@@ -7,7 +7,7 @@ import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Search, Check, X, Loader2, Building2, Package, Calendar,
   DollarSign, TrendingUp, RefreshCw, ChevronRight, ChevronDown, ChevronUp,
-  Wallet, Plus, Trash2, CircleDollarSign,
+  Wallet, Plus, Trash2, CircleDollarSign, User2, Phone,
 } from "lucide-react";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 // 2026-08-03 · 공급사명 표시 정제 · 법인접두어("(주)"·"주식회사"·"㈜") 및 vat 부가정보 제거
@@ -109,7 +109,21 @@ const CATEGORY_LEFT_BG: Record<string, string> = {
 
 // compact 테이블 정렬 키 타입 (모듈 레벨 · IIFE SortIcon 에서 참조)
 // 2026-08-04 · 일반 모드(non-compact) 에서도 재사용 · email/created_at 추가 (A-2 모든 헤더 정렬)
-type CompactSortKey = "company_name" | "category" | "business_number" | "contact_name" | "phone" | "email" | "vat" | "balance" | "invoice_date" | "created_at";
+// 2026-08-04 · #101 · 결제/공급사관리 리스트 · 총재고자산·총판매액 컬럼 추가
+type CompactSortKey =
+  | "company_name" | "category" | "business_number" | "contact_name" | "phone" | "email" | "vat"
+  | "balance" | "invoice_date" | "created_at"
+  | "stock_value" | "sales_total";
+
+// 공급사명 정규화 · vendors.company_name ↔ stock_history.supplier_name 매칭용
+// PurchaseHistoryTab.tsx 의 normalizeName 과 동일 규칙 (법인접두어/괄호/공백 제거)
+const normalizeSupplierKey = (s: string | null | undefined): string =>
+  String(s ?? "")
+    .replace(/[\s()㈜㈐]/g, "")
+    .replace(/^\(주\)/g, "")
+    .replace(/주식회사/g, "")
+    .replace(/\(주\)$/g, "")
+    .toLowerCase();
 
 export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   initialSelectedId,
@@ -125,8 +139,13 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   // compact 모드 · 선택된 항목 강조용
   const [activeId, setActiveId] = useState<number | null>(null);
   // compact 모드 · 테이블 정렬
-  const [compactSortKey, setCompactSortKey] = useState<CompactSortKey>("company_name");
-  const [compactSortDir, setCompactSortDir] = useState<"asc" | "desc">("asc");
+  // 2026-08-04 · #101 · compact 모드 default = 잔고 내림차순 (사용자 요청)
+  //   non-compact 는 기존과 동일하게 company_name asc 로 시작
+  const [compactSortKey, setCompactSortKey] = useState<CompactSortKey>(compact ? "balance" : "company_name");
+  const [compactSortDir, setCompactSortDir] = useState<"asc" | "desc">(compact ? "desc" : "asc");
+  // 2026-08-04 · #101 · 공급사별 재고자산·판매액 (총 3개월 · /api/stock-manage/supplier-purchases)
+  //   key = normalizeSupplierKey(supplier_name) · value = { stockValue, salesTotal }
+  const [supplierAggMap, setSupplierAggMap] = useState<Map<string, { stockValue: number; salesTotal: number }>>(new Map());
   const toggleCompactSort = (key: CompactSortKey) => {
     if (compactSortKey === key) {
       setCompactSortDir(d => d === "asc" ? "desc" : "asc");
@@ -160,6 +179,34 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   }, []);
 
   useEffect(() => { loadVendors(); }, [loadVendors]);
+
+  // 2026-08-04 · #101 · 공급사별 재고자산·판매액 집계 로드 (compact 모드 · 최근 3개월)
+  //   stock_history 기반 · 이름 정규화 매칭 · 실패 시 빈 map (컬럼은 "-" 로 표기)
+  useEffect(() => {
+    if (!compact) return; // compact 모드에서만 사용
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/stock-manage/supplier-purchases?months=3&limit=50000");
+        if (!res.ok) return;
+        const j = await res.json();
+        const rows: any[] = Array.isArray(j?.rows) ? j.rows : [];
+        const m = new Map<string, { stockValue: number; salesTotal: number }>();
+        for (const r of rows) {
+          const nm = String(r.supplier ?? "").trim();
+          if (!nm) continue;
+          const key = normalizeSupplierKey(nm);
+          if (!key) continue;
+          const cur = m.get(key) ?? { stockValue: 0, salesTotal: 0 };
+          cur.stockValue += Number(r.totalStockAmount ?? 0) || 0;
+          cur.salesTotal += Number(r.saleAmount ?? 0) || 0;
+          m.set(key, cur);
+        }
+        if (!cancelled) setSupplierAggMap(m);
+      } catch { /* 조회 실패 시 빈 map · 컬럼 "-" 표기 */ }
+    })();
+    return () => { cancelled = true; };
+  }, [compact]);
 
   useEffect(() => {
     if (initialSelectedId != null && vendors.find(v => v.id === initialSelectedId)) {
@@ -223,11 +270,22 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
           const db = b.created_at ?? "";
           cmp = da < db ? -1 : da > db ? 1 : 0; break;
         }
+        // 2026-08-04 · #101 · 총재고자산 · 총판매액 정렬 (supplierAggMap 참조)
+        case "stock_value": {
+          const va = supplierAggMap.get(normalizeSupplierKey(a.company_name))?.stockValue ?? -Infinity;
+          const vb = supplierAggMap.get(normalizeSupplierKey(b.company_name))?.stockValue ?? -Infinity;
+          cmp = va - vb; break;
+        }
+        case "sales_total": {
+          const va = supplierAggMap.get(normalizeSupplierKey(a.company_name))?.salesTotal ?? -Infinity;
+          const vb = supplierAggMap.get(normalizeSupplierKey(b.company_name))?.salesTotal ?? -Infinity;
+          cmp = va - vb; break;
+        }
         default: cmp = 0;
       }
       return compactSortDir === "asc" ? cmp : -cmp;
     });
-  }, [filtered, compactSortKey, compactSortDir]);
+  }, [filtered, compactSortKey, compactSortDir, supplierAggMap]);
 
   return (
     <div className="flex flex-col gap-2 min-h-0 flex-1">
@@ -359,9 +417,10 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
       )}
 
       {/* ── compact 모드: 표 형식 리스트 (헤더 정렬 · 결제/공급사 컬럼) ── */}
+      {/* 2026-08-04 · #101 · 컬럼 재정비 · 5개 (공급사·총잔고·총재고자산·총판매액·최근매입) */}
       {compact ? (
         <div className="flex-1 min-h-0 overflow-auto bg-white rounded-xl border border-slate-200 shadow-sm">
-          <table className="w-full min-w-[360px] text-xs border-collapse">
+          <table className="w-full min-w-[420px] text-xs border-collapse">
             <thead>
               <tr>
                 {/* 공급사 헤더 (분류+이름 stacked) · 2026-08-04 #68 · 활성 컬럼 subtle 배경 */}
@@ -384,94 +443,65 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                       : <ChevronUp size={9} className="text-slate-300 ml-0.5 shrink-0" />}
                   </span>
                 </th>
-                {/* 사업자번호 */}
-                <th
-                  onClick={() => toggleCompactSort("business_number")}
-                  className={[
-                    "sticky top-0 z-10 border-b border-slate-200",
-                    "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
-                    "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
-                    "py-1.5 text-left px-2 w-24",
-                    compactSortKey === "business_number" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-500 bg-slate-50",
-                  ].join(" ")}
-                >
-                  <span className="inline-flex items-center gap-0.5">
-                    사업자번호
-                    {compactSortKey === "business_number"
-                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 ml-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 ml-0.5 shrink-0" />)
-                      : <ChevronUp size={9} className="text-slate-300 ml-0.5 shrink-0" />}
-                  </span>
-                </th>
-                {/* 담당자 */}
-                <th
-                  onClick={() => toggleCompactSort("contact_name")}
-                  className={[
-                    "sticky top-0 z-10 border-b border-slate-200",
-                    "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
-                    "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
-                    "py-1.5 text-left px-2 w-16",
-                    compactSortKey === "contact_name" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-500 bg-slate-50",
-                  ].join(" ")}
-                >
-                  <span className="inline-flex items-center gap-0.5">
-                    담당자
-                    {compactSortKey === "contact_name"
-                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 ml-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 ml-0.5 shrink-0" />)
-                      : <ChevronUp size={9} className="text-slate-300 ml-0.5 shrink-0" />}
-                  </span>
-                </th>
-                {/* 전화 */}
-                <th
-                  onClick={() => toggleCompactSort("phone")}
-                  className={[
-                    "sticky top-0 z-10 border-b border-slate-200",
-                    "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
-                    "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
-                    "py-1.5 text-left px-2 w-24",
-                    compactSortKey === "phone" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-500 bg-slate-50",
-                  ].join(" ")}
-                >
-                  <span className="inline-flex items-center gap-0.5">
-                    전화
-                    {compactSortKey === "phone"
-                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 ml-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 ml-0.5 shrink-0" />)
-                      : <ChevronUp size={9} className="text-slate-300 ml-0.5 shrink-0" />}
-                  </span>
-                </th>
-                {/* VAT */}
-                <th
-                  onClick={() => toggleCompactSort("vat")}
-                  className={[
-                    "sticky top-0 z-10 border-b border-slate-200",
-                    "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
-                    "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
-                    "py-1.5 text-left px-2 w-16",
-                    compactSortKey === "vat" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-500 bg-slate-50",
-                  ].join(" ")}
-                >
-                  <span className="inline-flex items-center gap-0.5">
-                    VAT
-                    {compactSortKey === "vat"
-                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 ml-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 ml-0.5 shrink-0" />)
-                      : <ChevronUp size={9} className="text-slate-300 ml-0.5 shrink-0" />}
-                  </span>
-                </th>
-                {/* 잔고 · 우측 정렬 */}
+                {/* 2026-08-04 · #101 · 결제/공급사관리 리스트 재정비
+                     · 제거: 사업자번호·담당자·전화·VAT (상세 우측 상단으로 이동)
+                     · 유지: 공급사·총잔고·최근매입
+                     · 추가: 총재고자산·총판매액 (최근 3개월)  */}
+                {/* 총잔고 · 우측 정렬 */}
                 <th
                   onClick={() => toggleCompactSort("balance")}
                   className={[
                     "sticky top-0 z-10 border-b border-slate-200",
                     "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
-                    "py-1.5 text-right pr-2 pl-1 w-16",
+                    "py-1.5 text-right pr-2 pl-1 w-20",
                     compactSortKey === "balance" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-500 bg-slate-50",
                   ].join(" ")}
+                  title="공급사별 최근 청구 잔고"
                 >
                   <span className="inline-flex items-center flex-row-reverse gap-0.5">
-                    잔고
+                    총잔고
                     {compactSortKey === "balance"
                       ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 mr-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 mr-0.5 shrink-0" />)
-                      : <ChevronUp size={9} className="text-slate-300 mr-0.5 shrink-0" />}
+                      : <ChevronDown size={9} className="text-slate-300 mr-0.5 shrink-0" />}
+                  </span>
+                </th>
+                {/* 총재고자산 · 우측 정렬 · 최근 3개월 · totalStockAmount */}
+                <th
+                  onClick={() => toggleCompactSort("stock_value")}
+                  className={[
+                    "sticky top-0 z-10 border-b border-slate-200",
+                    "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
+                    "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
+                    "py-1.5 text-right pr-2 pl-1 w-20",
+                    compactSortKey === "stock_value" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-500 bg-slate-50",
+                  ].join(" ")}
+                  title="공급사 상품 재고 총액 · 최근 3개월 stock_history 합계"
+                >
+                  <span className="inline-flex items-center flex-row-reverse gap-0.5">
+                    총재고자산
+                    {compactSortKey === "stock_value"
+                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 mr-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 mr-0.5 shrink-0" />)
+                      : <ChevronDown size={9} className="text-slate-300 mr-0.5 shrink-0" />}
+                  </span>
+                </th>
+                {/* 총판매액 · 우측 정렬 · 최근 3개월 · saleAmount proxy */}
+                <th
+                  onClick={() => toggleCompactSort("sales_total")}
+                  className={[
+                    "sticky top-0 z-10 border-b border-slate-200",
+                    "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
+                    "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
+                    "py-1.5 text-right pr-2 pl-1 w-20",
+                    compactSortKey === "sales_total" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-500 bg-slate-50",
+                  ].join(" ")}
+                  title="공급사 상품 판매 총액 · 최근 3개월"
+                >
+                  <span className="inline-flex items-center flex-row-reverse gap-0.5">
+                    총판매액
+                    {compactSortKey === "sales_total"
+                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 mr-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 mr-0.5 shrink-0" />)
+                      : <ChevronDown size={9} className="text-slate-300 mr-0.5 shrink-0" />}
                   </span>
                 </th>
                 {/* 최근매입 */}
@@ -497,7 +527,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
             <tbody className="divide-y divide-slate-50">
               {compactSorted.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12">
+                  <td colSpan={5} className="text-center py-12">
                     <div className="flex flex-col items-center gap-2 text-slate-400">
                       <Building2 size={28} className="opacity-25" />
                       <span className="text-[13px] font-semibold">
@@ -510,9 +540,12 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 const isActive  = activeId === v.id;
                 const catBorder = v.category ? (CATEGORY_LEFT_BORDER[v.category] ?? "border-l-slate-200") : "border-l-slate-200";
                 const catBg     = v.category ? (CATEGORY_LEFT_BG[v.category] ?? "") : "";
-                const vatIn     = detectVatIncluded(v);
                 const hasBal    = v.latestBalance?.balance != null;
                 const invDate   = v.latestBalance?.invoice_date;
+                // 2026-08-04 · #101 · 재고자산·판매액 (최근 3개월 · supplierAggMap)
+                const agg = supplierAggMap.get(normalizeSupplierKey(v.company_name));
+                const stockValue = agg?.stockValue ?? null;
+                const salesTotal = agg?.salesTotal ?? null;
                 const fmtDate   = (d: string | null | undefined): string => {
                   if (!d) return "-";
                   const m = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -540,43 +573,34 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                         </div>
                       </div>
                     </td>
-                    {/* 사업자번호 */}
-                    <td className="px-2 py-1.5 text-[11px] text-slate-600 tabular-nums whitespace-nowrap">
-                      {v.business_number
-                        ? formatBizNum(v.business_number)
-                        : <span className="text-[10px] font-black text-rose-500 bg-rose-50 border border-rose-200 rounded px-1 py-px leading-none">번호없음</span>}
-                    </td>
-                    {/* 담당자 */}
-                    <td className="px-2 py-1.5 text-[12px] text-slate-600 whitespace-nowrap">
-                      {v.contact_name != null ? v.contact_name : <span className="text-slate-300">-</span>}
-                    </td>
-                    {/* 전화 */}
-                    <td className="px-2 py-1.5 text-[11px] text-slate-500 tabular-nums whitespace-nowrap">
-                      {v.phone != null ? v.phone : <span className="text-slate-300">-</span>}
-                    </td>
-                    {/* VAT */}
-                    <td className="px-2 py-1.5 whitespace-nowrap">
-                      {vatIn == null
-                        ? <span className="text-[10px] text-slate-300">-</span>
-                        : (
-                          <span
-                            className={`text-[10px] font-bold px-1 py-px rounded whitespace-nowrap ${
-                              vatIn
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                : "bg-amber-50 text-amber-700 border border-amber-200"
-                            }`}
-                            title={vatIn ? "부가세 포함" : "부가세 미포함 (VAT 별도)"}
-                          >
-                            {vatIn ? "포함" : "별도"}
-                          </span>
-                        )}
-                    </td>
-                    {/* 잔고 · 우측 정렬 */}
+                    {/* 총잔고 · 우측 정렬 */}
                     <td className="pr-2 pl-1 py-1.5 text-right whitespace-nowrap">
                       {hasBal
                         ? (
                           <span className={`text-[12px] font-bold tabular-nums ${v.latestBalance!.balance > 0 ? "text-emerald-600" : "text-slate-400"}`}>
                             {fmtWon(v.latestBalance!.balance)}
+                          </span>
+                        )
+                        : <span className="text-[10px] text-slate-300">-</span>}
+                    </td>
+                    {/* 총재고자산 · 우측 정렬 · 최근 3개월 */}
+                    <td className="pr-2 pl-1 py-1.5 text-right whitespace-nowrap">
+                      {stockValue != null && stockValue > 0
+                        ? (
+                          <span className="text-[12px] font-bold tabular-nums text-sky-700"
+                            title={`${stockValue.toLocaleString()}원 · 최근 3개월 재고금액 합`}>
+                            {fmtWon(stockValue)}
+                          </span>
+                        )
+                        : <span className="text-[10px] text-slate-300">-</span>}
+                    </td>
+                    {/* 총판매액 · 우측 정렬 · 최근 3개월 */}
+                    <td className="pr-2 pl-1 py-1.5 text-right whitespace-nowrap">
+                      {salesTotal != null && salesTotal > 0
+                        ? (
+                          <span className="text-[12px] font-bold tabular-nums text-violet-700"
+                            title={`${Math.round(salesTotal).toLocaleString()}원 · 최근 3개월 판매액`}>
+                            {fmtWon(salesTotal)}
                           </span>
                         )
                         : <span className="text-[10px] text-slate-300">-</span>}
@@ -1056,23 +1080,55 @@ export const VendorDetailModal: React.FC<{
         onClick={panel ? undefined : (e => e.stopPropagation())}
       >
         {/* ── 헤더 ── */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 bg-gradient-to-r from-teal-50 via-emerald-50 to-white shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
+        {/* 2026-08-04 · #101 · 좌측 리스트에서 뺀 사업자번호·담당자·전화 · 우측 상단 시인성 표시
+             · flex row · 아이콘 + 라벨(10px) + 값(13px bold) · 클릭 tel: · 없음 = 회색 미등록 */}
+        <div className="flex items-start justify-between px-5 py-3.5 border-b border-slate-200 bg-gradient-to-r from-teal-50 via-emerald-50 to-white shrink-0 gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="w-9 h-9 rounded-lg bg-teal-100 flex items-center justify-center shrink-0">
               <Building2 size={18} className="text-teal-700" />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="text-[15px] font-black text-slate-800 truncate leading-tight">{vendor.company_name}</div>
                 <VendorCategoryBadge category={vendor.category} />
-              </div>
-              <div className="text-[11px] text-slate-500 font-mono mt-0.5 flex items-center gap-2 flex-wrap">
-                {vendor.business_number
-                  ? <span className="tabular-nums">{formatBizNum(vendor.business_number)}</span>
-                  : <span className="text-rose-500 italic">사업자번호 없음</span>}
                 {vendor.created_at && (
-                  <span className="text-slate-400">· 등록 {String(vendor.created_at).slice(0, 10)}</span>
+                  <span className="text-[10px] text-slate-400 font-mono">등록 {String(vendor.created_at).slice(0, 10)}</span>
                 )}
+              </div>
+              {/* 사업자번호·담당자·전화 · flex row · gap-4 · flex-wrap */}
+              <div className="mt-1.5 flex items-center gap-x-4 gap-y-1 flex-wrap">
+                {/* 사업자번호 */}
+                <div className="inline-flex items-center gap-1.5">
+                  <Building2 size={12} className="text-slate-500 shrink-0" />
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">사업자</span>
+                  {vendor.business_number
+                    ? <span className="text-[13px] font-bold text-slate-800 tabular-nums font-mono">{formatBizNum(vendor.business_number)}</span>
+                    : <span className="text-[12px] font-semibold text-slate-400">미등록</span>}
+                </div>
+                {/* 담당자 */}
+                <div className="inline-flex items-center gap-1.5">
+                  <User2 size={12} className="text-slate-500 shrink-0" />
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">담당</span>
+                  {vendor.contact_name
+                    ? <span className="text-[13px] font-bold text-slate-800">{vendor.contact_name}</span>
+                    : <span className="text-[12px] font-semibold text-slate-400">미등록</span>}
+                </div>
+                {/* 전화번호 · 클릭 tel: */}
+                <div className="inline-flex items-center gap-1.5">
+                  <Phone size={12} className="text-slate-500 shrink-0" />
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">전화</span>
+                  {vendor.phone
+                    ? (
+                      <a
+                        href={`tel:${String(vendor.phone).replace(/[^0-9+]/g, "")}`}
+                        onClick={e => e.stopPropagation()}
+                        className="text-[13px] font-bold text-slate-800 hover:text-teal-700 hover:underline tabular-nums"
+                      >
+                        {vendor.phone}
+                      </a>
+                    )
+                    : <span className="text-[12px] font-semibold text-slate-400">미등록</span>}
+                </div>
               </div>
             </div>
           </div>
