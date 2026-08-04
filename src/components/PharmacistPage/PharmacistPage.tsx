@@ -164,13 +164,16 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
   // ── 설정 모달 (관리자) ───────────────────────────
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  // ── PDF 뷰어 모달 ────────────────────────────────
+  // ── T20 · 우측 인라인 PDF 뷰어 (선택된 하위메뉴) ─────
+  //   기존 모달 → 인라인 · 좌측에 하위메뉴 리스트 · 우측에 PDF 표시
+  const [selectedItem, setSelectedItem] = useState<PharmMenuItem | null>(null);
+  // 카테고리·탭 변경 시 · 선택 하위메뉴 초기화
+  useEffect(() => { setSelectedItem(null); }, [tab, selectedCat]);
+  const selectItem = (item: PharmMenuItem) => setSelectedItem(item);
+  // 풀스크린 모달 (선택적 · double-click) — 유지
   const [viewerItem, setViewerItem] = useState<PharmMenuItem | null>(null);
-  const openViewer = (item: PharmMenuItem) => {
-    if (!item.file_url) {
-      alert("첨부 파일이 없는 항목입니다.\n관리자에게 파일 등록을 요청하세요.");
-      return;
-    }
+  const openViewerModal = (item: PharmMenuItem) => {
+    if (!item.file_url) return;
     setViewerItem(item);
   };
 
@@ -235,20 +238,21 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
           }}
         />
 
-        {/* 좌 리스트 + 리사이저 + 우 상세 (기존 페이지와 동일 split) */}
+        {/* T20 · 좌 리스트 + 리사이저 + 우 PDF 인라인 뷰어 (2026-08-04 재구성) */}
         <div className="flex flex-col lg:flex-row gap-2 lg:min-h-[520px]">
-          {/* 좌측 · 카테고리 리스트 */}
+          {/* 좌측 · 카테고리 + 하위메뉴 stacked */}
           <div
-            className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col"
+            className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-2"
             style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? leftWidth : undefined }}
           >
+            {/* 카테고리 리스트 */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
               <div className="px-3 py-2 border-b border-slate-100 bg-slate-50/60 flex items-center gap-1.5">
                 {activeTabDef.icon && <activeTabDef.icon size={14} className="text-slate-500" weight="fill" />}
                 <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider">{activeTabDef.label} · 카테고리</span>
                 <span className="ml-auto text-[10px] font-bold text-slate-400 tabular-nums">{categories.length}건</span>
               </div>
-              <ul className="divide-y divide-slate-100 max-h-[70vh] overflow-y-auto">
+              <ul className="divide-y divide-slate-100 max-h-[38vh] overflow-y-auto">
                 {categories.map(c => {
                   const active = selectedCat === c.key;
                   return (
@@ -256,14 +260,14 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                       <button
                         type="button"
                         onClick={() => setSelectedCat(c.key)}
-                        className={`w-full text-left px-3 py-2.5 flex items-start gap-2 transition cursor-pointer ${active ? "bg-sky-50/70" : "hover:bg-slate-50"}`}
+                        className={`w-full text-left px-3 py-2 flex items-start gap-2 transition cursor-pointer ${active ? "bg-sky-50/70" : "hover:bg-slate-50"}`}
                       >
-                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${active ? "bg-sky-100 text-sky-600" : "bg-slate-100 text-slate-500"}`}>
-                          <Folder size={14} weight="fill" />
+                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${active ? "bg-sky-100 text-sky-600" : "bg-slate-100 text-slate-500"}`}>
+                          <Folder size={12} weight="fill" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className={`text-[13px] font-bold leading-tight ${active ? "text-sky-800" : "text-slate-800"}`}>{c.title}</div>
-                          <div className="text-[11px] text-slate-500 mt-0.5 truncate">{c.subtitle}</div>
+                          <div className={`text-[12.5px] font-bold leading-tight ${active ? "text-sky-800" : "text-slate-800"}`}>{c.title}</div>
+                          <div className="text-[10.5px] text-slate-500 mt-0.5 truncate">{c.subtitle}</div>
                         </div>
                       </button>
                     </li>
@@ -271,6 +275,75 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                 })}
               </ul>
             </div>
+
+            {/* 하위메뉴 리스트 · 선택된 카테고리 · 관리자 CRUD 버튼 포함 */}
+            {selectedCatObj && (
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+                <div className="px-3 py-2 border-b border-slate-100 bg-gradient-to-r from-sky-50/60 to-transparent flex items-center gap-1.5">
+                  <FileTextIcon size={13} className="text-sky-600" />
+                  <span className="text-[11px] font-black text-sky-700 uppercase tracking-wider truncate">{selectedCatObj.title}</span>
+                  <span className="ml-auto text-[10px] font-bold text-slate-400 tabular-nums">{menuItems.length}건</span>
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => setSettingsOpen(true)}
+                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-sky-600 hover:bg-sky-700 text-white text-[10px] font-bold cursor-pointer transition shadow-sm shrink-0"
+                      title="하위메뉴 추가·수정·삭제"
+                    >
+                      <Plus size={10} />관리
+                    </button>
+                  )}
+                </div>
+                {menuError && (
+                  <div className="px-3 py-1.5 text-[10.5px] text-rose-700 font-semibold bg-rose-50 border-b border-rose-200">
+                    {menuError}
+                  </div>
+                )}
+                {menuLoading ? (
+                  <div className="p-6 flex items-center justify-center gap-2 text-slate-400">
+                    <Loader2 size={13} className="animate-spin" />
+                    <span className="text-[11px] font-bold">불러오는 중...</span>
+                  </div>
+                ) : menuItems.length === 0 ? (
+                  <div className="p-6 text-center text-[11px] text-slate-400">
+                    {isAdmin ? "관리 버튼으로 등록하세요" : "등록된 자료 없음"}
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-slate-100 max-h-[38vh] overflow-y-auto">
+                    {menuItems.map(row => {
+                      const hasFile = !!row.file_url;
+                      const active = selectedItem?.id === row.id;
+                      return (
+                        <li key={row.id}>
+                          <button
+                            type="button"
+                            onClick={() => selectItem(row)}
+                            className={`w-full text-left px-3 py-2 flex items-center gap-2 transition ${
+                              active ? "bg-sky-100/60" : "hover:bg-sky-50/40"
+                            } cursor-pointer`}
+                            title={hasFile ? "PDF 인라인 표시" : "파일 없음"}
+                          >
+                            <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
+                              hasFile ? "bg-sky-100 text-sky-600" : "bg-slate-100 text-slate-400"
+                            }`}>
+                              <FileTextIcon size={12} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className={`text-[12px] font-bold truncate ${active ? "text-sky-800" : "text-slate-800"}`}>{row.title}</div>
+                              {row.file_name && (
+                                <div className="text-[10px] text-slate-400 truncate font-semibold">
+                                  {row.file_name}{row.file_size ? ` · ${fmtBytes(row.file_size)}` : ""}
+                                </div>
+                              )}
+                            </div>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
 
           {/* 리사이저 (lg 이상) */}
@@ -282,21 +355,51 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
             <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
           </div>
 
-          {/* 우측 · 선택된 카테고리의 하위메뉴 리스트 */}
+          {/* 우측 · 선택된 하위메뉴의 PDF 인라인 뷰어 */}
           <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0">
-            {!selectedCatObj ? (
-              <EmptyRightPanel tabLabel={activeTabDef.label} />
+            {!selectedItem ? (
+              <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
+                <FirstAid size={40} className="mb-3 opacity-30" />
+                <div className="text-sm font-bold">
+                  {selectedCatObj ? "좌측에서 하위메뉴를 선택하세요" : `좌측에서 ${activeTabDef.label} 카테고리를 선택하세요`}
+                </div>
+                <div className="text-[11px] mt-1">
+                  {selectedCatObj ? "선택된 자료의 PDF 가 이 영역에 표시됩니다" : "카테고리 선택 시 하위메뉴가 좌측 아래에 표시됩니다"}
+                </div>
+              </div>
+            ) : !selectedItem.file_url ? (
+              <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
+                <FileTextIcon size={36} className="mb-3 opacity-30" />
+                <div className="text-sm font-bold text-slate-600">{selectedItem.title}</div>
+                <div className="text-[11px] mt-2 text-slate-400">첨부 파일이 없습니다</div>
+              </div>
             ) : (
-              <SubMenuListPanel
-                tabLabel={activeTabDef.label}
-                category={selectedCatObj}
-                items={menuItems}
-                loading={menuLoading}
-                error={menuError}
-                isAdmin={isAdmin}
-                onOpenViewer={openViewer}
-                onOpenSettings={() => setSettingsOpen(true)}
-              />
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 flex flex-col overflow-hidden min-h-[400px]">
+                <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/60 flex items-center gap-2">
+                  <FileTextIcon size={14} className="text-sky-600" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-black text-slate-800 truncate">{selectedItem.title}</div>
+                    {selectedItem.file_name && (
+                      <div className="text-[10.5px] text-slate-400 truncate font-semibold">
+                        {selectedItem.file_name}{selectedItem.file_size ? ` · ${fmtBytes(selectedItem.file_size)}` : ""}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openViewerModal(selectedItem)}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-sky-600 hover:bg-sky-700 text-white text-[10.5px] font-bold cursor-pointer shrink-0"
+                    title="풀스크린 · 워터마크 스크린샷 방지 모드"
+                  >
+                    <Eye size={11} />풀스크린
+                  </button>
+                </div>
+                <iframe
+                  src={selectedItem.file_url}
+                  title={selectedItem.title}
+                  className="flex-1 w-full border-0 min-h-[400px] bg-slate-50"
+                />
+              </div>
             )}
           </div>
         </div>
