@@ -278,7 +278,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       if (isActive) {
         return (
           <span key="business" className={`${base} bg-gradient-to-br ${c.activeBg} ${c.activeText} border-transparent shadow-sm font-bold`}>
-            <Icon size={20} weight="fill" /> {tab.label}
+            <Icon size={24} weight="fill" /> {tab.label}
           </span>
         );
       }
@@ -290,7 +290,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           disabled={!onNavigate}
           className={`${base} bg-white ${c.inactiveText} ${c.inactiveHoverText} border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm active:scale-95 cursor-pointer disabled:opacity-40`}
         >
-          <Icon size={20} weight="fill" /> {tab.label}
+          <Icon size={24} weight="fill" /> {tab.label}
         </button>
       );
     }
@@ -300,7 +300,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     if (isActive) {
       return (
         <span key={tab.key} className={`${base} bg-gradient-to-br ${c.activeBg} ${c.activeText} border-transparent shadow-sm font-bold`}>
-          <Icon size={20} weight="fill" /> {tab.label}
+          <Icon size={24} weight="fill" /> {tab.label}
         </span>
       );
     }
@@ -311,7 +311,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         disabled={!onNavigate && !onBack}
         className={`${base} bg-white ${c.inactiveText} ${c.inactiveHoverText} border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm active:scale-95 cursor-pointer disabled:opacity-40`}
       >
-        <Icon size={20} weight="fill" /> {tab.label}
+        <Icon size={24} weight="fill" /> {tab.label}
       </button>
     );
   };
@@ -328,7 +328,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       if (isActive) {
         return (
           <span key="business" className={`${base} bg-gradient-to-br ${c.activeBg} ${c.activeText} shadow-md font-black`}>
-            <Icon size={22} weight="fill" />
+            <Icon size={26} weight="fill" />
             <span className="leading-tight text-center whitespace-nowrap">경영</span>
           </span>
         );
@@ -341,7 +341,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           disabled={!onNavigate}
           className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white cursor-pointer disabled:opacity-40`}
         >
-          <Icon size={22} weight="fill" />
+          <Icon size={26} weight="fill" />
           <span className="leading-tight text-center">경영</span>
         </button>
       );
@@ -352,7 +352,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     if (isActive) {
       return (
         <span key={tab.key} className={`${base} bg-gradient-to-br ${c.activeBg} ${c.activeText} shadow-md font-black`}>
-          <Icon size={22} weight="fill" />
+          <Icon size={26} weight="fill" />
           <span className="leading-tight text-center">
             {(() => {
               const L = tab.label;
@@ -379,7 +379,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         disabled={!onNavigate && !onBack}
         className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white cursor-pointer disabled:opacity-40`}
       >
-        <Icon size={22} weight="fill" />
+        <Icon size={26} weight="fill" />
         <span className="leading-tight text-center whitespace-nowrap">
           {/* 2026-08-04 · 3자 이하는 한줄 · 4자 이상만 wrap (스케줄 등 3자 줄바꿈 방지) */}
           {tab.label.length > 3 ? (

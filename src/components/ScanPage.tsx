@@ -20,7 +20,7 @@ import {
   ScanLine, Loader2, AlertCircle, Package,
   CheckCircle2, Trash2, RotateCcw, Warehouse, Store,
   Hash, Building2, Box, MapPin, ArrowUpDown, ArrowUp, ArrowDown,
-  SaveAll, Sparkles,
+  SaveAll, Sparkles, History, X,
 } from "lucide-react";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { loadZBar } from "./BarcodeScanner/zbar";
@@ -71,6 +71,27 @@ interface StockRow {
   store1Zone:    string | null;   // 매장1 구역 (편집 가능)
   store2Zone:    string | null;   // 매장2 구역 (편집 가능)
   store3Zone:    string | null;   // 매장3 구역 (편집 가능)
+  lastCheckedAt?: string | null;  // 최근 저장 시각 (같은날 여부 판정용)
+  historyCount?: number;          // 이력 건수 (badge 표시)
+}
+
+// 실재고 이력 · /api/inventory-checks 응답 요소 (부분)
+interface InventoryHistoryRow {
+  id: number;
+  product_code: string;
+  product_name?: string | null;
+  warehouse_stock?: number | null;
+  warehouse1_stock?: number | null;
+  warehouse2_stock?: number | null;
+  store_stock?: number | null;
+  store_stock_2?: number | null;
+  store3_stock?: number | null;
+  store1_zone?: string | null;
+  store2_zone?: string | null;
+  store3_zone?: string | null;
+  checked_by?: string | null;
+  checked_at?: string | null;
+  note?: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -191,6 +212,11 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   const [rows, setRows]                         = useState<StockRow[]>([]);
   const [lastAddedKey, setLastAddedKey]         = useState<string | null>(null);
 
+  // ── 실재고 이력 조회 모달 · 상품별 과거 저장 내역
+  const [historyModal, setHistoryModal]         = useState<{ code: string; name: string } | null>(null);
+  const [historyRows, setHistoryRows]           = useState<InventoryHistoryRow[]>([]);
+  const [historyLoading, setHistoryLoading]     = useState(false);
+
   // ── 전체 저장
   const [saveStatus, setSaveStatus]             = useState<"idle" | "saving" | "done" | "error">("idle");
   const [saveError, setSaveError]               = useState<string | null>(null);
@@ -266,9 +292,10 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     setSaveStatus("idle");
 
     // 기존 실재고 자동 로드 · 신규 컬럼 우선 · 없으면 레거시 fallback
+    // 이력 건수/최근 저장 시각도 함께 저장 (덮어쓰기 confirm · 이력 배지에 사용)
     fetch(`/api/inventory-checks?product_code=${encodeURIComponent(result)}`)
       .then(r => r.ok ? r.json() : [])
-      .then((list: any[]) => {
+      .then((list: InventoryHistoryRow[]) => {
         const last = list[0];
         if (!last) return;
         const w1 = last.warehouse1_stock ?? last.warehouse_stock;
@@ -288,6 +315,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               store1Zone: (last.store1_zone ?? r.store1Zone) || null,
               store2Zone: (last.store2_zone ?? r.store2Zone) || null,
               store3Zone: (last.store3_zone ?? r.store3Zone) || null,
+              lastCheckedAt: last.checked_at ?? null,
+              historyCount:  list.length,
             }
           : r
         ));
@@ -316,10 +345,33 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     setSaveError(null);
   };
 
+  // ── 실재고 이력 모달 열기
+  const openHistory = useCallback(async (code: string, name: string) => {
+    setHistoryModal({ code, name });
+    setHistoryLoading(true);
+    setHistoryRows([]);
+    try {
+      const r = await fetch(`/api/inventory-checks?product_code=${encodeURIComponent(code)}`);
+      const list = r.ok ? await r.json() : [];
+      setHistoryRows(Array.isArray(list) ? list : []);
+    } catch { /* noop */ } finally { setHistoryLoading(false); }
+  }, []);
+
   // ── 전체 저장
   const handleBulkSave = async () => {
     if (rows.length === 0) return;
     if (saveStatus === "saving") return;
+    // 오늘 이미 저장된 상품 · 덮어쓰기 확인 (서버가 같은날 UPDATE · 다른날 INSERT)
+    const todayYmd = new Date().toISOString().slice(0, 10);
+    const sameDayRows = rows.filter(r => r.lastCheckedAt && String(r.lastCheckedAt).slice(0, 10) === todayYmd);
+    if (sameDayRows.length > 0) {
+      const preview = sameDayRows.slice(0, 5).map(r => `· ${r.product.name}`).join("\n");
+      const more = sameDayRows.length > 5 ? `\n외 ${sameDayRows.length - 5}건` : "";
+      const ok = window.confirm(
+        `오늘(${todayYmd}) 이미 저장된 상품이 ${sameDayRows.length}건 있습니다.\n덮어쓰시겠습니까?\n\n${preview}${more}`
+      );
+      if (!ok) return;
+    }
     setSaveStatus("saving");
     setSaveError(null);
     try {
@@ -872,17 +924,35 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                             )}
                           </td>
 
-                          {/* 삭제 */}
+                          {/* 이력·삭제 */}
                           <td className="px-2 py-2 text-center align-middle">
-                            <button
-                              onClick={() => removeRow(row.key)}
-                              className="w-7 h-7 flex items-center justify-center rounded-lg mx-auto
-                                text-slate-300 hover:text-rose-500 hover:bg-rose-50
-                                transition-all duration-150 cursor-pointer"
-                              title="삭제"
-                            >
-                              <Trash2 size={13} />
-                            </button>
+                            <div className="flex items-center justify-center gap-0.5">
+                              <button
+                                onClick={() => openHistory(row.code, row.product.name)}
+                                className="relative w-7 h-7 flex items-center justify-center rounded-lg
+                                  text-slate-300 hover:text-teal-600 hover:bg-teal-50
+                                  transition-all duration-150 cursor-pointer"
+                                title="실재고 저장 이력"
+                              >
+                                <History size={13} />
+                                {(row.historyCount ?? 0) > 0 && (
+                                  <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-1
+                                    text-[9px] font-black text-white bg-teal-500 rounded-full
+                                    flex items-center justify-center leading-none tabular-nums">
+                                    {row.historyCount}
+                                  </span>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => removeRow(row.key)}
+                                className="w-7 h-7 flex items-center justify-center rounded-lg
+                                  text-slate-300 hover:text-rose-500 hover:bg-rose-50
+                                  transition-all duration-150 cursor-pointer"
+                                title="삭제"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -981,6 +1051,85 @@ export const ScanPage: React.FC<ScanPageProps> = ({
           )}
         </section>
       </main>
+
+      {/* ── 실재고 이력 조회 모달 ─────────────────────────────── */}
+      {historyModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[9998] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/50 backdrop-blur-sm"
+          onClick={() => setHistoryModal(null)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="w-full sm:max-w-2xl max-h-[85vh] bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col"
+          >
+            <div className="px-5 py-3.5 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <div className="text-[10px] font-bold text-teal-600 uppercase tracking-widest">실재고 저장 이력</div>
+                <div className="text-sm font-black text-slate-800 truncate">{historyModal.name}</div>
+                <div className="text-[10px] text-slate-400 font-mono">{historyModal.code}</div>
+              </div>
+              <button
+                onClick={() => setHistoryModal(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer shrink-0"
+                title="닫기"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto">
+              {historyLoading ? (
+                <div className="flex items-center justify-center py-12 text-slate-400 text-xs font-semibold">
+                  <Loader2 size={16} className="animate-spin mr-2" /> 이력 조회 중...
+                </div>
+              ) : historyRows.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-slate-400 text-xs font-semibold">
+                  <History size={22} className="mb-2 text-slate-300" />
+                  저장 이력이 없습니다.
+                </div>
+              ) : (
+                <table className="w-full text-[11px]">
+                  <thead className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase tracking-widest text-slate-500 font-bold">
+                    <tr>
+                      <th className="px-3 py-2 text-left">일시</th>
+                      <th className="px-2 py-2 text-center">창1</th>
+                      <th className="px-2 py-2 text-center">창2</th>
+                      <th className="px-2 py-2 text-center">매1</th>
+                      <th className="px-2 py-2 text-center">매2</th>
+                      <th className="px-2 py-2 text-center">매3</th>
+                      <th className="px-3 py-2 text-left">담당</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {historyRows.map(h => {
+                      const dt = h.checked_at ? new Date(h.checked_at) : null;
+                      const dtLabel = dt
+                        ? `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")} ${String(dt.getHours()).padStart(2,"0")}:${String(dt.getMinutes()).padStart(2,"0")}`
+                        : "-";
+                      const w1 = h.warehouse1_stock ?? h.warehouse_stock;
+                      return (
+                        <tr key={h.id} className="hover:bg-teal-50/40">
+                          <td className="px-3 py-2 font-mono text-slate-700 whitespace-nowrap">{dtLabel}</td>
+                          <td className="px-2 py-2 text-center tabular-nums font-bold text-slate-700">{w1 ?? "-"}</td>
+                          <td className="px-2 py-2 text-center tabular-nums font-bold text-slate-700">{h.warehouse2_stock ?? "-"}</td>
+                          <td className="px-2 py-2 text-center tabular-nums font-bold text-slate-700">{h.store_stock ?? "-"}</td>
+                          <td className="px-2 py-2 text-center tabular-nums font-bold text-slate-700">{h.store_stock_2 ?? "-"}</td>
+                          <td className="px-2 py-2 text-center tabular-nums font-bold text-slate-700">{h.store3_stock ?? "-"}</td>
+                          <td className="px-3 py-2 text-slate-600 truncate max-w-[100px]">{h.checked_by ?? "-"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            <div className="px-5 py-2.5 border-t border-slate-100 bg-slate-50/60 text-[10px] text-slate-400 font-semibold text-center">
+              같은 날 저장은 덮어쓰고, 다른 날 저장은 이력으로 추가됩니다.
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
