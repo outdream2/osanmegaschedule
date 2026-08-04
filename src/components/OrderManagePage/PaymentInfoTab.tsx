@@ -311,6 +311,17 @@ export const PaymentInfoTab: React.FC = () => {
 
   // 월별 매입/결제 breakdown · 2026-08-04 · #58 · 상단 요약 표
   const [monthlyBreakdown, setMonthlyBreakdown] = useState<MonthlyBreakdown | null>(null);
+  // T11 · 상품별 매입 그루핑 (supplier-purchase-detail rows 를 product_code 로 aggregate)
+  interface ProductPurchaseSummary {
+    product_code: string;
+    product_name: string;
+    totalAmount: number;
+    totalQty: number;
+    invoiceCount: number;
+    latestDate: string;
+  }
+  const [productSummary, setProductSummary] = useState<ProductPurchaseSummary[]>([]);
+  const [showProductGroup, setShowProductGroup] = useState(false);
   const [monthlyLoading, setMonthlyLoading] = useState(false);
 
   // 폼 상태
@@ -516,6 +527,8 @@ export const PaymentInfoTab: React.FC = () => {
       const payment: Record<string, number> = {};
       let totalPurchase = 0;
       let totalPayment = 0;
+      // T11 · 상품별 그루핑 (raw rows 를 product_code 로 집계)
+      const productMap = new Map<string, ProductPurchaseSummary>();
       if (detailRes.ok) {
         const j = await detailRes.json();
         for (const r of (Array.isArray(j?.rows) ? j.rows : [])) {
@@ -525,8 +538,26 @@ export const PaymentInfoTab: React.FC = () => {
           const amt = Number(r?.amount) || 0;
           purchase[key] = (purchase[key] ?? 0) + amt;
           totalPurchase += amt;
+          // 상품별 집계
+          const code = String(r?.product_code ?? "").trim();
+          const pname = String(r?.product_name ?? "").trim();
+          const groupKey = code || pname || "(미상)";
+          const existing = productMap.get(groupKey);
+          const qty = Number(r?.quantity) || 0;
+          if (existing) {
+            existing.totalAmount += amt;
+            existing.totalQty += qty;
+            existing.invoiceCount += 1;
+            if (date > existing.latestDate) existing.latestDate = date;
+          } else {
+            productMap.set(groupKey, {
+              product_code: code, product_name: pname || code || "(미상)",
+              totalAmount: amt, totalQty: qty, invoiceCount: 1, latestDate: date,
+            });
+          }
         }
       }
+      setProductSummary([...productMap.values()].sort((a, b) => b.totalAmount - a.totalAmount));
       if (paysRes.ok) {
         const j = await paysRes.json();
         for (const r of (Array.isArray(j?.rows) ? j.rows : [])) {
@@ -547,6 +578,7 @@ export const PaymentInfoTab: React.FC = () => {
       });
     } catch {
       setMonthlyBreakdown(null);
+      setProductSummary([]);
     } finally {
       setMonthlyLoading(false);
     }
@@ -558,6 +590,7 @@ export const PaymentInfoTab: React.FC = () => {
       setBalance(null);
       setRecentPayments([]);
       setMonthlyBreakdown(null);
+      setProductSummary([]);
       return;
     }
     loadBalance(selectedVendor.company_name);
@@ -1371,6 +1404,59 @@ export const PaymentInfoTab: React.FC = () => {
                 )}
               </div>
               </div>{/* 결제입력+최근결제내역 grid wrapper close */}
+
+              {/* T11 · 상품별 매입 요약 (2026-08-04 · 이 공급사에서 매입한 상품별 집계) */}
+              {productSummary.length > 0 && (
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => setShowProductGroup(v => !v)}
+                    className="w-full flex items-center gap-2 p-4 pb-2 border-b border-slate-100 hover:bg-slate-50/50 transition cursor-pointer"
+                  >
+                    <div className="w-6 h-6 rounded-lg bg-emerald-100 flex items-center justify-center">
+                      <Layers size={13} className="text-emerald-700" strokeWidth={2.5} />
+                    </div>
+                    <div className="text-[13px] font-black text-slate-800">상품별 매입 요약</div>
+                    <span className="text-[11px] font-semibold text-slate-400 tabular-nums">
+                      · {productSummary.length}개 상품 · 최근 1년
+                    </span>
+                    <span className="ml-auto text-[10px] font-bold text-slate-400">{showProductGroup ? "접기 ▲" : "펼치기 ▼"}</span>
+                  </button>
+                  {showProductGroup && (
+                    <div className="p-2 overflow-x-auto">
+                      <table className="w-full text-[12px] tabular-nums">
+                        <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                          <tr>
+                            <th className="text-left px-2 py-1.5">상품명</th>
+                            <th className="text-left px-2 py-1.5 font-mono">코드</th>
+                            <th className="text-right px-2 py-1.5">총 수량</th>
+                            <th className="text-right px-2 py-1.5">총 매입액</th>
+                            <th className="text-center px-2 py-1.5">건수</th>
+                            <th className="text-right px-2 py-1.5">최근 매입일</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {productSummary.slice(0, 100).map((p) => (
+                            <tr key={p.product_code || p.product_name} className="hover:bg-emerald-50/40">
+                              <td className="px-2 py-1.5 font-semibold text-slate-700 truncate max-w-[220px]" title={p.product_name}>{p.product_name}</td>
+                              <td className="px-2 py-1.5 text-slate-400 font-mono text-[11px]">{p.product_code || "-"}</td>
+                              <td className="px-2 py-1.5 text-right font-bold text-slate-700">{p.totalQty.toLocaleString()}</td>
+                              <td className="px-2 py-1.5 text-right font-black text-emerald-700">{fmtWonShort(p.totalAmount)}</td>
+                              <td className="px-2 py-1.5 text-center text-slate-500">{p.invoiceCount}</td>
+                              <td className="px-2 py-1.5 text-right text-slate-500 whitespace-nowrap">{p.latestDate}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {productSummary.length > 100 && (
+                        <div className="text-[10px] text-slate-400 text-center py-1.5">
+                          상위 100개 표시 (전체 {productSummary.length}개)
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
           </div>
