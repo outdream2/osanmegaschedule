@@ -756,6 +756,10 @@ export const PurchaseHistoryTab: React.FC = () => {
             wrapLeft={false}
             wrapRight={false}
             className="flex-1 min-h-0 gap-2 lg:gap-0"
+            mobileRightAsModal={true}
+            mobileModalTitle={selectedVendor?.company_name ?? "공급사 상세"}
+            mobileOpen={!!selectedVendor}
+            onMobileClose={() => setSelectedVendor(null)}
             left={
               <div className="w-full flex flex-col gap-2 h-full min-h-0">
               {/* 검색 + 분류 필터 + 정렬 */}
@@ -1009,6 +1013,10 @@ export const PurchaseHistoryTab: React.FC = () => {
             wrapLeft={false}
             wrapRight={false}
             className="flex-1 min-h-0 gap-2 lg:gap-0"
+            mobileRightAsModal={true}
+            mobileModalTitle={selectedProduct?.product_name ?? "상품 상세"}
+            mobileOpen={!!selectedProductKey}
+            onMobileClose={() => setSelectedProductKey(null)}
             left={
               <div className="w-full flex flex-col gap-2 h-full min-h-0">
               {/* 검색 + 정렬 */}
