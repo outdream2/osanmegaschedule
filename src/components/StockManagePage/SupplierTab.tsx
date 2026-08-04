@@ -36,7 +36,30 @@ type SupListSortKey = "totalStockAmount" | "saleQty" | "saleAmount" | "purchaseQ
 type SupDetailSortKey = "name" | "current" | "cycle" | "purchase_date" | "purchase_qty" | "min_order" | "total_amount" | "purchase_price" | "sale_qty" | "sale_amount";
 type SupplierGroup = "stock" | "purchase" | "sale";
 
-export const SupplierTab: React.FC = () => {
+export interface SupplierTabProps {
+  /**
+   * 임베디드 모드 · 외부 컨테이너 안에 좌측 공급사 리스트만 렌더
+   *   - true → 상단 큰 필터바(카드) · 리사이저 · 우측 상세 패널 모두 skip · 컴팩트 필터바만 렌더
+   *   - 매입이력 by-vendor 등 다른 화면에서 공급사 리스트 재사용용
+   */
+  embedded?: boolean;
+  /**
+   * 공급사 row 클릭 콜백 · 외부가 우측 상세를 담당하는 경우 사용
+   *   - 제공 시 · 내부 우측 패널 열기 대신 콜백만 호출
+   *   - embedded=true 조합 시 · 내부 상품 리스트 fetch 도 skip (부모가 자체 fetch)
+   */
+  onSupplierClick?: (supplierName: string) => void;
+  /**
+   * 외부 제어 · 시각적으로 강조할 공급사명 (embedded 모드 selection sync)
+   */
+  selectedSupplierName?: string | null;
+}
+
+export const SupplierTab: React.FC<SupplierTabProps> = ({
+  embedded = false,
+  onSupplierClick,
+  selectedSupplierName = null,
+}) => {
   const [loading, setLoading] = useState(false);
 
   // 기간 필터
@@ -80,6 +103,20 @@ export const SupplierTab: React.FC = () => {
 
   // 선택 공급사 (우측 패널)
   const [supplierSelectedKey, setSupplierSelectedKey] = useState<string | null>(null);
+
+  // 외부 selectedSupplierName · xlsxSuppliers 로드 후 · 내부 selectedKey 동기화
+  //   embedded 모드 · 부모가 선택 상태를 제어할 때 시각적 강조용
+  useEffect(() => {
+    if (!selectedSupplierName) return;
+    if (xlsxSuppliers.length === 0) return;
+    const norm = (s: string) => s.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim().toLowerCase();
+    const target = norm(selectedSupplierName);
+    const found = xlsxSuppliers.find(s => norm(s.supplier ?? "") === target);
+    if (found) {
+      const k = `${found.supplier_code ?? "-"}::${found.supplier}`;
+      setSupplierSelectedKey(prev => (prev === k ? prev : k));
+    }
+  }, [selectedSupplierName, xlsxSuppliers]);
 
   // 우측 패널 · 선택 공급사 상세 정렬
   const [supDetailSort, setSupDetailSort] = useState<{ key: SupDetailSortKey; dir: "asc" | "desc" }>({ key: "total_amount", dir: "desc" });
@@ -155,6 +192,13 @@ export const SupplierTab: React.FC = () => {
     const key = `${sup.supplier_code ?? "-"}::${sup.supplier}`;
     let isCurrentlyExpanded = false;
     setSupplierSelectedKey(prev => { if (prev === key) { isCurrentlyExpanded = true; } return key; });
+    // 외부 콜백 · 우측 상세를 외부가 담당하는 경우
+    if (onSupplierClick) {
+      const cleaned = sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim() ?? "";
+      onSupplierClick(cleaned || String(sup.supplier ?? ""));
+      // embedded 모드 · 내부 우측 패널 미렌더 → 상품 리스트 fetch 불필요
+      if (embedded) return;
+    }
     // 이미 fetch했거나 진행중이면 skip
     if (supplierFetchedRef.current.has(key) || supplierInflightRef.current.has(key)) return;
     supplierInflightRef.current.add(key);
@@ -173,7 +217,7 @@ export const SupplierTab: React.FC = () => {
       supplierInflightRef.current.delete(key);
       setSupplierRowsLoading(prev => { const n = new Set(prev); n.delete(key); return n; });
     }
-  }, []);
+  }, [embedded, onSupplierClick]);
 
   // 공급사 상세 모달 오픈
   const openSupplierDetailModal = useCallback(async (supplierName: string) => {
@@ -261,6 +305,268 @@ export const SupplierTab: React.FC = () => {
     })();
   }, []);
 
+  // ── 좌측 리스트 카드 내부 (헤더 + 분류 + 정렬 + 테이블) · embedded/non-embedded 공용 ──
+  const renderSupplierListCard = () => (
+    <>
+      {/* 카드 헤더 */}
+      <div className="flex items-center gap-2 px-4 h-10 border-b border-slate-100 bg-white shrink-0">
+        <Building2 size={14} className="text-sky-500 shrink-0" />
+        <span className="text-[13px] font-semibold text-slate-800">공급사별 현황</span>
+        <span className="text-[11px] font-semibold tabular-nums text-slate-400 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5">
+          {displayedXlsxSuppliers.length}{supListLimit < xlsxSuppliers.length ? `/${xlsxSuppliers.length}` : ""}개 사
+        </span>
+      </div>
+
+      {/* 분류 필터 */}
+      <div className="flex items-center gap-1.5 px-4 py-2 border-b border-slate-100 bg-white shrink-0 flex-wrap">
+        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-0.5">분류</span>
+        {([
+          { k: "전체" as const, activeCls: "bg-slate-700 text-white shadow-sm" },
+          { k: "위탁" as const, activeCls: "bg-violet-500 text-white shadow-sm" },
+          { k: "선결제" as const, activeCls: "bg-rose-500 text-white shadow-sm" },
+          { k: "60일회전" as const, activeCls: "bg-emerald-500 text-white shadow-sm" },
+          { k: "90일회전" as const, activeCls: "bg-teal-500 text-white shadow-sm" },
+          { k: "기타" as const, activeCls: "bg-slate-500 text-white shadow-sm" },
+        ]).map(o => (
+          <button key={o.k} onClick={() => setSupListCategory(o.k)}
+            className={`h-7 px-2.5 rounded-md text-[11px] font-semibold transition cursor-pointer ${supListCategory === o.k ? o.activeCls : "text-slate-500 bg-slate-50 hover:bg-slate-100 border border-slate-200"}`}>
+            {o.k}
+          </button>
+        ))}
+      </div>
+
+      {/* 정렬 행 */}
+      <div className="flex items-center gap-1.5 px-4 py-2 border-b border-slate-100 bg-white shrink-0 flex-wrap">
+        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-0.5">정렬</span>
+        {([
+          { k: "totalStockAmount" as SupListSortKey, label: "재고자산", color: "amber" },
+          { k: "saleQty" as SupListSortKey, label: "판매량", color: "emerald" },
+          { k: "saleAmount" as SupListSortKey, label: "판매액", color: "emerald" },
+          { k: "purchaseQty" as SupListSortKey, label: "매입", color: "emerald" },
+          { k: "itemCount" as SupListSortKey, label: "상품수", color: "slate" },
+          { k: "supplier" as SupListSortKey, label: "공급사명", color: "sky" },
+        ]).map(o => {
+          const active = supListSort.key === o.k;
+          const arrow = active ? (supListSort.dir === "desc" ? " ▼" : " ▲") : "";
+          const activeMap: Record<string, string> = {
+            amber: "bg-amber-500 text-white shadow-sm",
+            emerald: "bg-emerald-500 text-white shadow-sm",
+            sky: "bg-sky-500 text-white shadow-sm",
+            slate: "bg-slate-700 text-white shadow-sm",
+          };
+          return (
+            <button key={o.k} onClick={() => toggleSupListSort(o.k)}
+              className={`h-7 px-2.5 rounded-md text-[11px] font-semibold transition cursor-pointer ${active ? activeMap[o.color] : "text-slate-500 bg-slate-50 hover:bg-slate-100 border border-slate-200"}`}>
+              {o.label}{arrow}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 테이블 영역 */}
+      <div className="relative flex-1 overflow-auto">
+        {loading && xlsxSuppliers.length > 0 && (
+          <div className="flex items-center justify-center gap-1.5 text-[12px] text-sky-700 font-semibold py-1.5 mx-3 mt-2 bg-sky-50 border border-sky-200 rounded-md">
+            <LoaderIcon size={12} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
+          </div>
+        )}
+        {xlsxSuppliers.length === 0 ? (
+          loading ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-10">
+              <div className="w-9 h-9 border-4 border-slate-200 border-t-sky-500 rounded-full animate-spin" />
+              <div className="text-[13px] font-semibold text-slate-500">데이터 로딩중...</div>
+            </div>
+          ) : (
+            <div className="text-center text-[13px] text-slate-400 py-10 font-semibold">데이터 없음</div>
+          )
+        ) : (
+          <table className={`w-full text-[13px] ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`} style={{ borderCollapse: "separate", borderSpacing: 0 }}>
+            <thead className="sticky top-0 z-10">
+              {/* 그룹 헤더 */}
+              <tr className="text-[10px] font-semibold uppercase tracking-wider border-b border-slate-200">
+                <th colSpan={3} className="bg-slate-50 text-slate-400 text-left px-3 py-1.5">기본정보</th>
+                <th colSpan={isSupplierGroupCollapsed("stock") ? 1 : 2}
+                  className="bg-sky-50 text-sky-600 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-sky-100 transition"
+                  onClick={() => toggleSupplierGroup("stock")}
+                  title={isSupplierGroupCollapsed("stock") ? "재고현황 펼치기" : "재고현황 접기"}>
+                  <span className="inline-flex items-center gap-1">
+                    {isSupplierGroupCollapsed("stock") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}재고현황
+                  </span>
+                </th>
+                <th colSpan={isSupplierGroupCollapsed("purchase") ? 1 : 1}
+                  className="bg-amber-50 text-amber-600 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-amber-100 transition"
+                  onClick={() => toggleSupplierGroup("purchase")}
+                  title={isSupplierGroupCollapsed("purchase") ? "매입현황 펼치기" : "매입현황 접기"}>
+                  <span className="inline-flex items-center gap-1">
+                    {isSupplierGroupCollapsed("purchase") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}매입현황
+                  </span>
+                </th>
+                <th colSpan={isSupplierGroupCollapsed("sale") ? 1 : 2}
+                  className="bg-rose-50 text-rose-600 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-rose-100 transition"
+                  onClick={() => toggleSupplierGroup("sale")}
+                  title={isSupplierGroupCollapsed("sale") ? "판매현황 펼치기" : "판매현황 접기"}>
+                  <span className="inline-flex items-center gap-1">
+                    {isSupplierGroupCollapsed("sale") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}판매현황
+                  </span>
+                </th>
+              </tr>
+              {/* 서브 헤더 */}
+              <tr className="text-[11px] font-semibold text-slate-500 border-b border-slate-200 bg-white">
+                <th className="text-center w-7 py-2"></th>
+                <th className="text-center w-9 py-2">#</th>
+                <th className="text-left px-3 py-2 cursor-pointer select-none hover:bg-slate-50 transition" onClick={() => toggleSupListSort("supplier")} title="공급사명 정렬">
+                  공급사 {supListSort.key === "supplier" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-slate-300">⇅</span>}
+                </th>
+                {isSupplierGroupCollapsed("stock") ? <th className="bg-sky-50/20 w-4"></th> : (
+                  <>
+                    <th className="text-right px-3 py-2 w-24 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition text-sky-700" onClick={() => toggleSupListSort("totalStockAmount")} title="재고자산 정렬">
+                      재고자산 {supListSort.key === "totalStockAmount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-sky-300">⇅</span>}
+                    </th>
+                    <th className="text-right px-3 py-2 w-16 cursor-pointer select-none bg-sky-50/40 hover:bg-sky-100 transition text-sky-600" onClick={() => toggleSupListSort("itemCount")} title="상품수 정렬">
+                      상품수 {supListSort.key === "itemCount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-sky-300">⇅</span>}
+                    </th>
+                  </>
+                )}
+                {isSupplierGroupCollapsed("purchase") ? <th className="bg-amber-50/20 w-4"></th> : (
+                  <th className="text-right px-3 py-2 w-20 cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition text-amber-600" onClick={() => toggleSupListSort("purchaseQty")} title="매입수량 정렬">
+                    매입 {supListSort.key === "purchaseQty" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-amber-300">⇅</span>}
+                  </th>
+                )}
+                {isSupplierGroupCollapsed("sale") ? <th className="bg-rose-50/20 w-4"></th> : (
+                  <>
+                    <th className="text-right px-3 py-2 w-20 cursor-pointer select-none bg-rose-50/60 hover:bg-rose-100 transition text-rose-600" onClick={() => toggleSupListSort("saleQty")} title="판매량 정렬">
+                      판매량 {supListSort.key === "saleQty" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-rose-300">⇅</span>}
+                    </th>
+                    <th className="text-right px-3 py-2 w-24 cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition text-rose-700" onClick={() => toggleSupListSort("saleAmount")} title="판매액 정렬">
+                      판매액 {supListSort.key === "saleAmount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-rose-300">⇅</span>}
+                    </th>
+                  </>
+                )}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {/* 합계 요약 행 · 필터/제한된 visible 공급사 기준 */}
+              <tr className="bg-slate-100 border-b-2 border-slate-300 font-black text-slate-800 text-[12px]">
+                <td className="text-center py-1.5">Σ</td>
+                <td className="text-center py-1.5 text-slate-500">-</td>
+                <td className="text-left px-3 py-1.5 text-slate-800 font-black">합계 <span className="text-slate-500 font-bold">({displayedXlsxSuppliers.length}개 사)</span></td>
+                {isSupplierGroupCollapsed("stock") ? <td className="bg-slate-100" /> : (
+                  <>
+                    <td className="text-right px-3 py-1.5 tabular-nums font-black text-slate-800 bg-sky-100/60">{fmtWon(supListTotals.stock)}</td>
+                    <td className="text-right px-3 py-1.5 tabular-nums font-black text-slate-800 bg-sky-100/40">{supListTotals.item.toLocaleString()}</td>
+                  </>
+                )}
+                {isSupplierGroupCollapsed("purchase") ? <td className="bg-slate-100" /> : (
+                  <td className="text-right px-3 py-1.5 tabular-nums font-black text-amber-700 bg-amber-100/40">{supListTotals.purchase.toLocaleString()}</td>
+                )}
+                {isSupplierGroupCollapsed("sale") ? <td className="bg-slate-100" /> : (
+                  <>
+                    <td className="text-right px-3 py-1.5 tabular-nums font-black text-rose-700 bg-rose-100/40">{supListTotals.saleQ.toLocaleString()}</td>
+                    <td className="text-right px-3 py-1.5 tabular-nums font-black text-rose-700 bg-rose-100/60">{fmtWon(supListTotals.saleA)}</td>
+                  </>
+                )}
+              </tr>
+              {displayedXlsxSuppliers.map((sup, i) => {
+                const key = `${sup.supplier_code ?? "-"}::${sup.supplier}`;
+                const isExpanded = supplierRowsMap[key] != null;
+                const isSelected = supplierSelectedKey === key;
+                return (
+                  <tr key={key}
+                    onClick={() => { toggleSupplierExpand(sup); setSupplierSelectedKey(key); }}
+                    className={`cursor-pointer transition-colors ${isSelected ? "bg-sky-50 hover:bg-sky-100/70" : "hover:bg-slate-50/60"}`}
+                    title="클릭 → 오른쪽 패널에 상세">
+                    <td className="text-center align-middle py-2.5">
+                      {isExpanded ? <ChevronDown size={13} className="text-sky-400 mx-auto" /> : <ChevronRight size={13} className="text-slate-300 mx-auto" />}
+                    </td>
+                    <td className="text-center align-middle py-2.5 text-[11px] font-semibold text-slate-400 tabular-nums">{i + 1}</td>
+                    <td className="text-left px-3 py-2.5 align-middle">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {(() => {
+                          const nm = sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim() ?? "";
+                          const cat = vendorCategoryMap[nm] ?? vendorCategoryMap[sup.supplier ?? ""] ?? null;
+                          return <VendorCategoryBadge category={cat} />;
+                        })()}
+                        <span className={`text-[13px] font-semibold break-words whitespace-normal leading-tight ${isSelected ? "text-sky-800" : "text-slate-700"}`}>
+                          {sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}
+                        </span>
+                        {sup.supplier_code && <span className="text-[10px] tabular-nums text-slate-400 shrink-0 font-mono bg-slate-100 rounded px-1" title="공급사코드">#{sup.supplier_code}</span>}
+                        {sup.code_conflict && <span className="text-[11px] font-semibold text-amber-500 shrink-0" title="같은 이름에 여러 공급사코드가 존재">⚠</span>}
+                      </div>
+                    </td>
+                    {isSupplierGroupCollapsed("stock") ? <td className="bg-sky-50/20 w-4"></td> : (
+                      <>
+                        <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-sky-700 tabular-nums bg-sky-50/40" title="재고자산">{fmtWon(sup.totalStockAmount)}</td>
+                        <td className="text-right px-3 py-2.5 align-middle text-[12px] font-semibold text-sky-600 tabular-nums bg-sky-50/20" title="취급 상품 종수">{sup.itemCount}</td>
+                      </>
+                    )}
+                    {isSupplierGroupCollapsed("purchase") ? <td className="bg-amber-50/20 w-4"></td> : (
+                      <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-amber-700 tabular-nums bg-amber-50/30" title="매입수량">{fmt(sup.purchaseQty)}</td>
+                    )}
+                    {isSupplierGroupCollapsed("sale") ? <td className="bg-rose-50/20 w-4"></td> : (
+                      <>
+                        <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-rose-600 tabular-nums bg-rose-50/20" title="판매수량">{fmt(sup.saleQty)}</td>
+                        <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-rose-700 tabular-nums bg-rose-50/30" title="판매액">{fmtWon(Number(sup.saleAmount ?? 0))}</td>
+                      </>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </>
+  );
+
+  // ── embedded 모드 · 좌측 리스트만 (부모 SplitPanel 안에 배치) ─────────────
+  if (embedded) {
+    return (
+      <div className="w-full h-full min-h-0 flex flex-col gap-2">
+        {/* 컴팩트 상단 필터바 (기간 · Top N · 새로고침) */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 shrink-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">기간</span>
+            <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
+              <button onClick={() => { setSupplierSeason(null); setSupplierMonths(0); }}
+                className={`px-1.5 h-5 text-[10px] font-semibold rounded transition cursor-pointer ${!supplierSeason && supplierMonths === 0 ? "bg-sky-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>10일</button>
+              {[1, 2, 3, 4, 5, 6].map(m => (
+                <button key={m} onClick={() => { setSupplierSeason(null); setSupplierMonths(m as any); }}
+                  className={`px-1.5 h-5 text-[10px] font-semibold rounded transition cursor-pointer ${!supplierSeason && supplierMonths === m ? "bg-sky-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>{m}개월</button>
+              ))}
+            </div>
+          </div>
+          <SeasonButtons value={supplierSeason} onChange={(v) => { setSupplierSeason(v); if (v) setSupplierMonths(0); }} size="sm" hideLabel />
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">Top N</span>
+            <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
+              {[{ v: 100, label: "100" }, { v: 300, label: "300" }, { v: 1000, label: "1k" }, { v: 2000, label: "2k" }, { v: 999999, label: "전체" }].map(o => (
+                <button key={o.v} onClick={() => setSupListLimit(o.v)}
+                  className={`text-[10px] font-semibold h-5 px-1.5 rounded transition whitespace-nowrap cursor-pointer ${supListLimit === o.v ? "bg-sky-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                >{o.label}</button>
+              ))}
+            </div>
+          </div>
+          <button type="button" onClick={fetchData} disabled={loading}
+            className="ml-auto w-6 h-6 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-sky-50 hover:border-sky-300 text-slate-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer" title="새로고침">
+            <LoaderIcon size={12} className={loading ? "animate-spin" : ""} />
+          </button>
+        </div>
+        {/* 좌측 리스트 카드 */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
+          {renderSupplierListCard()}
+        </div>
+        {/* 공급사 상세 모달 (embedded 에서도 사용 가능하도록 유지) */}
+        {supplierDetailModal && (
+          <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setSupplierDetailModal(null)}>
+            <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-xl shadow-2xl" onClick={e => e.stopPropagation()}>
+              <VendorDetailModal vendor={supplierDetailModal} onClose={() => setSupplierDetailModal(null)} onSaved={() => setSupplierDetailModal(null)} />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-2">
       {/* ── 상단 필터바 ── */}
@@ -307,213 +613,7 @@ export const SupplierTab: React.FC = () => {
         <div className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
           style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? supplierPanelWidth : undefined }}>
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
-            {/* 카드 헤더 */}
-            <div className="flex items-center gap-2 px-4 h-10 border-b border-slate-100 bg-white shrink-0">
-              <Building2 size={14} className="text-sky-500 shrink-0" />
-              <span className="text-[13px] font-semibold text-slate-800">공급사별 현황</span>
-              <span className="text-[11px] font-semibold tabular-nums text-slate-400 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5">
-                {displayedXlsxSuppliers.length}{supListLimit < xlsxSuppliers.length ? `/${xlsxSuppliers.length}` : ""}개 사
-              </span>
-            </div>
-
-            {/* 분류 필터 */}
-            <div className="flex items-center gap-1.5 px-4 py-2 border-b border-slate-100 bg-white shrink-0 flex-wrap">
-              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-0.5">분류</span>
-              {([
-                { k: "전체" as const, activeCls: "bg-slate-700 text-white shadow-sm" },
-                { k: "위탁" as const, activeCls: "bg-violet-500 text-white shadow-sm" },
-                { k: "선결제" as const, activeCls: "bg-rose-500 text-white shadow-sm" },
-                { k: "60일회전" as const, activeCls: "bg-emerald-500 text-white shadow-sm" },
-                { k: "90일회전" as const, activeCls: "bg-teal-500 text-white shadow-sm" },
-                { k: "기타" as const, activeCls: "bg-slate-500 text-white shadow-sm" },
-              ]).map(o => (
-                <button key={o.k} onClick={() => setSupListCategory(o.k)}
-                  className={`h-7 px-2.5 rounded-md text-[11px] font-semibold transition cursor-pointer ${supListCategory === o.k ? o.activeCls : "text-slate-500 bg-slate-50 hover:bg-slate-100 border border-slate-200"}`}>
-                  {o.k}
-                </button>
-              ))}
-            </div>
-
-            {/* 정렬 행 */}
-            <div className="flex items-center gap-1.5 px-4 py-2 border-b border-slate-100 bg-white shrink-0 flex-wrap">
-              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-0.5">정렬</span>
-              {([
-                { k: "totalStockAmount" as SupListSortKey, label: "재고자산", color: "amber" },
-                { k: "saleQty" as SupListSortKey, label: "판매량", color: "emerald" },
-                { k: "saleAmount" as SupListSortKey, label: "판매액", color: "emerald" },
-                { k: "purchaseQty" as SupListSortKey, label: "매입", color: "emerald" },
-                { k: "itemCount" as SupListSortKey, label: "상품수", color: "slate" },
-                { k: "supplier" as SupListSortKey, label: "공급사명", color: "sky" },
-              ]).map(o => {
-                const active = supListSort.key === o.k;
-                const arrow = active ? (supListSort.dir === "desc" ? " ▼" : " ▲") : "";
-                const activeMap: Record<string, string> = {
-                  amber: "bg-amber-500 text-white shadow-sm",
-                  emerald: "bg-emerald-500 text-white shadow-sm",
-                  sky: "bg-sky-500 text-white shadow-sm",
-                  slate: "bg-slate-700 text-white shadow-sm",
-                };
-                return (
-                  <button key={o.k} onClick={() => toggleSupListSort(o.k)}
-                    className={`h-7 px-2.5 rounded-md text-[11px] font-semibold transition cursor-pointer ${active ? activeMap[o.color] : "text-slate-500 bg-slate-50 hover:bg-slate-100 border border-slate-200"}`}>
-                    {o.label}{arrow}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* 테이블 영역 */}
-            <div className="relative flex-1 overflow-auto">
-              {loading && xlsxSuppliers.length > 0 && (
-                <div className="flex items-center justify-center gap-1.5 text-[12px] text-sky-700 font-semibold py-1.5 mx-3 mt-2 bg-sky-50 border border-sky-200 rounded-md">
-                  <LoaderIcon size={12} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
-                </div>
-              )}
-              {xlsxSuppliers.length === 0 ? (
-                loading ? (
-                  <div className="flex flex-col items-center justify-center gap-3 py-10">
-                    <div className="w-9 h-9 border-4 border-slate-200 border-t-sky-500 rounded-full animate-spin" />
-                    <div className="text-[13px] font-semibold text-slate-500">데이터 로딩중...</div>
-                  </div>
-                ) : (
-                  <div className="text-center text-[13px] text-slate-400 py-10 font-semibold">데이터 없음</div>
-                )
-              ) : (
-                <table className={`w-full text-[13px] ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`} style={{ borderCollapse: "separate", borderSpacing: 0 }}>
-                  <thead className="sticky top-0 z-10">
-                    {/* 그룹 헤더 */}
-                    <tr className="text-[10px] font-semibold uppercase tracking-wider border-b border-slate-200">
-                      <th colSpan={3} className="bg-slate-50 text-slate-400 text-left px-3 py-1.5">기본정보</th>
-                      <th colSpan={isSupplierGroupCollapsed("stock") ? 1 : 2}
-                        className="bg-sky-50 text-sky-600 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-sky-100 transition"
-                        onClick={() => toggleSupplierGroup("stock")}
-                        title={isSupplierGroupCollapsed("stock") ? "재고현황 펼치기" : "재고현황 접기"}>
-                        <span className="inline-flex items-center gap-1">
-                          {isSupplierGroupCollapsed("stock") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}재고현황
-                        </span>
-                      </th>
-                      <th colSpan={isSupplierGroupCollapsed("purchase") ? 1 : 1}
-                        className="bg-amber-50 text-amber-600 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-amber-100 transition"
-                        onClick={() => toggleSupplierGroup("purchase")}
-                        title={isSupplierGroupCollapsed("purchase") ? "매입현황 펼치기" : "매입현황 접기"}>
-                        <span className="inline-flex items-center gap-1">
-                          {isSupplierGroupCollapsed("purchase") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}매입현황
-                        </span>
-                      </th>
-                      <th colSpan={isSupplierGroupCollapsed("sale") ? 1 : 2}
-                        className="bg-rose-50 text-rose-600 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-rose-100 transition"
-                        onClick={() => toggleSupplierGroup("sale")}
-                        title={isSupplierGroupCollapsed("sale") ? "판매현황 펼치기" : "판매현황 접기"}>
-                        <span className="inline-flex items-center gap-1">
-                          {isSupplierGroupCollapsed("sale") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}판매현황
-                        </span>
-                      </th>
-                    </tr>
-                    {/* 서브 헤더 */}
-                    <tr className="text-[11px] font-semibold text-slate-500 border-b border-slate-200 bg-white">
-                      <th className="text-center w-7 py-2"></th>
-                      <th className="text-center w-9 py-2">#</th>
-                      <th className="text-left px-3 py-2 cursor-pointer select-none hover:bg-slate-50 transition" onClick={() => toggleSupListSort("supplier")} title="공급사명 정렬">
-                        공급사 {supListSort.key === "supplier" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-slate-300">⇅</span>}
-                      </th>
-                      {isSupplierGroupCollapsed("stock") ? <th className="bg-sky-50/20 w-4"></th> : (
-                        <>
-                          <th className="text-right px-3 py-2 w-24 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition text-sky-700" onClick={() => toggleSupListSort("totalStockAmount")} title="재고자산 정렬">
-                            재고자산 {supListSort.key === "totalStockAmount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-sky-300">⇅</span>}
-                          </th>
-                          <th className="text-right px-3 py-2 w-16 cursor-pointer select-none bg-sky-50/40 hover:bg-sky-100 transition text-sky-600" onClick={() => toggleSupListSort("itemCount")} title="상품수 정렬">
-                            상품수 {supListSort.key === "itemCount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-sky-300">⇅</span>}
-                          </th>
-                        </>
-                      )}
-                      {isSupplierGroupCollapsed("purchase") ? <th className="bg-amber-50/20 w-4"></th> : (
-                        <th className="text-right px-3 py-2 w-20 cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition text-amber-600" onClick={() => toggleSupListSort("purchaseQty")} title="매입수량 정렬">
-                          매입 {supListSort.key === "purchaseQty" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-amber-300">⇅</span>}
-                        </th>
-                      )}
-                      {isSupplierGroupCollapsed("sale") ? <th className="bg-rose-50/20 w-4"></th> : (
-                        <>
-                          <th className="text-right px-3 py-2 w-20 cursor-pointer select-none bg-rose-50/60 hover:bg-rose-100 transition text-rose-600" onClick={() => toggleSupListSort("saleQty")} title="판매량 정렬">
-                            판매량 {supListSort.key === "saleQty" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-rose-300">⇅</span>}
-                          </th>
-                          <th className="text-right px-3 py-2 w-24 cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition text-rose-700" onClick={() => toggleSupListSort("saleAmount")} title="판매액 정렬">
-                            판매액 {supListSort.key === "saleAmount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-rose-300">⇅</span>}
-                          </th>
-                        </>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {/* 합계 요약 행 · 필터/제한된 visible 공급사 기준 */}
-                    <tr className="bg-slate-100 border-b-2 border-slate-300 font-black text-slate-800 text-[12px]">
-                      <td className="text-center py-1.5">Σ</td>
-                      <td className="text-center py-1.5 text-slate-500">-</td>
-                      <td className="text-left px-3 py-1.5 text-slate-800 font-black">합계 <span className="text-slate-500 font-bold">({displayedXlsxSuppliers.length}개 사)</span></td>
-                      {isSupplierGroupCollapsed("stock") ? <td className="bg-slate-100" /> : (
-                        <>
-                          <td className="text-right px-3 py-1.5 tabular-nums font-black text-slate-800 bg-sky-100/60">{fmtWon(supListTotals.stock)}</td>
-                          <td className="text-right px-3 py-1.5 tabular-nums font-black text-slate-800 bg-sky-100/40">{supListTotals.item.toLocaleString()}</td>
-                        </>
-                      )}
-                      {isSupplierGroupCollapsed("purchase") ? <td className="bg-slate-100" /> : (
-                        <td className="text-right px-3 py-1.5 tabular-nums font-black text-amber-700 bg-amber-100/40">{supListTotals.purchase.toLocaleString()}</td>
-                      )}
-                      {isSupplierGroupCollapsed("sale") ? <td className="bg-slate-100" /> : (
-                        <>
-                          <td className="text-right px-3 py-1.5 tabular-nums font-black text-rose-700 bg-rose-100/40">{supListTotals.saleQ.toLocaleString()}</td>
-                          <td className="text-right px-3 py-1.5 tabular-nums font-black text-rose-700 bg-rose-100/60">{fmtWon(supListTotals.saleA)}</td>
-                        </>
-                      )}
-                    </tr>
-                    {displayedXlsxSuppliers.map((sup, i) => {
-                      const key = `${sup.supplier_code ?? "-"}::${sup.supplier}`;
-                      const isExpanded = supplierRowsMap[key] != null;
-                      const isSelected = supplierSelectedKey === key;
-                      return (
-                        <tr key={key}
-                          onClick={() => { toggleSupplierExpand(sup); setSupplierSelectedKey(key); }}
-                          className={`cursor-pointer transition-colors ${isSelected ? "bg-sky-50 hover:bg-sky-100/70" : "hover:bg-slate-50/60"}`}
-                          title="클릭 → 오른쪽 패널에 상세">
-                          <td className="text-center align-middle py-2.5">
-                            {isExpanded ? <ChevronDown size={13} className="text-sky-400 mx-auto" /> : <ChevronRight size={13} className="text-slate-300 mx-auto" />}
-                          </td>
-                          <td className="text-center align-middle py-2.5 text-[11px] font-semibold text-slate-400 tabular-nums">{i + 1}</td>
-                          <td className="text-left px-3 py-2.5 align-middle">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {(() => {
-                                const nm = sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim() ?? "";
-                                const cat = vendorCategoryMap[nm] ?? vendorCategoryMap[sup.supplier ?? ""] ?? null;
-                                return <VendorCategoryBadge category={cat} />;
-                              })()}
-                              <span className={`text-[13px] font-semibold break-words whitespace-normal leading-tight ${isSelected ? "text-sky-800" : "text-slate-700"}`}>
-                                {sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}
-                              </span>
-                              {sup.supplier_code && <span className="text-[10px] tabular-nums text-slate-400 shrink-0 font-mono bg-slate-100 rounded px-1" title="공급사코드">#{sup.supplier_code}</span>}
-                              {sup.code_conflict && <span className="text-[11px] font-semibold text-amber-500 shrink-0" title="같은 이름에 여러 공급사코드가 존재">⚠</span>}
-                            </div>
-                          </td>
-                          {isSupplierGroupCollapsed("stock") ? <td className="bg-sky-50/20 w-4"></td> : (
-                            <>
-                              <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-sky-700 tabular-nums bg-sky-50/40" title="재고자산">{fmtWon(sup.totalStockAmount)}</td>
-                              <td className="text-right px-3 py-2.5 align-middle text-[12px] font-semibold text-sky-600 tabular-nums bg-sky-50/20" title="취급 상품 종수">{sup.itemCount}</td>
-                            </>
-                          )}
-                          {isSupplierGroupCollapsed("purchase") ? <td className="bg-amber-50/20 w-4"></td> : (
-                            <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-amber-700 tabular-nums bg-amber-50/30" title="매입수량">{fmt(sup.purchaseQty)}</td>
-                          )}
-                          {isSupplierGroupCollapsed("sale") ? <td className="bg-rose-50/20 w-4"></td> : (
-                            <>
-                              <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-rose-600 tabular-nums bg-rose-50/20" title="판매수량">{fmt(sup.saleQty)}</td>
-                              <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-rose-700 tabular-nums bg-rose-50/30" title="판매액">{fmtWon(Number(sup.saleAmount ?? 0))}</td>
-                            </>
-                          )}
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </div>
+            {renderSupplierListCard()}
           </div>
         </div>
 

@@ -27,6 +27,10 @@ import ProductPurchaseDetailPanel, {
   type ProductPurchaseRow,
 } from "./PurchaseHistoryTab/ProductPurchaseDetailPanel";
 import { useLedgerHighlight } from "../../hooks/useLedgerHighlight";
+// 2026-08-04 · by-vendor 좌측 리스트 · SupplierTab embedded 모드 재사용 (사용자 요청)
+//   · 기존 VendorRowCard 리스트 → SupplierTab 좌측 (재고자산·상품수·매입·판매량·판매액 컬럼)
+//   · 우측 상세 (VendorHeaderPanel + PurchaseSubTabs) 는 100% 유지
+import { SupplierTab } from "../StockManagePage/SupplierTab";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -765,150 +769,56 @@ export const PurchaseHistoryTab: React.FC = () => {
             mobileOpen={!!selectedVendor}
             onMobileClose={() => setSelectedVendor(null)}
             left={
-              <div className="w-full flex flex-col gap-2 h-full min-h-0">
-              {/* 검색 + 분류 필터 + 정렬 */}
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2 flex flex-col gap-2">
-                <input
-                  type="text"
-                  value={vendorSearch}
-                  onChange={e => setVendorSearch(e.target.value)}
-                  placeholder="공급사명 검색"
-                  className="w-full h-7 px-2.5 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-emerald-400 focus:border-emerald-400 transition"
-                />
-                <div className="flex flex-wrap gap-0.5">
-                  {(["전체", "위탁", "선결제", "60일회전", "90일회전", "기타"] as const).map(cat => (
-                    <button key={cat} onClick={() => setVendorCategoryFilter(cat)}
-                      className={`h-6 px-2 text-[10px] font-semibold rounded transition cursor-pointer ${
-                        vendorCategoryFilter === cat
-                          ? cat === "전체" ? "bg-slate-700 text-white"
-                          : cat === "위탁" ? "bg-violet-500 text-white"
-                          : cat === "선결제" ? "bg-rose-500 text-white"
-                          : cat === "60일회전" ? "bg-emerald-500 text-white"
-                          : cat === "90일회전" ? "bg-teal-500 text-white"
-                          : "bg-slate-500 text-white"
-                          : "bg-slate-50 text-slate-500 border border-slate-200 hover:text-slate-700"
-                      }`}>{cat}</button>
-                  ))}
-                </div>
-                {/* 정렬 · 슬림 (2026-08-04 · 사용자 요청 · 4옵션) · 최근매입·매입액·매입주기·가나다 */}
-                <div className="flex items-center gap-1 pt-1 border-t border-slate-100 flex-wrap">
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">정렬</span>
-                  {([
-                    { k: "recent"   as const, label: "최근매입" },
-                    { k: "amount"   as const, label: "매입액" },
-                    { k: "cycle"    as const, label: "매입주기" },
-                    { k: "name"     as const, label: "가나다" },
-                  ]).map(o => {
-                    const active = leftSort === o.k;
-                    return (
-                      <button
-                        key={o.k}
-                        type="button"
-                        onClick={() => toggleLeftSort(o.k)}
-                        className={`h-5 px-1.5 text-[10px] font-semibold rounded transition cursor-pointer inline-flex items-center gap-0.5 ${
-                          active
-                            ? "bg-emerald-500 text-white"
-                            : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                        }`}
-                        title={active ? `${o.label} · 클릭 시 ${leftDir === "asc" ? "내림" : "오름"}차순 전환` : `${o.label} 기준 정렬`}
-                      >
-                        {o.label}
-                        {active && (
-                          <span className="text-[9px] leading-none">
-                            {leftDir === "asc" ? "▲" : "▼"}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              {/* 공급사 리스트 · 컬럼 헤더 (2026-08-04 · 한 줄 4컬럼 · 사용자 요청)
-                    · 공급사 · 매입액(이번달) · 최근매입일 · 매입주기
-                    · SKU/판매/판매액 컬럼 제거 (부가정보라 우측 상세로 이관)
-                    · 각 헤더 클릭 시 정렬 asc/desc 토글 · arrow */}
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 max-h-[65vh] flex flex-col overflow-hidden">
-                <div className="px-2 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 grid grid-cols-[1fr_64px_60px_52px] gap-1.5 items-center text-[10px] font-bold uppercase tracking-wider">
-                  <button
-                    type="button"
-                    onClick={() => toggleLeftSort("name")}
-                    className={`text-left cursor-pointer inline-flex items-center gap-0.5 transition ${
-                      leftSort === "name" ? "text-slate-800" : "text-slate-500 hover:text-slate-700"
-                    }`}
-                    title="공급사명 정렬"
-                  >
-                    공급사
-                    {leftSort === "name" && (
-                      <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleLeftSort("amount")}
-                    className={`text-right whitespace-nowrap cursor-pointer inline-flex items-center gap-0.5 justify-end transition ${
-                      leftSort === "amount" ? "text-indigo-800" : "text-indigo-600 hover:text-indigo-800"
-                    }`}
-                    title="이번달 매입액 기준 정렬"
-                  >
-                    매입액
-                    {leftSort === "amount" && (
-                      <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleLeftSort("recent")}
-                    className={`text-right whitespace-nowrap cursor-pointer inline-flex items-center gap-0.5 justify-end transition ${
-                      leftSort === "recent" ? "text-emerald-800" : "text-emerald-600 hover:text-emerald-800"
-                    }`}
-                    title="최근 매입일 기준 정렬 (MM-DD 표시 · tooltip 에 full ISO)"
-                  >
-                    최근매입
-                    {leftSort === "recent" && (
-                      <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleLeftSort("cycle")}
-                    className={`text-right whitespace-nowrap cursor-pointer inline-flex items-center gap-0.5 justify-end transition ${
-                      leftSort === "cycle" ? "text-sky-800" : "text-sky-600 hover:text-sky-800"
-                    }`}
-                    title="매입주기 (평균 며칠마다 매입) 기준 정렬"
-                  >
-                    주기
-                    {leftSort === "cycle" && (
-                      <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
-                    )}
-                  </button>
-                </div>
-                <div className="flex-1 min-h-0 overflow-y-auto">
-                {vendorsLoading ? (
-                  <ListLoading label="공급사 불러오는 중..." tone="emerald" />
-                ) : filteredVendors.length === 0 ? (
-                  <div className="py-8 text-center text-[11px] text-slate-300">공급사 없음</div>
-                ) : (
-                  <div className="divide-y divide-slate-50">
-                    {filteredVendors.map(v => (
-                      <VendorRowCard
-                        key={v.id}
-                        vendorId={v.id}
-                        companyName={v.company_name}
-                        category={v.category}
-                        summary={summaryLookup(v.company_name)}
-                        active={selectedVendor?.id === v.id}
-                        onSelect={() => {
-                          setSelectedVendor(v);
-                          // 공급사 클릭 시 원장(매입원장) 탭으로 자동 전환 · 강조는 로드 완료 후 effect 에서
-                          setSubTab("ledger");
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-                </div>
-              </div>
-              </div>
+              /* 2026-08-04 · 사용자 요청 · 좌측 리스트를 SupplierTab 좌측(공급사현황) 스타일로 대체
+                   · 기존 검색+분류+정렬+VendorRowCard 리스트 → SupplierTab embedded 모드
+                   · 공급사 클릭 → 콜백으로 vendors 매칭 → setSelectedVendor(v) → 우측 상세는 그대로 유지
+                   · vendorSearch·vendorCategoryFilter·leftSort·leftDir·filteredVendors 는 미사용
+                     (제거 시 회귀 위험 · 별도 PR 에서 정리) */
+              <SupplierTab
+                embedded
+                selectedSupplierName={selectedVendor?.company_name ?? null}
+                onSupplierClick={(supplierName) => {
+                  // vendors 에서 공급사명 매칭 (정확 → 정규화 순)
+                  const clean = (s: string): string =>
+                    s.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim();
+                  const target = clean(supplierName);
+                  const targetLc = target.toLowerCase();
+                  // 1) 정확 매칭
+                  let v = vendors.find(x => clean(x.company_name) === target);
+                  // 2) case-insensitive
+                  if (!v) v = vendors.find(x => clean(x.company_name).toLowerCase() === targetLc);
+                  // 3) 정규화 (공백·괄호·㈜·(주)·주식회사 제거)
+                  if (!v) {
+                    const norm = (s: string) => s
+                      .replace(/[\s()㈜㈐]/g, "")
+                      .replace(/^\(주\)/g, "")
+                      .replace(/주식회사/g, "")
+                      .replace(/\(주\)$/g, "")
+                      .toLowerCase();
+                    const nt = norm(target);
+                    if (nt) v = vendors.find(x => norm(clean(x.company_name)) === nt);
+                  }
+                  if (v) {
+                    setSelectedVendor(v);
+                    setSubTab("ledger");
+                  } else {
+                    // vendors 에 없는 공급사 (ERP 매입만 있고 vendors 등록 안 됨)
+                    //   · 임시 VendorItem 으로 셋팅 · 우측 상세는 상품명 기반으로 로드 가능
+                    setSelectedVendor({
+                      id: -1,
+                      company_name: target,
+                      category: null,
+                      contact_name: null,
+                      phone: null,
+                      email: null,
+                      business_number: null,
+                      note: null,
+                      created_at: null,
+                    } as VendorItem);
+                    setSubTab("ledger");
+                  }
+                }}
+              />
             }
             right={
               /* 우측: 헤더 + 서브탭 */
