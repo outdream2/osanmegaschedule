@@ -9,7 +9,7 @@ import { SearchBar } from "../common/SearchBar";
 import { SearchFilterChips, type ChipOption } from "../common/SearchFilterChips";
 import { matchHangul } from "../common/hangulSearch";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
-import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp, ScanLine, PackagePlus, RotateCcw, X, Search, Info } from "lucide-react";
+import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp, ScanLine, PackagePlus, RotateCcw, X, Search, Info, MapPin } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
@@ -2075,31 +2075,47 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       </td>
                     </tr>
                     {/* #217 · 상세 재고현황 확장 tr · [상세] 버튼 클릭 시 표시 · 창고1/2·매장1/2/3
-                        · 2026-08-04 · 배지 → 텍스트 스타일 (사용자 요청) */}
+                        · 2026-08-04 · 개선 (창고/매장 섹션 분리 · 구역 명확 표시) */}
                     {needStockDetailOpen.has(code) && (
-                      <tr className="bg-violet-50/40">
-                        <td colSpan={13} className="px-3 py-2 border-t border-violet-100">
-                          <div className="flex items-center gap-3 flex-wrap text-[12px]">
-                            <span className="text-violet-700 font-black">상세 재고현황</span>
-                            <span className="text-orange-700"><span className="font-semibold">창고1</span> <span className="tabular-nums font-black">{inv?.w1 ?? "—"}</span></span>
-                            <span className="text-slate-300">·</span>
-                            <span className="text-orange-700"><span className="font-semibold">창고2</span> <span className="tabular-nums font-black">{inv?.w2 ?? "—"}</span></span>
-                            <span className="text-slate-300">·</span>
-                            <span className="text-emerald-700">
-                              <span className="font-semibold">매장1</span> <span className="tabular-nums font-black">{inv?.s1 ?? "—"}</span>
-                              {inv?.s1z && <span className="text-slate-400 font-normal ml-0.5">({inv.s1z})</span>}
+                      <tr className="bg-violet-50/30">
+                        <td colSpan={13} className="px-3 py-2.5 border-t border-violet-100">
+                          <div className="flex flex-wrap gap-x-5 gap-y-1.5 items-center text-[11px]">
+                            {/* 창고 */}
+                            <span className="flex items-center gap-1 text-orange-500 font-bold">
+                              <Package size={10} strokeWidth={2.5} />창고
                             </span>
-                            <span className="text-slate-300">·</span>
-                            <span className="text-emerald-700">
-                              <span className="font-semibold">매장2</span> <span className="tabular-nums font-black">{inv?.s2 ?? "—"}</span>
-                              {inv?.s2z && <span className="text-slate-400 font-normal ml-0.5">({inv.s2z})</span>}
+                            <span className="text-orange-700">
+                              <span className="font-semibold">창고1</span>{" "}
+                              <span className="tabular-nums font-black">{inv?.w1 ?? "—"}</span>
                             </span>
-                            <span className="text-slate-300">·</span>
-                            <span className="text-emerald-700">
-                              <span className="font-semibold">매장3</span> <span className="tabular-nums font-black">{inv?.s3 ?? "—"}</span>
-                              {inv?.s3z && <span className="text-slate-400 font-normal ml-0.5">({inv.s3z})</span>}
+                            <span className="text-orange-700">
+                              <span className="font-semibold">창고2</span>{" "}
+                              <span className="tabular-nums font-black">{inv?.w2 ?? "—"}</span>
                             </span>
-                            <span className="text-violet-800 font-black ml-auto"><span className="font-semibold">합계</span> <span className="tabular-nums">{inv?.total ?? "—"}</span></span>
+                            <span className="text-slate-200 select-none">│</span>
+                            {/* 매장 */}
+                            <span className="flex items-center gap-1 text-emerald-600 font-bold">
+                              <MapPin size={10} strokeWidth={2.5} />매장
+                            </span>
+                            <span className="text-emerald-700">
+                              <span className="font-semibold">매장1</span>{" "}
+                              <span className="tabular-nums font-black">{inv?.s1 ?? "—"}</span>
+                              {inv?.s1z && <span className="text-slate-400 font-medium ml-1">({inv.s1z})</span>}
+                            </span>
+                            <span className="text-emerald-700">
+                              <span className="font-semibold">매장2</span>{" "}
+                              <span className="tabular-nums font-black">{inv?.s2 ?? "—"}</span>
+                              {inv?.s2z && <span className="text-slate-400 font-medium ml-1">({inv.s2z})</span>}
+                            </span>
+                            <span className="text-emerald-700">
+                              <span className="font-semibold">매장3</span>{" "}
+                              <span className="tabular-nums font-black">{inv?.s3 ?? "—"}</span>
+                              {inv?.s3z && <span className="text-slate-400 font-medium ml-1">({inv.s3z})</span>}
+                            </span>
+                            <span className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-600 text-white">
+                              <span className="text-[10px] font-semibold text-violet-200">합계</span>
+                              <span className="tabular-nums text-[12px] font-black">{inv?.total ?? "—"}</span>
+                            </span>
                           </div>
                         </td>
                       </tr>
@@ -3073,48 +3089,99 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         </div>
       )}
 
-      {/* #243 · 발주요청 리스트 실재고 상세 모달 · 창고1/2·매장1/2/3 */}
+      {/* #243 · 발주요청 리스트 실재고 상세 모달 · 창고1/2·매장1/2/3 · 2026-08-04 리디자인 */}
       {orderStockDetail && (
-        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4"
-          onClick={() => setOrderStockDetail(null)}>
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-white flex items-center gap-2">
-              <Package size={16} className="text-violet-600" />
-              <div className="min-w-0 flex-1">
-                <div className="text-[13px] font-black text-slate-800 truncate">{orderStockDetail.name || orderStockDetail.code}</div>
-                <div className="text-[11px] font-semibold text-violet-600">상세 재고현황</div>
+        <div
+          className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-3 sm:p-6"
+          onClick={() => setOrderStockDetail(null)}
+          onKeyDown={(e) => { if (e.key === "Escape") setOrderStockDetail(null); }}
+        >
+          <div
+            className="relative w-full max-w-[95vw] sm:max-w-sm bg-white rounded-2xl shadow-lg overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 헤더 */}
+            <div className="px-4 py-3.5 border-b border-slate-100 flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0 mt-0.5">
+                <Package size={15} className="text-violet-600" strokeWidth={2.2} />
               </div>
-              <button type="button" onClick={() => setOrderStockDetail(null)}
-                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer" title="닫기">
-                <X size={14} strokeWidth={2.4} />
+              <div className="min-w-0 flex-1">
+                <div className="text-[13px] font-bold text-slate-800 leading-snug break-words whitespace-normal">{orderStockDetail.name || orderStockDetail.code}</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">실재고 상세현황 · 창고 + 매장</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOrderStockDetail(null)}
+                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer transition-colors shrink-0"
+                title="닫기 (ESC)"
+              >
+                <X size={13} strokeWidth={2.5} />
               </button>
             </div>
-            <div className="p-4 space-y-2">
-              <div className="grid grid-cols-2 gap-2 text-[12px] font-semibold">
-                <div className="px-3 py-2 rounded-lg bg-orange-50 border border-orange-200 text-orange-700 flex items-center justify-between">
-                  <span>창고1</span>
-                  <span className="tabular-nums font-black">{orderStockDetail.w1 ?? "—"}</span>
+
+            <div className="p-4 space-y-3">
+              {/* 창고 섹션 */}
+              <div>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Package size={11} className="text-orange-400" strokeWidth={2.5} />
+                  <span className="text-[10px] font-bold text-orange-500 tracking-wide uppercase">창고</span>
                 </div>
-                <div className="px-3 py-2 rounded-lg bg-orange-50 border border-orange-200 text-orange-700 flex items-center justify-between">
-                  <span>창고2</span>
-                  <span className="tabular-nums font-black">{orderStockDetail.w2 ?? "—"}</span>
-                </div>
-                <div className="px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-between col-span-2">
-                  <span>매장1 {orderStockDetail.s1z && <span className="text-[10px] font-normal text-slate-500 ml-1">· {orderStockDetail.s1z}</span>}</span>
-                  <span className="tabular-nums font-black">{orderStockDetail.s1 ?? "—"}</span>
-                </div>
-                <div className="px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-between col-span-2">
-                  <span>매장2 {orderStockDetail.s2z && <span className="text-[10px] font-normal text-slate-500 ml-1">· {orderStockDetail.s2z}</span>}</span>
-                  <span className="tabular-nums font-black">{orderStockDetail.s2 ?? "—"}</span>
-                </div>
-                <div className="px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-between col-span-2">
-                  <span>매장3 {orderStockDetail.s3z && <span className="text-[10px] font-normal text-slate-500 ml-1">· {orderStockDetail.s3z}</span>}</span>
-                  <span className="tabular-nums font-black">{orderStockDetail.s3 ?? "—"}</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="px-3 py-2.5 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-between">
+                    <span className="text-[12px] font-semibold text-orange-700">창고 1</span>
+                    <span className="tabular-nums text-[14px] font-black text-orange-800">{orderStockDetail.w1 ?? <span className="text-slate-300 font-normal text-[12px]">—</span>}</span>
+                  </div>
+                  <div className="px-3 py-2.5 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-between">
+                    <span className="text-[12px] font-semibold text-orange-700">창고 2</span>
+                    <span className="tabular-nums text-[14px] font-black text-orange-800">{orderStockDetail.w2 ?? <span className="text-slate-300 font-normal text-[12px]">—</span>}</span>
+                  </div>
                 </div>
               </div>
-              <div className="mt-3 px-3 py-2 rounded-lg bg-violet-100 border border-violet-300 text-violet-800 flex items-center justify-between text-[13px] font-black">
-                <span>합계 (창고+매장)</span>
-                <span className="tabular-nums">{orderStockDetail.total}</span>
+
+              {/* 매장 섹션 */}
+              <div>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <MapPin size={11} className="text-emerald-500" strokeWidth={2.5} />
+                  <span className="text-[10px] font-bold text-emerald-600 tracking-wide uppercase">매장</span>
+                </div>
+                <div className="space-y-1.5">
+                  {/* 매장1 */}
+                  <div className="px-3 py-2.5 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[12px] font-semibold text-emerald-700 shrink-0">매장 1</span>
+                      {orderStockDetail.s1z && (
+                        <span className="text-[11px] text-emerald-600/70 font-medium truncate">· {orderStockDetail.s1z}</span>
+                      )}
+                    </div>
+                    <span className="tabular-nums text-[14px] font-black text-emerald-800 shrink-0">{orderStockDetail.s1 ?? <span className="text-slate-300 font-normal text-[12px]">—</span>}</span>
+                  </div>
+                  {/* 매장2 */}
+                  <div className="px-3 py-2.5 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[12px] font-semibold text-emerald-700 shrink-0">매장 2</span>
+                      {orderStockDetail.s2z && (
+                        <span className="text-[11px] text-emerald-600/70 font-medium truncate">· {orderStockDetail.s2z}</span>
+                      )}
+                    </div>
+                    <span className="tabular-nums text-[14px] font-black text-emerald-800 shrink-0">{orderStockDetail.s2 ?? <span className="text-slate-300 font-normal text-[12px]">—</span>}</span>
+                  </div>
+                  {/* 매장3 */}
+                  <div className="px-3 py-2.5 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[12px] font-semibold text-emerald-700 shrink-0">매장 3</span>
+                      {orderStockDetail.s3z && (
+                        <span className="text-[11px] text-emerald-600/70 font-medium truncate">· {orderStockDetail.s3z}</span>
+                      )}
+                    </div>
+                    <span className="tabular-nums text-[14px] font-black text-emerald-800 shrink-0">{orderStockDetail.s3 ?? <span className="text-slate-300 font-normal text-[12px]">—</span>}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 합계 */}
+              <div className="px-4 py-3 rounded-xl bg-violet-600 flex items-center justify-between">
+                <span className="text-[12px] font-bold text-violet-100">합계 (창고 + 매장)</span>
+                <span className="tabular-nums text-[16px] font-black text-white">{orderStockDetail.total}</span>
               </div>
             </div>
           </div>
