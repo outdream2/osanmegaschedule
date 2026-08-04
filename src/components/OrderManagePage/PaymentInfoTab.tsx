@@ -694,64 +694,66 @@ export const PaymentInfoTab: React.FC = () => {
                     </FieldLabel>
                   )}
                 </div>
-                {/* Row 2 · 결제 금액 (다음줄) */}
-                <div>
-                  <FieldLabel label="결제 금액 (원)" icon={<Wallet size={11} />} required>
-                    <div className="relative">
+                {/* Row 2 · 결제금액 + 부가세포함 체크박스 · 같은 줄 (2026-08-04 · 사용자 요청 통합) */}
+                <div className="flex items-end gap-2">
+                  {/* 결제금액 · flex-1 */}
+                  <div className="flex-1 min-w-0">
+                    <FieldLabel label="결제 금액 (원)" icon={<Wallet size={11} />} required>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={amount ? Number(amount).toLocaleString() : ""}
+                          onChange={e => setAmount(e.target.value.replace(/[^0-9]/g, ""))}
+                          placeholder="0"
+                          className={`${inputCls} text-right tabular-nums font-black ${overBalance ? "border-amber-400 focus:ring-amber-400 focus:border-amber-400" : ""}`}
+                        />
+                        {currentBalance > 0 && !amount && (
+                          <button
+                            type="button"
+                            onClick={() => setAmount(String(Math.round(currentBalance)))}
+                            className="absolute right-1.5 top-1/2 -translate-y-1/2 h-6 px-2 text-[10px] font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition"
+                            title="현재 잔고 전액"
+                          >
+                            전액 {fmtWonShort(currentBalance)}
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] mt-1 min-h-[14px]">
+                        {amountNum > 0 && (
+                          <>
+                            <span className="text-slate-400 tabular-nums">₩{amountNum.toLocaleString()}</span>
+                            {taxInvoiceIssued && (
+                              <span className="text-slate-500 tabular-nums">
+                                공급 {supplyAmt.toLocaleString()} · VAT {vatAmt.toLocaleString()}
+                              </span>
+                            )}
+                          </>
+                        )}
+                        {overBalance && (
+                          <span className="text-amber-600 font-bold ml-auto">
+                            잔고({fmtWonShort(currentBalance)}) 초과
+                          </span>
+                        )}
+                      </div>
+                    </FieldLabel>
+                  </div>
+                  {/* 부가세포함 체크박스 · shrink-0 · 결제금액 오른쪽 · 인풋 높이 기준 정렬 */}
+                  <div className="shrink-0 pb-[18px]">
+                    <label className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border cursor-pointer text-[12px] font-semibold transition ${
+                      taxInvoiceIssued
+                        ? "bg-teal-50 border-teal-300 text-teal-700"
+                        : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                    }`}>
                       <input
-                        type="text"
-                        inputMode="numeric"
-                        value={amount ? Number(amount).toLocaleString() : ""}
-                        onChange={e => setAmount(e.target.value.replace(/[^0-9]/g, ""))}
-                        placeholder="0"
-                        className={`${inputCls} text-right font-mono tabular-nums font-black ${overBalance ? "border-amber-400 focus:ring-amber-400 focus:border-amber-400" : ""}`}
+                        type="checkbox"
+                        checked={taxInvoiceIssued}
+                        onChange={e => setTaxInvoiceIssued(e.target.checked)}
+                        className="w-3.5 h-3.5 accent-teal-600"
                       />
-                      {currentBalance > 0 && !amount && (
-                        <button
-                          type="button"
-                          onClick={() => setAmount(String(Math.round(currentBalance)))}
-                          className="absolute right-1.5 top-1/2 -translate-y-1/2 h-6 px-2 text-[10px] font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition"
-                          title="현재 잔고 전액"
-                        >
-                          전액 {fmtWonShort(currentBalance)}
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between text-[10px] mt-1 min-h-[14px]">
-                      {amountNum > 0 && (
-                        <>
-                          <span className="text-slate-400 font-mono">₩{amountNum.toLocaleString()}</span>
-                          {taxInvoiceIssued && (
-                            <span className="text-slate-500 font-mono tabular-nums">
-                              공급 {supplyAmt.toLocaleString()} · VAT {vatAmt.toLocaleString()}
-                            </span>
-                          )}
-                        </>
-                      )}
-                      {overBalance && (
-                        <span className="text-amber-600 font-bold ml-auto">
-                          잔고({fmtWonShort(currentBalance)}) 초과
-                        </span>
-                      )}
-                    </div>
-                  </FieldLabel>
-                </div>
-
-                {/* 부가세포함 체크박스 · 별도 라인 (2026-08-04 · sub-option 은 Row 1 로 통합됨) */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <label className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border cursor-pointer text-[12px] font-semibold transition shrink-0 ${
-                    taxInvoiceIssued
-                      ? "bg-teal-50 border-teal-300 text-teal-700"
-                      : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                  }`}>
-                    <input
-                      type="checkbox"
-                      checked={taxInvoiceIssued}
-                      onChange={e => setTaxInvoiceIssued(e.target.checked)}
-                      className="w-3.5 h-3.5 accent-teal-600"
-                    />
-                    부가세 포함 (VAT 별도 계산)
-                  </label>
+                      부가세 포함
+                    </label>
+                  </div>
                 </div>
                 {/* 참조번호 · 세금계산서번호 필드 · 2026-08-04 · 사용자 요청으로 제거 */}
 
