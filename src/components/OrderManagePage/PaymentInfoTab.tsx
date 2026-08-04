@@ -51,6 +51,10 @@ interface PaymentRow {
   method: PayMethod | string | null;
   memo: string | null;
   created_at?: string | null;
+  // 결제 직후 잔고 (누적 매입 - 누적 결제, 이 결제까지 반영)
+  // · Task #104 · /api/supplier-ledger 의 running_balance 사용
+  // · 양수 = 미결 · 0 = 완납 · 음수 = 초과결제
+  running_balance?: number | null;
   // decoded from memo prefix
   meta?: {
     card_issuer?: string;
@@ -459,20 +463,34 @@ export const PaymentInfoTab: React.FC = () => {
   const loadRecentPayments = useCallback(async (supplierName: string) => {
     setRecentLoading(true);
     try {
-      const res = await fetch(`/api/supplier-payments?supplier=${encodeURIComponent(supplierName)}&days=365`);
+      // Task #104 · 결제 후 잔고 컬럼용으로 supplier-ledger 사용
+      //   · ledger 는 매입+결제 시간순 merge 후 각 row 에 running_balance 계산 (서버측)
+      //   · 여기서는 payment type 만 필터 · 결제 시점의 running_balance = "결제 후 잔고"
+      //   · 넉넉히 3650일(10년) fetch · 누적 정합성 보장 (짧게 자르면 오래된 미결제 매입 누락 위험)
+      const res = await fetch(`/api/supplier-ledger?supplier=${encodeURIComponent(supplierName)}&days=3650`);
       if (!res.ok) throw new Error(String(res.status));
       const j = await res.json();
-      const rows: any[] = Array.isArray(j?.rows) ? j.rows : [];
-      const decoded: PaymentRow[] = rows.slice(0, 8).map(r => {
+      const allRows: any[] = Array.isArray(j?.rows) ? j.rows : [];
+      // payment type 만 · 최근순 (desc) 정렬 후 상위 8건
+      const paymentRows = allRows
+        .filter(r => r?.type === "payment")
+        .sort((a, b) => {
+          const dCmp = String(b?.date ?? "").localeCompare(String(a?.date ?? ""));
+          if (dCmp !== 0) return dCmp;
+          return (Number(b?.id) || 0) - (Number(a?.id) || 0);
+        })
+        .slice(0, 8);
+      const decoded: PaymentRow[] = paymentRows.map(r => {
         const { meta, note: n } = decodeMemo(r.memo);
         return {
-          id: r.id,
-          supplier_name: r.supplier_name,
-          payment_date: r.payment_date,
+          id: Number(r.id),
+          supplier_name: supplierName,
+          payment_date: String(r.date ?? ""),
           amount: Number(r.amount) || 0,
           method: r.method ?? null,
           memo: n,
-          created_at: r.created_at ?? null,
+          created_at: null,
+          running_balance: Number.isFinite(Number(r.running_balance)) ? Number(r.running_balance) : null,
           meta,
         };
       });
@@ -1327,6 +1345,25 @@ export const PaymentInfoTab: React.FC = () => {
                           <span className="text-[13px] font-black text-emerald-700 tabular-nums shrink-0">
                             -{p.amount.toLocaleString()}
                           </span>
+                          {/* 결제 후 잔고 · Task #104 (2026-08-04)
+                              · ledger running_balance · 양수=미결(amber) · 0=완납(slate) · 음수=초과(rose)
+                              · feedback_ui_principles B-2-2 · 12px · tabular-nums */}
+                          {p.running_balance != null && (
+                            <span
+                              className={`text-[12px] font-black tabular-nums shrink-0 min-w-[64px] text-right ${
+                                p.running_balance > 0
+                                  ? "text-amber-700"
+                                  : p.running_balance < 0
+                                  ? "text-rose-700"
+                                  : "text-slate-400"
+                              }`}
+                              title={`결제 후 잔고 · ${p.running_balance.toLocaleString()}원`}
+                            >
+                              {p.running_balance === 0
+                                ? "완납"
+                                : (p.running_balance > 0 ? "" : "-") + fmtWonShort(Math.abs(p.running_balance))}
+                            </span>
+                          )}
                         </div>
                       );
                     })}
