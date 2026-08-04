@@ -1287,8 +1287,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
           <span className="text-[10px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
         </div>
 
-        {/* ════ 우측: 인사카드 패널 · 공통 split-right · min-h-0 (flex-1 세로 스크롤 정상화) ════ */}
-        <section className="split-right">
+        {/* ════ 우측: 인사카드 패널 · 공통 split-right · 모바일(<lg)에서는 숨기고 모달로 대체 ════ */}
+        <section className="hidden lg:flex lg:flex-col split-right">
           {!displayEmp ? (
             <EmptyDetail />
           ) : (
