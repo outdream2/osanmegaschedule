@@ -38,3 +38,10 @@ export const CLASS_FILTER_LABEL: Record<ClassFilter, string> = {
   stationery: "상비약",
   general: "일반약",
 };
+
+// 라벨 옆 구역 범위 표시 (2026-08-04 · 사용자 요청 · "(1-9)" 형식)
+export const CLASS_FILTER_RANGE: Record<ClassFilter, string> = {
+  all: "",
+  stationery: "(1-9)",
+  general: "(10-)",
+};

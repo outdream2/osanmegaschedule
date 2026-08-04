@@ -7,7 +7,7 @@
 
 import React from "react";
 import { Pill, Stethoscope, Layers } from "lucide-react";
-import { CLASS_FILTER_LABEL, type ClassFilter } from "../../utils/productClassify";
+import { CLASS_FILTER_LABEL, CLASS_FILTER_RANGE, type ClassFilter } from "../../utils/productClassify";
 
 interface Props {
   value: ClassFilter;
@@ -62,7 +62,14 @@ export const ProductClassFilter: React.FC<Props> = ({
               aria-pressed={active}
             >
               <Icon size={12} className="shrink-0" />
-              <span className={compactOnMobile ? "hidden sm:inline" : ""}>{labelText}</span>
+              <span className={compactOnMobile ? "hidden sm:inline" : ""}>
+                {labelText}
+                {CLASS_FILTER_RANGE[opt.key] && (
+                  <span className="text-[9px] font-normal text-slate-400 ml-0.5 tabular-nums">
+                    {CLASS_FILTER_RANGE[opt.key]}
+                  </span>
+                )}
+              </span>
               {typeof cnt === "number" && (
                 <span className="text-[10px] font-bold text-slate-400 tabular-nums">{cnt}</span>
               )}
