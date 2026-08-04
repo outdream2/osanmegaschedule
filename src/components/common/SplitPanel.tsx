@@ -2,8 +2,13 @@
 // 2026-08-03 (#183) · 공통 마스터-디테일 split 패널
 //   - 좌측 (list) + divider (drag resize) + 우측 (detail)
 //   - 데스크탑 (lg:1024px+) · 가로 배치 + 폭 조정 · localStorage 저장
-//   - 모바일 (< lg) · 세로 스택 · 좌측은 max-h 제한 · 스크롤
+//   - 모바일 (< lg) · 좌측만 표시 · 우측은 모달로 렌더링 (mobileRightAsModal=true)
 //   - dividerColor · 프리셋 (indigo · teal · emerald 등) · hover 컬러 강조
+// 2026-08-04 (#B-3-2) · mobileRightAsModal 추가
+//   - 모바일에서 우측 패널을 모달로 자동 처리
+//   - mobileModalTitle · 모달 제목
+//   - 좌측 아이템 클릭 시 mobileOpen=true → 자동 모달 오픈
+//   - ESC · backdrop 클릭 · X 버튼 모두로 닫기
 //
 // 사용 예:
 //   <SplitPanel
@@ -12,6 +17,10 @@
 //     minWidth={200}
 //     maxWidth={640}
 //     dividerColor="indigo"
+//     mobileRightAsModal={true}
+//     mobileModalTitle="상세 정보"
+//     mobileOpen={!!selectedItem}
+//     onMobileClose={() => setSelectedItem(null)}
 //     left={<div>...</div>}
 //     right={<div>...</div>}
 //   />
@@ -20,6 +29,7 @@
 // 좌측 aside · 우측 section 시맨틱 · card-panel 스타일 자동 적용
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
 
 const STORAGE_PREFIX = "megatown_"; // 앱 관례 (useAuth · settings 와 동일)
 
@@ -58,12 +68,22 @@ export interface SplitPanelProps {
   style?: React.CSSProperties;
   /** 컨테이너 추가 className */
   className?: string;
+  // ── 모바일 모달 옵션 (B-3-2 · 2026-08-04) ──────────────────────────────
+  /** 모바일 < lg 에서 우측 패널을 모달로 표시 (기본 true) */
+  mobileRightAsModal?: boolean;
+  /** 모달 제목 */
+  mobileModalTitle?: React.ReactNode;
+  /** 모달 열림 상태 (외부 제어) · 미제공 시 내부 state 사용 */
+  mobileOpen?: boolean;
+  /** 모달 닫기 콜백 */
+  onMobileClose?: () => void;
 }
 
 /**
  * 공통 마스터-디테일 split 패널
  *   - 폭 조정 · localStorage 자동 저장
- *   - 모바일 반응형 (세로 스택)
+ *   - 모바일: 좌측만 표시 · 우측은 모달 (mobileRightAsModal=true 기본)
+ *   - 데스크탑: 기존 side-by-side 유지
  *   - 시맨틱 aside/section 태그
  */
 export const SplitPanel: React.FC<SplitPanelProps> = ({
@@ -78,6 +98,10 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
   wrapRight = true,
   style,
   className = "",
+  mobileRightAsModal = true,
+  mobileModalTitle,
+  mobileOpen: mobileOpenProp,
+  onMobileClose,
 }) => {
   const fullKey = STORAGE_PREFIX + storageKey;
 
@@ -111,6 +135,28 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  // 모바일 모달 내부 state (외부 제어 없을 때)
+  const [mobileOpenInternal, setMobileOpenInternal] = useState(false);
+  const isMobileModalControlled = mobileOpenProp !== undefined;
+  const mobileOpen = isMobileModalControlled ? mobileOpenProp : mobileOpenInternal;
+  const closeMobileModal = useCallback(() => {
+    if (isMobileModalControlled) {
+      onMobileClose?.();
+    } else {
+      setMobileOpenInternal(false);
+    }
+  }, [isMobileModalControlled, onMobileClose]);
+
+  // ESC 키 · 모바일 모달 닫기
+  useEffect(() => {
+    if (!mobileRightAsModal || !mobileOpen || isDesktop) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeMobileModal();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mobileRightAsModal, mobileOpen, isDesktop, closeMobileModal]);
+
   // 드래그 시작
   const startXRef = useRef<number>(0);
   const startWRef = useRef<number>(0);
@@ -141,30 +187,73 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
   const leftCls = wrapLeft ? "split-left" : "w-full shrink-0 flex flex-col min-h-0 max-h-[42vh] lg:max-h-none";
   const rightCls = wrapRight ? "split-right" : "flex-1 flex flex-col min-w-0 min-h-0";
 
-  return (
-    <div className={`split-container ${className}`} style={style}>
-      {/* 좌측: 리스트 · 폭 조정 */}
-      <aside
-        className={leftCls}
-        style={isDesktop ? { width: `${listWidth}px` } : undefined}
-      >
-        {left}
-      </aside>
+  // ── 모바일 모달 렌더링 (mobileRightAsModal=true · 비데스크탑) ──────────────
+  const mobileModal = mobileRightAsModal && !isDesktop && mobileOpen ? (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-[2.5vw] bg-black/40"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) closeMobileModal();
+      }}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] max-h-[92vh] flex flex-col overflow-hidden">
+        {/* 모달 헤더 */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-200 shrink-0">
+          {mobileModalTitle != null && (
+            <div className="flex-1 min-w-0 text-[14px] font-black text-slate-800 break-words whitespace-normal leading-tight">
+              {mobileModalTitle}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={closeMobileModal}
+            className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer shrink-0 transition-colors ml-auto"
+            title="닫기 (ESC)"
+            aria-label="닫기"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        {/* 모달 바디 · 우측 패널 컨텐츠 */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {right}
+        </div>
+      </div>
+    </div>
+  ) : null;
 
-      {/* 리사이즈 divider · 데스크탑만 · group 은 @apply 불가 → 클래스로 명시 */}
-      <div
-        onMouseDown={startResize}
-        className={`split-divider group ${dividerHoverCls}`}
-        title="드래그하여 좌측 폭 조절"
-      >
-        <span className="text-[10px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+  return (
+    <>
+      <div className={`split-container ${className}`} style={style}>
+        {/* 좌측: 리스트 · 폭 조정 */}
+        <aside
+          className={leftCls}
+          style={isDesktop ? { width: `${listWidth}px` } : undefined}
+        >
+          {left}
+        </aside>
+
+        {/* 리사이즈 divider · 데스크탑만 · group 은 @apply 불가 → 클래스로 명시 */}
+        <div
+          onMouseDown={startResize}
+          className={`split-divider group ${dividerHoverCls}`}
+          title="드래그하여 좌측 폭 조절"
+        >
+          <span className="text-[10px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+        </div>
+
+        {/* 우측: 상세 · 데스크탑만 표시 (모바일은 모달로) */}
+        {(!mobileRightAsModal || isDesktop) && (
+          <section className={rightCls}>
+            {right}
+          </section>
+        )}
       </div>
 
-      {/* 우측: 상세 */}
-      <section className={rightCls}>
-        {right}
-      </section>
-    </div>
+      {/* 모바일 모달 · portal 없이 body 레벨 z-50 */}
+      {mobileModal}
+    </>
   );
 };
 
