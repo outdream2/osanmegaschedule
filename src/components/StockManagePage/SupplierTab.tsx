@@ -448,7 +448,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                       매입수량 {supListSort.key === "purchaseQty" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-amber-300">⇅</span>}
                     </th>
                     {showExtraPurchaseColumns && (
-                      <th className="text-right px-3 py-2 w-24 cursor-pointer select-none bg-amber-50/80 hover:bg-amber-100 transition text-amber-700" onClick={() => toggleSupListSort("totalStockAmount")} title="매입액 (공급가액 합계) 정렬">
+                      <th className="text-right px-3 py-2 w-24 bg-amber-50/80 text-amber-700" title="매입액 (공급가액 합계 · stock_history.supply_amount)">
                         매입액
                       </th>
                     )}
