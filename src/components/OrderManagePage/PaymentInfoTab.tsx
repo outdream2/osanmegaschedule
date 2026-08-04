@@ -482,7 +482,14 @@ export const PaymentInfoTab: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-y-auto flex-1 min-h-0 max-h-[42vh] lg:max-h-none">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 max-h-[42vh] lg:max-h-none flex flex-col overflow-hidden">
+            {/* 헤더 · 컬럼 라벨 (2026-08-04 · 사용자 지적 · 헤더 없어서 추가) */}
+            <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-500">
+              <span className="w-[42px] shrink-0">분류</span>
+              <span className="flex-1">공급사명</span>
+              <span className="text-slate-400 tabular-nums">{filteredVendors.length}건</span>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto">
             {vendorsLoading ? (
               <div className="flex items-center justify-center py-10 text-slate-400 gap-2 text-[12px]">
                 <Loader2 size={13} className="animate-spin" />불러오는 중...
@@ -502,7 +509,7 @@ export const PaymentInfoTab: React.FC = () => {
                         : "hover:bg-slate-50 border-l-2 border-transparent"
                     }`}
                   >
-                    <VendorCategoryBadge category={v.category} />
+                    <span className="w-[42px] shrink-0"><VendorCategoryBadge category={v.category} /></span>
                     <span className={`text-[12px] font-semibold break-words whitespace-normal leading-tight flex-1 ${
                       selectedVendor?.id === v.id ? "text-sky-800" : "text-slate-700"
                     }`}>
@@ -512,6 +519,7 @@ export const PaymentInfoTab: React.FC = () => {
                 ))}
               </div>
             )}
+            </div>
           </div>
           </div>
         }
@@ -568,31 +576,60 @@ export const PaymentInfoTab: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 잔고 · 매입/결제 KPI (3 컬럼) */}
-                <div className="grid grid-cols-3 gap-2 pt-1">
-                  <KpiMini
-                    label="총 매입"
-                    value={fmtWonShort(balance?.total_purchase ?? 0)}
-                    tone="emerald"
-                    loading={balanceLoading}
-                    icon={<ReceiptText size={11} />}
-                  />
-                  <KpiMini
-                    label="총 결제"
-                    value={fmtWonShort(balance?.total_payment ?? 0)}
-                    tone="sky"
-                    loading={balanceLoading}
-                    icon={<Wallet size={11} />}
-                  />
-                  <KpiMini
-                    label="현재 잔고"
-                    value={fmtWonShort(Math.abs(currentBalance))}
-                    tone={currentBalance > 0 ? "amber" : currentBalance < 0 ? "rose" : "slate"}
-                    loading={balanceLoading}
-                    icon={<Coins size={11} />}
-                    hint={currentBalance > 0 ? "미결제" : currentBalance < 0 ? "초과결제" : "완납"}
-                  />
-                </div>
+                {/* 매입·결제·잔고 표 (2026-08-04 · 사용자 요청 · KPI 카드 → 표형태) */}
+                {(() => {
+                  // 이번달 결제 합계 (recentPayments · 클라이언트 계산)
+                  const now = new Date();
+                  const ymPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+                  const thisMonthPayment = recentPayments
+                    .filter(p => String(p.payment_date ?? "").startsWith(ymPrefix))
+                    .reduce((s, p) => s + (Number(p.amount) || 0), 0);
+                  const totalPurchase = balance?.total_purchase ?? 0;
+                  const totalPayment  = balance?.total_payment ?? 0;
+                  const totalBalance  = currentBalance; // 현재 잔고 (total_purchase - total_payment)
+                  // 월별 매입 · 서버 balance 미제공 · placeholder
+                  const thisMonthPurchase: number | null = null;
+                  const thisMonthBalance: number | null = thisMonthPurchase != null ? thisMonthPurchase - thisMonthPayment : null;
+                  const fmt = (n: number | null) => n == null ? "-" : fmtWonShort(n);
+                  return (
+                    <div className="overflow-hidden rounded-lg border border-slate-200 shadow-xs">
+                      <table className="w-full text-[12px] tabular-nums">
+                        <thead className="bg-slate-50/80 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                          <tr>
+                            <th className="text-left px-3 py-1.5 w-[70px]">구분</th>
+                            <th className="text-right px-3 py-1.5">이번달</th>
+                            <th className="text-right px-3 py-1.5">누적</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          <tr className="bg-white">
+                            <td className="px-3 py-1.5 font-black text-emerald-700 flex items-center gap-1.5"><ReceiptText size={11} />매입</td>
+                            <td className={`px-3 py-1.5 text-right font-black ${thisMonthPurchase == null ? "text-slate-300" : "text-emerald-800"}`}>{fmt(thisMonthPurchase)}</td>
+                            <td className="px-3 py-1.5 text-right font-black text-emerald-800">{fmt(totalPurchase)}</td>
+                          </tr>
+                          <tr className="bg-white">
+                            <td className="px-3 py-1.5 font-black text-sky-700 flex items-center gap-1.5"><Wallet size={11} />결제</td>
+                            <td className={`px-3 py-1.5 text-right font-black ${thisMonthPayment === 0 ? "text-slate-300" : "text-sky-800"}`}>{fmt(thisMonthPayment)}</td>
+                            <td className="px-3 py-1.5 text-right font-black text-sky-800">{fmt(totalPayment)}</td>
+                          </tr>
+                          <tr className="bg-slate-50/60">
+                            <td className="px-3 py-1.5 font-black text-slate-700 flex items-center gap-1.5"><Coins size={11} />잔고</td>
+                            <td className={`px-3 py-1.5 text-right font-black ${thisMonthBalance == null ? "text-slate-300" : thisMonthBalance > 0 ? "text-amber-700" : thisMonthBalance < 0 ? "text-rose-700" : "text-slate-500"}`}>{fmt(thisMonthBalance)}</td>
+                            <td className={`px-3 py-1.5 text-right font-black ${totalBalance > 0 ? "text-amber-700" : totalBalance < 0 ? "text-rose-700" : "text-slate-500"}`}>
+                              {fmt(Math.abs(totalBalance))}
+                              {totalBalance !== 0 && (
+                                <span className="text-[9px] font-semibold text-slate-400 ml-1">{totalBalance > 0 ? "미결" : "초과"}</span>
+                              )}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      {balanceLoading && (
+                        <div className="px-3 py-1 bg-slate-50 text-[10px] text-slate-400 flex items-center gap-1"><Loader2 size={10} className="animate-spin" />로딩중</div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* 결제 입력 + 최근 결제 내역 · 좌우 분할 · 반응형 stack (2026-08-04 · 사용자 요청) */}
@@ -612,16 +649,18 @@ export const PaymentInfoTab: React.FC = () => {
                   )}
                 </div>
 
-                {/* Row 1 · 결제일 · 결제방법 · sub-option (카드사/은행/기타) 나란히 (2026-08-04 · 사용자 요청) */}
+                {/* Row 1 · 결제일 · [결제방법+카드사 nowrap 그룹] (2026-08-04 · 사용자 요청) */}
                 <div className="flex flex-wrap items-end gap-2">
                   <FieldLabel label="결제일" icon={<CalendarDays size={11} />}>
                     <input
                       type="date"
                       value={paymentDate}
                       onChange={e => setPaymentDate(e.target.value)}
-                      className={`${inputCls} w-[140px]`}
+                      className={`${inputCls} w-[122px]`}
                     />
                   </FieldLabel>
+                  {/* 결제방법 + sub-option · 하나의 flex-nowrap 그룹 · 항상 같은 줄 */}
+                  <div className="flex items-end gap-2 flex-1 min-w-0">
                   <FieldLabel label="결제 방법" required>
                     <select
                       value={method}
@@ -693,6 +732,7 @@ export const PaymentInfoTab: React.FC = () => {
                       />
                     </FieldLabel>
                   )}
+                  </div>{/* 결제방법+sub-option nowrap 그룹 close */}
                 </div>
                 {/* Row 2 · 결제금액 + 부가세포함 체크박스 · 같은 줄 (2026-08-04 · 사용자 요청 통합) */}
                 <div className="flex items-end gap-2">
