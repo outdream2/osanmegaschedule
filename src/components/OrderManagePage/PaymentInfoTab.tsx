@@ -20,6 +20,7 @@ import {
   Phone, User2, ReceiptText, ArrowRight, Plus,
 } from "lucide-react";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
+import { SplitPanel } from "../common/SplitPanel";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -440,11 +441,23 @@ export const PaymentInfoTab: React.FC = () => {
   // ═══════════════════════════════════════════════════════════════════
   return (
     <div className="flex flex-col gap-2 h-full min-h-0">
-      <div className="flex flex-col lg:flex-row gap-2 flex-1 min-h-0">
-
-        {/* ── 좌측 · 공급사 리스트 ─────────────────────────────── */}
-        <div className="w-full lg:w-64 shrink-0 flex flex-col gap-2">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2.5 flex flex-col gap-2">
+      <SplitPanel
+        storageKey="paymentInfo.leftWidth"
+        defaultWidth={256}
+        minWidth={200}
+        maxWidth={400}
+        dividerColor="sky"
+        wrapLeft={false}
+        wrapRight={false}
+        mobileRightAsModal={true}
+        mobileModalTitle={selectedVendor?.company_name ?? "결제 정보"}
+        mobileOpen={!!selectedVendor}
+        onMobileClose={() => setSelectedVendor(null)}
+        className="flex-1 min-h-0"
+        left={
+          /* ── 좌측 · 공급사 리스트 ─────────────────────────────── */
+          <div className="w-full lg:flex-col shrink-0 flex flex-col gap-2 h-full min-h-0">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2.5 flex flex-col gap-2 shrink-0">
             <input
               type="text"
               value={vendorSearch}
@@ -469,7 +482,7 @@ export const PaymentInfoTab: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-y-auto flex-1 min-h-0 max-h-[72vh]">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-y-auto flex-1 min-h-0 max-h-[42vh] lg:max-h-none">
             {vendorsLoading ? (
               <div className="flex items-center justify-center py-10 text-slate-400 gap-2 text-[12px]">
                 <Loader2 size={13} className="animate-spin" />불러오는 중...
@@ -500,10 +513,11 @@ export const PaymentInfoTab: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
-
-        {/* ── 우측 · 결제 입력 · 최근 결제 ─────────────────────── */}
-        <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-2 overflow-y-auto">
+          </div>
+        }
+        right={
+          /* ── 우측 · 결제 입력 · 최근 결제 ─────────────────────── */
+          <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-2 overflow-y-auto lg:overflow-hidden">
           {!selectedVendor ? (
             <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
               <Wallet size={44} className="mb-3 opacity-30" />
@@ -848,8 +862,9 @@ export const PaymentInfoTab: React.FC = () => {
               </div>{/* 결제입력+최근결제내역 grid wrapper close */}
             </>
           )}
-        </div>
-      </div>
+          </div>
+        }
+      />
     </div>
   );
 };
