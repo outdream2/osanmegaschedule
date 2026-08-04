@@ -515,7 +515,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   const [workplaceTab, setWorkplaceTab] = useState<"전체" | "매장" | "창고">("전체");
   const [positionTab, setPositionTab] = useState<"전체" | "약사" | "물류" | "캐셔" | "진열" | "알바" | "기타">("전체");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"none" | "position" | "name">("none");
+  const [sortBy, setSortBy] = useState<"none" | "position" | "name">("position");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [todayFirst, setTodayFirst] = useState(true);
 
@@ -1269,12 +1269,17 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       return true;
     })
     .sort((a, b) => {
-      const POSITION_ORDER: Record<string, number> = { "대표": 1, "임원": 2, "약사": 3, "캐셔": 4, "진열": 5, "물류": 6 };
+      // 그룹 순서: 기타(1) → 약사(2) → 물류/캐셔/진열/사원(3) · 사용자 요청 (2026-08-04)
+      const getPositionGroup = (pos: string): number => {
+        if (pos === "약사") return 2;
+        if (pos.includes("물류") || pos === "캐셔" || pos === "진열" || pos === "사원") return 3;
+        return 1; // 기타 (대표·임원·매니저 등)
+      };
 
       if (sortBy === "position") {
-        const pA = POSITION_ORDER[a.position] ?? 99;
-        const pB = POSITION_ORDER[b.position] ?? 99;
-        if (pA !== pB) return sortOrder === "asc" ? pA - pB : pB - pA;
+        const gA = getPositionGroup(a.position);
+        const gB = getPositionGroup(b.position);
+        if (gA !== gB) return sortOrder === "asc" ? gA - gB : gB - gA;
         return a.name.localeCompare(b.name, "ko");
       }
 
@@ -1917,7 +1922,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                       <tr className="bg-slate-100 text-slate-600 select-none">
                         <th
                           ref={nameThRef}
-                          className="text-center text-[10px] sm:text-[11px] font-semibold border-r border-slate-200 border-b border-b-slate-200 sticky left-0 bg-slate-100 z-40 py-2 sm:py-2.5 tracking-wide whitespace-nowrap px-1 sm:px-3 min-w-[90px] sm:min-w-[120px] lg:min-w-[140px] w-[90px] sm:w-[120px] lg:w-[140px]"
+                          className="text-center text-[11px] sm:text-[12px] font-semibold border-r border-slate-200 border-b border-b-slate-200 sticky left-0 bg-slate-100 z-50 py-2 sm:py-2.5 tracking-wide whitespace-nowrap px-1 sm:px-3 min-w-[110px] sm:min-w-[140px] lg:min-w-[160px] w-[110px] sm:w-[140px] lg:w-[160px]"
                         >
                           <span className="hidden sm:inline">직원 성명</span>
                           <span className="sm:hidden">성명</span>
@@ -1958,7 +1963,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                       {/* Header Row 2: Day of Week Characters */}
                       <tr className="bg-slate-50 text-slate-400 select-none">
                         {/* Left spacing header matching Name column */}
-                        <th className="border-r border-b border-slate-200 sticky left-0 bg-slate-50 z-40 h-5 sm:h-6 min-w-[80px] sm:min-w-[120px]"></th>
+                        <th className="border-r border-b border-slate-200 sticky left-0 bg-slate-50 z-50 h-5 sm:h-6 min-w-[110px] sm:min-w-[140px] lg:min-w-[160px]"></th>
 
                         {displayDates.map((dateStr, dateIdx) => {
                           const { dayWord, isToday } = getDayDetails(dateStr);

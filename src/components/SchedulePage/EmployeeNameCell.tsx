@@ -65,12 +65,12 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
     <td
       className={`
         relative
-        border-r border-slate-100 bg-white sticky left-0 z-[29]
+        border-r border-slate-100 bg-white sticky left-0 z-50
         group-hover:bg-slate-50/70
         shadow-[1px_0_0_0_#e2e8f0]
-        min-w-[90px] w-[90px]
-        sm:min-w-[120px] sm:w-[120px]
-        lg:min-w-[140px] lg:w-[140px]
+        min-w-[110px] w-[110px]
+        sm:min-w-[140px] sm:w-[140px]
+        lg:min-w-[160px] lg:w-[160px]
         p-0 transition-colors duration-150
         ${isDragging ? "opacity-40" : ""}
       `}
@@ -96,16 +96,8 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
         {/* 메인 콘텐츠 영역 */}
         <div className="flex-1 flex flex-col justify-center py-1.5 px-1.5 sm:px-2 min-w-0 gap-0.5">
 
-          {/* 줄 1: 이름 */}
+          {/* 줄 1: 이름 · 성별 표시 제거 (사용자 요청) */}
           <div className="flex items-center gap-1 min-w-0">
-            {/* 성별 — 아주 작은 텍스트 · 공간 미소비 */}
-            {emp.gender === "남" && (
-              <span className="text-[8px] font-semibold text-slate-400 shrink-0 leading-none select-none">M</span>
-            )}
-            {emp.gender === "여" && (
-              <span className="text-[8px] font-semibold text-rose-300 shrink-0 leading-none select-none">F</span>
-            )}
-
             {/* 이름 — 약사: emerald · 나머지: slate */}
             <span
               onMouseDown={(e) => e.stopPropagation()}
@@ -115,7 +107,7 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
                 font-bold leading-tight
                 cursor-pointer select-none transition-colors duration-150
                 truncate
-                text-[12px] sm:text-[13px]
+                text-[13px] sm:text-[14px]
                 ${isPharmacist
                   ? "text-emerald-700 hover:text-emerald-900"
                   : "text-slate-700 hover:text-indigo-600"
