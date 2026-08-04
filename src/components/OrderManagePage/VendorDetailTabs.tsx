@@ -550,6 +550,14 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
     }
     const momPct = lastMonth > 0 ? ((thisMonth - lastMonth) / lastMonth) * 100 : null;
 
+    // 활성 상품수 · 표시 기간 내 unique product_code
+    const codeSet = new Set<string>();
+    for (const r of detailRows) {
+      const code = (r.product_code ?? "").trim();
+      if (code) codeSet.add(code);
+    }
+    const activeProductCount = codeSet.size;
+
     return {
       totalPurchase,
       totalPayment,
@@ -557,6 +565,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
       avgCycleDays,
       momPct,
       rowCount: ledger?.rows.length,
+      activeProductCount,
     };
   }, [ledger, detailRows]);
 
