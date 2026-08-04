@@ -53,12 +53,24 @@ export interface SupplierTabProps {
    * 외부 제어 · 시각적으로 강조할 공급사명 (embedded 모드 selection sync)
    */
   selectedSupplierName?: string | null;
+  /**
+   * 판매 컬럼(판매량·판매액) 숨김 · embedded=true + 매입이력 컨텍스트에서 사용
+   *   - default false (하위호환 · 기존 StockManagePage 등 변경 없음)
+   */
+  hideSaleColumns?: boolean;
+  /**
+   * 매입현황 확장 컬럼(매입액) 표시 · embedded=true + 매입이력 컨텍스트에서 사용
+   *   - default false (하위호환)
+   */
+  showExtraPurchaseColumns?: boolean;
 }
 
 export const SupplierTab: React.FC<SupplierTabProps> = ({
   embedded = false,
   onSupplierClick,
   selectedSupplierName = null,
+  hideSaleColumns = false,
+  showExtraPurchaseColumns = false,
 }) => {
   const [loading, setLoading] = useState(false);
 
@@ -172,15 +184,16 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
 
   // 합계 (필터/제한된 visible rows 기준)
   const supListTotals = useMemo(() => {
-    let stock = 0, item = 0, purchase = 0, saleQ = 0, saleA = 0;
+    let stock = 0, item = 0, purchase = 0, purchaseAmt = 0, saleQ = 0, saleA = 0;
     for (const s of displayedXlsxSuppliers) {
       stock += Number(s.totalStockAmount ?? 0);
       item  += Number(s.itemCount ?? 0);
       purchase += Number(s.purchaseQty ?? 0);
+      purchaseAmt += Number(s.purchaseAmount ?? 0);
       saleQ += Number(s.saleQty ?? 0);
       saleA += Number(s.saleAmount ?? 0);
     }
-    return { stock, item, purchase, saleQ, saleA };
+    return { stock, item, purchase, purchaseAmt, saleQ, saleA };
   }, [displayedXlsxSuppliers]);
 
   const supplierSelectedObj = useMemo(() =>
@@ -339,13 +352,13 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
       <div className="flex items-center gap-1.5 px-4 py-2 border-b border-slate-100 bg-white shrink-0 flex-wrap">
         <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-0.5">정렬</span>
         {([
-          { k: "totalStockAmount" as SupListSortKey, label: "재고자산", color: "amber" },
-          { k: "saleQty" as SupListSortKey, label: "판매량", color: "emerald" },
-          { k: "saleAmount" as SupListSortKey, label: "판매액", color: "emerald" },
-          { k: "purchaseQty" as SupListSortKey, label: "매입", color: "emerald" },
-          { k: "itemCount" as SupListSortKey, label: "상품수", color: "slate" },
-          { k: "supplier" as SupListSortKey, label: "공급사명", color: "sky" },
-        ]).map(o => {
+          { k: "totalStockAmount" as SupListSortKey, label: "재고자산", color: "amber", hideWhenNoSale: false },
+          { k: "saleQty" as SupListSortKey, label: "판매량", color: "emerald", hideWhenNoSale: true },
+          { k: "saleAmount" as SupListSortKey, label: "판매액", color: "emerald", hideWhenNoSale: true },
+          { k: "purchaseQty" as SupListSortKey, label: "매입", color: "amber", hideWhenNoSale: false },
+          { k: "itemCount" as SupListSortKey, label: "상품수", color: "slate", hideWhenNoSale: false },
+          { k: "supplier" as SupListSortKey, label: "공급사명", color: "sky", hideWhenNoSale: false },
+        ]).filter(o => !(hideSaleColumns && o.hideWhenNoSale)).map(o => {
           const active = supListSort.key === o.k;
           const arrow = active ? (supListSort.dir === "desc" ? " ▼" : " ▲") : "";
           const activeMap: Record<string, string> = {
@@ -393,7 +406,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                     {isSupplierGroupCollapsed("stock") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}재고현황
                   </span>
                 </th>
-                <th colSpan={isSupplierGroupCollapsed("purchase") ? 1 : 1}
+                <th colSpan={isSupplierGroupCollapsed("purchase") ? 1 : (showExtraPurchaseColumns ? 2 : 1)}
                   className="bg-amber-50 text-amber-600 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-amber-100 transition"
                   onClick={() => toggleSupplierGroup("purchase")}
                   title={isSupplierGroupCollapsed("purchase") ? "매입현황 펼치기" : "매입현황 접기"}>
@@ -401,14 +414,16 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                     {isSupplierGroupCollapsed("purchase") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}매입현황
                   </span>
                 </th>
-                <th colSpan={isSupplierGroupCollapsed("sale") ? 1 : 2}
-                  className="bg-rose-50 text-rose-600 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-rose-100 transition"
-                  onClick={() => toggleSupplierGroup("sale")}
-                  title={isSupplierGroupCollapsed("sale") ? "판매현황 펼치기" : "판매현황 접기"}>
-                  <span className="inline-flex items-center gap-1">
-                    {isSupplierGroupCollapsed("sale") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}판매현황
-                  </span>
-                </th>
+                {!hideSaleColumns && (
+                  <th colSpan={isSupplierGroupCollapsed("sale") ? 1 : 2}
+                    className="bg-rose-50 text-rose-600 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-rose-100 transition"
+                    onClick={() => toggleSupplierGroup("sale")}
+                    title={isSupplierGroupCollapsed("sale") ? "판매현황 펼치기" : "판매현황 접기"}>
+                    <span className="inline-flex items-center gap-1">
+                      {isSupplierGroupCollapsed("sale") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}판매현황
+                    </span>
+                  </th>
+                )}
               </tr>
               {/* 서브 헤더 */}
               <tr className="text-[11px] font-semibold text-slate-500 border-b border-slate-200 bg-white">
@@ -428,19 +443,28 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                   </>
                 )}
                 {isSupplierGroupCollapsed("purchase") ? <th className="bg-amber-50/20 w-4"></th> : (
-                  <th className="text-right px-3 py-2 w-20 cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition text-amber-600" onClick={() => toggleSupListSort("purchaseQty")} title="매입수량 정렬">
-                    매입 {supListSort.key === "purchaseQty" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-amber-300">⇅</span>}
-                  </th>
-                )}
-                {isSupplierGroupCollapsed("sale") ? <th className="bg-rose-50/20 w-4"></th> : (
                   <>
-                    <th className="text-right px-3 py-2 w-20 cursor-pointer select-none bg-rose-50/60 hover:bg-rose-100 transition text-rose-600" onClick={() => toggleSupListSort("saleQty")} title="판매량 정렬">
-                      판매량 {supListSort.key === "saleQty" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-rose-300">⇅</span>}
+                    <th className="text-right px-3 py-2 w-20 cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition text-amber-600" onClick={() => toggleSupListSort("purchaseQty")} title="매입수량 정렬">
+                      매입수량 {supListSort.key === "purchaseQty" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-amber-300">⇅</span>}
                     </th>
-                    <th className="text-right px-3 py-2 w-24 cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition text-rose-700" onClick={() => toggleSupListSort("saleAmount")} title="판매액 정렬">
-                      판매액 {supListSort.key === "saleAmount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-rose-300">⇅</span>}
-                    </th>
+                    {showExtraPurchaseColumns && (
+                      <th className="text-right px-3 py-2 w-24 cursor-pointer select-none bg-amber-50/80 hover:bg-amber-100 transition text-amber-700" onClick={() => toggleSupListSort("totalStockAmount")} title="매입액 (공급가액 합계) 정렬">
+                        매입액
+                      </th>
+                    )}
                   </>
+                )}
+                {!hideSaleColumns && (
+                  isSupplierGroupCollapsed("sale") ? <th className="bg-rose-50/20 w-4"></th> : (
+                    <>
+                      <th className="text-right px-3 py-2 w-20 cursor-pointer select-none bg-rose-50/60 hover:bg-rose-100 transition text-rose-600" onClick={() => toggleSupListSort("saleQty")} title="판매량 정렬">
+                        판매량 {supListSort.key === "saleQty" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-rose-300">⇅</span>}
+                      </th>
+                      <th className="text-right px-3 py-2 w-24 cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition text-rose-700" onClick={() => toggleSupListSort("saleAmount")} title="판매액 정렬">
+                        판매액 {supListSort.key === "saleAmount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-rose-300">⇅</span>}
+                      </th>
+                    </>
+                  )
                 )}
               </tr>
             </thead>
@@ -457,13 +481,20 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                   </>
                 )}
                 {isSupplierGroupCollapsed("purchase") ? <td className="bg-slate-100" /> : (
-                  <td className="text-right px-3 py-1.5 tabular-nums font-black text-amber-700 bg-amber-100/40">{supListTotals.purchase.toLocaleString()}</td>
-                )}
-                {isSupplierGroupCollapsed("sale") ? <td className="bg-slate-100" /> : (
                   <>
-                    <td className="text-right px-3 py-1.5 tabular-nums font-black text-rose-700 bg-rose-100/40">{supListTotals.saleQ.toLocaleString()}</td>
-                    <td className="text-right px-3 py-1.5 tabular-nums font-black text-rose-700 bg-rose-100/60">{fmtWon(supListTotals.saleA)}</td>
+                    <td className="text-right px-3 py-1.5 tabular-nums font-black text-amber-700 bg-amber-100/40">{supListTotals.purchase.toLocaleString()}</td>
+                    {showExtraPurchaseColumns && (
+                      <td className="text-right px-3 py-1.5 tabular-nums font-black text-amber-800 bg-amber-100/60">{fmtWon(supListTotals.purchaseAmt)}</td>
+                    )}
                   </>
+                )}
+                {!hideSaleColumns && (
+                  isSupplierGroupCollapsed("sale") ? <td className="bg-slate-100" /> : (
+                    <>
+                      <td className="text-right px-3 py-1.5 tabular-nums font-black text-rose-700 bg-rose-100/40">{supListTotals.saleQ.toLocaleString()}</td>
+                      <td className="text-right px-3 py-1.5 tabular-nums font-black text-rose-700 bg-rose-100/60">{fmtWon(supListTotals.saleA)}</td>
+                    </>
+                  )
                 )}
               </tr>
               {displayedXlsxSuppliers.map((sup, i) => {
@@ -500,13 +531,20 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                       </>
                     )}
                     {isSupplierGroupCollapsed("purchase") ? <td className="bg-amber-50/20 w-4"></td> : (
-                      <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-amber-700 tabular-nums bg-amber-50/30" title="매입수량">{fmt(sup.purchaseQty)}</td>
-                    )}
-                    {isSupplierGroupCollapsed("sale") ? <td className="bg-rose-50/20 w-4"></td> : (
                       <>
-                        <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-rose-600 tabular-nums bg-rose-50/20" title="판매수량">{fmt(sup.saleQty)}</td>
-                        <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-rose-700 tabular-nums bg-rose-50/30" title="판매액">{fmtWon(Number(sup.saleAmount ?? 0))}</td>
+                        <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-amber-700 tabular-nums bg-amber-50/30" title="매입수량">{fmt(sup.purchaseQty)}</td>
+                        {showExtraPurchaseColumns && (
+                          <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-amber-800 tabular-nums bg-amber-50/50" title="매입액 (공급가액 합계)">{fmtWon(Number(sup.purchaseAmount ?? 0))}</td>
+                        )}
                       </>
+                    )}
+                    {!hideSaleColumns && (
+                      isSupplierGroupCollapsed("sale") ? <td className="bg-rose-50/20 w-4"></td> : (
+                        <>
+                          <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-rose-600 tabular-nums bg-rose-50/20" title="판매수량">{fmt(sup.saleQty)}</td>
+                          <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-rose-700 tabular-nums bg-rose-50/30" title="판매액">{fmtWon(Number(sup.saleAmount ?? 0))}</td>
+                        </>
+                      )
                     )}
                   </tr>
                 );
@@ -552,7 +590,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
           </button>
         </div>
         {/* 좌측 리스트 카드 */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col">
           {renderSupplierListCard()}
         </div>
         {/* 공급사 상세 모달 (embedded 에서도 사용 가능하도록 유지) */}

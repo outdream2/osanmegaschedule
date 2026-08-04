@@ -283,6 +283,8 @@ export const PurchaseHistoryTab: React.FC = () => {
   }, [loadVendors, loadSummary]);
 
   // ─── 원장 (기간 필터) 로드 ─────────────────────────────────────────────
+  // 2026-08-04 · /api/purchase-details 로 전환 (해당 공급사 모든 상품 · products 조인 자동)
+  //   기존 /api/supplier-purchase-detail 은 fallback 오작동 · 서버 fix 반영 대기중
   const loadLedger = useCallback(async (supplier: string) => {
     setLedgerLoading(true);
     setLedgerError(null);
@@ -291,20 +293,27 @@ export const PurchaseHistoryTab: React.FC = () => {
       const days = periodSeason
         ? 365
         : isDays10 ? 10 : (periodMonths || 1) * 30;
-      // 매입 원장 · supplier-purchase-detail 사용 (상품코드·수량·단가 포함)
-      const params = new URLSearchParams({ supplier, days: String(days) });
-      const res = await fetch(`/api/supplier-purchase-detail?${params}`);
+      const fromDate = new Date();
+      fromDate.setDate(fromDate.getDate() - days);
+      const fromStr = fromDate.toISOString().slice(0, 10);
+      const params = new URLSearchParams({ supplier, from: fromStr, limit: "5000" });
+      const res = await fetch(`/api/purchase-details?${params}`);
       if (!res.ok) throw new Error(String(res.status));
       const j = await res.json();
       const rowsFromApi: any[] = Array.isArray(j.rows) ? j.rows : [];
-      const purchaseRows: PurchaseLedgerRow[] = rowsFromApi.map((r: any) => ({
+      // supplier 매칭 · raw supplier_name 또는 products 조인 supplier_name 모두
+      const filtered = rowsFromApi.filter(r => {
+        const rn = String(r.supplier_name ?? r.supplier ?? "").trim();
+        return rn === supplier;
+      });
+      const purchaseRows: PurchaseLedgerRow[] = filtered.map((r: any) => ({
         id: r.id,
-        invoice_date: r.date ?? r.invoice_date ?? null,
+        invoice_date: r.purchase_date ?? r.invoice_date ?? null,
         product_name: r.product_name ?? null,
         product_code: r.product_code ?? null,
         quantity: r.quantity != null ? Number(r.quantity) : null,
         unit_price: r.unit_price != null ? Number(r.unit_price) : null,
-        amount: Number(r.amount) || 0,
+        amount: Number(r.amount ?? r.total) || 0,
       }));
       setLedgerRows(purchaseRows);
     } catch (e: any) {
@@ -776,6 +785,8 @@ export const PurchaseHistoryTab: React.FC = () => {
                      (제거 시 회귀 위험 · 별도 PR 에서 정리) */
               <SupplierTab
                 embedded
+                hideSaleColumns
+                showExtraPurchaseColumns
                 selectedSupplierName={selectedVendor?.company_name ?? null}
                 onSupplierClick={(supplierName) => {
                   // vendors 에서 공급사명 매칭 (정확 → 정규화 순)
