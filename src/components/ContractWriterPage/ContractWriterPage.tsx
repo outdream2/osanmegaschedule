@@ -488,7 +488,6 @@ const VerticalLabel: React.FC<{ children: string; minH?: number }> = ({ children
     className="flex items-center justify-center bg-slate-100 border-r border-slate-400 text-slate-800 font-black text-[13px] tracking-widest select-none"
     style={{
       writingMode: "vertical-rl",
-      transform: "rotate(180deg)",
       minHeight: minH,
       width: 28,
       letterSpacing: "0.25em",
