@@ -32,7 +32,7 @@ type SupplierAgg = {
   itemCount: number; totalStockAmount: number;
 };
 
-type SupListSortKey = "totalStockAmount" | "saleQty" | "saleAmount" | "purchaseQty" | "itemCount" | "supplier";
+type SupListSortKey = "totalStockAmount" | "saleQty" | "saleAmount" | "purchaseQty" | "itemCount" | "supplier" | "avgCycleDays";
 type SupDetailSortKey = "name" | "current" | "cycle" | "purchase_date" | "purchase_qty" | "min_order" | "total_amount" | "purchase_price" | "sale_qty" | "sale_amount";
 type SupplierGroup = "stock" | "purchase" | "sale";
 
@@ -63,6 +63,12 @@ export interface SupplierTabProps {
    *   - default false (하위호환)
    */
   showExtraPurchaseColumns?: boolean;
+  /**
+   * 매입주기(일) 컬럼 표시 · embedded=true + 매입이력 컨텍스트에서 사용
+   *   - default false (하위호환 · 통계/재고관리 화면 영향 없음)
+   *   - true 일 때 · /api/supplier-purchase-summary?days=90 병렬 fetch → avg_cycle_days 매핑
+   */
+  showCycleColumn?: boolean;
 }
 
 export const SupplierTab: React.FC<SupplierTabProps> = ({
@@ -71,6 +77,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   selectedSupplierName = null,
   hideSaleColumns = false,
   showExtraPurchaseColumns = false,
+  showCycleColumn = false,
 }) => {
   const [loading, setLoading] = useState(false);
 
@@ -82,6 +89,16 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   const [xlsxSuppliers, setXlsxSuppliers] = useState<SupplierAgg[]>([]);
   const { vendorCategoryMap } = useVendors();
   const [supplierBalanceMap, setSupplierBalanceMap] = useState<Record<string, { balance: number; invoice_date: string | null }>>({});
+  // 공급사별 매입주기 (일) · showCycleColumn=true 일 때만 fetch
+  //   · key · 정규화 (VAT 미포함 제거 · trim · lower) 공급사명
+  const [supplierCycleMap, setSupplierCycleMap] = useState<Record<string, number | null>>({});
+  // 공급사명 → avg_cycle_days lookup · 정렬·렌더에서 공용
+  const cycleFor = useCallback((supplierName: string | null | undefined): number | null => {
+    if (!supplierName) return null;
+    const cleaned = supplierName.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim().toLowerCase();
+    if (cleaned in supplierCycleMap) return supplierCycleMap[cleaned];
+    return null;
+  }, [supplierCycleMap]);
 
   // 정렬·필터
   const [supListSort, setSupListSort] = useState<{ key: SupListSortKey; dir: "asc" | "desc" }>({ key: "totalStockAmount", dir: "desc" });
@@ -167,9 +184,18 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
     const mult = dir === "asc" ? 1 : -1;
     return [...xlsxSuppliers].sort((a, b) => {
       if (key === "supplier") return mult * String(a.supplier ?? "").localeCompare(String(b.supplier ?? ""), "ko");
-      return mult * (Number(a[key] ?? 0) - Number(b[key] ?? 0));
+      if (key === "avgCycleDays") {
+        // null 은 정렬 끝으로 (desc 일 때도 asc 일 때도 뒤로)
+        const va = cycleFor(a.supplier);
+        const vb = cycleFor(b.supplier);
+        if (va == null && vb == null) return 0;
+        if (va == null) return 1;
+        if (vb == null) return -1;
+        return mult * (va - vb);
+      }
+      return mult * (Number((a as any)[key] ?? 0) - Number((b as any)[key] ?? 0));
     });
-  }, [xlsxSuppliers, supListSort]);
+  }, [xlsxSuppliers, supListSort, cycleFor]);
 
   const displayedXlsxSuppliers = useMemo(() => {
     const filtered = supListCategory === "전체"
@@ -318,6 +344,34 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
     })();
   }, []);
 
+  // 매입주기 맵 로드 · showCycleColumn=true 일 때만
+  //   · /api/supplier-purchase-summary?days=90 · avg_cycle_days 필드 사용
+  //   · 성능 이슈 · 이미 PurchaseHistoryTab 이 fetch 하는 데이터 · SupplierTab 이 다시 fetch (초기 phase OK · 후속 리팩토링에서 shared context 로 승격 가능)
+  useEffect(() => {
+    if (!showCycleColumn) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/supplier-purchase-summary?days=90");
+        if (!res.ok) return;
+        const j = await res.json();
+        const rows: any[] = Array.isArray(j?.suppliers) ? j.suppliers : [];
+        const map: Record<string, number | null> = {};
+        const norm = (s: string) => s.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim().toLowerCase();
+        for (const r of rows) {
+          const nm = String(r.supplier ?? "").trim();
+          if (!nm) continue;
+          const v = r.avg_cycle_days;
+          const cycle = v == null ? null : Number(v);
+          const key = norm(nm);
+          if (!(key in map)) map[key] = Number.isFinite(cycle as number) ? (cycle as number) : null;
+        }
+        if (!cancelled) setSupplierCycleMap(map);
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, [showCycleColumn]);
+
   // ── 좌측 리스트 카드 내부 (헤더 + 분류 + 정렬 + 테이블) · embedded/non-embedded 공용 ──
   const renderSupplierListCard = () => (
     <>
@@ -352,13 +406,14 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
       <div className="flex items-center gap-1.5 px-4 py-2 border-b border-slate-100 bg-white shrink-0 flex-wrap">
         <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-0.5">정렬</span>
         {([
-          { k: "totalStockAmount" as SupListSortKey, label: "재고자산", color: "amber", hideWhenNoSale: false },
-          { k: "saleQty" as SupListSortKey, label: "판매량", color: "emerald", hideWhenNoSale: true },
-          { k: "saleAmount" as SupListSortKey, label: "판매액", color: "emerald", hideWhenNoSale: true },
-          { k: "purchaseQty" as SupListSortKey, label: "매입", color: "amber", hideWhenNoSale: false },
-          { k: "itemCount" as SupListSortKey, label: "상품수", color: "slate", hideWhenNoSale: false },
-          { k: "supplier" as SupListSortKey, label: "공급사명", color: "sky", hideWhenNoSale: false },
-        ]).filter(o => !(hideSaleColumns && o.hideWhenNoSale)).map(o => {
+          { k: "totalStockAmount" as SupListSortKey, label: "재고자산", color: "amber", hideWhenNoSale: false, showOnlyWithCycle: false },
+          { k: "saleQty" as SupListSortKey, label: "판매량", color: "emerald", hideWhenNoSale: true, showOnlyWithCycle: false },
+          { k: "saleAmount" as SupListSortKey, label: "판매액", color: "emerald", hideWhenNoSale: true, showOnlyWithCycle: false },
+          { k: "purchaseQty" as SupListSortKey, label: "매입", color: "amber", hideWhenNoSale: false, showOnlyWithCycle: false },
+          { k: "avgCycleDays" as SupListSortKey, label: "주기", color: "amber", hideWhenNoSale: false, showOnlyWithCycle: true },
+          { k: "itemCount" as SupListSortKey, label: "상품수", color: "slate", hideWhenNoSale: false, showOnlyWithCycle: false },
+          { k: "supplier" as SupListSortKey, label: "공급사명", color: "sky", hideWhenNoSale: false, showOnlyWithCycle: false },
+        ]).filter(o => !(hideSaleColumns && o.hideWhenNoSale) && !(o.showOnlyWithCycle && !showCycleColumn)).map(o => {
           const active = supListSort.key === o.k;
           const arrow = active ? (supListSort.dir === "desc" ? " ▼" : " ▲") : "";
           const activeMap: Record<string, string> = {
@@ -406,7 +461,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                     {isSupplierGroupCollapsed("stock") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}재고현황
                   </span>
                 </th>
-                <th colSpan={isSupplierGroupCollapsed("purchase") ? 1 : (showExtraPurchaseColumns ? 2 : 1)}
+                <th colSpan={isSupplierGroupCollapsed("purchase") ? 1 : (1 + (showExtraPurchaseColumns ? 1 : 0) + (showCycleColumn ? 1 : 0))}
                   className="bg-amber-50 text-amber-600 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-amber-100 transition"
                   onClick={() => toggleSupplierGroup("purchase")}
                   title={isSupplierGroupCollapsed("purchase") ? "매입현황 펼치기" : "매입현황 접기"}>
@@ -452,6 +507,15 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                         매입액
                       </th>
                     )}
+                    {showCycleColumn && (
+                      <th
+                        className="text-right px-3 py-2 w-16 cursor-pointer select-none bg-amber-50/50 hover:bg-amber-100 transition text-amber-700"
+                        onClick={() => toggleSupListSort("avgCycleDays")}
+                        title="매입주기 정렬 (최근 90일 평균)"
+                      >
+                        매입주기(일) {supListSort.key === "avgCycleDays" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-amber-300">⇅</span>}
+                      </th>
+                    )}
                   </>
                 )}
                 {!hideSaleColumns && (
@@ -485,6 +549,9 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                     <td className="text-right px-3 py-1.5 tabular-nums font-black text-amber-700 bg-amber-100/40">{supListTotals.purchase.toLocaleString()}</td>
                     {showExtraPurchaseColumns && (
                       <td className="text-right px-3 py-1.5 tabular-nums font-black text-amber-800 bg-amber-100/60">{fmtWon(supListTotals.purchaseAmt)}</td>
+                    )}
+                    {showCycleColumn && (
+                      <td className="text-right px-3 py-1.5 text-amber-400 bg-amber-100/40" title="합계 없음 · 개별 공급사별 값">-</td>
                     )}
                   </>
                 )}
@@ -536,6 +603,17 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                         {showExtraPurchaseColumns && (
                           <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-amber-800 tabular-nums bg-amber-50/50" title="매입액 (공급가액 합계)">{fmtWon(Number(sup.purchaseAmount ?? 0))}</td>
                         )}
+                        {showCycleColumn && (() => {
+                          const c = cycleFor(sup.supplier);
+                          return (
+                            <td
+                              className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-amber-700 tabular-nums bg-amber-50/40"
+                              title={c == null ? "최근 90일 매입 이력 부족" : `평균 매입주기 ${c}일 (최근 90일)`}
+                            >
+                              {c == null ? <span className="text-slate-300">-</span> : `${c}일`}
+                            </td>
+                          );
+                        })()}
                       </>
                     )}
                     {!hideSaleColumns && (
