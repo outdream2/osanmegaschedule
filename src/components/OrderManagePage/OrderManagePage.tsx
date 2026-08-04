@@ -1364,7 +1364,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
 
             {/* ── Row 1: 검색 + 재고상태 chip ── */}
-            <div className="px-4 pt-3 pb-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-100">
+            <div className="px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-100">
               <SearchBar
                 value={lowStockSearch}
                 onChange={setLowStockSearch}
@@ -1397,7 +1397,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             </div>
 
             {/* ── Row 2: 공급사 카테고리 필터 + 새로고침 ── */}
-            <div className="px-4 py-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-slate-100 bg-slate-50/40">
+            <div className="px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-slate-100 bg-slate-50/40">
               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0">분류</span>
               <div className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-0.5 gap-0.5 flex-wrap">
                 {([
@@ -1455,8 +1455,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 <span className={`text-[12px] whitespace-nowrap ${needCycleEnabled ? "text-slate-500" : "text-slate-300"}`}>일 이상</span>
               </label>
 
-              <span className="text-slate-200 text-xs hidden sm:inline">|</span>
-
               {/* 조건 2 · 재고 N개 이하 */}
               <label className="inline-flex items-center gap-1.5 shrink-0">
                 <input type="checkbox" checked={needCurrentEnabled} onChange={e => setNeedCurrentEnabled(e.target.checked)}
@@ -1475,8 +1473,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 <span className={`text-[12px] whitespace-nowrap ${needCurrentEnabled ? "text-slate-500" : "text-slate-300"}`}>개 이하</span>
               </label>
 
-              <span className="text-slate-200 text-xs hidden sm:inline">|</span>
-
               {/* 조건 3 · 최근 한달 판매량 N개 이하 */}
               <label className="inline-flex items-center gap-1.5 shrink-0">
                 <input type="checkbox" checked={needSalesMonthEnabled} onChange={e => setNeedSalesMonthEnabled(e.target.checked)}
@@ -1494,8 +1490,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 />
                 <span className={`text-[12px] whitespace-nowrap ${needSalesMonthEnabled ? "text-slate-500" : "text-slate-300"}`}>개 이하</span>
               </label>
-
-              <span className="text-slate-200 text-xs hidden sm:inline">|</span>
 
               {/* 조건 4 · 최근 3달 판매량 N개 이하 */}
               <label className="inline-flex items-center gap-1.5 shrink-0">
