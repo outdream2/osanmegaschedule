@@ -1463,10 +1463,9 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                 );
               })()}
 
-              {/* ── 인사카드 섹션들 · flex-1 min-h-0 · 세로 스크롤 (#238 · 명시적 max-h + overscroll-contain 강제) ── */}
+              {/* ── 인사카드 섹션들 · flex-1 min-h-0 · 세로 스크롤 (#238 · 2026-08-04 · maxHeight 제거 · flex-1 로 자연 계산) ── */}
               <div
                 className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 space-y-2 bg-slate-50/30"
-                style={{ maxHeight: "calc(100vh - 260px)" }}
               >
 
                 {/* §1 인적사항 — sky 그룹 */}
@@ -1750,8 +1749,9 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                   </div>
                 </SectionCard>
 
-                {/* §7 근로조건 — amber 그룹 */}
-                <SectionCard title="근로조건" icon={<Calendar size={11} />} group="work" defaultOpen={false}>
+                {/* §7 근로조건 · 임금 (통합) — amber 그룹 · 근로계약서 데이터 기반
+                    · 2026-08-04 · 사용자 요청 · 근로조건 + 임금정보 통합 · 근로계약서 연동 조회/수정 */}
+                <SectionCard title="근로조건 · 임금 (근로계약서 기반)" icon={<Calendar size={11} />} group="work" defaultOpen={true}>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                     <InlineField
                       label="주 소정근로시간"
@@ -1797,7 +1797,6 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                       editing={editing} placeholder="일요일"
                       onChange={(v) => setField("weekly_holiday", v)}
                     />
-                    {/* 연차유급휴가 총일수 · 아래 "연차 · 유급휴가" 섹션에서 편집 */}
                     <InlineField
                       label="근무 장소"
                       value={editing ? (draft?.work_location ?? "") : (displayEmp.work_location ?? "")}
@@ -1809,6 +1808,67 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                       value={editing ? (draft?.job_duties ?? "") : (displayEmp.job_duties ?? "")}
                       editing={editing} placeholder="조제보조·POS·진열" wide
                       onChange={(v) => setField("job_duties", v)}
+                    />
+
+                    {/* ─── 임금 (기존 §8 통합) ─── */}
+                    <div className="col-span-2 flex items-center gap-2 mt-1.5 pt-2 border-t border-slate-100">
+                      <Briefcase size={11} className="text-rose-400" />
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">임금</span>
+                      {latestContract && (
+                        <span className="text-[9px] text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-px rounded font-bold">근로계약서 연동</span>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[11px] font-semibold text-slate-400 leading-none">임금 유형</span>
+                      {editing ? (
+                        <select
+                          value={draft?.wage_calc_type ?? ""}
+                          onChange={(e) => setField("wage_calc_type", e.target.value || null)}
+                          className="border border-indigo-300 rounded-md px-2 text-[13px] focus:outline-none focus:border-indigo-500 bg-indigo-50/40 h-7"
+                        >
+                          <option value="">선택 안 함</option>
+                          <option value="hourly">시급</option>
+                          <option value="daily">일급</option>
+                          <option value="monthly">월급</option>
+                          <option value="annual">연봉</option>
+                        </select>
+                      ) : (
+                        <span className="text-[13px] font-semibold leading-snug min-h-[20px] text-slate-700">
+                          {({ hourly: "시급", daily: "일급", monthly: "월급", annual: "연봉" } as Record<string, string>)[displayEmp.wage_calc_type ?? ""] ?? <span className="text-slate-300 italic">(미지정)</span>}
+                        </span>
+                      )}
+                    </div>
+                    <InlineField
+                      label="임금액 (원)"
+                      value={editing ? String(draft?.wage_amount ?? "") : String(displayEmp.wage_amount ?? "")}
+                      editing={editing} type="number" placeholder="10030"
+                      monospace
+                      onChange={(v) => setField("wage_amount", v === "" ? null : Number(v))}
+                    />
+                    <InlineField
+                      label="지급일"
+                      value={editing ? (draft?.wage_pay_day ?? "") : (displayEmp.wage_pay_day ?? "")}
+                      editing={editing} placeholder="매월 10일"
+                      onChange={(v) => setField("wage_pay_day", v)}
+                    />
+                    <InlineField
+                      label="지급 방법"
+                      value={editing ? (draft?.wage_pay_method ?? "") : (displayEmp.wage_pay_method ?? "")}
+                      editing={editing} placeholder="계좌이체"
+                      onChange={(v) => setField("wage_pay_method", v)}
+                    />
+                    <InlineField
+                      label="은행"
+                      value={editing ? (draft?.bank_name ?? "") : (displayEmp.bank_name ?? "")}
+                      editing={editing} placeholder="국민은행"
+                      onChange={(v) => setField("bank_name", v)}
+                    />
+                    <InlineField
+                      label="계좌번호"
+                      value={editing ? (draft?.bank_account_no ?? "") : (displayEmp.bank_account_no ?? "")}
+                      editing={editing} placeholder="123-45-6789012"
+                      monospace
+                      onChange={(v) => setField("bank_account_no", v)}
                     />
                   </div>
                 </SectionCard>
@@ -1971,106 +2031,84 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                   })()}
                 </SectionCard>
 
-                {/* §8 임금 정보 — rose 그룹 */}
-                <SectionCard title="임금 정보" icon={<Briefcase size={11} />} group="wage" defaultOpen={false}>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[11px] font-semibold text-slate-400 leading-none">임금 유형</span>
+                {/* §8 임금 정보 · §7 근로조건과 통합됨 (위) · 2026-08-04 · 사용자 요청 */}
+
+                {/* §9 4대보험 — 한줄 컴팩트 (2026-08-04 · 사용자 요청) · 국민연금·건강보험·고용보험·산재보험 취득일 한줄 */}
+                <SectionCard title="4대보험" icon={<ClipboardList size={11} />} group="wage" defaultOpen={false}>
+                  <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
+                    <div className="flex flex-col gap-0.5 min-w-[110px] flex-1">
+                      <span className="text-[10px] font-semibold text-slate-400 leading-none">국민연금</span>
                       {editing ? (
-                        <select
-                          value={draft?.wage_calc_type ?? ""}
-                          onChange={(e) => setField("wage_calc_type", e.target.value || null)}
-                          className="border border-indigo-300 rounded-md px-2 text-[13px] focus:outline-none focus:border-indigo-500 bg-indigo-50/40 h-7"
-                        >
-                          <option value="">선택 안 함</option>
-                          <option value="hourly">시급</option>
-                          <option value="daily">일급</option>
-                          <option value="monthly">월급</option>
-                          <option value="annual">연봉</option>
-                        </select>
+                        <input
+                          type="date"
+                          value={draft?.insurance_nps_date ?? ""}
+                          onChange={(e) => setField("insurance_nps_date", e.target.value)}
+                          className="h-7 px-1.5 border border-indigo-300 rounded-md text-[12px] tabular-nums focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
+                        />
                       ) : (
-                        <span className="text-[13px] font-semibold leading-snug min-h-[20px] text-slate-700">
-                          {({ hourly: "시급", daily: "일급", monthly: "월급", annual: "연봉" } as Record<string, string>)[displayEmp.wage_calc_type ?? ""] ?? <span className="text-slate-300 italic">(미지정)</span>}
+                        <span className={`text-[12px] font-semibold leading-snug min-h-[20px] tabular-nums ${displayEmp.insurance_nps_date ? "text-slate-700" : "text-slate-300 italic"}`}>
+                          {displayEmp.insurance_nps_date || "미가입"}
                         </span>
                       )}
                     </div>
-                    <InlineField
-                      label="임금액 (원)"
-                      value={editing ? String(draft?.wage_amount ?? "") : String(displayEmp.wage_amount ?? "")}
-                      editing={editing} type="number" placeholder="10030"
-                      monospace
-                      onChange={(v) => setField("wage_amount", v === "" ? null : Number(v))}
-                    />
-                    <InlineField
-                      label="지급일"
-                      value={editing ? (draft?.wage_pay_day ?? "") : (displayEmp.wage_pay_day ?? "")}
-                      editing={editing} placeholder="매월 10일"
-                      onChange={(v) => setField("wage_pay_day", v)}
-                    />
-                    <InlineField
-                      label="지급 방법"
-                      value={editing ? (draft?.wage_pay_method ?? "") : (displayEmp.wage_pay_method ?? "")}
-                      editing={editing} placeholder="계좌이체"
-                      onChange={(v) => setField("wage_pay_method", v)}
-                    />
-                    <InlineField
-                      label="은행"
-                      value={editing ? (draft?.bank_name ?? "") : (displayEmp.bank_name ?? "")}
-                      editing={editing} placeholder="국민은행"
-                      onChange={(v) => setField("bank_name", v)}
-                    />
-                    <InlineField
-                      label="계좌번호"
-                      value={editing ? (draft?.bank_account_no ?? "") : (displayEmp.bank_account_no ?? "")}
-                      editing={editing} placeholder="123-45-6789012"
-                      monospace
-                      onChange={(v) => setField("bank_account_no", v)}
-                    />
-                  </div>
-                </SectionCard>
-
-                {/* §9 4대보험 — rose 그룹 */}
-                <SectionCard title="4대보험" icon={<ClipboardList size={11} />} group="wage" defaultOpen={false}>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                    <InlineField
-                      label="국민연금 취득일"
-                      value={editing ? (draft?.insurance_nps_date ?? "") : (displayEmp.insurance_nps_date ?? "")}
-                      editing={editing} icon={<Calendar size={9} />} type="date"
-                      onChange={(v) => setField("insurance_nps_date", v)}
-                    />
-                    <InlineField
-                      label="건강보험 취득일"
-                      value={editing ? (draft?.insurance_nhis_date ?? "") : (displayEmp.insurance_nhis_date ?? "")}
-                      editing={editing} icon={<Calendar size={9} />} type="date"
-                      onChange={(v) => setField("insurance_nhis_date", v)}
-                    />
-                    <InlineField
-                      label="고용보험 취득일"
-                      value={editing ? (draft?.insurance_ei_date ?? "") : (displayEmp.insurance_ei_date ?? "")}
-                      editing={editing} icon={<Calendar size={9} />} type="date"
-                      onChange={(v) => setField("insurance_ei_date", v)}
-                    />
-                    <InlineField
-                      label="산재보험 취득일"
-                      value={editing ? (draft?.insurance_wcia_date ?? "") : (displayEmp.insurance_wcia_date ?? "")}
-                      editing={editing} icon={<Calendar size={9} />} type="date"
-                      onChange={(v) => setField("insurance_wcia_date", v)}
-                    />
-                    <div className="col-span-2 flex items-center gap-2">
+                    <div className="flex flex-col gap-0.5 min-w-[110px] flex-1">
+                      <span className="text-[10px] font-semibold text-slate-400 leading-none">건강보험</span>
                       {editing ? (
-                        <label className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={!!draft?.insurance_excluded}
-                            onChange={(e) => setField("insurance_excluded", e.target.checked)}
-                            className="w-3.5 h-3.5 rounded"
-                          />
-                          4대보험 제외 대상
-                        </label>
-                      ) : displayEmp.insurance_excluded ? (
-                        <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-px rounded-md">4대보험 제외 대상</span>
-                      ) : null}
+                        <input
+                          type="date"
+                          value={draft?.insurance_nhis_date ?? ""}
+                          onChange={(e) => setField("insurance_nhis_date", e.target.value)}
+                          className="h-7 px-1.5 border border-indigo-300 rounded-md text-[12px] tabular-nums focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
+                        />
+                      ) : (
+                        <span className={`text-[12px] font-semibold leading-snug min-h-[20px] tabular-nums ${displayEmp.insurance_nhis_date ? "text-slate-700" : "text-slate-300 italic"}`}>
+                          {displayEmp.insurance_nhis_date || "미가입"}
+                        </span>
+                      )}
                     </div>
+                    <div className="flex flex-col gap-0.5 min-w-[110px] flex-1">
+                      <span className="text-[10px] font-semibold text-slate-400 leading-none">고용보험</span>
+                      {editing ? (
+                        <input
+                          type="date"
+                          value={draft?.insurance_ei_date ?? ""}
+                          onChange={(e) => setField("insurance_ei_date", e.target.value)}
+                          className="h-7 px-1.5 border border-indigo-300 rounded-md text-[12px] tabular-nums focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
+                        />
+                      ) : (
+                        <span className={`text-[12px] font-semibold leading-snug min-h-[20px] tabular-nums ${displayEmp.insurance_ei_date ? "text-slate-700" : "text-slate-300 italic"}`}>
+                          {displayEmp.insurance_ei_date || "미가입"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-0.5 min-w-[110px] flex-1">
+                      <span className="text-[10px] font-semibold text-slate-400 leading-none">산재보험</span>
+                      {editing ? (
+                        <input
+                          type="date"
+                          value={draft?.insurance_wcia_date ?? ""}
+                          onChange={(e) => setField("insurance_wcia_date", e.target.value)}
+                          className="h-7 px-1.5 border border-indigo-300 rounded-md text-[12px] tabular-nums focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
+                        />
+                      ) : (
+                        <span className={`text-[12px] font-semibold leading-snug min-h-[20px] tabular-nums ${displayEmp.insurance_wcia_date ? "text-slate-700" : "text-slate-300 italic"}`}>
+                          {displayEmp.insurance_wcia_date || "미가입"}
+                        </span>
+                      )}
+                    </div>
+                    {editing ? (
+                      <label className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 cursor-pointer shrink-0 h-7 self-end">
+                        <input
+                          type="checkbox"
+                          checked={!!draft?.insurance_excluded}
+                          onChange={(e) => setField("insurance_excluded", e.target.checked)}
+                          className="w-3.5 h-3.5 rounded"
+                        />
+                        제외 대상
+                      </label>
+                    ) : displayEmp.insurance_excluded ? (
+                      <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-1 rounded-md self-end">제외 대상</span>
+                    ) : null}
                   </div>
                 </SectionCard>
 
