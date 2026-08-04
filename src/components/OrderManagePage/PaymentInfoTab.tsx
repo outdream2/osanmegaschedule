@@ -36,6 +36,8 @@ interface VendorItem {
   payment_terms?: string | null;
   active?: boolean | null;
   vat_included?: boolean | null;
+  // 2026-08-04 · 좌측 리스트에 총 잔고 표시 (withBalances=1 응답)
+  balance?: number | null;
 }
 
 type PayMethod = "card" | "transfer" | "cash" | "check" | "offset" | "etc";
@@ -252,6 +254,7 @@ export const PaymentInfoTab: React.FC = () => {
         payment_terms: v.payment_terms ?? null,
         active: v.active ?? null,
         vat_included: v.vat_included ?? null,
+        balance: Number.isFinite(Number(v.balance)) ? Number(v.balance) : null,
       })));
     } catch { setVendors([]); }
     finally { setVendorsLoading(false); }
@@ -484,10 +487,11 @@ export const PaymentInfoTab: React.FC = () => {
 
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 max-h-[42vh] lg:max-h-none flex flex-col overflow-hidden">
             {/* 헤더 · 컬럼 라벨 (2026-08-04 · 사용자 지적 · 헤더 없어서 추가) */}
-            <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-500">
+            <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 flex items-center gap-2 text-[11px] font-black uppercase tracking-wider text-slate-500">
               <span className="w-[42px] shrink-0">분류</span>
               <span className="flex-1">공급사명</span>
-              <span className="text-slate-400 tabular-nums">{filteredVendors.length}건</span>
+              <span className="w-[72px] text-right text-amber-700" title="총 잔고 (미결제)">잔고</span>
+              <span className="text-slate-400 tabular-nums w-[36px] text-right">{filteredVendors.length}</span>
             </div>
             <div className="flex-1 min-h-0 overflow-y-auto">
             {vendorsLoading ? (
@@ -498,25 +502,37 @@ export const PaymentInfoTab: React.FC = () => {
               <div className="py-10 text-center text-[11px] text-slate-300">공급사 없음</div>
             ) : (
               <div className="divide-y divide-slate-50">
-                {filteredVendors.map(v => (
-                  <button
-                    key={v.id}
-                    type="button"
-                    onClick={() => setSelectedVendor(prev => prev?.id === v.id ? null : v)}
-                    className={`w-full text-left px-3 py-2.5 flex items-center gap-2 transition cursor-pointer ${
-                      selectedVendor?.id === v.id
-                        ? "bg-sky-50 border-l-2 border-sky-500"
-                        : "hover:bg-slate-50 border-l-2 border-transparent"
-                    }`}
-                  >
-                    <span className="w-[42px] shrink-0"><VendorCategoryBadge category={v.category} /></span>
-                    <span className={`text-[12px] font-semibold break-words whitespace-normal leading-tight flex-1 ${
-                      selectedVendor?.id === v.id ? "text-sky-800" : "text-slate-700"
-                    }`}>
-                      {v.company_name}
-                    </span>
-                  </button>
-                ))}
+                {filteredVendors.map(v => {
+                  const bal = Number(v.balance ?? 0);
+                  const hasBal = v.balance != null && bal !== 0;
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => setSelectedVendor(prev => prev?.id === v.id ? null : v)}
+                      className={`w-full text-left px-3 py-2.5 flex items-center gap-2 transition cursor-pointer ${
+                        selectedVendor?.id === v.id
+                          ? "bg-sky-50 border-l-2 border-sky-500"
+                          : "hover:bg-slate-50 border-l-2 border-transparent"
+                      }`}
+                    >
+                      <span className="w-[42px] shrink-0"><VendorCategoryBadge category={v.category} /></span>
+                      <span className={`text-[12px] font-semibold break-words whitespace-normal leading-tight flex-1 ${
+                        selectedVendor?.id === v.id ? "text-sky-800" : "text-slate-700"
+                      }`}>
+                        {v.company_name}
+                      </span>
+                      <span className={`w-[72px] text-right text-[11px] font-black tabular-nums shrink-0 ${
+                        hasBal
+                          ? bal > 0 ? "text-amber-700" : "text-rose-700"
+                          : "text-slate-300"
+                      }`} title={hasBal ? `${bal > 0 ? "미결제" : "초과결제"} ${Math.abs(bal).toLocaleString()}원` : "잔고 없음"}>
+                        {hasBal ? fmtWonShort(Math.abs(bal)) : "-"}
+                      </span>
+                      <span className="w-[36px]"></span>
+                    </button>
+                  );
+                })}
               </div>
             )}
             </div>
