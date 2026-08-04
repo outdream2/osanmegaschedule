@@ -605,6 +605,15 @@ const FieldLabel: React.FC<{ icon?: React.ReactNode; children: React.ReactNode; 
   </label>
 );
 
+// 좌측 폼 · 섹션 헤더 (근로자·근무조건·시급·산정·옵션)
+const SectionHeader: React.FC<{ icon: React.ReactNode; children: React.ReactNode; sub?: React.ReactNode }> = ({ icon, children, sub }) => (
+  <div className="text-[13px] font-black text-slate-700 flex items-center gap-1.5 border-b border-slate-100 pb-1 mb-2">
+    <span className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-slate-100 text-slate-600">{icon}</span>
+    <span>{children}</span>
+    {sub && <span className="ml-auto text-[10.5px] font-semibold text-slate-400">{sub}</span>}
+  </div>
+);
+
 // 사각형 체크박스 (PDF 안정 렌더)
 const SpanBox: React.FC<{ checked: boolean }> = ({ checked }) => (
   <span
@@ -2586,9 +2595,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         <h2 className="text-[13px] font-black text-slate-800">계약 조건 입력</h2>
       </div>
 
-      {/* ── 필수 · 근로자 정보 ── */}
-      <div className="flex flex-col gap-1.5">
-        <FieldLabel icon={<User size={12} weight="fill" className="text-slate-400" />}>근로자 정보</FieldLabel>
+      {/* ═══ 섹션 1 · 근로자 정보 (이름·주민번호·주소·연락처·계좌) ═══ */}
+      <section className="flex flex-col gap-1.5">
+        <SectionHeader icon={<User size={13} weight="fill" />}>근로자 정보</SectionHeader>
         {empError && <div className="text-[12px] text-rose-600">{empError}</div>}
         <div className="grid md:grid-cols-2 gap-1.5">
           <div className="relative">
@@ -2726,10 +2735,14 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             </div>
           </div>
         )}
-      </div>
+      </section>
 
-      {/* ── 필수 · 계약 유형 + 근무 요일 ── */}
-      <div className="grid md:grid-cols-2 gap-2">
+      {/* ═══ 섹션 2 · 근무 조건 (요일·근무시간·계약기간·담당업무) ═══ */}
+      <section className="flex flex-col gap-2 mt-3">
+        <SectionHeader icon={<ClockClockwise size={13} weight="fill" />}>근무 조건</SectionHeader>
+
+        {/* 계약 유형 + 근무 요일 */}
+        <div className="grid md:grid-cols-2 gap-2">
         <div className="flex flex-col gap-1">
           <FieldLabel required>계약 유형</FieldLabel>
           <SelectOrCustom value={form.contractType} options={CONTRACT_TYPES} onChange={(v) => upd("contractType", v)} placeholder="예: 프리랜서" />
@@ -2768,53 +2781,98 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         </div>
       </div>
 
-      {/* ── 필수 · 근무 시간 ── */}
-      <div className="flex flex-col gap-1">
-        <FieldLabel icon={<ClockClockwise size={12} weight="fill" className="text-slate-400" />} required>근무 시간</FieldLabel>
-        <div className="grid grid-cols-[1fr,1fr,auto] gap-1.5 items-end">
-          <div>
-            <div className="text-[10.5px] text-slate-400 font-semibold mb-0.5">시작</div>
-            <SelectOrCustom value={form.startTime} options={START_TIMES} onChange={(v) => upd("startTime", v)} placeholder="HH:MM" />
-          </div>
-          <div>
-            <div className="text-[10.5px] text-slate-400 font-semibold mb-0.5">종료</div>
-            <SelectOrCustom value={form.endTime} options={END_TIMES} onChange={(v) => upd("endTime", v)} placeholder="HH:MM" />
-          </div>
-          <div className="flex items-center gap-1">
-            <Coffee size={12} className="text-slate-400 shrink-0" />
-            <input type="number" min={0} value={form.breakMinutes} onChange={(e) => upd("breakMinutes", e.target.value)}
-              className="w-12 bg-white border border-slate-200 rounded-lg px-1.5 py-1.5 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition text-right"
-            />
-            <span className="text-[10.5px] text-slate-400 font-semibold">분</span>
-          </div>
-        </div>
-        {monthlyCalc && (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 px-2 py-1 flex items-center gap-2 text-[11px]">
-            <Calculator size={12} weight="fill" className="text-emerald-700" />
-            <span className="text-emerald-800 font-black">월 근로시간</span>
-            <span className="tabular-nums text-emerald-900 font-black">
-              {monthlyCalc.monthlyHoursInt}h {monthlyCalc.monthlyMinutesRem}m
+      {/* 근무 시간 (한 줄 표시) */}
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <label className="text-[12px] font-bold text-slate-600 flex items-center gap-1 shrink-0">
+              <ClockClockwise size={12} weight="fill" className="text-slate-400" />
+              <span>근무시간<span className="text-rose-500 ml-0.5">*</span></span>
+            </label>
+            <div className="w-20">
+              <SelectOrCustom value={form.startTime} options={START_TIMES} onChange={(v) => upd("startTime", v)} placeholder="HH:MM" />
+            </div>
+            <span className="text-[12px] text-slate-500 font-bold">~</span>
+            <div className="w-20">
+              <SelectOrCustom value={form.endTime} options={END_TIMES} onChange={(v) => upd("endTime", v)} placeholder="HH:MM" />
+            </div>
+            <span className="text-[11.5px] text-slate-500 font-semibold inline-flex items-center gap-0.5 ml-0.5">
+              <Coffee size={12} className="text-slate-400" />
+              (휴게
             </span>
-            <button type="button" onClick={applyMonthlyHoursToBasic}
-              className="ml-auto inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-600 text-white text-[10.5px] font-black hover:bg-emerald-700 transition-colors cursor-pointer"
-              title="계산된 월 근로시간을 임금표의 기본급 시간에 반영"
-            >
-              기본급 반영
-            </button>
+            <input type="number" min={0} value={form.breakMinutes} onChange={(e) => upd("breakMinutes", e.target.value)}
+              className="w-16 bg-white border border-slate-200 rounded-lg px-1.5 py-1 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition text-right"
+            />
+            <span className="text-[11.5px] text-slate-500 font-semibold">분)</span>
           </div>
-        )}
-      </div>
-
-      {/* ── 필수 · 시급 + 임금 구성 ── */}
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between">
-          <FieldLabel icon={<Money size={12} weight="fill" className="text-slate-400" />} required>시급 · 임금 구성</FieldLabel>
-          <label className="inline-flex items-center gap-1 cursor-pointer select-none mb-1">
-            <input type="checkbox" checked={form.useWageComponents} onChange={(e) => upd("useWageComponents", e.target.checked)}
-              className="w-3.5 h-3.5 accent-indigo-600 cursor-pointer" />
-            <span className="text-[11px] font-black text-indigo-700">임금 구성표</span>
-          </label>
+          {monthlyCalc && (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 px-2 py-1 flex items-center gap-2 text-[11px]">
+              <Calculator size={12} weight="fill" className="text-emerald-700" />
+              <span className="text-emerald-800 font-black">월 근로시간</span>
+              <span className="tabular-nums text-emerald-900 font-black">
+                {monthlyCalc.monthlyHoursInt}h {monthlyCalc.monthlyMinutesRem}m
+              </span>
+              <button type="button" onClick={applyMonthlyHoursToBasic}
+                className="ml-auto inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-600 text-white text-[10.5px] font-black hover:bg-emerald-700 transition-colors cursor-pointer"
+                title="계산된 월 근로시간을 임금표의 기본급 시간에 반영"
+              >
+                기본급 반영
+              </button>
+            </div>
+          )}
         </div>
+
+        {/* 계약 기간 + 계약체결일 */}
+        <div className="grid md:grid-cols-2 gap-2">
+          <div className="flex flex-col gap-1">
+            <FieldLabel required>계약 기간</FieldLabel>
+            <div className="grid grid-cols-[50px,1fr] gap-1 items-center">
+              <span className="text-[11px] text-slate-500 font-semibold">시작</span>
+              <input type="date" value={form.startDate} onChange={(e) => upd("startDate", e.target.value)}
+                className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[12.5px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+              />
+              <span className="text-[11px] text-slate-500 font-semibold">종료</span>
+              <input type="date" value={form.endDate} onChange={(e) => upd("endDate", e.target.value)} disabled={form.indefinite}
+                className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[12.5px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+              />
+            </div>
+            <label className="inline-flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" checked={form.indefinite} onChange={(e) => upd("indefinite", e.target.checked)}
+                className="w-4 h-4 accent-emerald-600" />
+              <span className="text-[11.5px] font-semibold text-slate-700">무기한 (정규직)</span>
+            </label>
+          </div>
+          <div className="flex flex-col gap-1">
+            <FieldLabel>계약체결일</FieldLabel>
+            <input type="date" value={form.contractSignDate} onChange={(e) => upd("contractSignDate", e.target.value)}
+              className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+            />
+          </div>
+        </div>
+
+        {/* 담당 업무 */}
+        <div className="flex flex-col gap-1">
+          <FieldLabel required>담당 업무</FieldLabel>
+          <input type="text" value={form.jobDuty} onChange={(e) => upd("jobDuty", e.target.value)}
+            placeholder="예: 약국 카운터 · OTC 판매"
+            className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-400 placeholder:text-[12px]"
+          />
+        </div>
+      </section>
+
+      {/* ═══ 섹션 3 · 시급 / 임금 (자동) ═══ */}
+      <section className="flex flex-col gap-1 mt-3">
+        <SectionHeader
+          icon={<Money size={13} weight="fill" />}
+          sub={
+            <label className="inline-flex items-center gap-1 cursor-pointer select-none">
+              <input type="checkbox" checked={form.useWageComponents} onChange={(e) => upd("useWageComponents", e.target.checked)}
+                className="w-3.5 h-3.5 accent-indigo-600 cursor-pointer" />
+              <span className="text-[11px] font-black text-indigo-700">임금 구성표</span>
+            </label>
+          }
+        >
+          시급 / 임금 (자동)
+        </SectionHeader>
         <div className="grid md:grid-cols-2 gap-1.5">
           <div>
             <div className="text-[10.5px] text-slate-400 font-semibold mb-0.5">주중 시급</div>
@@ -2841,6 +2899,18 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           <WageComponentsForm wage={form.wageComponents} onChange={(next) => upd("wageComponents", next)} />
         )}
 
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-[10.5px] text-slate-500 font-semibold shrink-0">지급일</span>
+          <input type="text" value={form.paymentDayText} onChange={(e) => upd("paymentDayText", e.target.value)}
+            placeholder="예: 당월 01일 ~ 당월 말일, 당월 말일 지급"
+            className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11.5px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+          />
+        </div>
+      </section>
+
+      {/* ═══ 섹션 4 · 산정 비교 (역산 + 좌우 산정) ═══ */}
+      <section className="flex flex-col gap-1 mt-3">
+        <SectionHeader icon={<Calculator size={13} weight="fill" />}>산정 비교</SectionHeader>
         {/* 역산 계산기 (C) */}
         <WageCalcModePanel
           form={form}
@@ -2849,8 +2919,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           onApplyToWageComponents={(nextWage) => upd("wageComponents", nextWage)}
           onApplyHourly={(wd, we) => setForm(prev => ({ ...prev, weekdayHourly: String(wd), weekendHourly: String(we) }))}
         />
-
-        {/* 임금 산정 비교 (D) */}
+        {/* 임금 산정 비교 (D) · 임금 구성표 활성 시 */}
         {form.useWageComponents && (
           <WageSummaryDualPanel
             form={form}
@@ -2858,55 +2927,15 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             weeklyWeekendDays={weeklyWeekendDays}
           />
         )}
-
-        <div className="flex items-center gap-2 mt-1">
-          <span className="text-[10.5px] text-slate-500 font-semibold shrink-0">지급일</span>
-          <input type="text" value={form.paymentDayText} onChange={(e) => upd("paymentDayText", e.target.value)}
-            placeholder="예: 당월 01일 ~ 당월 말일, 당월 말일 지급"
-            className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11.5px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
-          />
-        </div>
-      </div>
-
-      {/* ── 필수 · 계약 기간 + 계약체결일 ── */}
-      <div className="grid md:grid-cols-2 gap-2">
-        <div className="flex flex-col gap-1">
-          <FieldLabel required>계약 기간</FieldLabel>
-          <div className="grid grid-cols-[50px,1fr] gap-1 items-center">
-            <span className="text-[11px] text-slate-500 font-semibold">시작</span>
-            <input type="date" value={form.startDate} onChange={(e) => upd("startDate", e.target.value)}
-              className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[12.5px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
-            />
-            <span className="text-[11px] text-slate-500 font-semibold">종료</span>
-            <input type="date" value={form.endDate} onChange={(e) => upd("endDate", e.target.value)} disabled={form.indefinite}
-              className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[12.5px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
-            />
+        {!form.useWageComponents && (
+          <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-2 py-1.5 text-[10.5px] text-slate-500 font-semibold text-center">
+            임금 구성표 체크 시 · 포괄임금 vs 실 근무시간 좌우 비교 활성화
           </div>
-          <label className="inline-flex items-center gap-1.5 cursor-pointer">
-            <input type="checkbox" checked={form.indefinite} onChange={(e) => upd("indefinite", e.target.checked)}
-              className="w-4 h-4 accent-emerald-600" />
-            <span className="text-[11.5px] font-semibold text-slate-700">무기한 (정규직)</span>
-          </label>
-        </div>
-        <div className="flex flex-col gap-1">
-          <FieldLabel>계약체결일</FieldLabel>
-          <input type="date" value={form.contractSignDate} onChange={(e) => upd("contractSignDate", e.target.value)}
-            className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
-          />
-        </div>
-      </div>
+        )}
+      </section>
 
-      {/* ── 필수 · 담당 업무 ── */}
-      <div className="flex flex-col gap-1">
-        <FieldLabel required>담당 업무</FieldLabel>
-        <input type="text" value={form.jobDuty} onChange={(e) => upd("jobDuty", e.target.value)}
-          placeholder="예: 약국 카운터 · OTC 판매"
-          className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-400 placeholder:text-[12px]"
-        />
-      </div>
-
-      {/* ── 옵션 (접기) · 사업주 · 4대보험 · 추가특약 · CCTV ── */}
-      <details className="rounded-lg border border-slate-200 bg-slate-50/40 px-2 py-1.5">
+      {/* ═══ 섹션 5 · 옵션 (접기) · 사업주 · 4대보험 · 추가특약 · CCTV ═══ */}
+      <details className="rounded-lg border border-slate-200 bg-slate-50/40 px-2 py-1.5 mt-3">
         <summary className="text-[11.5px] font-black text-slate-600 cursor-pointer hover:text-emerald-700 flex items-center gap-1">
           <CaretDown size={10} weight="bold" /> 사업주 정보 · 4대보험 · 추가 특약 · CCTV
         </summary>
