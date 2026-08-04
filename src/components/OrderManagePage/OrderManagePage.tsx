@@ -1847,17 +1847,18 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     <th className="bg-amber-50/20 w-4"></th>
                   ) : (
                     <>
+                      {/* 매입주기 · 2026-08-04 · 사용자 요청 · ERP재고 앞으로 이동 */}
+                      <th onClick={() => handleNeedSort("cycle")} title="매입주기 (평균 며칠마다 매입) 정렬" className="text-right px-0.5 py-1.5 w-14 bg-teal-50/40 text-teal-600 cursor-pointer hover:bg-teal-100 select-none"><div className="leading-tight">매입<br/>주기{needArrow("cycle")}<br/><span className="text-[10px] text-slate-400 font-normal">(일)</span></div></th>
                       <th onClick={() => handleNeedSort("current")} title="ERP재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none"><div className="leading-tight">ERP<br/>재고{needArrow("current")}<br/><span className="text-[10px] text-slate-400 font-normal">(현재고)</span></div></th>
                       {/* 실재고 (합계) · 각 row 별 [상세] 버튼으로 창고1/2·매장1/2/3 확장 · #217 */}
                       <th onClick={() => handleNeedSort("inv")} title="실재고 합계 정렬 · 각 행의 [상세]로 창고1/2·매장1/2/3 확인" className="text-right px-0.5 py-1.5 w-20 bg-violet-50/40 text-violet-500 cursor-pointer hover:bg-violet-100 select-none">
                         <div className="leading-tight">실재고{needArrow("inv")}<br/><span className="text-[9px] text-slate-400 font-normal">(합계)</span></div>
                       </th>
-                      <th onClick={() => handleNeedSort("optimal")} title="추천적정재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-indigo-50/40 text-indigo-600 cursor-pointer hover:bg-indigo-100 select-none"><div className="leading-tight">추천<br/>적정재고{needArrow("optimal")}</div></th>
-                      <th onClick={() => handleNeedSort("short")} title="부족량 정렬" className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">부족{needArrow("short")}</th>
+                      {/* 적정재고 · 2026-08-04 · 사용자 요청 · 추천적정재고 → 적정재고 리네임 */}
+                      <th onClick={() => handleNeedSort("optimal")} title="적정재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-indigo-50/40 text-indigo-600 cursor-pointer hover:bg-indigo-100 select-none"><div className="leading-tight">적정재고{needArrow("optimal")}</div></th>
+                      {/* 부족 컬럼 · 2026-08-04 · 사용자 요청으로 제거 */}
                     </>
                   )}
-                  {/* 매입주기 컬럼 (2026-08-04 · 사용자 요청) · enrich 로 로드 · 미로딩·2회 미만 매입은 '-' */}
-                  <th onClick={() => handleNeedSort("cycle")} title="매입주기 (평균 며칠마다 매입) 정렬" className="text-right px-0.5 py-1.5 w-14 bg-teal-50/40 text-teal-600 cursor-pointer hover:bg-teal-100 select-none"><div className="leading-tight">매입<br/>주기{needArrow("cycle")}<br/><span className="text-[10px] text-slate-400 font-normal">(일)</span></div></th>
                   <th className="text-center px-0.5 py-1.5 w-20 cursor-default bg-emerald-50/30 text-emerald-600">발주</th>
                 </tr>
               </thead>
