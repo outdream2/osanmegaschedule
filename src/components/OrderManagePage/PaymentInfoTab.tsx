@@ -820,7 +820,7 @@ export const PaymentInfoTab: React.FC = () => {
                         type="date"
                         value={paymentDate}
                         onChange={e => setPaymentDate(e.target.value)}
-                        className={`${inputCls} w-[112px] text-sm px-2 [&::-webkit-calendar-picker-indicator]:hidden`}
+                        className={`${inputCls} w-[112px] px-2 [&::-webkit-calendar-picker-indicator]:hidden`}
                       />
                       <button
                         type="button"
