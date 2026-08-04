@@ -64,7 +64,8 @@ interface SourceDiagnostics {
 type ViewMode = "by-vendor" | "by-product";
 
 // 상품 리스트 정렬 (#191)
-type ProductSort = "amount" | "recent" | "name" | "count";
+// 2026-08-04 · 판매량(sale_qty) · 판매금액(sale_amt) 정렬 추가 (사용자 요청)
+type ProductSort = "amount" | "recent" | "name" | "count" | "sale_qty" | "sale_amt";
 
 // ─── PurchaseHistoryTab ───────────────────────────────────────────────────────
 
@@ -140,6 +141,11 @@ export const PurchaseHistoryTab: React.FC = () => {
   const [allDetailsLoading, setAllDetailsLoading] = useState(false);
   const [allDetailsError, setAllDetailsError] = useState<string | null>(null);
   const [allDetailsLoaded, setAllDetailsLoaded] = useState(false);
+
+  // 2026-08-04 · 상품별 판매지표 map · top-sales?months=1 · product_code → { qty, amt }
+  //   · by-product 리스트 · 판매량·판매금액 컬럼·정렬 (사용자 요청)
+  //   · 매핑 실패 상품은 undefined · UI 회색 처리
+  const [productSalesMap, setProductSalesMap] = useState<Map<string, { qty: number; amt: number }>>(new Map());
 
   // 매입상세 원본에는 supplier_name 이 함께 있어야 상품별 원장에 필요
   //   PurchaseDetailRow 타입은 supplier_name 을 갖지 않으므로 별도로 map 을 관리
@@ -403,7 +409,13 @@ export const PurchaseHistoryTab: React.FC = () => {
       const from = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
       const fromStr = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, "0")}-${String(from.getDate()).padStart(2, "0")}`;
       const params = new URLSearchParams({ from: fromStr, limit: "5000" });
-      const res = await fetch(`/api/purchase-details?${params}`);
+      // 2026-08-04 · top-sales?months=1 병렬 fetch (product_code → sale_qty·sale_amount)
+      //   · 사용자 요청 · by-product 리스트 판매량·판매금액 컬럼·정렬
+      //   · top-sales 실패해도 매입은 계속 표시 (판매만 회색)
+      const [res, salesRes] = await Promise.all([
+        fetch(`/api/purchase-details?${params}`),
+        fetch("/api/stock-manage/top-sales?months=1&limit=5000&sort=sale&dir=desc").catch(() => null),
+      ]);
       if (!res.ok) throw new Error(String(res.status));
       const j = await res.json();
       const rows: any[] = Array.isArray(j.rows) ? j.rows : [];
@@ -428,11 +440,38 @@ export const PurchaseHistoryTab: React.FC = () => {
       }
       setAllDetails(details);
       setDetailSupplierMap(supMap);
+
+      // 판매지표 map 구성 (product_code 기준 · leading zero 형태도 함께 저장)
+      //   · 매입 코드와 판매 코드 형식 차이(leading zero) 대응 · 매칭율 개선
+      const salesMap = new Map<string, { qty: number; amt: number }>();
+      if (salesRes && salesRes.ok) {
+        try {
+          const sb = await salesRes.json();
+          const sRows: any[] = Array.isArray(sb?.rows) ? sb.rows : [];
+          for (const r of sRows) {
+            const code = String(r.product_code ?? "").trim();
+            if (!code) continue;
+            const qty = Number(r.sale_qty_month ?? 0) || 0;
+            const amt = Number(r.sale_amount_month ?? 0) || 0;
+            if (qty === 0 && amt === 0) continue;
+            const cur = salesMap.get(code) ?? { qty: 0, amt: 0 };
+            cur.qty += qty;
+            cur.amt += amt;
+            salesMap.set(code, cur);
+            const stripped = code.replace(/^0+/, "");
+            if (stripped && stripped !== code && !salesMap.has(stripped)) {
+              salesMap.set(stripped, cur);
+            }
+          }
+        } catch { /* 판매 데이터 실패는 무시 · 매입은 표시 */ }
+      }
+      setProductSalesMap(salesMap);
       setAllDetailsLoaded(true);
     } catch (e: any) {
       setAllDetailsError(e?.message ?? "네트워크 오류");
       setAllDetails([]);
       setDetailSupplierMap(new Map());
+      setProductSalesMap(new Map());
     } finally { setAllDetailsLoading(false); }
   }, [allDetailsLoaded]);
 
@@ -545,11 +584,22 @@ export const PurchaseHistoryTab: React.FC = () => {
       if (supName) a.supplierSet.set(supName, (a.supplierSet.get(supName) ?? 0) + r.amount);
     }
     // supplierSet → primary_supplier (매입액 최대) + supplier_count
+    // 2026-08-04 · productSalesMap 조인 · sale_qty/sale_amount 매핑 (사용자 요청)
     const list: ProductSummary[] = [];
     for (const a of map.values()) {
       let top: [string, number] | null = null;
       for (const entry of a.supplierSet) {
         if (!top || entry[1] > top[1]) top = entry;
+      }
+      // 판매지표 매핑 · product_code 원본 → leading zero strip 순
+      let sales: { qty: number; amt: number } | undefined;
+      if (a.product_code) {
+        const code = String(a.product_code).trim();
+        sales = productSalesMap.get(code);
+        if (!sales) {
+          const stripped = code.replace(/^0+/, "");
+          if (stripped) sales = productSalesMap.get(stripped);
+        }
       }
       list.push({
         product_code: a.product_code,
@@ -560,10 +610,12 @@ export const PurchaseHistoryTab: React.FC = () => {
         last_purchase_date: a.last_purchase_date,
         primary_supplier: top ? top[0] : null,
         supplier_count: a.supplierSet.size,
+        sale_qty: sales ? sales.qty : null,
+        sale_amount: sales ? sales.amt : null,
       });
     }
     return list;
-  }, [allDetails, detailSupplierMap]);
+  }, [allDetails, detailSupplierMap, productSalesMap]);
 
   // 상품 필터링 + 정렬
   const filteredProducts = useMemo<ProductSummary[]>(() => {
@@ -588,6 +640,26 @@ export const PurchaseHistoryTab: React.FC = () => {
         }
         case "count": {
           if (b.purchase_count !== a.purchase_count) return b.purchase_count - a.purchase_count;
+          return a.product_name.localeCompare(b.product_name, "ko");
+        }
+        case "sale_qty": {
+          // 2026-08-04 · 판매량 desc · null 은 항상 뒤 (사용자 요청)
+          const va = a.sale_qty ?? null;
+          const vb = b.sale_qty ?? null;
+          if (va == null && vb == null) return a.product_name.localeCompare(b.product_name, "ko");
+          if (va == null) return 1;
+          if (vb == null) return -1;
+          if (vb !== va) return vb - va;
+          return a.product_name.localeCompare(b.product_name, "ko");
+        }
+        case "sale_amt": {
+          // 2026-08-04 · 판매금액 desc · null 은 항상 뒤 (사용자 요청)
+          const va = a.sale_amount ?? null;
+          const vb = b.sale_amount ?? null;
+          if (va == null && vb == null) return a.product_name.localeCompare(b.product_name, "ko");
+          if (va == null) return 1;
+          if (vb == null) return -1;
+          if (vb !== va) return vb - va;
           return a.product_name.localeCompare(b.product_name, "ko");
         }
         case "name":
@@ -796,8 +868,8 @@ export const PurchaseHistoryTab: React.FC = () => {
                      (제거 시 회귀 위험 · 별도 PR 에서 정리) */
               <SupplierTab
                 embedded
-                hideSaleColumns
                 showExtraPurchaseColumns
+                showCycleColumn
                 selectedSupplierName={selectedVendor?.company_name ?? null}
                 onSupplierClick={(supplierName) => {
                   // vendors 에서 공급사명 매칭 (정확 → 정규화 순)
@@ -925,30 +997,37 @@ export const PurchaseHistoryTab: React.FC = () => {
                 />
                 <div className="flex items-center gap-1 pt-1 border-t border-slate-100 flex-wrap">
                   <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">정렬</span>
+                  {/* 2026-08-04 · 판매량·판매금액 정렬 추가 (사용자 요청 · 판매는 rose · 매입/기타는 sky) */}
                   {([
-                    { k: "amount" as const, label: "매입액" },
-                    { k: "recent" as const, label: "최근매입" },
-                    { k: "count"  as const, label: "매입건수" },
-                    { k: "name"   as const, label: "가나다" },
-                  ]).map(o => (
-                    <button
-                      key={o.k}
-                      type="button"
-                      onClick={() => setProductSort(o.k)}
-                      className={`h-5 px-1.5 text-[10px] font-semibold rounded transition cursor-pointer ${
-                        productSort === o.k
-                          ? "bg-sky-500 text-white"
-                          : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                      }`}
-                    >{o.label}</button>
-                  ))}
+                    { k: "amount"   as const, label: "매입액",   color: "sky" as const },
+                    { k: "recent"   as const, label: "최근매입", color: "sky" as const },
+                    { k: "count"    as const, label: "매입건수", color: "sky" as const },
+                    { k: "sale_qty" as const, label: "판매량",   color: "rose" as const },
+                    { k: "sale_amt" as const, label: "판매금액", color: "rose" as const },
+                    { k: "name"     as const, label: "가나다",   color: "sky" as const },
+                  ]).map(o => {
+                    const activeCls = o.color === "rose" ? "bg-rose-500 text-white" : "bg-sky-500 text-white";
+                    return (
+                      <button
+                        key={o.k}
+                        type="button"
+                        onClick={() => setProductSort(o.k)}
+                        className={`h-5 px-1.5 text-[10px] font-semibold rounded transition cursor-pointer ${
+                          productSort === o.k
+                            ? activeCls
+                            : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                        }`}
+                      >{o.label}</button>
+                    );
+                  })}
                 </div>
               </div>
               {/* 상품 리스트 · 카드 2줄 · 상단 컬럼 헤더 */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 max-h-[65vh] flex flex-col overflow-hidden">
-                <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 grid grid-cols-[1fr_auto_auto] gap-2 items-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                   <span>상품</span>
-                  <span className="text-right whitespace-nowrap">매입정보</span>
+                  <span className="text-right whitespace-nowrap text-amber-600">매입</span>
+                  <span className="text-right whitespace-nowrap text-rose-600">판매</span>
                   <span className="text-right whitespace-nowrap">최근</span>
                 </div>
                 <div className="flex-1 min-h-0 overflow-y-auto">

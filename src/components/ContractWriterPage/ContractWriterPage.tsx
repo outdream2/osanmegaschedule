@@ -2842,11 +2842,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                         <Warning size={10} weight="fill" />
                         중요 서명 {criticalDone} / {criticalKeys.length}
                       </span>
-                      {regularKeys.length > 0 && (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 text-slate-600 font-bold px-1.5 py-0.5">
-                          일반 확인 {regularDone} / {regularKeys.length}
-                        </span>
-                      )}
+                      {/* 일반 확인 배지 · 2026-08-04 사용자 요청으로 제거 */}
                     </div>
                   )}
                 </div>
