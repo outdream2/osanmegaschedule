@@ -1,7 +1,7 @@
 // src/components/OrderManagePage/OrderManagePage.tsx
 // 발주관리 페이지 — 매장관리 · 재고관리 · 입고알림관리 옆의 서브탭으로 노출
 // 기존 요청목록의 '발주요청' 탭 컨텐츠를 독립 페이지로 분리
-// 사입(OCR거래명세서 등록) 탭에서는 거래명세서 OCR(OcrPage) 노출
+// 거래명세서 서브탭에서는 거래명세서 OCR(OcrPage) 노출
 import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useVendors } from "../../hooks/useVendors";
 // 2026-08-03 (#201) · 발주필요 검색 · 공통 SearchBar · SearchFilterChips · 한글 초성
@@ -301,7 +301,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     } catch { /* silent */ }
   }, []);
 
-  // 사입(OCR거래명세서 등록) 상태
+  // 거래명세서(OCR) 상태
   const [receipts, setReceipts] = useState<GoodsReceipt[]>([]);
   const [receiptsLoading, setReceiptsLoading] = useState(false);
   const [receiptFilter, setReceiptFilter] = useState<"all" | "pending" | "partial" | "complete">("all");
@@ -726,7 +726,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
   useEffect(() => { loadOrderReqs(); loadProducts(); }, [loadOrderReqs, loadProducts]);
 
-  // 사입(OCR거래명세서 등록) 목록 로드 (order_dispatches → goods_receipts 통합 조회)
+  // 거래명세서(OCR) 목록 로드 (order_dispatches → goods_receipts 통합 조회)
   const loadReceipts = useCallback(async () => {
     setReceiptsLoading(true);
     try {

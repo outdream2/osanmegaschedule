@@ -33,6 +33,22 @@ type VendorItem = VendorFull;
 
 interface SummaryResponse {
   suppliers: Array<VendorSummary & { supplier: string }>;
+  source?: "purchase_details" | "ocr_confirmed_items";
+  diagnostics?: {
+    pd_ok?: boolean;
+    pd_row_count?: number;
+    pd_skipped_null_supplier?: number;
+    total_rows?: number;
+  };
+}
+
+// data source · 서버 응답 source 필드 · UI 배지 표시
+type DataSource = "purchase_details" | "ocr_confirmed_items" | null;
+interface SourceDiagnostics {
+  pd_ok?: boolean;
+  pd_row_count?: number;
+  pd_skipped_null_supplier?: number;
+  total_rows?: number;
 }
 
 // 뷰 모드 (#191)
@@ -63,6 +79,11 @@ export const PurchaseHistoryTab: React.FC = () => {
   // 좌측 요약 (VendorRowCard 용)
   const [summaryMap, setSummaryMap] = useState<Map<string, VendorSummary>>(new Map());
   const [, setSummaryLoading] = useState(false);
+
+  // 데이터 소스 진단 · 2026-08-04 · 매입이력이 purchase_details(ERP) 인지 ocr_confirmed_items(거래명세서) 인지 UI 배지 표시
+  const [summarySource, setSummarySource] = useState<DataSource>(null);
+  const [summaryDiagnostics, setSummaryDiagnostics] = useState<SourceDiagnostics | null>(null);
+  const [detailSource, setDetailSource] = useState<DataSource>(null);
 
   // 좌측 정렬 · 2026-08-03 확장 (판매량·판매금액·매입주기·SKU 추가)
   type LeftSort = "recent" | "amount" | "sale_qty" | "sale_amt" | "cycle" | "sku" | "name";
@@ -222,6 +243,18 @@ export const PurchaseHistoryTab: React.FC = () => {
       ]);
       if (!summaryRes.ok) throw new Error(String(summaryRes.status));
       const j: SummaryResponse & { suppliers: any[] } = await summaryRes.json();
+      // source · diagnostics 저장 (UI 배지·console 출력)
+      setSummarySource(j.source ?? null);
+      setSummaryDiagnostics(j.diagnostics ?? null);
+      if (j.source === "ocr_confirmed_items") {
+        console.warn(
+          "[PurchaseHistory] 매입이력 데이터가 거래명세서(ocr_confirmed_items) 폴백으로 로드됨. " +
+          "정답 소스는 purchase_details (ERP xlsx 임포트). " +
+          "diagnostics:", j.diagnostics,
+        );
+      } else if (j.source === "purchase_details") {
+        console.log("[PurchaseHistory] source=purchase_details (ERP 임포트) · diagnostics:", j.diagnostics);
+      }
 
       // 공급사별 판매량·판매금액 집계 (top-sales row 는 상품 단위 · supplier 필드로 groupBy)
       //   2026-08-03 fix (이슈 C) · top-sales rows[].supplier 는 products.supplier 원본 (숫자 코드 or 축약)
@@ -342,8 +375,17 @@ export const PurchaseHistoryTab: React.FC = () => {
       const j = await res.json();
       const rows: PurchaseDetailRow[] = Array.isArray(j.rows) ? j.rows : [];
       setDetailRows(rows);
+      // detail source · UI 배지·console 로그 (2026-08-04)
+      setDetailSource((j.source ?? null) as DataSource);
+      if (j.source === "ocr_confirmed_items") {
+        console.warn(
+          `[PurchaseHistory:detail] ${supplier} · 거래명세서(ocr_confirmed_items) 폴백. ` +
+          `purchase_details(ERP)에 이 공급사 데이터 없음.`,
+        );
+      }
     } catch {
       setDetailRows([]);
+      setDetailSource(null);
     } finally { setDetailLoading(false); }
   }, []);
 
@@ -635,6 +677,43 @@ export const PurchaseHistoryTab: React.FC = () => {
           {viewMode === "by-product" && (
             <span className="text-[11px] font-semibold text-sky-600 bg-sky-50 rounded-full px-2 py-0.5 border border-sky-200 tabular-nums">
               {productList.length}종
+            </span>
+          )}
+          {/* 데이터 소스 배지 (2026-08-04) · 사용자가 매입이력 vs 거래명세서 소스 구분 · fallback 시 warning */}
+          {summarySource && (
+            <span
+              className={`text-[10px] font-black uppercase tracking-wider rounded-full px-2 py-0.5 border tabular-nums cursor-help ${
+                summarySource === "purchase_details"
+                  ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+                  : "text-amber-800 bg-amber-50 border-amber-300 animate-pulse"
+              }`}
+              title={
+                summarySource === "purchase_details"
+                  ? `ERP 매입상세 (xlsx 임포트) · ${summaryDiagnostics?.pd_row_count ?? 0}행` +
+                    (summaryDiagnostics?.pd_skipped_null_supplier
+                      ? ` · 스킵 ${summaryDiagnostics.pd_skipped_null_supplier}행 (supplier_name NULL)`
+                      : "")
+                  : "⚠ 매입이력이 거래명세서(OCR)에서 로드됨. " +
+                    "purchase_details(ERP xlsx 임포트) 테이블이 비어있거나 supplier_name 매핑 실패. " +
+                    (summaryDiagnostics
+                      ? `pd_ok=${summaryDiagnostics.pd_ok} · pd_rows=${summaryDiagnostics.pd_row_count} · skipped=${summaryDiagnostics.pd_skipped_null_supplier}`
+                      : "")
+              }
+            >
+              {summarySource === "purchase_details" ? "🟢 ERP" : "🟠 OCR"}
+            </span>
+          )}
+          {/* 선택 공급사 detail source · summary 와 다르면 표시 */}
+          {selectedVendor && detailSource && detailSource !== summarySource && (
+            <span
+              className={`text-[10px] font-black uppercase tracking-wider rounded-full px-2 py-0.5 border tabular-nums cursor-help ${
+                detailSource === "purchase_details"
+                  ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+                  : "text-amber-800 bg-amber-50 border-amber-300 animate-pulse"
+              }`}
+              title={`선택 공급사 원장 소스: ${detailSource === "purchase_details" ? "ERP 매입상세" : "거래명세서(OCR) 폴백"}`}
+            >
+              선택: {detailSource === "purchase_details" ? "🟢 ERP" : "🟠 OCR"}
             </span>
           )}
         </div>

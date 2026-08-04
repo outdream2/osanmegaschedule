@@ -599,6 +599,7 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
     }
     const normRows: NormRow[] = [];
     let pdOk = false;
+    let pdRowCount = 0; // 2026-08-04 fix · primary(purchase_details) 실제 push 된 행 수 (fallback 이 normRows 덮어써도 원본 판별)
     let pdSkippedNullSupplier = 0; // 2026-08-03 fix · supplier_name NULL 인 행 카운트 (진단용)
     // supplier_code → supplier_name 매핑 (vendors 테이블 · code null 인 raw 매입행 보완용)
     //   vendors 테이블에 supplier_code 컬럼 없으면 무해하게 skip (컬럼 에러 catch)
@@ -647,6 +648,7 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
           const amount = Number(r.amount ?? r.total ?? 0) || 0;
           const code = String(r.product_code ?? "").trim();
           normRows.push({ supplier, date, amount, code });
+          pdRowCount++;
         }
         pdOk = true;
         if (data.length < PAGE) break;
@@ -762,11 +764,21 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
       };
     });
 
+    // source · pdRowCount 로 정확 판별 (2026-08-04 fix)
+    //   pdRowCount > 0 = purchase_details 에서 실제로 rows push 됨
+    //   pdRowCount == 0 & normRows.length > 0 = fallback(ocr) 만 데이터 있음
+    //   둘 다 있으면 mixed (fallback 은 primary 비었을 때만 도는 로직이라 사실 mixed 없음)
     return res.json({
       suppliers,
       cutoff: cutoffYmd,
       days,
-      source: pdOk && normRows.length > 0 ? "purchase_details" : "ocr_confirmed_items",
+      source: pdRowCount > 0 ? "purchase_details" : "ocr_confirmed_items",
+      diagnostics: {
+        pd_ok: pdOk,
+        pd_row_count: pdRowCount,
+        pd_skipped_null_supplier: pdSkippedNullSupplier,
+        total_rows: normRows.length,
+      },
     });
   } catch (err: any) {
     console.error("[GET supplier-purchase-summary] error:", err.message);
