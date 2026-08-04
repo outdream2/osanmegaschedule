@@ -108,8 +108,10 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   const [supListLimit, setSupListLimit] = useState<number>(999999);
   const [supListCategory, setSupListCategory] = useState<"전체" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타">("전체");
 
-  // 그룹 헤더 접기
-  const [supplierGroupCollapsed, setSupplierGroupCollapsed] = useState<Set<SupplierGroup>>(new Set());
+  // 그룹 헤더 접기 · embedded (매입이력 컨텍스트) 는 매입현황만 펼치기 · 재고/판매 접기 (사용자 요청 2026-08-04)
+  const [supplierGroupCollapsed, setSupplierGroupCollapsed] = useState<Set<SupplierGroup>>(
+    () => embedded ? new Set<SupplierGroup>(["stock", "sale"]) : new Set<SupplierGroup>()
+  );
   const toggleSupplierGroup = (g: SupplierGroup) => setSupplierGroupCollapsed(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
   const isSupplierGroupCollapsed = (g: SupplierGroup) => supplierGroupCollapsed.has(g);
 

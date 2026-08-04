@@ -168,6 +168,8 @@ const LedgerTab: React.FC<{
   // 전체 합계
   const totalAmount = useMemo(() => groups.reduce((s, g) => s + g.totalAmount, 0), [groups]);
   const totalItems = useMemo(() => groups.reduce((s, g) => s + g.itemCount, 0), [groups]);
+  // 합계 행 접기/펼치기 · 사용자 요청 2026-08-04
+  const [sumCollapsed, setSumCollapsed] = useState(false);
 
   if (loading) {
     return (
@@ -285,12 +287,25 @@ const LedgerTab: React.FC<{
         </tbody>
         <tfoot className="sticky bottom-0 bg-white border-t-2 border-slate-200">
           <tr>
-            <td></td>
+            <td className="text-center">
+              <button
+                type="button"
+                onClick={() => setSumCollapsed(v => !v)}
+                title={sumCollapsed ? "합계 펼치기" : "합계 접기"}
+                className="inline-flex items-center justify-center w-5 h-5 rounded hover:bg-slate-100 text-slate-500 hover:text-emerald-600 transition cursor-pointer"
+              >
+                {sumCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+              </button>
+            </td>
             <td colSpan={2} className="px-3 py-2 text-right text-[11px] font-black text-slate-500">
               합계 <span className="text-slate-400 font-bold">({groups.length}일)</span>
             </td>
-            <td className="px-3 py-2 text-right tabular-nums font-mono text-[12px] font-black text-slate-700">{fmt(totalItems)}</td>
-            <td className="px-3 py-2 text-right tabular-nums font-mono text-[13px] font-black text-emerald-700">{fmtWon(totalAmount)}</td>
+            <td className={`px-3 py-2 text-right tabular-nums font-mono text-[12px] font-black text-slate-700 ${sumCollapsed ? "opacity-30" : ""}`}>
+              {sumCollapsed ? "···" : fmt(totalItems)}
+            </td>
+            <td className={`px-3 py-2 text-right tabular-nums font-mono text-[13px] font-black text-emerald-700 ${sumCollapsed ? "opacity-30" : ""}`}>
+              {sumCollapsed ? "···" : fmtWon(totalAmount)}
+            </td>
           </tr>
         </tfoot>
       </table>
