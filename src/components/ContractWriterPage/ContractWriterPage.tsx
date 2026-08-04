@@ -24,7 +24,7 @@ import {
   Buildings, Signature, ClockCounterClockwise, X as XIcon,
 } from "@phosphor-icons/react";
 import SignaturePad from "react-signature-canvas";
-import html2canvas from "html2canvas";
+import html2canvas from "html2canvas-pro"; // 2026-08-04 · Tailwind v4 oklch 지원 · drop-in 교체
 import jsPDF from "jspdf";
 
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
