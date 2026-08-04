@@ -1,30 +1,22 @@
 // src/components/ContractWriterPage/ContractWriterPage.tsx
-// 근로계약서 작성 페이지 · 2026-08-03 · #165 · #200 · #205
-// - 좌측: 조건 입력 폼 (직원·계약유형·근무요일·주근무횟수·시간·시급·기간·업무·4대보험·추가내용)
-// - 우측: 실시간 표준 근로계약서 렌더 + 조항별 이해확인 체크박스·마이크로 서명 (은행 스타일) + 최종 서명 2개
-// - [계약 완료 · PDF 다운] · html2canvas + jsPDF · 서명 포함 · 파일명: 근로계약서_{직원명}_{시작일}.pdf
-// - 드롭박스 기본 · "직접 입력" 옵션 · input 전환 · 모든 필드 자유 편집
-// - 반응형: 모바일 상하 스택 · 데스크탑 좌우 split (lg:)
-// - embedded 모드 · BusinessManagePage 임베드 시 자체 AppNavHeader skip
-// #200 · 은행 스타일 조항별 이해 확인 (DocuSign initial + 한국 금융권 개별약관 동의 패턴 참고):
-//   - 각 조항 오른쪽에 컴팩트 확인 영역 (~140px) · [ ] 이해했음 체크박스 + 60x30 mini signature pad
-//   - 서명 시 자동 체크 · 지우기 미니 버튼
-//   - 미확인 dashed rose / 확인 solid emerald
-//   - 하단 진행률 badge (N/M 조항 확인) · 100% 완료 시 emerald 강조
-//   - PDF 캡처 시 프리뷰 내부에 이미 canvas 포함 · html2canvas 가 자연스럽게 렌더
-//   - 좌측 대형 서명 canvas 2개 · 최종 서명(사업주·근로자)으로 우측 계약서 하단에 유지
-// 준수 원칙:
-//   - feedback_ui_principles: 리스트 아니라 폼이라 3원칙 자체는 미해당 · 카테고리 색상 팔레트는 유지
-//   - feedback_ui_consult: 통일된 디자인 (slate + emerald/indigo 팔레트 · rounded-xl · shadow-sm)
-//   - iOS/Gemini · 이 파일에서 절대 참조 안 함
+// 근로계약서 작성 페이지 · 2026-08-04 · 사용자 최우선 명령
+// - 이미지 (src/images/근로계약서1,2.jpg · 코스트팜 실제 양식) 픽셀 재현
+// - 임금 구성 표 7행 · 각 항목 월평균 시간·분·금액 · 사용자 편집 · 일급여총액 자동합계
+// - 근무시간 (시작/종료/휴게분/주근무일수) → 월 근로시간 자동계산 → "기본급 시간" 자동 반영
+// - 서명 지점 7개만 · 각 조항의 마이크로 서명 pad 전부 제거
+//   1. 계약체결일 옆 (contractDate) · 2. 특별근로 동의 (specialWork) · 3. 퇴직급 동의 (severance)
+//   4. 수령자 확인 (receipt)          · 5. 근로자 최종 (employee) · 6. CCTV/개인정보 (privacy)
+//   7. 사업주 (employer)
+// - 정계·해고 11사유 · 기타 5항목 · CCTV/개인정보 동의 표 모두 재현
+// - html2canvas-pro + jsPDF PDF 생성 · Supabase Storage 저장 · localStorage 임시저장 유지
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   NotePencil, User, ClipboardText, CalendarBlank, ClockClockwise, Money,
   Coffee, Notepad, Eraser, DownloadSimple, ArrowsClockwise, Warning, Check,
-  Buildings, Signature, ClockCounterClockwise, X as XIcon,
+  Signature, ClockCounterClockwise, X as XIcon, Calculator,
 } from "@phosphor-icons/react";
 import SignaturePad from "react-signature-canvas";
-import html2canvas from "html2canvas-pro"; // 2026-08-04 · Tailwind v4 oklch 지원 · drop-in 교체
+import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
 
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
@@ -35,7 +27,6 @@ import {
   type ContractCategory,
 } from "../ContractSettingsPage/ContractSettingsPage";
 
-// react-signature-canvas · 기본 export 가 SignatureCanvas 클래스 · ref 타입 별칭
 type SignatureCanvasType = SignaturePad;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -47,70 +38,66 @@ interface ContractWriterPageProps {
   onBack: () => void;
   onNavigate?: (page: AppNavPage) => void;
   onLogout?: () => void;
-  /** true · 자체 AppNavHeader skip (BusinessManagePage 임베드용) */
   embedded?: boolean;
 }
 
 type DayKey = "월" | "화" | "수" | "목" | "금" | "토" | "일";
 
-// 2026-08-04 · 코스트팜 이미지 기반 임금 세분화 구조
-//   · 기본급(주휴수당 포함) · 고정연장 · 고정휴일 · 고정휴일야간 · 고정야간 · 식대 · 차량유지비
-//   · 각 항목: 월평균 시간·금액(원) · 시간 0 · 금액 0 이면 미사용 (프리뷰 렌더 시 dash 로 표시)
+// 이미지 · 임금 구성 표 (7행) · 시간·분·금액 세분화
+// - 기본급(주휴수당 포함) · (고정)연장·휴일·휴일야간·야간 · 식대·차량유지비
 export interface WageComponentEntry {
-  hours: number;    // 월평균 시간
+  hours: number;    // 월평균 시간 (정수부)
+  minutes: number;  // 분 (0~59)
   amount: number;   // 금액 (원)
 }
 export interface WageComponents {
-  basicSalary: WageComponentEntry;       // 기본급 (주휴수당 포함) · 209.00h 기본
-  fixedOvertime: WageComponentEntry;     // 고정연장근로수당 (1.5배 가산)
-  fixedHoliday: WageComponentEntry;      // 고정휴일수당 (1.5배 가산)
-  fixedHolidayNight: WageComponentEntry; // 고정휴일야간수당 (0.5배 가산)
-  fixedNight: WageComponentEntry;        // 고정야간수당 (0.5배 가산)
+  basicSalary: WageComponentEntry;       // 기본급 (주휴수당 포함)
+  fixedOvertime: WageComponentEntry;     // (고정)연장근로수당 (1.5배 가산)
+  fixedHoliday: WageComponentEntry;      // (고정)휴일근로수당 (1.5배 가산)
+  fixedHolidayNight: WageComponentEntry; // (고정)휴일야간근로수당 (0.5배 가산)
+  fixedNight: WageComponentEntry;        // (고정)야간근로수당 (0.5배 가산)
   mealAllowance: number;                 // 식대 (비과세 · 해당자에 한함)
   vehicleAllowance: number;              // 차량유지비 (비과세 · 해당자에 한함)
 }
 
-// CCTV/개인정보 동의 · 이미지 2 최하단 별도 서명 섹션
 export interface PrivacyConsent {
-  recipientName: string;    // 수령자 성명 (근로자 성명과 동일 default)
-  recipientAddress: string; // 수령자 주소
-  agreedCollection: boolean; // 개인정보 수집·이용 동의
-  agreedCCTV: boolean;       // CCTV 촬영 시간·범위 동의
+  recipientName: string;
+  recipientAddress: string;
+  agreedCollection: boolean;
+  agreedCCTV: boolean;
 }
 
 interface ContractForm {
-  // 직원
+  // 근로자
   employeeId: number | null;
-  employeeName: string;         // 직접 입력도 가능 (자동 채움 + 편집 가능)
+  employeeName: string;
   employeePhone: string;
   employeeAddress: string;
-  employeeBirth: string;         // 주민번호 앞자리 or 생년월일 (자유 입력)
+  employeeBirth: string;
+  employeeBankAccount: string;   // 은행/계좌 (이미지 하단 · 옵션)
+  employeeEmail: string;         // 이메일 (이미지 하단 · 옵션)
 
   // 계약 유형
-  contractType: string;          // 정규직/계약직/알바/일용/인턴 · 자유 입력
+  contractType: string;
+  contractMonths: string;
 
-  // 계약직 · 개월수 (선택 시 startDate + N개월 → endDate 자동)
-  contractMonths: string;        // "3" | "6" | "12" | "24" | 자유 입력
-
-  // 근무 요일 (체크박스)
+  // 근무 요일 (체크박스) + 주 근무일수 (자동/수동)
   workDays: Record<DayKey, boolean>;
-
-  // 주 근무 횟수 (드롭박스 · 직접 입력)
-  weeklyDays: string;            // "3" | "4" | "5" | "6" | 자유 입력
+  weeklyDays: string;
 
   // 근무 시간
-  startTime: string;             // "09:00" 등
-  endTime: string;               // "18:00" 등
-  breakMinutes: string;          // 휴게 분
+  startTime: string;
+  endTime: string;
+  breakMinutes: string;
 
-  // 시급
-  weekdayHourly: string;         // 원
-  weekendHourly: string;         // 원
+  // 시급 (하위 호환 · useWageComponents=false 인 경우)
+  weekdayHourly: string;
+  weekendHourly: string;
 
   // 계약 기간
-  startDate: string;             // YYYY-MM-DD
-  endDate: string;               // YYYY-MM-DD or "" (무기한)
-  indefinite: boolean;           // 무기한
+  startDate: string;
+  endDate: string;
+  indefinite: boolean;
 
   // 업무
   jobDuty: string;
@@ -121,40 +108,37 @@ interface ContractForm {
   // 추가 내용
   additionalContent: string;
 
-  // 연차 유급휴가 (일)
+  // 연차
   annualLeaveDays: string;
 
-  // 직원 카테고리 (약사·사원·기타) · 기타는 자유 입력 지원
+  // 직원 카테고리
   employeeCategory: "약사" | "매장" | "창고" | "기타";
-  employeeCategoryCustom: string;   // 기타 선택 시 커스텀 텍스트 (예 · 인턴약사)
-
-  // #186 · 우선업무 · 매장/창고 선택 시 표시
-  // - primaryFocus: 매장/창고 중 어느 물류에 우선순위 · null 은 미사용
-  // - primaryFocusPercent: 비중 (%) · default 70
+  employeeCategoryCustom: string;
   primaryFocus: "매장" | "창고" | null;
   primaryFocusPercent: number;
 
-  // 사업주 (기본값 · 편집 가능)
-  employerName: string;          // 대표자명
-  companyName: string;           // 회사명
+  // 사업주 (편집 가능)
+  employerName: string;
+  companyName: string;
   companyAddress: string;
-  companyRegNo: string;          // 사업자등록번호
+  companyRegNo: string;
 
-  // 2026-08-04 · 코스트팜 이미지 기반 · 임금 세분화 (optional · 미입력 시 기존 시급 기반 표시)
-  //   · useWageComponents=true 인 경우에만 프리뷰에 표 형태 렌더
-  //   · false 인 경우 기존 시급 (weekdayHourly/weekendHourly) 텍스트 렌더 (하위 호환)
+  // 임금 세분화
   useWageComponents: boolean;
   wageComponents: WageComponents;
 
-  // 2026-08-04 · CCTV/개인정보 동의 (별도 서명)
+  // 개인정보/CCTV
   privacyConsent: PrivacyConsent;
 
-  // 2026-08-04 · 이미지 기반 · 임금 지급일 자유 입력 (기본: 매월 익월 5일)
+  // 임금 지급일 자유 입력
   paymentDayText: string;
+
+  // 이미지 재현 · 계약체결일 (기본 = 시작일)
+  contractSignDate: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 상수 (드롭박스 옵션)
+// 상수
 // ─────────────────────────────────────────────────────────────────────────────
 
 const DAYS: DayKey[] = ["월", "화", "수", "목", "금", "토", "일"];
@@ -174,7 +158,7 @@ const DEFAULT_EMPLOYER: Partial<ContractForm> = {
   companyRegNo: "",
 };
 
-// 2026-08-04 · 이미지 2 기반 · 인·정계·해고 사유 11개 (코스트팜 원본 문구 준용 · 오타 보정)
+// 인·정계·해고 11사유 (코스트팜 원본 문구 · 오타 보정)
 const DISCIPLINE_REASONS: string[] = [
   "부정 또는 부실한 방법으로 채용된 자",
   "업무상 명령 또는 시설물 훼손·손상이 있는 자",
@@ -187,6 +171,15 @@ const DISCIPLINE_REASONS: string[] = [
   "이유 없이 결근한 자",
   "근무태만 및 근무 불성실로 개선의 여지가 없다고 판단되는 자",
   "기타 이에 준하는 행위로 징계·해고할 필요가 있다고 판단되는 자",
+];
+
+// 기타사항 5항목 (코스트팜 원본)
+const ETC_ITEMS: string[] = [
+  "임금 지급일: '을'에게 지정 지급 및 '을'이 지정한 예금 통장에 입금한다.",
+  "'갑'과 '을'은 상기 임금지급을 최소 1주일 근로기간에 관련하여 지급하는 방법이 아니다.",
+  "임의 퇴사 시에는 사유가 발생한 후 30일 이상 회사에 알리며, 사직서 제출 후 사용자의 수리가 있기 전에는 '갑'이 지정한 임의 퇴사자에 대한 인수인계를 수행해야 한다. (퇴사 30일 전 통보) · 노동관계법령, 취업규칙, 기타 회사가 정한 지침에 위배된다.",
+  "'갑'과 '을'이 성립한 근로관계 형성상 노력에도 불구하고 본 계약 이외의 사항에 대해 단체 및 회사에 손해가 발생 시 지급되지 아니한다. (계약 해지 시 손해)",
+  "'을'의 퇴직 시 미사용 부여한 휴가에 대한 수당은 '갑'이 상여금 및 상계에 공제하여 지급되지 아니한다.",
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -211,7 +204,7 @@ const fmtKoreanDate = (iso: string): string => {
   return `${m[1]}년 ${Number(m[2])}월 ${Number(m[3])}일`;
 };
 
-// 2026-08-04 · 임금 세분화 · 총액 산출 (기본급 + 고정연장 + 고정휴일 + 고정휴일야간 + 고정야간 + 식대 + 차량유지비)
+// 임금 세분화 · 총액 산출 (7항목 합)
 function computeWageTotal(w: WageComponents): number {
   return (
     (w.basicSalary?.amount ?? 0) +
@@ -224,7 +217,41 @@ function computeWageTotal(w: WageComponents): number {
   );
 }
 
-// #220 · 기간 개월수 산출 · 연장 기본값 프리셋용 (start~end)
+// 시간 문자열 (HH:MM) 파싱
+function parseHM(s: string): { h: number; m: number } | null {
+  const mm = s.match(/^(\d{1,2}):(\d{2})$/);
+  if (!mm) return null;
+  const h = Number(mm[1]);
+  const m = Number(mm[2]);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+  return { h, m };
+}
+
+// 근무시간 → 월 근로시간 계산 (근기법 표준 · 주당 * 4.345)
+function computeMonthlyHours(startTime: string, endTime: string, breakMinutes: number, weeklyDays: number): {
+  dailyMinutes: number;
+  weeklyMinutes: number;
+  monthlyMinutes: number;
+  monthlyHours: number;   // 소수점 2자리
+  monthlyHoursInt: number;
+  monthlyMinutesRem: number;
+} | null {
+  const s = parseHM(startTime);
+  const e = parseHM(endTime);
+  if (!s || !e) return null;
+  const rawMin = (e.h * 60 + e.m) - (s.h * 60 + s.m);
+  if (rawMin <= 0) return null;
+  const dailyMinutes = Math.max(0, rawMin - Math.max(0, breakMinutes));
+  const weeklyMinutes = dailyMinutes * Math.max(0, weeklyDays);
+  // 월평균 = 주 × 4.345 (근기법 209시간의 근거)
+  const monthlyMinutes = Math.round(weeklyMinutes * 4.345);
+  const monthlyHours = monthlyMinutes / 60;
+  const monthlyHoursInt = Math.floor(monthlyMinutes / 60);
+  const monthlyMinutesRem = monthlyMinutes % 60;
+  return { dailyMinutes, weeklyMinutes, monthlyMinutes, monthlyHours, monthlyHoursInt, monthlyMinutesRem };
+}
+
+// #220 · 개월수 산출 (연장 baseline)
 function contractPeriodMonthsClient(startIso?: string | null, endIso?: string | null): number | null {
   if (!startIso || !endIso) return null;
   const s = new Date(startIso);
@@ -242,8 +269,10 @@ const emptyForm = (): ContractForm => ({
   employeePhone: "",
   employeeAddress: "",
   employeeBirth: "",
+  employeeBankAccount: "",
+  employeeEmail: "",
   contractType: "정규직",
-  contractMonths: "2",           // 계약직 default 2개월 (사용자 요청 2026-08-04)
+  contractMonths: "2",
   workDays: { "월": true, "화": true, "수": true, "목": true, "금": true, "토": false, "일": false },
   weeklyDays: "5",
   startTime: "09:00",
@@ -257,24 +286,22 @@ const emptyForm = (): ContractForm => ({
   jobDuty: "약국 카운터 · OTC 판매 · 재고 관리",
   socialInsurance: true,
   additionalContent: "",
-  annualLeaveDays: "12",         // 연차 default 12일 (사용자 요청 2026-08-04)
+  annualLeaveDays: "12",
   employeeCategory: "매장",
   employeeCategoryCustom: "",
-  primaryFocus: "매장",           // #186 · 매장이 기본 카테고리 · 기본 우선업무는 매장
-  primaryFocusPercent: 70,        // #186 · 기본 70%
+  primaryFocus: "매장",
+  primaryFocusPercent: 70,
   employerName: (DEFAULT_EMPLOYER.employerName as string) ?? "",
   companyName:  (DEFAULT_EMPLOYER.companyName as string) ?? "",
   companyAddress: (DEFAULT_EMPLOYER.companyAddress as string) ?? "",
   companyRegNo: (DEFAULT_EMPLOYER.companyRegNo as string) ?? "",
-  // 2026-08-04 · 임금 세분화 · 기본 OFF (기존 시급 기반 프리뷰 유지) · 코스트팜 이미지 값 프리셋
-  //   사용자가 좌측 폼 [상세 임금 구성] 토글 ON 시 표 형태 렌더로 전환
   useWageComponents: false,
   wageComponents: {
-    basicSalary:       { hours: 209.00, amount: 4671298 },
-    fixedOvertime:     { hours: 55.94,  amount: 1250408 },
-    fixedHoliday:      { hours: 22.00,  amount: 491716  },
-    fixedHolidayNight: { hours: 0,      amount: 0       },
-    fixedNight:        { hours: 10.00,  amount: 223508  },
+    basicSalary:       { hours: 209, minutes: 0, amount: 4671298 },
+    fixedOvertime:     { hours: 55,  minutes: 56, amount: 1250408 },
+    fixedHoliday:      { hours: 22,  minutes: 0,  amount: 491716  },
+    fixedHolidayNight: { hours: 0,   minutes: 0,  amount: 0       },
+    fixedNight:        { hours: 10,  minutes: 0,  amount: 223508  },
     mealAllowance:     0,
     vehicleAllowance:  0,
   },
@@ -284,11 +311,12 @@ const emptyForm = (): ContractForm => ({
     agreedCollection: false,
     agreedCCTV: false,
   },
-  paymentDayText: "매월 1일부터 당월 말일까지 임금은 익월 5일에 근로자 명의 예금통장에 지급",
+  paymentDayText: "매월 1일부터 당월 말일까지의 급여는 익월 5일에 '을' 본인의 통장에 지급된다.",
+  contractSignDate: todayIso(),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 재사용 컴포넌트: 드롭박스 + 직접입력
+// SelectOrCustom · FieldLabel · SignArea (재사용 컴포넌트)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SelectOrCustom: React.FC<{
@@ -299,12 +327,10 @@ const SelectOrCustom: React.FC<{
   suffix?: string;
   className?: string;
 }> = ({ value, options, onChange, placeholder, suffix, className = "" }) => {
-  // options 안에 있으면 select · 아니면 직접입력 모드
   const inList = options.includes(value);
   const [mode, setMode] = useState<"select" | "custom">(inList ? "select" : "custom");
 
   useEffect(() => {
-    // 외부에서 value 가 바뀌면 mode 재판단 (초기화 · 리셋 대응)
     setMode(options.includes(value) ? "select" : "custom");
   }, [value, options]);
 
@@ -354,7 +380,6 @@ const SelectOrCustom: React.FC<{
   );
 };
 
-// 필드 레이블
 const FieldLabel: React.FC<{ icon?: React.ReactNode; children: React.ReactNode; required?: boolean }> = ({ icon, children, required }) => (
   <label className="text-[12px] font-bold text-slate-600 flex items-center gap-1.5 mb-1.5">
     {icon}
@@ -362,69 +387,67 @@ const FieldLabel: React.FC<{ icon?: React.ReactNode; children: React.ReactNode; 
   </label>
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 서명 캔버스 래퍼 (react-signature-canvas · 마우스/터치 지원)
-// ─────────────────────────────────────────────────────────────────────────────
-
 const SignArea: React.FC<{
   label: string;
   padRef: React.MutableRefObject<SignatureCanvasType | null>;
-  color?: "emerald" | "indigo";
-}> = ({ label, padRef, color = "emerald" }) => {
+  color?: "emerald" | "indigo" | "amber" | "rose";
+  height?: number;
+  compact?: boolean;
+}> = ({ label, padRef, color = "emerald", height = 110, compact = false }) => {
   const [empty, setEmpty] = useState(true);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
-  const [size, setSize] = useState<{ w: number; h: number }>({ w: 300, h: 110 });
+  const [size, setSize] = useState<{ w: number; h: number }>({ w: 300, h: height });
 
-  // 반응형 · 부모 폭에 맞춰 canvas 크기 조정
   useEffect(() => {
     const el = wrapperRef.current;
     if (!el) return;
     const ro = new ResizeObserver(entries => {
       for (const e of entries) {
-        const w = Math.max(200, Math.floor(e.contentRect.width) - 2);
-        setSize({ w, h: 110 });
+        const w = Math.max(180, Math.floor(e.contentRect.width) - 2);
+        setSize({ w, h: height });
       }
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [height]);
 
   const handleEnd = () => {
-    // padRef.current 존재하면 empty 상태 재계산
     if (padRef.current) setEmpty(padRef.current.isEmpty());
   };
-
   const handleClear = () => {
     padRef.current?.clear();
     setEmpty(true);
   };
 
-  const borderCls = color === "emerald" ? "border-emerald-200" : "border-indigo-200";
-  const textCls   = color === "emerald" ? "text-emerald-700"  : "text-indigo-700";
-  const btnCls    = color === "emerald" ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200"
-                                        : "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200";
+  const palettes: Record<string, { border: string; text: string; btn: string }> = {
+    emerald: { border: "border-emerald-200", text: "text-emerald-700", btn: "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200" },
+    indigo:  { border: "border-indigo-200",  text: "text-indigo-700",  btn: "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200" },
+    amber:   { border: "border-amber-200",   text: "text-amber-700",   btn: "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200" },
+    rose:    { border: "border-rose-200",    text: "text-rose-700",    btn: "bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200" },
+  };
+  const p = palettes[color];
 
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between">
-        <span className={`text-xs font-black flex items-center gap-1 ${textCls}`}>
-          <Signature size={13} weight="fill" />
+        <span className={`text-[11px] font-black flex items-center gap-1 ${p.text}`}>
+          <Signature size={12} weight="fill" />
           {label}
         </span>
         <button
           type="button"
           onClick={handleClear}
-          className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[11px] font-bold transition-colors cursor-pointer ${btnCls}`}
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-bold transition-colors cursor-pointer ${p.btn}`}
           title="서명 지우기"
         >
-          <Eraser size={11} />
+          <Eraser size={10} />
           지우기
         </button>
       </div>
 
       <div
         ref={wrapperRef}
-        className={`relative bg-white border-2 border-dashed ${borderCls} rounded-lg overflow-hidden`}
+        className={`relative bg-white border-2 border-dashed ${p.border} rounded-lg overflow-hidden`}
         style={{ height: size.h + 2 }}
       >
         <SignaturePad
@@ -440,8 +463,8 @@ const SignArea: React.FC<{
           onBegin={() => setEmpty(false)}
         />
         {empty && (
-          <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-300 text-xs font-bold select-none">
-            여기에 서명해 주세요
+          <span className={`pointer-events-none absolute inset-0 flex items-center justify-center text-slate-300 ${compact ? "text-[10px]" : "text-xs"} font-bold select-none`}>
+            {compact ? "서명" : "여기에 서명해 주세요"}
           </span>
         )}
       </div>
@@ -449,746 +472,113 @@ const SignArea: React.FC<{
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// #200 · 조항별 이해 확인 · 마이크로 서명 패드 (은행/DocuSign initial 스타일)
-//   - 60~80 x 30~40 px · 지우기 미니 버튼 · 서명 시 자동 체크
-//   - padRef 는 부모에서 관리 (조항 키별 Map) · 자동 이해상태 콜백
-//   - 미확인 dashed rose · 확인 solid emerald
-// ─────────────────────────────────────────────────────────────────────────────
-
-const MicroSignPad: React.FC<{
-  clauseKey: string;
-  checked: boolean;
-  onChangeChecked: (v: boolean) => void;
-  padRef: React.MutableRefObject<SignatureCanvasType | null>;
-  onSignedChange?: (empty: boolean) => void;
-}> = ({ clauseKey: _clauseKey, checked, onChangeChecked, padRef, onSignedChange }) => {
-  const [empty, setEmpty] = useState(true);
-
-  // 서명 시작 → 자동 체크
-  const handleBegin = () => {
-    setEmpty(false);
-    if (!checked) onChangeChecked(true);
-    onSignedChange?.(false);
-  };
-  const handleEnd = () => {
-    const e = padRef.current ? padRef.current.isEmpty() : true;
-    setEmpty(e);
-    onSignedChange?.(e);
-  };
-  const handleClear = () => {
-    padRef.current?.clear();
-    setEmpty(true);
-    onSignedChange?.(true);
-    // 체크는 유지 (사용자 의도 존중) · 원한다면 해제하려면 아래 주석 해제
-    // onChangeChecked(false);
-  };
-
-  // 상태별 색상 · 완료(checked && !empty) · 확인만(checked) · 미확인
-  const isComplete = checked && !empty;
-  const borderCls = isComplete
-    ? "border-emerald-500 border-solid"
-    : checked
-      ? "border-amber-400 border-solid"
-      : "border-rose-300 border-dashed";
-  const bgCls = isComplete ? "bg-emerald-50/40" : "bg-white";
-
-  return (
-    <div className="flex flex-col items-stretch gap-1 w-[130px] shrink-0">
-      {/* 필수 서명 라벨 */}
-      <div className="flex items-center gap-1">
-        <Warning size={11} weight="fill" className="text-amber-600 shrink-0" />
-        <span className="text-[9px] font-black text-amber-700 leading-tight">필수 서명</span>
-      </div>
-
-      {/* 체크박스 */}
-      <label className="flex items-center gap-1 cursor-pointer select-none">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(e) => onChangeChecked(e.target.checked)}
-          className="w-3.5 h-3.5 accent-emerald-600 cursor-pointer"
-        />
-        <span className={`text-[10px] font-black leading-tight ${isComplete ? "text-emerald-700" : checked ? "text-amber-700" : "text-slate-500"}`}>
-          이해했음
-        </span>
-      </label>
-
-      {/* 서명 pad + 지우기 */}
-      <div className="relative">
-        <div
-          className={`relative rounded-md border-2 ${borderCls} ${bgCls} overflow-hidden`}
-          style={{ width: 130, height: 40 }}
-        >
-          <SignaturePad
-            ref={(el) => { padRef.current = el; }}
-            canvasProps={{
-              width: 130,
-              height: 40,
-              className: "block touch-none",
-              style: { width: "130px", height: "40px" },
-            }}
-            penColor="#0f172a"
-            onBegin={handleBegin}
-            onEnd={handleEnd}
-          />
-          {empty && (
-            <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[9px] font-bold text-slate-300 select-none">
-              여기에 서명
-            </span>
-          )}
-        </div>
-        {/* 지우기 미니 버튼 */}
-        <button
-          type="button"
-          onClick={handleClear}
-          className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 border border-slate-200 flex items-center justify-center text-[8px] font-black leading-none transition-colors cursor-pointer"
-          title="서명 지우기"
-        >
-          ×
-        </button>
-      </div>
-    </div>
-  );
-};
-
-// 일반 조항용 · 체크박스만 (컴팩트) · #205
-const MicroCheckOnly: React.FC<{
-  checked: boolean;
-  onChangeChecked: (v: boolean) => void;
-}> = ({ checked, onChangeChecked }) => (
-  <div className="flex flex-col items-stretch gap-1 w-[130px] shrink-0">
-    <label
-      className={`flex items-center justify-center gap-1.5 cursor-pointer select-none rounded-md border-2 px-2 py-2 transition-colors ${
-        checked
-          ? "border-emerald-500 bg-emerald-50/60"
-          : "border-slate-300 border-dashed bg-white hover:bg-slate-50"
-      }`}
-    >
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChangeChecked(e.target.checked)}
-        className="w-3.5 h-3.5 accent-emerald-600 cursor-pointer"
-      />
-      <span className={`text-[11px] font-black leading-tight ${checked ? "text-emerald-700" : "text-slate-500"}`}>
-        이해했음
-      </span>
-    </label>
-  </div>
-);
-
-// 각 조항 이해확인 상태
-interface ClauseAck {
-  checked: boolean;
-  empty: boolean;  // 서명 empty 여부 (requiresSignature=false 인 조항은 항상 true 로 유지)
-  requiresSignature: boolean;  // #205 · 중요 조항만 mini pad 필요
-}
-type ClauseAckMap = Record<string, ClauseAck>;
-
-// #205 · 중요 조항 정의 (참고 · 실제 배정은 각 PreviewRow 의 ack.requiresSignature 로 명시)
-// - 제4조 소정근로시간 · 제5조 근무일/주 근무횟수 · 제6조 임금 · 제7조 연차유급휴가
-// - 동적 조번호로 매핑되는 "계약유형" (fixed-term/indefinite · 해지·해제 조건과 직결) 도 중요
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 실시간 계약서 프리뷰 (우측)
-// ─────────────────────────────────────────────────────────────────────────────
-
-const ContractPreview = React.forwardRef<HTMLDivElement, {
-  form: ContractForm;
-  employerSignUrl: string | null;
-  employeeSignUrl: string | null;
-  privacySignUrl: string | null;                 // 2026-08-04 · CCTV/개인정보 동의 서명 이미지
-  clauseAcks: ClauseAckMap;
-  setClauseAckChecked: (key: string, v: boolean) => void;
-  setClauseAckEmpty: (key: string, empty: boolean) => void;
-  registerClauseAck: (key: string, requiresSignature: boolean) => void;
-  clausePadRefs: React.MutableRefObject<Record<string, SignatureCanvasType | null>>;
-}>(({ form, employerSignUrl, employeeSignUrl, privacySignUrl, clauseAcks, setClauseAckChecked, setClauseAckEmpty, registerClauseAck, clausePadRefs }, ref) => {
-  const workDayText = DAYS.filter(d => form.workDays[d]).join("·") || "(선택 안 됨)";
-  const startD = fmtKoreanDate(form.startDate);
-  const endD = form.indefinite ? "무기한 (기간의 정함 없음)" : fmtKoreanDate(form.endDate) || "(미입력)";
-
-  // 근무 시간 계산 (전체 · 휴게 · 실근무) · 인건비 정책과 동일 규칙
-  const hoursCalc = (() => {
-    const [sh, sm] = form.startTime.split(":").map(Number);
-    const [eh, em] = form.endTime.split(":").map(Number);
-    if (!Number.isFinite(sh) || !Number.isFinite(eh)) return null;
-    const rawMin = (eh * 60 + (em || 0)) - (sh * 60 + (sm || 0));
-    if (rawMin <= 0) return null;
-    const breakMin = Number(form.breakMinutes) || 0;
-    const paidMin = Math.max(0, rawMin - breakMin);
-    const fmt = (min: number) => {
-      const h = Math.floor(min / 60);
-      const m = min % 60;
-      return m > 0 ? `${h}시간 ${m}분` : `${h}시간`;
-    };
-    return { rawText: fmt(rawMin), paidText: fmt(paidMin), breakText: fmt(breakMin), paidHours: paidMin / 60 };
-  })();
-
-  return (
-    <div
-      ref={ref}
-      className="bg-white text-slate-900 border border-slate-200 rounded-xl shadow-sm p-6 sm:p-8 mx-auto"
-      style={{
-        // A4 근사 (PDF 출력 안정성 · 실제 PDF 는 A4 기준으로 스케일)
-        width: "100%",
-        maxWidth: "780px",
-        fontFamily: "'Noto Sans KR', 'Malgun Gothic', system-ui, -apple-system, 'Segoe UI', sans-serif",
-        lineHeight: 1.6,
-      }}
-    >
-      {/* 제목 */}
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-black tracking-wider text-slate-900" style={{ letterSpacing: "0.15em" }}>
-          표 준 근 로 계 약 서
-        </h2>
-        <div className="mt-1.5 text-[11px] text-slate-500 font-semibold">
-          (근로기준법 시행규칙 별지 제17호서식)
-        </div>
-      </div>
-
-      <p className="text-[13px] text-slate-700 mb-4">
-        <span className="font-bold">{form.companyName || "(사업주명)"}</span>(이하 "사업주"라 함)와(과){" "}
-        <span className="font-bold">{form.employeeName || "(근로자명)"}</span>(이하 "근로자"라 함)는 다음과 같이 근로계약을 체결한다.
-      </p>
-
-      {/* 헬퍼 · ack props 생성 · 조번호를 key 로 */}
-      {(() => null)()}
-
-      {/* #205 · 조항별 ack props 헬퍼 · 중요 여부 명시 */}
-      {(() => null)()}
-
-      <PreviewRow
-        no="1"
-        title="근로계약기간"
-        ack={{
-          clauseKey: "1",
-          checked: !!clauseAcks["1"]?.checked,
-          onChangeChecked: (v) => setClauseAckChecked("1", v),
-          padRef: ensurePadRef(clausePadRefs, "1"),
-          onSignedChange: (e) => setClauseAckEmpty("1", e),
-          requiresSignature: false,
-          register: registerClauseAck,
-        }}
-      >
-        <div>{startD || "(시작일 미입력)"} 부터 {endD} 까지</div>
-        {form.indefinite && <div className="text-[11px] text-slate-500 mt-0.5">※ 기간의 정함이 없는 경우 (정규직)</div>}
-      </PreviewRow>
-
-      <PreviewRow
-        no="2"
-        title="근무장소"
-        ack={{
-          clauseKey: "2",
-          checked: !!clauseAcks["2"]?.checked,
-          onChangeChecked: (v) => setClauseAckChecked("2", v),
-          padRef: ensurePadRef(clausePadRefs, "2"),
-          onSignedChange: (e) => setClauseAckEmpty("2", e),
-          requiresSignature: false,
-          register: registerClauseAck,
-        }}
-      >
-        <div>{form.companyAddress || "(근무장소 미입력)"}</div>
-      </PreviewRow>
-
-      <PreviewRow
-        no="3"
-        title="업무의 내용"
-        ack={{
-          clauseKey: "3",
-          checked: !!clauseAcks["3"]?.checked,
-          onChangeChecked: (v) => setClauseAckChecked("3", v),
-          padRef: ensurePadRef(clausePadRefs, "3"),
-          onSignedChange: (e) => setClauseAckEmpty("3", e),
-          requiresSignature: false,
-          register: registerClauseAck,
-        }}
-      >
-        <div className="whitespace-pre-wrap">{form.jobDuty || "(업무 내용 미입력)"}</div>
-      </PreviewRow>
-
-      <PreviewRow
-        no="4"
-        title="소정근로시간"
-        ack={{
-          clauseKey: "4",
-          checked: !!clauseAcks["4"]?.checked,
-          onChangeChecked: (v) => setClauseAckChecked("4", v),
-          padRef: ensurePadRef(clausePadRefs, "4"),
-          onSignedChange: (e) => setClauseAckEmpty("4", e),
-          requiresSignature: true,
-          register: registerClauseAck,
-        }}
-      >
-        <div>
-          {form.startTime || "--:--"} 부터 {form.endTime || "--:--"} 까지
-          {hoursCalc && <span className="text-slate-500 text-[12px] ml-1">(총 {hoursCalc.rawText})</span>}
-        </div>
-        {/* 주 N일 근무 · 2026-08-04 · 제4조에 추가 (사용자 요청 · 리서치 1순위) */}
-        <div className="mt-0.5">
-          주 <b>{form.weeklyDays || "-"}일</b> 근무
-          {workDayText && <span className="text-slate-500 text-[12px] ml-1">({workDayText})</span>}
-        </div>
-        <div>
-          휴게시간: {form.breakMinutes || "0"} 분
-          {hoursCalc && Number(form.breakMinutes) > 0 && (
-            <span className="text-slate-500 text-[12px] ml-1">({hoursCalc.breakText} · 무급)</span>
-          )}
-        </div>
-        {hoursCalc && (
-          <div className="text-[12px] text-slate-700 mt-1">
-            <span className="font-semibold">실근무시간 · {hoursCalc.paidText}</span>
-            <span className="text-slate-500"> (전체 {hoursCalc.rawText} − 휴게 {hoursCalc.breakText})</span>
-          </div>
-        )}
-        <div className="text-[11px] text-slate-500 mt-0.5">
-          ※ 휴게시간은 무급이며 임금 계산에서 제외됨 (근로기준법 제54조)
-        </div>
-      </PreviewRow>
-
-      {/* 제4조의2 · 휴게시간 별도 조항 · 2026-08-04 · 리서치 1순위 · 근로기준법 §54 명시 필수
-          · 4시간→30분 · 8시간→1시간 이상 부여 의무 · 위반 시 2년/2천만원 벌금 */}
-      <PreviewRow
-        no="4-2"
-        title="휴게시간"
-        ack={{
-          clauseKey: "4-2",
-          checked: !!clauseAcks["4-2"]?.checked,
-          onChangeChecked: (v) => setClauseAckChecked("4-2", v),
-          padRef: ensurePadRef(clausePadRefs, "4-2"),
-          onSignedChange: (e) => setClauseAckEmpty("4-2", e),
-          requiresSignature: false,
-          register: registerClauseAck,
-        }}
-      >
-        <div className="text-[13px]">
-          ① 근로시간 중 휴게시간은 <b>{form.breakMinutes || "0"}분</b>으로 하며,
-          근로자는 해당 시간 동안 근로에서 완전히 해방된다.
-        </div>
-        <div className="text-[13px] mt-1">
-          ② 휴게시간은 무급이며 소정근로시간 및 임금 계산에서 제외된다.
-        </div>
-        <div className="text-[11px] text-slate-500 mt-1">
-          ※ 근로기준법 제54조 · 4시간 근무 시 30분 이상, 8시간 근무 시 1시간 이상 부여 의무
-        </div>
-      </PreviewRow>
-
-      <PreviewRow
-        no="5"
-        title="근무일 / 주 근무횟수"
-        ack={{
-          clauseKey: "5",
-          checked: !!clauseAcks["5"]?.checked,
-          onChangeChecked: (v) => setClauseAckChecked("5", v),
-          padRef: ensurePadRef(clausePadRefs, "5"),
-          onSignedChange: (e) => setClauseAckEmpty("5", e),
-          requiresSignature: true,
-          register: registerClauseAck,
-        }}
-      >
-        <div>근무일: {workDayText}</div>
-        <div>주 {form.weeklyDays || "-"}일 근무</div>
-      </PreviewRow>
-
-      <PreviewRow
-        no="6"
-        title="임금"
-        ack={{
-          clauseKey: "6",
-          checked: !!clauseAcks["6"]?.checked,
-          onChangeChecked: (v) => setClauseAckChecked("6", v),
-          padRef: ensurePadRef(clausePadRefs, "6"),
-          onSignedChange: (e) => setClauseAckEmpty("6", e),
-          requiresSignature: true,
-          register: registerClauseAck,
-        }}
-      >
-        {/* 2026-08-04 · 코스트팜 이미지 기반 · 임금 구성항목 표 (useWageComponents 활성 시) */}
-        {form.useWageComponents ? (
-          <WageComponentsTable wage={form.wageComponents} />
-        ) : (
-          <>
-            <div>· 시간급 (주중): {fmtWon(form.weekdayHourly)} 원</div>
-            <div>· 시간급 (주말): {fmtWon(form.weekendHourly)} 원</div>
-            {/* 예상 급여 · 2026-08-04 · 사용자 요청 · 시급 × 실근무시간 × 주 근무일 × 4.34주 */}
-            {(() => {
-              const paidHours = hoursCalc?.paidHours ?? 0;
-              const weeklyDaysNum = Number(form.weeklyDays) || 0;
-              const weekdayRate = Number(String(form.weekdayHourly).replace(/[^0-9]/g, "")) || 0;
-              const weekendRate = Number(String(form.weekendHourly).replace(/[^0-9]/g, "")) || 0;
-              // 주말 근무 여부 (workDays 에 토·일 있으면 주말 포함)
-              const hasWeekend = !!(form.workDays["토"] || form.workDays["일"]);
-              const weekdayCount = ["월","화","수","목","금"].filter(d => form.workDays[d as "월"]).length;
-              const weekendCount = ["토","일"].filter(d => form.workDays[d as "토"]).length;
-              if (paidHours <= 0 || weeklyDaysNum <= 0 || weekdayRate <= 0) return null;
-              const weeklyPay = (weekdayCount * paidHours * weekdayRate) + (weekendCount * paidHours * (hasWeekend ? weekendRate : weekdayRate));
-              const monthlyPay = Math.round(weeklyPay * 4.345);
-              return (
-                <div className="text-[12px] text-emerald-700 mt-1 pt-1 border-t border-emerald-100 bg-emerald-50/40 -mx-1 px-2 py-1 rounded">
-                  <span className="font-black">· 예상 급여 (참고)</span>
-                  <div className="text-[11px] text-slate-600 mt-0.5">
-                    주급 <b className="text-emerald-800 tabular-nums">{fmtWon(String(Math.round(weeklyPay)))}원</b>
-                    <span className="mx-1 text-slate-300">·</span>
-                    월급 <b className="text-emerald-800 tabular-nums">{fmtWon(String(monthlyPay))}원</b>
-                    <span className="text-slate-400 ml-1">(주 {weeklyDaysNum}일 × {paidHours.toFixed(1)}h × 4.345주)</span>
-                  </div>
-                </div>
-              );
-            })()}
-          </>
-        )}
-        <div className="text-[12px] text-slate-600 mt-1">
-          · 임금지급일: {form.paymentDayText || "매월 말일 (해당일이 휴일인 경우 전일 지급)"}
-        </div>
-        <div className="text-[12px] text-slate-600">
-          · 지급방법: 근로자 명의 예금통장에 입금
-        </div>
-      </PreviewRow>
-
-      <PreviewRow
-        no="7"
-        title="연차유급휴가"
-        ack={{
-          clauseKey: "7",
-          checked: !!clauseAcks["7"]?.checked,
-          onChangeChecked: (v) => setClauseAckChecked("7", v),
-          padRef: ensurePadRef(clausePadRefs, "7"),
-          onSignedChange: (e) => setClauseAckEmpty("7", e),
-          requiresSignature: true,
-          register: registerClauseAck,
-        }}
-      >
-        <div>연차유급휴가는 근로기준법에서 정하는 바에 따라 <b>연 {form.annualLeaveDays || "12"}일</b> 부여함</div>
-      </PreviewRow>
-
-      {/* #186 · 8. 담당 업무의 우선순위 (매장/창고 우선업무 · 70%) · 조건부 */}
-      {form.primaryFocus && (form.employeeCategory === "매장" || form.employeeCategory === "창고") && (
-        <PreviewRow
-          no="8"
-          title="담당 업무의 우선순위"
-          ack={{
-            clauseKey: "8",
-            checked: !!clauseAcks["8"]?.checked,
-            onChangeChecked: (v) => setClauseAckChecked("8", v),
-            padRef: ensurePadRef(clausePadRefs, "8"),
-            onSignedChange: (e) => setClauseAckEmpty("8", e),
-            requiresSignature: false,
-            register: registerClauseAck,
-          }}
-        >
-          <div>
-            근로자는 <b>{form.primaryFocus}</b> 관련 업무에 근무시간의{" "}
-            <b>{form.primaryFocusPercent}%</b> 비중을 두고 근무한다.
-          </div>
-          <div className="text-[11px] text-slate-500 mt-0.5">
-            ※ 잔여 시간은 근무 상황에 따라 사업주가 지정하는 부수 업무를 수행함
-          </div>
-        </PreviewRow>
-      )}
-
-      {(() => {
-        // 우선업무 조항 유무에 따라 이후 조 번호 동적 계산
-        const hasFocus = !!(form.primaryFocus && (form.employeeCategory === "매장" || form.employeeCategory === "창고"));
-        let n = hasFocus ? 9 : 8;
-        const socialNo = String(n++);
-        const contractTypeNo = String(n++);
-        const additionalNo = form.additionalContent.trim() ? String(n++) : null;
-        // 2026-08-04 · 이미지 2 기반 · 인·정계·해고 사유 조항 추가 (중요)
-        const disciplineNo = String(n++);
-        const grantNo = String(n++);
-        const etcNo = String(n++);
-        // #205 · 중요 조항 여부는 title 기준 판별 (동적 조번호 이슈 회피)
-        const mkAck = (key: string, requiresSignature: boolean) => ({
-          clauseKey: key,
-          checked: !!clauseAcks[key]?.checked,
-          onChangeChecked: (v: boolean) => setClauseAckChecked(key, v),
-          padRef: ensurePadRef(clausePadRefs, key),
-          onSignedChange: (e: boolean) => setClauseAckEmpty(key, e),
-          requiresSignature,
-          register: registerClauseAck,
-        });
-        return (
-          <>
-            <PreviewRow no={socialNo} title="사회보험 적용" ack={mkAck(socialNo, false)}>
-              <div className="flex flex-wrap gap-3 text-[13px]">
-                <span className="flex items-center gap-1">
-                  <SpanBox checked={form.socialInsurance} /> 고용보험
-                </span>
-                <span className="flex items-center gap-1">
-                  <SpanBox checked={form.socialInsurance} /> 산재보험
-                </span>
-                <span className="flex items-center gap-1">
-                  <SpanBox checked={form.socialInsurance} /> 국민연금
-                </span>
-                <span className="flex items-center gap-1">
-                  <SpanBox checked={form.socialInsurance} /> 건강보험
-                </span>
-              </div>
-            </PreviewRow>
-
-            <PreviewRow no={contractTypeNo} title="계약유형" ack={mkAck(contractTypeNo, true)}>
-              <div>{form.contractType || "(계약유형 미입력)"}</div>
-            </PreviewRow>
-
-            {additionalNo && (
-              <PreviewRow no={additionalNo} title="기타 (추가 내용)" ack={mkAck(additionalNo, false)}>
-                <div className="whitespace-pre-wrap">{form.additionalContent}</div>
-              </PreviewRow>
-            )}
-
-            {/* 2026-08-04 · 이미지 2 재현 · 인·정계·해고 사유 11개 · 중요 (서명 필수) */}
-            <PreviewRow no={disciplineNo} title="인·정계·해고 사유" ack={mkAck(disciplineNo, true)}>
-              <div className="text-[12px] text-slate-700 mb-1">
-                다음 각 호의 어느 하나에 해당하는 경우 사업주는 근로자를 징계 또는 해고할 수 있다.
-              </div>
-              <ol className="list-decimal list-inside space-y-0.5 text-[12px] text-slate-800 pl-1">
-                {DISCIPLINE_REASONS.map((r, i) => (
-                  <li key={i} className="leading-snug">{r}</li>
-                ))}
-              </ol>
-            </PreviewRow>
-
-            <PreviewRow no={grantNo} title="근로계약서 교부" ack={mkAck(grantNo, false)}>
-              <div className="text-[12px] text-slate-700">
-                사업주는 근로계약을 체결함과 동시에 본 계약서를 사본하여 근로자의 교부요구와 관계 없이 근로자에게 교부한다.
-              </div>
-            </PreviewRow>
-
-            <PreviewRow no={etcNo} title="기타" ack={mkAck(etcNo, false)}>
-              <div className="text-[12px] text-slate-700">
-                본 계약에 정함이 없는 사항은 근로기준법령에 의함.
-              </div>
-            </PreviewRow>
-          </>
-        );
-      })()}
-
-      {/* 계약일자 */}
-      <div className="mt-8 text-center text-[14px] text-slate-800 font-semibold">
-        {fmtKoreanDate(form.startDate) || fmtKoreanDate(todayIso())}
-      </div>
-
-      {/* 2026-08-04 · 이미지 2 하단 · 개인정보 수집·이용 및 CCTV 설치·이용 동의 (별도 서명) */}
-      <div className="mt-6 border-2 border-slate-800 rounded-md overflow-hidden text-[12px]">
-        <div className="bg-slate-100 border-b border-slate-300 px-3 py-1.5 font-black text-slate-800 text-[13px] text-center">
-          개인정보 수집·이용 및 CCTV 설치·이용 동의
-        </div>
-        <table className="w-full border-collapse">
-          <tbody>
-            <tr>
-              <th className="w-[22%] bg-slate-50 border-b border-r border-slate-300 px-2 py-1.5 text-left font-bold text-slate-700 align-top">
-                수령자
-              </th>
-              <td className="border-b border-slate-300 px-2 py-1.5 align-top">
-                <div>성명: <b className="font-semibold">{form.privacyConsent.recipientName || form.employeeName || "-"}</b></div>
-                <div>주소: <b className="font-semibold">{form.privacyConsent.recipientAddress || form.employeeAddress || "-"}</b></div>
-              </td>
-            </tr>
-            <tr>
-              <th className="bg-slate-50 border-b border-r border-slate-300 px-2 py-1.5 text-left font-bold text-slate-700 align-top">
-                정보의 수집·이용 목적
-              </th>
-              <td className="border-b border-slate-300 px-2 py-1.5 align-top text-slate-800">
-                당사자 인적사항관리 · 임금·복리후생·안전관리·사업장 사고예방 및 범죄예방
-              </td>
-            </tr>
-            <tr>
-              <th className="bg-slate-50 border-b border-r border-slate-300 px-2 py-1.5 text-left font-bold text-slate-700 align-top">
-                개인정보의 항목
-              </th>
-              <td className="border-b border-slate-300 px-2 py-1.5 align-top text-slate-800">
-                성명 · 주민번호 · 주소 · 생년월일 · 이메일 · 휴대전화번호 등 연락처 · 기타 근무규정에 의한 개인정보
-              </td>
-            </tr>
-            <tr>
-              <th className="bg-slate-50 border-b border-r border-slate-300 px-2 py-1.5 text-left font-bold text-slate-700 align-top">
-                정보 보유 및 이용기간
-              </th>
-              <td className="border-b border-slate-300 px-2 py-1.5 align-top text-slate-800">
-                근로계약 유지 기간 · CCTV 영상은 통상 30일간 저장 후 기존 영상정보에서 삭제
-              </td>
-            </tr>
-            <tr>
-              <th className="bg-slate-50 border-b border-r border-slate-300 px-2 py-1.5 text-left font-bold text-slate-700 align-top">
-                CCTV 촬영시간 및 범위
-              </th>
-              <td className="border-b border-slate-300 px-2 py-1.5 align-top text-slate-800">
-                촬영시간: 24시간 연속 촬영 및 녹화 · 촬영범위: 출입구 및 복도 · 사업장 내 주요 시설
-              </td>
-            </tr>
-            <tr>
-              <td colSpan={2} className="px-3 py-2 text-[11px] text-slate-700 bg-amber-50/40">
-                ※ 위 내용을 충분히 숙지하고 개인정보의 수집·이용 및 CCTV 설치·이용에 동의합니다.
-                <br />
-                다만, 개인정보의 수집·이용 및 CCTV 설치의 동의를 거부할 불이익이 있음을 안내받았습니다.
-              </td>
-            </tr>
-            <tr>
-              <th className="bg-slate-50 border-t border-r border-slate-300 px-2 py-1.5 text-left font-bold text-slate-700 align-top w-[22%]">
-                동의 여부
-              </th>
-              <td className="border-t border-slate-300 px-2 py-1.5">
-                <div className="flex flex-wrap items-center gap-3 text-[12px]">
-                  <span className="inline-flex items-center gap-1">
-                    <SpanBox checked={form.privacyConsent.agreedCollection} /> 개인정보 수집·이용에 동의합니다
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <SpanBox checked={form.privacyConsent.agreedCCTV} /> CCTV 촬영·이용에 동의합니다
-                  </span>
-                </div>
-                <div className="mt-2 flex items-end gap-2">
-                  <span className="text-[11px] text-slate-600 font-semibold shrink-0">동의인 서명:</span>
-                  <div className="flex-1 border-b border-slate-400 h-10 flex items-end">
-                    {privacySignUrl && (
-                      <img src={privacySignUrl} alt="개인정보/CCTV 동의 서명" className="max-h-10 max-w-full object-contain" />
-                    )}
-                  </div>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      {/* 서명란 */}
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {/* 사업주 */}
-        <div className="border-t-2 border-slate-800 pt-3">
-          <div className="text-[13px] font-black text-slate-800 mb-2">(사업주)</div>
-          <div className="text-[12px] text-slate-700 space-y-0.5">
-            <div>사업체명: <span className="font-semibold">{form.companyName || "-"}</span></div>
-            <div>주소: <span className="font-semibold">{form.companyAddress || "-"}</span></div>
-            <div>대표자: <span className="font-semibold">{form.employerName || "-"}</span></div>
-            <div>사업자등록번호: <span className="font-semibold">{form.companyRegNo || "-"}</span></div>
-          </div>
-          <div className="mt-3 flex items-end gap-2">
-            <span className="text-[12px] text-slate-600 font-semibold">서명:</span>
-            <div className="flex-1 border-b border-slate-400 h-14 flex items-end">
-              {employerSignUrl && (
-                <img src={employerSignUrl} alt="사업주 서명" className="max-h-14 max-w-full object-contain" />
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* 근로자 */}
-        <div className="border-t-2 border-slate-800 pt-3">
-          <div className="text-[13px] font-black text-slate-800 mb-2">(근로자)</div>
-          <div className="text-[12px] text-slate-700 space-y-0.5">
-            <div>성명: <span className="font-semibold">{form.employeeName || "-"}</span></div>
-            <div>생년월일: <span className="font-semibold">{form.employeeBirth || "-"}</span></div>
-            <div>주소: <span className="font-semibold">{form.employeeAddress || "-"}</span></div>
-            <div>연락처: <span className="font-semibold">{form.employeePhone || "-"}</span></div>
-          </div>
-          <div className="mt-3 flex items-end gap-2">
-            <span className="text-[12px] text-slate-600 font-semibold">서명:</span>
-            <div className="flex-1 border-b border-slate-400 h-14 flex items-end">
-              {employeeSignUrl && (
-                <img src={employeeSignUrl} alt="근로자 서명" className="max-h-14 max-w-full object-contain" />
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-});
-ContractPreview.displayName = "ContractPreview";
-
-// 프리뷰 · 항목 하나 · #200 · 우측 이해확인 영역 지원 · #205 · 중요/일반 분리
-const PreviewRow: React.FC<{
-  no: string;
-  title: string;
-  children: React.ReactNode;
-  ack?: {
-    clauseKey: string;
-    checked: boolean;
-    onChangeChecked: (v: boolean) => void;
-    padRef: React.MutableRefObject<SignatureCanvasType | null>;
-    onSignedChange: (empty: boolean) => void;
-    requiresSignature: boolean;
-    register?: (key: string, requiresSignature: boolean) => void;
-  };
-}> = ({ no, title, children, ack }) => {
-  const isCritical = !!ack?.requiresSignature;
-  // #205 · 마운트/갱신 시 · 조항 metadata 를 부모 clauseAcks 에 등록 (idempotent)
-  const ackKey = ack?.clauseKey;
-  const ackReq = !!ack?.requiresSignature;
-  const ackRegister = ack?.register;
-  useEffect(() => {
-    if (ackKey && ackRegister) ackRegister(ackKey, ackReq);
-  }, [ackKey, ackReq, ackRegister]);
-  return (
-    <div
-      className={`mb-3 grid grid-cols-[52px,1fr,auto] gap-2 items-start text-[13px] ${
-        isCritical ? "rounded-lg bg-amber-50/40 border border-amber-200/70 px-2 py-1.5" : ""
-      }`}
-    >
-      <div className={`font-bold pt-0.5 flex items-center gap-1 ${isCritical ? "text-amber-800" : "text-slate-800"}`}>
-        제{no}조
-      </div>
-      <div className="text-slate-700 min-w-0">
-        <div className={`font-bold mb-0.5 flex items-center gap-1 ${isCritical ? "text-amber-900" : "text-slate-900"}`}>
-          ({title})
-          {isCritical && (
-            <span className="inline-flex items-center gap-0.5 rounded-md bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 leading-none">
-              <Warning size={9} weight="fill" />
-              중요
-            </span>
-          )}
-        </div>
-        <div className="pl-1">{children}</div>
-      </div>
-      {ack ? (
-        ack.requiresSignature ? (
-          <MicroSignPad
-            clauseKey={ack.clauseKey}
-            checked={ack.checked}
-            onChangeChecked={ack.onChangeChecked}
-            padRef={ack.padRef}
-            onSignedChange={ack.onSignedChange}
-          />
-        ) : (
-          <MicroCheckOnly checked={ack.checked} onChangeChecked={ack.onChangeChecked} />
-        )
-      ) : (
-        <div className="w-[130px] shrink-0" aria-hidden="true" />
-      )}
-    </div>
-  );
-};
-
-// 조항별 pad ref helper · lazy get/set
-function ensurePadRef(
-  refs: React.MutableRefObject<Record<string, SignatureCanvasType | null>>,
-  key: string,
-): React.MutableRefObject<SignatureCanvasType | null> {
-  if (!(key in refs.current)) refs.current[key] = null;
-  // wrapper 객체 (다른 부분과 API 동일 유지)
-  return {
-    get current() { return refs.current[key]; },
-    set current(v: SignatureCanvasType | null) { refs.current[key] = v; },
-  } as React.MutableRefObject<SignatureCanvasType | null>;
-}
-
-// 사회보험 · 체크박스 대체 사각형 (PDF 렌더 안정성 · 이모지 회피)
+// 사각형 체크박스 (PDF 안정 렌더)
 const SpanBox: React.FC<{ checked: boolean }> = ({ checked }) => (
   <span
-    className={`inline-flex items-center justify-center w-4 h-4 border-2 text-[10px] font-black ${checked ? "border-emerald-600 text-emerald-600" : "border-slate-300 text-transparent"}`}
+    className={`inline-flex items-center justify-center w-4 h-4 border-2 text-[10px] font-black ${checked ? "border-emerald-600 text-emerald-600" : "border-slate-400 text-transparent"}`}
     style={{ lineHeight: "1" }}
   >
     {checked ? "V" : ""}
   </span>
 );
 
-// 2026-08-04 · 상세 임금 구성 · 입력 폼 (좌측 폼에 인라인 · 각 항목 시간·금액 자유 편집)
+// 세로 라벨 (좌측 세로 텍스트 · 이미지의 "근·무·장·소" 스타일)
+const VerticalLabel: React.FC<{ children: string; minH?: number }> = ({ children, minH = 60 }) => (
+  <div
+    className="flex items-center justify-center bg-slate-100 border-r border-slate-400 text-slate-800 font-black text-[13px] tracking-widest select-none"
+    style={{
+      writingMode: "vertical-rl",
+      transform: "rotate(180deg)",
+      minHeight: minH,
+      width: 28,
+      letterSpacing: "0.25em",
+    }}
+  >
+    {children}
+  </div>
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 임금 구성 표 (프리뷰 · 이미지 재현)
+// ─────────────────────────────────────────────────────────────────────────────
+const WageComponentsTable: React.FC<{ wage: WageComponents }> = ({ wage }) => {
+  type Row = { label: string; note?: string; entry?: WageComponentEntry; flatAmount?: number; optional?: boolean };
+  const rows: Row[] = [
+    { label: "기본급", note: "주휴수당 포함", entry: wage.basicSalary },
+    { label: "(고정)연장근로수당", note: "1.5배 가산 포함", entry: wage.fixedOvertime },
+    { label: "(고정)휴일근로수당", note: "1.5배 가산 포함", entry: wage.fixedHoliday },
+    { label: "(고정)휴일야간근로수당", note: "0.5배 가산 포함", entry: wage.fixedHolidayNight },
+    { label: "(고정)야간근로수당", note: "0.5배 가산 포함", entry: wage.fixedNight },
+    { label: "식대", note: "비과세", flatAmount: wage.mealAllowance, optional: true },
+    { label: "차량유지비", note: "비과세", flatAmount: wage.vehicleAllowance, optional: true },
+  ];
+  const total = computeWageTotal(wage);
+
+  return (
+    <div className="border border-slate-500 rounded-sm overflow-hidden text-[11.5px]">
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="bg-slate-100 text-slate-800 font-black text-[11.5px]">
+            <th className="border-b border-r border-slate-400 px-2 py-1 text-left w-[36%]">구성 항목</th>
+            <th className="border-b border-r border-slate-400 px-2 py-1 text-left w-[38%]">내용</th>
+            <th className="border-b border-slate-400 px-2 py-1 text-right w-[26%]">금액</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, idx) => {
+            const isEmpty = r.entry
+              ? (r.entry.hours === 0 && r.entry.minutes === 0 && r.entry.amount === 0)
+              : (!r.flatAmount || r.flatAmount === 0);
+            const amount = r.entry ? r.entry.amount : (r.flatAmount ?? 0);
+            return (
+              <tr key={idx} className="bg-white">
+                <td className="border-b border-r border-slate-300 px-2 py-1 align-middle">
+                  <div className="font-bold text-slate-800">{r.label}</div>
+                  {r.note && <div className="text-[10px] text-slate-500 leading-tight">({r.note})</div>}
+                </td>
+                <td className="border-b border-r border-slate-300 px-2 py-1 align-middle">
+                  {r.optional ? (
+                    <span className={isEmpty ? "text-slate-400" : "text-slate-800"}>해당자에 한함</span>
+                  ) : (
+                    <span className={isEmpty ? "text-slate-400" : "text-slate-800"}>
+                      월평균 <b className="tabular-nums">{(r.entry?.hours ?? 0).toString().padStart(1, "0")}</b> 시간{" "}
+                      <b className="tabular-nums">{(r.entry?.minutes ?? 0).toString().padStart(2, "0")}</b> 분
+                    </span>
+                  )}
+                </td>
+                <td className="border-b border-slate-300 px-2 py-1 text-right tabular-nums align-middle">
+                  {isEmpty
+                    ? (r.optional ? <span className="text-slate-400">해당자에 한함</span> : <span className="text-slate-300">-</span>)
+                    : <span className="text-slate-900 font-semibold">{fmtWon(amount)} 원</span>}
+                </td>
+              </tr>
+            );
+          })}
+          <tr className="bg-amber-50">
+            <td className="px-2 py-1.5 font-black text-slate-800 border-r border-slate-400">일급여총액</td>
+            <td className="border-r border-slate-400 px-2 py-1.5 text-[10.5px] text-slate-600">(약칭)</td>
+            <td className="px-2 py-1.5 text-right tabular-nums font-black text-slate-900">
+              {fmtWon(total)} 원
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 임금 구성 입력 폼 (좌측 폼)
+// ─────────────────────────────────────────────────────────────────────────────
 const WageComponentsForm: React.FC<{
   wage: WageComponents;
   onChange: (next: WageComponents) => void;
 }> = ({ wage, onChange }) => {
-  const updEntry = (key: keyof Pick<WageComponents, "basicSalary" | "fixedOvertime" | "fixedHoliday" | "fixedHolidayNight" | "fixedNight">,
-                    field: keyof WageComponentEntry, val: number) => {
+  const updEntry = (
+    key: keyof Pick<WageComponents, "basicSalary" | "fixedOvertime" | "fixedHoliday" | "fixedHolidayNight" | "fixedNight">,
+    field: keyof WageComponentEntry,
+    val: number,
+  ) => {
     onChange({ ...wage, [key]: { ...wage[key], [field]: val } });
   };
   const updFlat = (key: "mealAllowance" | "vehicleAllowance", val: number) => {
@@ -1200,166 +590,649 @@ const WageComponentsForm: React.FC<{
     label: string;
     note: string;
   }> = [
-    { key: "basicSalary",       label: "기본급",       note: "주휴수당 포함" },
-    { key: "fixedOvertime",     label: "고정연장수당", note: "1.5배 가산" },
-    { key: "fixedHoliday",      label: "고정휴일수당", note: "1.5배 가산" },
-    { key: "fixedHolidayNight", label: "고정휴일야간", note: "0.5배 가산" },
-    { key: "fixedNight",        label: "고정야간수당", note: "0.5배 가산" },
+    { key: "basicSalary",       label: "기본급",                 note: "주휴수당 포함" },
+    { key: "fixedOvertime",     label: "(고정)연장근로수당",     note: "1.5배" },
+    { key: "fixedHoliday",      label: "(고정)휴일근로수당",     note: "1.5배" },
+    { key: "fixedHolidayNight", label: "(고정)휴일야간근로수당", note: "0.5배" },
+    { key: "fixedNight",        label: "(고정)야간근로수당",     note: "0.5배" },
   ];
 
   return (
     <div className="rounded-lg border border-indigo-100 bg-indigo-50/30 p-2 flex flex-col gap-1.5">
       <div className="text-[11px] font-black text-indigo-800 flex items-center gap-1">
         <Money size={11} weight="fill" />
-        상세 임금 구성 (월평균 시간 · 금액)
+        임금 구성 (월평균 시간·분 · 금액)
       </div>
+
+      <div className="grid grid-cols-[110px,1fr,50px,1fr] gap-1 text-[10px] font-bold text-slate-500 uppercase pl-1">
+        <div>항목</div>
+        <div className="text-center">시간</div>
+        <div className="text-center">분</div>
+        <div className="text-right pr-1">금액 (원)</div>
+      </div>
+
       {rows.map(r => (
-        <div key={r.key} className="grid grid-cols-[92px,1fr,1fr] gap-1.5 items-center">
+        <div key={r.key} className="grid grid-cols-[110px,1fr,50px,1fr] gap-1 items-center">
           <div className="text-[11px] font-bold text-slate-700 leading-tight">
             {r.label}
             <div className="text-[9px] text-slate-500 font-semibold">({r.note})</div>
           </div>
-          <div className="relative">
-            <input
-              type="number"
-              step="0.01"
-              min={0}
-              value={wage[r.key].hours}
-              onChange={(e) => updEntry(r.key, "hours", Number(e.target.value) || 0)}
-              className="w-full bg-white border border-slate-200 rounded-md pl-2 pr-8 py-1 text-[12px] text-slate-800 font-semibold text-right focus:outline-none focus:border-indigo-500 transition"
-              placeholder="0"
-            />
-            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-semibold pointer-events-none">시간</span>
-          </div>
-          <div className="relative">
-            <input
-              type="text"
-              inputMode="numeric"
-              value={String(wage[r.key].amount)}
-              onChange={(e) => updEntry(r.key, "amount", Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
-              className="w-full bg-white border border-slate-200 rounded-md pl-2 pr-6 py-1 text-[12px] text-slate-800 font-black text-right focus:outline-none focus:border-indigo-500 transition"
-              placeholder="0"
-            />
-            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-semibold pointer-events-none">원</span>
-          </div>
+          <input
+            type="number"
+            min={0}
+            value={wage[r.key].hours}
+            onChange={(e) => updEntry(r.key, "hours", Number(e.target.value) || 0)}
+            className="bg-white border border-slate-200 rounded-md px-1.5 py-1 text-[12px] text-slate-800 font-semibold text-right focus:outline-none focus:border-indigo-500 transition"
+            placeholder="0"
+          />
+          <input
+            type="number"
+            min={0}
+            max={59}
+            value={wage[r.key].minutes}
+            onChange={(e) => updEntry(r.key, "minutes", Math.max(0, Math.min(59, Number(e.target.value) || 0)))}
+            className="bg-white border border-slate-200 rounded-md px-1.5 py-1 text-[12px] text-slate-800 font-semibold text-right focus:outline-none focus:border-indigo-500 transition"
+            placeholder="0"
+          />
+          <input
+            type="text"
+            inputMode="numeric"
+            value={String(wage[r.key].amount)}
+            onChange={(e) => updEntry(r.key, "amount", Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
+            className="bg-white border border-slate-200 rounded-md px-1.5 py-1 text-[12px] text-slate-800 font-black text-right focus:outline-none focus:border-indigo-500 transition"
+            placeholder="0"
+          />
         </div>
       ))}
-      <div className="grid grid-cols-[92px,1fr,1fr] gap-1.5 items-center">
+      <div className="grid grid-cols-[110px,1fr,1fr] gap-1 items-center">
         <div className="text-[11px] font-bold text-slate-700 leading-tight">
           식대
           <div className="text-[9px] text-slate-500 font-semibold">(비과세)</div>
         </div>
         <div className="text-[10px] text-slate-500 font-semibold text-center">해당자에 한함</div>
-        <div className="relative">
-          <input
-            type="text"
-            inputMode="numeric"
-            value={String(wage.mealAllowance)}
-            onChange={(e) => updFlat("mealAllowance", Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
-            className="w-full bg-white border border-slate-200 rounded-md pl-2 pr-6 py-1 text-[12px] text-slate-800 font-black text-right focus:outline-none focus:border-indigo-500 transition"
-            placeholder="0"
-          />
-          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-semibold pointer-events-none">원</span>
-        </div>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={String(wage.mealAllowance)}
+          onChange={(e) => updFlat("mealAllowance", Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
+          className="bg-white border border-slate-200 rounded-md px-1.5 py-1 text-[12px] text-slate-800 font-black text-right focus:outline-none focus:border-indigo-500 transition"
+          placeholder="0"
+        />
       </div>
-      <div className="grid grid-cols-[92px,1fr,1fr] gap-1.5 items-center">
+      <div className="grid grid-cols-[110px,1fr,1fr] gap-1 items-center">
         <div className="text-[11px] font-bold text-slate-700 leading-tight">
           차량유지비
           <div className="text-[9px] text-slate-500 font-semibold">(비과세)</div>
         </div>
         <div className="text-[10px] text-slate-500 font-semibold text-center">해당자에 한함</div>
-        <div className="relative">
-          <input
-            type="text"
-            inputMode="numeric"
-            value={String(wage.vehicleAllowance)}
-            onChange={(e) => updFlat("vehicleAllowance", Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
-            className="w-full bg-white border border-slate-200 rounded-md pl-2 pr-6 py-1 text-[12px] text-slate-800 font-black text-right focus:outline-none focus:border-indigo-500 transition"
-            placeholder="0"
-          />
-          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-semibold pointer-events-none">원</span>
-        </div>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={String(wage.vehicleAllowance)}
+          onChange={(e) => updFlat("vehicleAllowance", Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
+          className="bg-white border border-slate-200 rounded-md px-1.5 py-1 text-[12px] text-slate-800 font-black text-right focus:outline-none focus:border-indigo-500 transition"
+          placeholder="0"
+        />
       </div>
+
       <div className="mt-1 pt-1 border-t border-indigo-200 flex items-center justify-between text-[12px]">
-        <span className="text-emerald-800 font-black">월급여총액 (예정)</span>
+        <span className="text-emerald-800 font-black">일급여총액 (자동합)</span>
         <span className="text-emerald-800 font-black tabular-nums">{fmtWon(computeWageTotal(wage))} 원</span>
       </div>
     </div>
   );
 };
 
-// 2026-08-04 · 코스트팜 이미지 재현 · 임금 구성 표 (구성항목 / 내역 / 금액)
-const WageComponentsTable: React.FC<{ wage: WageComponents }> = ({ wage }) => {
-  const rows: Array<{
-    label: string;
-    note?: string;
-    hours: number;
-    amount: number;
-    optional?: boolean;    // 해당자에 한함 (식대/차량유지비)
-  }> = [
-    { label: "기본급", note: "주휴수당 포함", hours: wage.basicSalary.hours, amount: wage.basicSalary.amount },
-    { label: "(고정)연장근로수당", note: "1.5배 가산 포함", hours: wage.fixedOvertime.hours, amount: wage.fixedOvertime.amount },
-    { label: "(고정)휴일수당", note: "1.5배 가산 포함", hours: wage.fixedHoliday.hours, amount: wage.fixedHoliday.amount },
-    { label: "(고정)휴일야간수당", note: "0.5배 가산 포함", hours: wage.fixedHolidayNight.hours, amount: wage.fixedHolidayNight.amount },
-    { label: "(고정)야간수당", note: "0.5배 가산 포함", hours: wage.fixedNight.hours, amount: wage.fixedNight.amount },
-    { label: "식대", note: "비과세", hours: 0, amount: wage.mealAllowance, optional: true },
-    { label: "차량유지비", note: "비과세", hours: 0, amount: wage.vehicleAllowance, optional: true },
-  ];
-  const total = computeWageTotal(wage);
+// ─────────────────────────────────────────────────────────────────────────────
+// 이미지 재현 프리뷰
+// ─────────────────────────────────────────────────────────────────────────────
+const ContractPreview = React.forwardRef<HTMLDivElement, {
+  form: ContractForm;
+  employerSignUrl: string | null;
+  employeeSignUrl: string | null;
+  privacySignUrl: string | null;
+  contractDateSignUrl: string | null;
+  specialWorkSignUrl: string | null;
+  severanceSignUrl: string | null;
+  receiptSignUrl: string | null;
+}>(({
+  form, employerSignUrl, employeeSignUrl, privacySignUrl,
+  contractDateSignUrl, specialWorkSignUrl, severanceSignUrl, receiptSignUrl,
+}, ref) => {
+  const workDayText = DAYS.filter(d => form.workDays[d]).join("·") || "(선택 안 됨)";
+  const startD = fmtKoreanDate(form.startDate);
+  const endD = form.indefinite ? "" : fmtKoreanDate(form.endDate);
+
+  // 계약체결일 · 년/월/일 분리 표시
+  const csDate = form.contractSignDate ? form.contractSignDate.match(/^(\d{4})-(\d{2})-(\d{2})$/) : null;
+  const csY = csDate ? csDate[1] : "";
+  const csM = csDate ? Number(csDate[2]) : "";
+  const csD = csDate ? Number(csDate[3]) : "";
+
+  // 시작일 년/월/일 (기간 있음 케이스)
+  const stDate = form.startDate ? form.startDate.match(/^(\d{4})-(\d{2})-(\d{2})$/) : null;
+  const enDate = form.endDate   ? form.endDate.match(/^(\d{4})-(\d{2})-(\d{2})$/) : null;
+
+  // 근무시간 요약
+  const hoursCalc = (() => {
+    const s = parseHM(form.startTime);
+    const e = parseHM(form.endTime);
+    if (!s || !e) return null;
+    const rawMin = (e.h * 60 + e.m) - (s.h * 60 + s.m);
+    if (rawMin <= 0) return null;
+    const breakMin = Number(form.breakMinutes) || 0;
+    const paidMin = Math.max(0, rawMin - breakMin);
+    const fmt = (min: number) => {
+      const h = Math.floor(min / 60);
+      const m = min % 60;
+      return m > 0 ? `${h}시간 ${m}분` : `${h}시간`;
+    };
+    return { rawText: fmt(rawMin), paidText: fmt(paidMin), breakText: fmt(breakMin), paidHours: paidMin / 60 };
+  })();
+
+  // 휴게 시작·종료 표시용 (start~end 사이에서 breakMinutes 만큼 · 이미지 예: 12:00 ~ 13:00)
+  const breakDisplay = (() => {
+    const s = parseHM(form.startTime);
+    const bMin = Number(form.breakMinutes) || 0;
+    if (!s || bMin <= 0) return null;
+    // 관례상 정오 12:00~13:00 · 8시간+휴게 케이스 · 그 외엔 중간 시간대
+    const startMin = s.h * 60 + s.m;
+    const e = parseHM(form.endTime);
+    if (!e) return null;
+    const endMin = e.h * 60 + e.m;
+    const midpoint = Math.floor((startMin + endMin - bMin) / 2);
+    const bs = midpoint;
+    const be = midpoint + bMin;
+    const hm = (min: number) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+    return `${hm(bs)} ~ ${hm(be)}`;
+  })();
+
   return (
-    <div className="w-full border border-slate-300 rounded-md overflow-hidden text-[12px]">
-      <table className="w-full border-collapse">
-        <thead>
-          <tr className="bg-slate-100 text-slate-700 text-[11px] font-black">
-            <th className="border-b border-slate-300 px-2 py-1 text-left w-[38%]">구성항목</th>
-            <th className="border-b border-l border-slate-300 px-2 py-1 text-left w-[32%]">내역 (월평균 시간)</th>
-            <th className="border-b border-l border-slate-300 px-2 py-1 text-right w-[30%]">금액 (원)</th>
-          </tr>
-        </thead>
+    <div
+      ref={ref}
+      className="bg-white text-slate-900 border border-slate-300 rounded-sm shadow-sm p-4 sm:p-6 mx-auto"
+      style={{
+        width: "100%",
+        maxWidth: "820px",
+        fontFamily: "'Noto Sans KR', 'Malgun Gothic', system-ui, -apple-system, 'Segoe UI', sans-serif",
+        lineHeight: 1.55,
+        color: "#0f172a",
+      }}
+    >
+      {/* 상단 · 제목 + 근로자명 · 우측 상단 (이미지 재현) */}
+      <div className="flex items-center justify-center border-b-2 border-slate-800 pb-2 mb-3 relative">
+        <h2 className="text-[22px] font-black tracking-[0.3em] text-slate-900 text-center">
+          근 로 계 약 서
+        </h2>
+        <div className="absolute right-0 top-0 bottom-0 flex items-center text-[15px] font-black text-slate-800">
+          ( <span className="mx-1 min-w-[60px] text-center border-b border-slate-500 px-2">{form.employeeName || " "}</span> )
+        </div>
+      </div>
+
+      {/* 서두 · 한 줄 */}
+      <p className="text-[12px] text-slate-800 mb-3 leading-relaxed">
+        <b>사용자 '갑'(회사)와 근로자 '을'</b> (이하 '을'이라 한다) 은 다음과 같이 근로계약을 체결하고 신의에 따라 성실히 이행할 것을 약정한다.
+      </p>
+
+      {/* ── 표 1 · 근무장소 / 근로계약기간 / 임금 / 근로일·근무시간 / 퇴직급 / 연차 ── */}
+      <table className="w-full border-collapse border-2 border-slate-800 text-[12px]">
         <tbody>
-          {rows.map((r, idx) => {
-            const isEmpty = (r.hours === 0 && r.amount === 0);
-            return (
-              <tr key={idx} className="odd:bg-white even:bg-slate-50/40">
-                <td className="border-b border-slate-200 px-2 py-1 align-top">
-                  <div className="font-bold text-slate-800">{r.label}</div>
-                  {r.note && <div className="text-[10px] text-slate-500 leading-tight">({r.note})</div>}
-                </td>
-                <td className="border-b border-l border-slate-200 px-2 py-1 align-top">
-                  {r.optional ? (
-                    <span className={isEmpty ? "text-slate-400" : "text-slate-700"}>해당자에 한함</span>
+          {/* 근무장소 */}
+          <tr>
+            <td className="border-b border-r border-slate-500 p-0 w-[32px]" rowSpan={1}>
+              <VerticalLabel minH={54}>근무장소</VerticalLabel>
+            </td>
+            <td className="border-b border-slate-500 px-3 py-2 align-top">
+              <div>
+                <b className="font-bold">코스트팜(Costpharm)</b> 회사 및 관계 현장 · <b>담당업무</b> {form.jobDuty || "-"}
+              </div>
+              <div className="text-[11px] text-slate-700 mt-1">
+                '갑', '을'의 사정에 따라 근무 장소 및 업무를 변경할 수 있으며, '을'은 정당한 사유 없이 이를 거부할 수 없다.
+              </div>
+            </td>
+          </tr>
+
+          {/* 근로계약기간 */}
+          <tr>
+            <td className="border-b border-r border-slate-500 p-0" rowSpan={1}>
+              <VerticalLabel minH={80}>근로계약기간</VerticalLabel>
+            </td>
+            <td className="border-b border-slate-500 px-3 py-2 align-top">
+              <div className="flex items-center gap-2 mb-1">
+                <SpanBox checked={form.indefinite} />
+                <span className="font-bold">기간의 정함이 없음.</span>
+              </div>
+              <div className="flex items-center flex-wrap gap-1 text-[12px]">
+                <SpanBox checked={!form.indefinite} />
+                <span className="tabular-nums">
+                  <b>{stDate ? stDate[1] : "20__"}</b>년{" "}
+                  <b>{stDate ? Number(stDate[2]) : "__"}</b>월{" "}
+                  <b>{stDate ? Number(stDate[3]) : "__"}</b>일{" "}
+                  ~ <b>{enDate ? enDate[1] : "20__"}</b>년{" "}
+                  <b>{enDate ? Number(enDate[2]) : "__"}</b>월{" "}
+                  <b>{enDate ? Number(enDate[3]) : "__"}</b>일까지
+                </span>
+              </div>
+              <div className="text-[10px] text-slate-500 mt-1">
+                (근로계약일: <b>{fmtKoreanDate(form.contractSignDate) || "-"}</b>)
+              </div>
+              {!form.indefinite && (
+                <div className="text-[10.5px] text-slate-600 mt-1">
+                  기간의 정함이 있는 기간제 근로의 경우 계약기간 만료일에 별도의 통보 없이 근로계약은 자동 해지된다.
+                </div>
+              )}
+              {/* 계약체결일 · 서명 · 우측 (이미지 재현) */}
+              <div className="mt-2 flex items-end justify-end gap-2">
+                <span className="text-[11px] text-slate-700 font-bold">
+                  (계약체결일 경우 서명)
+                </span>
+                <div className="w-[140px] h-[38px] border-b-2 border-slate-500 flex items-end justify-center">
+                  {contractDateSignUrl && (
+                    <img src={contractDateSignUrl} alt="계약체결일 서명" className="max-h-[38px] max-w-full object-contain" />
+                  )}
+                </div>
+                <span className="text-[10px] text-slate-500 font-semibold pb-1">(서명 또는 도장)</span>
+              </div>
+            </td>
+          </tr>
+
+          {/* 임금 (표 + 조항 + 지급일) */}
+          <tr>
+            <td className="border-b border-r border-slate-500 p-0" rowSpan={1}>
+              <VerticalLabel minH={340}>임금</VerticalLabel>
+            </td>
+            <td className="border-b border-slate-500 px-3 py-2 align-top">
+              <div className="text-[11.5px] text-slate-800 mb-1.5 font-semibold">
+                1. '을'의 구체적인 임금 구성항목은 아래와 같다.
+              </div>
+              {form.useWageComponents ? (
+                <WageComponentsTable wage={form.wageComponents} />
+              ) : (
+                // 하위 호환 · 시급 기반 텍스트 렌더 (사용자가 상세임금구성 OFF 인 경우)
+                <div className="border border-slate-400 rounded-sm p-2 text-[12px]">
+                  <div>· 시간급 (주중): <b>{fmtWon(form.weekdayHourly)} 원</b></div>
+                  <div>· 시간급 (주말): <b>{fmtWon(form.weekendHourly)} 원</b></div>
+                </div>
+              )}
+
+              {/* 조항 (이미지 재현) */}
+              <div className="mt-2 space-y-1 text-[11px] text-slate-700 leading-snug">
+                <div>
+                  ※ 상기 월 급여 총액에는 (고정)연장·휴일근로수당에 대한 (고정)연장·휴일수당이 포함되어 있으므로,
+                  추가 연장 및 휴일 근무 등 휴무일 상시 발생 가능한 연장 및 휴일 근무의 통상 발생하는 급여의 대가로 포함되었다.
+                </div>
+                <div>
+                  ※ 약국의 업무 특성상 불규칙한 근로 및 급여 총액에는 통상 기본 근로 시,
+                  기본 근로시간, 연장·야간 등의 통상적 상기 연장/휴일 근무의 대가로 지원되었다.
+                </div>
+                <div>
+                  ※ '을'은 상기 급여 총액에 대하여 급여 지급방식에 개별별 신청에 대해 연차유급휴가·유급 사용할 경우
+                  지 지급이 상실 차기에 의 청산·해지된다. 연차유급휴가수당 및 회사에 정한 정계사유에 해당하는 경우에만 지 지급된다.
+                </div>
+              </div>
+
+              {/* 임금 지급일 */}
+              <div className="mt-2 rounded-sm bg-amber-50/60 border border-amber-300 px-2 py-1 text-[11.5px]">
+                <b>2. 임금지급일:</b> {form.paymentDayText}
+              </div>
+            </td>
+          </tr>
+
+          {/* 근로일 · 근무시간 · 휴게시간 */}
+          <tr>
+            <td className="border-b border-r border-slate-500 p-0" rowSpan={1}>
+              <VerticalLabel minH={180}>근로일 근무시간</VerticalLabel>
+            </td>
+            <td className="border-b border-slate-500 px-3 py-2 align-top">
+              <div className="text-[11.5px] font-bold mb-1">
+                1. 기본 근로일: <b className="text-slate-900">{workDayText}</b>
+              </div>
+              <div className="text-[10.5px] text-slate-600 mb-2 leading-snug">
+                · 소정근로시간 주 40시간 이내에서 당사자가 정하는 시간을 의미하며, 무급 휴게시간을 제외한 실 근로시간을 근로시간으로 하며,
+                주휴일은 유급일로 근무한 경우 유급휴일로 인정한다.
+              </div>
+
+              <div className="text-[11.5px] font-bold mb-1">1. 기본 근로시간:</div>
+              <table className="w-full border-collapse border border-slate-500 text-[11.5px] mb-1">
+                <thead>
+                  <tr className="bg-slate-100 font-black">
+                    <th className="border border-slate-400 px-2 py-1 text-center w-[35%]">구분</th>
+                    <th className="border border-slate-400 px-2 py-1 text-center w-[35%]">기본 근로시간</th>
+                    <th className="border border-slate-400 px-2 py-1 text-center w-[30%]">휴게시간(무급)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="border border-slate-400 px-2 py-1 text-center font-bold">{workDayText}</td>
+                    <td className="border border-slate-400 px-2 py-1 text-center tabular-nums">
+                      {form.startTime || "--:--"} ~ {form.endTime || "--:--"}
+                      {hoursCalc && (
+                        <div className="text-[10px] text-slate-500 mt-0.5">
+                          (실근무 {hoursCalc.paidText})
+                        </div>
+                      )}
+                    </td>
+                    <td className="border border-slate-400 px-2 py-1 text-center tabular-nums">
+                      {breakDisplay ?? "-"}
+                      <div className="text-[10px] text-slate-500 mt-0.5">
+                        ({form.breakMinutes || 0}분)
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div className="text-[10.5px] text-slate-600 leading-snug mb-2">
+                ※ 소정근로시간과 휴게시간을 제외한 일자별 법정근로시간 (초과분) 을 초과할 당사자가 정하는 시간에 근로하며,
+                상기 시간 이외에도 자유롭게 동의한다.
+                <br />
+                ※ 업무형편상 부득이 상기 휴게시간을 재조정하여 사용해야 할 경우에는 재조정에 정하거나 사용할 수 있다.
+              </div>
+
+              {/* 특별근로 동의 · 서명 (이미지 재현) */}
+              <div className="mt-1 rounded-sm border border-amber-300 bg-amber-50/50 px-2 py-1.5">
+                <div className="text-[11px] text-slate-800 leading-snug">
+                  ※ 사업주 및 근로자를 특별히 사용하는 근무의 경우에 '을'은 소정근로시간을 특별히 사용하는 경우의 근로에 본인의 자유의사로 동의한다. <b>(해당시 서명)</b>
+                </div>
+                <div className="mt-1 flex items-end justify-end gap-2">
+                  <span className="text-[11px] font-bold text-slate-800">{form.employeeName || "(근로자)"}</span>
+                  <div className="w-[140px] h-[36px] border-b-2 border-slate-500 flex items-end justify-center">
+                    {specialWorkSignUrl && (
+                      <img src={specialWorkSignUrl} alt="특별근로 동의 서명" className="max-h-[36px] max-w-full object-contain" />
+                    )}
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-semibold pb-1">(서명)</span>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          {/* 퇴직급 */}
+          <tr>
+            <td className="border-b border-r border-slate-500 p-0">
+              <VerticalLabel minH={54}>퇴직급</VerticalLabel>
+            </td>
+            <td className="border-b border-slate-500 px-3 py-2 align-top">
+              <div className="text-[11.5px]">
+                퇴직급여보장법 및 퇴직연금제도 등, 정과금 관련하여 정하고 있는 법정기준에 따라 지급한다.
+              </div>
+              <div className="mt-1 flex items-end justify-end gap-2">
+                <span className="text-[11px] font-bold text-slate-800">{form.employeeName || "(근로자)"}</span>
+                <div className="w-[140px] h-[32px] border-b-2 border-slate-500 flex items-end justify-center">
+                  {severanceSignUrl && (
+                    <img src={severanceSignUrl} alt="퇴직급 동의 서명" className="max-h-[32px] max-w-full object-contain" />
+                  )}
+                </div>
+                <span className="text-[10px] text-slate-500 font-semibold pb-1">(서명)</span>
+              </div>
+            </td>
+          </tr>
+
+          {/* 연차유급휴가 */}
+          <tr>
+            <td className="border-b border-r border-slate-500 p-0">
+              <VerticalLabel minH={44}>연차유급휴가</VerticalLabel>
+            </td>
+            <td className="border-b border-slate-500 px-3 py-2 align-top">
+              <div className="text-[11.5px]">
+                연차유급휴가는 근로기준법 제60조에 따라 <b>연 {form.annualLeaveDays || "12"}일</b> 부여하며,
+                근로자대표와의 서면합의로 연차유급휴가일을 갈음하여 정한 근로일에 휴무시킬 수 있다
+                (상시 근로자 5인 미만 사업장의 경우에는 적용을 제외한다).
+              </div>
+            </td>
+          </tr>
+
+          {/* 유급 관련 (뒷면 상단) */}
+          <tr>
+            <td className="border-b border-r border-slate-500 p-0">
+              <VerticalLabel minH={80}>유급</VerticalLabel>
+            </td>
+            <td className="border-b border-slate-500 px-3 py-2 align-top">
+              <ol className="list-decimal list-inside space-y-0.5 text-[11.5px] text-slate-800">
+                <li>15일 이상 소정근로일수를 계산한 경우에도 시간이 15시간 미만인 경우에 해당하여 개근 시에는 <b>주휴수당을 지급한다.</b></li>
+                <li>공휴일은 유급휴일로 한다.</li>
+                <li>퇴직자는 무급휴가를 부여한다.</li>
+                <li>급요와 공휴일에 관련 규정, 제3조 (휴게시간을 제외한다) 따른 근무일 등 같은 조 제3조에 따라 대체근무 등의 요일에 대체근무 사용자간 부여할 수 있으며 · 보상 휴가 부여도 가능하다. (상시 근로자 수가 5인 이상)</li>
+              </ol>
+            </td>
+          </tr>
+
+          {/* 인·정계·해고 사유 (11개) */}
+          <tr>
+            <td className="border-b border-r border-slate-500 p-0">
+              <VerticalLabel minH={220}>인정계 해고 사유</VerticalLabel>
+            </td>
+            <td className="border-b border-slate-500 px-3 py-2 align-top">
+              <div className="text-[11px] font-bold text-slate-800 mb-1">
+                인·정계·해고에 관련 처벌 방법 (다음 각 호의 어느 하나에 해당하는 경우 사업주는 근로자를 징계 또는 해고할 수 있다)
+              </div>
+              <ol className="list-decimal list-inside space-y-0.5 text-[11.5px] text-slate-800 pl-1">
+                {DISCIPLINE_REASONS.map((r, i) => (
+                  <li key={i} className="leading-snug">{r}</li>
+                ))}
+              </ol>
+            </td>
+          </tr>
+
+          {/* 기타사항 5항목 */}
+          <tr>
+            <td className="border-b border-r border-slate-500 p-0">
+              <VerticalLabel minH={140}>기타사항</VerticalLabel>
+            </td>
+            <td className="border-b border-slate-500 px-3 py-2 align-top">
+              <ol className="list-decimal list-inside space-y-0.5 text-[11.5px] text-slate-800 pl-1">
+                {ETC_ITEMS.map((r, i) => (
+                  <li key={i} className="leading-snug">{r}</li>
+                ))}
+              </ol>
+              {form.additionalContent.trim() && (
+                <div className="mt-2 rounded-sm border border-slate-300 bg-slate-50/70 px-2 py-1">
+                  <div className="text-[10.5px] font-bold text-slate-600 mb-0.5">추가 특약 사항</div>
+                  <div className="text-[11.5px] whitespace-pre-wrap text-slate-800">{form.additionalContent}</div>
+                </div>
+              )}
+              {form.socialInsurance && (
+                <div className="mt-1.5 text-[11px] text-slate-700">
+                  · 4대보험 가입: <SpanBox checked /> 고용보험 <SpanBox checked /> 산재보험 <SpanBox checked /> 국민연금 <SpanBox checked /> 건강보험
+                </div>
+              )}
+              {form.primaryFocus && (form.employeeCategory === "매장" || form.employeeCategory === "창고") && (
+                <div className="mt-1 text-[11px] text-slate-700">
+                  · 담당 업무의 우선순위: <b>{form.primaryFocus}</b> 관련 업무에 근무시간의 <b>{form.primaryFocusPercent}%</b> 비중.
+                </div>
+              )}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* 본 계약서 교부 확인 · 수령자 서명 */}
+      <div className="mt-3 border border-slate-500 rounded-sm px-3 py-2 text-[11.5px] flex flex-wrap items-end gap-2">
+        <div className="flex-1 min-w-[280px] leading-snug">
+          본 계약은 당사자 간의 자유로운 의사에 의해 작성되었으며, '을'은 작성된 근로계약서 1부를 교부받았음을 확인합니다.
+        </div>
+        <div className="flex items-end gap-1">
+          <span className="text-[11px] font-bold text-slate-800">수령자 성명:</span>
+          <span className="text-[11.5px] font-black text-slate-900 border-b border-slate-500 px-2 min-w-[70px] text-center">
+            {form.employeeName || " "}
+          </span>
+          <div className="w-[120px] h-[32px] border-b-2 border-slate-500 flex items-end justify-center">
+            {receiptSignUrl && (
+              <img src={receiptSignUrl} alt="수령자 서명" className="max-h-[32px] max-w-full object-contain" />
+            )}
+          </div>
+          <span className="text-[10px] text-slate-500 font-semibold pb-1">(서명)</span>
+        </div>
+      </div>
+
+      {/* 계약일 (년/월/일) 크게 · 도장 위치 */}
+      <div className="mt-3 flex items-center justify-center gap-3 text-[18px] font-black tracking-widest text-slate-900">
+        <span className="tabular-nums">{csY || "20__"}</span>
+        <span>년</span>
+        <span className="tabular-nums">{typeof csM === "number" ? csM : "__"}</span>
+        <span>월</span>
+        <span className="tabular-nums">{typeof csD === "number" ? csD : "__"}</span>
+        <span>일</span>
+      </div>
+
+      {/* 사업주 (갑) · 근로자 (을) 정보 · 하단 2열 (이미지 재현) */}
+      <table className="w-full border-collapse border-2 border-slate-800 text-[11.5px] mt-3">
+        <tbody>
+          {/* 사업주 (갑) */}
+          <tr>
+            <td className="border-b border-r border-slate-500 p-0 w-[32px]">
+              <VerticalLabel minH={72}>사용자 갑</VerticalLabel>
+            </td>
+            <td className="border-b border-slate-500 px-2 py-1.5 align-top">
+              <div className="grid grid-cols-[70px,1fr,70px,1fr,80px] gap-1 items-center">
+                <div className="bg-slate-100 border border-slate-300 px-1 py-0.5 text-center font-black">상호</div>
+                <div className="border-b border-slate-400 px-2 py-0.5 font-semibold">{form.companyName || "-"}</div>
+                <div className="bg-slate-100 border border-slate-300 px-1 py-0.5 text-center font-black">대표</div>
+                <div className="border-b border-slate-400 px-2 py-0.5 font-semibold">{form.employerName || "-"}</div>
+                <div className="relative flex items-center justify-center h-[42px]">
+                  {employerSignUrl ? (
+                    <img src={employerSignUrl} alt="사업주 도장/서명" className="max-h-[40px] max-w-[76px] object-contain" />
                   ) : (
-                    <span className={isEmpty ? "text-slate-400" : "text-slate-800"}>
-                      월평균 <b className="tabular-nums">{r.hours.toFixed(2)}</b> 시간
+                    <span className="inline-flex items-center justify-center w-[42px] h-[42px] rounded-full border-2 border-rose-500 text-rose-500 text-[10px] font-black">
+                      (도장)
                     </span>
                   )}
-                </td>
-                <td className="border-b border-l border-slate-200 px-2 py-1 align-top text-right tabular-nums font-semibold">
-                  {isEmpty ? <span className="text-slate-300">-</span> : (
-                    <span className="text-slate-900">{fmtWon(r.amount)} 원</span>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-          <tr className="bg-emerald-50">
-            <td className="px-2 py-1.5 font-black text-emerald-800">월급여총액</td>
-            <td className="border-l border-slate-200 px-2 py-1.5 text-[10px] text-emerald-700">
-              세전 · 세금·4대보험 공제 전
+                </div>
+              </div>
+              <div className="grid grid-cols-[70px,1fr] gap-1 items-center mt-1">
+                <div className="bg-slate-100 border border-slate-300 px-1 py-0.5 text-center font-black">주소</div>
+                <div className="border-b border-slate-400 px-2 py-0.5 font-semibold">{form.companyAddress || "-"}</div>
+              </div>
+              {form.companyRegNo && (
+                <div className="grid grid-cols-[110px,1fr] gap-1 items-center mt-1">
+                  <div className="bg-slate-100 border border-slate-300 px-1 py-0.5 text-center font-black">사업자등록번호</div>
+                  <div className="border-b border-slate-400 px-2 py-0.5 font-semibold">{form.companyRegNo}</div>
+                </div>
+              )}
             </td>
-            <td className="border-l border-slate-200 px-2 py-1.5 text-right tabular-nums font-black text-emerald-800">
-              {fmtWon(total)} 원
+          </tr>
+          {/* 근로자 (을) */}
+          <tr>
+            <td className="border-b border-r border-slate-500 p-0">
+              <VerticalLabel minH={130}>근로자 을</VerticalLabel>
+            </td>
+            <td className="border-b border-slate-500 px-2 py-1.5 align-top">
+              <div className="grid grid-cols-[70px,1fr,70px,1fr,80px] gap-1 items-center">
+                <div className="bg-slate-100 border border-slate-300 px-1 py-0.5 text-center font-black">주민번호</div>
+                <div className="border-b border-slate-400 px-2 py-0.5 font-semibold tabular-nums">{form.employeeBirth || "-"}</div>
+                <div className="bg-slate-100 border border-slate-300 px-1 py-0.5 text-center font-black">성명</div>
+                <div className="border-b border-slate-400 px-2 py-0.5 font-semibold">{form.employeeName || "-"}</div>
+                <div className="flex items-end justify-center h-[42px]">
+                  {employeeSignUrl ? (
+                    <img src={employeeSignUrl} alt="근로자 서명" className="max-h-[40px] max-w-[76px] object-contain" />
+                  ) : (
+                    <span className="inline-flex items-center justify-center w-[42px] h-[42px] rounded-full border-2 border-slate-400 text-slate-400 text-[10px] font-black">
+                      (서명)
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-[70px,1fr,70px,1fr] gap-1 items-center mt-1">
+                <div className="bg-slate-100 border border-slate-300 px-1 py-0.5 text-center font-black">주소</div>
+                <div className="border-b border-slate-400 px-2 py-0.5 font-semibold">{form.employeeAddress || "-"}</div>
+                <div className="bg-slate-100 border border-slate-300 px-1 py-0.5 text-center font-black">전화번호</div>
+                <div className="border-b border-slate-400 px-2 py-0.5 font-semibold tabular-nums">{form.employeePhone || "-"}</div>
+              </div>
+              <div className="grid grid-cols-[110px,1fr,70px,1fr] gap-1 items-center mt-1">
+                <div className="bg-slate-100 border border-slate-300 px-1 py-0.5 text-center font-black">은행/계좌번호</div>
+                <div className="border-b border-slate-400 px-2 py-0.5 font-semibold">{form.employeeBankAccount || "-"}</div>
+                <div className="bg-slate-100 border border-slate-300 px-1 py-0.5 text-center font-black">이메일</div>
+                <div className="border-b border-slate-400 px-2 py-0.5 font-semibold">{form.employeeEmail || "-"}</div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* CCTV/개인정보 동의 · 이미지 재현 (별도 표) */}
+      <table className="w-full border-collapse border-2 border-slate-800 text-[11px] mt-3">
+        <tbody>
+          <tr>
+            <td className="border-b border-r border-slate-500 p-0 w-[32px]" rowSpan={5}>
+              <VerticalLabel minH={220}>개인정보 CCTV 설치 이용 대한 동의</VerticalLabel>
+            </td>
+            <td className="border-b border-r border-slate-500 bg-slate-100 px-2 py-1 text-center font-black w-[22%]">
+              정보의 수집·이용 목적 <br /><span className="text-[10px] text-slate-600">(CCTV 설치 포함)</span>
+            </td>
+            <td className="border-b border-r border-slate-500 px-2 py-1 text-slate-800 align-top">
+              당사자 인적사항관리 · 회사 안전관리 · 사업장 사고예방 및 범죄예방
+            </td>
+            <td className="border-b border-r border-slate-500 bg-slate-100 px-2 py-1 text-center font-black w-[18%]">
+              정보 보유 및 이용기간
+            </td>
+            <td className="border-b border-slate-500 px-2 py-1 text-slate-800 align-top">
+              근로계약이 유지되는 기간 · CCTV 화상영상 정보인 경우 90일 정기간, 기존 영상정보에서 삭제
+            </td>
+          </tr>
+          <tr>
+            <td className="border-b border-r border-slate-500 bg-slate-100 px-2 py-1 text-center font-black">
+              개인정보의 항목
+            </td>
+            <td className="border-b border-slate-500 px-2 py-1 text-slate-800 align-top" colSpan={3}>
+              성명, 주민번호, 주소, 생년월일, 이메일, 휴대전화번호 등 연락처 · 기타, 근로계약 관련 개인정보
+            </td>
+          </tr>
+          <tr>
+            <td className="border-b border-r border-slate-500 bg-slate-100 px-2 py-1 text-center font-black">
+              CCTV 촬영시간 및 범위
+            </td>
+            <td className="border-b border-slate-500 px-2 py-1 text-slate-800 align-top" colSpan={3}>
+              촬영시간: 24시간 연속 촬영 및 녹화 · 촬영범위: 출입구 및 복도, 사업장 내 건물 내 주요 시설
+              <br />
+              3자에 제공하지 않으며, CCTV 설치 상 지 목적으로 이용하지 않는 3자에 정보를 공하지 않는다.
+            </td>
+          </tr>
+          <tr>
+            <td className="border-b border-slate-500 bg-amber-50/40 px-2 py-1 text-slate-800 align-top text-[10.5px]" colSpan={4}>
+              위 내용을 충분히 인지하고 · 개인정보의 수집 및 CCTV 설치 이용에 동의합니다.
+              <br />
+              개인정보의 수집이 및 CCTV 설치에 동의를 거부할 불이익이 없습니다.
+            </td>
+          </tr>
+          <tr>
+            <td className="border-slate-500 px-2 py-1 align-middle text-[11px]" colSpan={4}>
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="inline-flex items-center gap-1">
+                  <SpanBox checked={form.privacyConsent.agreedCollection} />
+                  <span>개인정보 수집·이용에 동의합니다</span>
+                </label>
+                <label className="inline-flex items-center gap-1">
+                  <SpanBox checked={form.privacyConsent.agreedCCTV} />
+                  <span>CCTV 촬영·이용에 동의합니다</span>
+                </label>
+                <label className="inline-flex items-center gap-1">
+                  <SpanBox checked={!form.privacyConsent.agreedCollection && !form.privacyConsent.agreedCCTV} />
+                  <span>(동의하지 않음)</span>
+                </label>
+                <div className="ml-auto flex items-end gap-1">
+                  <span className="text-[11px] text-slate-700 font-bold">동의인:</span>
+                  <span className="text-[11.5px] font-black text-slate-900 border-b border-slate-500 px-2 min-w-[70px] text-center">
+                    {form.privacyConsent.recipientName || form.employeeName || " "}
+                  </span>
+                  <div className="w-[130px] h-[32px] border-b-2 border-slate-500 flex items-end justify-center">
+                    {privacySignUrl && (
+                      <img src={privacySignUrl} alt="CCTV/개인정보 동의 서명" className="max-h-[32px] max-w-full object-contain" />
+                    )}
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-semibold pb-1">(서명)</span>
+                </div>
+              </div>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
   );
-};
+});
+ContractPreview.displayName = "ContractPreview";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// #220 · 연장 모달 · N개월 입력 → 신규 startDate/endDate 프리뷰 → 확정
-//   · 확정 후 · 부모(handleExtendConfirm)가 폼 업데이트 + 서명 초기화
+// #220 · 연장 모달
 // ─────────────────────────────────────────────────────────────────────────────
 const ExtendContractModal: React.FC<{
   open: boolean;
@@ -1370,7 +1243,6 @@ const ExtendContractModal: React.FC<{
   existingEnd: string | null | undefined;
   hireDateReference: string | null;
 }> = ({ open, onClose, onConfirm, months, setMonths, existingEnd, hireDateReference }) => {
-  // 신규 기간 프리뷰 계산
   const preview = useMemo(() => {
     if (!existingEnd) return null;
     const baseEnd = new Date(existingEnd);
@@ -1382,21 +1254,14 @@ const ExtendContractModal: React.FC<{
     const newEnd = new Date(newStart);
     newEnd.setMonth(newEnd.getMonth() + n);
     newEnd.setDate(newEnd.getDate() - 1);
-    const iso = (d: Date) =>
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     return { start: iso(newStart), end: iso(newEnd) };
   }, [existingEnd, months]);
 
   if (!open) return null;
   return (
-    <div
-      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="px-4 py-3 border-b border-slate-200 bg-gradient-to-r from-indigo-50 to-emerald-50 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center shadow-sm">
@@ -1404,38 +1269,23 @@ const ExtendContractModal: React.FC<{
             </div>
             <span className="text-sm font-black text-slate-800">근로계약 연장</span>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 w-7 h-7 rounded-md hover:bg-white/70 cursor-pointer flex items-center justify-center"
-            title="닫기"
-          >
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-700 w-7 h-7 rounded-md hover:bg-white/70 cursor-pointer flex items-center justify-center" title="닫기">
             <XIcon size={13} weight="bold" />
           </button>
         </div>
-
         <div className="p-4 flex flex-col gap-3">
           <div className="text-[12px] text-slate-700 leading-relaxed">
             현재 계약 종료일 <b className="text-slate-900">{existingEnd ?? "-"}</b> 다음 날부터 지정한 개월수만큼 자동으로 신규 계약서를 작성합니다.
           </div>
-
-          {/* 프리셋 버튼 + 직접 입력 */}
           <div className="flex flex-col gap-2">
-            <label className="text-[12px] font-bold text-slate-600 flex items-center gap-1">
-              연장 개월수 <span className="text-rose-500">*</span>
-            </label>
+            <label className="text-[12px] font-bold text-slate-600 flex items-center gap-1">연장 개월수 <span className="text-rose-500">*</span></label>
             <div className="flex flex-wrap gap-1.5">
               {["1", "3", "6", "12", "24"].map(m => {
                 const active = months === m;
                 return (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setMonths(m)}
+                  <button key={m} type="button" onClick={() => setMonths(m)}
                     className={`px-3 py-1.5 rounded-lg border text-[13px] font-black transition-colors cursor-pointer ${
-                      active
-                        ? "bg-indigo-500 text-white border-indigo-600 shadow-sm"
-                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                      active ? "bg-indigo-500 text-white border-indigo-600 shadow-sm" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
                     }`}
                   >
                     {m}개월
@@ -1443,63 +1293,32 @@ const ExtendContractModal: React.FC<{
                 );
               })}
               <div className="flex items-center gap-1 ml-1">
-                <input
-                  type="number"
-                  min={1}
-                  max={120}
-                  value={months}
-                  onChange={(e) => setMonths(e.target.value.replace(/[^0-9]/g, ""))}
-                  className="w-16 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[13px] text-slate-800 font-black text-right focus:outline-none focus:border-indigo-500 focus:shadow-sm transition"
-                  placeholder="직접"
-                />
+                <input type="number" min={1} max={120} value={months} onChange={(e) => setMonths(e.target.value.replace(/[^0-9]/g, ""))}
+                  className="w-16 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[13px] text-slate-800 font-black text-right focus:outline-none focus:border-indigo-500 focus:shadow-sm transition" placeholder="직접" />
                 <span className="text-[11px] font-semibold text-slate-500">개월</span>
               </div>
             </div>
           </div>
-
-          {/* 프리뷰 · 신규 기간 */}
           <div className="rounded-lg border border-indigo-200 bg-indigo-50/40 px-3 py-2 text-[12px] flex flex-col gap-1">
             <div className="font-black text-indigo-800 flex items-center gap-1">
-              <CalendarBlank size={12} weight="fill" />
-              신규 계약 기간
+              <CalendarBlank size={12} weight="fill" />신규 계약 기간
             </div>
             {preview ? (
               <div className="text-slate-800">
-                <b className="font-black">{preview.start}</b>
-                <span className="mx-1 text-slate-400">~</span>
-                <b className="font-black">{preview.end}</b>
+                <b className="font-black">{preview.start}</b><span className="mx-1 text-slate-400">~</span><b className="font-black">{preview.end}</b>
               </div>
-            ) : (
-              <div className="text-rose-600 font-semibold">개월수를 입력하면 신규 기간이 계산됩니다.</div>
-            )}
-            {hireDateReference && (
-              <div className="text-[11px] text-slate-500 mt-0.5">
-                · 입사일 <b className="text-slate-700">{hireDateReference}</b> 은 변경되지 않고 유지됩니다 (근속 산정용).
-              </div>
-            )}
+            ) : <div className="text-rose-600 font-semibold">개월수를 입력하면 신규 기간이 계산됩니다.</div>}
+            {hireDateReference && <div className="text-[11px] text-slate-500 mt-0.5">· 입사일 <b className="text-slate-700">{hireDateReference}</b> 은 변경되지 않고 유지됩니다 (근속 산정용).</div>}
           </div>
-
           <div className="text-[11px] text-amber-700 bg-amber-50/70 border border-amber-200 rounded-lg px-2.5 py-1.5">
-            확정 시 현재 폼에 신규 계약 기간이 반영되고 · 서명·이해확인 상태가 초기화됩니다. 서명 후 [계약완료 승인] 을 눌러 저장하세요.
+            확정 시 현재 폼에 신규 계약 기간이 반영되고 · 서명 상태가 초기화됩니다. 서명 후 [계약완료 승인] 을 눌러 저장하세요.
           </div>
         </div>
-
         <div className="px-4 py-3 border-t border-slate-200 bg-slate-50/70 flex items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-[12px] font-bold text-slate-600 bg-white border border-slate-300 rounded-md h-8 px-3 hover:bg-slate-50 cursor-pointer"
-          >
-            취소
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={!preview}
-            className="text-[12px] font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-md h-8 px-4 cursor-pointer disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-sm"
-          >
-            <Check size={12} weight="bold" />
-            연장 확정
+          <button type="button" onClick={onClose} className="text-[12px] font-bold text-slate-600 bg-white border border-slate-300 rounded-md h-8 px-3 hover:bg-slate-50 cursor-pointer">취소</button>
+          <button type="button" onClick={onConfirm} disabled={!preview}
+            className="text-[12px] font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-md h-8 px-4 cursor-pointer disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-sm">
+            <Check size={12} weight="bold" />연장 확정
           </button>
         </div>
       </div>
@@ -1511,12 +1330,10 @@ const ExtendContractModal: React.FC<{
 // 메인 페이지
 // ─────────────────────────────────────────────────────────────────────────────
 
-// 임시저장 localStorage key (2026-08-04 · #28 · 사용자 요청)
 const DRAFT_STORAGE_KEY = "megatown_contract_writer_draft";
 const DRAFT_TIMESTAMP_KEY = "megatown_contract_writer_draft_ts";
 
 const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, onBack, onNavigate, onLogout, embedded = false }) => {
-  // 초기값 · localStorage draft 있으면 복원 확인
   const [form, setForm] = useState<ContractForm>(() => {
     try {
       const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
@@ -1527,11 +1344,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     } catch { /* silent */ }
     return emptyForm();
   });
-  // 임시저장 상태
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(() => {
     try { return localStorage.getItem(DRAFT_TIMESTAMP_KEY); } catch { return null; }
   });
-  // 수동 임시저장 함수
   const saveDraft = useCallback(() => {
     try {
       localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(form));
@@ -1539,11 +1354,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       localStorage.setItem(DRAFT_TIMESTAMP_KEY, ts);
       setDraftSavedAt(ts);
     } catch {
-      // localStorage quota
       alert("임시저장 실패 · 브라우저 저장공간 부족");
     }
   }, [form]);
-  // 자동 저장 · form 변경 30초 debounce (부하 감소)
   useEffect(() => {
     const t = window.setTimeout(() => {
       try {
@@ -1555,7 +1368,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     }, 30_000);
     return () => window.clearTimeout(t);
   }, [form]);
-  // draft 삭제 (계약 승인·저장 완료 시 호출)
   const clearDraft = useCallback(() => {
     try {
       localStorage.removeItem(DRAFT_STORAGE_KEY);
@@ -1569,58 +1381,28 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const [empError, setEmpError] = useState<string | null>(null);
   const [empSearchOpen, setEmpSearchOpen] = useState(false);
 
-  // 서명 pad refs
+  // 서명 pad refs (7개 · 사용자 요구)
   const employerPadRef = useRef<SignatureCanvasType | null>(null);
   const employeePadRef = useRef<SignatureCanvasType | null>(null);
-  // 2026-08-04 · 개인정보/CCTV 동의 별도 서명
   const privacyPadRef = useRef<SignatureCanvasType | null>(null);
+  const contractDatePadRef = useRef<SignatureCanvasType | null>(null);
+  const specialWorkPadRef = useRef<SignatureCanvasType | null>(null);
+  const severancePadRef = useRef<SignatureCanvasType | null>(null);
+  const receiptPadRef = useRef<SignatureCanvasType | null>(null);
+
+  const [employerSignUrl, setEmployerSignUrl] = useState<string | null>(null);
+  const [employeeSignUrl, setEmployeeSignUrl] = useState<string | null>(null);
   const [privacySignUrl, setPrivacySignUrl] = useState<string | null>(null);
+  const [contractDateSignUrl, setContractDateSignUrl] = useState<string | null>(null);
+  const [specialWorkSignUrl, setSpecialWorkSignUrl] = useState<string | null>(null);
+  const [severanceSignUrl, setSeveranceSignUrl] = useState<string | null>(null);
+  const [receiptSignUrl, setReceiptSignUrl] = useState<string | null>(null);
 
-  // #200 · 조항별 이해확인 상태
-  const [clauseAcks, setClauseAcks] = useState<ClauseAckMap>({});
-  const clausePadRefs = useRef<Record<string, SignatureCanvasType | null>>({});
-  const setClauseAckChecked = useCallback((key: string, v: boolean) => {
-    setClauseAcks(prev => ({
-      ...prev,
-      [key]: {
-        checked: v,
-        empty: prev[key]?.empty ?? true,
-        requiresSignature: prev[key]?.requiresSignature ?? false,
-      },
-    }));
-  }, []);
-  const setClauseAckEmpty = useCallback((key: string, empty: boolean) => {
-    setClauseAcks(prev => ({
-      ...prev,
-      [key]: {
-        checked: prev[key]?.checked ?? false,
-        empty,
-        requiresSignature: prev[key]?.requiresSignature ?? false,
-      },
-    }));
-  }, []);
-  // #205 · PreviewRow 마운트 시 · 조항 metadata 등록 · idempotent (변화 없으면 재렌더 스킵)
-  const registerClauseAck = useCallback((key: string, requiresSignature: boolean) => {
-    setClauseAcks(prev => {
-      const existing = prev[key];
-      if (existing && existing.requiresSignature === requiresSignature) return prev;
-      return {
-        ...prev,
-        [key]: {
-          checked: existing?.checked ?? false,
-          empty: existing?.empty ?? true,
-          requiresSignature,
-        },
-      };
-    });
-  }, []);
-
-  // 완료 · PDF 생성 상태
   const previewRef = useRef<HTMLDivElement | null>(null);
   const [generating, setGenerating] = useState(false);
   const [notice, setNotice] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
 
-  // #220 · 연장 기능 · 기존 근로계약서 이력 (선택된 직원 기준 · 최신 1건)
+  // #220 · 연장 기능
   interface ExistingContract {
     id?: number;
     contract_type?: string | null;
@@ -1633,10 +1415,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const [existingLoading, setExistingLoading] = useState(false);
   const [extendModalOpen, setExtendModalOpen] = useState(false);
   const [extendMonths, setExtendMonths] = useState<string>("3");
-  // #220 · 재계약 baseline · 원본 계약의 hire_date (입사일) · 표시용 (계약 startDate 는 신규 = 기존 end+1일)
   const [hireDateReference, setHireDateReference] = useState<string | null>(null);
 
-  // 직원 목록 로드
+  // 직원 목록
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -1660,10 +1441,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     return () => { cancelled = true; };
   }, []);
 
-  // #194 · localStorage · "contract-writer-prefill" · 자동 채움 (mount 후 1회)
-  // - 직원목록 [작성] 버튼 → localStorage prefill → 이 페이지 마운트 시 자동 반영
-  // - 채움 후 · localStorage.removeItem · 재사용 방지 (뒤로가기 뒤 다시 들어와도 재적용 안 됨)
-  // - 실패 시 silent
+  // prefill (직원목록 [작성] 버튼)
   const [prefillConsumed, setPrefillConsumed] = useState(false);
   useEffect(() => {
     if (prefillConsumed) return;
@@ -1673,7 +1451,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       const p = JSON.parse(raw);
       if (!p || typeof p !== "object") { setPrefillConsumed(true); return; }
 
-      // position → employeeCategory 매핑 (onSelectEmployee 와 동일 규칙)
       const mapCategory = (pos: string): { cat: ContractForm["employeeCategory"]; custom: string } => {
         const t = String(pos ?? "").trim();
         if (t === "약사") return { cat: "약사", custom: "" };
@@ -1683,7 +1460,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         if (!t) return { cat: "기타", custom: "" };
         return { cat: "기타", custom: t };
       };
-      // employmentType → contractType
       const mapContractType = (et: string, fallback: string): string => {
         const t = String(et ?? "").trim();
         if (!t) return fallback;
@@ -1709,23 +1485,18 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           employeeCategory: cat,
           employeeCategoryCustom: custom || prev.employeeCategoryCustom,
           contractType: mapContractType(typeof p.employmentType === "string" ? p.employmentType : "", prev.contractType),
-          // 입사일 있으면 startDate 로 (없으면 유지)
           startDate: typeof p.hireDate === "string" && p.hireDate ? p.hireDate : prev.startDate,
         };
       });
-
-      // 재사용 방지 · 소비 즉시 제거
       localStorage.removeItem("contract-writer-prefill");
     } catch {
-      // silent · 실패해도 기본 폼 유지
+      // silent
     } finally {
       setPrefillConsumed(true);
     }
   }, [prefillConsumed]);
 
-  // #220 · form.employeeId 변경 시 · 기존 근로계약서 이력 (최신 1건) 조회 + hire_date 참조 저장
-  //   · GET /api/employee-contracts?employeeId=X · created_at DESC 첫번째
-  //   · 실패해도 UX 는 그대로 · 연장 버튼만 미노출
+  // 계약 이력 조회
   useEffect(() => {
     const empId = form.employeeId;
     if (empId == null) {
@@ -1738,7 +1509,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     (async () => {
       setExistingLoading(true);
       try {
-        // 계약 이력
         const res = await fetch(`/api/employee-contracts?employeeId=${empId}`);
         if (res.ok) {
           const rows = await res.json();
@@ -1749,7 +1519,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         } else if (!cancelled) {
           setExistingContract(null);
         }
-        // hire_date · employees 리스트에서 · 이미 employees state 에 존재
         const emp = employees.find(e => e.id === empId);
         const hd = (emp as any)?.hire_date ?? null;
         if (!cancelled) setHireDateReference(typeof hd === "string" && hd ? hd : null);
@@ -1765,9 +1534,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     return () => { cancelled = true; };
   }, [form.employeeId, employees]);
 
-  // 사업주 · 대표자 · 기본값(강남성 · 오산 메가타운 약국) · 편집 가능
-
-  // 계약 유형 · "정규직" 이면 무기한 자동 · "계약직" 이면 무기한 해제 (편집 가능)
+  // 계약 유형 · 정규직 → 무기한 · 계약직 → 유기
   useEffect(() => {
     if (form.contractType === "정규직" && !form.indefinite) {
       setForm(prev => ({ ...prev, indefinite: true, endDate: "" }));
@@ -1776,7 +1543,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     }
   }, [form.contractType]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 계약직 · contractMonths → 시작일 + N개월 · 종료일 자동 계산 (편집 가능)
+  // 계약직 · N개월 → endDate 자동
   useEffect(() => {
     if (form.contractType !== "계약직") return;
     if (form.indefinite) return;
@@ -1794,10 +1561,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     }
   }, [form.contractType, form.contractMonths, form.startDate, form.indefinite]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 직원 카테고리 (약사·매장·창고·기타) → 업무 내용 기본값 자동 반영 (사용자 편집 시 그대로 유지)
-  // - #184 · 사용자 설정 (contract-writer-settings) 우선 · 없으면 하드코딩 fallback
+  // 카테고리 → 업무 기본값
   useEffect(() => {
-    // 저장된 설정 우선 · 실패 시 default
     const settings = loadContractSettings();
     const defaults: Record<ContractCategory, string> = {
       "약사": settings.약사 || DEFAULT_CONTRACT_SETTINGS.약사,
@@ -1809,7 +1574,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     const nextDuty = form.employeeCategory === "기타" && form.employeeCategoryCustom
       ? `${form.employeeCategoryCustom} 관련 업무`
       : defaults[key];
-    // 기본값 4종 · DEFAULT 4종 · 빈 값 중 하나이면 자동 갱신 (사용자 커스텀 지키기)
     const knownDefaults = new Set<string>([
       ...Object.values(defaults),
       ...Object.values(DEFAULT_CONTRACT_SETTINGS).filter((v): v is string => typeof v === "string" && v.length > 0),
@@ -1820,19 +1584,15 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     }
   }, [form.employeeCategory, form.employeeCategoryCustom]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // #186 · 카테고리 → 우선업무 자동 매핑
-  // - 매장/창고 선택 시 · primaryFocus 자동 설정 (이미 다른 값이면 유지)
-  // - 약사/기타 선택 시 · primaryFocus null 로 리셋 (부적합)
+  // 매장/창고 → primaryFocus 자동
   useEffect(() => {
     setForm(prev => {
       if (prev.employeeCategory === "매장" || prev.employeeCategory === "창고") {
-        // 카테고리와 동일한 물류 자동 · 이미 매장/창고 중 값이면 유지
         if (prev.primaryFocus == null) {
           return { ...prev, primaryFocus: prev.employeeCategory };
         }
         return prev;
       }
-      // 약사·기타 · 우선업무 미적용
       if (prev.primaryFocus !== null) {
         return { ...prev, primaryFocus: null };
       }
@@ -1840,10 +1600,13 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     });
   }, [form.employeeCategory]);
 
-  // 근무요일 개수 → 주근무횟수 자동 (사용자가 직접 조정 안 했으면)
+  // 계약체결일 = 시작일 (사용자가 수동으로 바꾼 것 없으면 유지)
+  useEffect(() => {
+    setForm(prev => (prev.contractSignDate ? prev : { ...prev, contractSignDate: prev.startDate || todayIso() }));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const chosenDaysCount = useMemo(() => DAYS.filter(d => form.workDays[d]).length, [form.workDays]);
 
-  // 필드 업데이트 helper
   const upd = useCallback(<K extends keyof ContractForm>(key: K, val: ContractForm[K]) => {
     setForm(prev => ({ ...prev, [key]: val }));
   }, []);
@@ -1852,12 +1615,43 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     setForm(prev => ({ ...prev, workDays: { ...prev.workDays, [d]: !prev.workDays[d] } }));
   };
 
-  // 직원 선택 시 · 이름·연락처·주소·업무 자동 채움 (모두 편집 가능)
-  const onSelectEmployee = (empIdRaw: string) => {
-    if (!empIdRaw) {
-      upd("employeeId", null);
+  // 근무시간 → 월 근로시간 계산 (실시간)
+  const monthlyCalc = useMemo(() => {
+    return computeMonthlyHours(
+      form.startTime,
+      form.endTime,
+      Number(form.breakMinutes) || 0,
+      Number(form.weeklyDays) || 0,
+    );
+  }, [form.startTime, form.endTime, form.breakMinutes, form.weeklyDays]);
+
+  // 자동계산 적용 → 기본급 시간·분 세팅
+  const applyMonthlyHoursToBasic = useCallback(() => {
+    if (!monthlyCalc) {
+      setNotice({ tone: "err", text: "근무시간을 먼저 입력하세요." });
       return;
     }
+    setForm(prev => ({
+      ...prev,
+      useWageComponents: true,
+      wageComponents: {
+        ...prev.wageComponents,
+        basicSalary: {
+          ...prev.wageComponents.basicSalary,
+          hours: monthlyCalc.monthlyHoursInt,
+          minutes: monthlyCalc.monthlyMinutesRem,
+        },
+      },
+    }));
+    setNotice({
+      tone: "ok",
+      text: `월 근로시간 ${monthlyCalc.monthlyHoursInt}시간 ${monthlyCalc.monthlyMinutesRem}분 을 기본급 항목에 반영했습니다.`,
+    });
+  }, [monthlyCalc]);
+
+  // 직원 선택
+  const onSelectEmployee = (empIdRaw: string) => {
+    if (!empIdRaw) { upd("employeeId", null); return; }
     const empId = Number(empIdRaw);
     const emp = employees.find(e => e.id === empId);
     if (!emp) { upd("employeeId", empId); return; }
@@ -1868,13 +1662,11 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       employeePhone: emp.phone || prev.employeePhone,
       employeeAddress: emp.address || prev.employeeAddress,
       annualLeaveDays: emp.annual_leave_days != null ? String(emp.annual_leave_days) : prev.annualLeaveDays,
-      // 직원 카테고리 자동 매핑 (약사·매장·창고·기타)
       employeeCategory: (() => {
         const pos = String(emp.position || "").trim();
         if (pos === "약사")  return "약사" as const;
         if (pos === "매장")  return "매장" as const;
         if (pos === "창고")  return "창고" as const;
-        // 하위 호환 · 물류/캐셔/진열 → 매장 (기본)
         if (["물류", "캐셔", "진열"].includes(pos)) return "매장" as const;
         return "기타" as const;
       })(),
@@ -1882,7 +1674,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         const pos = String(emp.position || "").trim();
         return pos && pos !== "약사" ? pos : prev.employeeCategoryCustom;
       })(),
-      // 정규직/계약직/알바 · 매핑
       contractType: (() => {
         const et = (emp.employmentType || "").trim();
         if (et.includes("정")) return "정규직";
@@ -1890,7 +1681,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         if (et.includes("알바") || et.includes("파트")) return "알바";
         return prev.contractType;
       })(),
-      // #186 · Employee.primary_focus / primary_focus_percent 존재 시 반영
       primaryFocus: (emp.primary_focus === "매장" || emp.primary_focus === "창고")
         ? emp.primary_focus
         : prev.primaryFocus,
@@ -1900,11 +1690,25 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     }));
   };
 
-  // #220 · 연장 확정 · N개월 연장
-  //   · 신규 startDate = 기존 계약 end_date + 1일
-  //   · 신규 endDate = 신규 startDate + N개월 - 1일 (contractMonths → useEffect 자동계산과 동일 규칙)
-  //   · contractType = "계약직" · indefinite = false · 기타 필드는 유지 (사용자가 서명 후 저장)
-  //   · hire_date (입사일) 은 폼에 별도 필드 없음 · UI 배너로 "입사일 X · 유지됨" 안내
+  // 서명 pad 초기화 · 전체
+  const clearAllSignatures = useCallback(() => {
+    employerPadRef.current?.clear();
+    employeePadRef.current?.clear();
+    privacyPadRef.current?.clear();
+    contractDatePadRef.current?.clear();
+    specialWorkPadRef.current?.clear();
+    severancePadRef.current?.clear();
+    receiptPadRef.current?.clear();
+    setEmployerSignUrl(null);
+    setEmployeeSignUrl(null);
+    setPrivacySignUrl(null);
+    setContractDateSignUrl(null);
+    setSpecialWorkSignUrl(null);
+    setSeveranceSignUrl(null);
+    setReceiptSignUrl(null);
+  }, []);
+
+  // #220 · 연장 확정
   const handleExtendConfirm = () => {
     const months = Number(extendMonths);
     if (!Number.isFinite(months) || months <= 0) {
@@ -1921,11 +1725,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       setNotice({ tone: "err", text: "기존 계약서 종료일이 유효하지 않습니다." });
       return;
     }
-    // 신규 시작일 = 기존 종료일 + 1일
     const newStart = new Date(baseEndDate);
     newStart.setDate(newStart.getDate() + 1);
     const newStartIso = `${newStart.getFullYear()}-${String(newStart.getMonth() + 1).padStart(2, "0")}-${String(newStart.getDate()).padStart(2, "0")}`;
-    // 신규 종료일 = 신규 시작일 + N개월 - 1일 (기존 계약직 auto-end 규칙과 동일)
     const newEnd = new Date(newStart);
     newEnd.setMonth(newEnd.getMonth() + months);
     newEnd.setDate(newEnd.getDate() - 1);
@@ -1938,25 +1740,10 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       indefinite: false,
       startDate: newStartIso,
       endDate: newEndIso,
+      contractSignDate: newStartIso,
     }));
 
-    // 신규 계약서 · 서명·조항확인 초기화 (사용자에게 재서명 요구)
-    employerPadRef.current?.clear();
-    employeePadRef.current?.clear();
-    privacyPadRef.current?.clear();
-    setEmployerSignUrl(null);
-    setEmployeeSignUrl(null);
-    setPrivacySignUrl(null);
-    Object.values(clausePadRefs.current).forEach(p => { try { p?.clear(); } catch {} });
-    setClauseAcks(prev => {
-      // requiresSignature metadata 는 유지 · checked/empty 만 초기화
-      const next: ClauseAckMap = {};
-      for (const [k, v] of Object.entries(prev)) {
-        next[k] = { checked: false, empty: true, requiresSignature: v.requiresSignature };
-      }
-      return next;
-    });
-
+    clearAllSignatures();
     setExtendModalOpen(false);
     setNotice({
       tone: "ok",
@@ -1968,39 +1755,28 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const handleReset = () => {
     if (!window.confirm("입력한 모든 내용과 서명을 초기화합니다. 계속하시겠습니까?")) return;
     setForm(emptyForm());
-    employerPadRef.current?.clear();
-    employeePadRef.current?.clear();
-    privacyPadRef.current?.clear();
-    setEmployerSignUrl(null);
-    setEmployeeSignUrl(null);
-    setPrivacySignUrl(null);
-    // #200 · 조항별 이해확인 pad·상태 초기화
-    Object.values(clausePadRefs.current).forEach(p => { try { p?.clear(); } catch {} });
-    setClauseAcks({});
+    clearAllSignatures();
     setNotice(null);
   };
 
-  // 서명 URL (실시간 프리뷰 반영은 사용자가 "미리보기 갱신" 버튼 or 완료 시 반영)
-  const [employerSignUrl, setEmployerSignUrl] = useState<string | null>(null);
-  const [employeeSignUrl, setEmployeeSignUrl] = useState<string | null>(null);
-
+  // 서명 URL 갱신
   const refreshSignaturePreview = () => {
     try {
-      // isEmpty() true 면 null · false 면 dataURL
-      setEmployerSignUrl(employerPadRef.current && !employerPadRef.current.isEmpty()
-        ? employerPadRef.current.toDataURL("image/png") : null);
-      setEmployeeSignUrl(employeePadRef.current && !employeePadRef.current.isEmpty()
-        ? employeePadRef.current.toDataURL("image/png") : null);
-      // 2026-08-04 · 개인정보/CCTV 동의 서명
-      setPrivacySignUrl(privacyPadRef.current && !privacyPadRef.current.isEmpty()
-        ? privacyPadRef.current.toDataURL("image/png") : null);
+      const capture = (ref: React.MutableRefObject<SignatureCanvasType | null>) =>
+        ref.current && !ref.current.isEmpty() ? ref.current.toDataURL("image/png") : null;
+      setEmployerSignUrl(capture(employerPadRef));
+      setEmployeeSignUrl(capture(employeePadRef));
+      setPrivacySignUrl(capture(privacyPadRef));
+      setContractDateSignUrl(capture(contractDatePadRef));
+      setSpecialWorkSignUrl(capture(specialWorkPadRef));
+      setSeveranceSignUrl(capture(severancePadRef));
+      setReceiptSignUrl(capture(receiptPadRef));
     } catch {
       // no-op
     }
   };
 
-  // ── 공통 · 프리뷰 캡처 → PDF 인스턴스 생성 ────────────────────────────
-  // handleComplete (로컬 다운) 과 handleApproveAndSave (#202 · DB 저장) 이 공유
+  // PDF 빌드
   const buildPdfFromPreview = async (): Promise<{ pdf: jsPDF; filename: string }> => {
     const node = previewRef.current;
     if (!node) throw new Error("계약서 프리뷰를 찾을 수 없습니다.");
@@ -2014,7 +1790,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     });
 
     const imgData = canvas.toDataURL("image/png");
-
     const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
     const pdfW = pdf.internal.pageSize.getWidth();
     const pdfH = pdf.internal.pageSize.getHeight();
@@ -2042,8 +1817,21 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     return { pdf, filename };
   };
 
-  // 공통 검증 · 최소 필드 + 서명 + 조항 확인 (softMode=true 면 조항 미확인 시 confirm 스킵)
-  const validateBeforeAction = (opts: { requireAllAcks: boolean }): boolean => {
+  // 서명 상태 (7개) · URL 캐시 기준 (refresh 필수) · 승인 활성/진행률 UI 용도
+  const signatureStatus = useMemo(() => {
+    const urls = [
+      employerSignUrl, employeeSignUrl, privacySignUrl,
+      contractDateSignUrl, specialWorkSignUrl, severanceSignUrl, receiptSignUrl,
+    ];
+    const filled = urls.filter(Boolean).length;
+    return { filled, total: 7 };
+  }, [
+    employerSignUrl, employeeSignUrl, privacySignUrl,
+    contractDateSignUrl, specialWorkSignUrl, severanceSignUrl, receiptSignUrl,
+  ]);
+
+  // 검증
+  const validateBeforeAction = (opts: { requireAllSignatures: boolean }): boolean => {
     if (!form.employeeName.trim()) {
       setNotice({ tone: "err", text: "근로자 성명을 입력하세요." });
       return false;
@@ -2056,65 +1844,35 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       setNotice({ tone: "err", text: "계약 종료일을 입력하거나 '무기한'을 선택하세요." });
       return false;
     }
-    const employerEmpty = !employerPadRef.current || employerPadRef.current.isEmpty();
-    const employeeEmpty = !employeePadRef.current || employeePadRef.current.isEmpty();
-    if (employerEmpty || employeeEmpty) {
-      const missing = [
-        employerEmpty ? "사업주" : null,
-        employeeEmpty ? "근로자" : null,
-      ].filter(Boolean).join(" · ");
-      if (!window.confirm(`서명이 비어있습니다 (${missing}).\n서명 없이 진행하시겠습니까?`)) return false;
-    }
-
-    const activeKeys = Object.keys(clauseAcks);
-    const unchecked = activeKeys.filter(k => !clauseAcks[k].checked);
-    // #205 · 중요 조항 · 서명 empty 검증 · checked 는 되었지만 서명이 안 된 경우
-    const unsignedCritical = activeKeys.filter(k => {
-      const a = clauseAcks[k];
-      return a?.requiresSignature && a.checked && a.empty;
-    });
-    if (opts.requireAllAcks) {
-      // 승인 모드 · 미확인 또는 중요조항 서명 누락 → 하드 스톱
-      if (activeKeys.length === 0 || unchecked.length > 0) {
-        setNotice({
-          tone: "err",
-          text: activeKeys.length === 0
-            ? "조항 이해 확인을 먼저 완료하세요."
-            : `이해 미확인 조항 ${unchecked.length}개 (제${unchecked.join("·")}조) 를 완료하세요.`,
-        });
+    // 서명 검증 · 7개 pad 실시간 확인 (URL 이 아닌 pad ref 기준)
+    const padList: Array<[string, React.MutableRefObject<SignatureCanvasType | null>]> = [
+      ["사업주", employerPadRef],
+      ["근로자 (하단)", employeePadRef],
+      ["개인정보/CCTV", privacyPadRef],
+      ["계약체결일", contractDatePadRef],
+      ["특별근로 동의", specialWorkPadRef],
+      ["퇴직급 동의", severancePadRef],
+      ["수령자 확인", receiptPadRef],
+    ];
+    const missing = padList.filter(([, ref]) => !ref.current || ref.current.isEmpty()).map(([n]) => n);
+    if (missing.length > 0) {
+      if (opts.requireAllSignatures) {
+        setNotice({ tone: "err", text: `서명 누락 (${missing.length}/7): ${missing.join(" · ")}` });
         return false;
-      }
-      if (unsignedCritical.length > 0) {
-        setNotice({
-          tone: "err",
-          text: `중요 조항 서명이 누락되었습니다 (제${unsignedCritical.join("·")}조). 우측 서명 pad 에 서명해 주세요.`,
-        });
-        return false;
-      }
-    } else {
-      // 로컬 다운로드 모드 · confirm 로 진행 여부 확인
-      if (activeKeys.length === 0 || unchecked.length > 0) {
-        const msg = activeKeys.length === 0
-          ? "조항별 이해 확인이 하나도 완료되지 않았습니다.\n그래도 PDF를 생성하시겠습니까?"
-          : `이해 미확인 조항이 ${unchecked.length}개 있습니다 (제${unchecked.join("·")}조).\n그래도 PDF를 생성하시겠습니까?`;
-        if (!window.confirm(msg)) return false;
-      } else if (unsignedCritical.length > 0) {
-        const msg = `중요 조항 서명이 비어있습니다 (제${unsignedCritical.join("·")}조).\n그래도 PDF를 생성하시겠습니까?`;
-        if (!window.confirm(msg)) return false;
+      } else {
+        if (!window.confirm(`서명이 ${missing.length}/7 비어있습니다:\n${missing.join(" · ")}\n\n서명 없이 PDF를 생성하시겠습니까?`)) return false;
       }
     }
     return true;
   };
 
-  // 계약 완료 → 프리뷰 캡처 → PDF 로컬 저장 (기존 · 유지)
+  // 계약 완료 → PDF 로컬 저장
   const handleComplete = async () => {
     setNotice(null);
-    if (!validateBeforeAction({ requireAllAcks: false })) return;
-
+    if (!validateBeforeAction({ requireAllSignatures: false })) return;
     refreshSignaturePreview();
     setGenerating(true);
     await new Promise(r => setTimeout(r, 60));
-
     try {
       const { pdf, filename } = await buildPdfFromPreview();
       pdf.save(filename);
@@ -2126,22 +1884,16 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     }
   };
 
-  // #202 · 계약완료 승인 · PDF 생성 → DB 저장 (Supabase Storage + employee_contracts row + employees.contract_file_url 갱신) → 로컬 다운도 병행
+  // 계약완료 승인 · DB 저장
   const handleApproveAndSave = async () => {
     setNotice(null);
-    if (!validateBeforeAction({ requireAllAcks: true })) return;
-
+    if (!validateBeforeAction({ requireAllSignatures: true })) return;
     refreshSignaturePreview();
     setGenerating(true);
     await new Promise(r => setTimeout(r, 60));
-
     try {
       const { pdf, filename } = await buildPdfFromPreview();
-
-      // dataURL · data:application/pdf;base64,...
       const pdfDataUrl = pdf.output("datauristring");
-
-      // 서버 저장 (Storage 업로드 + row insert + employees.contract_file_url 갱신)
       const body = {
         employee_id: form.employeeId,
         employee_name: form.employeeName,
@@ -2160,26 +1912,17 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       const saved = await resp.json().catch(() => ({}));
       if (!resp.ok) {
         const msg = saved?.error ?? `저장 실패 (HTTP ${resp.status})`;
-        // 저장 실패라도 사용자 편의 · 로컬 다운은 진행
         pdf.save(filename);
         setNotice({ tone: "err", text: `${msg} · 로컬 다운로드만 진행되었습니다.` });
         return;
       }
-
-      // 로컬 다운도 병행 (사용자 편의)
       pdf.save(filename);
-
       const pdfUrl: string | undefined = saved?.pdf_url;
       setNotice({
         tone: "ok",
-        text: pdfUrl
-          ? `계약이 승인되어 저장되었습니다. 다운로드 링크: ${pdfUrl}`
-          : "계약이 승인되어 저장되었습니다.",
+        text: pdfUrl ? `계약이 승인되어 저장되었습니다. 다운로드 링크: ${pdfUrl}` : "계약이 승인되어 저장되었습니다.",
       });
-      // 저장 완료 · 임시저장 draft 삭제 (#28)
       clearDraft();
-
-      // #220 · 방금 저장된 계약을 existingContract 로 반영 (다음 연장 baseline)
       if (saved && (saved.start_date || saved.end_date)) {
         setExistingContract({
           id: saved.id,
@@ -2197,19 +1940,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     }
   };
 
-  // 승인 버튼 활성화 조건 · #205 · 모든 조항 checked + 중요 조항은 서명(!empty) 도 완료
-  const canApprove = (() => {
-    const keys = Object.keys(clauseAcks);
-    if (keys.length === 0) return false;
-    return keys.every(k => {
-      const a = clauseAcks[k];
-      if (!a?.checked) return false;
-      if (a.requiresSignature && a.empty) return false;
-      return true;
-    });
-  })();
+  // 승인 활성 조건 · 7 pad 모두 채워야 함 (URL 기준 · refresh 필요)
+  const canApprove = signatureStatus.filled === signatureStatus.total;
 
-  // ── 렌더 ─────────────────────────────────────────────────────────────────
   return (
     <div className={embedded ? "flex-1 flex flex-col" : "min-h-screen bg-slate-50 flex flex-col"}>
       {!embedded && (
@@ -2230,18 +1963,16 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               <NotePencil size={20} weight="fill" />
             </div>
             <div>
-              <h1 className="text-lg sm:text-xl font-black text-slate-800 leading-none">근로계약서 작성</h1>
-              <p className="text-xs text-slate-500 mt-1">좌측에서 조건을 입력하면 우측에 실시간 계약서가 생성됩니다. 서명 후 PDF로 다운로드하세요.</p>
+              <h1 className="text-lg sm:text-xl font-black text-slate-800 leading-none">근로계약서 작성 · 코스트팜 양식</h1>
+              <p className="text-xs text-slate-500 mt-1">좌측 폼 · 우측 이미지 재현 계약서. 7개 서명 지점 채우고 [계약완료 승인].</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* #220 · 연장 버튼 · 기존 계약(종료일 있는) 존재 시 노출 */}
             {existingContract && existingContract.end_date && (
               <button
                 type="button"
                 onClick={() => {
-                  // 개월수 초기화 · 기존 계약의 기간과 비슷하게 프리셋 · fallback 3
                   const prevMonths = contractPeriodMonthsClient(existingContract.start_date, existingContract.end_date);
                   setExtendMonths(prevMonths != null && prevMonths > 0 ? String(prevMonths) : "3");
                   setExtendModalOpen(true);
@@ -2265,7 +1996,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           </div>
         </div>
 
-        {/* #220 · 기존 계약서 안내 배너 · 연장 대상 · 입사일 참조 */}
         {existingContract && form.employeeId != null && (
           <div className="rounded-lg border border-indigo-200 bg-indigo-50/60 px-3 py-2 text-[12px] text-indigo-800 flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="inline-flex items-center gap-1 font-black">
@@ -2301,7 +2031,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           <div className="text-[11px] text-slate-400">기존 계약 이력 조회 중...</div>
         )}
 
-        {/* 안내 배너 */}
         {notice && (
           <div
             className={`rounded-lg border px-3 py-2 text-sm font-semibold flex items-center gap-2 ${
@@ -2315,9 +2044,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           </div>
         )}
 
-        {/* 좌우 split */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* ── 좌측: 조건 입력 폼 ────────────────────────────────────────── */}
+          {/* ── 좌측: 폼 ── */}
           <section className="bg-white border border-slate-200 rounded-xl shadow-sm p-3 sm:p-4 flex flex-col gap-3 order-1">
             <div className="flex items-center gap-1.5 pb-1.5 border-b border-slate-100">
               <ClipboardText size={15} weight="fill" className="text-emerald-600" />
@@ -2328,7 +2056,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             <div className="flex flex-col gap-1.5">
               <FieldLabel icon={<User size={12} weight="fill" className="text-slate-400" />}>근로자 정보</FieldLabel>
               {empError && <div className="text-[12px] text-rose-600">{empError}</div>}
-              {/* 성명 (autocomplete · DB 검색) + 생년월일 한 줄 */}
               <div className="grid grid-cols-2 gap-1.5">
                 <div className="relative">
                   <input
@@ -2370,12 +2097,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                               className="w-full text-left px-2.5 py-1.5 hover:bg-emerald-50 transition-colors flex items-center gap-2"
                             >
                               <span className="text-[13px] font-bold text-slate-800">{e.name}</span>
-                              {e.position && (
-                                <span className="text-[11px] text-slate-500">{e.position}</span>
-                              )}
-                              {e.phone && (
-                                <span className="text-[11px] text-slate-400 ml-auto tabular-nums">{e.phone}</span>
-                              )}
+                              {e.position && <span className="text-[11px] text-slate-500">{e.position}</span>}
+                              {e.phone && <span className="text-[11px] text-slate-400 ml-auto tabular-nums">{e.phone}</span>}
                             </button>
                           </li>
                         ))}
@@ -2387,11 +2110,10 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   type="text"
                   value={form.employeeBirth}
                   onChange={(e) => upd("employeeBirth", e.target.value)}
-                  placeholder="생년월일 (1990-01-15)"
+                  placeholder="주민번호 (970302-2002227)"
                   className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
                 />
               </div>
-              {/* 연락처 */}
               <input
                 type="text"
                 value={form.employeePhone}
@@ -2399,7 +2121,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 placeholder="연락처 (010-1234-5678)"
                 className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
               />
-              {/* 주소 */}
               <input
                 type="text"
                 value={form.employeeAddress}
@@ -2407,7 +2128,24 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 placeholder="주소"
                 className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
               />
-              {/* 직원 카테고리 (4버튼) + 연차 인라인 */}
+              <div className="grid grid-cols-2 gap-1.5">
+                <input
+                  type="text"
+                  value={form.employeeBankAccount}
+                  onChange={(e) => upd("employeeBankAccount", e.target.value)}
+                  placeholder="은행 / 계좌번호 (선택)"
+                  className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[11px]"
+                />
+                <input
+                  type="text"
+                  value={form.employeeEmail}
+                  onChange={(e) => upd("employeeEmail", e.target.value)}
+                  placeholder="이메일 (선택)"
+                  className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[11px]"
+                />
+              </div>
+
+              {/* 카테고리 + 연차 */}
               <div className="flex items-center gap-1">
                 {(["약사", "매장", "창고", "기타"] as const).map(cat => {
                   const active = form.employeeCategory === cat;
@@ -2417,42 +2155,27 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     cat === "창고" ? "bg-orange-500 text-white border-orange-500" :
                                      "bg-slate-600 text-white border-slate-600";
                   return (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => upd("employeeCategory", cat)}
+                    <button key={cat} type="button" onClick={() => upd("employeeCategory", cat)}
                       className={`px-2 py-1 rounded-lg border text-[12px] font-bold transition-colors cursor-pointer ${
                         active ? activeColor : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
                       }`}
-                    >
-                      {cat}
-                    </button>
+                    >{cat}</button>
                   );
                 })}
                 <div className="flex items-center gap-1 ml-auto">
                   <span className="text-[11px] text-slate-400 font-semibold shrink-0">연차</span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={form.annualLeaveDays}
-                    onChange={(e) => upd("annualLeaveDays", e.target.value)}
-                    placeholder="15"
+                  <input type="number" min={0} value={form.annualLeaveDays} onChange={(e) => upd("annualLeaveDays", e.target.value)} placeholder="15"
                     className="w-14 bg-white border border-slate-200 rounded-lg px-2 py-1 text-[14px] text-slate-800 font-semibold text-right focus:outline-none focus:border-emerald-500 focus:shadow-sm transition"
                   />
                   <span className="text-[11px] text-slate-400 font-semibold">일</span>
                 </div>
               </div>
               {form.employeeCategory === "기타" && (
-                <input
-                  type="text"
-                  value={form.employeeCategoryCustom}
-                  onChange={(e) => upd("employeeCategoryCustom", e.target.value)}
+                <input type="text" value={form.employeeCategoryCustom} onChange={(e) => upd("employeeCategoryCustom", e.target.value)}
                   placeholder="기타 직군 자유 입력 (예: 인턴약사 · 청소 · 배송)"
                   className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
                 />
               )}
-
-              {/* #186 · 우선업무 (매장/창고) · 매장/창고 카테고리에서만 노출 */}
               {(form.employeeCategory === "매장" || form.employeeCategory === "창고") && (
                 <div className="mt-1 rounded-lg border border-indigo-100 bg-indigo-50/40 px-2 py-1.5 flex flex-wrap items-center gap-2">
                   <span className="text-[11px] font-black text-indigo-700 shrink-0">우선업무</span>
@@ -2463,26 +2186,16 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                         ? "bg-emerald-500 text-white border-emerald-600"
                         : "bg-orange-500 text-white border-orange-600";
                       return (
-                        <button
-                          key={f}
-                          type="button"
-                          onClick={() => upd("primaryFocus", active ? null : f)}
+                        <button key={f} type="button" onClick={() => upd("primaryFocus", active ? null : f)}
                           className={`px-2 py-0.5 rounded-md border text-[12px] font-bold transition-colors cursor-pointer ${
                             active ? activeCls : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
                           }`}
-                          title={`${f} 업무를 우선순위로 지정`}
-                        >
-                          {f}
-                        </button>
+                        >{f}</button>
                       );
                     })}
                   </div>
                   <div className="flex items-center gap-1 ml-auto">
-                    <input
-                      type="number"
-                      min={0}
-                      max={100}
-                      value={form.primaryFocusPercent}
+                    <input type="number" min={0} max={100} value={form.primaryFocusPercent}
                       onChange={(e) => {
                         const n = Number(e.target.value);
                         upd("primaryFocusPercent", Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 70);
@@ -2492,42 +2205,24 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     />
                     <span className="text-[11px] text-indigo-700 font-bold">% 비중</span>
                   </div>
-                  <div className="basis-full text-[10px] text-indigo-500/80 leading-tight">
-                    선택한 물류(매장/창고)의 업무에 {form.primaryFocusPercent}% 비중을 두고 근무. 스케줄표에 우선업무 배지로 표시됨.
-                  </div>
                 </div>
               )}
             </div>
 
-            {/* 계약 유형 · 근무 요일 · 주 근무 횟수 — flex-wrap 한 줄 */}
+            {/* 계약 유형 · 근무 요일 · 주 근무 횟수 */}
             <div className="flex flex-wrap gap-3 items-start">
-              {/* 계약 유형 */}
               <div className="flex flex-col gap-1.5 min-w-[140px] flex-1">
                 <FieldLabel required>계약 유형</FieldLabel>
-                <SelectOrCustom
-                  value={form.contractType}
-                  options={CONTRACT_TYPES}
-                  onChange={(v) => upd("contractType", v)}
-                  placeholder="예: 프리랜서"
-                />
-                {/* 계약직 · 개월수 선택 */}
+                <SelectOrCustom value={form.contractType} options={CONTRACT_TYPES} onChange={(v) => upd("contractType", v)} placeholder="예: 프리랜서" />
                 {form.contractType === "계약직" && (
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] text-slate-400 font-semibold shrink-0">개월수</span>
                     <div className="flex-1">
-                      <SelectOrCustom
-                        value={form.contractMonths}
-                        options={["2", "3", "6", "12"]}
-                        onChange={(v) => upd("contractMonths", v)}
-                        placeholder="예: 9"
-                        suffix="개월"
-                      />
+                      <SelectOrCustom value={form.contractMonths} options={["2", "3", "6", "12"]} onChange={(v) => upd("contractMonths", v)} placeholder="예: 9" suffix="개월" />
                     </div>
                   </div>
                 )}
               </div>
-
-              {/* 근무 요일 */}
               <div className="flex flex-col gap-1 min-w-[200px] flex-[2]">
                 <FieldLabel icon={<CalendarBlank size={12} weight="fill" className="text-slate-400" />} required>근무 요일</FieldLabel>
                 <div className="flex flex-wrap gap-1">
@@ -2535,10 +2230,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     const on = form.workDays[d];
                     const isWeekend = d === "토" || d === "일";
                     return (
-                      <button
-                        key={d}
-                        type="button"
-                        onClick={() => toggleDay(d)}
+                      <button key={d} type="button" onClick={() => toggleDay(d)}
                         className={[
                           "min-w-[34px] px-2 py-1 rounded-lg text-[12px] font-black transition-colors cursor-pointer border",
                           on
@@ -2547,78 +2239,70 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                               : "bg-emerald-500 text-white border-emerald-600"
                             : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50",
                         ].join(" ")}
-                      >
-                        {d}
-                      </button>
+                      >{d}</button>
                     );
                   })}
                   <span className="text-[11px] text-slate-400 font-semibold self-center ml-1">선택 {chosenDaysCount}일</span>
                 </div>
               </div>
-
-              {/* 주 근무 횟수 */}
               <div className="flex flex-col gap-1.5 min-w-[110px] flex-1">
                 <span className="text-[12px] text-slate-500 font-semibold leading-none">주 근무 횟수</span>
-                <SelectOrCustom
-                  value={form.weeklyDays}
-                  options={WEEKLY_DAYS}
-                  onChange={(v) => upd("weeklyDays", v)}
-                  suffix="일"
-                  placeholder="예: 2.5"
-                />
+                <SelectOrCustom value={form.weeklyDays} options={WEEKLY_DAYS} onChange={(v) => upd("weeklyDays", v)} suffix="일" placeholder="예: 2.5" />
               </div>
             </div>
 
-            {/* 근무 시간 */}
+            {/* 근무 시간 + 월 근로시간 자동계산 */}
             <div className="flex flex-col gap-1.5">
               <FieldLabel icon={<ClockClockwise size={12} weight="fill" className="text-slate-400" />} required>근무 시간</FieldLabel>
-              {/* 시작 · 종료 · 휴게 한 줄 */}
               <div className="flex items-end gap-2">
                 <div className="flex-1">
                   <div className="text-[11px] text-slate-400 font-semibold mb-0.5">시작</div>
-                  <SelectOrCustom
-                    value={form.startTime}
-                    options={START_TIMES}
-                    onChange={(v) => upd("startTime", v)}
-                    placeholder="HH:MM"
-                  />
+                  <SelectOrCustom value={form.startTime} options={START_TIMES} onChange={(v) => upd("startTime", v)} placeholder="HH:MM" />
                 </div>
                 <div className="flex-1">
                   <div className="text-[11px] text-slate-400 font-semibold mb-0.5">종료</div>
-                  <SelectOrCustom
-                    value={form.endTime}
-                    options={END_TIMES}
-                    onChange={(v) => upd("endTime", v)}
-                    placeholder="HH:MM"
-                  />
+                  <SelectOrCustom value={form.endTime} options={END_TIMES} onChange={(v) => upd("endTime", v)} placeholder="HH:MM" />
                 </div>
                 <div className="flex items-center gap-1 pb-0.5">
                   <Coffee size={12} className="text-slate-400 shrink-0" />
-                  <input
-                    type="number"
-                    min={0}
-                    value={form.breakMinutes}
-                    onChange={(e) => upd("breakMinutes", e.target.value)}
+                  <input type="number" min={0} value={form.breakMinutes} onChange={(e) => upd("breakMinutes", e.target.value)}
                     className="w-14 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition text-right"
                   />
                   <span className="text-[11px] text-slate-400 font-semibold">분</span>
                 </div>
               </div>
+
+              {/* 월 근로시간 자동계산 배지 */}
+              {monthlyCalc && (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 px-2.5 py-1.5 flex items-center gap-2 text-[12px]">
+                  <Calculator size={13} weight="fill" className="text-emerald-700" />
+                  <span className="text-emerald-800 font-black">월 근로시간</span>
+                  <span className="tabular-nums text-emerald-900 font-black">
+                    {monthlyCalc.monthlyHoursInt}시간 {monthlyCalc.monthlyMinutesRem}분
+                  </span>
+                  <span className="text-[10.5px] text-slate-500">
+                    (일 {Math.floor(monthlyCalc.dailyMinutes/60)}시간 {monthlyCalc.dailyMinutes%60}분 × 주 {form.weeklyDays}일 × 4.345주)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={applyMonthlyHoursToBasic}
+                    className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[11px] font-black hover:bg-emerald-700 transition-colors cursor-pointer shadow-sm"
+                    title="계산된 월 근로시간을 임금표의 기본급 시간에 반영"
+                  >
+                    기본급 시간에 반영
+                  </button>
+                </div>
+              )}
             </div>
 
-            {/* 시급 */}
+            {/* 시급 / 임금 구성 */}
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
-                <FieldLabel icon={<Money size={12} weight="fill" className="text-slate-400" />} required>시급 (원)</FieldLabel>
-                {/* 2026-08-04 · 임금 세분화 토글 · ON 시 표 형태 상세 임금 구성 UI 표시 */}
+                <FieldLabel icon={<Money size={12} weight="fill" className="text-slate-400" />} required>시급 / 임금 구성</FieldLabel>
                 <label className="inline-flex items-center gap-1 cursor-pointer select-none mb-1.5">
-                  <input
-                    type="checkbox"
-                    checked={form.useWageComponents}
-                    onChange={(e) => upd("useWageComponents", e.target.checked)}
-                    className="w-3.5 h-3.5 accent-indigo-600 cursor-pointer"
-                  />
-                  <span className="text-[11px] font-black text-indigo-700">상세 임금 구성 (월급제)</span>
+                  <input type="checkbox" checked={form.useWageComponents} onChange={(e) => upd("useWageComponents", e.target.checked)}
+                    className="w-3.5 h-3.5 accent-indigo-600 cursor-pointer" />
+                  <span className="text-[11px] font-black text-indigo-700">임금 구성표 (월급제)</span>
                 </label>
               </div>
               {!form.useWageComponents && (
@@ -2626,10 +2310,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   <div>
                     <div className="text-[11px] text-slate-400 font-semibold mb-0.5">주중</div>
                     <div className="relative">
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={form.weekdayHourly}
+                      <input type="text" inputMode="numeric" value={form.weekdayHourly}
                         onChange={(e) => upd("weekdayHourly", e.target.value.replace(/[^0-9]/g, ""))}
                         className="w-full bg-white border border-slate-200 rounded-lg pl-2 pr-7 py-1.5 text-[12px] text-slate-800 font-black focus:outline-none focus:border-emerald-500 focus:shadow-sm transition text-right"
                       />
@@ -2639,10 +2320,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   <div>
                     <div className="text-[11px] text-slate-400 font-semibold mb-0.5">주말</div>
                     <div className="relative">
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={form.weekendHourly}
+                      <input type="text" inputMode="numeric" value={form.weekendHourly}
                         onChange={(e) => upd("weekendHourly", e.target.value.replace(/[^0-9]/g, ""))}
                         className="w-full bg-white border border-slate-200 rounded-lg pl-2 pr-7 py-1.5 text-[12px] text-slate-800 font-black focus:outline-none focus:border-emerald-500 focus:shadow-sm transition text-right"
                       />
@@ -2651,66 +2329,50 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   </div>
                 </div>
               )}
-              {/* 상세 임금 구성 (코스트팜 이미지 기반) · 사용자가 각 항목 자유 편집 */}
               {form.useWageComponents && (
-                <WageComponentsForm
-                  wage={form.wageComponents}
-                  onChange={(next) => upd("wageComponents", next)}
-                />
+                <WageComponentsForm wage={form.wageComponents} onChange={(next) => upd("wageComponents", next)} />
               )}
-              {/* 임금 지급일 자유 편집 */}
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-[11px] text-slate-500 font-semibold shrink-0">임금지급일</span>
-                <input
-                  type="text"
-                  value={form.paymentDayText}
-                  onChange={(e) => upd("paymentDayText", e.target.value)}
+                <input type="text" value={form.paymentDayText} onChange={(e) => upd("paymentDayText", e.target.value)}
                   placeholder="예: 매월 1일부터 당월 말일까지 임금은 익월 5일에 지급"
                   className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400"
                 />
               </div>
             </div>
 
-            {/* 계약 기간 */}
+            {/* 계약 기간 + 계약체결일 */}
             <div className="flex flex-col gap-1.5">
               <FieldLabel required>계약 기간</FieldLabel>
               <div className="flex items-center gap-2">
-                <span className="text-[12px] text-slate-500 font-semibold shrink-0 w-[40px]">시작일</span>
-                <input
-                  type="date"
-                  value={form.startDate}
-                  onChange={(e) => upd("startDate", e.target.value)}
+                <span className="text-[12px] text-slate-500 font-semibold shrink-0 w-[60px]">시작일</span>
+                <input type="date" value={form.startDate} onChange={(e) => upd("startDate", e.target.value)}
                   className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition"
                 />
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[12px] text-slate-500 font-semibold shrink-0 w-[40px]">종료일</span>
-                <input
-                  type="date"
-                  value={form.endDate}
-                  onChange={(e) => upd("endDate", e.target.value)}
-                  disabled={form.indefinite}
+                <span className="text-[12px] text-slate-500 font-semibold shrink-0 w-[60px]">종료일</span>
+                <input type="date" value={form.endDate} onChange={(e) => upd("endDate", e.target.value)} disabled={form.indefinite}
                   className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                 />
               </div>
               <label className="inline-flex items-center gap-1.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.indefinite}
-                  onChange={(e) => upd("indefinite", e.target.checked)}
-                  className="w-4 h-4 accent-emerald-600"
-                />
+                <input type="checkbox" checked={form.indefinite} onChange={(e) => upd("indefinite", e.target.checked)}
+                  className="w-4 h-4 accent-emerald-600" />
                 <span className="text-[12px] font-semibold text-slate-700">무기한 (기간의 정함 없음 · 정규직)</span>
               </label>
+              <div className="flex items-center gap-2">
+                <span className="text-[12px] text-slate-500 font-semibold shrink-0 w-[60px]">계약체결일</span>
+                <input type="date" value={form.contractSignDate} onChange={(e) => upd("contractSignDate", e.target.value)}
+                  className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition"
+                />
+              </div>
             </div>
 
             {/* 담당 업무 */}
             <div className="flex flex-col gap-1">
               <FieldLabel required>담당 업무</FieldLabel>
-              <input
-                type="text"
-                value={form.jobDuty}
-                onChange={(e) => upd("jobDuty", e.target.value)}
+              <input type="text" value={form.jobDuty} onChange={(e) => upd("jobDuty", e.target.value)}
                 placeholder="예: 약국 카운터 · OTC 판매"
                 className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
               />
@@ -2719,45 +2381,34 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             {/* 4대보험 */}
             <div>
               <label className="inline-flex items-center gap-1.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.socialInsurance}
-                  onChange={(e) => upd("socialInsurance", e.target.checked)}
-                  className="w-4 h-4 accent-emerald-600"
-                />
+                <input type="checkbox" checked={form.socialInsurance} onChange={(e) => upd("socialInsurance", e.target.checked)}
+                  className="w-4 h-4 accent-emerald-600" />
                 <span className="text-[12px] font-bold text-slate-700">4대보험 가입 (고용·산재·국민연금·건강보험)</span>
               </label>
             </div>
 
             {/* 추가 내용 */}
             <div className="flex flex-col gap-1">
-              <FieldLabel icon={<Notepad size={12} weight="fill" className="text-slate-400" />}>추가 내용</FieldLabel>
-              <textarea
-                value={form.additionalContent}
-                onChange={(e) => upd("additionalContent", e.target.value)}
-                rows={3}
+              <FieldLabel icon={<Notepad size={12} weight="fill" className="text-slate-400" />}>추가 특약</FieldLabel>
+              <textarea value={form.additionalContent} onChange={(e) => upd("additionalContent", e.target.value)} rows={3}
                 placeholder="계약서에 추가로 명시할 내용 (예: 수습기간 3개월 · 명절 상여 별도 등)"
                 className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition resize-y placeholder:text-slate-400 placeholder:text-[12px]"
               />
             </div>
 
-            {/* 2026-08-04 · 이미지 2 하단 · 개인정보/CCTV 동의 · 별도 서명 (좌측 폼 · 우측 프리뷰에 반영) */}
+            {/* CCTV/개인정보 동의 */}
             <div className="flex flex-col gap-1.5 rounded-lg border border-amber-200 bg-amber-50/40 p-2">
               <div className="text-[11px] font-black text-amber-800 flex items-center gap-1">
                 <Warning size={11} weight="fill" />
-                개인정보 수집·이용 및 CCTV 동의 (별도 서명 필수)
+                개인정보 수집·이용 및 CCTV 동의
               </div>
               <div className="grid grid-cols-2 gap-1.5">
-                <input
-                  type="text"
-                  value={form.privacyConsent.recipientName}
+                <input type="text" value={form.privacyConsent.recipientName}
                   onChange={(e) => upd("privacyConsent", { ...form.privacyConsent, recipientName: e.target.value })}
                   placeholder="수령자 성명 (미입력 시 근로자명 사용)"
                   className="bg-white border border-slate-200 rounded-md px-2 py-1 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-amber-500 transition placeholder:text-slate-400 placeholder:text-[11px]"
                 />
-                <input
-                  type="text"
-                  value={form.privacyConsent.recipientAddress}
+                <input type="text" value={form.privacyConsent.recipientAddress}
                   onChange={(e) => upd("privacyConsent", { ...form.privacyConsent, recipientAddress: e.target.value })}
                   placeholder="수령자 주소 (미입력 시 근로자 주소)"
                   className="bg-white border border-slate-200 rounded-md px-2 py-1 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-amber-500 transition placeholder:text-slate-400 placeholder:text-[11px]"
@@ -2765,32 +2416,22 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <label className="inline-flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.privacyConsent.agreedCollection}
+                  <input type="checkbox" checked={form.privacyConsent.agreedCollection}
                     onChange={(e) => upd("privacyConsent", { ...form.privacyConsent, agreedCollection: e.target.checked })}
-                    className="w-3.5 h-3.5 accent-amber-600 cursor-pointer"
-                  />
+                    className="w-3.5 h-3.5 accent-amber-600 cursor-pointer" />
                   <span className="text-[11px] font-bold text-slate-700">개인정보 수집·이용 동의</span>
                 </label>
                 <label className="inline-flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.privacyConsent.agreedCCTV}
+                  <input type="checkbox" checked={form.privacyConsent.agreedCCTV}
                     onChange={(e) => upd("privacyConsent", { ...form.privacyConsent, agreedCCTV: e.target.checked })}
-                    className="w-3.5 h-3.5 accent-amber-600 cursor-pointer"
-                  />
+                    className="w-3.5 h-3.5 accent-amber-600 cursor-pointer" />
                   <span className="text-[11px] font-bold text-slate-700">CCTV 촬영·이용 동의</span>
                 </label>
               </div>
-              <div className="text-[10px] text-amber-700 leading-tight">
-                ※ 상단 [수령자 성명·주소] 미입력 시 · 근로자 정보로 자동 채워집니다. 우측 서명 영역의 [개인정보/CCTV 동의 서명] 이 별도 필요합니다.
-              </div>
             </div>
-
           </section>
 
-          {/* ── 우측: 실시간 프리뷰 ──────────────────────────────────────── */}
+          {/* ── 우측: 프리뷰 + 서명 ── */}
           <section className="order-2 flex flex-col gap-3">
             <div className="flex items-center gap-1.5 pb-1">
               <NotePencil size={16} weight="fill" className="text-emerald-600" />
@@ -2798,56 +2439,29 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               <span className="text-[11px] text-slate-400 font-semibold ml-1">(우측 화면 그대로 PDF로 저장됩니다)</span>
             </div>
 
-            {/* #200 · 조항 이해 확인 진행률 · #205 · 중요 조항 서명 진행률 분리 */}
-            {(() => {
-              const activeKeys = Object.keys(clauseAcks);
-              const criticalKeys = activeKeys.filter(k => clauseAcks[k]?.requiresSignature);
-              const regularKeys = activeKeys.filter(k => !clauseAcks[k]?.requiresSignature);
-              const criticalDone = criticalKeys.filter(k => clauseAcks[k].checked && !clauseAcks[k].empty).length;
-              const regularDone = regularKeys.filter(k => clauseAcks[k].checked).length;
-              const totalDone = criticalDone + regularDone;
-              const total = Math.max(activeKeys.length, 1);
-              const pct = Math.round((totalDone / total) * 100);
-              const complete = activeKeys.length > 0 && totalDone === activeKeys.length;
-              return (
-                <div className={`rounded-lg border px-3 py-2 flex flex-col gap-1.5 ${
-                  complete
-                    ? "bg-emerald-50 border-emerald-200"
-                    : "bg-slate-50 border-slate-200"
-                }`}>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {complete ? (
-                        <Check size={14} weight="bold" className="text-emerald-600" />
-                      ) : (
-                        <ClipboardText size={14} weight="fill" className="text-slate-500" />
-                      )}
-                      <span className={`text-[12px] font-black ${complete ? "text-emerald-700" : "text-slate-700"}`}>
-                        조항 이해 확인 {totalDone} / {activeKeys.length || "-"}
-                      </span>
-                    </div>
-                    <div className="flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden">
-                      <div
-                        className={`h-full transition-all ${complete ? "bg-emerald-500" : "bg-indigo-400"}`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <span className={`text-[11px] font-bold shrink-0 ${complete ? "text-emerald-600" : "text-slate-500"}`}>
-                      {complete ? "전체 완료" : `${pct}%`}
-                    </span>
-                  </div>
-                  {criticalKeys.length > 0 && (
-                    <div className="flex items-center gap-2 text-[11px]">
-                      <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5">
-                        <Warning size={10} weight="fill" />
-                        중요 서명 {criticalDone} / {criticalKeys.length}
-                      </span>
-                      {/* 일반 확인 배지 · 2026-08-04 사용자 요청으로 제거 */}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
+            {/* 서명 진행률 · 7 지점 */}
+            <div className={`rounded-lg border px-3 py-2 flex items-center gap-3 ${
+              canApprove ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-200"
+            }`}>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {canApprove ? <Check size={14} weight="bold" className="text-emerald-600" /> : <Signature size={14} weight="fill" className="text-slate-500" />}
+                <span className={`text-[12px] font-black ${canApprove ? "text-emerald-700" : "text-slate-700"}`}>
+                  서명 {signatureStatus.filled} / {signatureStatus.total} 지점
+                </span>
+              </div>
+              <div className="flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                <div className={`h-full transition-all ${canApprove ? "bg-emerald-500" : "bg-indigo-400"}`}
+                  style={{ width: `${Math.round((signatureStatus.filled / signatureStatus.total) * 100)}%` }}
+                />
+              </div>
+              <button type="button" onClick={refreshSignaturePreview}
+                className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold transition-colors cursor-pointer"
+                title="서명을 우측 프리뷰에 반영"
+              >
+                <ArrowsClockwise size={11} />
+                반영
+              </button>
+            </div>
 
             <div className="bg-slate-100 border border-slate-200 rounded-xl p-3 sm:p-4">
               <ContractPreview
@@ -2856,24 +2470,21 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 employerSignUrl={employerSignUrl}
                 employeeSignUrl={employeeSignUrl}
                 privacySignUrl={privacySignUrl}
-                clauseAcks={clauseAcks}
-                setClauseAckChecked={setClauseAckChecked}
-                setClauseAckEmpty={setClauseAckEmpty}
-                registerClauseAck={registerClauseAck}
-                clausePadRefs={clausePadRefs}
+                contractDateSignUrl={contractDateSignUrl}
+                specialWorkSignUrl={specialWorkSignUrl}
+                severanceSignUrl={severanceSignUrl}
+                receiptSignUrl={receiptSignUrl}
               />
             </div>
 
-            {/* 서명 영역 · 우측 (2026-08-03 · 사용자 요청 · 좌측에서 이동) */}
+            {/* 서명 영역 · 7 지점 */}
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <Signature size={14} weight="fill" className="text-slate-500" />
-                  <span className="text-[13px] font-bold text-slate-700">서명 (사업주 · 근로자)</span>
+                  <span className="text-[13px] font-bold text-slate-700">서명 (7 지점)</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={refreshSignaturePreview}
+                <button type="button" onClick={refreshSignaturePreview}
                   className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 text-[12px] font-bold transition-colors cursor-pointer"
                   title="위 계약서 프리뷰에 서명 반영"
                 >
@@ -2881,59 +2492,57 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   미리보기 반영
                 </button>
               </div>
+
+              {/* 상단 2 · 사업주 + 근로자 */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <SignArea label="사업주 서명" padRef={employerPadRef} color="emerald" />
-                <SignArea label="근로자 서명" padRef={employeePadRef} color="indigo" />
-              </div>
-              {/* 2026-08-04 · 개인정보/CCTV 동의 · 별도 서명 (이미지 2 하단 재현) */}
-              <div>
-                <SignArea label="개인정보/CCTV 동의 서명 (별도)" padRef={privacyPadRef} color="indigo" />
+                <SignArea label="1. 사업주 (갑)" padRef={employerPadRef} color="emerald" />
+                <SignArea label="2. 근로자 (을) 하단" padRef={employeePadRef} color="indigo" />
               </div>
 
-              {/* 계약 완료 · 승인/PDF 다운 · #202 */}
+              {/* 중단 · 조항 서명 4개 */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <SignArea label="3. 계약체결일" padRef={contractDatePadRef} color="amber" height={70} compact />
+                <SignArea label="4. 특별근로 동의" padRef={specialWorkPadRef} color="amber" height={70} compact />
+                <SignArea label="5. 퇴직급 동의" padRef={severancePadRef} color="amber" height={70} compact />
+                <SignArea label="6. 수령자 확인" padRef={receiptPadRef} color="amber" height={70} compact />
+              </div>
+
+              {/* 하단 · CCTV */}
+              <div>
+                <SignArea label="7. 개인정보/CCTV 동의" padRef={privacyPadRef} color="rose" />
+              </div>
+
+              {/* 완료 버튼 */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-2 border-t border-slate-100">
                 <div className="flex-1 flex flex-col gap-1">
-                  <button
-                    type="button"
-                    onClick={handleApproveAndSave}
-                    disabled={generating || !canApprove}
+                  <button type="button" onClick={handleApproveAndSave} disabled={generating || !canApprove}
                     className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-white text-[15px] font-black shadow-md transition-all cursor-pointer disabled:cursor-not-allowed
                       ${canApprove && !generating
                         ? "bg-gradient-to-r from-rose-500 via-fuchsia-500 to-emerald-500 hover:brightness-110 hover:shadow-lg"
                         : "bg-slate-300 text-slate-500"}`}
-                    title={canApprove
-                      ? "계약 승인 · DB 저장 + PDF 다운"
-                      : "모든 조항 이해 확인을 완료해야 활성화됩니다"}
+                    title={canApprove ? "계약 승인 · DB 저장 + PDF 다운" : "7 지점 서명을 모두 채워야 활성화됩니다"}
                   >
                     <Check size={16} weight="bold" />
                     <span>{generating ? "저장 중..." : "계약완료 승인 (DB 저장)"}</span>
                   </button>
                   {!canApprove && (
                     <span className="text-[11px] text-slate-500 font-semibold text-center sm:text-left">
-                      모든 조항 · 이해 확인 + 중요 조항 서명 완료 시 활성화
+                      7 지점 서명 후 [반영] 버튼을 눌러 프리뷰에 반영 · 승인 활성화
                     </span>
                   )}
                 </div>
-
-                {/* 임시저장 버튼 (2026-08-04 · #28) · localStorage 저장 · 30초 자동저장도 실행 */}
-                <button
-                  type="button"
-                  onClick={saveDraft}
+                <button type="button" onClick={saveDraft}
                   className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-[12px] font-black shadow-sm transition-colors cursor-pointer whitespace-nowrap"
                   title="현재 작성 내용을 브라우저에 저장 (다음 방문 시 복원)"
                 >
-                  💾 임시저장
+                  임시저장
                   {draftSavedAt && (
                     <span className="text-[10px] font-normal text-emerald-600 ml-1">
                       · {new Date(draftSavedAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
                     </span>
                   )}
                 </button>
-
-                <button
-                  type="button"
-                  onClick={handleComplete}
-                  disabled={generating}
+                <button type="button" onClick={handleComplete} disabled={generating}
                   className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-sm font-bold shadow-sm transition-colors cursor-pointer whitespace-nowrap"
                   title="PDF 로컬 다운로드 (승인 없이)"
                 >
@@ -2946,7 +2555,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         </div>
       </main>
 
-      {/* #220 · 연장 모달 */}
       <ExtendContractModal
         open={extendModalOpen}
         onClose={() => setExtendModalOpen(false)}
