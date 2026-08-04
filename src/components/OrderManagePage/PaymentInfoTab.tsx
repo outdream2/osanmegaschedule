@@ -13,11 +13,11 @@
 //   · U-pharm/Cresoty/Platpharm/Baropharm · 유팜 · 크레소티 등 벤치마크
 //   · Zoho/QuickBooks · payment_method + reference_number + tax_invoice_no
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Building2, Loader2, Wallet, CalendarDays, CreditCard, Banknote,
   FileText, Check, X, RefreshCw, Landmark, Coins, ScrollText, Layers,
-  Phone, User2, ReceiptText, ArrowRight, Plus,
+  Phone, User2, ReceiptText, ArrowRight, Plus, Calendar,
 } from "lucide-react";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { SplitPanel } from "../common/SplitPanel";
@@ -267,6 +267,19 @@ export const PaymentInfoTab: React.FC = () => {
 
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  // 결제일 date input ref · 캘린더 아이콘 클릭 시 native picker 트리거 (2026-08-04 · #74)
+  const paymentDateRef = useRef<HTMLInputElement | null>(null);
+  const openDatePicker = useCallback(() => {
+    const el = paymentDateRef.current;
+    if (!el) return;
+    // showPicker 는 Chrome 99+/Safari 16+/Firefox 101+ 지원 · 미지원 시 focus fallback
+    if (typeof (el as any).showPicker === "function") {
+      try { (el as any).showPicker(); return; } catch { /* fallthrough */ }
+    }
+    el.focus();
+    try { el.click(); } catch { /* ignore */ }
+  }, []);
 
   // ── 공급사 목록 로드 ────────────────────────────────────────
   const loadVendors = useCallback(async () => {
@@ -801,12 +814,24 @@ export const PaymentInfoTab: React.FC = () => {
                 {/* Row 1 · 결제일 · [결제방법+카드사 nowrap 그룹] (2026-08-04 · 사용자 요청) */}
                 <div className="flex flex-wrap items-end gap-2">
                   <FieldLabel label="결제일" icon={<CalendarDays size={11} />}>
-                    <input
-                      type="date"
-                      value={paymentDate}
-                      onChange={e => setPaymentDate(e.target.value)}
-                      className={`${inputCls} w-[122px]`}
-                    />
+                    <div className="flex items-center gap-1">
+                      <input
+                        ref={paymentDateRef}
+                        type="date"
+                        value={paymentDate}
+                        onChange={e => setPaymentDate(e.target.value)}
+                        className={`${inputCls} w-[112px] text-sm px-2 [&::-webkit-calendar-picker-indicator]:hidden`}
+                      />
+                      <button
+                        type="button"
+                        onClick={openDatePicker}
+                        title="달력 열기"
+                        aria-label="달력 열기"
+                        className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-300 bg-white hover:bg-emerald-50 hover:border-emerald-400 text-slate-500 hover:text-emerald-600 transition cursor-pointer shrink-0"
+                      >
+                        <Calendar size={14} strokeWidth={2.25} />
+                      </button>
+                    </div>
                   </FieldLabel>
                   {/* 결제방법 + sub-option · 하나의 flex-nowrap 그룹 · 항상 같은 줄 */}
                   <div className="flex items-end gap-2 flex-1 min-w-0">
