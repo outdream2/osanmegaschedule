@@ -39,7 +39,20 @@ export const CLASS_FILTER_LABEL: Record<ClassFilter, string> = {
   general: "일반약",
 };
 
-// 라벨 옆 구역 범위 표시 (2026-08-04 · 사용자 요청 · "(1-9)" 형식)
+// 라벨 옆 구역 범위 표시 (2026-08-04 · 사용자 요청 · "(1-9)" · "(10-45)" 형식)
+// 상비약 · 고정 1-9 · 일반약 · 10 ~ 매핑된 최대 번호 (동적 · getZoneMappings 사용)
+import { getZoneMappings } from "../constants/zoneLabels";
+export function getClassFilterRange(cls: ClassFilter): string {
+  if (cls === "all") return "";
+  if (cls === "stationery") return "(1-9)";
+  // general · 10~마지막
+  const maps = getZoneMappings();
+  const nums = maps.map(m => Number(m.number)).filter(n => Number.isFinite(n) && n >= 10);
+  if (nums.length === 0) return "(10-)";
+  const max = Math.max(...nums);
+  return `(10-${max})`;
+}
+// 하위 호환 (기존 정적 라벨 · deprecated · getClassFilterRange 사용 권장)
 export const CLASS_FILTER_RANGE: Record<ClassFilter, string> = {
   all: "",
   stationery: "(1-9)",
