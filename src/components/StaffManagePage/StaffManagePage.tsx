@@ -32,6 +32,9 @@ import {
   UserPlus,
   Users,
   X,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from "lucide-react";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
@@ -836,7 +839,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
   };
 
   // ── 필터링 ──
-  const filtered = useMemo(() => {
+  const filteredRaw = useMemo(() => {
     return employees.filter((e) => {
       const isRetired = !!(e as any).retire_date;
       if (filterStatus === "active"  && isRetired)   return false;
@@ -854,6 +857,43 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
       return true;
     });
   }, [employees, search, filterPosition, filterStatus]);
+
+  // ── 정렬 (T35 · 헤더 클릭 정렬 · 원칙 feedback_ui_principles) ──
+  type SortKey = "name" | "position" | "contract_type" | "tenure" | "performance_rating" | "contract_file" | "status";
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const toggleSort = (k: SortKey) => {
+    if (sortKey === k) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortKey(k); setSortDir("asc"); }
+  };
+  const filtered = useMemo(() => {
+    const arr = [...filteredRaw];
+    const sign = sortDir === "asc" ? 1 : -1;
+    const cmpStr = (a: string, b: string) => sign * a.localeCompare(b, "ko");
+    const tenureDays = (e: Employee): number => {
+      if (!e.hire_date) return -Infinity;
+      const t = Date.parse(String(e.hire_date));
+      return Number.isFinite(t) ? t : -Infinity;
+    };
+    arr.sort((a, b) => {
+      switch (sortKey) {
+        case "name":              return cmpStr(a.name ?? "", b.name ?? "");
+        case "position":          return cmpStr(a.position ?? "", b.position ?? "");
+        case "contract_type":     return cmpStr((a as any).contract_type ?? "", (b as any).contract_type ?? "");
+        case "tenure":            return sign * (tenureDays(b) - tenureDays(a));  // 오래된순 = asc
+        case "performance_rating":return cmpStr((a as any).performance_rating ?? "", (b as any).performance_rating ?? "");
+        case "contract_file":     return sign * (((b as any).contract_file_url ? 1 : 0) - ((a as any).contract_file_url ? 1 : 0));
+        case "status":            return sign * (((a as any).retire_date ? 1 : 0) - ((b as any).retire_date ? 1 : 0));
+        default:                  return 0;
+      }
+    });
+    return arr;
+  }, [filteredRaw, sortKey, sortDir]);
+  const SortIcon: React.FC<{ k: SortKey }> = ({ k }) => (
+    sortKey === k
+      ? (sortDir === "asc" ? <ArrowUp size={10} className="text-indigo-500 inline ml-0.5" /> : <ArrowDown size={10} className="text-indigo-500 inline ml-0.5" />)
+      : <ArrowUpDown size={10} className="text-slate-300 inline ml-0.5" />
+  );
 
   const selectedEmp = useMemo(
     () => employees.find((e) => e.id === selectedId) ?? null,
@@ -1251,13 +1291,13 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
               <table className={`w-full border-collapse ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 <thead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur">
                   <tr className="border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                    <th className="px-2 py-1.5 text-left">이름</th>
-                    <th className="px-1 py-1.5 text-center">직책</th>
-                    <th className="px-1 py-1.5 text-center">계약유형</th>
-                    <th className="px-1 py-1.5 text-center">근속</th>
-                    <th className="px-1 py-1.5 text-center">평가</th>
-                    <th className="px-1 py-1.5 text-center">계약서</th>
-                    <th className="px-1 py-1.5 text-center">상태</th>
+                    <th className="px-2 py-1.5 text-left cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("name")}>이름<SortIcon k="name" /></th>
+                    <th className="px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("position")}>직책<SortIcon k="position" /></th>
+                    <th className="px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("contract_type")}>계약유형<SortIcon k="contract_type" /></th>
+                    <th className="px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("tenure")}>근속<SortIcon k="tenure" /></th>
+                    <th className="px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("performance_rating")}>평가<SortIcon k="performance_rating" /></th>
+                    <th className="px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("contract_file")}>계약서<SortIcon k="contract_file" /></th>
+                    <th className="px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("status")}>상태<SortIcon k="status" /></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
