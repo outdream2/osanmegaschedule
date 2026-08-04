@@ -672,6 +672,28 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
   const [latestContract, setLatestContract] = useState<LatestContract | null>(null);
   const [latestContractLoading, setLatestContractLoading] = useState(false);
 
+  // 2026-08-04 · 첫계약/재계약 표시 · employee_id 별 계약 총 count map (list 컬럼용)
+  const [contractCountByEmp, setContractCountByEmp] = useState<Map<number, number>>(() => new Map());
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/employee-contracts");
+        if (!res.ok) return;
+        const rows: any[] = await res.json();
+        if (!Array.isArray(rows)) return;
+        const map = new Map<number, number>();
+        for (const r of rows) {
+          const id = Number(r?.employee_id);
+          if (!Number.isFinite(id)) continue;
+          map.set(id, (map.get(id) ?? 0) + 1);
+        }
+        if (alive) setContractCountByEmp(map);
+      } catch { /* silent */ }
+    })();
+    return () => { alive = false; };
+  }, [latestContract]); // latestContract 변경 시(신규 계약 승인) 재계산
+
   // ── 데이터 로드 ──
   const loadEmployees = useCallback(async () => {
     setLoading(true);
@@ -983,15 +1005,30 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
             </span>
           )}
         </td>
-        {/* 계약유형 */}
+        {/* 계약유형 · 2026-08-04 · 계약직 → "계약N" (N=총 계약수) · 정/알 등은 short */}
         <td className="px-1 py-2 text-center">
-          {ctMeta ? (
-            <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-md border leading-tight ${ctMeta.color}`}>
-              {ctMeta.short}
-            </span>
-          ) : (
-            <span className="text-[11px] text-slate-300">-</span>
-          )}
+          {(() => {
+            const count = contractCountByEmp.get(emp.id) ?? 0;
+            const isContract = emp.contract_type === "fixed_term";
+            if (isContract && count > 0) {
+              return (
+                <span
+                  className="text-[11px] font-semibold px-1.5 py-0.5 rounded-md border leading-tight bg-amber-100 text-amber-800 border-amber-300"
+                  title={`계약직 · 총 ${count}회 계약 (${count === 1 ? "첫 계약" : `재계약 ${count - 1}회`})`}
+                >
+                  계약{count}
+                </span>
+              );
+            }
+            if (ctMeta) {
+              return (
+                <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-md border leading-tight ${ctMeta.color}`}>
+                  {ctMeta.short}
+                </span>
+              );
+            }
+            return <span className="text-[11px] text-slate-300">-</span>;
+          })()}
         </td>
         {/* 근속 */}
         <td className="px-1 py-2 text-center text-[12px] text-slate-600 tabular-nums whitespace-nowrap">
@@ -1811,11 +1848,29 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                     />
 
                     {/* ─── 임금 (기존 §8 통합) ─── */}
-                    <div className="col-span-2 flex items-center gap-2 mt-1.5 pt-2 border-t border-slate-100">
+                    <div className="col-span-2 flex items-center gap-2 mt-1.5 pt-2 border-t border-slate-100 flex-wrap">
                       <Briefcase size={11} className="text-rose-400" />
                       <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">임금</span>
                       {latestContract && (
-                        <span className="text-[9px] text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-px rounded font-bold">근로계약서 연동</span>
+                        <>
+                          <span className="text-[10px] text-emerald-700 font-bold">
+                            근로계약서 연동 · {latestContract.start_date ?? "-"} ~ {latestContract.end_date ?? "무기한"}
+                            {latestContract.contract_type && <span className="text-slate-500 ml-1">· {latestContract.contract_type}</span>}
+                          </span>
+                          {latestContract.pdf_url && (
+                            <button
+                              type="button"
+                              onClick={() => window.open(latestContract.pdf_url!, "_blank", "noopener,noreferrer")}
+                              className="inline-flex items-center gap-1 h-6 px-2 rounded-md border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-[11px] font-black transition cursor-pointer"
+                              title="근로계약서 PDF 열기"
+                            >
+                              <ExternalLink size={10} /> 근로계약서 보기
+                            </button>
+                          )}
+                        </>
+                      )}
+                      {!latestContract && !latestContractLoading && (
+                        <span className="text-[10px] text-slate-400 italic">근로계약서 없음 (계약서 작성 시 자동 연동)</span>
                       )}
                     </div>
                     <div className="flex flex-col gap-0.5">
