@@ -2,6 +2,7 @@
 // 직원관리 페이지 — 마스터-디테일 레이아웃 (이력서 스타일 우측 패널)
 // 좌측: 슬림 원라인 리스트 / 우측: 이력서 형식 상세 + 인라인 편집
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSortableTable } from "../../hooks/useSortableTable";
 import {
   Award,
   Briefcase,
@@ -858,37 +859,24 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
     });
   }, [employees, search, filterPosition, filterStatus]);
 
-  // ── 정렬 (T35 · 헤더 클릭 정렬 · 원칙 feedback_ui_principles) ──
+  // ── 정렬 (T35 · 공용 useSortableTable 훅 사용 · 원칙 feedback_ui_principles) ──
   type SortKey = "name" | "position" | "contract_type" | "tenure" | "performance_rating" | "contract_file" | "status";
-  const [sortKey, setSortKey] = useState<SortKey>("name");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const toggleSort = (k: SortKey) => {
-    if (sortKey === k) setSortDir(d => d === "asc" ? "desc" : "asc");
-    else { setSortKey(k); setSortDir("asc"); }
+  const cmpStr = (a: string, b: string) => a.localeCompare(b, "ko");
+  const tenureDays = (e: Employee): number => {
+    if (!e.hire_date) return -Infinity;
+    const t = Date.parse(String(e.hire_date));
+    return Number.isFinite(t) ? t : -Infinity;
   };
-  const filtered = useMemo(() => {
-    const arr = [...filteredRaw];
-    const sign = sortDir === "asc" ? 1 : -1;
-    const cmpStr = (a: string, b: string) => sign * a.localeCompare(b, "ko");
-    const tenureDays = (e: Employee): number => {
-      if (!e.hire_date) return -Infinity;
-      const t = Date.parse(String(e.hire_date));
-      return Number.isFinite(t) ? t : -Infinity;
-    };
-    arr.sort((a, b) => {
-      switch (sortKey) {
-        case "name":              return cmpStr(a.name ?? "", b.name ?? "");
-        case "position":          return cmpStr(a.position ?? "", b.position ?? "");
-        case "contract_type":     return cmpStr((a as any).contract_type ?? "", (b as any).contract_type ?? "");
-        case "tenure":            return sign * (tenureDays(b) - tenureDays(a));  // 오래된순 = asc
-        case "performance_rating":return cmpStr((a as any).performance_rating ?? "", (b as any).performance_rating ?? "");
-        case "contract_file":     return sign * (((b as any).contract_file_url ? 1 : 0) - ((a as any).contract_file_url ? 1 : 0));
-        case "status":            return sign * (((a as any).retire_date ? 1 : 0) - ((b as any).retire_date ? 1 : 0));
-        default:                  return 0;
-      }
-    });
-    return arr;
-  }, [filteredRaw, sortKey, sortDir]);
+  const sortComparators = useMemo<Record<SortKey, (a: Employee, b: Employee) => number>>(() => ({
+    name:               (a, b) => cmpStr(a.name ?? "", b.name ?? ""),
+    position:           (a, b) => cmpStr(a.position ?? "", b.position ?? ""),
+    contract_type:      (a, b) => cmpStr((a as any).contract_type ?? "", (b as any).contract_type ?? ""),
+    tenure:             (a, b) => tenureDays(b) - tenureDays(a),  // asc = 오래된순
+    performance_rating: (a, b) => cmpStr((a as any).performance_rating ?? "", (b as any).performance_rating ?? ""),
+    contract_file:      (a, b) => (((b as any).contract_file_url ? 1 : 0) - ((a as any).contract_file_url ? 1 : 0)),
+    status:             (a, b) => (((a as any).retire_date ? 1 : 0) - ((b as any).retire_date ? 1 : 0)),
+  }), []);
+  const { sorted: filtered, sortKey, sortDir, toggleSort } = useSortableTable<Employee, SortKey>(filteredRaw, "name", sortComparators);
   const SortIcon: React.FC<{ k: SortKey }> = ({ k }) => (
     sortKey === k
       ? (sortDir === "asc" ? <ArrowUp size={10} className="text-indigo-500 inline ml-0.5" /> : <ArrowDown size={10} className="text-indigo-500 inline ml-0.5" />)

@@ -122,10 +122,15 @@
 - useVendors 공용 훅 (12곳 중복 통합) · DisplayPage 스케줄 fetch 훅 분리 · Trending·Category·Order 폴더 이동
 - 예상 2~4h
 
-### T30. 공통 CSS 리팩터 · 잔여 검증
-- 공통 컴포넌트 16개 · 대부분 마이그레이션됨 (Modal · SplitPanel · TabBar · ListLoading 등)
-- 세부 페이지 잔여 항목 검증 · 사용자 재요청 (2026-08-04)
-- 예상 1~2h
+### T30-followup 공통 훅/컴포넌트 점진 채택 (T30 감사 후속)
+- **T30 감사 완료** (2026-08-04) · `useSortableTable` 훅 신규 · StaffManagePage 예제 마이그레이션
+- 남은 채택 후보 (점진 진행):
+  - `useSortableTable`: 22파일 (OrderManagePage · FlowTab · SupplierTab · CategoryTab · PaymentInfoTab · VendorDetailTabs · PurchaseHistoryTab · ReturnListPanel · StockReconciliationTab · DisplayPage · SalesTrendPage · HrFormsPage · ProductArrivalPage · StockArrivalPage · StockCheckPage · PurchaseHistoryList 등)
+  - `Modal.tsx` 확장 + 9개 로컬 모달 마이그레이션 (BreakModal · EmployeeFormModal · SettingsModal · HiddenManagerModal 등)
+  - `useFilterState` 훅 · 48파일 필터 상태 (OrderManagePage 33개 상태 → 1개)
+  - `ReusableFilterBar` · 3개 로컬 필터바 통합
+- 예상 · 각 페이지별 15~30분 · 총 8~12h (점진)
+- **주의**: 매 파일 마이그레이션 후 TS+build 검증 · 회귀 없음
 
 ### T34. 헤더 자동 정렬 · 전체 리스트 검증
 - 사용자 원칙 (feedback_ui_principles) · 모든 리스트 · 헤더 클릭 asc/desc 토글 · 활성 컬럼 화살표 표시 · 예외 없음
