@@ -1173,20 +1173,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         if (cat !== needCategoryFilter) return false;
       }
     }
-    // 3) 재고 상태 chip 필터 (다중 선택 · OR · 하나라도 만족)
-    if (needStockStatus.size > 0) {
-      const cur = p.current_stock != null ? Number(p.current_stock) : NaN;
-      const opt = p.optimal_stock != null ? Number(p.optimal_stock) : NaN;
-      const shortage = (!isNaN(cur) && !isNaN(opt)) ? (opt - cur) : NaN;
-      let matched = false;
-      if (needStockStatus.has("zero")    && !isNaN(cur) && cur <= 0) matched = true;
-      if (needStockStatus.has("low")     && !isNaN(cur) && cur > 0 && cur <= 3) matched = true;
-      if (needStockStatus.has("warning") && !isNaN(shortage) && shortage >= 10) matched = true;
-      if (!matched) return false;
-    }
+    // 재고 상태 chip 필터 · 2026-08-04 · 사용자 요청으로 제거
     return true;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [lowStock, deferredNeedSearch, needCategoryFilter, vendorCategoryMap, needStockStatus]);
+  }), [lowStock, deferredNeedSearch, needCategoryFilter, vendorCategoryMap]);
 
   // 2026-08-03 (#201) · 재고 상태 chip · 실시간 카운트 (검색·카테고리 만족 후 · 상태별 개수)
   //   · UX 원칙 · dead-end 방지 · 각 chip 옆에 만족 상품 수 노출
@@ -1375,21 +1365,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 accent="rose"
                 widthClass="w-64 sm:w-80"
               />
-              <SearchFilterChips<NeedStockStatus>
-                label="재고 상태"
-                options={stockStatusChipOptions}
-                selected={needStockStatus}
-                onToggle={toggleNeedStockStatus}
-                showAll={true}
-                allLabel="전체"
-                size="sm"
-              />
-              {(lowStockSearch.trim() || needStockStatus.size > 0) && (
+              {/* 재고상태 필터 · 2026-08-04 · 사용자 요청으로 완전 제거 (필터·기능 모두) */}
+              {lowStockSearch.trim() && (
                 <button
                   type="button"
-                  onClick={() => { setLowStockSearch(""); setNeedStockStatus(new Set()); }}
+                  onClick={() => { setLowStockSearch(""); }}
                   className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-black text-slate-500 hover:text-rose-600 transition cursor-pointer"
-                  title="검색·필터 모두 초기화"
+                  title="검색 초기화"
                 >
                   <RotateCcw size={11} />초기화
                 </button>
@@ -1398,7 +1380,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
             {/* ── Row 2: 공급사 카테고리 필터 + 새로고침 ── */}
             <div className="px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-slate-100 bg-slate-50/40">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0">분류</span>
+              <span className="text-[12px] font-black uppercase tracking-wider text-slate-500 shrink-0">분류</span>
               <div className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-0.5 gap-0.5 flex-wrap">
                 {([
                   { k: "all"      as NeedCategoryFilter, label: "전체",     activeCls: "bg-slate-100    text-slate-800   border-slate-300"  },
@@ -1415,7 +1397,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       type="button"
                       onClick={() => setNeedCategoryFilter(b.k)}
                       className={[
-                        "px-2.5 h-7 rounded-md text-[11px] font-black leading-none border transition-colors cursor-pointer whitespace-nowrap",
+                        "px-3 h-8 rounded-md text-[13px] font-black leading-none border transition-colors cursor-pointer whitespace-nowrap",
                         active ? b.activeCls : "bg-white text-slate-500 border-transparent hover:text-slate-800 hover:bg-slate-50",
                       ].join(" ")}
                       title={`${b.label} 카테고리만 표시`}
@@ -1435,7 +1417,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
             {/* ── Row 3: 발주 4조건 체크박스 + 조회/초기화 버튼 ── */}
             <div className="px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-slate-100">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0 whitespace-nowrap">발주 조건</span>
+              <span className="text-[12px] font-black uppercase tracking-wider text-slate-500 shrink-0 whitespace-nowrap">발주 조건</span>
 
               {/* 조건 1 · 매입일 N일 이상 */}
               <label className="inline-flex items-center gap-1.5 shrink-0">
@@ -1456,24 +1438,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               </label>
 
               {/* 조건 2 · 재고 N개 이하 */}
-              <label className="inline-flex items-center gap-1.5 shrink-0">
-                <input type="checkbox" checked={needCurrentEnabled} onChange={e => setNeedCurrentEnabled(e.target.checked)}
-                  className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
-                <span className={`text-[12px] font-bold whitespace-nowrap ${needCurrentEnabled ? "text-slate-700" : "text-slate-400"}`}>재고</span>
-                <input
-                  type="number" min={0} step={1}
-                  disabled={!needCurrentEnabled}
-                  value={needInlineMaxCurrent === 0 ? "" : needInlineMaxCurrent}
-                  onChange={e => updateInline("current", e.target.value)}
-                  placeholder="50"
-                  className="w-16 h-8 px-2 rounded-md border border-slate-200 text-[13px] font-bold text-slate-800 text-right tabular-nums bg-white
-                             focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
-                             hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
-                />
-                <span className={`text-[12px] whitespace-nowrap ${needCurrentEnabled ? "text-slate-500" : "text-slate-300"}`}>개 이하</span>
-              </label>
+              {/* 재고 조건 · 2026-08-04 · 사용자 요청으로 제거 (매입주기·한달판매·3달판매만 유지) */}
 
-              {/* 조건 3 · 최근 한달 판매량 N개 이하 */}
+              {/* 조건 2 · 최근 한달 판매량 N개 이하 */}
               <label className="inline-flex items-center gap-1.5 shrink-0">
                 <input type="checkbox" checked={needSalesMonthEnabled} onChange={e => setNeedSalesMonthEnabled(e.target.checked)}
                   className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
@@ -2061,15 +2028,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           <button
                             onClick={() => handleRequestOrder(p)}
                             disabled={busy}
-                            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[13px] font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer whitespace-nowrap"
+                            className="inline-flex items-center justify-center h-8 px-3 rounded-md text-[13px] font-black text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer whitespace-nowrap"
                             title="발주요청 리스트에 추가"
                           >
-                            {busy ? (
-                              <Loader2 size={12} strokeWidth={2.5} className="animate-spin" />
-                            ) : (
-                              <ShoppingCart size={12} strokeWidth={2.5} />
-                            )}
-                            <span>{busy ? "추가 중" : "발주"}</span>
+                            {busy ? <Loader2 size={12} strokeWidth={2.5} className="animate-spin" /> : <span>요청</span>}
                           </button>
                         )}
                       </td>
