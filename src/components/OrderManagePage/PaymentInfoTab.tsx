@@ -71,6 +71,16 @@ interface BalanceResp {
   payment_count: number;
 }
 
+// 월별 매입/결제 breakdown · 2026-08-04 · #58 · 상단 요약 표용
+// key = "YYYY-MM" · purchase/payment 는 해당 월 합계
+interface MonthlyBreakdown {
+  months: string[];               // 오래된순 · 최근 N개월 · e.g. ["2026-06","2026-07","2026-08"]
+  purchase: Record<string, number>; // "YYYY-MM" → 매입 합계
+  payment: Record<string, number>;  // "YYYY-MM" → 결제 합계
+  total_purchase: number;          // 전체 (fetch 기간 내) 매입 합계
+  total_payment: number;           // 전체 (fetch 기간 내) 결제 합계
+}
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const CARD_ISSUERS = [
@@ -112,6 +122,25 @@ const todayYmd = (): string => {
   const day = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}-${m}-${day}`;
 };
+
+// 최근 N개월 · 오래된순 · "YYYY-MM" · 2026-08-04 · #58
+// e.g. now=2026-08-04, n=3 → ["2026-06","2026-07","2026-08"]
+function recentMonthKeys(n: number): string[] {
+  const out: string[] = [];
+  const now = new Date();
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    out.push(`${d.getFullYear()}-${m}`);
+  }
+  return out;
+}
+
+// "YYYY-MM" → "M월" · 2026-08-04 · #58 · 표 헤더용
+function fmtMonthShort(key: string): string {
+  const [_y, m] = key.split("-");
+  return `${Number(m)}월`;
+}
 
 function fmtWonShort(n: number): string {
   if (!Number.isFinite(n) || n === 0) return "0";
@@ -217,6 +246,10 @@ export const PaymentInfoTab: React.FC = () => {
   const [recentPayments, setRecentPayments] = useState<PaymentRow[]>([]);
   const [recentLoading, setRecentLoading] = useState(false);
 
+  // 월별 매입/결제 breakdown · 2026-08-04 · #58 · 상단 요약 표
+  const [monthlyBreakdown, setMonthlyBreakdown] = useState<MonthlyBreakdown | null>(null);
+  const [monthlyLoading, setMonthlyLoading] = useState(false);
+
   // 폼 상태
   const [paymentDate, setPaymentDate] = useState<string>(todayYmd());
   const [amount, setAmount] = useState<string>("");
@@ -316,15 +349,70 @@ export const PaymentInfoTab: React.FC = () => {
     finally { setRecentLoading(false); }
   }, []);
 
+  // 월별 매입·결제 breakdown 로드 · 2026-08-04 · #58
+  //   · /api/supplier-purchase-detail (매입 raw) + /api/supplier-payments (결제 raw)
+  //   · 클라이언트에서 YYYY-MM key 로 sum · 최근 N개월 표시
+  //   · 파생컬럼 X · 기존 API 조합 · 서버 신규 없음 (feedback_no_derived_columns)
+  const MONTHS_TO_SHOW = 3;
+  const FETCH_DAYS = 365; // 1년치 fetch · 누적 컬럼 정합성 위해 넉넉히
+  const loadMonthlyBreakdown = useCallback(async (supplierName: string) => {
+    setMonthlyLoading(true);
+    try {
+      const [detailRes, paysRes] = await Promise.all([
+        fetch(`/api/supplier-purchase-detail?supplier=${encodeURIComponent(supplierName)}&days=${FETCH_DAYS}`),
+        fetch(`/api/supplier-payments?supplier=${encodeURIComponent(supplierName)}&days=${FETCH_DAYS}`),
+      ]);
+      const purchase: Record<string, number> = {};
+      const payment: Record<string, number> = {};
+      let totalPurchase = 0;
+      let totalPayment = 0;
+      if (detailRes.ok) {
+        const j = await detailRes.json();
+        for (const r of (Array.isArray(j?.rows) ? j.rows : [])) {
+          const date = String(r?.date ?? "");
+          if (!/^\d{4}-\d{2}/.test(date)) continue;
+          const key = date.slice(0, 7);
+          const amt = Number(r?.amount) || 0;
+          purchase[key] = (purchase[key] ?? 0) + amt;
+          totalPurchase += amt;
+        }
+      }
+      if (paysRes.ok) {
+        const j = await paysRes.json();
+        for (const r of (Array.isArray(j?.rows) ? j.rows : [])) {
+          const date = String(r?.payment_date ?? "");
+          if (!/^\d{4}-\d{2}/.test(date)) continue;
+          const key = date.slice(0, 7);
+          const amt = Number(r?.amount) || 0;
+          payment[key] = (payment[key] ?? 0) + amt;
+          totalPayment += amt;
+        }
+      }
+      setMonthlyBreakdown({
+        months: recentMonthKeys(MONTHS_TO_SHOW),
+        purchase,
+        payment,
+        total_purchase: totalPurchase,
+        total_payment: totalPayment,
+      });
+    } catch {
+      setMonthlyBreakdown(null);
+    } finally {
+      setMonthlyLoading(false);
+    }
+  }, []);
+
   // 공급사 선택 시 · 잔고 + 최근결제 로드 · 폼 리셋
   useEffect(() => {
     if (!selectedVendor) {
       setBalance(null);
       setRecentPayments([]);
+      setMonthlyBreakdown(null);
       return;
     }
     loadBalance(selectedVendor.company_name);
     loadRecentPayments(selectedVendor.company_name);
+    loadMonthlyBreakdown(selectedVendor.company_name);
     // 폼 리셋
     setPaymentDate(todayYmd());
     setAmount("");
@@ -339,7 +427,7 @@ export const PaymentInfoTab: React.FC = () => {
     setTaxInvoiceNo("");
     setNote("");
     setMsg(null);
-  }, [selectedVendor, loadBalance, loadRecentPayments]);
+  }, [selectedVendor, loadBalance, loadRecentPayments, loadMonthlyBreakdown]);
 
   // ── 필터링된 공급사 ─────────────────────────────────────────
   const filteredVendors = useMemo(() => {
@@ -430,6 +518,7 @@ export const PaymentInfoTab: React.FC = () => {
       await Promise.all([
         loadBalance(selectedVendor.company_name),
         loadRecentPayments(selectedVendor.company_name),
+        loadMonthlyBreakdown(selectedVendor.company_name),
       ]);
       window.dispatchEvent(new CustomEvent("supplier-payment-added", {
         detail: { supplier: selectedVendor.company_name },
@@ -592,54 +681,100 @@ export const PaymentInfoTab: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 매입·결제·잔고 표 (2026-08-04 · 사용자 요청 · KPI 카드 → 표형태) */}
+                {/* 월별 매입·결제·잔고 표 (2026-08-04 · #58 · 사용자 요청)
+                    · 최근 3개월 + 누적 + 잔고 컬럼 · 3행 (총매입/총결제/잔고)
+                    · 데이터: monthlyBreakdown (supplier-purchase-detail + supplier-payments)
+                    · 누적: balance.total_purchase/total_payment (전체 기간 · 서버 sum) 우선
+                    · 잔고: currentBalance (누적매입 - 누적결제)
+                    · 모바일 반응형 · 가로 스크롤 */}
                 {(() => {
-                  // 이번달 결제 합계 (recentPayments · 클라이언트 계산)
-                  const now = new Date();
-                  const ymPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-                  const thisMonthPayment = recentPayments
-                    .filter(p => String(p.payment_date ?? "").startsWith(ymPrefix))
-                    .reduce((s, p) => s + (Number(p.amount) || 0), 0);
-                  const totalPurchase = balance?.total_purchase ?? 0;
-                  const totalPayment  = balance?.total_payment ?? 0;
-                  const totalBalance  = currentBalance; // 현재 잔고 (total_purchase - total_payment)
-                  // 월별 매입 · 서버 balance 미제공 · placeholder
-                  const thisMonthPurchase: number | null = null;
-                  const thisMonthBalance: number | null = thisMonthPurchase != null ? thisMonthPurchase - thisMonthPayment : null;
-                  const fmt = (n: number | null) => n == null ? "-" : fmtWonShort(n);
+                  const months = monthlyBreakdown?.months ?? recentMonthKeys(MONTHS_TO_SHOW);
+                  const purMap = monthlyBreakdown?.purchase ?? {};
+                  const payMap = monthlyBreakdown?.payment ?? {};
+                  // 누적 · balance 응답 (전체 기간) 우선 · monthlyBreakdown 은 1년치라 부정확할 수 있음
+                  const totalPurchase = balance?.total_purchase ?? monthlyBreakdown?.total_purchase ?? 0;
+                  const totalPayment  = balance?.total_payment  ?? monthlyBreakdown?.total_payment  ?? 0;
+                  const totalBalance  = currentBalance;
+                  const fmt = (n: number) => n === 0 ? "-" : fmtWonShort(n);
+                  const dash = <span className="text-slate-300">-</span>;
+                  const showLoading = monthlyLoading || balanceLoading;
                   return (
                     <div className="overflow-hidden rounded-lg border border-slate-200 shadow-xs">
-                      <table className="w-full text-[12px] tabular-nums">
+                      <div className="overflow-x-auto">
+                      <table className="w-full min-w-[420px] text-[12px] tabular-nums">
                         <thead className="bg-slate-50/80 text-[11px] font-black uppercase tracking-wider text-slate-500">
                           <tr>
-                            <th className="text-left px-3 py-1.5 w-[70px]">구분</th>
-                            <th className="text-right px-3 py-1.5 text-emerald-700"><span className="inline-flex items-center gap-1 justify-end"><ReceiptText size={11} />매입</span></th>
-                            <th className="text-right px-3 py-1.5 text-sky-700"><span className="inline-flex items-center gap-1 justify-end"><Wallet size={11} />결제</span></th>
-                            <th className="text-right px-3 py-1.5 text-slate-700"><span className="inline-flex items-center gap-1 justify-end"><Coins size={11} />잔고</span></th>
+                            <th className="text-left px-3 py-1.5 w-[64px]">구분</th>
+                            {months.map(k => (
+                              <th key={k} className="text-right px-2.5 py-1.5 whitespace-nowrap">
+                                <span className="inline-flex flex-col items-end leading-tight">
+                                  <span className="text-slate-400 text-[9px]">{k.slice(0, 4)}</span>
+                                  <span>{fmtMonthShort(k)}</span>
+                                </span>
+                              </th>
+                            ))}
+                            <th className="text-right px-2.5 py-1.5 whitespace-nowrap text-slate-700 border-l border-slate-200">
+                              <span className="inline-flex items-center gap-1 justify-end"><Layers size={11} />누적</span>
+                            </th>
+                            <th className="text-right px-2.5 py-1.5 whitespace-nowrap text-amber-700 bg-amber-50/40">
+                              <span className="inline-flex items-center gap-1 justify-end"><Coins size={11} />잔고</span>
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
+                          {/* Row 1 · 총 매입 */}
                           <tr className="bg-white">
-                            <td className="px-3 py-1.5 font-black text-slate-700">이번달</td>
-                            <td className={`px-3 py-1.5 text-right font-black ${thisMonthPurchase == null ? "text-slate-300" : "text-emerald-800"}`}>{fmt(thisMonthPurchase)}</td>
-                            <td className={`px-3 py-1.5 text-right font-black ${thisMonthPayment === 0 ? "text-slate-300" : "text-sky-800"}`}>{fmt(thisMonthPayment)}</td>
-                            <td className={`px-3 py-1.5 text-right font-black ${thisMonthBalance == null ? "text-slate-300" : thisMonthBalance > 0 ? "text-amber-700" : thisMonthBalance < 0 ? "text-rose-700" : "text-slate-500"}`}>{fmt(thisMonthBalance)}</td>
+                            <td className="px-3 py-1.5 font-black text-emerald-700">
+                              <span className="inline-flex items-center gap-1"><ReceiptText size={11} />매입</span>
+                            </td>
+                            {months.map(k => (
+                              <td key={k} className={`px-2.5 py-1.5 text-right font-black ${(purMap[k] ?? 0) === 0 ? "text-slate-300" : "text-emerald-800"}`}>
+                                {fmt(purMap[k] ?? 0)}
+                              </td>
+                            ))}
+                            <td className="px-2.5 py-1.5 text-right font-black text-emerald-800 border-l border-slate-200">{fmt(totalPurchase)}</td>
+                            <td className="px-2.5 py-1.5 text-right text-slate-300 bg-amber-50/30">{dash}</td>
                           </tr>
-                          <tr className="bg-slate-50/60">
-                            <td className="px-3 py-1.5 font-black text-slate-700">누적</td>
-                            <td className="px-3 py-1.5 text-right font-black text-emerald-800">{fmt(totalPurchase)}</td>
-                            <td className="px-3 py-1.5 text-right font-black text-sky-800">{fmt(totalPayment)}</td>
-                            <td className={`px-3 py-1.5 text-right font-black ${totalBalance > 0 ? "text-amber-700" : totalBalance < 0 ? "text-rose-700" : "text-slate-500"}`}>
-                              {fmt(Math.abs(totalBalance))}
+                          {/* Row 2 · 총 결제 */}
+                          <tr className="bg-slate-50/40">
+                            <td className="px-3 py-1.5 font-black text-sky-700">
+                              <span className="inline-flex items-center gap-1"><Wallet size={11} />결제</span>
+                            </td>
+                            {months.map(k => (
+                              <td key={k} className={`px-2.5 py-1.5 text-right font-black ${(payMap[k] ?? 0) === 0 ? "text-slate-300" : "text-sky-800"}`}>
+                                {fmt(payMap[k] ?? 0)}
+                              </td>
+                            ))}
+                            <td className="px-2.5 py-1.5 text-right font-black text-sky-800 border-l border-slate-200">{fmt(totalPayment)}</td>
+                            <td className="px-2.5 py-1.5 text-right text-slate-300 bg-amber-50/30">{dash}</td>
+                          </tr>
+                          {/* Row 3 · 잔고 */}
+                          <tr className="bg-white">
+                            <td className="px-3 py-1.5 font-black text-amber-700">
+                              <span className="inline-flex items-center gap-1"><Coins size={11} />잔고</span>
+                            </td>
+                            {months.map(k => (
+                              <td key={k} className="px-2.5 py-1.5 text-right text-slate-300">{dash}</td>
+                            ))}
+                            <td className="px-2.5 py-1.5 text-right text-slate-300 border-l border-slate-200">{dash}</td>
+                            <td className={`px-2.5 py-1.5 text-right font-black bg-amber-50/60 ${
+                              totalBalance > 0 ? "text-amber-700" : totalBalance < 0 ? "text-rose-700" : "text-slate-500"
+                            }`}>
+                              {totalBalance === 0 ? "0" : fmtWonShort(Math.abs(totalBalance))}
                               {totalBalance !== 0 && (
-                                <span className="text-[9px] font-semibold text-slate-400 ml-1">{totalBalance > 0 ? "미결" : "초과"}</span>
+                                <span className="text-[9px] font-semibold text-slate-400 ml-1">
+                                  {totalBalance > 0 ? "미결" : "초과"}
+                                </span>
                               )}
                             </td>
                           </tr>
                         </tbody>
                       </table>
-                      {balanceLoading && (
-                        <div className="px-3 py-1 bg-slate-50 text-[10px] text-slate-400 flex items-center gap-1"><Loader2 size={10} className="animate-spin" />로딩중</div>
+                      </div>
+                      {showLoading && (
+                        <div className="px-3 py-1 bg-slate-50 text-[10px] text-slate-400 flex items-center gap-1">
+                          <Loader2 size={10} className="animate-spin" />로딩중
+                        </div>
                       )}
                     </div>
                   );
