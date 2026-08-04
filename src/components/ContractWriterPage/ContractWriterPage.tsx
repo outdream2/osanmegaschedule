@@ -318,6 +318,7 @@ function parseHM(s: string): { h: number; m: number } | null {
 }
 
 // 근무시간 → 월 근로시간 계산 (근기법 표준 · 주당 × 4.345)
+// 근로자 이익 보호 · Math.ceil 로 올림 (반내림 시 임금 손실 방지)
 function computeMonthlyHours(startTime: string, endTime: string, breakMinutes: number, weeklyDays: number): {
   dailyMinutes: number;
   weeklyMinutes: number;
@@ -333,7 +334,8 @@ function computeMonthlyHours(startTime: string, endTime: string, breakMinutes: n
   if (rawMin <= 0) return null;
   const dailyMinutes = Math.max(0, rawMin - Math.max(0, breakMinutes));
   const weeklyMinutes = dailyMinutes * Math.max(0, weeklyDays);
-  const monthlyMinutes = Math.round(weeklyMinutes * 4.345);
+  // 근로자 이익 보호 · 올림 (반내림 시 임금 손실 방지)
+  const monthlyMinutes = Math.ceil(weeklyMinutes * 4.345);
   const monthlyHours = monthlyMinutes / 60;
   const monthlyHoursInt = Math.floor(monthlyMinutes / 60);
   const monthlyMinutesRem = monthlyMinutes % 60;
@@ -424,8 +426,11 @@ function computeActualPay(
   if (rawMin <= 0) return null;
   const dailyMin = Math.max(0, rawMin - Math.max(0, breakMinutes));
   const dailyHours = dailyMin / 60;
-  const weekdayMonthlyHours = dailyHours * Math.max(0, weeklyWeekdayDays) * 4.345;
-  const weekendMonthlyHours = dailyHours * Math.max(0, weeklyWeekendDays) * 4.345;
+  // 근로자 이익 보호 · 월 근로시간 올림 · 분 단위 ceil 후 시간 환산
+  const weekdayMonthlyMinutes = Math.ceil(dailyMin * Math.max(0, weeklyWeekdayDays) * 4.345);
+  const weekendMonthlyMinutes = Math.ceil(dailyMin * Math.max(0, weeklyWeekendDays) * 4.345);
+  const weekdayMonthlyHours = weekdayMonthlyMinutes / 60;
+  const weekendMonthlyHours = weekendMonthlyMinutes / 60;
   const weekdayPay = Math.round(weekdayMonthlyHours * Math.max(0, weekdayHourly));
   const weekendPay = Math.round(weekendMonthlyHours * Math.max(0, weekendHourly));
   return {
