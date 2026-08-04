@@ -194,7 +194,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need">("need");
   const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "scan" | "productarrival" | "return" | "purchase-history">("receipt");
   const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment-input" | "vat-prepare">("vendor");
-  const [statSubTab, setStatSubTab] = useState<"trending" | "category" | "flow" | "diff">("trending");
+  const [statSubTab, setStatSubTab] = useState<"trending" | "category" | "flow" | "diff" | "supplier">("trending");
 
   // 2026-08-03 · 관리자(level>=8) 전용 · 서브탭 long-press 드래그 재정렬 (useSortableTabs 훅)
   //   · storageKey 는 memory feedback_tab_reorder 규칙 준수 (tabOrder.<page-key>)
@@ -1224,7 +1224,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   type PurchaseOrderKey = "order" | "need";
   type PurchaseKey = "receipt" | "reconciliation" | "scan" | "productarrival" | "return" | "purchase-history";
   type PaymentKey = "vendor" | "payment-input" | "vat-prepare";
-  type StatKey = "trending" | "category" | "flow" | "diff";
+  type StatKey = "trending" | "category" | "flow" | "diff" | "supplier";
   interface SubTabDef<K extends string> { key: K; label: string; icon: React.ElementType; color: string; }
 
   const purchaseOrderDefaultTabs: SubTabDef<PurchaseOrderKey>[] = useMemo(() => [
@@ -1248,6 +1248,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     { key: "trending", label: "급상승",         icon: TrendingUp,    color: "indigo" },
     { key: "category", label: "카테고리별현황", icon: PieChart,      color: "amber"  },
     { key: "flow",     label: "상품현황",       icon: Boxes,         color: "sky"    },
+    { key: "supplier", label: "공급사별현황",   icon: Building2,     color: "emerald"}, // 2026-08-04 복원 (사용자 요청 · 1주일 전 코드 참고)
     { key: "diff",     label: "손실추적",       icon: AlertTriangle, color: "rose"   },
   ], []);
 
@@ -2317,6 +2318,12 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           {statSubTab === "flow" && (
             <div className="flex-1 min-h-0">
               <FlowTab />
+            </div>
+          )}
+          {/* 공급사별현황 · 2026-08-04 복원 (사용자 요청 · 1주일 전 코드) */}
+          {statSubTab === "supplier" && (
+            <div className="flex-1 min-h-0">
+              <SupplierTab />
             </div>
           )}
           {statSubTab === "diff" && (
