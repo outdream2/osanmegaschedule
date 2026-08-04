@@ -322,24 +322,35 @@ export const PurchaseHistoryTab: React.FC = () => {
     } finally { setLedgerLoading(false); }
   }, [periodMonths, periodSeason]);
 
-  // ─── detail (최근 1년) 로드 ────────────────────────────────────────────
+  // ─── detail (최근 1년) 로드 · /api/purchase-details 로 전환 (2026-08-04) ────
   const loadDetail = useCallback(async (supplier: string) => {
     setDetailLoading(true);
     try {
-      const params = new URLSearchParams({ supplier, days: "365" });
-      const res = await fetch(`/api/supplier-purchase-detail?${params}`);
+      const now = new Date();
+      const from = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+      const fromStr = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, "0")}-${String(from.getDate()).padStart(2, "0")}`;
+      const params = new URLSearchParams({ supplier, from: fromStr, limit: "5000" });
+      const res = await fetch(`/api/purchase-details?${params}`);
       if (!res.ok) throw new Error(String(res.status));
       const j = await res.json();
-      const rows: PurchaseDetailRow[] = Array.isArray(j.rows) ? j.rows : [];
+      const rowsFromApi: any[] = Array.isArray(j.rows) ? j.rows : [];
+      const filtered = rowsFromApi.filter(r => {
+        const rn = String(r.supplier_name ?? r.supplier ?? "").trim();
+        return rn === supplier;
+      });
+      const rows: PurchaseDetailRow[] = filtered.map((r: any) => ({
+        id: r.id,
+        date: r.purchase_date ?? r.invoice_date ?? "",
+        product_code: r.product_code ?? null,
+        product_name: r.product_name ?? null,
+        quantity: Number(r.quantity) || 0,
+        unit_price: Number(r.unit_price) || 0,
+        amount: Number(r.amount ?? r.total) || 0,
+        vat_amount: Number(r.vat_amount ?? r.vat) || 0,
+        supply_amount: Number(r.supply_amount) || 0,
+      }));
       setDetailRows(rows);
-      // detail source · UI 배지·console 로그 (2026-08-04)
-      setDetailSource((j.source ?? null) as DataSource);
-      if (j.source === "ocr_confirmed_items") {
-        console.warn(
-          `[PurchaseHistory:detail] ${supplier} · 거래명세서(ocr_confirmed_items) 폴백. ` +
-          `purchase_details(ERP)에 이 공급사 데이터 없음.`,
-        );
-      }
+      setDetailSource("purchase_details" as DataSource);
     } catch {
       setDetailRows([]);
       setDetailSource(null);
