@@ -5,9 +5,8 @@
 // Tab 3 · 매입 추이 (월별 bar + 카테고리 pie · 커스텀 SVG)
 // Progressive Disclosure · 결제·명세서 탭 · VendorDetailModal 과 중복이라 만들지 않음
 
-import React, { useMemo, useState } from "react";
-import { ArrowUpDown, BarChart3, ListOrdered, Package2 } from "lucide-react";
-import { PurchaseHistoryList, type PurchaseHistoryRow } from "../../common/PurchaseHistoryList";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowUpDown, BarChart3, ChevronDown, ChevronRight, ListOrdered, Loader2, Package2 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -67,39 +66,235 @@ function dateLabel(iso: string | null): string {
   return String(iso).slice(0, 10);
 }
 
-// ─── Tab 1 · 매입 원장 ─────────────────────────────────────────────────────
-// 2026-08-04 · 사용자 요청 · 공통 PurchaseHistoryList 컴포넌트로 대체
-//   · 이전 자체 표 → common/PurchaseHistoryList (통일된 UI · 자동 정렬 · highlight)
+// ─── Tab 1 · 매입 원장 · 매입일 그룹 + 화살표 확장 ──────────────────────────
+// 2026-08-04 · 사용자 요청 (Task 2)
+//   · 한 줄 그룹 헤더: [▶/▼] YYYY-MM-DD · {대표 상품} 외 N건 · 매입금액 XXX,XXX원
+//   · 클릭 시 아래 sub-table (상품명·수량·단가·금액) · 수정 X · 조회만
+//   · 매입일 desc 정렬 · 최상위(가장 최근) 그룹 자동 확장
+//   · highlightId · 해당 row 가 속한 그룹 자동 확장 + 스크롤 (원장 로드 후 최신 강조 훅과 연동)
 
 type SortDir = "asc" | "desc";
+
+interface DateGroup {
+  date: string; // YYYY-MM-DD
+  items: PurchaseLedgerRow[];
+  totalAmount: number;
+  itemCount: number;
+  repName: string; // 대표 상품명 (금액 최대)
+}
 
 const LedgerTab: React.FC<{
   rows: PurchaseLedgerRow[];
   loading: boolean;
   highlightId?: string | number | null;
 }> = ({ rows, loading, highlightId = null }) => {
-  // PurchaseLedgerRow → PurchaseHistoryRow 변환 (invoice_date → date · 상품명/코드 유지)
-  const listRows = useMemo<PurchaseHistoryRow[]>(() => rows.map(r => ({
-    id: r.id,
-    date: r.invoice_date,
-    product_name: r.product_name,
-    product_code: r.product_code,
-    quantity: r.quantity,
-    unit_price: r.unit_price,
-    amount: r.amount,
-  })), [rows]);
+  // 매입일 groupBy · items · totalAmount · itemCount · repName
+  const groups = useMemo<DateGroup[]>(() => {
+    const map = new Map<string, DateGroup>();
+    for (const r of rows) {
+      const d = String(r.invoice_date ?? "").slice(0, 10) || "-";
+      let g = map.get(d);
+      if (!g) {
+        g = { date: d, items: [], totalAmount: 0, itemCount: 0, repName: "" };
+        map.set(d, g);
+      }
+      g.items.push(r);
+      g.totalAmount += Number(r.amount ?? 0) || 0;
+      g.itemCount += 1;
+    }
+    // 각 그룹 대표 상품 · 금액 max (동률 → 첫번째)
+    for (const g of map.values()) {
+      let best: PurchaseLedgerRow | null = null;
+      for (const it of g.items) {
+        if (!best) { best = it; continue; }
+        if ((Number(it.amount ?? 0) || 0) > (Number(best.amount ?? 0) || 0)) best = it;
+      }
+      g.repName = String(best?.product_name ?? "").trim() || "(이름없음)";
+    }
+    // 최신 매입일 위 (desc)
+    return Array.from(map.values()).sort((a, b) => b.date.localeCompare(a.date));
+  }, [rows]);
+
+  // 확장된 그룹 date set
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+
+  // 그룹 목록 변경 시 · 최상위(최신) 그룹 자동 확장 (매입 이력이 처음 로드될 때)
+  const groupsSigRef = useRef<string>("");
+  useEffect(() => {
+    const sig = groups.map(g => g.date).join("|");
+    if (sig === groupsSigRef.current) return;
+    groupsSigRef.current = sig;
+    setExpanded(prev => {
+      if (groups.length === 0) return new Set();
+      // 이미 확장한 것이 있으면 유지 · 아니면 최신 그룹 자동 확장
+      if (prev.size > 0) return prev;
+      const s = new Set<string>();
+      s.add(groups[0].date);
+      return s;
+    });
+  }, [groups]);
+
+  const toggle = (date: string) => {
+    setExpanded(prev => {
+      const n = new Set(prev);
+      if (n.has(date)) n.delete(date); else n.add(date);
+      return n;
+    });
+  };
+
+  // highlightId · 해당 row 가 속한 그룹 자동 확장 + 스크롤
+  const highlightRowRef = useRef<HTMLTableRowElement | null>(null);
+  useEffect(() => {
+    if (highlightId == null) return;
+    let targetDate: string | null = null;
+    for (const g of groups) {
+      if (g.items.some(it => String(it.id) === String(highlightId))) {
+        targetDate = g.date; break;
+      }
+    }
+    if (!targetDate) return;
+    setExpanded(prev => {
+      if (prev.has(targetDate as string)) return prev;
+      const n = new Set(prev); n.add(targetDate as string); return n;
+    });
+    // 스크롤 · 확장 반영 후 다음 tick
+    const t = window.setTimeout(() => {
+      try { highlightRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); }
+      catch { highlightRowRef.current?.scrollIntoView(); }
+    }, 60);
+    return () => window.clearTimeout(t);
+  }, [highlightId, groups]);
+
+  // 전체 합계
+  const totalAmount = useMemo(() => groups.reduce((s, g) => s + g.totalAmount, 0), [groups]);
+  const totalItems = useMemo(() => groups.reduce((s, g) => s + g.itemCount, 0), [groups]);
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[12px] gap-2">
+        <Loader2 size={14} className="animate-spin" />
+        <span>매입 이력 로딩 중...</span>
+      </div>
+    );
+  }
+  if (groups.length === 0) {
+    return <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[12px]">해당 기간 매입 이력 없음</div>;
+  }
 
   return (
-    <PurchaseHistoryList
-      rows={listRows}
-      loading={loading}
-      highlightId={highlightId}
-      showSupplier={false}
-      showProduct
-      showRowNumber
-      showFooterSum
-      emptyText="해당 기간 매입 이력 없음"
-    />
+    <div className="overflow-auto flex-1 min-h-0 bg-white">
+      <table className="w-full text-[12px] min-w-[420px]" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
+        <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
+          <tr className="text-[11px] text-slate-500 uppercase tracking-wider">
+            <th className="text-center w-8 py-2"></th>
+            <th className="text-left px-3 py-2 w-28">매입일</th>
+            <th className="text-left px-3 py-2">상품 (대표 · 외 N건)</th>
+            <th className="text-right px-3 py-2 w-16">건수</th>
+            <th className="text-right px-3 py-2 w-28 text-emerald-600">매입금액</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {groups.map((g) => {
+            const isOpen = expanded.has(g.date);
+            const containsHighlight = highlightId != null && g.items.some(it => String(it.id) === String(highlightId));
+            return (
+              <React.Fragment key={`grp-${g.date}`}>
+                <tr
+                  onClick={() => toggle(g.date)}
+                  className={`cursor-pointer transition-colors ${
+                    containsHighlight ? "bg-amber-50 hover:bg-amber-100/70" : isOpen ? "bg-emerald-50/40 hover:bg-emerald-50/60" : "hover:bg-slate-50/60"
+                  }`}
+                  title={isOpen ? "접기" : "펼치기"}
+                >
+                  <td className="text-center align-middle py-2">
+                    {isOpen
+                      ? <ChevronDown size={13} className="text-emerald-500 mx-auto" />
+                      : <ChevronRight size={13} className="text-slate-400 mx-auto" />}
+                  </td>
+                  <td className="px-3 py-2 font-mono text-[12px] font-semibold text-slate-700 whitespace-nowrap">
+                    {g.date}
+                    {containsHighlight && <span className="ml-1 text-[10px] text-amber-600 font-black">◀</span>}
+                  </td>
+                  <td className="px-3 py-2 text-slate-700 break-words whitespace-normal leading-snug">
+                    <span className="font-semibold">{g.repName}</span>
+                    {g.itemCount > 1 && (
+                      <span className="ml-1 text-[11px] text-slate-500 font-semibold">외 {g.itemCount - 1}건</span>
+                    )}
+                  </td>
+                  <td className="text-right px-3 py-2 tabular-nums font-mono text-[11px] text-slate-600 whitespace-nowrap">
+                    {fmt(g.itemCount)}
+                  </td>
+                  <td className="text-right px-3 py-2 tabular-nums font-mono font-black text-emerald-700 whitespace-nowrap">
+                    {g.totalAmount > 0 ? fmt(g.totalAmount) : "-"}
+                  </td>
+                </tr>
+                {isOpen && (
+                  <tr className="bg-slate-50/40">
+                    <td></td>
+                    <td colSpan={4} className="px-3 py-2">
+                      <div className="overflow-x-auto rounded border border-slate-200 bg-white">
+                        <table className="w-full text-[11px]">
+                          <thead className="bg-slate-50 border-b border-slate-200">
+                            <tr className="text-[10px] text-slate-500 uppercase tracking-wider">
+                              <th className="text-left px-2 py-1.5 w-7 text-slate-300">#</th>
+                              <th className="text-left px-2 py-1.5">상품명</th>
+                              <th className="text-right px-2 py-1.5 w-16">수량</th>
+                              <th className="text-right px-2 py-1.5 w-20">단가</th>
+                              <th className="text-right px-2 py-1.5 w-24 text-emerald-600">금액</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {g.items.map((it, i) => {
+                              const isHl = highlightId != null && String(it.id) === String(highlightId);
+                              return (
+                                <tr
+                                  key={`gi-${g.date}-${it.id}-${i}`}
+                                  ref={isHl ? highlightRowRef : undefined}
+                                  className={`transition-colors ${isHl ? "bg-amber-50" : "hover:bg-emerald-50/40"}`}
+                                >
+                                  <td className="px-2 py-1 text-slate-300 tabular-nums align-top">{i + 1}</td>
+                                  <td className="px-2 py-1 align-top">
+                                    <div className="text-[12px] font-semibold text-slate-700 break-words whitespace-normal leading-snug">
+                                      {it.product_name ?? "-"}
+                                    </div>
+                                    {it.product_code && (
+                                      <div className="text-[10px] font-mono text-slate-400 tabular-nums">{it.product_code}</div>
+                                    )}
+                                  </td>
+                                  <td className="text-right px-2 py-1 font-mono font-bold text-slate-800 tabular-nums align-top">
+                                    {Number(it.quantity ?? 0) !== 0 ? fmt(Number(it.quantity ?? 0)) : "-"}
+                                  </td>
+                                  <td className="text-right px-2 py-1 font-mono text-slate-500 tabular-nums align-top">
+                                    {Number(it.unit_price ?? 0) > 0 ? fmt(Number(it.unit_price ?? 0)) : "-"}
+                                  </td>
+                                  <td className="text-right px-2 py-1 font-mono font-black text-emerald-700 tabular-nums align-top">
+                                    {Number(it.amount ?? 0) > 0 ? fmt(Number(it.amount ?? 0)) : "-"}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </tbody>
+        <tfoot className="sticky bottom-0 bg-white border-t-2 border-slate-200">
+          <tr>
+            <td></td>
+            <td colSpan={2} className="px-3 py-2 text-right text-[11px] font-black text-slate-500">
+              합계 <span className="text-slate-400 font-bold">({groups.length}일)</span>
+            </td>
+            <td className="px-3 py-2 text-right tabular-nums font-mono text-[12px] font-black text-slate-700">{fmt(totalItems)}</td>
+            <td className="px-3 py-2 text-right tabular-nums font-mono text-[13px] font-black text-emerald-700">{fmtWon(totalAmount)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
   );
 };
 
