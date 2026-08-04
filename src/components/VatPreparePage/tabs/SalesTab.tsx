@@ -3,8 +3,11 @@
 //   · 이전 · localStorage 매출 수동 입력 (useSalesLocal) · 삭제
 //   · 현재 · useMonthlyVat 로 DB 매출(stock_history) + 매입(purchase_details) 자동 조회
 //   · 경비 · localStorage `megatown_vat_expenses_v1` · 월별 사용자 입력
-//   · 예상 부가세 = 매출세액 - 매입세액공제 - 경비세액 · 실시간 재계산
-//   · 컬럼 · 월 | 매출총액 | 매출세액 | 매입총액 | 매입세액(공제) | 경비 | 경비세액 | 예상 부가세
+//   · 면세(TAX FREE) 매출 · localStorage `megatown_vat_taxfree_sales_v1` · 월별 사용자 입력
+//     - 유형: 외국인 즉시환급 (POS 자동 분류 불가 · 수동 입력)
+//     - 과세 매출 = 매출총액 - 면세 매출 · 매출세액 = 과세매출 / 11
+//   · 예상 부가세 = 과세 매출세액 - 매입세액공제 - 경비세액 · 실시간 재계산
+//   · 컬럼 · 월 | 매출총액[과세/면세TAXFREE] | 매출세액 | 매입총액 | 매입세액(공제) | 경비 | 경비세액 | 예상 부가세
 
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -33,16 +36,21 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
   const monthly = useMonthlyVat({ from: fromDate, to: toDate });
 
   // 상위 KPI 갱신 (매출 관련만 · 매입은 별도 API 로 계산됨)
+  //   · taxableSales · 과세 매출 공급가액 (총액 - 면세 - 과세VAT)
+  //   · exemptSales · 사용자 입력 면세(TAX FREE) 매출 총합
+  //   · outputVat · 과세 매출세액 (면세 제외 후 재계산)
   useEffect(() => {
+    const taxableSupply = Math.max(monthly.totals.taxableSales - monthly.totals.taxableSalesVat, 0);
     onAggregateChange?.({
-      taxableSales: monthly.totals.salesSupply,
-      exemptSales: 0,
-      outputVat: monthly.totals.salesVat,
+      taxableSales: taxableSupply,
+      exemptSales: monthly.totals.taxfreeSales,
+      outputVat: monthly.totals.taxableSalesVat,
       salesRowCount: monthly.rows.reduce((s, r) => s + r.salesRowCount, 0),
     });
   }, [
-    monthly.totals.salesSupply,
-    monthly.totals.salesVat,
+    monthly.totals.taxableSales,
+    monthly.totals.taxableSalesVat,
+    monthly.totals.taxfreeSales,
     monthly.rows,
     onAggregateChange,
   ]);
@@ -93,13 +101,17 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
         <div className="leading-relaxed">
           <b className="text-slate-700">계산 방식</b>
           <span className="mx-1 text-slate-400">·</span>
-          매출 · <b>stock_history</b> 판매액 합계 · VAT 포함 총액 가정 (총액/11 = 매출세액)
+          매출 · <b>stock_history</b> 판매액 합계 (VAT 포함 총액 가정)
           <span className="mx-1 text-slate-400">·</span>
+          면세(<b className="text-amber-700">TAX FREE</b>) 매출 · 사용자 수동 입력 · 매출세액 산정 <b>제외</b>
+          <span className="mx-1 text-slate-400">·</span>
+          매출세액 = <b>과세 매출</b>(=총액−면세) / 11
+          <br />
           매입 · <b>purchase_details</b> + 공급사 <b>vat_included</b> flag · 면세 공급사는 공제 제외
           <span className="mx-1 text-slate-400">·</span>
           경비 · 사용자 입력 (VAT 포함 가정 · 입력값/11 = 경비세액)
           <br />
-          <b className="text-slate-700">예상 부가세 = 매출세액 − 매입세액 공제 − 경비세액</b>
+          <b className="text-slate-700">예상 부가세 = 과세 매출세액 − 매입세액 공제 − 경비세액</b>
           <span className="ml-2 text-slate-500">
             · 본 계산은 참고용이며, 실제 신고는 반드시 세무사 검토 후 진행하세요.
           </span>
@@ -127,14 +139,32 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
             <table className="w-full text-[12px]">
               <thead className="sticky top-0 bg-slate-50 z-10 shadow-sm text-slate-600">
                 <tr>
-                  <th className="text-left px-3 py-2 font-bold">월</th>
-                  <th className="text-right px-2 py-2 font-bold">매출 총액</th>
-                  <th className="text-right px-2 py-2 font-bold text-rose-700">매출세액</th>
-                  <th className="text-right px-2 py-2 font-bold">매입 총액</th>
-                  <th className="text-right px-2 py-2 font-bold text-emerald-700">매입세액 공제</th>
-                  <th className="text-right px-2 py-2 font-bold w-[130px]">경비 (입력)</th>
-                  <th className="text-right px-2 py-2 font-bold text-slate-700">경비세액</th>
-                  <th className="text-right px-2 py-2 font-bold">예상 부가세</th>
+                  <th rowSpan={2} className="text-left px-3 py-2 font-bold border-b border-slate-200 align-bottom">월</th>
+                  <th colSpan={3} className="text-center px-2 py-1 font-bold border-b border-l border-slate-200 bg-slate-100/70">
+                    매출
+                  </th>
+                  <th rowSpan={2} className="text-right px-2 py-2 font-bold text-rose-700 border-b border-l border-slate-200 align-bottom">
+                    매출세액
+                    <div className="text-[9px] font-medium text-rose-500/80">과세만</div>
+                  </th>
+                  <th rowSpan={2} className="text-right px-2 py-2 font-bold border-b border-l border-slate-200 align-bottom">매입 총액</th>
+                  <th rowSpan={2} className="text-right px-2 py-2 font-bold text-emerald-700 border-b border-slate-200 align-bottom">매입세액 공제</th>
+                  <th rowSpan={2} className="text-right px-2 py-2 font-bold w-[110px] border-b border-l border-slate-200 align-bottom">경비 (입력)</th>
+                  <th rowSpan={2} className="text-right px-2 py-2 font-bold text-slate-700 border-b border-slate-200 align-bottom">경비세액</th>
+                  <th rowSpan={2} className="text-right px-2 py-2 font-bold border-b border-l border-slate-200 align-bottom">예상 부가세</th>
+                </tr>
+                <tr>
+                  <th className="text-right px-2 py-2 font-bold border-b border-l border-slate-200 bg-slate-100/70">
+                    총액
+                  </th>
+                  <th className="text-right px-2 py-2 font-bold border-b border-slate-200 bg-slate-100/70 w-[130px]">
+                    <span className="text-amber-700">면세</span>
+                    <span className="text-[9px] font-medium text-amber-600/80 ml-0.5">(TAX FREE · 입력)</span>
+                  </th>
+                  <th className="text-right px-2 py-2 font-bold border-b border-slate-200 bg-slate-100/70">
+                    <span className="text-slate-700">과세</span>
+                    <span className="text-[9px] font-medium text-slate-500 ml-0.5">(자동)</span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -143,31 +173,38 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
                     key={row.month}
                     row={row}
                     onExpenseChange={monthly.setExpense}
+                    onTaxfreeChange={monthly.setTaxfreeSales}
                   />
                 ))}
               </tbody>
               <tfoot className="sticky bottom-0 bg-gradient-to-t from-slate-100 to-slate-50 shadow-inner">
                 <tr className="text-slate-800 font-black">
                   <td className="px-3 py-3 text-[11px]">합계</td>
-                  <td className="px-2 py-3 text-right tabular-nums text-[12px]">
+                  <td className="px-2 py-3 text-right tabular-nums text-[12px] border-l border-slate-200">
                     {fmt(monthly.totals.salesTotal)}
                   </td>
-                  <td className="px-2 py-3 text-right tabular-nums text-rose-700 text-[13px]">
-                    {fmt(monthly.totals.salesVat)}
+                  <td className="px-2 py-3 text-right tabular-nums text-amber-700 text-[12px]">
+                    {fmt(monthly.totals.taxfreeSales)}
                   </td>
-                  <td className="px-2 py-3 text-right tabular-nums text-[12px]">
+                  <td className="px-2 py-3 text-right tabular-nums text-slate-800 text-[12px]">
+                    {fmt(monthly.totals.taxableSales)}
+                  </td>
+                  <td className="px-2 py-3 text-right tabular-nums text-rose-700 text-[13px] border-l border-slate-200">
+                    {fmt(monthly.totals.taxableSalesVat)}
+                  </td>
+                  <td className="px-2 py-3 text-right tabular-nums text-[12px] border-l border-slate-200">
                     {fmt(monthly.totals.purchaseGross)}
                   </td>
                   <td className="px-2 py-3 text-right tabular-nums text-emerald-700 text-[13px]">
                     {fmt(monthly.totals.purchaseDeductibleVat)}
                   </td>
-                  <td className="px-2 py-3 text-right tabular-nums text-[12px]">
+                  <td className="px-2 py-3 text-right tabular-nums text-[12px] border-l border-slate-200">
                     {fmt(monthly.totals.expense)}
                   </td>
                   <td className="px-2 py-3 text-right tabular-nums text-[12px]">
                     {fmt(monthly.totals.expenseVat)}
                   </td>
-                  <td className="px-2 py-3 text-right">
+                  <td className="px-2 py-3 text-right border-l border-slate-200">
                     <div className={`tabular-nums text-[15px] font-black leading-tight ${
                       monthly.totals.expectedVat >= 0 ? "text-rose-700" : "text-emerald-700"
                     }`}>
@@ -186,14 +223,26 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
         </div>
       </div>
 
+      {/* 면세 매출 안내 */}
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2 text-[11px] text-amber-800">
+        <AlertCircle size={13} className="mt-0.5 shrink-0 text-amber-600" />
+        <div className="leading-relaxed">
+          <b>면세(TAX FREE) 매출은 매출세액 산정에서 제외됩니다.</b>
+          <span className="mx-1 text-amber-500">·</span>
+          현재 POS 데이터에는 과세/면세 구분이 없어 · 각 월별 <b>면세 매출액</b> 셀에 외국인 즉시환급 금액을 직접 입력하세요.
+          <span className="mx-1 text-amber-500">·</span>
+          입력값은 이 브라우저(localStorage · <code className="text-[10px] bg-amber-100 px-1 rounded">megatown_vat_taxfree_sales_v1</code>)에 저장됩니다.
+        </div>
+      </div>
+
       {/* 요약 카드 (하단) */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <SummaryCard
-          label="매출세액"
-          value={monthly.totals.salesVat}
+          label="매출세액 (과세)"
+          value={monthly.totals.taxableSalesVat}
           icon={<TrendingUp size={14} />}
           color="rose"
-          hint="매출 총액 × 10/110"
+          hint="과세 매출 × 10/110 · 면세 제외"
         />
         <SummaryCard
           label="매입세액 공제"
@@ -214,7 +263,7 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
           value={Math.abs(monthly.totals.expectedVat)}
           icon={<Calculator size={14} />}
           color={monthly.totals.expectedVat >= 0 ? "rose" : "emerald"}
-          hint="매출세액 − 매입공제 − 경비세액"
+          hint="과세 매출세액 − 매입공제 − 경비세액"
           highlight
         />
       </div>
@@ -222,57 +271,91 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
   );
 };
 
-// ─── 월별 row (경비 입력 · 디바운스) ─────────────────────────
+// ─── 월별 row (경비·면세 입력 · blur commit) ─────────────────
 interface MonthlyRowProps {
   row: MonthlyVatRow;
   onExpenseChange: (month: string, value: number) => void;
+  onTaxfreeChange: (month: string, value: number) => void;
 }
 
-const MonthlyRow: React.FC<MonthlyRowProps> = ({ row, onExpenseChange }) => {
-  // 로컬 입력값 (편집 중 유지 · blur 또는 debounce 시 저장)
-  const [text, setText] = useState<string>(row.expense > 0 ? String(row.expense) : "");
-
-  // row.expense 가 외부에서 변경 (다른 탭 storage 이벤트 등) 시 반영
+/** 숫자 · 빈문자 허용 텍스트 입력 셀 (blur/Enter 시 commit) */
+interface MoneyCellInputProps {
+  value: number;
+  onCommit: (n: number) => void;
+  placeholder?: string;
+  colorClass?: string;
+}
+const MoneyCellInput: React.FC<MoneyCellInputProps> = ({ value, onCommit, placeholder, colorClass }) => {
+  const [text, setText] = useState<string>(value > 0 ? String(value) : "");
   useEffect(() => {
-    setText(row.expense > 0 ? String(row.expense) : "");
-  }, [row.expense]);
+    setText(value > 0 ? String(value) : "");
+  }, [value]);
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      value={text}
+      onChange={e => setText(e.target.value.replace(/[^0-9]/g, ""))}
+      onBlur={() => {
+        const n = text === "" ? 0 : Number(text);
+        if (Number.isFinite(n) && n >= 0 && n !== value) onCommit(n);
+      }}
+      onKeyDown={e => { if (e.key === "Enter") { e.currentTarget.blur(); } }}
+      placeholder={placeholder ?? "0"}
+      className={`w-full h-8 px-2 text-[11px] text-right tabular-nums border border-slate-300 rounded outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 ${colorClass ?? ""}`}
+    />
+  );
+};
 
-  const handleChange = (v: string) => {
-    // 숫자·빈문자만 허용
-    const cleaned = v.replace(/[^0-9]/g, "");
-    setText(cleaned);
-  };
-
-  const handleCommit = () => {
-    const n = text === "" ? 0 : Number(text);
-    if (Number.isFinite(n) && n >= 0 && n !== row.expense) {
-      onExpenseChange(row.month, n);
-    }
-  };
-
+const MonthlyRow: React.FC<MonthlyRowProps> = ({ row, onExpenseChange, onTaxfreeChange }) => {
   const expectedColor = row.expectedVat >= 0 ? "text-rose-700" : "text-emerald-700";
 
   return (
     <tr className="hover:bg-slate-50">
       <td className="px-3 py-2 font-bold text-slate-800 tabular-nums">{row.month}</td>
-      <td className="px-2 py-2 text-right tabular-nums text-slate-700">{fmt(row.salesTotal)}</td>
-      <td className="px-2 py-2 text-right tabular-nums font-black text-rose-700">{fmt(row.salesVat)}</td>
-      <td className="px-2 py-2 text-right tabular-nums text-slate-700">{fmt(row.purchaseGross)}</td>
-      <td className="px-2 py-2 text-right tabular-nums font-black text-emerald-700">{fmt(row.purchaseDeductibleVat)}</td>
+      {/* 매출 총액 */}
+      <td className="px-2 py-2 text-right tabular-nums text-slate-700 border-l border-slate-100">
+        {fmt(row.salesTotal)}
+      </td>
+      {/* 면세(TAX FREE) 매출 · 입력 셀 */}
       <td className="px-2 py-2 text-right">
-        <input
-          type="text"
-          inputMode="numeric"
-          value={text}
-          onChange={e => handleChange(e.target.value)}
-          onBlur={handleCommit}
-          onKeyDown={e => { if (e.key === "Enter") { e.currentTarget.blur(); } }}
+        <MoneyCellInput
+          value={row.taxfreeSales}
+          onCommit={n => onTaxfreeChange(row.month, n)}
           placeholder="0"
-          className="w-full h-8 px-2 text-[11px] text-right tabular-nums border border-slate-300 rounded outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400"
+          colorClass="text-amber-700 focus:ring-amber-400 focus:border-amber-400"
         />
       </td>
-      <td className="px-2 py-2 text-right tabular-nums text-slate-700">{fmt(row.expenseVat)}</td>
-      <td className={`px-2 py-2 text-right tabular-nums font-black ${expectedColor}`}>
+      {/* 과세 매출 · 자동 계산 */}
+      <td className="px-2 py-2 text-right tabular-nums text-slate-800 font-bold">
+        {fmt(row.taxableSales)}
+      </td>
+      {/* 매출세액 · 과세만 */}
+      <td className="px-2 py-2 text-right tabular-nums font-black text-rose-700 border-l border-slate-100">
+        {fmt(row.taxableSalesVat)}
+      </td>
+      {/* 매입 총액 */}
+      <td className="px-2 py-2 text-right tabular-nums text-slate-700 border-l border-slate-100">
+        {fmt(row.purchaseGross)}
+      </td>
+      {/* 매입세액 공제 */}
+      <td className="px-2 py-2 text-right tabular-nums font-black text-emerald-700">
+        {fmt(row.purchaseDeductibleVat)}
+      </td>
+      {/* 경비 (입력) */}
+      <td className="px-2 py-2 text-right border-l border-slate-100">
+        <MoneyCellInput
+          value={row.expense}
+          onCommit={n => onExpenseChange(row.month, n)}
+          placeholder="0"
+        />
+      </td>
+      {/* 경비세액 */}
+      <td className="px-2 py-2 text-right tabular-nums text-slate-700">
+        {fmt(row.expenseVat)}
+      </td>
+      {/* 예상 부가세 */}
+      <td className={`px-2 py-2 text-right tabular-nums font-black border-l border-slate-100 ${expectedColor}`}>
         {row.expectedVat >= 0 ? "" : "−"}{fmt(Math.abs(row.expectedVat))}
       </td>
     </tr>

@@ -2,7 +2,10 @@
 // 2026-08-04 · #253 · 부가세 준비 월별 매출·매입·경비 통합 hook
 //   · GET /api/vat/monthly-summary?from=&to= · 매출 (stock_history) + 매입 (purchase_details + vendors.vat_included)
 //   · 경비 · localStorage `megatown_vat_expenses_v1` · { "YYYY-MM": number }
-//   · 예상 부가세 = 매출세액 - 매입세액공제 - 경비세액
+//   · 면세(TAX FREE) 매출 · localStorage `megatown_vat_taxfree_sales_v1` · { "YYYY-MM": number }
+//       - 사용자 수동 입력 (외국인 즉시환급 · 처방전 조제 등 POS 미분류)
+//       - stock_history 매출 총액 중 면세분만큼 차감 → 과세 매출로만 매출세액 산정
+//   · 예상 부가세 = 매출세액(과세만) - 매입세액공제 - 경비세액
 //     경비세액 · 사용자가 별도 지정하지 않으면 VAT 포함 가정 · expense / 11
 //   · 파생컬럼 X · 모든 계산 runtime
 //
@@ -31,17 +34,27 @@ interface MonthlyVatResponse {
   warning?: string;
 }
 
-// ─── 프론트 확장 타입 (경비 병합) ──────────────────────────────
+// ─── 프론트 확장 타입 (경비·면세 병합) ─────────────────────────
 export interface MonthlyVatRow extends MonthlyVatServerRow {
+  // 경비 (사용자 입력)
   expense: number;                  // 사용자 입력 경비 (VAT 포함 총액)
   expenseVat: number;               // 경비세액 (expense / 11 · 반올림)
-  expectedVat: number;              // 예상 부가세 = salesVat - purchaseDeductibleVat - expenseVat
+  // 면세(TAX FREE) 매출 (사용자 입력)
+  taxfreeSales: number;             // 면세 매출액 (외국인 즉시환급 등 · 매출세액 산정 제외)
+  taxableSales: number;             // 과세 매출 = max(salesTotal - taxfreeSales, 0)
+  // 재계산된 매출세액 (서버 응답 salesVat 는 참고용 · 실제 표시는 taxableSalesVat)
+  taxableSalesVat: number;          // 과세 매출세액 (taxableSales / 11 · 반올림)
+  // 예상 부가세 = taxableSalesVat - purchaseDeductibleVat - expenseVat
+  expectedVat: number;
 }
 
 export interface MonthlyVatTotals {
-  salesTotal: number;
-  salesSupply: number;
-  salesVat: number;
+  salesTotal: number;               // 매출 총액 (과세+면세)
+  salesSupply: number;              // (참고) 서버 계산 공급가액 총합
+  salesVat: number;                 // (참고) 서버 원본 매출세액 총합
+  taxfreeSales: number;             // 면세 매출 총합
+  taxableSales: number;             // 과세 매출 총합
+  taxableSalesVat: number;          // 과세 매출세액 총합 (실제 신고 base)
   purchaseGross: number;
   purchaseSupply: number;
   purchaseVat: number;
@@ -51,18 +64,20 @@ export interface MonthlyVatTotals {
   expectedVat: number;
 }
 
-// ─── 경비 localStorage ─────────────────────────────────────────
-const EXPENSE_KEY = "megatown_vat_expenses_v1";
+// ─── localStorage · 경비 · 면세매출 ────────────────────────────
+const EXPENSE_KEY  = "megatown_vat_expenses_v1";
+const TAXFREE_KEY  = "megatown_vat_taxfree_sales_v1";
 
-type ExpenseMap = Record<string, number>;
+type MonthMoneyMap = Record<string, number>;
 
-function loadExpenses(): ExpenseMap {
+/** 월별 금액 map · YYYY-MM 키만 · 유한 non-negative 수치만 */
+function loadMoneyMap(key: string): MonthMoneyMap {
   try {
-    const raw = localStorage.getItem(EXPENSE_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return {};
     const obj = JSON.parse(raw);
     if (obj && typeof obj === "object") {
-      const clean: ExpenseMap = {};
+      const clean: MonthMoneyMap = {};
       for (const [k, v] of Object.entries(obj)) {
         if (/^\d{4}-\d{2}$/.test(k) && typeof v === "number" && Number.isFinite(v) && v >= 0) {
           clean[k] = v;
@@ -76,9 +91,9 @@ function loadExpenses(): ExpenseMap {
   }
 }
 
-function saveExpenses(map: ExpenseMap) {
+function saveMoneyMap(key: string, map: MonthMoneyMap) {
   try {
-    localStorage.setItem(EXPENSE_KEY, JSON.stringify(map));
+    localStorage.setItem(key, JSON.stringify(map));
   } catch {
     /* quota 초과 등 무시 */
   }
@@ -98,6 +113,8 @@ export interface UseMonthlyVatResult {
   warning: string | null;
   /** 특정 월 경비 저장 (localStorage 즉시 반영) */
   setExpense: (month: string, value: number) => void;
+  /** 특정 월 면세(TAX FREE) 매출 저장 (localStorage 즉시 반영) */
+  setTaxfreeSales: (month: string, value: number) => void;
   /** 수동 리로드 */
   reload: () => void;
 }
@@ -111,7 +128,8 @@ function vatFromInclusive(total: number): number {
 export function useMonthlyVat(opts: UseMonthlyVatOptions): UseMonthlyVatResult {
   const { from, to } = opts;
   const [serverRows, setServerRows] = useState<MonthlyVatServerRow[]>([]);
-  const [expenses, setExpenses] = useState<ExpenseMap>(() => loadExpenses());
+  const [expenses, setExpenses] = useState<MonthMoneyMap>(() => loadMoneyMap(EXPENSE_KEY));
+  const [taxfree, setTaxfree] = useState<MonthMoneyMap>(() => loadMoneyMap(TAXFREE_KEY));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
@@ -147,35 +165,47 @@ export function useMonthlyVat(opts: UseMonthlyVatOptions): UseMonthlyVatResult {
     return () => { cancelled = true; };
   }, [from, to, reloadTick]);
 
-  // 경비 storage 이벤트 (다른 탭 동기화)
+  // 경비·면세매출 storage 이벤트 (다른 탭 동기화)
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === EXPENSE_KEY) setExpenses(loadExpenses());
+      if (e.key === EXPENSE_KEY) setExpenses(loadMoneyMap(EXPENSE_KEY));
+      if (e.key === TAXFREE_KEY) setTaxfree(loadMoneyMap(TAXFREE_KEY));
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  // 경비 병합 · row 계산
+  // 경비·면세 병합 · row 계산
   const rows = useMemo<MonthlyVatRow[]>(() => {
     return serverRows.map(r => {
       const expense = expenses[r.month] ?? 0;
       const expenseVat = vatFromInclusive(expense);
-      const expectedVat = r.salesVat - r.purchaseDeductibleVat - expenseVat;
+      // 면세 매출 · 사용자 입력 · 서버 salesTotal 상한 clamp (음수 방지)
+      const rawTaxfree = taxfree[r.month] ?? 0;
+      const taxfreeSales = Math.min(rawTaxfree, r.salesTotal);
+      const taxableSales = Math.max(r.salesTotal - taxfreeSales, 0);
+      const taxableSalesVat = vatFromInclusive(taxableSales);
+      const expectedVat = taxableSalesVat - r.purchaseDeductibleVat - expenseVat;
       return {
         ...r,
         expense,
         expenseVat,
+        taxfreeSales,
+        taxableSales,
+        taxableSalesVat,
         expectedVat,
       };
     });
-  }, [serverRows, expenses]);
+  }, [serverRows, expenses, taxfree]);
 
   const totals = useMemo<MonthlyVatTotals>(() => {
     const t: MonthlyVatTotals = {
       salesTotal: 0,
       salesSupply: 0,
       salesVat: 0,
+      taxfreeSales: 0,
+      taxableSales: 0,
+      taxableSalesVat: 0,
       purchaseGross: 0,
       purchaseSupply: 0,
       purchaseVat: 0,
@@ -188,6 +218,9 @@ export function useMonthlyVat(opts: UseMonthlyVatOptions): UseMonthlyVatResult {
       t.salesTotal += r.salesTotal;
       t.salesSupply += r.salesSupply;
       t.salesVat += r.salesVat;
+      t.taxfreeSales += r.taxfreeSales;
+      t.taxableSales += r.taxableSales;
+      t.taxableSalesVat += r.taxableSalesVat;
       t.purchaseGross += r.purchaseGross;
       t.purchaseSupply += r.purchaseSupply;
       t.purchaseVat += r.purchaseVat;
@@ -206,14 +239,26 @@ export function useMonthlyVat(opts: UseMonthlyVatOptions): UseMonthlyVatResult {
       const next = { ...prev };
       if (clean === 0) delete next[month];
       else next[month] = clean;
-      saveExpenses(next);
+      saveMoneyMap(EXPENSE_KEY, next);
+      return next;
+    });
+  }, []);
+
+  const setTaxfreeSales = useCallback((month: string, value: number) => {
+    if (!/^\d{4}-\d{2}$/.test(month)) return;
+    const clean = Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0;
+    setTaxfree(prev => {
+      const next = { ...prev };
+      if (clean === 0) delete next[month];
+      else next[month] = clean;
+      saveMoneyMap(TAXFREE_KEY, next);
       return next;
     });
   }, []);
 
   const reload = useCallback(() => setReloadTick(x => x + 1), []);
 
-  return { rows, totals, loading, error, warning, setExpense, reload };
+  return { rows, totals, loading, error, warning, setExpense, setTaxfreeSales, reload };
 }
 
 export default useMonthlyVat;
