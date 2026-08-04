@@ -639,6 +639,14 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
 
   const [mobileDetail, setMobileDetail] = useState(false);
   const [createOpen, setCreateOpen]     = useState(false);
+
+  // 모바일 상세 모달 · ESC 닫기 (B-3-2 원칙)
+  useEffect(() => {
+    if (!mobileDetail) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMobileDetail(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mobileDetail]);
   const [createSaving, setCreateSaving] = useState(false);
 
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -2213,11 +2221,11 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
       {/* ── 모바일 상세 모달 · 가운데 위치 (2026-08-03 사용자 요청) ── */}
       {mobileDetail && selectedEmp && (
         <div
-          className="lg:hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+          className="lg:hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-[2.5vw]"
           onClick={() => setMobileDetail(false)}
         >
           <div
-            className="bg-white w-full max-w-lg rounded-2xl shadow-2xl max-h-[86vh] overflow-hidden flex flex-col"
+            className="bg-white w-full max-w-[95vw] rounded-2xl shadow-2xl max-h-[92vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-gradient-to-r from-indigo-50/80 to-violet-50/60 shrink-0">
