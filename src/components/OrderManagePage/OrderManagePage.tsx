@@ -191,7 +191,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialTopTab]);
   // Level-2 서브탭 상태
-  const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need">("need");
+  const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need" | "critical">("need");
   const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "scan" | "productarrival" | "return" | "purchase-history">("receipt");
   const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment-input" | "vat-prepare">("vendor");
   const [statSubTab, setStatSubTab] = useState<"trending" | "category" | "flow" | "diff" | "supplier">("trending");
@@ -1221,15 +1221,16 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // ── 2026-08-03 · 서브탭 정의 (useSortableTabs 재정렬 대상) ──
   //   · 각 페이지별 storageKey 는 memory feedback_tab_reorder 규칙 준수 (tabOrder.<page>)
   //   · badge 는 렌더 시 별도 계산 (여기서는 순서·label·icon·color 만 유지)
-  type PurchaseOrderKey = "order" | "need";
+  type PurchaseOrderKey = "order" | "need" | "critical";
   type PurchaseKey = "receipt" | "reconciliation" | "scan" | "productarrival" | "return" | "purchase-history";
   type PaymentKey = "vendor" | "payment-input" | "vat-prepare";
   type StatKey = "trending" | "category" | "flow" | "diff" | "supplier";
   interface SubTabDef<K extends string> { key: K; label: string; icon: React.ElementType; color: string; }
 
   const purchaseOrderDefaultTabs: SubTabDef<PurchaseOrderKey>[] = useMemo(() => [
-    { key: "order", label: "발주요청",     icon: ShoppingCart,  color: "sky"   },
-    { key: "need",  label: "발주필요",     icon: ClipboardList, color: "rose"  },
+    { key: "order",    label: "발주요청",   icon: ShoppingCart,  color: "sky"    },
+    { key: "need",     label: "발주필요",   icon: ClipboardList, color: "rose"   },
+    { key: "critical", label: "품절임박",   icon: AlertTriangle, color: "amber"  }, // 2026-08-04 · 실재고 기준
   ], []);
   const purchaseDefaultTabs: SubTabDef<PurchaseKey>[] = useMemo(() => [
     { key: "purchase-history", label: "매입이력",   icon: Building2,      color: "sky"     },
@@ -2143,6 +2144,91 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           </div>
         </div>
           </>)}
+          {/* ── 품절임박 서브탭 · 2026-08-04 · 실재고 기준 (사용자 요청) ── */}
+          {purchaseOrderSubTab === "critical" && (
+            <div className="flex flex-col gap-2">
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex items-center gap-2 flex-wrap">
+                <AlertTriangle size={16} className="text-amber-500 shrink-0" />
+                <span className="text-[13px] font-black text-slate-800">품절임박</span>
+                <span className="text-[11px] text-slate-500">실재고 (창고+매장 합계) 기준 · 3개 이하</span>
+                {(() => {
+                  const critical = products.filter(p => {
+                    const code = getCode(p);
+                    const inv = invStockMap.get(code);
+                    if (!inv || !Number.isFinite(inv.total)) return false;
+                    return Number(inv.total) <= 3;
+                  });
+                  return (
+                    <span className="ml-auto text-[11px] font-black text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-0.5 tabular-nums">
+                      {critical.length}건
+                    </span>
+                  );
+                })()}
+              </div>
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <table className="w-full text-[12px] tabular-nums">
+                  <thead className="bg-slate-50/80 text-[11px] font-black text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                    <tr>
+                      <th className="text-left px-3 py-2 w-[110px]">공급사</th>
+                      <th className="text-left px-3 py-2">상품명</th>
+                      <th className="text-right px-3 py-2 w-[70px] bg-amber-50/40 text-amber-700">실재고</th>
+                      <th className="text-right px-3 py-2 w-[70px] text-slate-500">ERP재고</th>
+                      <th className="text-right px-3 py-2 w-[70px] text-indigo-600">적정재고</th>
+                      <th className="text-center px-3 py-2 w-[80px]">발주</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {(() => {
+                      const critical = products
+                        .filter(p => {
+                          const code = getCode(p);
+                          const inv = invStockMap.get(code);
+                          if (!inv || !Number.isFinite(inv.total)) return false;
+                          return Number(inv.total) <= 3;
+                        })
+                        .sort((a, b) => {
+                          const invA = invStockMap.get(getCode(a));
+                          const invB = invStockMap.get(getCode(b));
+                          return Number(invA?.total ?? 0) - Number(invB?.total ?? 0);
+                        });
+                      if (critical.length === 0) {
+                        return (
+                          <tr><td colSpan={6} className="text-center text-[12px] text-slate-400 py-8">품절임박 상품 없음 (실재고 3개 이하)</td></tr>
+                        );
+                      }
+                      return critical.map(p => {
+                        const code = getCode(p);
+                        const inv = invStockMap.get(code);
+                        const name = String(p.product_name ?? "-");
+                        const supplier = String(p.supplier ?? "-");
+                        const alreadyRequested = orderReqs.some(r => r.product_code === code);
+                        return (
+                          <tr key={code} className={`${Number(inv?.total ?? 0) <= 0 ? "bg-rose-50/40 hover:bg-rose-50" : "hover:bg-slate-50"}`}>
+                            <td className="px-3 py-1.5 text-[12px] text-slate-700 truncate max-w-[110px]" title={supplier}>{supplier}</td>
+                            <td className="px-3 py-1.5 text-[13px] font-semibold text-slate-800 truncate">{name}</td>
+                            <td className={`px-3 py-1.5 text-right font-black ${Number(inv?.total ?? 0) <= 0 ? "text-rose-700" : "text-amber-700"}`}>{inv?.total ?? "-"}</td>
+                            <td className="px-3 py-1.5 text-right text-slate-600">{p.current_stock ?? "-"}</td>
+                            <td className="px-3 py-1.5 text-right text-indigo-700 font-bold">{p.optimal_stock ?? "-"}</td>
+                            <td className="px-3 py-1.5 text-center">
+                              <button
+                                onClick={() => handleRequestOrder(p)}
+                                disabled={alreadyRequested}
+                                className={`h-7 px-3 rounded-md text-[12px] font-black cursor-pointer transition ${
+                                  alreadyRequested
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-not-allowed"
+                                    : "bg-indigo-600 text-white hover:bg-indigo-700"
+                                }`}
+                              >{alreadyRequested ? "요청됨" : "요청"}</button>
+                            </td>
+                          </tr>
+                        );
+                      });
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
