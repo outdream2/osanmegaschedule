@@ -74,10 +74,8 @@
 - DB: `employees.resume_url` 컬럼 · Supabase Storage bucket
 - 예상 2~2.5h · 선행: 사용자 SQL 실행 (아이템 L)
 
-### T31. 직원상세 · 근무타입 옆 계약타입 표기 (재검토)
-- 이전 세션에 근무 정보 섹션이 제거됨 (`55647fd`) · 계약타입은 §6 계약·서류에 존재
-- 사용자 재요청 (2026-08-04) — UI 어디에 넣을지 재확인 필요
-- 예상 0.5~1h
+### ~~T31. 직원상세 · 근무타입 옆 계약타입 표기~~ ✅ 이미 구현
+- `StaffManagePage.tsx:1398-1434` · 직책 → 계약유형(autoContractBadge) → 근무타입(schedule_type) 순 배치
 
 ### T32. 연차내역 통합 UI · 평가·코멘트 저장 (연차승인 부분과 연동)
 - 부분 완료: usedLeaves 렌더 · performance_rating · employees.memo 산발적 존재
