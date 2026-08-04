@@ -15,6 +15,10 @@ export interface ProductSummary {
   last_purchase_date: string | null;
   primary_supplier: string | null;
   supplier_count: number;
+  // 2026-08-04 · 판매 지표 (top-sales?months=1 조인 · 사용자 요청)
+  //   · null · 매핑 실패 or 판매 데이터 없음 (0 과 구분 · UI 회색 처리)
+  sale_qty?: number | null;
+  sale_amount?: number | null;
 }
 
 interface ProductRowCardProps {
@@ -62,6 +66,9 @@ export const ProductRowCard: React.FC<ProductRowCardProps> = React.memo(({
   const recency = recencyStyle(days);
   const totalAmount = product.total_amount ?? 0;
   const purchaseCount = product.purchase_count ?? 0;
+  // 2026-08-04 · 판매 지표 (사용자 요청 · null 은 미매핑 · 0 은 매핑됐지만 판매 없음)
+  const saleQty = product.sale_qty ?? null;
+  const saleAmt = product.sale_amount ?? null;
   const supplierLabel = product.primary_supplier
     ? (product.supplier_count > 1 ? `${product.primary_supplier} 외 ${product.supplier_count - 1}` : product.primary_supplier)
     : "공급사 미상";
@@ -115,6 +122,27 @@ export const ProductRowCard: React.FC<ProductRowCardProps> = React.memo(({
             {product.product_code}
           </span>
         )}
+      </div>
+
+      {/* Line 3 · 판매량 · 판매금액 (최근 1개월 · 2026-08-04 사용자 요청) */}
+      <div className="flex items-center gap-2 w-full min-w-0">
+        <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">판매</span>
+        <span
+          className={`text-[10px] font-semibold tabular-nums shrink-0 ${
+            saleQty != null && saleQty > 0 ? "text-rose-600" : "text-slate-300"
+          }`}
+          title={saleQty != null ? `판매량 · ${saleQty.toLocaleString()}개 (최근 1개월)` : "판매 데이터 없음"}
+        >
+          {saleQty != null ? `${fmtWon(saleQty)}개` : "-"}
+        </span>
+        <span
+          className={`text-[10px] font-black tabular-nums shrink-0 ${
+            saleAmt != null && saleAmt > 0 ? "text-rose-700" : "text-slate-300"
+          }`}
+          title={saleAmt != null ? `판매금액 · ${saleAmt.toLocaleString()}원 (최근 1개월)` : "판매 데이터 없음"}
+        >
+          {saleAmt != null ? fmtWon(saleAmt) : "-"}
+        </span>
       </div>
     </button>
   );
