@@ -23,11 +23,12 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Calculator, Calendar, Building2, Loader2, AlertTriangle, CheckSquare, Square,
-  FileText, TrendingUp, Wallet, ChevronRight, RefreshCw,
+  Calculator, Calendar, Loader2, AlertTriangle, CheckSquare, Square,
+  FileText, TrendingUp, ChevronRight, RefreshCw,
   Receipt, PackageCheck, FileCheck2, Landmark,
 } from "lucide-react";
 import SalesTab from "./tabs/SalesTab";
+import SupplierVatTab from "./tabs/SupplierVatTab";
 
 // ─── 타입 ────────────────────────────────────────────────────────
 
@@ -53,6 +54,7 @@ interface VendorBreakdownRow {
   supplier_code: string | null;
   category: string | null;
   business_number: string | null;
+  vat_included?: boolean | null;   // 2026-08-04 · Task #60 · VAT 여부 컬럼 표시용
   amount: number;
   vat: number;
   total: number;
@@ -489,93 +491,14 @@ const VatPreparePage: React.FC = () => {
       <>
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 flex-1 min-h-0">
 
-        {/* 좌: 공급사별 매입세액 리스트 */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col min-h-0 overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Building2 size={14} className="text-rose-500" />
-              <div className="text-[13px] font-black text-slate-800">공급사별 매입세액</div>
-            </div>
-            <div className="text-[10px] font-bold text-slate-500">{fmt(breakdown.length)}곳</div>
-          </div>
-
-          <div className="overflow-y-auto flex-1 min-h-0 max-h-[60vh]">
-            {loading ? (
-              <div className="flex items-center justify-center py-10 text-slate-400 gap-2 text-[12px]">
-                <Loader2 size={13} className="animate-spin" />불러오는 중...
-              </div>
-            ) : breakdown.length === 0 ? (
-              <div className="py-10 text-center text-[11px] text-slate-300">매입 데이터 없음</div>
-            ) : (
-              <table className="w-full text-[11px]">
-                <thead className="sticky top-0 bg-slate-50 z-10 shadow-sm">
-                  <tr className="text-slate-600">
-                    <th className="text-left px-3 py-2 font-bold">공급사</th>
-                    <th className="text-right px-2 py-2 font-bold" title="공급가액 (VAT 별도)">공급가액</th>
-                    <th className="text-right px-2 py-2 font-bold">부가세</th>
-                    <th className="text-right px-2 py-2 font-bold" title="공급가액 + 부가세 · 실제 매입 총액">매입금액</th>
-                    <th className="text-center px-2 py-2 font-bold">공제</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {breakdown.map(v => (
-                    <tr
-                      key={v.supplier_name}
-                      onClick={() => setSelectedVendor(prev => prev === v.supplier_name ? null : v.supplier_name)}
-                      className={`cursor-pointer transition ${
-                        selectedVendor === v.supplier_name
-                          ? "bg-rose-50 border-l-2 border-rose-500"
-                          : "hover:bg-slate-50 border-l-2 border-transparent"
-                      }`}
-                    >
-                      <td className="px-3 py-2">
-                        <div className="flex items-center gap-1.5">
-                          <span className={`font-bold ${selectedVendor === v.supplier_name ? "text-rose-800" : "text-slate-700"}`}>
-                            {v.supplier_name}
-                          </span>
-                          {v.category === "면세" && (
-                            <span className="text-[9px] font-black px-1 py-0.5 rounded bg-slate-200 text-slate-600">면세</span>
-                          )}
-                        </div>
-                        {v.business_number && (
-                          <div className="text-[10px] text-slate-400 tabular-nums">
-                            {v.business_number.length === 10
-                              ? `${v.business_number.slice(0, 3)}-${v.business_number.slice(3, 5)}-${v.business_number.slice(5)}`
-                              : v.business_number}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-2 py-2 text-right tabular-nums text-slate-700">{fmt(v.amount)}</td>
-                      <td className="px-2 py-2 text-right tabular-nums font-semibold text-rose-700">{fmt(v.vat)}</td>
-                      <td className="px-2 py-2 text-right tabular-nums font-black text-slate-900">{fmt(v.amount + v.vat)}</td>
-                      <td className="px-2 py-2 text-center">
-                        {v.deductible ? (
-                          <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">공제</span>
-                        ) : (
-                          <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">불공제</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot className="sticky bottom-0 bg-slate-50 shadow-inner">
-                  <tr className="text-slate-800 font-black">
-                    <td className="px-3 py-2 text-[11px]">합계</td>
-                    <td className="px-2 py-2 text-right tabular-nums text-[11px]">
-                      {fmt(breakdown.reduce((s, r) => s + r.amount, 0))}
-                    </td>
-                    <td className="px-2 py-2 text-right tabular-nums text-rose-700 text-[11px]">
-                      {fmt(breakdown.reduce((s, r) => s + r.vat, 0))}
-                    </td>
-                    <td className="px-2 py-2 text-right tabular-nums text-[11px]">
-                      {fmt(breakdown.reduce((s, r) => s + r.amount + r.vat, 0))}
-                    </td>
-                    <td className="px-2 py-2"></td>
-                  </tr>
-                </tfoot>
-              </table>
-            )}
-          </div>
+        {/* 좌: 공급사별 매입세액 리스트 (Task #60 · SupplierVatTab 분리) */}
+        <div className="lg:col-span-2 min-h-0">
+          <SupplierVatTab
+            rows={breakdown}
+            loading={loading}
+            selectedVendor={selectedVendor}
+            onSelectVendor={setSelectedVendor}
+          />
         </div>
 
         {/* 우: 매입 명세 (선택 공급사) */}
