@@ -308,4 +308,257 @@ router.get("/api/vat/vendor-detail", async (req, res) => {
   }
 });
 
+// ═════════════════════════════════════════════════════════════════
+// GET /api/vat/monthly-summary?from=YYYY-MM-DD&to=YYYY-MM-DD
+//   · 월별 매출·매입 통합 · 예상 부가세 계산 base 데이터
+//   · 매출 · stock_history.total_amount (SKU 별 판매액 · snapshot_date 로 월 그룹)
+//     - VAT 포함 총액으로 가정 · 매출세액 = total / 11 (10/110 rule)
+//     - 참고 · POS 데이터 상 과세/면세 구분 없음 · 사용자 안내 필요
+//   · 매입 · purchase_details.amount + vendor.vat_included flag 로 VAT 계산
+//     - vat_included=true  · 매입세액 = amount / 11 · 공급가액 = amount × 10/11
+//     - vat_included=false · 매입세액 = amount × 0.1 · 공급가액 = amount
+//     - 면세 (vendor.category === "면세") · 매입세액 = 0 (불공제)
+//   · 반환 · months[] 오름차순 · 각 월 { month, salesTotal, salesVat, salesSupply,
+//                                        purchaseGross, purchaseSupply, purchaseVat, purchaseDeductibleVat }
+// ═════════════════════════════════════════════════════════════════
+router.get("/api/vat/monthly-summary", async (req, res) => {
+  try {
+    const fromParam = String(req.query.from ?? "").trim();
+    const toParam = String(req.query.to ?? "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fromParam) || !/^\d{4}-\d{2}-\d{2}$/.test(toParam)) {
+      return res.status(400).json({ error: "from, to (YYYY-MM-DD) 필수" });
+    }
+    if (fromParam > toParam) {
+      return res.status(400).json({ error: "from > to" });
+    }
+
+    const monthsAgg = new Map<string, {
+      month: string;
+      salesTotal: number;         // 매출 총액 (VAT 포함 가정)
+      salesVat: number;           // 매출세액 (total / 11)
+      salesSupply: number;        // 공급가액 (total - vat)
+      salesRowCount: number;
+      purchaseGross: number;      // 매입 총액 (amount + vat)
+      purchaseSupply: number;     // 공급가액
+      purchaseVat: number;        // 매입세액 (총)
+      purchaseDeductibleVat: number; // 매입세액 중 공제 가능분 (면세 공급사 제외)
+      purchaseRowCount: number;
+    }>();
+
+    const getBucket = (month: string) => {
+      if (!monthsAgg.has(month)) {
+        monthsAgg.set(month, {
+          month,
+          salesTotal: 0,
+          salesVat: 0,
+          salesSupply: 0,
+          salesRowCount: 0,
+          purchaseGross: 0,
+          purchaseSupply: 0,
+          purchaseVat: 0,
+          purchaseDeductibleVat: 0,
+          purchaseRowCount: 0,
+        });
+      }
+      return monthsAgg.get(month)!;
+    };
+
+    const warnings: string[] = [];
+
+    // ── 매출 · stock_history · snapshot_date 로 그룹 ───────────
+    //   NOTE · stock_history 는 SKU × 일자 매트릭스 · total_amount = sale_qty × sale_price
+    //   snapshot_date 기준 월 그룹 · VAT 포함 총액으로 간주
+    try {
+      const PAGE = 1000;
+      let fromRow = 0;
+      let salesTableMissing = false;
+      while (true) {
+        const { data: pg, error: pgErr } = await supabase
+          .from("stock_history")
+          .select("snapshot_date, total_amount")
+          .gte("snapshot_date", fromParam)
+          .lte("snapshot_date", toParam)
+          .range(fromRow, fromRow + PAGE - 1);
+        if (pgErr) {
+          if (/relation .* does not exist/i.test(pgErr.message)) {
+            salesTableMissing = true;
+            break;
+          }
+          throw new Error(pgErr.message);
+        }
+        if (!pg || pg.length === 0) break;
+        for (const r of pg) {
+          const date = String((r as any).snapshot_date ?? "");
+          const month = date.slice(0, 7);
+          if (!/^\d{4}-\d{2}$/.test(month)) continue;
+          const amt = Number((r as any).total_amount ?? 0) || 0;
+          if (amt <= 0) continue;
+          const bucket = getBucket(month);
+          bucket.salesTotal += amt;
+          bucket.salesRowCount += 1;
+        }
+        if (pg.length < PAGE) break;
+        fromRow += PAGE;
+      }
+      if (salesTableMissing) {
+        warnings.push("stock_history 테이블 없음 · 매출 데이터 0 표시");
+      }
+    } catch (e: any) {
+      warnings.push(`매출 조회 실패: ${e?.message ?? "unknown"}`);
+    }
+
+    // 매출 · VAT 포함 총액 기준 매출세액 계산 (총액 / 11 · 반올림)
+    for (const bucket of monthsAgg.values()) {
+      if (bucket.salesTotal > 0) {
+        bucket.salesVat = Math.round(bucket.salesTotal / 11);
+        bucket.salesSupply = bucket.salesTotal - bucket.salesVat;
+      }
+    }
+
+    // ── 매입 · purchase_details + vendors.vat_included ─────────
+    const purchaseRows: Array<{ supplier: string; date: string; amount: number; vat: number }> = [];
+    try {
+      const PAGE = 1000;
+      let fromRow = 0;
+      let purchaseTableMissing = false;
+      while (true) {
+        const { data: pg, error: pgErr } = await supabase
+          .from("purchase_details")
+          .select("supplier_name, purchase_date, amount, vat")
+          .gte("purchase_date", fromParam)
+          .lte("purchase_date", toParam)
+          .range(fromRow, fromRow + PAGE - 1);
+        if (pgErr) {
+          if (/relation .* does not exist/i.test(pgErr.message)) {
+            purchaseTableMissing = true;
+            break;
+          }
+          throw new Error(pgErr.message);
+        }
+        if (!pg || pg.length === 0) break;
+        for (const r of pg) {
+          const sup = String((r as any).supplier_name ?? "").trim();
+          const date = String((r as any).purchase_date ?? "");
+          if (!/^\d{4}-\d{2}-\d{2}/.test(date)) continue;
+          purchaseRows.push({
+            supplier: sup,
+            date,
+            amount: Number((r as any).amount ?? 0) || 0,
+            vat: Number((r as any).vat ?? 0) || 0,
+          });
+        }
+        if (pg.length < PAGE) break;
+        fromRow += PAGE;
+      }
+      if (purchaseTableMissing) {
+        warnings.push("purchase_details 테이블 없음 · 매입 데이터 0 표시");
+      }
+    } catch (e: any) {
+      warnings.push(`매입 조회 실패: ${e?.message ?? "unknown"}`);
+    }
+
+    // 공급사 정보 lookup
+    const supplierNames = Array.from(new Set(purchaseRows.map(r => r.supplier).filter(Boolean)));
+    const catMap = new Map<string, string | null>();
+    const vatIncMap = new Map<string, boolean | null>();
+    if (supplierNames.length > 0) {
+      let vendors: any[] | null = null;
+      const rv1 = await supabase
+        .from("vendors")
+        .select("company_name, category, vat_included")
+        .in("company_name", supplierNames);
+      if (!rv1.error) vendors = rv1.data ?? [];
+      else if (/vat_included/i.test(rv1.error.message)) {
+        const rv2 = await supabase
+          .from("vendors")
+          .select("company_name, category")
+          .in("company_name", supplierNames);
+        if (!rv2.error) vendors = (rv2.data ?? []).map((v: any) => ({ ...v, vat_included: null }));
+      }
+      for (const v of vendors ?? []) {
+        const name = String((v as any).company_name);
+        catMap.set(name, (v as any).category ?? null);
+        const vi = (v as any).vat_included;
+        vatIncMap.set(name, vi === true || vi === false ? vi : null);
+      }
+    }
+
+    for (const r of purchaseRows) {
+      const month = r.date.slice(0, 7);
+      const bucket = getBucket(month);
+      const vi = vatIncMap.get(r.supplier) ?? null;
+      const cat = catMap.get(r.supplier) ?? "";
+      const vat = calcVat(r.amount, r.vat, vi);
+
+      // VAT 포함 매입 · amount 가 총액 · 공급가액 = amount - vat
+      // VAT 별도 매입 · amount 가 공급가액 · 총액 = amount + vat
+      // 면세 (cat === "면세") · vat 를 0 처리 · 공급가액 = amount · 총액 = amount
+      let supply: number;
+      let gross: number;
+      let effectiveVat: number;
+      if (cat === "면세") {
+        effectiveVat = 0;
+        supply = r.amount;
+        gross = r.amount;
+      } else if (vi === true) {
+        effectiveVat = vat;
+        supply = r.amount - vat;
+        gross = r.amount;
+      } else {
+        // vi === false or null · 별도 과세 가정
+        effectiveVat = vat;
+        supply = r.amount;
+        gross = r.amount + vat;
+      }
+
+      bucket.purchaseGross += gross;
+      bucket.purchaseSupply += supply;
+      bucket.purchaseVat += effectiveVat;
+      if (cat !== "면세") {
+        bucket.purchaseDeductibleVat += effectiveVat;
+      }
+      bucket.purchaseRowCount += 1;
+    }
+
+    // ── 월 시퀀스 채우기 (from ~ to 사이 · 빈 월도 포함) ───────
+    const [fy, fm] = fromParam.slice(0, 7).split("-").map(Number);
+    const [ty, tm] = toParam.slice(0, 7).split("-").map(Number);
+    const monthList: string[] = [];
+    let cy = fy, cm = fm;
+    while (cy < ty || (cy === ty && cm <= tm)) {
+      monthList.push(`${cy}-${String(cm).padStart(2, "0")}`);
+      cm += 1;
+      if (cm > 12) { cm = 1; cy += 1; }
+      if (monthList.length > 60) break; // safety
+    }
+    for (const m of monthList) getBucket(m); // ensure empty months exist
+
+    const months = Array.from(monthsAgg.values())
+      .filter(b => monthList.includes(b.month))
+      .sort((a, b) => (a.month < b.month ? -1 : 1))
+      .map(b => ({
+        month: b.month,
+        salesTotal: Math.round(b.salesTotal),
+        salesVat: Math.round(b.salesVat),
+        salesSupply: Math.round(b.salesSupply),
+        salesRowCount: b.salesRowCount,
+        purchaseGross: Math.round(b.purchaseGross),
+        purchaseSupply: Math.round(b.purchaseSupply),
+        purchaseVat: Math.round(b.purchaseVat),
+        purchaseDeductibleVat: Math.round(b.purchaseDeductibleVat),
+        purchaseRowCount: b.purchaseRowCount,
+      }));
+
+    res.json({
+      from: fromParam,
+      to: toParam,
+      months,
+      warning: warnings.length > 0 ? warnings.join(" · ") : undefined,
+    });
+  } catch (err: any) {
+    console.error("[vat/monthly-summary] error:", err?.message);
+    res.status(500).json({ error: err?.message ?? "월별 부가세 요약 조회 실패" });
+  }
+});
+
 export default router;
