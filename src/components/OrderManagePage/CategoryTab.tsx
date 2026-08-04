@@ -178,6 +178,12 @@ const ZoneCategoryContent: React.FC = () => {
             : rank <= 10
               ? "bg-slate-400 text-white border-slate-500"
               : "bg-white text-slate-400 border-slate-200";
+
+    // 판매량 상위 베스트 아이템 (최대 3개)
+    const bestItems = [...g.items]
+      .sort((a, b) => b.saleQty - a.saleQty)
+      .slice(0, 3);
+
     return (
       <button
         key={g.zone}
@@ -185,6 +191,22 @@ const ZoneCategoryContent: React.FC = () => {
         onClick={() => setSelectedZone(prev => prev === g.zone ? null : g.zone)}
         className={`w-full flex flex-col gap-1.5 p-2.5 rounded-xl border cursor-pointer text-left transition ${selectedBorder}`}
       >
+        {/* 베스트 아이템 한 행 */}
+        {bestItems.length > 0 && (
+          <div className="flex items-center gap-1 flex-wrap">
+            {bestItems.map((it, i) => (
+              <span
+                key={it.code}
+                className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 leading-tight break-words whitespace-normal"
+                title={it.name}
+              >
+                <span className="text-[9px] font-black text-orange-500 tabular-nums shrink-0">{i + 1}</span>
+                <span className="line-clamp-1">{it.name}</span>
+              </span>
+            ))}
+          </div>
+        )}
+        {/* 구역 정보 행 */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2 min-w-0">
             <span className={`inline-flex items-center justify-center w-[20px] h-[20px] text-[12px] font-black rounded-md border tabular-nums shrink-0 ${rankCls}`}
