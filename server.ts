@@ -22,7 +22,8 @@ import lunchRouter       from "./server/routes/lunch";
 import reservationsRouter from "./server/routes/reservations";
 import vendorsRouter     from "./server/routes/vendors";
 import ocrRouter         from "./server/routes/ocr";
-import stockCountRouter  from "./server/routes/stockCount";
+// 2026-08-04 · 사용자 요청 · 재고세기(YOLO) 일단 주석처리 · OOM 방어 (T39)
+// import stockCountRouter  from "./server/routes/stockCount";
 import stockManageRouter from "./server/routes/stockManage";
 import purchaseRouter    from "./server/routes/purchase";
 import stockArrivalsRouter from "./server/routes/stockArrivals";
@@ -44,7 +45,9 @@ import employeeContractsRouter from "./server/routes/employeeContracts";
 import vatRouter from "./server/routes/vat";
 // 2026-07-28 · 재고·판매 통합 메뉴 제거 (사용자 요청) · 파일 보관 · 라우터 등록만 해제
 // import inventorySalesRouter from "./server/routes/inventorySales";
-import { loadStockCountModel } from "./server/stockCounter";
+// 2026-08-04 · 사용자 요청 · 재고세기(YOLO) 주석처리 · loadStockCountModel 도 비활성 (T39)
+// import { loadStockCountModel } from "./server/stockCounter";
+import { cleanupStaleLogs } from "./server/utils/logsCleanup";
 
 async function startServer() {
   const app = express();
@@ -87,7 +90,7 @@ async function startServer() {
   app.use(reservationsRouter);
   app.use(vendorsRouter);
   app.use(ocrRouter);
-  app.use(stockCountRouter);
+  // app.use(stockCountRouter); // 2026-08-04 · YOLO 비활성 (T39)
   app.use(stockManageRouter);
   app.use(purchaseRouter);
   app.use(stockArrivalsRouter);
@@ -137,7 +140,10 @@ async function startServer() {
     });
   }
 
-  loadStockCountModel();
+  // loadStockCountModel(); // 2026-08-04 · YOLO 비활성 (T39 · OOM 방어)
+
+  // T38 · 부팅 시 오래된 로그 파일 자동 정리 (14일 초과)
+  cleanupStaleLogs();
 
   httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`[Server] Megatown schedule service running on http://localhost:${PORT}`);

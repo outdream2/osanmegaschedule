@@ -20,6 +20,17 @@
 
 ### 【안정성 · 보안】
 
+### T37. JSON body parser 한도 축소 (DoS 방어)
+- 현재 `server.ts` · `express.json({limit:"200mb"})` · 인증 전 단계에서 대용량 payload 로 OOM 유도 가능 (DoS)
+- 작업: (1) 일반 API 10mb 로 축소 (2) 파일 업로드 라우터 (contracts·hrForms·invoiceImages·board) 만 별도 route-level 큰 한도 or multipart
+- 예상 1~1.5h · 라우터 감사 필요
+
+### T39. YOLO/OCR 모델 별도 서비스 분리 (OOM 방어)
+- ONNX Runtime + PaddleOCR 로 메인 Node 서버가 상당 RAM 점유
+- **부분 완료 · 2026-08-04**: 재고세기(YOLO) 라우터·loadStockCountModel 주석처리 완료 (사용자 요청)
+- 남은 작업: PaddleOCR (layout_server.py) 는 별도 서비스로 분리 검토 · Render 배포 후 실측
+- 예상 4~6h · **선행: Render 배포 실측 데이터 확보**
+
 ### T3. API 인증 미들웨어 · 서버단 세션·권한 검증 도입
 - 원인: `PUT /api/schedules` · `DELETE /api/employees/:id` 등 민감 API 서버단 세션/JWT 검증 부재 · Postman 등으로 프론트 우회 가능
 - 작업: 공통 `requireAuth` + `authorize(level)` 미들웨어 · 민감 라우터 적용
@@ -37,11 +48,6 @@
 - T18 서명란 · 이미 갑/을 인적사항 완전 (주민번호·성명·주소·전화·계좌·이메일)
 - T16 휴게시간 · breakStart/breakEnd 필드 추가 (선택 입력) · UI 편집기 · 표 그대로 유지
 - T17 근로일별 표 · **사용자 지시 "이미지대로" · single-row 유지** · 알바용 별도 표 미추가
-
-### T35. StaffManagePage 헤더 정렬 추가 (T34 audit)
-- 직원 리스트 (7컬럼 · 이름·직책·계약·근속·평가·계약서·상태) · 정렬 없음
-- 파일: `src/components/StaffManagePage/StaffManagePage.tsx:1251`
-- 예상 1h
 
 ### T36. RawOcrTable 헤더 정렬 추가 (T34 audit)
 - OcrPage/RawOcrTable · 3개 하위테이블 (발주·재고·손실액) · 정렬 없음
@@ -108,9 +114,11 @@
 
 ### 【리팩터 · 성능】
 
-### T24. 아키텍처 리팩터 · P1 즉시 (dead code)
-- InventorySalesPage 삭제 (652줄 orphan) · StockManagePage dead export 제거 · SalesTrendPage `_deprecated` 제거 · LossTrackerTab 확인 후 삭제
-- 예상 0.5~1h · 각 단계 후 TS+build 검증
+### T24. 아키텍처 리팩터 · P1 즉시 (dead code) · **에이전트 위임 금지**
+- 이전 시도: dead-code-auditor 에이전트가 SalesTrendPage 오편집 (LossTrackerTab · 다른 모듈에서 참조 중인데 삭제 시도) · 종료됨
+- 재시도: **수동 진행 필수** · 각 파일별로 grep으로 참조 확인 → 삭제 → TS+build 검증
+- 대상: InventorySalesPage (orphan · 실제 확인 필요) · dead exports (사용여부 재확인)
+- 예상 1~2h · 각 단계 강제 verification
 
 ### T25. 아키텍처 리팩터 · P2 (공용 훅 · 폴더 이동)
 - useVendors 공용 훅 (12곳 중복 통합) · DisplayPage 스케줄 fetch 훅 분리 · Trending·Category·Order 폴더 이동
