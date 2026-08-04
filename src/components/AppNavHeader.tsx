@@ -328,8 +328,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       if (isActive) {
         return (
           <span key="business" className={`${base} bg-gradient-to-br ${c.activeBg} ${c.activeText} shadow-md font-black`}>
-            <Icon size={18} weight="fill" />
-            <span className="leading-tight text-center">경영</span>
+            <Icon size={22} weight="fill" />
+            <span className="leading-tight text-center whitespace-nowrap">경영</span>
           </span>
         );
       }
@@ -341,7 +341,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           disabled={!onNavigate}
           className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white cursor-pointer disabled:opacity-40`}
         >
-          <Icon size={18} weight="fill" />
+          <Icon size={22} weight="fill" />
           <span className="leading-tight text-center">경영</span>
         </button>
       );
@@ -352,7 +352,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     if (isActive) {
       return (
         <span key={tab.key} className={`${base} bg-gradient-to-br ${c.activeBg} ${c.activeText} shadow-md font-black`}>
-          <Icon size={18} weight="fill" />
+          <Icon size={22} weight="fill" />
           <span className="leading-tight text-center">
             {(() => {
               const L = tab.label;
@@ -379,9 +379,10 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         disabled={!onNavigate && !onBack}
         className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white cursor-pointer disabled:opacity-40`}
       >
-        <Icon size={18} weight="fill" />
-        <span className="leading-tight text-center">
-          {tab.label.length > 2 ? (
+        <Icon size={22} weight="fill" />
+        <span className="leading-tight text-center whitespace-nowrap">
+          {/* 2026-08-04 · 3자 이하는 한줄 · 4자 이상만 wrap (스케줄 등 3자 줄바꿈 방지) */}
+          {tab.label.length > 3 ? (
             <>
               <div>{tab.label.slice(0, tab.label.length - 2)}</div>
               <div>{tab.label.slice(-2)}</div>
