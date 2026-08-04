@@ -594,27 +594,25 @@ export const PaymentInfoTab: React.FC = () => {
                   return (
                     <div className="overflow-hidden rounded-lg border border-slate-200 shadow-xs">
                       <table className="w-full text-[12px] tabular-nums">
-                        <thead className="bg-slate-50/80 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                        <thead className="bg-slate-50/80 text-[11px] font-black uppercase tracking-wider text-slate-500">
                           <tr>
                             <th className="text-left px-3 py-1.5 w-[70px]">구분</th>
-                            <th className="text-right px-3 py-1.5">이번달</th>
-                            <th className="text-right px-3 py-1.5">누적</th>
+                            <th className="text-right px-3 py-1.5 text-emerald-700"><span className="inline-flex items-center gap-1 justify-end"><ReceiptText size={11} />매입</span></th>
+                            <th className="text-right px-3 py-1.5 text-sky-700"><span className="inline-flex items-center gap-1 justify-end"><Wallet size={11} />결제</span></th>
+                            <th className="text-right px-3 py-1.5 text-slate-700"><span className="inline-flex items-center gap-1 justify-end"><Coins size={11} />잔고</span></th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                           <tr className="bg-white">
-                            <td className="px-3 py-1.5 font-black text-emerald-700 flex items-center gap-1.5"><ReceiptText size={11} />매입</td>
+                            <td className="px-3 py-1.5 font-black text-slate-700">이번달</td>
                             <td className={`px-3 py-1.5 text-right font-black ${thisMonthPurchase == null ? "text-slate-300" : "text-emerald-800"}`}>{fmt(thisMonthPurchase)}</td>
-                            <td className="px-3 py-1.5 text-right font-black text-emerald-800">{fmt(totalPurchase)}</td>
-                          </tr>
-                          <tr className="bg-white">
-                            <td className="px-3 py-1.5 font-black text-sky-700 flex items-center gap-1.5"><Wallet size={11} />결제</td>
                             <td className={`px-3 py-1.5 text-right font-black ${thisMonthPayment === 0 ? "text-slate-300" : "text-sky-800"}`}>{fmt(thisMonthPayment)}</td>
-                            <td className="px-3 py-1.5 text-right font-black text-sky-800">{fmt(totalPayment)}</td>
+                            <td className={`px-3 py-1.5 text-right font-black ${thisMonthBalance == null ? "text-slate-300" : thisMonthBalance > 0 ? "text-amber-700" : thisMonthBalance < 0 ? "text-rose-700" : "text-slate-500"}`}>{fmt(thisMonthBalance)}</td>
                           </tr>
                           <tr className="bg-slate-50/60">
-                            <td className="px-3 py-1.5 font-black text-slate-700 flex items-center gap-1.5"><Coins size={11} />잔고</td>
-                            <td className={`px-3 py-1.5 text-right font-black ${thisMonthBalance == null ? "text-slate-300" : thisMonthBalance > 0 ? "text-amber-700" : thisMonthBalance < 0 ? "text-rose-700" : "text-slate-500"}`}>{fmt(thisMonthBalance)}</td>
+                            <td className="px-3 py-1.5 font-black text-slate-700">누적</td>
+                            <td className="px-3 py-1.5 text-right font-black text-emerald-800">{fmt(totalPurchase)}</td>
+                            <td className="px-3 py-1.5 text-right font-black text-sky-800">{fmt(totalPayment)}</td>
                             <td className={`px-3 py-1.5 text-right font-black ${totalBalance > 0 ? "text-amber-700" : totalBalance < 0 ? "text-rose-700" : "text-slate-500"}`}>
                               {fmt(Math.abs(totalBalance))}
                               {totalBalance !== 0 && (
