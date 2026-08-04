@@ -601,6 +601,26 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
     let pdOk = false;
     let pdRowCount = 0; // 2026-08-04 fix · primary(purchase_details) 실제 push 된 행 수 (fallback 이 normRows 덮어써도 원본 판별)
     let pdSkippedNullSupplier = 0; // 2026-08-03 fix · supplier_name NULL 인 행 카운트 (진단용)
+    let pdRelationMissing = false; // 2026-08-04 · purchase_details 테이블 자체 존재하는지
+    // 전체(=cutoff 무관) 통계 · 사용자 진단용 (매입이력이 안들어온다 지적)
+    //   - 90일보다 오래된 매입만 있을 때 · pd_row_count=0 인데 pd_total_all_time>0
+    let pdTotalAllTime: number | null = null;
+    let pdLatestDate: string | null = null;
+    try {
+      const { count } = await supabase
+        .from("purchase_details")
+        .select("id", { count: "exact", head: true });
+      if (count != null) pdTotalAllTime = count;
+      const { data: latestRow } = await supabase
+        .from("purchase_details")
+        .select("purchase_date")
+        .order("purchase_date", { ascending: false })
+        .limit(1);
+      const l = (latestRow ?? [])[0] as any;
+      pdLatestDate = l?.purchase_date ? String(l.purchase_date).slice(0, 10) : null;
+    } catch (e: any) {
+      if (/relation .* does not exist/i.test(String(e?.message ?? ""))) pdRelationMissing = true;
+    }
     // supplier_code → supplier_name 매핑 (vendors 테이블 · code null 인 raw 매입행 보완용)
     //   vendors 테이블에 supplier_code 컬럼 없으면 무해하게 skip (컬럼 에러 catch)
     const codeToName = new Map<string, string>();
@@ -626,7 +646,8 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
           .gte("purchase_date", cutoffYmd)
           .range(from, from + PAGE - 1);
         if (error) {
-          if (/relation .* does not exist|column .* does not exist/i.test(error.message)) break;
+          if (/relation .* does not exist/i.test(error.message)) { pdRelationMissing = true; break; }
+          if (/column .* does not exist/i.test(error.message)) break;
           throw new Error(error.message);
         }
         if (!data || data.length === 0) break;
@@ -777,6 +798,9 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
         pd_ok: pdOk,
         pd_row_count: pdRowCount,
         pd_skipped_null_supplier: pdSkippedNullSupplier,
+        pd_relation_missing: pdRelationMissing,
+        pd_total_all_time: pdTotalAllTime,    // 90d 무관 · 전체 행 수
+        pd_latest_date: pdLatestDate,          // 가장 최근 매입일 (전체) · 90d 밖이면 여기서 확인
         total_rows: normRows.length,
       },
     });

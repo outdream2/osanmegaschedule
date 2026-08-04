@@ -48,6 +48,9 @@ interface SourceDiagnostics {
   pd_ok?: boolean;
   pd_row_count?: number;
   pd_skipped_null_supplier?: number;
+  pd_relation_missing?: boolean;
+  pd_total_all_time?: number | null;
+  pd_latest_date?: string | null;
   total_rows?: number;
 }
 
@@ -689,15 +692,20 @@ export const PurchaseHistoryTab: React.FC = () => {
               }`}
               title={
                 summarySource === "purchase_details"
-                  ? `ERP 매입상세 (xlsx 임포트) · ${summaryDiagnostics?.pd_row_count ?? 0}행` +
+                  ? `ERP 매입상세 (xlsx 임포트) · ${summaryDiagnostics?.pd_row_count ?? 0}행 (최근 90일)` +
                     (summaryDiagnostics?.pd_skipped_null_supplier
                       ? ` · 스킵 ${summaryDiagnostics.pd_skipped_null_supplier}행 (supplier_name NULL)`
-                      : "")
-                  : "⚠ 매입이력이 거래명세서(OCR)에서 로드됨. " +
-                    "purchase_details(ERP xlsx 임포트) 테이블이 비어있거나 supplier_name 매핑 실패. " +
-                    (summaryDiagnostics
-                      ? `pd_ok=${summaryDiagnostics.pd_ok} · pd_rows=${summaryDiagnostics.pd_row_count} · skipped=${summaryDiagnostics.pd_skipped_null_supplier}`
-                      : "")
+                      : "") +
+                    ` · 전체 ${summaryDiagnostics?.pd_total_all_time ?? "?"}행 · 최근매입 ${summaryDiagnostics?.pd_latest_date ?? "-"}`
+                  : summaryDiagnostics?.pd_relation_missing
+                    ? "⚠ purchase_details 테이블이 Supabase 에 없음. xlsx 임포트 실행 필요."
+                    : (summaryDiagnostics?.pd_total_all_time ?? 0) === 0
+                      ? "⚠ purchase_details 테이블은 있지만 데이터 없음. xlsx 임포트 실행 필요."
+                      : (summaryDiagnostics?.pd_row_count ?? 0) === 0 && (summaryDiagnostics?.pd_total_all_time ?? 0) > 0
+                        ? `⚠ 90일 이내 매입 없음. 전체 ${summaryDiagnostics?.pd_total_all_time}행 · 최근 매입 ${summaryDiagnostics?.pd_latest_date ?? "-"} · 90일보다 오래됨`
+                        : (summaryDiagnostics?.pd_skipped_null_supplier ?? 0) > 0
+                          ? `⚠ supplier_name NULL 로 ${summaryDiagnostics?.pd_skipped_null_supplier}행 스킵 · vendors.supplier_code 매핑 실패`
+                          : "⚠ 매입이력이 거래명세서(OCR)로 폴백됨. 원인 미상 · console 확인."
               }
             >
               {summarySource === "purchase_details" ? "🟢 ERP" : "🟠 OCR"}
