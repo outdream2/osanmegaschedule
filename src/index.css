@@ -191,10 +191,10 @@ body:has(.fixed.inset-0[class*="bg-neutral-9"]) {
          active:opacity-70;
 }
 /* ── 탭 컨테이너 (탭바 전체 wrap) ── */
-/* #239 · 모바일 · 탭메뉴 밀면 둥둥떠다니는 버그 · overflow-x-auto 를 tab-bar-row 로 이동
- *   원인 · tab-bar-inner 가 overflow-x-auto 이면 sticky 부모 컨텍스트가 깨지고
- *          모바일 좌우 스와이프 시 sticky 위치 오프셋이 어긋남
- *   해결 · 부모(inner) overflow visible 유지 · 자식(row) 만 좌우 스크롤 */
+/* B-3-3 (2026-08-04) · 반응형 두줄 wrap 원칙
+ *   탭이 화면 너비 초과 시 overflow-dropdown 로 숨기지 않고
+ *   flex-wrap 으로 줄바꿈 노출 · overflow-x-auto 제거
+ *   (기존 #239 floating 버그는 tab-bar-inner 를 overflow visible 로 유지함으로써 해결됨) */
 .tab-bar-l1, .tab-bar-l2 {
   @apply bg-white border-b border-slate-200 w-full shrink-0;
 }
@@ -205,7 +205,7 @@ body:has(.fixed.inset-0[class*="bg-neutral-9"]) {
   @apply max-w-[1360px] mx-auto px-2 sm:px-5 w-full;
 }
 .tab-bar-row {
-  @apply flex flex-nowrap items-stretch gap-0 overflow-x-auto scrollbar-none;
+  @apply flex flex-wrap items-stretch gap-0;
 }
 /* ── 활성 탭 underline (색상은 인라인 or bg-* 프리셋으로 별도 지정) ── */
 .tab-active-underline-l1 {

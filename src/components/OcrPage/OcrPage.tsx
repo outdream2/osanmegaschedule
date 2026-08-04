@@ -1297,8 +1297,8 @@ return (
 
     {/* Tab bar */}
     <div className="bg-white/90 backdrop-blur-sm border-b border-slate-200/70 sticky top-0 z-10">
-      <div className="max-w-5xl mx-auto px-2 sm:px-4 py-2 overflow-x-auto scrollbar-none">
-        <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5 min-w-max">
+      <div className="max-w-5xl mx-auto px-2 sm:px-4 py-2">
+        <div className="flex flex-wrap bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
           <button
             onClick={() => setMainTab("ocr")}
             className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "ocr" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"}`}
@@ -1339,7 +1339,7 @@ return (
         {/* 동의어 서브 탭 */}
         <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
           <div className="flex items-center gap-1 px-4 py-2 border-b border-slate-100/80">
-            <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
+            <div className="flex flex-wrap bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
             <button onClick={() => setSynTab("product")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${synTab === "product" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"}`}>
               <BookOpen size={12} className={synTab === "product" ? "text-slate-800" : "text-slate-400"} /> 상품명 동의어 ({productSynonyms.length})
             </button>

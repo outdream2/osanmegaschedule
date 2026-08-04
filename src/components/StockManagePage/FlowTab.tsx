@@ -483,7 +483,7 @@ export const FlowTab: React.FC = () => {
             const e = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
             return <span className="text-[11px] tabular-nums font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-md px-2 py-0.5">{s} ~ {e}</span>;
           })()}
-          <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
+          <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
             <button onClick={() => { setFlowSeason(null); setPendingFlowMonths(0); setFlowMonths(0); }}
               className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!flowSeason && flowMonths === 0 ? "bg-teal-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>10일</button>
             {([1, 2, 3, 4, 5, 6] as const).map(m => (
@@ -569,7 +569,7 @@ export const FlowTab: React.FC = () => {
         </button>
 
         {/* 분류 세그먼트 필터 */}
-        <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
+        <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
           {(["전체", "위탁", "선결제", "60일회전", "90일회전", "기타"] as const).map(cat => (
             <button key={cat} onClick={() => setFlowCategoryFilter(cat)}
               className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${

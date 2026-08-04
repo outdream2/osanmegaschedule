@@ -201,7 +201,7 @@ export const LowStockPanel: React.FC = () => {
         </div>
         <span className="text-[11px] text-slate-400">현재고 &lt; 추천적정재고 · 상품명 클릭 → 상세</span>
         {/* 분류 세그먼트 필터 */}
-        <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
+        <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
           {(["전체", "위탁", "선결제", "60일회전", "90일회전", "기타"] as const).map(cat => (
             <button key={cat} onClick={() => setCategoryFilter(cat)}
               className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${

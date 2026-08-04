@@ -349,7 +349,7 @@ const HistoryContent: React.FC<{
       {/* 툴바 */}
       <div className="flex items-center gap-2 flex-wrap px-1">
         {/* 뷰 토글 */}
-        <div className="inline-flex bg-slate-100 border border-slate-200 rounded-lg p-0.5 gap-0.5">
+        <div className="flex flex-wrap bg-slate-100 border border-slate-200 rounded-lg p-0.5 gap-0.5">
           {(["sku", "all"] as const).map(mode => (
             <button
               key={mode}
@@ -630,7 +630,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
       {/* 기간 필터 + 새로고침 */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
         <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">기간</span>
-        <div className="inline-flex bg-slate-50 border border-slate-200 rounded-lg p-0.5 gap-0.5">
+        <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-lg p-0.5 gap-0.5">
           <button onClick={() => { setPeriodSeason(null); setPeriodMonths(0); }}
             className={`px-2.5 h-6 text-[11px] font-semibold rounded-md transition cursor-pointer ${!periodSeason && periodMonths === 0 ? "bg-sky-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
             10일

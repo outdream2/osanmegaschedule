@@ -137,7 +137,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         </div>
 
         {/* 탭 */}
-        <div className="mb-4 inline-flex bg-slate-100 border border-slate-200 rounded-xl p-0.5 gap-0.5">
+        <div className="mb-4 flex flex-wrap bg-slate-100 border border-slate-200 rounded-xl p-0.5 gap-0.5 w-fit">
           <button type="button" onClick={() => setTab("permissions")}
             className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-black transition cursor-pointer ${tab === "permissions" ? "bg-white text-violet-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
             <Shield size={12} /> 권한 조정
