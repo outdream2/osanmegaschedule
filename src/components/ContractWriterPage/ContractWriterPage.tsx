@@ -1148,8 +1148,59 @@ const ExtendContractModal: React.FC<{
 // 메인 페이지
 // ─────────────────────────────────────────────────────────────────────────────
 
+// 중간저장 localStorage key (2026-08-04 · #28 · 사용자 요청)
+const DRAFT_STORAGE_KEY = "megatown_contract_writer_draft";
+const DRAFT_TIMESTAMP_KEY = "megatown_contract_writer_draft_ts";
+
 const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, onBack, onNavigate, onLogout, embedded = false }) => {
-  const [form, setForm] = useState<ContractForm>(() => emptyForm());
+  // 초기값 · localStorage draft 있으면 복원 확인
+  const [form, setForm] = useState<ContractForm>(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") return { ...emptyForm(), ...parsed } as ContractForm;
+      }
+    } catch { /* silent */ }
+    return emptyForm();
+  });
+  // 중간저장 상태
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(() => {
+    try { return localStorage.getItem(DRAFT_TIMESTAMP_KEY); } catch { return null; }
+  });
+  // 수동 중간저장 함수
+  const saveDraft = useCallback(() => {
+    try {
+      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(form));
+      const ts = new Date().toISOString();
+      localStorage.setItem(DRAFT_TIMESTAMP_KEY, ts);
+      setDraftSavedAt(ts);
+    } catch {
+      // localStorage quota
+      alert("중간저장 실패 · 브라우저 저장공간 부족");
+    }
+  }, [form]);
+  // 자동 저장 · form 변경 30초 debounce (부하 감소)
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(form));
+        const ts = new Date().toISOString();
+        localStorage.setItem(DRAFT_TIMESTAMP_KEY, ts);
+        setDraftSavedAt(ts);
+      } catch { /* silent */ }
+    }, 30_000);
+    return () => window.clearTimeout(t);
+  }, [form]);
+  // draft 삭제 (계약 승인·저장 완료 시 호출)
+  const clearDraft = useCallback(() => {
+    try {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+      localStorage.removeItem(DRAFT_TIMESTAMP_KEY);
+      setDraftSavedAt(null);
+    } catch { /* silent */ }
+  }, []);
+
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [empLoading, setEmpLoading] = useState(false);
   const [empError, setEmpError] = useState<string | null>(null);
@@ -1750,6 +1801,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           ? `계약이 승인되어 저장되었습니다. 다운로드 링크: ${pdfUrl}`
           : "계약이 승인되어 저장되었습니다.",
       });
+      // 저장 완료 · 중간저장 draft 삭제 (#28)
+      clearDraft();
 
       // #220 · 방금 저장된 계약을 existingContract 로 반영 (다음 연장 baseline)
       if (saved && (saved.start_date || saved.end_date)) {
@@ -2448,6 +2501,21 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     </span>
                   )}
                 </div>
+
+                {/* 중간저장 버튼 (2026-08-04 · #28) · localStorage 저장 · 30초 자동저장도 실행 */}
+                <button
+                  type="button"
+                  onClick={saveDraft}
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-[12px] font-black shadow-sm transition-colors cursor-pointer whitespace-nowrap"
+                  title="현재 작성 내용을 브라우저에 저장 (다음 방문 시 복원)"
+                >
+                  💾 중간저장
+                  {draftSavedAt && (
+                    <span className="text-[10px] font-normal text-emerald-600 ml-1">
+                      · {new Date(draftSavedAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  )}
+                </button>
 
                 <button
                   type="button"
