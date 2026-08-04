@@ -1776,6 +1776,28 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                       )}
                     </div>
 
+                    {/* T32 · 인사 코멘트 (memo) · 평가 옆에 · 편집 저장 */}
+                    <div className="col-span-2 flex flex-col gap-0.5">
+                      <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none">
+                        <NotePencilIcon size={9} /> 인사 코멘트
+                      </span>
+                      {editing ? (
+                        <textarea
+                          value={String(draft?.memo ?? "")}
+                          onChange={(e) => setField("memo", e.target.value)}
+                          placeholder="근무 특이사항 · 평가 코멘트 · 알러지 등 (선택)"
+                          rows={2}
+                          className="border border-indigo-300 rounded-md px-2 py-1 text-[12px] bg-indigo-50/40 focus:outline-none focus:border-indigo-500 resize-none"
+                        />
+                      ) : displayEmp.memo ? (
+                        <p className="text-[12px] text-slate-700 whitespace-pre-wrap leading-relaxed bg-slate-50/70 border border-slate-200 rounded-md px-2 py-1 min-h-[24px]">
+                          {displayEmp.memo}
+                        </p>
+                      ) : (
+                        <span className="text-[13px] font-semibold text-slate-300 italic leading-snug min-h-[20px]">(코멘트 없음)</span>
+                      )}
+                    </div>
+
                     {/* 계약서 파일 · [보기] 버튼 UI · 없으면 "없음" 배지 · 편집 모드에서 URL 입력 */}
                     <div className="col-span-2 flex flex-col gap-0.5">
                       <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none">
