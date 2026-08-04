@@ -1,14 +1,18 @@
 // src/components/VatPreparePage/VatPreparePage.tsx
 // 2026-08-03 · #197 · 부가세 준비 페이지
-//   · 다음 신고일 카운트다운 · 신고기간별 매입세액 KPI
-//   · 공급사별 매입세액 리스트 (면세 배제·매입세액 공제 대상 표시)
-//   · 공급사 상세 매입 명세 · 준비 체크리스트 (localStorage)
+// 2026-08-04 · Phase 1 · 매출 탭 신설 + 5 KPI 확장 + 3 탭 컨테이너 (매출·매입·신고서)
+//   · 다음 신고일 카운트다운 · 신고기간별 매출/매입세액 KPI
+//   · [매출 탭] localStorage 기반 매출 수동 입력 (useSalesLocal) · Phase 2 DB 이전 예정
+//   · [매입 탭] 공급사별 매입세액 리스트 + 매입 명세 (기존)
+//   · [신고서 미리보기 탭] Phase 3 예정 placeholder
+//   · 공통 · 준비 체크리스트 (localStorage)
 //
 // 한국 부가세 리서치 요약:
 //   · 개인 일반과세자 · 반기 신고 (1~6월분 → 7/25, 7~12월분 → 1/25 다음해)
 //   · 법인 일반과세자 · 분기 신고 (예정 4/25·10/25, 확정 7/25·1/25)
 //   · 간이과세자 · 연 1회 (1/25 다음해)
-//   · 세율 10% · 매입세액 = 매입가 × 10% (공급가액 별도과세 기준)
+//   · 세율 10% · 매출세액 = 과세 공급가액 × 10% · 매입세액 = 매입가 × 10%
+//   · 납부세액 = 매출세액 - 매입세액공제 (음수면 환급)
 //   · 공제 = 매입세액 - 면세사업 관련 매입 (약국 처방전 · 전문의약품 대부분 면세)
 //   · 홈택스 신고서: 매입처별 세금계산서 합계표 · 신용카드 매출전표 수령명세서
 //
@@ -21,7 +25,9 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Calculator, Calendar, Building2, Loader2, AlertTriangle, CheckSquare, Square,
   FileText, TrendingUp, Wallet, ChevronRight, RefreshCw,
+  Receipt, PackageCheck, FileCheck2, Landmark,
 } from "lucide-react";
+import SalesTab from "./tabs/SalesTab";
 
 // ─── 타입 ────────────────────────────────────────────────────────
 
@@ -122,6 +128,17 @@ function prevHalfPeriod(): string {
   return `${y}-1H`;
 }
 
+// ─── 탭 컨테이너 ─────────────────────────────────────────────────
+type MainTab = "sales" | "purchase" | "preview";
+
+// 매출 KPI (SalesTab 에서 상위로 전달)
+interface SalesAggregate {
+  taxableSales: number;
+  exemptSales: number;
+  outputVat: number;
+  salesRowCount: number;
+}
+
 // ─── 컴포넌트 ────────────────────────────────────────────────────
 
 const VatPreparePage: React.FC = () => {
@@ -142,6 +159,20 @@ const VatPreparePage: React.FC = () => {
 
   // 체크리스트
   const [checklist, setChecklist] = useState<VatChecklistState>(() => loadChecklist(period));
+
+  // 메인 탭 (매출/매입/신고서 미리보기)
+  const [mainTab, setMainTab] = useState<MainTab>("sales");
+
+  // 매출 KPI (SalesTab 이 계산해서 전달)
+  const [salesAgg, setSalesAgg] = useState<SalesAggregate>({
+    taxableSales: 0,
+    exemptSales: 0,
+    outputVat: 0,
+    salesRowCount: 0,
+  });
+  const handleSalesAggregate = useCallback((agg: SalesAggregate) => {
+    setSalesAgg(agg);
+  }, []);
 
   // period 변경 시 체크리스트 로드
   useEffect(() => { setChecklist(loadChecklist(period)); }, [period]);
@@ -204,8 +235,16 @@ const VatPreparePage: React.FC = () => {
     return Math.round((done / items.length) * 100);
   }, [checklist]);
 
-  // 예상 납부·환급 · 매출세액 데이터가 없으므로 매입세액공제분 만 표시 (환급 관점)
+  // 예상 매입세액 공제 (매입 탭 하단 · 안내용)
   const expectedRefund = summary?.deductibleVat ?? 0;
+
+  // ── Phase 1 매출·매입 통합 계산 ─────────────────────────────
+  //   · 매출세액 (outputVat)          · SalesTab 에서 계산
+  //   · 매입세액 공제 (deductibleVat) · 서버 /api/vat/summary
+  //   · 납부예상 (netPayable) = 매출세액 - 매입세액 공제
+  //     양수 = 납부 · 음수 = 환급
+  const outputVat = salesAgg.outputVat;
+  const netPayable = outputVat - (summary?.deductibleVat ?? 0);
 
   // Preset 전환 핸들러
   const applyPreset = (p: PeriodPreset) => {
@@ -324,44 +363,130 @@ const VatPreparePage: React.FC = () => {
         </div>
       )}
 
-      {/* ── KPI 카드 4개 ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* ── KPI 카드 5개 (Phase 1) ── */}
+      <div
+        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3"
+        title="본 계산은 참고용이며, 실제 신고는 세무사 검토 후 진행하세요."
+      >
         <KpiCard
-          label="총 매입가"
-          value={summary ? `${fmt(summary.totalAmount)}원` : "-"}
-          sub={summary ? `공급사 ${summary.vendorCount}곳` : ""}
-          icon={<Wallet size={16} />}
-          color="slate"
-          loading={loading}
-        />
-        <KpiCard
-          label="이번 신고기간 매입세액"
-          value={summary ? `${fmt(summary.totalVat)}원` : "-"}
-          sub="공급가액의 10% (별도과세)"
-          icon={<Calculator size={16} />}
+          label="과세 매출"
+          value={`${fmt(salesAgg.taxableSales)}원`}
+          sub={salesAgg.salesRowCount > 0 ? `${salesAgg.salesRowCount}건 입력 · 공급가액` : "매출 탭에서 입력"}
+          icon={<Receipt size={16} />}
           color="rose"
-          loading={loading}
+          loading={false}
         />
         <KpiCard
-          label="매입세액공제 대상"
-          value={summary ? `${fmt(summary.deductibleVat)}원` : "-"}
-          sub={summary ? `면세 ${fmt(summary.exemptVat)}원 제외` : ""}
+          label="면세 매출"
+          value={`${fmt(salesAgg.exemptSales)}원`}
+          sub="처방·전문약 조제분"
+          icon={<Landmark size={16} />}
+          color="slate"
+          loading={false}
+        />
+        <KpiCard
+          label="매출세액"
+          value={`${fmt(outputVat)}원`}
+          sub="과세 매출의 10% (10/110)"
           icon={<TrendingUp size={16} />}
+          color="rose"
+          loading={false}
+        />
+        <KpiCard
+          label="매입세액 공제"
+          value={summary ? `${fmt(summary.deductibleVat)}원` : "-"}
+          sub={summary ? `총 매입세액 ${fmt(summary.totalVat)}원 중 공제분` : ""}
+          icon={<PackageCheck size={16} />}
           color="emerald"
           loading={loading}
         />
         <KpiCard
-          label="신고 준비도"
-          value={`${readiness}%`}
-          sub={`체크리스트 ${Object.values(checklist).filter(Boolean).length}/4 완료`}
-          icon={<CheckSquare size={16} />}
-          color="sky"
-          loading={false}
-          bar={readiness}
+          label={netPayable >= 0 ? "납부 예상" : "환급 예상"}
+          value={`${fmt(Math.abs(netPayable))}원`}
+          sub={netPayable >= 0 ? "매출세액 - 매입공제 (양수)" : "매입공제 > 매출세액 (환급)"}
+          icon={<Calculator size={16} />}
+          color={netPayable >= 0 ? "rose" : "emerald"}
+          loading={loading}
         />
       </div>
 
-      {/* ── 중단: 좌 공급사별 매입세액 · 우 매입 명세 ── */}
+      {/* 신고 준비도 (별도 · 5 KPI 카드 정렬 유지 위해 하단 얇은 바) */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex items-center gap-3">
+        <CheckSquare size={14} className="text-sky-500 shrink-0" />
+        <div className="text-[11px] font-bold text-slate-600 shrink-0">신고 준비도</div>
+        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-sky-500 transition-all"
+            style={{ width: `${readiness}%` }}
+          />
+        </div>
+        <div className="text-[11px] font-black text-sky-700 tabular-nums shrink-0">{readiness}%</div>
+        <div className="text-[10px] text-slate-500 shrink-0 hidden sm:block">
+          체크리스트 {Object.values(checklist).filter(Boolean).length}/4 완료
+        </div>
+      </div>
+
+      {/* ── 메인 탭 (매출 / 매입 / 신고서 미리보기) ── */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+        <div className="flex border-b border-slate-200">
+          {([
+            { key: "sales" as const,    label: "매출",             icon: Receipt,    color: "text-rose-600",    activeBar: "bg-rose-500" },
+            { key: "purchase" as const, label: "매입",             icon: PackageCheck, color: "text-emerald-600", activeBar: "bg-emerald-500" },
+            { key: "preview" as const,  label: "신고서 미리보기",   icon: FileCheck2, color: "text-sky-600",     activeBar: "bg-sky-500" },
+          ]).map(t => {
+            const active = mainTab === t.key;
+            const Icon = t.icon;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setMainTab(t.key)}
+                className={`relative flex items-center gap-2 px-5 py-3 text-[13px] font-black transition cursor-pointer ${
+                  active ? t.color : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <Icon size={15} strokeWidth={active ? 2.4 : 2} />
+                <span>{t.label}</span>
+                {active && (
+                  <span className={`absolute left-0 right-0 -bottom-px h-[3px] ${t.activeBar}`} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── 매출 탭 ── */}
+      {mainTab === "sales" && summary?.range && (
+        <SalesTab
+          fromDate={summary.range.from}
+          toDate={summary.range.to}
+          onAggregateChange={handleSalesAggregate}
+        />
+      )}
+      {mainTab === "sales" && !summary?.range && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
+          <Loader2 size={20} className="animate-spin inline text-slate-400" />
+          <div className="text-[11px] text-slate-400 mt-2">기간 정보를 불러오는 중…</div>
+        </div>
+      )}
+
+      {/* ── 신고서 미리보기 탭 (Phase 3 placeholder) ── */}
+      {mainTab === "preview" && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-10 text-center">
+          <FileCheck2 size={32} className="text-sky-400 mx-auto" />
+          <div className="mt-3 text-[13px] font-black text-slate-700">신고서 미리보기 · Phase 3 예정</div>
+          <div className="mt-1 text-[11px] text-slate-500 leading-relaxed max-w-lg mx-auto">
+            홈택스 일반과세자 신고서 서식 · 매입처별 세금계산서 합계표 · 신용카드 매출전표 수령명세서 등
+            <br />
+            자동 생성 · PDF 미리보기 기능을 Phase 3 에서 추가 예정입니다.
+          </div>
+        </div>
+      )}
+
+      {/* ── 매입 탭 (기존 좌 공급사별 리스트 · 우 매입 명세) ── */}
+      {mainTab === "purchase" && (
+      <>
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 flex-1 min-h-0">
 
         {/* 좌: 공급사별 매입세액 리스트 */}
@@ -533,57 +658,83 @@ const VatPreparePage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── 하단: 준비 체크리스트 · 예상 환급 안내 ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <CheckSquare size={14} className="text-rose-500" />
-            <div className="text-[13px] font-black text-slate-800">신고 준비 체크리스트</div>
-            <div className="text-[10px] text-slate-400 ml-auto">자동 저장 · localStorage</div>
-          </div>
-          <div className="space-y-2">
-            <ChecklistItem
-              label="모든 공급사 VAT 여부 확인"
-              hint="공급사관리에서 카테고리를 '면세' 또는 일반으로 설정"
-              checked={checklist.vatVerified}
-              onChange={v => setChecklist(prev => ({ ...prev, vatVerified: v }))}
-            />
-            <ChecklistItem
-              label="거래명세서·세금계산서 확보"
-              hint="홈택스 매입처별 세금계산서 합계표 · 신용카드 매출전표 수령명세서"
-              checked={checklist.invoicesCollected}
-              onChange={v => setChecklist(prev => ({ ...prev, invoicesCollected: v }))}
-            />
-            <ChecklistItem
-              label="매입세액 계산 완료"
-              hint="공제 대상 매입세액 확정 · 면세사업분 안분 계산 (약국 조제료 관련 매입)"
-              checked={checklist.vatCalculated}
-              onChange={v => setChecklist(prev => ({ ...prev, vatCalculated: v }))}
-            />
-            <ChecklistItem
-              label="홈택스 신고 서식 준비"
-              hint="일반과세자 신고서 · 매입처별 세금계산서 합계표 등"
-              checked={checklist.filingReady}
-              onChange={v => setChecklist(prev => ({ ...prev, filingReady: v }))}
-            />
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-rose-50 to-white rounded-xl border border-rose-200 shadow-sm p-4">
+      {/* 예상 매입세액 공제 (매입 탭 하단 · 안내용) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl border border-emerald-200 shadow-sm p-4">
           <div className="flex items-center gap-2 mb-2">
-            <TrendingUp size={14} className="text-rose-600" />
-            <div className="text-[13px] font-black text-rose-800">예상 매입세액 공제</div>
+            <PackageCheck size={14} className="text-emerald-600" />
+            <div className="text-[13px] font-black text-emerald-800">예상 매입세액 공제</div>
           </div>
-          <div className="text-[22px] font-black text-rose-700 tabular-nums leading-none mb-2">
+          <div className="text-[22px] font-black text-emerald-700 tabular-nums leading-none mb-2">
             {fmt(expectedRefund)}<span className="text-[13px] font-bold ml-1">원</span>
           </div>
           <div className="text-[10px] text-slate-500 leading-relaxed">
             매출세액에서 위 금액을 공제받을 수 있습니다. 매출세액이 매입세액보다 적으면 환급 · 많으면 차액만 납부.
           </div>
-          <div className="mt-3 pt-3 border-t border-rose-100 text-[10px] text-slate-500 leading-relaxed">
+          <div className="mt-3 pt-3 border-t border-emerald-100 text-[10px] text-slate-500 leading-relaxed">
             <b className="text-slate-700">약국 특이사항</b><br />
             처방전 조제료·전문의약품 대부분은 <b>면세</b>이므로, 관련 매입세액은 <b>안분 후 불공제</b> 처리. 일반 매약(OTC)은 과세이므로 매입세액 전액 공제 가능.
           </div>
+        </div>
+
+        <div className={`bg-gradient-to-br ${netPayable >= 0 ? "from-rose-50" : "from-emerald-50"} to-white rounded-xl border ${netPayable >= 0 ? "border-rose-200" : "border-emerald-200"} shadow-sm p-4`}>
+          <div className="flex items-center gap-2 mb-2">
+            <Calculator size={14} className={netPayable >= 0 ? "text-rose-600" : "text-emerald-600"} />
+            <div className={`text-[13px] font-black ${netPayable >= 0 ? "text-rose-800" : "text-emerald-800"}`}>
+              {netPayable >= 0 ? "예상 납부세액" : "예상 환급세액"}
+            </div>
+          </div>
+          <div className={`text-[22px] font-black ${netPayable >= 0 ? "text-rose-700" : "text-emerald-700"} tabular-nums leading-none mb-2`}>
+            {fmt(Math.abs(netPayable))}<span className="text-[13px] font-bold ml-1">원</span>
+          </div>
+          <div className="text-[10px] text-slate-500 leading-relaxed">
+            매출세액 <b className="text-slate-700">{fmt(outputVat)}원</b>
+            {" − "}
+            매입공제 <b className="text-slate-700">{fmt(expectedRefund)}원</b>
+            {" = "}
+            <b className={netPayable >= 0 ? "text-rose-700" : "text-emerald-700"}>{fmt(netPayable)}원</b>
+          </div>
+          <div className="mt-3 pt-3 border-t border-slate-100 text-[10px] text-slate-400 leading-relaxed">
+            <AlertTriangle size={10} className="inline mb-0.5 mr-0.5" />
+            본 계산은 참고용 · 실제 신고는 세무사 검토 필수
+          </div>
+        </div>
+      </div>
+      </>
+      )}
+
+      {/* ── 공통 하단: 준비 체크리스트 (모든 탭) ── */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <CheckSquare size={14} className="text-sky-500" />
+          <div className="text-[13px] font-black text-slate-800">신고 준비 체크리스트</div>
+          <div className="text-[10px] text-slate-400 ml-auto">자동 저장 · localStorage</div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <ChecklistItem
+            label="모든 공급사 VAT 여부 확인"
+            hint="공급사관리에서 카테고리를 '면세' 또는 일반으로 설정"
+            checked={checklist.vatVerified}
+            onChange={v => setChecklist(prev => ({ ...prev, vatVerified: v }))}
+          />
+          <ChecklistItem
+            label="거래명세서·세금계산서 확보"
+            hint="홈택스 매입처별 세금계산서 합계표 · 신용카드 매출전표 수령명세서"
+            checked={checklist.invoicesCollected}
+            onChange={v => setChecklist(prev => ({ ...prev, invoicesCollected: v }))}
+          />
+          <ChecklistItem
+            label="매입세액 계산 완료"
+            hint="공제 대상 매입세액 확정 · 면세사업분 안분 계산 (약국 조제료 관련 매입)"
+            checked={checklist.vatCalculated}
+            onChange={v => setChecklist(prev => ({ ...prev, vatCalculated: v }))}
+          />
+          <ChecklistItem
+            label="홈택스 신고 서식 준비"
+            hint="일반과세자 신고서 · 매입처별 세금계산서 합계표 등"
+            checked={checklist.filingReady}
+            onChange={v => setChecklist(prev => ({ ...prev, filingReady: v }))}
+          />
         </div>
       </div>
     </div>
