@@ -181,6 +181,16 @@ interface ContractForm {
 
   // 계약체결일 (기본 = 시작일)
   contractSignDate: string;
+
+  // T6 · 카테고리별 이해·동의 (개별 조항 서명 대신 카테고리 하나씩)
+  // - wage: 임금 조항 (단서 5개 전체)
+  // - workTime: 근로시간·휴게 조항 (소정근로·휴게 변경)
+  // - etc: 기타사항 5개 (5번 퇴직 시 연차 공제 포함)
+  clauseAcks: {
+    wage: boolean;
+    workTime: boolean;
+    etc: boolean;
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -536,6 +546,7 @@ const emptyForm = (): ContractForm => ({
   },
   paymentDayText: "당월 01일부터 당월 말일 까지 근로한 부분에 대하여 당월 말일에 '을' 본인 명의의 통장으로 지급한다.",
   contractSignDate: todayIso(),
+  clauseAcks: { wage: false, workTime: false, etc: false },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1456,47 +1467,23 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
                 </div>
               )}
 
-              {/* 임금 단서 조항 5개 · 3·4번 옆 서명 */}
+              {/* 임금 단서 조항 5개 · T6 · 개별 서명 → 카테고리별 이해·동의 (아래 통합 체크박스) */}
               <ol className="mt-2 space-y-1 text-[11px] text-slate-700 leading-snug list-decimal list-inside pl-1">
-                {WAGE_CLAUSES.map((clause, i) => {
-                  const isThird = i === 2;
-                  const isFourth = i === 3;
-                  return (
-                    <li key={i}>
-                      <span className="align-middle">{clause}</span>
-                      {isThird && (
-                        <span className="ml-1">
-                          <InlineSignSpot
-                            signKey="wageClause3"
-                            signUrl={signUrls.wageClause3}
-                            onOpen={onOpenSign}
-                            onClear={onClearSign}
-                            width={110}
-                            height={28}
-                            placeholder="(연차 포괄 서명)"
-                          />
-                        </span>
-                      )}
-                      {isFourth && (
-                        <span className="ml-1">
-                          <InlineSignSpot
-                            signKey="wageClause4"
-                            signUrl={signUrls.wageClause4}
-                            onOpen={onOpenSign}
-                            onClear={onClearSign}
-                            width={110}
-                            height={28}
-                            placeholder="(공휴일 포괄 서명)"
-                          />
-                        </span>
-                      )}
-                    </li>
-                  );
-                })}
+                {WAGE_CLAUSES.map((clause, i) => (
+                  <li key={i}><span className="align-middle">{clause}</span></li>
+                ))}
                 <li className="text-slate-600 list-none pl-0 mt-1 text-[10.5px]">
                   <b>별도:</b> {WAGE_CLAUSE_EXTRA}
                 </li>
               </ol>
+              {/* T6 · 임금 조항 카테고리별 이해·동의 체크박스 (2026-08-04) */}
+              <div className="mt-2 rounded-sm border border-indigo-300 bg-indigo-50/40 px-2 py-1.5 flex items-center gap-2">
+                <SpanBox checked={form.clauseAcks.wage} />
+                <span className="text-[11.5px] font-semibold text-slate-800">
+                  위의 임금 조항 전체 내용을 이해하고 동의함
+                </span>
+                <span className="ml-auto text-[11px] font-bold text-slate-700">{form.employeeName || "(근로자)"}</span>
+              </div>
 
               {/* 임금 지급일 */}
               <div className="mt-2 rounded-sm bg-amber-50/60 border border-amber-300 px-2 py-1 text-[11.5px]">
@@ -1543,42 +1530,27 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
                 </tbody>
               </table>
 
-              {/* 소정근로시간 안내 + 서명 */}
+              {/* 소정근로시간 안내 · T6 · 개별 서명 제거 (아래 카테고리 통합 체크박스로) */}
               <div className="mt-2 rounded-sm border border-amber-300 bg-amber-50/50 px-2 py-1.5">
                 <div className="text-[11px] text-slate-800 leading-snug">
                   ※ 소정근로시간은 휴게시간을 제외한 일단위 법정근로시간(8시간) 내에서 당사자가 정하는 시간이며, '을'은 '갑'의 사정에 따라 필요 시 상기 근로시간 이외에 추가로 연장, 야간, 휴일근로를 수행할 수 있으며 자유로운 의사로 동의한다.
                 </div>
-                <div className="mt-1 flex items-center justify-end gap-2">
-                  <span className="text-[11px] font-bold text-slate-800">{form.employeeName || "(근로자)"}</span>
-                  <InlineSignSpot
-                    signKey="specialWork"
-                    signUrl={signUrls.specialWork}
-                    onOpen={onOpenSign}
-                    onClear={onClearSign}
-                    width={130}
-                    height={30}
-                    placeholder="(특별근로 서명)"
-                  />
-                </div>
               </div>
 
-              {/* 휴게시간 변경 동의 + 서명 */}
+              {/* 휴게시간 변경 · T6 · 개별 서명 제거 (아래 카테고리 통합 체크박스로) */}
               <div className="mt-2 rounded-sm border border-amber-300 bg-amber-50/50 px-2 py-1.5">
                 <div className="text-[11px] text-slate-800 leading-snug">
                   ※ 업무형편상 부득이한 경우 상기 휴게 시간을 변경할 수 있고, 제대로 사용하지 못한 휴게시간은 다른 시간 내에서 보충 사용하는 것에 동의한다.
                 </div>
-                <div className="mt-1 flex items-center justify-end gap-2">
-                  <span className="text-[11px] font-bold text-slate-800">{form.employeeName || "(근로자)"}</span>
-                  <InlineSignSpot
-                    signKey="breakChange"
-                    signUrl={signUrls.breakChange}
-                    onOpen={onOpenSign}
-                    onClear={onClearSign}
-                    width={130}
-                    height={30}
-                    placeholder="(휴게변경 서명)"
-                  />
-                </div>
+              </div>
+
+              {/* T6 · 근로시간 조항 카테고리별 이해·동의 체크박스 (2026-08-04) */}
+              <div className="mt-2 rounded-sm border border-indigo-300 bg-indigo-50/40 px-2 py-1.5 flex items-center gap-2">
+                <SpanBox checked={form.clauseAcks.workTime} />
+                <span className="text-[11.5px] font-semibold text-slate-800">
+                  위의 근로시간·휴게 조항 전체 내용을 이해하고 동의함
+                </span>
+                <span className="ml-auto text-[11px] font-bold text-slate-700">{form.employeeName || "(근로자)"}</span>
               </div>
             </td>
           </tr>
@@ -1644,28 +1616,18 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
             </td>
             <td className="border-b border-slate-500 px-3 py-2 align-top">
               <ol className="list-decimal list-inside space-y-0.5 text-[11.5px] text-slate-800 pl-1">
-                {ETC_ITEMS.map((r, i) => {
-                  const isFive = i === 4;
-                  return (
-                    <li key={i} className="leading-snug">
-                      <span className="align-middle">{r}</span>
-                      {isFive && (
-                        <span className="ml-1">
-                          <InlineSignSpot
-                            signKey="etc5"
-                            signUrl={signUrls.etc5}
-                            onOpen={onOpenSign}
-                            onClear={onClearSign}
-                            width={110}
-                            height={28}
-                            placeholder="(연차 공제 서명)"
-                          />
-                        </span>
-                      )}
-                    </li>
-                  );
-                })}
+                {ETC_ITEMS.map((r, i) => (
+                  <li key={i} className="leading-snug"><span className="align-middle">{r}</span></li>
+                ))}
               </ol>
+              {/* T6 · 기타사항 카테고리별 이해·동의 체크박스 (2026-08-04 · 개별 서명 대신) */}
+              <div className="mt-2 rounded-sm border border-indigo-300 bg-indigo-50/40 px-2 py-1.5 flex items-center gap-2">
+                <SpanBox checked={form.clauseAcks.etc} />
+                <span className="text-[11.5px] font-semibold text-slate-800">
+                  위의 기타사항 전체 내용을 이해하고 동의함
+                </span>
+                <span className="ml-auto text-[11px] font-bold text-slate-700">{form.employeeName || "(근로자)"}</span>
+              </div>
               {form.additionalContent.trim() && (
                 <div className="mt-2 rounded-sm border border-slate-300 bg-slate-50/70 px-2 py-1">
                   <div className="text-[10.5px] font-bold text-slate-600 mb-0.5">추가 특약 사항</div>
@@ -2998,6 +2960,32 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               placeholder="예: 수습기간 3개월 · 명절 상여 별도"
               className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition resize-y"
             />
+          </div>
+
+          {/* T6 · 카테고리별 이해·동의 체크 (개별 서명 대신 · 2026-08-04) */}
+          <div className="rounded-lg border border-indigo-200 bg-indigo-50/30 p-2 flex flex-col gap-1.5">
+            <div className="text-[11px] font-black text-indigo-800 flex items-center gap-1">
+              카테고리별 이해·동의
+              <span className="text-[9.5px] font-semibold text-indigo-500">(계약서 미리보기 반영)</span>
+            </div>
+            <label className="inline-flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" checked={form.clauseAcks.wage}
+                onChange={(e) => upd("clauseAcks", { ...form.clauseAcks, wage: e.target.checked })}
+                className="w-4 h-4 accent-indigo-600" />
+              <span className="text-[11.5px] font-semibold text-slate-700">임금 조항 이해·동의 (단서 5개 전체)</span>
+            </label>
+            <label className="inline-flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" checked={form.clauseAcks.workTime}
+                onChange={(e) => upd("clauseAcks", { ...form.clauseAcks, workTime: e.target.checked })}
+                className="w-4 h-4 accent-indigo-600" />
+              <span className="text-[11.5px] font-semibold text-slate-700">근로시간·휴게 조항 이해·동의</span>
+            </label>
+            <label className="inline-flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" checked={form.clauseAcks.etc}
+                onChange={(e) => upd("clauseAcks", { ...form.clauseAcks, etc: e.target.checked })}
+                className="w-4 h-4 accent-indigo-600" />
+              <span className="text-[11.5px] font-semibold text-slate-700">기타사항 이해·동의 (5개 항목 전체)</span>
+            </label>
           </div>
 
           {/* CCTV/개인정보 */}
