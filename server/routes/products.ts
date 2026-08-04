@@ -4,6 +4,7 @@ import XLSX from "xlsx";
 import { supabase } from "../../src/supabase/client";
 import { getProductMap, resetProductCache } from "../productCache";
 import { COL_KEYS, xlsxToRows } from "../xlsx";
+import { sanitizeOrValue } from "../utils/sanitize";
 
 const router = Router();
 
@@ -91,9 +92,12 @@ router.get("/api/inventory-latest", async (_req, res) => {
 });
 
 router.get("/api/products-search", async (req, res) => {
-  const q        = String(req.query.q        ?? "").trim();
+  const rawQ     = String(req.query.q        ?? "").trim();
   const supplier = String(req.query.supplier ?? "").trim();
   const includeHidden = req.query.include_hidden === "1" || req.query.include_hidden === "true";
+  if (rawQ.length < 1) return res.json([]);
+  // PostgREST or() 특수문자 방어 (쉼표·괄호 등)
+  const q = sanitizeOrValue(rawQ);
   if (q.length < 1) return res.json([]);
   try {
     // 상품명 · 검색키워드 · 상품코드 (원본·앞자리0제거·padStart8) 모두 검색

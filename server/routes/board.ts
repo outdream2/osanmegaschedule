@@ -12,6 +12,7 @@ import webpush from "web-push";
 import fs from "fs";
 import path from "path";
 import { supabase } from "../../src/supabase/client";
+import { sanitizeOrValue } from "../utils/sanitize";
 
 const router = Router();
 
@@ -154,7 +155,10 @@ router.get("/api/board/posts", async (req, res) => {
   if (type) q = q.eq("post_type", type);
   if (status) q = q.eq("status", status);
   if (category) q = q.eq("category", category);
-  if (search) q = q.or(`title.ilike.%${search}%,body.ilike.%${search}%`);
+  if (search) {
+    const safe = sanitizeOrValue(search);
+    if (safe) q = q.or(`title.ilike.%${safe}%,body.ilike.%${safe}%`);
+  }
 
   const { data, error } = await q;
   if (error) return res.status(500).json({ error: error.message });

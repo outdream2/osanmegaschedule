@@ -82,6 +82,44 @@ export function isStaffEmp(emp: Employee): boolean {
   return !isPharmEmp(emp) && !isOtherEmp(emp);
 }
 
+// ─── LocalStorage 안전 저장 · 만료 정리 ────────────────────────────────────
+// tl_* 키가 날짜별로 무한 누적 · 5MB 초과 시 QuotaExceededError 로 화면 멈춤.
+// (1) 30일 초과된 tl_*_YYYY-MM-DD 키 자동 정리 · (2) setItem 은 try-catch + 실패 시 정리 후 1회 재시도.
+const TL_KEY_PREFIX = "tl_";
+const TL_KEY_DATE_RE = /_(\d{4}-\d{2}-\d{2})$/;
+const TL_STALE_DAYS = 30;
+
+function cleanupStaleTimelineKeys(now: Date = new Date()): number {
+  let removed = 0;
+  try {
+    const cutoff = now.getTime() - TL_STALE_DAYS * 24 * 60 * 60 * 1000;
+    const staleKeys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !key.startsWith(TL_KEY_PREFIX)) continue;
+      const m = key.match(TL_KEY_DATE_RE);
+      if (!m) continue;
+      const ts = Date.parse(m[1] + "T00:00:00");
+      if (Number.isFinite(ts) && ts < cutoff) staleKeys.push(key);
+    }
+    for (const k of staleKeys) { try { localStorage.removeItem(k); removed++; } catch { /* noop */ } }
+  } catch { /* noop */ }
+  return removed;
+}
+
+function safeSetTimelineItem(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e: any) {
+    // QuotaExceededError · 만료 키 정리 후 1회 재시도
+    const isQuota = e && (e.name === "QuotaExceededError" || e.code === 22 || e.code === 1014);
+    if (!isQuota) return;
+    const removed = cleanupStaleTimelineKeys();
+    if (removed === 0) return;
+    try { localStorage.setItem(key, value); } catch { /* 여전히 실패 시 조용히 포기 */ }
+  }
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 type WorkerEntry = {
   emp: Employee;
@@ -1410,6 +1448,9 @@ export const DayTimelineModal: React.FC<Props> = ({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  // 모달 첫 마운트 시 30일 초과된 tl_* localStorage 키 정리 (Quota 방어)
+  useEffect(() => { cleanupStaleTimelineKeys(); }, []);
+
   // ── Slot state ────────────────────────────────────────────────────────────
   const [lunchSlots, setLunchSlots] = useState<SlotMap>(() => {
     try { return JSON.parse(localStorage.getItem(`tl_lunch_slots_${date}`) || "{}"); } catch { return {}; }
@@ -1472,39 +1513,39 @@ export const DayTimelineModal: React.FC<Props> = ({
   ) => {
     if (data.zone_slots && Object.keys(data.zone_slots).length > 0) {
       setZoneSlots(data.zone_slots);
-      localStorage.setItem(`tl_zone_slots_${targetDate}`, JSON.stringify(data.zone_slots));
+      safeSetTimelineItem(`tl_zone_slots_${targetDate}`, JSON.stringify(data.zone_slots));
     }
     if (data.lunch_slots && Object.keys(data.lunch_slots).length > 0) {
       setLunchSlots(data.lunch_slots);
-      localStorage.setItem(`tl_lunch_slots_${targetDate}`, JSON.stringify(data.lunch_slots));
+      safeSetTimelineItem(`tl_lunch_slots_${targetDate}`, JSON.stringify(data.lunch_slots));
     }
     if (data.rest_slots && Object.keys(data.rest_slots).length > 0) {
       setRestSlots(data.rest_slots);
-      localStorage.setItem(`tl_rest_slots_${targetDate}`, JSON.stringify(data.rest_slots));
+      safeSetTimelineItem(`tl_rest_slots_${targetDate}`, JSON.stringify(data.rest_slots));
     }
     if (data.lunch_offset != null) {
       setLunchOffset(data.lunch_offset);
-      localStorage.setItem(`tl_lunch_offset_${targetDate}`, String(data.lunch_offset));
+      safeSetTimelineItem(`tl_lunch_offset_${targetDate}`, String(data.lunch_offset));
     }
     if (data.rest_offset != null) {
       setRestOffset(data.rest_offset);
-      localStorage.setItem(`tl_rest_offset_${targetDate}`, String(data.rest_offset));
+      safeSetTimelineItem(`tl_rest_offset_${targetDate}`, String(data.rest_offset));
     }
     if (data.lunch_interval === 30 || data.lunch_interval === 60 || data.lunch_interval === 90) {
       setLunchInterval(data.lunch_interval as BreakInterval);
-      localStorage.setItem(`tl_lunch_interval_${targetDate}`, String(data.lunch_interval));
+      safeSetTimelineItem(`tl_lunch_interval_${targetDate}`, String(data.lunch_interval));
     }
     if (data.rest_interval === 30 || data.rest_interval === 60 || data.rest_interval === 90) {
       setRestInterval(data.rest_interval as BreakInterval);
-      localStorage.setItem(`tl_rest_interval_${targetDate}`, String(data.rest_interval));
+      safeSetTimelineItem(`tl_rest_interval_${targetDate}`, String(data.rest_interval));
     }
     if (data.lunch_count && [1,2,3,4,5,6,7,8,9,10].includes(data.lunch_count)) {
       setLunchCount(data.lunch_count as BreakCount);
-      localStorage.setItem(`tl_lunch_count_${targetDate}`, String(data.lunch_count));
+      safeSetTimelineItem(`tl_lunch_count_${targetDate}`, String(data.lunch_count));
     }
     if (data.rest_count && [1,2,3,4,5,6,7,8,9,10].includes(data.rest_count)) {
       setRestCount(data.rest_count as BreakCount);
-      localStorage.setItem(`tl_rest_count_${targetDate}`, String(data.rest_count));
+      safeSetTimelineItem(`tl_rest_count_${targetDate}`, String(data.rest_count));
     }
   }, []);
 
@@ -1730,7 +1771,7 @@ export const DayTimelineModal: React.FC<Props> = ({
     workers.forEach(w => { localRangeMap[w.emp.id] = parseRange(w.wh); });
     const suggested = buildAutoSuggest(workers, new Map(), localRangeMap);
     setZoneSlots(suggested);
-    localStorage.setItem(`tl_zone_slots_${date}`, JSON.stringify(suggested));
+    safeSetTimelineItem(`tl_zone_slots_${date}`, JSON.stringify(suggested));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAutoSuggested, workers]);
 
@@ -1886,7 +1927,7 @@ export const DayTimelineModal: React.FC<Props> = ({
     }
     setLunchSlots(prev => {
       const next = { ...prev, [slot]: [...(prev[slot] ?? []).filter(id => id !== empId), empId] };
-      localStorage.setItem(`tl_lunch_slots_${date}`, JSON.stringify(next));
+      safeSetTimelineItem(`tl_lunch_slots_${date}`, JSON.stringify(next));
       scheduleAutoSave(zoneSlots, next, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
       return next;
     });
@@ -1895,7 +1936,7 @@ export const DayTimelineModal: React.FC<Props> = ({
   const removeFromLunchSlot = useCallback((slot: string, empId: number) => {
     setLunchSlots(prev => {
       const next = { ...prev, [slot]: (prev[slot] ?? []).filter(id => id !== empId) };
-      localStorage.setItem(`tl_lunch_slots_${date}`, JSON.stringify(next));
+      safeSetTimelineItem(`tl_lunch_slots_${date}`, JSON.stringify(next));
       scheduleAutoSave(zoneSlots, next, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
       return next;
     });
@@ -1939,7 +1980,7 @@ export const DayTimelineModal: React.FC<Props> = ({
     }
     setRestSlots(prev => {
       const next = { ...prev, [slot]: [...(prev[slot] ?? []).filter(id => id !== empId), empId] };
-      localStorage.setItem(`tl_rest_slots_${date}`, JSON.stringify(next));
+      safeSetTimelineItem(`tl_rest_slots_${date}`, JSON.stringify(next));
       scheduleAutoSave(zoneSlots, lunchSlots, next, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
       return next;
     });
@@ -1948,7 +1989,7 @@ export const DayTimelineModal: React.FC<Props> = ({
   const removeFromRestSlot = useCallback((slot: string, empId: number) => {
     setRestSlots(prev => {
       const next = { ...prev, [slot]: (prev[slot] ?? []).filter(id => id !== empId) };
-      localStorage.setItem(`tl_rest_slots_${date}`, JSON.stringify(next));
+      safeSetTimelineItem(`tl_rest_slots_${date}`, JSON.stringify(next));
       scheduleAutoSave(zoneSlots, lunchSlots, next, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
       return next;
     });
@@ -1975,7 +2016,7 @@ export const DayTimelineModal: React.FC<Props> = ({
       const z = { ...(base[zone] ?? {}) };
       z[slot] = [...(z[slot] ?? []).filter(id => id !== empId), empId];
       const next = { ...base, [zone]: z };
-      localStorage.setItem(`tl_zone_slots_${date}`, JSON.stringify(next));
+      safeSetTimelineItem(`tl_zone_slots_${date}`, JSON.stringify(next));
       scheduleAutoSave(next, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
       return next;
     });
@@ -1986,7 +2027,7 @@ export const DayTimelineModal: React.FC<Props> = ({
       const z = { ...(prev[zone] ?? {}) };
       z[slot] = (z[slot] ?? []).filter(id => id !== empId);
       const next = { ...prev, [zone]: z };
-      localStorage.setItem(`tl_zone_slots_${date}`, JSON.stringify(next));
+      safeSetTimelineItem(`tl_zone_slots_${date}`, JSON.stringify(next));
       scheduleAutoSave(next, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
       return next;
     });
@@ -2002,15 +2043,15 @@ export const DayTimelineModal: React.FC<Props> = ({
     for (let i = 0; i < 4; i++) {
       const d = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`;
       dayDates.push(d);
-      localStorage.setItem(`tl_zone_slots_${d}`,  JSON.stringify(zoneSlots));
-      localStorage.setItem(`tl_lunch_slots_${d}`, JSON.stringify(lunchSlots));
-      localStorage.setItem(`tl_rest_slots_${d}`,  JSON.stringify(restSlots));
-      localStorage.setItem(`tl_lunch_offset_${d}`, String(lunchOffset));
-      localStorage.setItem(`tl_rest_offset_${d}`,  String(restOffset));
-      localStorage.setItem(`tl_lunch_interval_${d}`, String(lunchInterval));
-      localStorage.setItem(`tl_rest_interval_${d}`, String(restInterval));
-      localStorage.setItem(`tl_lunch_count_${d}`, String(lunchCount));
-      localStorage.setItem(`tl_rest_count_${d}`, String(restCount));
+      safeSetTimelineItem(`tl_zone_slots_${d}`,  JSON.stringify(zoneSlots));
+      safeSetTimelineItem(`tl_lunch_slots_${d}`, JSON.stringify(lunchSlots));
+      safeSetTimelineItem(`tl_rest_slots_${d}`,  JSON.stringify(restSlots));
+      safeSetTimelineItem(`tl_lunch_offset_${d}`, String(lunchOffset));
+      safeSetTimelineItem(`tl_rest_offset_${d}`,  String(restOffset));
+      safeSetTimelineItem(`tl_lunch_interval_${d}`, String(lunchInterval));
+      safeSetTimelineItem(`tl_rest_interval_${d}`, String(restInterval));
+      safeSetTimelineItem(`tl_lunch_count_${d}`, String(lunchCount));
+      safeSetTimelineItem(`tl_rest_count_${d}`, String(restCount));
       cur.setDate(cur.getDate() + 7);
     }
     try {
@@ -2085,7 +2126,7 @@ export const DayTimelineModal: React.FC<Props> = ({
   const handleLunchShiftOffset = useCallback((delta: number) => {
     setLunchOffset(prev => {
       const next = Math.max(-60, Math.min(60, prev + delta));
-      localStorage.setItem(`tl_lunch_offset_${date}`, String(next));
+      safeSetTimelineItem(`tl_lunch_offset_${date}`, String(next));
       scheduleAutoSave(zoneSlots, lunchSlots, restSlots, next, restOffset, lunchInterval, restInterval, lunchCount, restCount);
       return next;
     });
@@ -2094,7 +2135,7 @@ export const DayTimelineModal: React.FC<Props> = ({
   const handleRestShiftOffset = useCallback((delta: number) => {
     setRestOffset(prev => {
       const next = Math.max(-60, Math.min(60, prev + delta));
-      localStorage.setItem(`tl_rest_offset_${date}`, String(next));
+      safeSetTimelineItem(`tl_rest_offset_${date}`, String(next));
       scheduleAutoSave(zoneSlots, lunchSlots, restSlots, lunchOffset, next, lunchInterval, restInterval, lunchCount, restCount);
       return next;
     });
@@ -2102,23 +2143,23 @@ export const DayTimelineModal: React.FC<Props> = ({
 
   const handleSetLunchInterval = useCallback((v: BreakInterval) => {
     setLunchInterval(v);
-    localStorage.setItem(`tl_lunch_interval_${date}`, String(v));
+    safeSetTimelineItem(`tl_lunch_interval_${date}`, String(v));
     scheduleAutoSave(zoneSlots, lunchSlots, restSlots, lunchOffset, restOffset, v, restInterval, lunchCount, restCount);
   }, [date, zoneSlots, lunchSlots, restSlots, lunchOffset, restOffset, restInterval, lunchCount, restCount, scheduleAutoSave]);
   const handleSetRestInterval = useCallback((v: BreakInterval) => {
     setRestInterval(v);
-    localStorage.setItem(`tl_rest_interval_${date}`, String(v));
+    safeSetTimelineItem(`tl_rest_interval_${date}`, String(v));
     scheduleAutoSave(zoneSlots, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, v, lunchCount, restCount);
   }, [date, zoneSlots, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, lunchCount, restCount, scheduleAutoSave]);
 
   const handleSetLunchCount = useCallback((v: BreakCount) => {
     setLunchCount(v);
-    localStorage.setItem(`tl_lunch_count_${date}`, String(v));
+    safeSetTimelineItem(`tl_lunch_count_${date}`, String(v));
     scheduleAutoSave(zoneSlots, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, v, restCount);
   }, [date, zoneSlots, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, restCount, scheduleAutoSave]);
   const handleSetRestCount = useCallback((v: BreakCount) => {
     setRestCount(v);
-    localStorage.setItem(`tl_rest_count_${date}`, String(v));
+    safeSetTimelineItem(`tl_rest_count_${date}`, String(v));
     scheduleAutoSave(zoneSlots, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, v);
   }, [date, zoneSlots, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, scheduleAutoSave]);
 
@@ -2505,7 +2546,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                   const idx = Math.max(0, Math.min(toIndex, arr.length));
                   arr.splice(idx, 0, empId);
                   const next = { ...prev, [slot]: arr };
-                  localStorage.setItem(`tl_lunch_slots_${date}`, JSON.stringify(next));
+                  safeSetTimelineItem(`tl_lunch_slots_${date}`, JSON.stringify(next));
                   scheduleAutoSave(zoneSlots, next, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
                   return next;
                 });
@@ -2525,7 +2566,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                   const idx = Math.max(0, Math.min(toIndex, arr.length));
                   arr.splice(idx, 0, empId);
                   const next = { ...prev, [slot]: arr };
-                  localStorage.setItem(`tl_rest_slots_${date}`, JSON.stringify(next));
+                  safeSetTimelineItem(`tl_rest_slots_${date}`, JSON.stringify(next));
                   scheduleAutoSave(zoneSlots, lunchSlots, next, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
                   return next;
                 });
@@ -2649,7 +2690,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                     }
                   }
                   nextZone = next;
-                  localStorage.setItem(`tl_zone_slots_${date}`, JSON.stringify(next));
+                  safeSetTimelineItem(`tl_zone_slots_${date}`, JSON.stringify(next));
                   return next;
                 });
 
@@ -2663,7 +2704,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                     if (!cleaned[slot]) cleaned[slot] = [];
                     if (!cleaned[slot].includes(empId)) cleaned[slot].push(empId);
                   }
-                  localStorage.setItem(`tl_lunch_slots_${date}`, JSON.stringify(cleaned));
+                  safeSetTimelineItem(`tl_lunch_slots_${date}`, JSON.stringify(cleaned));
                   scheduleAutoSave(nextZone, cleaned, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
                   return cleaned;
                 });
