@@ -66,7 +66,7 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
       className={`
         relative
         border-r border-slate-100 bg-white sticky left-0 z-50
-        group-hover:bg-slate-50/70
+        group-hover:bg-slate-50
         shadow-[1px_0_0_0_#e2e8f0]
         min-w-[110px] w-[110px]
         sm:min-w-[140px] sm:w-[140px]
@@ -74,7 +74,7 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
         p-0 transition-colors duration-150
         ${isDragging ? "opacity-40" : ""}
       `}
-      style={{ willChange: "transform" }}
+      style={{ willChange: "transform", backgroundColor: "#ffffff" }}
     >
       <div className="flex items-stretch h-full min-h-[54px] sm:min-h-[58px]">
 
