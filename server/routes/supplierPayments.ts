@@ -881,22 +881,58 @@ router.get("/api/supplier-purchase-detail", async (req, res) => {
     //   vat_amount·supply_amount 컬럼 없을 수 있음 · 실패 시 재시도
     let data: any[] | null = null;
     let sourceUsed: "purchase_details" | "ocr_confirmed_items" = "purchase_details";
-    // 2026-08-03 fix (이슈 B 관련) · supplier_name NULL 인 매입행 회수 · supplier_code 로도 조회
-    //   vendors.supplier_code 있으면 · purchase_details.supplier_code 매칭 병행
-    //   vendors 테이블에 supplier_code 컬럼 없으면 무해하게 skip (컬럼 에러 catch)
+    // 2026-08-03 fix · supplier_name NULL 인 매입행 회수 · supplier_code (or note) 로도 조회
+    //   2026-08-04 · vendors 에 supplier_code 컬럼 없음 · vendors.note 에 code 저장됨 (숫자 3~5자리)
+    //   product_code → products.supplier 도 fallback 으로 추가 (매입이력 ERP 데이터 반드시 로드)
     let supplierCode: string | null = null;
     try {
-      const { data: vd, error: verr } = await supabase
+      // note 우선 조회 (실제 code 저장 위치)
+      const { data: vn, error: vnerr } = await supabase
         .from("vendors")
-        .select("supplier_code")
+        .select("note")
         .eq("company_name", supplier)
         .limit(1);
-      if (!verr) {
-        const c = String(((vd ?? [])[0] as any)?.supplier_code ?? "").trim();
-        if (c) supplierCode = c;
+      if (!vnerr) {
+        const c = String(((vn ?? [])[0] as any)?.note ?? "").trim();
+        if (c && /^\d{1,5}$/.test(c)) supplierCode = c;
       }
-    } catch { /* silent · 컬럼 없어도 무관 · supplierCode null */ }
-    // 2026-08-03 fix · 헬퍼 · purchase_details 조회 (name + optional code 병렬 · dedup by id)
+      // supplier_code 컬럼 있으면 우선 사용 (미래 호환)
+      try {
+        const { data: vs, error: vserr } = await supabase
+          .from("vendors")
+          .select("supplier_code")
+          .eq("company_name", supplier)
+          .limit(1);
+        if (!vserr) {
+          const c = String(((vs ?? [])[0] as any)?.supplier_code ?? "").trim();
+          if (c) supplierCode = c;
+        }
+      } catch { /* silent · 컬럼 없어도 무관 */ }
+    } catch { /* silent · vendors 없어도 무관 */ }
+
+    // 2026-08-04 · products.supplier === 이 supplier 인 product_codes 리스트 (fallback)
+    //   supplier_name/code 모두 NULL 인 purchase_details 행 · product_code 로 supplier 재구성
+    const productCodesForSupplier: string[] = [];
+    try {
+      const PPAGE = 1000;
+      let pfrom = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("products")
+          .select("product_code, supplier")
+          .eq("supplier", supplier)
+          .range(pfrom, pfrom + PPAGE - 1);
+        if (error) break;
+        if (!data || data.length === 0) break;
+        for (const p of data as any[]) {
+          const pc = String((p as any).product_code ?? "").trim();
+          if (pc) productCodesForSupplier.push(pc);
+        }
+        if (data.length < PPAGE) break;
+        pfrom += PPAGE;
+      }
+    } catch { /* silent · products 없어도 무관 */ }
+    // 2026-08-04 · 헬퍼 · purchase_details 조회 (name + code + product_codes IN · dedup by id)
     const fetchPdByNameAndCode = async (withVatCols: boolean) => {
       const cols = withVatCols
         ? "id, purchase_date, product_code, product_name, quantity, unit_price, amount, total, vat_amount, supply_amount"
@@ -913,11 +949,32 @@ router.get("/api/supplier-purchase-detail", async (req, res) => {
             .eq("supplier_code", supplierCode)
             .gte("purchase_date", cutoffYmd)
         : Promise.resolve({ data: [] as any[], error: null as any });
-      const [rn, rc] = await Promise.all([byName, byCode]);
+      // 2026-08-04 · product_codes IN 조회 (fallback · supplier_name/code 모두 NULL 인 행)
+      //   IN 은 Supabase max ~1000 · 청킹 필요
+      const byProductCodes = async () => {
+        if (productCodesForSupplier.length === 0) return { data: [] as any[], error: null as any };
+        const merged: any[] = [];
+        const CHUNK = 500;
+        for (let i = 0; i < productCodesForSupplier.length; i += CHUNK) {
+          const chunk = productCodesForSupplier.slice(i, i + CHUNK);
+          const { data, error } = await supabase
+            .from("purchase_details")
+            .select(cols)
+            .in("product_code", chunk)
+            .gte("purchase_date", cutoffYmd);
+          if (error) return { data: [] as any[], error };
+          merged.push(...(data ?? []));
+        }
+        return { data: merged, error: null as any };
+      };
+      const [rn, rc, rp] = await Promise.all([byName, byCode, byProductCodes()]);
       if (rn.error) return rn;
       const merged: any[] = [...(rn.data ?? [])];
       const seen = new Set(merged.map((x: any) => x.id));
       for (const r of ((rc as any).data ?? [])) {
+        if (!seen.has((r as any).id)) { merged.push(r); seen.add((r as any).id); }
+      }
+      for (const r of ((rp as any).data ?? [])) {
         if (!seen.has((r as any).id)) { merged.push(r); seen.add((r as any).id); }
       }
       return { data: merged, error: null as any };
