@@ -13,6 +13,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Building2, Loader2, Package, RefreshCw } from "lucide-react";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { SplitPanel } from "../common/SplitPanel";
+import { ListLoading } from "../common/ListLoading";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import VendorRowCard, { type VendorSummary } from "./PurchaseHistoryTab/VendorRowCard";
 import VendorHeaderPanel, { type VendorFull } from "./PurchaseHistoryTab/VendorHeaderPanel";
@@ -73,9 +74,9 @@ export const PurchaseHistoryTab: React.FC = () => {
   //  공급사별 뷰 (기존)
   // ═══════════════════════════════════════════════════════════════════════
 
-  // 공급사 목록
+  // 공급사 목록 · 초기값 true (첫 렌더부터 로딩 표시 · 사용자 요청 2026-08-04)
   const [vendors, setVendors] = useState<VendorItem[]>([]);
-  const [vendorsLoading, setVendorsLoading] = useState(false);
+  const [vendorsLoading, setVendorsLoading] = useState(true);
   const [vendorSearch, setVendorSearch] = useState("");
   const [vendorCategoryFilter, setVendorCategoryFilter] =
     useState<"전체" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타">("전체");
@@ -916,9 +917,7 @@ export const PurchaseHistoryTab: React.FC = () => {
                 </div>
                 <div className="flex-1 min-h-0 overflow-y-auto">
                 {vendorsLoading ? (
-                  <div className="flex items-center justify-center py-8 text-slate-400 gap-2 text-[12px]">
-                    <Loader2 size={13} className="animate-spin" />불러오는 중...
-                  </div>
+                  <ListLoading label="공급사 불러오는 중..." tone="emerald" />
                 ) : filteredVendors.length === 0 ? (
                   <div className="py-8 text-center text-[11px] text-slate-300">공급사 없음</div>
                 ) : (
@@ -1051,9 +1050,7 @@ export const PurchaseHistoryTab: React.FC = () => {
                 </div>
                 <div className="flex-1 min-h-0 overflow-y-auto">
                 {allDetailsLoading ? (
-                  <div className="flex items-center justify-center py-8 text-slate-400 gap-2 text-[12px]">
-                    <Loader2 size={13} className="animate-spin" />불러오는 중...
-                  </div>
+                  <ListLoading label="상품 매입이력 불러오는 중..." tone="sky" />
                 ) : allDetailsError ? (
                   <div className="p-4 text-[11px] text-rose-600 space-y-1">
                     <div className="font-black">로드 실패</div>
