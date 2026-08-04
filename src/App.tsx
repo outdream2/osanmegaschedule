@@ -16,7 +16,6 @@ import { LeavePage } from "./components/LeavePage/LeavePage";
 import { PermissionsPage } from "./components/PermissionsPage";
 import { LunchPage } from "./components/LunchPage/LunchPage";
 import { StockCheckPage } from "./components/StockCheckPage/StockCheckPage";
-import { SynonymPage } from "./components/SynonymPage";
 import { StockArrivalPage } from "./components/StockArrivalPage";
 import { BoardPage } from "./components/BoardPage";
 import { MyPage } from "./components/MyPage";
@@ -32,16 +31,12 @@ import { loadZoneLabelsFromServer } from "./constants/zoneLabels";
 const ZoneLabelsEditor = React.lazy(() => import("./components/ZoneLabelsEditor/ZoneLabelsEditor"));
 // 2026-08-03 · 경영관리 통합 페이지 (직원관리 · 연차승인 · 점심불참 · 직원권한 서브탭) · lazy 로드
 const BusinessManagePage = React.lazy(() => import("./components/BusinessManagePage/BusinessManagePage"));
-// 2026-08-03 · 기타 도구 페이지 (관리자용 · 잘 안 쓰이는 3개 페이지 링크) · lazy 로드
-const OthersPage = React.lazy(() => import("./components/OthersPage/OthersPage"));
 // 2026-08-03 · 약사 전용 페이지 (교육자료·복약지도·문서) · lazy 로드
 const PharmacistPage = React.lazy(() => import("./components/PharmacistPage/PharmacistPage"));
-// 2026-08-03 · 재고·판매 통합 (기타 도구 서브 페이지) · lazy 로드
-const InventorySalesPage = React.lazy(() => import("./components/InventorySalesPage/InventorySalesPage").then(m => ({ default: m.InventorySalesPage })));
 // 2026-08-03 · 각종 양식 (인사 문서 관리) · 경영관리 서브탭 및 별도 라우팅 진입 지원 · lazy 로드
 const HrFormsPage = React.lazy(() => import("./components/HrFormsPage/HrFormsPage"));
 
-type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "others" | "inventory-sales" | "hr-forms" | "pharmacist";
+type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist";
 
 export default function App() {
   // 전역 모달 스크롤 잠금은 CSS :has() 셀렉터로 처리 (index.css) · JS 훅 불필요
@@ -57,11 +52,11 @@ export default function App() {
   } = useAuth();
 
   // 상품 캐시 prefetch · 로그인 즉시 아니라 상품 관련 페이지 진입 시로 지연 (2026-07-15 · B)
-  //   상품 관련 페이지: scan/display/stockcheck/synonyms/stockarrivals · 상품 데이터 필요
+  //   상품 관련 페이지: scan/display/stockcheck/stockarrivals · 상품 데이터 필요
   //   나머지 페이지: 상품 데이터 안 씀 → prefetch 스킵으로 초기 로딩 부하 감소
   useEffect(() => {
     if (!authSession) return;
-    const needsProducts: Page[] = ["scan", "productarrival", "display", "stockcheck", "synonyms", "stockarrivals"];
+    const needsProducts: Page[] = ["scan", "productarrival", "display", "stockcheck", "stockarrivals"];
     if (needsProducts.includes(page)) prefetchProducts();
   }, [authSession, page]);
 
@@ -97,7 +92,7 @@ export default function App() {
     }
   };
 
-  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "others" | "inventory-sales" | "hr-forms", auth?: AuthSession) => {
+  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms", auth?: AuthSession) => {
     if (auth) setAuthSession(auth);
     navigate(next);
   };
@@ -123,7 +118,7 @@ export default function App() {
 
   // Simple navigation wrapper used by the shared AppNavHeader on inner pages.
   // The user is already authenticated here, so no AuthSession is required.
-  const navigateInner = (next: "landing" | "schedule" | "display" | "requests" | "leave" | "scan" | "productarrival" | "ocr" | "lunch" | "board" | "mypage" | "business-manage" | "others" | "inventory-sales" | "stockcheck" | "synonyms" | "zone-labels" | "hr-forms") => navigate(next as Page);
+  const navigateInner = (next: "landing" | "schedule" | "display" | "requests" | "leave" | "scan" | "productarrival" | "ocr" | "lunch" | "board" | "mypage" | "business-manage" | "stockcheck" | "zone-labels" | "hr-forms") => navigate(next as Page);
 
   let pageContent: React.ReactElement;
 
@@ -209,8 +204,6 @@ export default function App() {
     );
   } else if (page === "stockcheck") {
     pageContent = <StockCheckPage onBack={goBack} authSession={authSession} onNavigate={navigateInner as any} onLogout={handleLogout} />;
-  } else if (page === "synonyms") {
-    pageContent = <SynonymPage authSession={authSession} onBack={goBack} onNavigate={navigateInner} onLogout={handleLogout} />;
   } else if (page === "stockarrivals") {
     pageContent = <StockArrivalPage authSession={authSession} onBack={goBack} onNavigate={navigateInner} onLogout={handleLogout} />;
   } else if (page === "board") {
@@ -253,18 +246,6 @@ export default function App() {
         <BusinessManagePage authSession={authSession} onBack={goBack} onNavigate={navigateInner} onLogout={handleLogout} />
       </React.Suspense>
     );
-  } else if (page === "others") {
-    // 2026-08-03 · 기타 도구 페이지 · 관리자용 · 잘 안 쓰이는 3개 페이지 링크
-    pageContent = (
-      <React.Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-400 text-sm">불러오는 중...</div>}>
-        <OthersPage
-          authSession={authSession}
-          onBack={goBack}
-          onNavigate={(p) => navigate(p as Page)}
-          onLogout={handleLogout}
-        />
-      </React.Suspense>
-    );
   } else if (page === "pharmacist") {
     // 2026-08-03 · 약사 전용 페이지 · 교육자료·복약지도 등 · 약사 rank 만 접근
     pageContent = (
@@ -275,13 +256,6 @@ export default function App() {
           onNavigate={navigateInner}
           onLogout={handleLogout}
         />
-      </React.Suspense>
-    );
-  } else if (page === "inventory-sales") {
-    // 2026-08-03 · 재고·판매 통합 (구 페이지) · 기타 도구 내부에서 접근
-    pageContent = (
-      <React.Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-400 text-sm">불러오는 중...</div>}>
-        <InventorySalesPage />
       </React.Suspense>
     );
   } else if (page === "hr-forms") {

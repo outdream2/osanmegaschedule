@@ -33,15 +33,12 @@ export type AppNavPage =
   | "lunch"
   | "permissions"
   | "stockarrivals"
-  | "synonyms"
   | "stockcheck"
   | "board"
   | "mypage"
   | "zone-labels"          // 2026-08-03 · 구역 라벨 관리 (설정 링크에서 접근 · 헤더 탭 노출 없음 · 라우팅 union 유지)
   | "business-manage"      // 2026-08-03 · 경영관리 통합 페이지
   | "hr-forms"             // 2026-08-03 · 각종 양식 (경영관리 서브탭 · 별도 라우팅 union 유지)
-  | "others"               // 2026-08-03 · 기타 도구 페이지 (관리자용 · 숨은 도구 모음)
-  | "inventory-sales"      // 2026-08-03 · 재고·판매 통합 (기타 도구 내부 링크 · 헤더 탭 노출 없음)
   | "pharmacist";          // 2026-08-03 · 약사 전용 페이지
 
 // 헤더 내부 탭 렌더용 확장 키 (경영관리 · business-manage 로 라우팅)

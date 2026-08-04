@@ -48,7 +48,7 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
   // 활성 매칭: 매장/재고/OCR 등은 "더보기" 그룹으로 취급
   const isActive = (key: TabDef["key"]) => {
     if (key === activePage) return true;
-    if (key === "more" && ["display", "scan", "ocr", "leave", "lunch", "permissions", "stockarrivals", "synonyms", "stockcheck"].includes(activePage)) return true;
+    if (key === "more" && ["display", "scan", "ocr", "leave", "lunch", "permissions", "stockarrivals", "stockcheck"].includes(activePage)) return true;
     return false;
   };
 
