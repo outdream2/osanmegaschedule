@@ -18,6 +18,7 @@ import {
   Building2, Loader2, Wallet, CalendarDays, CreditCard, Banknote,
   FileText, Check, X, RefreshCw, Landmark, Coins, ScrollText, Layers,
   Phone, User2, ReceiptText, ArrowRight, Plus, Calendar,
+  ChevronUp, ChevronDown, ChevronsUpDown,
 } from "lucide-react";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { SplitPanel } from "../common/SplitPanel";
@@ -80,6 +81,35 @@ interface MonthlyBreakdown {
   total_purchase: number;          // 전체 (fetch 기간 내) 매입 합계
   total_payment: number;           // 전체 (fetch 기간 내) 결제 합계
 }
+
+// ─── Period Filter · Task #103 (2026-08-04) ─────────────────────────────────
+//   좌측 리스트 상단 · 매입·결제 집계 기간 chip · 10d/1M/2M/3M · default 1M
+//   localStorage: megatown_payment_period · 다음 방문 시 복원
+
+type PeriodDays = 10 | 30 | 60 | 90;
+const PERIOD_STORAGE_KEY = "megatown_payment_period";
+const PERIOD_OPTIONS: Array<{ days: PeriodDays; label: string }> = [
+  { days: 10, label: "10일" },
+  { days: 30, label: "1개월" },
+  { days: 60, label: "2개월" },
+  { days: 90, label: "3개월" },
+];
+const DEFAULT_PERIOD: PeriodDays = 30;
+
+function loadPeriodPref(): PeriodDays {
+  try {
+    const raw = window.localStorage.getItem(PERIOD_STORAGE_KEY);
+    const n = Number(raw);
+    if ([10, 30, 60, 90].includes(n)) return n as PeriodDays;
+  } catch { /* SSR safe */ }
+  return DEFAULT_PERIOD;
+}
+
+// ─── Sort · 좌측 리스트 헤더 정렬 · Task #103 ─────────────────────────────
+//   default · 잔고 desc (많은 순 · Task #101 확장)
+//   name = 공급사명 · balance = 잔고 · purchase = 매입 · payment = 결제
+type VendorSortKey = "name" | "balance" | "purchase" | "payment";
+type SortDir = "asc" | "desc";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -235,6 +265,35 @@ export const PaymentInfoTab: React.FC = () => {
   const [vendorCategoryFilter, setVendorCategoryFilter] =
     useState<"전체" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타">("전체");
 
+  // 기간 필터 · Task #103 (2026-08-04) · 매입·결제 집계 기간
+  const [periodDays, setPeriodDaysState] = useState<PeriodDays>(() => loadPeriodPref());
+  const setPeriodDays = useCallback((d: PeriodDays) => {
+    setPeriodDaysState(d);
+    try { window.localStorage.setItem(PERIOD_STORAGE_KEY, String(d)); } catch { /* ignore */ }
+  }, []);
+
+  // 좌측 리스트 · 매입·결제 aggregate (기간 내 벤더별 합계) · Task #103
+  //   /api/supplier-purchase-summary?days=N + /api/supplier-payments?days=N
+  //   벤더명 (company_name) → 금액 · 매칭 실패 시 0
+  const [purchaseByVendor, setPurchaseByVendor] = useState<Map<string, number>>(new Map());
+  const [paymentByVendor, setPaymentByVendor] = useState<Map<string, number>>(new Map());
+  const [aggregatesLoading, setAggregatesLoading] = useState(false);
+
+  // 정렬 상태 · Task #103 · default 잔고 desc
+  const [sortKey, setSortKey] = useState<VendorSortKey>("balance");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const handleSort = useCallback((key: VendorSortKey) => {
+    setSortKey(prev => {
+      if (prev === key) {
+        setSortDir(d => (d === "asc" ? "desc" : "asc"));
+        return prev;
+      }
+      // 신규 컬럼 · 숫자는 desc(큰것 우선) · 이름은 asc(가나다) 로 초기화
+      setSortDir(key === "name" ? "asc" : "desc");
+      return key;
+    });
+  }, []);
+
   // 선택 공급사
   const [selectedVendor, setSelectedVendor] = useState<VendorItem | null>(null);
 
@@ -288,20 +347,26 @@ export const PaymentInfoTab: React.FC = () => {
       const res = await fetch("/api/vendors?withBalances=1");
       if (!res.ok) throw new Error(String(res.status));
       const list: any[] = await res.json();
-      setVendors(list.map(v => ({
-        id: v.id,
-        company_name: String(v.company_name ?? ""),
-        category: v.category ?? null,
-        contact_name: v.contact_name ?? null,
-        phone: v.phone ?? null,
-        email: v.email ?? null,
-        business_number: v.business_number ?? null,
-        created_at: v.created_at ?? null,
-        payment_terms: v.payment_terms ?? null,
-        active: v.active ?? null,
-        vat_included: v.vat_included ?? null,
-        balance: Number.isFinite(Number(v.balance)) ? Number(v.balance) : null,
-      })));
+      setVendors(list.map(v => {
+        // /api/vendors?withBalances=1 응답 · latestBalance.balance 가 실제 잔고 소스
+        //   (v.balance 는 존재하지 않는 필드 · 2026-08-04 · Task #103 fix)
+        const rawBal = v?.latestBalance?.balance;
+        const bal = Number.isFinite(Number(rawBal)) ? Number(rawBal) : null;
+        return {
+          id: v.id,
+          company_name: String(v.company_name ?? ""),
+          category: v.category ?? null,
+          contact_name: v.contact_name ?? null,
+          phone: v.phone ?? null,
+          email: v.email ?? null,
+          business_number: v.business_number ?? null,
+          created_at: v.created_at ?? null,
+          payment_terms: v.payment_terms ?? null,
+          active: v.active ?? null,
+          vat_included: v.vat_included ?? null,
+          balance: bal,
+        };
+      }));
     } catch { setVendors([]); }
     finally { setVendorsLoading(false); }
   }, []);
@@ -324,6 +389,60 @@ export const PaymentInfoTab: React.FC = () => {
     if (found) setSelectedVendor(found);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vendors]);
+
+  // ── 좌측 리스트 · 벤더별 매입·결제 aggregate 로드 · Task #103 (2026-08-04) ─
+  //   기간(periodDays) 변경 시 · 결제 등록 시 · 초기 로드 시 자동 재조회
+  //   /api/supplier-purchase-summary → suppliers[].total_amount (기간 내 매입 합)
+  //   /api/supplier-payments → rows[] 를 supplier_name 별 sum (기간 내 결제 합)
+  //   벤더명 = supplier_name (raw) · vendors.company_name 과 완전일치 매칭
+  const loadAggregates = useCallback(async (days: PeriodDays) => {
+    setAggregatesLoading(true);
+    try {
+      const [purRes, payRes] = await Promise.all([
+        fetch(`/api/supplier-purchase-summary?days=${days}`),
+        fetch(`/api/supplier-payments?days=${days}`),
+      ]);
+      const purMap = new Map<string, number>();
+      const payMap = new Map<string, number>();
+      if (purRes.ok) {
+        const j = await purRes.json();
+        const list: any[] = Array.isArray(j?.suppliers) ? j.suppliers : [];
+        for (const s of list) {
+          const name = String(s?.supplier ?? "").trim();
+          if (!name) continue;
+          const amt = Number(s?.total_amount) || 0;
+          purMap.set(name, (purMap.get(name) ?? 0) + amt);
+        }
+      }
+      if (payRes.ok) {
+        const j = await payRes.json();
+        const rows: any[] = Array.isArray(j?.rows) ? j.rows : [];
+        for (const r of rows) {
+          const name = String(r?.supplier_name ?? "").trim();
+          if (!name) continue;
+          const amt = Number(r?.amount) || 0;
+          payMap.set(name, (payMap.get(name) ?? 0) + amt);
+        }
+      }
+      setPurchaseByVendor(purMap);
+      setPaymentByVendor(payMap);
+    } catch {
+      setPurchaseByVendor(new Map());
+      setPaymentByVendor(new Map());
+    } finally {
+      setAggregatesLoading(false);
+    }
+  }, []);
+
+  // 기간 변경 · 초기 로드 · 결제 등록 후 재조회
+  useEffect(() => {
+    loadAggregates(periodDays);
+    const reload = () => loadAggregates(periodDays);
+    window.addEventListener("supplier-payment-added", reload);
+    return () => {
+      window.removeEventListener("supplier-payment-added", reload);
+    };
+  }, [periodDays, loadAggregates]);
 
   // ── 잔고 · 최근결제 로드 ─────────────────────────────────────
   const loadBalance = useCallback(async (supplierName: string) => {
@@ -442,15 +561,36 @@ export const PaymentInfoTab: React.FC = () => {
     setMsg(null);
   }, [selectedVendor, loadBalance, loadRecentPayments, loadMonthlyBreakdown]);
 
-  // ── 필터링된 공급사 ─────────────────────────────────────────
+  // ── 필터링·정렬된 공급사 · Task #103 (2026-08-04) ─────────────
+  //   필터 · 검색어 + 카테고리
+  //   정렬 · sortKey (name/balance/purchase/payment) + sortDir (asc/desc)
+  //     · 숫자 컬럼 · 값 없으면 0 취급 (내림차순 시 하단으로)
+  //     · 이름 · localeCompare("ko") · 한글 가나다 순
   const filteredVendors = useMemo(() => {
     const q = vendorSearch.trim().toLowerCase();
-    return vendors.filter(v => {
+    const filtered = vendors.filter(v => {
       if (q && !v.company_name.toLowerCase().includes(q)) return false;
       if (vendorCategoryFilter !== "전체" && v.category !== vendorCategoryFilter) return false;
       return true;
     });
-  }, [vendors, vendorSearch, vendorCategoryFilter]);
+    const dirMul = sortDir === "asc" ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case "name":
+          cmp = a.company_name.localeCompare(b.company_name, "ko"); break;
+        case "balance":
+          cmp = (Number(a.balance ?? 0)) - (Number(b.balance ?? 0)); break;
+        case "purchase":
+          cmp = (purchaseByVendor.get(a.company_name) ?? 0) - (purchaseByVendor.get(b.company_name) ?? 0); break;
+        case "payment":
+          cmp = (paymentByVendor.get(a.company_name) ?? 0) - (paymentByVendor.get(b.company_name) ?? 0); break;
+      }
+      // 동값 tiebreaker · 공급사명 asc (안정 정렬 · 시각적 일관성)
+      if (cmp === 0) return a.company_name.localeCompare(b.company_name, "ko");
+      return cmp * dirMul;
+    });
+  }, [vendors, vendorSearch, vendorCategoryFilter, sortKey, sortDir, purchaseByVendor, paymentByVendor]);
 
   // ── VAT 자동 계산 ────────────────────────────────────────────
   const amountNum = Number(String(amount).replace(/[^0-9]/g, "")) || 0;
@@ -585,16 +725,47 @@ export const PaymentInfoTab: React.FC = () => {
                 </button>
               ))}
             </div>
+            {/* 기간 필터 chip · Task #103 (2026-08-04) · 매입·결제 집계 기간
+                · 선택 시 자동 재조회 (loadAggregates via useEffect on periodDays)
+                · localStorage · megatown_payment_period · 다음 방문 시 복원 */}
+            <div className="flex items-center gap-1 pt-1 border-t border-slate-100">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider shrink-0" title="매입·결제 집계 기간">기간</span>
+              <div className="flex-1 flex items-center gap-0.5">
+                {PERIOD_OPTIONS.map(opt => {
+                  const active = periodDays === opt.days;
+                  return (
+                    <button
+                      key={opt.days}
+                      type="button"
+                      onClick={() => setPeriodDays(opt.days)}
+                      className={`flex-1 h-6 px-1 text-[10px] font-black rounded-md transition cursor-pointer tabular-nums ${
+                        active
+                          ? "bg-sky-500 text-white shadow-sm"
+                          : "bg-slate-50 text-slate-500 border border-slate-200 hover:text-slate-700 hover:border-slate-300"
+                      }`}
+                      title={`최근 ${opt.days}일 매입·결제 집계`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {aggregatesLoading && (
+                <Loader2 size={11} className="animate-spin text-sky-400 shrink-0" />
+              )}
+            </div>
           </div>
 
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 max-h-[42vh] lg:max-h-none flex flex-col overflow-hidden">
-            {/* 헤더 · 컬럼 라벨 (2026-08-04 · 사용자 지적 · 헤더 없어서 추가) */}
-            <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 flex items-center gap-2 text-[11px] font-black uppercase tracking-wider text-slate-500">
-              <span className="w-[42px] shrink-0">분류</span>
-              <span className="flex-1">공급사명</span>
-              <span className="w-[72px] text-right text-amber-700" title="총 잔고 (미결제)">잔고</span>
-              <span className="text-slate-400 tabular-nums w-[36px] text-right">{filteredVendors.length}</span>
-            </div>
+            {/* 헤더 · 자동 정렬 (Task #103 · 2026-08-04)
+                · 컬럼: 분류 / 공급사명 / 매입 / 결제 / 잔고
+                · 클릭 시 asc/desc 토글 · 활성 컬럼 화살표 표시 */}
+            <VendorListHeader
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={handleSort}
+              count={filteredVendors.length}
+            />
             <div className="flex-1 min-h-0 overflow-y-auto">
             {vendorsLoading ? (
               <div className="flex items-center justify-center py-10 text-slate-400 gap-2 text-[12px]">
@@ -607,31 +778,45 @@ export const PaymentInfoTab: React.FC = () => {
                 {filteredVendors.map(v => {
                   const bal = Number(v.balance ?? 0);
                   const hasBal = v.balance != null && bal !== 0;
+                  const purAmt = purchaseByVendor.get(v.company_name) ?? 0;
+                  const payAmt = paymentByVendor.get(v.company_name) ?? 0;
                   return (
                     <button
                       key={v.id}
                       type="button"
                       onClick={() => setSelectedVendor(prev => prev?.id === v.id ? null : v)}
-                      className={`w-full text-left px-3 py-2.5 flex items-center gap-2 transition cursor-pointer ${
+                      className={`w-full text-left px-2 py-2.5 flex items-center gap-1.5 transition cursor-pointer ${
                         selectedVendor?.id === v.id
                           ? "bg-sky-50 border-l-2 border-sky-500"
                           : "hover:bg-slate-50 border-l-2 border-transparent"
                       }`}
                     >
                       <span className="w-[42px] shrink-0"><VendorCategoryBadge category={v.category} /></span>
-                      <span className={`text-[12px] font-semibold break-words whitespace-normal leading-tight flex-1 ${
+                      <span className={`text-[12px] font-semibold break-words whitespace-normal leading-tight flex-1 min-w-0 ${
                         selectedVendor?.id === v.id ? "text-sky-800" : "text-slate-700"
                       }`}>
                         {v.company_name}
                       </span>
-                      <span className={`w-[72px] text-right text-[11px] font-black tabular-nums shrink-0 ${
+                      {/* 매입 (기간 내) */}
+                      <span className={`w-[52px] text-right text-[11px] font-black tabular-nums shrink-0 ${
+                        purAmt > 0 ? "text-emerald-700" : "text-slate-300"
+                      }`} title={purAmt > 0 ? `최근 ${periodDays}일 매입 ${purAmt.toLocaleString()}원` : "매입 없음"}>
+                        {purAmt > 0 ? fmtWonShort(purAmt) : "-"}
+                      </span>
+                      {/* 결제 (기간 내) */}
+                      <span className={`w-[52px] text-right text-[11px] font-black tabular-nums shrink-0 ${
+                        payAmt > 0 ? "text-sky-700" : "text-slate-300"
+                      }`} title={payAmt > 0 ? `최근 ${periodDays}일 결제 ${payAmt.toLocaleString()}원` : "결제 없음"}>
+                        {payAmt > 0 ? fmtWonShort(payAmt) : "-"}
+                      </span>
+                      {/* 잔고 (전체) */}
+                      <span className={`w-[56px] text-right text-[11px] font-black tabular-nums shrink-0 ${
                         hasBal
                           ? bal > 0 ? "text-amber-700" : "text-rose-700"
                           : "text-slate-300"
                       }`} title={hasBal ? `${bal > 0 ? "미결제" : "초과결제"} ${Math.abs(bal).toLocaleString()}원` : "잔고 없음"}>
                         {hasBal ? fmtWonShort(Math.abs(bal)) : "-"}
                       </span>
-                      <span className="w-[36px]"></span>
                     </button>
                   );
                 })}
@@ -1195,6 +1380,70 @@ const AmountField: React.FC<{
       )}
     </div>
   </FieldLabel>
+);
+
+// ─── 좌측 리스트 헤더 · 자동 정렬 · Task #103 (2026-08-04) ─────────────────
+//   커스텀 header (div 기반 · 리스트 row 도 div/button 이라 일관성 유지)
+//   feedback_ui_principles A-2 · 자동 정렬 · B-2-2 · 12px+
+//   컬럼 폭 · row 와 정확 일치 (분류 42 · 이름 flex · 매입 52 · 결제 52 · 잔고 56)
+const SortHeaderBtn: React.FC<{
+  label: string;
+  columnKey: VendorSortKey;
+  activeKey: VendorSortKey;
+  activeDir: SortDir;
+  onSort: (k: VendorSortKey) => void;
+  className?: string;
+  align?: "left" | "right";
+  title?: string;
+}> = ({ label, columnKey, activeKey, activeDir, onSort, className = "", align = "right", title }) => {
+  const active = columnKey === activeKey;
+  const alignCls = align === "right" ? "justify-end text-right" : "justify-start text-left";
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(columnKey)}
+      title={title ?? `${label} · 클릭하여 정렬`}
+      className={`inline-flex items-center gap-0.5 ${alignCls} h-full transition cursor-pointer select-none ${
+        active ? "text-slate-800" : "text-slate-500 hover:text-slate-700"
+      } ${className}`}
+    >
+      <span>{label}</span>
+      {active
+        ? (activeDir === "asc"
+            ? <ChevronUp size={11} strokeWidth={3} className="shrink-0" />
+            : <ChevronDown size={11} strokeWidth={3} className="shrink-0" />)
+        : <ChevronsUpDown size={10} strokeWidth={2.25} className="opacity-30 shrink-0" />
+      }
+    </button>
+  );
+};
+
+const VendorListHeader: React.FC<{
+  sortKey: VendorSortKey;
+  sortDir: SortDir;
+  onSort: (k: VendorSortKey) => void;
+  count: number;
+}> = ({ sortKey, sortDir, onSort, count }) => (
+  <div className="px-2 py-1.5 border-b border-slate-200 bg-slate-50/70 shrink-0 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider">
+    {/* 분류 · 정렬 X (badge column) */}
+    <span className="w-[42px] shrink-0 text-slate-400">분류</span>
+    {/* 공급사명 · flex */}
+    <span className="flex-1 min-w-0">
+      <SortHeaderBtn label={`공급사 (${count})`} columnKey="name" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="left" />
+    </span>
+    {/* 매입 (기간 내) */}
+    <span className="w-[52px] shrink-0">
+      <SortHeaderBtn label="매입" columnKey="purchase" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-emerald-700" title="선택 기간 내 매입 합계 · 클릭하여 정렬" />
+    </span>
+    {/* 결제 (기간 내) */}
+    <span className="w-[52px] shrink-0">
+      <SortHeaderBtn label="결제" columnKey="payment" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-sky-700" title="선택 기간 내 결제 합계 · 클릭하여 정렬" />
+    </span>
+    {/* 잔고 (전체) */}
+    <span className="w-[56px] shrink-0">
+      <SortHeaderBtn label="잔고" columnKey="balance" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-amber-700" title="총 잔고 (미결제 잔액) · 클릭하여 정렬" />
+    </span>
+  </div>
 );
 
 const inputCls =
