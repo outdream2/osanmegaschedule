@@ -1550,7 +1550,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                             <button
                               type="button"
                               onClick={() => handleProductResultClick(p.realMap)}
-                              className="flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-1.5 py-0.5 rounded-lg whitespace-nowrap hover:bg-emerald-200 transition cursor-pointer"
+                              className="flex items-center gap-0.5 text-[10px] font-semibold text-emerald-700 whitespace-nowrap hover:text-emerald-900 transition cursor-pointer"
                             >
                               <MapPin size={9} />
                               {p.realMap}
@@ -1679,7 +1679,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                   <button
                                     type="button"
                                     onClick={() => handleProductResultClick(p.realMap)}
-                                    className="flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-1.5 py-0.5 rounded-lg whitespace-nowrap hover:bg-emerald-200 transition cursor-pointer"
+                                    className="flex items-center gap-0.5 text-[10px] font-semibold text-emerald-700 whitespace-nowrap hover:text-emerald-900 transition cursor-pointer"
                                   >
                                     <MapPin size={9} />
                                     {p.realMap}

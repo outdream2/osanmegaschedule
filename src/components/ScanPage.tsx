@@ -582,8 +582,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                       const rm = (lastProduct as any).realMap ?? (lastProduct as any).real_map ?? null;
                       if (!rm) return null;
                       return (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-violet-700
-                          bg-violet-50 border border-violet-200/70 rounded-lg px-2 py-1">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-violet-700">
                           <MapPin size={10} className="text-violet-400" />
                           {rm}
                         </span>
@@ -783,9 +782,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                           {/* 구역 원본 (real_map) */}
                           <td className="px-2 py-2 align-middle">
                             {rm ? (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-bold
-                                text-violet-700 bg-violet-50 border border-violet-200/60 rounded-md px-1.5 py-0.5
-                                whitespace-nowrap">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-violet-700 whitespace-nowrap">
                                 <MapPin size={9} className="text-violet-400 shrink-0" />
                                 {rm}
                               </span>
