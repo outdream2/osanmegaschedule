@@ -697,19 +697,25 @@ export const PurchaseHistoryTab: React.FC = () => {
           </button>
         </div>
 
-        {/* 기간 필터 · 원장 탭 전용 (공급사별 뷰에서만 표시) */}
+        {/* 기간 필터 · 원장 탭 전용 (공급사별 뷰에서만 표시)
+            2026-08-04 · 사용자 요청 · 반응형 시간기간+계절기간 수직 배치 (< sm) */}
         {viewMode === "by-vendor" && (
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">원장 기간</span>
-            <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
-              <button onClick={() => { setPeriodSeason(null); setPeriodMonths(0); }}
-                className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!periodSeason && periodMonths === 0 ? "bg-emerald-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>10일</button>
-              {([1, 2, 3, 4, 5, 6] as const).map(m => (
-                <button key={m} onClick={() => { setPeriodSeason(null); setPeriodMonths(m); }}
-                  className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!periodSeason && periodMonths === m ? "bg-emerald-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>{m}개월</button>
-              ))}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">시간기간</span>
+              <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5 flex-wrap">
+                <button onClick={() => { setPeriodSeason(null); setPeriodMonths(0); }}
+                  className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!periodSeason && periodMonths === 0 ? "bg-emerald-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>10일</button>
+                {([1, 2, 3, 4, 5, 6] as const).map(m => (
+                  <button key={m} onClick={() => { setPeriodSeason(null); setPeriodMonths(m); }}
+                    className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!periodSeason && periodMonths === m ? "bg-emerald-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>{m}개월</button>
+                ))}
+              </div>
             </div>
-            <SeasonButtons value={periodSeason} onChange={(v) => { setPeriodSeason(v); if (v) setPeriodMonths(0); }} size="sm" hideLabel />
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0 sm:hidden">계절기간</span>
+              <SeasonButtons value={periodSeason} onChange={(v) => { setPeriodSeason(v); if (v) setPeriodMonths(0); }} size="sm" hideLabel />
+            </div>
           </div>
         )}
 

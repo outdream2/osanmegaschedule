@@ -395,7 +395,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   return (
     <header className="bg-white border-b border-[#e2e8f0] shrink-0 shadow-sm">
       {/* ── Top row: logo + desktop tabs + right actions ── */}
-      <div className="px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+      <div className="px-4 sm:px-6 min-h-14 flex flex-wrap items-center justify-between gap-3 py-2 sm:py-0">
         {/* Left: logo (클릭 시 랜딩 이동) + desktop nav tabs */}
         <div className="flex items-center gap-2 min-w-0">
           <button
@@ -422,8 +422,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
             </div>
           </button>
 
-          {/* 2026-07-30 · Desktop/태블릿 nav tabs · sm+ · 오버플로 시 삼선(☰) 드롭다운 */}
-          <div ref={desktopContainerRef} className="hidden sm:flex items-center gap-1 ml-3 min-w-0 relative flex-1">
+          {/* 2026-07-30 · Desktop/태블릿 nav tabs · sm+ · 화면 넘어가면 두줄 wrap (2026-08-04 · 사용자 요청)
+              · flex-wrap 으로 자연 wrap · 삼선 드롭다운 로직은 유지 (매우 좁은 화면 대비 fallback) */}
+          <div ref={desktopContainerRef} className="hidden sm:flex flex-wrap items-center gap-1 gap-y-1.5 ml-3 min-w-0 relative flex-1 py-1">
             {/* 측정용 hidden 영역 · 실제 탭 폭 계산 */}
             <div
               ref={desktopMeasureRef}

@@ -612,27 +612,87 @@ export const PaymentInfoTab: React.FC = () => {
                   )}
                 </div>
 
-                {/* Row 1 · 결제일 · 결제방법 (2컬럼) · 2026-08-04 · 사용자 요청 */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
+                {/* Row 1 · 결제일 · 결제방법 · sub-option (카드사/은행/기타) 나란히 (2026-08-04 · 사용자 요청) */}
+                <div className="flex flex-wrap items-end gap-2">
                   <FieldLabel label="결제일" icon={<CalendarDays size={11} />}>
                     <input
                       type="date"
                       value={paymentDate}
                       onChange={e => setPaymentDate(e.target.value)}
-                      className={inputCls}
+                      className={`${inputCls} w-[140px]`}
                     />
                   </FieldLabel>
                   <FieldLabel label="결제 방법" required>
                     <select
                       value={method}
                       onChange={e => setMethod(e.target.value as PayMethod)}
-                      className={inputCls}
+                      className={`${inputCls} w-[100px]`}
                     >
                       {METHOD_OPTIONS.map(opt => (
                         <option key={opt.key} value={opt.key}>{opt.label}</option>
                       ))}
                     </select>
                   </FieldLabel>
+                  {/* 결제방법 sub-option · 나란히 · 카드사/은행/입력 */}
+                  {method === "card" && (
+                    <FieldLabel label="카드사">
+                      <div className="flex items-center gap-1.5">
+                        <select
+                          value={cardIssuer}
+                          onChange={e => setCardIssuer(e.target.value)}
+                          className={`${inputCls} w-[140px]`}
+                        >
+                          <option value="">선택...</option>
+                          {CARD_ISSUERS.map(c => <option key={c} value={c}>{c}</option>)}
+                          <option value="직접입력">직접 입력...</option>
+                        </select>
+                        {cardIssuer === "직접입력" && (
+                          <input
+                            type="text"
+                            value={cardIssuerCustom}
+                            onChange={e => setCardIssuerCustom(e.target.value)}
+                            placeholder="카드사 이름"
+                            className={`${inputCls} w-[140px]`}
+                          />
+                        )}
+                      </div>
+                    </FieldLabel>
+                  )}
+                  {method === "cash" && (
+                    <FieldLabel label="은행">
+                      <div className="flex items-center gap-1.5">
+                        <select
+                          value={bankName}
+                          onChange={e => setBankName(e.target.value)}
+                          className={`${inputCls} w-[140px]`}
+                        >
+                          <option value="">선택...</option>
+                          {BANKS.map(b => <option key={b} value={b}>{b}</option>)}
+                          <option value="직접입력">직접 입력...</option>
+                        </select>
+                        {bankName === "직접입력" && (
+                          <input
+                            type="text"
+                            value={bankNameCustom}
+                            onChange={e => setBankNameCustom(e.target.value)}
+                            placeholder="은행 이름"
+                            className={`${inputCls} w-[140px]`}
+                          />
+                        )}
+                      </div>
+                    </FieldLabel>
+                  )}
+                  {method === "etc" && (
+                    <FieldLabel label="기타 결제방법">
+                      <input
+                        type="text"
+                        value={etcNote}
+                        onChange={e => setEtcNote(e.target.value)}
+                        placeholder="예: 페이코 · 카카오페이 · 상계 · 어음 등"
+                        className={`${inputCls} w-[220px]`}
+                      />
+                    </FieldLabel>
+                  )}
                 </div>
                 {/* Row 2 · 결제 금액 (다음줄) */}
                 <div>
@@ -677,63 +737,9 @@ export const PaymentInfoTab: React.FC = () => {
                   </FieldLabel>
                 </div>
 
-                {/* Row 2 · 결제방법 sub-options (카드사/은행/기타) + 부가세포함 · 조건부 */}
+                {/* 부가세포함 체크박스 · 별도 라인 (2026-08-04 · sub-option 은 Row 1 로 통합됨) */}
                 <div className="flex items-center gap-2 flex-wrap">
-                  {method === "card" && (
-                    <>
-                      <select
-                        value={cardIssuer}
-                        onChange={e => setCardIssuer(e.target.value)}
-                        className={`${inputCls} w-36 shrink-0`}
-                      >
-                        <option value="">카드사 선택...</option>
-                        {CARD_ISSUERS.map(c => <option key={c} value={c}>{c}</option>)}
-                        <option value="직접입력">직접 입력...</option>
-                      </select>
-                      {cardIssuer === "직접입력" && (
-                        <input
-                          type="text"
-                          value={cardIssuerCustom}
-                          onChange={e => setCardIssuerCustom(e.target.value)}
-                          placeholder="카드사 이름"
-                          className={`${inputCls} flex-1 min-w-[140px]`}
-                        />
-                      )}
-                    </>
-                  )}
-                  {method === "cash" && (
-                    <>
-                      <select
-                        value={bankName}
-                        onChange={e => setBankName(e.target.value)}
-                        className={`${inputCls} w-36 shrink-0`}
-                      >
-                        <option value="">은행 선택...</option>
-                        {BANKS.map(b => <option key={b} value={b}>{b}</option>)}
-                        <option value="직접입력">직접 입력...</option>
-                      </select>
-                      {bankName === "직접입력" && (
-                        <input
-                          type="text"
-                          value={bankNameCustom}
-                          onChange={e => setBankNameCustom(e.target.value)}
-                          placeholder="은행 이름"
-                          className={`${inputCls} flex-1 min-w-[140px]`}
-                        />
-                      )}
-                    </>
-                  )}
-                  {method === "etc" && (
-                    <input
-                      type="text"
-                      value={etcNote}
-                      onChange={e => setEtcNote(e.target.value)}
-                      placeholder="예: 페이코 · 카카오페이 · 상계 · 어음 등"
-                      className={`${inputCls} flex-1 min-w-[180px]`}
-                    />
-                  )}
-                  {/* 부가세 포함 체크박스 · 2026-08-04 · 사용자 요청 · 세금계산서 체크박스 대체 */}
-                  <label className={`ml-auto inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border cursor-pointer text-[12px] font-semibold transition shrink-0 ${
+                  <label className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border cursor-pointer text-[12px] font-semibold transition shrink-0 ${
                     taxInvoiceIssued
                       ? "bg-teal-50 border-teal-300 text-teal-700"
                       : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
