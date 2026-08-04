@@ -574,6 +574,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [needExtraMap, setNeedExtraMap] = useState<Map<string, NeedExtra>>(() => new Map());
   const [needExtraLoaded, setNeedExtraLoaded] = useState(false);
   const needExtraRequired = (
+    // 2026-08-04 · 매입주기 컬럼 상시 표시 → enrich 항상 로드
+    true ||
     orderNeedConfig.minPurchaseCycle > 0 ||
     orderNeedConfig.minMonthlySales > 0 ||
     orderNeedConfig.defaultSortKey === "sale_month" ||
@@ -1892,6 +1894,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       <th onClick={() => handleNeedSort("short")} title="부족량 정렬" className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">부족{needArrow("short")}</th>
                     </>
                   )}
+                  {/* 매입주기 컬럼 (2026-08-04 · 사용자 요청) · enrich 로 로드 · 미로딩·2회 미만 매입은 '-' */}
+                  <th onClick={() => handleNeedSort("cycle")} title="매입주기 (평균 며칠마다 매입) 정렬" className="text-right px-0.5 py-1.5 w-14 bg-teal-50/40 text-teal-600 cursor-pointer hover:bg-teal-100 select-none"><div className="leading-tight">매입<br/>주기{needArrow("cycle")}<br/><span className="text-[10px] text-slate-400 font-normal">(일)</span></div></th>
                   <th className="text-center px-0.5 py-1.5 w-20 cursor-default bg-emerald-50/30 text-emerald-600">발주</th>
                 </tr>
               </thead>
@@ -1930,6 +1934,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-rose-700 bg-rose-100/60">-{sumShort.toLocaleString()}</td>
                         </>
                       )}
+                      {/* 매입주기 sum 은 무의미 (평균 아님) · 빈칸 */}
+                      <td className="bg-teal-50/40" />
                       <td className="bg-slate-100" />
                     </tr>
                   );
@@ -2033,6 +2039,18 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           </td>
                         </>
                       )}
+                      {/* 매입주기 (2026-08-04 · teal 톤) · enrich 로 · 없으면 '-' */}
+                      {(() => {
+                        const cyc = needExtraMap.get(code)?.cycle ?? null;
+                        return (
+                          <td
+                            className={`text-right px-0.5 py-1.5 tabular-nums font-black text-[12px] bg-teal-50/40 align-top ${cyc != null ? "text-teal-700" : "text-slate-300"}`}
+                            title={cyc != null ? `평균 매입주기 · ${cyc}일 (매입일 2회↑ 기준)` : "매입 2회 미만 · 계산 불가"}
+                          >
+                            {cyc != null ? `${cyc}` : "—"}
+                          </td>
+                        );
+                      })()}
                       <td className="text-center px-1 py-1.5 align-top whitespace-nowrap">
                         {alreadyRequested ? (
                           <button
@@ -2066,7 +2084,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         · 2026-08-04 · 배지 → 텍스트 스타일 (사용자 요청) */}
                     {needStockDetailOpen.has(code) && (
                       <tr className="bg-violet-50/40">
-                        <td colSpan={12} className="px-3 py-2 border-t border-violet-100">
+                        <td colSpan={13} className="px-3 py-2 border-t border-violet-100">
                           <div className="flex items-center gap-3 flex-wrap text-[12px]">
                             <span className="text-violet-700 font-black">상세 재고현황</span>
                             <span className="text-orange-700"><span className="font-semibold">창고1</span> <span className="tabular-nums font-black">{inv?.w1 ?? "—"}</span></span>
@@ -2096,7 +2114,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   );
                 })}
                 {lowStockFiltered.length === 0 && (
-                  <tr><td colSpan={12} className="text-center text-[11px] text-slate-300 py-6">검색 결과 없음</td></tr>
+                  <tr><td colSpan={13} className="text-center text-[11px] text-slate-300 py-6">검색 결과 없음</td></tr>
                 )}
               </tbody>
             </table>
