@@ -581,6 +581,9 @@ export const PaymentInfoTab: React.FC = () => {
                 </div>
               </div>
 
+              {/* 결제 입력 + 최근 결제 내역 · 좌우 분할 · 반응형 stack (2026-08-04 · 사용자 요청) */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
+
               {/* ── 결제 입력 폼 ─────────────────────────────── */}
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-3">
                 <div className="flex items-center gap-2 pb-1 border-b border-slate-100">
@@ -595,8 +598,8 @@ export const PaymentInfoTab: React.FC = () => {
                   )}
                 </div>
 
-                {/* Row 1 · 결제일 · 결제방법 · 결제금액 · 부가세포함 (한줄 · 2026-08-04 · 사용자 요청) */}
-                <div className="grid grid-cols-1 sm:grid-cols-[130px_140px_1fr] gap-3 items-start">
+                {/* Row 1 · 결제일 · 결제방법 (2컬럼) · 2026-08-04 · 사용자 요청 */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
                   <FieldLabel label="결제일" icon={<CalendarDays size={11} />}>
                     <input
                       type="date"
@@ -616,6 +619,9 @@ export const PaymentInfoTab: React.FC = () => {
                       ))}
                     </select>
                   </FieldLabel>
+                </div>
+                {/* Row 2 · 결제 금액 (다음줄) */}
+                <div>
                   <FieldLabel label="결제 금액 (원)" icon={<Wallet size={11} />} required>
                     <div className="relative">
                       <input
@@ -839,6 +845,7 @@ export const PaymentInfoTab: React.FC = () => {
                   </div>
                 )}
               </div>
+              </div>{/* 결제입력+최근결제내역 grid wrapper close */}
             </>
           )}
         </div>
