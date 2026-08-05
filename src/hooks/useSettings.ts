@@ -28,6 +28,17 @@ export interface AppSettings {
 const STORAGE_KEY = "app_settings";
 const DB_KEY = "all_settings";
 
+// 2026-08-05 · 근로계약서 시급 default (사용자 편집 가능한 초기값)
+//  - 약사: 주중 35,000 / 주말 40,000
+//  - 사원 (그 외 직급 · 캐셔·물류 등): 2026년 최저시급 기준 · 주중 10,030 / 주말 12,000
+export const DEFAULT_PHARMACIST_WAGE: WageRate = { weekday: 35000, weekend: 40000 };
+export const DEFAULT_STAFF_WAGE: WageRate = { weekday: 10030, weekend: 12000 };
+
+/** 직급명 → default 시급. positions 목록에 있으면 자동으로 default 를 제공. */
+export function defaultWageForPosition(position: string): WageRate {
+  return position === "약사" ? { ...DEFAULT_PHARMACIST_WAGE } : { ...DEFAULT_STAFF_WAGE };
+}
+
 const DEFAULT_SETTINGS: AppSettings = {
   positions: ["약사", "캐셔", "물류", "대표", "임원"],
   employmentTypes: ["정직원", "계약직", "알바"],

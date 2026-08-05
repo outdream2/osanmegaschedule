@@ -37,7 +37,7 @@ import {
 } from "../ContractSettingsPage/ContractSettingsPage";
 import SplitPanel from "../common/SplitPanel";
 import sungstampUrl from "../../images/sungstamp.png";
-import { useSettings } from "../../hooks/useSettings";
+import { useSettings, defaultWageForPosition, type WageRate } from "../../hooks/useSettings";
 import kyustampUrl from "../../images/kyustamp.png";
 
 type SignatureCanvasType = SignaturePad;
@@ -1457,27 +1457,46 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
 
       {/* 2. 근로계약기간 */}
       <Section label="근로계약기간">
+        {/* 계약체결일 · 근무시작일 · 항상 표시 */}
+        <div className="grid grid-cols-2 gap-2 mb-1.5 text-[11.5px]">
+          <div className="border border-slate-300 rounded-sm px-2 py-1 bg-slate-50">
+            <div className="text-[10px] text-slate-500 font-semibold">계약체결일</div>
+            <div className="font-bold text-slate-900 tabular-nums">
+              {fmtKoreanDate(form.contractSignDate) || "-"}
+            </div>
+          </div>
+          <div className="border border-slate-300 rounded-sm px-2 py-1 bg-slate-50">
+            <div className="text-[10px] text-slate-500 font-semibold">근무시작일</div>
+            <div className="font-bold text-slate-900 tabular-nums">
+              {fmtKoreanDate(form.startDate) || "-"}
+            </div>
+          </div>
+        </div>
+
         <div className="flex items-center gap-2 mb-1">
           <SpanBox checked={form.indefinite} />
           <span className="font-bold">기간의 정함이 없음.</span>
           <span className="text-[11px] text-slate-600">(근로개시일: <b>{fmtKoreanDate(form.startDate) || "-"}</b>)</span>
         </div>
-        <div className="flex items-center flex-wrap gap-1 text-[12px]">
-          <SpanBox checked={!form.indefinite} />
-          <span className="tabular-nums">
-            <b>{stDate ? stDate[1] : "20__"}</b>년{" "}
-            <b>{stDate ? Number(stDate[2]) : "__"}</b>월{" "}
-            <b>{stDate ? Number(stDate[3]) : "__"}</b>일{" "}
-            ~ <b>{enDate ? enDate[1] : "20__"}</b>년{" "}
-            <b>{enDate ? Number(enDate[2]) : "__"}</b>월{" "}
-            <b>{enDate ? Number(enDate[3]) : "__"}</b>일까지
-          </span>
-          <span className="text-[10.5px] text-slate-600 ml-1">(근로개시일: {fmtKoreanDate(form.startDate) || "-"})</span>
-        </div>
+        {/* 정규직(indefinite) 이면 계약종료일 라인 완전 숨김 */}
         {!form.indefinite && (
-          <div className="text-[10.5px] text-slate-600 mt-1">
-            계약기간 만료일에 별도의 통보 없이 근로계약은 자동 해지되는 것으로 한다.
-          </div>
+          <>
+            <div className="flex items-center flex-wrap gap-1 text-[12px]">
+              <SpanBox checked={!form.indefinite} />
+              <span className="tabular-nums">
+                <b>{stDate ? stDate[1] : "20__"}</b>년{" "}
+                <b>{stDate ? Number(stDate[2]) : "__"}</b>월{" "}
+                <b>{stDate ? Number(stDate[3]) : "__"}</b>일{" "}
+                ~ <b>{enDate ? enDate[1] : "20__"}</b>년{" "}
+                <b>{enDate ? Number(enDate[2]) : "__"}</b>월{" "}
+                <b>{enDate ? Number(enDate[3]) : "__"}</b>일까지
+              </span>
+              <span className="text-[10.5px] text-slate-600 ml-1">(근로개시일: {fmtKoreanDate(form.startDate) || "-"})</span>
+            </div>
+            <div className="text-[10.5px] text-slate-600 mt-1">
+              계약기간 만료일에 별도의 통보 없이 근로계약은 자동 해지되는 것으로 한다.
+            </div>
+          </>
         )}
       </Section>
 
@@ -2108,6 +2127,11 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
 
   // prefill (직원목록 [작성] 버튼)
   const [prefillConsumed, setPrefillConsumed] = useState(false);
+
+  // 2026-08-05 · 시급 자동 로드 상태 · 사용자 직접 입력 vs 자동 로드 구분
+  const wageAutoLoadedRef = useRef(false);
+  const lastAutoWageRef = useRef<{ wd: string; we: string } | null>(null);
+  const wageAutoInitRef = useRef(false);
   useEffect(() => {
     if (prefillConsumed) return;
     try {
@@ -2142,6 +2166,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             : prev.annualLeaveDays;
         // T14/Phase B · 직급별 default 시급 자동 로드 (개인별 override 우선)
         //   · 사용자 편집 가능 유지 · 기존 값이 default (12000/13500) 이면만 덮어씀
+        //   2026-08-05 · settings 미설정 시 defaultWageForPosition fallback (약사=35000/40000 · 그외=10030/12000)
         const isDefaultWage = (prev.weekdayHourly === "12000" || !prev.weekdayHourly) &&
                               (prev.weekendHourly === "13500" || !prev.weekendHourly);
         let wd = prev.weekdayHourly;
@@ -2151,10 +2176,12 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const empId = typeof p.employeeId === "number" ? p.employeeId : null;
           const override = empId != null ? settings.employeeWageOverrides?.[empId] : undefined;
           const positionRate = rawPos ? settings.wageRates?.[rawPos] : undefined;
-          const rate = override ?? positionRate;
+          const rate = override ?? positionRate ?? (rawPos ? defaultWageForPosition(rawPos) : null);
           if (rate) {
             wd = String(rate.weekday);
             we = String(rate.weekend);
+            wageAutoLoadedRef.current = true;
+            lastAutoWageRef.current = { wd, we };
           }
         }
         return {
@@ -2180,25 +2207,52 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
 
   // T14/Phase B · 직급 기본 시급 재적용 · 사용자 액션
   //   폼의 employeeCategory 기반 · settings 에서 값 로드 · 개인별 override 있으면 그 값 우선
-  const applyDefaultHourly = useCallback(() => {
+  //   2026-08-05 · settings 에 저장된 값이 없으면 defaultWageForPosition (약사=35000/40000 · 그외=10030/12000) 을 자동 fallback
+  const resolveWageForCategory = useCallback((cat: ContractForm["employeeCategory"], custom: string, empId: number | null): WageRate & { posKey: string } => {
     const catToPositionKey = (c: ContractForm["employeeCategory"]): string => {
-      // 폼 카테고리(약사/매장/창고/기타) → settings positions 키 매핑
       if (c === "약사") return "약사";
       if (c === "매장") return "매장";
       if (c === "창고") return "창고";
       return "";
     };
-    const posKey = catToPositionKey(form.employeeCategory) || form.employeeCategoryCustom;
-    const empId = form.employeeId;
+    const posKey = catToPositionKey(cat) || custom || "사원";
     const override = empId != null ? settings.employeeWageOverrides?.[empId] : undefined;
     const positionRate = posKey ? settings.wageRates?.[posKey] : undefined;
-    const rate = override ?? positionRate;
-    if (!rate) {
-      alert(`직급 "${posKey || "?"}" 기본 시급이 설정되지 않았습니다.\n설정 > 시급 설정 에서 등록해주세요.`);
+    const rate = override ?? positionRate ?? defaultWageForPosition(posKey);
+    return { weekday: rate.weekday, weekend: rate.weekend, posKey };
+  }, [settings.wageRates, settings.employeeWageOverrides]);
+
+  const applyDefaultHourly = useCallback(() => {
+    const { weekday, weekend } = resolveWageForCategory(form.employeeCategory, form.employeeCategoryCustom, form.employeeId);
+    setForm(prev => ({ ...prev, weekdayHourly: String(weekday), weekendHourly: String(weekend) }));
+    // 자동 로드 마킹 · 이후 카테고리 변경 시 재로드 허용
+    wageAutoLoadedRef.current = true;
+    lastAutoWageRef.current = { wd: String(weekday), we: String(weekend) };
+  }, [form.employeeCategory, form.employeeCategoryCustom, form.employeeId, resolveWageForCategory]);
+
+  // 2026-08-05 · form.employeeCategory 변경 시 자동 재로드
+  //   조건: (a) 최초 진입 default (12000/13500) · (b) 빈 값 · (c) 이전에 자동 로드한 값과 정확히 일치
+  //   → 사용자가 직접 입력한 값이면 덮어쓰지 않음
+  useEffect(() => {
+    // 첫 렌더 skip (mount 시엔 default 값 유지)
+    if (!wageAutoInitRef.current) {
+      wageAutoInitRef.current = true;
       return;
     }
-    setForm(prev => ({ ...prev, weekdayHourly: String(rate.weekday), weekendHourly: String(rate.weekend) }));
-  }, [form.employeeCategory, form.employeeCategoryCustom, form.employeeId, settings.wageRates, settings.employeeWageOverrides]);
+    const wd = form.weekdayHourly;
+    const we = form.weekendHourly;
+    const isInitialDefault = (wd === "12000" || wd === "") && (we === "13500" || we === "");
+    const last = lastAutoWageRef.current;
+    const isPreviousAuto = last && wd === last.wd && we === last.we;
+    if (!isInitialDefault && !isPreviousAuto) return; // 사용자가 직접 입력한 값 → 유지
+    const { weekday, weekend } = resolveWageForCategory(form.employeeCategory, form.employeeCategoryCustom, form.employeeId);
+    const nextWd = String(weekday);
+    const nextWe = String(weekend);
+    if (nextWd === wd && nextWe === we) return; // 이미 동일
+    setForm(prev => ({ ...prev, weekdayHourly: nextWd, weekendHourly: nextWe }));
+    wageAutoLoadedRef.current = true;
+    lastAutoWageRef.current = { wd: nextWd, we: nextWe };
+  }, [form.employeeCategory, form.employeeCategoryCustom, form.employeeId, resolveWageForCategory]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 계약 이력 조회
   useEffect(() => {
@@ -2862,24 +2916,28 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           )}
         </div>
 
-        {/* 계약 기간 + 계약체결일 */}
+        {/* 계약 기간 · 계약체결일 · 근무시작일 · 계약종료일(정규직 시 숨김) */}
         <div className="grid md:grid-cols-2 gap-2">
           <div className="flex flex-col gap-1">
             <FieldLabel required>계약 기간</FieldLabel>
-            <div className="grid grid-cols-[50px,1fr] gap-1 items-center">
-              <span className="text-[11px] text-slate-500 font-semibold">시작</span>
+            <div className="grid grid-cols-[70px,1fr] gap-1 items-center">
+              <span className="text-[11px] text-slate-500 font-semibold">근무시작일</span>
               <input type="date" value={form.startDate} onChange={(e) => upd("startDate", e.target.value)}
                 className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[12.5px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
               />
-              <span className="text-[11px] text-slate-500 font-semibold">종료</span>
-              <input type="date" value={form.endDate} onChange={(e) => upd("endDate", e.target.value)} disabled={form.indefinite}
-                className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[12.5px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
-              />
+              {!form.indefinite && (
+                <>
+                  <span className="text-[11px] text-slate-500 font-semibold">계약종료일</span>
+                  <input type="date" value={form.endDate} onChange={(e) => upd("endDate", e.target.value)}
+                    className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[12.5px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                  />
+                </>
+              )}
             </div>
             <label className="inline-flex items-center gap-1.5 cursor-pointer">
               <input type="checkbox" checked={form.indefinite} onChange={(e) => upd("indefinite", e.target.checked)}
                 className="w-4 h-4 accent-emerald-600" />
-              <span className="text-[11.5px] font-semibold text-slate-700">무기한 (정규직)</span>
+              <span className="text-[11.5px] font-semibold text-slate-700">무기한 (정규직) · 계약종료일 없음</span>
             </label>
           </div>
           <div className="flex flex-col gap-1">

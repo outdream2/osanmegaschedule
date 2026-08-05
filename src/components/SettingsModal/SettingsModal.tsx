@@ -1,7 +1,7 @@
 // src/components/SettingsModal.tsx
 import React, { useState, useEffect, useRef } from "react";
 import { X, Plus, Trash2, GripVertical, Check, MapPin, ShieldCheck, ChevronRight } from "lucide-react";
-import { AppSettings, WageRate, ScheduleTypeEntry } from "../../hooks/useSettings";
+import { AppSettings, WageRate, ScheduleTypeEntry, defaultWageForPosition } from "../../hooks/useSettings";
 import { COLOR_PRESETS, findPresetByBg } from "../../constants";
 
 interface SettingsModalProps {
@@ -673,13 +673,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                       <span>주말 시급 (원)</span>
                     </div>
                     {positions.map((pos) => {
-                      const rate = wageRates[pos] ?? { weekday: 0, weekend: 0 };
+                      // 2026-08-05 · 미설정 직급은 default 값 (약사=35000/40000 · 그외=10030/12000) 을 초기값으로 표시
+                      //  · 사용자 편집 가능 · 편집 시 wageRates 에 저장됨
+                      const stored = wageRates[pos];
+                      const fallback = defaultWageForPosition(pos);
+                      const rate = stored ?? fallback;
+                      const isDefault = !stored;
                       return (
                         <div
                           key={pos}
                           className="flex flex-col gap-1.5 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] sm:gap-2 sm:items-center bg-white border border-slate-200 rounded-lg px-3 py-2"
                         >
-                          <span className="text-xs font-semibold text-slate-800 truncate">{pos}</span>
+                          <span className="text-xs font-semibold text-slate-800 truncate flex items-center gap-1.5">
+                            {pos}
+                            {isDefault && (
+                              <span
+                                className="text-[9px] font-bold text-slate-400 border border-slate-200 rounded px-1 py-[1px]"
+                                title="기본값 · 편집 시 저장됩니다"
+                              >
+                                기본
+                              </span>
+                            )}
+                          </span>
                           <div className="flex items-center gap-1.5 sm:contents">
                             <span className="text-[10px] text-slate-400 font-semibold sm:hidden w-16 shrink-0">주중</span>
                             <input
@@ -687,8 +702,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                               min={0}
                               value={rate.weekday || ""}
                               onChange={(e) => updatePositionWage(pos, "weekday", parseWageInput(e.target.value))}
-                              placeholder="예: 10340"
-                              className="flex-1 sm:w-full text-xs rounded-lg border border-slate-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
+                              placeholder={String(fallback.weekday)}
+                              className={`flex-1 sm:w-full text-xs rounded-lg border p-2 bg-white focus:outline-none focus:border-[#2563eb] ${isDefault ? "border-slate-200 text-slate-500" : "border-slate-200"}`}
                             />
                           </div>
                           <div className="flex items-center gap-1.5 sm:contents">
@@ -698,8 +713,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                               min={0}
                               value={rate.weekend || ""}
                               onChange={(e) => updatePositionWage(pos, "weekend", parseWageInput(e.target.value))}
-                              placeholder="예: 10340"
-                              className="flex-1 sm:w-full text-xs rounded-lg border border-slate-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
+                              placeholder={String(fallback.weekend)}
+                              className={`flex-1 sm:w-full text-xs rounded-lg border p-2 bg-white focus:outline-none focus:border-[#2563eb] ${isDefault ? "border-slate-200 text-slate-500" : "border-slate-200"}`}
                             />
                           </div>
                         </div>
