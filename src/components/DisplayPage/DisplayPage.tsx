@@ -54,8 +54,22 @@ import { OcrPage } from "../OcrPage";
 import OrderManagePage from "../OrderManagePage/OrderManagePage";
 // 2026-08-03 (#183) · 공통 탭바 컴포넌트 · duplicate 스타일 흡수
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
+// 2026-08-05 · 관리자(level>=8) long-press 드래그 재정렬 · localStorage 순서 저장
+import { useSortableTabs } from "../../hooks/useSortableTabs";
 // 2026-08-03 · StaffManagePage · 매장관리 서브탭에서 제거 · 경영관리 통합 페이지(BusinessManagePage)로 이동
 import type { AuthSession } from "../../types";
+
+// ── DisplayPage 서브탭 (level 2) 정의 · 상수 · 컴포넌트 외부 배치 (참조 안정성 · 훅 재등록 방지) ──
+type DpSubTabKey = "purchase-order" | "purchase" | "payment" | "statistics" | "stock-arrivals" | "display-request" | "store";
+const DP_SUBTAB_DEFAULTS: CommonTabDef<DpSubTabKey>[] = [
+  { key: "purchase-order", label: "발주",       icon: ClipboardList, color: "sky"    },
+  { key: "purchase",       label: "매입",       icon: Package,       color: "amber"  },
+  { key: "payment",        label: "결제",       icon: Wallet,        color: "teal"   },
+  { key: "statistics",     label: "통계",       icon: BarChart2,     color: "indigo" },
+  { key: "stock-arrivals", label: "입고알림",   icon: Bell,          color: "orange" },
+  { key: "display-request",label: "진열요청",   icon: Bell,          color: "rose"   },
+  { key: "store",          label: "매장구역도", icon: Store,         color: "violet" },
+];
 
 interface DisplayPageProps {
   onBack: () => void;
@@ -329,8 +343,14 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       authSession?.role === "manager" ? 2 : authSession?.role === "employee" ? 1 : 0);
   const dpCanSeeStockManage = dpUserLevel >= 9;
   const dpCanSeeStockArrivals = dpUserLevel >= 3;
-  const [dpSubTab, setDpSubTab] = useState<"store" | "purchase-order" | "purchase" | "payment" | "statistics" | "stock-arrivals" | "display-request">(
+  const [dpSubTab, setDpSubTab] = useState<DpSubTabKey>(
     dpCanSeeStockManage ? "purchase-order" : "store"
+  );
+  // 2026-08-05 · 관리자(level>=8) long-press 드래그 재정렬
+  const dpTabSortable = useSortableTabs<CommonTabDef<DpSubTabKey>>(
+    "tabOrder.displayPage",
+    DP_SUBTAB_DEFAULTS,
+    dpUserLevel >= 8,
   );
   const [zones, setZones] = useState<DisplayZone[]>(() => loadZones());
   const [zonesLoaded, setZonesLoaded] = useState(false);
@@ -1422,25 +1442,26 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
       {/* 서브탭 · 2026-07-28 재설계 · Vercel Ink underline 계열 + 색상 아이덴티티 강조 */}
       {/* 2026-08-03 (#183) · 공통 TabBar (level 2) 로 리팩터 · duplicate 스타일 흡수 */}
+      {/* 2026-08-05 · 관리자 long-press 드래그 재정렬 (useSortableTabs · localStorage 순서 저장) */}
       {(dpCanSeeStockManage || dpCanSeeStockArrivals) && (() => {
-        type DpSubTabKey = "purchase-order" | "purchase" | "payment" | "statistics" | "stock-arrivals" | "display-request" | "store";
-        const tabs: CommonTabDef<DpSubTabKey>[] = [
-          // 2026-08-03 · 발주/사입관리 단일 탭 → 4개 서브탭으로 분해 (사용자 요청) · stock-manage 폐지
-          { key: "purchase-order", label: "발주",         icon: ClipboardList, visible: dpCanSeeStockManage,   color: "sky"     },
-          { key: "purchase",       label: "매입",         icon: Package,       visible: dpCanSeeStockManage,   color: "amber"   },
-          { key: "payment",        label: "결제",         icon: Wallet,        visible: dpCanSeeStockManage,   color: "teal"    },
-          { key: "statistics",     label: "통계",         icon: BarChart2,     visible: dpCanSeeStockManage,   color: "indigo"  },
-          { key: "stock-arrivals", label: "입고알림",     icon: Bell,          visible: dpCanSeeStockArrivals, color: "orange"  },
-          // 2026-08-05 · 진열요청 Phase 3 · 상품별 3단계 워크플로우 리스트
-          { key: "display-request",label: "진열요청",     icon: Bell,          visible: true,                  color: "rose"    },
-          { key: "store",          label: "매장구역도",   icon: Store,         visible: true,                  color: "violet"  },
-        ];
+        const visibilityMap: Record<DpSubTabKey, boolean> = {
+          "purchase-order": dpCanSeeStockManage,
+          "purchase":       dpCanSeeStockManage,
+          "payment":        dpCanSeeStockManage,
+          "statistics":     dpCanSeeStockManage,
+          "stock-arrivals": dpCanSeeStockArrivals,
+          "display-request": true,
+          "store":          true,
+        };
+        // sortable.tabs 는 localStorage 순서가 적용된 배열 · 여기서 visible 만 덮어씌움
+        const tabs: CommonTabDef<DpSubTabKey>[] = dpTabSortable.tabs.map(t => ({ ...t, visible: visibilityMap[t.key] }));
         return (
           <TabBar<DpSubTabKey>
             level={2}
             tabs={tabs}
-            activeKey={dpSubTab as DpSubTabKey}
-            onSelect={(k) => setDpSubTab(k as any)}
+            activeKey={dpSubTab}
+            onSelect={setDpSubTab}
+            sortable={{ getTabProps: dpTabSortable.getTabProps, isDragging: dpTabSortable.isDragging }}
           />
         );
       })()}

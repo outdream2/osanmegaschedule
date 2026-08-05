@@ -6,12 +6,14 @@
 //   · 60초 폴링 fallback (동일 세션 · 다른 탭 처리 반영)
 //
 // 2026-08-03 (#183) · 공통 TabBar 로 리팩터 · duplicate 스타일 흡수
-import React, { Suspense, useCallback, useEffect, useState } from "react";
+// 2026-08-05 · 관리자(level>=8) long-press 드래그 재정렬 (useSortableTabs · tabOrder.approvalCenter)
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarDots, SignOut } from "@phosphor-icons/react";
 import { LeavePage } from "../LeavePage/LeavePage";
 import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../AppNavHeader";
 import { TabBar, type TabDef } from "../common/TabBar";
+import { useSortableTabs } from "../../hooks/useSortableTabs";
 
 const ResignationApprovalPage = React.lazy(() => import("../ResignationApprovalPage/ResignationApprovalPage"));
 
@@ -63,21 +65,25 @@ const ApprovalCenterPage: React.FC<ApprovalCenterPageProps> = (props) => {
     };
   }, [loadCounts]);
 
-  const TABS: TabDef<ACTab>[] = [
+  const TABS: TabDef<ACTab>[] = useMemo(() => [
     { key: "leave",       label: "연차승인",   icon: CalendarDots, color: "teal", badge: leaveCount  },
     { key: "resignation", label: "사직서승인", icon: SignOut,      color: "rose", badge: resignCount },
-  ];
+  ], [leaveCount, resignCount]);
+
+  const isAdmin = (props.authSession?.level ?? 0) >= 8;
+  const sortable = useSortableTabs<TabDef<ACTab>>("tabOrder.approvalCenter", TABS, isAdmin);
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {/* ── 내부 2탭 바 · 공통 TabBar (level 2) · rose 배지 ── */}
+      {/* ── 내부 2탭 바 · 공통 TabBar (level 2) · rose 배지 · 관리자 long-press 재정렬 ── */}
       <TabBar<ACTab>
         level={2}
-        tabs={TABS}
+        tabs={sortable.tabs}
         activeKey={tab}
         onSelect={setTab}
         badgeColor="rose"
         maxWidth={1400}
+        sortable={{ getTabProps: sortable.getTabProps, isDragging: sortable.isDragging }}
       />
 
       {/* ── 내부 탭 컨텐츠 ── */}
