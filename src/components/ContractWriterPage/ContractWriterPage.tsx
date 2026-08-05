@@ -214,6 +214,18 @@ interface ContractForm {
     workTime: boolean;
     etc: boolean;
   };
+
+  // T-CTR-7 (2026-08-05) · 임금 항목 명시적 비활성화 · 사용자 체크 해제 시 true (자동 재계산 useEffect 에서 skip)
+  //   · basicSalary 는 항상 활성 (필드 없음)
+  //   · undefined = 미설정 (기본 · 자동 판단 사용) · false = 명시적 활성 · true = 명시적 비활성
+  //   · 하위호환 · 저장된 계약서에 필드 없으면 undefined 처리
+  wageDisabled?: {
+    fixedOvertime?: boolean;
+    fixedHoliday?: boolean;
+    fixedHolidayOvertime?: boolean;
+    fixedNight?: boolean;
+    fixedAnnualLeave?: boolean;
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -906,6 +918,14 @@ const emptyForm = (): ContractForm => ({
   contractSignDate: todayIso(),
   targetNetInput: "",
   clauseAcks: { wage: false, workTime: false, etc: false },
+  // T-CTR-7 · 임금 항목 명시적 비활성화 · 기본 · 연차 활성 (기본급은 별도 · 필드 없음)
+  wageDisabled: {
+    fixedOvertime: false,
+    fixedHoliday: false,
+    fixedHolidayOvertime: true,
+    fixedNight: true,
+    fixedAnnualLeave: false,
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1279,19 +1299,30 @@ const WageComponentsTable: React.FC<{ wage: WageComponents }> = ({ wage }) => {
 //   시급 입력 시 자동 계산 결과 반영 (read-only)
 // ─────────────────────────────────────────────────────────────────────────────
 
+// T-CTR-7 · toggleable 항목 key
+type WageEntryKey = keyof Pick<WageComponents, "basicSalary" | "fixedOvertime" | "fixedHoliday" | "fixedHolidayOvertime" | "fixedNight" | "fixedAnnualLeave">;
+type WageToggleableKey = Exclude<WageEntryKey, "basicSalary">;
+type WageDisabledMap = NonNullable<ContractForm["wageDisabled"]>;
+
 interface WageComponentsFormProps {
   wage: WageComponents;
   onChange: (next: WageComponents) => void;
   // T-V (2026-08-05) · 통상시급 · 수식 표시용 (내용 컬럼에 = 시급 × N 표기)
   weekdayHourly?: number;
+  // T-CTR-7 (2026-08-05) · 각 임금 항목 체크박스 활성화 상태 (명시적 비활성)
+  wageDisabled?: WageDisabledMap;
+  onWageDisabledChange?: (next: WageDisabledMap) => void;
 }
 
 // T-K (2026-08-05) · 이미지 레이아웃 3열 재구성 (구성 항목 · 내용 · 금액)
 //   좌측 폼도 우측 프리뷰와 동일한 배치 · 금액 없으면 "-" · 하단 월급여총액 (포괄임금) 강조
 // T-V (2026-08-05) · 내용 컬럼에 수식 표시 (= 시급 × N · 배수 반영됨)
-const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange, weekdayHourly = 0 }) => {
+// T-CTR-7 (2026-08-05) · 각 임금 항목 체크박스 활성화 · 명시적 비활성 시 form.wageDisabled[key]=true · useEffect 자동 채움 skip
+//   · basicSalary 는 항상 활성 (체크박스 없음)
+//   · 해제 시 · 백업 lastValuesRef · 재활성 시 복원 (사용자 편집 손실 방지)
+const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange, weekdayHourly = 0, wageDisabled, onWageDisabledChange }) => {
   const updEntry = (
-    key: keyof Pick<WageComponents, "basicSalary" | "fixedOvertime" | "fixedHoliday" | "fixedHolidayOvertime" | "fixedNight" | "fixedAnnualLeave">,
+    key: WageEntryKey,
     field: keyof WageComponentEntry,
     val: number,
   ) => {
@@ -1301,16 +1332,43 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
     onChange({ ...wage, [key]: val });
   };
 
+  // T-CTR-7 · 해제된 항목의 마지막 값 백업 (재활성화 시 복원용)
+  const lastValuesRef = React.useRef<Partial<Record<WageToggleableKey, WageComponentEntry>>>({});
+  // 명시적 비활성 여부 · form.wageDisabled[key] === true
+  const isKeyDisabled = (key: WageToggleableKey): boolean => Boolean(wageDisabled?.[key]);
+  const toggleEntry = (key: WageToggleableKey, enabled: boolean) => {
+    const cur = wage[key];
+    // 1) disabled 맵 갱신 (상위 form 반영)
+    if (onWageDisabledChange) {
+      onWageDisabledChange({ ...(wageDisabled ?? {}), [key]: !enabled });
+    }
+    // 2) 값 반영 · 활성화 · 백업 있으면 복원 · 없으면 유지 (자동 채움이 다음 useEffect 에서 동작)
+    if (enabled) {
+      const restored = lastValuesRef.current[key];
+      if (restored && (restored.hours + restored.minutes + restored.amount > 0)) {
+        onChange({ ...wage, [key]: restored });
+      }
+      // 백업 없음 · 값 그대로 (0/0/0 유지 · 자동 재계산 useEffect 가 채움)
+    } else {
+      // 비활성화 · 현재 값 백업 · 필드 0 처리
+      if (cur.hours > 0 || cur.minutes > 0 || cur.amount > 0) {
+        lastValuesRef.current[key] = { ...cur };
+      }
+      onChange({ ...wage, [key]: { hours: 0, minutes: 0, amount: 0 } });
+    }
+  };
+
   // T-K · 8항목 rows (이미지 원본 순서)
   // T-V · formulaMul · 시급에 곱할 계수 (배수 이미 반영 항목 = 1 · 0.5배 항목 = 0.5)
-  type ComponentKey = keyof Pick<WageComponents, "basicSalary" | "fixedOvertime" | "fixedHoliday" | "fixedHolidayOvertime" | "fixedNight" | "fixedAnnualLeave">;
-  const rows: Array<{ key: ComponentKey; label: string; note: string; formulaMul: number; formulaHint?: string }> = [
-    { key: "basicSalary",          label: "기본급",                   note: "주휴수당 포함",     formulaMul: 1,   formulaHint: "주40+주휴8 × 4.3452" },
-    { key: "fixedOvertime",        label: "(고정)연장근로수당",       note: "1.5배 가산 포함",   formulaMul: 1,   formulaHint: "시간에 1.5배 반영됨" },
-    { key: "fixedHoliday",         label: "(고정)휴일근로수당",       note: "1.5배 가산 포함",   formulaMul: 1,   formulaHint: "시간에 1.5배 반영됨" },
-    { key: "fixedHolidayOvertime", label: "(고정)휴일연장근로수당",   note: "0.5배 가산 포함",   formulaMul: 0.5 },
-    { key: "fixedNight",           label: "(고정)야간근로수당",       note: "0.5배 가산 포함",   formulaMul: 0.5 },
-    { key: "fixedAnnualLeave",     label: "(고정)연차휴가수당",       note: "",                  formulaMul: 1 },
+  // T-CTR-7 · toggleable · basicSalary=false (항상 활성) · 나머지 5개=true
+  type ComponentKey = WageEntryKey;
+  const rows: Array<{ key: ComponentKey; label: string; note: string; formulaMul: number; formulaHint?: string; toggleable: boolean }> = [
+    { key: "basicSalary",          label: "기본급",                   note: "주휴수당 포함",     formulaMul: 1,   formulaHint: "주40+주휴8 × 4.3452", toggleable: false },
+    { key: "fixedOvertime",        label: "(고정)연장근로수당",       note: "1.5배 가산 포함",   formulaMul: 1,   formulaHint: "시간에 1.5배 반영됨",  toggleable: true },
+    { key: "fixedHoliday",         label: "(고정)휴일근로수당",       note: "1.5배 가산 포함",   formulaMul: 1,   formulaHint: "시간에 1.5배 반영됨",  toggleable: true },
+    { key: "fixedHolidayOvertime", label: "(고정)휴일연장근로수당",   note: "0.5배 가산 포함",   formulaMul: 0.5,                                       toggleable: true },
+    { key: "fixedNight",           label: "(고정)야간근로수당",       note: "0.5배 가산 포함",   formulaMul: 0.5,                                       toggleable: true },
+    { key: "fixedAnnualLeave",     label: "(고정)연차휴가수당",       note: "",                  formulaMul: 1,                                         toggleable: true },
   ];
 
   const total = computeWageTotal(wage);
@@ -1337,19 +1395,47 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
           {rows.map(r => {
             const entry = wage[r.key];
             const isEmpty = entry.hours === 0 && entry.minutes === 0 && entry.amount === 0;
+            // T-CTR-7 · 명시적 비활성 · form.wageDisabled[key] === true
+            const explicitlyDisabled = r.toggleable && isKeyDisabled(r.key as WageToggleableKey);
+            const enabled = !explicitlyDisabled;
+            const dim = explicitlyDisabled;
             return (
-              <tr key={r.key} className="border-b border-slate-100 last:border-b-0">
+              <tr key={r.key} className={`border-b border-slate-100 last:border-b-0 ${dim ? "opacity-60" : ""}`}>
                 <td className="px-1.5 py-1 align-middle">
-                  <div className="text-[11px] font-bold text-slate-800 leading-tight">
-                    {r.label}
-                  </div>
-                  {r.note && (
-                    <div className="text-[9px] text-slate-500 font-semibold leading-tight">
-                      ({r.note})
-                    </div>
+                  {r.toggleable ? (
+                    <label className="inline-flex items-start gap-1.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={enabled}
+                        onChange={(e) => toggleEntry(r.key as WageToggleableKey, e.target.checked)}
+                        className="w-3.5 h-3.5 rounded accent-indigo-600 cursor-pointer shrink-0 mt-0.5"
+                        title={enabled ? `${r.label} 비활성화` : `${r.label} 활성화`}
+                      />
+                      <span>
+                        <div className="text-[11px] font-bold text-slate-800 leading-tight">
+                          {r.label}
+                        </div>
+                        {r.note && (
+                          <div className="text-[9px] text-slate-500 font-semibold leading-tight">
+                            ({r.note})
+                          </div>
+                        )}
+                      </span>
+                    </label>
+                  ) : (
+                    <>
+                      <div className="text-[11px] font-bold text-slate-800 leading-tight">
+                        {r.label}
+                      </div>
+                      {r.note && (
+                        <div className="text-[9px] text-slate-500 font-semibold leading-tight">
+                          ({r.note})
+                        </div>
+                      )}
+                    </>
                   )}
                 </td>
-                {/* 내용 · 월평균 시간·분 입력 + T-V 수식 표시 */}
+                {/* 내용 · 월평균 시간·분 입력 + T-V 수식 표시 · T-CTR-7 · disabled 시 회색 */}
                 <td className="px-1.5 py-1 align-middle">
                   <div className="flex items-center justify-center gap-0.5 text-[10px] text-slate-500 font-semibold">
                     <span>월평균</span>
@@ -1358,7 +1444,8 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
                       min={0}
                       value={entry.hours}
                       onChange={(e) => updEntry(r.key, "hours", Number(e.target.value) || 0)}
-                      className="w-8 bg-white border border-slate-200 rounded px-0.5 py-0.5 text-[11px] text-slate-800 font-semibold text-right focus:outline-none focus:border-indigo-500 transition"
+                      disabled={dim}
+                      className={`w-8 bg-white border border-slate-200 rounded px-0.5 py-0.5 text-[11px] font-semibold text-right focus:outline-none focus:border-indigo-500 transition ${dim ? "bg-slate-50 text-slate-300 cursor-not-allowed" : "text-slate-800"}`}
                       placeholder="0"
                     />
                     <span>h</span>
@@ -1368,7 +1455,8 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
                       max={59}
                       value={entry.minutes}
                       onChange={(e) => updEntry(r.key, "minutes", Math.max(0, Math.min(59, Number(e.target.value) || 0)))}
-                      className="w-7 bg-white border border-slate-200 rounded px-0.5 py-0.5 text-[11px] text-slate-800 font-semibold text-right focus:outline-none focus:border-indigo-500 transition"
+                      disabled={dim}
+                      className={`w-7 bg-white border border-slate-200 rounded px-0.5 py-0.5 text-[11px] font-semibold text-right focus:outline-none focus:border-indigo-500 transition ${dim ? "bg-slate-50 text-slate-300 cursor-not-allowed" : "text-slate-800"}`}
                       placeholder="0"
                     />
                     <span>m</span>
@@ -1393,7 +1481,7 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
                     );
                   })()}
                 </td>
-                {/* 금액 · 없으면 "-" placeholder · 입력 시 값 표시 */}
+                {/* 금액 · 없으면 "-" placeholder · 입력 시 값 표시 · T-CTR-7 · dim 시 편집 잠금 */}
                 <td className="px-1.5 py-1 align-middle text-right">
                   <div className="relative inline-block w-full">
                     <input
@@ -1401,10 +1489,13 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
                       inputMode="numeric"
                       value={entry.amount === 0 ? "" : String(entry.amount)}
                       onChange={(e) => updEntry(r.key, "amount", Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
+                      disabled={dim}
                       className={`w-full bg-white border rounded px-1 py-0.5 text-[11px] font-black text-right focus:outline-none focus:border-indigo-500 transition ${
-                        isEmpty ? "border-slate-100 text-slate-300" : "border-slate-200 text-slate-800"
+                        dim
+                          ? "border-slate-100 text-slate-300 bg-slate-50 cursor-not-allowed"
+                          : isEmpty ? "border-slate-100 text-slate-300" : "border-slate-200 text-slate-800"
                       }`}
-                      placeholder="-"
+                      placeholder={dim ? "비활성" : "-"}
                     />
                   </div>
                 </td>
@@ -3079,8 +3170,11 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         return false;
       };
 
+      // T-CTR-7 · 명시적 비활성 항목 skip · 자동 채움 방지 (사용자 의도 우선)
+      const disMap = prev.wageDisabled ?? {};
+
       if (base) {
-        // 1) basic hours · 노무사 표준
+        // 1) basic hours · 노무사 표준 (항상 활성)
         {
           const cur = prev.wageComponents.basicSalary;
           if (isSameAutoOrDefault(
@@ -3095,8 +3189,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             lastAutoBasicHoursRef.current = next;
           }
         }
-        // 2) fixedOvertime hours · 연장가산 (× 1.5 반영) · default 55h56m
-        {
+        // 2) fixedOvertime hours · 연장가산 (× 1.5 반영) · default 55h56m · T-CTR-7 · disabled 시 skip
+        if (!disMap.fixedOvertime) {
           const cur = nextWage.fixedOvertime;
           if (isSameAutoOrDefault(
             cur,
@@ -3110,8 +3204,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             lastAutoOtHoursRef.current = next;
           }
         }
-        // 3) fixedHoliday hours · 휴일가산 (× 1.5 반영) · default 22h0m · 주말 근무 없으면 0
-        {
+        // 3) fixedHoliday hours · 휴일가산 (× 1.5 반영) · default 22h0m · 주말 근무 없으면 0 · T-CTR-7 · disabled 시 skip
+        if (!disMap.fixedHoliday) {
           const cur = nextWage.fixedHoliday;
           if (isSameAutoOrDefault(
             cur,
@@ -3143,16 +3237,16 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         }
       }
 
-      // 4) 각 항목 시간 × 시급 재계산 (배수 · 야간/휴일연장 0.5)
+      // 4) 각 항목 시간 × 시급 재계산 (배수 · 야간/휴일연장 0.5) · T-CTR-7 · disabled 항목 amount=0 강제
       const calc = computeWageFromHourlyDual(wd, we, nextWage);
       const nextComp: WageComponents = {
         ...nextWage,
         basicSalary:          { ...nextWage.basicSalary,          amount: calc.basicAmount },
-        fixedOvertime:        { ...nextWage.fixedOvertime,        amount: calc.overtimeAmount },
-        fixedHoliday:         { ...nextWage.fixedHoliday,         amount: calc.holidayAmount },
-        fixedHolidayOvertime: { ...nextWage.fixedHolidayOvertime, amount: calc.holidayOvertimeAmount },
-        fixedNight:           { ...nextWage.fixedNight,           amount: calc.nightAmount },
-        fixedAnnualLeave:     { ...nextWage.fixedAnnualLeave,     amount: calc.annualLeaveAmount },
+        fixedOvertime:        { ...nextWage.fixedOvertime,        amount: disMap.fixedOvertime        ? 0 : calc.overtimeAmount },
+        fixedHoliday:         { ...nextWage.fixedHoliday,         amount: disMap.fixedHoliday         ? 0 : calc.holidayAmount },
+        fixedHolidayOvertime: { ...nextWage.fixedHolidayOvertime, amount: disMap.fixedHolidayOvertime ? 0 : calc.holidayOvertimeAmount },
+        fixedNight:           { ...nextWage.fixedNight,           amount: disMap.fixedNight           ? 0 : calc.nightAmount },
+        fixedAnnualLeave:     { ...nextWage.fixedAnnualLeave,     amount: disMap.fixedAnnualLeave     ? 0 : calc.annualLeaveAmount },
       };
 
       // 변화 감지 (시간 or 금액 갱신)
@@ -3188,6 +3282,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     form.wageComponents.fixedAnnualLeave.hours,
     form.wageComponents.fixedAnnualLeave.minutes,
     monthlyCalc,
+    // T-CTR-7 · 명시적 비활성 변경 시 재계산
+    form.wageDisabled,
   ]);
 
   // 직원 선택
@@ -4239,6 +4335,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             // T-X (2026-08-05) · 노무사 표준 계산법 · 동적 시간 산정
             //   · dailyH + 주중일수 + 주말일수 · 각 항목 시간 자동
             //   · divisor = 기본h + 연장가산h + 휴일가산h + 연차h
+            // T-CTR-7 · 명시적 비활성 항목 · divisor 에서 제외 · 시급 재산정 · amount=0 유지
+            const disMap = form.wageDisabled ?? {};
             const dailyH = monthlyCalc ? monthlyCalc.dailyMinutes / 60 : 0;
             const useDynamic = dailyH > 0 && weeklyWeekdayDays > 0;
             const base = useDynamic
@@ -4247,9 +4345,13 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             const annualLeaveH = form.wageComponents.fixedAnnualLeave.hours
                                 + form.wageComponents.fixedAnnualLeave.minutes / 60
                               || WAGE_HOURS.ANNUAL_LEAVE;
-            const divisor = base
-              ? (base.monthlyBasicH + base.monthlyOvertimeGainedH + base.monthlyHolidayGainedH + annualLeaveH)
-              : WAGE_DIVISOR;
+            const otH = base ? base.monthlyOvertimeGainedH : WAGE_HOURS.OVERTIME;
+            const holH = base ? base.monthlyHolidayGainedH : WAGE_HOURS.HOLIDAY;
+            const basicH = base ? base.monthlyBasicH : WAGE_HOURS.BASIC;
+            const divisor = basicH
+              + (disMap.fixedOvertime    ? 0 : otH)
+              + (disMap.fixedHoliday     ? 0 : holH)
+              + (disMap.fixedAnnualLeave ? 0 : annualLeaveH);
             const hourly = divisor > 0 ? Math.round(gross / divisor) : 0;
 
             const splitHM = (totalH: number): { h: number; m: number } => {
@@ -4262,17 +4364,24 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               const nextBasic = base
                 ? { ...splitHM(base.monthlyBasicH),          amount: Math.round(base.monthlyBasicH * hourly) }
                 : { hours: 209, minutes: 0,  amount: Math.round(WAGE_HOURS.BASIC * hourly) };
-              const nextOt = base
-                ? { ...splitHM(base.monthlyOvertimeGainedH), amount: Math.round(base.monthlyOvertimeGainedH * hourly) }
-                : { hours: 55,  minutes: 56, amount: Math.round(WAGE_HOURS.OVERTIME * hourly) };
-              const nextHoliday = base
-                ? { ...splitHM(base.monthlyHolidayGainedH),  amount: Math.round(base.monthlyHolidayGainedH * hourly) }
-                : { hours: 22,  minutes: 0,  amount: Math.round(WAGE_HOURS.HOLIDAY * hourly) };
-              const nextAnnual = {
-                hours: prev.wageComponents.fixedAnnualLeave.hours || 10,
-                minutes: prev.wageComponents.fixedAnnualLeave.minutes,
-                amount: Math.round((prev.wageComponents.fixedAnnualLeave.hours + prev.wageComponents.fixedAnnualLeave.minutes / 60 || WAGE_HOURS.ANNUAL_LEAVE) * hourly),
-              };
+              // T-CTR-7 · disabled 시 · 시간·금액 0 유지
+              const nextOt = disMap.fixedOvertime
+                ? { hours: 0, minutes: 0, amount: 0 }
+                : (base
+                    ? { ...splitHM(base.monthlyOvertimeGainedH), amount: Math.round(base.monthlyOvertimeGainedH * hourly) }
+                    : { hours: 55,  minutes: 56, amount: Math.round(WAGE_HOURS.OVERTIME * hourly) });
+              const nextHoliday = disMap.fixedHoliday
+                ? { hours: 0, minutes: 0, amount: 0 }
+                : (base
+                    ? { ...splitHM(base.monthlyHolidayGainedH),  amount: Math.round(base.monthlyHolidayGainedH * hourly) }
+                    : { hours: 22,  minutes: 0,  amount: Math.round(WAGE_HOURS.HOLIDAY * hourly) });
+              const nextAnnual = disMap.fixedAnnualLeave
+                ? { hours: 0, minutes: 0, amount: 0 }
+                : {
+                    hours: prev.wageComponents.fixedAnnualLeave.hours || 10,
+                    minutes: prev.wageComponents.fixedAnnualLeave.minutes,
+                    amount: Math.round((prev.wageComponents.fixedAnnualLeave.hours + prev.wageComponents.fixedAnnualLeave.minutes / 60 || WAGE_HOURS.ANNUAL_LEAVE) * hourly),
+                  };
               return {
                 ...prev,
                 weekdayHourly: String(hourly),
@@ -4482,11 +4591,13 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           </div>
         </div>
 
-        {/* 임금 구성표 · T-V (2026-08-05) · 항상 표시 · weekdayHourly 로 수식 계산 */}
+        {/* 임금 구성표 · T-V (2026-08-05) · 항상 표시 · weekdayHourly 로 수식 계산 · T-CTR-7 · 체크박스 활성화 */}
         <WageComponentsForm
           wage={form.wageComponents}
           onChange={(next) => upd("wageComponents", next)}
           weekdayHourly={Number(form.weekdayHourly) || 0}
+          wageDisabled={form.wageDisabled}
+          onWageDisabledChange={(next) => upd("wageDisabled", next)}
         />
 
         </>)}
