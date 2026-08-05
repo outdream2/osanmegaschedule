@@ -3309,6 +3309,34 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     });
   }, [form.employeeName, form.employeeAddress]);
 
+  // T-CTR-9 · Step 2 (2026-08-05) · 자동 희망세후 (실수령액) 계산
+  //   · 사용자 정본 흐름:
+  //     (주중일 × 하루h × 주중시급 + 주말일 × 하루h × 주말시급) × 4.3452
+  //     = 희망세후 실수령액 (자동 입력창 반영)
+  //   · 사용자가 targetNetInput 편집한 후엔 자동 갱신 중단 (수동 우선)
+  //   · targetNetInput 을 빈 값으로 초기화하면 자동 재개
+  const manualTargetNetRef = useRef(false);
+  useEffect(() => {
+    if (manualTargetNetRef.current) return; // 수동 편집 후엔 스킵
+    const dailyH = monthlyCalc ? monthlyCalc.dailyMinutes / 60 : 0;
+    const wdRate = Number(form.weekdayHourly) || 0;
+    const weRate = Number(form.weekendHourly) || wdRate;
+    if (!Number.isFinite(dailyH) || dailyH <= 0) return;
+    if (!Number.isFinite(wdRate) || wdRate <= 0) return;
+    if (!Number.isFinite(weeklyWeekdayDays) || weeklyWeekdayDays <= 0) return;
+
+    const monthlyWeekdayHours = weeklyWeekdayDays * dailyH * WEEK_PER_MONTH;
+    const monthlyWeekendHours = (weeklyWeekendDays || 0) * dailyH * WEEK_PER_MONTH;
+    const autoNet = Math.round(monthlyWeekdayHours * wdRate + monthlyWeekendHours * weRate);
+    if (!Number.isFinite(autoNet) || autoNet <= 0) return;
+
+    setForm(prev => {
+      const str = String(autoNet);
+      if (prev.targetNetInput === str) return prev;
+      return { ...prev, targetNetInput: str };
+    });
+  }, [monthlyCalc, form.weekdayHourly, form.weekendHourly, weeklyWeekdayDays, weeklyWeekendDays]);
+
   // 직원 선택
   const onSelectEmployee = (empIdRaw: string) => {
     if (!empIdRaw) { upd("employeeId", null); return; }
@@ -4450,7 +4478,12 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     type="text"
                     inputMode="numeric"
                     value={form.targetNetInput}
-                    onChange={(e) => upd("targetNetInput", e.target.value.replace(/[^0-9]/g, ""))}
+                    onChange={(e) => {
+                      const cleaned = e.target.value.replace(/[^0-9]/g, "");
+                      // T-CTR-9 · Step 2 · 사용자 편집 감지 · 빈 값이면 자동 재개
+                      manualTargetNetRef.current = cleaned !== "";
+                      upd("targetNetInput", cleaned);
+                    }}
                     placeholder="예: 3000000"
                     className="w-full bg-white border border-indigo-200 rounded-lg pl-3 pr-8 py-2 text-[14px] text-slate-800 font-black text-right focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition"
                   />
