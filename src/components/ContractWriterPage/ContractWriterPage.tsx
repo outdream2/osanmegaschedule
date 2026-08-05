@@ -383,7 +383,7 @@ function contractPeriodMonthsClient(startIso?: string | null, endIso?: string | 
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * 시급 → 포괄임금 4항목 (기본급/연장/휴일/연차) · 각 금액 산출
+ * 시급 → 포괄임금 4항목 (기본급/연장/휴일/연차) · 각 금액 산출 · 레거시 (WageCalcModePanel forward mode)
  *   기본급 = BASIC × 주중시급
  *   연장   = OVERTIME × 주중시급 × 1.5
  *   휴일   = HOLIDAY × 주말시급 × 1.5
@@ -405,6 +405,52 @@ function computeWageFromHourly(weekdayHourly: number, weekendHourly: number): {
   return {
     basicAmount, overtimeAmount, holidayAmount, annualLeaveAmount,
     total: basicAmount + overtimeAmount + holidayAmount + annualLeaveAmount,
+  };
+}
+
+/**
+ * T-N (2026-08-05) · 시급 (주중·주말) + 각 항목 시간·분 → 임금구성 6항목 금액 산출
+ *   · 사용자 스펙 · 약국 실무 (주중/주말 시급 분리)
+ *   · 기본급              = 주중시급 × basicH               (배수 1.0)
+ *   · (고정)연장근로수당  = 주중시급 × overtimeH × 1.5
+ *   · (고정)휴일근로수당  = 주말시급 × holidayH × 1.5
+ *   · (고정)휴일연장근로수당 = 주말시급 × holidayOvertimeH × 0.5
+ *   · (고정)야간근로수당   = 주중시급 × nightH × 0.5
+ *   · (고정)연차휴가수당   = 주중시급 × annualH             (배수 1.0)
+ *   · 식대·차량유지비 · 사용자 입력 유지 (별도)
+ *   · 각 항목 시간·분 · WageComponents 에서 그대로 사용 (사용자 미세 조정 반영)
+ */
+function computeWageFromHourlyDual(
+  weekdayHourly: number,
+  weekendHourly: number,
+  wage: WageComponents,
+): {
+  basicAmount: number;
+  overtimeAmount: number;
+  holidayAmount: number;
+  holidayOvertimeAmount: number;
+  nightAmount: number;
+  annualLeaveAmount: number;
+  total: number;
+} {
+  const wd = Math.max(0, weekdayHourly);
+  const we = Math.max(0, weekendHourly);
+  const hoursOf = (e: WageComponentEntry) => Math.max(0, e.hours) + Math.max(0, e.minutes) / 60;
+  const basicH = hoursOf(wage.basicSalary);
+  const overtimeH = hoursOf(wage.fixedOvertime);
+  const holidayH = hoursOf(wage.fixedHoliday);
+  const holidayOtH = hoursOf(wage.fixedHolidayOvertime);
+  const nightH = hoursOf(wage.fixedNight);
+  const annualH = hoursOf(wage.fixedAnnualLeave);
+  const basicAmount           = Math.round(basicH     * wd);
+  const overtimeAmount        = Math.round(overtimeH  * wd * 1.5);
+  const holidayAmount         = Math.round(holidayH   * we * 1.5);
+  const holidayOvertimeAmount = Math.round(holidayOtH * we * 0.5);
+  const nightAmount           = Math.round(nightH     * wd * 0.5);
+  const annualLeaveAmount     = Math.round(annualH    * wd);
+  return {
+    basicAmount, overtimeAmount, holidayAmount, holidayOvertimeAmount, nightAmount, annualLeaveAmount,
+    total: basicAmount + overtimeAmount + holidayAmount + holidayOvertimeAmount + nightAmount + annualLeaveAmount,
   };
 }
 
@@ -521,7 +567,7 @@ function reverseGrossFromNet(targetNet: number): number {
 }
 
 /**
- * T-A (2026-08-05) · 세후 목표 → 통상시급 · 8항목 임금구성 역산
+ * T-A (2026-08-05) · 세후 목표 → 통상시급 · 8항목 임금구성 역산 · 레거시 (단일 시급 · 미사용)
  *   1) 세후 → 세전 (reverseGrossFromNet)
  *   2) 세전 → 통상시급: w = 세전 / 335.91  (335.91 = 209 + 55.94×1.5 + 22×1.5 + 10)
  *   3) 8항목: basic 209h·연장 55.94h(×1.5)·휴일 22h(×1.5)·연차 10h · 나머지는 0 or 별도 입력 유지
@@ -546,6 +592,63 @@ function reverseWageFromNet(
     // 식대·차량·야간·휴일연장 · 사용자 입력 유지
   };
   return { hourly, gross, wage };
+}
+
+/**
+ * T-N (2026-08-05) · 세후 목표 → 주중/주말 시급 · 6항목 임금구성 역산 (약국 실무)
+ *   · 두 시급 비율 유지 · 스케일 팩터 방식
+ *   · 각 항목 시간·분 (기본 209/55.94/22/0/0/10) · 유지 (사용자 미세 조정 반영)
+ *
+ * 알고리즘:
+ *   1) 세후 → 세전 목표 (reverseGrossFromNet · 4대보험+소득세 근사)
+ *   2) 현재 시급 (주중·주말) · 임금구성 시간 · 로 세전 총액 계산 (currentGross)
+ *   3) 스케일 팩터 = 세전 목표 / currentGross
+ *   4) 두 시급 · 각각 스케일 팩터 적용 · 비율 유지 · 반올림
+ *   5) 조정된 두 시급 · 임금구성 각 항목 금액 재계산
+ *
+ * · 사용자가 세후만 입력한 초기 상태 (시급 0) 는 default 시급 (약사 35000/40000) 사용
+ * · 사용자 미세 조정 (야간·휴일연장·식대·차량) 은 유지
+ */
+function reverseWageFromNetDual(
+  targetNet: number,
+  currentWeekdayHourly: number,
+  currentWeekendHourly: number,
+  prevWage: WageComponents,
+): {
+  weekdayHourly: number;
+  weekendHourly: number;
+  gross: number;
+  wage: WageComponents;
+} {
+  const gross = reverseGrossFromNet(targetNet);
+
+  // 기준 시급 · 사용자 입력 있으면 그대로, 없으면 default (약사 35000/40000 · 비율 7:8 근사)
+  const wdBase = currentWeekdayHourly > 0 ? currentWeekdayHourly : 35000;
+  const weBase = currentWeekendHourly > 0 ? currentWeekendHourly : 40000;
+
+  // 현재 시급 기반 세전 총액 계산 (6항목 · 식대·차량 제외)
+  const baseCalc = computeWageFromHourlyDual(wdBase, weBase, prevWage);
+  const currentGross = baseCalc.total;
+
+  // 스케일 팩터 · 세전 목표 / 현재 세전
+  const scale = currentGross > 0 ? gross / currentGross : 0;
+  const weekdayHourly = Math.round(wdBase * scale);
+  const weekendHourly = Math.round(weBase * scale);
+
+  // 조정 후 재계산 · 반올림 오차 반영
+  const finalCalc = computeWageFromHourlyDual(weekdayHourly, weekendHourly, prevWage);
+
+  const wage: WageComponents = {
+    ...prevWage,
+    basicSalary:          { ...prevWage.basicSalary,          amount: finalCalc.basicAmount },
+    fixedOvertime:        { ...prevWage.fixedOvertime,        amount: finalCalc.overtimeAmount },
+    fixedHoliday:         { ...prevWage.fixedHoliday,         amount: finalCalc.holidayAmount },
+    fixedHolidayOvertime: { ...prevWage.fixedHolidayOvertime, amount: finalCalc.holidayOvertimeAmount },
+    fixedNight:           { ...prevWage.fixedNight,           amount: finalCalc.nightAmount },
+    fixedAnnualLeave:     { ...prevWage.fixedAnnualLeave,     amount: finalCalc.annualLeaveAmount },
+    // 식대·차량 · 사용자 입력 유지
+  };
+  return { weekdayHourly, weekendHourly, gross, wage };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1176,12 +1279,12 @@ const WageCalcModePanel: React.FC<WageCalcModePanelProps> = ({
   const [mode, setMode] = useState<CalcMode>("forward");
   const [targetTotal, setTargetTotal] = useState<string>("3000000");
 
-  // Mode 1: forward (시급 → 포괄임금 산정)
+  // Mode 1: forward (시급 → 포괄임금 산정) · T-N (2026-08-05) · 각 항목 시간·분 기준
   const forwardCalc = useMemo(() => {
     const wd = Number(form.weekdayHourly) || 0;
     const we = Number(form.weekendHourly) || 0;
-    return computeWageFromHourly(wd, we);
-  }, [form.weekdayHourly, form.weekendHourly]);
+    return computeWageFromHourlyDual(wd, we, form.wageComponents);
+  }, [form.weekdayHourly, form.weekendHourly, form.wageComponents]);
 
   // Mode 2: target (목표 월급 → 시급 역산)
   const targetHourly = useMemo(() => computeHourlyFromTarget(Number(targetTotal) || 0), [targetTotal]);
@@ -1194,13 +1297,16 @@ const WageCalcModePanel: React.FC<WageCalcModePanelProps> = ({
   ), [form.startTime, form.endTime, form.breakMinutes, weeklyWeekdayDays, weeklyWeekendDays, form.weekdayHourly, form.weekendHourly]);
 
   const applyForwardToWage = () => {
+    // T-N (2026-08-05) · 6항목 반영 · 각 항목 시간·분 유지 (사용자 미세 조정 반영)
     const c = forwardCalc;
     onApplyToWageComponents({
       ...form.wageComponents,
-      basicSalary:      { ...form.wageComponents.basicSalary,      hours: WAGE_HOURS.BASIC, minutes: 0, amount: c.basicAmount },
-      fixedOvertime:    { ...form.wageComponents.fixedOvertime,    hours: Math.floor(WAGE_HOURS.OVERTIME), minutes: Math.round((WAGE_HOURS.OVERTIME % 1) * 60), amount: c.overtimeAmount },
-      fixedHoliday:     { ...form.wageComponents.fixedHoliday,     hours: WAGE_HOURS.HOLIDAY, minutes: 0, amount: c.holidayAmount },
-      fixedAnnualLeave: { ...form.wageComponents.fixedAnnualLeave, hours: WAGE_HOURS.ANNUAL_LEAVE, minutes: 0, amount: c.annualLeaveAmount },
+      basicSalary:          { ...form.wageComponents.basicSalary,          amount: c.basicAmount },
+      fixedOvertime:        { ...form.wageComponents.fixedOvertime,        amount: c.overtimeAmount },
+      fixedHoliday:         { ...form.wageComponents.fixedHoliday,         amount: c.holidayAmount },
+      fixedHolidayOvertime: { ...form.wageComponents.fixedHolidayOvertime, amount: c.holidayOvertimeAmount },
+      fixedNight:           { ...form.wageComponents.fixedNight,           amount: c.nightAmount },
+      fixedAnnualLeave:     { ...form.wageComponents.fixedAnnualLeave,     amount: c.annualLeaveAmount },
     });
   };
 
@@ -1241,6 +1347,12 @@ const WageCalcModePanel: React.FC<WageCalcModePanelProps> = ({
           <div>· 기본급 <b className="tabular-nums">{fmtWon(forwardCalc.basicAmount)}</b></div>
           <div>· 연장수당 <b className="tabular-nums">{fmtWon(forwardCalc.overtimeAmount)}</b></div>
           <div>· 휴일수당 <b className="tabular-nums">{fmtWon(forwardCalc.holidayAmount)}</b></div>
+          {forwardCalc.holidayOvertimeAmount > 0 && (
+            <div>· 휴일연장수당 <b className="tabular-nums">{fmtWon(forwardCalc.holidayOvertimeAmount)}</b></div>
+          )}
+          {forwardCalc.nightAmount > 0 && (
+            <div>· 야간수당 <b className="tabular-nums">{fmtWon(forwardCalc.nightAmount)}</b></div>
+          )}
           <div>· 연차수당 <b className="tabular-nums">{fmtWon(forwardCalc.annualLeaveAmount)}</b></div>
           <div className="mt-1 font-black text-emerald-800">세전 총액 <span className="tabular-nums">{fmtWon(forwardCalc.total)}</span> 원</div>
           <button
@@ -3213,13 +3325,17 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   const raw = e.target.value.replace(/[^0-9]/g, "");
                   const num = Number(raw) || 0;
                   setForm(prev => {
-                    // 세후 → 세전 · 통상시급 · 8항목 역산 (즉시)
-                    const { hourly, wage } = reverseWageFromNet(num, prev.wageComponents);
+                    // T-N (2026-08-05) · 세후 → 주중/주말 시급 · 6항목 역산 (비율 유지 · 스케일)
+                    const prevWd = Number(prev.weekdayHourly) || 0;
+                    const prevWe = Number(prev.weekendHourly) || 0;
+                    const { weekdayHourly, weekendHourly, wage } = reverseWageFromNetDual(
+                      num, prevWd, prevWe, prev.wageComponents,
+                    );
                     return {
                       ...prev,
                       targetNetInput: raw,
-                      weekdayHourly: String(hourly),
-                      weekendHourly: String(hourly),
+                      weekdayHourly: String(weekdayHourly),
+                      weekendHourly: String(weekendHourly),
                       wageComponents: wage,
                       useWageComponents: true,
                     };
@@ -3231,29 +3347,35 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-emerald-700 font-black pointer-events-none">원</span>
             </div>
           </div>
-          {/* 즉시 계산 결과 표시 */}
+          {/* T-N (2026-08-05) · 즉시 계산 결과 표시 · 주중/주말 시급 · 6항목 세전 총액 */}
           {(() => {
             const target = Number(form.targetNetInput) || 0;
             if (target <= 0) {
               return (
                 <div className="text-[10.5px] text-slate-500 italic">
-                  세후 금액 입력 시 · 임금구성표 8항목이 즉시 자동 계산됩니다 (통상시급 역산 · 근사)
+                  세후 금액 입력 시 · 주중/주말 시급 (비율 유지) 및 임금구성 6항목이 즉시 자동 계산됩니다
                 </div>
               );
             }
-            const gross = reverseGrossFromNet(target);
-            const divisor = WAGE_HOURS.BASIC + WAGE_HOURS.OVERTIME * 1.5 + WAGE_HOURS.HOLIDAY * 1.5 + WAGE_HOURS.ANNUAL_LEAVE;
-            const hourly = divisor > 0 ? Math.round(gross / divisor) : 0;
-            const net = computeNetPay(gross).net;
+            const wd = Number(form.weekdayHourly) || 0;
+            const we = Number(form.weekendHourly) || 0;
+            const grossFromWage = computeWageFromHourlyDual(wd, we, form.wageComponents).total
+              + (form.wageComponents.mealAllowance || 0)
+              + (form.wageComponents.vehicleAllowance || 0);
+            const net = computeNetPay(grossFromWage).net;
             return (
-              <div className="grid grid-cols-3 gap-2 text-[10.5px] tabular-nums pt-1 border-t border-emerald-200">
+              <div className="grid grid-cols-4 gap-2 text-[10.5px] tabular-nums pt-1 border-t border-emerald-200">
                 <div className="flex flex-col">
-                  <span className="text-slate-600">통상시급</span>
-                  <span className="font-black text-slate-900">{fmtWon(hourly)}원</span>
+                  <span className="text-slate-600">주중 시급</span>
+                  <span className="font-black text-slate-900">{fmtWon(wd)}원</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-slate-600">주말 시급</span>
+                  <span className="font-black text-slate-900">{fmtWon(we)}원</span>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-slate-600">세전 총액</span>
-                  <span className="font-black text-slate-900">{fmtWon(gross)}원</span>
+                  <span className="font-black text-slate-900">{fmtWon(grossFromWage)}원</span>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-slate-600">계산 세후</span>
@@ -3263,7 +3385,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             );
           })()}
           <div className="text-[9.5px] text-slate-500 italic leading-snug">
-            * 부양가족 1인·5인 이상 사업장·포괄임금 기준 (근기법 §50 · 209h 표준)
+            * 부양가족 1인·5인 이상 사업장·포괄임금 기준 (근기법 §50·§56 · 209h 표준)
+            <br />
+            * 주중/주말 시급 비율 유지 · 스케일 팩터 방식 · 시급 미입력 시 default (35000/40000) 기준
             <br />
             * 실제 원천징수와 근사치 차이 있을 수 있음 · 식대·차량은 별도 입력 시 총액에 반영
           </div>
