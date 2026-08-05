@@ -45,10 +45,127 @@ function isMissingTableError(msg: string): boolean {
   return /relation .* does not exist|table .* not found|schema cache/i.test(msg);
 }
 
+function isMissingColumnError(err: { message?: string; code?: string } | null | undefined): boolean {
+  if (!err) return false;
+  if (err.code === "42703") return true;
+  const msg = err.message ?? "";
+  return /column .* does not exist|could not find .* column|schema cache/i.test(msg);
+}
+
+/**
+ * 재계약 감지 · 기존 활성 employee_contracts row 를 is_active=false 로 UPDATE.
+ * is_active 컬럼 미존재 (42703) 시 · 조용히 skip · 앱 계속 동작.
+ */
+async function deactivatePriorContracts(employeeId: number): Promise<void> {
+  try {
+    const { data: existing, error: selErr } = await supabase
+      .from("employee_contracts")
+      .select("id")
+      .eq("employee_id", employeeId)
+      .eq("is_active", true);
+
+    if (selErr) {
+      if (isMissingColumnError(selErr)) {
+        console.warn("[employee-contracts] is_active 컬럼 없음 · 재계약 감지 skip (ALTER TABLE 필요)");
+        return;
+      }
+      console.warn("[employee-contracts] 기존 활성 계약 조회 실패:", selErr.message);
+      return;
+    }
+
+    if (!existing || existing.length === 0) return;
+
+    const { error: deactErr } = await supabase
+      .from("employee_contracts")
+      .update({ is_active: false })
+      .eq("employee_id", employeeId)
+      .eq("is_active", true);
+    if (deactErr) {
+      if (isMissingColumnError(deactErr)) {
+        console.warn("[employee-contracts] is_active 컬럼 없음 · UPDATE skip");
+        return;
+      }
+      console.warn("[employee-contracts] 재계약 비활성화 실패:", deactErr.message);
+    } else {
+      console.log(`[employee-contracts] 재계약 감지 · 기존 ${existing.length}건 · is_active=false 처리 · employee_id=${employeeId}`);
+    }
+  } catch (e: any) {
+    console.warn("[employee-contracts] 재계약 감지 예외 (무시):", e?.message ?? e);
+  }
+}
+
+/**
+ * INSERT 시 · is_active=true 를 payload 에 포함하되 · 42703 에러 발생 시 자동 재시도 (is_active 제거).
+ * 반환: { row, err } · row 있으면 성공, err 있으면 실패 (missing table 등 상위에서 처리).
+ */
+async function insertContractWithIsActiveFallback(
+  baseRow: Record<string, unknown>,
+): Promise<{ row: any; err: any }> {
+  const withActive = { ...baseRow, is_active: true };
+  const first = await supabase.from("employee_contracts").insert([withActive]).select("*").single();
+  if (!first.error) return { row: first.data, err: null };
+
+  if (isMissingColumnError(first.error)) {
+    console.warn("[employee-contracts] is_active 컬럼 없음 · is_active 제거 후 INSERT 재시도");
+    const retry = await supabase.from("employee_contracts").insert([baseRow]).select("*").single();
+    return { row: retry.data, err: retry.error };
+  }
+
+  return { row: null, err: first.error };
+}
+
+/**
+ * employees 테이블 · 계약 관련 필드 동기 갱신 (best-effort).
+ * contract_file_url + contract_type + contract_start + contract_end + probation_end_date
+ * 개별 컬럼 미존재 (42703) 시 · 해당 컬럼만 제외 후 재시도.
+ */
+async function syncEmployeeContractFields(
+  employeeId: number,
+  fields: {
+    contract_file_url?: string | null;
+    contract_type?: string | null;
+    contract_start?: string | null;
+    contract_end?: string | null;
+    probation_end_date?: string | null;
+  },
+): Promise<void> {
+  const payload: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(fields)) {
+    if (v !== undefined) payload[k] = v;
+  }
+  if (Object.keys(payload).length === 0) return;
+
+  try {
+    const { error } = await supabase.from("employees").update(payload).eq("id", employeeId);
+    if (!error) return;
+
+    // 42703 · 특정 컬럼 미존재 · 컬럼명 파싱 · 제거 후 재시도
+    if (isMissingColumnError(error)) {
+      const colMatch = /column\s+"?([a-z_][a-z0-9_]*)"?/i.exec(error.message ?? "");
+      const missingCol = colMatch?.[1];
+      if (missingCol && missingCol in payload) {
+        console.warn(`[employee-contracts] employees.${missingCol} 컬럼 없음 · 제외 후 재시도`);
+        delete payload[missingCol];
+        if (Object.keys(payload).length > 0) {
+          await syncEmployeeContractFields(employeeId, payload as any);
+        }
+        return;
+      }
+      console.warn(`[employee-contracts] employees 동기 갱신 · 컬럼 미존재 (무시): ${error.message}`);
+      return;
+    }
+
+    console.warn(`[employee-contracts] employees 동기 갱신 실패 (무시) · id=${employeeId} · ${error.message}`);
+  } catch (e: any) {
+    console.warn(`[employee-contracts] employees 동기 갱신 예외 (무시) · ${e?.message ?? e}`);
+  }
+}
+
 // ─── GET · 직원별 이력 ─────────────────────────────────────────────────────
 router.get("/api/employee-contracts", async (req, res) => {
   try {
     const employeeId = Number(req.query.employeeId);
+    // select("*") · is_active 컬럼 존재 시 자동 포함 (프론트 이력 UI 활성 계약 강조용)
     let q = supabase.from("employee_contracts").select("*").order("created_at", { ascending: false });
     if (Number.isFinite(employeeId)) q = q.eq("employee_id", employeeId);
 
@@ -78,6 +195,12 @@ router.post("/api/employee-contracts", async (req, res) => {
     const dataUrl       = String(b.pdf_data_url ?? "");
     const approvedBy    = b.approved_by ? String(b.approved_by) : null;
     const approvedById  = Number.isFinite(Number(b.approved_by_id)) ? Number(b.approved_by_id) : null;
+    // 신규 · employees 동기 갱신용 필드 (하위 호환 · 없으면 start_date/end_date 재사용)
+    const contractStart      = b.contract_start ? String(b.contract_start) : startDate;
+    const contractEnd        = b.contract_end !== undefined ? (b.contract_end ? String(b.contract_end) : null) : endDate;
+    const probationEndDate   = b.probation_end_date !== undefined
+      ? (b.probation_end_date ? String(b.probation_end_date) : null)
+      : undefined;
 
     if (!employeeName) return res.status(400).json({ error: "employee_name required" });
     if (!dataUrl)      return res.status(400).json({ error: "pdf_data_url required (data:application/pdf;base64,...)" });
@@ -139,7 +262,12 @@ router.post("/api/employee-contracts", async (req, res) => {
       console.log(`[employee-contracts/upload] Local fallback · path=${pdfUrl}`);
     }
 
-    // 3) employee_contracts row insert
+    // 3-A) 재계약 감지 · 기존 활성 계약 is_active=false (컬럼 미존재 시 skip)
+    if (employeeId && Number.isFinite(employeeId)) {
+      await deactivatePriorContracts(employeeId);
+    }
+
+    // 3-B) employee_contracts row insert (is_active=true · 컬럼 없으면 자동 fallback)
     const insertRow: Record<string, unknown> = {
       employee_id: employeeId ?? 0,   // 미매핑 시 0 (직접 입력 케이스)
       employee_name: employeeName,
@@ -154,40 +282,32 @@ router.post("/api/employee-contracts", async (req, res) => {
       approved_by_id: approvedById,
     };
 
-    const { data: row, error: insErr } = await supabase
-      .from("employee_contracts")
-      .insert([insertRow])
-      .select("*")
-      .single();
+    const { row, err: insErr } = await insertContractWithIsActiveFallback(insertRow);
 
-    if (insErr) {
+    if (insErr || !row) {
       // 이력 저장 실패 · 원본 정리 (best-effort)
       if (storage === "supabase") {
         await supabase.storage.from(CONTRACTS_BUCKET).remove([storagePath]).catch(() => null);
       } else {
         try { fs.unlinkSync(path.join(process.cwd(), "uploads", "contracts", storagePath)); } catch { /* noop */ }
       }
-      if (isMissingTableError(insErr.message)) {
+      if (insErr && isMissingTableError(insErr.message ?? "")) {
         return res.status(500).json({
           error: "employee_contracts 테이블이 없습니다. Supabase SQL Editor 에서 migrations/create_employee_contracts.sql 을 실행하세요.",
         });
       }
-      throw new Error(insErr.message);
+      throw new Error(insErr?.message ?? "insert failed");
     }
 
-    // 4) employees.contract_file_url 갱신 (best-effort · 실패해도 저장 자체는 성공)
+    // 4) employees 동기 갱신 (contract_file_url + contract_type + contract_start/end + probation_end_date)
     if (employeeId && Number.isFinite(employeeId)) {
-      try {
-        const { error: updErr } = await supabase
-          .from("employees")
-          .update({ contract_file_url: pdfUrl })
-          .eq("id", employeeId);
-        if (updErr) {
-          console.warn(`[employee-contracts] employees.contract_file_url 갱신 실패 (무시) · id=${employeeId} · ${updErr.message}`);
-        }
-      } catch (e: any) {
-        console.warn(`[employee-contracts] employees 갱신 예외 (무시) · ${e?.message ?? e}`);
-      }
+      await syncEmployeeContractFields(employeeId, {
+        contract_file_url: pdfUrl,
+        contract_type: contractType ?? (row?.contract_type ?? null),
+        contract_start: contractStart,
+        contract_end: contractEnd,
+        probation_end_date: probationEndDate,
+      });
     }
 
     return res.status(201).json(row);
@@ -219,6 +339,12 @@ router.post("/api/employee-contracts/upload", driveUpload.single("contract"), as
     const endDate       = b.end_date   ? String(b.end_date)   : null;
     const approvedBy    = b.approved_by ? String(b.approved_by) : null;
     const approvedById  = Number.isFinite(Number(b.approved_by_id)) ? Number(b.approved_by_id) : null;
+    // employees 동기 갱신용 필드 (하위 호환)
+    const contractStart      = b.contract_start ? String(b.contract_start) : startDate;
+    const contractEnd        = b.contract_end !== undefined ? (b.contract_end ? String(b.contract_end) : null) : endDate;
+    const probationEndDate   = b.probation_end_date !== undefined
+      ? (b.probation_end_date ? String(b.probation_end_date) : null)
+      : undefined;
 
     if (!employeeName) return res.status(400).json({ error: "employee_name required" });
 
@@ -240,7 +366,12 @@ router.post("/api/employee-contracts/upload", driveUpload.single("contract"), as
       });
     }
 
-    // employee_contracts row insert · storage="drive" · pdf_url = Drive URL
+    // 재계약 감지 · 기존 활성 계약 is_active=false (컬럼 미존재 시 skip)
+    if (employeeId && Number.isFinite(employeeId)) {
+      await deactivatePriorContracts(employeeId);
+    }
+
+    // employee_contracts row insert · storage="drive" · pdf_url = Drive URL · is_active=true (fallback)
     const insertRow: Record<string, unknown> = {
       employee_id: employeeId ?? 0,
       employee_name: employeeName,
@@ -255,28 +386,26 @@ router.post("/api/employee-contracts/upload", driveUpload.single("contract"), as
       approved_by_id: approvedById,
     };
 
-    const { data: row, error: insErr } = await supabase
-      .from("employee_contracts")
-      .insert([insertRow])
-      .select("*")
-      .single();
+    const { row, err: insErr } = await insertContractWithIsActiveFallback(insertRow);
 
-    if (insErr) {
-      if (isMissingTableError(insErr.message)) {
+    if (insErr || !row) {
+      if (insErr && isMissingTableError(insErr.message ?? "")) {
         return res.status(500).json({
           error: "employee_contracts 테이블이 없습니다. Supabase SQL Editor 에서 migrations/create_employee_contracts.sql 을 실행하세요.",
         });
       }
-      throw new Error(insErr.message);
+      throw new Error(insErr?.message ?? "insert failed");
     }
 
-    // employees.contract_file_url 갱신 (best-effort)
+    // employees 동기 갱신
     if (employeeId && Number.isFinite(employeeId)) {
-      try {
-        await supabase.from("employees").update({ contract_file_url: driveUrl }).eq("id", employeeId);
-      } catch (e: any) {
-        console.warn(`[employee-contracts/upload] employees 갱신 예외 (무시) · ${e?.message ?? e}`);
-      }
+      await syncEmployeeContractFields(employeeId, {
+        contract_file_url: driveUrl,
+        contract_type: contractType ?? (row?.contract_type ?? null),
+        contract_start: contractStart,
+        contract_end: contractEnd,
+        probation_end_date: probationEndDate,
+      });
     }
 
     return res.status(201).json(row);
