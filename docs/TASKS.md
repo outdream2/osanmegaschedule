@@ -31,19 +31,71 @@
 - 보안 부가 · payload 5~30% 축소
 - 예상 4~6h · 위험 중
 
-### T-CSS · 공통 CSS 리팩토링 (신규 · 2026-08-05)
-- **목적**: 반복되는 Tailwind 클래스 조합을 · 공통 컴포넌트·className 상수·CSS 유틸로 통합
-- **후보**:
-  - 카드 스타일 (`rounded-2xl border border-slate-200 shadow-sm` 반복)
-  - 버튼 톤 (indigo/emerald/rose/violet 그라디언트 · 크기별)
-  - 헤더 라벨 (`text-[10px] font-black uppercase tracking-widest text-slate-400`)
-  - 상태 배지 (pending/prepared/done · amber/sky/emerald)
-  - 입력 필드 (border/focus-ring 조합)
-  - 모달 백드롭 (`fixed inset-0 z-[...] bg-slate-900/50 backdrop-blur-sm`)
-- **효과**: 코드 -500~1000줄 · 디자인 통일성 · 다크모드 대비 쉬움
-- **위험**: 낮음~중 (className 만 변경 · 렌더 결과 동일해야 함)
-- **예상**: 6~10h (여러 파일 · 파일별 순차)
-- **방식**: mobile-ui-designer 위임 · 파일별 · 회귀 즉시 revert 가능
+### T-CSS · 공통 CSS 리팩토링 + 전체 UI 통일 (신규 · 2026-08-05 · 확장 v2)
+
+**최상위 목표** (사용자 명시):
+- **전체 통일성 있는 깔끔하고 세련된 UI**
+- **글씨 크기 통일** (page 마다 [10px]/[11px]/[12px] 제각각 → 스케일 5단계로 통일)
+
+**타이포 스케일 (신규 규칙)**:
+- `text-hero` — 페이지 타이틀 (17~18px · 헤더 아이콘 옆)
+- `text-body` — 본문 · 기본 (13~14px · 리스트 셀·라벨)
+- `text-caption` — 서브·힌트 (11~12px · 배지·라벨·메타)
+- `text-micro` — 최소 · 코드·시각 (9.5~10px · 시각·타임스탬프)
+- `text-num` — 숫자 강조 (font-black tabular-nums · KPI·금액)
+
+**색상 팔레트 정리**:
+- `primary` (indigo) · `success` (emerald) · `warning` (amber) · `danger` (rose) · `info` (sky) · `neutral` (slate)
+- 각 색상 · 50/100/200/500/600/700 만 사용 (다양성 제한 · 통일)
+
+
+**목적**: 각 탭 페이지의 공통 부분 · 반응형 로직을 공통 CSS/컴포넌트로 통합
+
+**대상 1 · 탭 페이지 공통 부분**:
+- **페이지 헤더** (AppNavHeader 아래 · 페이지 타이틀·아이콘·설명) · 대부분 페이지 반복
+- **서브탭 바** (TabBar 이미 있음 · 미채택 페이지 마이그레이션)
+- **툴바** (검색·필터·새로고침·정렬 아이콘) · 페이지마다 개별 구현
+- **리스트 컨테이너** (`rounded-2xl border border-slate-200 shadow-sm` 반복)
+- **빈 상태** (`데이터 없음` · `로딩 중...` · 페이지마다 다른 스타일)
+- **상태 배지** (pending/prepared/done · amber/sky/emerald 반복)
+- **액션 버튼** (준비완료·완료·삭제·저장 · 색상 톤별 반복)
+- **입력 필드** (border/focus-ring 조합 반복)
+- **KPI 카드** (숫자·라벨 조합 반복)
+
+**대상 2 · 반응형 공통 정리**:
+- **breakpoint 통일**: sm/md/lg 사용 규칙 (예: 리스트 sm=1열 · md=2열 · lg=3열)
+- **모달 → 바텀시트** (모바일에서 `rounded-t-2xl` · 데스크탑 `rounded-2xl` 반복)
+- **SplitPanel 좌우 → 세로 스택 or 모달** (이미 있음 · 미채택 페이지 마이그레이션)
+- **가로 스크롤 vs 컬럼 접기** 규칙
+- **폰트 크기 스케일** (text-[10px]/[11px]/[12px] · 페이지마다 다름)
+- **터치 타겟** (min-h-9 · min-w-9 통일 · 모바일 44px 규칙)
+
+**방법론**:
+1. **디자인 토큰 파일** 신규 (`src/styles/tokens.ts`)
+   - `CARD_BASE`, `TOOLBAR_BASE`, `INPUT_BASE`, `BUTTON_PRIMARY`, `BADGE_PENDING/PREPARED/DONE` 등
+2. **공통 컴포넌트 확장**:
+   - `PageHeader` 신규 (제목·아이콘·설명·서브탭 슬롯)
+   - `Toolbar` 신규 (검색·필터·액션 슬롯)
+   - `StatusBadge` 신규 (status prop · 색상 자동)
+   - `EmptyState` · `LoadingState` 신규
+3. **반응형 유틸**:
+   - `useBreakpoint()` 훅 (필요 시)
+   - CSS 유틸 클래스 (Tailwind config 확장 or `@apply`)
+4. **파일별 마이그레이션**:
+   - 재고관리 → 매입관리 → 진열요청 → 근로계약서 → 스케줄 → 경영관리 순
+   - 파일 단위 · 회귀 시 즉시 revert
+
+**효과**:
+- 코드 -1000~1500줄
+- 디자인 통일성 · 다크모드 대비
+- 새 페이지 추가 시 · 3~5 컴포넌트 조립으로 완성
+- 반응형 일관성
+
+**위험**: 낮음~중 (className 변경 · 렌더 동일 유지)
+
+**예상**: 10~15h (여러 파일 · 파일별 순차 · 다수 세션 가능)
+
+**방식**: mobile-ui-designer 위임 · 파일별 · 회귀 즉시 revert 가능
 
 ### T-PERF-5 · 가상 스크롤 (react-window) · 보류
 - 5000+ 행 리스트에서 필요 · 현재 페이지네이션으로 렌더 수십 행
