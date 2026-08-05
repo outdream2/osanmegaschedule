@@ -45,6 +45,8 @@ let cached: { driveClient: drive_v3.Drive | null; config: DriveConfig } = {
   config: { serviceAccountJson: null, folders: { resume: null, contract: null } },
 };
 let initTried = false;
+let lastInitFailAt = 0;   // 실패 시 · 재시도 쿨다운 (60초 · 외부 API 활성화 반영 대응)
+const RETRY_COOLDOWN_MS = 60 * 1000;
 
 function loadKeyFromFile(): any | null {
   for (const dir of KEY_FILE_DIRS) {
@@ -105,13 +107,17 @@ async function loadConfig(): Promise<DriveConfig> {
 
 async function initClient(): Promise<drive_v3.Drive | null> {
   if (cached.driveClient) return cached.driveClient;
-  if (initTried) return cached.driveClient;
+  // 실패 후 쿨다운 (60초) 지나면 · 재시도 · Drive API 활성화 · 폴더 공유 등 외부 변경 반영
+  if (initTried && Date.now() - lastInitFailAt < RETRY_COOLDOWN_MS) {
+    return cached.driveClient;
+  }
   initTried = true;
   try {
     const config = await loadConfig();
     cached.config = config;
     if (!config.serviceAccountJson) {
       console.warn("[google-drive] app_settings.google_service_account 미설정 · Drive 통합 비활성");
+      lastInitFailAt = Date.now();
       return null;
     }
     const auth = new google.auth.GoogleAuth({
@@ -124,6 +130,7 @@ async function initClient(): Promise<drive_v3.Drive | null> {
     return client;
   } catch (e: any) {
     console.warn("[google-drive] 초기화 실패:", e?.message);
+    lastInitFailAt = Date.now();
     return null;
   }
 }
