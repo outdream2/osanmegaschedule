@@ -7,6 +7,9 @@
 - 매 milestone 후 update
 - **회귀 절대 금지** · TS + build + test 통과 후 커밋
 - **리모트 푸시 · 사용자 명시 승인 시에만** (기본 로컬 커밋)
+- **DB · 파생컬럼 사용 금지** · 원래 테이블 활용이 최우선 · 사용자 명시 (2026-08-05 재강조)
+  · 파생컬럼 필요 시 · 반드시 사용자 승인 후
+  · 조회는 JOIN · 계산은 서버·클라이언트 로직 우선
 
 ---
 
@@ -46,6 +49,48 @@
 ### T26 · select('*') → 명시 컬럼 (20 파일)
 - 보안 부가 · payload 5~30% 축소
 - 예상 4~6h · 위험 중
+
+### T-SLIM · 공통 기능 분리·리팩토링·코드 슬림화 (2026-08-05 · 사용자)
+**절대 원칙**: **기능에 절대 문제 안 생기게** · 렌더·데이터·동작 동일 유지
+
+**후보 (project-architect 분석 후 확정)**:
+
+**A. 유틸리티 통합**
+- `fmtDate` · `fmtWon` · `fmtNumber` 등 · 파일마다 로컬 정의 → `src/lib/format.ts` 통합
+- date-fns / dayjs 도입 검토 (자체 구현 대체)
+- 전화번호 · 사업자번호 포맷터 · 정규식 통합
+
+**B. 폼·검증 통합**
+- react-hook-form + zod 도입 검토
+- 유효성 검증 로직 (전화번호 · 이메일 · 숫자) 통합
+- 폼 필드 컴포넌트 (`TextField` · `NumberField` · `Select`) 신규
+
+**C. 데이터 fetch 패턴 통합**
+- useVendors · useProducts · useEmployees 같은 도메인별 훅 (T25 useVendors 이미 완료)
+- 공통 fetch 훅 (`useFetch<T>(url)`) 신규 검토
+- 에러·로딩 상태 표준화
+
+**D. 알림·확인·토스트 통합**
+- `window.confirm` 남용 → 커스텀 ConfirmDialog 컴포넌트
+- toast 상태 · 페이지마다 개별 useState → useToast 훅 or context
+
+**E. 서버 응답 shape 정규화**
+- 라우터별 응답 형식 통일 (`{ data, error }` vs 배열 직접 반환)
+- 페이지네이션 응답 통일 (T-PERF-1a/b 에서 `has_more` 등)
+
+**F. 상수 파일 정리**
+- `src/constants/` 하위 정리 · 도메인별 그룹핑
+- 매직 넘버 상수화
+
+**진행 방식**:
+1. project-architect 분석 완료 → 구체 대상 리스트 파악
+2. 우선순위 결정 (효과 큰 것부터)
+3. 항목별 · 별도 브랜치 or 커밋 단위
+4. **각 항목 · TS+테스트+build 통과 필수** · 실패 시 즉시 revert
+5. UI 검증 · 각 항목마다 사용자 확인 or 자동 E2E
+
+**예상**: 15~25h (다수 세션 · 항목별 진행)
+**위험**: 중~높음 (무회귀 원칙 · 극도 신중)
 
 ### T-CSS · 공통 CSS 리팩토링 + 전체 UI 통일 (신규 · 2026-08-05 · 확장 v2)
 
