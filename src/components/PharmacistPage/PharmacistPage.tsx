@@ -10,7 +10,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FirstAid, BookOpen, Video, FileText, GraduationCap, Folder, FolderOpen, File as FileIcon } from "@phosphor-icons/react";
-import { Settings2, Plus, Eye, FileText as FileTextIcon, Loader2, ChevronRight, ChevronDown } from "lucide-react";
+import { Settings2, Plus, Eye, FileText as FileTextIcon, Loader2, ChevronRight, ChevronDown, CloudUpload, Trash2, X as XIcon } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
@@ -34,7 +34,24 @@ const PHARM_TABS: CommonTabDef<PharmTabKey>[] = [
   { key: "docs",      label: "각종 문서",  icon: FileText,      color: "amber"   },
 ];
 
-interface CategoryItem { key: string; title: string; subtitle: string; }
+interface CategoryItem { key: string; title: string; subtitle: string; custom?: boolean; }
+
+// 커스텀 카테고리 · app_settings key='education_custom_categories' 로 저장 (JSON 배열)
+//   - zone 기반 카테고리와 병합 · 뒤쪽에 표시 · 삭제는 커스텀만 가능
+//   - key 는 "cus_<timestamp>_<rand>" (zone key 와 충돌 방지)
+const CUSTOM_CATS_SETTINGS_KEY = "education_custom_categories";
+interface CustomCategoryRow { key: string; title: string; subtitle?: string; createdAt?: string; }
+
+// 파일 → dataURL (신규 카테고리 · 첫 자료 업로드용 · MenuSettings 와 동일 패턴)
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(reader.error ?? new Error("파일을 읽을 수 없습니다"));
+    reader.readAsDataURL(file);
+  });
+}
+const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 
 // 교육자료 카테고리는 매장 구역(ZONE_DEFS) 기반 · 아래 buildEducationCategories 참조
 const CATEGORIES: Record<Exclude<PharmTabKey, "education">, CategoryItem[]> = {
@@ -144,9 +161,61 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
   }, []);
   const educationCategories = useMemo(() => buildEducationCategories(), [zoneLabelVer]);
 
+  // ── 커스텀 교육 카테고리 (사용자 추가) · app_settings 저장 ──────
+  const [customCats, setCustomCats] = useState<CustomCategoryRow[]>([]);
+  const [customCatsLoading, setCustomCatsLoading] = useState(false);
+  const loadCustomCats = useCallback(async () => {
+    setCustomCatsLoading(true);
+    try {
+      const res = await fetch(`/api/settings?key=${encodeURIComponent(CUSTOM_CATS_SETTINGS_KEY)}`);
+      if (!res.ok) throw new Error(`서버 오류 (${res.status})`);
+      const data = await res.json().catch(() => ({ value: null }));
+      const arr = Array.isArray(data?.value) ? data.value : [];
+      // sanitize
+      const clean: CustomCategoryRow[] = arr
+        .filter((r: any) => r && typeof r.key === "string" && typeof r.title === "string" && r.key && r.title)
+        .map((r: any) => ({
+          key: String(r.key),
+          title: String(r.title),
+          subtitle: typeof r.subtitle === "string" ? r.subtitle : "",
+          createdAt: typeof r.createdAt === "string" ? r.createdAt : undefined,
+        }));
+      setCustomCats(clean);
+    } catch {
+      // 조용히 빈 배열 fallback (기존 동작 유지)
+      setCustomCats([]);
+    } finally {
+      setCustomCatsLoading(false);
+    }
+  }, []);
+  useEffect(() => { loadCustomCats(); }, [loadCustomCats]);
+
+  // 저장 유틸 (전체 배열 upsert)
+  const persistCustomCats = useCallback(async (next: CustomCategoryRow[]) => {
+    const res = await fetch(`/api/settings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: CUSTOM_CATS_SETTINGS_KEY, value: next }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `저장 실패 (${res.status})`);
+    }
+  }, []);
+
   const categories = useMemo<CategoryItem[]>(
-    () => (tab === "education" ? educationCategories : (CATEGORIES[tab as Exclude<PharmTabKey, "education">] ?? [])),
-    [tab, educationCategories],
+    () => {
+      if (tab !== "education") return CATEGORIES[tab as Exclude<PharmTabKey, "education">] ?? [];
+      // zone 기반 + 커스텀 (뒤쪽에 표시)
+      const custom: CategoryItem[] = customCats.map(c => ({
+        key: c.key,
+        title: c.title,
+        subtitle: c.subtitle || "사용자 추가",
+        custom: true,
+      }));
+      return [...educationCategories, ...custom];
+    },
+    [tab, educationCategories, customCats],
   );
   const activeTabDef = useMemo(() => PHARM_TABS.find(t => t.key === tab)!, [tab]);
   const selectedCatObj = useMemo(() => categories.find(c => c.key === selectedCat) ?? null, [categories, selectedCat]);
@@ -178,6 +247,111 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
 
   // ── 설정 모달 (관리자) ───────────────────────────
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // ── 왼쪽 상단 · 신규 카테고리 추가 폼 (교육탭 · 모든 사용자 사용 가능) ─
+  const [addCatOpen, setAddCatOpen] = useState(false);
+  const [newCatTitle, setNewCatTitle] = useState("");
+  const [newCatFile, setNewCatFile] = useState<File | null>(null);
+  const [newCatSaving, setNewCatSaving] = useState(false);
+  const [newCatError, setNewCatError] = useState<string | null>(null);
+  const newCatFileRef = useRef<HTMLInputElement | null>(null);
+
+  const resetNewCatForm = useCallback(() => {
+    setNewCatTitle("");
+    setNewCatFile(null);
+    setNewCatError(null);
+    if (newCatFileRef.current) newCatFileRef.current.value = "";
+  }, []);
+
+  const onNewCatFile = (file: File | null) => {
+    setNewCatError(null);
+    if (!file) { setNewCatFile(null); return; }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setNewCatError(`파일 크기 초과 (${(file.size / 1024 / 1024).toFixed(1)}MB > 20MB)`);
+      setNewCatFile(null);
+      return;
+    }
+    setNewCatFile(file);
+  };
+
+  const handleAddCustomCat = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNewCatError(null);
+    const title = newCatTitle.trim();
+    if (!title) { setNewCatError("카테고리 제목을 입력하세요."); return; }
+    // 중복 방지 (title 기준 커스텀)
+    if (customCats.some(c => c.title === title)) { setNewCatError("이미 같은 이름의 카테고리가 있습니다."); return; }
+
+    setNewCatSaving(true);
+    try {
+      // 1) 새 커스텀 카테고리 key 생성 및 배열 upsert
+      const key = `cus_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const nextRow: CustomCategoryRow = {
+        key,
+        title,
+        subtitle: newCatFile ? newCatFile.name : "사용자 추가",
+        createdAt: new Date().toISOString(),
+      };
+      const next = [...customCats, nextRow];
+      await persistCustomCats(next);
+      setCustomCats(next);
+
+      // 2) 파일이 있으면 · 이 카테고리의 첫 자료로 등록 (관리자 권한 필요 · 서버 체크)
+      if (newCatFile) {
+        try {
+          const dataUrl = await readFileAsDataUrl(newCatFile);
+          const res = await fetch(`/api/pharmacist-menu-items`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              editor_level: authSession?.level ?? 0,
+              tab_key: "education",
+              category_key: key,
+              title,
+              sort_order: 0,
+              data_url: dataUrl,
+              file_name: newCatFile.name,
+              uploaded_by: authSession?.employeeName ?? null,
+              uploaded_by_id: authSession?.employeeId ?? null,
+            }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            // 카테고리는 저장됨 · 파일만 실패 안내 (카테고리 유지)
+            setNewCatError(`카테고리는 추가됐지만 자료 업로드 실패: ${err.error || res.status}`);
+          }
+        } catch (fileErr: any) {
+          setNewCatError(`카테고리는 추가됐지만 자료 업로드 실패: ${fileErr?.message ?? "unknown"}`);
+        }
+      }
+
+      // 3) 카테고리 자동 선택 · 폼 초기화
+      setSelectedCat(key);
+      setExpandedCats(prev => { const n = new Set(prev); n.add(key); return n; });
+      // 성공 시 폼만 초기화 (에러 메시지는 파일 실패 시 유지)
+      setNewCatTitle("");
+      setNewCatFile(null);
+      if (newCatFileRef.current) newCatFileRef.current.value = "";
+    } catch (err: any) {
+      setNewCatError(err?.message ?? "저장 실패");
+    } finally {
+      setNewCatSaving(false);
+    }
+  };
+
+  const handleDeleteCustomCat = async (key: string, title: string) => {
+    if (!window.confirm(`정말 삭제하시겠습니까?\n\n${title}\n\n(이 카테고리와 그 하위 자료가 리스트에서 제거됩니다)`)) return;
+    try {
+      const next = customCats.filter(c => c.key !== key);
+      await persistCustomCats(next);
+      setCustomCats(next);
+      // 선택 카테고리가 삭제된 경우 해제
+      if (selectedCat === key) { setSelectedCat(null); setSelectedItem(null); }
+      setExpandedCats(prev => { const n = new Set(prev); n.delete(key); return n; });
+    } catch (err: any) {
+      alert(err?.message ?? "삭제 실패");
+    }
+  };
 
   // ── T20 · 우측 인라인 PDF 뷰어 (선택된 하위메뉴) ─────
   //   기존 모달 → 인라인 · 좌측에 하위메뉴 리스트 · 우측에 PDF 표시
@@ -230,10 +404,11 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
           <div className="flex-1" />
           <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-slate-500 font-bold">
             <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200">level ≥ 3</span>
-            {isAdmin && <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">관리자 CRUD</span>}
+            {/* 관리자 CRUD 배지 · 교육탭에서는 숨김 (사용자 요청 · 2026-08-05) */}
+            {isAdmin && tab !== "education" && <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">관리자 CRUD</span>}
           </div>
-          {/* 관리자 · 설정 버튼 (카테고리 선택 시에만 활성) */}
-          {isAdmin && (
+          {/* 관리자 · 설정 버튼 · 교육탭에서는 트리 위 통합 컨트롤로 대체 (숨김) */}
+          {isAdmin && tab !== "education" && (
             <button
               type="button"
               onClick={() => selectedCatObj && setSettingsOpen(true)}
@@ -270,11 +445,91 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
             {tab === "education" ? (
               /* ─── 교육탭 · 트리 구조 ─────────────────────── */
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+                {/* ── 트리 위 · 카테고리 추가 컨트롤 (통합 진입점) ── */}
+                <div className="border-b border-slate-100 bg-gradient-to-br from-sky-50/70 to-white">
+                  <div className="px-3 py-2 flex items-center gap-1.5">
+                    <Plus size={13} className="text-sky-600" />
+                    <span className="text-[11px] font-black text-sky-700 uppercase tracking-wider">하위메뉴 설정</span>
+                    <span className="ml-auto flex items-center gap-1">
+                      {customCatsLoading && <Loader2 size={10} className="animate-spin text-slate-400" />}
+                      <button
+                        type="button"
+                        onClick={() => { setAddCatOpen(v => !v); if (!addCatOpen) resetNewCatForm(); }}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold cursor-pointer transition bg-sky-600 hover:bg-sky-700 text-white shadow-sm"
+                        title={addCatOpen ? "폼 닫기" : "새 카테고리 추가"}
+                      >
+                        {addCatOpen ? <XIcon size={11} /> : <Plus size={11} />}
+                        {addCatOpen ? "닫기" : "카테고리 추가"}
+                      </button>
+                    </span>
+                  </div>
+                  {addCatOpen && (
+                    <form onSubmit={handleAddCustomCat} className="px-3 pb-3 flex flex-col gap-2">
+                      <input
+                        type="text"
+                        value={newCatTitle}
+                        onChange={e => setNewCatTitle(e.target.value)}
+                        placeholder="카테고리 제목 (예: 겨울철 감기 대응)"
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[12px] font-semibold text-slate-800 focus:outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 transition placeholder:text-slate-400 placeholder:font-normal"
+                        maxLength={120}
+                        disabled={newCatSaving}
+                        required
+                      />
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          ref={newCatFileRef}
+                          type="file"
+                          className="sr-only"
+                          onChange={e => onNewCatFile(e.target.files?.[0] ?? null)}
+                          accept=".pdf,application/pdf,image/*,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                          disabled={newCatSaving}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => newCatFileRef.current?.click()}
+                          disabled={newCatSaving}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-[11px] font-semibold transition cursor-pointer whitespace-nowrap disabled:opacity-50"
+                          title="자료 파일 선택 (선택 · PDF·이미지 등 · 최대 20MB)"
+                        >
+                          <CloudUpload size={11} />
+                          {newCatFile ? "파일 변경" : "자료 파일 (선택)"}
+                        </button>
+                        {newCatFile && (
+                          <span className="text-[10.5px] text-slate-500 font-semibold truncate flex-1">
+                            {newCatFile.name}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="submit"
+                          disabled={newCatSaving || !newCatTitle.trim()}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-sky-600 hover:bg-sky-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-[11px] font-bold cursor-pointer transition shadow-sm"
+                        >
+                          {newCatSaving ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}
+                          {newCatSaving ? "저장 중..." : "저장"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { resetNewCatForm(); setAddCatOpen(false); }}
+                          disabled={newCatSaving}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 text-[11px] font-semibold cursor-pointer transition"
+                        >
+                          취소
+                        </button>
+                      </div>
+                      {newCatError && (
+                        <div className="text-[10.5px] text-rose-600 font-semibold leading-tight">{newCatError}</div>
+                      )}
+                    </form>
+                  )}
+                </div>
+
                 {/* 트리 헤더 */}
                 <div className="px-3 py-2 border-b border-slate-100 bg-slate-50/60 flex items-center gap-1.5">
                   <GraduationCap size={14} className="text-slate-500" weight="fill" />
-                  <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider">교육자료 · 구역별</span>
-                  <span className="ml-auto text-[10px] font-bold text-slate-400 tabular-nums">{categories.length}개 구역</span>
+                  <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider">교육자료 · 카테고리</span>
+                  <span className="ml-auto text-[10px] font-bold text-slate-400 tabular-nums">{categories.length}건</span>
                 </div>
 
                 {/* 트리 본문 */}
@@ -322,15 +577,15 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                               <div className="text-[10px] text-slate-500 leading-tight">{c.subtitle}</div>
                             </div>
                           </button>
-                          {/* 관리자 · [+] 버튼 */}
-                          {isAdmin && (
+                          {/* 커스텀 카테고리 · 삭제 버튼 (zone 기반은 여기서 삭제 불가) */}
+                          {c.custom && (
                             <button
                               type="button"
-                              onClick={() => { setSelectedCat(c.key); setExpandedCats(prev => { const n = new Set(prev); n.add(c.key); return n; }); setSettingsOpen(true); }}
-                              className="shrink-0 w-6 h-6 mr-2 rounded flex items-center justify-center text-slate-400 hover:text-sky-600 hover:bg-sky-50 transition cursor-pointer"
-                              title="이 카테고리에 하위메뉴 추가"
+                              onClick={(e) => { e.stopPropagation(); handleDeleteCustomCat(c.key, c.title); }}
+                              className="shrink-0 w-6 h-6 mr-2 rounded flex items-center justify-center text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                              title="이 카테고리 삭제 (사용자 추가 카테고리만)"
                             >
-                              <Plus size={11} />
+                              <Trash2 size={11} />
                             </button>
                           )}
                         </div>
