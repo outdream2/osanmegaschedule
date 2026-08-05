@@ -3286,6 +3286,23 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     form.wageDisabled,
   ]);
 
+  // T-CTR-8 (2026-08-05) · 개인정보 수령자 자동 sync
+  //   · recipientName 비어있으면 employeeName 로 자동 채움
+  //   · recipientAddress 비어있으면 employeeAddress 로 자동 채움
+  //   · 사용자가 프리뷰나 저장 시점에 별도 편집 가능 (원본 값이 있으면 유지)
+  useEffect(() => {
+    setForm(prev => {
+      const p = prev.privacyConsent;
+      const nextName = p.recipientName || prev.employeeName;
+      const nextAddr = p.recipientAddress || prev.employeeAddress;
+      if (nextName === p.recipientName && nextAddr === p.recipientAddress) return prev;
+      return {
+        ...prev,
+        privacyConsent: { ...p, recipientName: nextName, recipientAddress: nextAddr },
+      };
+    });
+  }, [form.employeeName, form.employeeAddress]);
+
   // 직원 선택
   const onSelectEmployee = (empIdRaw: string) => {
     if (!empIdRaw) { upd("employeeId", null); return; }
@@ -4719,12 +4736,16 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       </details>
 
       {/* ═══════════════════════════════════════════════════
-          접기 · 사업주 정보 · 이해·동의 · CCTV
+          접기 · 사업주 정보
+          T-CTR-8 (2026-08-05) · 카테고리 이해·동의 카드 및 CCTV·개인정보 카드 제거
+            · 오른쪽 프리뷰 및 상태·핸들러·서명 로직 유지
+            · privacyConsent.recipientName · 프리뷰에서 form.employeeName 자동 fallback
+            · clauseAcks · 기본 false · 오른쪽 서명 시 true (기존 로직 유지)
       ═══════════════════════════════════════════════════ */}
       <details className="rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-2.5">
         <summary className="text-[11.5px] font-black text-slate-600 cursor-pointer hover:text-indigo-700 flex items-center gap-1.5 select-none list-none">
           <CaretDown size={10} weight="bold" />
-          사업주 정보 · 카테고리 이해·동의 · CCTV
+          사업주 정보
         </summary>
         <div className="mt-3 flex flex-col gap-3">
 
@@ -4760,66 +4781,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   className={fldInput}
                 />
               </div>
-            </div>
-          </div>
-
-          {/* 이해·동의 */}
-          <div className="rounded-lg border border-indigo-200 bg-indigo-50/30 p-3 flex flex-col gap-2">
-            <div className="text-[10.5px] font-black uppercase tracking-wider text-indigo-700 flex items-center gap-1.5">
-              카테고리별 이해·동의
-              <span className="font-semibold text-[9.5px] text-indigo-400 normal-case">(계약서 미리보기 반영)</span>
-            </div>
-            {([
-              { key: "wage" as const,     label: "임금 조항 이해·동의 (단서 5개 전체)" },
-              { key: "workTime" as const, label: "근로시간·휴게 조항 이해·동의" },
-              { key: "etc" as const,      label: "기타사항 이해·동의 (5개 항목 전체)" },
-            ]).map(({ key, label }) => (
-              <label key={key} className="inline-flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={form.clauseAcks[key]}
-                  onChange={(e) => upd("clauseAcks", { ...form.clauseAcks, [key]: e.target.checked })}
-                  className="w-4 h-4 rounded accent-indigo-600" />
-                <span className="text-[12px] font-semibold text-slate-700">{label}</span>
-              </label>
-            ))}
-          </div>
-
-          {/* CCTV/개인정보 */}
-          <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-3 flex flex-col gap-2">
-            <div className="text-[10.5px] font-black uppercase tracking-wider text-amber-700 flex items-center gap-1.5">
-              <Warning size={11} weight="fill" />
-              개인정보 · CCTV 동의
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className={fldLabel}>수령자 성명</label>
-                <input type="text" value={form.privacyConsent.recipientName}
-                  onChange={(e) => upd("privacyConsent", { ...form.privacyConsent, recipientName: e.target.value })}
-                  placeholder="미입력 시 근로자명"
-                  className={fldInput}
-                />
-              </div>
-              <div>
-                <label className={fldLabel}>수령자 주소</label>
-                <input type="text" value={form.privacyConsent.recipientAddress}
-                  onChange={(e) => upd("privacyConsent", { ...form.privacyConsent, recipientAddress: e.target.value })}
-                  placeholder="미입력 시 근로자 주소"
-                  className={fldInput}
-                />
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-4 mt-0.5">
-              <label className="inline-flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={form.privacyConsent.agreedCollection}
-                  onChange={(e) => upd("privacyConsent", { ...form.privacyConsent, agreedCollection: e.target.checked })}
-                  className="w-4 h-4 rounded accent-amber-600 cursor-pointer" />
-                <span className="text-[12px] font-semibold text-slate-700">개인정보 수집·이용</span>
-              </label>
-              <label className="inline-flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={form.privacyConsent.agreedCCTV}
-                  onChange={(e) => upd("privacyConsent", { ...form.privacyConsent, agreedCCTV: e.target.checked })}
-                  className="w-4 h-4 rounded accent-amber-600 cursor-pointer" />
-                <span className="text-[12px] font-semibold text-slate-700">CCTV 촬영·이용</span>
-              </label>
             </div>
           </div>
 
