@@ -53,12 +53,14 @@ export function useBarcodeScannerHandlers({
     if (scannedRef.current || !mountedRef.current) return;
     scannedRef.current = true;
 
-    // 2026-07-31 · 사용자 재요청 "BEEP!! 하고 소리 나야지" · Web Audio 우선 (autoplay 정책 회피 확실)
-    //   1) Web Audio API (unlock 된 AudioContext 재사용 · POS 3.2kHz 삑)
-    //   2) HTMLAudioElement + WAV 병행 (더블 안전)
-    //   3) Vibration API (silent 모드 대비)
+    // 2026-08-05 · T-SCAN-3 · "벨소리 무관·무조건 삑" · 최대 강화
+    //   1) Web Audio · state 무시 · resume 후 즉시 재생 시도 · 2톤 삑삑 (POS 스타일)
+    //   2) HTMLAudioElement + WAV 병행 · 볼륨 1.0
+    //   3) Vibration 강화 (200ms · silent 모드 대비)
+    //   ⚠ iOS Safari silent switch 는 Web Audio 도 뮤트함 (플랫폼 제약)
+    //   · 완화: gain 1.0 · square wave · 진동·시각 flash 3중 안전장치
     const playBeep = () => {
-      // 1) Web Audio · unlock 된 shared context 재사용 · 매번 new AC 는 mobile 에서 실패 가능
+      // 1) Web Audio · state 체크 제거 · resume 후 무조건 시도 (mobile Safari 대비)
       try {
         const AC: any = (window as any).AudioContext || (window as any).webkitAudioContext;
         if (AC) {
@@ -67,17 +69,24 @@ export function useBarcodeScannerHandlers({
             ctx = new AC();
             (window as any).__beepAudioCtx = ctx;
           }
-          if (ctx && ctx.state === "suspended") { try { ctx.resume(); } catch {} }
-          if (ctx && ctx.state === "running") {
-            const osc = ctx.createOscillator();
-            const gainNode = ctx.createGain();
-            osc.connect(gainNode); gainNode.connect(ctx.destination);
-            osc.type = "square";
-            osc.frequency.value = 3200;
-            gainNode.gain.setValueAtTime(0.7, ctx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-            osc.start(ctx.currentTime);
-            osc.stop(ctx.currentTime + 0.1);
+          if (ctx && ctx.state === "suspended") {
+            try { ctx.resume(); } catch { /* silent */ }
+          }
+          if (ctx) {
+            // 삑삑 2톤 · POS 스캐너 스타일 · 볼륨 1.0
+            const beepOnce = (startAt: number, freq: number) => {
+              const osc = ctx!.createOscillator();
+              const g = ctx!.createGain();
+              osc.connect(g); g.connect(ctx!.destination);
+              osc.type = "square";
+              osc.frequency.value = freq;
+              g.gain.setValueAtTime(1.0, ctx!.currentTime + startAt);
+              g.gain.exponentialRampToValueAtTime(0.001, ctx!.currentTime + startAt + 0.09);
+              osc.start(ctx!.currentTime + startAt);
+              osc.stop(ctx!.currentTime + startAt + 0.09);
+            };
+            beepOnce(0,     2800);  // 첫 삑 · 2.8kHz
+            beepOnce(0.12,  3400);  // 둘째 삑 · 3.4kHz (higher)
           }
         }
       } catch { /* silent */ }
@@ -97,8 +106,8 @@ export function useBarcodeScannerHandlers({
       } catch { /* silent */ }
     };
     playBeep();
-    // 진동 fallback · 무음 모드 대비
-    try { (navigator as any).vibrate?.(60); } catch { /* silent */ }
+    // 진동 강화 · silent 모드 대비 (짧-짧 두번 = 삑삑 시각화)
+    try { (navigator as any).vibrate?.([80, 40, 80]); } catch { /* silent */ }
 
     // Turn off torch on recognition
     if (mountedRef.current) setTorchOn(false);

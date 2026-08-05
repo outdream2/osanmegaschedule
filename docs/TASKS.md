@@ -10,6 +10,20 @@
 
 ## 🔴 진행 중 · 미완료
 
+### T-UI-1 · 공통 · SplitPanel 반응형 · 오른쪽 정보는 모바일에서 모달로 (2026-08-05 · 사용자 제보)
+- 증상: **모든 split 화면**에서 · 데스크탑 좌우 분할 → 모바일 세로 스택 (오른쪽이 아래로)
+- 요구: **모바일 반응형에서 오른쪽 정보는 아래가 아닌 모달**로 표시
+- 공통 작업 · SplitPanel (또는 유사 컴포넌트) 를 사용하는 모든 페이지에 일괄 적용
+- 영향 페이지: 재고관리·발주관리·매입관리·직원상세·근로계약서 등 다수
+- 담당: **mobile-ui-designer 에이전트** 위임 (T-SCAN-2 완료 후 이어서)
+
+### T-SCAN-3 · 바코드 인식 순간 무조건 삑소리 (2026-08-05 · 사용자 제보)
+- 요구: 폰 벨소리·무음모드와 무관하게 · 인식되는 순간 즉시 삑
+- 구현: Web Audio API (AudioContext + OscillatorNode) · HTMLAudioElement 회피
+  - 사유: iOS/Android · muted 상태에서 `<audio>` 재생 안 됨 · AudioContext 는 재생됨
+- 위치: `handleScan` (ScanPage.tsx:287) · 진입 즉시 beep()
+- 실패한 접근: audio 태그·mp3 파일 (silent mode 무시됨)
+
 ### T-SCAN-2 · ScanPage 상품정보 카드 반응형 UI 개선 (2026-08-05 · 사용자 제보)
 - 위치: `ProductInfoCard.tsx` (ScanPage 내부에서 사용)
 - 증상: 바코드 스캔 후 나타나는 상품정보 화면
