@@ -1,16 +1,16 @@
 // src/components/ContractSettingsPage/ContractSettingsPage.tsx
 // 근로계약서 설정 페이지 · 2026-08-05 · 재설계
 // - 직군별 주중/주말 시급 (약사·매장·창고·기타)
+//     · 실 저장 위치: settings.wageRates (서버 저장 · 모든 관리자 공유)
+//     · ContractWriterPage 가 참조하는 유일한 소스로 통일
 // - 각 호 내용 편집 CMS (임금단서·근로시간·휴일·징계·기타·개인정보)
-// - localStorage
-//     · contractJobWages:v1     (직군별 시급)
-//     · contractClauses:v1      (각 호 내용)
-//     · contract-writer-settings (기존 · ContractWriterPage 참조 · 유지)
+//     · localStorage: contractClauses:v1
 //
 // 하위호환:
 //   · 기존 export (ContractCategory, ContractWriterSettings, CONTRACT_SETTINGS_KEY,
 //     DEFAULT_CONTRACT_SETTINGS, loadContractSettings) 는 유지 - ContractWriterPage 가 참조.
-//   · 다만 편집 UI 는 삭제 - localStorage 저장값이 없으면 기본값 사용.
+//   · 기존 export (JOB_WAGES_KEY, JobWage, ContractJobWages, DEFAULT_JOB_WAGES, loadJobWages) 는
+//     하위호환용으로 유지 - 다만 이제 편집은 settings.wageRates 로 저장 (localStorage 아님).
 //
 // 준수 원칙:
 //   · feedback_ui_principles: slate + indigo/emerald 팔레트 · rounded-xl · shadow-sm
@@ -25,6 +25,7 @@ import {
 
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import type { AuthSession } from "../../types";
+import { useSettings, defaultWageForPosition, type WageRate } from "../../hooks/useSettings";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 하위호환 · 기존 export (ContractWriterPage 가 import 하므로 유지)
@@ -286,9 +287,31 @@ interface ContractSettingsPageProps {
 const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
   authSession, onBack, onNavigate, onLogout, embedded = false,
 }) => {
-  // ── 상태 · 시급
-  const [wages, setWages] = useState<ContractJobWages>(() => loadJobWages());
-  const [initialWages, setInitialWages] = useState<ContractJobWages>(() => loadJobWages());
+  // ── 시급 · 서버 저장 (settings.wageRates · 모든 관리자 공유)
+  //   ContractWriterPage 가 참조하는 유일한 소스와 통일
+  //   즉시 저장 (debounce · useSettings 내부)
+  const { wageRates, update: updateSettings } = useSettings();
+
+  // ── 기존 localStorage(contractJobWages:v1) 마이그레이션 (1회)
+  //   저장된 값이 wageRates 에 없으면 병합 후 삭제
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(JOB_WAGES_KEY);
+      if (!raw) return;
+      const legacy = loadJobWages();
+      const missing: Record<string, WageRate> = {};
+      (["약사", "매장", "창고", "기타"] as ContractCategory[]).forEach(k => {
+        if (!wageRates?.[k]) {
+          missing[k] = { weekday: legacy[k].weekday, weekend: legacy[k].weekend };
+        }
+      });
+      if (Object.keys(missing).length > 0) {
+        updateSettings({ wageRates: { ...(wageRates ?? {}), ...missing } });
+      }
+      localStorage.removeItem(JOB_WAGES_KEY);
+    } catch { /* silent */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── 상태 · 각 호
   const [clauses, setClauses] = useState<ContractClauses>(() => loadContractClauses());
@@ -302,10 +325,9 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
 
   const [notice, setNotice] = useState<{ tone: "ok" | "err" | "info"; text: string } | null>(null);
 
-  // 변경 여부 (dirty)
-  const wagesDirty = useMemo(() => JSON.stringify(wages) !== JSON.stringify(initialWages), [wages, initialWages]);
+  // 변경 여부 (dirty · 각 호만 · 시급은 즉시 저장)
   const clausesDirty = useMemo(() => !clausesEqual(clauses, initialClauses), [clauses, initialClauses]);
-  const dirty = wagesDirty || clausesDirty;
+  const dirty = clausesDirty;
 
   // 자동 배너 제거
   useEffect(() => {
@@ -314,10 +336,22 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
     return () => clearTimeout(t);
   }, [notice]);
 
-  // ── 시급 편집
-  const updWage = useCallback((cat: ContractCategory, field: keyof JobWage, val: number) => {
-    setWages(prev => ({ ...prev, [cat]: { ...prev[cat], [field]: val } }));
-  }, []);
+  // ── 시급 편집 · 즉시 서버 저장 (useSettings 가 debounce 처리)
+  const updWage = useCallback((cat: ContractCategory, field: keyof WageRate, val: number) => {
+    const prev = wageRates?.[cat] ?? defaultWageForPosition(cat);
+    const nextRate: WageRate = {
+      weekday: field === "weekday" ? val : prev.weekday,
+      weekend: field === "weekend" ? val : prev.weekend,
+    };
+    updateSettings({ wageRates: { ...(wageRates ?? {}), [cat]: nextRate } });
+  }, [wageRates, updateSettings]);
+
+  // ── 시급 초기화 (해당 직군 default 로)
+  const resetWage = useCallback((cat: ContractCategory) => {
+    const nextRates = { ...(wageRates ?? {}) };
+    delete nextRates[cat];
+    updateSettings({ wageRates: nextRates });
+  }, [wageRates, updateSettings]);
 
   // ── 각 호 편집
   const updClause = useCallback((group: ClauseGroupKey, idx: number, val: string) => {
@@ -355,32 +389,29 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
     setOpen(prev => ({ ...prev, [group]: !prev[group] }));
   }, []);
 
-  // ── 저장
+  // ── 저장 (각 호만 · 시급은 즉시 저장되므로 여기서 처리 안 함)
   const handleSave = () => {
     try {
-      localStorage.setItem(JOB_WAGES_KEY, JSON.stringify(wages));
       localStorage.setItem(CONTRACT_CLAUSES_KEY, JSON.stringify(clauses));
-      setInitialWages(JSON.parse(JSON.stringify(wages)));
       setInitialClauses(cloneClauses(clauses));
-      setNotice({ tone: "ok", text: "설정이 저장되었습니다. 이후 근로계약서 작성에 반영됩니다." });
+      setNotice({ tone: "ok", text: "각 호 내용이 저장되었습니다. 이후 근로계약서 작성에 반영됩니다." });
     } catch (err: any) {
       setNotice({ tone: "err", text: err?.message ?? "설정 저장에 실패했습니다." });
     }
   };
 
-  // ── 기본값 (전체)
+  // ── 기본값 (전체 · 시급은 wageRates 비우기 → default fallback)
   const handleResetToDefault = () => {
     if (!window.confirm("모든 시급 및 각 호 내용을 기본값으로 되돌립니다. 계속하시겠습니까?")) return;
-    setWages({ ...DEFAULT_JOB_WAGES });
+    updateSettings({ wageRates: {} });
     setClauses(cloneClauses(DEFAULT_CLAUSES));
-    setNotice({ tone: "info", text: "기본값으로 되돌렸습니다. 저장하려면 [저장] 버튼을 누르세요." });
+    setNotice({ tone: "info", text: "기본값으로 되돌렸습니다. 각 호는 [저장] 버튼을 눌러야 확정됩니다." });
   };
 
-  // ── 취소 (마지막 저장값 복원)
+  // ── 취소 (각 호만 · 마지막 저장값 복원)
   const handleRevert = () => {
-    setWages(JSON.parse(JSON.stringify(initialWages)));
     setClauses(cloneClauses(initialClauses));
-    setNotice({ tone: "info", text: "저장된 마지막 값으로 되돌렸습니다." });
+    setNotice({ tone: "info", text: "각 호를 마지막 저장값으로 되돌렸습니다." });
   };
 
   // ── 그룹별 기본값 복원
@@ -411,7 +442,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
             <div>
               <h1 className="text-lg sm:text-xl font-black text-slate-800 leading-none">근로계약서 설정</h1>
               <p className="text-xs text-slate-500 mt-1">
-                직군별 주중·주말 시급 및 계약서 각 호의 내용을 설정합니다.
+                직군별 시급은 편집 즉시 저장 · 각 호 내용은 [저장] 버튼으로 확정합니다.
               </p>
             </div>
           </div>
@@ -431,7 +462,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
               onClick={handleRevert}
               disabled={!dirty}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-semibold transition-colors cursor-pointer"
-              title="편집 취소 · 마지막 저장값 복원"
+              title="각 호 편집 취소 · 마지막 저장값으로 복원"
             >
               취소
             </button>
@@ -440,10 +471,10 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
               onClick={handleSave}
               disabled={!dirty}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white text-sm font-black shadow-sm transition-colors cursor-pointer"
-              title="설정 저장"
+              title="각 호 저장 (시급은 편집 즉시 자동 저장됨)"
             >
               <FloppyDisk size={14} weight="bold" />
-              저장
+              각 호 저장
             </button>
           </div>
         </div>
@@ -472,9 +503,18 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
             </div>
             <div className="flex-1">
               <h2 className="text-[15px] font-black text-indigo-700">직군별 시급</h2>
-              <p className="text-[11px] text-slate-500 font-semibold">주중·주말 시급을 직군별로 설정합니다.</p>
+              <p className="text-[11px] text-slate-500 font-semibold">주중·주말 시급을 직군별로 설정합니다. 이 값은 근로계약서 작성 시 자동 채워집니다.</p>
             </div>
           </header>
+
+          {/* 안내 · 즉시 저장 · 서버 공유 */}
+          <div className="text-[11px] text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-2.5 py-1.5 font-semibold flex items-start gap-1.5">
+            <Info size={12} weight="fill" className="mt-[2px] shrink-0" />
+            <span>
+              시급 값은 <b>편집 즉시 서버에 저장</b>되며 모든 관리자에게 공유됩니다.
+              값을 비우면 기본값 (약사 35,000/40,000 · 그 외 10,030/12,000) 이 자동 사용됩니다.
+            </span>
+          </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -483,38 +523,66 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                   <th className="text-left px-3 py-2 min-w-[100px]">직군</th>
                   <th className="text-right px-3 py-2">주중 시급 (원)</th>
                   <th className="text-right px-3 py-2">주말 시급 (원)</th>
+                  <th className="text-center px-2 py-2 w-[60px]">기본값</th>
                 </tr>
               </thead>
               <tbody>
-                {JOB_META.map(job => (
-                  <tr key={job.key} className="border-b border-slate-100 last:border-b-0">
-                    <td className="px-3 py-2">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md ${job.bg} ${job.color} text-[13px] font-black`}>
-                        {job.label}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2">
-                      <input
-                        type="number"
-                        min={0}
-                        step={10}
-                        value={wages[job.key].weekday}
-                        onChange={(e) => updWage(job.key, "weekday", Math.max(0, Number(e.target.value) || 0))}
-                        className="w-full max-w-[180px] ml-auto block bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-bold text-right focus:outline-none focus:border-indigo-500 focus:shadow-sm transition"
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <input
-                        type="number"
-                        min={0}
-                        step={10}
-                        value={wages[job.key].weekend}
-                        onChange={(e) => updWage(job.key, "weekend", Math.max(0, Number(e.target.value) || 0))}
-                        className="w-full max-w-[180px] ml-auto block bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-bold text-right focus:outline-none focus:border-indigo-500 focus:shadow-sm transition"
-                      />
-                    </td>
-                  </tr>
-                ))}
+                {JOB_META.map(job => {
+                  const stored = wageRates?.[job.key];
+                  const fallback = defaultWageForPosition(job.key);
+                  const rate = stored ?? fallback;
+                  const isDefault = !stored;
+                  return (
+                    <tr key={job.key} className="border-b border-slate-100 last:border-b-0">
+                      <td className="px-3 py-2">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md ${job.bg} ${job.color} text-[13px] font-black`}>
+                          {job.label}
+                          {isDefault && (
+                            <span
+                              className="text-[9px] font-bold text-slate-500 bg-white/70 border border-slate-200 rounded px-1 py-[1px]"
+                              title="저장된 값이 없어 기본값 사용 중 · 편집 시 저장됩니다"
+                            >
+                              기본
+                            </span>
+                          )}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2">
+                        <input
+                          type="number"
+                          min={0}
+                          step={10}
+                          value={rate.weekday || ""}
+                          placeholder={String(fallback.weekday)}
+                          onChange={(e) => updWage(job.key, "weekday", Math.max(0, Number(e.target.value) || 0))}
+                          className={`w-full max-w-[180px] ml-auto block bg-white border rounded-lg px-2.5 py-1.5 text-[14px] font-bold text-right focus:outline-none focus:border-indigo-500 focus:shadow-sm transition ${isDefault ? "border-slate-200 text-slate-500" : "border-slate-300 text-slate-800"}`}
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <input
+                          type="number"
+                          min={0}
+                          step={10}
+                          value={rate.weekend || ""}
+                          placeholder={String(fallback.weekend)}
+                          onChange={(e) => updWage(job.key, "weekend", Math.max(0, Number(e.target.value) || 0))}
+                          className={`w-full max-w-[180px] ml-auto block bg-white border rounded-lg px-2.5 py-1.5 text-[14px] font-bold text-right focus:outline-none focus:border-indigo-500 focus:shadow-sm transition ${isDefault ? "border-slate-200 text-slate-500" : "border-slate-300 text-slate-800"}`}
+                        />
+                      </td>
+                      <td className="px-2 py-2 text-center">
+                        <button
+                          type="button"
+                          onClick={() => resetWage(job.key)}
+                          disabled={isDefault}
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                          title="이 직군만 기본값으로 되돌리기"
+                        >
+                          <ArrowsClockwise size={12} weight="bold" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -629,10 +697,10 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
           })}
         </div>
 
-        <div className="text-[11px] text-slate-400 font-semibold text-center py-2">
-          설정 저장 위치 · 브라우저 localStorage
-          {" · "}<code className="bg-slate-100 px-1 rounded">{JOB_WAGES_KEY}</code>
-          {" · "}<code className="bg-slate-100 px-1 rounded">{CONTRACT_CLAUSES_KEY}</code>
+        <div className="text-[11px] text-slate-400 font-semibold text-center py-2 leading-relaxed">
+          시급 · 서버 저장 (모든 관리자 공유) · <code className="bg-slate-100 px-1 rounded">settings.wageRates</code>
+          <br />
+          각 호 · 브라우저 저장 (이 브라우저에만 저장됨) · <code className="bg-slate-100 px-1 rounded">{CONTRACT_CLAUSES_KEY}</code>
         </div>
       </main>
     </div>
