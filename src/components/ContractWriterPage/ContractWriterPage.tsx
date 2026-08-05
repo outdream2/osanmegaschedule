@@ -641,20 +641,7 @@ const SpanBox: React.FC<{ checked: boolean }> = ({ checked }) => (
   </span>
 );
 
-// 세로 라벨 (좌측 세로 텍스트)
-const VerticalLabel: React.FC<{ children: string; minH?: number }> = ({ children, minH = 60 }) => (
-  <div
-    className="flex items-center justify-center bg-slate-100 border-r border-slate-400 text-slate-800 font-black text-[13px] tracking-widest select-none"
-    style={{
-      writingMode: "vertical-rl",
-      minHeight: minH,
-      width: 28,
-      letterSpacing: "0.25em",
-    }}
-  >
-    {children}
-  </div>
-);
+// (VerticalLabel 제거 · 하이브리드 재디자인 · 2026-08-05)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // InlineSignSpot · 프리뷰 안에 있는 서명 spot (클릭 → 서명 모달)
@@ -1371,10 +1358,66 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
   })();
 
 
+  // 하이브리드 재디자인 · 2026-08-05
+  // 색상 fixed hex (PDF · html2canvas 안정)
+  const HEX = {
+    indigoBg:  "#eef2ff",   // indigo-50
+    indigoBd:  "#c7d2fe",   // indigo-200 → 300 근사
+    amberBg:   "#fef3c7",   // amber-100 (약간 부드러운)
+    amberSoft: "#fffbeb",   // amber-50
+    amberBd:   "#fcd34d",   // amber-300
+    slateBd:   "#94a3b8",   // slate-400
+    slateSoft: "#f8fafc",   // slate-50
+    slateHead: "#e2e8f0",   // slate-200
+  } as const;
+
+  // 섹션 헤딩 · 좌측 3px 세로바 + 소캡스 라벨
+  const Section: React.FC<{ label: string; children: React.ReactNode; avoidBreak?: boolean }> = ({ label, children, avoidBreak }) => (
+    <section
+      className="mt-4"
+      style={avoidBreak ? { pageBreakInside: "avoid", breakInside: "avoid" } : undefined}
+    >
+      <div className="border-l-[3px] border-slate-700 pl-3">
+        <h3 className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500 mb-1.5">
+          {label}
+        </h3>
+        <div className="text-[12px] text-slate-800 leading-relaxed">
+          {children}
+        </div>
+      </div>
+    </section>
+  );
+
+  // 하단 서명 · 갑/을 셀 (grid grid-cols-2)
+  const PartyCell: React.FC<{
+    partyLabel: string;
+    children: React.ReactNode;
+  }> = ({ partyLabel, children }) => (
+    <div className="border border-slate-400 rounded-sm p-3 flex flex-col gap-1.5 bg-white">
+      <div className="text-[10.5px] font-black uppercase tracking-[0.24em] text-slate-500 pb-1 border-b border-slate-200">
+        {partyLabel}
+      </div>
+      {children}
+    </div>
+  );
+
+  const FieldRow: React.FC<{ label: string; value: React.ReactNode; wide?: boolean }> = ({ label, value }) => (
+    <div className="flex items-baseline gap-2 text-[11.5px]">
+      <span
+        className="min-w-[68px] text-slate-600 font-bold text-[10.5px] tracking-wide"
+      >
+        {label}
+      </span>
+      <span className="flex-1 border-b border-slate-300 pb-0.5 text-slate-900 font-semibold">
+        {value ?? "-"}
+      </span>
+    </div>
+  );
+
   return (
     <div
       ref={ref}
-      className="bg-white text-slate-900 border border-slate-300 rounded-sm shadow-sm p-4 sm:p-6 mx-auto"
+      className="bg-white text-slate-900 shadow-sm p-5 sm:p-8 mx-auto"
       style={{
         width: "100%",
         maxWidth: "820px",
@@ -1383,275 +1426,252 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
         color: "#0f172a",
       }}
     >
-      {/* 상단 · 제목 + 근로자명 · 우측 상단 */}
-      <div className="flex items-center justify-center border-b-2 border-slate-800 pb-2 mb-3 relative">
-        <h2 className="text-[22px] font-black tracking-[0.3em] text-slate-900 text-center">
+      {/* 상단 · 제목 + 근로자명 · 우측 상단 · 바깥 테두리 제거 · 상단 2px 구분선만 */}
+      <header
+        className="flex items-center justify-center pb-3 mb-3 relative"
+        style={{ borderBottom: "2px solid #1e293b" }}
+      >
+        <h2 className="text-[24px] font-black tracking-[0.32em] text-slate-900 text-center">
           근 로 계 약 서
         </h2>
-        <div className="absolute right-0 top-0 bottom-0 flex items-center text-[15px] font-black text-slate-800">
-          ( <span className="mx-1 min-w-[60px] text-center border-b border-slate-500 px-2">{form.employeeName || " "}</span> )
+        <div className="absolute right-0 top-0 bottom-0 flex items-center text-[14px] font-black text-slate-800">
+          ( <span className="mx-1 min-w-[80px] text-center border-b border-slate-500 px-2">{form.employeeName || " "}</span> )
         </div>
-      </div>
+      </header>
 
       {/* 서두 */}
-      <p className="text-[12px] text-slate-800 mb-3 leading-relaxed">
+      <p className="text-[12px] text-slate-700 mb-2 leading-relaxed">
         사용자(이하 '갑'이라 함)와 근로자(이하 '을'이라 함)는 다음과 같이 근로계약을 체결하고 신의에 따라 이를 성실히 이행할 것을 약정한다.
       </p>
 
-      {/* ── 표 1 ── */}
-      <table className="w-full border-collapse border-2 border-slate-800 text-[12px]">
-        <tbody>
-          {/* 근무장소 · 담당업무 */}
-          <tr>
-            <td className="border-b border-r border-slate-500 p-0 w-[32px]">
-              <VerticalLabel minH={54}>근무장소</VerticalLabel>
-            </td>
-            <td className="border-b border-slate-500 px-3 py-2 align-top">
-              <div>
-                <b className="font-bold">코스트팜(Costpharm) 社內 및 관계 현장</b>
-              </div>
-              <div className="text-[11px] text-slate-700 mt-0.5">
-                담당업무: <b className="text-slate-900">{form.jobDuty || "-"}</b>
-              </div>
-              <div className="text-[10.5px] text-slate-600 mt-1">
-                단, '갑'의 사정에 따라 근무 장소와 담당 업무를 변경할 수 있으며 '을'은 정당한 사유 없이 이를 거부할 수 없다.
-              </div>
-            </td>
-          </tr>
+      {/* 1. 근무장소 · 담당업무 */}
+      <Section label="근무장소 · 담당업무">
+        <div className="font-bold text-slate-900">코스트팜(Costpharm) 社內 및 관계 현장</div>
+        <div className="mt-1">
+          담당업무: <b className="text-slate-900">{form.jobDuty || "-"}</b>
+        </div>
+        <div className="text-[10.5px] text-slate-600 mt-1">
+          단, '갑'의 사정에 따라 근무 장소와 담당 업무를 변경할 수 있으며 '을'은 정당한 사유 없이 이를 거부할 수 없다.
+        </div>
+      </Section>
 
-          {/* 근로계약기간 (근로계약기간 우측 서명 제거) */}
-          <tr>
-            <td className="border-b border-r border-slate-500 p-0">
-              <VerticalLabel minH={80}>근로계약기간</VerticalLabel>
-            </td>
-            <td className="border-b border-slate-500 px-3 py-2 align-top">
-              <div className="flex items-center gap-2 mb-1">
-                <SpanBox checked={form.indefinite} />
-                <span className="font-bold">기간의 정함이 없음.</span>
-                <span className="text-[11px] text-slate-600">(근로개시일: <b>{fmtKoreanDate(form.startDate) || "-"}</b>)</span>
-              </div>
-              <div className="flex items-center flex-wrap gap-1 text-[12px]">
-                <SpanBox checked={!form.indefinite} />
-                <span className="tabular-nums">
-                  <b>{stDate ? stDate[1] : "20__"}</b>년{" "}
-                  <b>{stDate ? Number(stDate[2]) : "__"}</b>월{" "}
-                  <b>{stDate ? Number(stDate[3]) : "__"}</b>일{" "}
-                  ~ <b>{enDate ? enDate[1] : "20__"}</b>년{" "}
-                  <b>{enDate ? Number(enDate[2]) : "__"}</b>월{" "}
-                  <b>{enDate ? Number(enDate[3]) : "__"}</b>일까지
-                </span>
-                <span className="text-[10.5px] text-slate-600 ml-1">(근로개시일: {fmtKoreanDate(form.startDate) || "-"})</span>
-              </div>
-              {!form.indefinite && (
-                <div className="text-[10.5px] text-slate-600 mt-1">
-                  계약기간 만료일에 별도의 통보 없이 근로계약은 자동 해지되는 것으로 한다.
+      {/* 2. 근로계약기간 */}
+      <Section label="근로계약기간">
+        <div className="flex items-center gap-2 mb-1">
+          <SpanBox checked={form.indefinite} />
+          <span className="font-bold">기간의 정함이 없음.</span>
+          <span className="text-[11px] text-slate-600">(근로개시일: <b>{fmtKoreanDate(form.startDate) || "-"}</b>)</span>
+        </div>
+        <div className="flex items-center flex-wrap gap-1 text-[12px]">
+          <SpanBox checked={!form.indefinite} />
+          <span className="tabular-nums">
+            <b>{stDate ? stDate[1] : "20__"}</b>년{" "}
+            <b>{stDate ? Number(stDate[2]) : "__"}</b>월{" "}
+            <b>{stDate ? Number(stDate[3]) : "__"}</b>일{" "}
+            ~ <b>{enDate ? enDate[1] : "20__"}</b>년{" "}
+            <b>{enDate ? Number(enDate[2]) : "__"}</b>월{" "}
+            <b>{enDate ? Number(enDate[3]) : "__"}</b>일까지
+          </span>
+          <span className="text-[10.5px] text-slate-600 ml-1">(근로개시일: {fmtKoreanDate(form.startDate) || "-"})</span>
+        </div>
+        {!form.indefinite && (
+          <div className="text-[10.5px] text-slate-600 mt-1">
+            계약기간 만료일에 별도의 통보 없이 근로계약은 자동 해지되는 것으로 한다.
+          </div>
+        )}
+      </Section>
+
+      {/* 3. 임금 (표 유지 · avoidBreak) */}
+      <Section label="임금" avoidBreak>
+        <div className="text-[11.5px] text-slate-800 mb-1.5 font-semibold">
+          1. '을'의 구체적인 임금 구성항목은 아래와 같다.
+        </div>
+        {form.useWageComponents ? (
+          <WageComponentsTable wage={form.wageComponents} />
+        ) : (
+          <div className="border border-slate-400 rounded-sm p-2 text-[12px]">
+            <div>· 시간급 (주중): <b>{fmtWon(form.weekdayHourly)} 원</b></div>
+            <div>· 시간급 (주말): <b>{fmtWon(form.weekendHourly)} 원</b></div>
+          </div>
+        )}
+
+        {/* 임금 단서 조항 5개 · 문단형 */}
+        <ol className="mt-2 space-y-1 text-[11px] text-slate-700 leading-snug list-decimal list-inside pl-1">
+          {WAGE_CLAUSES.map((clause, i) => (
+            <li key={i}><span className="align-middle">{clause}</span></li>
+          ))}
+        </ol>
+        <div className="mt-1 text-[10.5px] text-slate-600 leading-snug">
+          <b>별도:</b> {WAGE_CLAUSE_EXTRA}
+        </div>
+
+        {/* T6 · 임금 조항 카테고리별 이해·동의 체크박스 · fixed hex */}
+        <div
+          className="mt-2 rounded-sm px-2 py-1.5 flex items-center gap-2"
+          style={{ backgroundColor: HEX.indigoBg, border: `1px solid ${HEX.indigoBd}` }}
+        >
+          <SpanBox checked={form.clauseAcks.wage} />
+          <span className="text-[11.5px] font-semibold text-slate-800">
+            위의 임금 조항 전체 내용을 이해하고 동의함
+          </span>
+          <span className="ml-auto text-[11px] font-bold text-slate-700">{form.employeeName || "(근로자)"}</span>
+        </div>
+
+        {/* 임금 지급일 · amber fixed hex */}
+        <div
+          className="mt-2 rounded-sm px-2 py-1 text-[11.5px]"
+          style={{ backgroundColor: HEX.amberSoft, border: `1px solid ${HEX.amberBd}` }}
+        >
+          <b>2. 임금지급일:</b> {form.paymentDayText}
+        </div>
+      </Section>
+
+      {/* 4. 근로일 · 근로시간 (표 유지 · avoidBreak) */}
+      <Section label="근로일 · 근로시간" avoidBreak>
+        <div className="text-[11.5px] font-bold mb-1">
+          1. 기본 근로일: <b className="text-slate-900">{workDayText}</b>
+        </div>
+        <div className="text-[10.5px] text-slate-600 mb-2 leading-snug">
+          ※ 소정근로일은 주40시간제 내에서 당사자가 정하는 근로일을 의미하며, 무급 휴무일인 토요일에 근로할 경우 연장근로로 보고, 주휴일인 일요일에 근로할 경우 휴일근로로 본다.
+        </div>
+
+        <div className="text-[11.5px] font-bold mb-1">2. 기본 근로시간:</div>
+        <table className="w-full border-collapse border border-slate-400 text-[11.5px] mb-1 rounded-sm overflow-hidden">
+          <thead>
+            <tr style={{ backgroundColor: HEX.slateHead }} className="font-black">
+              <th className="border border-slate-300 px-2 py-1 text-center w-[35%]">구분</th>
+              <th className="border border-slate-300 px-2 py-1 text-center w-[35%]">기본 근로시간</th>
+              <th className="border border-slate-300 px-2 py-1 text-center w-[30%]">휴게시간(무급)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className="border border-slate-300 px-2 py-1 text-center font-bold">{workDayText}</td>
+              <td className="border border-slate-300 px-2 py-1 text-center tabular-nums">
+                {form.startTime || "--:--"} ~ {form.endTime || "--:--"}
+              </td>
+              <td className="border border-slate-300 px-2 py-1 text-center tabular-nums">
+                {breakDisplay ?? "-"}
+                <div className="text-[10px] text-slate-500 mt-0.5">
+                  ({form.breakMinutes || 0}분)
                 </div>
-              )}
-            </td>
-          </tr>
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-          {/* 임금 */}
-          <tr>
-            <td className="border-b border-r border-slate-500 p-0">
-              <VerticalLabel minH={340}>임금</VerticalLabel>
-            </td>
-            <td className="border-b border-slate-500 px-3 py-2 align-top">
-              <div className="text-[11.5px] text-slate-800 mb-1.5 font-semibold">
-                1. '을'의 구체적인 임금 구성항목은 아래와 같다.
-              </div>
-              {form.useWageComponents ? (
-                <WageComponentsTable wage={form.wageComponents} />
-              ) : (
-                <div className="border border-slate-400 rounded-sm p-2 text-[12px]">
-                  <div>· 시간급 (주중): <b>{fmtWon(form.weekdayHourly)} 원</b></div>
-                  <div>· 시간급 (주말): <b>{fmtWon(form.weekendHourly)} 원</b></div>
-                </div>
-              )}
+        {/* 소정근로시간 안내 · amber fixed hex */}
+        <div
+          className="mt-2 rounded-sm px-2 py-1.5"
+          style={{ backgroundColor: HEX.amberSoft, border: `1px solid ${HEX.amberBd}` }}
+        >
+          <div className="text-[11px] text-slate-800 leading-snug">
+            ※ 소정근로시간은 휴게시간을 제외한 일단위 법정근로시간(8시간) 내에서 당사자가 정하는 시간이며, '을'은 '갑'의 사정에 따라 필요 시 상기 근로시간 이외에 추가로 연장, 야간, 휴일근로를 수행할 수 있으며 자유로운 의사로 동의한다.
+          </div>
+        </div>
 
-              {/* 임금 단서 조항 5개 · T6 · 개별 서명 → 카테고리별 이해·동의 (아래 통합 체크박스) */}
-              <ol className="mt-2 space-y-1 text-[11px] text-slate-700 leading-snug list-decimal list-inside pl-1">
-                {WAGE_CLAUSES.map((clause, i) => (
-                  <li key={i}><span className="align-middle">{clause}</span></li>
-                ))}
-                <li className="text-slate-600 list-none pl-0 mt-1 text-[10.5px]">
-                  <b>별도:</b> {WAGE_CLAUSE_EXTRA}
-                </li>
-              </ol>
-              {/* T6 · 임금 조항 카테고리별 이해·동의 체크박스 (2026-08-04) */}
-              <div className="mt-2 rounded-sm border border-indigo-300 bg-indigo-50/40 px-2 py-1.5 flex items-center gap-2">
-                <SpanBox checked={form.clauseAcks.wage} />
-                <span className="text-[11.5px] font-semibold text-slate-800">
-                  위의 임금 조항 전체 내용을 이해하고 동의함
-                </span>
-                <span className="ml-auto text-[11px] font-bold text-slate-700">{form.employeeName || "(근로자)"}</span>
-              </div>
+        {/* 휴게시간 변경 · amber fixed hex */}
+        <div
+          className="mt-2 rounded-sm px-2 py-1.5"
+          style={{ backgroundColor: HEX.amberSoft, border: `1px solid ${HEX.amberBd}` }}
+        >
+          <div className="text-[11px] text-slate-800 leading-snug">
+            ※ 업무형편상 부득이한 경우 상기 휴게 시간을 변경할 수 있고, 제대로 사용하지 못한 휴게시간은 다른 시간 내에서 보충 사용하는 것에 동의한다.
+          </div>
+        </div>
 
-              {/* 임금 지급일 */}
-              <div className="mt-2 rounded-sm bg-amber-50/60 border border-amber-300 px-2 py-1 text-[11.5px]">
-                <b>2. 임금지급일:</b> {form.paymentDayText}
-              </div>
-            </td>
-          </tr>
+        {/* T6 · 근로시간 조항 카테고리별 이해·동의 체크박스 · fixed hex */}
+        <div
+          className="mt-2 rounded-sm px-2 py-1.5 flex items-center gap-2"
+          style={{ backgroundColor: HEX.indigoBg, border: `1px solid ${HEX.indigoBd}` }}
+        >
+          <SpanBox checked={form.clauseAcks.workTime} />
+          <span className="text-[11.5px] font-semibold text-slate-800">
+            위의 근로시간·휴게 조항 전체 내용을 이해하고 동의함
+          </span>
+          <span className="ml-auto text-[11px] font-bold text-slate-700">{form.employeeName || "(근로자)"}</span>
+        </div>
+      </Section>
 
-          {/* 근로일 · 근로시간 */}
-          <tr>
-            <td className="border-b border-r border-slate-500 p-0">
-              <VerticalLabel minH={220}>근로일 근로시간</VerticalLabel>
-            </td>
-            <td className="border-b border-slate-500 px-3 py-2 align-top">
-              <div className="text-[11.5px] font-bold mb-1">
-                1. 기본 근로일: <b className="text-slate-900">{workDayText}</b>
-              </div>
-              <div className="text-[10.5px] text-slate-600 mb-2 leading-snug">
-                ※ 소정근로일은 주40시간제 내에서 당사자가 정하는 근로일을 의미하며, 무급 휴무일인 토요일에 근로할 경우 연장근로로 보고, 주휴일인 일요일에 근로할 경우 휴일근로로 본다.
-              </div>
+      {/* 5. 퇴직금 */}
+      <Section label="퇴직금">
+        <div className="text-[11.5px]">
+          퇴직급여보장법에 따라 퇴직연금제도, 퇴직제도를 설정 및 운영해 법정기준으로 지급한다.
+        </div>
+      </Section>
 
-              <div className="text-[11.5px] font-bold mb-1">2. 기본 근로시간:</div>
-              <table className="w-full border-collapse border border-slate-500 text-[11.5px] mb-1">
-                <thead>
-                  <tr className="bg-slate-100 font-black">
-                    <th className="border border-slate-400 px-2 py-1 text-center w-[35%]">구분</th>
-                    <th className="border border-slate-400 px-2 py-1 text-center w-[35%]">기본 근로시간</th>
-                    <th className="border border-slate-400 px-2 py-1 text-center w-[30%]">휴게시간(무급)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="border border-slate-400 px-2 py-1 text-center font-bold">{workDayText}</td>
-                    <td className="border border-slate-400 px-2 py-1 text-center tabular-nums">
-                      {form.startTime || "--:--"} ~ {form.endTime || "--:--"}
-                    </td>
-                    <td className="border border-slate-400 px-2 py-1 text-center tabular-nums">
-                      {breakDisplay ?? "-"}
-                      <div className="text-[10px] text-slate-500 mt-0.5">
-                        ({form.breakMinutes || 0}분)
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+      {/* 6. 연차유급휴가 */}
+      <Section label="연차유급휴가">
+        <div className="text-[11.5px]">
+          연차유급휴가는 근로기준법에 따른다. 다만, 근로기준법 제62조에 따라 근로자대표와의 서면합의로 연차유급휴가를 갈음하여 특정 근로일에 휴무시킬 수 있다. (상시 근로자 수가 5인 미만인 경우에는 적용을 제외한다.)
+          <br />
+          기본 부여 연차: <b>연 {form.annualLeaveDays || "15"}일</b>
+        </div>
+      </Section>
 
-              {/* 소정근로시간 안내 · T6 · 개별 서명 제거 (아래 카테고리 통합 체크박스로) */}
-              <div className="mt-2 rounded-sm border border-amber-300 bg-amber-50/50 px-2 py-1.5">
-                <div className="text-[11px] text-slate-800 leading-snug">
-                  ※ 소정근로시간은 휴게시간을 제외한 일단위 법정근로시간(8시간) 내에서 당사자가 정하는 시간이며, '을'은 '갑'의 사정에 따라 필요 시 상기 근로시간 이외에 추가로 연장, 야간, 휴일근로를 수행할 수 있으며 자유로운 의사로 동의한다.
-                </div>
-              </div>
+      {/* 7. 휴일 및 휴무 (4조항) */}
+      <Section label="휴일 및 휴무">
+        <ol className="list-decimal list-inside space-y-0.5 text-[11.5px] text-slate-800 pl-1">
+          {HOLIDAY_CLAUSES.map((c, i) => <li key={i} className="leading-snug">{c}</li>)}
+        </ol>
+      </Section>
 
-              {/* 휴게시간 변경 · T6 · 개별 서명 제거 (아래 카테고리 통합 체크박스로) */}
-              <div className="mt-2 rounded-sm border border-amber-300 bg-amber-50/50 px-2 py-1.5">
-                <div className="text-[11px] text-slate-800 leading-snug">
-                  ※ 업무형편상 부득이한 경우 상기 휴게 시간을 변경할 수 있고, 제대로 사용하지 못한 휴게시간은 다른 시간 내에서 보충 사용하는 것에 동의한다.
-                </div>
-              </div>
+      {/* 8. 징계 및 근로계약 해지 사유 (13개) */}
+      <Section label="징계 및 근로계약 해지 사유">
+        <div className="text-[11px] font-bold text-slate-800 mb-1">
+          다음 각 호의 어느 하나에 해당하는 경우 사업주는 근로자를 징계 또는 근로계약 해지할 수 있다.
+        </div>
+        <ol className="list-decimal list-inside space-y-0.5 text-[11.5px] text-slate-800 pl-1">
+          {DISCIPLINE_REASONS.map((r, i) => (
+            <li key={i} className="leading-snug">{r}</li>
+          ))}
+        </ol>
+      </Section>
 
-              {/* T6 · 근로시간 조항 카테고리별 이해·동의 체크박스 (2026-08-04) */}
-              <div className="mt-2 rounded-sm border border-indigo-300 bg-indigo-50/40 px-2 py-1.5 flex items-center gap-2">
-                <SpanBox checked={form.clauseAcks.workTime} />
-                <span className="text-[11.5px] font-semibold text-slate-800">
-                  위의 근로시간·휴게 조항 전체 내용을 이해하고 동의함
-                </span>
-                <span className="ml-auto text-[11px] font-bold text-slate-700">{form.employeeName || "(근로자)"}</span>
-              </div>
-            </td>
-          </tr>
-
-          {/* 퇴직금 (서명 제거) */}
-          <tr>
-            <td className="border-b border-r border-slate-500 p-0">
-              <VerticalLabel minH={40}>퇴직금</VerticalLabel>
-            </td>
-            <td className="border-b border-slate-500 px-3 py-2 align-top">
-              <div className="text-[11.5px]">
-                퇴직급여보장법에 따라 퇴직연금제도, 퇴직제도를 설정 및 운영해 법정기준으로 지급한다.
-              </div>
-            </td>
-          </tr>
-
-          {/* 연차유급휴가 */}
-          <tr>
-            <td className="border-b border-r border-slate-500 p-0">
-              <VerticalLabel minH={44}>연차휴가</VerticalLabel>
-            </td>
-            <td className="border-b border-slate-500 px-3 py-2 align-top">
-              <div className="text-[11.5px]">
-                연차유급휴가는 근로기준법에 따른다. 다만, 근로기준법 제62조에 따라 근로자대표와의 서면합의로 연차유급휴가를 갈음하여 특정 근로일에 휴무시킬 수 있다. (상시 근로자 수가 5인 미만인 경우에는 적용을 제외한다.)
-                기본 부여 연차: <b>연 {form.annualLeaveDays || "15"}일</b>
-              </div>
-            </td>
-          </tr>
-
-          {/* 휴일 및 휴무 (4조항) */}
-          <tr>
-            <td className="border-b border-r border-slate-500 p-0">
-              <VerticalLabel minH={140}>휴일 휴무</VerticalLabel>
-            </td>
-            <td className="border-b border-slate-500 px-3 py-2 align-top">
-              <ol className="list-decimal list-inside space-y-0.5 text-[11.5px] text-slate-800 pl-1">
-                {HOLIDAY_CLAUSES.map((c, i) => <li key={i} className="leading-snug">{c}</li>)}
-              </ol>
-            </td>
-          </tr>
-
-          {/* 정계 및 근로계약 해지 사유 (13개) */}
-          <tr>
-            <td className="border-b border-r border-slate-500 p-0">
-              <VerticalLabel minH={260}>정계 해지 사유</VerticalLabel>
-            </td>
-            <td className="border-b border-slate-500 px-3 py-2 align-top">
-              <div className="text-[11px] font-bold text-slate-800 mb-1">
-                다음 각 호의 어느 하나에 해당하는 경우 사업주는 근로자를 징계 또는 근로계약 해지할 수 있다.
-              </div>
-              <ol className="list-decimal list-inside space-y-0.5 text-[11.5px] text-slate-800 pl-1">
-                {DISCIPLINE_REASONS.map((r, i) => (
-                  <li key={i} className="leading-snug">{r}</li>
-                ))}
-              </ol>
-            </td>
-          </tr>
-
-          {/* 기타사항 5항목 · 5번 옆 서명 */}
-          <tr>
-            <td className="border-b border-r border-slate-500 p-0">
-              <VerticalLabel minH={140}>기타사항</VerticalLabel>
-            </td>
-            <td className="border-b border-slate-500 px-3 py-2 align-top">
-              <ol className="list-decimal list-inside space-y-0.5 text-[11.5px] text-slate-800 pl-1">
-                {ETC_ITEMS.map((r, i) => (
-                  <li key={i} className="leading-snug"><span className="align-middle">{r}</span></li>
-                ))}
-              </ol>
-              {/* T6 · 기타사항 카테고리별 이해·동의 체크박스 (2026-08-04 · 개별 서명 대신) */}
-              <div className="mt-2 rounded-sm border border-indigo-300 bg-indigo-50/40 px-2 py-1.5 flex items-center gap-2">
-                <SpanBox checked={form.clauseAcks.etc} />
-                <span className="text-[11.5px] font-semibold text-slate-800">
-                  위의 기타사항 전체 내용을 이해하고 동의함
-                </span>
-                <span className="ml-auto text-[11px] font-bold text-slate-700">{form.employeeName || "(근로자)"}</span>
-              </div>
-              {form.additionalContent.trim() && (
-                <div className="mt-2 rounded-sm border border-slate-300 bg-slate-50/70 px-2 py-1">
-                  <div className="text-[10.5px] font-bold text-slate-600 mb-0.5">추가 특약 사항</div>
-                  <div className="text-[11.5px] whitespace-pre-wrap text-slate-800">{form.additionalContent}</div>
-                </div>
-              )}
-              {form.socialInsurance && (
-                <div className="mt-1.5 text-[11px] text-slate-700">
-                  · 4대보험 가입: <SpanBox checked /> 고용보험 <SpanBox checked /> 산재보험 <SpanBox checked /> 국민연금 <SpanBox checked /> 건강보험
-                </div>
-              )}
-              {form.primaryFocus && (form.employeeCategory === "매장" || form.employeeCategory === "창고") && (
-                <div className="mt-1 text-[11px] text-slate-700">
-                  · 담당 업무의 우선순위: <b>{form.primaryFocus}</b> 관련 업무에 근무시간의 <b>{form.primaryFocusPercent}%</b> 비중.
-                </div>
-              )}
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      {/* 9. 기타사항 5항목 */}
+      <Section label="기타사항">
+        <ol className="list-decimal list-inside space-y-0.5 text-[11.5px] text-slate-800 pl-1">
+          {ETC_ITEMS.map((r, i) => (
+            <li key={i} className="leading-snug"><span className="align-middle">{r}</span></li>
+          ))}
+        </ol>
+        {/* T6 · 기타사항 카테고리별 이해·동의 체크박스 · fixed hex */}
+        <div
+          className="mt-2 rounded-sm px-2 py-1.5 flex items-center gap-2"
+          style={{ backgroundColor: HEX.indigoBg, border: `1px solid ${HEX.indigoBd}` }}
+        >
+          <SpanBox checked={form.clauseAcks.etc} />
+          <span className="text-[11.5px] font-semibold text-slate-800">
+            위의 기타사항 전체 내용을 이해하고 동의함
+          </span>
+          <span className="ml-auto text-[11px] font-bold text-slate-700">{form.employeeName || "(근로자)"}</span>
+        </div>
+        {form.additionalContent.trim() && (
+          <div
+            className="mt-2 rounded-sm px-2 py-1"
+            style={{ backgroundColor: HEX.slateSoft, border: "1px solid #cbd5e1" }}
+          >
+            <div className="text-[10.5px] font-bold text-slate-600 mb-0.5">추가 특약 사항</div>
+            <div className="text-[11.5px] whitespace-pre-wrap text-slate-800">{form.additionalContent}</div>
+          </div>
+        )}
+        {form.socialInsurance && (
+          <div className="mt-1.5 text-[11px] text-slate-700">
+            · 4대보험 가입: <SpanBox checked /> 고용보험 <SpanBox checked /> 산재보험 <SpanBox checked /> 국민연금 <SpanBox checked /> 건강보험
+          </div>
+        )}
+        {form.primaryFocus && (form.employeeCategory === "매장" || form.employeeCategory === "창고") && (
+          <div className="mt-1 text-[11px] text-slate-700">
+            · 담당 업무의 우선순위: <b>{form.primaryFocus}</b> 관련 업무에 근무시간의 <b>{form.primaryFocusPercent}%</b> 비중.
+          </div>
+        )}
+      </Section>
 
       {/* 본 계약서 교부 확인 · 수령자 서명 (인라인) */}
-      <div className="mt-3 border border-slate-500 rounded-sm px-3 py-2 text-[11.5px] flex flex-wrap items-center gap-2">
+      <div
+        className="mt-4 rounded-sm px-3 py-2 text-[11.5px] flex flex-wrap items-center gap-2"
+        style={{ backgroundColor: HEX.slateSoft, border: "1px solid #cbd5e1", pageBreakInside: "avoid", breakInside: "avoid" }}
+      >
         <div className="flex-1 min-w-[280px] leading-snug">
           본 계약은 당사자 간의 자유로운 의사에 의해 작성되었으며, 을은 작성된 근로계약서 1부를 교부받았음을 확인합니다.
         </div>
@@ -1673,7 +1693,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
       </div>
 
       {/* 계약일 (년/월/일) */}
-      <div className="mt-3 flex items-center justify-center gap-3 text-[18px] font-black tracking-widest text-slate-900">
+      <div className="mt-4 flex items-center justify-center gap-3 text-[18px] font-black tracking-widest text-slate-900">
         <span className="tabular-nums">{csY || "20__"}</span>
         <span>년</span>
         <span className="tabular-nums">{typeof csM === "number" ? csM : "__"}</span>
@@ -1682,162 +1702,154 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
         <span>일</span>
       </div>
 
-      {/* 사업주 (갑) · 근로자 (을) · 하단 */}
-      <table className="w-full border-collapse border-2 border-slate-800 text-[11.5px] mt-3">
-        <tbody>
-          {/* 사업주 (갑) */}
-          <tr>
-            <td className="border-b border-r border-slate-500 p-0 w-[32px]">
-              <VerticalLabel minH={72}>사용자 갑</VerticalLabel>
-            </td>
-            <td className="border-b border-slate-500 px-2 py-1.5 align-top">
-              <div className="grid grid-cols-[70px,1fr,70px,1fr,90px] gap-1 items-center">
-                <div className="bg-slate-100 border border-slate-300 px-1 py-0.5 text-center font-black">상호</div>
-                <div className="border-b border-slate-400 px-2 py-0.5 font-semibold">{form.companyName || "-"}</div>
-                <div className="bg-slate-100 border border-slate-300 px-1 py-0.5 text-center font-black">대표</div>
-                <div className="border-b border-slate-400 px-2 py-0.5 font-semibold">{form.employerName || "-"}</div>
-                <div className="relative flex items-center justify-center h-[46px]">
-                  <InlineSignSpot
-                    signKey="employer"
-                    signUrl={signUrls.employer}
-                    stampUrl={employerStampUrl}
-                    onOpen={onOpenSign}
-                    onClear={onClearSign}
-                    width={84}
-                    height={44}
-                    placeholder="(도장)"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-[70px,1fr] gap-1 items-center mt-1">
-                <div className="bg-slate-100 border border-slate-300 px-1 py-0.5 text-center font-black">주소</div>
-                <div className="border-b border-slate-400 px-2 py-0.5 font-semibold">{form.companyAddress || "-"}</div>
-              </div>
-              {form.companyRegNo && (
-                <div className="grid grid-cols-[110px,1fr] gap-1 items-center mt-1">
-                  <div className="bg-slate-100 border border-slate-300 px-1 py-0.5 text-center font-black">사업자등록번호</div>
-                  <div className="border-b border-slate-400 px-2 py-0.5 font-semibold">{form.companyRegNo}</div>
-                </div>
-              )}
-            </td>
-          </tr>
-          {/* 근로자 (을) */}
-          <tr>
-            <td className="border-b border-r border-slate-500 p-0">
-              <VerticalLabel minH={130}>근로자 을</VerticalLabel>
-            </td>
-            <td className="border-b border-slate-500 px-2 py-1.5 align-top">
-              <div className="grid grid-cols-[70px,1fr,70px,1fr,90px] gap-1 items-center">
-                <div className="bg-slate-100 border border-slate-300 px-1 py-0.5 text-center font-black">주민번호</div>
-                <div className="border-b border-slate-400 px-2 py-0.5 font-semibold tabular-nums">{form.employeeBirth || "-"}</div>
-                <div className="bg-slate-100 border border-slate-300 px-1 py-0.5 text-center font-black">성명</div>
-                <div className="border-b border-slate-400 px-2 py-0.5 font-semibold">{form.employeeName || "-"}</div>
-                <div className="flex items-center justify-center h-[46px]">
-                  <InlineSignSpot
-                    signKey="employee"
-                    signUrl={signUrls.employee}
-                    stampUrl={employeeStampUrl}
-                    onOpen={onOpenSign}
-                    onClear={onClearSign}
-                    width={84}
-                    height={44}
-                    placeholder="(서명)"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-[70px,1fr,70px,1fr] gap-1 items-center mt-1">
-                <div className="bg-slate-100 border border-slate-300 px-1 py-0.5 text-center font-black">주소</div>
-                <div className="border-b border-slate-400 px-2 py-0.5 font-semibold">{form.employeeAddress || "-"}</div>
-                <div className="bg-slate-100 border border-slate-300 px-1 py-0.5 text-center font-black">전화번호</div>
-                <div className="border-b border-slate-400 px-2 py-0.5 font-semibold tabular-nums">{form.employeePhone || "-"}</div>
-              </div>
-              <div className="grid grid-cols-[110px,1fr,70px,1fr] gap-1 items-center mt-1">
-                <div className="bg-slate-100 border border-slate-300 px-1 py-0.5 text-center font-black">은행/계좌번호</div>
-                <div className="border-b border-slate-400 px-2 py-0.5 font-semibold">{form.employeeBankAccount || "-"}</div>
-                <div className="bg-slate-100 border border-slate-300 px-1 py-0.5 text-center font-black">이메일</div>
-                <div className="border-b border-slate-400 px-2 py-0.5 font-semibold">{form.employeeEmail || "-"}</div>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      {/* 하단 서명 · 갑/을 · grid grid-cols-2 · avoidBreak · 상단 2px 구분선 */}
+      <div
+        className="mt-3 pt-3 grid grid-cols-1 sm:grid-cols-2 gap-3"
+        style={{ borderTop: "2px solid #1e293b", pageBreakInside: "avoid", breakInside: "avoid" }}
+      >
+        {/* 사용자 (갑) */}
+        <PartyCell partyLabel="사용자 · 갑">
+          <FieldRow label="상호" value={form.companyName || "-"} />
+          <FieldRow label="대표" value={form.employerName || "-"} />
+          <FieldRow label="주소" value={form.companyAddress || "-"} />
+          {form.companyRegNo && (
+            <FieldRow label="사업자등록번호" value={form.companyRegNo} />
+          )}
+          <div className="flex items-center justify-end mt-1">
+            <span className="text-[10.5px] text-slate-500 font-bold mr-2">(도장)</span>
+            <InlineSignSpot
+              signKey="employer"
+              signUrl={signUrls.employer}
+              stampUrl={employerStampUrl}
+              onOpen={onOpenSign}
+              onClear={onClearSign}
+              width={96}
+              height={48}
+              placeholder="(도장)"
+            />
+          </div>
+        </PartyCell>
 
-      {/* 개인정보/CCTV 동의 · 4분류 */}
-      <table className="w-full border-collapse border-2 border-slate-800 text-[11px] mt-3">
-        <tbody>
-          <tr>
-            <td className="border-b border-r border-slate-500 p-0 w-[32px]" rowSpan={5}>
-              <VerticalLabel minH={280}>개인정보 CCTV 설치 동의</VerticalLabel>
-            </td>
-            <td className="border-b border-r border-slate-500 bg-slate-100 px-2 py-1 text-center font-black w-[22%]">
-              정보의 수집·이용 목적<br /><span className="text-[10px] text-slate-600">(CCTV 설치 목적)</span>
-            </td>
-            <td className="border-b border-r border-slate-500 px-2 py-1 text-slate-800 align-top">
-              당사의 인적자원관리, 방범 및 화재예방, 시설안전관리, 사업장내 사고예방 및 범죄예방
-            </td>
-            <td className="border-b border-r border-slate-500 bg-slate-100 px-2 py-1 text-center font-black w-[18%]">
-              정보 보유 및 이용기간
-            </td>
-            <td className="border-b border-slate-500 px-2 py-1 text-slate-800 align-top">
-              근로관계가 유지되는 기간. 단, CCTV 화상영상 정보의 경우 일정기간 후 기존 영상정보에서 삭제
-            </td>
-          </tr>
-          <tr>
-            <td className="border-b border-r border-slate-500 bg-slate-100 px-2 py-1 text-center font-black">
-              개인정보의 항목
-            </td>
-            <td className="border-b border-slate-500 px-2 py-1 text-slate-800 align-top" colSpan={3}>
-              <ol className="list-decimal list-inside space-y-0.5 text-[10.5px]">
-                {PRIVACY_ITEMS.map((p, i) => <li key={i}>{p}</li>)}
-              </ol>
-            </td>
-          </tr>
-          <tr>
-            <td className="border-b border-r border-slate-500 bg-slate-100 px-2 py-1 text-center font-black">
-              CCTV 촬영시간 및 범위
-            </td>
-            <td className="border-b border-slate-500 px-2 py-1 text-slate-800 align-top" colSpan={3}>
-              촬영시간: 24시간 연속 촬영 및 녹화 · 촬영범위: 출입구 및 복도, 사업장 내 등 건물 내 주요 시설
-            </td>
-          </tr>
-          <tr>
-            <td className="border-b border-slate-500 bg-amber-50/40 px-2 py-1 text-slate-800 align-top text-[10.5px]" colSpan={4}>
-              회사는 개인정보를 인사관리업무와 관련된 업무(기관)외 다른 목적으로 이용하거나 제3자에게 제공하지 않으며, CCTV 설치도 상기 목적외 다른 목적으로 이용하지 않습니다.
-              <br />
-              위 내용을 충분히 숙지하고 개인정보의 수집 및 CCTV 설치 이용에 대하여 동의합니다.
-            </td>
-          </tr>
-          <tr>
-            <td className="border-slate-500 px-2 py-1 align-middle text-[11px]" colSpan={4}>
-              <div className="flex flex-wrap items-center gap-3">
-                <label className="inline-flex items-center gap-1">
-                  <SpanBox checked={form.privacyConsent.agreedCollection && form.privacyConsent.agreedCCTV} />
-                  <span>동의</span>
-                </label>
-                <label className="inline-flex items-center gap-1">
-                  <SpanBox checked={!(form.privacyConsent.agreedCollection && form.privacyConsent.agreedCCTV)} />
-                  <span>동의하지 않음</span>
-                </label>
-                <div className="ml-auto flex items-center gap-1">
-                  <span className="text-[11px] text-slate-700 font-bold">성명:</span>
-                  <span className="text-[11.5px] font-black text-slate-900 border-b border-slate-500 px-2 min-w-[70px] text-center">
-                    {form.privacyConsent.recipientName || form.employeeName || " "}
-                  </span>
-                  <InlineSignSpot
-                    signKey="privacy"
-                    signUrl={signUrls.privacy}
-                    onOpen={onOpenSign}
-                    onClear={onClearSign}
-                    width={120}
-                    height={30}
-                    placeholder="(서명)"
-                  />
-                </div>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+        {/* 근로자 (을) */}
+        <PartyCell partyLabel="근로자 · 을">
+          <FieldRow label="성명" value={form.employeeName || "-"} />
+          <FieldRow label="주민번호" value={<span className="tabular-nums">{form.employeeBirth || "-"}</span>} />
+          <FieldRow label="주소" value={form.employeeAddress || "-"} />
+          <FieldRow label="전화번호" value={<span className="tabular-nums">{form.employeePhone || "-"}</span>} />
+          <FieldRow label="은행/계좌" value={form.employeeBankAccount || "-"} />
+          <FieldRow label="이메일" value={form.employeeEmail || "-"} />
+          <div className="flex items-center justify-end mt-1">
+            <span className="text-[10.5px] text-slate-500 font-bold mr-2">(서명)</span>
+            <InlineSignSpot
+              signKey="employee"
+              signUrl={signUrls.employee}
+              stampUrl={employeeStampUrl}
+              onOpen={onOpenSign}
+              onClear={onClearSign}
+              width={96}
+              height={48}
+              placeholder="(서명)"
+            />
+          </div>
+        </PartyCell>
+      </div>
+
+      {/* 개인정보/CCTV 동의 · 4분류 표 유지 · avoidBreak */}
+      <div
+        className="mt-5"
+        style={{ pageBreakInside: "avoid", breakInside: "avoid" }}
+      >
+        <div className="border-l-[3px] border-slate-700 pl-3 mb-2">
+          <h3 className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">
+            개인정보 · CCTV 설치 동의
+          </h3>
+        </div>
+        <table className="w-full border-collapse border border-slate-400 text-[11px] rounded-sm overflow-hidden">
+          <tbody>
+            <tr>
+              <td
+                className="border border-slate-300 px-2 py-1 text-center font-black w-[22%]"
+                style={{ backgroundColor: HEX.slateHead }}
+              >
+                정보의 수집·이용 목적<br /><span className="text-[10px] text-slate-600">(CCTV 설치 목적)</span>
+              </td>
+              <td className="border border-slate-300 px-2 py-1 text-slate-800 align-top">
+                당사의 인적자원관리, 방범 및 화재예방, 시설안전관리, 사업장내 사고예방 및 범죄예방
+              </td>
+              <td
+                className="border border-slate-300 px-2 py-1 text-center font-black w-[18%]"
+                style={{ backgroundColor: HEX.slateHead }}
+              >
+                정보 보유 및 이용기간
+              </td>
+              <td className="border border-slate-300 px-2 py-1 text-slate-800 align-top">
+                근로관계가 유지되는 기간. 단, CCTV 화상영상 정보의 경우 일정기간 후 기존 영상정보에서 삭제
+              </td>
+            </tr>
+            <tr>
+              <td
+                className="border border-slate-300 px-2 py-1 text-center font-black"
+                style={{ backgroundColor: HEX.slateHead }}
+              >
+                개인정보의 항목
+              </td>
+              <td className="border border-slate-300 px-2 py-1 text-slate-800 align-top" colSpan={3}>
+                <ol className="list-decimal list-inside space-y-0.5 text-[10.5px]">
+                  {PRIVACY_ITEMS.map((p, i) => <li key={i}>{p}</li>)}
+                </ol>
+              </td>
+            </tr>
+            <tr>
+              <td
+                className="border border-slate-300 px-2 py-1 text-center font-black"
+                style={{ backgroundColor: HEX.slateHead }}
+              >
+                CCTV 촬영시간 및 범위
+              </td>
+              <td className="border border-slate-300 px-2 py-1 text-slate-800 align-top" colSpan={3}>
+                촬영시간: 24시간 연속 촬영 및 녹화 · 촬영범위: 출입구 및 복도, 사업장 내 등 건물 내 주요 시설
+              </td>
+            </tr>
+            <tr>
+              <td
+                className="border border-slate-300 px-2 py-1 text-slate-800 align-top text-[10.5px]"
+                colSpan={4}
+                style={{ backgroundColor: HEX.amberSoft }}
+              >
+                회사는 개인정보를 인사관리업무와 관련된 업무(기관)외 다른 목적으로 이용하거나 제3자에게 제공하지 않으며, CCTV 설치도 상기 목적외 다른 목적으로 이용하지 않습니다.
+                <br />
+                위 내용을 충분히 숙지하고 개인정보의 수집 및 CCTV 설치 이용에 대하여 동의합니다.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        {/* 동의/서명 행 · flex */}
+        <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px]">
+          <label className="inline-flex items-center gap-1">
+            <SpanBox checked={form.privacyConsent.agreedCollection && form.privacyConsent.agreedCCTV} />
+            <span>동의</span>
+          </label>
+          <label className="inline-flex items-center gap-1">
+            <SpanBox checked={!(form.privacyConsent.agreedCollection && form.privacyConsent.agreedCCTV)} />
+            <span>동의하지 않음</span>
+          </label>
+          <div className="ml-auto flex items-center gap-1">
+            <span className="text-[11px] text-slate-700 font-bold">성명:</span>
+            <span className="text-[11.5px] font-black text-slate-900 border-b border-slate-500 px-2 min-w-[70px] text-center">
+              {form.privacyConsent.recipientName || form.employeeName || " "}
+            </span>
+            <InlineSignSpot
+              signKey="privacy"
+              signUrl={signUrls.privacy}
+              onOpen={onOpenSign}
+              onClear={onClearSign}
+              width={120}
+              height={30}
+              placeholder="(서명)"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 });
