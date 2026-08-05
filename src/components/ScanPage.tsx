@@ -20,7 +20,7 @@ import {
   ScanLine, Loader2, AlertCircle, Package,
   CheckCircle2, Trash2, RotateCcw, Warehouse, Store,
   Hash, Building2, Box, MapPin, ArrowUpDown, ArrowUp, ArrowDown,
-  SaveAll, Sparkles, History, X,
+  SaveAll, Sparkles, History, X, Megaphone,
 } from "lucide-react";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { loadZBar } from "./BarcodeScanner/zbar";
@@ -217,6 +217,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   const [historyRows, setHistoryRows]           = useState<InventoryHistoryRow[]>([]);
   const [historyLoading, setHistoryLoading]     = useState(false);
 
+  // ── T20/Phase 2 · 상품별 진열요청 · 각 행 [📢 요청] state (핸들러는 showToast 아래)
+  const [requestingKey, setRequestingKey]       = useState<string | null>(null);
+
   // ── 전체 저장
   const [saveStatus, setSaveStatus]             = useState<"idle" | "saving" | "done" | "error">("idle");
   const [saveError, setSaveError]               = useState<string | null>(null);
@@ -239,6 +242,46 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     setToast(msg);
     setTimeout(() => setToast(null), ms);
   }, []);
+
+  // ── T20/Phase 2 · 상품별 진열요청 · POST /api/display-requests
+  const requestDisplay = useCallback(async (row: StockRow) => {
+    const store1 = row.store1Qty === "" ? 0 : Number(row.store1Qty);
+    const store2 = row.store2Qty === "" ? 0 : Number(row.store2Qty);
+    const store3 = row.store3Qty === "" ? 0 : Number(row.store3Qty);
+    const w1 = row.warehouse1Qty === "" ? 0 : Number(row.warehouse1Qty);
+    const w2 = row.warehouse2Qty === "" ? 0 : Number(row.warehouse2Qty);
+    const storeSum = store1 + store2 + store3;
+    const warehouseSum = w1 + w2;
+    const rm = (row.product as any).realMap ?? (row.product as any).real_map ?? "";
+    const autoNote = storeSum === 0
+      ? (warehouseSum > 0 ? `매장 전량 부족 · 창고 ${warehouseSum}개 대기` : "매장·창고 모두 부족")
+      : `매장 ${storeSum}개 · 진열 보충 요청`;
+    const confirmMsg = `[${row.product.name}] 진열요청?\n· 배정 구역: ${rm || "미지정"}\n· 현재 매장: ${storeSum}개 · 창고: ${warehouseSum}개\n· 노트: ${autoNote}`;
+    if (!window.confirm(confirmMsg)) return;
+    setRequestingKey(row.key);
+    try {
+      const res = await fetch("/api/display-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_code: row.code,
+          zone_id: rm,
+          note: autoNote,
+          requested_at: new Date().toISOString(),
+        }),
+      });
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        throw new Error((b as any).error ?? `요청 실패 (${res.status})`);
+      }
+      showToast(`[${row.product.name}] 진열요청 전송 완료 · 담당자 알림 발송`, 3000);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "요청 실패";
+      showToast(`요청 실패 · ${msg}`, 3000);
+    } finally {
+      setRequestingKey(null);
+    }
+  }, [showToast]);
 
   // ── 스캔 핸들러
   const handleScan = useCallback(async (result: string) => {
@@ -924,7 +967,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                             )}
                           </td>
 
-                          {/* 이력·삭제 */}
+                          {/* 이력·진열요청·삭제 */}
                           <td className="px-2 py-2 text-center align-middle">
                             <div className="flex items-center justify-center gap-0.5">
                               <button
@@ -942,6 +985,23 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                                     {row.historyCount}
                                   </span>
                                 )}
+                              </button>
+                              {/* T20/Phase 2 · 진열요청 · 매장 재고 부족 시 amber 강조 */}
+                              <button
+                                onClick={() => requestDisplay(row)}
+                                disabled={requestingKey === row.key}
+                                className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
+                                  (row.store1Qty === "" || Number(row.store1Qty) === 0) &&
+                                  (row.store2Qty === "" || Number(row.store2Qty) === 0) &&
+                                  (row.store3Qty === "" || Number(row.store3Qty) === 0)
+                                    ? "text-amber-500 bg-amber-50 hover:text-amber-700 hover:bg-amber-100 animate-pulse"
+                                    : "text-slate-300 hover:text-violet-600 hover:bg-violet-50"
+                                }`}
+                                title="진열요청 전송 · 매장 재고 부족 시 강조"
+                              >
+                                {requestingKey === row.key
+                                  ? <Loader2 size={13} className="animate-spin" />
+                                  : <Megaphone size={13} />}
                               </button>
                               <button
                                 onClick={() => removeRow(row.key)}
