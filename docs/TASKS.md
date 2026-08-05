@@ -24,13 +24,13 @@
 - 위치: `handleScan` (ScanPage.tsx:287) · 진입 즉시 beep()
 - 실패한 접근: audio 태그·mp3 파일 (silent mode 무시됨)
 
-### T-SCAN-2 · ScanPage 상품정보 카드 반응형 UI 개선 (2026-08-05 · 사용자 제보)
-- 위치: `ProductInfoCard.tsx` (ScanPage 내부에서 사용)
-- 증상: 바코드 스캔 후 나타나는 상품정보 화면
-  - **제목이 세로로 나옴** (텍스트 폴딩·너무 좁은 컬럼)
-  - 전반적 시각 정리 필요 (반응형 깨짐)
-- 담당: **mobile-ui-designer 에이전트** 위임
-- 요구: 반응형 정돈 · 헤더 정렬 · 카테고리 색상 · 기존 로직 무회귀
+### ✅ T-SCAN-2 완료 · ProductInfoCard 반응형 UI 정돈 (commit `92a25bb`)
+- 상품명 헤더 · `flex-wrap` + `break-keep whitespace-normal` · 한글 단어 단위 줄바꿈 · 글자 세로 원천 차단
+- 배정구역 · 각 셀 border 분리 · 변경 버튼 `min-h-[44px]` 터치 타겟
+- 재고현황 헤더 · 접기 flex-1 min-w-0 · 재고세기 shrink-0 · 좁은 화면 줄바꿈 허용
+- 재고현황 접힘 · 완전 숨김 처리 (기존 헤더만 접힘)
+- 매입이력 · 상품명 보조 라벨 · line-clamp-1 · 정보 손실 없음
+- 사용자 실 UI 검증 대기
 
 ### T-SCAN-1 · 상품별 진열요청 3단계 워크플로우 (2026-08-05 · 사용자 확정)
 
