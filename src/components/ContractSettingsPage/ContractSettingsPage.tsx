@@ -546,13 +546,25 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
   }, []);
 
   // ── 저장 (각 호만 · 시급은 즉시 저장되므로 여기서 처리 안 함)
-  const handleSave = () => {
+  //   T-C · 서버 저장 · 실패 시 localStorage fallback (saveContractClausesToServer 내부)
+  const handleSave = async () => {
+    if (saving) return;
+    setSaving(true);
     try {
-      localStorage.setItem(CONTRACT_CLAUSES_KEY, JSON.stringify(clauses));
+      const result = await saveContractClausesToServer(clauses, authSession?.employeeId ?? null);
       setInitialClauses(cloneClauses(clauses));
-      setNotice({ tone: "ok", text: "각 호 내용이 저장되었습니다. 이후 근로계약서 작성에 반영됩니다." });
+      if (result.savedToServer) {
+        setNotice({ tone: "ok", text: "각 호 내용이 서버에 저장되었습니다. 모든 관리자에게 즉시 반영됩니다." });
+      } else {
+        setNotice({
+          tone: "err",
+          text: `서버 저장 실패 · 이 브라우저에만 저장되었습니다 (${result.error ?? "네트워크 오류"}). 인터넷 확인 후 다시 [저장] 버튼을 눌러 주세요.`,
+        });
+      }
     } catch (err: any) {
       setNotice({ tone: "err", text: err?.message ?? "설정 저장에 실패했습니다." });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -625,12 +637,12 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
             <button
               type="button"
               onClick={handleSave}
-              disabled={!dirty}
+              disabled={!dirty || saving}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white text-sm font-black shadow-sm transition-colors cursor-pointer"
               title="각 호 저장 (시급은 편집 즉시 자동 저장됨)"
             >
               <FloppyDisk size={14} weight="bold" />
-              각 호 저장
+              {saving ? "저장 중..." : "각 호 저장"}
             </button>
           </div>
         </div>
@@ -856,7 +868,8 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
         <div className="text-[11px] text-slate-400 font-semibold text-center py-2 leading-relaxed">
           시급 · 서버 저장 (모든 관리자 공유) · <code className="bg-slate-100 px-1 rounded">settings.wageRates</code>
           <br />
-          각 호 · 브라우저 저장 (이 브라우저에만 저장됨) · <code className="bg-slate-100 px-1 rounded">{CONTRACT_CLAUSES_KEY}</code>
+          각 호 · 서버 저장 (모든 관리자 공유) · <code className="bg-slate-100 px-1 rounded">contract_clauses</code>
+          {!serverLoaded && <span className="ml-1 text-slate-300">· 서버 로드 중...</span>}
         </div>
       </main>
     </div>

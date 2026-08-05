@@ -35,6 +35,7 @@ import {
   DEFAULT_CONTRACT_SETTINGS,
   type ContractCategory,
   loadContractClauses,
+  fetchContractClauses,
 } from "../ContractSettingsPage/ContractSettingsPage";
 import SplitPanel from "../common/SplitPanel";
 import sungstampUrl from "../../images/sungstamp.png";
@@ -1917,9 +1918,21 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
   const workDayText = DAYS.filter(d => form.workDays[d]).join("·") || "(선택 안 됨)";
 
   // 각 호 CMS (설정에서 편집한 조항) · 없으면 기본 상수 사용
-  const clauses = React.useMemo(() => {
+  //   T-C · 서버 저장 (contract_clauses) · fetch 로 최신값 확보 · localStorage fallback
+  //   초기값: localStorage 즉시 렌더 (SSR-safe async 지연 없음) → mount 시 서버 fetch 로 덮어씀
+  const [clauses, setClauses] = React.useState(() => {
     try { return loadContractClauses(); }
     catch { return null; }
+  });
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const fresh = await fetchContractClauses();
+        if (!cancelled) setClauses(fresh);
+      } catch { /* 서버 오류 · 초기 localStorage 값 유지 */ }
+    })();
+    return () => { cancelled = true; };
   }, []);
   const wageClauses       = clauses?.wageClauses       ?? WAGE_CLAUSES;
   const holidayClauses    = clauses?.holidayClauses    ?? HOLIDAY_CLAUSES;
