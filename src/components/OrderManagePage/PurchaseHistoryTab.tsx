@@ -10,6 +10,7 @@
 // Ref · Zoho·QuickBooks·Odoo·Cin7 Procurement Dashboard 벤치마크
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useVendors } from "../../hooks/useVendors";
 import { Building2, Loader2, Package, RefreshCw } from "lucide-react";
 import { SplitPanel } from "../common/SplitPanel";
 import { ListLoading } from "../common/ListLoading";
@@ -82,9 +83,9 @@ export const PurchaseHistoryTab: React.FC = () => {
   //  공급사별 뷰 (기존)
   // ═══════════════════════════════════════════════════════════════════════
 
-  // 공급사 목록 · 초기값 true (첫 렌더부터 로딩 표시 · 사용자 요청 2026-08-04)
-  const [vendors, setVendors] = useState<VendorItem[]>([]);
-  const [vendorsLoading, setVendorsLoading] = useState(true);
+  // 공급사 목록 · useVendors 캐시 (inline fetch 제거)
+  const { vendors: _rawVendors, loading: vendorsLoading } = useVendors();
+  const vendors = useMemo<VendorItem[]>(() => _rawVendors as unknown as VendorItem[], [_rawVendors]);
   const [vendorSearch, setVendorSearch] = useState("");
   const [vendorCategoryFilter, setVendorCategoryFilter] =
     useState<"전체" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타">("전체");
@@ -162,28 +163,6 @@ export const PurchaseHistoryTab: React.FC = () => {
 
   // Split 리사이저 · 공통 SplitPanel 사용 (2026-08-04 · feedback_ui_principles B-3 준수)
   //   storageKey · by-vendor / by-product 별도 · SplitPanel 이 megatown_ prefix 자동 붙임
-
-  // ─── 공급사 목록 로드 ────────────────────────────────────────────────────
-  const loadVendors = useCallback(async () => {
-    setVendorsLoading(true);
-    try {
-      const res = await fetch("/api/vendors?withBalances=1");
-      if (!res.ok) throw new Error(String(res.status));
-      const list: any[] = await res.json();
-      setVendors(list.map(v => ({
-        id: v.id,
-        company_name: String(v.company_name ?? ""),
-        category: v.category ?? null,
-        contact_name: v.contact_name ?? null,
-        phone: v.phone ?? null,
-        email: v.email ?? null,
-        business_number: v.business_number ?? null,
-        note: v.note ?? null,
-        created_at: v.created_at ?? null,
-      })));
-    } catch { setVendors([]); }
-    finally { setVendorsLoading(false); }
-  }, []);
 
   // ─── 좌측 요약 (최근 90일) 로드 ─────────────────────────────────────────
   //   2026-08-03 · purchase_details primary (서버 스왑) + top-sales?months=1 병렬 조인
@@ -283,13 +262,13 @@ export const PurchaseHistoryTab: React.FC = () => {
     } finally { setSummaryLoading(false); }
   }, []);
 
+  // vendors-changed → loadSummary 재조회 (vendors 는 useVendors 내부에서 자동 갱신)
   useEffect(() => {
-    loadVendors();
     loadSummary();
-    const onChange = () => { loadVendors(); loadSummary(); };
+    const onChange = () => loadSummary();
     window.addEventListener("vendors-changed", onChange);
     return () => window.removeEventListener("vendors-changed", onChange);
-  }, [loadVendors, loadSummary]);
+  }, [loadSummary]);
 
   // ─── 원장 + detail 통합 로드 (2026-08-05 · 단일 fetch · no_cycle=1) ────
   //   기존 loadLedger / loadDetail 이 동일 URL 을 두 번 호출하던 N+1 패턴 제거.

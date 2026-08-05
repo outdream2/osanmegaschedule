@@ -252,54 +252,24 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const isOrderGroupCollapsed = (g: string) => orderGroupCollapsed.has(g);
   // 2026-07-30 · 사용자 요청 · 공급사 관리 페이지와 동일 방식으로 공급사 정보 조회
   //   findVendor (로컬 캐시) 우선 · 실패 시 API 재조회 (이름 부분 매칭 fallback)
-  // findVendor 는 아래에서 정의 (line 481) · closure 캡처 OK
-  const openSupplierInfo = async (supplierName: string | null | undefined) => {
+  // T25 · 공급사 마스터 · 공용 훅 · 아래 openSupplierInfo/handleVendorEditRequest 에서 사용
+  //   (useVendors 호출 위치 · declare-before-use 준수)
+  const { vendors, vendorCategoryMap, getVendorCategory, findVendorByName } = useVendors();
+
+  // 공급사 정보 팝업 · 캐시(findVendorByName) 활용 (inline fetch 제거)
+  const openSupplierInfo = (supplierName: string | null | undefined) => {
     if (!supplierName) return;
     const name = String(supplierName).trim();
     if (!name) return;
-    // 1차 · 로컬 vendors 배열에서 전체 Vendor 객체 탐색 (findVendor 는 contact 전용 partial 반환 · 사용 불가)
-    const cachedVendor = vendors.find(v =>
-      v.company_name.trim() === name ||
-      v.company_name.replace(/\s+/g, "") === name.replace(/\s+/g, "") ||
-      v.company_name.trim().toLowerCase() === name.toLowerCase()
-    );
-    if (cachedVendor) {
-      // vendors 배열 타입이 Vendor 부분집합 · Vendor 전체 필드가 있는 객체로 캐스팅 (런타임 데이터는 실제 Vendor 형태)
-      setSupplierInfoModal(cachedVendor as unknown as Vendor);
-      return;
-    }
-    // 2차 · API 조회 · 정확 매칭 후 부분 매칭 fallback
-    try {
-      const res = await fetch("/api/vendors?withBalances=1");
-      if (res.ok) {
-        const list: Vendor[] = await res.json();
-        const exact = list.find(v => v.company_name?.trim() === name);
-        if (exact) { setSupplierInfoModal(exact); return; }
-        // 괄호 안 부가정보 벗기고 재시도 (예: "(주)대웅제약 (vat미포함)")
-        const stripped = name.replace(/\s*\(.*?\)\s*/g, "").trim();
-        const strippedMatch = stripped ? list.find(v => v.company_name?.trim() === stripped || v.company_name?.trim().includes(stripped)) : undefined;
-        if (strippedMatch) { setSupplierInfoModal(strippedMatch); return; }
-        // 부분 매칭 (양방향 includes)
-        const partial = list.find(v => {
-          const vn = v.company_name?.trim() ?? "";
-          return vn && (vn.includes(name) || name.includes(vn));
-        });
-        if (partial) { setSupplierInfoModal(partial); return; }
-      }
-    } catch { /* silent */ }
+    const found = findVendorByName(name);
+    if (found) { setSupplierInfoModal(found as unknown as Vendor); return; }
     alert(`공급사 정보 없음: ${supplierName}`);
   };
-  // 공급사 클릭 → API 로 전체 목록 fetch 후 해당 id 의 vendor 우측 패널 표시
-  const handleVendorEditRequest = useCallback(async (vendorId: number) => {
-    try {
-      const res = await fetch("/api/vendors?withBalances=1");
-      if (res.ok) {
-        const list: Vendor[] = await res.json();
-        const found = list.find(v => v.id === vendorId);
-        if (found) setVendorSelected(found);
-      }
-    } catch { /* silent */ }
-  }, []);
+  // 공급사 클릭 → 캐시에서 id 조회 후 우측 패널 표시 (inline fetch 제거)
+  const handleVendorEditRequest = useCallback((vendorId: number) => {
+    const found = vendors.find(v => v.id === vendorId);
+    if (found) setVendorSelected(found as unknown as Vendor);
+  }, [vendors]);
 
   // 거래명세서(OCR) 상태
   const [receipts, setReceipts] = useState<GoodsReceipt[]>([]);
@@ -339,8 +309,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [lowStockSearch, setLowStockSearch] = useState("");
   const [orderReqCollapsed, setOrderReqCollapsed] = useState(false);
   const [lowStockCollapsed, setLowStockCollapsed] = useState(false);
-  // 공급사 마스터 · 공용 훅 (모듈 레벨 캐시 · 5분 TTL · vendors-changed 이벤트 구독)
-  const { vendors, vendorCategoryMap, getVendorCategory } = useVendors();
+  // (공급사 마스터 useVendors 는 상단에서 호출됨 · declare-before-use 준수)
 
   // 공급사 임포트 로직은 LandingPage 데이터 업로드 > 공급사관리 로 이동됨 (여기서 제거 · 2026-07-15)
   // vendorMap: 원본·공백정규화·소문자 세 가지 형태로 저장 (매칭률 극대화)

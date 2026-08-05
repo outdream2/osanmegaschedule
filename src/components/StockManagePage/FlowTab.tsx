@@ -186,31 +186,17 @@ export const FlowTab: React.FC = () => {
     window.addEventListener("mouseup", up);
   };
 
-  // 공급사 상세 모달 (우측 패널의 "공급사 조회" 버튼)
-  const [supplierDetailModal, setSupplierDetailModal] = useState<any | null>(null);
-  const openSupplierDetailModal = useCallback(async (supplierName: string) => {
-    if (!supplierName) return;
-    const name = supplierName.trim();
-    try {
-      const res = await fetch("/api/vendors?withBalances=1");
-      if (!res.ok) { alert(`공급사 정보 조회 실패 (${res.status})`); return; }
-      const list: any[] = await res.json();
-      const exact = list.find(v => String(v.company_name ?? "").trim() === name);
-      if (exact) { setSupplierDetailModal(exact); return; }
-      const stripped = name.replace(/\s*\(.*?\)\s*/g, "").trim();
-      const strippedMatch = stripped ? list.find(v => {
-        const vn = String(v.company_name ?? "").trim();
-        return vn === stripped || vn.includes(stripped);
-      }) : undefined;
-      if (strippedMatch) { setSupplierDetailModal(strippedMatch); return; }
-      const partial = list.find(v => { const vn = String(v.company_name ?? "").trim(); return vn && (vn.includes(name) || name.includes(vn)); });
-      if (partial) { setSupplierDetailModal(partial); return; }
-      alert(`공급사 정보 없음: ${supplierName}`);
-    } catch (e: any) { alert(`공급사 정보 조회 실패: ${e?.message ?? "네트워크 오류"}`); }
-  }, []);
+  // 분류 맵 · 공용 훅 (vendorCategoryMap + findVendorByName 함께 사용)
+  const { vendorCategoryMap, findVendorByName } = useVendors();
 
-  // 분류 맵 · 공용 훅
-  const { vendorCategoryMap } = useVendors();
+  // 공급사 상세 모달 (우측 패널의 "공급사 조회" 버튼) · 캐시 활용 (inline fetch 제거)
+  const [supplierDetailModal, setSupplierDetailModal] = useState<any | null>(null);
+  const openSupplierDetailModal = useCallback((supplierName: string) => {
+    if (!supplierName) return;
+    const found = findVendorByName(supplierName);
+    if (found) { setSupplierDetailModal(found); return; }
+    alert(`공급사 정보 없음: ${supplierName}`);
+  }, [findVendorByName]);
 
   // 숨김 관리 훅
   const fetchStockFlowRef = useRef<() => void>(() => {});

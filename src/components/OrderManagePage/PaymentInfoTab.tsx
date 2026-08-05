@@ -14,6 +14,7 @@
 //   · Zoho/QuickBooks · payment_method + reference_number + tax_invoice_no
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useVendors } from "../../hooks/useVendors";
 import {
   Building2, Loader2, Wallet, CalendarDays, CreditCard, Banknote,
   FileText, Check, X, RefreshCw, Landmark, Coins, ScrollText, Layers,
@@ -263,9 +264,27 @@ function computeVat(amount: number, vatIncluded: boolean): { supply: number; vat
 // ─── PaymentInfoTab ──────────────────────────────────────────────────────────
 
 export const PaymentInfoTab: React.FC = () => {
-  // 공급사 목록
-  const [vendors, setVendors] = useState<VendorItem[]>([]);
-  const [vendorsLoading, setVendorsLoading] = useState(false);
+  // 공급사 목록 · useVendors 캐시 (inline fetch 제거)
+  const { vendors: rawVendors, loading: vendorsLoading, refresh: reloadVendors } = useVendors();
+  // latestBalance.balance 파싱 · VendorItem 형태로 변환
+  const vendors = useMemo<VendorItem[]>(() => rawVendors.map(v => {
+    const rawBal = (v as any)?.latestBalance?.balance;
+    const bal = Number.isFinite(Number(rawBal)) ? Number(rawBal) : null;
+    return {
+      id: v.id,
+      company_name: String(v.company_name ?? ""),
+      category: v.category ?? null,
+      contact_name: v.contact_name ?? null,
+      phone: v.phone ?? null,
+      email: v.email ?? null,
+      business_number: (v.business_number ?? null) as string | null,
+      created_at: ((v as any).created_at ?? null) as string | null,
+      payment_terms: ((v as any).payment_terms ?? null) as string | null,
+      active: ((v as any).active ?? null) as boolean | null,
+      vat_included: ((v as any).vat_included ?? null) as boolean | null,
+      balance: bal,
+    };
+  }), [rawVendors]);
   const [vendorSearch, setVendorSearch] = useState("");
   const [vendorCategoryFilter, setVendorCategoryFilter] =
     useState<"전체" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타">("전체");
@@ -373,47 +392,12 @@ export const PaymentInfoTab: React.FC = () => {
     try { el.click(); } catch { /* ignore */ }
   }, []);
 
-  // ── 공급사 목록 로드 ────────────────────────────────────────
-  const loadVendors = useCallback(async () => {
-    setVendorsLoading(true);
-    try {
-      const res = await fetch("/api/vendors?withBalances=1");
-      if (!res.ok) throw new Error(String(res.status));
-      const list: any[] = await res.json();
-      setVendors(list.map(v => {
-        // /api/vendors?withBalances=1 응답 · latestBalance.balance 가 실제 잔고 소스
-        //   (v.balance 는 존재하지 않는 필드 · 2026-08-04 · Task #103 fix)
-        const rawBal = v?.latestBalance?.balance;
-        const bal = Number.isFinite(Number(rawBal)) ? Number(rawBal) : null;
-        return {
-          id: v.id,
-          company_name: String(v.company_name ?? ""),
-          category: v.category ?? null,
-          contact_name: v.contact_name ?? null,
-          phone: v.phone ?? null,
-          email: v.email ?? null,
-          business_number: v.business_number ?? null,
-          created_at: v.created_at ?? null,
-          payment_terms: v.payment_terms ?? null,
-          active: v.active ?? null,
-          vat_included: v.vat_included ?? null,
-          balance: bal,
-        };
-      }));
-    } catch { setVendors([]); }
-    finally { setVendorsLoading(false); }
-  }, []);
-
+  // supplier-payment-added 이벤트 · 결제 등록 후 공급사 캐시 재fetch (vendors-changed 는 useVendors 내부에서 이미 구독)
   useEffect(() => {
-    loadVendors();
-    const reload = () => loadVendors();
-    window.addEventListener("vendors-changed", reload);
-    window.addEventListener("supplier-payment-added", reload);
-    return () => {
-      window.removeEventListener("vendors-changed", reload);
-      window.removeEventListener("supplier-payment-added", reload);
-    };
-  }, [loadVendors]);
+    const onPaymentAdded = () => reloadVendors();
+    window.addEventListener("supplier-payment-added", onPaymentAdded);
+    return () => window.removeEventListener("supplier-payment-added", onPaymentAdded);
+  }, [reloadVendors]);
 
   // 공급사 목록 refresh 후 선택 동기화
   useEffect(() => {

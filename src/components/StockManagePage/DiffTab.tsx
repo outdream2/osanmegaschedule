@@ -8,6 +8,7 @@ import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { matchClassFilter, type ClassFilter } from "../../utils/productClassify";
+import { useVendors } from "../../hooks/useVendors";
 
 function fmt(n: number): string {
   if (!Number.isFinite(n)) return "0";
@@ -27,6 +28,7 @@ interface ProductLite {
 }
 
 export const DiffTab: React.FC = () => {
+  const { findVendorByName } = useVendors();
   const [lowStock, setLowStock] = useState<ProductLite[]>([]);
   const [loading, setLoading] = useState(false);
   // 상비약/일반약/전체 3-way 필터 (localStorage 저장)
@@ -74,30 +76,14 @@ export const DiffTab: React.FC = () => {
   const toggleDiffGroup = (g: DiffGroup) => setDiffGroupCollapsed(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
   const isDiffGroupCollapsed = (g: DiffGroup) => diffGroupCollapsed.has(g);
 
-  // 공급사 상세 모달
+  // 공급사 상세 모달 · useVendors 캐시에서 fuzzy 조회 (inline fetch 제거)
   const [supplierDetailModal, setSupplierDetailModal] = useState<any | null>(null);
-  const openSupplierDetailModal = useCallback(async (supplierName: string) => {
+  const openSupplierDetailModal = useCallback((supplierName: string) => {
     if (!supplierName) return;
-    const name = supplierName.trim();
-    try {
-      const res = await fetch("/api/vendors?withBalances=1");
-      if (!res.ok) { alert(`공급사 정보 조회 실패 (${res.status})`); return; }
-      const list: any[] = await res.json();
-      const exact = list.find(v => String(v.company_name ?? "").trim() === name);
-      if (exact) { setSupplierDetailModal(exact); return; }
-      const stripped = name.replace(/\s*\(.*?\)\s*/g, "").trim();
-      const strippedMatch = stripped ? list.find(v => {
-        const vn = String(v.company_name ?? "").trim();
-        return vn === stripped || vn.includes(stripped);
-      }) : undefined;
-      if (strippedMatch) { setSupplierDetailModal(strippedMatch); return; }
-      const partial = list.find(v => { const vn = String(v.company_name ?? "").trim(); return vn && (vn.includes(name) || name.includes(vn)); });
-      if (partial) { setSupplierDetailModal(partial); return; }
-      alert(`공급사 정보 없음: ${supplierName}`);
-    } catch (e: any) {
-      alert(`공급사 정보 조회 실패: ${e?.message ?? "네트워크 오류"}`);
-    }
-  }, []);
+    const found = findVendorByName(supplierName);
+    if (found) { setSupplierDetailModal(found); return; }
+    alert(`공급사 정보 없음: ${supplierName}`);
+  }, [findVendorByName]);
 
   // 데이터 fetch
   const fetchData = useCallback(async () => {

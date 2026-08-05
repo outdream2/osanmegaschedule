@@ -1,9 +1,10 @@
-﻿import React, { useCallback, useEffect, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { Wand2, Loader2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, BookmarkPlus, BookOpen, Check, Save } from "lucide-react";
 import { isNonProductText, isValidSupplierHint, isValidProductName, scoreProductRow, cleanProductName } from "../../lib/ocrRowFilter";
 import { reextractCellCandidates } from "../../lib/cellReextract";
 import { VendorDetailModal, type Vendor } from "../LandingPage/VendorListEditor";
+import { useVendors } from "../../hooks/useVendors";
 import type {
   ConfirmedItem,
   RawPage,
@@ -63,6 +64,8 @@ import { useSaveConfirmed } from "./RawOcrTable/useSaveConfirmed";
 export type { ConfirmedItem };
 
 export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps, pageImages, rotation = -90, onReparsePage, barcodeMatches, balanceConfig: balanceConfigProp, onSaveConfirmed, onUserEdit }) => {
+  // 공급사 목록 · 자동완성·조회 공용 (inline fetch 제거)
+  const { vendors: _ocrVendors, refresh: refreshVendors } = useVendors();
   // 2026-07-24 · 리팩터 · 페이지 snapshot 은 usePagesSnapshot 훅으로 분리
   //   props.pages (SSE 업데이트) → 내부 스냅샷 (append-only) → dispRows 파생
   const pages = usePagesSnapshot(pagesFromProps);
@@ -77,38 +80,33 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   const openVendorEdit = useCallback(async (supplierName: string) => {
     const name = supplierName.trim();
     if (!name) return;
-    try {
-      const res = await fetch(`/api/vendors`);
-      const data = await res.json();
-      const arr: Vendor[] = Array.isArray(data) ? data : (data.rows ?? []);
-      const norm = (s: string) => s.toLowerCase().replace(/[()（）\s㈜(주)주식회사]/g, "");
-      const target = norm(name);
-      // 정확 일치 우선 · 다음 부분일치
-      let match = arr.find(v => norm(String(v.company_name ?? "")) === target);
-      if (!match) match = arr.find(v => norm(String(v.company_name ?? "")).includes(target) || target.includes(norm(String(v.company_name ?? ""))));
-      if (!match) {
-        // 신규 공급사 등록 유도
-        if (window.confirm(`"${name}" 은(는) 공급사 DB 에 없습니다.\n신규 등록하시겠습니까?`)) {
-          const created = await fetch("/api/vendors", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ company_name: name }),
-          });
-          if (created.ok) {
-            const newV = await created.json();
-            setVendorEditModal(newV);
-          } else {
-            alert("공급사 신규 등록 실패");
-          }
+    const norm = (s: string) => s.toLowerCase().replace(/[()（）\s㈜(주)주식회사]/g, "");
+    const target = norm(name);
+    // 캐시된 목록에서 조회 (정확일치 우선 · 부분일치 fallback)
+    let match = (_ocrVendors as unknown as Vendor[]).find(v => norm(String(v.company_name ?? "")) === target);
+    if (!match) match = (_ocrVendors as unknown as Vendor[]).find(v => norm(String(v.company_name ?? "")).includes(target) || target.includes(norm(String(v.company_name ?? ""))));
+    if (match) { setVendorEditModal(match); return; }
+    // 신규 공급사 등록 유도
+    if (window.confirm(`"${name}" 은(는) 공급사 DB 에 없습니다.\n신규 등록하시겠습니까?`)) {
+      try {
+        const created = await fetch("/api/vendors", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ company_name: name }),
+        });
+        if (created.ok) {
+          const newV = await created.json();
+          setVendorEditModal(newV);
+          refreshVendors(); // 캐시 갱신
+        } else {
+          alert("공급사 신규 등록 실패");
         }
-        return;
+      } catch (e) {
+        console.error("[공급사조회] 실패:", e);
+        alert("공급사 정보 조회 실패");
       }
-      setVendorEditModal(match);
-    } catch (e) {
-      console.error("[공급사조회] 실패:", e);
-      alert("공급사 정보 조회 실패");
     }
-  }, []);
+  }, [_ocrVendors, refreshVendors]);
   const [editingRawSuppRow, setEditingRawSuppRow] = useState<number | null>(null);
   const [editingRawSuppVal, setEditingRawSuppVal] = useState("");
   const [supplierConfirm,   setSupplierConfirm  ] = useState<{ pageNum: number; newVal: string; rowCount: number; addSynonyms: boolean } | null>(null);
@@ -126,21 +124,11 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   }, []);
   const clearCheckedCells = useCallback(() => setCheckedCells(new Set()), []);
 
-  // 공급사 DB 리스트 (자동완성 · 2026-07-14) · 컴포넌트 mount 시 한 번만 로드
-  const [vendorNames, setVendorNames] = useState<string[]>([]);
-  useEffect(() => {
-    let mounted = true;
-    fetch("/api/vendors")
-      .then(r => r.ok ? r.json() : [])
-      .then(data => {
-        if (!mounted) return;
-        const names = Array.isArray(data) ? data.map((v: any) => String(v.company_name ?? "").trim()).filter(Boolean) : [];
-        setVendorNames(names);
-        console.log(`[공급사자동완성] vendors 로드: ${names.length}건`);
-      })
-      .catch(e => console.warn("[공급사자동완성] 로드 실패:", e));
-    return () => { mounted = false; };
-  }, []);
+  // 공급사 DB 리스트 (자동완성 · 2026-07-14) · useVendors 캐시에서 파생
+  const vendorNames = useMemo<string[]>(
+    () => _ocrVendors.map(v => String(v.company_name ?? "").trim()).filter(Boolean),
+    [_ocrVendors],
+  );
   // 공급처 편집 시 드롭다운 위치 (fixed positioning · 테이블 안 stacking context 우회)
   const [suppDropdownRect, setSuppDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
   const suppInputRef = useRef<HTMLInputElement | null>(null);

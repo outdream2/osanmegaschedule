@@ -87,7 +87,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
 
   // 공급사 목록
   const [xlsxSuppliers, setXlsxSuppliers] = useState<SupplierAgg[]>([]);
-  const { vendorCategoryMap } = useVendors();
+  const { vendorCategoryMap, findVendorByName } = useVendors();
   const [supplierBalanceMap, setSupplierBalanceMap] = useState<Record<string, { balance: number; invoice_date: string | null }>>({});
   // 공급사별 매입주기 (일) · showCycleColumn=true 일 때만 fetch
   //   · key · 정규화 (VAT 미포함 제거 · trim · lower) 공급사명
@@ -260,24 +260,13 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
     }
   }, [embedded, onSupplierClick]);
 
-  // 공급사 상세 모달 오픈
-  const openSupplierDetailModal = useCallback(async (supplierName: string) => {
+  // 공급사 상세 모달 오픈 · 캐시 활용 (inline fetch 제거)
+  const openSupplierDetailModal = useCallback((supplierName: string) => {
     if (!supplierName) return;
-    const name = supplierName.trim();
-    try {
-      const res = await fetch("/api/vendors?withBalances=1");
-      if (!res.ok) { alert(`공급사 정보 조회 실패 (${res.status})`); return; }
-      const list: any[] = await res.json();
-      const exact = list.find(v => String(v.company_name ?? "").trim() === name);
-      if (exact) { setSupplierDetailModal(exact); return; }
-      const stripped = name.replace(/\s*\(.*?\)\s*/g, "").trim();
-      const match = stripped ? list.find(v => { const vn = String(v.company_name ?? "").trim(); return vn === stripped || vn.includes(stripped); }) : undefined;
-      if (match) { setSupplierDetailModal(match); return; }
-      const partial = list.find(v => { const vn = String(v.company_name ?? "").trim(); return vn && (vn.includes(name) || name.includes(vn)); });
-      if (partial) { setSupplierDetailModal(partial); return; }
-      alert(`공급사 정보 없음: ${supplierName}`);
-    } catch (e: any) { alert(`공급사 정보 조회 실패: ${e?.message ?? "네트워크 오류"}`); }
-  }, []);
+    const found = findVendorByName(supplierName);
+    if (found) { setSupplierDetailModal(found); return; }
+    alert(`공급사 정보 없음: ${supplierName}`);
+  }, [findVendorByName]);
 
   // 우측 패널 상세 정렬 helper
   const sortSupDetailRows = (rows: any[]): any[] => {

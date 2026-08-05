@@ -4,6 +4,7 @@
 //   모달:   헤더 gradient · 폼 h-9 · 매입이력 shadcn 스타일 · 하단 저장/닫기 통일
 
 import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { useVendors } from "../../hooks/useVendors";
 import {
   Search, Check, X, Loader2, Building2, Package, Calendar,
   DollarSign, TrendingUp, RefreshCw, ChevronRight, ChevronDown, ChevronUp,
@@ -130,8 +131,9 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   onEditRequest,
   compact = false,
 }) => {
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { vendors: _rawVendors, loading, refresh: loadVendors } = useVendors();
+  // 로컬 Vendor 타입으로 캐스팅 (latestBalance 등 추가 필드 접근용)
+  const vendors = _rawVendors as unknown as Vendor[];
   const [search, setSearch] = useState("");
   const [filterMissingBiz, setFilterMissingBiz] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>("전체");
@@ -164,21 +166,6 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
     setActiveId(id);
     if (onEditRequest) { onEditRequest(id); } else { setModalVendorId(id); }
   };
-
-  const loadVendors = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/vendors?withBalances=1");
-      const data = await res.json();
-      setVendors(Array.isArray(data) ? data : []);
-    } catch (e) {
-      console.error("공급사 로드 실패:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { loadVendors(); }, [loadVendors]);
 
   // 2026-08-04 · #101 · 공급사별 재고자산·판매액 집계 로드 (compact 모드 · 최근 3개월)
   //   stock_history 기반 · 이름 정규화 매칭 · 실패 시 빈 map (컬럼은 "-" 로 표기)
