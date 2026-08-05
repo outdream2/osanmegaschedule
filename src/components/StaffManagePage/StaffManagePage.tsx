@@ -48,6 +48,7 @@ interface Employee {
   level?: number | null;
   role?: string | null;
   contract_file_url?: string | null;
+  resume_url?: string | null;  // T21 · 이력서 · Google Drive URL
   photo_url?: string | null;
   hire_date?: string | null;
   memo?: string | null;
@@ -167,7 +168,7 @@ interface CertItem {
 type EditDraft = Pick<
   Employee,
   | "name" | "position" | "phone" | "email" | "level" | "role"
-  | "hire_date" | "memo" | "contract_file_url" | "photo_url"
+  | "hire_date" | "memo" | "contract_file_url" | "resume_url" | "photo_url"
   | "birth_date" | "gender" | "address" | "schedule_type" | "work_area"
   | "salary" | "contract_start" | "contract_end"
   // 신규 · 인사기록카드 확장
@@ -909,6 +910,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
       hire_date: emp.hire_date ?? "",
       memo: emp.memo ?? "",
       contract_file_url: emp.contract_file_url ?? "",
+      resume_url: (emp as any).resume_url ?? "",
       photo_url: emp.photo_url ?? "",
       birth_date: emp.birth_date ?? "",
       gender: emp.gender ?? "",
@@ -1796,6 +1798,90 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                       ) : (
                         <span className="text-[13px] font-semibold text-slate-300 italic leading-snug min-h-[20px]">(코멘트 없음)</span>
                       )}
+                    </div>
+
+                    {/* T21 · 이력서 · Google Drive 업로드 + [보기] 버튼 · 편집 모드에서 파일 선택 */}
+                    <div className="col-span-2 flex flex-col gap-0.5">
+                      <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none">
+                        <Paperclip size={9} /> 이력서
+                      </span>
+                      <div className="flex items-center gap-2 py-1">
+                        {displayEmp.resume_url ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => window.open(displayEmp.resume_url as string, "_blank", "noopener,noreferrer")}
+                              className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md shadow-sm cursor-pointer transition-colors"
+                            >
+                              <ExternalLink size={11} /> 이력서 보기
+                            </button>
+                            {editing && (
+                              <>
+                                <label className="inline-flex items-center gap-1 h-7 px-2 text-[11px] font-semibold text-slate-600 bg-white border border-slate-300 rounded-md hover:bg-slate-50 cursor-pointer">
+                                  <Paperclip size={10} /> 교체
+                                  <input
+                                    type="file"
+                                    accept=".pdf,.doc,.docx,.hwp,image/*"
+                                    className="hidden"
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (!file || !selectedEmp) return;
+                                      try {
+                                        const fd = new FormData();
+                                        fd.append("resume", file);
+                                        const res = await fetch(`/api/employees/${selectedEmp.id}/resume`, { method: "POST", body: fd });
+                                        const j = await res.json();
+                                        if (!res.ok) throw new Error(j.error ?? "업로드 실패");
+                                        setField("resume_url", j.url);
+                                        alert(`업로드 완료: ${j.name}`);
+                                      } catch (err: any) { alert(`업로드 실패: ${err.message}`); }
+                                    }}
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (!selectedEmp) return;
+                                    if (!window.confirm("이력서를 삭제하시겠습니까?")) return;
+                                    try {
+                                      const res = await fetch(`/api/employees/${selectedEmp.id}/resume`, { method: "DELETE" });
+                                      if (!res.ok) throw new Error("삭제 실패");
+                                      setField("resume_url", "");
+                                    } catch (err: any) { alert(`삭제 실패: ${err.message}`); }
+                                  }}
+                                  className="inline-flex items-center gap-1 h-7 px-2 text-[11px] font-semibold text-rose-600 bg-white border border-rose-200 rounded-md hover:bg-rose-50 cursor-pointer"
+                                >
+                                  <Trash2 size={10} />
+                                </button>
+                              </>
+                            )}
+                          </>
+                        ) : editing ? (
+                          <label className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md hover:bg-emerald-100 cursor-pointer">
+                            <Paperclip size={11} /> 이력서 업로드 (PDF·DOC·이미지 · 10MB)
+                            <input
+                              type="file"
+                              accept=".pdf,.doc,.docx,.hwp,image/*"
+                              className="hidden"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file || !selectedEmp) return;
+                                try {
+                                  const fd = new FormData();
+                                  fd.append("resume", file);
+                                  const res = await fetch(`/api/employees/${selectedEmp.id}/resume`, { method: "POST", body: fd });
+                                  const j = await res.json();
+                                  if (!res.ok) throw new Error(j.error ?? "업로드 실패");
+                                  setField("resume_url", j.url);
+                                  alert(`업로드 완료: ${j.name}`);
+                                } catch (err: any) { alert(`업로드 실패: ${err.message}`); }
+                              }}
+                            />
+                          </label>
+                        ) : (
+                          <span className="text-[11px] font-semibold text-slate-400 italic">이력서 없음</span>
+                        )}
+                      </div>
                     </div>
 
                     {/* 계약서 파일 · [보기] 버튼 UI · 없으면 "없음" 배지 · 편집 모드에서 URL 입력 */}
