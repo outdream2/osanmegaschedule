@@ -27,28 +27,28 @@
 - 예상 4~6h · 위험 낮음
 - **T25 완료 후 자동 launch 승인 됨**
 
-### T27 · TanStack Query 캐싱
-- 재고관리 이미 in-memory 캐시 있음 (T-PERF-1a)
-- 우선순위 낮음
-- 예상 3~4h · 위험 중
-
-### T-PERF-5 · 가상 스크롤 (react-window)
-- 5000+ 행 렌더 부드러움 · 지금은 불필요
-- 예상 2~3h · 위험 낮음
-
 ### T26 · select('*') → 명시 컬럼 (20 파일)
 - 보안 부가 · payload 5~30% 축소
 - 예상 4~6h · 위험 중
 
-### T39 · PaddleOCR 분리 (Render 배포 대비)
-- YOLO 완전 제거됨 · PaddleOCR 만 남음
-- Render Pro 티어 (2GB) 로 분리 불필요할 수도
-- 예상 3~4h · 위험 높음
+### T-CSS · 공통 CSS 리팩토링 (신규 · 2026-08-05)
+- **목적**: 반복되는 Tailwind 클래스 조합을 · 공통 컴포넌트·className 상수·CSS 유틸로 통합
+- **후보**:
+  - 카드 스타일 (`rounded-2xl border border-slate-200 shadow-sm` 반복)
+  - 버튼 톤 (indigo/emerald/rose/violet 그라디언트 · 크기별)
+  - 헤더 라벨 (`text-[10px] font-black uppercase tracking-widest text-slate-400`)
+  - 상태 배지 (pending/prepared/done · amber/sky/emerald)
+  - 입력 필드 (border/focus-ring 조합)
+  - 모달 백드롭 (`fixed inset-0 z-[...] bg-slate-900/50 backdrop-blur-sm`)
+- **효과**: 코드 -500~1000줄 · 디자인 통일성 · 다크모드 대비 쉬움
+- **위험**: 낮음~중 (className 만 변경 · 렌더 결과 동일해야 함)
+- **예상**: 6~10h (여러 파일 · 파일별 순차)
+- **방식**: mobile-ui-designer 위임 · 파일별 · 회귀 즉시 revert 가능
 
-### T36 · RawOcrTable 정렬 (deferred · 복잡)
-- OCR 워크플로우 회귀 위험 높음
-- 사용자 명시 요구 시에만
-- 예상 4~6h · 위험 높음
+### T-PERF-5 · 가상 스크롤 (react-window) · 보류
+- 5000+ 행 리스트에서 필요 · 현재 페이지네이션으로 렌더 수십 행
+- 나중 필요 시 재검토
+- 예상 2~3h · 위험 낮음
 
 ---
 
