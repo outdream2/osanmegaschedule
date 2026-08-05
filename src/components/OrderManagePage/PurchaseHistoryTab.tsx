@@ -1080,7 +1080,8 @@ export const PurchaseHistoryTab: React.FC = () => {
                 </div>
               </div>
               {/* 상품 리스트 · 카드 2줄 · 상단 컬럼 헤더 */}
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 max-h-[65vh] flex flex-col overflow-hidden">
+              {/* 2026-08-05 · max-h-[65vh] 좁아서 스크롤·데이터 안 보임 문제 · 90vh 로 확대 */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 max-h-[calc(100vh-200px)] flex flex-col overflow-hidden">
                 <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                   <span>상품</span>
                   <span className="text-right whitespace-nowrap text-amber-600">매입</span>
