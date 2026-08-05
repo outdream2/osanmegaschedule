@@ -50,6 +50,46 @@
 - 보안 부가 · payload 5~30% 축소
 - 예상 4~6h · 위험 중
 
+## 🔍 project-architect 분석 결과 (2026-08-05)
+
+**규모**: 107K줄 · 프론트 118 tsx / 74 ts · 서버 92 파일
+
+**아키텍처 강점**:
+- 서버-클라이언트 fetch 분리 (2개 예외: scheduleService · notificationsService)
+- OCR 파이프라인 stage 분리 잘 됨
+- common 컴포넌트 24개
+- 도메인 훅 분리 시작 (useVendors · useSettings · useSortableTable)
+
+**주요 문제점 · 우선순위** (10건):
+
+| # | 카테고리 | 문제 | 시간 | 상태 |
+|---|---------|------|------|-----|
+| 1 | 🚨보안 | requireAuth 미들웨어 전체 비활성 (Render 시 critical) | 2h | T3-defer |
+| 2 | 코드품질 | fmtWon/fmtDate 16+ 파일 중복 정의 | 3~4h | T-SLIM A |
+| 3 | 아키텍처 | God Component 5개 (RawOcrTable 5268 · ContractWriter 5256 · OrderManage 3224 · DisplayPage 2890 · StaffManage 2773) | 1~3일/파일 | 별도 |
+| 4 | 성능 | select('*') 56곳 | 4~6h | **T26 진행중** |
+| 5 | 코드품질 | `as any` 1322건 (front 490 · server 832) | 10h+ | T-SLIM 부수 |
+| 6 | 아키텍처 | scheduleService · frontend 번들 혼입 | 2~3h | 신규 |
+| 7 | 보안 | password_hash · 로그인 응답 노출 위험 | 30분 | **즉시** |
+| 8 | UX | window.confirm 146건 | 4~6h | T-SLIM D |
+| 9 | 유지보수 | 타입 정의 산재 | 5~8h | T-SLIM E |
+| 10 | 유지보수 | src/ 루트 · 엑셀 4개 혼입 | 10분 | **즉시** |
+
+**즉시 실행 가능 (2h 이하 · 5건)**:
+1. `password_hash` 응답 제거 · 30분 · **보안**
+2. src/ xlsx 이동 · 10분 · 정리
+3. `fmtWon` 통합 시작 · 1~2h · T-SLIM A 개시
+4. requireAuth 최소 적용 · 1~2h · **Render 대비**
+5. scheduleService src→server 이동 · 1h · 번들 분리
+
+**Render 배포 CRITICAL**:
+- 인증 미들웨어 재도입
+- JWT_SECRET 확인
+- scheduleService 번들 분리
+- CORS · Helmet · Rate Limit 신규
+
+---
+
 ### T-SLIM · 공통 기능 분리·리팩토링·코드 슬림화 (2026-08-05 · 사용자)
 **절대 원칙**: **기능에 절대 문제 안 생기게** · 렌더·데이터·동작 동일 유지
 

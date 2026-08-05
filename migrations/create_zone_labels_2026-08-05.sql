@@ -1,7 +1,7 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 -- zone_labels 테이블 생성 · 2026-08-05
 --
--- 원인: 서버 로그 · [zone-labels GET] Could not find the table 'public.zone_labels'
+-- 원인: 서버 로그 · [zone-labels GET] Could noㅁt find the table 'public.zone_labels'
 -- 원인: docs/supabase_functions_and_tables.sql 에는 스키마 있지만 실제 DB 에 미생성
 --
 -- 실행: Supabase 대시보드 → SQL Editor → 붙여넣기 → Run

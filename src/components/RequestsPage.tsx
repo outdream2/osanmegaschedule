@@ -171,8 +171,9 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const [notifying, setNotifying] = useState(false);
   const [notifyToast, setNotifyToast] = useState<string | null>(null);
 
-  // 2026-08-05 · T-SCAN-1 · [창고 준비완료] · PATCH /prepare (pending → prepared)
-  //   · 진열담당(assigned)에게 픽업 알림 자동 발송
+  // 2026-08-05 · T-SCAN-1 · [창고준비] 토글 · PATCH /prepare
+  //   · pending → prepared (완료 · 진열담당 알림)
+  //   · prepared → pending (되돌리기 · 준비자 정보 clear)
   const handlePrepareDisplay = useCallback(async (req: DisplayRequest) => {
     setCompletingDisplay(prev => new Set([...prev, req.id]));
     try {
@@ -185,15 +186,19 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         }),
       });
       if (res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const reverted = (body as any).action === "reverted";
         const now = new Date().toISOString();
         setDisplayReqs(prev => prev.map(r => r.id === req.id
-          ? { ...r, status: "prepared", prepared_at: now,
-              prepared_by: authSession?.employeeId ?? null,
-              prepared_by_name: authSession?.employeeName ?? "" }
+          ? reverted
+            ? { ...r, status: "pending", prepared_at: null, prepared_by: null, prepared_by_name: null }
+            : { ...r, status: "prepared", prepared_at: now,
+                prepared_by: authSession?.employeeId ?? null,
+                prepared_by_name: authSession?.employeeName ?? "" }
           : r));
       } else {
         const b = await res.json().catch(() => ({}));
-        alert(`창고 준비완료 실패: ${(b as any).error ?? res.statusText}`);
+        alert(`창고 준비 토글 실패: ${(b as any).error ?? res.statusText}`);
       }
     } catch { /* ignore */ }
     finally {
@@ -201,8 +206,9 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     }
   }, [authSession?.employeeId, authSession?.employeeName]);
 
-  // 2026-08-05 · T-SCAN-1 · [진열 완료] · PATCH /complete (pending·prepared → done)
-  //   · 관리자(level≥8) 완료 알림 자동 발송
+  // 2026-08-05 · T-SCAN-1 · [진열완료] 토글 · PATCH /complete
+  //   · pending·prepared → done (완료 · 관리자 알림)
+  //   · done → prepared(창고준비O) or pending(창고준비X) · 완료자 정보 clear
   const handleCompleteDisplay = useCallback(async (req: DisplayRequest) => {
     setCompletingDisplay(prev => new Set([...prev, req.id]));
     try {
@@ -215,15 +221,20 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         }),
       });
       if (res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const reverted = (body as any).action === "reverted";
+        const revertedStatus = (body as any).status as "prepared" | "pending" | undefined;
         const now = new Date().toISOString();
         setDisplayReqs(prev => prev.map(r => r.id === req.id
-          ? { ...r, status: "done", completed_at: now,
-              completed_by: authSession?.employeeId ?? null,
-              completed_by_name: authSession?.employeeName ?? "" }
+          ? reverted
+            ? { ...r, status: revertedStatus ?? "prepared", completed_at: null, completed_by: null, completed_by_name: null }
+            : { ...r, status: "done", completed_at: now,
+                completed_by: authSession?.employeeId ?? null,
+                completed_by_name: authSession?.employeeName ?? "" }
           : r));
       } else {
         const b = await res.json().catch(() => ({}));
-        alert(`완료 실패: ${(b as any).error ?? res.statusText}`);
+        alert(`진열완료 토글 실패: ${(b as any).error ?? res.statusText}`);
       }
     } catch { /* ignore */ }
     finally {
@@ -675,64 +686,74 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                               : <span className="text-[11px] text-slate-300">미지정</span>}
                           </td>
 
-                          {/* 창고준비 */}
+                          {/* 창고준비 · 토글 (대기 ↔ 완료) · 2026-08-05 */}
                           <td className="px-3 py-2 text-center whitespace-nowrap">
-                            {isPending ? (
-                              <button
-                                onClick={() => handlePrepareDisplay(r)}
-                                disabled={!canPrepare || completing}
-                                title={canPrepare ? "창고 준비 완료 처리" : "창고담당만 가능"}
-                                className={`text-[10px] font-semibold px-2.5 h-6 rounded-md transition-all duration-150 inline-flex items-center gap-0.5 disabled:opacity-40 ${
-                                  canPrepare
-                                    ? "text-amber-700 bg-amber-50 border border-amber-300 hover:bg-amber-100 cursor-pointer"
-                                    : "text-slate-400 bg-slate-100 border border-slate-200 cursor-not-allowed"
-                                }`}
-                              >
-                                {completing ? <Loader2 size={9} className="animate-spin" /> : <Clock size={9} />}
-                                대기
-                              </button>
-                            ) : (
-                              <span
-                                title={`${r.prepared_by_name ?? ""}${r.prepared_at ? " · " + fmtDate(r.prepared_at) : ""}`}
-                                className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 cursor-default"
-                              >
-                                <Package size={9} />
-                                완료
-                              </span>
-                            )}
+                            {(() => {
+                              const prepared = !isPending; // prepared 또는 done
+                              const disabled = !canPrepare || completing;
+                              const clickable = !disabled;
+                              const label = prepared ? "완료" : "대기";
+                              const cls = prepared
+                                ? "text-sky-700 bg-sky-50 border-sky-200 hover:bg-sky-100"
+                                : "text-amber-700 bg-amber-50 border-amber-300 hover:bg-amber-100";
+                              const Icon = prepared ? Package : Clock;
+                              return (
+                                <button
+                                  onClick={() => handlePrepareDisplay(r)}
+                                  disabled={disabled}
+                                  title={
+                                    canPrepare
+                                      ? prepared
+                                        ? `클릭 시 대기로 되돌리기 (${r.prepared_by_name ?? ""}${r.prepared_at ? " · " + fmtDate(r.prepared_at) : ""})`
+                                        : "창고 준비 완료 처리"
+                                      : "창고담당만 가능"
+                                  }
+                                  className={`text-[10px] font-semibold px-2.5 h-6 rounded-md border transition-all duration-150 inline-flex items-center gap-0.5 disabled:opacity-40 ${
+                                    clickable ? cls + " cursor-pointer" : "text-slate-400 bg-slate-100 border-slate-200 cursor-not-allowed"
+                                  }`}
+                                >
+                                  {completing ? <Loader2 size={9} className="animate-spin" /> : <Icon size={9} />}
+                                  {label}
+                                </button>
+                              );
+                            })()}
                           </td>
 
-                          {/* 진열완료 */}
+                          {/* 진열완료 · 토글 (대기 ↔ 완료) · 2026-08-05 */}
                           <td className="px-3 py-2 text-center whitespace-nowrap">
-                            {isDone ? (
-                              <span
-                                title={`${r.completed_by_name ?? ""}${r.completed_at ? " · " + fmtDate(r.completed_at) : ""}`}
-                                className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default"
-                              >
-                                <CheckCircle2 size={9} />
-                                완료
-                              </span>
-                            ) : (
-                              <button
-                                onClick={() => handleCompleteDisplay(r)}
-                                disabled={!canComplete || completing || (isPending && !isAdminLevel8)}
-                                title={
-                                  canComplete
-                                    ? isPending && !isAdminLevel8
-                                      ? "창고 준비 완료 후 진열완료 가능"
-                                      : "진열 완료 처리"
-                                    : "진열담당만 가능"
-                                }
-                                className={`text-[10px] font-semibold px-2.5 h-6 rounded-md transition-all duration-150 inline-flex items-center gap-0.5 disabled:opacity-40 ${
-                                  canComplete && (isPrepared || isAdminLevel8)
-                                    ? "text-amber-700 bg-amber-50 border border-amber-300 hover:bg-amber-100 cursor-pointer"
-                                    : "text-slate-400 bg-slate-100 border border-slate-200 cursor-not-allowed"
-                                }`}
-                              >
-                                {completing ? <Loader2 size={9} className="animate-spin" /> : <Clock size={9} />}
-                                대기
-                              </button>
-                            )}
+                            {(() => {
+                              const done = isDone;
+                              // pending 상태에서 진열완료 · 관리자만 가능 (창고 준비 선행 강제)
+                              const gated = isPending && !isAdminLevel8;
+                              const disabled = !canComplete || completing || gated;
+                              const clickable = !disabled;
+                              const label = done ? "완료" : "대기";
+                              const cls = done
+                                ? "text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100"
+                                : "text-amber-700 bg-amber-50 border-amber-300 hover:bg-amber-100";
+                              const Icon = done ? CheckCircle2 : Clock;
+                              return (
+                                <button
+                                  onClick={() => handleCompleteDisplay(r)}
+                                  disabled={disabled}
+                                  title={
+                                    canComplete
+                                      ? done
+                                        ? `클릭 시 대기로 되돌리기 (${r.completed_by_name ?? ""}${r.completed_at ? " · " + fmtDate(r.completed_at) : ""})`
+                                        : gated
+                                          ? "창고 준비 완료 후 진열완료 가능"
+                                          : "진열 완료 처리"
+                                      : "진열담당만 가능"
+                                  }
+                                  className={`text-[10px] font-semibold px-2.5 h-6 rounded-md border transition-all duration-150 inline-flex items-center gap-0.5 disabled:opacity-40 ${
+                                    clickable ? cls + " cursor-pointer" : "text-slate-400 bg-slate-100 border-slate-200 cursor-not-allowed"
+                                  }`}
+                                >
+                                  {completing ? <Loader2 size={9} className="animate-spin" /> : <Icon size={9} />}
+                                  {label}
+                                </button>
+                              );
+                            })()}
                           </td>
 
                           {/* 날짜 */}

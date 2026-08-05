@@ -207,16 +207,34 @@ router.post("/api/display-requests", async (req, res) => {
   res.json({ ok: true, id: data?.id });
 });
 
-// 2026-08-05 · Phase 1 · 신규 · 창고담당 pending → prepared (준비 완료)
+// 2026-08-05 · Phase 1 · 창고담당 pending ↔ prepared 토글
+//   · pending → prepared (준비 완료)
+//   · prepared → pending (되돌리기 · 토글)
 router.patch("/api/display-requests/:id/prepare", async (req, res) => {
   const b = req.body ?? {};
   const preparedById = b.prepared_by ? Number(b.prepared_by) : null;
   const preparedByName = String(b.prepared_by_name ?? "");
   const now = new Date().toISOString();
-  // 상태 확인 (idempotency · pending 만 허용)
   const { data: cur } = await supabase.from("display_requests").select("id, status, assigned_staff_id, assigned_staff_name, zone_label, note, product_code").eq("id", req.params.id).maybeSingle();
   if (!cur) return res.status(404).json({ error: "요청을 찾을 수 없습니다" });
-  if ((cur as any).status !== "pending") return res.status(400).json({ error: `현재 상태 "${(cur as any).status}" · pending 만 준비완료 가능` });
+
+  // 토글: prepared 면 pending 으로 되돌리기 · pending 이면 prepared 로 전진
+  //   · done 은 완료 상태 · 토글 X (완료 버튼에서 별도 처리)
+  const currentStatus = (cur as any).status;
+  if (currentStatus === "prepared") {
+    // 되돌리기 · prepared → pending · 준비자 정보 제거
+    const { error } = await supabase.from("display_requests").update({
+      status: "pending",
+      prepared_at: null,
+      prepared_by: null,
+      prepared_by_name: null,
+    }).eq("id", req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ ok: true, action: "reverted", status: "pending" });
+  }
+  if (currentStatus !== "pending") {
+    return res.status(400).json({ error: `현재 상태 "${currentStatus}" · pending/prepared 만 토글 가능` });
+  }
   const { error } = await supabase.from("display_requests").update({
     status: "prepared",
     prepared_at: now,
@@ -254,17 +272,34 @@ router.patch("/api/display-requests/:id/prepare", async (req, res) => {
   res.json({ ok: true });
 });
 
-// 2026-08-05 · Phase 1 · 신규 · 진열담당 prepared → done (진열 완료)
+// 2026-08-05 · Phase 1 · 진열담당 prepared/pending ↔ done 토글
+//   · pending or prepared → done (진열 완료)
+//   · done → prepared (되돌리기 · 토글 · 완료자 정보 제거)
 router.patch("/api/display-requests/:id/complete", async (req, res) => {
   const b = req.body ?? {};
   const completedById = b.completed_by ? Number(b.completed_by) : null;
   const completedByName = String(b.completed_by_name ?? "");
   const now = new Date().toISOString();
-  const { data: cur } = await supabase.from("display_requests").select("id, status, zone_label").eq("id", req.params.id).maybeSingle();
+  const { data: cur } = await supabase.from("display_requests").select("id, status, zone_label, prepared_by").eq("id", req.params.id).maybeSingle();
   if (!cur) return res.status(404).json({ error: "요청을 찾을 수 없습니다" });
-  // prepared 뿐 아니라 pending 에서도 완료 가능 (관리자 fallback · 빠른 방식 요청 등)
-  if (!["pending", "prepared"].includes((cur as any).status)) {
-    return res.status(400).json({ error: `현재 상태 "${(cur as any).status}" · 완료 처리 불가` });
+  const currentStatus = (cur as any).status;
+
+  // 토글: done 이면 prepared 로 되돌리기 (완료자 정보 제거)
+  //   · 창고 준비 기록이 있으면 prepared 로 · 없으면 pending 으로
+  if (currentStatus === "done") {
+    const hadPrepare = (cur as any).prepared_by != null;
+    const { error } = await supabase.from("display_requests").update({
+      status: hadPrepare ? "prepared" : "pending",
+      completed_at: null,
+      completed_by: null,
+      completed_by_name: null,
+    }).eq("id", req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ ok: true, action: "reverted", status: hadPrepare ? "prepared" : "pending" });
+  }
+
+  if (!["pending", "prepared"].includes(currentStatus)) {
+    return res.status(400).json({ error: `현재 상태 "${currentStatus}" · 완료 처리 불가` });
   }
   const { error } = await supabase.from("display_requests").update({
     status: "done",
