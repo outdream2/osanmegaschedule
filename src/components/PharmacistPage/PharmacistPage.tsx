@@ -1,16 +1,16 @@
 // src/components/PharmacistPage/PharmacistPage.tsx
-// 2026-08-03 · 약사 전용 페이지 · 하위메뉴 CRUD + PDF 뷰어 + 스크린샷 방지 확장
+// 2026-08-05 · 약사 전용 페이지 · 교육탭 트리구조 리스트 + 기존 3탭 stacked 유지
 //   - 상단 정보 헤더 (약사 전용 · FirstAid) · 관리자 시 [설정] 버튼 노출
 //   - 공통 TabBar (L2) · 교육자료 · 복약지도 · 동영상 · 문서
 //     · 관리자(level>=8) long-press 드래그 재정렬 (useSortableTabs)
-//   - 각 탭 아래 · 좌 카테고리 리스트 + 리사이저 + 우 하위메뉴 리스트 split
-//   - 하위메뉴 · /api/pharmacist-menu-items · 관리자 CRUD · 약사 조회 + PDF 뷰
-//   - 하위메뉴 클릭 → PDF 뷰어 모달 (스크린샷 방지 · 워터마크)
+//   - 교육자료 탭 · 좌측 트리구조 (카테고리 폴더 펼침/접힘 + 하위메뉴 들여쓰기)
+//   - 나머지 3탭 · 기존 stacked 방식 (카테고리 리스트 상 + 하위메뉴 리스트 하)
+//   - 하위메뉴 클릭 → 우측 인라인 PDF + 풀스크린 모달 (스크린샷 방지·워터마크)
 // 관리자만 CRUD · 약사(및 관리자) 조회·PDF 열람 · 미로그인 접근 제한
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FirstAid, BookOpen, Video, FileText, GraduationCap, Folder } from "@phosphor-icons/react";
-import { Settings2, Plus, Eye, FileText as FileTextIcon, Loader2 } from "lucide-react";
+import { FirstAid, BookOpen, Video, FileText, GraduationCap, Folder, FolderOpen, File as FileIcon } from "@phosphor-icons/react";
+import { Settings2, Plus, Eye, FileText as FileTextIcon, Loader2, ChevronRight, ChevronDown } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
@@ -101,6 +101,21 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
   useEffect(() => { setSelectedCat(null); }, [tab]);
 
+  // ── 교육탭 트리 · 펼쳐진 카테고리 키 Set ─────────────
+  const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
+  // 교육탭 전환 시 · 이전 펼침 상태 초기화
+  useEffect(() => {
+    if (tab === "education") setExpandedCats(new Set());
+  }, [tab]);
+  const toggleCat = (key: string) => {
+    setExpandedCats(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) { next.delete(key); }
+      else { next.add(key); }
+      return next;
+    });
+  };
+
   // ── 좌우 split 폭 (lg 이상) · localStorage 저장 ─────────────────
   const [leftWidth, setLeftWidth] = useState<number>(() => {
     try { const v = Number(localStorage.getItem(RESIZE_STORAGE_KEY)); return Number.isFinite(v) && v > 0 ? v : 320; } catch { return 320; }
@@ -170,6 +185,13 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
   // 카테고리·탭 변경 시 · 선택 하위메뉴 초기화
   useEffect(() => { setSelectedItem(null); }, [tab, selectedCat]);
   const selectItem = (item: PharmMenuItem) => setSelectedItem(item);
+
+  // 교육탭 트리 · 카테고리 클릭 핸들러 (selectedItem 선언 이후 위치)
+  const handleCatClickTree = (key: string) => {
+    toggleCat(key);
+    setSelectedCat(key);
+    setSelectedItem(null);
+  };
   // 풀스크린 모달 (선택적 · double-click) — 유지
   const [viewerItem, setViewerItem] = useState<PharmMenuItem | null>(null);
   const openViewerModal = (item: PharmMenuItem) => {
@@ -238,111 +260,244 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
           }}
         />
 
-        {/* T20 · 좌 리스트 + 리사이저 + 우 PDF 인라인 뷰어 (2026-08-04 재구성) */}
+        {/* T20 · 좌 리스트 + 리사이저 + 우 PDF 인라인 뷰어 (2026-08-05 교육탭 트리구조) */}
         <div className="flex flex-col lg:flex-row gap-2 lg:min-h-[520px]">
-          {/* 좌측 · 카테고리 + 하위메뉴 stacked */}
+          {/* 좌측 패널 · 교육탭=트리구조 / 나머지=stacked 2단 */}
           <div
             className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-2"
             style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? leftWidth : undefined }}
           >
-            {/* 카테고리 리스트 */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
-              <div className="px-3 py-2 border-b border-slate-100 bg-slate-50/60 flex items-center gap-1.5">
-                {activeTabDef.icon && <activeTabDef.icon size={14} className="text-slate-500" weight="fill" />}
-                <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider">{activeTabDef.label} · 카테고리</span>
-                <span className="ml-auto text-[10px] font-bold text-slate-400 tabular-nums">{categories.length}건</span>
-              </div>
-              <ul className="divide-y divide-slate-100 max-h-[38vh] overflow-y-auto">
-                {categories.map(c => {
-                  const active = selectedCat === c.key;
-                  return (
-                    <li key={c.key}>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedCat(c.key)}
-                        className={`w-full text-left px-3 py-2 flex items-start gap-2 transition cursor-pointer ${active ? "bg-sky-50/70" : "hover:bg-slate-50"}`}
-                      >
-                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${active ? "bg-sky-100 text-sky-600" : "bg-slate-100 text-slate-500"}`}>
-                          <Folder size={12} weight="fill" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className={`text-[12.5px] font-bold leading-tight ${active ? "text-sky-800" : "text-slate-800"}`}>{c.title}</div>
-                          <div className="text-[10.5px] text-slate-500 mt-0.5 truncate">{c.subtitle}</div>
-                        </div>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-
-            {/* 하위메뉴 리스트 · 선택된 카테고리 · 관리자 CRUD 버튼 포함 */}
-            {selectedCatObj && (
+            {tab === "education" ? (
+              /* ─── 교육탭 · 트리 구조 ─────────────────────── */
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
-                <div className="px-3 py-2 border-b border-slate-100 bg-gradient-to-r from-sky-50/60 to-transparent flex items-center gap-1.5">
-                  <FileTextIcon size={13} className="text-sky-600" />
-                  <span className="text-[11px] font-black text-sky-700 uppercase tracking-wider truncate">{selectedCatObj.title}</span>
-                  <span className="ml-auto text-[10px] font-bold text-slate-400 tabular-nums">{menuItems.length}건</span>
-                  {isAdmin && (
-                    <button
-                      type="button"
-                      onClick={() => setSettingsOpen(true)}
-                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-sky-600 hover:bg-sky-700 text-white text-[10px] font-bold cursor-pointer transition shadow-sm shrink-0"
-                      title="하위메뉴 추가·수정·삭제"
-                    >
-                      <Plus size={10} />관리
-                    </button>
-                  )}
+                {/* 트리 헤더 */}
+                <div className="px-3 py-2 border-b border-slate-100 bg-slate-50/60 flex items-center gap-1.5">
+                  <GraduationCap size={14} className="text-slate-500" weight="fill" />
+                  <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider">교육자료 · 구역별</span>
+                  <span className="ml-auto text-[10px] font-bold text-slate-400 tabular-nums">{categories.length}개 구역</span>
                 </div>
-                {menuError && (
-                  <div className="px-3 py-1.5 text-[10.5px] text-rose-700 font-semibold bg-rose-50 border-b border-rose-200">
-                    {menuError}
-                  </div>
-                )}
-                {menuLoading ? (
-                  <div className="p-6 flex items-center justify-center gap-2 text-slate-400">
-                    <Loader2 size={13} className="animate-spin" />
-                    <span className="text-[11px] font-bold">불러오는 중...</span>
-                  </div>
-                ) : menuItems.length === 0 ? (
-                  <div className="p-6 text-center text-[11px] text-slate-400">
-                    {isAdmin ? "관리 버튼으로 등록하세요" : "등록된 자료 없음"}
-                  </div>
-                ) : (
-                  <ul className="divide-y divide-slate-100 max-h-[38vh] overflow-y-auto">
-                    {menuItems.map(row => {
-                      const hasFile = !!row.file_url;
-                      const active = selectedItem?.id === row.id;
-                      return (
-                        <li key={row.id}>
+
+                {/* 트리 본문 */}
+                <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 280px)", minHeight: 200 }}>
+                  {categories.map(c => {
+                    const isExpanded = expandedCats.has(c.key);
+                    const isCatActive = selectedCat === c.key;
+                    // 이 카테고리의 하위메뉴 로딩 여부 (선택된 카테고리만 로드)
+                    const showChildren = isExpanded && isCatActive;
+                    const showLoading = showChildren && menuLoading;
+                    const showItems = showChildren && !menuLoading && menuItems.length > 0;
+                    const showEmpty = showChildren && !menuLoading && menuItems.length === 0;
+
+                    return (
+                      <div key={c.key}>
+                        {/* 카테고리 행 (폴더 행) */}
+                        <div className={`flex items-center gap-0 ${isCatActive && isExpanded ? "bg-sky-50/60" : ""}`}>
                           <button
                             type="button"
-                            onClick={() => selectItem(row)}
-                            className={`w-full text-left px-3 py-2 flex items-center gap-2 transition ${
-                              active ? "bg-sky-100/60" : "hover:bg-sky-50/40"
-                            } cursor-pointer`}
-                            title={hasFile ? "PDF 인라인 표시" : "파일 없음"}
+                            onClick={() => handleCatClickTree(c.key)}
+                            className={`flex-1 text-left px-2.5 py-2 flex items-center gap-2 transition cursor-pointer min-w-0 ${
+                              isCatActive ? "text-sky-800" : "text-slate-800 hover:bg-slate-50"
+                            }`}
+                            title={isExpanded ? "접기" : "펼치기"}
                           >
-                            <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
-                              hasFile ? "bg-sky-100 text-sky-600" : "bg-slate-100 text-slate-400"
-                            }`}>
-                              <FileTextIcon size={12} />
+                            {/* 펼침/접힘 화살표 */}
+                            <span className={`text-slate-400 shrink-0 transition-transform duration-150 ${isExpanded ? "rotate-0" : "-rotate-90"}`}>
+                              {isExpanded
+                                ? <ChevronDown size={13} className={isCatActive ? "text-sky-500" : "text-slate-400"} />
+                                : <ChevronRight size={13} className="text-slate-400" />
+                              }
+                            </span>
+                            {/* 폴더 아이콘 */}
+                            <span className="shrink-0">
+                              {isExpanded
+                                ? <FolderOpen size={14} className="text-sky-500" weight="fill" />
+                                : <Folder size={14} className={isCatActive ? "text-sky-400" : "text-slate-400"} weight="fill" />
+                              }
+                            </span>
+                            {/* 카테고리 텍스트 */}
+                            <div className="min-w-0 flex-1">
+                              <div className={`text-[12.5px] font-bold leading-tight break-words whitespace-normal ${isCatActive ? "text-sky-800" : "text-slate-800"}`}>
+                                {c.title}
+                              </div>
+                              <div className="text-[10px] text-slate-500 leading-tight">{c.subtitle}</div>
+                            </div>
+                          </button>
+                          {/* 관리자 · [+] 버튼 */}
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => { setSelectedCat(c.key); setExpandedCats(prev => { const n = new Set(prev); n.add(c.key); return n; }); setSettingsOpen(true); }}
+                              className="shrink-0 w-6 h-6 mr-2 rounded flex items-center justify-center text-slate-400 hover:text-sky-600 hover:bg-sky-50 transition cursor-pointer"
+                              title="이 카테고리에 하위메뉴 추가"
+                            >
+                              <Plus size={11} />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* 하위메뉴 (펼쳐진 상태 · 선택된 카테고리만) */}
+                        {isExpanded && isCatActive && (
+                          <div className="border-l-2 border-sky-100 ml-6">
+                            {showLoading && (
+                              <div className="pl-4 py-2 flex items-center gap-1.5 text-slate-400">
+                                <Loader2 size={11} className="animate-spin" />
+                                <span className="text-[10.5px] font-bold">불러오는 중...</span>
+                              </div>
+                            )}
+                            {menuError && (
+                              <div className="pl-4 py-1.5 text-[10px] text-rose-600 font-semibold">
+                                {menuError}
+                              </div>
+                            )}
+                            {showEmpty && (
+                              <div className="pl-4 py-2 text-[10.5px] text-slate-400 italic">
+                                {isAdmin ? "[ + ] 버튼으로 등록하세요" : "등록된 자료 없음"}
+                              </div>
+                            )}
+                            {showItems && menuItems.map(row => {
+                              const hasFile = !!row.file_url;
+                              const itemActive = selectedItem?.id === row.id;
+                              return (
+                                <button
+                                  key={row.id}
+                                  type="button"
+                                  onClick={() => selectItem(row)}
+                                  className={`w-full text-left pl-5 pr-3 py-1.5 flex items-center gap-2 transition cursor-pointer ${
+                                    itemActive ? "bg-sky-100/70" : "hover:bg-sky-50/50"
+                                  }`}
+                                  title={hasFile ? "PDF 인라인 표시" : "파일 없음"}
+                                >
+                                  <FileIcon
+                                    size={12}
+                                    className={hasFile ? (itemActive ? "text-sky-600" : "text-slate-400") : "text-slate-300"}
+                                    weight="fill"
+                                  />
+                                  <div className="min-w-0 flex-1">
+                                    <div className={`text-[11.5px] font-bold leading-tight break-words whitespace-normal ${itemActive ? "text-sky-800" : "text-slate-700"}`}>
+                                      {row.title}
+                                    </div>
+                                    {row.file_name && (
+                                      <div className="text-[9.5px] text-slate-400 font-semibold leading-tight">
+                                        {fmtBytes(row.file_size)}
+                                      </div>
+                                    )}
+                                  </div>
+                                  {itemActive && <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-sky-500" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {/* 구분선 */}
+                        <div className="border-b border-slate-100 mx-0" />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              /* ─── 나머지 탭 · 기존 stacked 2단 ──────────── */
+              <>
+                {/* 카테고리 리스트 */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+                  <div className="px-3 py-2 border-b border-slate-100 bg-slate-50/60 flex items-center gap-1.5">
+                    {activeTabDef.icon && <activeTabDef.icon size={14} className="text-slate-500" weight="fill" />}
+                    <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider">{activeTabDef.label} · 카테고리</span>
+                    <span className="ml-auto text-[10px] font-bold text-slate-400 tabular-nums">{categories.length}건</span>
+                  </div>
+                  <ul className="divide-y divide-slate-100 max-h-[38vh] overflow-y-auto">
+                    {categories.map(c => {
+                      const active = selectedCat === c.key;
+                      return (
+                        <li key={c.key}>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedCat(c.key)}
+                            className={`w-full text-left px-3 py-2 flex items-start gap-2 transition cursor-pointer ${active ? "bg-sky-50/70" : "hover:bg-slate-50"}`}
+                          >
+                            <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${active ? "bg-sky-100 text-sky-600" : "bg-slate-100 text-slate-500"}`}>
+                              <Folder size={12} weight="fill" />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <div className={`text-[12px] font-bold truncate ${active ? "text-sky-800" : "text-slate-800"}`}>{row.title}</div>
-                              {row.file_name && (
-                                <div className="text-[10px] text-slate-400 truncate font-semibold">
-                                  {row.file_name}{row.file_size ? ` · ${fmtBytes(row.file_size)}` : ""}
-                                </div>
-                              )}
+                              <div className={`text-[12.5px] font-bold leading-tight ${active ? "text-sky-800" : "text-slate-800"}`}>{c.title}</div>
+                              <div className="text-[10.5px] text-slate-500 mt-0.5">{c.subtitle}</div>
                             </div>
                           </button>
                         </li>
                       );
                     })}
                   </ul>
+                </div>
+
+                {/* 하위메뉴 리스트 · 선택된 카테고리 · 관리자 CRUD 버튼 포함 */}
+                {selectedCatObj && (
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+                    <div className="px-3 py-2 border-b border-slate-100 bg-gradient-to-r from-sky-50/60 to-transparent flex items-center gap-1.5">
+                      <FileTextIcon size={13} className="text-sky-600" />
+                      <span className="text-[11px] font-black text-sky-700 uppercase tracking-wider break-words whitespace-normal">{selectedCatObj.title}</span>
+                      <span className="ml-auto text-[10px] font-bold text-slate-400 tabular-nums shrink-0">{menuItems.length}건</span>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => setSettingsOpen(true)}
+                          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-sky-600 hover:bg-sky-700 text-white text-[10px] font-bold cursor-pointer transition shadow-sm shrink-0"
+                          title="하위메뉴 추가·수정·삭제"
+                        >
+                          <Plus size={10} />관리
+                        </button>
+                      )}
+                    </div>
+                    {menuError && (
+                      <div className="px-3 py-1.5 text-[10.5px] text-rose-700 font-semibold bg-rose-50 border-b border-rose-200">
+                        {menuError}
+                      </div>
+                    )}
+                    {menuLoading ? (
+                      <div className="p-6 flex items-center justify-center gap-2 text-slate-400">
+                        <Loader2 size={13} className="animate-spin" />
+                        <span className="text-[11px] font-bold">불러오는 중...</span>
+                      </div>
+                    ) : menuItems.length === 0 ? (
+                      <div className="p-6 text-center text-[11px] text-slate-400">
+                        {isAdmin ? "관리 버튼으로 등록하세요" : "등록된 자료 없음"}
+                      </div>
+                    ) : (
+                      <ul className="divide-y divide-slate-100 max-h-[38vh] overflow-y-auto">
+                        {menuItems.map(row => {
+                          const hasFile = !!row.file_url;
+                          const active = selectedItem?.id === row.id;
+                          return (
+                            <li key={row.id}>
+                              <button
+                                type="button"
+                                onClick={() => selectItem(row)}
+                                className={`w-full text-left px-3 py-2 flex items-center gap-2 transition ${
+                                  active ? "bg-sky-100/60" : "hover:bg-sky-50/40"
+                                } cursor-pointer`}
+                                title={hasFile ? "PDF 인라인 표시" : "파일 없음"}
+                              >
+                                <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
+                                  hasFile ? "bg-sky-100 text-sky-600" : "bg-slate-100 text-slate-400"
+                                }`}>
+                                  <FileTextIcon size={12} />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className={`text-[12px] font-bold break-words whitespace-normal ${active ? "text-sky-800" : "text-slate-800"}`}>{row.title}</div>
+                                  {row.file_name && (
+                                    <div className="text-[10px] text-slate-400 font-semibold">
+                                      {row.file_name}{row.file_size ? ` · ${fmtBytes(row.file_size)}` : ""}
+                                    </div>
+                                  )}
+                                </div>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
                 )}
-              </div>
+              </>
             )}
           </div>
 
