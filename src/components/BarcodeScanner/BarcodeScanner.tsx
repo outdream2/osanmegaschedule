@@ -224,13 +224,13 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
         className="bg-gray-950 rounded-2xl overflow-hidden shadow-2xl w-full max-w-sm border border-gray-800"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-800">
-          <div className="flex items-center gap-2 text-white">
+        {/* Header · 2026-08-05 · 제목 세로 표시 fix · whitespace-nowrap + 배지 flex-wrap */}
+        <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-800 gap-2">
+          <div className="flex items-center gap-2 text-white shrink-0">
             <ScanLine size={15} className="text-emerald-400" />
-            <span className="text-sm font-bold">{title}</span>
+            <span className="text-sm font-bold whitespace-nowrap">{title}</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap justify-end min-w-0">
             {/* Engine indicators */}
             <div className="flex items-center gap-1.5">
               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-900/60 border border-emerald-700 text-emerald-400 text-[10px] font-bold">
