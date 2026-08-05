@@ -2,10 +2,18 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
+import compression from 'vite-plugin-compression';
 
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      // T28 · Brotli 압축 (2026-08-05) · 청크 크기 15~25% 추가 감소 (gzip 대비)
+      //   · 프로덕션 빌드만 · .br 파일 생성 (Render/Nginx 자동 서빙)
+      compression({ algorithm: 'brotliCompress', ext: '.br', threshold: 10240, deleteOriginFile: false }),
+      compression({ algorithm: 'gzip',           ext: '.gz', threshold: 10240, deleteOriginFile: false }),
+    ],
     optimizeDeps: {
       exclude: ["@undecaf/zbar-wasm", "@ericblade/quagga2"],
     },
