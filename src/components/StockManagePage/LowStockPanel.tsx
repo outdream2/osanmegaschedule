@@ -7,6 +7,9 @@ import { AlertTriangle, Check, X as XIcon, Loader2 as LoaderIcon, Pencil, Chevro
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
+import { EmptyState } from "../common/EmptyState";
+import { LoadingState } from "../common/LoadingState";
+import { CARD_BASE, TEXT } from "../../styles/tokens";
 
 // ── ProductLite (low-stock API 응답 shape) ───────────────────────────────
 interface ProductLite {
@@ -193,13 +196,13 @@ export const LowStockPanel: React.FC = () => {
   return (
     <div className="flex flex-col gap-2">
       {/* ── 상단 필터바 ── */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+      <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
         <div className="flex items-center gap-2">
           <AlertTriangle size={14} className="text-rose-500 shrink-0" />
-          <span className="text-[13px] font-semibold text-slate-800">추천적정재고 이하</span>
+          <span className={`${TEXT.body} text-slate-800`}>추천적정재고 이하</span>
           <span className="text-[11px] font-semibold text-rose-600 bg-rose-100 rounded-full px-2 py-0.5 tabular-nums">{lowStock.length}개</span>
         </div>
-        <span className="text-[11px] text-slate-400">현재고 &lt; 추천적정재고 · 상품명 클릭 → 상세</span>
+        <span className={`${TEXT.caption} text-slate-400`}>현재고 &lt; 추천적정재고 · 상품명 클릭 → 상세</span>
         {/* 분류 세그먼트 필터 */}
         <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
           {(["전체", "위탁", "선결제", "60일회전", "90일회전", "기타"] as const).map(cat => (
@@ -234,7 +237,7 @@ export const LowStockPanel: React.FC = () => {
           className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
           style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? lowPanelWidth : undefined }}
         >
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
+          <div className={`${CARD_BASE} flex-1 min-h-0 flex flex-col overflow-hidden`}>
             {!lowStockCollapsed && (
               <div className="flex-1 overflow-y-auto relative">
                 {loading && lowStock.length > 0 && (
@@ -243,15 +246,13 @@ export const LowStockPanel: React.FC = () => {
                   </div>
                 )}
                 {loading && lowStock.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center gap-3 py-10">
-                    <div className="w-9 h-9 border-4 border-rose-100 border-t-rose-400 rounded-full animate-spin" />
-                    <div className="text-[11px] font-semibold text-slate-500">데이터 로딩중...</div>
-                  </div>
+                  <LoadingState tone="slate" size="compact" label="데이터 로딩중..." />
                 ) : lowStock.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center gap-2 py-12 text-slate-400">
-                    <AlertTriangle size={28} className="opacity-20" />
-                    <div className="text-[12px] font-semibold">추천적정재고 이하 상품 없음</div>
-                  </div>
+                  <EmptyState
+                    icon={AlertTriangle}
+                    title="추천적정재고 이하 상품 없음"
+                    size="compact"
+                  />
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs sm:min-w-[480px]">

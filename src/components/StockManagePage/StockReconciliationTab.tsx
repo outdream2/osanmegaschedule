@@ -12,7 +12,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
   RefreshCw,
-  Loader2,
   Search,
   ArrowUpDown,
   ArrowUp,
@@ -24,6 +23,9 @@ import {
 } from "lucide-react";
 import type { AuthSession } from "../../types";
 import { useSortableTable } from "../../hooks/useSortableTable";
+import { EmptyState } from "../common/EmptyState";
+import { LoadingState } from "../common/LoadingState";
+import { CARD_BASE, TEXT } from "../../styles/tokens";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -217,11 +219,11 @@ export const StockReconciliationTab: React.FC<{
     <div className="flex-1 flex flex-col min-h-0 gap-3">
 
       {/* ── 헤더 카드 ── */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-3 flex flex-wrap items-center gap-2">
+      <div className={`${CARD_BASE} p-3 flex flex-wrap items-center gap-2`}>
         <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
           <CheckCircle2 size={14} className="text-emerald-600" />
         </div>
-        <span className="text-[13px] font-semibold text-slate-700">실재고</span>
+        <span className={`${TEXT.body} text-slate-700`}>실재고</span>
         <span className="text-[11px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 tabular-nums">
           차이 있는 상품 {diffCount}개
         </span>
@@ -257,7 +259,7 @@ export const StockReconciliationTab: React.FC<{
       </div>
 
       {/* ── 필터바 ── */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-2 flex flex-wrap items-center gap-2">
+      <div className={`${CARD_BASE} p-2 flex flex-wrap items-center gap-2`}>
         <div className="relative flex-1 min-w-[200px]">
           <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -295,33 +297,23 @@ export const StockReconciliationTab: React.FC<{
       </div>
 
       {/* ── 리스트 카드 ── */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex-1 min-h-0 flex flex-col">
+      <div className={`${CARD_BASE} overflow-hidden flex-1 min-h-0 flex flex-col`}>
         {error ? (
-          <div className="py-12 flex items-center justify-center gap-2 text-rose-600 text-[13px] font-semibold">
-            <AlertTriangle size={16} /> {error}
-          </div>
+          <EmptyState
+            icon={AlertTriangle}
+            title="로드 실패"
+            hint={error}
+            size="compact"
+          />
         ) : loading && rows.length === 0 ? (
-          <div className="py-12 flex items-center justify-center gap-2 text-slate-400 text-[13px] font-semibold">
-            <Loader2 size={16} className="animate-spin" /> 실재고 대사 계산 중...
-          </div>
+          <LoadingState tone="emerald" size="compact" label="실재고 대사 계산 중..." />
         ) : diffCount === 0 ? (
-          <div className="py-16 flex flex-col items-center justify-center gap-3 text-slate-400">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
-              <CheckCircle2 size={24} className="text-emerald-400" />
-            </div>
-            <div className="text-center">
-              <p className="text-[13px] font-bold text-slate-500">
-                {rows.length === 0
-                  ? "실재고가 입력된 상품이 없습니다"
-                  : "ERP 재고와 실재고가 모두 일치합니다"}
-              </p>
-              <p className="text-[11px] text-slate-400 mt-1">
-                {rows.length === 0
-                  ? "'실재고입력' 탭에서 바코드 스캔 후 저장하세요"
-                  : "필터 조건을 확인하거나 새로고침해보세요"}
-              </p>
-            </div>
-          </div>
+          <EmptyState
+            icon={CheckCircle2}
+            title={rows.length === 0 ? "실재고가 입력된 상품이 없습니다" : "ERP 재고와 실재고가 모두 일치합니다"}
+            hint={rows.length === 0 ? "'실재고입력' 탭에서 바코드 스캔 후 저장하세요" : "필터 조건을 확인하거나 새로고침해보세요"}
+            size="normal"
+          />
         ) : (
           <div className="overflow-auto flex-1 min-h-0">
             <table className="w-full text-[12px] border-collapse">
@@ -379,9 +371,9 @@ export const StockReconciliationTab: React.FC<{
                       <td className="px-2 py-1.5 text-slate-400 tabular-nums">{i + 1}</td>
                       <td className="px-2 py-1.5">
                         <p className="text-[12px] font-bold text-slate-800 leading-snug break-words">{r.product_name}</p>
-                        <p className="text-[10px] font-mono text-slate-400 mt-0.5">#{r.product_code}</p>
+                        <p className="text-[10px] tabular-nums text-slate-400 mt-0.5">#{r.product_code}</p>
                       </td>
-                      <td className="px-2 py-1.5 text-slate-600 truncate max-w-[160px]" title={r.supplier ?? ""}>
+                      <td className="px-2 py-1.5 text-slate-600 break-words max-w-[160px]" title={r.supplier ?? ""}>
                         {r.supplier ?? <span className="text-slate-300">-</span>}
                       </td>
                       <td className="px-2 py-1.5 text-right text-slate-700 font-bold tabular-nums">{r.erp_qty}</td>

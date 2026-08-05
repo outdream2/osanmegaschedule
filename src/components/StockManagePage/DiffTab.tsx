@@ -9,6 +9,9 @@ import { VendorDetailModal } from "../LandingPage/VendorListEditor";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { matchClassFilter, type ClassFilter } from "../../utils/productClassify";
 import { useVendors } from "../../hooks/useVendors";
+import { EmptyState } from "../common/EmptyState";
+import { LoadingState } from "../common/LoadingState";
+import { CARD_BASE, TEXT } from "../../styles/tokens";
 
 function fmt(n: number): string {
   if (!Number.isFinite(n)) return "0";
@@ -132,12 +135,12 @@ export const DiffTab: React.FC = () => {
   return (
     <div className="flex flex-col gap-2">
       {/* ── 상단 필터바 ── */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+      <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
         <div className="flex items-center gap-2">
           <Layers size={14} className="text-violet-500 shrink-0" />
-          <span className="text-[13px] font-semibold text-slate-800">손실추적</span>
+          <span className={`${TEXT.body} text-slate-800`}>손실추적</span>
           <span className="text-[11px] font-semibold text-violet-600 bg-violet-50 rounded-full px-2 py-0.5 border border-violet-200 tabular-nums">{diffList.length}건</span>
-          <span className="text-[11px] text-slate-400 hidden sm:inline">실재고(창고+매장) ↔ ERP 차이 · 도난·파손·미기록 판매·재고 오류 · 상품명 클릭 → 상세</span>
+          <span className={`${TEXT.caption} text-slate-400 hidden sm:inline`}>실재고(창고+매장) ↔ ERP 차이 · 도난·파손·미기록 판매·재고 오류 · 상품명 클릭 → 상세</span>
         </div>
         <button
           type="button"
@@ -157,7 +160,7 @@ export const DiffTab: React.FC = () => {
           className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
           style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? diffPanelWidth : undefined }}
         >
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
+          <div className={`${CARD_BASE} flex-1 min-h-0 flex flex-col overflow-hidden`}>
             {/* 상비약/일반약/전체 3-way 필터 */}
             <div className="flex items-center gap-1 border-b-2 border-slate-200 bg-white px-2 pt-1 shrink-0">
               <button type="button" onClick={() => setClassFilter("stationery")}
@@ -183,16 +186,14 @@ export const DiffTab: React.FC = () => {
                 </div>
               )}
               {loading && diffList.length === 0 ? (
-                <div className="flex flex-col items-center justify-center gap-3 py-10">
-                  <div className="w-9 h-9 border-4 border-violet-100 border-t-violet-400 rounded-full animate-spin" />
-                  <div className="text-[11px] font-semibold text-slate-500">데이터 로딩중...</div>
-                </div>
+                <LoadingState tone="slate" size="compact" label="데이터 로딩중..." />
               ) : diffList.length === 0 ? (
-                <div className="flex flex-col items-center justify-center gap-2 py-12 text-slate-400">
-                  <Layers size={28} className="opacity-20" />
-                  <div className="text-[12px] font-semibold">차이 있는 상품 없음</div>
-                  <div className="text-[11px] text-slate-300">실재고와 ERP 현재고가 일치합니다</div>
-                </div>
+                <EmptyState
+                  icon={Layers}
+                  title="차이 있는 상품 없음"
+                  hint="실재고와 ERP 현재고가 일치합니다"
+                  size="compact"
+                />
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs sm:min-w-[280px]">

@@ -17,6 +17,9 @@ import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";
 import { matchClassFilter, type ClassFilter } from "../../utils/productClassify";
+import { EmptyState } from "../common/EmptyState";
+import { LoadingState } from "../common/LoadingState";
+import { CARD_BASE, TEXT } from "../../styles/tokens";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -447,10 +450,10 @@ export const FlowTab: React.FC = () => {
     <div className="flex flex-col gap-2">
 
       {/* 상단 필터바 */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+      <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
         <div className="flex items-center gap-2">
           <Boxes size={14} className="text-sky-500 shrink-0" />
-          <span className="text-[13px] font-semibold text-slate-800">상품현황리스트</span>
+          <span className={`${TEXT.body} text-slate-800`}>상품현황리스트</span>
           <span className="text-[11px] font-semibold text-sky-600 bg-sky-50 rounded-full px-2 py-0.5 border border-sky-200 tabular-nums">{filteredFlow.length}건</span>
         </div>
 
@@ -587,7 +590,7 @@ export const FlowTab: React.FC = () => {
           className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
           style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? flowPanelWidth : undefined }}
         >
-          <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex-1 min-h-0 flex flex-col overflow-hidden">
+          <section className={`${CARD_BASE} p-4 flex-1 min-h-0 flex flex-col overflow-hidden`}>
             <div className="flex-1 min-h-0 flex flex-col">
               {/* 소제목 */}
               <div className="flex items-center gap-2 mb-2 shrink-0">
@@ -628,16 +631,14 @@ export const FlowTab: React.FC = () => {
 
                 {filteredFlow.length === 0 ? (
                   loading ? (
-                    <div className="flex flex-col items-center justify-center gap-3 py-8">
-                      <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
-                      <div className="text-xs font-black text-slate-600">데이터 로딩중...</div>
-                    </div>
+                    <LoadingState tone="slate" size="compact" label="데이터 로딩중..." />
                   ) : (
-                    <div className="text-center text-[13px] text-slate-300 py-6">
-                      {stockFlow.length === 0
-                        ? "재고 데이터 없음 (재고현황 xlsx 업로드 필요)"
-                        : "선택한 판매수량 범위에 해당하는 상품 없음"}
-                    </div>
+                    <EmptyState
+                      icon={Boxes}
+                      title={stockFlow.length === 0 ? "재고 데이터 없음" : "해당 상품 없음"}
+                      hint={stockFlow.length === 0 ? "재고현황 xlsx 업로드 필요" : "선택한 판매수량 범위에 해당하는 상품 없음"}
+                      size="compact"
+                    />
                   )
                 ) : (
                   <div className={`transition-opacity duration-200 ${loading ? "opacity-60" : "opacity-100"}`}>

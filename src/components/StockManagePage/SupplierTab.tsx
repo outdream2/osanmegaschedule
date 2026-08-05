@@ -12,6 +12,9 @@ import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/produ
 import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { ProductPurchaseHistoryModal } from "./ProductPurchaseHistoryModal";
+import { LoadingState } from "../common/LoadingState";
+import { EmptyState } from "../common/EmptyState";
+import { CARD_BASE, TEXT } from "../../styles/tokens";
 
 function fmt(n: number): string {
   if (!Number.isFinite(n)) return "0";
@@ -369,7 +372,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
       {/* 카드 헤더 */}
       <div className="flex items-center gap-2 px-4 h-10 border-b border-slate-100 bg-white shrink-0">
         <Building2 size={14} className="text-sky-500 shrink-0" />
-        <span className="text-[13px] font-semibold text-slate-800">공급사별 현황</span>
+        <span className={`${TEXT.body} text-slate-800`}>공급사별 현황</span>
         <span className="text-[11px] font-semibold tabular-nums text-slate-400 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5">
           {displayedXlsxSuppliers.length}{supListLimit < xlsxSuppliers.length ? `/${xlsxSuppliers.length}` : ""}개 사
         </span>
@@ -431,12 +434,9 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         )}
         {xlsxSuppliers.length === 0 ? (
           loading ? (
-            <div className="flex flex-col items-center justify-center gap-3 py-10">
-              <div className="w-9 h-9 border-4 border-slate-200 border-t-sky-500 rounded-full animate-spin" />
-              <div className="text-[13px] font-semibold text-slate-500">데이터 로딩중...</div>
-            </div>
+            <LoadingState tone="sky" size="compact" label="데이터 로딩중..." />
           ) : (
-            <div className="text-center text-[13px] text-slate-400 py-10 font-semibold">데이터 없음</div>
+            <EmptyState icon={Building2} title="데이터 없음" size="compact" />
           )
         ) : (
           <table className={`w-full text-[13px] ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`} style={{ borderCollapse: "separate", borderSpacing: 0 }}>
@@ -659,7 +659,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
           </button>
         </div>
         {/* 좌측 리스트 카드 */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col">
+        <div className={`${CARD_BASE} flex-1 min-h-0 flex flex-col`}>
           {renderSupplierListCard()}
         </div>
         {/* 공급사 상세 모달 (embedded 에서도 사용 가능하도록 유지) */}
@@ -677,12 +677,12 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   return (
     <div className="flex flex-col gap-2">
       {/* ── 상단 필터바 ── */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+      <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
         <div className="flex items-center gap-2">
           <Building2 size={14} className="text-sky-500 shrink-0" />
-          <span className="text-[13px] font-semibold text-slate-800">공급사현황</span>
+          <span className={`${TEXT.body} text-slate-800`}>공급사현황</span>
           <span className="text-[11px] font-semibold text-sky-600 bg-sky-50 rounded-full px-2 py-0.5 border border-sky-200 tabular-nums">{displayedXlsxSuppliers.length}개 사</span>
-          <span className="text-[11px] text-slate-400 hidden sm:inline">행 클릭 → 우측 상품 리스트 · 상품명 클릭 → 상세</span>
+          <span className={`${TEXT.caption} text-slate-400 hidden sm:inline`}>행 클릭 → 우측 상품 리스트 · 상품명 클릭 → 상세</span>
         </div>
         {/* 조회기간 */}
         <div className="flex items-center gap-1.5">
@@ -719,7 +719,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         {/* 좌측: 공급사 리스트 */}
         <div className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
           style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? supplierPanelWidth : undefined }}>
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
+          <div className={`${CARD_BASE} flex-1 min-h-0 flex flex-col overflow-hidden`}>
             {renderSupplierListCard()}
           </div>
         </div>
