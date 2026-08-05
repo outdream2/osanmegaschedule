@@ -23,6 +23,7 @@ import {
   Filter,
 } from "lucide-react";
 import type { AuthSession } from "../../types";
+import { useSortableTable } from "../../hooks/useSortableTable";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -108,8 +109,6 @@ export const StockReconciliationTab: React.FC<{
   const [rows, setRows] = useState<DiffRow[]>([]);
   const [query, setQuery] = useState("");
   const [supplierFilter, setSupplierFilter] = useState<string>("");
-  const [sortKey, setSortKey] = useState<SortKey>("diff");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [refreshedAt, setRefreshedAt] = useState<Date | null>(null);
 
   // ── Data load ─────────────────────────────────────────────────────────────
@@ -177,9 +176,9 @@ export const StockReconciliationTab: React.FC<{
     return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
   }, [rows]);
 
-  const visibleRows = useMemo(() => {
+  const filteredRows = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let arr = rows.filter(r => {
+    return rows.filter(r => {
       if (supplierFilter && (r.supplier ?? "") !== supplierFilter) return false;
       if (q) {
         const hay = `${r.product_name} ${r.product_code} ${r.supplier ?? ""}`.toLowerCase();
@@ -187,32 +186,18 @@ export const StockReconciliationTab: React.FC<{
       }
       return true;
     });
-    const sign = sortDir === "asc" ? 1 : -1;
-    arr = arr.slice().sort((a, b) => {
-      switch (sortKey) {
-        case "name":
-          return sign * a.product_name.localeCompare(b.product_name, "ko");
-        case "supplier":
-          return sign * (a.supplier ?? "").localeCompare(b.supplier ?? "", "ko");
-        case "erp":
-          return sign * (a.erp_qty - b.erp_qty);
-        case "actual":
-          return sign * (a.actual_qty - b.actual_qty);
-        case "checked_at":
-          return sign * ((new Date(a.checked_at ?? 0).getTime()) - (new Date(b.checked_at ?? 0).getTime()));
-        case "diff":
-        default:
-          // 기본: 절대값 큰 순 (문제 있는 것 먼저)
-          return sign * (Math.abs(a.diff) - Math.abs(b.diff));
-      }
-    });
-    return arr;
-  }, [rows, query, supplierFilter, sortKey, sortDir]);
+  }, [rows, query, supplierFilter]);
 
-  const toggleSort = (k: SortKey) => {
-    if (sortKey === k) setSortDir(d => (d === "asc" ? "desc" : "asc"));
-    else { setSortKey(k); setSortDir("desc"); }
-  };
+  // 공용 정렬 훅 (T30-followup · 22파일 중복 통합의 두번째 채택자)
+  const sortComparators = useMemo<Record<SortKey, (a: DiffRow, b: DiffRow) => number>>(() => ({
+    name:       (a, b) => a.product_name.localeCompare(b.product_name, "ko"),
+    supplier:   (a, b) => (a.supplier ?? "").localeCompare(b.supplier ?? "", "ko"),
+    erp:        (a, b) => a.erp_qty - b.erp_qty,
+    actual:     (a, b) => a.actual_qty - b.actual_qty,
+    checked_at: (a, b) => (new Date(a.checked_at ?? 0).getTime()) - (new Date(b.checked_at ?? 0).getTime()),
+    diff:       (a, b) => Math.abs(a.diff) - Math.abs(b.diff), // 절대값 큰 순 (asc = 작은 차이부터)
+  }), []);
+  const { sorted: visibleRows, sortKey, sortDir, toggleSort } = useSortableTable<DiffRow, SortKey>(filteredRows, "diff", sortComparators, "desc");
 
   const SortIcon: React.FC<{ k: SortKey }> = ({ k }) => {
     if (sortKey !== k) return <ArrowUpDown size={10} className="text-slate-300 ml-0.5 inline" />;

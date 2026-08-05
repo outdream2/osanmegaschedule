@@ -99,11 +99,9 @@
 - 데이터 소스: supplier-purchase-detail (기존 monthly 조회 rows 재활용 · 파생컬럼 X · 서버 신규 없음)
 - 잔고 KPI 는 기존 월별 표에 amber 강조 컬럼으로 유지
 
-### T23. 매입이력 UX · Phase A~C (좌 카드+우 KPI+탭 3개)
-- Phase A: 좌측 vendor 카드 (스파크라인·SKU수) 1.5h
-- Phase B: 우측 상단 정보+KPI 2h
-- Phase C: 우측 하단 탭 3개 (원장·집계·추이) 2h
-- 총 4~6h · 스파크라인 virtualize · RPC N+1 통합
+### ~~T23. 매입이력 UX Phase A~C~~ ✅ 이미 완료 (2026-08-03)
+- VendorRowCard (143줄 · sparkline·SKU) · VendorHeaderPanel (246줄 · KPI 4카드) · PurchaseSubTabs (693줄 · 3탭)
+- ProductRowCard/ProductPurchaseDetailPanel · by-product 뷰 추가 (#191)
 
 ### 【약사·기타 UI】
 
