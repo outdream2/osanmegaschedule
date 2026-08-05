@@ -993,12 +993,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight leading-tight">
                       매장관리
                     </div>
-                    <div className="text-slate-400 text-[10px] leading-tight block mt-0.5">
+                    <div className="text-slate-400 text-[11px] sm:text-[13px] leading-tight block mt-0.5">
                       매장 · 발주 · 매입 · 결제 · 통계 · 입고알림
-                    </div>
-                    <div className="flex items-center gap-1 mt-2 text-sky-600 text-xs font-bold">
-                      <span className="text-[11px] sm:text-xs">관리하기</span>
-                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>
                 </button>
@@ -1017,11 +1013,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       <Briefcase size={16} className="text-violet-600 sm:hidden" weight="fill" /><Briefcase size={20} className="text-violet-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight leading-tight">경영관리</div>
-                    <div className="text-slate-400 text-[10px] leading-tight block mt-0.5">직원관리 · 연차승인 · 점심불참 · 권한</div>
-                    <div className="flex items-center gap-1 mt-2 text-violet-600 text-xs font-bold">
-                      <span className="text-[11px] sm:text-xs">{leavePendingCount > 0 ? `대기 ${leavePendingCount}건` : "관리하기"}</span>
-                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                    </div>
+                    <div className="text-slate-400 text-[11px] sm:text-[13px] leading-tight block mt-0.5">직원관리 · 연차승인 · 점심불참 · 권한</div>
                   </div>
                 </button>
 
@@ -1040,11 +1032,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       <List size={16} className="text-indigo-600 sm:hidden" weight="fill" /><List size={20} className="text-indigo-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">요청목록 조회</div>
-                    <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">진열·발주요청 및 배치구역 불일치 확인</div>
-                    <div className="flex items-center gap-1 mt-2 text-indigo-600 text-xs font-bold">
-                      <span className="text-[11px] sm:text-xs">{(requestsCounts.display + requestsCounts.order + requestsCounts.mismatch + requestsCounts.lunch) > 0 ? `대기 ${requestsCounts.display + requestsCounts.order + requestsCounts.mismatch + requestsCounts.lunch}건` : "조회하기"}</span>
-                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                    </div>
+                    <div className="text-slate-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">진열·발주요청 및 배치구역 불일치 확인</div>
                   </div>
                 </button>
 
@@ -1060,11 +1048,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                         <Table size={16} className="text-orange-500 sm:hidden" weight="fill" /><Table size={20} className="text-orange-500 hidden sm:block" weight="fill" />
                       </div>
                       <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">데이터 업로드</div>
-                      <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">상품목록 · 재고리스트 xlsx 업로드</div>
-                      <div className="flex items-center gap-1 mt-2 text-orange-500 text-xs font-bold">
-                        <span className="text-[11px] sm:text-xs">업로드하기</span>
-                        <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                      </div>
+                      <div className="text-slate-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">상품목록 · 재고리스트 xlsx 업로드</div>
                     </div>
                   </button>
                 )}
@@ -1083,11 +1067,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                         <ShieldCheck size={16} className="text-fuchsia-600 sm:hidden" weight="fill" /><ShieldCheck size={20} className="text-fuchsia-600 hidden sm:block" weight="fill" />
                       </div>
                       <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">설정</div>
-                      <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">권한 · 근무 유형 · 시급 등 앱 전체 설정</div>
-                      <div className="flex items-center gap-1 mt-2 text-fuchsia-600 text-xs font-bold">
-                        <span className="text-[11px] sm:text-xs">설정하기</span>
-                        <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                      </div>
+                      <div className="text-slate-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">권한 · 근무 유형 · 시급 등 앱 전체 설정</div>
                     </div>
                   </button>
                 )}
@@ -1121,11 +1101,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                         <FirstAid size={16} className="text-sky-600 sm:hidden" weight="fill" /><FirstAid size={20} className="text-sky-600 hidden sm:block" weight="fill" />
                       </div>
                       <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight leading-tight">약사 전용</div>
-                      <div className="text-slate-400 text-[10px] leading-tight block mt-0.5">교육자료 · 복약지도 · 참고 문서</div>
-                      <div className="flex items-center gap-1 mt-2 text-sky-600 text-xs font-bold">
-                        <span className="text-[11px] sm:text-xs">열기</span>
-                        <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                      </div>
+                      <div className="text-slate-400 text-[11px] sm:text-[13px] leading-tight block mt-0.5">교육자료 · 복약지도 · 참고 문서</div>
                     </div>
                   </button>
                 )}
@@ -1139,11 +1115,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       <Calendar size={16} className="text-blue-600 sm:hidden" weight="fill" /><Calendar size={20} className="text-blue-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">스케줄표 조회</div>
-                    <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">직원 월간 근무 스케줄 확인 및 관리</div>
-                    <div className="flex items-center gap-1 mt-2 text-blue-600 text-xs font-bold">
-                      <span className="text-[11px] sm:text-xs">입장하기</span>
-                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                    </div>
+                    <div className="text-slate-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">직원 월간 근무 스케줄 확인 및 관리</div>
                   </div>
                 </button>
 
@@ -1156,11 +1128,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       <Scan size={16} className="text-violet-600 sm:hidden" weight="fill" /><Scan size={20} className="text-violet-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">실재고 확인</div>
-                    <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">바코드 스캔 · 실재고·진열보충 요청</div>
-                    <div className="flex items-center gap-1 mt-2 text-violet-600 text-xs font-bold">
-                      <span className="text-[11px] sm:text-xs">스캔하기</span>
-                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                    </div>
+                    <div className="text-slate-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">바코드 스캔 · 실재고·진열보충 요청</div>
                   </div>
                 </button>
 
@@ -1173,11 +1141,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       <Package size={16} className="text-emerald-600 sm:hidden" weight="fill" /><Package size={20} className="text-emerald-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">상품입고</div>
-                    <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">바코드 스캔으로 입고 상품 등록</div>
-                    <div className="flex items-center gap-1 mt-2 text-emerald-600 text-xs font-bold">
-                      <span className="text-[11px] sm:text-xs">입고하기</span>
-                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                    </div>
+                    <div className="text-slate-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">바코드 스캔으로 입고 상품 등록</div>
                   </div>
                 </button>
 
@@ -1190,11 +1154,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       <CalendarDots size={16} className="text-rose-500 sm:hidden" weight="fill" /><CalendarDots size={20} className="text-rose-500 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">연차 신청</div>
-                    <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">휴가·연차 신청 및 내역 조회</div>
-                    <div className="flex items-center gap-1 mt-2 text-rose-500 text-xs font-bold">
-                      <span className="text-[11px] sm:text-xs">신청하기</span>
-                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                    </div>
+                    <div className="text-slate-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">휴가·연차 신청 및 내역 조회</div>
                   </div>
                 </button>
 
@@ -1207,11 +1167,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       <ForkKnife size={16} className="text-red-500 sm:hidden" weight="fill" /><ForkKnife size={20} className="text-red-500 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">점심 불참</div>
-                    <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">오늘의 점심 불참 신청</div>
-                    <div className="flex items-center gap-1 mt-2 text-orange-500 text-xs font-bold">
-                      <span className="text-[11px] sm:text-xs">신청하기</span>
-                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                    </div>
+                    <div className="text-slate-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">오늘의 점심 불참 신청</div>
                   </div>
                 </button>
 
@@ -1251,7 +1207,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                           backgroundImage: "linear-gradient(135deg, #ef4444, #f97316, #eab308, #22c55e, #06b6d4, #8b5cf6)"
                         }}
                       >내 요청목록</div>
-                      <div className="text-slate-500 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">나에게 배정된 진열 보충 요청</div>
+                      <div className="text-slate-500 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">나에게 배정된 진열 보충 요청</div>
                       <div className="flex items-center gap-1 mt-2 text-xs font-bold">
                         <span
                           className="text-[11px] sm:text-xs bg-clip-text text-transparent font-black"
@@ -1261,7 +1217,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                         >
                           {authSession?.employeeName ? `${authSession.employeeName}${authSession.employeeRank ? " " + authSession.employeeRank : ""} 님` : "확인하기"}
                         </span>
-                        <ChevronRight size={11} className="text-indigo-600 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </div>
                   </button>
@@ -1276,11 +1231,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       <ChatCircle size={16} className="text-amber-600 sm:hidden" weight="fill" /><ChatCircle size={20} className="text-amber-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">이슈공유</div>
-                    <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">질문·이슈·메모 · 사진 첨부 · 담당자 지정</div>
-                    <div className="flex items-center gap-1 mt-2 text-amber-600 text-xs font-bold">
-                      <span className="text-[11px] sm:text-xs">보러가기</span>
-                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                    </div>
+                    <div className="text-slate-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">질문·이슈·메모 · 사진 첨부 · 담당자 지정</div>
                   </div>
                 </button>
 
@@ -1411,11 +1362,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       <CalendarCheck size={16} className="text-emerald-600 sm:hidden" weight="fill" /><CalendarCheck size={20} className="text-emerald-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">방문예약</div>
-                    <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">상담 및 방문 일정을 간편하게 예약</div>
-                    <div className="flex items-center gap-1 mt-2 text-emerald-600 text-xs font-bold">
-                      <span className="text-[11px] sm:text-xs">예약하기</span>
-                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                    </div>
+                    <div className="text-slate-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">상담 및 방문 일정을 간편하게 예약</div>
                   </div>
                 </button>
               </div>
