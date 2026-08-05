@@ -3379,25 +3379,39 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               />
             </div>
 
-            {/* 직군 */}
-            <div>
-              <label className={fldLabel}>직군</label>
-              <div className="flex gap-1 flex-wrap">
-                {(["약사", "매장", "창고", "기타"] as const).map(cat => {
-                  const active = form.employeeCategory === cat;
-                  const activeCls =
-                    cat === "약사"  ? "bg-violet-500 text-white border-violet-500" :
-                    cat === "매장"  ? "bg-emerald-500 text-white border-emerald-500" :
-                    cat === "창고"  ? "bg-orange-500 text-white border-orange-500" :
-                                      "bg-slate-600 text-white border-slate-600";
-                  return (
-                    <button key={cat} type="button" onClick={() => upd("employeeCategory", cat)}
-                      className={`flex-1 min-w-[36px] py-1.5 rounded-lg border text-[11.5px] font-bold transition-colors cursor-pointer ${
-                        active ? activeCls : "bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700"
-                      }`}
-                    >{cat}</button>
-                  );
-                })}
+            {/* 직군 + 연차 · 한 줄에 · 반응형 wrap (2026-08-05) */}
+            <div className="col-span-2 flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
+              {/* 직군 · flex-1 */}
+              <div className="flex-1 min-w-0">
+                <label className={fldLabel}>직군</label>
+                <div className="flex gap-1">
+                  {(["약사", "매장", "창고", "기타"] as const).map(cat => {
+                    const active = form.employeeCategory === cat;
+                    const activeCls =
+                      cat === "약사"  ? "bg-violet-500 text-white border-violet-500" :
+                      cat === "매장"  ? "bg-emerald-500 text-white border-emerald-500" :
+                      cat === "창고"  ? "bg-orange-500 text-white border-orange-500" :
+                                        "bg-slate-600 text-white border-slate-600";
+                    return (
+                      <button key={cat} type="button" onClick={() => upd("employeeCategory", cat)}
+                        className={`flex-1 min-w-[36px] py-1.5 rounded-lg border text-[11.5px] font-bold transition-colors cursor-pointer ${
+                          active ? activeCls : "bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700"
+                        }`}
+                      >{cat}</button>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* 연차 일수 · 직군 옆 · 좁게 */}
+              <div className="shrink-0 sm:w-[110px]">
+                <label className={fldLabel}>연차</label>
+                <div className="relative">
+                  <input type="number" min={0} value={form.annualLeaveDays} onChange={(e) => upd("annualLeaveDays", e.target.value)}
+                    placeholder="15"
+                    className="w-full bg-white border border-slate-200 rounded-lg pl-3 pr-8 py-1.5 text-[13px] text-slate-800 font-semibold text-right focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 font-semibold pointer-events-none">일</span>
+                </div>
               </div>
             </div>
           </div>
@@ -3439,17 +3453,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               </div>
             </div>
           )}
-
-          {/* 연차 */}
-          <div className="flex items-center gap-2">
-            <label className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 shrink-0">연차 일수</label>
-            <div className="flex items-center gap-1 ml-auto">
-              <input type="number" min={0} value={form.annualLeaveDays} onChange={(e) => upd("annualLeaveDays", e.target.value)} placeholder="15"
-                className="w-20 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-[13px] text-slate-800 font-semibold text-right focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition"
-              />
-              <span className="text-[11.5px] text-slate-500 font-semibold">일</span>
-            </div>
-          </div>
         </div>
 
         {/* 그룹 B · 연락처 */}
