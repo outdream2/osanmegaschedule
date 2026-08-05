@@ -9,7 +9,7 @@
 //   · 상품별 (신규) · 좌 상품 리스트 · 우 상품별 매입이력
 // Ref · Zoho·QuickBooks·Odoo·Cin7 Procurement Dashboard 벤치마크
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useVendors } from "../../hooks/useVendors";
 import { Building2, Loader2, Package, RefreshCw } from "lucide-react";
 import { SplitPanel } from "../common/SplitPanel";
@@ -376,8 +376,13 @@ export const PurchaseHistoryTab: React.FC = () => {
   //     · top-sales 는 첫 fetch 와 병렬 (기존 동일)
   // ═══════════════════════════════════════════════════════════════════════
   const PER_PAGE_ALL = 200; // 첫 페이지 행 수
+  // 2026-08-05 · loadAllDetails 경쟁 방지 (bug fix · stability-bug-hunter)
+  //   · force=true 재호출 시 · 이전 백그라운드 루프 무효화
+  //   · runId 증가 · 각 반복 · currentRunId !== loadAllDetailsRunIdRef.current 면 break
+  const loadAllDetailsRunIdRef = useRef(0);
   const loadAllDetails = useCallback(async (force = false) => {
     if (allDetailsLoaded && !force) return;
+    const currentRunId = ++loadAllDetailsRunIdRef.current;
     setAllDetailsLoading(true);
     setAllDetailsError(null);
     try {
@@ -459,6 +464,8 @@ export const PurchaseHistoryTab: React.FC = () => {
         let page = 2;
         const accumulated = [...firstRows];
         while (true) {
+          // 경쟁 방지 · 이 루프가 최신 호출이 아니면 중단 (force 재호출 시)
+          if (currentRunId !== loadAllDetailsRunIdRef.current) break;
           const moreParams = new URLSearchParams({
             from: fromStr,
             per_page: String(PER_PAGE_ALL),
@@ -472,6 +479,8 @@ export const PurchaseHistoryTab: React.FC = () => {
           if (moreRows.length === 0) break;
           accumulated.push(...moreRows);
           const { details: accDet, supMap: accSup } = normalizeRows(accumulated);
+          // 결과 반영 전에도 최신 runId 확인
+          if (currentRunId !== loadAllDetailsRunIdRef.current) break;
           setAllDetails(accDet);
           setDetailSupplierMap(accSup);
           if (!mj.has_more) break;
