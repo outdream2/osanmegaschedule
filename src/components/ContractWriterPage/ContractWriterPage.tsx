@@ -548,22 +548,16 @@ function computeNetPay(gross: number): {
 }
 
 /**
- * T-A (2026-08-05) · 세후 목표 → 세전 총액 역산 (부양가족 1인 기준 · 근사)
- * 반복 근사: 초기값 gross0 = net / (1 - 0.0909), 5회 반복하여 세금 재계산 후 수렴
+ * T-O (2026-08-05) · 세후 목표 → 세전 총액 역산 (사용자 실무 기준)
+ *   · 4대보험 근로자 부담 9.09% 만 반영 (소득세·지방소득세 제외)
+ *   · 임금구성 표시 실무 관례: 원천징수는 별도 · 세전/세후 표시엔 4대보험만
+ *   · 예: 세후 6,000,000 → 세전 6,600,660 (사용자 기대치 660만원)
+ *   · 예: 세후 5,000,000 → 세전 5,500,550
  */
 function reverseGrossFromNet(targetNet: number): number {
   if (targetNet <= 0) return 0;
   const insuranceRate = 0.0909; // 4대보험 근로자 부담 합계 근사
-  let gross = targetNet / (1 - insuranceRate);
-  for (let i = 0; i < 8; i++) {
-    const net = computeNetPay(Math.round(gross)).net;
-    const diff = targetNet - net;
-    if (Math.abs(diff) < 100) break;
-    // 조정 계수 · 세금 포함 유효율
-    gross += diff / (1 - insuranceRate - (gross > 1_500_000 ? 0.088 : 0));
-    if (gross <= 0) { gross = 0; break; }
-  }
-  return Math.max(0, Math.round(gross));
+  return Math.round(targetNet / (1 - insuranceRate));
 }
 
 /**
@@ -3294,28 +3288,57 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         </div>
       </div>
       {/* /그룹 (c) · T-L (2026-08-05) */}
-      </section>
 
-      {/* ═══ 섹션 3 · 희망 월 세후 수령액 · T-A (2026-08-05) · 세후→8항목 역산 ═══ */}
-      <section className="flex flex-col gap-1 mt-3">
-        <SectionHeader
-          icon={<Money size={13} weight="fill" />}
-          sub={
-            <label className="inline-flex items-center gap-1 cursor-pointer select-none">
-              <input type="checkbox" checked={form.useWageComponents} onChange={(e) => upd("useWageComponents", e.target.checked)}
-                className="w-3.5 h-3.5 accent-indigo-600 cursor-pointer" />
-              <span className="text-[11px] font-black text-indigo-700">임금 구성표</span>
-            </label>
-          }
-        >
-          희망 월 세후 수령액
-        </SectionHeader>
+      {/* ── 그룹 (d) · T-O (2026-08-05) · 임금계산 (근무조건 카드 아래로 통합) ── */}
+      <div className="rounded-lg border border-emerald-200 bg-emerald-50/40 p-2 flex flex-col gap-1.5">
+        <div className="text-[10px] font-black text-emerald-700 uppercase tracking-wider flex items-center gap-1">
+          <Money size={10} weight="fill" />
+          임금 계산
+          <label className="ml-auto inline-flex items-center gap-1 cursor-pointer select-none">
+            <input type="checkbox" checked={form.useWageComponents} onChange={(e) => upd("useWageComponents", e.target.checked)}
+              className="w-3.5 h-3.5 accent-indigo-600 cursor-pointer" />
+            <span className="text-[10px] font-black text-indigo-700">임금 구성표</span>
+          </label>
+        </div>
 
-        {/* 세후 목표 입력 → 8항목 자동 역산 · onChange 즉시 */}
-        <div className="rounded-lg border-2 border-emerald-300 bg-emerald-50/70 px-3 py-2 flex flex-col gap-1.5">
+        {/* 실 근무시간 · 시급 · 세전/세후 자동 계산 요약 · T-O (2026-08-05) */}
+        {(() => {
+          const wd = Number(form.weekdayHourly) || 0;
+          const we = Number(form.weekendHourly) || 0;
+          const grossFromWage = computeWageFromHourlyDual(wd, we, form.wageComponents).total
+            + (form.wageComponents.mealAllowance || 0)
+            + (form.wageComponents.vehicleAllowance || 0);
+          // T-O · 4대보험 (9.09%) 만 공제 · 실무 표시 관례 · 소득세·지방소득세 제외
+          const netAuto = Math.round(grossFromWage * (1 - 0.0909));
+          return (
+            <div className="grid grid-cols-4 gap-2 text-[10.5px] tabular-nums px-1">
+              <div className="flex flex-col">
+                <span className="text-slate-600">월 근로시간</span>
+                <span className="font-black text-slate-900">
+                  {monthlyCalc ? `${monthlyCalc.monthlyHoursInt}h ${monthlyCalc.monthlyMinutesRem}m` : "-"}
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-slate-600">주중/주말 시급</span>
+                <span className="font-black text-slate-900">{fmtWon(wd)} / {fmtWon(we)}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-slate-600">세전 총액</span>
+                <span className="font-black text-slate-900">{fmtWon(grossFromWage)}원</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-slate-600">세후 (4대보험만)</span>
+                <span className="font-black text-emerald-800">{fmtWon(netAuto)}원</span>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* 목표 세후 입력 → 6항목 자동 역산 · onChange 즉시 · T-O · 4대보험만 (9.09%) */}
+        <div className="rounded-lg border-2 border-emerald-300 bg-white/80 px-2 py-1.5 flex flex-col gap-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <Calculator size={13} weight="fill" className="text-emerald-700" />
-            <span className="text-[11.5px] font-black text-emerald-800">목표 세후</span>
+            <Calculator size={12} weight="fill" className="text-emerald-700" />
+            <span className="text-[11px] font-black text-emerald-800">목표 세후</span>
             <div className="flex-1 min-w-[140px] relative">
               <input
                 type="text"
@@ -3325,7 +3348,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   const raw = e.target.value.replace(/[^0-9]/g, "");
                   const num = Number(raw) || 0;
                   setForm(prev => {
-                    // T-N (2026-08-05) · 세후 → 주중/주말 시급 · 6항목 역산 (비율 유지 · 스케일)
+                    // T-O (2026-08-05) · 세후 → 세전 = 세후 / 0.9091 (4대보험만) · 그 후 두 시급 스케일링
                     const prevWd = Number(prev.weekdayHourly) || 0;
                     const prevWe = Number(prev.weekendHourly) || 0;
                     const { weekdayHourly, weekendHourly, wage } = reverseWageFromNetDual(
@@ -3341,60 +3364,23 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     };
                   });
                 }}
-                placeholder="예: 3,500,000"
-                className="w-full bg-white border-2 border-emerald-400 rounded-lg pl-2 pr-8 py-1.5 text-[14px] text-slate-900 font-black focus:outline-none focus:border-emerald-600 transition text-right"
+                placeholder="예: 6,000,000"
+                className="w-full bg-white border-2 border-emerald-400 rounded-lg pl-2 pr-8 py-1.5 text-[13px] text-slate-900 font-black focus:outline-none focus:border-emerald-600 transition text-right"
               />
               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-emerald-700 font-black pointer-events-none">원</span>
             </div>
           </div>
-          {/* T-N (2026-08-05) · 즉시 계산 결과 표시 · 주중/주말 시급 · 6항목 세전 총액 */}
-          {(() => {
-            const target = Number(form.targetNetInput) || 0;
-            if (target <= 0) {
-              return (
-                <div className="text-[10.5px] text-slate-500 italic">
-                  세후 금액 입력 시 · 주중/주말 시급 (비율 유지) 및 임금구성 6항목이 즉시 자동 계산됩니다
-                </div>
-              );
-            }
-            const wd = Number(form.weekdayHourly) || 0;
-            const we = Number(form.weekendHourly) || 0;
-            const grossFromWage = computeWageFromHourlyDual(wd, we, form.wageComponents).total
-              + (form.wageComponents.mealAllowance || 0)
-              + (form.wageComponents.vehicleAllowance || 0);
-            const net = computeNetPay(grossFromWage).net;
-            return (
-              <div className="grid grid-cols-4 gap-2 text-[10.5px] tabular-nums pt-1 border-t border-emerald-200">
-                <div className="flex flex-col">
-                  <span className="text-slate-600">주중 시급</span>
-                  <span className="font-black text-slate-900">{fmtWon(wd)}원</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-slate-600">주말 시급</span>
-                  <span className="font-black text-slate-900">{fmtWon(we)}원</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-slate-600">세전 총액</span>
-                  <span className="font-black text-slate-900">{fmtWon(grossFromWage)}원</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-slate-600">계산 세후</span>
-                  <span className="font-black text-emerald-800">{fmtWon(net)}원</span>
-                </div>
-              </div>
-            );
-          })()}
           <div className="text-[9.5px] text-slate-500 italic leading-snug">
-            * 부양가족 1인·5인 이상 사업장·포괄임금 기준 (근기법 §50·§56 · 209h 표준)
+            * 세후 = 세전 × (1 - 9.09%) · 4대보험 근로자 부담만 반영 · 소득세·지방소득세 제외
             <br />
-            * 주중/주말 시급 비율 유지 · 스케일 팩터 방식 · 시급 미입력 시 default (35000/40000) 기준
+            * 주중/주말 시급 비율 유지 · 스케일 팩터 방식 · 시급 미입력 시 default (약사 35000/40000) 기준
             <br />
-            * 실제 원천징수와 근사치 차이 있을 수 있음 · 식대·차량은 별도 입력 시 총액에 반영
+            * 예: 세후 6,000,000 → 세전 약 6,600,660원
           </div>
         </div>
 
-        {/* 시급 조정 (역산 결과 · 사용자 미세 조정 가능) */}
-        <div className="grid md:grid-cols-2 gap-1.5 mt-1">
+        {/* 시급 조정 (직급 default 로드 · 사용자 미세 조정 가능) */}
+        <div className="grid md:grid-cols-2 gap-1.5">
           <div>
             <div className="flex items-center justify-between mb-0.5">
               <span className="text-[10.5px] text-slate-400 font-semibold">주중 시급</span>
@@ -3438,6 +3424,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11.5px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
           />
         </div>
+      </div>
+      {/* /그룹 (d) · T-O (2026-08-05) */}
       </section>
 
       {/* ═══ 섹션 4 · 산정 비교 (접기 · 심층 조정) ═══ */}
