@@ -19,7 +19,9 @@
 import { Router } from "express";
 import fs from "fs";
 import path from "path";
+import multer from "multer";
 import { supabase } from "../../src/supabase/client";
+import { uploadToDrive } from "../googleDrive";
 
 const router = Router();
 
@@ -191,6 +193,95 @@ router.post("/api/employee-contracts", async (req, res) => {
     return res.status(201).json(row);
   } catch (err: any) {
     return res.status(500).json({ error: err?.message ?? "save failed" });
+  }
+});
+
+// ─── POST · PDF 업로드 방식 (Google Drive · 2026-08-05) ────────────────────
+// 사용자가 미리 준비한 PDF 를 Google Drive (contract 폴더) 에 저장 · employee_contracts 이력 insert
+// storage="drive" · pdf_url = Drive webViewLink (drive_url 개념)
+const driveUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_BYTES },
+  fileFilter: (_req, file, cb) => {
+    const ok = /pdf/.test(file.mimetype) || /\.pdf$/i.test(file.originalname);
+    cb(null, ok);
+  },
+});
+router.post("/api/employee-contracts/upload", driveUpload.single("contract"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "PDF 파일이 없습니다" });
+
+    const b = req.body ?? {};
+    const employeeId    = Number.isFinite(Number(b.employee_id)) ? Number(b.employee_id) : null;
+    const employeeName  = String(b.employee_name ?? "").trim();
+    const contractType  = b.contract_type ? String(b.contract_type) : null;
+    const startDate     = b.start_date ? String(b.start_date) : null;
+    const endDate       = b.end_date   ? String(b.end_date)   : null;
+    const approvedBy    = b.approved_by ? String(b.approved_by) : null;
+    const approvedById  = Number.isFinite(Number(b.approved_by_id)) ? Number(b.approved_by_id) : null;
+
+    if (!employeeName) return res.status(400).json({ error: "employee_name required" });
+
+    // Drive 파일명 · {직원명}_근로계약서_{시작일}.pdf
+    const dateTag = (startDate || new Date().toISOString().slice(0, 10)).replace(/-/g, "");
+    const nameTag = safeName(employeeName);
+    const fileName = `${nameTag}_근로계약서_${dateTag}.pdf`;
+
+    // Drive 업로드
+    let driveUrl = "";
+    let driveFileId = "";
+    try {
+      const result = await uploadToDrive("contract", req.file.buffer, fileName, req.file.mimetype || "application/pdf");
+      driveUrl = result.webViewLink;
+      driveFileId = result.fileId;
+    } catch (drvErr: any) {
+      return res.status(500).json({
+        error: `Google Drive 업로드 실패 · ${drvErr?.message ?? drvErr}`,
+      });
+    }
+
+    // employee_contracts row insert · storage="drive" · pdf_url = Drive URL
+    const insertRow: Record<string, unknown> = {
+      employee_id: employeeId ?? 0,
+      employee_name: employeeName,
+      contract_type: contractType,
+      start_date: startDate,
+      end_date: endDate,
+      pdf_url: driveUrl,
+      pdf_size: req.file.size,
+      storage_path: driveFileId,
+      storage: "drive",
+      approved_by: approvedBy,
+      approved_by_id: approvedById,
+    };
+
+    const { data: row, error: insErr } = await supabase
+      .from("employee_contracts")
+      .insert([insertRow])
+      .select("*")
+      .single();
+
+    if (insErr) {
+      if (isMissingTableError(insErr.message)) {
+        return res.status(500).json({
+          error: "employee_contracts 테이블이 없습니다. Supabase SQL Editor 에서 migrations/create_employee_contracts.sql 을 실행하세요.",
+        });
+      }
+      throw new Error(insErr.message);
+    }
+
+    // employees.contract_file_url 갱신 (best-effort)
+    if (employeeId && Number.isFinite(employeeId)) {
+      try {
+        await supabase.from("employees").update({ contract_file_url: driveUrl }).eq("id", employeeId);
+      } catch (e: any) {
+        console.warn(`[employee-contracts/upload] employees 갱신 예외 (무시) · ${e?.message ?? e}`);
+      }
+    }
+
+    return res.status(201).json(row);
+  } catch (err: any) {
+    return res.status(500).json({ error: err?.message ?? "upload failed" });
   }
 });
 

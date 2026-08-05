@@ -1197,51 +1197,108 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange 
             );
           })}
 
-          {/* 식대 (비과세) · flat amount · "해당자에 한함" */}
-          <tr className="border-b border-slate-100">
-            <td className="px-1.5 py-1 align-middle">
-              <div className="text-[11px] font-bold text-slate-800 leading-tight">식대</div>
-              <div className="text-[9px] text-slate-500 font-semibold leading-tight">(비과세)</div>
-            </td>
-            <td className="px-1.5 py-1 align-middle text-center text-[10px] text-slate-500 font-semibold italic">
-              해당자에 한함
-            </td>
-            <td className="px-1.5 py-1 align-middle text-right">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={wage.mealAllowance === 0 ? "" : String(wage.mealAllowance)}
-                onChange={(e) => updFlat("mealAllowance", Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
-                className={`w-full bg-white border rounded px-1 py-0.5 text-[11px] font-black text-right focus:outline-none focus:border-indigo-500 transition ${
-                  wage.mealAllowance === 0 ? "border-slate-100 text-slate-300" : "border-slate-200 text-slate-800"
-                }`}
-                placeholder="해당자에 한함"
-              />
-            </td>
-          </tr>
+          {/* 식대 (비과세) · flat amount · 체크박스로 활성화 · 2026-08-05 T-R */}
+          {(() => {
+            const enabled = wage.mealAllowance > 0;
+            return (
+              <tr className="border-b border-slate-100">
+                <td className="px-1.5 py-1 align-middle">
+                  <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={enabled}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          // 체크 시 · 최소값 1로 활성화 (사용자가 즉시 실제 금액 입력)
+                          if (wage.mealAllowance === 0) updFlat("mealAllowance", 1);
+                        } else {
+                          updFlat("mealAllowance", 0);
+                        }
+                      }}
+                      className="w-3.5 h-3.5 rounded accent-indigo-600 cursor-pointer shrink-0"
+                      title="식대 비과세 · 해당자만 체크"
+                    />
+                    <span>
+                      <div className="text-[11px] font-bold text-slate-800 leading-tight">식대</div>
+                      <div className="text-[9px] text-slate-500 font-semibold leading-tight">(비과세)</div>
+                    </span>
+                  </label>
+                </td>
+                <td className="px-1.5 py-1 align-middle text-center text-[10px] text-slate-500 font-semibold italic">
+                  {enabled ? "비과세" : "해당자에 한함"}
+                </td>
+                <td className="px-1.5 py-1 align-middle text-right">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={!enabled ? "" : String(wage.mealAllowance)}
+                    onChange={(e) => {
+                      const n = Number(e.target.value.replace(/[^0-9]/g, "")) || 0;
+                      updFlat("mealAllowance", n);
+                    }}
+                    disabled={!enabled}
+                    className={`w-full bg-white border rounded px-1 py-0.5 text-[11px] font-black text-right focus:outline-none focus:border-indigo-500 transition ${
+                      !enabled
+                        ? "border-slate-100 text-slate-300 bg-slate-50 cursor-not-allowed"
+                        : "border-slate-200 text-slate-800"
+                    }`}
+                    placeholder={enabled ? "금액 입력" : "해당자에 한함"}
+                  />
+                </td>
+              </tr>
+            );
+          })()}
 
-          {/* 차량유지비 (비과세) */}
-          <tr className="border-b border-slate-200">
-            <td className="px-1.5 py-1 align-middle">
-              <div className="text-[11px] font-bold text-slate-800 leading-tight">차량유지비</div>
-              <div className="text-[9px] text-slate-500 font-semibold leading-tight">(비과세)</div>
-            </td>
-            <td className="px-1.5 py-1 align-middle text-center text-[10px] text-slate-500 font-semibold italic">
-              해당자에 한함
-            </td>
-            <td className="px-1.5 py-1 align-middle text-right">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={wage.vehicleAllowance === 0 ? "" : String(wage.vehicleAllowance)}
-                onChange={(e) => updFlat("vehicleAllowance", Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
-                className={`w-full bg-white border rounded px-1 py-0.5 text-[11px] font-black text-right focus:outline-none focus:border-indigo-500 transition ${
-                  wage.vehicleAllowance === 0 ? "border-slate-100 text-slate-300" : "border-slate-200 text-slate-800"
-                }`}
-                placeholder="해당자에 한함"
-              />
-            </td>
-          </tr>
+          {/* 차량유지비 (비과세) · 체크박스로 활성화 · 2026-08-05 T-R */}
+          {(() => {
+            const enabled = wage.vehicleAllowance > 0;
+            return (
+              <tr className="border-b border-slate-200">
+                <td className="px-1.5 py-1 align-middle">
+                  <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={enabled}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          if (wage.vehicleAllowance === 0) updFlat("vehicleAllowance", 1);
+                        } else {
+                          updFlat("vehicleAllowance", 0);
+                        }
+                      }}
+                      className="w-3.5 h-3.5 rounded accent-indigo-600 cursor-pointer shrink-0"
+                      title="차량유지비 비과세 · 해당자만 체크"
+                    />
+                    <span>
+                      <div className="text-[11px] font-bold text-slate-800 leading-tight">차량유지비</div>
+                      <div className="text-[9px] text-slate-500 font-semibold leading-tight">(비과세)</div>
+                    </span>
+                  </label>
+                </td>
+                <td className="px-1.5 py-1 align-middle text-center text-[10px] text-slate-500 font-semibold italic">
+                  {enabled ? "비과세" : "해당자에 한함"}
+                </td>
+                <td className="px-1.5 py-1 align-middle text-right">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={!enabled ? "" : String(wage.vehicleAllowance)}
+                    onChange={(e) => {
+                      const n = Number(e.target.value.replace(/[^0-9]/g, "")) || 0;
+                      updFlat("vehicleAllowance", n);
+                    }}
+                    disabled={!enabled}
+                    className={`w-full bg-white border rounded px-1 py-0.5 text-[11px] font-black text-right focus:outline-none focus:border-indigo-500 transition ${
+                      !enabled
+                        ? "border-slate-100 text-slate-300 bg-slate-50 cursor-not-allowed"
+                        : "border-slate-200 text-slate-800"
+                    }`}
+                    placeholder={enabled ? "금액 입력" : "해당자에 한함"}
+                  />
+                </td>
+              </tr>
+            );
+          })()}
 
           {/* 하단 · 월급여총액 (세전) · (포괄임금) · 강조 */}
           <tr className="bg-amber-50">
@@ -2295,6 +2352,12 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const [includeIncomeTax, setIncludeIncomeTax] = useState<boolean>(false);
   // T-Q · 실수령액 상세 카드 접기/펼치기 · default 펼침
   const [netDetailOpen, setNetDetailOpen] = useState<boolean>(true);
+
+  // T-R (2026-08-05) · 작성 방식 · [여기서 작성] vs [PDF 업로드]
+  const [writeMode, setWriteMode] = useState<"form" | "upload">("form");
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadBusy, setUploadBusy] = useState<boolean>(false);
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const saveDraft = useCallback(() => {
     try {
       localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(form));
@@ -2966,6 +3029,71 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     }
   };
 
+  // T-R (2026-08-05) · PDF 업로드 방식 · Google Drive (contract 폴더) 저장
+  const handleUploadContract = async () => {
+    setNotice(null);
+    if (!uploadFile) {
+      setNotice({ tone: "err", text: "업로드할 PDF 파일을 선택하세요." });
+      return;
+    }
+    if (!form.employeeName.trim()) {
+      setNotice({ tone: "err", text: "근로자 성명을 입력하세요 (왼쪽 폼)." });
+      return;
+    }
+    if (!/pdf$/i.test(uploadFile.name) && uploadFile.type !== "application/pdf") {
+      setNotice({ tone: "err", text: "PDF 파일만 업로드 가능합니다." });
+      return;
+    }
+    if (uploadFile.size > 20 * 1024 * 1024) {
+      setNotice({ tone: "err", text: `파일 크기 초과 (${(uploadFile.size / 1024 / 1024).toFixed(1)}MB > 20MB)` });
+      return;
+    }
+
+    setUploadBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append("contract", uploadFile);
+      if (form.employeeId != null) fd.append("employee_id", String(form.employeeId));
+      fd.append("employee_name", form.employeeName);
+      if (form.contractType) fd.append("contract_type", form.contractType);
+      if (form.startDate) fd.append("start_date", form.startDate);
+      if (!form.indefinite && form.endDate) fd.append("end_date", form.endDate);
+      if (authSession?.employeeName) fd.append("approved_by", authSession.employeeName);
+      if (authSession?.employeeId != null) fd.append("approved_by_id", String(authSession.employeeId));
+
+      const resp = await fetch("/api/employee-contracts/upload", { method: "POST", body: fd });
+      const saved = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        const msg = saved?.error ?? `업로드 실패 (HTTP ${resp.status})`;
+        setNotice({ tone: "err", text: msg });
+        return;
+      }
+      setNotice({
+        tone: "ok",
+        text: saved?.pdf_url
+          ? `Google Drive 업로드 완료 · 링크: ${saved.pdf_url}`
+          : "Google Drive 업로드 완료",
+      });
+      clearDraft();
+      setUploadFile(null);
+      if (uploadInputRef.current) uploadInputRef.current.value = "";
+      if (saved && (saved.start_date || saved.end_date)) {
+        setExistingContract({
+          id: saved.id,
+          contract_type: saved.contract_type,
+          start_date: saved.start_date,
+          end_date: saved.end_date,
+          created_at: saved.created_at,
+          pdf_url: saved.pdf_url,
+        });
+      }
+    } catch (err: any) {
+      setNotice({ tone: "err", text: err?.message ?? "업로드 실패" });
+    } finally {
+      setUploadBusy(false);
+    }
+  };
+
   const canApprove = signatureStatus.filled === signatureStatus.total;
 
   // ────────────────────────────────────────────────────────────────
@@ -2994,6 +3122,181 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           <p className="text-[10.5px] text-slate-400 font-semibold mt-0.5">근로자 정보와 근무조건을 입력하세요</p>
         </div>
       </div>
+
+      {/* ── T-R (2026-08-05) · 작성 방식 토글 ── */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-2">
+        <div className="grid grid-cols-2 gap-1">
+          {([
+            { key: "form" as const,   label: "여기서 작성", desc: "폼 입력 → 미리보기 → PDF 생성" },
+            { key: "upload" as const, label: "PDF 업로드",  desc: "이미 작성된 PDF 를 Drive 에 저장" },
+          ]).map(m => {
+            const active = writeMode === m.key;
+            return (
+              <button
+                key={m.key}
+                type="button"
+                onClick={() => setWriteMode(m.key)}
+                className={`flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2 text-left transition-colors cursor-pointer ${
+                  active
+                    ? "bg-gradient-to-br from-indigo-50 to-emerald-50 border-indigo-400 shadow-sm"
+                    : "bg-white border-slate-200 hover:bg-slate-50"
+                }`}
+              >
+                <span className={`text-[12px] font-black ${active ? "text-indigo-700" : "text-slate-600"}`}>
+                  {m.label}
+                </span>
+                <span className={`text-[10px] font-semibold ${active ? "text-slate-600" : "text-slate-400"}`}>
+                  {m.desc}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── T-R · PDF 업로드 모드 ── */}
+      {writeMode === "upload" && (
+        <div className={cardBase}>
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+            <div className="w-6 h-6 rounded-md bg-indigo-100 flex items-center justify-center shrink-0">
+              <DownloadSimple size={13} weight="fill" className="text-indigo-600" />
+            </div>
+            <span className="text-[12px] font-black text-slate-700">PDF 업로드 (Google Drive)</span>
+          </div>
+
+          <div className="rounded-lg border border-indigo-100 bg-indigo-50/30 px-3 py-2 text-[11px] text-slate-600 leading-relaxed">
+            이미 작성한 근로계약서 PDF 를 선택 후 [Google Drive 업로드] 를 누르세요. <br />
+            · 저장 위치: Google Drive · <b>contract</b> 폴더 <br />
+            · 이력: employee_contracts 테이블 · 링크 (Drive URL) 로 저장 <br />
+            · 하단 근로자 정보 · 계약 유형 · 기간 · 입력 후 업로드 필수
+          </div>
+
+          {/* 근로자 기본 정보 · 업로드 필수 필드 */}
+          <div className={cardInner}>
+            <div className={cardGroupLabel}>
+              <User size={10} weight="bold" />
+              근로자 기본 정보 (업로드용)
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="col-span-2 relative">
+                <label className={fldLabel}>성명 *</label>
+                <input
+                  type="text"
+                  value={form.employeeName}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    upd("employeeName", val);
+                    setEmpSearchOpen(true);
+                    if (form.employeeId != null) upd("employeeId", null);
+                  }}
+                  onFocus={() => setEmpSearchOpen(true)}
+                  onBlur={() => setTimeout(() => setEmpSearchOpen(false), 200)}
+                  placeholder={empLoading ? "직원 불러오는 중..." : "성명 입력 또는 검색"}
+                  autoComplete="off"
+                  className={fldInput}
+                />
+                {empSearchOpen && form.employeeName.trim() && (() => {
+                  const q = form.employeeName.trim().toLowerCase();
+                  const matches = employees.filter(e => (e.name ?? "").toLowerCase().includes(q)).slice(0, 8);
+                  if (matches.length === 0) return null;
+                  return (
+                    <ul className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-xl shadow-lg max-h-52 overflow-y-auto divide-y divide-slate-100">
+                      {matches.map(e => (
+                        <li key={e.id}>
+                          <button
+                            type="button"
+                            onMouseDown={(ev) => ev.preventDefault()}
+                            onClick={() => { onSelectEmployee(String(e.id)); setEmpSearchOpen(false); }}
+                            className="w-full text-left px-3 py-2 hover:bg-indigo-50 transition-colors flex items-center gap-2"
+                          >
+                            <span className="text-[13px] font-bold text-slate-800">{e.name}</span>
+                            {e.position && <span className="text-[11px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">{e.position}</span>}
+                            {e.phone && <span className="text-[11px] text-slate-400 ml-auto tabular-nums">{e.phone}</span>}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  );
+                })()}
+              </div>
+              <div>
+                <label className={fldLabel}>계약 유형</label>
+                <SelectOrCustom value={form.contractType} options={CONTRACT_TYPES} onChange={(v) => upd("contractType", v)} placeholder="예: 프리랜서" />
+              </div>
+              <div>
+                <label className={fldLabel}>시작일</label>
+                <input type="date" value={form.startDate} onChange={(e) => upd("startDate", e.target.value)}
+                  className={fldInput}
+                />
+              </div>
+              {!form.indefinite && (
+                <div className="col-span-2">
+                  <label className={fldLabel}>종료일</label>
+                  <input type="date" value={form.endDate} onChange={(e) => upd("endDate", e.target.value)}
+                    className={fldInput}
+                  />
+                </div>
+              )}
+              <label className="col-span-2 inline-flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.indefinite} onChange={(e) => upd("indefinite", e.target.checked)}
+                  className="w-4 h-4 rounded accent-indigo-600" />
+                <span className="text-[12px] font-semibold text-slate-700">무기한 (정규직) · 종료일 없음</span>
+              </label>
+            </div>
+          </div>
+
+          {/* 파일 선택 */}
+          <div className={cardInner}>
+            <div className={cardGroupLabel}>PDF 파일 선택</div>
+            <input
+              ref={uploadInputRef}
+              type="file"
+              accept="application/pdf,.pdf"
+              onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
+              className="w-full text-[12px] text-slate-700 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[12px] file:font-black file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200 file:cursor-pointer cursor-pointer"
+            />
+            {uploadFile && (
+              <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-600 bg-white border border-slate-200 rounded-lg px-2 py-1.5">
+                <ClipboardText size={12} weight="fill" className="text-indigo-500 shrink-0" />
+                <span className="truncate flex-1 font-semibold">{uploadFile.name}</span>
+                <span className="tabular-nums text-[10px] text-slate-400 shrink-0">
+                  {(uploadFile.size / 1024).toFixed(1)} KB
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUploadFile(null);
+                    if (uploadInputRef.current) uploadInputRef.current.value = "";
+                  }}
+                  className="text-rose-500 hover:text-rose-700 shrink-0 cursor-pointer"
+                  title="선택 취소"
+                >
+                  <XIcon size={11} weight="bold" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* 업로드 버튼 */}
+          <button
+            type="button"
+            onClick={handleUploadContract}
+            disabled={!uploadFile || uploadBusy || !form.employeeName.trim()}
+            className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white text-[13px] font-black shadow-sm transition-all cursor-pointer disabled:cursor-not-allowed ${
+              uploadFile && !uploadBusy && form.employeeName.trim()
+                ? "bg-gradient-to-r from-indigo-500 to-emerald-500 hover:brightness-110"
+                : "bg-slate-300 text-slate-500"
+            }`}
+            title="Google Drive contract 폴더에 저장 · employee_contracts 이력 insert"
+          >
+            <DownloadSimple size={13} weight="bold" className="rotate-180" />
+            {uploadBusy ? "업로드 중..." : "Google Drive 업로드"}
+          </button>
+        </div>
+      )}
+
+      {/* ── T-R · 여기서 작성 모드 · 기존 폼 전체 ── */}
+      {writeMode === "form" && (<>
 
       {/* ═══════════════════════════════════════════════════
           카드 1 · 근로자 정보
@@ -3845,6 +4148,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         </div>
       </details>
 
+      </>)}
+      {/* /T-R · 여기서 작성 모드 */}
+
     </section>
   );
 
@@ -3852,7 +4158,26 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   // 우측 · 프리뷰 (인라인 서명 spot 포함)
   // ────────────────────────────────────────────────────────────────
 
-  const rightPreviewNode = (
+  const rightPreviewNode = writeMode === "upload" ? (
+    <section className="flex flex-col gap-3 h-full overflow-y-auto p-3 bg-slate-100 rounded-xl">
+      <div className="flex items-center gap-1.5 pb-1">
+        <DownloadSimple size={16} weight="fill" className="text-indigo-600 rotate-180" />
+        <h2 className="text-sm font-black text-slate-800">PDF 업로드 안내</h2>
+      </div>
+      <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-2 text-[12px] text-slate-700 leading-relaxed">
+        <div className="text-[13px] font-black text-slate-800">Google Drive · contract 폴더 저장</div>
+        <ol className="list-decimal pl-5 space-y-1">
+          <li>왼쪽 폼에서 근로자 성명 · 계약 유형 · 기간을 입력합니다.</li>
+          <li>PDF 파일 선택 후 [Google Drive 업로드] 클릭.</li>
+          <li>저장 후 · employees.contract_file_url 갱신 · 직원관리 [보기] 활성화.</li>
+          <li>이력은 employee_contracts 테이블에 저장 (storage="drive").</li>
+        </ol>
+        <div className="mt-2 rounded-lg bg-indigo-50 border border-indigo-200 px-3 py-2 text-[11px] font-semibold text-indigo-700">
+          팁 · [여기서 작성] 으로 전환하면 폼 입력 → 미리보기 → PDF 자동생성 방식으로 계약서를 만듭니다.
+        </div>
+      </div>
+    </section>
+  ) : (
     <section className="flex flex-col gap-2 h-full overflow-y-auto p-2 bg-slate-100 rounded-xl">
       <div className="flex items-center gap-1.5 pb-1">
         <NotePencil size={16} weight="fill" className="text-emerald-600" />
