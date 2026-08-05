@@ -41,6 +41,13 @@ const OCR_AGG_TTL = 5 * 60 * 1000;
 /** OCR 아이템 저장/삭제 후 캐시 무효화 (ocrConfirmed.ts 에서 호출) */
 export function clearOcrAggCache() { ocrAggCache.clear(); }
 
+// 2026-08-05 · T-PERF-1a · low-stock 캐시 (in-memory TTL 2분)
+//   products 전체 + inventory_checks 전체 풀스캔 · 탭 전환마다 반복 → 캐시로 감소
+//   inventory-checks POST/PATCH/DELETE 시 무효화 필요 (clearLowStockCache export)
+let lowStockCache: { data: any; expiresAt: number } | null = null;
+const LOW_STOCK_TTL = 2 * 60 * 1000; // 2분
+export function clearLowStockCache() { lowStockCache = null; }
+
 // GET /api/stock-manage/suppliers?days=7|30|90
 // 공급사별 매입 총액 · 수량 · 상품수
 router.get("/api/stock-manage/suppliers", async (req, res) => {
@@ -1503,7 +1510,12 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
 // 적정재고보다 현재고가 작은 상품 (current_stock < optimal_stock, 둘 다 값 있음)
 // 페이지네이션으로 전체 조회 (Supabase 기본 limit 1000 우회)
 // inventory_checks 최근값(제품별)에서 warehouse_stock / store_stock 실재고 병합
+// 2026-08-05 · T-PERF-1a · 2분 in-memory 캐시 적용 (products + inventory_checks 풀스캔 반복 방지)
 router.get("/api/stock-manage/low-stock", async (_req, res) => {
+  if (lowStockCache && lowStockCache.expiresAt > Date.now()) {
+    res.setHeader("X-Cache", "HIT");
+    return res.json(lowStockCache.data);
+  }
   try {
     const all: any[] = [];
     const PAGE = 1000;
@@ -1576,6 +1588,9 @@ router.get("/api/stock-manage/low-stock", async (_req, res) => {
           inv_checked_at:  inv?.checked_at ?? null,
         };
       });
+    // 2026-08-05 · T-PERF-1a · 캐시 저장 후 응답
+    lowStockCache = { data: filtered, expiresAt: Date.now() + LOW_STOCK_TTL };
+    res.setHeader("X-Cache", "MISS");
     res.json(filtered);
   } catch (err: any) {
     res.status(500).json({ error: err.message });

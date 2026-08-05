@@ -2,6 +2,8 @@ import { Router } from "express";
 import webpush from "web-push";
 import { supabase } from "../../src/supabase/client";
 import { notificationsService } from "../../src/services/notificationsService";
+// 2026-08-05 · T-PERF-1a · inventory-checks 변경 시 low-stock 캐시 무효화
+import { clearLowStockCache } from "./stockManage";
 
 const router = Router();
 
@@ -506,7 +508,17 @@ router.post("/api/order-requests/bulk-send", async (req, res) => {
 // ── 실재고 점검 ──────────────────────────────────────────────────────────────
 
 router.get("/api/inventory-checks", async (req, res) => {
-  let q = supabase.from("inventory_checks").select("*").order("checked_at", { ascending: false });
+  // 2026-08-05 · T-PERF-1a · select("*") → 명시적 컬럼 지정 (페이로드 최소화)
+  //   StockReconciliationTab 사용 컬럼: product_code, product_name, checked_at, checked_by
+  //   + 실재고 컬럼 전체 (warehouse1/2, store1/2/3, 레거시)
+  const COLS = [
+    "id", "product_code", "product_name", "checked_at", "checked_by",
+    "warehouse_stock", "warehouse1_stock", "warehouse2_stock",
+    "store_stock", "store_stock_2", "store3_stock",
+    "store1_zone", "store2_zone", "store3_zone",
+    "system_stock", "optimal_stock", "status", "note",
+  ].join(", ");
+  let q = supabase.from("inventory_checks").select(COLS).order("checked_at", { ascending: false });
   if (req.query.product_code) q = q.eq("product_code", String(req.query.product_code));
   const { data, error } = await q;
   if (error) return res.status(500).json({ error: error.message });
@@ -587,6 +599,7 @@ router.post("/api/inventory-checks", async (req, res) => {
     result = await applyPayload();
   }
   if (result?.error) return res.status(500).json({ error: result.error });
+  clearLowStockCache(); // 2026-08-05 · T-PERF-1a
   return res.json({ ok: true, updated: !!existing });
 });
 
@@ -675,6 +688,7 @@ router.post("/api/inventory-checks/bulk", async (req, res) => {
       }
       if (error) { failed++; } else { saved++; }
     }
+    clearLowStockCache(); // 2026-08-05 · T-PERF-1a
     res.json({ ok: true, saved, failed, total: items.length, downgraded });
   } catch (err: any) {
     console.error("[inventory-checks/bulk POST]", err?.message);
@@ -687,12 +701,14 @@ router.patch("/api/inventory-checks/:id", async (req, res) => {
   if (!["pending", "done"].includes(status)) return res.status(400).json({ error: "invalid status" });
   const { error } = await supabase.from("inventory_checks").update({ status }).eq("id", req.params.id);
   if (error) return res.status(500).json({ error: error.message });
+  clearLowStockCache(); // 2026-08-05 · T-PERF-1a
   res.json({ ok: true });
 });
 
 router.delete("/api/inventory-checks/:id", async (req, res) => {
   const { error } = await supabase.from("inventory_checks").delete().eq("id", req.params.id);
   if (error) return res.status(500).json({ error: error.message });
+  clearLowStockCache(); // 2026-08-05 · T-PERF-1a
   res.json({ ok: true });
 });
 
