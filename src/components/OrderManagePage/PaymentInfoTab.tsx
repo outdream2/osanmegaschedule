@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { SplitPanel } from "../common/SplitPanel";
+import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -323,6 +324,23 @@ export const PaymentInfoTab: React.FC = () => {
   const [productSummary, setProductSummary] = useState<ProductPurchaseSummary[]>([]);
   const [showProductGroup, setShowProductGroup] = useState(false);
   const [monthlyLoading, setMonthlyLoading] = useState(false);
+
+  // 상품매입 상세 표 · 헤더 자동 정렬 (2026-08-05 · UI #7)
+  type ProdSortKey = "product_name" | "product_code" | "totalQty" | "totalAmount" | "invoiceCount" | "latestDate";
+  const productSortComparators = useMemo<Record<ProdSortKey, Comparator<ProductPurchaseSummary>>>(() => ({
+    product_name: (a, b) => a.product_name.localeCompare(b.product_name, "ko"),
+    product_code: (a, b) => a.product_code.localeCompare(b.product_code, "ko"),
+    totalQty:     (a, b) => a.totalQty - b.totalQty,
+    totalAmount:  (a, b) => a.totalAmount - b.totalAmount,
+    invoiceCount: (a, b) => a.invoiceCount - b.invoiceCount,
+    latestDate:   (a, b) => a.latestDate.localeCompare(b.latestDate),
+  }), []);
+  const {
+    sorted: sortedProductSummary,
+    sortKey: prodSortKey,
+    sortDir: prodSortDir,
+    toggleSort: toggleProdSort,
+  } = useSortableTable<ProductPurchaseSummary, ProdSortKey>(productSummary, "totalAmount", productSortComparators, "desc");
 
   // 폼 상태
   const [paymentDate, setPaymentDate] = useState<string>(todayYmd());
@@ -1427,16 +1445,82 @@ export const PaymentInfoTab: React.FC = () => {
                       <table className="w-full text-[12px] tabular-nums">
                         <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-wider text-slate-500">
                           <tr>
-                            <th className="text-left px-2 py-1.5">상품명</th>
-                            <th className="text-left px-2 py-1.5 font-mono">코드</th>
-                            <th className="text-right px-2 py-1.5">총 수량</th>
-                            <th className="text-right px-2 py-1.5">총 매입액</th>
-                            <th className="text-center px-2 py-1.5">건수</th>
-                            <th className="text-right px-2 py-1.5">최근 매입일</th>
+                            <th
+                              onClick={() => toggleProdSort("product_name")}
+                              title="상품명 정렬"
+                              className="text-left px-2 py-1.5 cursor-pointer select-none hover:bg-emerald-50/60 transition"
+                            >
+                              상품명
+                              {prodSortKey === "product_name"
+                                ? (prodSortDir === "asc"
+                                    ? <ChevronUp size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />
+                                    : <ChevronDown size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />)
+                                : <ChevronsUpDown size={9} strokeWidth={2.25} className="inline-block align-middle ml-0.5 text-slate-300" />}
+                            </th>
+                            <th
+                              onClick={() => toggleProdSort("product_code")}
+                              title="코드 정렬"
+                              className="text-left px-2 py-1.5 font-mono cursor-pointer select-none hover:bg-emerald-50/60 transition"
+                            >
+                              코드
+                              {prodSortKey === "product_code"
+                                ? (prodSortDir === "asc"
+                                    ? <ChevronUp size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />
+                                    : <ChevronDown size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />)
+                                : <ChevronsUpDown size={9} strokeWidth={2.25} className="inline-block align-middle ml-0.5 text-slate-300" />}
+                            </th>
+                            <th
+                              onClick={() => toggleProdSort("totalQty")}
+                              title="총 수량 정렬"
+                              className="text-right px-2 py-1.5 cursor-pointer select-none hover:bg-emerald-50/60 transition"
+                            >
+                              총 수량
+                              {prodSortKey === "totalQty"
+                                ? (prodSortDir === "asc"
+                                    ? <ChevronUp size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />
+                                    : <ChevronDown size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />)
+                                : <ChevronsUpDown size={9} strokeWidth={2.25} className="inline-block align-middle ml-0.5 text-slate-300" />}
+                            </th>
+                            <th
+                              onClick={() => toggleProdSort("totalAmount")}
+                              title="총 매입액 정렬"
+                              className="text-right px-2 py-1.5 cursor-pointer select-none hover:bg-emerald-50/60 transition"
+                            >
+                              총 매입액
+                              {prodSortKey === "totalAmount"
+                                ? (prodSortDir === "asc"
+                                    ? <ChevronUp size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />
+                                    : <ChevronDown size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />)
+                                : <ChevronsUpDown size={9} strokeWidth={2.25} className="inline-block align-middle ml-0.5 text-slate-300" />}
+                            </th>
+                            <th
+                              onClick={() => toggleProdSort("invoiceCount")}
+                              title="건수 정렬"
+                              className="text-center px-2 py-1.5 cursor-pointer select-none hover:bg-emerald-50/60 transition"
+                            >
+                              건수
+                              {prodSortKey === "invoiceCount"
+                                ? (prodSortDir === "asc"
+                                    ? <ChevronUp size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />
+                                    : <ChevronDown size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />)
+                                : <ChevronsUpDown size={9} strokeWidth={2.25} className="inline-block align-middle ml-0.5 text-slate-300" />}
+                            </th>
+                            <th
+                              onClick={() => toggleProdSort("latestDate")}
+                              title="최근 매입일 정렬"
+                              className="text-right px-2 py-1.5 cursor-pointer select-none hover:bg-emerald-50/60 transition"
+                            >
+                              최근 매입일
+                              {prodSortKey === "latestDate"
+                                ? (prodSortDir === "asc"
+                                    ? <ChevronUp size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />
+                                    : <ChevronDown size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />)
+                                : <ChevronsUpDown size={9} strokeWidth={2.25} className="inline-block align-middle ml-0.5 text-slate-300" />}
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {productSummary.slice(0, 100).map((p) => (
+                          {sortedProductSummary.slice(0, 100).map((p) => (
                             <tr key={p.product_code || p.product_name} className="hover:bg-emerald-50/40">
                               <td className="px-2 py-1.5 font-semibold text-slate-700 truncate max-w-[220px]" title={p.product_name}>{p.product_name}</td>
                               <td className="px-2 py-1.5 text-slate-400 font-mono text-[11px]">{p.product_code || "-"}</td>
