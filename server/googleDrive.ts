@@ -1,18 +1,19 @@
 // server/googleDrive.ts
 // Google Drive 통합 · T19 (근로계약서) + T21 (이력서)
 //
-// 설정 로드 우선순위:
-//   1. 파일 · src/keys/*.json (Service Account 키 · gitignore) → 최우선
-//   2. Supabase · app_settings.google_service_account (fallback)
+// 2026-08-05 · OAuth 2.0 (refresh_token) 방식 · Service Account 대체
+//   · SA 는 개인 Drive 저장 불가 (Google 정책 · quota 없음)
+//   · OAuth · 개인 Google 계정 · 15GB 무료 사용 가능
+//
+// 설정 파일 (src/keys/*.json · gitignore):
+//   OAuth 방식 (권장):
+//     { "client_id": "...", "client_secret": "...", "refresh_token": "..." }
+//   Service Account 방식 (레거시 · 공유 드라이브만):
+//     { "type": "service_account", "private_key": "...", ... }
 //
 // 폴더 ID · 하드코딩 (사용자 제공 · 2026-08-05):
 //   - 근로계약서: 1taDuOluNZxHSd_uJ7qr32xRVYFpD-IXe
 //   - 이력서:    1gEYUWD-PHzsewJkomuzWkpQA960rLkUv
-//   변경 시 · DRIVE_FOLDERS 상수 수정 or app_settings.google_drive_folders 로 override
-//
-// 사용:
-//   const url = await uploadToDrive("resume", buffer, "홍길동_이력서.pdf", "application/pdf");
-//   → https://drive.google.com/file/d/<fileId>/view (public link · anyone with link · viewer)
 
 import { google } from "googleapis";
 import type { drive_v3 } from "googleapis";
@@ -21,13 +22,12 @@ import fs from "fs";
 import path from "path";
 import { supabase } from "../src/supabase/client";
 
-// 사용자 제공 · Drive 폴더 ID (기본값 · app_settings 로 override 가능)
+// 사용자 제공 · Drive 폴더 ID
 const DRIVE_FOLDERS_DEFAULT = {
   resume: "1gEYUWD-PHzsewJkomuzWkpQA960rLkUv",
   contract: "1taDuOluNZxHSd_uJ7qr32xRVYFpD-IXe",
 };
 
-// Service Account 키 파일 검색 경로 (우선순위)
 const KEY_FILE_DIRS = [
   path.join(process.cwd(), "src", "keys"),
   path.join(process.cwd(), "keys"),
@@ -35,62 +35,97 @@ const KEY_FILE_DIRS = [
 
 type FolderKind = "resume" | "contract";
 
+interface OAuthCreds {
+  client_id: string;
+  client_secret: string;
+  refresh_token: string;
+}
+
 interface DriveConfig {
-  serviceAccountJson: any | null;
+  oauth: OAuthCreds | null;
+  serviceAccountJson: any | null;  // 레거시 fallback
   folders: Record<FolderKind, string | null>;
 }
 
 let cached: { driveClient: drive_v3.Drive | null; config: DriveConfig } = {
   driveClient: null,
-  config: { serviceAccountJson: null, folders: { resume: null, contract: null } },
+  config: { oauth: null, serviceAccountJson: null, folders: { resume: null, contract: null } },
 };
 let initTried = false;
-let lastInitFailAt = 0;   // 실패 시 · 재시도 쿨다운 (60초 · 외부 API 활성화 반영 대응)
+let lastInitFailAt = 0;
 const RETRY_COOLDOWN_MS = 60 * 1000;
 
-function loadKeyFromFile(): any | null {
+/**
+ * src/keys 폴더에서 · OAuth JSON 또는 Service Account JSON 을 자동 감지 로드
+ * 우선순위: OAuth > Service Account (OAuth 가 있으면 그것을 사용)
+ */
+function loadKeyFromFile(): { oauth: OAuthCreds | null; sa: any | null } {
+  let oauth: OAuthCreds | null = null;
+  let sa: any | null = null;
   for (const dir of KEY_FILE_DIRS) {
     try {
       if (!fs.existsSync(dir)) continue;
       const files = fs.readdirSync(dir).filter(f => f.endsWith(".json"));
-      if (files.length === 0) continue;
-      // 첫번째 .json 파일 사용 (여러 개 있으면 이름 순 첫번째)
-      const filePath = path.join(dir, files.sort()[0]);
-      const raw = fs.readFileSync(filePath, "utf8");
-      const parsed = JSON.parse(raw);
-      if (parsed && parsed.type === "service_account" && parsed.private_key) {
-        console.log(`[google-drive] Service Account 키 로드 (파일): ${filePath}`);
-        return parsed;
+      for (const f of files) {
+        try {
+          const filePath = path.join(dir, f);
+          const raw = fs.readFileSync(filePath, "utf8");
+          const parsed = JSON.parse(raw);
+          if (!parsed || typeof parsed !== "object") continue;
+          // OAuth JSON 감지 · refresh_token 존재
+          if (parsed.refresh_token && parsed.client_id && parsed.client_secret) {
+            oauth = {
+              client_id: String(parsed.client_id),
+              client_secret: String(parsed.client_secret),
+              refresh_token: String(parsed.refresh_token),
+            };
+            console.log(`[google-drive] OAuth 크레덴셜 로드 (파일): ${filePath}`);
+          }
+          // Service Account JSON 감지 (레거시)
+          else if (parsed.type === "service_account" && parsed.private_key) {
+            sa = parsed;
+            console.log(`[google-drive] Service Account 키 로드 (파일): ${filePath}`);
+          }
+        } catch (e: any) {
+          console.warn(`[google-drive] 파일 파싱 실패 (${f}):`, e?.message);
+        }
       }
     } catch (e: any) {
-      console.warn(`[google-drive] 키 파일 읽기 실패 (${dir}):`, e?.message);
+      console.warn(`[google-drive] 디렉토리 읽기 실패 (${dir}):`, e?.message);
     }
   }
-  return null;
+  return { oauth, sa };
 }
 
 async function loadConfig(): Promise<DriveConfig> {
   const config: DriveConfig = {
+    oauth: null,
     serviceAccountJson: null,
     folders: { ...DRIVE_FOLDERS_DEFAULT },
   };
 
-  // 1) 파일 우선 (src/keys/*.json)
+  // 1) 파일 우선
   const fromFile = loadKeyFromFile();
-  if (fromFile) {
-    config.serviceAccountJson = fromFile;
-  }
+  if (fromFile.oauth) config.oauth = fromFile.oauth;
+  if (fromFile.sa) config.serviceAccountJson = fromFile.sa;
 
-  // 2) DB fallback (파일 없으면) + folder ID override
+  // 2) DB fallback · 파일 없으면 · 폴더 ID override
   try {
     const { data } = await supabase
       .from("app_settings")
       .select("key, value")
-      .in("key", ["google_service_account", "google_drive_folders"]);
+      .in("key", ["google_service_account", "google_oauth_refresh", "google_drive_folders"]);
     for (const row of (data ?? []) as any[]) {
+      if (row.key === "google_oauth_refresh" && !config.oauth) {
+        const v = row.value ?? {};
+        if (v.refresh_token && v.client_id && v.client_secret) {
+          config.oauth = v as OAuthCreds;
+          console.log("[google-drive] OAuth 크레덴셜 로드 (Supabase)");
+        }
+      }
       if (row.key === "google_service_account" && !config.serviceAccountJson) {
         config.serviceAccountJson = row.value ?? null;
-        if (config.serviceAccountJson) console.log("[google-drive] Service Account 키 로드 (Supabase app_settings)");
+        if (config.serviceAccountJson) console.log("[google-drive] Service Account 키 로드 (Supabase)");
       }
       if (row.key === "google_drive_folders") {
         const v = row.value ?? {};
@@ -107,7 +142,6 @@ async function loadConfig(): Promise<DriveConfig> {
 
 async function initClient(): Promise<drive_v3.Drive | null> {
   if (cached.driveClient) return cached.driveClient;
-  // 실패 후 쿨다운 (60초) 지나면 · 재시도 · Drive API 활성화 · 폴더 공유 등 외부 변경 반영
   if (initTried && Date.now() - lastInitFailAt < RETRY_COOLDOWN_MS) {
     return cached.driveClient;
   }
@@ -115,19 +149,36 @@ async function initClient(): Promise<drive_v3.Drive | null> {
   try {
     const config = await loadConfig();
     cached.config = config;
-    if (!config.serviceAccountJson) {
-      console.warn("[google-drive] app_settings.google_service_account 미설정 · Drive 통합 비활성");
-      lastInitFailAt = Date.now();
-      return null;
+
+    // 방식 1 · OAuth (권장 · 개인 Drive 지원)
+    if (config.oauth) {
+      const oAuth2Client = new google.auth.OAuth2(
+        config.oauth.client_id,
+        config.oauth.client_secret,
+        "https://developers.google.com/oauthplayground",
+      );
+      oAuth2Client.setCredentials({ refresh_token: config.oauth.refresh_token });
+      const client = google.drive({ version: "v3", auth: oAuth2Client });
+      cached.driveClient = client;
+      console.log("[google-drive] OAuth 초기화 완료 · 폴더: resume=", config.folders.resume, "contract=", config.folders.contract);
+      return client;
     }
-    const auth = new google.auth.GoogleAuth({
-      credentials: config.serviceAccountJson,
-      scopes: ["https://www.googleapis.com/auth/drive.file"],
-    });
-    const client = google.drive({ version: "v3", auth });
-    cached.driveClient = client;
-    console.log("[google-drive] 초기화 완료 · 폴더: resume=", config.folders.resume, "contract=", config.folders.contract);
-    return client;
+
+    // 방식 2 · Service Account (레거시 · 공유 드라이브만)
+    if (config.serviceAccountJson) {
+      const auth = new google.auth.GoogleAuth({
+        credentials: config.serviceAccountJson,
+        scopes: ["https://www.googleapis.com/auth/drive.file"],
+      });
+      const client = google.drive({ version: "v3", auth });
+      cached.driveClient = client;
+      console.log("[google-drive] Service Account 초기화 완료 · 폴더: resume=", config.folders.resume, "contract=", config.folders.contract);
+      return client;
+    }
+
+    console.warn("[google-drive] OAuth · Service Account 모두 미설정 · Drive 통합 비활성");
+    lastInitFailAt = Date.now();
+    return null;
   } catch (e: any) {
     console.warn("[google-drive] 초기화 실패:", e?.message);
     lastInitFailAt = Date.now();
@@ -135,27 +186,26 @@ async function initClient(): Promise<drive_v3.Drive | null> {
   }
 }
 
-export async function isDriveReady(): Promise<{ ready: boolean; folders: DriveConfig["folders"] }> {
+export async function isDriveReady(): Promise<{
+  ready: boolean;
+  mode: "oauth" | "service_account" | "none";
+  folders: DriveConfig["folders"];
+}> {
   const client = await initClient();
-  return { ready: !!client, folders: cached.config.folders };
+  const mode: "oauth" | "service_account" | "none" =
+    cached.config.oauth ? "oauth" :
+    cached.config.serviceAccountJson ? "service_account" : "none";
+  return { ready: !!client, mode, folders: cached.config.folders };
 }
 
 export interface DriveUploadResult {
   fileId: string;
-  webViewLink: string;      // https://drive.google.com/file/d/<id>/view (뷰어 페이지)
-  webContentLink?: string;  // 다운로드 링크 (선택)
+  webViewLink: string;
+  webContentLink?: string;
   name: string;
   size: number;
 }
 
-/**
- * 파일을 Google Drive 지정 폴더에 업로드하고 · 공유 링크(anyone with link · viewer) 를 반환
- *
- * @param kind "resume" | "contract" (앱_settings.google_drive_folders 에서 조회)
- * @param buffer 파일 바이너리
- * @param fileName 저장할 파일명 (예: "홍길동_이력서_20260805.pdf")
- * @param mimeType MIME 타입 (예: "application/pdf")
- */
 export async function uploadToDrive(
   kind: FolderKind,
   buffer: Buffer,
@@ -163,11 +213,10 @@ export async function uploadToDrive(
   mimeType: string,
 ): Promise<DriveUploadResult> {
   const client = await initClient();
-  if (!client) throw new Error("Google Drive 미설정 · app_settings 확인 필요");
+  if (!client) throw new Error("Google Drive 미설정 · src/keys 확인 필요");
   const folderId = cached.config.folders[kind];
   if (!folderId) throw new Error(`Google Drive 폴더 ID 미설정 · ${kind}`);
 
-  // 파일 생성
   const created = await client.files.create({
     requestBody: {
       name: fileName,
@@ -183,7 +232,6 @@ export async function uploadToDrive(
   });
 
   const fileId = created.data.id!;
-  // 공유 설정 · anyone with link · reader (organization 정책 따라 실패 가능 · 무시)
   try {
     await client.permissions.create({
       fileId,
@@ -203,9 +251,6 @@ export async function uploadToDrive(
   };
 }
 
-/**
- * Drive 파일 삭제 · (실패해도 throw X · log 만)
- */
 export async function deleteFromDrive(fileId: string): Promise<boolean> {
   const client = await initClient();
   if (!client) return false;
@@ -218,13 +263,6 @@ export async function deleteFromDrive(fileId: string): Promise<boolean> {
   }
 }
 
-/**
- * URL 에서 Drive fileId 추출
- * 지원 형식:
- *  - https://drive.google.com/file/d/<ID>/view
- *  - https://drive.google.com/open?id=<ID>
- *  - https://drive.google.com/uc?id=<ID>
- */
 export function extractDriveFileId(url: string): string | null {
   if (!url) return null;
   const m1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
