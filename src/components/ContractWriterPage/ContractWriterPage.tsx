@@ -4970,15 +4970,15 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       )}
 
       <main className="flex-1 max-w-[1600px] mx-auto w-full px-3 sm:px-5 py-4 flex flex-col gap-3 min-h-0">
-        {/* 페이지 헤더 */}
+        {/* 페이지 헤더 · T-CTR-11 · 컴팩트 축소 */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-              <NotePencil size={20} weight="fill" />
+            <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+              <NotePencil size={16} weight="fill" />
             </div>
             <div>
-              <h1 className="text-lg sm:text-xl font-black text-slate-800 leading-none">근로계약서 작성</h1>
-              <p className="text-xs text-slate-500 mt-1">좌측 폼 · 우측 이미지 재현 · 프리뷰 내 서명 spot 클릭하여 서명 입력</p>
+              <h1 className="text-sm sm:text-base font-black text-slate-800 leading-none">근로계약서 작성</h1>
+              <p className="text-[10px] text-slate-500 mt-0.5">좌측 폼 · 우측 이미지 재현 · 프리뷰 내 서명 spot 클릭하여 서명 입력</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
