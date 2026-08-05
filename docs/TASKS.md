@@ -33,10 +33,13 @@
 
 ## 🟢 개발 필요 (에이전트·자체 진행 가능)
 
-### ✅ T-SCAN-1 완료 · 스캔 즉시 모달 팝업 (commit `e7e058e`)
-- ScanPage · 바코드 스캔 즉시 상품정보 모달 · [진열요청] 진입점
-- 리스트 행 추가 유지 (기존 실재고 입력 UX 보존)
-- 관리자(auth_level ≥ 8) 알림 · commit `36a996d`
+### ✅ T-SCAN-1 완료 · 진열요청 전체 워크플로우 (2026-08-05)
+- **`e7e058e`** ScanPage 스캔 즉시 상품정보 모달 · [진열요청] 진입점
+- **`36a996d`** 관리자(auth_level ≥ 8) 알림 추가 (POST /api/display-requests)
+- **`ecf84b4`** RequestsPage 진열요청 3단계 통합 · DisplayPage 중복 서브탭 제거
+  - [준비완료] · [진열완료] 컬럼 · 상태 배지 (대기·창고준비완료·완료)
+  - 창고 준비자·완료자 이름·시각 서브라인
+- Backend 3단계 API 이미 완료 (POST · PATCH prepare · PATCH complete)
 - 사용자 실 UI 검증 대기
 
 ### ✅ 매입 서브탭 · 3탭 공통 기간 필터 + 원형차트 3종 완료 (commit `89612ac`)
