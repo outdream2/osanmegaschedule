@@ -542,7 +542,7 @@ function classifyProduct(name: string): string {
   return "기타";
 }
 
-const CategoryPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
+export const CategoryPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
   const { data, total } = useMemo(() => {
     const map = new Map<string, number>();
     let t = 0;
@@ -614,7 +614,7 @@ const CategoryPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => 
 };
 
 // ── 차트 2 · 월별 매입액 분포 (최근 6개월 파이차트) ───────────────────────
-const MonthlyPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
+export const MonthlyPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
   const { data, total } = useMemo(() => {
     // 최근 6개월 label 생성
     const now = new Date();
@@ -688,7 +688,7 @@ const MonthlyPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
 };
 
 // ── 차트 3 · 상품별 매입 Top 10 비중 ─────────────────────────────────────
-const TopProductsPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
+export const TopProductsPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
   const { data, total } = useMemo(() => {
     const map = new Map<string, number>();
     let t = 0;

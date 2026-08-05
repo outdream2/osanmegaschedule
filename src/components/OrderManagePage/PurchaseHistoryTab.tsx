@@ -20,7 +20,11 @@ import PurchaseSubTabs, {
   type PurchaseLedgerRow,
   type PurchaseDetailRow,
   type TabKey as PurchaseSubTabKey,
+  CategoryPieChart,
+  MonthlyPieChart,
+  TopProductsPieChart,
 } from "./PurchaseHistoryTab/PurchaseSubTabs";
+import { SeasonButtons } from "../common/SeasonButtons";
 import ProductRowCard, { type ProductSummary } from "./PurchaseHistoryTab/ProductRowCard";
 import ProductPurchaseDetailPanel, {
   type ProductPurchaseRow,
@@ -572,11 +576,37 @@ export const PurchaseHistoryTab: React.FC = () => {
     });
   }, [vendors, vendorSearch, vendorCategoryFilter, summaryLookup, leftSort, leftDir]);
 
-  // ─── 상품별 집계 (allDetails groupBy product_code || product_name) ──────
-  const productList = useMemo<ProductSummary[]>(() => {
+  // ─── by-product 기간 필터 적용 allDetails 슬라이스 (2026-08-05) ──────────
+  //   · allDetails 는 최근 1년치 전부 · 기간 필터로 클라이언트 슬라이스
+  //   · periodMonths/periodSeason 은 by-vendor 뷰와 공유 state
+  const filteredAllDetails = useMemo<PurchaseDetailRow[]>(() => {
     if (allDetails.length === 0) return [];
+    const isDays10 = periodMonths === 0 && !periodSeason;
+    const days = periodSeason
+      ? 365
+      : isDays10 ? 10 : (periodMonths || 1) * 30;
+    const fromDate = new Date();
+    fromDate.setDate(fromDate.getDate() - days);
+    const fromStr = fromDate.toISOString().slice(0, 10);
+    return allDetails.filter(r => r.date >= fromStr);
+  }, [allDetails, periodMonths, periodSeason]);
+
+  // 기간 필터 변경 시 · 선택 상품이 필터된 리스트에 없으면 해제 (2026-08-05)
+  useEffect(() => {
+    if (!selectedProductKey || viewMode !== "by-product") return;
+    const found = filteredAllDetails.some(r => {
+      const k = String(r.product_code ?? "").trim() || String(r.product_name ?? "").trim() || "(무명)";
+      return k === selectedProductKey;
+    });
+    if (!found) setSelectedProductKey(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredAllDetails]);
+
+  // ─── 상품별 집계 (filteredAllDetails groupBy · 기간 필터 반영) ────────────
+  const productList = useMemo<ProductSummary[]>(() => {
+    if (filteredAllDetails.length === 0) return [];
     const map = new Map<string, ProductSummary & { supplierSet: Map<string, number> }>();
-    for (const r of allDetails) {
+    for (const r of filteredAllDetails) {
       const key = String(r.product_code ?? "").trim() || String(r.product_name ?? "").trim() || "(무명)";
       const supName = detailSupplierMap.get(r.id) ?? null;
       let a = map.get(key);
@@ -632,7 +662,7 @@ export const PurchaseHistoryTab: React.FC = () => {
       });
     }
     return list;
-  }, [allDetails, detailSupplierMap, productSalesMap]);
+  }, [filteredAllDetails, detailSupplierMap, productSalesMap]);
 
   // 상품 필터링 + 정렬
   const filteredProducts = useMemo<ProductSummary[]>(() => {
@@ -698,7 +728,7 @@ export const PurchaseHistoryTab: React.FC = () => {
   const selectedProductRows = useMemo<ProductPurchaseRow[]>(() => {
     if (!selectedProductKey) return [];
     const rows: ProductPurchaseRow[] = [];
-    for (const r of allDetails) {
+    for (const r of filteredAllDetails) {
       const k = String(r.product_code ?? "").trim() || String(r.product_name ?? "").trim() || "(무명)";
       if (k !== selectedProductKey) continue;
       rows.push({
@@ -713,7 +743,7 @@ export const PurchaseHistoryTab: React.FC = () => {
     // 최근 순 정렬 (default)
     rows.sort((a, b) => String(b.date).localeCompare(String(a.date)));
     return rows;
-  }, [allDetails, detailSupplierMap, selectedProductKey]);
+  }, [filteredAllDetails, detailSupplierMap, selectedProductKey]);
 
   return (
     <div className="flex flex-col gap-2 h-full min-h-0">
@@ -991,7 +1021,7 @@ export const PurchaseHistoryTab: React.FC = () => {
             onMobileClose={() => setSelectedProductKey(null)}
             left={
               <div className="w-full flex flex-col gap-2 h-full min-h-0">
-              {/* 검색 + 정렬 */}
+              {/* 검색 + 기간 필터 + 정렬 */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2 flex flex-col gap-2">
                 <input
                   type="text"
@@ -1000,6 +1030,39 @@ export const PurchaseHistoryTab: React.FC = () => {
                   placeholder="상품명 · 코드 검색"
                   className="w-full h-7 px-2.5 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-sky-400 focus:border-sky-400 transition"
                 />
+                {/* 2026-08-05 · 기간 필터 (by-product 공통 periodMonths/periodSeason 공유) */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-100">
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">기간</span>
+                  <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
+                    <button
+                      type="button"
+                      onClick={() => { setPeriodMonths(0); setPeriodSeason(null); }}
+                      className={`px-2 h-6 text-[10px] font-semibold rounded transition cursor-pointer ${
+                        !periodSeason && periodMonths === 0
+                          ? "bg-sky-500 text-white shadow-sm"
+                          : "text-slate-500 hover:text-slate-700"
+                      }`}
+                    >10일</button>
+                    {([1, 2, 3, 6] as const).map(m => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => { setPeriodMonths(m); setPeriodSeason(null); }}
+                        className={`px-2 h-6 text-[10px] font-semibold rounded transition cursor-pointer ${
+                          !periodSeason && periodMonths === m
+                            ? "bg-sky-500 text-white shadow-sm"
+                            : "text-slate-500 hover:text-slate-700"
+                        }`}
+                      >{m}개월</button>
+                    ))}
+                  </div>
+                  <SeasonButtons
+                    value={periodSeason ?? null}
+                    onChange={(v) => { setPeriodSeason(v); }}
+                    size="sm"
+                    hideLabel
+                  />
+                </div>
                 <div className="flex items-center gap-1 pt-1 border-t border-slate-100 flex-wrap">
                   <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">정렬</span>
                   {/* 2026-08-04 · 판매량·판매금액 정렬 추가 (사용자 요청 · 판매는 rose · 매입/기타는 sky) */}
@@ -1052,7 +1115,7 @@ export const PurchaseHistoryTab: React.FC = () => {
                   </div>
                 ) : filteredProducts.length === 0 ? (
                   <div className="py-8 text-center text-[11px] text-slate-300">
-                    {productSearch ? "검색 결과 없음" : "최근 1년 매입 상품 없음"}
+                    {productSearch ? "검색 결과 없음" : "해당 기간 매입 상품 없음"}
                   </div>
                 ) : (
                   <div className="divide-y divide-slate-50">
@@ -1074,13 +1137,37 @@ export const PurchaseHistoryTab: React.FC = () => {
               </div>
             }
             right={
-              /* 우측: 상품 상세 (헤더 + 매입 원장) */
+              /* 우측: 상품 선택 전 → 전체 파이차트 3종 / 선택 후 → 상품 상세 */
               <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-2">
               {!selectedProduct ? (
-                <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
-                  <Package size={40} className="mb-3 opacity-30" />
-                  <div className="text-[11px] font-semibold">좌측에서 상품을 선택하세요</div>
-                  <div className="text-[11px] mt-1">최근 1년 · 공급사별 매입 원장이 표시됩니다</div>
+                /* 2026-08-05 · 상품 선택 전 · 기간 필터 기반 전체 매입 파이차트 3종 */
+                <div className="flex flex-col gap-2 flex-1 min-h-0 overflow-auto">
+                  {/* 차트 헤더 */}
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-2.5 flex items-center gap-2 shrink-0">
+                    <Package size={14} className="text-sky-500 shrink-0" />
+                    <span className="text-[13px] font-black text-slate-800">상품별 매입 분석</span>
+                    <span className="text-[11px] text-slate-400 font-semibold ml-1">
+                      {filteredAllDetails.length > 0
+                        ? `${filteredAllDetails.length}건 분석`
+                        : allDetailsLoading ? "로딩 중..." : "데이터 없음"}
+                    </span>
+                    <span className="ml-auto text-[10px] text-slate-400">좌측에서 상품을 선택하면 원장 표시</span>
+                  </div>
+                  {/* 3종 파이차트 · 반응형 그리드 */}
+                  {allDetailsLoading ? (
+                    <div className="bg-white rounded-xl border border-slate-200 flex-1 flex items-center justify-center text-slate-400 text-[12px] gap-2 min-h-[300px]">
+                      <Loader2 size={14} className="animate-spin" />
+                      <span>매입 데이터 로딩 중...</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-2 pb-2">
+                      <CategoryPieChart rows={filteredAllDetails} />
+                      <TopProductsPieChart rows={filteredAllDetails} />
+                      <div className="xl:col-span-2">
+                        <MonthlyPieChart rows={filteredAllDetails} />
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <ProductPurchaseDetailPanel
