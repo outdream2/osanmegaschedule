@@ -127,6 +127,10 @@ interface ContractForm {
   employeeAddress: string;
   employeeBirth: string;
   employeeBankAccount: string;
+  // T-Q (2026-08-05) · 은행 · 계좌번호 · 통장사본 분리 (하위호환 · employeeBankAccount 유지)
+  bankName: string;
+  bankAccountNumber: string;
+  bankbookImageUrl: string;
   employeeEmail: string;
 
   // 계약 유형
@@ -217,6 +221,17 @@ const START_TIMES = ["08:00", "09:00", "09:30", "10:00", "11:00", "12:00", "13:0
 const END_TIMES  = ["15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"];
 
 const CUSTOM_OPTION = "__custom__";
+
+// T-Q (2026-08-05) · 은행 목록 (드롭다운) · "기타" 선택 시 자유 텍스트 fallback
+const BANK_LIST: string[] = [
+  "국민", "신한", "하나", "우리", "NH농협", "기업", "SC제일", "씨티", "카카오뱅크", "토스뱅크", "기타",
+];
+
+// T-S (2026-08-05) · 휴게 시간대 드롭다운 옵션 · 1시간 간격 (근무시간 커버 · 8~22시)
+const BREAK_TIME_OPTIONS: string[] = [
+  "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00",
+  "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00",
+];
 
 // 회사 기본값 (오산 메가타운 약국)
 const DEFAULT_EMPLOYER: Partial<ContractForm> = {
@@ -664,6 +679,9 @@ const emptyForm = (): ContractForm => ({
   employeeAddress: "",
   employeeBirth: "",
   employeeBankAccount: "",
+  bankName: "",
+  bankAccountNumber: "",
+  bankbookImageUrl: "",
   employeeEmail: "",
   contractType: "정규직",
   contractMonths: "2",
@@ -1899,7 +1917,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
             ※ 업무형편상 부득이한 경우 상기 휴게 시간을 변경할 수 있고, 제대로 사용하지 못한 휴게시간은 다른 시간 내에서 보충 사용하는 것에 동의한다.
           </div>
           <div className="text-[11px] text-slate-800 leading-snug mt-1">
-            ※ 휴게시간은 사업장 사정에 따라 변경될 수 있으며, 을은 정당한 사유 없이 이를 거부할 수 없다.
+            ※ 휴게시간은 갑과 을의 협의에 따라 변경할 수 있다.
           </div>
         </div>
 
@@ -2085,7 +2103,14 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
           <FieldRow label="주민번호" value={<span className="tabular-nums">{form.employeeBirth || "-"}</span>} />
           <FieldRow label="주소" value={form.employeeAddress || "-"} />
           <FieldRow label="전화번호" value={<span className="tabular-nums">{form.employeePhone || "-"}</span>} />
-          <FieldRow label="은행/계좌" value={form.employeeBankAccount || "-"} />
+          <FieldRow
+            label="은행/계좌"
+            value={
+              (form.bankName || form.bankAccountNumber)
+                ? `${form.bankName ?? ""} ${form.bankAccountNumber ?? ""}`.trim() || "-"
+                : (form.employeeBankAccount || "-")
+            }
+          />
           <FieldRow label="이메일" value={form.employeeEmail || "-"} />
           <div className="flex items-center justify-end mt-1">
             <span className="text-[10.5px] text-slate-500 font-bold mr-2">(서명)</span>
@@ -2766,6 +2791,92 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       text: `월 근로시간 ${monthlyCalc.monthlyHoursInt}시간 ${monthlyCalc.monthlyMinutesRem}분 을 기본급 항목에 반영했습니다.`,
     });
   }, [monthlyCalc]);
+
+  // T-U (2026-08-05) · workDays·근무시간·시급 변경 시 임금구성표 자동 재계산
+  //   · 시급 (통상시급) × 각 항목 시간 = 각 항목 금액
+  //   · 기본급 시간 · monthlyCalc 기준 자동 조정 (주말 추가 시 반영)
+  //     - 단, 사용자가 수동으로 변경한 basic hours 는 유지 (default 값 209 또는 이전 monthlyCalc 값일 때만 자동 갱신)
+  //   · 연장·휴일·연차 시간 · 그대로 유지 (사용자가 조정한 항목)
+  //   · 금액은 각 항목 시간 × 시급 (또는 야간·휴일연장은 × 0.5) 로 재산정
+  const lastAutoBasicHoursRef = useRef<{ h: number; m: number } | null>(null);
+  useEffect(() => {
+    setForm(prev => {
+      const wd = Number(prev.weekdayHourly) || 0;
+      const we = Number(prev.weekendHourly) || 0;
+      if (wd <= 0) return prev; // 시급 미입력 시 skip
+
+      let nextWage = prev.wageComponents;
+
+      // 1) basic hours 자동 갱신 · monthlyCalc 있고 · 사용자가 수동 조정 안 한 경우
+      //    (조건: 현재 basic hours = 최근 자동 반영값 OR default 209h OR 0)
+      if (monthlyCalc) {
+        const cur = prev.wageComponents.basicSalary;
+        const last = lastAutoBasicHoursRef.current;
+        const isDefaultBasic =
+          (cur.hours === 209 && cur.minutes === 0) ||
+          (cur.hours === 0 && cur.minutes === 0) ||
+          (last != null && cur.hours === last.h && cur.minutes === last.m);
+        if (isDefaultBasic) {
+          const nextH = monthlyCalc.monthlyHoursInt;
+          const nextM = monthlyCalc.monthlyMinutesRem;
+          if (cur.hours !== nextH || cur.minutes !== nextM) {
+            nextWage = {
+              ...nextWage,
+              basicSalary: { ...cur, hours: nextH, minutes: nextM },
+            };
+            lastAutoBasicHoursRef.current = { h: nextH, m: nextM };
+          } else {
+            lastAutoBasicHoursRef.current = { h: nextH, m: nextM };
+          }
+        }
+      }
+
+      // 2) 각 항목 시간 × 시급 재계산 (배수 · 야간/휴일연장 0.5)
+      const calc = computeWageFromHourlyDual(wd, we, nextWage);
+      const nextComp: WageComponents = {
+        ...nextWage,
+        basicSalary:          { ...nextWage.basicSalary,          amount: calc.basicAmount },
+        fixedOvertime:        { ...nextWage.fixedOvertime,        amount: calc.overtimeAmount },
+        fixedHoliday:         { ...nextWage.fixedHoliday,         amount: calc.holidayAmount },
+        fixedHolidayOvertime: { ...nextWage.fixedHolidayOvertime, amount: calc.holidayOvertimeAmount },
+        fixedNight:           { ...nextWage.fixedNight,           amount: calc.nightAmount },
+        fixedAnnualLeave:     { ...nextWage.fixedAnnualLeave,     amount: calc.annualLeaveAmount },
+      };
+
+      // 변화 감지 (basic hours 갱신 · 또는 6항목 금액 갱신)
+      const changed =
+        nextWage !== prev.wageComponents ||
+        nextComp.basicSalary.amount          !== prev.wageComponents.basicSalary.amount ||
+        nextComp.fixedOvertime.amount        !== prev.wageComponents.fixedOvertime.amount ||
+        nextComp.fixedHoliday.amount         !== prev.wageComponents.fixedHoliday.amount ||
+        nextComp.fixedHolidayOvertime.amount !== prev.wageComponents.fixedHolidayOvertime.amount ||
+        nextComp.fixedNight.amount           !== prev.wageComponents.fixedNight.amount ||
+        nextComp.fixedAnnualLeave.amount     !== prev.wageComponents.fixedAnnualLeave.amount;
+      if (!changed) return prev;
+      return { ...prev, wageComponents: nextComp };
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    form.workDays,
+    form.startTime,
+    form.endTime,
+    form.breakMinutes,
+    form.weekdayHourly,
+    form.weekendHourly,
+    form.wageComponents.basicSalary.hours,
+    form.wageComponents.basicSalary.minutes,
+    form.wageComponents.fixedOvertime.hours,
+    form.wageComponents.fixedOvertime.minutes,
+    form.wageComponents.fixedHoliday.hours,
+    form.wageComponents.fixedHoliday.minutes,
+    form.wageComponents.fixedHolidayOvertime.hours,
+    form.wageComponents.fixedHolidayOvertime.minutes,
+    form.wageComponents.fixedNight.hours,
+    form.wageComponents.fixedNight.minutes,
+    form.wageComponents.fixedAnnualLeave.hours,
+    form.wageComponents.fixedAnnualLeave.minutes,
+    monthlyCalc,
+  ]);
 
   // 직원 선택
   const onSelectEmployee = (empIdRaw: string) => {
@@ -3480,12 +3591,98 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 className={fldInput}
               />
             </div>
-            <div className="col-span-2">
-              <label className={fldLabel}>은행 / 계좌번호</label>
-              <input type="text" value={form.employeeBankAccount} onChange={(e) => upd("employeeBankAccount", e.target.value)}
-                placeholder="카카오뱅크 3333-12-3456789"
-                className={fldInput}
-              />
+            {/* T-Q (2026-08-05) · 은행 · 계좌번호 · 통장사본 업로드 (분리) */}
+            <div className="col-span-2 grid grid-cols-[130px_1fr_auto] gap-2 items-end">
+              <div>
+                <label className={fldLabel}>은행</label>
+                <select
+                  value={form.bankName}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    upd("bankName", v);
+                    // 하위호환: employeeBankAccount 도 동기화 (표시용)
+                    const acct = form.bankAccountNumber;
+                    upd("employeeBankAccount", [v, acct].filter(Boolean).join(" ").trim());
+                  }}
+                  className="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 text-[13px] text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition cursor-pointer"
+                >
+                  <option value="">선택</option>
+                  {BANK_LIST.map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={fldLabel}>계좌번호</label>
+                <input
+                  type="text"
+                  value={form.bankAccountNumber}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    upd("bankAccountNumber", v);
+                    // 하위호환 · 결합 표시
+                    upd("employeeBankAccount", [form.bankName, v].filter(Boolean).join(" ").trim());
+                  }}
+                  placeholder="3333-12-3456789"
+                  className={fldInput}
+                />
+              </div>
+              <div className="shrink-0">
+                <label className={fldLabel}>통장사본</label>
+                <label
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg border font-black text-[11.5px] transition-colors cursor-pointer ${
+                    form.bankbookImageUrl
+                      ? "bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100"
+                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
+                  title={form.bankbookImageUrl ? "다시 업로드하려면 클릭" : "통장사본 이미지 업로드 (jpg/png)"}
+                >
+                  <DownloadSimple size={12} weight="bold" className="rotate-180" />
+                  {form.bankbookImageUrl ? "업로드됨" : "파일 선택"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      // 5MB 제한
+                      if (f.size > 5 * 1024 * 1024) {
+                        setNotice({ tone: "err", text: `파일 크기 초과 (${(f.size / 1024 / 1024).toFixed(1)}MB > 5MB)` });
+                        return;
+                      }
+                      // base64 로 저장 (별도 업로드 API 없이 폼에 첨부 · Drive 저장은 향후)
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const url = String(reader.result || "");
+                        upd("bankbookImageUrl", url);
+                        setNotice({ tone: "ok", text: `통장사본이 첨부되었습니다 (${(f.size / 1024).toFixed(0)}KB)` });
+                      };
+                      reader.onerror = () => {
+                        setNotice({ tone: "err", text: "통장사본 읽기 실패" });
+                      };
+                      reader.readAsDataURL(f);
+                      // input 리셋 (같은 파일 재선택 허용)
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+              {form.bankbookImageUrl && (
+                <div className="col-span-3 flex items-center gap-2 mt-1">
+                  <img
+                    src={form.bankbookImageUrl}
+                    alt="통장사본"
+                    className="h-14 border border-slate-200 rounded-md object-contain bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => upd("bankbookImageUrl", "")}
+                    className="text-[11px] font-bold text-rose-500 hover:text-rose-700 cursor-pointer"
+                    title="첨부한 통장사본 제거"
+                  >
+                    ✕ 제거
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -3493,23 +3690,42 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       {/* /카드 1 */}
 
       {/* ═══════════════════════════════════════════════════
-          카드 2 · 계약 유형 · 근무 요일
+          카드 2 · 근무조건 (T-S 통합 · 계약유형 + 근무요일 + 근무시간 + 휴게)
       ═══════════════════════════════════════════════════ */}
       <div className={cardBase}>
         <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
           <div className="w-6 h-6 rounded-md bg-indigo-100 flex items-center justify-center shrink-0">
             <ClipboardText size={13} weight="fill" className="text-indigo-600" />
           </div>
-          <span className="text-[12px] font-black text-slate-700">계약 유형 · 근무 요일</span>
+          <span className="text-[12px] font-black text-slate-700">근무조건</span>
+          {monthlyCalc && (
+            <span
+              className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800"
+              title="선택한 근무요일·시간 기준 · 근기법 4.345주"
+            >
+              <Calculator size={11} weight="fill" className="text-emerald-600" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">월 근로</span>
+              <span className="tabular-nums text-[12px] font-black text-emerald-900">
+                {monthlyCalc.monthlyHoursInt}h {monthlyCalc.monthlyMinutesRem}m
+              </span>
+              <button type="button" onClick={applyMonthlyHoursToBasic}
+                className="ml-1 px-1.5 py-0.5 rounded bg-emerald-600 text-white text-[9.5px] font-black hover:bg-emerald-700 transition-colors cursor-pointer"
+                title="계산된 월 근로시간을 임금표의 기본급 시간에 반영"
+              >
+                반영
+              </button>
+            </span>
+          )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        {/* 1행 · 계약 유형 · 근무 요일 */}
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-start">
           {/* 계약 유형 */}
           <div>
             <label className={fldLabel}>계약 유형</label>
             <SelectOrCustom value={form.contractType} options={CONTRACT_TYPES} onChange={(v) => upd("contractType", v)} placeholder="예: 프리랜서" />
             {form.contractType === "계약직" && (
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-2 mt-1.5">
                 <span className="text-[10.5px] text-slate-400 font-semibold shrink-0">계약 기간</span>
                 <div className="flex-1">
                   <SelectOrCustom value={form.contractMonths} options={["2", "3", "6", "12"]} onChange={(v) => upd("contractMonths", v)} placeholder="예: 9" suffix="개월" />
@@ -3522,6 +3738,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           <div>
             <label className={fldLabel}>
               근무 요일 <span className="text-indigo-600 font-black">주{weeklyDays}일</span>
+              <span className="text-slate-400 font-semibold normal-case tracking-normal ml-1">
+                (주중 {weeklyWeekdayDays}일 · 주말 {weeklyWeekendDays}일)
+              </span>
             </label>
             <div className="flex flex-wrap gap-1">
               {DAYS.map(d => {
@@ -3530,7 +3749,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 return (
                   <button key={d} type="button" onClick={() => toggleDay(d)}
                     className={[
-                      "w-8 h-8 rounded-lg text-[12px] font-black transition-colors cursor-pointer border",
+                      "w-7 h-7 rounded-md text-[11.5px] font-black transition-colors cursor-pointer border",
                       on
                         ? isWeekend
                           ? "bg-rose-500 text-white border-rose-600 shadow-sm"
@@ -3541,85 +3760,61 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 );
               })}
             </div>
-            <div className="text-[10px] text-slate-400 font-semibold mt-1.5">
-              주중 {weeklyWeekdayDays}일 · 주말 {weeklyWeekendDays}일
-            </div>
           </div>
         </div>
-      </div>
-      {/* /카드 2 */}
 
-      {/* ═══════════════════════════════════════════════════
-          카드 3 · 근무 시간 · 휴게
-      ═══════════════════════════════════════════════════ */}
-      <div className={cardBase}>
-        <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-          <div className="w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center shrink-0">
-            <ClockClockwise size={13} weight="fill" className="text-emerald-600" />
-          </div>
-          <span className="text-[12px] font-black text-slate-700">근무 시간 · 휴게</span>
-        </div>
-
-        {/* 시작~종료 + 휴게분 한 줄 */}
+        {/* 2행 · 근무시간 + 휴게분 */}
         <div className="flex flex-wrap items-end gap-2">
           <div className="flex-1 min-w-[80px]">
-            <label className={fldLabel}>출근 시간</label>
+            <label className={fldLabel}>
+              <ClockClockwise size={10} className="inline mr-0.5 text-emerald-600" />출근
+            </label>
             <SelectOrCustom value={form.startTime} options={START_TIMES} onChange={(v) => upd("startTime", v)} placeholder="HH:MM" />
           </div>
           <span className="text-[13px] text-slate-400 font-black pb-2">~</span>
           <div className="flex-1 min-w-[80px]">
-            <label className={fldLabel}>퇴근 시간</label>
+            <label className={fldLabel}>퇴근</label>
             <SelectOrCustom value={form.endTime} options={END_TIMES} onChange={(v) => upd("endTime", v)} placeholder="HH:MM" />
           </div>
-          <div className="w-24">
+          <div className="w-20">
             <label className={fldLabel}>
               <Coffee size={10} className="inline mr-0.5" />휴게
             </label>
             <div className="relative">
               <input type="number" min={0} value={form.breakMinutes} onChange={(e) => upd("breakMinutes", e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg pl-3 pr-7 py-2 text-[13px] text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition text-right"
+                className="w-full bg-white border border-slate-200 rounded-lg pl-2 pr-6 py-1.5 text-[13px] text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition text-right"
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10.5px] text-slate-400 font-semibold pointer-events-none">분</span>
+              <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-semibold pointer-events-none">분</span>
             </div>
           </div>
         </div>
 
-        {/* 휴게 시간대 (선택) */}
-        <div className={cardInner}>
-          <div className={cardGroupLabel}>
-            휴게 시간대 <span className="font-normal normal-case text-[9.5px] text-slate-400">(선택 · 미입력 시 자동)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <input type="time" value={form.breakStart} onChange={(e) => upd("breakStart", e.target.value)}
-              className="flex-1 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[12px] text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition"
-            />
-            <span className="text-[11px] text-slate-400 font-semibold">~</span>
-            <input type="time" value={form.breakEnd} onChange={(e) => upd("breakEnd", e.target.value)}
-              className="flex-1 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[12px] text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition"
-            />
-          </div>
-        </div>
-
-        {/* 월 근로시간 자동 계산 결과 */}
-        {monthlyCalc && (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 px-3 py-2 flex items-center gap-2">
-            <Calculator size={13} weight="fill" className="text-emerald-600 shrink-0" />
-            <div className="flex flex-col">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">월 근로시간</span>
-              <span className="tabular-nums text-[13px] font-black text-emerald-900">
-                {monthlyCalc.monthlyHoursInt}h {monthlyCalc.monthlyMinutesRem}m
-              </span>
-            </div>
-            <button type="button" onClick={applyMonthlyHoursToBasic}
-              className="ml-auto inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-black hover:bg-emerald-700 transition-colors cursor-pointer shadow-sm"
-              title="계산된 월 근로시간을 임금표의 기본급 시간에 반영"
+        {/* 3행 · 휴게시간대 (드롭다운) · default 12:00~13:00 */}
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="flex-1 min-w-[80px]">
+            <label className={fldLabel}>휴게시간대 시작</label>
+            <select
+              value={form.breakStart}
+              onChange={(e) => upd("breakStart", e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[13px] text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition cursor-pointer"
             >
-              기본급 반영
-            </button>
+              {BREAK_TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
           </div>
-        )}
+          <span className="text-[13px] text-slate-400 font-black pb-2">~</span>
+          <div className="flex-1 min-w-[80px]">
+            <label className={fldLabel}>종료</label>
+            <select
+              value={form.breakEnd}
+              onChange={(e) => upd("breakEnd", e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[13px] text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition cursor-pointer"
+            >
+              {BREAK_TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+        </div>
       </div>
-      {/* /카드 3 */}
+      {/* /카드 2 (통합) */}
 
       {/* ═══════════════════════════════════════════════════
           카드 4 · 계약 기간 · 담당업무 · 4대보험 · 특약
