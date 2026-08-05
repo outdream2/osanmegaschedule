@@ -3323,8 +3323,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             기본 정보
           </div>
           <div className="grid grid-cols-2 gap-2">
-            {/* 성명 · 검색 */}
-            <div className="col-span-2 relative">
+            {/* 성명 · 검색 (주민번호와 나란히 · 2026-08-05) */}
+            <div className="relative">
               <label className={fldLabel}>성명</label>
               <input
                 type="text"
