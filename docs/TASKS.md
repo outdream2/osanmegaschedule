@@ -5,93 +5,54 @@
 - 새 태스크 발생 즉시 이 파일에 추가
 - 세션 시작 시 반드시 이 파일 read (토큰 만료로 in-memory TaskList 유실 대비)
 - 매 milestone (커밋·이슈 완료) 후 이 파일 update
+- **회귀 절대 금지** · TS + build 통과 · end-to-end 테스트 후 커밋
 
 ---
 
-## 🔴 진행 중 · 미완료
+## 🔴 진행 중 · 사용자 확인 대기
 
-### T-UI-1 · 공통 · SplitPanel 반응형 · 오른쪽 정보는 모바일에서 모달로 (2026-08-05 · 사용자 제보)
-- 증상: **모든 split 화면**에서 · 데스크탑 좌우 분할 → 모바일 세로 스택 (오른쪽이 아래로)
-- 요구: **모바일 반응형에서 오른쪽 정보는 아래가 아닌 모달**로 표시
-- 공통 작업 · SplitPanel (또는 유사 컴포넌트) 를 사용하는 모든 페이지에 일괄 적용
-- 영향 페이지: 재고관리·발주관리·매입관리·직원상세·근로계약서 등 다수
-- 담당: **mobile-ui-designer 에이전트** 위임 (T-SCAN-2 완료 후 이어서)
+### T-CTR-12 UI 검증 (2026-08-05 · commit `ff04638`)
+- 세전월급 자동 흐름 · 근무시간만 입력 → 4단계 완전 자동
+- 브라우저에서 근로계약서 페이지 → 직원 선택 → 근무일 클릭 → 세전 자동 채움 확인
+- 세전 수동 편집 시 임금구조 재분배 확인
 
-### T-SCAN-3 · 바코드 인식 순간 무조건 삑소리 (2026-08-05 · 사용자 제보)
-- 요구: 폰 벨소리·무음모드와 무관하게 · 인식되는 순간 즉시 삑
-- 구현: Web Audio API (AudioContext + OscillatorNode) · HTMLAudioElement 회피
-  - 사유: iOS/Android · muted 상태에서 `<audio>` 재생 안 됨 · AudioContext 는 재생됨
-- 위치: `handleScan` (ScanPage.tsx:287) · 진입 즉시 beep()
-- 실패한 접근: audio 태그·mp3 파일 (silent mode 무시됨)
+### T-CTR-9 UI 검증 (2026-08-05 · commit `97ef77d`)
+- 자동 희망세후 · 케이스: 하루 8h · 주 6일 · 시급 32,083 → 약 6,691,860원
 
-### ✅ T-SCAN-2 완료 · ProductInfoCard 반응형 UI 정돈 (commit `92a25bb`)
-- 상품명 헤더 · `flex-wrap` + `break-keep whitespace-normal` · 한글 단어 단위 줄바꿈 · 글자 세로 원천 차단
-- 배정구역 · 각 셀 border 분리 · 변경 버튼 `min-h-[44px]` 터치 타겟
-- 재고현황 헤더 · 접기 flex-1 min-w-0 · 재고세기 shrink-0 · 좁은 화면 줄바꿈 허용
-- 재고현황 접힘 · 완전 숨김 처리 (기존 헤더만 접힘)
-- 매입이력 · 상품명 보조 라벨 · line-clamp-1 · 정보 손실 없음
-- 사용자 실 UI 검증 대기
+### T-SCAN-2 UI 검증 (2026-08-05 · commit `92a25bb`)
+- ProductInfoCard 반응형 정돈 · 상품명 세로 방지 · 스캔해서 확인
 
-### T-SCAN-1 · 상품별 진열요청 3단계 워크플로우 (2026-08-05 · 사용자 확정)
+### T-SCAN-3 UI 검증 (2026-08-05 · commit `9851d10`)
+- 바코드 인식 삑삑 (2톤) · 진동 [80,40,80] 강화
+- iOS silent switch 는 Web Audio 도 뮤트 (플랫폼 제약)
 
-**전체 흐름** (사용자 확정):
-```
-[1] 실재고확인 (ScanPage) → 바코드 스캔 → 상품정보 모달 팝업
-       → 모달 내 [진열요청] 버튼 클릭
-       → 담당자(진열) + 관리자에게 알림 발송
+### T-UI-1 UI 검증 (2026-08-05 · commit `49e34e5`)
+- ProductDetailPanel 태블릿까지 fullscreen 모달 (sm→lg breakpoint)
 
-[2] 창고 준비: 창고담당이 [창고 준비완료] 버튼 클릭
-       → 진열담당에게 픽업 알림
+---
 
-[3] 진열 완료: 진열담당이 [진열완료] 버튼 클릭
-       → 관리자 완료 알림
-```
+## 🟢 개발 필요 (에이전트·자체 진행 가능)
 
-**DisplayRequestListPage UI 스펙** (사용자 확정):
-- 실시간 진열보충 리스트 · **상품별 진열요청 받은 것들**
-- 상품리스트를 **구역별로 묶어서 정렬**
-- 컬럼: **구역 · 상품 · 창고준비완료 버튼 · 진열완료 버튼**
+### T-SCAN-1 · 상품별 진열요청 · ScanPage 모달 팝업 (진행 필요)
 
-**현재 구현 상태 (검증 결과)**:
+**남은 작업** (Backend·DisplayRequestListPage 이미 완성):
+- ScanPage · 바코드 스캔 즉시 상품정보 모달 팝업 · 모달 안 [진열요청] 버튼
+- 현재는 리스트 행 추가 후 [📢] 버튼 방식
+- 사용자 요구: 스캔 → 모달 → [진열요청] → 담당자+관리자+창고담당 알림
+- 관리자(auth_level ≥ 8) 알림 · 이미 commit `36a996d` 로 반영됨
 
-✅ **이미 완료된 부분** (2026-08-05):
-- Backend 3단계 API (`requests.ts`)
-  - POST `/api/display-requests` · 창고담당 {창고,물류} 전원 알림 (line 71)
-  - PATCH `/prepare` · 진열담당(assigned) 픽업 알림 (line 182)
-  - PATCH `/complete` · 관리자(level≥8) 완료 알림 (line 229)
-- DisplayRequestListPage (`DisplayRequestListPage.tsx`)
-  - 구역별 그룹화 (zoneGroups line 160) ✓
-  - 컬럼: 구역 · 상품명 · 담당자 · 창고상황 · 완료 ✓
-  - [준비완료] 창고담당 버튼 (line 268) ✓
-  - [완료] 진열담당 버튼 (line 299) ✓
-  - 실시간 폴링 30초 (line 150) ✓
-  - 관리자 강제 완료 버튼 ✓
+### 매입 서브탭 · 3탭 공통 기간 필터 + 원형차트 3종
+- 지난 세션 보류 · 아직 미착수 · mobile-ui-designer 위임 예정
+- 스펙: 매입이력·상품매입·공급사별 3탭 · 공통 상단 기간 필터 · 각 탭 원형차트
 
-🔴 **Gap · 남은 작업**:
-1. **ScanPage 모달 팝업 방식** — 현재는 리스트에 행 추가 후 [📢] 버튼
-   - 사용자 요구: 스캔 즉시 **상품정보 모달 팝업** · 모달 안에 [진열요청] 버튼
-2. **알림 대상 통일**: `POST /api/display-requests` 는 창고담당 전원인데
-   - 사용자 요구: **담당자(진열) + 관리자(level≥8)** 에게 알림
-   - 창고담당 전원 유지 여부 사용자 확인 필요
-3. **[진열요청] 버튼 위치** — 상품정보 모달 안에 명시 배치
+### 바코드 UI 반응형 검토 (리포트)
+- 지난 세션 보류 · 문제 특정 없이 리포트 요청
 
-### T-CTR-12 UI 검증 · 사용자 확인 필요 (2026-08-05 · commit `ff04638`)
-- 세전월급 자동 흐름 (근무시간만 입력 → 4단계 완전 자동)
-  1. 직원 선택 → settings.wageRates 시급 로드
-  2. 시급 × 시간 → 희망세후 (T-CTR-9)
-  3. 희망세후 → payrollGrossUp → **세전 자동 채움 (신규)**
-  4. 세전 X → 통상시급 = X/296.94 → **임금구조 4항목 분배 (신규)**
-- 검증 케이스: 시급 32,083 · 하루 8h · 주 6일 → 희망세후 약 6,691,860원 → 세전 약 X → 임금분배
-- 세전월급 입력창 · 통상시급 실시간 표시 · 296.94 힌트 뱃지 확인
-- 세전 수동 편집 시 → 임금구조 재분배 확인 (manualGrossSalaryRef)
+---
 
-### T-CTR-9 잔여 확인 · 사용자 검증 필요
-- 자동 희망세후 흐름 (Step 2 · 커밋 `97ef77d`) 실 UI 동작 확인
-- 케이스: 하루 8h · 주 6일 · 시급 32,083 → 자동 희망세후 약 6,691,860원
-- 반영 버튼 · gross-up → 세전 · 임금구성표 자동 채움 확인
-- 문제 있으면 · 근본 원인 (form.wageComponents.basicSalary undefined 원인) 재조사
+## ⏸️ 사용자 액션 대기 (외부)
 
-### T-CTR-3 · Supabase SQL 실행 (사용자 액션 대기)
+### T-CTR-3 · Supabase SQL 실행
 ```sql
 ALTER TABLE employees
   ADD COLUMN IF NOT EXISTS contract_type TEXT,
@@ -104,9 +65,32 @@ CREATE INDEX IF NOT EXISTS idx_ec_is_active
   ON employee_contracts(employee_id, is_active);
 ```
 
-### 지난 세션 보류 (유효)
-- 매입 서브탭 · 3탭 공통 기간 필터 + 원형차트 3종 (mobile-ui-designer)
-- 바코드 UI 반응형 검토 (리포트)
+| # | 항목 | 필요 액션 |
+|---|------|---------|
+| J | pharmacist-materials 버킷 | Supabase 대시보드 |
+| K | vendors 오학습 정리 (page 6) | Supabase vendors 직접 |
+| L | employees.resume_url 컬럼 | Supabase SQL |
+
+---
+
+## 🚨 T3-defer · Render 배포 직전 재도입 (2026-08-05 원복 · commit `7cd406c`)
+
+**원복 사유**:
+- 원본 T3 (`0bce40e`) 설계 버그 · `app.use(requireAuth, router)` 가 `/` 에 mount → SPA·정적자원 401
+- 사용자 로그: `[requireAuth 401] GET /` `[requireAuth 401] GET /sw.js`
+- 사내 사용 · 외부 유입 없어 당장 보안 리스크 낮음
+
+**재도입 시 필수 사항** (Render 배포 직전 · 별도 세션):
+1. 각 라우터마다 명시적 경로 mount: `app.use("/api/staff", requireAuth, staffRouter)`
+2. Public 경로 명확히 분리 (`/api/auth/*` · 서비스워커 · SPA)
+3. End-to-end 테스트 (로그인 · 각 페이지 · 401 에러 없음)
+4. src/App.tsx 부트 세션 체크 (`/api/auth/me`) 함께 복구
+5. 로컬 → staging → prod 단계별 검증
+
+**유지 중 (재도입 시 활용)**:
+- `server/middleware/requireAuth.ts` · 파일 자체
+- `server/routes/auth.ts` · `/api/auth/me` endpoint
+- `server/routes/auth.ts` · `issueToken` (로그인 시 쿠키 세팅)
 
 ---
 
@@ -114,17 +98,10 @@ CREATE INDEX IF NOT EXISTS idx_ec_is_active
 
 | # | 항목 | 필요 액션 |
 |---|------|---------|
-| P | T3 API 인증 미들웨어 승인? | Y/N |
 | R | T27 TanStack Query 도입? | Y/N |
 | S | T29 TanStack Table? | Y/N |
 | T | T-C 각 호 CMS · 서버 이전 (현재 localStorage)? | Y/N |
-| J | pharmacist-materials 버킷 | Supabase 대시보드 |
-| K | vendors 오학습 정리 (page 6) | Supabase vendors 직접 |
 | Q | Remote push 시점 | 매번 재확인 (2026-08-05 · "이후로 리모트 푸시 금지") |
-
-### T3 · API 인증 미들웨어 (대기)
-- requireAuth + authorize(level) · 라우터 적용
-- 예상 2~3h · 아키텍처 큰 변경
 
 ### T37 · JSON body parser 한도 축소 (DoS)
 - 현재 100mb → 일반 API 10mb · 파일 업로드 route-level
@@ -161,5 +138,5 @@ CREATE INDEX IF NOT EXISTS idx_ec_is_active
 - **임금 알고리즘**: `docs/PAYROLL_ALGORITHM.md`
 - **contract-master 에이전트**: `.claude/agents/contract-master.md`
 - **메모리**: `~/.claude/projects/D--antigravity-projects-megatown-staff-scheduler/memory/`
-- **오늘 세션**: 다수 로컬 커밋 · 리모트 푸시 1회 (`97ef77d` · 2026-08-05 오후)
-- **이후 리모트 push 금지** · 사용자 명시
+- **오늘 세션 (2026-08-05)**: 다수 로컬 커밋 · 리모트 푸시 1회 (`97ef77d` · 오후)
+- **이후 리모트 push 금지** · 사용자 명시 (2026-08-05)
