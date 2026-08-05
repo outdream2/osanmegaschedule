@@ -1,83 +1,89 @@
 # TASKS
 
-**규칙** (사용자 지시):
+**규칙**:
 - 완료 태스크는 이 파일에서 **삭제** (아카이브 X)
-- 새 태스크 발생 즉시 추가
+- 새 태스크 즉시 추가
 - 세션 시작 시 반드시 read
 - 매 milestone 후 update
 - **회귀 절대 금지** · TS + build + test 통과 후 커밋
-- **리모트 푸시 · 사용자 명시 승인 시에만** (기본은 로컬 커밋)
+- **리모트 푸시 · 사용자 명시 승인 시에만** (기본 로컬 커밋)
 
 ---
 
-## 🚀 리스트 속도 개선 (신규 · 우선순위 순 · 사용자 지목 · "리스트 전반적으로 느림")
+## 🔄 진행 중
 
-### T-PERF-2 · DB 인덱스 최적화 ⭐⭐⭐⭐ (권장 1순위 · 즉효)
-- 예상: **10~100배 빨라짐** (WHERE·ORDER 컬럼)
-- SQL 실행만 · Supabase 대시보드 액션 (사용자)
-- 예상 조사 시간 1~2h · SQL 실행 즉시
-
-**조사 완료 · 기존 인덱스 (11개)**:
-- notifications: employee_id, created_at
-- supplier_balances, purchase_details (supplier/product+date)
-- employee_contracts (employee, created)
-- resignation_requests (status/employee/created)
-- product_arrivals (date/supplier)
-- product_arrival_items (arrival/code)
-- OCR invoice_date
-- employee_contracts (is_active · T-CTR-3 대기)
-
-**추가 필요 · 실사용 쿼리 분석 (122 곳)**:
-- 필요 시 · Supabase EXPLAIN 실행 · Seq Scan 감지 · 인덱스 SQL 생성
-
-### T-PERF-1 · 페이지네이션 도입 ⭐⭐⭐⭐⭐ (효과 최대)
-- 5000행 → 첫 50행만 · **초기 로딩 90%+ 단축**
-- 대상: 재고관리 · 매입이력 · OCR 확정 · 상품 리스트 · 스케줄
-- 서버 + 클라이언트 페어 수정
-- 무한 스크롤 or 페이지 버튼
-- 예상 4~6h · 회귀 중
-
-### T-PERF-3 · N+1 쿼리 제거 · JOIN 활용 ⭐⭐⭐
-- 리스트 조회 후 각 행마다 별도 쿼리 하는 곳 통합
-- `.select("*, other_table(*)")` Supabase 문법
-- 예상 2~3h
-
-### T27 · TanStack Query 캐싱 ⭐⭐⭐
-- 재방문 시 캐시 즉시 표시 · 백그라운드 refresh
-- 체감 속도 극적 개선
-- 예상 3~4h
-
-### T-PERF-5 · 가상 스크롤 (react-window) ⭐⭐
-- 5000+ 행 렌더 부드러움
-- 예상 2~3h
-
-### T26 · select('*') → 명시 컬럼 ⭐ (보안+부수 성능)
-- 20 파일 · 56곳
-- Payload 5~30% 축소 · password_hash 등 노출 방지
-- 예상 4~6h · 파일별 순차
+### T25 · useVendors 공용 훅 (safe-refactoring-expert 백그라운드)
+- 10개 파일 · 각자 vendor fetch → 공용 훅 통합
+- 7 파일 수정됨 · 커밋 대기 중
+- **자동 검증 프로토콜**: 완료 알림 시 TS+테스트+build → 자동 커밋 → T30-followup 자동 launch
 
 ---
 
-## 🔴 사용자 실 UI 검증 대기 (오늘 커밋 · 브라우저 확인 필요)
+## 🟢 대기 · 사용자 승인 후 진행
 
-| 커밋 | 태스크 | 확인 |
-|------|--------|-----|
-| `9cd8d27` | 스캔 모달 컴팩트 · 5칸 한 화면 보장 | 스캔 → 창1/2·매1/2/3 · 매장별 [요청] 버튼 |
-| `2621b87` | T-SCAN-4-b RequestsPage 표 형태 | 요청메뉴 진열요청 · 표 컬럼 · 창고준비/진열완료 상태 pill |
-| `24d57cd` | T-SCAN-4-a 매장별 [진열요청] | 매장 슬롯 미니 버튼 · 구역별 담당자 매칭 |
-| `f5217d9` | T37 JSON body 10MB | DoS 방어 |
-| `07a4428` | T24 dead code 삭제 | -600 lines |
-| `ff04638` | T-CTR-12 세전월급 자동 | 근로계약서 자동 채움 |
-| `92a25bb` | T-SCAN-2 ProductInfoCard | 세로 제목 방지 |
-| `9851d10` | T-SCAN-3 삑소리 강화 | 2톤 · 진동 |
-| `49e34e5` | T-UI-1 ProductDetailPanel | 태블릿 fullscreen |
-| `89612ac` | 매입 서브탭 파이차트+필터 | 3종 원형차트 · 기간필터 |
+### T30-followup · useSortableTable · Modal · useFilterState 채택 확대
+- 10+ 파일 · 각자 수동 sortKey/sortDir → 통일
+- 파일별 순차 마이그레이션 · 회귀 시 파일 단위 revert 가능
+- 예상 4~6h · 위험 낮음
+- **T25 완료 후 자동 launch 승인 됨**
+
+### T27 · TanStack Query 캐싱
+- 재고관리 이미 in-memory 캐시 있음 (T-PERF-1a)
+- 우선순위 낮음
+- 예상 3~4h · 위험 중
+
+### T-PERF-5 · 가상 스크롤 (react-window)
+- 5000+ 행 렌더 부드러움 · 지금은 불필요
+- 예상 2~3h · 위험 낮음
+
+### T26 · select('*') → 명시 컬럼 (20 파일)
+- 보안 부가 · payload 5~30% 축소
+- 예상 4~6h · 위험 중
+
+### T39 · PaddleOCR 분리 (Render 배포 대비)
+- YOLO 완전 제거됨 · PaddleOCR 만 남음
+- Render Pro 티어 (2GB) 로 분리 불필요할 수도
+- 예상 3~4h · 위험 높음
+
+### T36 · RawOcrTable 정렬 (deferred · 복잡)
+- OCR 워크플로우 회귀 위험 높음
+- 사용자 명시 요구 시에만
+- 예상 4~6h · 위험 높음
 
 ---
+
+## 🔴 사용자 실 UI 검증 대기 (2026-08-05 커밋)
+
+| 커밋 | 태스크 | 검증 |
+|------|-------|-----|
+| `2d799bc` | T-C · 근로계약서 CMS 서버 이전 완결 | 설정 페이지 → 조항 편집 저장 → 다른 브라우저 확인 |
+| `3f4e57e` | T-C · CMS 서버 이전 초기 | 상동 |
+| `f444d21` | T-PERF-1b · 매입이력 페이지네이션 | 매입이력 첫 로드 속도 |
+| `480b9e4` | T-PERF-1a · 재고관리 캐시 | 재고관리 재방문 즉시 반영 |
+| `bf35419` | YOLO 완전 제거 (-946 lines) | 재고세기 버튼 사라짐 확인 |
+| `f5217d9` | T37 · JSON body 10MB | DoS 방어 · 정상 요청 영향 없음 |
+| `ecf84b4` | T-SCAN-1 · RequestsPage 진열요청 3단계 표 | 요청 메뉴 진열요청 탭 |
+| `9cd8d27` | 스캔 모달 컴팩트 5칸 | 스캔 → 창1/2·매1/2/3 한 화면 |
+| `24d57cd` | T-SCAN-4-a · 매장별 [요청] | 매장 슬롯 미니 버튼 |
+| `2621b87` | T-SCAN-4-b · 표 재구성 | 요청메뉴 진열요청 표 컬럼 |
+| `ff04638` | T-CTR-12 · 세전월급 자동 | 근로계약서 자동 채움 |
+| `92a25bb` | T-SCAN-2 · ProductInfoCard | 세로 제목 방지 |
+| `9851d10` | T-SCAN-3 · 삑소리 강화 | 2톤 · 진동 |
+| `49e34e5` | T-UI-1 · ProductDetailPanel | 태블릿 fullscreen |
+| `89612ac` | 매입 서브탭 파이차트+필터 | 원형차트 3종 · 기간필터 |
+
+---
+
+## ✅ 사용자 SQL 실행 완료 (2026-08-05)
+
+- ✅ `contract_clauses` 테이블 생성 (T-C 대응)
+- ✅ 인덱스 SQL Block A (재고관리·매입이력·상품·실재고·진열요청)
+- ⏳ 인덱스 Block B (pg_trgm + trigram · 상품 검색 5~10배 · 선택)
+- ⏳ zone_labels 테이블 생성 (아직 안 하셨으면 · `migrations/create_zone_labels_2026-08-05.sql`)
 
 ## ⏸️ 사용자 액션 대기 (Supabase 대시보드)
 
-### T-CTR-3 · Supabase SQL 실행
+### T-CTR-3 · Supabase SQL
 ```sql
 ALTER TABLE employees
   ADD COLUMN IF NOT EXISTS contract_type TEXT,
@@ -86,61 +92,29 @@ ALTER TABLE employees
   ADD COLUMN IF NOT EXISTS probation_end_date DATE;
 ALTER TABLE employee_contracts
   ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
-CREATE INDEX IF NOT EXISTS idx_ec_is_active
-  ON employee_contracts(employee_id, is_active);
 ```
 
-| # | 항목 | 필요 액션 |
-|---|------|---------|
-| J | pharmacist-materials 버킷 | Supabase 대시보드 · 버킷 생성 |
-| K | vendors 오학습 정리 (page 6 · 5848801771→앤바이오 등) | vendors 테이블 직접 수정 |
+| # | 항목 | 액션 |
+|---|------|-----|
+| J | pharmacist-materials 버킷 | Supabase 대시보드 |
+| K | vendors 오학습 정리 (page 6) | vendors 테이블 직접 |
 | L | employees.resume_url 컬럼 | `ALTER TABLE employees ADD COLUMN resume_url TEXT;` |
 
 ---
 
-## 🟡 승인 필요 · 대형 태스크
+## 🚨 T3-defer · Render 배포 직전 재도입
 
-### T39 · PaddleOCR 분리 (Render OOM 대비 · YOLO 제거 후 축소 범위)
-- YOLO 재고세기 · **완전 제거됨** (커밋 `bf35419`)
-- 남은: PaddleOCR 별도 Python 서비스 분리 검토
-- 대안 · Render Pro 티어 (2GB RAM) 로 분리 불필요할 수 있음
-- 예상 3~4h (범위 축소)
-
-### T-C · CMS 서버 이전 (localStorage → Supabase)
-- 예상 2~3h · 마이그레이션
-
-### T25 · useVendors 공용 훅
-- 10+ 파일 통합
-- 예상 3~4h · 위험 중
-
-### T30-followup · useSortableTable · Modal · useFilterState 채택
-- 10+ 파일 순차 마이그레이션
-- 예상 4~6h
-
-### T36 · RawOcrTable 정렬 (deferred · 복잡)
-
----
-
-## 🚨 T3-defer · Render 배포 직전 재도입 (원복 · `7cd406c`)
-
-**원복 사유**: `app.use(requireAuth, router)` 가 `/` 에 mount → SPA 401
-
-**재도입 시 필수**:
-1. 각 라우터 명시 경로 mount: `app.use("/api/staff", requireAuth, staffRouter)`
-2. Public 경로 분리
-3. End-to-end 테스트
-4. src/App.tsx 부트 세션 체크 복구
-5. 로컬 → staging → prod 단계
-
-**유지 중**: `requireAuth.ts` · `/api/auth/me` · `issueToken`
+- 원본 T3 (`0bce40e`) 설계 버그 원복 (`7cd406c`)
+- 재도입 시 필수: 각 라우터 명시 경로 mount · public 분리 · E2E 테스트
+- `server/middleware/requireAuth.ts` · `/api/auth/me` · `issueToken` 유지 중
 
 ---
 
 ## 세션 관리
 
 - **원칙**: `docs/AGENT_PRINCIPLES.md`
-- **임금 알고리즘**: `docs/PAYROLL_ALGORITHM.md`
-- **contract-master 에이전트**: `.claude/agents/contract-master.md`
+- **임금**: `docs/PAYROLL_ALGORITHM.md`
+- **contract-master**: `.claude/agents/contract-master.md`
 - **메모리**: `~/.claude/projects/D--antigravity-projects-megatown-staff-scheduler/memory/`
-- **2026-08-05 세션**: 로컬 커밋 20+ · 리모트 푸시 2회 (`97ef77d` · `ecf84b4`)
+- **2026-08-05 세션**: 로컬 커밋 30+ · 리모트 푸시 2회 (`97ef77d` · `ecf84b4`)
 - **이후 리모트 push · 명시 승인 시에만**
