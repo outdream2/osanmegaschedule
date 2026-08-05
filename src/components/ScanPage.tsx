@@ -1175,8 +1175,12 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         </section>
       </main>
 
-      {/* ── T-SCAN-1 (2026-08-05) · 스캔 즉시 상품정보 모달 · [진열요청] 진입점 ── */}
-      {scanModal && (
+      {/* ── T-SCAN-1 (2026-08-05) · 스캔 즉시 상품 실재고 정보 모달 · [진열요청] 진입점 ── */}
+      {/* 창고1/2 + 매장1/2/3 5개 슬롯 · 한 화면에 flex-wrap 배치 · 실재고 편집 가능 · 하단 [진열요청] */}
+      {scanModal && (() => {
+        // 최신 row 참조 (rows state 에서 lookup · 히스토리 로드 반영)
+        const liveRow = rows.find(r => r.key === scanModal.key) ?? scanModal;
+        return (
         <div
           role="dialog"
           aria-modal="true"
@@ -1185,18 +1189,18 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         >
           <div
             onClick={e => e.stopPropagation()}
-            className="w-full sm:max-w-md max-h-[85vh] bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col"
+            className="w-full sm:max-w-lg max-h-[90vh] bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col"
           >
             {/* 헤더 */}
-            <div className="px-5 py-3.5 border-b border-slate-100 bg-gradient-to-r from-violet-50/60 to-transparent flex items-center justify-between gap-2">
-              <div className="min-w-0 flex items-center gap-2">
+            <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-violet-50/60 to-transparent flex items-center justify-between gap-2">
+              <div className="min-w-0 flex items-center gap-2 flex-1">
                 <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
-                  <ScanLine size={16} className="text-violet-600" />
+                  <Package size={16} className="text-violet-600" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[10px] font-bold text-violet-600 uppercase tracking-widest">스캔 완료</div>
-                  <div className="text-sm font-black text-slate-800 break-keep line-clamp-2 leading-tight">{scanModal.product.name}</div>
-                  <div className="text-[10px] text-slate-400 font-mono">{scanModal.code}</div>
+                  <div className="text-[9.5px] font-bold text-violet-600 uppercase tracking-widest">상품 실재고 정보</div>
+                  <div className="text-[13.5px] font-black text-slate-800 break-keep line-clamp-2 leading-tight">{liveRow.product.name}</div>
+                  <div className="text-[10px] text-slate-400 font-mono truncate">{liveRow.code}</div>
                 </div>
               </div>
               <button
@@ -1207,55 +1211,70 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 <X size={16} />
               </button>
             </div>
-            {/* 본문 · 상품 요약 */}
-            <div className="flex-1 overflow-auto px-5 py-4 flex flex-col gap-3">
-              {/* 배정 구역 */}
-              {((scanModal.product as any).realMap ?? (scanModal.product as any).real_map) && (
-                <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2 flex items-center gap-2">
-                  <MapPin size={13} className="text-emerald-600 shrink-0" />
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">배정 구역</span>
-                  <span className="text-[13px] font-black text-slate-800 tabular-nums ml-auto">
-                    {(scanModal.product as any).realMap ?? (scanModal.product as any).real_map}
+            {/* 본문 · 배정구역 · 창고 · 매장 (한 화면에 flex-wrap · 필요 시 줄바꿈) */}
+            <div className="flex-1 overflow-auto px-4 py-3 flex flex-col gap-2.5">
+              {/* 배정 구역 · 공급처 · 카테고리 라인 */}
+              <div className="flex items-center flex-wrap gap-1.5 text-[10.5px]">
+                {((liveRow.product as any).realMap ?? (liveRow.product as any).real_map) && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 font-black">
+                    <MapPin size={10} /> {(liveRow.product as any).realMap ?? (liveRow.product as any).real_map}
                   </span>
-                </div>
-              )}
-              {/* 현재고·공급처 */}
-              <div className="grid grid-cols-2 gap-2">
-                {(scanModal.product as any).current_stock != null && (
-                  <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 flex flex-col gap-0.5">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">현재고</span>
-                    <span className="tabular-nums text-[13px] font-black text-slate-800">{(scanModal.product as any).current_stock}</span>
-                  </div>
                 )}
-                {(scanModal.product as any).supplier && (
-                  <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 flex flex-col gap-0.5">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">공급처</span>
-                    <span className="text-[12px] font-black text-slate-700 truncate">{(scanModal.product as any).supplier}</span>
-                  </div>
+                {(liveRow.product as any).category && (
+                  <span className="inline-flex px-2 py-0.5 rounded-md bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold">
+                    {(liveRow.product as any).category}
+                  </span>
+                )}
+                {(liveRow.product as any).supplier && (
+                  <span className="inline-flex px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-slate-600 font-semibold truncate max-w-[140px]">
+                    {(liveRow.product as any).supplier}
+                  </span>
+                )}
+                {(liveRow.product as any).spec && (
+                  <span className="inline-flex px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-slate-500 font-medium">
+                    {(liveRow.product as any).spec}
+                  </span>
                 )}
               </div>
-              {/* 카테고리 · 규격 */}
-              {((scanModal.product as any).category || (scanModal.product as any).spec) && (
-                <div className="flex flex-wrap gap-1.5">
-                  {(scanModal.product as any).category && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                      {(scanModal.product as any).category}
-                    </span>
-                  )}
-                  {(scanModal.product as any).spec && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-50 text-slate-600 border border-slate-200">
-                      {(scanModal.product as any).spec}
-                    </span>
-                  )}
-                </div>
-              )}
+              {/* 창고1 · 창고2 · 매장1 · 매장2 · 매장3 · 5열 grid · sm 이하 3열로 wrap */}
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
+                {([
+                  { key: "warehouse1Qty" as const, label: "창고1", Icon: Warehouse, tone: "sky",     zone: null },
+                  { key: "warehouse2Qty" as const, label: "창고2", Icon: Warehouse, tone: "sky",     zone: null },
+                  { key: "store1Qty"     as const, label: "매장1", Icon: Store,     tone: "amber",   zone: liveRow.store1Zone },
+                  { key: "store2Qty"     as const, label: "매장2", Icon: Store,     tone: "amber",   zone: liveRow.store2Zone },
+                  { key: "store3Qty"     as const, label: "매장3", Icon: Store,     tone: "amber",   zone: liveRow.store3Zone },
+                ]).map(({ key, label, Icon, tone, zone }) => {
+                  const val = liveRow[key];
+                  const toneCls = tone === "sky"
+                    ? { chip: "bg-sky-50 border-sky-200 text-sky-700", label: "text-sky-700" }
+                    : { chip: "bg-amber-50 border-amber-200 text-amber-800", label: "text-amber-700" };
+                  return (
+                    <div key={key} className={`rounded-lg border ${toneCls.chip} px-2 py-1.5 flex flex-col gap-1`}>
+                      <div className={`flex items-center gap-1 text-[9.5px] font-black uppercase tracking-wider ${toneCls.label}`}>
+                        <Icon size={9} />
+                        <span>{label}</span>
+                        {zone && <span className="ml-auto text-[8.5px] text-slate-500 font-bold tabular-nums truncate max-w-[36px]">{zone}</span>}
+                      </div>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={val}
+                        onChange={e => patchRow(liveRow.key, { [key]: e.target.value === "" ? "" : Number(e.target.value) })}
+                        placeholder="0"
+                        className="w-full bg-white/60 border border-transparent rounded-md px-1.5 py-1 text-[13px] font-black text-slate-800 text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-violet-300"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
               {/* 힌트 */}
-              <div className="text-[10.5px] text-slate-500 font-semibold text-center bg-slate-50/60 rounded-lg px-3 py-2 border border-slate-100">
-                리스트에 추가됐습니다 · 실재고 입력은 리스트에서 · 진열 필요시 아래 버튼
+              <div className="text-[10px] text-slate-500 font-semibold text-center bg-slate-50/60 rounded-lg px-3 py-1.5 border border-slate-100">
+                실재고 입력 · 리스트에도 자동 반영 · 매장 부족 시 아래 [진열요청]
               </div>
             </div>
-            {/* 액션 버튼 · [진열요청] · [닫기] */}
-            <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/40 flex items-center gap-2">
+            {/* 액션 버튼 · [닫기] · [진열요청] */}
+            <div className="px-4 py-3 border-t border-slate-100 bg-slate-50/40 flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setScanModal(null)}
@@ -1266,13 +1285,13 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               <button
                 type="button"
                 onClick={async () => {
-                  await requestDisplay(scanModal);
+                  await requestDisplay(liveRow);
                   setScanModal(null);
                 }}
-                disabled={requestingKey === scanModal.key}
+                disabled={requestingKey === liveRow.key}
                 className="flex-1 h-10 rounded-lg text-[12px] font-black text-white bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:brightness-110 shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
               >
-                {requestingKey === scanModal.key ? (
+                {requestingKey === liveRow.key ? (
                   <><Loader2 size={13} className="animate-spin" /> 전송 중</>
                 ) : (
                   <><Megaphone size={13} /> 진열요청</>
@@ -1281,7 +1300,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* ── 실재고 이력 조회 모달 ─────────────────────────────── */}
       {historyModal && (
