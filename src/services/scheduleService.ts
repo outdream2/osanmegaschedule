@@ -170,7 +170,57 @@ export class ScheduleService {
     return result;
   }
 
-  async updateEmployee(id: number, data: { name: string; position: string; employmentType?: string; hireDate: string; retireDate?: string | null; description: string; workplace?: string; rank?: string | null; gender?: string | null; phone?: string | null; annual_leave_days?: number; level?: number; contract_file_url?: string | null; address?: string | null; break_time_minutes?: number; break_apply_paid?: boolean }) {
+  async updateEmployee(id: number, data: {
+    // 기존 필드
+    name: string;
+    position: string;
+    employmentType?: string;
+    hireDate: string;
+    retireDate?: string | null;
+    description: string;
+    workplace?: string;
+    rank?: string | null;
+    gender?: string | null;
+    phone?: string | null;
+    annual_leave_days?: number | null;
+    level?: number | null;
+    contract_file_url?: string | null;
+    address?: string | null;
+    break_time_minutes?: number | null;
+    break_apply_paid?: boolean;
+    // 신규 HR 필드
+    contract_type?: string | null;
+    contract_start?: string | null;
+    contract_end?: string | null;
+    probation_end_date?: string | null;
+    birth_date?: string | null;
+    emergency_contact_name?: string | null;
+    emergency_contact_phone?: string | null;
+    emergency_contact_rel?: string | null;
+    schedule_type?: string | null;
+    work_area?: string | null;
+    work_location?: string | null;
+    job_duties?: string | null;
+    working_hours_per_week?: number | null;
+    weekly_holiday?: string | null;
+    wage_calc_type?: string | null;
+    wage_amount?: number | null;
+    wage_pay_day?: number | null;
+    wage_pay_method?: string | null;
+    bank_name?: string | null;
+    bank_account_no?: string | null;
+    insurance_nps_date?: string | null;
+    insurance_nhis_date?: string | null;
+    insurance_ei_date?: string | null;
+    insurance_wcia_date?: string | null;
+    insurance_excluded?: boolean;
+    pharmacist_license_no?: string | null;
+    health_check_expiry?: string | null;
+    careers?: any;
+    educations?: any;
+    certifications?: any;
+    performance_rating?: string | null;
+  }) {
     // 핵심 필드 + 존재하는 선택 필드로 페이로드 구성
     const payload: Record<string, any> = {
       name: data.name,
@@ -181,12 +231,31 @@ export class ScheduleService {
       workplace: data.workplace ?? "매장",
     };
     if (data.retireDate !== undefined) payload.retireDate = data.retireDate;
-    for (const k of ["rank", "gender", "phone", "annual_leave_days", "level", "contract_file_url", "address", "break_time_minutes", "break_apply_paid"] as const) {
+    // 기존 선택 필드 목록 유지 + 신규 HR 필드 추가 (조건부 add 패턴 그대로)
+    const optionalKeys = [
+      // 기존
+      "rank", "gender", "phone", "annual_leave_days", "level", "contract_file_url",
+      "address", "break_time_minutes", "break_apply_paid",
+      // 신규 HR 필드
+      "contract_type", "contract_start", "contract_end", "probation_end_date",
+      "birth_date", "emergency_contact_name", "emergency_contact_phone", "emergency_contact_rel",
+      "schedule_type", "work_area", "work_location", "job_duties",
+      "working_hours_per_week", "weekly_holiday",
+      "wage_calc_type", "wage_amount", "wage_pay_day", "wage_pay_method",
+      "bank_name", "bank_account_no",
+      "insurance_nps_date", "insurance_nhis_date", "insurance_ei_date", "insurance_wcia_date",
+      "insurance_excluded",
+      "pharmacist_license_no", "health_check_expiry",
+      "careers", "educations", "certifications",
+      "performance_rating",
+    ] as const;
+    for (const k of optionalKeys) {
       if ((data as any)[k] !== undefined) payload[k] = (data as any)[k];
     }
 
-    // 컬럼 없음 오류 시 해당 컬럼 제거하고 최대 6회 재시도
-    for (let attempt = 0; attempt <= 6; attempt++) {
+    // 컬럼 없음 오류 시 해당 컬럼 제거하고 최대 재시도 (필드 수 증가로 재시도 상한도 확장)
+    const maxAttempts = optionalKeys.length + 2;
+    for (let attempt = 0; attempt <= maxAttempts; attempt++) {
       const { data: rows, error } = await supabase
         .from("employees").update(payload).eq("id", id).select();
       if (!error) return rows?.[0] ?? { id };

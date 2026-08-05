@@ -137,14 +137,54 @@ export class ScheduleController {
   async updateEmployee(req: Request, res: Response): Promise<void> {
     try {
       const id = parseInt(req.params.id);
-      const { name, position, employmentType, hireDate, retireDate, description, workplace, rank, gender, phone, annual_leave_days, level, address, break_time_minutes, break_apply_paid } = req.body;
+      const {
+        // 기존 필드
+        name, position, employmentType, hireDate, retireDate, description, workplace,
+        rank, gender, phone, annual_leave_days, level, address,
+        break_time_minutes, break_apply_paid,
+        // 신규 HR 필드
+        contract_type, contract_start, contract_end, probation_end_date,
+        birth_date, emergency_contact_name, emergency_contact_phone, emergency_contact_rel,
+        schedule_type, work_area, work_location, job_duties,
+        working_hours_per_week, weekly_holiday,
+        wage_calc_type, wage_amount, wage_pay_day, wage_pay_method,
+        bank_name, bank_account_no,
+        insurance_nps_date, insurance_nhis_date, insurance_ei_date, insurance_wcia_date, insurance_excluded,
+        pharmacist_license_no, health_check_expiry,
+        careers, educations, certifications,
+        performance_rating,
+      } = req.body;
 
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid employee ID" });
         return;
       }
 
+      // 날짜 필드 정규화: "" → null, undefined 는 그대로 유지 (기존 값 유지 목적)
+      const normalizeDate = (v: any): string | null | undefined => {
+        if (v === undefined) return undefined;
+        if (v === null) return null;
+        if (typeof v === "string" && v.trim() === "") return null;
+        return v;
+      };
+      // 문자열 필드 정규화: "" → null 로 통일 (empty clear 의도 허용)
+      const normalizeStr = (v: any): string | null | undefined => {
+        if (v === undefined) return undefined;
+        if (v === null) return null;
+        if (typeof v === "string" && v.trim() === "") return null;
+        return v;
+      };
+      // 숫자 필드 정규화: undefined 유지, null/"" → null, 그 외 Number
+      const normalizeNum = (v: any): number | null | undefined => {
+        if (v === undefined) return undefined;
+        if (v === null) return null;
+        if (typeof v === "string" && v.trim() === "") return null;
+        const n = Number(v);
+        return isNaN(n) ? null : n;
+      };
+
       const result = await scheduleService.updateEmployee(id, {
+        // 기존 필드 (변경 없음)
         name,
         position,
         employmentType: employmentType || "정직원",
@@ -160,6 +200,40 @@ export class ScheduleController {
         address: address !== undefined ? (address || null) : undefined,
         break_time_minutes: break_time_minutes != null ? Number(break_time_minutes) : undefined,
         break_apply_paid: break_apply_paid !== undefined ? Boolean(break_apply_paid) : undefined,
+        // 신규 HR 필드 (undefined 는 payload 에서 제외 → 기존 값 유지)
+        contract_type: normalizeStr(contract_type),
+        contract_start: normalizeDate(contract_start),
+        contract_end: normalizeDate(contract_end),
+        probation_end_date: normalizeDate(probation_end_date),
+        birth_date: normalizeDate(birth_date),
+        emergency_contact_name: normalizeStr(emergency_contact_name),
+        emergency_contact_phone: emergency_contact_phone !== undefined
+          ? (emergency_contact_phone ? String(emergency_contact_phone).trim().replace(/[^0-9]/g, "") || null : null)
+          : undefined,
+        emergency_contact_rel: normalizeStr(emergency_contact_rel),
+        schedule_type: normalizeStr(schedule_type),
+        work_area: normalizeStr(work_area),
+        work_location: normalizeStr(work_location),
+        job_duties: normalizeStr(job_duties),
+        working_hours_per_week: normalizeNum(working_hours_per_week),
+        weekly_holiday: normalizeStr(weekly_holiday),
+        wage_calc_type: normalizeStr(wage_calc_type),
+        wage_amount: normalizeNum(wage_amount),
+        wage_pay_day: normalizeNum(wage_pay_day),
+        wage_pay_method: normalizeStr(wage_pay_method),
+        bank_name: normalizeStr(bank_name),
+        bank_account_no: normalizeStr(bank_account_no),
+        insurance_nps_date: normalizeDate(insurance_nps_date),
+        insurance_nhis_date: normalizeDate(insurance_nhis_date),
+        insurance_ei_date: normalizeDate(insurance_ei_date),
+        insurance_wcia_date: normalizeDate(insurance_wcia_date),
+        insurance_excluded: insurance_excluded !== undefined ? Boolean(insurance_excluded) : undefined,
+        pharmacist_license_no: normalizeStr(pharmacist_license_no),
+        health_check_expiry: normalizeDate(health_check_expiry),
+        careers: careers !== undefined ? careers : undefined,
+        educations: educations !== undefined ? educations : undefined,
+        certifications: certifications !== undefined ? certifications : undefined,
+        performance_rating: normalizeStr(performance_rating),
       });
       res.json(result);
     } catch (error: any) {
