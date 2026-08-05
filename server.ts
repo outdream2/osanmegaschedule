@@ -42,6 +42,7 @@ import hrFormsRouter from "./server/routes/hrForms";
 import pharmacistMenuItemsRouter from "./server/routes/pharmacistMenuItems";
 import resignationsRouter from "./server/routes/resignations";
 import employeeContractsRouter from "./server/routes/employeeContracts";
+import contractClausesRouter from "./server/routes/contractClauses";
 import vatRouter from "./server/routes/vat";
 // 2026-07-28 · 재고·판매 통합 메뉴 제거 (사용자 요청) · 파일 보관 · 라우터 등록만 해제
 // import inventorySalesRouter from "./server/routes/inventorySales";
@@ -119,6 +120,7 @@ async function startServer() {
   app.use(hrFormsRouter);
   app.use(resignationsRouter);
   app.use(employeeContractsRouter);
+  app.use(contractClausesRouter);   // T-C · 근로계약서 각 호 CMS (서버 저장)
 
   // OCR·매입 (사업 데이터)
   app.use(ocrRouter);

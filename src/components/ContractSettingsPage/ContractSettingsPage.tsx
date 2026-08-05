@@ -4,13 +4,18 @@
 //     · 실 저장 위치: settings.wageRates (서버 저장 · 모든 관리자 공유)
 //     · ContractWriterPage 가 참조하는 유일한 소스로 통일
 // - 각 호 내용 편집 CMS (임금단서·근로시간·휴일·징계·기타·개인정보)
-//     · localStorage: contractClauses:v1
+//     · 2026-08-05 T-C · localStorage → Supabase 서버 저장 (contract_clauses 테이블)
+//     · 모든 관리자·모든 기기 동일 값 공유
+//     · 서버 오류 시 localStorage("contractClauses:v1") fallback 유지 (하위호환)
+//     · 1회 자동 마이그레이션 · 기존 localStorage 값 있으면 서버로 업로드 후 로컬 유지 (백업)
 //
 // 하위호환:
 //   · 기존 export (ContractCategory, ContractWriterSettings, CONTRACT_SETTINGS_KEY,
 //     DEFAULT_CONTRACT_SETTINGS, loadContractSettings) 는 유지 - ContractWriterPage 가 참조.
 //   · 기존 export (JOB_WAGES_KEY, JobWage, ContractJobWages, DEFAULT_JOB_WAGES, loadJobWages) 는
 //     하위호환용으로 유지 - 다만 이제 편집은 settings.wageRates 로 저장 (localStorage 아님).
+//   · loadContractClauses (동기 · localStorage) 유지 · 오프라인/구 브라우저용
+//   · fetchContractClauses (신규 · async) · 서버 조회 · 실패 시 localStorage fallback
 //
 // 준수 원칙:
 //   · feedback_ui_principles: slate + indigo/emerald 팔레트 · rounded-xl · shadow-sm
@@ -188,28 +193,94 @@ export const DEFAULT_CLAUSES: ContractClauses = {
   ],
 };
 
+const CLAUSE_GROUP_KEYS: ClauseGroupKey[] = [
+  "wageClauses", "workTimeClauses", "holidayClauses",
+  "disciplineClauses", "etcClauses", "privacyClauses",
+];
+
+/**
+ * localStorage 값을 정규화 · DEFAULT 로 채워서 완전한 ContractClauses 반환
+ * (loadContractClauses / fetchContractClauses 공용)
+ */
+function normalizeClauses(parsed: any): ContractClauses {
+  if (!parsed || typeof parsed !== "object") return cloneClauses(DEFAULT_CLAUSES);
+  const out = {} as ContractClauses;
+  for (const k of CLAUSE_GROUP_KEYS) {
+    const arr = (parsed as any)[k];
+    if (Array.isArray(arr) && arr.length > 0 && arr.every((v: any) => typeof v === "string")) {
+      out[k] = arr.slice();
+    } else {
+      out[k] = DEFAULT_CLAUSES[k].slice();
+    }
+  }
+  return out;
+}
+
+/**
+ * 동기 로더 · localStorage 기반 · 하위호환 유지
+ * · ContractWriterPage 가 useMemo 로 즉시 호출 (async 회피)
+ * · 신규: 서버에서 미리 fetch 한 값이 localStorage 에 저장되어 있으므로 최신값 반영됨
+ */
 export function loadContractClauses(): ContractClauses {
-  const keys: ClauseGroupKey[] = [
-    "wageClauses", "workTimeClauses", "holidayClauses",
-    "disciplineClauses", "etcClauses", "privacyClauses",
-  ];
   try {
     const raw = localStorage.getItem(CONTRACT_CLAUSES_KEY);
     if (!raw) return cloneClauses(DEFAULT_CLAUSES);
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return cloneClauses(DEFAULT_CLAUSES);
-    const out = {} as ContractClauses;
-    for (const k of keys) {
-      const arr = (parsed as any)[k];
-      if (Array.isArray(arr) && arr.every((v: any) => typeof v === "string")) {
-        out[k] = arr.slice();
-      } else {
-        out[k] = DEFAULT_CLAUSES[k].slice();
-      }
-    }
-    return out;
+    return normalizeClauses(JSON.parse(raw));
   } catch {
     return cloneClauses(DEFAULT_CLAUSES);
+  }
+}
+
+/**
+ * 서버 조회 · fetch("/api/contract-clauses")
+ * · 성공: localStorage 에 동기화 (다음 loadContractClauses 호출 시 최신값)
+ * · 실패: localStorage fallback (기존 값 유지)
+ */
+export async function fetchContractClauses(): Promise<ContractClauses> {
+  try {
+    const res = await fetch("/api/contract-clauses", { credentials: "include" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const merged = normalizeClauses(data);
+    // localStorage sync · ContractWriterPage 의 동기 loader 가 즉시 최신값 사용
+    try { localStorage.setItem(CONTRACT_CLAUSES_KEY, JSON.stringify(merged)); } catch { /* silent */ }
+    return merged;
+  } catch {
+    // fallback · 기존 localStorage 값
+    return loadContractClauses();
+  }
+}
+
+/**
+ * 서버 저장 · PUT /api/contract-clauses (일괄)
+ * · 성공: localStorage 도 동기화
+ * · 실패: localStorage 만 저장 (fallback · 오프라인/서버 다운 시 서비스 유지)
+ * @returns { ok: boolean · savedToServer: boolean }
+ */
+export async function saveContractClausesToServer(
+  clauses: ContractClauses,
+  updatedBy?: number | null,
+): Promise<{ ok: boolean; savedToServer: boolean; error?: string }> {
+  // localStorage 는 항상 저장 (fallback 안전망)
+  try { localStorage.setItem(CONTRACT_CLAUSES_KEY, JSON.stringify(clauses)); } catch { /* silent */ }
+
+  try {
+    const res = await fetch("/api/contract-clauses", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        clauses,
+        updated_by: updatedBy ?? null,
+      }),
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      return { ok: true, savedToServer: false, error: errBody?.error ?? `HTTP ${res.status}` };
+    }
+    return { ok: true, savedToServer: true };
+  } catch (err: any) {
+    return { ok: true, savedToServer: false, error: err?.message ?? "네트워크 오류" };
   }
 }
 
@@ -314,8 +385,93 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
   }, []);
 
   // ── 상태 · 각 호
+  //   초기값: localStorage (동기 · 즉시 렌더) · 이후 useEffect 로 서버 fetch 하여 최신값 덮어씀
   const [clauses, setClauses] = useState<ContractClauses>(() => loadContractClauses());
   const [initialClauses, setInitialClauses] = useState<ContractClauses>(() => loadContractClauses());
+  const [serverLoaded, setServerLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // ── 서버 초기 로드 (mount 1회) · 실패 시 기존 localStorage 값 유지
+  //   자동 마이그레이션: 서버가 빈 값(모든 그룹이 DEFAULT 와 동일) 이고
+  //                     localStorage 에 편집된 값이 있으면 서버로 upload
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/contract-clauses", { credentials: "include" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const raw = await res.json();
+        if (cancelled) return;
+
+        // 서버 응답에서 · 각 그룹이 배열이지만 비어있으면 (서버 미저장) DEFAULT 로 fallback
+        //   → normalizeClauses 는 빈 배열도 DEFAULT 로 대체함
+        //   따라서 여기서는 "서버에 실제 저장된 key" 를 별도 판단
+        const savedKeys = new Set<string>();
+        for (const k of ["wageClauses", "workTimeClauses", "holidayClauses",
+                         "disciplineClauses", "etcClauses", "privacyClauses"] as ClauseGroupKey[]) {
+          const arr = (raw as any)?.[k];
+          if (Array.isArray(arr) && arr.length > 0) savedKeys.add(k);
+        }
+
+        // 서버 값 (없는 key 는 DEFAULT · normalizeClauses 로직)
+        const serverClauses: ContractClauses = {
+          wageClauses: savedKeys.has("wageClauses") ? raw.wageClauses.slice() : DEFAULT_CLAUSES.wageClauses.slice(),
+          workTimeClauses: savedKeys.has("workTimeClauses") ? raw.workTimeClauses.slice() : DEFAULT_CLAUSES.workTimeClauses.slice(),
+          holidayClauses: savedKeys.has("holidayClauses") ? raw.holidayClauses.slice() : DEFAULT_CLAUSES.holidayClauses.slice(),
+          disciplineClauses: savedKeys.has("disciplineClauses") ? raw.disciplineClauses.slice() : DEFAULT_CLAUSES.disciplineClauses.slice(),
+          etcClauses: savedKeys.has("etcClauses") ? raw.etcClauses.slice() : DEFAULT_CLAUSES.etcClauses.slice(),
+          privacyClauses: savedKeys.has("privacyClauses") ? raw.privacyClauses.slice() : DEFAULT_CLAUSES.privacyClauses.slice(),
+        };
+
+        // ── 1회 자동 마이그레이션
+        //   조건: 서버에 저장된 key 가 하나도 없음 && localStorage 에 편집된 값 있음
+        let migrated = false;
+        const legacyRaw = (() => {
+          try { return localStorage.getItem(CONTRACT_CLAUSES_KEY); } catch { return null; }
+        })();
+        if (savedKeys.size === 0 && legacyRaw) {
+          try {
+            const legacyParsed = normalizeClauses(JSON.parse(legacyRaw));
+            // legacy 가 DEFAULT 와 다르면 (실제 편집한 흔적) 업로드
+            if (!clausesEqual(legacyParsed, DEFAULT_CLAUSES)) {
+              await fetch("/api/contract-clauses", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                  clauses: legacyParsed,
+                  updated_by: authSession?.employeeId ?? null,
+                }),
+              });
+              // 마이그레이션 완료 · 화면 상태 = legacy 값
+              setClauses(cloneClauses(legacyParsed));
+              setInitialClauses(cloneClauses(legacyParsed));
+              // localStorage 도 정규화된 값으로 재저장
+              try { localStorage.setItem(CONTRACT_CLAUSES_KEY, JSON.stringify(legacyParsed)); } catch { /* silent */ }
+              migrated = true;
+              setNotice({ tone: "info", text: "기존 브라우저 저장값을 서버로 자동 업로드 했습니다. 이제 모든 관리자에게 공유됩니다." });
+            }
+          } catch { /* legacy parse 실패 · 무시 */ }
+        }
+
+        if (!migrated) {
+          setClauses(cloneClauses(serverClauses));
+          setInitialClauses(cloneClauses(serverClauses));
+          // localStorage 동기화 (다음 ContractWriterPage 의 동기 loader 가 최신값 사용)
+          try { localStorage.setItem(CONTRACT_CLAUSES_KEY, JSON.stringify(serverClauses)); } catch { /* silent */ }
+        }
+        setServerLoaded(true);
+      } catch {
+        // 서버 오류 · 기존 localStorage 값 유지 · UX 지속
+        if (!cancelled) {
+          setServerLoaded(true);
+          setNotice({ tone: "info", text: "서버 조회 실패 · 이 브라우저 저장값으로 동작합니다. (저장 시 재시도)" });
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── UI · 카드 접기/펴기 (기본 전체 펼침)
   const [open, setOpen] = useState<Record<ClauseGroupKey, boolean>>({
