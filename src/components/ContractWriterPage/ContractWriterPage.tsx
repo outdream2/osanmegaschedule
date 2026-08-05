@@ -2969,394 +2969,552 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const canApprove = signatureStatus.filled === signatureStatus.total;
 
   // ────────────────────────────────────────────────────────────────
-  // 좌측 폼 · 컴팩트 표 형식 (J)
+  // 좌측 폼 · 재디자인 (2026-08-05) · BambooHR/Rippling/Notion 벤치마크
+  //   · 라벨 상단 · 필드 그룹핑 · slate+indigo+emerald 팔레트
+  //   · 11px uppercase tracking-wider 라벨 · 13px 값 텍스트
   // ────────────────────────────────────────────────────────────────
 
+  // 폼 내 공용 스타일 토큰
+  const fldInput = "w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition placeholder:text-slate-400 placeholder:font-normal";
+  const fldLabel = "block text-[10.5px] font-bold uppercase tracking-wider text-slate-500 mb-1";
+  const cardBase = "rounded-xl border border-slate-200 bg-white p-3 flex flex-col gap-3 shadow-sm";
+  const cardInner = "rounded-lg border border-slate-100 bg-slate-50/60 p-2.5 flex flex-col gap-2";
+  const cardGroupLabel = "text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5 mb-0.5";
+
   const leftFormNode = (
-    <section className="bg-white border border-slate-200 rounded-xl shadow-sm p-3 flex flex-col gap-2 h-full overflow-y-auto">
-      <div className="flex items-center gap-1.5 pb-1.5 border-b border-slate-100">
-        <ClipboardText size={15} weight="fill" className="text-emerald-600" />
-        <h2 className="text-[13px] font-black text-slate-800">계약 조건 입력</h2>
+    <section className="bg-slate-50 flex flex-col gap-3 h-full overflow-y-auto p-0.5">
+
+      {/* ── 폼 헤더 ── */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex items-center gap-2.5">
+        <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
+          <ClipboardText size={16} weight="fill" className="text-indigo-600" />
+        </div>
+        <div>
+          <h2 className="text-[13px] font-black text-slate-800 leading-tight">계약 조건 입력</h2>
+          <p className="text-[10.5px] text-slate-400 font-semibold mt-0.5">근로자 정보와 근무조건을 입력하세요</p>
+        </div>
       </div>
 
-      {/* ═══ 섹션 1 · 근로자 정보 (이름·주민번호·주소·연락처·계좌) ═══ */}
-      <section className="flex flex-col gap-1.5">
-        <SectionHeader icon={<User size={13} weight="fill" />}>근로자 정보</SectionHeader>
-        {empError && <div className="text-[12px] text-rose-600">{empError}</div>}
-        <div className="grid md:grid-cols-2 gap-1.5">
-          <div className="relative">
-            <input
-              type="text"
-              value={form.employeeName}
-              onChange={(e) => {
-                const val = e.target.value;
-                upd("employeeName", val);
-                setEmpSearchOpen(true);
-                if (form.employeeId != null) upd("employeeId", null);
-              }}
-              onFocus={() => setEmpSearchOpen(true)}
-              onBlur={() => setTimeout(() => setEmpSearchOpen(false), 200)}
-              placeholder={empLoading ? "직원 불러오는 중..." : "성명 → 검색"}
-              autoComplete="off"
-              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
-            />
-            {empSearchOpen && form.employeeName.trim() && (() => {
-              const q = form.employeeName.trim().toLowerCase();
-              const matches = employees.filter(e => (e.name ?? "").toLowerCase().includes(q)).slice(0, 8);
-              if (matches.length === 0) return (
-                <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-lg shadow-lg p-2 text-[12px] text-slate-400 text-center">
-                  일치 없음 · 직접 입력
-                </div>
-              );
-              return (
-                <ul className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-lg shadow-lg max-h-56 overflow-y-auto divide-y divide-slate-100">
-                  {matches.map(e => (
-                    <li key={e.id}>
-                      <button
-                        type="button"
-                        onMouseDown={(ev) => ev.preventDefault()}
-                        onClick={() => { onSelectEmployee(String(e.id)); setEmpSearchOpen(false); }}
-                        className="w-full text-left px-2.5 py-1.5 hover:bg-emerald-50 transition-colors flex items-center gap-2"
-                      >
-                        <span className="text-[13px] font-bold text-slate-800">{e.name}</span>
-                        {e.position && <span className="text-[11px] text-slate-500">{e.position}</span>}
-                        {e.phone && <span className="text-[11px] text-slate-400 ml-auto tabular-nums">{e.phone}</span>}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              );
-            })()}
+      {/* ═══════════════════════════════════════════════════
+          카드 1 · 근로자 정보
+      ═══════════════════════════════════════════════════ */}
+      <div className={cardBase}>
+        {/* 카드 헤더 */}
+        <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+          <div className="w-6 h-6 rounded-md bg-violet-100 flex items-center justify-center shrink-0">
+            <User size={13} weight="fill" className="text-violet-600" />
           </div>
-          <input type="text" value={form.employeeBirth} onChange={(e) => upd("employeeBirth", e.target.value)}
-            placeholder="주민번호 (970302-2002227)"
-            className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-400 placeholder:text-[12px]"
-          />
+          <span className="text-[12px] font-black text-slate-700">근로자 정보</span>
         </div>
-        <div className="grid md:grid-cols-2 gap-1.5">
-          <input type="text" value={form.employeePhone} onChange={(e) => upd("employeePhone", e.target.value)}
-            placeholder="연락처 (010-1234-5678)"
-            className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-400 placeholder:text-[12px]"
-          />
-          <input type="text" value={form.employeeAddress} onChange={(e) => upd("employeeAddress", e.target.value)}
-            placeholder="주소"
-            className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-400 placeholder:text-[12px]"
-          />
-        </div>
-        <details className="text-[11px]">
-          <summary className="text-slate-500 font-bold cursor-pointer hover:text-emerald-700 inline-flex items-center gap-1">
-            <CaretDown size={9} weight="bold" /> 선택 (은행·이메일)
-          </summary>
-          <div className="grid md:grid-cols-2 gap-1.5 mt-1">
-            <input type="text" value={form.employeeBankAccount} onChange={(e) => upd("employeeBankAccount", e.target.value)}
-              placeholder="은행 / 계좌번호"
-              className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
-            />
-            <input type="text" value={form.employeeEmail} onChange={(e) => upd("employeeEmail", e.target.value)}
-              placeholder="이메일"
-              className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
-            />
-          </div>
-        </details>
 
-        {/* 카테고리 + 연차 */}
-        <div className="flex items-center gap-1 flex-wrap">
-          {(["약사", "매장", "창고", "기타"] as const).map(cat => {
-            const active = form.employeeCategory === cat;
-            const activeColor =
-              cat === "약사" ? "bg-violet-500 text-white border-violet-500" :
-              cat === "매장" ? "bg-emerald-500 text-white border-emerald-500" :
-              cat === "창고" ? "bg-orange-500 text-white border-orange-500" :
-                               "bg-slate-600 text-white border-slate-600";
-            return (
-              <button key={cat} type="button" onClick={() => upd("employeeCategory", cat)}
-                className={`px-2 py-1 rounded-lg border text-[12px] font-bold transition-colors cursor-pointer ${
-                  active ? activeColor : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
-                }`}
-              >{cat}</button>
-            );
-          })}
-          <div className="flex items-center gap-1 ml-auto">
-            <span className="text-[11px] text-slate-400 font-semibold shrink-0">연차</span>
-            <input type="number" min={0} value={form.annualLeaveDays} onChange={(e) => upd("annualLeaveDays", e.target.value)} placeholder="15"
-              className="w-14 bg-white border border-slate-200 rounded-lg px-2 py-1 text-[13px] text-slate-800 font-semibold text-right focus:outline-none focus:border-emerald-500 transition"
-            />
-            <span className="text-[11px] text-slate-400 font-semibold">일</span>
+        {empError && (
+          <div className="rounded-lg bg-rose-50 border border-rose-200 px-3 py-1.5 text-[12px] text-rose-700 font-semibold">
+            {empError}
           </div>
-        </div>
-        {form.employeeCategory === "기타" && (
-          <input type="text" value={form.employeeCategoryCustom} onChange={(e) => upd("employeeCategoryCustom", e.target.value)}
-            placeholder="기타 직군 (예: 인턴약사 · 청소 · 배송)"
-            className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-400 placeholder:text-[12px]"
-          />
         )}
-        {(form.employeeCategory === "매장" || form.employeeCategory === "창고") && (
-          <div className="rounded-lg border border-indigo-100 bg-indigo-50/40 px-2 py-1.5 flex flex-wrap items-center gap-2">
-            <span className="text-[11px] font-black text-indigo-700 shrink-0">우선업무</span>
-            <div className="flex items-center gap-1">
-              {(["매장", "창고"] as const).map(f => {
-                const active = form.primaryFocus === f;
-                const activeCls = f === "매장" ? "bg-emerald-500 text-white border-emerald-600" : "bg-orange-500 text-white border-orange-600";
-                return (
-                  <button key={f} type="button" onClick={() => upd("primaryFocus", active ? null : f)}
-                    className={`px-2 py-0.5 rounded-md border text-[12px] font-bold transition-colors cursor-pointer ${
-                      active ? activeCls : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
-                    }`}
-                  >{f}</button>
-                );
-              })}
-            </div>
-            <div className="flex items-center gap-1 ml-auto">
-              <input type="number" min={0} max={100} value={form.primaryFocusPercent}
+
+        {/* 그룹 A · 기본 식별 */}
+        <div className={cardInner}>
+          <div className={cardGroupLabel}>
+            <User size={10} weight="bold" />
+            기본 정보
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {/* 성명 · 검색 */}
+            <div className="col-span-2 relative">
+              <label className={fldLabel}>성명</label>
+              <input
+                type="text"
+                value={form.employeeName}
                 onChange={(e) => {
-                  const n = Number(e.target.value);
-                  upd("primaryFocusPercent", Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 70);
+                  const val = e.target.value;
+                  upd("employeeName", val);
+                  setEmpSearchOpen(true);
+                  if (form.employeeId != null) upd("employeeId", null);
                 }}
-                disabled={form.primaryFocus == null}
-                className="w-14 bg-white border border-slate-200 rounded-md px-1.5 py-0.5 text-[12px] text-slate-800 font-black text-right focus:outline-none focus:border-indigo-500 transition disabled:bg-slate-100 disabled:text-slate-400"
+                onFocus={() => setEmpSearchOpen(true)}
+                onBlur={() => setTimeout(() => setEmpSearchOpen(false), 200)}
+                placeholder={empLoading ? "직원 불러오는 중..." : "성명 입력 또는 검색"}
+                autoComplete="off"
+                className={fldInput}
               />
-              <span className="text-[11px] text-indigo-700 font-bold">%</span>
+              {empSearchOpen && form.employeeName.trim() && (() => {
+                const q = form.employeeName.trim().toLowerCase();
+                const matches = employees.filter(e => (e.name ?? "").toLowerCase().includes(q)).slice(0, 8);
+                if (matches.length === 0) return (
+                  <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-xl shadow-lg p-2.5 text-[12px] text-slate-400 text-center">
+                    일치하는 직원 없음 · 직접 입력
+                  </div>
+                );
+                return (
+                  <ul className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-xl shadow-lg max-h-52 overflow-y-auto divide-y divide-slate-100">
+                    {matches.map(e => (
+                      <li key={e.id}>
+                        <button
+                          type="button"
+                          onMouseDown={(ev) => ev.preventDefault()}
+                          onClick={() => { onSelectEmployee(String(e.id)); setEmpSearchOpen(false); }}
+                          className="w-full text-left px-3 py-2 hover:bg-indigo-50 transition-colors flex items-center gap-2"
+                        >
+                          <span className="text-[13px] font-bold text-slate-800">{e.name}</span>
+                          {e.position && <span className="text-[11px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">{e.position}</span>}
+                          {e.phone && <span className="text-[11px] text-slate-400 ml-auto tabular-nums">{e.phone}</span>}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                );
+              })()}
+            </div>
+
+            {/* 주민번호 */}
+            <div>
+              <label className={fldLabel}>주민번호</label>
+              <input type="text" value={form.employeeBirth} onChange={(e) => upd("employeeBirth", e.target.value)}
+                placeholder="970302-2002227"
+                className={fldInput}
+              />
+            </div>
+
+            {/* 직군 */}
+            <div>
+              <label className={fldLabel}>직군</label>
+              <div className="flex gap-1 flex-wrap">
+                {(["약사", "매장", "창고", "기타"] as const).map(cat => {
+                  const active = form.employeeCategory === cat;
+                  const activeCls =
+                    cat === "약사"  ? "bg-violet-500 text-white border-violet-500" :
+                    cat === "매장"  ? "bg-emerald-500 text-white border-emerald-500" :
+                    cat === "창고"  ? "bg-orange-500 text-white border-orange-500" :
+                                      "bg-slate-600 text-white border-slate-600";
+                  return (
+                    <button key={cat} type="button" onClick={() => upd("employeeCategory", cat)}
+                      className={`flex-1 min-w-[36px] py-1.5 rounded-lg border text-[11.5px] font-bold transition-colors cursor-pointer ${
+                        active ? activeCls : "bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700"
+                      }`}
+                    >{cat}</button>
+                  );
+                })}
+              </div>
             </div>
           </div>
-        )}
-      </section>
 
-      {/* ═══ 섹션 2 · 근무 조건 · T-L (2026-08-05) · 카드 그룹핑 재구성 ═══
-          그룹: (a) 계약 유형·기간 · (b) 근무 요일·시간·휴게 · (c) 담당업무·4대보험·특약 */}
-      <section className="flex flex-col gap-2 mt-3">
-        <SectionHeader icon={<ClockClockwise size={13} weight="fill" />}>근무 조건</SectionHeader>
+          {form.employeeCategory === "기타" && (
+            <input type="text" value={form.employeeCategoryCustom} onChange={(e) => upd("employeeCategoryCustom", e.target.value)}
+              placeholder="직군 명칭 (예: 인턴약사 · 청소 · 배송)"
+              className={fldInput}
+            />
+          )}
 
-        {/* ── 그룹 (a) · 계약 유형 · 근무 요일 · 카드 ── */}
-        <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-2 flex flex-col gap-2">
-          <div className="text-[10px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1">
-            <ClipboardText size={10} weight="fill" />
-            계약 유형 · 근무 요일
-          </div>
-        <div className="grid md:grid-cols-2 gap-2">
-        <div className="flex flex-col gap-1">
-          <FieldLabel required>계약 유형</FieldLabel>
-          <SelectOrCustom value={form.contractType} options={CONTRACT_TYPES} onChange={(v) => upd("contractType", v)} placeholder="예: 프리랜서" />
-          {form.contractType === "계약직" && (
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] text-slate-400 font-semibold shrink-0">개월수</span>
-              <div className="flex-1">
-                <SelectOrCustom value={form.contractMonths} options={["2", "3", "6", "12"]} onChange={(v) => upd("contractMonths", v)} placeholder="예: 9" suffix="개월" />
+          {/* 우선업무 */}
+          {(form.employeeCategory === "매장" || form.employeeCategory === "창고") && (
+            <div className="rounded-lg border border-indigo-100 bg-indigo-50/40 px-2.5 py-2 flex flex-wrap items-center gap-2">
+              <span className="text-[10.5px] font-black text-indigo-700 shrink-0">우선업무</span>
+              <div className="flex items-center gap-1">
+                {(["매장", "창고"] as const).map(f => {
+                  const active = form.primaryFocus === f;
+                  const activeCls = f === "매장" ? "bg-emerald-500 text-white border-emerald-600" : "bg-orange-500 text-white border-orange-600";
+                  return (
+                    <button key={f} type="button" onClick={() => upd("primaryFocus", active ? null : f)}
+                      className={`px-2.5 py-1 rounded-md border text-[11.5px] font-bold transition-colors cursor-pointer ${
+                        active ? activeCls : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                      }`}
+                    >{f}</button>
+                  );
+                })}
+              </div>
+              <div className="flex items-center gap-1 ml-auto">
+                <input type="number" min={0} max={100} value={form.primaryFocusPercent}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    upd("primaryFocusPercent", Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 70);
+                  }}
+                  disabled={form.primaryFocus == null}
+                  className="w-14 bg-white border border-slate-200 rounded-lg px-2 py-1 text-[12px] text-slate-800 font-black text-right focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition disabled:bg-slate-100 disabled:text-slate-400"
+                />
+                <span className="text-[11px] text-indigo-700 font-bold">%</span>
               </div>
             </div>
           )}
-        </div>
-        <div className="flex flex-col gap-1">
-          <FieldLabel icon={<CalendarBlank size={12} weight="fill" className="text-slate-400" />} required>근무 요일 (자동 주{weeklyDays}일)</FieldLabel>
-          <div className="flex flex-wrap gap-0.5">
-            {DAYS.map(d => {
-              const on = form.workDays[d];
-              const isWeekend = d === "토" || d === "일";
-              return (
-                <button key={d} type="button" onClick={() => toggleDay(d)}
-                  className={[
-                    "min-w-[30px] px-1.5 py-1 rounded-lg text-[12px] font-black transition-colors cursor-pointer border",
-                    on
-                      ? isWeekend
-                        ? "bg-rose-500 text-white border-rose-600"
-                        : "bg-emerald-500 text-white border-emerald-600"
-                      : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50",
-                  ].join(" ")}
-                >{d}</button>
-              );
-            })}
+
+          {/* 연차 */}
+          <div className="flex items-center gap-2">
+            <label className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 shrink-0">연차 일수</label>
+            <div className="flex items-center gap-1 ml-auto">
+              <input type="number" min={0} value={form.annualLeaveDays} onChange={(e) => upd("annualLeaveDays", e.target.value)} placeholder="15"
+                className="w-20 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-[13px] text-slate-800 font-semibold text-right focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition"
+              />
+              <span className="text-[11.5px] text-slate-500 font-semibold">일</span>
+            </div>
           </div>
-          <div className="text-[10.5px] text-slate-500 font-semibold">
-            {workDaysSummary} · 주중 {weeklyWeekdayDays}일 · 주말 {weeklyWeekendDays}일
+        </div>
+
+        {/* 그룹 B · 연락처 */}
+        <div className={cardInner}>
+          <div className={cardGroupLabel}>
+            연락처 · 주소
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={fldLabel}>전화번호</label>
+              <input type="text" value={form.employeePhone} onChange={(e) => upd("employeePhone", e.target.value)}
+                placeholder="010-1234-5678"
+                className={fldInput}
+              />
+            </div>
+            <div>
+              <label className={fldLabel}>이메일</label>
+              <input type="text" value={form.employeeEmail} onChange={(e) => upd("employeeEmail", e.target.value)}
+                placeholder="email@example.com"
+                className={fldInput}
+              />
+            </div>
+            <div className="col-span-2">
+              <label className={fldLabel}>주소</label>
+              <input type="text" value={form.employeeAddress} onChange={(e) => upd("employeeAddress", e.target.value)}
+                placeholder="경기도 오산시 ..."
+                className={fldInput}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 그룹 C · 금융 */}
+        <div className={cardInner}>
+          <div className={cardGroupLabel}>
+            금융 정보
+          </div>
+          <div>
+            <label className={fldLabel}>은행 / 계좌번호</label>
+            <input type="text" value={form.employeeBankAccount} onChange={(e) => upd("employeeBankAccount", e.target.value)}
+              placeholder="카카오뱅크 3333-12-3456789"
+              className={fldInput}
+            />
           </div>
         </div>
       </div>
+      {/* /카드 1 */}
+
+      {/* ═══════════════════════════════════════════════════
+          카드 2 · 계약 유형 · 근무 요일
+      ═══════════════════════════════════════════════════ */}
+      <div className={cardBase}>
+        <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+          <div className="w-6 h-6 rounded-md bg-indigo-100 flex items-center justify-center shrink-0">
+            <ClipboardText size={13} weight="fill" className="text-indigo-600" />
+          </div>
+          <span className="text-[12px] font-black text-slate-700">계약 유형 · 근무 요일</span>
         </div>
 
-      {/* ── 그룹 (b) · 근무 시간 · 휴게 · 카드 ── */}
-      <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-2 flex flex-col gap-1">
-        <div className="text-[10px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1">
-          <ClockClockwise size={10} weight="fill" />
-          근무 시간 · 휴게
-        </div>
-      {/* 근무 시간 (한 줄 표시) */}
-        <div className="flex flex-col gap-1">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <label className="text-[12px] font-bold text-slate-600 flex items-center gap-1 shrink-0">
-              <ClockClockwise size={12} weight="fill" className="text-slate-400" />
-              <span>근무시간<span className="text-rose-500 ml-0.5">*</span></span>
+        <div className="grid grid-cols-2 gap-3">
+          {/* 계약 유형 */}
+          <div>
+            <label className={fldLabel}>계약 유형</label>
+            <SelectOrCustom value={form.contractType} options={CONTRACT_TYPES} onChange={(v) => upd("contractType", v)} placeholder="예: 프리랜서" />
+            {form.contractType === "계약직" && (
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-[10.5px] text-slate-400 font-semibold shrink-0">계약 기간</span>
+                <div className="flex-1">
+                  <SelectOrCustom value={form.contractMonths} options={["2", "3", "6", "12"]} onChange={(v) => upd("contractMonths", v)} placeholder="예: 9" suffix="개월" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 근무 요일 */}
+          <div>
+            <label className={fldLabel}>
+              근무 요일 <span className="text-indigo-600 font-black">주{weeklyDays}일</span>
             </label>
-            <div className="w-20">
-              <SelectOrCustom value={form.startTime} options={START_TIMES} onChange={(v) => upd("startTime", v)} placeholder="HH:MM" />
+            <div className="flex flex-wrap gap-1">
+              {DAYS.map(d => {
+                const on = form.workDays[d];
+                const isWeekend = d === "토" || d === "일";
+                return (
+                  <button key={d} type="button" onClick={() => toggleDay(d)}
+                    className={[
+                      "w-8 h-8 rounded-lg text-[12px] font-black transition-colors cursor-pointer border",
+                      on
+                        ? isWeekend
+                          ? "bg-rose-500 text-white border-rose-600 shadow-sm"
+                          : "bg-indigo-500 text-white border-indigo-600 shadow-sm"
+                        : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:border-slate-300",
+                    ].join(" ")}
+                  >{d}</button>
+                );
+              })}
             </div>
-            <span className="text-[12px] text-slate-500 font-bold">~</span>
-            <div className="w-20">
-              <SelectOrCustom value={form.endTime} options={END_TIMES} onChange={(v) => upd("endTime", v)} placeholder="HH:MM" />
+            <div className="text-[10px] text-slate-400 font-semibold mt-1.5">
+              주중 {weeklyWeekdayDays}일 · 주말 {weeklyWeekendDays}일
             </div>
-            <span className="text-[11.5px] text-slate-500 font-semibold inline-flex items-center gap-0.5 ml-0.5">
-              <Coffee size={12} className="text-slate-400" />
-              (휴게
-            </span>
-            <input type="number" min={0} value={form.breakMinutes} onChange={(e) => upd("breakMinutes", e.target.value)}
-              className="w-16 bg-white border border-slate-200 rounded-lg px-1.5 py-1 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition text-right"
-            />
-            <span className="text-[11.5px] text-slate-500 font-semibold">분)</span>
           </div>
-          {/* 휴게 시작·종료 (선택 · 미입력 시 자동 파생) · T16 · 근기법 §54 별도 조항용 */}
-          <div className="flex flex-wrap items-center gap-1.5 pl-4">
-            <span className="text-[11px] text-slate-400 font-semibold">휴게 시간대(선택)</span>
+        </div>
+      </div>
+      {/* /카드 2 */}
+
+      {/* ═══════════════════════════════════════════════════
+          카드 3 · 근무 시간 · 휴게
+      ═══════════════════════════════════════════════════ */}
+      <div className={cardBase}>
+        <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+          <div className="w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center shrink-0">
+            <ClockClockwise size={13} weight="fill" className="text-emerald-600" />
+          </div>
+          <span className="text-[12px] font-black text-slate-700">근무 시간 · 휴게</span>
+        </div>
+
+        {/* 시작~종료 + 휴게분 한 줄 */}
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="flex-1 min-w-[80px]">
+            <label className={fldLabel}>출근 시간</label>
+            <SelectOrCustom value={form.startTime} options={START_TIMES} onChange={(v) => upd("startTime", v)} placeholder="HH:MM" />
+          </div>
+          <span className="text-[13px] text-slate-400 font-black pb-2">~</span>
+          <div className="flex-1 min-w-[80px]">
+            <label className={fldLabel}>퇴근 시간</label>
+            <SelectOrCustom value={form.endTime} options={END_TIMES} onChange={(v) => upd("endTime", v)} placeholder="HH:MM" />
+          </div>
+          <div className="w-24">
+            <label className={fldLabel}>
+              <Coffee size={10} className="inline mr-0.5" />휴게
+            </label>
+            <div className="relative">
+              <input type="number" min={0} value={form.breakMinutes} onChange={(e) => upd("breakMinutes", e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-lg pl-3 pr-7 py-2 text-[13px] text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition text-right"
+              />
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10.5px] text-slate-400 font-semibold pointer-events-none">분</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 휴게 시간대 (선택) */}
+        <div className={cardInner}>
+          <div className={cardGroupLabel}>
+            휴게 시간대 <span className="font-normal normal-case text-[9.5px] text-slate-400">(선택 · 미입력 시 자동)</span>
+          </div>
+          <div className="flex items-center gap-2">
             <input type="time" value={form.breakStart} onChange={(e) => upd("breakStart", e.target.value)}
-              className="w-24 bg-white border border-slate-200 rounded-lg px-1.5 py-1 text-[12px] text-slate-700 font-semibold focus:outline-none focus:border-emerald-500 transition"
-              placeholder="시작"
+              className="flex-1 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[12px] text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition"
             />
-            <span className="text-[11px] text-slate-400">~</span>
+            <span className="text-[11px] text-slate-400 font-semibold">~</span>
             <input type="time" value={form.breakEnd} onChange={(e) => upd("breakEnd", e.target.value)}
-              className="w-24 bg-white border border-slate-200 rounded-lg px-1.5 py-1 text-[12px] text-slate-700 font-semibold focus:outline-none focus:border-emerald-500 transition"
-              placeholder="종료"
+              className="flex-1 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[12px] text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition"
             />
-            <span className="text-[10px] text-slate-400 italic">미입력 시 근무시간 중간 자동 계산</span>
           </div>
-          {monthlyCalc && (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 px-2 py-1 flex items-center gap-2 text-[11px]">
-              <Calculator size={12} weight="fill" className="text-emerald-700" />
-              <span className="text-emerald-800 font-black">월 근로시간</span>
-              <span className="tabular-nums text-emerald-900 font-black">
+        </div>
+
+        {/* 월 근로시간 자동 계산 결과 */}
+        {monthlyCalc && (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 px-3 py-2 flex items-center gap-2">
+            <Calculator size={13} weight="fill" className="text-emerald-600 shrink-0" />
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">월 근로시간</span>
+              <span className="tabular-nums text-[13px] font-black text-emerald-900">
                 {monthlyCalc.monthlyHoursInt}h {monthlyCalc.monthlyMinutesRem}m
               </span>
-              <button type="button" onClick={applyMonthlyHoursToBasic}
-                className="ml-auto inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-600 text-white text-[10.5px] font-black hover:bg-emerald-700 transition-colors cursor-pointer"
-                title="계산된 월 근로시간을 임금표의 기본급 시간에 반영"
-              >
-                기본급 반영
-              </button>
             </div>
-          )}
-        </div>
+            <button type="button" onClick={applyMonthlyHoursToBasic}
+              className="ml-auto inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-black hover:bg-emerald-700 transition-colors cursor-pointer shadow-sm"
+              title="계산된 월 근로시간을 임금표의 기본급 시간에 반영"
+            >
+              기본급 반영
+            </button>
+          </div>
+        )}
       </div>
-      {/* /그룹 (b) */}
+      {/* /카드 3 */}
 
-      {/* ── 그룹 (c) · 계약 기간 · 담당업무 · 4대보험 · 특약 · 카드 ── */}
-      <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-2 flex flex-col gap-2">
-        <div className="text-[10px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1">
-          <CalendarBlank size={10} weight="fill" />
-          계약 기간 · 담당업무 · 4대보험 · 특약
+      {/* ═══════════════════════════════════════════════════
+          카드 4 · 계약 기간 · 담당업무 · 4대보험 · 특약
+      ═══════════════════════════════════════════════════ */}
+      <div className={cardBase}>
+        <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+          <div className="w-6 h-6 rounded-md bg-amber-100 flex items-center justify-center shrink-0">
+            <CalendarBlank size={13} weight="fill" className="text-amber-600" />
+          </div>
+          <span className="text-[12px] font-black text-slate-700">계약 기간 · 담당업무</span>
         </div>
 
-        {/* 계약 기간 · 계약체결일 · 근무시작일 · 계약종료일(정규직 시 숨김) */}
-        <div className="grid md:grid-cols-2 gap-2">
-          <div className="flex flex-col gap-1">
-            <FieldLabel required>계약 기간</FieldLabel>
-            <div className="grid grid-cols-[70px,1fr] gap-1 items-center">
-              <span className="text-[11px] text-slate-500 font-semibold">근무시작일</span>
+        {/* 계약 기간 */}
+        <div className={cardInner}>
+          <div className={cardGroupLabel}><CalendarBlank size={10} weight="bold" /> 계약 기간</div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={fldLabel}>근무 시작일</label>
               <input type="date" value={form.startDate} onChange={(e) => upd("startDate", e.target.value)}
-                className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[12.5px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                className={fldInput}
               />
-              {!form.indefinite && (
-                <>
-                  <span className="text-[11px] text-slate-500 font-semibold">계약종료일</span>
-                  <input type="date" value={form.endDate} onChange={(e) => upd("endDate", e.target.value)}
-                    className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[12.5px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
-                  />
-                </>
-              )}
             </div>
-            <label className="inline-flex items-center gap-1.5 cursor-pointer">
-              <input type="checkbox" checked={form.indefinite} onChange={(e) => upd("indefinite", e.target.checked)}
-                className="w-4 h-4 accent-emerald-600" />
-              <span className="text-[11.5px] font-semibold text-slate-700">무기한 (정규직) · 계약종료일 없음</span>
-            </label>
+            <div>
+              <label className={fldLabel}>계약 체결일</label>
+              <input type="date" value={form.contractSignDate} onChange={(e) => upd("contractSignDate", e.target.value)}
+                className={fldInput}
+              />
+            </div>
+            {!form.indefinite && (
+              <div className="col-span-2">
+                <label className={fldLabel}>계약 종료일</label>
+                <input type="date" value={form.endDate} onChange={(e) => upd("endDate", e.target.value)}
+                  className={fldInput}
+                />
+              </div>
+            )}
           </div>
-          <div className="flex flex-col gap-1">
-            <FieldLabel>계약체결일</FieldLabel>
-            <input type="date" value={form.contractSignDate} onChange={(e) => upd("contractSignDate", e.target.value)}
-              className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
-            />
-          </div>
+          <label className="inline-flex items-center gap-2 cursor-pointer mt-0.5">
+            <input type="checkbox" checked={form.indefinite} onChange={(e) => upd("indefinite", e.target.checked)}
+              className="w-4 h-4 rounded accent-indigo-600" />
+            <span className="text-[12px] font-semibold text-slate-700">무기한 (정규직) · 종료일 없음</span>
+          </label>
         </div>
 
         {/* 담당 업무 */}
-        <div className="flex flex-col gap-1">
-          <FieldLabel required>담당 업무</FieldLabel>
+        <div>
+          <label className={fldLabel}>담당 업무</label>
           <input type="text" value={form.jobDuty} onChange={(e) => upd("jobDuty", e.target.value)}
-            placeholder="예: 약국 카운터 · OTC 판매"
-            className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-400 placeholder:text-[12px]"
+            placeholder="예: 약국 카운터 · OTC 판매 · 재고 관리"
+            className={fldInput}
           />
         </div>
 
-        {/* T-A (2026-08-05) · 4대보험 + 추가 특약 · 근무조건 섹션 통합 */}
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="inline-flex items-center gap-1.5 cursor-pointer">
+        {/* 4대보험 */}
+        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2">
+          <label className="inline-flex items-center gap-2 cursor-pointer flex-1">
             <input type="checkbox" checked={form.socialInsurance} onChange={(e) => upd("socialInsurance", e.target.checked)}
-              className="w-4 h-4 accent-emerald-600" />
-            <span className="text-[12px] font-bold text-slate-700">4대보험 가입 (고용·산재·국민연금·건강보험)</span>
+              className="w-4 h-4 rounded accent-indigo-600" />
+            <span className="text-[12.5px] font-semibold text-slate-700">4대보험 가입</span>
           </label>
+          <span className="text-[10.5px] text-slate-400 font-semibold">고용·산재·국민연금·건강보험</span>
         </div>
-        <div className="flex flex-col gap-1">
-          <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
-            <Notepad size={11} weight="fill" className="text-slate-400" /> 추가 특약 (선택)
-          </span>
+
+        {/* 특약 */}
+        <div>
+          <label className={fldLabel}>
+            <Notepad size={10} weight="fill" className="inline mr-0.5" />추가 특약 (선택)
+          </label>
           <textarea value={form.additionalContent} onChange={(e) => upd("additionalContent", e.target.value)} rows={2}
             placeholder="예: 수습기간 3개월 · 명절 상여 별도"
-            className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition resize-y"
+            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-[12.5px] text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition resize-y placeholder:text-slate-400 placeholder:font-normal"
           />
         </div>
       </div>
-      {/* /그룹 (c) · T-L (2026-08-05) */}
+      {/* /카드 4 */}
 
-      {/* ── 그룹 (d) · T-O (2026-08-05) · 임금계산 (근무조건 카드 아래로 통합) ── */}
-      <div className="rounded-lg border border-emerald-200 bg-emerald-50/40 p-2 flex flex-col gap-1.5">
-        <div className="text-[10px] font-black text-emerald-700 uppercase tracking-wider flex items-center gap-1">
-          <Money size={10} weight="fill" />
-          임금 계산
-          <label className="ml-auto inline-flex items-center gap-1 cursor-pointer select-none">
+      {/* ═══════════════════════════════════════════════════
+          카드 5 · 임금 계산
+      ═══════════════════════════════════════════════════ */}
+      <div className="rounded-xl border border-emerald-200 bg-white p-3 flex flex-col gap-3 shadow-sm">
+        <div className="flex items-center gap-2 pb-2 border-b border-emerald-100">
+          <div className="w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center shrink-0">
+            <Money size={13} weight="fill" className="text-emerald-600" />
+          </div>
+          <span className="text-[12px] font-black text-slate-700">임금 계산</span>
+          <label className="ml-auto inline-flex items-center gap-1.5 cursor-pointer select-none">
             <input type="checkbox" checked={form.useWageComponents} onChange={(e) => upd("useWageComponents", e.target.checked)}
-              className="w-3.5 h-3.5 accent-indigo-600 cursor-pointer" />
-            <span className="text-[10px] font-black text-indigo-700">임금 구성표</span>
+              className="w-4 h-4 rounded accent-indigo-600 cursor-pointer" />
+            <span className="text-[11px] font-bold text-indigo-700">임금 구성표</span>
           </label>
         </div>
 
-        {/* 실 근무시간 · 시급 · 세전/세후 자동 계산 요약 · T-O (2026-08-05) · T-R (2026-08-05) 흐름 시각화 */}
+        {/* 흐름 요약 · 우측 임금구성표와 동일한 3열 표 형식 (항목 · 내용 · 값) */}
         {(() => {
           const wd = Number(form.weekdayHourly) || 0;
           const we = Number(form.weekendHourly) || 0;
           const grossFromWage = computeWageFromHourlyDual(wd, we, form.wageComponents).total
             + (form.wageComponents.mealAllowance || 0)
             + (form.wageComponents.vehicleAllowance || 0);
-          // T-O · 4대보험 (9.09%) 만 공제 · 실무 표시 관례 · 소득세·지방소득세 제외
           const netAuto = Math.round(grossFromWage * (1 - 0.0909));
           return (
-            <div className="flex flex-col gap-1">
-              {/* 흐름 요약 · 4단계 시각화 · T-R (2026-08-05) */}
-              <div className="rounded-lg bg-white/70 border border-emerald-200 px-2 py-1.5 grid grid-cols-4 gap-1.5 text-[10.5px] tabular-nums">
-                <div className="flex flex-col items-start">
-                  <span className="text-[9.5px] text-slate-500 font-semibold">① 월 근로시간</span>
-                  <span className="font-black text-slate-900 text-[11.5px]">
-                    {monthlyCalc ? `${monthlyCalc.monthlyHoursInt}h ${monthlyCalc.monthlyMinutesRem}m` : "-"}
-                  </span>
-                  <span className="text-[9px] text-slate-400">주중 {weeklyWeekdayDays}일·주말 {weeklyWeekendDays}일</span>
-                </div>
-                <div className="flex flex-col items-start border-l border-slate-200 pl-1.5">
-                  <span className="text-[9.5px] text-slate-500 font-semibold">② 주중/주말 시급</span>
-                  <span className="font-black text-slate-900 text-[11.5px]">{fmtWon(wd)}</span>
-                  <span className="text-[9px] text-slate-400">/ {fmtWon(we)}원 (주말)</span>
-                </div>
-                <div className="flex flex-col items-start border-l border-slate-200 pl-1.5">
-                  <span className="text-[9.5px] text-slate-500 font-semibold">③ 세전 총액</span>
-                  <span className="font-black text-slate-900 text-[11.5px]">{fmtWon(grossFromWage)}원</span>
-                  <span className="text-[9px] text-slate-400">시급 × 296.94h</span>
-                </div>
-                <div className="flex flex-col items-start border-l border-slate-200 pl-1.5">
-                  <span className="text-[9.5px] text-emerald-700 font-black">④ 예상 세후</span>
-                  <span className="font-black text-emerald-800 text-[11.5px]">{fmtWon(netAuto)}원</span>
-                  <span className="text-[9px] text-slate-400">-4대보험 9.09%</span>
-                </div>
+            <div className="rounded-lg border border-emerald-200 bg-white flex flex-col overflow-hidden">
+              {/* 상단 라벨 · 우측 임금구성표와 동일한 스타일 */}
+              <div className="text-[11px] font-black text-emerald-800 flex items-center gap-1 px-2 py-1 border-b border-emerald-100 bg-emerald-50/50">
+                <Calculator size={11} weight="fill" />
+                임금 계산 요약
               </div>
+              <table className="w-full border-collapse text-[11px] tabular-nums">
+                <thead>
+                  <tr className="bg-slate-100 text-slate-700 font-black text-[10.5px]">
+                    <th className="border-b border-slate-300 px-1.5 py-1 text-left w-[28%]">항목</th>
+                    <th className="border-b border-slate-300 px-1.5 py-1 text-center w-[44%]">내용</th>
+                    <th className="border-b border-slate-300 px-1.5 py-1 text-right w-[28%]">값</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* ① 월 근로시간 */}
+                  <tr className="border-b border-slate-200">
+                    <td className="px-1.5 py-1 align-middle">
+                      <div className="text-[11px] font-bold text-slate-800 leading-tight">
+                        <span className="text-emerald-600 font-black mr-0.5">①</span>월 근로시간
+                      </div>
+                    </td>
+                    <td className="px-1.5 py-1 align-middle text-center text-[10px] text-slate-500 font-semibold">
+                      주중 {weeklyWeekdayDays}일 · 주말 {weeklyWeekendDays}일 · 4.345주
+                    </td>
+                    <td className="px-1.5 py-1 align-middle text-right text-[11px] font-black text-slate-900">
+                      {monthlyCalc ? `${monthlyCalc.monthlyHoursInt}h ${monthlyCalc.monthlyMinutesRem}m` : "-"}
+                    </td>
+                  </tr>
+                  {/* ② 통상시급 (주중) */}
+                  <tr className="border-b border-slate-100">
+                    <td className="px-1.5 py-1 align-middle">
+                      <div className="text-[11px] font-bold text-slate-800 leading-tight">
+                        <span className="text-emerald-600 font-black mr-0.5">②</span>통상시급 (주중)
+                      </div>
+                    </td>
+                    <td className="px-1.5 py-1 align-middle text-center text-[10px] text-slate-500 font-semibold italic">
+                      사용자 입력 or 자동 역산
+                    </td>
+                    <td className="px-1.5 py-1 align-middle text-right text-[11px] font-black text-slate-900">
+                      {fmtWon(wd)}
+                    </td>
+                  </tr>
+                  {/* 통상시급 (주말) */}
+                  <tr className="border-b border-slate-200">
+                    <td className="px-1.5 py-1 align-middle">
+                      <div className="text-[11px] font-bold text-slate-800 leading-tight pl-3">
+                        통상시급 (주말)
+                      </div>
+                    </td>
+                    <td className="px-1.5 py-1 align-middle text-center text-[10px] text-slate-500 font-semibold italic">
+                      &nbsp;
+                    </td>
+                    <td className="px-1.5 py-1 align-middle text-right text-[11px] font-black text-slate-900">
+                      {fmtWon(we)}
+                    </td>
+                  </tr>
+                  {/* ③ 세전 총액 */}
+                  <tr className="border-b border-slate-200">
+                    <td className="px-1.5 py-1 align-middle">
+                      <div className="text-[11px] font-bold text-slate-800 leading-tight">
+                        <span className="text-emerald-600 font-black mr-0.5">③</span>세전 총액
+                      </div>
+                    </td>
+                    <td className="px-1.5 py-1 align-middle text-center text-[10px] text-slate-500 font-semibold">
+                      시급 × 296.94h (포괄임금)
+                    </td>
+                    <td className="px-1.5 py-1 align-middle text-right text-[11px] font-black text-slate-900">
+                      {fmtWon(grossFromWage)}원
+                    </td>
+                  </tr>
+                  {/* ④ 예상 세후 · 합계 강조 행 */}
+                  <tr className="bg-emerald-50">
+                    <td className="px-1.5 py-1.5 align-middle text-left text-[11.5px] font-black text-emerald-900">
+                      <span className="text-emerald-600 font-black mr-0.5">④</span>예상 세후
+                    </td>
+                    <td className="px-1.5 py-1.5 align-middle text-center text-[10.5px] font-bold text-emerald-700">
+                      세전 × (1 - 4대보험 9.09%)
+                    </td>
+                    <td className="px-1.5 py-1.5 align-middle text-right text-[12px] font-black text-emerald-800">
+                      {fmtWon(netAuto)}원
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           );
         })()}
 
-        {/* 목표 세후 입력 → 6항목 자동 역산 · onChange 즉시 · T-O · 4대보험만 (9.09%) · T-R (2026-08-05) auto default */}
+        {/* 목표 세후 역산 */}
         {(() => {
-          // T-R (2026-08-05) · 자동 계산된 세후 = default placeholder
           const wd = Number(form.weekdayHourly) || 0;
           const we = Number(form.weekendHourly) || 0;
           const autoGross = computeWageFromHourlyDual(wd, we, form.wageComponents).total
@@ -3365,62 +3523,58 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const autoNet = Math.round(autoGross * (1 - 0.0909));
           const hasUserInput = form.targetNetInput.trim() !== "";
           return (
-            <div className="rounded-lg border-2 border-emerald-300 bg-white/80 px-2 py-1.5 flex flex-col gap-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <Calculator size={12} weight="fill" className="text-emerald-700" />
-                <span className="text-[11px] font-black text-emerald-800">⑤ 목표 세후</span>
-                <span className="text-[9.5px] text-slate-500 font-semibold">(조정 가능 · 미입력 시 자동값)</span>
-                <div className="flex-1 min-w-[140px] relative">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={form.targetNetInput}
-                    onChange={(e) => {
-                      const raw = e.target.value.replace(/[^0-9]/g, "");
-                      const num = Number(raw) || 0;
-                      // T-R (2026-08-05) · 빈 값 → 조정 취소 · 시급/구성표 재계산 안 함 (default 유지)
-                      if (raw === "") {
-                        setForm(prev => ({ ...prev, targetNetInput: "" }));
-                        return;
-                      }
-                      setForm(prev => {
-                        // T-O (2026-08-05) · 세후 → 세전 = 세후 / 0.9091 (4대보험만) · 그 후 두 시급 스케일링
-                        const prevWd = Number(prev.weekdayHourly) || 0;
-                        const prevWe = Number(prev.weekendHourly) || 0;
-                        const { weekdayHourly, weekendHourly, wage } = reverseWageFromNetDual(
-                          num, prevWd, prevWe, prev.wageComponents,
-                        );
-                        return {
-                          ...prev,
-                          targetNetInput: raw,
-                          weekdayHourly: String(weekdayHourly),
-                          weekendHourly: String(weekendHourly),
-                          wageComponents: wage,
-                          useWageComponents: true,
-                        };
-                      });
-                    }}
-                    placeholder={autoNet > 0 ? fmtWon(autoNet) : "예: 6,000,000"}
-                    className="w-full bg-white border-2 border-emerald-400 rounded-lg pl-2 pr-8 py-1.5 text-[13px] text-slate-900 font-black focus:outline-none focus:border-emerald-600 transition text-right placeholder:text-emerald-500 placeholder:font-black placeholder:italic"
-                  />
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-emerald-700 font-black pointer-events-none">원</span>
-                </div>
-                {!hasUserInput && autoNet > 0 && (
-                  <span className="text-[10px] font-black text-emerald-600 whitespace-nowrap">← 자동 = {fmtWon(autoNet)}원</span>
-                )}
+            <div className="rounded-lg border-2 border-emerald-300 bg-emerald-50/30 px-3 py-2.5 flex flex-col gap-2">
+              <div className="flex items-center gap-1.5">
+                <Calculator size={13} weight="fill" className="text-emerald-600 shrink-0" />
+                <span className="text-[11px] font-black text-slate-700">목표 세후 설정</span>
+                <span className="text-[9.5px] text-slate-400 font-semibold">(입력 시 시급·구성표 자동 역산)</span>
               </div>
-              <div className="text-[9.5px] text-slate-500 italic leading-snug">
-                * 비워두면 자동 계산된 세후({fmtWon(autoNet)}원) 그대로 · 값 입력 시 시급·임금구성표 자동 재조정
-                <br />
-                * 세후 = 세전 × (1 - 9.09%) · 4대보험 근로자 부담만 · 소득세·지방소득세 제외
-                <br />
-                * 예: 세후 6,000,000원 → 세전 약 6,600,660원 · 660만 = 예상 임금구성 총액
+              <div className="relative">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={form.targetNetInput}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^0-9]/g, "");
+                    const num = Number(raw) || 0;
+                    if (raw === "") {
+                      setForm(prev => ({ ...prev, targetNetInput: "" }));
+                      return;
+                    }
+                    setForm(prev => {
+                      const prevWd = Number(prev.weekdayHourly) || 0;
+                      const prevWe = Number(prev.weekendHourly) || 0;
+                      const { weekdayHourly, weekendHourly, wage } = reverseWageFromNetDual(
+                        num, prevWd, prevWe, prev.wageComponents,
+                      );
+                      return {
+                        ...prev,
+                        targetNetInput: raw,
+                        weekdayHourly: String(weekdayHourly),
+                        weekendHourly: String(weekendHourly),
+                        wageComponents: wage,
+                        useWageComponents: true,
+                      };
+                    });
+                  }}
+                  placeholder={autoNet > 0 ? fmtWon(autoNet) : "예: 6,000,000"}
+                  className="w-full bg-white border-2 border-emerald-300 rounded-lg pl-3 pr-9 py-2 text-[14px] text-slate-900 font-black focus:outline-none focus:ring-2 focus:ring-emerald-400/60 focus:border-emerald-500 transition text-right placeholder:text-emerald-400 placeholder:font-normal"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11.5px] text-emerald-700 font-black pointer-events-none">원</span>
+              </div>
+              {!hasUserInput && autoNet > 0 && (
+                <div className="text-[10px] text-emerald-600 font-semibold text-right">
+                  자동 계산값 {fmtWon(autoNet)}원 · 입력하면 역산 적용
+                </div>
+              )}
+              <div className="text-[9.5px] text-slate-400 leading-relaxed">
+                세후 = 세전 × (1 − 9.09%) · 4대보험 근로자 부담만 · 소득세 제외
               </div>
             </div>
           );
         })()}
 
-        {/* ── T-Q (2026-08-05) · 실수령액 상세 · 세전 → 4대보험 → (선택) 소득세 → 실수령액 ── */}
+        {/* 실수령액 상세 */}
         {(() => {
           const wd = Number(form.weekdayHourly) || 0;
           const we = Number(form.weekendHourly) || 0;
@@ -3433,242 +3587,264 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             ? Math.max(0, gross - ins.total - tax.total)
             : Math.max(0, gross - ins.total);
           const row = (label: string, amount: number, opts?: { minus?: boolean; sub?: boolean; hint?: string }) => (
-            <div className={`flex items-baseline justify-between gap-2 ${opts?.sub ? "pl-2.5" : ""}`}>
-              <span className={`${opts?.sub ? "text-[10.5px] text-slate-500 font-semibold" : "text-[11px] text-slate-700 font-bold"}`}>
+            <div className={`flex items-baseline justify-between gap-2 ${opts?.sub ? "pl-3" : ""}`}>
+              <span className={`${opts?.sub ? "text-[10.5px] text-slate-500 font-semibold" : "text-[11.5px] text-slate-700 font-bold"}`}>
                 {label}
                 {opts?.hint && <span className="ml-1 text-[9.5px] text-slate-400 font-medium">{opts.hint}</span>}
               </span>
-              <span className={`tabular-nums ${opts?.sub ? "text-[10.5px] text-slate-600 font-bold" : "text-[11.5px] text-slate-900 font-black"}`}>
-                {opts?.minus ? "-" : ""}{fmtWon(amount)} 원
+              <span className={`tabular-nums ${opts?.sub ? "text-[10.5px] text-slate-600 font-bold" : "text-[12px] text-slate-900 font-black"}`}>
+                {opts?.minus ? "−" : ""}{fmtWon(amount)} 원
               </span>
             </div>
           );
           return (
-            <details className="rounded-lg border-2 border-slate-300 bg-white/90 px-2 py-1.5" open={netDetailOpen} onToggle={(e) => setNetDetailOpen((e.currentTarget as HTMLDetailsElement).open)}>
-              <summary className="text-[11px] font-black text-slate-800 cursor-pointer hover:text-emerald-700 flex items-center gap-1.5 list-none">
+            <details className="rounded-lg border border-slate-200 bg-white px-3 py-2" open={netDetailOpen} onToggle={(e) => setNetDetailOpen((e.currentTarget as HTMLDetailsElement).open)}>
+              <summary className="text-[11.5px] font-black text-slate-700 cursor-pointer hover:text-emerald-700 flex items-center gap-1.5 list-none select-none">
                 <CaretDown size={11} weight="bold" className={`transition-transform ${netDetailOpen ? "" : "-rotate-90"}`} />
-                <Calculator size={12} weight="fill" className="text-emerald-700" />
+                <Calculator size={12} weight="fill" className="text-emerald-600" />
                 실수령액 상세
-                <label className="ml-auto inline-flex items-center gap-1 cursor-pointer select-none" onClick={(e) => e.stopPropagation()}>
+                <label className="ml-auto inline-flex items-center gap-1.5 cursor-pointer select-none" onClick={(e) => e.stopPropagation()}>
                   <input
                     type="checkbox"
                     checked={includeIncomeTax}
                     onChange={(e) => setIncludeIncomeTax(e.target.checked)}
-                    className="w-3.5 h-3.5 accent-emerald-600 cursor-pointer"
+                    className="w-3.5 h-3.5 rounded accent-indigo-600 cursor-pointer"
                   />
-                  <span className="text-[10px] font-black text-slate-600">소득세 포함</span>
+                  <span className="text-[10.5px] font-bold text-slate-600">소득세 포함</span>
                 </label>
               </summary>
-              <div className="mt-1.5 flex flex-col gap-1">
-                {/* 세전 총액 */}
+              <div className="mt-2.5 flex flex-col gap-1.5">
                 {row("월 세전 총액", gross)}
-                <div className="border-t border-slate-200 my-0.5" />
-                {/* 4대보험 */}
-                <div className="text-[10px] font-black text-slate-500 uppercase tracking-wider mt-0.5">공제 항목 (예상 세금)</div>
+                <div className="border-t border-slate-100 my-0.5" />
+                <div className="text-[9.5px] font-black text-slate-400 uppercase tracking-wider mt-0.5">공제 항목</div>
                 {row("국민연금", ins.pension, { minus: true, sub: true, hint: "(4.5%)" })}
                 {row("건강보험", ins.health, { minus: true, sub: true, hint: "(3.545%)" })}
                 {row("장기요양", ins.ltc, { minus: true, sub: true, hint: "(건보×12.95%)" })}
                 {row("고용보험", ins.employment, { minus: true, sub: true, hint: "(0.9%)" })}
-                <div className="flex items-baseline justify-between gap-2 pl-2.5 border-t border-slate-200 pt-0.5">
-                  <span className="text-[10.5px] text-slate-700 font-black">└ 4대보험 합계</span>
-                  <span className="tabular-nums text-[11px] text-rose-700 font-black">-{fmtWon(ins.total)} 원</span>
+                <div className="flex items-baseline justify-between gap-2 pl-3 border-t border-slate-100 pt-1">
+                  <span className="text-[10.5px] text-slate-600 font-black">4대보험 합계</span>
+                  <span className="tabular-nums text-[11px] text-rose-600 font-black">−{fmtWon(ins.total)} 원</span>
                 </div>
-                {/* 소득세 (참고) · 토글 ON 시 실수령액에 반영 */}
-                <div className={`mt-0.5 ${includeIncomeTax ? "" : "opacity-60"}`}>
-                  {row("소득세", tax.incomeTax, { minus: true, sub: true, hint: "(간이세액표 근사·부양 1인)" })}
+                <div className={`mt-0.5 ${includeIncomeTax ? "" : "opacity-50"}`}>
+                  {row("소득세", tax.incomeTax, { minus: true, sub: true, hint: "(간이 근사·부양 1인)" })}
                   {row("지방소득세", tax.localTax, { minus: true, sub: true, hint: "(소득세×10%)" })}
-                  <div className="flex items-baseline justify-between gap-2 pl-2.5 border-t border-slate-200 pt-0.5">
-                    <span className="text-[10.5px] text-slate-700 font-black">└ 소득세 합계</span>
-                    <span className="tabular-nums text-[11px] text-rose-700 font-black">-{fmtWon(tax.total)} 원</span>
+                  <div className="flex items-baseline justify-between gap-2 pl-3 border-t border-slate-100 pt-1">
+                    <span className="text-[10.5px] text-slate-600 font-black">소득세 합계</span>
+                    <span className="tabular-nums text-[11px] text-rose-600 font-black">−{fmtWon(tax.total)} 원</span>
                   </div>
                   {!includeIncomeTax && (
-                    <div className="text-[9.5px] text-slate-400 italic pl-2.5 mt-0.5">
-                      * 참고용 · 실수령액에 반영하려면 "소득세 포함" 체크
+                    <div className="text-[9.5px] text-slate-400 italic pl-3 mt-0.5">
+                      참고용 · "소득세 포함" 체크 시 실수령액에 반영
                     </div>
                   )}
                 </div>
-                {/* 최종 실수령액 */}
-                <div className="mt-1 rounded-lg bg-emerald-50 border-2 border-emerald-300 px-2 py-1.5 flex items-baseline justify-between gap-2">
-                  <span className="text-[12px] font-black text-emerald-900 flex items-center gap-1">
-                    <Money size={12} weight="fill" />
+                <div className="mt-1.5 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 flex items-baseline justify-between gap-2">
+                  <span className="text-[12px] font-black text-emerald-900 flex items-center gap-1.5">
+                    <Money size={13} weight="fill" />
                     월 실수령액
-                    <span className="text-[9.5px] font-bold text-emerald-600">
+                    <span className="text-[9.5px] font-semibold text-emerald-600">
                       ({includeIncomeTax ? "4대보험+소득세" : "4대보험만"})
                     </span>
                   </span>
-                  <span className="tabular-nums text-lg font-black text-emerald-800">{fmtWon(netFinal)} 원</span>
+                  <span className="tabular-nums text-[18px] font-black text-emerald-800">{fmtWon(netFinal)} 원</span>
                 </div>
               </div>
             </details>
           );
         })()}
 
-        {/* 시급 조정 (직급 default 로드 · 사용자 미세 조정 가능) */}
-        <div className="grid md:grid-cols-2 gap-1.5">
-          <div>
-            <div className="flex items-center justify-between mb-0.5">
-              <span className="text-[10.5px] text-slate-400 font-semibold">주중 시급</span>
-              <button
-                type="button"
-                onClick={applyDefaultHourly}
-                className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer"
-                title="설정 > 시급 설정 에서 등록한 직급 기본 시급을 자동 로드"
-              >
-                직급 기본
-              </button>
+        {/* 시급 조정 */}
+        <div className={cardInner}>
+          <div className={cardGroupLabel}>시급 조정</div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">주중 시급</label>
+                <button
+                  type="button"
+                  onClick={applyDefaultHourly}
+                  className="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 hover:underline cursor-pointer"
+                  title="설정 > 시급 설정 에서 등록한 직급 기본 시급 로드"
+                >
+                  직급 기본
+                </button>
+              </div>
+              <div className="relative">
+                <input type="text" inputMode="numeric" value={form.weekdayHourly}
+                  onChange={(e) => upd("weekdayHourly", e.target.value.replace(/[^0-9]/g, ""))}
+                  className="w-full bg-white border border-slate-200 rounded-lg pl-3 pr-7 py-2 text-[13px] text-slate-800 font-black focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition text-right"
+                />
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-semibold pointer-events-none">원</span>
+              </div>
             </div>
-            <div className="relative">
-              <input type="text" inputMode="numeric" value={form.weekdayHourly}
-                onChange={(e) => upd("weekdayHourly", e.target.value.replace(/[^0-9]/g, ""))}
-                className="w-full bg-white border border-slate-200 rounded-lg pl-2 pr-6 py-1.5 text-[12px] text-slate-800 font-black focus:outline-none focus:border-emerald-500 transition text-right"
-              />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10.5px] text-slate-400 font-semibold pointer-events-none">원</span>
-            </div>
-          </div>
-          <div>
-            <div className="text-[10.5px] text-slate-400 font-semibold mb-0.5">주말 시급</div>
-            <div className="relative">
-              <input type="text" inputMode="numeric" value={form.weekendHourly}
-                onChange={(e) => upd("weekendHourly", e.target.value.replace(/[^0-9]/g, ""))}
-                className="w-full bg-white border border-slate-200 rounded-lg pl-2 pr-6 py-1.5 text-[12px] text-slate-800 font-black focus:outline-none focus:border-emerald-500 transition text-right"
-              />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10.5px] text-slate-400 font-semibold pointer-events-none">원</span>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">주말 시급</label>
+              <div className="relative">
+                <input type="text" inputMode="numeric" value={form.weekendHourly}
+                  onChange={(e) => upd("weekendHourly", e.target.value.replace(/[^0-9]/g, ""))}
+                  className="w-full bg-white border border-slate-200 rounded-lg pl-3 pr-7 py-2 text-[13px] text-slate-800 font-black focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition text-right"
+                />
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-semibold pointer-events-none">원</span>
+              </div>
             </div>
           </div>
         </div>
-        {/* 임금 구성표 (역산 결과 · 사용자 개별 항목 미세 조정) */}
+
+        {/* 임금 구성표 */}
         {form.useWageComponents && (
           <WageComponentsForm wage={form.wageComponents} onChange={(next) => upd("wageComponents", next)} />
         )}
 
-        <div className="flex items-center gap-2 mt-1">
-          <span className="text-[10.5px] text-slate-500 font-semibold shrink-0">지급일</span>
+        {/* 지급일 */}
+        <div>
+          <label className={fldLabel}>지급일</label>
           <input type="text" value={form.paymentDayText} onChange={(e) => upd("paymentDayText", e.target.value)}
             placeholder="예: 당월 01일 ~ 당월 말일, 당월 말일 지급"
-            className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11.5px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+            className={fldInput}
           />
         </div>
       </div>
-      {/* /그룹 (d) · T-O (2026-08-05) */}
-      </section>
+      {/* /카드 5 */}
 
-      {/* ═══ 섹션 4 · 산정 비교 (접기 · 심층 조정) ═══ */}
-      <details className="rounded-lg border border-slate-200 bg-slate-50/40 px-2 py-1.5 mt-3">
-        <summary className="text-[11.5px] font-black text-slate-600 cursor-pointer hover:text-indigo-700 flex items-center gap-1">
-          <CaretDown size={10} weight="bold" /> 임금 산정 비교 · 3가지 모드 계산기 (심층)
+      {/* ═══════════════════════════════════════════════════
+          접기 · 임금 산정 비교 (심층)
+      ═══════════════════════════════════════════════════ */}
+      <details className="rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-2.5">
+        <summary className="text-[11.5px] font-black text-slate-600 cursor-pointer hover:text-indigo-700 flex items-center gap-1.5 select-none list-none">
+          <CaretDown size={10} weight="bold" />
+          임금 산정 비교 · 3가지 모드 계산기
         </summary>
-        <div className="flex flex-col gap-1 mt-1.5">
-        {/* 역산 계산기 (C) */}
-        <WageCalcModePanel
-          form={form}
-          weeklyWeekdayDays={weeklyWeekdayDays}
-          weeklyWeekendDays={weeklyWeekendDays}
-          onApplyToWageComponents={(nextWage) => upd("wageComponents", nextWage)}
-          onApplyHourly={(wd, we) => setForm(prev => ({ ...prev, weekdayHourly: String(wd), weekendHourly: String(we) }))}
-        />
-        {/* 임금 산정 비교 (D) · 임금 구성표 활성 시 */}
-        {form.useWageComponents && (
-          <WageSummaryDualPanel
+        <div className="flex flex-col gap-2 mt-2">
+          <WageCalcModePanel
             form={form}
             weeklyWeekdayDays={weeklyWeekdayDays}
             weeklyWeekendDays={weeklyWeekendDays}
+            onApplyToWageComponents={(nextWage) => upd("wageComponents", nextWage)}
+            onApplyHourly={(wd, we) => setForm(prev => ({ ...prev, weekdayHourly: String(wd), weekendHourly: String(we) }))}
           />
-        )}
-        {!form.useWageComponents && (
-          <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-2 py-1.5 text-[10.5px] text-slate-500 font-semibold text-center">
-            임금 구성표 체크 시 · 포괄임금 vs 실 근무시간 좌우 비교 활성화
-          </div>
-        )}
+          {form.useWageComponents && (
+            <WageSummaryDualPanel
+              form={form}
+              weeklyWeekdayDays={weeklyWeekdayDays}
+              weeklyWeekendDays={weeklyWeekendDays}
+            />
+          )}
+          {!form.useWageComponents && (
+            <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2 text-[10.5px] text-slate-500 font-semibold text-center">
+              임금 구성표 체크 시 포괄임금 vs 실 근무시간 비교 활성화
+            </div>
+          )}
         </div>
       </details>
 
-      {/* ═══ 옵션 (접기) · 사업주 정보 · 카테고리 이해·동의 · CCTV (4대보험·특약은 근무조건으로 이동됨) ═══ */}
-      <details className="rounded-lg border border-slate-200 bg-slate-50/40 px-2 py-1.5 mt-3">
-        <summary className="text-[11.5px] font-black text-slate-600 cursor-pointer hover:text-emerald-700 flex items-center gap-1">
-          <CaretDown size={10} weight="bold" /> 사업주 정보 · 카테고리별 이해·동의 · CCTV
+      {/* ═══════════════════════════════════════════════════
+          접기 · 사업주 정보 · 이해·동의 · CCTV
+      ═══════════════════════════════════════════════════ */}
+      <details className="rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-2.5">
+        <summary className="text-[11.5px] font-black text-slate-600 cursor-pointer hover:text-indigo-700 flex items-center gap-1.5 select-none list-none">
+          <CaretDown size={10} weight="bold" />
+          사업주 정보 · 카테고리 이해·동의 · CCTV
         </summary>
-        <div className="mt-1.5 flex flex-col gap-1.5">
+        <div className="mt-3 flex flex-col gap-3">
+
           {/* 사업주 */}
-          <div className="grid md:grid-cols-2 gap-1.5">
-            <input type="text" value={form.employerName} onChange={(e) => upd("employerName", e.target.value)}
-              placeholder="대표자 (강남성)"
-              className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
-            />
-            <input type="text" value={form.companyName} onChange={(e) => upd("companyName", e.target.value)}
-              placeholder="상호 (오산 메가타운 약국)"
-              className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
-            />
-            <input type="text" value={form.companyAddress} onChange={(e) => upd("companyAddress", e.target.value)}
-              placeholder="사업장 주소"
-              className="md:col-span-2 bg-white border border-slate-200 rounded-lg px-2 py-1 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
-            />
-            <input type="text" value={form.companyRegNo} onChange={(e) => upd("companyRegNo", e.target.value)}
-              placeholder="사업자등록번호 (선택)"
-              className="md:col-span-2 bg-white border border-slate-200 rounded-lg px-2 py-1 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
-            />
+          <div className={cardInner}>
+            <div className={cardGroupLabel}>사업주 정보</div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className={fldLabel}>대표자</label>
+                <input type="text" value={form.employerName} onChange={(e) => upd("employerName", e.target.value)}
+                  placeholder="강남성"
+                  className={fldInput}
+                />
+              </div>
+              <div>
+                <label className={fldLabel}>상호</label>
+                <input type="text" value={form.companyName} onChange={(e) => upd("companyName", e.target.value)}
+                  placeholder="오산 메가타운 약국"
+                  className={fldInput}
+                />
+              </div>
+              <div className="col-span-2">
+                <label className={fldLabel}>사업장 주소</label>
+                <input type="text" value={form.companyAddress} onChange={(e) => upd("companyAddress", e.target.value)}
+                  placeholder="경기도 오산시 경기대로 868-4 2층"
+                  className={fldInput}
+                />
+              </div>
+              <div className="col-span-2">
+                <label className={fldLabel}>사업자등록번호 (선택)</label>
+                <input type="text" value={form.companyRegNo} onChange={(e) => upd("companyRegNo", e.target.value)}
+                  placeholder="000-00-00000"
+                  className={fldInput}
+                />
+              </div>
+            </div>
           </div>
 
-          {/* T6 · 카테고리별 이해·동의 체크 (개별 서명 대신 · 2026-08-04) · T-D: 프리뷰에 서명 pad 있음 */}
-          <div className="rounded-lg border border-indigo-200 bg-indigo-50/30 p-2 flex flex-col gap-1.5">
-            <div className="text-[11px] font-black text-indigo-800 flex items-center gap-1">
+          {/* 이해·동의 */}
+          <div className="rounded-lg border border-indigo-200 bg-indigo-50/30 p-3 flex flex-col gap-2">
+            <div className="text-[10.5px] font-black uppercase tracking-wider text-indigo-700 flex items-center gap-1.5">
               카테고리별 이해·동의
-              <span className="text-[9.5px] font-semibold text-indigo-500">(계약서 미리보기 반영)</span>
+              <span className="font-semibold text-[9.5px] text-indigo-400 normal-case">(계약서 미리보기 반영)</span>
             </div>
-            <label className="inline-flex items-center gap-1.5 cursor-pointer">
-              <input type="checkbox" checked={form.clauseAcks.wage}
-                onChange={(e) => upd("clauseAcks", { ...form.clauseAcks, wage: e.target.checked })}
-                className="w-4 h-4 accent-indigo-600" />
-              <span className="text-[11.5px] font-semibold text-slate-700">임금 조항 이해·동의 (단서 5개 전체)</span>
-            </label>
-            <label className="inline-flex items-center gap-1.5 cursor-pointer">
-              <input type="checkbox" checked={form.clauseAcks.workTime}
-                onChange={(e) => upd("clauseAcks", { ...form.clauseAcks, workTime: e.target.checked })}
-                className="w-4 h-4 accent-indigo-600" />
-              <span className="text-[11.5px] font-semibold text-slate-700">근로시간·휴게 조항 이해·동의</span>
-            </label>
-            <label className="inline-flex items-center gap-1.5 cursor-pointer">
-              <input type="checkbox" checked={form.clauseAcks.etc}
-                onChange={(e) => upd("clauseAcks", { ...form.clauseAcks, etc: e.target.checked })}
-                className="w-4 h-4 accent-indigo-600" />
-              <span className="text-[11.5px] font-semibold text-slate-700">기타사항 이해·동의 (5개 항목 전체)</span>
-            </label>
+            {([
+              { key: "wage" as const,     label: "임금 조항 이해·동의 (단서 5개 전체)" },
+              { key: "workTime" as const, label: "근로시간·휴게 조항 이해·동의" },
+              { key: "etc" as const,      label: "기타사항 이해·동의 (5개 항목 전체)" },
+            ]).map(({ key, label }) => (
+              <label key={key} className="inline-flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.clauseAcks[key]}
+                  onChange={(e) => upd("clauseAcks", { ...form.clauseAcks, [key]: e.target.checked })}
+                  className="w-4 h-4 rounded accent-indigo-600" />
+                <span className="text-[12px] font-semibold text-slate-700">{label}</span>
+              </label>
+            ))}
           </div>
 
           {/* CCTV/개인정보 */}
-          <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-1.5 flex flex-col gap-1">
-            <div className="text-[11px] font-black text-amber-800 flex items-center gap-1">
+          <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-3 flex flex-col gap-2">
+            <div className="text-[10.5px] font-black uppercase tracking-wider text-amber-700 flex items-center gap-1.5">
               <Warning size={11} weight="fill" />
               개인정보 · CCTV 동의
             </div>
-            <div className="grid md:grid-cols-2 gap-1.5">
-              <input type="text" value={form.privacyConsent.recipientName}
-                onChange={(e) => upd("privacyConsent", { ...form.privacyConsent, recipientName: e.target.value })}
-                placeholder="수령자 성명 (미입력 시 근로자명)"
-                className="bg-white border border-slate-200 rounded-md px-2 py-1 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-amber-500 transition"
-              />
-              <input type="text" value={form.privacyConsent.recipientAddress}
-                onChange={(e) => upd("privacyConsent", { ...form.privacyConsent, recipientAddress: e.target.value })}
-                placeholder="수령자 주소 (미입력 시 근로자 주소)"
-                className="bg-white border border-slate-200 rounded-md px-2 py-1 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-amber-500 transition"
-              />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className={fldLabel}>수령자 성명</label>
+                <input type="text" value={form.privacyConsent.recipientName}
+                  onChange={(e) => upd("privacyConsent", { ...form.privacyConsent, recipientName: e.target.value })}
+                  placeholder="미입력 시 근로자명"
+                  className={fldInput}
+                />
+              </div>
+              <div>
+                <label className={fldLabel}>수령자 주소</label>
+                <input type="text" value={form.privacyConsent.recipientAddress}
+                  onChange={(e) => upd("privacyConsent", { ...form.privacyConsent, recipientAddress: e.target.value })}
+                  placeholder="미입력 시 근로자 주소"
+                  className={fldInput}
+                />
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <label className="inline-flex items-center gap-1 cursor-pointer">
+            <div className="flex flex-wrap items-center gap-4 mt-0.5">
+              <label className="inline-flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={form.privacyConsent.agreedCollection}
                   onChange={(e) => upd("privacyConsent", { ...form.privacyConsent, agreedCollection: e.target.checked })}
-                  className="w-3.5 h-3.5 accent-amber-600 cursor-pointer" />
-                <span className="text-[11px] font-bold text-slate-700">개인정보 수집·이용</span>
+                  className="w-4 h-4 rounded accent-amber-600 cursor-pointer" />
+                <span className="text-[12px] font-semibold text-slate-700">개인정보 수집·이용</span>
               </label>
-              <label className="inline-flex items-center gap-1 cursor-pointer">
+              <label className="inline-flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={form.privacyConsent.agreedCCTV}
                   onChange={(e) => upd("privacyConsent", { ...form.privacyConsent, agreedCCTV: e.target.checked })}
-                  className="w-3.5 h-3.5 accent-amber-600 cursor-pointer" />
-                <span className="text-[11px] font-bold text-slate-700">CCTV 촬영·이용</span>
+                  className="w-4 h-4 rounded accent-amber-600 cursor-pointer" />
+                <span className="text-[12px] font-semibold text-slate-700">CCTV 촬영·이용</span>
               </label>
             </div>
           </div>
+
         </div>
       </details>
+
     </section>
   );
 
