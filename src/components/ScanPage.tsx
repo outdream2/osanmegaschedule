@@ -1217,50 +1217,50 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 <X size={16} />
               </button>
             </div>
-            {/* 본문 · 배정구역 · 창고 · 매장 (한 화면에 flex-wrap · 필요 시 줄바꿈) */}
-            <div className="flex-1 overflow-auto px-4 py-3 flex flex-col gap-2.5">
-              {/* 배정 구역 · 공급처 · 카테고리 라인 */}
-              <div className="flex items-center flex-wrap gap-1.5 text-[10.5px]">
+            {/* 본문 · 컴팩트 · 한 화면 보장 · scroll 없이 5칸 */}
+            <div className="px-3 py-2.5 flex flex-col gap-2">
+              {/* 배정 구역 · 카테고리 · 공급처 · 규격 · 1줄 chip · 넘치면 truncate */}
+              <div className="flex items-center gap-1 flex-wrap text-[10px]">
                 {((liveRow.product as any).realMap ?? (liveRow.product as any).real_map) && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 font-black">
-                    <MapPin size={10} /> {(liveRow.product as any).realMap ?? (liveRow.product as any).real_map}
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 font-black">
+                    <MapPin size={9} /> {(liveRow.product as any).realMap ?? (liveRow.product as any).real_map}
                   </span>
                 )}
                 {(liveRow.product as any).category && (
-                  <span className="inline-flex px-2 py-0.5 rounded-md bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold">
+                  <span className="inline-flex px-1.5 py-0.5 rounded bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold">
                     {(liveRow.product as any).category}
                   </span>
                 )}
                 {(liveRow.product as any).supplier && (
-                  <span className="inline-flex px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-slate-600 font-semibold truncate max-w-[140px]">
+                  <span className="inline-flex px-1.5 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-600 font-semibold truncate max-w-[120px]">
                     {(liveRow.product as any).supplier}
                   </span>
                 )}
                 {(liveRow.product as any).spec && (
-                  <span className="inline-flex px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-slate-500 font-medium">
+                  <span className="inline-flex px-1.5 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-500 font-medium truncate max-w-[80px]">
                     {(liveRow.product as any).spec}
                   </span>
                 )}
               </div>
-              {/* 창고1 · 창고2 · 매장1 · 매장2 · 매장3 · 5열 grid · sm 이하 3열로 wrap */}
-              <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
+              {/* 창고1 · 창고2 · 매장1 · 매장2 · 매장3 · 항상 5열 (모바일도 5칸 강제) · 한 화면 보장 */}
+              <div className="grid grid-cols-5 gap-1">
                 {([
-                  { key: "warehouse1Qty" as const, label: "창고1", Icon: Warehouse, tone: "sky",     zone: null,               requestable: false },
-                  { key: "warehouse2Qty" as const, label: "창고2", Icon: Warehouse, tone: "sky",     zone: null,               requestable: false },
-                  { key: "store1Qty"     as const, label: "매장1", Icon: Store,     tone: "amber",   zone: liveRow.store1Zone, requestable: true  },
-                  { key: "store2Qty"     as const, label: "매장2", Icon: Store,     tone: "amber",   zone: liveRow.store2Zone, requestable: true  },
-                  { key: "store3Qty"     as const, label: "매장3", Icon: Store,     tone: "amber",   zone: liveRow.store3Zone, requestable: true  },
+                  { key: "warehouse1Qty" as const, label: "창1", Icon: Warehouse, tone: "sky",   zone: null,               requestable: false },
+                  { key: "warehouse2Qty" as const, label: "창2", Icon: Warehouse, tone: "sky",   zone: null,               requestable: false },
+                  { key: "store1Qty"     as const, label: "매1", Icon: Store,     tone: "amber", zone: liveRow.store1Zone, requestable: true  },
+                  { key: "store2Qty"     as const, label: "매2", Icon: Store,     tone: "amber", zone: liveRow.store2Zone, requestable: true  },
+                  { key: "store3Qty"     as const, label: "매3", Icon: Store,     tone: "amber", zone: liveRow.store3Zone, requestable: true  },
                 ]).map(({ key, label, Icon, tone, zone, requestable }) => {
                   const val = liveRow[key];
                   const toneCls = tone === "sky"
-                    ? { chip: "bg-sky-50 border-sky-200 text-sky-700", label: "text-sky-700" }
-                    : { chip: "bg-amber-50 border-amber-200 text-amber-800", label: "text-amber-700" };
+                    ? { chip: "bg-sky-50 border-sky-200",   label: "text-sky-700" }
+                    : { chip: "bg-amber-50 border-amber-200", label: "text-amber-700" };
                   return (
-                    <div key={key} className={`rounded-lg border ${toneCls.chip} px-2 py-1.5 flex flex-col gap-1`}>
-                      <div className={`flex items-center gap-1 text-[9.5px] font-black uppercase tracking-wider ${toneCls.label}`}>
-                        <Icon size={9} />
-                        <span>{label}</span>
-                        {zone && <span className="ml-auto text-[8.5px] text-slate-500 font-bold tabular-nums truncate max-w-[36px]">{zone}</span>}
+                    <div key={key} className={`rounded-md border ${toneCls.chip} px-1 py-1 flex flex-col gap-0.5 min-w-0`}>
+                      <div className={`flex items-center gap-0.5 text-[9px] font-black uppercase ${toneCls.label} leading-none`}>
+                        <Icon size={8} className="shrink-0" />
+                        <span className="tabular-nums">{label}</span>
+                        {zone && <span className="ml-auto text-[8px] text-slate-500 font-bold tabular-nums truncate">{zone}</span>}
                       </div>
                       <input
                         type="number"
@@ -1268,21 +1268,20 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                         value={val}
                         onChange={e => patchRow(liveRow.key, { [key]: e.target.value === "" ? "" : Number(e.target.value) })}
                         placeholder="0"
-                        className="w-full bg-white/60 border border-transparent rounded-md px-1.5 py-1 text-[13px] font-black text-slate-800 text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-violet-300"
+                        className="w-full bg-white/70 border border-transparent rounded px-1 py-0.5 text-[12.5px] font-black text-slate-800 text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-violet-400 min-w-0"
                       />
-                      {/* T-SCAN-4-a · 매장 슬롯 · 구역별 [진열요청] 미니 버튼 (2026-08-05) */}
                       {requestable && (
                         <button
                           type="button"
                           onClick={async () => { await requestDisplay(liveRow, zone); }}
                           disabled={requestingKey === liveRow.key}
                           title={zone ? `${label} (${zone}) 진열요청` : `${label} 진열요청 · 구역 미지정`}
-                          className="w-full h-6 rounded-md text-[9.5px] font-black text-white bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:brightness-110 shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                          className="w-full h-5 rounded text-[8.5px] font-black text-white bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:brightness-110 shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-0.5"
                         >
                           {requestingKey === liveRow.key ? (
-                            <Loader2 size={9} className="animate-spin" />
+                            <Loader2 size={8} className="animate-spin" />
                           ) : (
-                            <><Megaphone size={9} /> 요청</>
+                            <><Megaphone size={8} /> 요청</>
                           )}
                         </button>
                       )}
@@ -1290,9 +1289,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                   );
                 })}
               </div>
-              {/* 힌트 */}
-              <div className="text-[10px] text-slate-500 font-semibold text-center bg-slate-50/60 rounded-lg px-3 py-1.5 border border-slate-100">
-                실재고 입력 · 매장 슬롯별 [요청] · 구역 단위로 진열요청 전송
+              {/* 힌트 · 매우 컴팩트 */}
+              <div className="text-[9.5px] text-slate-500 font-semibold text-center leading-tight">
+                입력 · 리스트 자동반영 · 매장 슬롯 [요청] 은 해당 구역만 전송
               </div>
             </div>
             {/* 액션 버튼 · [닫기] (구역별 요청은 슬롯 안 미니 버튼에서 처리) */}
