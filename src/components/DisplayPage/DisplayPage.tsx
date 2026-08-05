@@ -1274,41 +1274,11 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     );
   }, [activeGroupId]);
 
-  // Helper: 진열요청 버튼 (배정된 경우 = 빨간 활성 · 미배정/미출근 = 회색 disabled)
-  const renderRequestButton = (num: number, id?: string) => {
-    const targetId = id ?? String(num);
-    const zRaw = zones.find(z => z.id === targetId);
-    if (!zRaw || zoneConfigOpen) return null;
-    const todayNames = new Set(todayStaff.map(s => s.employee.name));
-    const names = zRaw.assignedStaffName ? zRaw.assignedStaffName.split(",").map(s => s.trim()).filter(Boolean) : [];
-    const activeToday = names.some(n => todayNames.has(n));
-    const isActive = zRaw.assignedStaffId !== null && activeToday;
-    if (isActive) {
-      return (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); handleQuickRequest(zRaw); }}
-          title={`${zRaw.assignedStaffName}에게 보충 요청`}
-          className="w-full h-6 bg-red-500 hover:bg-red-600 rounded text-white text-[11px] font-black flex items-center justify-center gap-1 transition-colors leading-none cursor-pointer shrink-0"
-        >
-          <Bell size={10} />
-          진열요청
-        </button>
-      );
-    }
-    // 미배정 또는 오늘 미출근 → 회색 비활성 버튼
-    return (
-      <button
-        type="button"
-        disabled
-        title="담당 직원 미배정 · 사원을 드래그하여 배정하세요"
-        className="w-full h-6 bg-slate-100 border border-slate-200 rounded text-slate-400 text-[10px] font-bold flex items-center justify-center gap-1 leading-none cursor-not-allowed shrink-0"
-      >
-        <Bell size={9} />
-        미배정
-      </button>
-    );
-  };
+  // 2026-08-05 · 사용자 요청 · 구역 단위 진열요청 제거 (상품별 요청으로 전환 · ScanPage 진입점)
+  //   - 담당자 배정 기능은 유지 (zone_assignments · 배정 모달 · dow_map 등 무관)
+  //   - handleQuickRequest 함수는 유지 (다른 곳에서 참조 가능 · 미사용 시 나중에 정리)
+  //   - renderRequestButton · 호출부 5곳 유지 · 여기서 null 반환하여 UI 만 사라짐
+  const renderRequestButton = (_num: number, _id?: string): React.ReactNode => null;
   // Helper to render Zone Cell on Blueprint (id-based · A/B 서브존 지원)
   const renderZoneCellById = (id: string, classes = "", wrapperClass = "", hideRequest = false) => {
     const zRaw = getZoneById(id);
@@ -1404,17 +1374,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           inSelectedGroup={inSelectedGroup}
           onConfigClick={zoneConfigOpen ? (zone) => handleZoneConfigClick(zone.id) : undefined}
         />
-        {!hideRequest && !zoneConfigOpen && z.assignedStaffId !== null && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); handleQuickRequest(z); }}
-            title={`${z.assignedStaffName}에게 보충 요청`}
-            className="w-full h-6 bg-red-500 hover:bg-red-600 rounded text-white text-[11px] font-black flex items-center justify-center gap-1 transition-colors leading-none cursor-pointer shrink-0"
-          >
-            <Bell size={10} />
-            진열요청
-          </button>
-        )}
+        {/* 2026-08-05 · 사용자 요청 · 구역 단위 진열요청 버튼 제거 (상품별 요청으로 전환) */}
       </div>
     );
   };
