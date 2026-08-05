@@ -110,27 +110,24 @@
 - 파일: `src/components/OcrPage/RawOcrTable.tsx:3169+`
 - 예상 1~1.5h · deferred
 
-### T19. 근로계약서 · 구글드라이브 저장 (#33)
-- DB + 구글드라이브 이중 저장 · OAuth Service Account 필요
-- 예상 4~6h · 선행: 아이템 O (OAuth 준비)
+### ~~T19+T21 · 구글드라이브 통합~~ ✅ 완료 (2026-08-05)
+- server/googleDrive.ts · src/keys/*.json 파일 우선 · Supabase app_settings fallback
+- POST /api/employees/:id/resume · Drive 업로드 · resume_url 저장
+- StaffManagePage · [이력서 보기] · 편집시 업로드/교체/삭제
+- 폴더 ID: contract=1taDuOluN... · resume=1gEYUWD...
+- 사용자 액션 · Service Account JSON 파일 (src/keys/) + Drive 폴더 공유
 
-### T9. #164 각종 양식 페이지 (신규)
-- 근로계약서·사직서 등 템플릿 CRUD · Supabase Storage
-- 예상 4h · 선행: 아이템 N (테이블 생성)
-
-### T21. 직원등록 · 이력서 업로드 + [이력서 보기]
-- 사용자 재요청 (2026-08-04)
-- 예상 2~2.5h · 선행: 아이템 L (SQL 실행)
+### ~~T9. 각종 양식 페이지~~ ✅ 이미 완료
+- HrFormsPage (999줄) · 드래그드롭 업로드 · 카테고리 세분화 · 정렬
+- 사용자 · hr_forms 테이블 + hr-forms 버킷 준비 완료 · 즉시 동작
 
 ### 【매입 · 재고】
 
-### T14. 매입 서브탭 · Phase 3 ScanPage 확장
-- inventory_checks · warehouse1/2·store1/2/3 컬럼 추가
-- 예상 3~4h · 선행: 아이템 M (SQL) · 하위호환 필수
-
-### T15. 매입 서브탭 · Phase 4 구역 연동 UI
-- ScanPage · 매장1/2/3 아래 구역 드롭다운 · real_map 연동
-- 예상 1~2h
+### ~~T14/T15. 매입 5분리~~ ✅ 이미 완료
+- ScanPage · 창고1/2·매장1/2/3 · 반응형 wrap · zone 편집 (2026-08-05)
+- Server · 5분리 + 레거시 mirror · 하위호환
+- Reconciliation · 5분리 합산 차이 계산
+- SQL (사용자) 실행 완료 (M)
 
 ### 【리팩터 · 성능】
 
