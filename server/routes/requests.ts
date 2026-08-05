@@ -249,7 +249,7 @@ router.patch("/api/display-requests/:id/complete", async (req, res) => {
   (async () => {
     try {
       const { data: admins } = await supabase
-        .from("employees").select("id, push_subscription").eq("auth_level", 9);
+        .from("employees").select("id, push_subscription").gte("auth_level", 8);
       if (!admins?.length) return;
       const title = "✅ 진열 완료";
       const body = (cur as any).zone_label
@@ -279,7 +279,7 @@ router.patch("/api/display-requests/:id", async (req, res) => {
 
   if (status === "done") {
     const { data: admins } = await supabase
-      .from("employees").select("id, push_subscription").eq("auth_level", 9);
+      .from("employees").select("id, push_subscription").gte("auth_level", 8);
     if (admins?.length) {
       const title = "✅ 진열 완료";
       const body = zone_label
