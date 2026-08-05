@@ -93,6 +93,37 @@ router.post("/api/auth/logout", (_req, res) => {
   return res.status(200).json({ ok: true });
 });
 
+// 2026-08-05 T3 · 세션 검증 · 부트 시 JWT 쿠키 유효성 체크용 (401 자동 로그아웃 트리거)
+//   · JWT 있으면 { id, name, role, level } 반환 · 없거나 만료면 401
+//   · 클라이언트 · 앱 부트 시 이 endpoint 호출 → 401 이면 localStorage 클리어 + LandingPage
+router.get("/api/auth/me", (req, res) => {
+  const JWT_SECRET = process.env.JWT_SECRET || "";
+  if (!JWT_SECRET) {
+    // JWT_SECRET 미설정 · 인증 시스템 비활성 · 세션 유지 (하위호환)
+    return res.status(200).json({ authOff: true });
+  }
+  const cookieToken = req.cookies?.["mt_auth"] as string | undefined;
+  const authHeader = req.headers["authorization"];
+  const bearerToken = typeof authHeader === "string" && authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : undefined;
+  const token = cookieToken || bearerToken;
+  if (!token) return res.status(401).json({ error: "no_token" });
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const jwt = require("jsonwebtoken");
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] });
+    return res.status(200).json({
+      id: (decoded as any).sub,
+      name: (decoded as any).name,
+      role: (decoded as any).role,
+      level: (decoded as any).level,
+    });
+  } catch {
+    return res.status(401).json({ error: "invalid_token" });
+  }
+});
+
 // 로그인한 직원 본인이 비밀번호 변경
 router.post("/api/auth/change-password", async (req, res) => {
   const { employeeId, currentPassword, newPassword } = req.body ?? {};

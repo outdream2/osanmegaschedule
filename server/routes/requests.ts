@@ -162,13 +162,40 @@ router.post("/api/display-requests", async (req, res) => {
         }
       };
       const tagBase = `disp-req-${data?.id ?? Date.now()}`;
+      const notifiedIds = new Set<number>();
+      // 1) 창고담당 (position ∈ 창고/물류) 전원 알림
       if (warehouseStaff && warehouseStaff.length > 0) {
-        await Promise.allSettled(warehouseStaff.map(emp => notifyEmp(emp as any, `${tagBase}-wh-${emp.id}`)));
+        await Promise.allSettled(warehouseStaff.map(emp => {
+          notifiedIds.add((emp as any).id);
+          return notifyEmp(emp as any, `${tagBase}-wh-${emp.id}`);
+        }));
       } else if (assignedStaffId) {
         // 창고담당 없으면 · 기존 방식 (진열담당 자체) 알림 (하위호환)
         const { data: emp } = await supabase
           .from("employees").select("id, name, push_subscription").eq("id", assignedStaffId).maybeSingle();
-        if (emp) await notifyEmp(emp as any, `${tagBase}-fallback`);
+        if (emp) {
+          notifiedIds.add((emp as any).id);
+          await notifyEmp(emp as any, `${tagBase}-fallback`);
+        }
+      }
+      // 2) T-SCAN-1 (2026-08-05) · 관리자 (auth_level ≥ 8) 전원 알림 (사용자 요구)
+      //    · 창고담당·진열담당과 별개로 · 요청 발생 시각을 관리자에게 통지
+      //    · 이미 알림 받은 사람 skip (중복 방지)
+      try {
+        const { data: admins } = await supabase
+          .from("employees")
+          .select("id, name, push_subscription")
+          .gte("auth_level", 8);
+        if (admins && admins.length > 0) {
+          const targetAdmins = admins.filter(a => !notifiedIds.has((a as any).id));
+          if (targetAdmins.length > 0) {
+            await Promise.allSettled(targetAdmins.map(a =>
+              notifyEmp(a as any, `${tagBase}-admin-${(a as any).id}`)
+            ));
+          }
+        }
+      } catch (e: any) {
+        console.warn("[display-request] 관리자 알림 실패:", e?.message);
       }
     } catch (e: any) {
       console.warn("[display-request] 알림 예외:", e?.message);
