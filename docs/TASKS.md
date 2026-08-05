@@ -8,147 +8,23 @@
 
 ---
 
-## 🔴 진행 중 · 미완료 (2026-08-05)
+## 🔴 진행 중 · 미완료
 
-### T-CTR-11 · "근로계약서 작성" 헤더 텍스트 축소 (T-CTR-9 완료 후)
+### T-CTR-9 잔여 확인 · 사용자 검증 필요
+- 자동 희망세후 흐름 (Step 2 · 커밋 `97ef77d`) 실 UI 동작 확인
+- 케이스: 하루 8h · 주 6일 · 시급 32,083 → 자동 희망세후 약 6,691,860원
+- 반영 버튼 · gross-up → 세전 · 임금구성표 자동 채움 확인
+- 문제 있으면 · 근본 원인 (form.wageComponents.basicSalary undefined 원인) 재조사
 
-**증상**: 근로계약서 작성 탭 페이지 상단 "근로계약서 작성" 제목이 너무 큼.
-
-**Fix**:
-- ContractWriterPage 헤더 · 제목 폰트 크기 축소 (text-2xl → text-lg or text-base)
-- 아이콘·서브텍스트 · 균형 맞게 조정
-- 컴팩트 배치 (UI 원칙 7-a)
-
-### T-CTR-10 · 설정 시급 자동 반영 (T-CTR-9 완료 후)
-
-**증상**: 근로자 설정 (SettingsModal · 직군별 시급 · 직원별 시급 override) 이 · 근로계약서 왼쪽 폼 시급 필드에 자동 채워지지 않음.
-
-**Fix**:
-- 근로자 선택 시 · `defaultWageForPosition` 또는 `employeeWageOverrides` 조회
-- form.weekdayHourly · form.weekendHourly · 자동 채움 (사용자 수동 편집 전 default)
-- `useSettings` 훅 재사용 (`src/hooks/useSettings.ts`)
-- 이미 import 되어 있음 (ContractWriterPage L40 · `useSettings, defaultWageForPosition, type WageRate`)
-- 실제 useEffect 로 · 근로자 선택 시 · form.weekdayHourly/weekendHourly 자동 세팅되는지 확인·수정
-
-### T-CTR-9 · 월근로 NaN + 희망세후 자동 흐름 fix (T-CTR-7+8 완료 후)
-
-**증상 (사용자 케이스 2026-08-05)**:
-- 근무조건: 하루 8h · 주 6일 (주중 5 + 주말 1) · 계약3 · 시급 32,083 · 희망 600만
-- 결과: 월근로 **NaNh** · 세전 0 · 예상세후 0
-
-**요구 흐름 (사용자 정본)**:
-```
-(주중일수 × 하루h × 주중시급 + 주말일수 × 하루h × 주말시급) × 4.3452
-= 희망 세후 실수령액 (자동 채움)
-```
-- 근무조건·시급 변경 시 · 희망세후 입력창에 자동 반영
-- 사용자는 이 자동값을 그대로 or 편집 가능
-- 편집한 희망세후 → gross-up 역산 → 세전 → 임금구성표
-
-**Fix 항목**:
-- 근무조건 값 · undefined/NaN → 0 처리 (guard)
-- 4-col 카드 · `Number.isFinite(x) ? x : "-"` guard
-- payroll 훅 · 입력 검증 (0 반환)
-- **자동 흐름 신설**: 근무조건+시급 → 희망세후 자동 계산 · 입력창 반영
-- 케이스 검증: 하루8h·주6일·시급32,083 → 월근로 271.14h · 세전 약 660만 · 세후 약 600만
-- **레이아웃 순서 (사용자 재강조 2026-08-05)**: 왼쪽 폼 임금계산 세션 · **희망세후 자동계산 위** · **임금구성표 아래**
-
-### T-PERM-1 · 권한 페이지 · 직원별 레벨 조정 표 (system-implementer 진행 중)
-- [ ] PermissionsPage 에 직원 레벨 조정 섹션 추가 (표 형태)
-- [ ] 컴팩트 배치 · 성명·직군·레벨 select · 한눈에
-- [ ] 약사 우선 정렬
-- [ ] 기존 PUT /api/employees/:id 재사용
-
-### T-PHARM-1 · 약사전용 교육탭 · 트리 상단 카테고리 추가 UI (system-implementer 진행 중)
-- [ ] 관리자 CRUD 완전 숨김 (level 관계없이)
-- [ ] 왼쪽 트리 위쪽 · "+ 카테고리 추가" 컨트롤 (제목·자료)
-- [ ] 커스텀 카테고리 저장 (app_settings JSON or 신규 테이블)
-- [ ] 기존 zone 기반 카테고리와 병합 표시
-
-### T-CTR-8 · 왼쪽 폼 · 카테고리별 이해·동의·개인정보 섹션 제거 (T-CTR-6 완료 후)
-
-**사용자 요구 (2026-08-05)**: 왼쪽 폼에서 다음 UI 완전 제거 (프리뷰에는 유지 · 자동 반영):
-- 카테고리별 이해·동의 (계약서 미리보기 반영)
-  - 임금 조항 이해·동의 (단서 5개 전체)
-  - 근로시간·휴게 조항 이해·동의
-  - 기타사항 이해·동의 (5개 항목 전체)
-- 개인정보 · CCTV 동의
-  - 수령자 성명 (미입력 시 근로자명 · 자동)
-  - 수령자 주소 (미입력 시 근로자 주소 · 자동)
-  - 개인정보 수집·이용
-  - CCTV 촬영·이용
-
-**주의**:
-- 오른쪽 프리뷰 · 그대로 유지 (이해 동의 서명 spot · privacy 서명 spot 유지)
-- 관련 state·서명 pad · 자동 default (수령자 = 근로자 · privacy 자동 동의 or 오른쪽 프리뷰에서만 편집)
-- 왼쪽 폼 · 카드 or 섹션 자체 삭제 (또는 축소 · 사용자 판단)
-
-### T-CTR-7 · 임금 항목 체크박스 활성화 UI (T-CTR-6 완료 후)
-
-**사용자 요구 (2026-08-05)**: 왼쪽 폼에 각 임금 항목 체크박스 · 체크 시 활성화·계산 반영.
-
-**항목** (기본급은 항상 활성 · 나머지는 체크 옵션):
-- [ ] 연장수당 (일 8h 초과 자동 감지 · 체크로 강제 on/off)
-- [ ] 휴일수당 (주말 근무 자동 감지 · 체크로 on/off)
-- [ ] 야간수당 (22:00~06:00 근무 시 · 체크 시 강제 on)
-- [ ] 연차수당 (기본 on · 체크 해제 가능)
-- [ ] 식대 (이미 체크박스 있음 · 재확인)
-- [ ] 차량유지비 (이미 체크박스 있음 · 재확인)
-
-**동작**:
-- 체크 · 해당 항목 · gross-up 재계산 대상에 포함 · 임금구성표에 표시
-- 체크 해제 · 항목 금액 0 · 임금구성표에서 숨김 (or grey out)
-- 프리뷰 (오른쪽) · 좌우 동일 반영
-
-### T-CTR-6 · 임금 계산 알고리즘 전면 재구현 (리서치 완료 · 구현 대기)
-
-**⚠️ 하드코딩 금지 원칙 (2026-08-05 사용자 강조)**:
-- 리서치 리포트의 예제 (300만·500만·700만·1000만 → 각 소득세·통상시급) 는 **검증 케이스**일 뿐 · lookup 배열·맵으로 하드코딩 X
-- 실제 로직 · **근로소득세 간이세액표 공식** (홈택스 원칙 · 누진 구간별 계산 함수)
-- 4대보험 요율 · 상수 OK (config 파일)
-- 최저임금 · 상수 OK (config)
-- 세율·비율 외 · 예제 금액 · 반드시 함수로 산출
-
-**상세**: `docs/PAYROLL_ALGORITHM.md` (research-strategist 리포트)
-
-**흐름 (사용자 정본)**:
-1. 근무조건 (주중일·h · 주말일·h)
-2. 직군별 시급 (주중·주말 · SettingsModal)
-3. `희망세후 = 시급 × 시간 합계`
-4. gross-up 반복 근사 (3~5회 수렴) · 세전 산출
-5. 통상시급 분배 → 기본급·연장·휴일·야간·연차·식대·차량
-6. 세전 - 4대보험·소득세·지방세 = 세후 (희망과 100원 이내)
-
-**Todo (ContractWriter 에이전트 완료 후)**:
-- [ ] `src/lib/payroll/` 폴더 신설 (7개 파일)
-- [ ] `insuranceRates.ts` 2026 요율 상수
-- [ ] `simplifiedTax2026.json` 간이세액표 스냅샷 (홈택스 엑셀 파싱)
-- [ ] `calcTaxes.ts` · `grossUp.ts` · `buildWageBreakdown.ts`
-- [ ] `useWageCalculator.ts` React 훅 (debounce 200ms)
-- [ ] `ContractWriterPage` 기존 계산 로직 → 훅 교체
-- [ ] 4 케이스 정답 검증 (300만·500만·700만·1000만)
-- [ ] 최저임금 위반 UI warning
-- [ ] 부양가족 UI 조정 (default 1)
-
-### T-CTR-1 잔여 (ContractWriter 에이전트 진행 중)
-- [ ] PDF A4 정확 2장 (현재 5장 · 프리뷰 HTML 분할 필요)
-- [ ] 계약유형 드롭다운 short label 저장 (`정규`/`계약N`)
-- [ ] 프리뷰 원본 텍스트 vs `DISCIPLINE_REASONS` 등 상수 audit
-- [ ] 좌우 임금표 스타일 parity
-- [ ] 각 호 설정 CMS → ContractWriterPage 프리뷰 반영 (loadContractClauses 활용)
-
-### T-CTR-3 잔여 · 사용자 액션 대기
-- [ ] **[사용자]** Supabase SQL 실행:
+### T-CTR-3 · Supabase SQL 실행 (사용자 액션 대기)
 ```sql
 ALTER TABLE employees
   ADD COLUMN IF NOT EXISTS contract_type TEXT,
   ADD COLUMN IF NOT EXISTS contract_start DATE,
   ADD COLUMN IF NOT EXISTS contract_end DATE,
   ADD COLUMN IF NOT EXISTS probation_end_date DATE;
-
 ALTER TABLE employee_contracts
   ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
-
 CREATE INDEX IF NOT EXISTS idx_ec_is_active
   ON employee_contracts(employee_id, is_active);
 ```
@@ -169,7 +45,7 @@ CREATE INDEX IF NOT EXISTS idx_ec_is_active
 | T | T-C 각 호 CMS · 서버 이전 (현재 localStorage)? | Y/N |
 | J | pharmacist-materials 버킷 | Supabase 대시보드 |
 | K | vendors 오학습 정리 (page 6) | Supabase vendors 직접 |
-| Q | Remote push 시점 | Y/N |
+| Q | Remote push 시점 | 매번 재확인 (2026-08-05 · "이후로 리모트 푸시 금지") |
 
 ### T3 · API 인증 미들웨어 (대기)
 - requireAuth + authorize(level) · 라우터 적용
@@ -184,44 +60,23 @@ CREATE INDEX IF NOT EXISTS idx_ec_is_active
 - 남은: PaddleOCR 별도 서비스 분리 · Render 실측
 - 예상 4~6h
 
-### T27 · TanStack Query
-- 재고관리부터 · 페이지 재방문 <50ms
-- 예상 2h
+### T27 · TanStack Query · T29 TanStack Table
+- 재고관리·StockManage 성능 개선
+- 예상 각 2~4h
 
-### T29 · TanStack Table
-- StockManage · 초기 페인트 2~5초 → 100~200ms
-- 예상 3~4h
+### T-CTR-6 잔여 · 홈택스 엑셀 파싱 자동 갱신
+- 매년 2월 개정치 파싱 · JSON 스냅샷 갱신
+- 현재는 19점 근사 · 실제 홈택스 표와 편차 있을 수 있음
 
 ---
 
-## 🟢 자율 리팩터 · 성능 (진행 가능)
+## 🟢 자율 리팩터 · 성능 (사용자 승인 후 진행 권장 · 회귀 우려)
 
 ### T24 · P1 dead code (수동 · 에이전트 위임 금지)
-- 각 파일 grep 확인 후 삭제
-- 완료: StoreMap 1786줄 (`282bac5`)
-- 남은: 개별 파일 확인
-
-### T25 · P2 리팩터 (공용 훅·폴더 이동)
-- useVendors 공용 훅 (12곳 중복 통합)
-- 폴더 정리
-- 예상 2~4h
-
-### T26 · select('*') → 명시적 컬럼
-- Supabase payload 40~70% 감소
-- 20파일 · 예상 1.5~2h
-
-### T30-followup · 훅 점진 채택
-- 완료: useSortableTable · StaffManagePage · StockReconciliationTab
-- 남은: 20파일 (useSortableTable) · 9모달 (Modal.tsx) · 48파일 (useFilterState)
-- 각 파일 15~30분 · 총 8~12h
-
-### T34 · 헤더 자동 정렬 검증
-- 완료: StaffManagePage · StockReconciliationTab
-- 남은: OrderManagePage · 기타 테이블
-
+### T25 · P2 리팩터 (useVendors 공용 훅)
+### T26 · select('*') → 명시적 컬럼 (20 파일)
+### T30-followup · useSortableTable · Modal.tsx · useFilterState 채택
 ### T36 · RawOcrTable 정렬 (deferred · 복잡)
-- 3개 dynamic OCR 컬럼 정렬 없음
-- 예상 1~1.5h
 
 ---
 
@@ -231,4 +86,5 @@ CREATE INDEX IF NOT EXISTS idx_ec_is_active
 - **임금 알고리즘**: `docs/PAYROLL_ALGORITHM.md`
 - **contract-master 에이전트**: `.claude/agents/contract-master.md`
 - **메모리**: `~/.claude/projects/D--antigravity-projects-megatown-staff-scheduler/memory/`
-- **오늘 세션 커밋**: 다수 로컬 · remote push 사용자 승인됨 · 완료 후 push 예정
+- **오늘 세션**: 다수 로컬 커밋 · 리모트 푸시 1회 (`97ef77d` · 2026-08-05 오후)
+- **이후 리모트 push 금지** · 사용자 명시
