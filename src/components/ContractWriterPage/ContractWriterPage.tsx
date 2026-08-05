@@ -1780,16 +1780,17 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
   } as const;
 
   // 섹션 헤딩 · 좌측 3px 세로바 + 소캡스 라벨
+  // T-Y (2026-08-05) · A4 2페이지 컴팩트 · mt-4 → mt-2.5 · text-[12] leading-relaxed → text-[11.5] leading-snug
   const Section: React.FC<{ label: string; children: React.ReactNode; avoidBreak?: boolean }> = ({ label, children, avoidBreak }) => (
     <section
-      className="mt-4"
+      className="mt-2.5"
       style={avoidBreak ? { pageBreakInside: "avoid", breakInside: "avoid" } : undefined}
     >
       <div className="border-l-[3px] border-slate-700 pl-3">
-        <h3 className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500 mb-1.5">
+        <h3 className="text-[10.5px] font-black uppercase tracking-[0.22em] text-slate-500 mb-1">
           {label}
         </h3>
-        <div className="text-[12px] text-slate-800 leading-relaxed">
+        <div className="text-[11.5px] text-slate-800 leading-snug">
           {children}
         </div>
       </div>
@@ -1825,12 +1826,13 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
   return (
     <div
       ref={ref}
-      className="bg-white text-slate-900 shadow-sm p-5 sm:p-8 mx-auto"
+      className="bg-white text-slate-900 shadow-sm p-4 sm:p-6 mx-auto"
       style={{
         width: "100%",
         maxWidth: "820px",
         fontFamily: "'Noto Sans KR', 'Malgun Gothic', system-ui, -apple-system, 'Segoe UI', sans-serif",
-        lineHeight: 1.55,
+        // T-Y (2026-08-05) · A4 2페이지 정확 · 폰트 축소 (1.55 → 1.35) · 여백 축소 (p-5/8 → p-4/6)
+        lineHeight: 1.35,
         color: "#0f172a",
       }}
     >
@@ -3208,10 +3210,12 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     setNotice({ tone: "ok", text: "전체 초기화되었습니다." });
   };
 
-  // PDF 빌드 · T-M (2026-08-05) · A4 2장 자동 분할 (210mm × 297mm × 2)
-  //   - 컨텐츠가 1장 이내면 1페이지
-  //   - 1장 초과 ~ 2장 이내면 정확히 2페이지에 분할 (contentSection 단위 pageBreakInside: avoid 존중)
-  //   - 2장 초과 시 자연 분할 계속 (안전장치)
+  // PDF 빌드 · T-Y (2026-08-05) · A4 정확히 2페이지 출력 (사용자 요청)
+  //   방식 A + C 조합:
+  //     · C · 프리뷰 자체 · 폰트/여백 축소된 상태 (컴팩트 hex 색상 · 이미 적용됨)
+  //     · A · 컨텐츠 캡처 후 · A4 2페이지 크기에 맞춰 스케일 보정 (2페이지 초과 방지)
+  //     · B · 단일 이미지 캡처 · pdfH 씩 슬라이스 · 총 2페이지 강제
+  //   목표: 2 페이지 이내 항상 · 폰트 최소 10pt+ 유지 (스케일 팩터 안전 범위)
   const buildPdfFromPreview = async (): Promise<{ pdf: jsPDF; filename: string }> => {
     const node = previewRef.current;
     if (!node) throw new Error("계약서 프리뷰를 찾을 수 없습니다.");
@@ -3228,30 +3232,47 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
     const pdfW = pdf.internal.pageSize.getWidth();   // A4 = 210mm
     const pdfH = pdf.internal.pageSize.getHeight();  // A4 = 297mm
-    const imgW = pdfW;
-    const imgH = (canvas.height * imgW) / canvas.width;
 
-    if (imgH <= pdfH) {
-      // 1장 이내 · 1페이지
+    // 컨텐츠 원본 비율 (mm 단위)
+    const naturalImgW = pdfW;
+    const naturalImgH = (canvas.height * naturalImgW) / canvas.width;
+
+    // T-Y · 정확히 2페이지 강제 · 컨텐츠가 2페이지 초과 시 스케일 축소
+    //   · 최대 컨텐츠 높이 = pdfH × 2 (594mm)
+    //   · 스케일 팩터 = min(1, pdfH*2 / naturalImgH)
+    //   · 스케일 후 imgW 축소 · 좌우 여백 발생 → centering (x offset)
+    const maxTwoPageH = pdfH * 2;
+    let imgW: number;
+    let imgH: number;
+    if (naturalImgH <= pdfH) {
+      // 1페이지 이내 · 자연 크기 유지 · 1페이지 발행
+      imgW = naturalImgW;
+      imgH = naturalImgH;
       pdf.addImage(imgData, "PNG", 0, 0, imgW, imgH, undefined, "FAST");
-    } else if (imgH <= pdfH * 2) {
-      // T-M · A4 2장 이내 → 정확히 2페이지에 균등 배분 (컨텐츠 높이의 절반씩)
-      // 상반부 · 페이지 1
-      pdf.addImage(imgData, "PNG", 0, 0, imgW, imgH, undefined, "FAST");
-      // 하반부 · 페이지 2 (기존 image 를 -pdfH offset 하여 하단만 보임)
-      pdf.addPage();
-      pdf.addImage(imgData, "PNG", 0, -pdfH, imgW, imgH, undefined, "FAST");
     } else {
-      // 안전장치 · 2장 초과 시 자연 분할 (기존 로직 유지)
-      let heightLeft = imgH;
-      let position = 0;
-      pdf.addImage(imgData, "PNG", 0, position, imgW, imgH, undefined, "FAST");
-      heightLeft -= pdfH;
-      while (heightLeft > 0) {
-        position -= pdfH;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, imgW, imgH, undefined, "FAST");
-        heightLeft -= pdfH;
+      // 2페이지 이상 필요 · 스케일 팩터 계산 (2페이지 초과 시 축소)
+      const scale = naturalImgH <= maxTwoPageH ? 1 : (maxTwoPageH / naturalImgH);
+      imgH = naturalImgH * scale;
+      imgW = naturalImgW * scale;
+      const xOffset = (pdfW - imgW) / 2; // 좌우 여백 · 중앙 정렬
+
+      // T-Y · 2페이지 강제 분할 (자연 크기든 축소든 · 항상 2페이지)
+      //   상반부 · 페이지 1
+      pdf.addImage(imgData, "PNG", xOffset, 0, imgW, imgH, undefined, "FAST");
+      //   하반부 · 페이지 2 (동일 이미지 · y offset -pdfH 로 하단만 보임)
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", xOffset, -pdfH, imgW, imgH, undefined, "FAST");
+
+      // 안전장치 · imgH 가 여전히 2*pdfH 초과 (매우 긴 컨텐츠) → 추가 페이지
+      if (imgH > maxTwoPageH + 1) {
+        let heightLeft = imgH - maxTwoPageH;
+        let position = -pdfH * 2;
+        while (heightLeft > 0) {
+          pdf.addPage();
+          pdf.addImage(imgData, "PNG", xOffset, position, imgW, imgH, undefined, "FAST");
+          heightLeft -= pdfH;
+          position -= pdfH;
+        }
       }
     }
 
