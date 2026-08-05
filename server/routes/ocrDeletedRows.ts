@@ -28,7 +28,7 @@ export const ocrDeletedRowsRouter = Router();
 ocrDeletedRowsRouter.get("/api/ocr-deleted-rows", async (req, res) => {
   try {
     const supplier = String(req.query.supplier ?? "").trim();
-    let q = supabase.from("ocr_deleted_rows").select("*").order("deleted_at", { ascending: false });
+    let q = supabase.from("ocr_deleted_rows").select("id, supplier_norm, name_norm, supplier_raw, name_raw, signature, deleted_at").order("deleted_at", { ascending: false });
     if (supplier) {
       q = q.eq("supplier_norm", normSupplier(supplier));
     }

@@ -57,7 +57,7 @@ router.get("/api/display-requests", async (req, res) => {
   })();
 
   // 최신 요청이 항상 위로 (requested_at DESC)
-  let query = supabase.from("display_requests").select("*").order("requested_at", { ascending: false });
+  let query = supabase.from("display_requests").select("id, zone_id, zone_label, category, requested_at, assigned_staff_id, assigned_staff_name, status, note, product_code, prepared_at, prepared_by, prepared_by_name, completed_at, completed_by, completed_by_name").order("requested_at", { ascending: false });
   if (scope === "mine" && employeeId && Number.isFinite(employeeId)) {
     query = query.eq("assigned_staff_id", employeeId);
   }
@@ -336,7 +336,7 @@ router.delete("/api/display-requests/:id", async (req, res) => {
 });
 
 router.get("/api/order-requests", async (req, res) => {
-  let q = supabase.from("order_requests").select("*").order("requested_at", { ascending: false });
+  let q = supabase.from("order_requests").select("id, product_code, product_name, current_stock, optimal_stock, note, qty, request_qty, supplier, assigned_staff_id, assigned_staff_name, requested_at").order("requested_at", { ascending: false });
   if (req.query.product_code) q = q.eq("product_code", String(req.query.product_code));
   const { data, error } = await q;
   if (error) return res.status(500).json({ error: error.message });

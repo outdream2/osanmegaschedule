@@ -102,12 +102,12 @@ async function insertContractWithIsActiveFallback(
   baseRow: Record<string, unknown>,
 ): Promise<{ row: any; err: any }> {
   const withActive = { ...baseRow, is_active: true };
-  const first = await supabase.from("employee_contracts").insert([withActive]).select("*").single();
+  const first = await supabase.from("employee_contracts").insert([withActive]).select("id, employee_id, employee_name, contract_type, start_date, end_date, pdf_url, pdf_size, storage_path, storage, approved_by, approved_by_id, is_active, created_at").single();
   if (!first.error) return { row: first.data, err: null };
 
   if (isMissingColumnError(first.error)) {
     console.warn("[employee-contracts] is_active 컬럼 없음 · is_active 제거 후 INSERT 재시도");
-    const retry = await supabase.from("employee_contracts").insert([baseRow]).select("*").single();
+    const retry = await supabase.from("employee_contracts").insert([baseRow]).select("id, employee_id, employee_name, contract_type, start_date, end_date, pdf_url, pdf_size, storage_path, storage, approved_by, approved_by_id, created_at").single();
     return { row: retry.data, err: retry.error };
   }
 
@@ -165,8 +165,10 @@ async function syncEmployeeContractFields(
 router.get("/api/employee-contracts", async (req, res) => {
   try {
     const employeeId = Number(req.query.employeeId);
-    // select("*") · is_active 컬럼 존재 시 자동 포함 (프론트 이력 UI 활성 계약 강조용)
-    let q = supabase.from("employee_contracts").select("*").order("created_at", { ascending: false });
+    // is_active 컬럼 존재 시 자동 포함 (프론트 이력 UI 활성 계약 강조용)
+    let q = supabase.from("employee_contracts")
+      .select("id, employee_id, employee_name, contract_type, start_date, end_date, pdf_url, pdf_size, storage_path, storage, approved_by, approved_by_id, is_active, created_at")
+      .order("created_at", { ascending: false });
     if (Number.isFinite(employeeId)) q = q.eq("employee_id", employeeId);
 
     const { data, error } = await q;

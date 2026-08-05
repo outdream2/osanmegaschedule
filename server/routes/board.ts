@@ -148,7 +148,7 @@ router.get("/api/board/posts", async (req, res) => {
 
   let q = supabase
     .from("board_posts")
-    .select("*")
+    .select("id, author_id, author_name, author_rank, post_type, title, body, category, status, pinned, mentions, resolved_at, resolved_by, created_at, updated_at")
     .order("pinned", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -192,11 +192,11 @@ router.get("/api/board/posts/:id", async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "invalid id" });
   const [postRes, imgRes, cmtRes, cmtImgRes, reactRes] = await Promise.all([
-    supabase.from("board_posts").select("*").eq("id", id).maybeSingle(),
-    supabase.from("board_post_images").select("*").eq("post_id", id).is("comment_id", null).order("id"),
-    supabase.from("board_post_comments").select("*").eq("post_id", id).order("created_at", { ascending: true }),
-    supabase.from("board_post_images").select("*").eq("post_id", id).not("comment_id", "is", null),
-    supabase.from("board_post_reactions").select("*").eq("post_id", id),
+    supabase.from("board_posts").select("id, author_id, author_name, author_rank, post_type, title, body, category, status, pinned, mentions, resolved_at, resolved_by, created_at, updated_at").eq("id", id).maybeSingle(),
+    supabase.from("board_post_images").select("id, post_id, comment_id, image_url, public_id, width, height, created_at").eq("post_id", id).is("comment_id", null).order("id"),
+    supabase.from("board_post_comments").select("id, post_id, author_id, author_name, author_rank, parent_id, body, mentions, is_answer, created_at, updated_at").eq("post_id", id).order("created_at", { ascending: true }),
+    supabase.from("board_post_images").select("id, post_id, comment_id, image_url, public_id, width, height, created_at").eq("post_id", id).not("comment_id", "is", null),
+    supabase.from("board_post_reactions").select("id, post_id, employee_id, reaction, created_at").eq("post_id", id),
   ]);
   if (postRes.error) return res.status(500).json({ error: postRes.error.message });
   if (!postRes.data) return res.status(404).json({ error: "not found" });
@@ -237,7 +237,7 @@ router.post("/api/board/posts", async (req, res) => {
     category: b.category ?? null,
     mentions,
   };
-  const { data, error } = await supabase.from("board_posts").insert([insertRow]).select("*").single();
+  const { data, error } = await supabase.from("board_posts").insert([insertRow]).select("id, author_id, author_name, post_type, title, body, category, status, pinned, mentions, created_at").single();
   if (error) return res.status(500).json({ error: error.message });
 
   // 이미지 batch insert
@@ -376,7 +376,7 @@ router.post("/api/board/posts/:id/comments", async (req, res) => {
     parent_id: b.parent_id ?? null,
     body: String(b.body),
     mentions,
-  }]).select("*").single();
+  }]).select("id, post_id, author_id, author_name, author_rank, parent_id, body, mentions, is_answer, created_at").single();
   if (error) return res.status(500).json({ error: error.message });
 
   // 이미지 batch (댓글 첨부)

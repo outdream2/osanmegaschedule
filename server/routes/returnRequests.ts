@@ -34,7 +34,7 @@ router.post("/api/return-requests", async (req, res) => {
     const { data, error } = await supabase
       .from("return_requests")
       .insert([row])
-      .select("*")
+      .select("id, product_code, product_name, supplier, qty, current_stock, purchase_price, reason, requested_by, requested_by_id, status, created_at")
       .single();
     if (error) throw new Error(error.message);
     res.json({ ok: true, row: data });
@@ -54,7 +54,7 @@ router.get("/api/return-requests", async (req, res) => {
     const since = new Date(); since.setDate(since.getDate() - days);
     let q = supabase
       .from("return_requests")
-      .select("*")
+      .select("id, product_code, product_name, supplier, qty, current_stock, purchase_price, reason, requested_by, requested_by_id, status, created_at")
       .gte("created_at", since.toISOString())
       .order("created_at", { ascending: false })
       .limit(limit);
@@ -79,7 +79,7 @@ router.get("/api/return-requests/by-supplier", async (req, res) => {
     const since = new Date(); since.setDate(since.getDate() - days);
     const { data, error } = await supabase
       .from("return_requests")
-      .select("*")
+      .select("id, product_code, product_name, supplier, qty, current_stock, purchase_price, reason, requested_by, status, created_at")
       .gte("created_at", since.toISOString());
     if (error) {
       if (/relation .* does not exist/i.test(error.message)) return res.json({ groups: [] });
@@ -122,7 +122,7 @@ router.patch("/api/return-requests/:id", async (req, res) => {
       .from("return_requests")
       .update(patch)
       .eq("id", id)
-      .select("*")
+      .select("id, product_code, product_name, supplier, qty, current_stock, purchase_price, reason, requested_by, requested_by_id, status, created_at")
       .single();
     if (error) throw new Error(error.message);
     res.json({ ok: true, row: data });
@@ -154,7 +154,7 @@ router.post("/api/return-requests/bulk-send", async (req, res) => {
     // 대상 조회
     const { data: rows, error } = await supabase
       .from("return_requests")
-      .select("*")
+      .select("id, product_code, product_name, supplier, qty, purchase_price, status")
       .in("id", ids);
     if (error) throw new Error(error.message);
     if (!rows || rows.length === 0) return res.status(404).json({ error: "대상 없음" });

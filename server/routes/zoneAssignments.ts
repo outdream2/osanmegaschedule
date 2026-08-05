@@ -159,7 +159,7 @@ router.get("/api/zone-assignments/:dow", async (req, res) => {
   const dow = parseInt(req.params.dow, 10);
   if (isNaN(dow) || dow < 0 || dow > 6) return res.status(400).json({ error: "dow는 0~6이어야 합니다" });
 
-  const { data, error } = await supabase.from(TABLE).select("*").eq("dow", dow).maybeSingle();
+  const { data, error } = await supabase.from(TABLE).select("dow, zone_slots, lunch_slots, rest_slots, lunch_offset, rest_offset, lunch_interval, rest_interval, lunch_count, rest_count, updated_at").eq("dow", dow).maybeSingle();
   if (error) {
     if (/relation|does not exist/i.test(error.message)) {
       return res.json({ dow, ...EMPTY_ROW });
@@ -250,7 +250,7 @@ router.get("/api/zone-day/:date", async (req, res) => {
   const { date } = req.params;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ error: "date는 YYYY-MM-DD 형식이어야 합니다" });
 
-  const { data, error } = await supabase.from(DAY_TABLE).select("*").eq("date", date).maybeSingle();
+  const { data, error } = await supabase.from(DAY_TABLE).select("date, zone_slots, lunch_slots, rest_slots, lunch_offset, rest_offset, lunch_interval, rest_interval, lunch_count, rest_count, is_confirmed, updated_at").eq("date", date).maybeSingle();
   if (error) {
     if (/relation|does not exist/i.test(error.message)) {
       return res.json({ date, ...EMPTY_DAY_ROW });
@@ -361,7 +361,7 @@ router.post("/api/zone-day/copy-month", async (req, res) => {
   // 이전 달 데이터 로드
   const { data: prevRows, error: prevErr } = await supabase
     .from(DAY_TABLE)
-    .select("*")
+    .select("date, zone_slots, lunch_slots, rest_slots, lunch_offset, rest_offset, lunch_interval, rest_interval, lunch_count, rest_count")
     .like("date", `${prevPrefix}%`);
   if (prevErr) {
     if (/relation|does not exist/i.test(prevErr.message)) return res.json({ ok: true, count: 0 });
