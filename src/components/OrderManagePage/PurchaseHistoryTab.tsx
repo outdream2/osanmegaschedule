@@ -11,7 +11,6 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Building2, Loader2, Package, RefreshCw } from "lucide-react";
-import { SeasonButtons } from "../common/SeasonButtons";
 import { SplitPanel } from "../common/SplitPanel";
 import { ListLoading } from "../common/ListLoading";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
@@ -372,7 +371,18 @@ export const PurchaseHistoryTab: React.FC = () => {
     }
     loadLedger(selectedVendor.company_name);
     loadDetail(selectedVendor.company_name);
-  }, [selectedVendor, loadLedger, loadDetail]);
+  // loadDetail 은 기간 필터에 무관 (365일 고정) · selectedVendor 변경 시만 재로드
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedVendor, loadDetail]);
+
+  // Fix #2 · 기간 필터 변경 시 원장만 재조회 (detail 은 365일 고정이라 재로드 불필요)
+  //   · periodMonths / periodSeason 이 바뀌면 loadLedger 참조가 새로 생성되므로
+  //     selectedVendor 가 선택된 상태라면 즉시 원장 재조회
+  useEffect(() => {
+    if (!selectedVendor) return;
+    loadLedger(selectedVendor.company_name);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [periodMonths, periodSeason]);
 
   // 원장 로드 완료 후 · 서브탭이 ledger 이고 최신 row 가 있으면 잠깐 강조
   useEffect(() => {
@@ -791,27 +801,8 @@ export const PurchaseHistoryTab: React.FC = () => {
           </button>
         </div>
 
-        {/* 기간 필터 · 원장 탭 전용 (공급사별 뷰에서만 표시)
-            2026-08-04 · 사용자 요청 · 반응형 시간기간+계절기간 수직 배치 (< sm) */}
-        {viewMode === "by-vendor" && (
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">시간기간</span>
-              <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
-                <button onClick={() => { setPeriodSeason(null); setPeriodMonths(0); }}
-                  className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!periodSeason && periodMonths === 0 ? "bg-emerald-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>10일</button>
-                {([1, 2, 3, 4, 5, 6] as const).map(m => (
-                  <button key={m} onClick={() => { setPeriodSeason(null); setPeriodMonths(m); }}
-                    className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!periodSeason && periodMonths === m ? "bg-emerald-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>{m}개월</button>
-                ))}
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0 sm:hidden">계절기간</span>
-              <SeasonButtons value={periodSeason} onChange={(v) => { setPeriodSeason(v); if (v) setPeriodMonths(0); }} size="sm" hideLabel />
-            </div>
-          </div>
-        )}
+        {/* 기간 필터 · 매입이력 탭 내부로 이동 (개선 3 · 2026-08-05)
+            by-vendor 공급사별 뷰에서 상단 공통 필터 제거 · PurchaseSubTabs 내부 ledger 탭 헤더에 배치 */}
 
         {/* 새로고침 */}
         {viewMode === "by-vendor" && selectedVendor && (
@@ -855,6 +846,7 @@ export const PurchaseHistoryTab: React.FC = () => {
             dividerColor="emerald"
             wrapLeft={false}
             wrapRight={false}
+            leftClassName="max-h-[60vh] lg:max-h-none"
             className="flex-1 min-h-0 gap-2 lg:gap-0"
             mobileRightAsModal={true}
             mobileModalTitle={selectedVendor?.company_name ?? "공급사 상세"}
@@ -962,6 +954,12 @@ export const PurchaseHistoryTab: React.FC = () => {
                     activeTab={subTab}
                     onTabChange={setSubTab}
                     highlightId={highlightId}
+                    ledgerPeriodMonths={periodMonths}
+                    ledgerPeriodSeason={periodSeason}
+                    onLedgerPeriodChange={(months, season) => {
+                      setPeriodMonths(months);
+                      setPeriodSeason(season);
+                    }}
                   />
                 </>
               )}

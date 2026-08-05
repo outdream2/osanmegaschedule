@@ -7,6 +7,8 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowUpDown, BarChart3, ChevronDown, ChevronRight, ListOrdered, Loader2, Package2 } from "lucide-react";
+import { SeasonButtons } from "../../common/SeasonButtons";
+import { type SeasonKey } from "../../../hooks/useSeasonRanges";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -45,6 +47,13 @@ interface PurchaseSubTabsProps {
   onTabChange?: (tab: TabKey) => void;
   /** 매입원장 탭에서 강조할 row id · null 이면 강조 없음 · 2~3초 후 자동 해제는 caller 책임 */
   highlightId?: string | number | null;
+  // ── 개선 3 · 매입이력 탭 내부 기간 필터 (2026-08-05) ──────────────────
+  /** 현재 기간 (개월수 · 0=10일) */
+  ledgerPeriodMonths?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  /** 현재 계절 기간 */
+  ledgerPeriodSeason?: SeasonKey | null;
+  /** 기간 변경 콜백 */
+  onLedgerPeriodChange?: (months: 0 | 1 | 2 | 3 | 4 | 5 | 6, season: SeasonKey | null) => void;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -635,6 +644,9 @@ export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
   activeTab,
   onTabChange,
   highlightId = null,
+  ledgerPeriodMonths,
+  ledgerPeriodSeason,
+  onLedgerPeriodChange,
 }) => {
   // controlled · uncontrolled 모드 모두 지원 (activeTab 제공 시 controlled)
   const [internalTab, setInternalTab] = useState<TabKey>(initialTab);
@@ -647,7 +659,7 @@ export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col min-h-0 flex-1">
       {/* 탭 헤더 */}
-      <div className="flex items-center border-b border-slate-200 bg-slate-50/50 px-2 pt-1 gap-0">
+      <div className="flex flex-wrap items-center border-b border-slate-200 bg-slate-50/50 px-2 pt-1 gap-0">
         {TABS.map(t => {
           const Icon = t.icon;
           const active = tab === t.key;
@@ -679,6 +691,42 @@ export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
           <span>헤더 클릭 정렬</span>
         </div>
       </div>
+
+      {/* 개선 3 · 매입이력 탭 전용 기간 필터 (탭 바 아래 · 활성 시만 표시) */}
+      {tab === "ledger" && onLedgerPeriodChange != null && (
+        <div className="px-3 py-2 border-b border-slate-100 bg-slate-50/30 flex flex-wrap items-center gap-2 shrink-0">
+          <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">조회기간</span>
+          <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
+            <button
+              type="button"
+              onClick={() => onLedgerPeriodChange(0, null)}
+              className={`px-2 h-6 text-[10px] font-semibold rounded transition cursor-pointer ${
+                !ledgerPeriodSeason && ledgerPeriodMonths === 0
+                  ? "bg-emerald-500 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >10일</button>
+            {([1, 2, 3, 4, 5, 6] as const).map(m => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => onLedgerPeriodChange(m, null)}
+                className={`px-2 h-6 text-[10px] font-semibold rounded transition cursor-pointer ${
+                  !ledgerPeriodSeason && ledgerPeriodMonths === m
+                    ? "bg-emerald-500 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >{m}개월</button>
+            ))}
+          </div>
+          <SeasonButtons
+            value={ledgerPeriodSeason ?? null}
+            onChange={(v) => onLedgerPeriodChange(ledgerPeriodMonths ?? 1, v)}
+            size="sm"
+            hideLabel
+          />
+        </div>
+      )}
 
       {/* 탭 컨텐츠 */}
       <div className="flex flex-col min-h-0 flex-1">

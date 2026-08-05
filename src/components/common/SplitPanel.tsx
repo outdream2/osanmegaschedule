@@ -64,6 +64,8 @@ export interface SplitPanelProps {
   wrapLeft?: boolean;
   /** 우측을 card-panel 로 감쌀지 (기본 true) */
   wrapRight?: boolean;
+  /** wrapLeft=false 일 때 모바일 aside 추가 className (max-h 오버라이드 등) */
+  leftClassName?: string;
   /** 컨테이너 style (예 · minHeight) */
   style?: React.CSSProperties;
   /** 컨테이너 추가 className */
@@ -96,6 +98,7 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
   right,
   wrapLeft = true,
   wrapRight = true,
+  leftClassName = "",
   style,
   className = "",
   mobileRightAsModal = true,
@@ -184,7 +187,15 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
 
   const dividerHoverCls = DIVIDER_HOVER[dividerColor];
 
-  const leftCls = wrapLeft ? "split-left" : "w-full shrink-0 flex flex-col min-h-0 max-h-[42vh] lg:max-h-none";
+  // wrapLeft=false · leftClassName 이 max-h 를 포함하면 기본 max-h-[42vh] 를 적용하지 않음
+  const hasCustomMaxH = leftClassName.includes("max-h-");
+  const leftCls = wrapLeft
+    ? "split-left"
+    : [
+        "w-full shrink-0 flex flex-col min-h-0",
+        hasCustomMaxH ? "" : "max-h-[42vh] lg:max-h-none",
+        leftClassName,
+      ].filter(Boolean).join(" ");
   const rightCls = wrapRight ? "split-right" : "flex-1 flex flex-col min-w-0 min-h-0";
 
   // ── 모바일 모달 렌더링 (mobileRightAsModal=true · 비데스크탑) ──────────────
