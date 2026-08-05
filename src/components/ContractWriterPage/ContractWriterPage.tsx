@@ -21,7 +21,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   NotePencil, User, ClipboardText, CalendarBlank, ClockClockwise, Money,
-  Coffee, Notepad, Eraser, DownloadSimple, ArrowsClockwise, Warning, Check,
+  Coffee, Notepad, Eraser, DownloadSimple, Warning, Check,
   Signature, ClockCounterClockwise, X as XIcon, Calculator, CaretDown,
 } from "@phosphor-icons/react";
 import SignaturePad from "react-signature-canvas";
@@ -566,10 +566,14 @@ const emptyForm = (): ContractForm => ({
   startTime: "10:00",
   endTime: "19:00",
   breakMinutes: "60",
-  breakStart: "",
-  breakEnd: "",
-  weekdayHourly: "12000",
-  weekendHourly: "13500",
+  // T-G (2026-08-05) · 휴게시간 default 12:00-13:00 (근기법 §54 4시간당 30분 · 8시간당 1시간)
+  breakStart: "12:00",
+  breakEnd: "13:00",
+  // T-I (2026-08-05) · 시급 default · 약사 기본 (실제로는 useSettings 훅으로 자동 로드됨)
+  //   · 이전: "12000"/"13500" → 자동 로드 감지 조건에 사용되어 초기 상태 fallback 만 담당
+  //   · 신규: 약사 기본 (35000/40000) · 자동 로드 조건과 함께 갱신
+  weekdayHourly: "35000",
+  weekendHourly: "40000",
   startDate: todayIso(),
   endDate: "",
   indefinite: true,
@@ -984,6 +988,8 @@ interface WageComponentsFormProps {
   onChange: (next: WageComponents) => void;
 }
 
+// T-K (2026-08-05) · 이미지 레이아웃 3열 재구성 (구성 항목 · 내용 · 금액)
+//   좌측 폼도 우측 프리뷰와 동일한 배치 · 금액 없으면 "-" · 하단 월급여총액 (포괄임금) 강조
 const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange }) => {
   const updEntry = (
     key: keyof Pick<WageComponents, "basicSalary" | "fixedOvertime" | "fixedHoliday" | "fixedHolidayOvertime" | "fixedNight" | "fixedAnnualLeave">,
@@ -996,110 +1002,156 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange 
     onChange({ ...wage, [key]: val });
   };
 
-  const rows: Array<{
-    key: keyof Pick<WageComponents, "basicSalary" | "fixedOvertime" | "fixedHoliday" | "fixedHolidayOvertime" | "fixedNight" | "fixedAnnualLeave">;
-    label: string;
-    note: string;
-  }> = [
-    { key: "basicSalary",          label: "기본급",             note: "주휴 포함" },
-    { key: "fixedOvertime",        label: "(고정)연장",         note: "1.5배" },
-    { key: "fixedHoliday",         label: "(고정)휴일",         note: "1.5배" },
-    { key: "fixedHolidayOvertime", label: "(고정)휴일연장",     note: "0.5배" },
-    { key: "fixedNight",           label: "(고정)야간",         note: "0.5배" },
-    { key: "fixedAnnualLeave",     label: "(고정)연차",         note: "" },
+  // T-K · 8항목 rows (이미지 원본 순서)
+  type ComponentKey = keyof Pick<WageComponents, "basicSalary" | "fixedOvertime" | "fixedHoliday" | "fixedHolidayOvertime" | "fixedNight" | "fixedAnnualLeave">;
+  const rows: Array<{ key: ComponentKey; label: string; note: string }> = [
+    { key: "basicSalary",          label: "기본급",                   note: "주휴수당 포함" },
+    { key: "fixedOvertime",        label: "(고정)연장근로수당",       note: "1.5배 가산 포함" },
+    { key: "fixedHoliday",         label: "(고정)휴일근로수당",       note: "1.5배 가산 포함" },
+    { key: "fixedHolidayOvertime", label: "(고정)휴일연장근로수당",   note: "0.5배 가산 포함" },
+    { key: "fixedNight",           label: "(고정)야간근로수당",       note: "0.5배 가산 포함" },
+    { key: "fixedAnnualLeave",     label: "(고정)연차휴가수당",       note: "" },
   ];
 
   const total = computeWageTotal(wage);
 
   return (
-    <div className="rounded-lg border border-indigo-100 bg-indigo-50/30 p-2 flex flex-col gap-1">
-      <div className="text-[11px] font-black text-indigo-800 flex items-center gap-1">
+    <div className="rounded-lg border border-indigo-200 bg-white flex flex-col overflow-hidden">
+      {/* 상단 라벨 */}
+      <div className="text-[11px] font-black text-indigo-800 flex items-center gap-1 px-2 py-1 border-b border-indigo-100 bg-indigo-50/50">
         <Money size={11} weight="fill" />
-        임금 구성표 (표 형식)
+        임금 구성표 (편집 가능 · 이미지 레이아웃)
       </div>
 
-      {/* 헤더 */}
-      <div className="grid grid-cols-[1fr,72px,1fr] gap-1 text-[10px] font-black text-slate-500 uppercase pl-1">
-        <div>항목</div>
-        <div className="text-center">시간</div>
-        <div className="text-right pr-1">금액 (원)</div>
-      </div>
+      {/* 이미지 형식 · 3열 테이블 · 구성 항목 · 내용 (월평균 시간) · 금액 (원) */}
+      <table className="w-full border-collapse text-[11px]">
+        <thead>
+          <tr className="bg-slate-100 text-slate-700 font-black text-[10.5px]">
+            <th className="border-b border-slate-300 px-1.5 py-1 text-left w-[42%]">구성 항목</th>
+            <th className="border-b border-slate-300 px-1.5 py-1 text-center w-[30%]">내용</th>
+            <th className="border-b border-slate-300 px-1.5 py-1 text-right w-[28%]">금액 (원)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(r => {
+            const entry = wage[r.key];
+            const isEmpty = entry.hours === 0 && entry.minutes === 0 && entry.amount === 0;
+            return (
+              <tr key={r.key} className="border-b border-slate-100 last:border-b-0">
+                <td className="px-1.5 py-1 align-middle">
+                  <div className="text-[11px] font-bold text-slate-800 leading-tight">
+                    {r.label}
+                  </div>
+                  {r.note && (
+                    <div className="text-[9px] text-slate-500 font-semibold leading-tight">
+                      ({r.note})
+                    </div>
+                  )}
+                </td>
+                {/* 내용 · 월평균 시간·분 입력 */}
+                <td className="px-1.5 py-1 align-middle">
+                  <div className="flex items-center justify-center gap-0.5 text-[10px] text-slate-500 font-semibold">
+                    <span>월평균</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={entry.hours}
+                      onChange={(e) => updEntry(r.key, "hours", Number(e.target.value) || 0)}
+                      className="w-8 bg-white border border-slate-200 rounded px-0.5 py-0.5 text-[11px] text-slate-800 font-semibold text-right focus:outline-none focus:border-indigo-500 transition"
+                      placeholder="0"
+                    />
+                    <span>h</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={59}
+                      value={entry.minutes}
+                      onChange={(e) => updEntry(r.key, "minutes", Math.max(0, Math.min(59, Number(e.target.value) || 0)))}
+                      className="w-7 bg-white border border-slate-200 rounded px-0.5 py-0.5 text-[11px] text-slate-800 font-semibold text-right focus:outline-none focus:border-indigo-500 transition"
+                      placeholder="0"
+                    />
+                    <span>m</span>
+                  </div>
+                </td>
+                {/* 금액 · 없으면 "-" placeholder · 입력 시 값 표시 */}
+                <td className="px-1.5 py-1 align-middle text-right">
+                  <div className="relative inline-block w-full">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={entry.amount === 0 ? "" : String(entry.amount)}
+                      onChange={(e) => updEntry(r.key, "amount", Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
+                      className={`w-full bg-white border rounded px-1 py-0.5 text-[11px] font-black text-right focus:outline-none focus:border-indigo-500 transition ${
+                        isEmpty ? "border-slate-100 text-slate-300" : "border-slate-200 text-slate-800"
+                      }`}
+                      placeholder="-"
+                    />
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
 
-      {rows.map(r => (
-        <div key={r.key} className="grid grid-cols-[1fr,72px,1fr] gap-1 items-center">
-          <div className="text-[11px] font-bold text-slate-700 leading-tight">
-            {r.label}
-            {r.note && <span className="text-[9px] text-slate-500 font-semibold ml-1">({r.note})</span>}
-          </div>
-          <div className="flex items-center gap-0.5">
-            <input
-              type="number"
-              min={0}
-              value={wage[r.key].hours}
-              onChange={(e) => updEntry(r.key, "hours", Number(e.target.value) || 0)}
-              className="w-8 bg-white border border-slate-200 rounded px-1 py-0.5 text-[11px] text-slate-800 font-semibold text-right focus:outline-none focus:border-indigo-500 transition"
-              placeholder="0"
-            />
-            <span className="text-[9px] text-slate-500 font-semibold">h</span>
-            <input
-              type="number"
-              min={0}
-              max={59}
-              value={wage[r.key].minutes}
-              onChange={(e) => updEntry(r.key, "minutes", Math.max(0, Math.min(59, Number(e.target.value) || 0)))}
-              className="w-7 bg-white border border-slate-200 rounded px-1 py-0.5 text-[11px] text-slate-800 font-semibold text-right focus:outline-none focus:border-indigo-500 transition"
-              placeholder="0"
-            />
-            <span className="text-[9px] text-slate-500 font-semibold">m</span>
-          </div>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={String(wage[r.key].amount)}
-            onChange={(e) => updEntry(r.key, "amount", Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
-            className="bg-white border border-slate-200 rounded px-1.5 py-0.5 text-[11px] text-slate-800 font-black text-right focus:outline-none focus:border-indigo-500 transition"
-            placeholder="0"
-          />
-        </div>
-      ))}
+          {/* 식대 (비과세) · flat amount · "해당자에 한함" */}
+          <tr className="border-b border-slate-100">
+            <td className="px-1.5 py-1 align-middle">
+              <div className="text-[11px] font-bold text-slate-800 leading-tight">식대</div>
+              <div className="text-[9px] text-slate-500 font-semibold leading-tight">(비과세)</div>
+            </td>
+            <td className="px-1.5 py-1 align-middle text-center text-[10px] text-slate-500 font-semibold italic">
+              해당자에 한함
+            </td>
+            <td className="px-1.5 py-1 align-middle text-right">
+              <input
+                type="text"
+                inputMode="numeric"
+                value={wage.mealAllowance === 0 ? "" : String(wage.mealAllowance)}
+                onChange={(e) => updFlat("mealAllowance", Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
+                className={`w-full bg-white border rounded px-1 py-0.5 text-[11px] font-black text-right focus:outline-none focus:border-indigo-500 transition ${
+                  wage.mealAllowance === 0 ? "border-slate-100 text-slate-300" : "border-slate-200 text-slate-800"
+                }`}
+                placeholder="해당자에 한함"
+              />
+            </td>
+          </tr>
 
-      {/* 옵션 항목 · 식대·차량 */}
-      <details className="mt-1">
-        <summary className="text-[10px] font-bold text-slate-500 cursor-pointer hover:text-indigo-700 flex items-center gap-1">
-          <CaretDown size={9} weight="bold" /> 옵션 (식대·차량유지비)
-        </summary>
-        <div className="mt-1 flex flex-col gap-1">
-          <div className="grid grid-cols-[1fr,72px,1fr] gap-1 items-center">
-            <div className="text-[11px] font-bold text-slate-700">식대 <span className="text-[9px] text-slate-500 font-semibold">(비과세)</span></div>
-            <div className="text-[9px] text-slate-500 text-center">해당자</div>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={String(wage.mealAllowance)}
-              onChange={(e) => updFlat("mealAllowance", Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
-              className="bg-white border border-slate-200 rounded px-1.5 py-0.5 text-[11px] text-slate-800 font-black text-right focus:outline-none focus:border-indigo-500 transition"
-              placeholder="0"
-            />
-          </div>
-          <div className="grid grid-cols-[1fr,72px,1fr] gap-1 items-center">
-            <div className="text-[11px] font-bold text-slate-700">차량유지비 <span className="text-[9px] text-slate-500 font-semibold">(비과세)</span></div>
-            <div className="text-[9px] text-slate-500 text-center">해당자</div>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={String(wage.vehicleAllowance)}
-              onChange={(e) => updFlat("vehicleAllowance", Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
-              className="bg-white border border-slate-200 rounded px-1.5 py-0.5 text-[11px] text-slate-800 font-black text-right focus:outline-none focus:border-indigo-500 transition"
-              placeholder="0"
-            />
-          </div>
-        </div>
-      </details>
+          {/* 차량유지비 (비과세) */}
+          <tr className="border-b border-slate-200">
+            <td className="px-1.5 py-1 align-middle">
+              <div className="text-[11px] font-bold text-slate-800 leading-tight">차량유지비</div>
+              <div className="text-[9px] text-slate-500 font-semibold leading-tight">(비과세)</div>
+            </td>
+            <td className="px-1.5 py-1 align-middle text-center text-[10px] text-slate-500 font-semibold italic">
+              해당자에 한함
+            </td>
+            <td className="px-1.5 py-1 align-middle text-right">
+              <input
+                type="text"
+                inputMode="numeric"
+                value={wage.vehicleAllowance === 0 ? "" : String(wage.vehicleAllowance)}
+                onChange={(e) => updFlat("vehicleAllowance", Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
+                className={`w-full bg-white border rounded px-1 py-0.5 text-[11px] font-black text-right focus:outline-none focus:border-indigo-500 transition ${
+                  wage.vehicleAllowance === 0 ? "border-slate-100 text-slate-300" : "border-slate-200 text-slate-800"
+                }`}
+                placeholder="해당자에 한함"
+              />
+            </td>
+          </tr>
 
-      <div className="mt-1 pt-1 border-t border-indigo-200 flex items-center justify-between text-[12px]">
-        <span className="text-emerald-800 font-black">월급여총액 (세전)</span>
-        <span className="text-emerald-800 font-black tabular-nums">{fmtWon(total)} 원</span>
-      </div>
+          {/* 하단 · 월급여총액 (세전) · (포괄임금) · 강조 */}
+          <tr className="bg-amber-50">
+            <td className="px-1.5 py-1.5 text-left text-[11.5px] font-black text-slate-900">
+              월급여총액 (세전)
+            </td>
+            <td className="px-1.5 py-1.5 text-center text-[10.5px] font-bold text-slate-600">
+              (포괄임금)
+            </td>
+            <td className="px-1.5 py-1.5 text-right text-[12px] font-black text-slate-900 tabular-nums">
+              {fmtWon(total)} 원
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 };
@@ -1156,19 +1208,7 @@ const WageCalcModePanel: React.FC<WageCalcModePanelProps> = ({
     onApplyHourly(targetHourly, targetHourly);
   };
 
-  const applyActualToBasic = () => {
-    if (!actualCalc) return;
-    // 실 근무 총액을 기본급으로 (약사 실무 스타일)
-    onApplyToWageComponents({
-      ...form.wageComponents,
-      basicSalary: {
-        ...form.wageComponents.basicSalary,
-        hours: Math.floor(actualCalc.weekdayMonthlyHours + actualCalc.weekendMonthlyHours),
-        minutes: Math.round(((actualCalc.weekdayMonthlyHours + actualCalc.weekendMonthlyHours) % 1) * 60),
-        amount: actualCalc.total,
-      },
-    });
-  };
+  // T-J (2026-08-05) · applyActualToBasic 제거 · 계산기는 참고용으로만 유지
 
   return (
     <div className="rounded-lg border border-emerald-200 bg-emerald-50/40 p-2 flex flex-col gap-2">
@@ -1249,13 +1289,10 @@ const WageCalcModePanel: React.FC<WageCalcModePanelProps> = ({
             <div>월 주중근무 <b className="tabular-nums">{actualCalc.weekdayMonthlyHours.toFixed(1)}h</b> × <b className="tabular-nums">{fmtWon(form.weekdayHourly)}</b> = <b className="tabular-nums">{fmtWon(actualCalc.weekdayPay)}</b></div>
             <div>월 주말근무 <b className="tabular-nums">{actualCalc.weekendMonthlyHours.toFixed(1)}h</b> × <b className="tabular-nums">{fmtWon(form.weekendHourly)}</b> = <b className="tabular-nums">{fmtWon(actualCalc.weekendPay)}</b></div>
             <div className="mt-1 font-black text-emerald-800">실 근무 총액 <span className="tabular-nums">{fmtWon(actualCalc.total)}</span> 원</div>
-            <button
-              type="button"
-              onClick={applyActualToBasic}
-              className="mt-1 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-600 text-white text-[10.5px] font-black hover:bg-emerald-700 transition-colors cursor-pointer"
-            >
-              기본급에 반영
-            </button>
+            {/* T-J (2026-08-05) · 기본급에 반영 버튼 제거 · 참고용 계산기로 유지 */}
+            <div className="mt-1 text-[9.5px] text-slate-500 italic">
+              * 계산 결과는 참고용입니다. 세후 목표 역산은 상단 "희망 월 세후 수령액" 을 사용하세요.
+            </div>
           </div>
         ) : (
           <div className="text-[11px] text-rose-600">근무 시간을 입력하세요.</div>
@@ -1502,9 +1539,15 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
         사용자(이하 '갑'이라 함)와 근로자(이하 '을'이라 함)는 다음과 같이 근로계약을 체결하고 신의에 따라 이를 성실히 이행할 것을 약정한다.
       </p>
 
-      {/* 1. 근무장소 · 담당업무 */}
+      {/* 1. 근무장소 · 담당업무 · T-H (2026-08-05) · 사업주 정보 동적 반영 */}
       <Section label="근무장소 · 담당업무">
-        <div className="font-bold text-slate-900">코스트팜(Costpharm) 社內 및 관계 현장</div>
+        <div className="font-bold text-slate-900">
+          {form.companyName || "코스트팜(Costpharm)"}
+          {form.companyAddress && (
+            <span className="text-slate-700 font-semibold"> ({form.companyAddress})</span>
+          )}
+          <span className="ml-1">社內 및 관계 현장</span>
+        </div>
         <div className="mt-1">
           담당업무: <b className="text-slate-900">{form.jobDuty || "-"}</b>
         </div>
@@ -1676,13 +1719,16 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
           </div>
         </div>
 
-        {/* 휴게시간 변경 · amber fixed hex */}
+        {/* 휴게시간 변경 · amber fixed hex · T-G (2026-08-05) · 근기법 §54 문구 강화 */}
         <div
           className="mt-2 rounded-sm px-2 py-1.5"
           style={{ backgroundColor: HEX.amberSoft, border: `1px solid ${HEX.amberBd}` }}
         >
           <div className="text-[11px] text-slate-800 leading-snug">
             ※ 업무형편상 부득이한 경우 상기 휴게 시간을 변경할 수 있고, 제대로 사용하지 못한 휴게시간은 다른 시간 내에서 보충 사용하는 것에 동의한다.
+          </div>
+          <div className="text-[11px] text-slate-800 leading-snug mt-1">
+            ※ 휴게시간은 사업장 사정에 따라 변경될 수 있으며, 을은 정당한 사유 없이 이를 거부할 수 없다.
           </div>
         </div>
 
@@ -2279,10 +2325,15 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             ? String(p.annualLeaveDays)
             : prev.annualLeaveDays;
         // T14/Phase B · 직급별 default 시급 자동 로드 (개인별 override 우선)
-        //   · 사용자 편집 가능 유지 · 기존 값이 default (12000/13500) 이면만 덮어씀
+        //   · 사용자 편집 가능 유지 · 기존 값이 default 이면만 덮어씀
         //   2026-08-05 · settings 미설정 시 defaultWageForPosition fallback (약사=35000/40000 · 그외=10030/12000)
-        const isDefaultWage = (prev.weekdayHourly === "12000" || !prev.weekdayHourly) &&
-                              (prev.weekendHourly === "13500" || !prev.weekendHourly);
+        //   T-I (2026-08-05) · default 변경: 12000/13500 → 35000/40000 (약사 기본) · 10030/12000 (사원 기본) 도 자동 로드 감지
+        const isDefaultWage = (
+          (prev.weekdayHourly === "35000" && prev.weekendHourly === "40000") ||
+          (prev.weekdayHourly === "10030" && prev.weekendHourly === "12000") ||
+          (prev.weekdayHourly === "12000" && prev.weekendHourly === "13500") ||
+          (!prev.weekdayHourly && !prev.weekendHourly)
+        );
         let wd = prev.weekdayHourly;
         let we = prev.weekendHourly;
         if (isDefaultWage) {
@@ -2355,7 +2406,12 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     }
     const wd = form.weekdayHourly;
     const we = form.weekendHourly;
-    const isInitialDefault = (wd === "12000" || wd === "") && (we === "13500" || we === "");
+    // T-I (2026-08-05) · 초기 default 감지: 약사 기본 (35000/40000) · 사원 기본 (10030/12000) · 구 default (12000/13500) · 빈 값
+    const isInitialDefault =
+      (wd === "35000" && we === "40000") ||
+      (wd === "10030" && we === "12000") ||
+      (wd === "12000" && we === "13500") ||
+      (wd === "" && we === "");
     const last = lastAutoWageRef.current;
     const isPreviousAuto = last && wd === last.wd && we === last.we;
     if (!isInitialDefault && !isPreviousAuto) return; // 사용자가 직접 입력한 값 → 유지
@@ -2624,15 +2680,19 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     });
   };
 
-  // 폼 리셋
+  // 폼 리셋 · T-N (2026-08-05) · 임시저장(localStorage) 도 함께 삭제
   const handleReset = () => {
-    if (!window.confirm("입력한 모든 내용과 서명을 초기화합니다. 계속하시겠습니까?")) return;
+    if (!window.confirm("입력한 모든 내용 · 서명 · 임시저장까지 전체 초기화합니다.\n계속하시겠습니까?")) return;
     setForm(emptyForm());
     clearAllSignatures();
-    setNotice(null);
+    clearDraft();
+    setNotice({ tone: "ok", text: "전체 초기화되었습니다." });
   };
 
-  // PDF 빌드
+  // PDF 빌드 · T-M (2026-08-05) · A4 2장 자동 분할 (210mm × 297mm × 2)
+  //   - 컨텐츠가 1장 이내면 1페이지
+  //   - 1장 초과 ~ 2장 이내면 정확히 2페이지에 분할 (contentSection 단위 pageBreakInside: avoid 존중)
+  //   - 2장 초과 시 자연 분할 계속 (안전장치)
   const buildPdfFromPreview = async (): Promise<{ pdf: jsPDF; filename: string }> => {
     const node = previewRef.current;
     if (!node) throw new Error("계약서 프리뷰를 찾을 수 없습니다.");
@@ -2647,14 +2707,23 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
 
     const imgData = canvas.toDataURL("image/png");
     const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-    const pdfW = pdf.internal.pageSize.getWidth();
-    const pdfH = pdf.internal.pageSize.getHeight();
+    const pdfW = pdf.internal.pageSize.getWidth();   // A4 = 210mm
+    const pdfH = pdf.internal.pageSize.getHeight();  // A4 = 297mm
     const imgW = pdfW;
     const imgH = (canvas.height * imgW) / canvas.width;
 
     if (imgH <= pdfH) {
+      // 1장 이내 · 1페이지
       pdf.addImage(imgData, "PNG", 0, 0, imgW, imgH, undefined, "FAST");
+    } else if (imgH <= pdfH * 2) {
+      // T-M · A4 2장 이내 → 정확히 2페이지에 균등 배분 (컨텐츠 높이의 절반씩)
+      // 상반부 · 페이지 1
+      pdf.addImage(imgData, "PNG", 0, 0, imgW, imgH, undefined, "FAST");
+      // 하반부 · 페이지 2 (기존 image 를 -pdfH offset 하여 하단만 보임)
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, -pdfH, imgW, imgH, undefined, "FAST");
     } else {
+      // 안전장치 · 2장 초과 시 자연 분할 (기존 로직 유지)
       let heightLeft = imgH;
       let position = 0;
       pdf.addImage(imgData, "PNG", 0, position, imgW, imgH, undefined, "FAST");
@@ -2933,11 +3002,17 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         )}
       </section>
 
-      {/* ═══ 섹션 2 · 근무 조건 (요일·근무시간·계약기간·담당업무) ═══ */}
+      {/* ═══ 섹션 2 · 근무 조건 · T-L (2026-08-05) · 카드 그룹핑 재구성 ═══
+          그룹: (a) 계약 유형·기간 · (b) 근무 요일·시간·휴게 · (c) 담당업무·4대보험·특약 */}
       <section className="flex flex-col gap-2 mt-3">
         <SectionHeader icon={<ClockClockwise size={13} weight="fill" />}>근무 조건</SectionHeader>
 
-        {/* 계약 유형 + 근무 요일 */}
+        {/* ── 그룹 (a) · 계약 유형 · 근무 요일 · 카드 ── */}
+        <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-2 flex flex-col gap-2">
+          <div className="text-[10px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1">
+            <ClipboardText size={10} weight="fill" />
+            계약 유형 · 근무 요일
+          </div>
         <div className="grid md:grid-cols-2 gap-2">
         <div className="flex flex-col gap-1">
           <FieldLabel required>계약 유형</FieldLabel>
@@ -2976,7 +3051,14 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           </div>
         </div>
       </div>
+        </div>
 
+      {/* ── 그룹 (b) · 근무 시간 · 휴게 · 카드 ── */}
+      <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-2 flex flex-col gap-1">
+        <div className="text-[10px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1">
+          <ClockClockwise size={10} weight="fill" />
+          근무 시간 · 휴게
+        </div>
       {/* 근무 시간 (한 줄 표시) */}
         <div className="flex flex-col gap-1">
           <div className="flex flex-wrap items-center gap-1.5">
@@ -3029,6 +3111,15 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               </button>
             </div>
           )}
+        </div>
+      </div>
+      {/* /그룹 (b) */}
+
+      {/* ── 그룹 (c) · 계약 기간 · 담당업무 · 4대보험 · 특약 · 카드 ── */}
+      <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-2 flex flex-col gap-2">
+        <div className="text-[10px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1">
+          <CalendarBlank size={10} weight="fill" />
+          계약 기간 · 담당업무 · 4대보험 · 특약
         </div>
 
         {/* 계약 기간 · 계약체결일 · 근무시작일 · 계약종료일(정규직 시 숨김) */}
@@ -3089,6 +3180,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition resize-y"
           />
         </div>
+      </div>
+      {/* /그룹 (c) · T-L (2026-08-05) */}
       </section>
 
       {/* ═══ 섹션 3 · 희망 월 세후 수령액 · T-A (2026-08-05) · 세후→8항목 역산 ═══ */}
@@ -3474,11 +3567,12 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 <span>연장</span>
               </button>
             )}
+            {/* T-N (2026-08-05) · 초기화 버튼 · outline 세련화 · rose hover · confirm dialog */}
             <button type="button" onClick={handleReset}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-sm font-semibold transition-colors cursor-pointer"
-              title="초기화"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300 text-sm font-semibold transition-colors cursor-pointer shadow-sm"
+              title="입력 내용·서명·임시저장 · 전체 초기화"
             >
-              <ArrowsClockwise size={14} />
+              <Eraser size={14} weight="bold" />
               <span className="hidden sm:inline">초기화</span>
             </button>
           </div>
