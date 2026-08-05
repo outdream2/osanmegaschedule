@@ -15,6 +15,7 @@ import {
 } from "recharts";
 import { SeasonButtons } from "../../common/SeasonButtons";
 import { type SeasonKey } from "../../../hooks/useSeasonRanges";
+import { useSortableTable, type Comparator } from "../../../hooks/useSortableTable";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -86,8 +87,6 @@ function dateLabel(iso: string | null): string {
 }
 
 // ─── Tab 1 · 매입 원장 · 매입일 그룹 + 화살표 확장 ──────────────────────────
-
-type SortDir = "asc" | "desc";
 
 interface DateGroup {
   date: string; // YYYY-MM-DD
@@ -332,15 +331,16 @@ interface ProductAgg {
 
 type ProductSortKey = "product_name" | "total_qty" | "avg_unit_price" | "last_date" | "purchase_count" | "total_amount";
 
-const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ rows, loading }) => {
-  const [sortKey, setSortKey] = useState<ProductSortKey>("total_amount");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
-  const toggleSort = (k: ProductSortKey) => {
-    if (sortKey === k) setSortDir(d => (d === "asc" ? "desc" : "asc"));
-    else { setSortKey(k); setSortDir("desc"); }
-  };
-  const arrow = (k: ProductSortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
+const PRODUCT_AGG_CMP: Record<ProductSortKey, Comparator<ProductAgg>> = {
+  product_name:   (a, b) => a.product_name.localeCompare(b.product_name, "ko"),
+  total_qty:      (a, b) => a.total_qty - b.total_qty,
+  avg_unit_price: (a, b) => a.avg_unit_price - b.avg_unit_price,
+  last_date:      (a, b) => a.last_date.localeCompare(b.last_date),
+  purchase_count: (a, b) => a.purchase_count - b.purchase_count,
+  total_amount:   (a, b) => a.total_amount - b.total_amount,
+};
 
+const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ rows, loading }) => {
   const aggregated = useMemo<ProductAgg[]>(() => {
     const map = new Map<string, ProductAgg>();
     for (const r of rows) {
@@ -372,20 +372,8 @@ const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> =
     return Array.from(map.values());
   }, [rows]);
 
-  const sorted = useMemo(() => {
-    const sign = sortDir === "asc" ? 1 : -1;
-    return [...aggregated].sort((a, b) => {
-      switch (sortKey) {
-        case "product_name":   return sign * a.product_name.localeCompare(b.product_name, "ko");
-        case "total_qty":      return sign * (a.total_qty - b.total_qty);
-        case "avg_unit_price": return sign * (a.avg_unit_price - b.avg_unit_price);
-        case "last_date":      return sign * a.last_date.localeCompare(b.last_date);
-        case "purchase_count": return sign * (a.purchase_count - b.purchase_count);
-        case "total_amount":   return sign * (a.total_amount - b.total_amount);
-        default:               return 0;
-      }
-    });
-  }, [aggregated, sortKey, sortDir]);
+  const { sorted, sortKey, sortDir, toggleSort } = useSortableTable<ProductAgg, ProductSortKey>(aggregated, "total_amount", PRODUCT_AGG_CMP, "desc");
+  const arrow = (k: ProductSortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
 
   const totalAmount = useMemo(() => aggregated.reduce((s, a) => s + a.total_amount, 0), [aggregated]);
 

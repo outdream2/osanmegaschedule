@@ -20,6 +20,7 @@ import {
 } from "../lib/productsCache";
 import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
 import type { AuthSession } from "../types";
+import { useSortableTable, type Comparator, type SortDir } from "../hooks/useSortableTable";
 
 interface ProductArrivalPageProps {
   onBack: () => void;
@@ -81,12 +82,21 @@ const SummaryPill: React.FC<SummaryPillProps> = ({ label, value, valueClass, acc
 // ─────────────────────────────────────────────────────────────
 // SortIcon
 // ─────────────────────────────────────────────────────────────
-type SortDir = "asc" | "desc";
 const SortIcon: React.FC<{ active: boolean; dir: SortDir }> = ({ active, dir }) => {
   if (!active) return <ArrowUpDown size={11} className="text-slate-300 ml-0.5 inline" />;
   return dir === "asc"
     ? <ArrowUp size={11} className="text-sky-500 ml-0.5 inline" />
     : <ArrowDown size={11} className="text-sky-500 ml-0.5 inline" />;
+};
+
+type ArrivalSortKey = "addedAt" | "supplier" | "name" | "qty" | "status";
+
+const ARRIVAL_CMP: Record<ArrivalSortKey, Comparator<ArrivalItem>> = {
+  addedAt:  (a, b) => a.addedAt - b.addedAt,
+  supplier: (a, b) => (a.product?.supplier ?? "").localeCompare(b.product?.supplier ?? "", "ko"),
+  name:     (a, b) => (a.product?.name ?? "").localeCompare(b.product?.name ?? "", "ko"),
+  qty:      (a, b) => a.qty - b.qty,
+  status:   (a, b) => a.status.localeCompare(b.status),
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -274,27 +284,9 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
   };
 
   // ── 정렬
-  type ArrivalSortKey = "addedAt" | "supplier" | "name" | "qty" | "status";
-  const [sortKey, setSortKey] = useState<ArrivalSortKey>("addedAt");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
-  const handleSort = (k: ArrivalSortKey) => {
-    if (sortKey === k) setSortDir(d => d === "asc" ? "desc" : "asc");
-    else { setSortKey(k); setSortDir("desc"); }
-  };
-
-  const sortedItems = useMemo(() => {
-    const sign = sortDir === "asc" ? 1 : -1;
-    return items.slice().sort((a, b) => {
-      switch (sortKey) {
-        case "addedAt":  return sign * (a.addedAt - b.addedAt);
-        case "supplier": return sign * (a.product?.supplier ?? "").localeCompare(b.product?.supplier ?? "", "ko");
-        case "name":     return sign * (a.product?.name ?? "").localeCompare(b.product?.name ?? "", "ko");
-        case "qty":      return sign * (a.qty - b.qty);
-        case "status":   return sign * a.status.localeCompare(b.status);
-        default:         return 0;
-      }
-    });
-  }, [items, sortKey, sortDir]);
+  const { sorted: sortedItems, sortKey, sortDir, toggleSort: handleSort } = useSortableTable<ArrivalItem, ArrivalSortKey>(
+    items, "addedAt", ARRIVAL_CMP, "desc",
+  );
 
   const counts = useMemo(() => {
     const c = { total: items.length, match: 0, mismatch: 0, expiring: 0, pending: 0, totalQty: 0 };

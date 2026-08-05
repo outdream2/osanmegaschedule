@@ -11,6 +11,7 @@ import { VendorInfoHeader, type VendorBasic, type VendorKpi, type LedgerRowMinim
 import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
+import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -67,7 +68,6 @@ interface ProductStat {
 
 type LedgerSortKey = "date" | "type" | "amount" | "running_balance";
 type PurchaseSortKey = "date" | "product_name" | "quantity" | "amount";
-type SortDir = "asc" | "desc";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
@@ -112,32 +112,21 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
 
 // ─── Ledger tab content ────────────────────────────────────────────────────
 
+const LEDGER_CMP: Record<LedgerSortKey, Comparator<LedgerRow>> = {
+  date:            (a, b) => String(a.date ?? "").localeCompare(String(b.date ?? "")),
+  type:            (a, b) => a.type.localeCompare(b.type),
+  amount:          (a, b) => a.amount - b.amount,
+  running_balance: (a, b) => a.running_balance - b.running_balance,
+};
+
 const LedgerContent: React.FC<{
   ledger: LedgerSummary | null;
   loading: boolean;
   error: string | null;
 }> = ({ ledger, loading, error }) => {
-  const [sortKey, setSortKey] = useState<LedgerSortKey>("date");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
-  const toggleSort = (k: LedgerSortKey) => {
-    if (sortKey === k) setSortDir(d => d === "asc" ? "desc" : "asc");
-    else { setSortKey(k); setSortDir("desc"); }
-  };
+  const rawRows = useMemo(() => ledger?.rows ?? [], [ledger]);
+  const { sorted: rows, sortKey, sortDir, toggleSort } = useSortableTable<LedgerRow, LedgerSortKey>(rawRows, "date", LEDGER_CMP, "desc");
   const arrow = (k: LedgerSortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
-
-  const rows = useMemo(() => {
-    if (!ledger) return [];
-    const sign = sortDir === "asc" ? 1 : -1;
-    return [...ledger.rows].sort((a, b) => {
-      switch (sortKey) {
-        case "date":            return sign * String(a.date ?? "").localeCompare(String(b.date ?? ""));
-        case "type":            return sign * a.type.localeCompare(b.type);
-        case "amount":          return sign * (a.amount - b.amount);
-        case "running_balance": return sign * (a.running_balance - b.running_balance);
-        default:                return 0;
-      }
-    });
-  }, [ledger, sortKey, sortDir]);
 
   if (loading) return (
     <div className="flex-1 flex items-center justify-center py-16 text-slate-400 gap-2">
