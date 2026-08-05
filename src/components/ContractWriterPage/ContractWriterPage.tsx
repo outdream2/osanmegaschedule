@@ -2290,6 +2290,11 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(() => {
     try { return localStorage.getItem(DRAFT_TIMESTAMP_KEY); } catch { return null; }
   });
+
+  // T-Q (2026-08-05) · 실수령액 상세 · 소득세 포함 토글 · default OFF (참고 표시만)
+  const [includeIncomeTax, setIncludeIncomeTax] = useState<boolean>(false);
+  // T-Q · 실수령액 상세 카드 접기/펼치기 · default 펼침
+  const [netDetailOpen, setNetDetailOpen] = useState<boolean>(true);
   const saveDraft = useCallback(() => {
     try {
       localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(form));
@@ -3386,6 +3391,89 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             * 예: 세후 6,000,000 → 세전 약 6,600,660원
           </div>
         </div>
+
+        {/* ── T-Q (2026-08-05) · 실수령액 상세 · 세전 → 4대보험 → (선택) 소득세 → 실수령액 ── */}
+        {(() => {
+          const wd = Number(form.weekdayHourly) || 0;
+          const we = Number(form.weekendHourly) || 0;
+          const gross = computeWageFromHourlyDual(wd, we, form.wageComponents).total
+            + (form.wageComponents.mealAllowance || 0)
+            + (form.wageComponents.vehicleAllowance || 0);
+          const ins = computeInsurance(gross);
+          const tax = computeIncomeTax(gross);
+          const netFinal = includeIncomeTax
+            ? Math.max(0, gross - ins.total - tax.total)
+            : Math.max(0, gross - ins.total);
+          const row = (label: string, amount: number, opts?: { minus?: boolean; sub?: boolean; hint?: string }) => (
+            <div className={`flex items-baseline justify-between gap-2 ${opts?.sub ? "pl-2.5" : ""}`}>
+              <span className={`${opts?.sub ? "text-[10.5px] text-slate-500 font-semibold" : "text-[11px] text-slate-700 font-bold"}`}>
+                {label}
+                {opts?.hint && <span className="ml-1 text-[9.5px] text-slate-400 font-medium">{opts.hint}</span>}
+              </span>
+              <span className={`tabular-nums ${opts?.sub ? "text-[10.5px] text-slate-600 font-bold" : "text-[11.5px] text-slate-900 font-black"}`}>
+                {opts?.minus ? "-" : ""}{fmtWon(amount)} 원
+              </span>
+            </div>
+          );
+          return (
+            <details className="rounded-lg border-2 border-slate-300 bg-white/90 px-2 py-1.5" open={netDetailOpen} onToggle={(e) => setNetDetailOpen((e.currentTarget as HTMLDetailsElement).open)}>
+              <summary className="text-[11px] font-black text-slate-800 cursor-pointer hover:text-emerald-700 flex items-center gap-1.5 list-none">
+                <CaretDown size={11} weight="bold" className={`transition-transform ${netDetailOpen ? "" : "-rotate-90"}`} />
+                <Calculator size={12} weight="fill" className="text-emerald-700" />
+                실수령액 상세
+                <label className="ml-auto inline-flex items-center gap-1 cursor-pointer select-none" onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    checked={includeIncomeTax}
+                    onChange={(e) => setIncludeIncomeTax(e.target.checked)}
+                    className="w-3.5 h-3.5 accent-emerald-600 cursor-pointer"
+                  />
+                  <span className="text-[10px] font-black text-slate-600">소득세 포함</span>
+                </label>
+              </summary>
+              <div className="mt-1.5 flex flex-col gap-1">
+                {/* 세전 총액 */}
+                {row("월 세전 총액", gross)}
+                <div className="border-t border-slate-200 my-0.5" />
+                {/* 4대보험 */}
+                <div className="text-[10px] font-black text-slate-500 uppercase tracking-wider mt-0.5">공제 항목 (예상 세금)</div>
+                {row("국민연금", ins.pension, { minus: true, sub: true, hint: "(4.5%)" })}
+                {row("건강보험", ins.health, { minus: true, sub: true, hint: "(3.545%)" })}
+                {row("장기요양", ins.ltc, { minus: true, sub: true, hint: "(건보×12.95%)" })}
+                {row("고용보험", ins.employment, { minus: true, sub: true, hint: "(0.9%)" })}
+                <div className="flex items-baseline justify-between gap-2 pl-2.5 border-t border-slate-200 pt-0.5">
+                  <span className="text-[10.5px] text-slate-700 font-black">└ 4대보험 합계</span>
+                  <span className="tabular-nums text-[11px] text-rose-700 font-black">-{fmtWon(ins.total)} 원</span>
+                </div>
+                {/* 소득세 (참고) · 토글 ON 시 실수령액에 반영 */}
+                <div className={`mt-0.5 ${includeIncomeTax ? "" : "opacity-60"}`}>
+                  {row("소득세", tax.incomeTax, { minus: true, sub: true, hint: "(간이세액표 근사·부양 1인)" })}
+                  {row("지방소득세", tax.localTax, { minus: true, sub: true, hint: "(소득세×10%)" })}
+                  <div className="flex items-baseline justify-between gap-2 pl-2.5 border-t border-slate-200 pt-0.5">
+                    <span className="text-[10.5px] text-slate-700 font-black">└ 소득세 합계</span>
+                    <span className="tabular-nums text-[11px] text-rose-700 font-black">-{fmtWon(tax.total)} 원</span>
+                  </div>
+                  {!includeIncomeTax && (
+                    <div className="text-[9.5px] text-slate-400 italic pl-2.5 mt-0.5">
+                      * 참고용 · 실수령액에 반영하려면 "소득세 포함" 체크
+                    </div>
+                  )}
+                </div>
+                {/* 최종 실수령액 */}
+                <div className="mt-1 rounded-lg bg-emerald-50 border-2 border-emerald-300 px-2 py-1.5 flex items-baseline justify-between gap-2">
+                  <span className="text-[12px] font-black text-emerald-900 flex items-center gap-1">
+                    <Money size={12} weight="fill" />
+                    월 실수령액
+                    <span className="text-[9.5px] font-bold text-emerald-600">
+                      ({includeIncomeTax ? "4대보험+소득세" : "4대보험만"})
+                    </span>
+                  </span>
+                  <span className="tabular-nums text-lg font-black text-emerald-800">{fmtWon(netFinal)} 원</span>
+                </div>
+              </div>
+            </details>
+          );
+        })()}
 
         {/* 시급 조정 (직급 default 로드 · 사용자 미세 조정 가능) */}
         <div className="grid md:grid-cols-2 gap-1.5">
