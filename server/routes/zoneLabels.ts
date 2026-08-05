@@ -10,6 +10,9 @@ import { supabase } from "../../src/supabase/client";
 
 const router = Router();
 
+// 2026-08-05 · 미존재 warning · 한번만 출력 (로그 스팸 방지)
+let _missingWarned = false;
+
 // GET /api/zone-labels
 router.get("/api/zone-labels", async (_req, res) => {
   try {
@@ -22,7 +25,10 @@ router.get("/api/zone-labels", async (_req, res) => {
       //   · migrations/create_zone_labels_2026-08-05.sql 실행 후 자동 해결
       const msg = error.message ?? "";
       if (/could not find the table|does not exist|schema cache/i.test(msg)) {
-        console.warn("[zone-labels GET] zone_labels 테이블 미존재 · SQL 마이그레이션 실행 필요 · 빈 배열 반환");
+        if (!_missingWarned) {
+          console.warn("[zone-labels GET] zone_labels 테이블 미존재 · migrations/create_zone_labels_2026-08-05.sql 실행 필요 · 이후 warning 침묵");
+          _missingWarned = true;
+        }
         return res.json({ mappings: [], _missing: true });
       }
       throw new Error(msg);
