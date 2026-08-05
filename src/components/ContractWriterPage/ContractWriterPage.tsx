@@ -226,13 +226,21 @@ const DEFAULT_EMPLOYER: Partial<ContractForm> = {
   companyRegNo: "",
 };
 
-// 시간 상수 (포괄임금 산정 · 스펙)
+// 시간 상수 (포괄임금 산정 · 스펙 · 계약서 이미지 원본)
+// 중요: OVERTIME(55.94) · HOLIDAY(22.00) 은 "이미 1.5배 가산이 반영된 시간"
+//   · 실 연장 = 55.94 ÷ 1.5 = 37.29h · 주 8.58h
+//   · 실 휴일 = 22 ÷ 1.5 = 14.67h · 월 1.83일
+//   · 계산식에서 × 1.5 를 곱하면 안 됨 (2중 가산)
 const WAGE_HOURS = {
-  BASIC: 209,        // 기본급 (주40 + 주휴 8) × 4.345
-  OVERTIME: 55.94,   // 연장 (월평균)
-  HOLIDAY: 22.00,    // 휴일 (월평균)
-  ANNUAL_LEAVE: 10.00, // 연차 (월평균)
+  BASIC: 209,        // 기본급 (주40 + 주휴 8) × 4.3452 ≈ 209
+  OVERTIME: 55.94,   // 연장 (월평균) · 1.5배 가산 반영됨
+  HOLIDAY: 22.00,    // 휴일 (월평균) · 1.5배 가산 반영됨
+  ANNUAL_LEAVE: 10.00, // 연차 (월평균 · 가산 없음)
 } as const;
+
+// T-P (2026-08-05) · 세전 총액 divisor · 통상시급 하나로 모든 항목 계산
+//   세전 = 통상시급 × (209 + 55.94 + 22 + 10) = 통상시급 × 296.94
+const WAGE_DIVISOR = WAGE_HOURS.BASIC + WAGE_HOURS.OVERTIME + WAGE_HOURS.HOLIDAY + WAGE_HOURS.ANNUAL_LEAVE;
 
 // 4대보험 요율 (근로자 부담)
 const INSURANCE_RATES = {
@@ -383,25 +391,26 @@ function contractPeriodMonthsClient(startIso?: string | null, endIso?: string | 
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * 시급 → 포괄임금 4항목 (기본급/연장/휴일/연차) · 각 금액 산출 · 레거시 (WageCalcModePanel forward mode)
- *   기본급 = BASIC × 주중시급
- *   연장   = OVERTIME × 주중시급 × 1.5
- *   휴일   = HOLIDAY × 주말시급 × 1.5
- *   연차   = ANNUAL_LEAVE × 주중시급
+ * T-P (2026-08-05) · 시급 → 포괄임금 4항목 · 계약서 이미지 원본 스펙
+ *   · 통상시급 = 주중시급 (표준 · 약국 관례)
+ *   · 기본급 = 통상시급 × 209                (주휴 포함)
+ *   · 연장   = 통상시급 × 55.94              (이미 1.5배 가산 반영된 시간)
+ *   · 휴일   = 통상시급 × 22                 (이미 1.5배 가산 반영된 시간)
+ *   · 연차   = 통상시급 × 10                 (가산 없음)
+ *   · we 인자는 하위호환 유지 (사용 안 함)
  */
-function computeWageFromHourly(weekdayHourly: number, weekendHourly: number): {
+function computeWageFromHourly(weekdayHourly: number, _weekendHourly: number): {
   basicAmount: number;
   overtimeAmount: number;
   holidayAmount: number;
   annualLeaveAmount: number;
   total: number;
 } {
-  const wd = Math.max(0, weekdayHourly);
-  const we = Math.max(0, weekendHourly);
-  const basicAmount = Math.round(WAGE_HOURS.BASIC * wd);
-  const overtimeAmount = Math.round(WAGE_HOURS.OVERTIME * wd * 1.5);
-  const holidayAmount = Math.round(WAGE_HOURS.HOLIDAY * we * 1.5);
-  const annualLeaveAmount = Math.round(WAGE_HOURS.ANNUAL_LEAVE * wd);
+  const w = Math.max(0, weekdayHourly); // 통상시급 = 주중시급
+  const basicAmount = Math.round(WAGE_HOURS.BASIC * w);
+  const overtimeAmount = Math.round(WAGE_HOURS.OVERTIME * w);
+  const holidayAmount = Math.round(WAGE_HOURS.HOLIDAY * w);
+  const annualLeaveAmount = Math.round(WAGE_HOURS.ANNUAL_LEAVE * w);
   return {
     basicAmount, overtimeAmount, holidayAmount, annualLeaveAmount,
     total: basicAmount + overtimeAmount + holidayAmount + annualLeaveAmount,
@@ -409,20 +418,21 @@ function computeWageFromHourly(weekdayHourly: number, weekendHourly: number): {
 }
 
 /**
- * T-N (2026-08-05) · 시급 (주중·주말) + 각 항목 시간·분 → 임금구성 6항목 금액 산출
- *   · 사용자 스펙 · 약국 실무 (주중/주말 시급 분리)
- *   · 기본급              = 주중시급 × basicH               (배수 1.0)
- *   · (고정)연장근로수당  = 주중시급 × overtimeH × 1.5
- *   · (고정)휴일근로수당  = 주말시급 × holidayH × 1.5
- *   · (고정)휴일연장근로수당 = 주말시급 × holidayOvertimeH × 0.5
- *   · (고정)야간근로수당   = 주중시급 × nightH × 0.5
- *   · (고정)연차휴가수당   = 주중시급 × annualH             (배수 1.0)
+ * T-P (2026-08-05) · 시급 + 각 항목 시간·분 → 임금구성 6항목 금액 산출 · 계약서 이미지 원본 스펙
+ *   · 통상시급 = 주중시급 (표준 · 약국 관례 · UI 는 두 시급 입력 유지)
+ *   · 기본급              = 통상시급 × basicH                  (배수 1.0 · 주휴 포함)
+ *   · (고정)연장근로수당  = 통상시급 × overtimeH                (배수 X · 시간에 이미 반영)
+ *   · (고정)휴일근로수당  = 통상시급 × holidayH                 (배수 X · 시간에 이미 반영)
+ *   · (고정)휴일연장근로수당 = 통상시급 × holidayOvertimeH × 0.5 (0.5배 가산 · 심야/연장 할증)
+ *   · (고정)야간근로수당   = 통상시급 × nightH × 0.5           (0.5배 가산)
+ *   · (고정)연차휴가수당   = 통상시급 × annualH                 (배수 없음)
  *   · 식대·차량유지비 · 사용자 입력 유지 (별도)
  *   · 각 항목 시간·분 · WageComponents 에서 그대로 사용 (사용자 미세 조정 반영)
+ *   · weekendHourly 인자는 하위호환 유지 (통상시급 계산에는 사용 안 함)
  */
 function computeWageFromHourlyDual(
   weekdayHourly: number,
-  weekendHourly: number,
+  _weekendHourly: number,
   wage: WageComponents,
 ): {
   basicAmount: number;
@@ -433,8 +443,7 @@ function computeWageFromHourlyDual(
   annualLeaveAmount: number;
   total: number;
 } {
-  const wd = Math.max(0, weekdayHourly);
-  const we = Math.max(0, weekendHourly);
+  const w = Math.max(0, weekdayHourly); // 통상시급 = 주중시급
   const hoursOf = (e: WageComponentEntry) => Math.max(0, e.hours) + Math.max(0, e.minutes) / 60;
   const basicH = hoursOf(wage.basicSalary);
   const overtimeH = hoursOf(wage.fixedOvertime);
@@ -442,12 +451,12 @@ function computeWageFromHourlyDual(
   const holidayOtH = hoursOf(wage.fixedHolidayOvertime);
   const nightH = hoursOf(wage.fixedNight);
   const annualH = hoursOf(wage.fixedAnnualLeave);
-  const basicAmount           = Math.round(basicH     * wd);
-  const overtimeAmount        = Math.round(overtimeH  * wd * 1.5);
-  const holidayAmount         = Math.round(holidayH   * we * 1.5);
-  const holidayOvertimeAmount = Math.round(holidayOtH * we * 0.5);
-  const nightAmount           = Math.round(nightH     * wd * 0.5);
-  const annualLeaveAmount     = Math.round(annualH    * wd);
+  const basicAmount           = Math.round(basicH     * w);
+  const overtimeAmount        = Math.round(overtimeH  * w);
+  const holidayAmount         = Math.round(holidayH   * w);
+  const holidayOvertimeAmount = Math.round(holidayOtH * w * 0.5);
+  const nightAmount           = Math.round(nightH     * w * 0.5);
+  const annualLeaveAmount     = Math.round(annualH    * w);
   return {
     basicAmount, overtimeAmount, holidayAmount, holidayOvertimeAmount, nightAmount, annualLeaveAmount,
     total: basicAmount + overtimeAmount + holidayAmount + holidayOvertimeAmount + nightAmount + annualLeaveAmount,
@@ -455,16 +464,15 @@ function computeWageFromHourlyDual(
 }
 
 /**
- * 목표 월급 → 필요 주중 시급 (주말 시급도 동일하다고 가정)
- *   총액 ≈ 시급 × (BASIC + OVERTIME×1.5 + HOLIDAY×1.5 + ANNUAL_LEAVE)
- *        = 시급 × (209 + 83.91 + 33 + 10)
- *        = 시급 × 335.91
- *   * 주말 시급 == 주중 시급 (단순 역산)
+ * T-P (2026-08-05) · 목표 월급 → 통상시급 · 계약서 이미지 원본 스펙
+ *   총액 = 통상시급 × (BASIC + OVERTIME + HOLIDAY + ANNUAL_LEAVE)
+ *        = 통상시급 × (209 + 55.94 + 22 + 10)
+ *        = 통상시급 × 296.94
+ *   * OVERTIME·HOLIDAY 는 이미 1.5배 가산 반영된 시간이므로 배수 곱하지 않음
  */
 function computeHourlyFromTarget(targetTotal: number): number {
-  const divisor = WAGE_HOURS.BASIC + WAGE_HOURS.OVERTIME * 1.5 + WAGE_HOURS.HOLIDAY * 1.5 + WAGE_HOURS.ANNUAL_LEAVE;
-  if (divisor <= 0) return 0;
-  return Math.round(Math.max(0, targetTotal) / divisor);
+  if (WAGE_DIVISOR <= 0) return 0;
+  return Math.round(Math.max(0, targetTotal) / WAGE_DIVISOR);
 }
 
 /**
@@ -561,21 +569,21 @@ function reverseGrossFromNet(targetNet: number): number {
 }
 
 /**
- * T-A (2026-08-05) · 세후 목표 → 통상시급 · 8항목 임금구성 역산 · 레거시 (단일 시급 · 미사용)
- *   1) 세후 → 세전 (reverseGrossFromNet)
- *   2) 세전 → 통상시급: w = 세전 / 335.91  (335.91 = 209 + 55.94×1.5 + 22×1.5 + 10)
- *   3) 8항목: basic 209h·연장 55.94h(×1.5)·휴일 22h(×1.5)·연차 10h · 나머지는 0 or 별도 입력 유지
+ * T-P (2026-08-05) · 세후 목표 → 통상시급 · 4항목 임금구성 역산 · 계약서 이미지 원본 스펙
+ *   1) 세후 → 세전 (reverseGrossFromNet · 4대보험만)
+ *   2) 세전 → 통상시급: w = 세전 / 296.94  (296.94 = 209 + 55.94 + 22 + 10)
+ *   3) 4항목: basic 209h·연장 55.94h·휴일 22h·연차 10h (모두 통상시급 × 시간 · 배수 없음)
+ *      · OVERTIME·HOLIDAY 시간은 이미 1.5배 가산 반영됨
  */
 function reverseWageFromNet(
   targetNet: number,
   prevWage: WageComponents,
 ): { hourly: number; gross: number; wage: WageComponents } {
   const gross = reverseGrossFromNet(targetNet);
-  const divisor = WAGE_HOURS.BASIC + WAGE_HOURS.OVERTIME * 1.5 + WAGE_HOURS.HOLIDAY * 1.5 + WAGE_HOURS.ANNUAL_LEAVE;
-  const hourly = divisor > 0 ? Math.round(gross / divisor) : 0;
+  const hourly = WAGE_DIVISOR > 0 ? Math.round(gross / WAGE_DIVISOR) : 0;
   const basicAmount        = Math.round(WAGE_HOURS.BASIC * hourly);
-  const overtimeAmount     = Math.round(WAGE_HOURS.OVERTIME * hourly * 1.5);
-  const holidayAmount      = Math.round(WAGE_HOURS.HOLIDAY * hourly * 1.5);
+  const overtimeAmount     = Math.round(WAGE_HOURS.OVERTIME * hourly);
+  const holidayAmount      = Math.round(WAGE_HOURS.HOLIDAY * hourly);
   const annualLeaveAmount  = Math.round(WAGE_HOURS.ANNUAL_LEAVE * hourly);
   const wage: WageComponents = {
     ...prevWage,
@@ -1375,7 +1383,7 @@ const WageCalcModePanel: React.FC<WageCalcModePanelProps> = ({
           <div className="mt-1 font-black text-emerald-800">
             필요 시급 <span className="tabular-nums">{fmtWon(targetHourly)}</span> 원
             <span className="text-[9.5px] text-slate-500 font-semibold ml-1">
-              (÷{(WAGE_HOURS.BASIC + WAGE_HOURS.OVERTIME * 1.5 + WAGE_HOURS.HOLIDAY * 1.5 + WAGE_HOURS.ANNUAL_LEAVE).toFixed(2)})
+              (÷{WAGE_DIVISOR.toFixed(2)})
             </span>
           </div>
           <button
