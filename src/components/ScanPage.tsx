@@ -250,7 +250,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   }, []);
 
   // ── T20/Phase 2 · 상품별 진열요청 · POST /api/display-requests
-  const requestDisplay = useCallback(async (row: StockRow) => {
+  // 2026-08-05 · 구역별 요청 지원 · zoneOverride 있으면 그 구역 · 없으면 배정구역
+  const requestDisplay = useCallback(async (row: StockRow, zoneOverride?: string | null) => {
     const store1 = row.store1Qty === "" ? 0 : Number(row.store1Qty);
     const store2 = row.store2Qty === "" ? 0 : Number(row.store2Qty);
     const store3 = row.store3Qty === "" ? 0 : Number(row.store3Qty);
@@ -259,11 +260,15 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     const storeSum = store1 + store2 + store3;
     const warehouseSum = w1 + w2;
     const rm = (row.product as any).realMap ?? (row.product as any).real_map ?? "";
+    const targetZone = (zoneOverride && zoneOverride.trim()) ? zoneOverride.trim() : rm;
     const autoNote = storeSum === 0
       ? (warehouseSum > 0 ? `매장 전량 부족 · 창고 ${warehouseSum}개 대기` : "매장·창고 모두 부족")
       : `매장 ${storeSum}개 · 진열 보충 요청`;
-    const confirmMsg = `[${row.product.name}] 진열요청?\n· 배정 구역: ${rm || "미지정"}\n· 현재 매장: ${storeSum}개 · 창고: ${warehouseSum}개\n· 노트: ${autoNote}`;
-    if (!window.confirm(confirmMsg)) return;
+    // 구역별 요청 시 confirm 생략 (모달 안 직접 클릭 · 이중 확인 제거)
+    if (!zoneOverride) {
+      const confirmMsg = `[${row.product.name}] 진열요청?\n· 배정 구역: ${rm || "미지정"}\n· 현재 매장: ${storeSum}개 · 창고: ${warehouseSum}개\n· 노트: ${autoNote}`;
+      if (!window.confirm(confirmMsg)) return;
+    }
     setRequestingKey(row.key);
     try {
       const res = await fetch("/api/display-requests", {
@@ -271,7 +276,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           product_code: row.code,
-          zone_id: rm,
+          zone_id: targetZone,
+          zone_label: targetZone,
           note: autoNote,
           requested_at: new Date().toISOString(),
         }),
@@ -280,7 +286,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         const b = await res.json().catch(() => ({}));
         throw new Error((b as any).error ?? `요청 실패 (${res.status})`);
       }
-      showToast(`[${row.product.name}] 진열요청 전송 완료 · 담당자 알림 발송`, 3000);
+      showToast(`[${row.product.name}] ${targetZone || "배정구역"} 진열요청 전송 완료`, 3000);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "요청 실패";
       showToast(`요청 실패 · ${msg}`, 3000);
