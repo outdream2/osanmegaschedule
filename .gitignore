@@ -31,3 +31,7 @@ src/*.xlsx
 
 # 게시판 업로드 이미지
 uploads/board/
+
+# 🔐 Google Service Account · Drive 통합 (git 커밋 절대 금지)
+src/keys/
+keys/

@@ -1,11 +1,14 @@
 // server/googleDrive.ts
 // Google Drive 통합 · T19 (근로계약서) + T21 (이력서)
 //
-// 설정 (Supabase · app_settings 테이블 · Render 환경변수 불필요):
-//   INSERT INTO app_settings (key, value) VALUES
-//     ('google_service_account', '<JSON 전체>'::jsonb),
-//     ('google_drive_folders', '{"resume":"<FOLDER_ID>","contract":"<FOLDER_ID>"}'::jsonb)
-//   ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+// 설정 로드 우선순위:
+//   1. 파일 · src/keys/*.json (Service Account 키 · gitignore) → 최우선
+//   2. Supabase · app_settings.google_service_account (fallback)
+//
+// 폴더 ID · 하드코딩 (사용자 제공 · 2026-08-05):
+//   - 근로계약서: 1taDuOluNZxHSd_uJ7qr32xRVYFpD-IXe
+//   - 이력서:    1gEYUWD-PHzsewJkomuzWkpQA960rLkUv
+//   변경 시 · DRIVE_FOLDERS 상수 수정 or app_settings.google_drive_folders 로 override
 //
 // 사용:
 //   const url = await uploadToDrive("resume", buffer, "홍길동_이력서.pdf", "application/pdf");
@@ -14,7 +17,21 @@
 import { google } from "googleapis";
 import type { drive_v3 } from "googleapis";
 import { Readable } from "stream";
+import fs from "fs";
+import path from "path";
 import { supabase } from "../src/supabase/client";
+
+// 사용자 제공 · Drive 폴더 ID (기본값 · app_settings 로 override 가능)
+const DRIVE_FOLDERS_DEFAULT = {
+  resume: "1gEYUWD-PHzsewJkomuzWkpQA960rLkUv",
+  contract: "1taDuOluNZxHSd_uJ7qr32xRVYFpD-IXe",
+};
+
+// Service Account 키 파일 검색 경로 (우선순위)
+const KEY_FILE_DIRS = [
+  path.join(process.cwd(), "src", "keys"),
+  path.join(process.cwd(), "keys"),
+];
 
 type FolderKind = "resume" | "contract";
 
@@ -29,23 +46,60 @@ let cached: { driveClient: drive_v3.Drive | null; config: DriveConfig } = {
 };
 let initTried = false;
 
-async function loadConfig(): Promise<DriveConfig> {
-  const { data } = await supabase
-    .from("app_settings")
-    .select("key, value")
-    .in("key", ["google_service_account", "google_drive_folders"]);
-  const config: DriveConfig = {
-    serviceAccountJson: null,
-    folders: { resume: null, contract: null },
-  };
-  for (const row of (data ?? []) as any[]) {
-    if (row.key === "google_service_account") config.serviceAccountJson = row.value ?? null;
-    if (row.key === "google_drive_folders") {
-      const v = row.value ?? {};
-      config.folders.resume = v.resume ?? null;
-      config.folders.contract = v.contract ?? null;
+function loadKeyFromFile(): any | null {
+  for (const dir of KEY_FILE_DIRS) {
+    try {
+      if (!fs.existsSync(dir)) continue;
+      const files = fs.readdirSync(dir).filter(f => f.endsWith(".json"));
+      if (files.length === 0) continue;
+      // 첫번째 .json 파일 사용 (여러 개 있으면 이름 순 첫번째)
+      const filePath = path.join(dir, files.sort()[0]);
+      const raw = fs.readFileSync(filePath, "utf8");
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.type === "service_account" && parsed.private_key) {
+        console.log(`[google-drive] Service Account 키 로드 (파일): ${filePath}`);
+        return parsed;
+      }
+    } catch (e: any) {
+      console.warn(`[google-drive] 키 파일 읽기 실패 (${dir}):`, e?.message);
     }
   }
+  return null;
+}
+
+async function loadConfig(): Promise<DriveConfig> {
+  const config: DriveConfig = {
+    serviceAccountJson: null,
+    folders: { ...DRIVE_FOLDERS_DEFAULT },
+  };
+
+  // 1) 파일 우선 (src/keys/*.json)
+  const fromFile = loadKeyFromFile();
+  if (fromFile) {
+    config.serviceAccountJson = fromFile;
+  }
+
+  // 2) DB fallback (파일 없으면) + folder ID override
+  try {
+    const { data } = await supabase
+      .from("app_settings")
+      .select("key, value")
+      .in("key", ["google_service_account", "google_drive_folders"]);
+    for (const row of (data ?? []) as any[]) {
+      if (row.key === "google_service_account" && !config.serviceAccountJson) {
+        config.serviceAccountJson = row.value ?? null;
+        if (config.serviceAccountJson) console.log("[google-drive] Service Account 키 로드 (Supabase app_settings)");
+      }
+      if (row.key === "google_drive_folders") {
+        const v = row.value ?? {};
+        if (v.resume) config.folders.resume = v.resume;
+        if (v.contract) config.folders.contract = v.contract;
+      }
+    }
+  } catch (e: any) {
+    console.warn("[google-drive] app_settings 조회 실패:", e?.message);
+  }
+
   return config;
 }
 
