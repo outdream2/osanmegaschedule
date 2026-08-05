@@ -1245,12 +1245,12 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               {/* 창고1 · 창고2 · 매장1 · 매장2 · 매장3 · 5열 grid · sm 이하 3열로 wrap */}
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
                 {([
-                  { key: "warehouse1Qty" as const, label: "창고1", Icon: Warehouse, tone: "sky",     zone: null },
-                  { key: "warehouse2Qty" as const, label: "창고2", Icon: Warehouse, tone: "sky",     zone: null },
-                  { key: "store1Qty"     as const, label: "매장1", Icon: Store,     tone: "amber",   zone: liveRow.store1Zone },
-                  { key: "store2Qty"     as const, label: "매장2", Icon: Store,     tone: "amber",   zone: liveRow.store2Zone },
-                  { key: "store3Qty"     as const, label: "매장3", Icon: Store,     tone: "amber",   zone: liveRow.store3Zone },
-                ]).map(({ key, label, Icon, tone, zone }) => {
+                  { key: "warehouse1Qty" as const, label: "창고1", Icon: Warehouse, tone: "sky",     zone: null,               requestable: false },
+                  { key: "warehouse2Qty" as const, label: "창고2", Icon: Warehouse, tone: "sky",     zone: null,               requestable: false },
+                  { key: "store1Qty"     as const, label: "매장1", Icon: Store,     tone: "amber",   zone: liveRow.store1Zone, requestable: true  },
+                  { key: "store2Qty"     as const, label: "매장2", Icon: Store,     tone: "amber",   zone: liveRow.store2Zone, requestable: true  },
+                  { key: "store3Qty"     as const, label: "매장3", Icon: Store,     tone: "amber",   zone: liveRow.store3Zone, requestable: true  },
+                ]).map(({ key, label, Icon, tone, zone, requestable }) => {
                   const val = liveRow[key];
                   const toneCls = tone === "sky"
                     ? { chip: "bg-sky-50 border-sky-200 text-sky-700", label: "text-sky-700" }
@@ -1270,38 +1270,39 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                         placeholder="0"
                         className="w-full bg-white/60 border border-transparent rounded-md px-1.5 py-1 text-[13px] font-black text-slate-800 text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-violet-300"
                       />
+                      {/* T-SCAN-4-a · 매장 슬롯 · 구역별 [진열요청] 미니 버튼 (2026-08-05) */}
+                      {requestable && (
+                        <button
+                          type="button"
+                          onClick={async () => { await requestDisplay(liveRow, zone); }}
+                          disabled={requestingKey === liveRow.key}
+                          title={zone ? `${label} (${zone}) 진열요청` : `${label} 진열요청 · 구역 미지정`}
+                          className="w-full h-6 rounded-md text-[9.5px] font-black text-white bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:brightness-110 shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                        >
+                          {requestingKey === liveRow.key ? (
+                            <Loader2 size={9} className="animate-spin" />
+                          ) : (
+                            <><Megaphone size={9} /> 요청</>
+                          )}
+                        </button>
+                      )}
                     </div>
                   );
                 })}
               </div>
               {/* 힌트 */}
               <div className="text-[10px] text-slate-500 font-semibold text-center bg-slate-50/60 rounded-lg px-3 py-1.5 border border-slate-100">
-                실재고 입력 · 리스트에도 자동 반영 · 매장 부족 시 아래 [진열요청]
+                실재고 입력 · 매장 슬롯별 [요청] · 구역 단위로 진열요청 전송
               </div>
             </div>
-            {/* 액션 버튼 · [닫기] · [진열요청] */}
+            {/* 액션 버튼 · [닫기] (구역별 요청은 슬롯 안 미니 버튼에서 처리) */}
             <div className="px-4 py-3 border-t border-slate-100 bg-slate-50/40 flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setScanModal(null)}
-                className="flex-1 h-10 rounded-lg text-[12px] font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition cursor-pointer"
+                className="w-full h-10 rounded-lg text-[12px] font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition cursor-pointer"
               >
                 닫기
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  await requestDisplay(liveRow);
-                  setScanModal(null);
-                }}
-                disabled={requestingKey === liveRow.key}
-                className="flex-1 h-10 rounded-lg text-[12px] font-black text-white bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:brightness-110 shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
-              >
-                {requestingKey === liveRow.key ? (
-                  <><Loader2 size={13} className="animate-spin" /> 전송 중</>
-                ) : (
-                  <><Megaphone size={13} /> 진열요청</>
-                )}
               </button>
             </div>
           </div>
