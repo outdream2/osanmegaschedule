@@ -159,9 +159,10 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession 
         .notif-bell-shake { animation: notif-bell-shake 0.8s ease-in-out 2; transform-origin: 50% 20%; }
       `}</style>
 
-      {/* Dropdown panel */}
+      {/* Dropdown panel · 반응형 · 모바일은 fixed 로 화면 폭에 맞춤 (2026-08-05 · 왼쪽 치우침 fix) */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden"
+        <div
+          className="fixed inset-x-2 top-14 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 mx-auto sm:mx-0 max-w-[420px] bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden"
           style={{ boxShadow: "0 8px 32px rgba(15,23,42,0.14), 0 2px 8px rgba(15,23,42,0.06)" }}>
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
