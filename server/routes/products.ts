@@ -320,12 +320,11 @@ router.get("/api/products/:code", async (req, res) => {
   const code = (req.params.code ?? "").trim();
   if (!code) return res.status(400).json({ error: "code required" });
   try {
-    const PRODUCT_COLS = "product_code, product_name, spec, supplier, purchase_price, sale_price, cost_price, profit_rate, expiry_date, real_map, current_stock, optimal_stock, optimal_stock_backup, category, sale_status, hidden, barcode, brand, manufacturer, memo, note, search_keywords, min_order, warehouse_stock, store_stock";
-    let { data, error } = await supabase.from("products").select(PRODUCT_COLS).eq("product_code", code).maybeSingle();
+    let { data, error } = await supabase.from("products").select("*").eq("product_code", code).maybeSingle();
     if (error) throw new Error(error.message);
     if (!data && /^0+/.test(code)) {
       const stripped = code.replace(/^0+/, "");
-      const r2 = await supabase.from("products").select(PRODUCT_COLS).eq("product_code", stripped).maybeSingle();
+      const r2 = await supabase.from("products").select("*").eq("product_code", stripped).maybeSingle();
       if (r2.error) throw new Error(r2.error.message);
       data = r2.data;
     }

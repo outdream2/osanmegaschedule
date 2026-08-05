@@ -124,7 +124,7 @@ router.get("/api/ocr-confirmed-items", async (req, res) => {
 
   let query = supabase
     .from(TABLE)
-    .select("id, saved_at, invoice_date, supplier, product_name, product_code, quantity, unit_price, amount, balance, expiry_date, memo, image_url, image_public_id, created_at")
+    .select("*")
     .order("saved_at", { ascending: false })
     .order("id", { ascending: false });
 

@@ -52,7 +52,7 @@ router.post("/api/product-arrivals", async (req, res) => {
         supplier_summary: supplierSummary,
         note,
       }])
-      .select("id, arrival_date, checked_by, checked_by_id, total_items, total_qty, match_count, mismatch_count, expiring_count, final_decision, supplier_summary, note, created_at")
+      .select("*")
       .single();
     if (hErr) throw new Error(hErr.message);
 
@@ -89,7 +89,7 @@ router.get("/api/product-arrivals", async (req, res) => {
     const since = new Date(); since.setDate(since.getDate() - days);
     const { data, error } = await supabase
       .from("product_arrivals")
-      .select("id, arrival_date, checked_by, checked_by_id, total_items, total_qty, match_count, mismatch_count, expiring_count, final_decision, supplier_summary, note, created_at")
+      .select("*")
       .gte("arrival_date", since.toISOString())
       .order("arrival_date", { ascending: false })
       .limit(limit);
@@ -115,7 +115,7 @@ router.get("/api/product-arrivals/compare/orders", async (req, res) => {
     // 최근 발주 (order_requests)
     const { data: orders, error: oErr } = await supabase
       .from("order_requests")
-      .select("id, product_code, product_name, current_stock, optimal_stock, note, qty, request_qty, supplier, assigned_staff_id, assigned_staff_name, requested_at")
+      .select("*")
       .gte("requested_at", sinceStr)
       .order("requested_at", { ascending: false })
       .limit(1000);
@@ -133,7 +133,7 @@ router.get("/api/product-arrivals/compare/orders", async (req, res) => {
     if (arrivalIds.length > 0) {
       const { data: itemsData } = await supabase
         .from("product_arrival_items")
-        .select("id, arrival_id, product_code, product_name, supplier, qty, status, expiring")
+        .select("*")
         .in("arrival_id", arrivalIds);
       items = itemsData ?? [];
     }
@@ -190,14 +190,14 @@ router.get("/api/product-arrivals/:id", async (req, res) => {
     if (!Number.isFinite(id)) return res.status(400).json({ error: "잘못된 id" });
     const { data: header, error: hErr } = await supabase
       .from("product_arrivals")
-      .select("id, arrival_date, checked_by, checked_by_id, total_items, total_qty, match_count, mismatch_count, expiring_count, final_decision, supplier_summary, note, created_at")
+      .select("*")
       .eq("id", id)
       .maybeSingle();
     if (hErr) throw new Error(hErr.message);
     if (!header) return res.status(404).json({ error: "not found" });
     const { data: items, error: iErr } = await supabase
       .from("product_arrival_items")
-      .select("id, arrival_id, product_code, product_name, supplier, qty, status, expiring")
+      .select("*")
       .eq("arrival_id", id)
       .order("id", { ascending: true });
     if (iErr) throw new Error(iErr.message);

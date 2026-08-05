@@ -153,10 +153,7 @@ export async function getProductMap(): Promise<Record<string, ProductInfo>> {
     const map: Record<string, ProductInfo> = {};
     let from = 0;
     while (true) {
-      const { data, error } = await supabase
-        .from("products")
-        .select("product_code, product_name, spec, supplier, purchase_price, sale_price, real_map, current_stock, optimal_stock, category, expiry_date, sale_status, hidden, barcode")
-        .range(from, from + PAGE - 1);
+      const { data, error } = await supabase.from("products").select("*").range(from, from + PAGE - 1);
       if (error) throw new Error(error.message);
       if (!data || data.length === 0) break;
       for (const row of data) {

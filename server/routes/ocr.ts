@@ -522,7 +522,7 @@ router.post("/api/ocr-match", async (req, res) => {
 
 router.get("/api/ocr-synonyms", async (_req, res) => {
   try {
-    const { data, error } = await supabase.from("ocr_synonyms").select("id, prod_name_old, prod_name_new, supplier_old, supplier_new, product_code, cancelled, created_at").order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("ocr_synonyms").select("*").order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     res.json({ synonyms: data ?? [] });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -664,7 +664,7 @@ router.delete("/api/ocr-synonyms/:id", async (req, res) => {
 // ── 공급사 별칭 CRUD ──────────────────────────────────────────────────────────
 router.get("/api/ocr-supplier-aliases", async (_req, res) => {
   try {
-    const { data, error } = await supabase.from("ocr_supplier_aliases").select("id, alias, supplier_name, created_at").order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("ocr_supplier_aliases").select("*").order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     res.json({ aliases: data ?? [] });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -722,7 +722,7 @@ router.delete("/api/ocr-supplier-aliases/:id", async (req, res) => {
 
 router.get("/api/ocr-templates", async (_req, res) => {
   try {
-    const { data, error } = await supabase.from("ocr_templates").select("id, supplier_name, headers, column_mapping, updated_at").order("supplier_name");
+    const { data, error } = await supabase.from("ocr_templates").select("*").order("supplier_name");
     if (error) throw new Error(error.message);
     res.json({ templates: data ?? [] });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -1783,7 +1783,7 @@ router.get("/api/supplier-balances", async (_req, res) => {
   try {
     const { data, error } = await supabase
       .from("supplier_balances")
-      .select("id, supplier_name, invoice_date, balance, created_at")
+      .select("*")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     res.json({ balances: data ?? [] });

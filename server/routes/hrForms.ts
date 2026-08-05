@@ -95,7 +95,7 @@ function extFromNameOrMime(filename: string, mime: string): string {
 router.get("/api/hr-forms", async (req, res) => {
   try {
     const category = typeof req.query.category === "string" ? req.query.category : "";
-    let q = supabase.from("hr_forms").select("id, title, category, file_url, file_name, file_size, mime_type, storage_path, storage, uploaded_by, uploaded_by_id, created_at").order("created_at", { ascending: false });
+    let q = supabase.from("hr_forms").select("*").order("created_at", { ascending: false });
     if (category && ALLOWED_CATEGORIES.has(category)) q = q.eq("category", category);
     const { data, error } = await q;
     if (error) throw new Error(error.message);
@@ -202,7 +202,7 @@ router.post("/api/hr-forms", async (req, res) => {
     const { data, error } = await supabase
       .from("hr_forms")
       .insert([insertRow])
-      .select("id, title, category, file_url, file_name, file_size, mime_type, storage_path, storage, uploaded_by, uploaded_by_id, created_at")
+      .select("*")
       .single();
     if (error) {
       // 메타 저장 실패 · 업로드한 파일 정리 시도

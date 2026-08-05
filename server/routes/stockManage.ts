@@ -1605,7 +1605,7 @@ router.get("/api/stock-manage/raw", async (req, res) => {
   try {
     let query = supabase
       .from("stock_history")
-      .select("id, snapshot_date, product_code, product_name, supplier_name, supplier_code, spec, opening_stock, purchase_qty, sale_qty, disposal_qty, closing_stock, supply_amount, total_amount, purchase_price, sale_price, real_map, period_type, period_start_date")
+      .select("*")
       .order("supplier_name", { ascending: true })
       .limit(limit);
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
@@ -1636,9 +1636,9 @@ router.get("/api/stock-manage/product-info", async (req, res) => {
   if (!code) return res.status(400).json({ error: "code 필요" });
   try {
     const [prodRes, histRes, invRes] = await Promise.all([
-      supabase.from("products").select("product_code, product_name, spec, supplier, purchase_price, sale_price, cost_price, profit_rate, expiry_date, real_map, current_stock, optimal_stock, category, sale_status, hidden, barcode, brand, manufacturer, memo").eq("product_code", code).maybeSingle(),
-      supabase.from("stock_history").select("id, snapshot_date, product_code, product_name, supplier_name, spec, opening_stock, purchase_qty, sale_qty, disposal_qty, closing_stock, supply_amount, total_amount, purchase_price, sale_price, real_map, period_type, period_start_date").eq("product_code", code).order("snapshot_date", { ascending: false }).limit(200),
-      supabase.from("inventory_checks").select("id, product_code, product_name, checked_at, checked_by, warehouse_stock, warehouse1_stock, warehouse2_stock, store_stock, store_stock_2, store3_stock, store1_zone, store2_zone, store3_zone, system_stock, optimal_stock, status, note").eq("product_code", code).order("checked_at", { ascending: false }).limit(50),
+      supabase.from("products").select("*").eq("product_code", code).maybeSingle(),
+      supabase.from("stock_history").select("*").eq("product_code", code).order("snapshot_date", { ascending: false }).limit(200),
+      supabase.from("inventory_checks").select("*").eq("product_code", code).order("checked_at", { ascending: false }).limit(50),
     ]);
     if (prodRes.error && !/does not exist/i.test(prodRes.error.message)) throw new Error(prodRes.error.message);
     res.json({
