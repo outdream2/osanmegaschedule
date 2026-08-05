@@ -5,19 +5,22 @@
 // - [사직서 제출·PDF 다운] · POST /api/resignations · 관리자 알림
 // - 직원 · 세션 자동 채움 · 자유 편집 가능
 // - iOS/Gemini/ContractWriterPage 참조만 · 절대 수정 안 함
+//
+// 2026-08-05 · 실제 사직서 스펙 반영 (강남성 · 코스트팜):
+//   1) [사직서 정보] · 성명·생년월일·사직일·사직서 제출일·수신·사유
+//   2) [임금·퇴직금 등 금품 지급기일 동의] · 지급일 + 동의 서명
+//   3) [기타 사항 동의] · 노동관계법령상 권리·영업비밀 2조항 + 동의 서명
+//   4) 퇴사 사유 4가지 (일신상의 사유·개인사정·이직·기타)
+//
 // 준수 원칙:
 //   - memory feedback_ui_principles · 최소 14px · 3단 위계 · 고급 톤
 //   - memory feedback_ui_consult · 통일된 디자인 · slate + rose 팔레트 · rounded-xl · shadow-sm
 //   - memory feedback_git_push · remote push 절대 금지
-//
-// 리서치 · 한국 사직서 표준 항목:
-//   회사명·대표자 · 근로자 성명·사번·부서/직급 · 입사일·근속기간
-//   · 사직 희망일 · 퇴사 사유 · 인수인계 · 서명·작성일
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   SignOut, User, ClipboardText, CalendarBlank, Notepad, Eraser,
   DownloadSimple, ArrowsClockwise, Warning, Check, Buildings, Signature,
-  PaperPlaneTilt,
+  PaperPlaneTilt, Cake, Money, ShieldCheck,
 } from "@phosphor-icons/react";
 import SignaturePad from "react-signature-canvas";
 import html2canvas from "html2canvas-pro"; // 2026-08-04 · Tailwind v4 oklch 지원 · drop-in 교체
@@ -47,17 +50,23 @@ interface ResignationForm {
   employeeId: number | null;
   employeeName: string;
   employeeNo: string;         // 사번 (있으면)
+  birthDate: string;          // YYYY-MM-DD (생년월일 · 2026-08-05 추가)
   department: string;         // 부서
   position: string;           // 직급/직위
   hireDate: string;           // YYYY-MM-DD (입사일)
 
   // 사직 정보
   lastWorkDate: string;       // YYYY-MM-DD (마지막 근무일 = 사직 희망일)
+  submitDate: string;         // YYYY-MM-DD (사직서 제출일 · 2026-08-05 추가)
+  recipient: string;          // 수신 (예: "코스트팜(Costpharm) 대표") · 2026-08-05 추가
 
   // 사유
   reason: string;             // 표준 사유 (드롭다운 · 자유 입력 가능)
   reasonDetail: string;       // 상세 사유 (textarea)
   handoverNotes: string;      // 인수인계 사항 (textarea)
+
+  // 금품 지급기일 동의 (2026-08-05 추가)
+  payoutDate: string;         // YYYY-MM-DD (임금·퇴직금 지급일)
 
   // 회사
   employerName: string;       // 대표자
@@ -68,15 +77,11 @@ interface ResignationForm {
 // 상수
 // ─────────────────────────────────────────────────────────────────────────────
 
-// 표준 사유 (한국 사직서 관례)
+// 표준 사유 (2026-08-05 · 4가지로 제한)
 const REASON_OPTIONS = [
-  "개인 사정",
-  "건강상의 이유",
+  "일신상의 사유",
+  "개인사정",
   "이직",
-  "학업",
-  "결혼",
-  "육아",
-  "가족 돌봄",
   "기타",
 ];
 
@@ -85,6 +90,9 @@ const DEFAULT_COMPANY = {
   employerName: "강남성",
   companyName: "오산 메가타운 약국",
 };
+
+// 기본 수신처 (실제 사직서 스펙)
+const DEFAULT_RECIPIENT = "코스트팜(Costpharm) 대표";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 유틸
@@ -98,6 +106,16 @@ const todayIso = (): string => {
 // 오늘 + N일
 const addDaysIso = (days: number): string => {
   const d = new Date();
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+// 특정 기준일자 + N일 (근로기준법 · 금품 지급기일 14일 계산용)
+const addDaysToIso = (baseIso: string, days: number): string => {
+  if (!baseIso) return addDaysIso(days);
+  const m = baseIso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return addDaysIso(days);
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
   d.setDate(d.getDate() + days);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
@@ -125,20 +143,28 @@ const calcTenure = (hire: string, end: string): string => {
   return `${years}년 ${rem}개월`;
 };
 
-const emptyForm = (): ResignationForm => ({
-  employeeId: null,
-  employeeName: "",
-  employeeNo: "",
-  department: "",
-  position: "",
-  hireDate: "",
-  lastWorkDate: addDaysIso(30),
-  reason: "개인 사정",
-  reasonDetail: "",
-  handoverNotes: "",
-  employerName: DEFAULT_COMPANY.employerName,
-  companyName: DEFAULT_COMPANY.companyName,
-});
+const emptyForm = (): ResignationForm => {
+  const submit = todayIso();
+  return {
+    employeeId: null,
+    employeeName: "",
+    employeeNo: "",
+    birthDate: "",
+    department: "",
+    position: "",
+    hireDate: "",
+    lastWorkDate: addDaysIso(30),
+    submitDate: submit,
+    recipient: DEFAULT_RECIPIENT,
+    reason: "일신상의 사유",
+    reasonDetail: "",
+    handoverNotes: "",
+    // 근로기준법 · 퇴직 후 14일 이내 금품 지급 (마지막 근무일 + 5일 기본값 · 사용자 조정 가능)
+    payoutDate: addDaysToIso(addDaysIso(30), 5),
+    employerName: DEFAULT_COMPANY.employerName,
+    companyName: DEFAULT_COMPANY.companyName,
+  };
+};
 
 // FieldLabel · 공통 컴포넌트 사용 (../common/FieldLabel) · 2026-08-03 (#199)
 
@@ -227,7 +253,9 @@ const SignArea: React.FC<{
 const ResignationPreview = React.forwardRef<HTMLDivElement, {
   form: ResignationForm;
   employeeSignUrl: string | null;
-}>(({ form, employeeSignUrl }, ref) => {
+  payoutSignUrl: string | null;
+  otherSignUrl: string | null;
+}>(({ form, employeeSignUrl, payoutSignUrl, otherSignUrl }, ref) => {
   const tenure = calcTenure(form.hireDate, form.lastWorkDate);
   const reasonText = form.reason === "기타" && form.reasonDetail
     ? form.reasonDetail
@@ -245,86 +273,125 @@ const ResignationPreview = React.forwardRef<HTMLDivElement, {
       }}
     >
       {/* 제목 */}
-      <div className="text-center mb-10">
+      <div className="text-center mb-8">
         <h2 className="text-3xl font-black tracking-[0.3em] text-slate-900">
           사&nbsp;직&nbsp;서
         </h2>
       </div>
 
-      {/* 인적사항 표 (2열 · 근로계약서와 통일된 톤) */}
-      <table className="w-full text-[14px] mb-8 border-collapse">
-        <tbody>
-          <tr className="border-t-2 border-slate-800">
-            <th className="w-[110px] py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">성명</th>
-            <td className="py-2 px-3 text-slate-800 font-semibold border-b border-slate-200">{form.employeeName || "-"}</td>
-            <th className="w-[110px] py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">사번</th>
-            <td className="py-2 px-3 text-slate-800 font-semibold border-b border-slate-200">{form.employeeNo || "-"}</td>
-          </tr>
-          <tr>
-            <th className="py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">부서</th>
-            <td className="py-2 px-3 text-slate-800 font-semibold border-b border-slate-200">{form.department || "-"}</td>
-            <th className="py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">직급</th>
-            <td className="py-2 px-3 text-slate-800 font-semibold border-b border-slate-200">{form.position || "-"}</td>
-          </tr>
-          <tr>
-            <th className="py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">입사일</th>
-            <td className="py-2 px-3 text-slate-800 font-semibold border-b border-slate-200">{fmtKoreanDate(form.hireDate) || "-"}</td>
-            <th className="py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">근속기간</th>
-            <td className="py-2 px-3 text-slate-800 font-semibold border-b border-slate-200">{tenure}</td>
-          </tr>
-          <tr>
-            <th className="py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b-2 border-slate-800 pl-3">사직 희망일</th>
-            <td className="py-2 px-3 text-slate-800 font-black border-b-2 border-slate-800" colSpan={3}>
-              {fmtKoreanDate(form.lastWorkDate) || "-"}
-              <span className="text-[12px] text-slate-500 font-semibold ml-2">
-                (해당일자를 마지막 근무일로 함)
-              </span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      {/* [1] 사직서 정보 */}
+      <div className="mb-6">
+        <div className="text-[13px] font-black text-slate-800 mb-2 bg-slate-100 px-3 py-1.5 rounded-md border-l-4 border-rose-500">
+          [ 사직서 정보 ]
+        </div>
+        <table className="w-full text-[14px] border-collapse">
+          <tbody>
+            <tr className="border-t-2 border-slate-800">
+              <th className="w-[110px] py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">성명</th>
+              <td className="py-2 px-3 text-slate-800 font-semibold border-b border-slate-200">{form.employeeName || "-"}</td>
+              <th className="w-[110px] py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">생년월일</th>
+              <td className="py-2 px-3 text-slate-800 font-semibold border-b border-slate-200">{fmtKoreanDate(form.birthDate) || "-"}</td>
+            </tr>
+            <tr>
+              <th className="py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">부서 / 직급</th>
+              <td className="py-2 px-3 text-slate-800 font-semibold border-b border-slate-200">
+                {form.department || "-"}{form.position ? ` / ${form.position}` : ""}
+              </td>
+              <th className="py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">입사일</th>
+              <td className="py-2 px-3 text-slate-800 font-semibold border-b border-slate-200">{fmtKoreanDate(form.hireDate) || "-"}</td>
+            </tr>
+            <tr>
+              <th className="py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">사직일<br/><span className="text-[11px] font-semibold text-slate-500">(마지막 근무일)</span></th>
+              <td className="py-2 px-3 text-slate-800 font-black border-b border-slate-200">{fmtKoreanDate(form.lastWorkDate) || "-"}</td>
+              <th className="py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">근속기간</th>
+              <td className="py-2 px-3 text-slate-800 font-semibold border-b border-slate-200">{tenure}</td>
+            </tr>
+            <tr>
+              <th className="py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">사직서 제출일</th>
+              <td className="py-2 px-3 text-slate-800 font-semibold border-b border-slate-200">{fmtKoreanDate(form.submitDate) || "-"}</td>
+              <th className="py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">수신</th>
+              <td className="py-2 px-3 text-slate-800 font-semibold border-b border-slate-200">{form.recipient || "-"} 귀하</td>
+            </tr>
+            <tr>
+              <th className="py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b-2 border-slate-800 pl-3 align-top">사유</th>
+              <td className="py-2 px-3 text-slate-800 font-semibold border-b-2 border-slate-800 leading-7" colSpan={3}>
+                상기자는 <span className="font-black">{reasonText || "일신상의 사유"}</span>(으)로 사직하고자 하오니 처리하여 주시기 바랍니다.
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-      {/* 본문 (표준 문구) */}
-      <div className="mb-8 text-[14px] text-slate-800 leading-8">
-        <p className="mb-4">
-          본인은 <span className="font-bold">{reasonText || "개인 사정"}</span>(으)로 인하여{" "}
-          <span className="font-bold underline underline-offset-4">{fmtKoreanDate(form.lastWorkDate) || "(사직 희망일)"}</span>{" "}
-          자로 사직하고자 하오니 재가하여 주시기 바랍니다.
-        </p>
-        <p>
-          그동안 <span className="font-semibold">{form.companyName || "회사"}</span>에서 근무한 기간 동안 베풀어 주신 배려에 진심으로 감사드리며,
-          퇴사일까지 맡은 업무와 인수인계에 최선을 다하겠습니다.
-        </p>
-      </div>
-
-      {/* 사유 상세 */}
-      {form.reasonDetail && form.reason !== "기타" && (
-        <div className="mb-6">
-          <div className="text-[13px] font-black text-slate-800 mb-1.5 pb-1 border-b border-slate-200">
-            사유 상세
-          </div>
-          <div className="text-[13px] text-slate-700 whitespace-pre-wrap leading-7 pl-1">
+        {/* 사유 상세 (기타 사유가 아닌 경우에만 별도 표시) */}
+        {form.reasonDetail && form.reason !== "기타" && (
+          <div className="mt-3 pl-3 text-[13px] text-slate-700 whitespace-pre-wrap leading-7">
+            <span className="font-bold text-slate-600">· 상세: </span>
             {form.reasonDetail}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 인수인계 사항 */}
-      {form.handoverNotes && (
-        <div className="mb-8">
-          <div className="text-[13px] font-black text-slate-800 mb-1.5 pb-1 border-b border-slate-200">
-            인수인계 사항
-          </div>
-          <div className="text-[13px] text-slate-700 whitespace-pre-wrap leading-7 pl-1">
+        {/* 인수인계 사항 */}
+        {form.handoverNotes && (
+          <div className="mt-3 pl-3 text-[13px] text-slate-700 whitespace-pre-wrap leading-7">
+            <span className="font-bold text-slate-600">· 인수인계: </span>
             {form.handoverNotes}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* 작성일 · 서명 */}
-      <div className="mt-12">
-        <div className="text-center text-[15px] text-slate-800 font-semibold mb-8">
-          {fmtKoreanDate(todayIso())}
+      {/* [2] 임금·퇴직금 등 금품 지급기일 동의 */}
+      <div className="mb-6">
+        <div className="text-[13px] font-black text-slate-800 mb-2 bg-slate-100 px-3 py-1.5 rounded-md border-l-4 border-rose-500">
+          [ 임금, 퇴직금 등 금품 지급기일 동의 ]
+        </div>
+        <div className="text-[13px] text-slate-800 leading-7 px-2 py-2">
+          상기 본인은 퇴직일 현재 이미 발생한 임금, 퇴직금, 그 밖의 일체의 금품을{" "}
+          <span className="font-black">「{fmtKoreanDate(form.payoutDate) || "지급일"}」</span>에 지급받는 것에 동의합니다.
+        </div>
+        <div className="flex items-center justify-end gap-3 text-[14px] text-slate-800 mt-2 pr-2">
+          <span className="font-semibold">동의자</span>
+          <span className="font-black">{form.employeeName || "-"}</span>
+          <span className="font-semibold">(서명)</span>
+          <div className="w-32 h-14 border-b-2 border-slate-800 flex items-end justify-center">
+            {payoutSignUrl && (
+              <img src={payoutSignUrl} alt="동의 서명" className="max-h-14 max-w-full object-contain" />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* [3] 기타 사항 동의 */}
+      <div className="mb-6">
+        <div className="text-[13px] font-black text-slate-800 mb-2 bg-slate-100 px-3 py-1.5 rounded-md border-l-4 border-rose-500">
+          [ 기타 사항 동의 ]
+        </div>
+        <ol className="list-decimal pl-6 text-[13px] text-slate-800 leading-7 space-y-2">
+          <li>
+            상기 본인은 귀사와 근로관계 중 근로에 대한 임금(연장, 야간, 휴일), 퇴직금(발생 시),
+            연차미사용수당(발생 시), 휴일 및 휴게시간 등 노동관계법령상 권리를 부여 및 지급 받았음을
+            확인하며, 추후 노동관계법령상 권리에 관하여 민사, 형사, 행정상 이의를 제기하지 않을 것을
+            동의합니다.
+          </li>
+          <li>
+            귀사와의 근로관계 중 알게된 영업비밀, 고객정보 및 경영상 관련 정보 일체를 누설하지 않을 것을
+            동의합니다.
+          </li>
+        </ol>
+        <div className="flex items-center justify-end gap-3 text-[14px] text-slate-800 mt-3 pr-2">
+          <span className="font-semibold">동의자</span>
+          <span className="font-black">{form.employeeName || "-"}</span>
+          <span className="font-semibold">(서명)</span>
+          <div className="w-32 h-14 border-b-2 border-slate-800 flex items-end justify-center">
+            {otherSignUrl && (
+              <img src={otherSignUrl} alt="기타 동의 서명" className="max-h-14 max-w-full object-contain" />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 작성일 · 신청인 서명 */}
+      <div className="mt-10">
+        <div className="text-center text-[15px] text-slate-800 font-semibold mb-6">
+          {fmtKoreanDate(form.submitDate || todayIso())}
         </div>
 
         <div className="flex flex-col items-end gap-3 pr-2">
@@ -341,9 +408,9 @@ const ResignationPreview = React.forwardRef<HTMLDivElement, {
         </div>
 
         {/* 수신 · 대표자 */}
-        <div className="mt-10 pt-4 border-t-2 border-slate-800 text-center">
+        <div className="mt-8 pt-4 border-t-2 border-slate-800 text-center">
           <div className="text-[15px] font-black text-slate-800 tracking-wider">
-            {form.companyName || "-"}&nbsp;&nbsp;대표이사 <span className="ml-1">{form.employerName || "-"}</span> 귀하
+            {form.recipient || `${form.companyName} 대표`} <span className="ml-1">귀하</span>
           </div>
         </div>
       </div>
@@ -366,6 +433,8 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
   const [empSearchOpen, setEmpSearchOpen] = useState(false);
 
   const employeePadRef = useRef<SignatureCanvasType | null>(null);
+  const payoutPadRef = useRef<SignatureCanvasType | null>(null);
+  const otherPadRef = useRef<SignatureCanvasType | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
@@ -373,6 +442,8 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
   const [notice, setNotice] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
 
   const [employeeSignUrl, setEmployeeSignUrl] = useState<string | null>(null);
+  const [payoutSignUrl, setPayoutSignUrl] = useState<string | null>(null);
+  const [otherSignUrl, setOtherSignUrl] = useState<string | null>(null);
 
   // ── 직원 목록 로드 ────────────────────────────────────────────────────
   useEffect(() => {
@@ -414,6 +485,12 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
     setForm(prev => ({ ...prev, [key]: val }));
   }, []);
 
+  // 사직일 변경 시 · 지급일 미변경(자동) 상태면 재계산 (근로기준법 · 14일 이내 관례)
+  // → 사용자가 직접 조정한 경우엔 그대로 유지
+  useEffect(() => {
+    // 별도 자동추적 하지 않음 · 사용자가 자유롭게 조정
+  }, [form.lastWorkDate]);
+
   // ── 직원 선택 · 자동 채움 ─────────────────────────────────────────────
   const onSelectEmployee = (empIdRaw: string) => {
     if (!empIdRaw) {
@@ -431,6 +508,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
       department: (emp as any).workplace || prev.department, // "매장"/"창고"
       position: emp.position || prev.position,               // "약사"/"매장"/"창고"/...
       hireDate: (emp as any).hire_date || (emp as any).hireDate || prev.hireDate,
+      birthDate: (emp as any).birth_date || (emp as any).birthDate || prev.birthDate,
     }));
   };
 
@@ -439,6 +517,16 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
       setEmployeeSignUrl(
         employeePadRef.current && !employeePadRef.current.isEmpty()
           ? employeePadRef.current.toDataURL("image/png")
+          : null
+      );
+      setPayoutSignUrl(
+        payoutPadRef.current && !payoutPadRef.current.isEmpty()
+          ? payoutPadRef.current.toDataURL("image/png")
+          : null
+      );
+      setOtherSignUrl(
+        otherPadRef.current && !otherPadRef.current.isEmpty()
+          ? otherPadRef.current.toDataURL("image/png")
           : null
       );
     } catch {
@@ -450,7 +538,11 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
     if (!window.confirm("입력한 모든 내용과 서명을 초기화합니다. 계속하시겠습니까?")) return;
     setForm(emptyForm());
     employeePadRef.current?.clear();
+    payoutPadRef.current?.clear();
+    otherPadRef.current?.clear();
     setEmployeeSignUrl(null);
+    setPayoutSignUrl(null);
+    setOtherSignUrl(null);
     setNotice(null);
   };
 
@@ -737,8 +829,19 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                   className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
                 />
               </div>
-              {/* 입사일 + 근속기간(자동) */}
+              {/* 생년월일 + 입사일 한 줄 */}
               <div className="grid grid-cols-2 gap-1.5">
+                <div>
+                  <div className="text-[11px] text-slate-400 font-semibold mb-0.5 flex items-center gap-1">
+                    <Cake size={11} weight="fill" />생년월일
+                  </div>
+                  <input
+                    type="date"
+                    value={form.birthDate}
+                    onChange={(e) => upd("birthDate", e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition"
+                  />
+                </div>
                 <div>
                   <div className="text-[11px] text-slate-400 font-semibold mb-0.5">입사일</div>
                   <input
@@ -748,11 +851,12 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                     className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition"
                   />
                 </div>
-                <div>
-                  <div className="text-[11px] text-slate-400 font-semibold mb-0.5">근속기간 (자동)</div>
-                  <div className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-700 font-semibold">
-                    {_tenure}
-                  </div>
+              </div>
+              {/* 근속기간 (자동) */}
+              <div>
+                <div className="text-[11px] text-slate-400 font-semibold mb-0.5">근속기간 (자동)</div>
+                <div className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-700 font-semibold">
+                  {_tenure}
                 </div>
               </div>
             </div>
@@ -760,7 +864,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
             {/* 사직 정보 */}
             <div className="flex flex-col gap-1.5">
               <FieldLabel icon={<CalendarBlank size={12} weight="fill" className="text-slate-400" />} required>
-                사직 희망일 (마지막 근무일)
+                사직일 (마지막 근무일)
               </FieldLabel>
               <input
                 type="date"
@@ -774,10 +878,36 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
               </p>
             </div>
 
-            {/* 퇴사 사유 */}
+            {/* 제출일 + 수신 */}
+            <div className="grid grid-cols-2 gap-1.5">
+              <div>
+                <FieldLabel icon={<CalendarBlank size={12} weight="fill" className="text-slate-400" />}>
+                  사직서 제출일
+                </FieldLabel>
+                <input
+                  type="date"
+                  value={form.submitDate}
+                  onChange={(e) => upd("submitDate", e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition"
+                />
+              </div>
+              <div>
+                <FieldLabel icon={<Buildings size={12} weight="fill" className="text-slate-400" />}>
+                  수신
+                </FieldLabel>
+                <input
+                  type="text"
+                  value={form.recipient}
+                  onChange={(e) => upd("recipient", e.target.value)}
+                  placeholder="예: 코스트팜(Costpharm) 대표"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
+                />
+              </div>
+            </div>
+
+            {/* 퇴사 사유 (2026-08-05 · 4가지) */}
             <div className="flex flex-col gap-1.5">
               <FieldLabel required>퇴사 사유</FieldLabel>
-              {/* 사유 버튼 그리드 (모바일 친화) */}
               <div className="grid grid-cols-4 gap-1">
                 {REASON_OPTIONS.map(r => {
                   const active = form.reason === r;
@@ -829,6 +959,37 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
               />
             </div>
 
+            {/* 금품 지급기일 동의 */}
+            <div className="flex flex-col gap-1.5 border-t border-slate-100 pt-2.5">
+              <FieldLabel icon={<Money size={12} weight="fill" className="text-slate-400" />}>
+                금품 지급기일 (임금·퇴직금 등)
+              </FieldLabel>
+              <input
+                type="date"
+                value={form.payoutDate}
+                onChange={(e) => upd("payoutDate", e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition"
+              />
+              <p className="text-[11px] text-slate-400 leading-snug">
+                * 근로기준법 § 36 · 퇴직 후 14일 이내 지급 원칙 · 당사자 합의로 연장 가능
+              </p>
+              <SignArea label="금품 지급기일 동의 서명" padRef={payoutPadRef} />
+            </div>
+
+            {/* 기타 사항 동의 */}
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel icon={<ShieldCheck size={12} weight="fill" className="text-slate-400" />}>
+                기타 사항 동의 (권리 확인 · 영업비밀 유지)
+              </FieldLabel>
+              <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-[12px] text-slate-600 leading-6">
+                <ol className="list-decimal pl-4 space-y-1">
+                  <li>노동관계법령상 권리(임금·퇴직금·연차미사용수당·휴게시간 등) 지급 확인 및 이의 미제기</li>
+                  <li>재직 중 알게된 영업비밀·고객정보·경영정보 누설 금지</li>
+                </ol>
+              </div>
+              <SignArea label="기타 사항 동의 서명" padRef={otherPadRef} />
+            </div>
+
             {/* 회사 정보 */}
             <div className="flex flex-col gap-1.5">
               <FieldLabel icon={<Buildings size={12} weight="fill" className="text-slate-400" />}>
@@ -852,24 +1013,24 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
               </div>
             </div>
 
-            {/* 서명 영역 */}
+            {/* 서명 영역 · 신청인 */}
             <div className="border-t border-slate-100 pt-2.5">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
                   <Signature size={13} weight="fill" className="text-slate-400" />
-                  <span className="text-[12px] font-bold text-slate-600">서명 (근로자)</span>
+                  <span className="text-[12px] font-bold text-slate-600">신청인 서명</span>
                 </div>
                 <button
                   type="button"
                   onClick={refreshSignaturePreview}
                   className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold transition-colors cursor-pointer"
-                  title="우측 사직서에 서명 반영"
+                  title="우측 사직서에 서명 반영 (3개 서명 모두)"
                 >
                   <ArrowsClockwise size={11} />
                   미리보기 반영
                 </button>
               </div>
-              <SignArea label="근로자 서명" padRef={employeePadRef} />
+              <SignArea label="신청인 서명" padRef={employeePadRef} />
 
               {/* 사직서 제출 · PDF 다운 */}
               <div className="mt-3 flex flex-col sm:flex-row items-stretch sm:justify-end gap-2">
@@ -915,6 +1076,8 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                 ref={previewRef}
                 form={form}
                 employeeSignUrl={employeeSignUrl}
+                payoutSignUrl={payoutSignUrl}
+                otherSignUrl={otherSignUrl}
               />
             </div>
           </section>
