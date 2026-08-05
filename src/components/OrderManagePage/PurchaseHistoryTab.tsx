@@ -1003,6 +1003,8 @@ export const PurchaseHistoryTab: React.FC = () => {
             dividerColor="sky"
             wrapLeft={false}
             wrapRight={false}
+            /* 2026-08-05 · 모바일 max-h-[42vh] 기본 제한 · 상품 리스트 안 보임 해결 */
+            leftClassName="max-h-[80vh] lg:max-h-none"
             className="flex-1 min-h-0 gap-2 lg:gap-0"
             mobileRightAsModal={true}
             mobileModalTitle={selectedProduct?.product_name ?? "상품 상세"}
