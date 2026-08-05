@@ -2356,6 +2356,26 @@ const ExtendContractModal: React.FC<{
 const DRAFT_STORAGE_KEY = "megatown_contract_writer_draft";
 const DRAFT_TIMESTAMP_KEY = "megatown_contract_writer_draft_ts";
 
+// T-W (2026-08-05) · 좌측 카드 접기/펴기 · localStorage 저장 · 기본 모두 펼침
+const CARD_COLLAPSE_STORAGE_KEY = "contractWriter:cardCollapsed";
+type CardKey = "employee" | "workCondition" | "wage" | "period" | "wageCompare" | "employerEtc";
+type CardCollapsedMap = Partial<Record<CardKey, boolean>>;
+
+function loadCardCollapsedMap(): CardCollapsedMap {
+  try {
+    const raw = localStorage.getItem(CARD_COLLAPSE_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object") return parsed as CardCollapsedMap;
+  } catch { /* silent */ }
+  return {};
+}
+
+function saveCardCollapsedMap(map: CardCollapsedMap): void {
+  try { localStorage.setItem(CARD_COLLAPSE_STORAGE_KEY, JSON.stringify(map)); }
+  catch { /* silent */ }
+}
+
 const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, onBack, onNavigate, onLogout, embedded = false }) => {
   // ── T14/Phase B · 직급별 기본 시급 로드 (useSettings) · 사용자 편집 가능 유지
   const settings = useSettings();
@@ -2401,6 +2421,17 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const [includeIncomeTax, setIncludeIncomeTax] = useState<boolean>(false);
   // T-Q · 실수령액 상세 카드 접기/펼치기 · default 펼침
   const [netDetailOpen, setNetDetailOpen] = useState<boolean>(true);
+
+  // T-W (2026-08-05) · 좌측 카드 접기/펴기 상태 · localStorage 지속
+  const [cardCollapsed, setCardCollapsed] = useState<CardCollapsedMap>(() => loadCardCollapsedMap());
+  const toggleCard = useCallback((key: CardKey) => {
+    setCardCollapsed(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      saveCardCollapsedMap(next);
+      return next;
+    });
+  }, []);
+  const isCardCollapsed = useCallback((key: CardKey) => Boolean(cardCollapsed[key]), [cardCollapsed]);
 
   // T-R (2026-08-05) · 작성 방식 · [여기서 작성] vs [PDF 업로드]
   const [writeMode, setWriteMode] = useState<"form" | "upload">("form");
@@ -3434,16 +3465,24 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       {writeMode === "form" && (<>
 
       {/* ═══════════════════════════════════════════════════
-          카드 1 · 근로자 정보
+          카드 1 · 근로자 정보 (collapsible · T-W)
       ═══════════════════════════════════════════════════ */}
       <div className={cardBase}>
-        {/* 카드 헤더 */}
-        <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+        {/* 카드 헤더 (클릭 · 접기/펴기) */}
+        <button
+          type="button"
+          onClick={() => toggleCard("employee")}
+          className="flex items-center gap-2 pb-2 border-b border-slate-100 cursor-pointer hover:opacity-80 transition-opacity w-full text-left"
+          aria-expanded={!isCardCollapsed("employee")}
+        >
           <div className="w-6 h-6 rounded-md bg-violet-100 flex items-center justify-center shrink-0">
             <User size={13} weight="fill" className="text-violet-600" />
           </div>
           <span className="text-[12px] font-black text-slate-700">근로자 정보</span>
-        </div>
+          <CaretDown size={11} weight="bold" className={`ml-auto text-slate-400 transition-transform ${isCardCollapsed("employee") ? "-rotate-90" : ""}`} />
+        </button>
+
+        {!isCardCollapsed("employee") && (<>
 
         {empError && (
           <div className="rounded-lg bg-rose-50 border border-rose-200 px-3 py-1.5 text-[12px] text-rose-700 font-semibold">
@@ -3710,6 +3749,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             </div>
           </div>
         </div>
+        </>)}
       </div>
       {/* /카드 1 */}
 
@@ -3718,10 +3758,18 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       ═══════════════════════════════════════════════════ */}
       <div className={cardBase}>
         <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-          <div className="w-6 h-6 rounded-md bg-indigo-100 flex items-center justify-center shrink-0">
-            <ClipboardText size={13} weight="fill" className="text-indigo-600" />
-          </div>
-          <span className="text-[12px] font-black text-slate-700">근무조건</span>
+          <button
+            type="button"
+            onClick={() => toggleCard("workCondition")}
+            className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity text-left"
+            aria-expanded={!isCardCollapsed("workCondition")}
+          >
+            <div className="w-6 h-6 rounded-md bg-indigo-100 flex items-center justify-center shrink-0">
+              <ClipboardText size={13} weight="fill" className="text-indigo-600" />
+            </div>
+            <span className="text-[12px] font-black text-slate-700">근무조건</span>
+            <CaretDown size={11} weight="bold" className={`text-slate-400 transition-transform ${isCardCollapsed("workCondition") ? "-rotate-90" : ""}`} />
+          </button>
           {monthlyCalc && (
             <span
               className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800"
@@ -3741,6 +3789,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             </span>
           )}
         </div>
+
+        {!isCardCollapsed("workCondition") && (<>
 
         {/* 1행 · 계약 유형 · 근무 요일 */}
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-start">
@@ -3837,6 +3887,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             </select>
           </div>
         </div>
+        </>)}
       </div>
       {/* /카드 2 (통합) */}
 
@@ -3845,10 +3896,18 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       ═══════════════════════════════════════════════════ */}
       <div className="rounded-xl border border-emerald-200 bg-white p-3 flex flex-col gap-3 shadow-sm">
         <div className="flex items-center gap-2 pb-2 border-b border-emerald-100">
-          <div className="w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center shrink-0">
-            <Money size={13} weight="fill" className="text-emerald-600" />
-          </div>
-          <span className="text-[12px] font-black text-slate-700">임금 계산</span>
+          <button
+            type="button"
+            onClick={() => toggleCard("wage")}
+            className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity text-left"
+            aria-expanded={!isCardCollapsed("wage")}
+          >
+            <div className="w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center shrink-0">
+              <Money size={13} weight="fill" className="text-emerald-600" />
+            </div>
+            <span className="text-[12px] font-black text-slate-700">임금 계산</span>
+            <CaretDown size={11} weight="bold" className={`text-slate-400 transition-transform ${isCardCollapsed("wage") ? "-rotate-90" : ""}`} />
+          </button>
           <label className="ml-auto inline-flex items-center gap-1.5 cursor-pointer select-none">
             <input type="checkbox" checked={form.useWageComponents} onChange={(e) => upd("useWageComponents", e.target.checked)}
               className="w-4 h-4 rounded accent-indigo-600 cursor-pointer" />
@@ -3856,7 +3915,98 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           </label>
         </div>
 
-        {/* T-V (2026-08-05) · 4-col 요약 표 제거 · 목표세후 UI 제거 · 임금 구성표 = 주 컨텐츠 (아래 위치) */}
+        {!isCardCollapsed("wage") && (<>
+
+        {/* T-W (2026-08-05) · 희망 세후 수령액 → 임금구성 자동 역산 (사용자 요청 3번 복원) */}
+        {(() => {
+          const wd = Number(form.weekdayHourly) || 0;
+          const currentGross = computeWageFromHourlyDual(wd, wd, form.wageComponents).total
+            + (form.wageComponents.mealAllowance || 0)
+            + (form.wageComponents.vehicleAllowance || 0);
+          const currentIns = computeInsurance(currentGross);
+          const currentTax = computeIncomeTax(currentGross);
+          const currentNet = includeIncomeTax
+            ? Math.max(0, currentGross - currentIns.total - currentTax.total)
+            : Math.max(0, currentGross - currentIns.total);
+          const monthlyHours = form.wageComponents.basicSalary.hours
+            + form.wageComponents.basicSalary.minutes / 60;
+
+          const applyTargetNet = () => {
+            const targetNet = Number(form.targetNetInput.replace(/[^0-9]/g, "")) || 0;
+            if (targetNet <= 0) {
+              setNotice({ tone: "err", text: "희망 세후 수령액을 입력하세요." });
+              return;
+            }
+            const gross = reverseGrossFromNet(targetNet);
+            const hourly = computeHourlyFromTarget(gross);
+            const calc = computeWageFromHourly(hourly, hourly);
+            setForm(prev => ({
+              ...prev,
+              weekdayHourly: String(hourly),
+              weekendHourly: String(hourly),
+              wageComponents: {
+                ...prev.wageComponents,
+                basicSalary:      { ...prev.wageComponents.basicSalary,      hours: 209, minutes: 0,  amount: calc.basicAmount },
+                fixedOvertime:    { ...prev.wageComponents.fixedOvertime,    hours: 55,  minutes: 56, amount: calc.overtimeAmount },
+                fixedHoliday:     { ...prev.wageComponents.fixedHoliday,     hours: 22,  minutes: 0,  amount: calc.holidayAmount },
+                fixedAnnualLeave: { ...prev.wageComponents.fixedAnnualLeave, hours: 10,  minutes: 0,  amount: calc.annualLeaveAmount },
+              },
+            }));
+            setNotice({ tone: "ok", text: `역산 완료 · 시급 ${hourly.toLocaleString()}원 · 세전 ${gross.toLocaleString()}원 · 임금구성 8항목에 반영` });
+          };
+
+          return (
+            <div className="rounded-lg border border-indigo-200 bg-gradient-to-br from-indigo-50/40 to-emerald-50/40 p-3 flex flex-col gap-2">
+              <div className="text-[10.5px] font-black uppercase tracking-wider text-indigo-700 flex items-center gap-1.5">
+                <Calculator size={11} weight="fill" />
+                희망 세후 수령액 (역산 입력)
+                <span className="ml-auto text-[9.5px] font-semibold text-indigo-400 normal-case">
+                  입력 · [반영] · 임금구성표 자동 채움
+                </span>
+              </div>
+              <div className="flex items-stretch gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={form.targetNetInput}
+                    onChange={(e) => upd("targetNetInput", e.target.value.replace(/[^0-9]/g, ""))}
+                    placeholder="예: 3000000"
+                    className="w-full bg-white border border-indigo-200 rounded-lg pl-3 pr-8 py-2 text-[14px] text-slate-800 font-black text-right focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 font-semibold pointer-events-none">원</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={applyTargetNet}
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-emerald-500 text-white text-[12px] font-black shadow-sm hover:brightness-110 transition-all cursor-pointer whitespace-nowrap"
+                  title="희망세후 → 세전 (÷0.9091) → 시급 (÷296.94) → 임금구성 8항목 채움"
+                >
+                  반영
+                </button>
+              </div>
+              {/* 4-col 요약 (실시간) */}
+              <div className="grid grid-cols-4 gap-1.5 mt-1">
+                <div className="rounded-md bg-white border border-slate-200 px-2 py-1.5 flex flex-col gap-0.5">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">월근로</span>
+                  <span className="tabular-nums text-[11.5px] font-black text-slate-800">{monthlyHours.toFixed(1)}h</span>
+                </div>
+                <div className="rounded-md bg-white border border-slate-200 px-2 py-1.5 flex flex-col gap-0.5">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">시급</span>
+                  <span className="tabular-nums text-[11.5px] font-black text-indigo-700">{fmtWon(wd)}</span>
+                </div>
+                <div className="rounded-md bg-white border border-slate-200 px-2 py-1.5 flex flex-col gap-0.5">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">세전</span>
+                  <span className="tabular-nums text-[11.5px] font-black text-slate-800">{fmtWon(currentGross)}</span>
+                </div>
+                <div className="rounded-md bg-emerald-50 border border-emerald-200 px-2 py-1.5 flex flex-col gap-0.5">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-emerald-600">예상세후</span>
+                  <span className="tabular-nums text-[11.5px] font-black text-emerald-800">{fmtWon(currentNet)}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* 실수령액 상세 */}
         {(() => {
@@ -3987,6 +4137,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           onChange={(next) => upd("wageComponents", next)}
           weekdayHourly={Number(form.weekdayHourly) || 0}
         />
+
+        </>)}
       </div>
       {/* /카드 3 (임금 · T-V 재배치) */}
 
@@ -3994,12 +4146,20 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           카드 4 · 계약 기간 · 담당업무 · 4대보험 · 특약 (맨 아래)
       ═══════════════════════════════════════════════════ */}
       <div className={cardBase}>
-        <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+        <button
+          type="button"
+          onClick={() => toggleCard("period")}
+          className="flex items-center gap-2 pb-2 border-b border-slate-100 cursor-pointer hover:opacity-80 transition-opacity w-full text-left"
+          aria-expanded={!isCardCollapsed("period")}
+        >
           <div className="w-6 h-6 rounded-md bg-amber-100 flex items-center justify-center shrink-0">
             <CalendarBlank size={13} weight="fill" className="text-amber-600" />
           </div>
           <span className="text-[12px] font-black text-slate-700">계약 기간 · 담당업무</span>
-        </div>
+          <CaretDown size={11} weight="bold" className={`ml-auto text-slate-400 transition-transform ${isCardCollapsed("period") ? "-rotate-90" : ""}`} />
+        </button>
+
+        {!isCardCollapsed("period") && (<>
 
         {/* 계약 기간 */}
         <div className={cardInner}>
@@ -4060,6 +4220,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-[12.5px] text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition resize-y placeholder:text-slate-400 placeholder:font-normal"
           />
         </div>
+
+        </>)}
       </div>
       {/* /카드 4 (계약기간 · 맨 아래) */}
 
