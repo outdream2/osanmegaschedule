@@ -39,9 +39,12 @@
 - 관리자(auth_level ≥ 8) 알림 · commit `36a996d`
 - 사용자 실 UI 검증 대기
 
-### 매입 서브탭 · 3탭 공통 기간 필터 + 원형차트 3종
-- 지난 세션 보류 · 아직 미착수 · mobile-ui-designer 위임 예정
-- 스펙: 매입이력·상품매입·공급사별 3탭 · 공통 상단 기간 필터 · 각 탭 원형차트
+### ✅ 매입 서브탭 · 3탭 공통 기간 필터 + 원형차트 3종 완료 (commit `89612ac`)
+- PurchaseHistoryTab · by-vendor·by-product 뷰 · 공통 periodMonths·periodSeason state
+- by-product 뷰 · 카테고리별·상품별Top10·월별 파이차트 신규
+- by-vendor 뷰 · 기존 3종 파이차트 유지
+- allDetails (1년치 fetch) → filteredAllDetails 클라이언트 슬라이스 · API 재호출 없음
+- 사용자 실 UI 검증 대기
 
 ### 바코드 UI 반응형 검토 (리포트)
 - 지난 세션 보류 · 문제 특정 없이 리포트 요청
