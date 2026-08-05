@@ -253,9 +253,106 @@ const WAGE_HOURS = {
   ANNUAL_LEAVE: 10.00, // 연차 (월평균 · 가산 없음)
 } as const;
 
-// T-P (2026-08-05) · 세전 총액 divisor · 통상시급 하나로 모든 항목 계산
+// T-P (2026-08-05) · 세전 총액 divisor · 통상시급 하나로 모든 항목 계산 (레거시 · 하드코딩)
 //   세전 = 통상시급 × (209 + 55.94 + 22 + 10) = 통상시급 × 296.94
 const WAGE_DIVISOR = WAGE_HOURS.BASIC + WAGE_HOURS.OVERTIME + WAGE_HOURS.HOLIDAY + WAGE_HOURS.ANNUAL_LEAVE;
+
+// T-X (2026-08-05) · 노무사 표준 임금 계산법 (근로기준법 §50·§56·§55)
+//   · 하드코딩 divisor 대신 · 실제 근무시간·요일로 동적 산정
+//   · 입력: dailyHours (하루 소정 h), weekdays (주 근무일수), weekendDays (주말 근무 일수)
+//   · 출력: 월 기본급/연장/휴일 시간 (가산 반영)
+const WEEK_PER_MONTH = 4.3452;
+const DAILY_LIMIT = 8;
+
+interface WageBaseHours {
+  monthlyBasicH: number;           // 월 기본급 시간 (주휴 포함)
+  monthlyOvertimeGainedH: number;  // 월 연장 시간 (× 1.5 가산 반영)
+  monthlyHolidayGainedH: number;   // 월 휴일 시간 (× 1.5 가산 반영)
+  monthlyOvertimeRealH: number;    // 월 연장 실시간 (참고 · 미가산)
+  monthlyHolidayRealH: number;     // 월 휴일 실시간 (참고 · 미가산)
+  weeklyBasicH: number;            // 주 기본 (참고)
+  weeklyHolidayH: number;          // 주휴 (참고)
+}
+
+/**
+ * T-X (2026-08-05) · 노무사 표준 계산법 · 동적 wage base
+ *   · dailyBasic = min(dailyHours, 8)                        (일 기본 · 최대 8h · 법정근로시간)
+ *   · dailyOvertime = max(0, dailyHours - 8)                 (일 연장)
+ *   · weeklyBasic = dailyBasic × weekdays                    (주 소정)
+ *   · weeklyHoliday = 40h 이상 → 8 · 15h 이상 → dailyBasic · 미만 → 0  (주휴수당 · 근기법 §55)
+ *   · monthlyBasicH = (weeklyBasic + weeklyHoliday) × 4.3452
+ *   · monthlyOvertimeRealH = weeklyOvertime × 4.3452
+ *   · monthlyOvertimeGainedH = monthlyOvertimeRealH × 1.5    (연장 가산 · §56)
+ *   · monthlyHolidayRealH = weekendDays × dailyHours × 4.3452
+ *   · monthlyHolidayGainedH = monthlyHolidayRealH × 1.5      (휴일근로 · §56)
+ *
+ * 정본 케이스 (weekdays=5, weekendDays=0):
+ *   · 7.5h → basic 195.5 · OT 0
+ *   · 8.0h → basic 209   · OT 0
+ *   · 8.5h → basic 209   · OT 16.29
+ *   · 9.0h → basic 209   · OT 32.59
+ *   · 10.0h → basic 209  · OT 65.18
+ */
+function calcWageBase(dailyHours: number, weekdays: number, weekendDays: number = 0): WageBaseHours {
+  const dh = Math.max(0, dailyHours);
+  const wd = Math.max(0, weekdays);
+  const we = Math.max(0, weekendDays);
+  const dailyBasic = Math.min(dh, DAILY_LIMIT);
+  const dailyOvertime = Math.max(0, dh - DAILY_LIMIT);
+
+  const weeklyBasic = dailyBasic * wd;
+  const weeklyHoliday = weeklyBasic >= 40 ? 8 : (weeklyBasic >= 15 ? dailyBasic : 0);
+  const weeklyOvertime = dailyOvertime * wd;
+
+  const monthlyBasicH = (weeklyBasic + weeklyHoliday) * WEEK_PER_MONTH;
+  const monthlyOvertimeRealH = weeklyOvertime * WEEK_PER_MONTH;
+  const monthlyOvertimeGainedH = monthlyOvertimeRealH * 1.5;
+  const monthlyHolidayRealH = we * dh * WEEK_PER_MONTH;
+  const monthlyHolidayGainedH = monthlyHolidayRealH * 1.5;
+
+  return {
+    monthlyBasicH,
+    monthlyOvertimeGainedH,
+    monthlyHolidayGainedH,
+    monthlyOvertimeRealH,
+    monthlyHolidayRealH,
+    weeklyBasicH: weeklyBasic,
+    weeklyHolidayH: weeklyHoliday,
+  };
+}
+
+// T-X (2026-08-05) · 통상시급 산정용 · 동적 divisor (기본+연장가산+휴일가산+연차)
+function calcDynamicDivisor(dailyHours: number, weekdays: number, weekendDays: number, annualLeaveH: number = WAGE_HOURS.ANNUAL_LEAVE): number {
+  const b = calcWageBase(dailyHours, weekdays, weekendDays);
+  return b.monthlyBasicH + b.monthlyOvertimeGainedH + b.monthlyHolidayGainedH + Math.max(0, annualLeaveH);
+}
+
+// T-X (2026-08-05) · dev-only 자체 검증 · 정본 5 케이스 (주5일 주중)
+//   개발 모드 · 콘솔에서 확인 가능 · 프로덕션 build 에는 영향 없음
+if (typeof window !== "undefined" && (import.meta as any)?.env?.DEV) {
+  const cases: Array<{ dh: number; expBasic: number; expOtGained: number }> = [
+    { dh: 7.5,  expBasic: 195.5, expOtGained: 0 },
+    { dh: 8.0,  expBasic: 209,   expOtGained: 0 },
+    { dh: 8.5,  expBasic: 209,   expOtGained: 16.29 },
+    { dh: 9.0,  expBasic: 209,   expOtGained: 32.59 },
+    { dh: 10.0, expBasic: 209,   expOtGained: 65.18 },
+  ];
+  const eps = 0.5; // 소수 반올림 허용
+  const results = cases.map(({ dh, expBasic, expOtGained }) => {
+    const b = calcWageBase(dh, 5, 0);
+    const pass = Math.abs(b.monthlyBasicH - expBasic) < eps
+              && Math.abs(b.monthlyOvertimeGainedH - expOtGained) < eps;
+    return { dh, basic: b.monthlyBasicH.toFixed(2), ot: b.monthlyOvertimeGainedH.toFixed(2), pass };
+  });
+  const anyFail = results.some(r => !r.pass);
+  if (anyFail) {
+    // eslint-disable-next-line no-console
+    console.warn("[ContractWriter] calcWageBase 검증 실패:", results);
+  } else {
+    // eslint-disable-next-line no-console
+    console.log("[ContractWriter] calcWageBase 5 케이스 검증 통과", results);
+  }
+}
 
 // 4대보험 요율 (근로자 부담)
 const INSURANCE_RATES = {
@@ -479,15 +576,18 @@ function computeWageFromHourlyDual(
 }
 
 /**
- * T-P (2026-08-05) · 목표 월급 → 통상시급 · 계약서 이미지 원본 스펙
+ * T-P (2026-08-05) · 목표 월급 → 통상시급 · 계약서 이미지 원본 스펙 (레거시 · 하드코딩 divisor)
  *   총액 = 통상시급 × (BASIC + OVERTIME + HOLIDAY + ANNUAL_LEAVE)
  *        = 통상시급 × (209 + 55.94 + 22 + 10)
  *        = 통상시급 × 296.94
  *   * OVERTIME·HOLIDAY 는 이미 1.5배 가산 반영된 시간이므로 배수 곱하지 않음
+ *
+ * T-X (2026-08-05) · dynamicDivisor 인자 추가 · > 0 이면 노무사 표준 계산 (calcDynamicDivisor) 사용
  */
-function computeHourlyFromTarget(targetTotal: number): number {
-  if (WAGE_DIVISOR <= 0) return 0;
-  return Math.round(Math.max(0, targetTotal) / WAGE_DIVISOR);
+function computeHourlyFromTarget(targetTotal: number, dynamicDivisor?: number): number {
+  const div = (dynamicDivisor != null && dynamicDivisor > 0) ? dynamicDivisor : WAGE_DIVISOR;
+  if (div <= 0) return 0;
+  return Math.round(Math.max(0, targetTotal) / div);
 }
 
 /**
@@ -2853,7 +2953,13 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   //     - 단, 사용자가 수동으로 변경한 basic hours 는 유지 (default 값 209 또는 이전 monthlyCalc 값일 때만 자동 갱신)
   //   · 연장·휴일·연차 시간 · 그대로 유지 (사용자가 조정한 항목)
   //   · 금액은 각 항목 시간 × 시급 (또는 야간·휴일연장은 × 0.5) 로 재산정
+  //
+  // T-X (2026-08-05) · 노무사 표준 계산법 적용
+  //   · basic/OT/holiday 시간 · 하루 근무h + 주중일수 + 주말일수 기반 · 자동 산정
+  //   · 사용자 수동조정 시엔 · lastAutoRef 로 감지하여 자동 갱신 skip (수동값 유지)
   const lastAutoBasicHoursRef = useRef<{ h: number; m: number } | null>(null);
+  const lastAutoOtHoursRef = useRef<{ h: number; m: number } | null>(null);
+  const lastAutoHolidayHoursRef = useRef<{ h: number; m: number } | null>(null);
   useEffect(() => {
     setForm(prev => {
       const wd = Number(prev.weekdayHourly) || 0;
@@ -2862,9 +2968,79 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
 
       let nextWage = prev.wageComponents;
 
-      // 1) basic hours 자동 갱신 · monthlyCalc 있고 · 사용자가 수동 조정 안 한 경우
-      //    (조건: 현재 basic hours = 최근 자동 반영값 OR default 209h OR 0)
-      if (monthlyCalc) {
+      // T-X · 하루 근무시간 + 주중/주말 일수 → 노무사 표준 base 시간
+      const dailyH = monthlyCalc ? monthlyCalc.dailyMinutes / 60 : 0;
+      const base = dailyH > 0 && weeklyWeekdayDays > 0
+        ? calcWageBase(dailyH, weeklyWeekdayDays, weeklyWeekendDays)
+        : null;
+
+      // helper · 시·분 분리 (반올림 최소화 · 근로자 이익 · 분 올림)
+      const splitHM = (totalH: number): { h: number; m: number } => {
+        if (totalH <= 0) return { h: 0, m: 0 };
+        const totalMin = Math.round(totalH * 60);
+        return { h: Math.floor(totalMin / 60), m: totalMin % 60 };
+      };
+
+      // helper · 수동 조정 여부 감지 (default 값 또는 최근 auto 값 이면 auto 갱신)
+      const isSameAutoOrDefault = (
+        cur: WageComponentEntry,
+        defaults: Array<{ h: number; m: number }>,
+        lastAuto: { h: number; m: number } | null,
+      ): boolean => {
+        if (defaults.some(d => cur.hours === d.h && cur.minutes === d.m)) return true;
+        if (lastAuto != null && cur.hours === lastAuto.h && cur.minutes === lastAuto.m) return true;
+        if (cur.hours === 0 && cur.minutes === 0) return true;
+        return false;
+      };
+
+      if (base) {
+        // 1) basic hours · 노무사 표준
+        {
+          const cur = prev.wageComponents.basicSalary;
+          if (isSameAutoOrDefault(
+            cur,
+            [{ h: 209, m: 0 }, { h: 195, m: 30 }, { h: 195, m: 32 }],
+            lastAutoBasicHoursRef.current,
+          )) {
+            const next = splitHM(base.monthlyBasicH);
+            if (cur.hours !== next.h || cur.minutes !== next.m) {
+              nextWage = { ...nextWage, basicSalary: { ...cur, hours: next.h, minutes: next.m } };
+            }
+            lastAutoBasicHoursRef.current = next;
+          }
+        }
+        // 2) fixedOvertime hours · 연장가산 (× 1.5 반영) · default 55h56m
+        {
+          const cur = nextWage.fixedOvertime;
+          if (isSameAutoOrDefault(
+            cur,
+            [{ h: 55, m: 56 }, { h: 0, m: 0 }],
+            lastAutoOtHoursRef.current,
+          )) {
+            const next = splitHM(base.monthlyOvertimeGainedH);
+            if (cur.hours !== next.h || cur.minutes !== next.m) {
+              nextWage = { ...nextWage, fixedOvertime: { ...cur, hours: next.h, minutes: next.m } };
+            }
+            lastAutoOtHoursRef.current = next;
+          }
+        }
+        // 3) fixedHoliday hours · 휴일가산 (× 1.5 반영) · default 22h0m · 주말 근무 없으면 0
+        {
+          const cur = nextWage.fixedHoliday;
+          if (isSameAutoOrDefault(
+            cur,
+            [{ h: 22, m: 0 }, { h: 0, m: 0 }],
+            lastAutoHolidayHoursRef.current,
+          )) {
+            const next = splitHM(base.monthlyHolidayGainedH);
+            if (cur.hours !== next.h || cur.minutes !== next.m) {
+              nextWage = { ...nextWage, fixedHoliday: { ...cur, hours: next.h, minutes: next.m } };
+            }
+            lastAutoHolidayHoursRef.current = next;
+          }
+        }
+      } else if (monthlyCalc) {
+        // Fallback · base 산정 불가 시 · 기존 monthlyCalc 기반 basic 만 반영
         const cur = prev.wageComponents.basicSalary;
         const last = lastAutoBasicHoursRef.current;
         const isDefaultBasic =
@@ -2875,18 +3051,13 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const nextH = monthlyCalc.monthlyHoursInt;
           const nextM = monthlyCalc.monthlyMinutesRem;
           if (cur.hours !== nextH || cur.minutes !== nextM) {
-            nextWage = {
-              ...nextWage,
-              basicSalary: { ...cur, hours: nextH, minutes: nextM },
-            };
-            lastAutoBasicHoursRef.current = { h: nextH, m: nextM };
-          } else {
-            lastAutoBasicHoursRef.current = { h: nextH, m: nextM };
+            nextWage = { ...nextWage, basicSalary: { ...cur, hours: nextH, minutes: nextM } };
           }
+          lastAutoBasicHoursRef.current = { h: nextH, m: nextM };
         }
       }
 
-      // 2) 각 항목 시간 × 시급 재계산 (배수 · 야간/휴일연장 0.5)
+      // 4) 각 항목 시간 × 시급 재계산 (배수 · 야간/휴일연장 0.5)
       const calc = computeWageFromHourlyDual(wd, we, nextWage);
       const nextComp: WageComponents = {
         ...nextWage,
@@ -2898,7 +3069,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         fixedAnnualLeave:     { ...nextWage.fixedAnnualLeave,     amount: calc.annualLeaveAmount },
       };
 
-      // 변화 감지 (basic hours 갱신 · 또는 6항목 금액 갱신)
+      // 변화 감지 (시간 or 금액 갱신)
       const changed =
         nextWage !== prev.wageComponents ||
         nextComp.basicSalary.amount          !== prev.wageComponents.basicSalary.amount ||
@@ -3956,21 +4127,62 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               return;
             }
             const gross = reverseGrossFromNet(targetNet);
-            const hourly = computeHourlyFromTarget(gross);
-            const calc = computeWageFromHourly(hourly, hourly);
-            setForm(prev => ({
-              ...prev,
-              weekdayHourly: String(hourly),
-              weekendHourly: String(hourly),
-              wageComponents: {
-                ...prev.wageComponents,
-                basicSalary:      { ...prev.wageComponents.basicSalary,      hours: 209, minutes: 0,  amount: calc.basicAmount },
-                fixedOvertime:    { ...prev.wageComponents.fixedOvertime,    hours: 55,  minutes: 56, amount: calc.overtimeAmount },
-                fixedHoliday:     { ...prev.wageComponents.fixedHoliday,     hours: 22,  minutes: 0,  amount: calc.holidayAmount },
-                fixedAnnualLeave: { ...prev.wageComponents.fixedAnnualLeave, hours: 10,  minutes: 0,  amount: calc.annualLeaveAmount },
-              },
-            }));
-            setNotice({ tone: "ok", text: `역산 완료 · 시급 ${hourly.toLocaleString()}원 · 세전 ${gross.toLocaleString()}원 · 임금구성 8항목에 반영` });
+
+            // T-X (2026-08-05) · 노무사 표준 계산법 · 동적 시간 산정
+            //   · dailyH + 주중일수 + 주말일수 · 각 항목 시간 자동
+            //   · divisor = 기본h + 연장가산h + 휴일가산h + 연차h
+            const dailyH = monthlyCalc ? monthlyCalc.dailyMinutes / 60 : 0;
+            const useDynamic = dailyH > 0 && weeklyWeekdayDays > 0;
+            const base = useDynamic
+              ? calcWageBase(dailyH, weeklyWeekdayDays, weeklyWeekendDays)
+              : null;
+            const annualLeaveH = form.wageComponents.fixedAnnualLeave.hours
+                                + form.wageComponents.fixedAnnualLeave.minutes / 60
+                              || WAGE_HOURS.ANNUAL_LEAVE;
+            const divisor = base
+              ? (base.monthlyBasicH + base.monthlyOvertimeGainedH + base.monthlyHolidayGainedH + annualLeaveH)
+              : WAGE_DIVISOR;
+            const hourly = divisor > 0 ? Math.round(gross / divisor) : 0;
+
+            const splitHM = (totalH: number): { h: number; m: number } => {
+              if (totalH <= 0) return { h: 0, m: 0 };
+              const totalMin = Math.round(totalH * 60);
+              return { h: Math.floor(totalMin / 60), m: totalMin % 60 };
+            };
+
+            setForm(prev => {
+              const nextBasic = base
+                ? { ...splitHM(base.monthlyBasicH),          amount: Math.round(base.monthlyBasicH * hourly) }
+                : { hours: 209, minutes: 0,  amount: Math.round(WAGE_HOURS.BASIC * hourly) };
+              const nextOt = base
+                ? { ...splitHM(base.monthlyOvertimeGainedH), amount: Math.round(base.monthlyOvertimeGainedH * hourly) }
+                : { hours: 55,  minutes: 56, amount: Math.round(WAGE_HOURS.OVERTIME * hourly) };
+              const nextHoliday = base
+                ? { ...splitHM(base.monthlyHolidayGainedH),  amount: Math.round(base.monthlyHolidayGainedH * hourly) }
+                : { hours: 22,  minutes: 0,  amount: Math.round(WAGE_HOURS.HOLIDAY * hourly) };
+              const nextAnnual = {
+                hours: prev.wageComponents.fixedAnnualLeave.hours || 10,
+                minutes: prev.wageComponents.fixedAnnualLeave.minutes,
+                amount: Math.round((prev.wageComponents.fixedAnnualLeave.hours + prev.wageComponents.fixedAnnualLeave.minutes / 60 || WAGE_HOURS.ANNUAL_LEAVE) * hourly),
+              };
+              return {
+                ...prev,
+                weekdayHourly: String(hourly),
+                weekendHourly: String(hourly),
+                wageComponents: {
+                  ...prev.wageComponents,
+                  basicSalary:      { ...prev.wageComponents.basicSalary,      ...nextBasic },
+                  fixedOvertime:    { ...prev.wageComponents.fixedOvertime,    ...nextOt },
+                  fixedHoliday:     { ...prev.wageComponents.fixedHoliday,     ...nextHoliday },
+                  fixedAnnualLeave: { ...prev.wageComponents.fixedAnnualLeave, ...nextAnnual },
+                },
+              };
+            });
+            const modeText = base ? "노무사 표준" : "레거시 296.94";
+            setNotice({
+              tone: "ok",
+              text: `역산 완료 (${modeText}) · 시급 ${hourly.toLocaleString()}원 · 세전 ${gross.toLocaleString()}원 · divisor ${divisor.toFixed(2)}`,
+            });
           };
 
           return (
@@ -3998,7 +4210,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   type="button"
                   onClick={applyTargetNet}
                   className="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-emerald-500 text-white text-[12px] font-black shadow-sm hover:brightness-110 transition-all cursor-pointer whitespace-nowrap"
-                  title="희망세후 → 세전 (÷0.9091) → 시급 (÷296.94) → 임금구성 8항목 채움"
+                  title="희망세후 → 세전 (÷0.9091) → 시급 (÷동적 divisor · 노무사 표준) → 임금구성 8항목 채움"
                 >
                   반영
                 </button>

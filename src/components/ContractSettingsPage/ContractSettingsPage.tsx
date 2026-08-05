@@ -1,24 +1,33 @@
 // src/components/ContractSettingsPage/ContractSettingsPage.tsx
-// 근로계약서 설정 페이지 · 2026-08-03 · #184
-// - 카테고리별 업무내용 기본값 관리 (약사·매장·창고·기타)
-// - 공통 안내문구 관리
-// - localStorage · "contract-writer-settings"
-// - 저장 · 초기화 · 하드코딩 fallback 안내
+// 근로계약서 설정 페이지 · 2026-08-05 · 재설계
+// - 직군별 주중/주말 시급 (약사·매장·창고·기타)
+// - 각 호 내용 편집 CMS (임금단서·근로시간·휴일·징계·기타·개인정보)
+// - localStorage
+//     · contractJobWages:v1     (직군별 시급)
+//     · contractClauses:v1      (각 호 내용)
+//     · contract-writer-settings (기존 · ContractWriterPage 참조 · 유지)
+//
+// 하위호환:
+//   · 기존 export (ContractCategory, ContractWriterSettings, CONTRACT_SETTINGS_KEY,
+//     DEFAULT_CONTRACT_SETTINGS, loadContractSettings) 는 유지 - ContractWriterPage 가 참조.
+//   · 다만 편집 UI 는 삭제 - localStorage 저장값이 없으면 기본값 사용.
+//
 // 준수 원칙:
-//   - feedback_ui_principles: 폼 요소 · min 14px · 3단 위계
-//   - feedback_ui_consult: slate + indigo/emerald 팔레트 · rounded-xl · shadow-sm
-//   - embedded 모드 · DocumentWriterPage 임베드 시 자체 헤더 skip
+//   · feedback_ui_principles: slate + indigo/emerald 팔레트 · rounded-xl · shadow-sm
+//   · feedback_ui_consult: 카테고리 색 분류 · 통일된 카드
+//   · embedded 모드 · DocumentWriterPage 임베드 시 자체 헤더 skip
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Gear, User, Storefront, Warehouse, DotsThreeCircle,
-  FloppyDisk, ArrowsClockwise, Check, Warning, Info, Notepad,
+  Gear, FloppyDisk, ArrowsClockwise, Check, Warning, Info,
+  CaretDown, CaretRight, Plus, Trash, ArrowUp, ArrowDown,
+  CurrencyKrw, Coins, Clock, Calendar, Shield, ListChecks, Lock,
 } from "@phosphor-icons/react";
 
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import type { AuthSession } from "../../types";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 타입 & 상수
+// 하위호환 · 기존 export (ContractWriterPage 가 import 하므로 유지)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type ContractCategory = "약사" | "매장" | "창고" | "기타";
@@ -44,6 +53,7 @@ export const DEFAULT_CONTRACT_SETTINGS: ContractWriterSettings = {
 
 /**
  * localStorage · 안전하게 로드 · JSON parse 실패 시 default
+ * ContractWriterPage 에서 참조 · 편집 UI 는 삭제되었으나 저장값 있으면 여전히 유효.
  */
 export function loadContractSettings(): ContractWriterSettings {
   try {
@@ -64,6 +74,203 @@ export function loadContractSettings(): ContractWriterSettings {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 신규 · 직군별 시급
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const JOB_WAGES_KEY = "contractJobWages:v1";
+
+export interface JobWage {
+  weekday: number; // 주중 시급 (원)
+  weekend: number; // 주말 시급 (원)
+}
+
+export type ContractJobWages = Record<ContractCategory, JobWage>;
+
+export const DEFAULT_JOB_WAGES: ContractJobWages = {
+  약사: { weekday: 30000, weekend: 33000 },
+  매장: { weekday: 10030, weekend: 11000 },
+  창고: { weekday: 10030, weekend: 11000 },
+  기타: { weekday: 10030, weekend: 11000 },
+};
+
+export function loadJobWages(): ContractJobWages {
+  try {
+    const raw = localStorage.getItem(JOB_WAGES_KEY);
+    if (!raw) return { ...DEFAULT_JOB_WAGES };
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return { ...DEFAULT_JOB_WAGES };
+    const pick = (k: ContractCategory): JobWage => {
+      const v = (parsed as any)[k];
+      if (!v || typeof v !== "object") return { ...DEFAULT_JOB_WAGES[k] };
+      const wd = Number(v.weekday);
+      const we = Number(v.weekend);
+      return {
+        weekday: Number.isFinite(wd) && wd >= 0 ? wd : DEFAULT_JOB_WAGES[k].weekday,
+        weekend: Number.isFinite(we) && we >= 0 ? we : DEFAULT_JOB_WAGES[k].weekend,
+      };
+    };
+    return {
+      약사: pick("약사"),
+      매장: pick("매장"),
+      창고: pick("창고"),
+      기타: pick("기타"),
+    };
+  } catch {
+    return { ...DEFAULT_JOB_WAGES };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 신규 · 각 호 내용 (CMS)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const CONTRACT_CLAUSES_KEY = "contractClauses:v1";
+
+export type ClauseGroupKey =
+  | "wageClauses"
+  | "workTimeClauses"
+  | "holidayClauses"
+  | "disciplineClauses"
+  | "etcClauses"
+  | "privacyClauses";
+
+export type ContractClauses = Record<ClauseGroupKey, string[]>;
+
+export const DEFAULT_CLAUSES: ContractClauses = {
+  wageClauses: [
+    "상기 월 급여 총액에는 (고정) 연장·휴일시간에 대한 (고정) 연장·휴일근로수당이 포함되어 있으며, 추가 연장 및 휴일근무는 근무일 및 휴무일(휴일) 상황에 맞게 수행할 수 있고, 매달 수행 가능한 연장 및 휴일 근무의 범위는 상기에 기재된 연장 및 휴일근로시간으로 한다.",
+    "약국의 업무 특성상 불규칙한 근무로 인해 월 급여 총액에는 월간 기본 근로일, 기본 근로시간 외 추가근무를 고려하여 책정한 상기의 연장, 휴일, 야간 근로시간에 대한 수당의 사전 산입에 을은 자유로운 의사로 동의한다.",
+    "'을'은 연차휴가수당을 월 지급액에 포괄하여 지급받음에 동의하고, '갑'은 '을'의 자유로운 연차휴가사용을 보장하되 '을'이 연차유급휴가를 사용할 경우 기 지급된 수당을 차감하여 정산한다. 또한, 연차휴가수당은 해당 월에 회사가 정한 징계사유에 해당하지 않고 만근한 경우에 한하여 지급한다.",
+    "'을'은 관공서 공휴일 및 국경일의 날 근무로 발생하는 휴일근로 수당을 연봉에 포괄하여 (년 22일 근로에 가산을 반영한 휴일근로수당) 매달 임금으로 지급 받음에 자유로운 의사로 동의한다.",
+    "관리 편의상 사전 책정한 상기의 (고정) 근로시간을 상회하여 연장·휴일근로를 한 경우에는 상기 월 급여 총액과 별도로 추가수당(상시 근로자가 5인 미만인 경우 근로기준법 제56조의 적용을 제외한다.)을 지급한다. 다만, 추가수당을 인정하는 경우는 회사의 사전 지시나 승인이 있는 경우에 한한다.",
+    "지각, 조퇴 시에는 해당 시간 본을 공제하며, 중도 입·퇴사의 경우 일할 계산하여 임금을 지급한다.",
+  ],
+  workTimeClauses: [
+    "소정근로일은 주 40시간 내에서 당사자가 정하는 근로일을 의미하며, 무급 휴무일인 토요일에 근로할 경우 연장근로로 보고, 주휴일인 일요일에 근로할 경우 휴일근로로 본다.",
+    "업무형편상 부득이한 경우 상기 휴게 시간을 변경할 수 있고, 제대로 사용하지 못한 휴게시간은 다른 시간 내에서 보충 사용하는 것에 동의한다.",
+    "소정근로시간은 휴게시간을 제외하고 일단위 법정근로시간(8시간) 내에서 당사자가 정하는 시간이며, '을'은 '갑'의 사정에 따라 필요 시 상기 근로시간 이외에 추가로 연장, 야간, 휴일근로를 수행할 수 있음에 자유로운 의사로 동의한다.",
+    "사업장 외 근무 또는 출장근무는 특별한 사정이 없는 한 8시간을 근무한 것으로 본다. '을'은 사업장 외 근무 또는 출장근무 수행에 대한 간주근로시간 근무를 '갑'으로부터 충분한 설명을 받았으며, 이에 본인의 자유의사로 동의한다. (해당자에 한함)",
+  ],
+  holidayClauses: [
+    "1주 동안 소정근무일을 개근한 경우에는 주 1회의 유급휴일을 부여하며, 주휴일은 일요일로 한다. 다만, 1주일의 소정근로시간이 15시간 미만인 경우와 해당 주에 결근 시에는 주휴수당을 지급하지 아니한다.",
+    "근로자의 날은 유급휴일로 한다.",
+    "토요일은 무급휴무일로 한다.",
+    "「관공서의 공휴일에 관한 규정」 제2조 각 호(제1호는 제외한다)에 따른 공휴일 및 같은 영 제3조에 따른 대체공휴일은 유급휴일로 한다. 다만, 근로자대표와 서면으로 합의한 경우 특정한 근로일로 대체할 수 있으며, 보상 휴가 부여도 가능하다. (상시 근로자 수가 5인 미만인 경우에는 적용을 제외한다.)",
+  ],
+  disciplineClauses: [
+    "부정 및 허위 등의 방법으로 채용된 자",
+    "업무상 비밀 및 기밀을 누설하여 회사에 피해를 입힌 자",
+    "회사의 명예 또는 신용에 손상을 입힌 자",
+    "회사의 영업을 방해하는 언행을 한 자",
+    "회사의 규율과 상사의 정당한 지시를 어겨 질서를 문란하게 한 자",
+    "정당한 이유 없이 회사의 물품 및 금품을 반출한 자",
+    "직무를 이용하여 부당한 이익을 취한 자",
+    "회사가 정한 복무규정을 위반한 자",
+    "직장 내 성희롱 행위를 한 자",
+    "직장 내 괴롭힘 행위를 한 자",
+    "무단으로 결근한 자",
+    "근무태도나 근무성적이 극히 불량하고 개선의 여지가 없다고 판단되는 자",
+    "기타 이에 준하는 행위로 징계 및 근로계약 해지가 필요하다고 판단되는 행위를 한 경우",
+  ],
+  etcClauses: [
+    "임금 지급방법: '을'에게 직접 지급 또는 '을'이 지정한 예금 통장에 입금한다.",
+    "'갑'과 '을'은 상기 임금내역을 회사 내의 타 근로자에게 누설하지 아니한다.",
+    "임의 퇴사하고자 하는 경우에는 30일 전에 미리 회사에 알려야 하며, 사직서 제출 후 사용자의 수리가 있기 전까지는 '갑'이 지정하는 자에게 인수인계를 하는 등 제반업무를 수행하여야 한다.",
+    "'갑'과 '을'은 성실한 근로관계가 형성되도록 노력하며 본 계약 이외의 사항에 대하여는 노동관계법, 취업규칙, 기타 회사가 정한 방침에 따른다.",
+    "'을'은 퇴직 시 과다 부여된 연차휴가 및 수당에 대해 '갑'이 '을'의 임금 및 퇴직금에 공제하여 지급하는 것에 동의한다.",
+  ],
+  privacyClauses: [
+    "정보의 수집 및 이용 목적 / CCTV 설치 목적: 당사의 인적자원관리 · 방범 및 화재예방, 시설안전관리, 사업장내 사고예방 및 범죄예방",
+    "정보 보유 및 이용기간: 근로관계가 유지되는 기간 · 단, CCTV 화상영상 정보의 경우 일정기간 후 기존 영상정보에서 삭제",
+    "개인정보의 항목: 성명, 주민번호, 피부양자정보, 주소, 이메일, 휴대전화번호 등 연락처 · 학력, 근무경력과 계좌번호 등 금융정보 · 기타 근로와 관련된 개인정보 · 사진, 화상영상(CCTV)",
+    "CCTV 촬영시간 및 범위: 촬영시간 24시간 연속 촬영 및 녹화 · 촬영범위 출입구 및 복도, 사업장내 등 건물 내 주요 시설",
+  ],
+};
+
+export function loadContractClauses(): ContractClauses {
+  const keys: ClauseGroupKey[] = [
+    "wageClauses", "workTimeClauses", "holidayClauses",
+    "disciplineClauses", "etcClauses", "privacyClauses",
+  ];
+  try {
+    const raw = localStorage.getItem(CONTRACT_CLAUSES_KEY);
+    if (!raw) return cloneClauses(DEFAULT_CLAUSES);
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return cloneClauses(DEFAULT_CLAUSES);
+    const out = {} as ContractClauses;
+    for (const k of keys) {
+      const arr = (parsed as any)[k];
+      if (Array.isArray(arr) && arr.every((v: any) => typeof v === "string")) {
+        out[k] = arr.slice();
+      } else {
+        out[k] = DEFAULT_CLAUSES[k].slice();
+      }
+    }
+    return out;
+  } catch {
+    return cloneClauses(DEFAULT_CLAUSES);
+  }
+}
+
+function cloneClauses(src: ContractClauses): ContractClauses {
+  return {
+    wageClauses: src.wageClauses.slice(),
+    workTimeClauses: src.workTimeClauses.slice(),
+    holidayClauses: src.holidayClauses.slice(),
+    disciplineClauses: src.disciplineClauses.slice(),
+    etcClauses: src.etcClauses.slice(),
+    privacyClauses: src.privacyClauses.slice(),
+  };
+}
+
+function clausesEqual(a: ContractClauses, b: ContractClauses): boolean {
+  const keys: ClauseGroupKey[] = [
+    "wageClauses", "workTimeClauses", "holidayClauses",
+    "disciplineClauses", "etcClauses", "privacyClauses",
+  ];
+  for (const k of keys) {
+    const aa = a[k]; const bb = b[k];
+    if (aa.length !== bb.length) return false;
+    for (let i = 0; i < aa.length; i++) if (aa[i] !== bb[i]) return false;
+  }
+  return true;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 메타 · 직군 & 각 호 그룹
+// ─────────────────────────────────────────────────────────────────────────────
+
+const JOB_META: Array<{
+  key: ContractCategory;
+  label: string;
+  color: string;    // 텍스트
+  bg: string;       // 배경
+  border: string;   // 테두리
+}> = [
+  { key: "약사", label: "약사", color: "text-violet-700",  bg: "bg-violet-50",  border: "border-violet-200"  },
+  { key: "매장", label: "매장", color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200" },
+  { key: "창고", label: "창고", color: "text-orange-700",  bg: "bg-orange-50",  border: "border-orange-200"  },
+  { key: "기타", label: "기타", color: "text-slate-700",   bg: "bg-slate-50",   border: "border-slate-200"   },
+];
+
+const CLAUSE_GROUP_META: Array<{
+  key: ClauseGroupKey;
+  label: string;
+  desc: string;
+  icon: React.ComponentType<{ size?: number; weight?: any; className?: string }>;
+  color: string;
+  bg: string;
+  border: string;
+}> = [
+  { key: "wageClauses",       label: "임금 단서",        desc: "임금·수당 지급에 관한 사전 동의 및 약정",       icon: Coins,      color: "text-amber-700",   bg: "bg-amber-50",   border: "border-amber-200"   },
+  { key: "workTimeClauses",   label: "근로시간·휴게",    desc: "근로시간·휴게시간·간주근로 등 약정",          icon: Clock,      color: "text-sky-700",     bg: "bg-sky-50",     border: "border-sky-200"     },
+  { key: "holidayClauses",    label: "휴일",             desc: "주휴일·공휴일·근로자의 날 등",                icon: Calendar,   color: "text-teal-700",    bg: "bg-teal-50",    border: "border-teal-200"    },
+  { key: "disciplineClauses", label: "징계·해지 사유",   desc: "근로계약 해지 및 징계 사유 각 호",             icon: Shield,     color: "text-rose-700",    bg: "bg-rose-50",    border: "border-rose-200"    },
+  { key: "etcClauses",        label: "기타",             desc: "지급방법·비밀유지·인수인계 등",                icon: ListChecks, color: "text-indigo-700",  bg: "bg-indigo-50",  border: "border-indigo-200"  },
+  { key: "privacyClauses",    label: "개인정보",         desc: "개인정보·CCTV 수집·이용",                     icon: Lock,       color: "text-slate-700",   bg: "bg-slate-50",   border: "border-slate-200"   },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 컴포넌트
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -76,69 +283,110 @@ interface ContractSettingsPageProps {
   embedded?: boolean;
 }
 
-const CATEGORY_META: Array<{
-  key: ContractCategory;
-  label: string;
-  icon: React.ComponentType<{ size?: number; weight?: any; className?: string }>;
-  color: string;      // 텍스트
-  bg: string;         // 배경
-  border: string;     // 테두리
-  ring: string;       // focus ring
-}> = [
-  { key: "약사", label: "약사",  icon: User,             color: "text-violet-700",  bg: "bg-violet-50",  border: "border-violet-200",  ring: "focus:border-violet-500"  },
-  { key: "매장", label: "매장",  icon: Storefront,       color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200", ring: "focus:border-emerald-500" },
-  { key: "창고", label: "창고",  icon: Warehouse,        color: "text-orange-700",  bg: "bg-orange-50",  border: "border-orange-200",  ring: "focus:border-orange-500"  },
-  { key: "기타", label: "기타",  icon: DotsThreeCircle,  color: "text-slate-700",   bg: "bg-slate-50",   border: "border-slate-200",   ring: "focus:border-slate-500"   },
-];
-
 const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
   authSession, onBack, onNavigate, onLogout, embedded = false,
 }) => {
-  const [settings, setSettings] = useState<ContractWriterSettings>(() => loadContractSettings());
-  const [initial, setInitial] = useState<ContractWriterSettings>(() => loadContractSettings());
+  // ── 상태 · 시급
+  const [wages, setWages] = useState<ContractJobWages>(() => loadJobWages());
+  const [initialWages, setInitialWages] = useState<ContractJobWages>(() => loadJobWages());
+
+  // ── 상태 · 각 호
+  const [clauses, setClauses] = useState<ContractClauses>(() => loadContractClauses());
+  const [initialClauses, setInitialClauses] = useState<ContractClauses>(() => loadContractClauses());
+
+  // ── UI · 카드 접기/펴기 (기본 전체 펼침)
+  const [open, setOpen] = useState<Record<ClauseGroupKey, boolean>>({
+    wageClauses: true, workTimeClauses: true, holidayClauses: true,
+    disciplineClauses: true, etcClauses: true, privacyClauses: true,
+  });
+
   const [notice, setNotice] = useState<{ tone: "ok" | "err" | "info"; text: string } | null>(null);
 
   // 변경 여부 (dirty)
-  const dirty = useMemo(() => {
-    return (
-      settings.약사 !== initial.약사 ||
-      settings.매장 !== initial.매장 ||
-      settings.창고 !== initial.창고 ||
-      settings.기타 !== initial.기타 ||
-      (settings.commonNotice ?? "") !== (initial.commonNotice ?? "")
-    );
-  }, [settings, initial]);
+  const wagesDirty = useMemo(() => JSON.stringify(wages) !== JSON.stringify(initialWages), [wages, initialWages]);
+  const clausesDirty = useMemo(() => !clausesEqual(clauses, initialClauses), [clauses, initialClauses]);
+  const dirty = wagesDirty || clausesDirty;
 
-  // 자동 안내 배너 제거 (5초)
+  // 자동 배너 제거
   useEffect(() => {
     if (!notice) return;
     const t = setTimeout(() => setNotice(null), 5000);
     return () => clearTimeout(t);
   }, [notice]);
 
-  const upd = useCallback(<K extends keyof ContractWriterSettings>(key: K, val: ContractWriterSettings[K]) => {
-    setSettings(prev => ({ ...prev, [key]: val }));
+  // ── 시급 편집
+  const updWage = useCallback((cat: ContractCategory, field: keyof JobWage, val: number) => {
+    setWages(prev => ({ ...prev, [cat]: { ...prev[cat], [field]: val } }));
   }, []);
 
+  // ── 각 호 편집
+  const updClause = useCallback((group: ClauseGroupKey, idx: number, val: string) => {
+    setClauses(prev => {
+      const next = { ...prev, [group]: prev[group].slice() };
+      next[group][idx] = val;
+      return next;
+    });
+  }, []);
+
+  const addClause = useCallback((group: ClauseGroupKey) => {
+    setClauses(prev => ({ ...prev, [group]: [...prev[group], ""] }));
+  }, []);
+
+  const removeClause = useCallback((group: ClauseGroupKey, idx: number) => {
+    if (!window.confirm(`이 항목을 삭제하시겠습니까?`)) return;
+    setClauses(prev => {
+      const arr = prev[group].slice();
+      arr.splice(idx, 1);
+      return { ...prev, [group]: arr };
+    });
+  }, []);
+
+  const moveClause = useCallback((group: ClauseGroupKey, idx: number, dir: -1 | 1) => {
+    setClauses(prev => {
+      const arr = prev[group].slice();
+      const j = idx + dir;
+      if (j < 0 || j >= arr.length) return prev;
+      [arr[idx], arr[j]] = [arr[j], arr[idx]];
+      return { ...prev, [group]: arr };
+    });
+  }, []);
+
+  const toggleOpen = useCallback((group: ClauseGroupKey) => {
+    setOpen(prev => ({ ...prev, [group]: !prev[group] }));
+  }, []);
+
+  // ── 저장
   const handleSave = () => {
     try {
-      localStorage.setItem(CONTRACT_SETTINGS_KEY, JSON.stringify(settings));
-      setInitial({ ...settings });
+      localStorage.setItem(JOB_WAGES_KEY, JSON.stringify(wages));
+      localStorage.setItem(CONTRACT_CLAUSES_KEY, JSON.stringify(clauses));
+      setInitialWages(JSON.parse(JSON.stringify(wages)));
+      setInitialClauses(cloneClauses(clauses));
       setNotice({ tone: "ok", text: "설정이 저장되었습니다. 이후 근로계약서 작성에 반영됩니다." });
     } catch (err: any) {
       setNotice({ tone: "err", text: err?.message ?? "설정 저장에 실패했습니다." });
     }
   };
 
+  // ── 기본값 (전체)
   const handleResetToDefault = () => {
-    if (!window.confirm("모든 카테고리 업무내용을 기본값으로 되돌립니다. 계속하시겠습니까?")) return;
-    setSettings({ ...DEFAULT_CONTRACT_SETTINGS });
+    if (!window.confirm("모든 시급 및 각 호 내용을 기본값으로 되돌립니다. 계속하시겠습니까?")) return;
+    setWages({ ...DEFAULT_JOB_WAGES });
+    setClauses(cloneClauses(DEFAULT_CLAUSES));
     setNotice({ tone: "info", text: "기본값으로 되돌렸습니다. 저장하려면 [저장] 버튼을 누르세요." });
   };
 
+  // ── 취소 (마지막 저장값 복원)
   const handleRevert = () => {
-    setSettings({ ...initial });
+    setWages(JSON.parse(JSON.stringify(initialWages)));
+    setClauses(cloneClauses(initialClauses));
     setNotice({ tone: "info", text: "저장된 마지막 값으로 되돌렸습니다." });
+  };
+
+  // ── 그룹별 기본값 복원
+  const handleResetGroup = (group: ClauseGroupKey) => {
+    if (!window.confirm(`[${CLAUSE_GROUP_META.find(g => g.key === group)?.label}] 항목을 기본값으로 되돌립니다. 계속하시겠습니까?`)) return;
+    setClauses(prev => ({ ...prev, [group]: DEFAULT_CLAUSES[group].slice() }));
   };
 
   return (
@@ -163,7 +411,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
             <div>
               <h1 className="text-lg sm:text-xl font-black text-slate-800 leading-none">근로계약서 설정</h1>
               <p className="text-xs text-slate-500 mt-1">
-                직군별 업무내용 기본값을 지정하면, 근로계약서 작성 시 직군 선택만으로 자동 채워집니다.
+                직군별 주중·주말 시급 및 계약서 각 호의 내용을 설정합니다.
               </p>
             </div>
           </div>
@@ -216,81 +464,175 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
           </div>
         )}
 
-        {/* 안내 카드 */}
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-3 sm:p-4">
-          <div className="flex items-start gap-2">
-            <Info size={16} weight="fill" className="text-indigo-500 mt-0.5 shrink-0" />
-            <div className="text-[12px] text-slate-600 leading-relaxed">
-              <div className="font-bold text-slate-700 mb-1">사용 안내</div>
-              <ul className="list-disc list-inside space-y-0.5">
-                <li>각 카테고리에 자주 쓰는 업무내용을 저장해 두면, 계약서 작성 시 자동으로 채워집니다.</li>
-                <li>저장된 값이 없으면 시스템 기본값이 사용됩니다.</li>
-                <li>계약서 작성 화면에서 <b>수동 편집</b>도 가능합니다. 여기서의 설정은 <b>초기값</b>에 해당합니다.</li>
-                <li>공통 안내문구는 모든 계약서의 [기타] 항목에 참고 기본값으로 활용됩니다 (선택).</li>
-              </ul>
+        {/* ── 섹션 1 · 직군별 시급 ─────────────────────────────────────── */}
+        <section className="bg-white border border-slate-200 rounded-xl shadow-sm p-3 sm:p-4 flex flex-col gap-3">
+          <header className="flex items-center gap-2 pb-1 border-b border-slate-100">
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
+              <CurrencyKrw size={16} weight="fill" />
             </div>
-          </div>
-        </div>
+            <div className="flex-1">
+              <h2 className="text-[15px] font-black text-indigo-700">직군별 시급</h2>
+              <p className="text-[11px] text-slate-500 font-semibold">주중·주말 시급을 직군별로 설정합니다.</p>
+            </div>
+          </header>
 
-        {/* 카테고리별 편집 카드 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {CATEGORY_META.map(cat => {
-            const Icon = cat.icon;
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-[12px] text-slate-500 font-black bg-slate-50 border-b border-slate-200">
+                  <th className="text-left px-3 py-2 min-w-[100px]">직군</th>
+                  <th className="text-right px-3 py-2">주중 시급 (원)</th>
+                  <th className="text-right px-3 py-2">주말 시급 (원)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {JOB_META.map(job => (
+                  <tr key={job.key} className="border-b border-slate-100 last:border-b-0">
+                    <td className="px-3 py-2">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md ${job.bg} ${job.color} text-[13px] font-black`}>
+                        {job.label}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        min={0}
+                        step={10}
+                        value={wages[job.key].weekday}
+                        onChange={(e) => updWage(job.key, "weekday", Math.max(0, Number(e.target.value) || 0))}
+                        className="w-full max-w-[180px] ml-auto block bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-bold text-right focus:outline-none focus:border-indigo-500 focus:shadow-sm transition"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        min={0}
+                        step={10}
+                        value={wages[job.key].weekend}
+                        onChange={(e) => updWage(job.key, "weekend", Math.max(0, Number(e.target.value) || 0))}
+                        className="w-full max-w-[180px] ml-auto block bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-bold text-right focus:outline-none focus:border-indigo-500 focus:shadow-sm transition"
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* ── 섹션 2 · 각 호 내용 CMS ──────────────────────────────────── */}
+        <div className="flex flex-col gap-3">
+          {CLAUSE_GROUP_META.map(grp => {
+            const Icon = grp.icon;
+            const list = clauses[grp.key];
+            const isOpen = open[grp.key];
             return (
               <section
-                key={cat.key}
-                className={`bg-white border ${cat.border} rounded-xl shadow-sm p-3 sm:p-4 flex flex-col gap-2`}
+                key={grp.key}
+                className={`bg-white border ${grp.border} rounded-xl shadow-sm overflow-hidden`}
               >
-                <header className="flex items-center gap-2 pb-1 border-b border-slate-100">
-                  <div className={`w-7 h-7 rounded-lg ${cat.bg} ${cat.color} flex items-center justify-center shrink-0`}>
-                    <Icon size={15} weight="fill" />
+                <header
+                  className="flex items-center gap-2 px-3 sm:px-4 py-3 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
+                  onClick={() => toggleOpen(grp.key)}
+                  role="button"
+                  aria-expanded={isOpen}
+                >
+                  <div className={`w-8 h-8 rounded-lg ${grp.bg} ${grp.color} flex items-center justify-center shrink-0`}>
+                    <Icon size={16} weight="fill" />
                   </div>
-                  <h2 className={`text-[14px] font-black ${cat.color}`}>{cat.label} · 업무내용 기본값</h2>
+                  <div className="flex-1 min-w-0">
+                    <h2 className={`text-[14px] font-black ${grp.color}`}>{grp.label}</h2>
+                    <p className="text-[11px] text-slate-500 font-semibold">{grp.desc}</p>
+                  </div>
+                  <span className="text-[11px] font-black text-slate-400">{list.length}개</span>
+                  {isOpen
+                    ? <CaretDown size={14} weight="bold" className="text-slate-400" />
+                    : <CaretRight size={14} weight="bold" className="text-slate-400" />}
                 </header>
-                <textarea
-                  value={settings[cat.key]}
-                  onChange={(e) => upd(cat.key, e.target.value)}
-                  rows={4}
-                  placeholder={`${cat.label} 카테고리의 기본 업무내용을 입력하세요.\n예: ${DEFAULT_CONTRACT_SETTINGS[cat.key]}`}
-                  className={`w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 text-[14px] text-slate-800 font-semibold ${cat.ring} focus:outline-none focus:shadow-sm transition resize-y placeholder:text-slate-400 placeholder:text-[12px]`}
-                />
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-slate-400 font-semibold">
-                    {settings[cat.key].length}자
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => upd(cat.key, DEFAULT_CONTRACT_SETTINGS[cat.key])}
-                    className="text-[11px] font-bold text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer"
-                    title="이 카테고리만 기본값으로 되돌리기"
-                  >
-                    이 카테고리 기본값
-                  </button>
-                </div>
+
+                {isOpen && (
+                  <div className="p-3 sm:p-4 flex flex-col gap-2">
+                    {list.length === 0 && (
+                      <div className="text-[12px] text-slate-400 font-semibold text-center py-4 border border-dashed border-slate-200 rounded-lg">
+                        등록된 항목이 없습니다.
+                      </div>
+                    )}
+
+                    {list.map((text, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-start gap-2 p-2 rounded-lg border border-slate-100 bg-slate-50/40 hover:border-slate-200 transition-colors"
+                      >
+                        <div className={`flex items-center justify-center min-w-[26px] h-[26px] rounded-md ${grp.bg} ${grp.color} text-[11px] font-black shrink-0 mt-1`}>
+                          {idx + 1}
+                        </div>
+                        <textarea
+                          value={text}
+                          onChange={(e) => updClause(grp.key, idx, e.target.value)}
+                          rows={Math.max(2, Math.min(6, Math.ceil(text.length / 60) || 2))}
+                          placeholder="내용을 입력하세요."
+                          className="flex-1 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-indigo-500 focus:shadow-sm transition resize-y leading-relaxed"
+                        />
+                        <div className="flex flex-col gap-1 shrink-0 pt-0.5">
+                          <button
+                            type="button"
+                            onClick={() => moveClause(grp.key, idx, -1)}
+                            disabled={idx === 0}
+                            className="w-7 h-7 rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer transition-colors"
+                            title="위로 이동"
+                          >
+                            <ArrowUp size={12} weight="bold" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveClause(grp.key, idx, 1)}
+                            disabled={idx === list.length - 1}
+                            className="w-7 h-7 rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer transition-colors"
+                            title="아래로 이동"
+                          >
+                            <ArrowDown size={12} weight="bold" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeClause(grp.key, idx)}
+                            className="w-7 h-7 rounded-md border border-rose-200 bg-white text-rose-500 hover:bg-rose-50 flex items-center justify-center cursor-pointer transition-colors"
+                            title="삭제"
+                          >
+                            <Trash size={12} weight="bold" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    <div className="flex items-center justify-between pt-1">
+                      <button
+                        type="button"
+                        onClick={() => addClause(grp.key)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-dashed border-slate-300 bg-white text-slate-600 hover:bg-slate-50 hover:border-indigo-400 hover:text-indigo-600 text-[12px] font-bold transition-colors cursor-pointer"
+                      >
+                        <Plus size={12} weight="bold" />
+                        항목 추가
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleResetGroup(grp.key)}
+                        className="text-[11px] font-bold text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer"
+                        title="이 그룹만 기본값으로 되돌리기"
+                      >
+                        이 그룹 기본값
+                      </button>
+                    </div>
+                  </div>
+                )}
               </section>
             );
           })}
         </div>
 
-        {/* 공통 안내문구 */}
-        <section className="bg-white border border-slate-200 rounded-xl shadow-sm p-3 sm:p-4 flex flex-col gap-2">
-          <header className="flex items-center gap-2 pb-1 border-b border-slate-100">
-            <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-              <Notepad size={15} weight="fill" />
-            </div>
-            <h2 className="text-[14px] font-black text-indigo-700">공통 안내문구 · 계약서 [기타] 참고 기본값 (선택)</h2>
-          </header>
-          <textarea
-            value={settings.commonNotice ?? ""}
-            onChange={(e) => upd("commonNotice", e.target.value)}
-            rows={3}
-            placeholder={"모든 계약서의 [기타 · 추가내용] 항목에 참고할 기본 문구를 입력하세요.\n예: 수습기간 3개월 · 명절 상여 별도 · 근무복 지급 등"}
-            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-indigo-500 focus:shadow-sm transition resize-y placeholder:text-slate-400 placeholder:text-[12px]"
-          />
-        </section>
-
         <div className="text-[11px] text-slate-400 font-semibold text-center py-2">
-          설정 저장 위치 · 브라우저 localStorage <code className="bg-slate-100 px-1 rounded">{CONTRACT_SETTINGS_KEY}</code>
+          설정 저장 위치 · 브라우저 localStorage
+          {" · "}<code className="bg-slate-100 px-1 rounded">{JOB_WAGES_KEY}</code>
+          {" · "}<code className="bg-slate-100 px-1 rounded">{CONTRACT_CLAUSES_KEY}</code>
         </div>
       </main>
     </div>
