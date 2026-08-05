@@ -1109,11 +1109,14 @@ const WageComponentsTable: React.FC<{ wage: WageComponents }> = ({ wage }) => {
 interface WageComponentsFormProps {
   wage: WageComponents;
   onChange: (next: WageComponents) => void;
+  // T-V (2026-08-05) · 통상시급 · 수식 표시용 (내용 컬럼에 = 시급 × N 표기)
+  weekdayHourly?: number;
 }
 
 // T-K (2026-08-05) · 이미지 레이아웃 3열 재구성 (구성 항목 · 내용 · 금액)
 //   좌측 폼도 우측 프리뷰와 동일한 배치 · 금액 없으면 "-" · 하단 월급여총액 (포괄임금) 강조
-const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange }) => {
+// T-V (2026-08-05) · 내용 컬럼에 수식 표시 (= 시급 × N · 배수 반영됨)
+const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange, weekdayHourly = 0 }) => {
   const updEntry = (
     key: keyof Pick<WageComponents, "basicSalary" | "fixedOvertime" | "fixedHoliday" | "fixedHolidayOvertime" | "fixedNight" | "fixedAnnualLeave">,
     field: keyof WageComponentEntry,
@@ -1126,17 +1129,19 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange 
   };
 
   // T-K · 8항목 rows (이미지 원본 순서)
+  // T-V · formulaMul · 시급에 곱할 계수 (배수 이미 반영 항목 = 1 · 0.5배 항목 = 0.5)
   type ComponentKey = keyof Pick<WageComponents, "basicSalary" | "fixedOvertime" | "fixedHoliday" | "fixedHolidayOvertime" | "fixedNight" | "fixedAnnualLeave">;
-  const rows: Array<{ key: ComponentKey; label: string; note: string }> = [
-    { key: "basicSalary",          label: "기본급",                   note: "주휴수당 포함" },
-    { key: "fixedOvertime",        label: "(고정)연장근로수당",       note: "1.5배 가산 포함" },
-    { key: "fixedHoliday",         label: "(고정)휴일근로수당",       note: "1.5배 가산 포함" },
-    { key: "fixedHolidayOvertime", label: "(고정)휴일연장근로수당",   note: "0.5배 가산 포함" },
-    { key: "fixedNight",           label: "(고정)야간근로수당",       note: "0.5배 가산 포함" },
-    { key: "fixedAnnualLeave",     label: "(고정)연차휴가수당",       note: "" },
+  const rows: Array<{ key: ComponentKey; label: string; note: string; formulaMul: number; formulaHint?: string }> = [
+    { key: "basicSalary",          label: "기본급",                   note: "주휴수당 포함",     formulaMul: 1,   formulaHint: "주40+주휴8 × 4.3452" },
+    { key: "fixedOvertime",        label: "(고정)연장근로수당",       note: "1.5배 가산 포함",   formulaMul: 1,   formulaHint: "시간에 1.5배 반영됨" },
+    { key: "fixedHoliday",         label: "(고정)휴일근로수당",       note: "1.5배 가산 포함",   formulaMul: 1,   formulaHint: "시간에 1.5배 반영됨" },
+    { key: "fixedHolidayOvertime", label: "(고정)휴일연장근로수당",   note: "0.5배 가산 포함",   formulaMul: 0.5 },
+    { key: "fixedNight",           label: "(고정)야간근로수당",       note: "0.5배 가산 포함",   formulaMul: 0.5 },
+    { key: "fixedAnnualLeave",     label: "(고정)연차휴가수당",       note: "",                  formulaMul: 1 },
   ];
 
   const total = computeWageTotal(wage);
+  const w = Math.max(0, weekdayHourly);
 
   return (
     <div className="rounded-lg border border-indigo-200 bg-white flex flex-col overflow-hidden">
@@ -1171,7 +1176,7 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange 
                     </div>
                   )}
                 </td>
-                {/* 내용 · 월평균 시간·분 입력 */}
+                {/* 내용 · 월평균 시간·분 입력 + T-V 수식 표시 */}
                 <td className="px-1.5 py-1 align-middle">
                   <div className="flex items-center justify-center gap-0.5 text-[10px] text-slate-500 font-semibold">
                     <span>월평균</span>
@@ -1195,6 +1200,25 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange 
                     />
                     <span>m</span>
                   </div>
+                  {/* T-V · 수식 (시급 × 시간 · 배수 표기) */}
+                  {(() => {
+                    const totalH = (entry.hours || 0) + (entry.minutes || 0) / 60;
+                    if (totalH === 0 && r.key !== "basicSalary" && r.key !== "fixedAnnualLeave") return null;
+                    const mulText = r.formulaMul === 0.5 ? " × 0.5" : "";
+                    return (
+                      <div className="text-[9px] text-slate-400 font-semibold text-center mt-0.5 leading-tight">
+                        = 시급 × <span className="tabular-nums text-slate-500">{totalH.toFixed(2).replace(/\.?0+$/, "")}</span>{mulText}
+                        {r.formulaHint && (
+                          <span className="text-[9px] text-slate-400 ml-1 italic">({r.formulaHint})</span>
+                        )}
+                        {w > 0 && (
+                          <div className="text-[9px] text-emerald-600 font-black tabular-nums">
+                            = {fmtWon(Math.round(w * totalH * r.formulaMul))}원
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </td>
                 {/* 금액 · 없으면 "-" placeholder · 입력 시 값 표시 */}
                 <td className="px-1.5 py-1 align-middle text-right">
@@ -3817,80 +3841,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       {/* /카드 2 (통합) */}
 
       {/* ═══════════════════════════════════════════════════
-          카드 4 · 계약 기간 · 담당업무 · 4대보험 · 특약
-      ═══════════════════════════════════════════════════ */}
-      <div className={cardBase}>
-        <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-          <div className="w-6 h-6 rounded-md bg-amber-100 flex items-center justify-center shrink-0">
-            <CalendarBlank size={13} weight="fill" className="text-amber-600" />
-          </div>
-          <span className="text-[12px] font-black text-slate-700">계약 기간 · 담당업무</span>
-        </div>
-
-        {/* 계약 기간 */}
-        <div className={cardInner}>
-          <div className="flex items-center justify-between mb-0.5">
-            <div className={cardGroupLabel}><CalendarBlank size={10} weight="bold" /> 계약 기간</div>
-            <label className="inline-flex items-center gap-1.5 cursor-pointer">
-              <input type="checkbox" checked={form.indefinite} onChange={(e) => upd("indefinite", e.target.checked)}
-                className="w-3.5 h-3.5 rounded accent-indigo-600" />
-              <span className="text-[11px] font-semibold text-slate-600">무기한</span>
-            </label>
-          </div>
-          <div className={`grid gap-2 ${form.indefinite ? "grid-cols-2" : "grid-cols-3"}`}>
-            <div>
-              <label className={fldLabel}>근무 시작일</label>
-              <input type="date" value={form.startDate} onChange={(e) => upd("startDate", e.target.value)}
-                className={fldInput}
-              />
-            </div>
-            <div>
-              <label className={fldLabel}>계약 체결일</label>
-              <input type="date" value={form.contractSignDate} onChange={(e) => upd("contractSignDate", e.target.value)}
-                className={fldInput}
-              />
-            </div>
-            {!form.indefinite && (
-              <div>
-                <label className={fldLabel}>계약 종료일</label>
-                <input type="date" value={form.endDate} onChange={(e) => upd("endDate", e.target.value)}
-                  className={fldInput}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 담당 업무 · 4대보험 한 그룹 */}
-        <div className={cardInner}>
-          <div className={cardGroupLabel}>담당업무 · 보험</div>
-          <input type="text" value={form.jobDuty} onChange={(e) => upd("jobDuty", e.target.value)}
-            placeholder="예: 약국 카운터 · OTC 판매 · 재고 관리"
-            className={fldInput}
-          />
-          <label className="inline-flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={form.socialInsurance} onChange={(e) => upd("socialInsurance", e.target.checked)}
-              className="w-4 h-4 rounded accent-indigo-600" />
-            <span className="text-[12px] font-semibold text-slate-700">4대보험 가입</span>
-            <span className="text-[10.5px] text-slate-400 font-semibold ml-1">고용·산재·국민연금·건강보험</span>
-          </label>
-        </div>
-
-        {/* 특약 */}
-        <div>
-          <label className={fldLabel}>
-            <Notepad size={10} weight="fill" className="inline mr-0.5" />추가 특약 (선택)
-          </label>
-          <textarea value={form.additionalContent} onChange={(e) => upd("additionalContent", e.target.value)} rows={2}
-            placeholder="예: 수습기간 3개월 · 명절 상여 별도"
-            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-[12.5px] text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition resize-y placeholder:text-slate-400 placeholder:font-normal"
-          />
-        </div>
-      </div>
-      {/* /카드 4 */}
-
-      {/* ═══════════════════════════════════════════════════
-          카드 5 · 임금 계산
+          카드 3 · 임금 계산 · T-V (2026-08-05) · 카드 순서 재배치 (근무조건 → 임금 → 계약기간)
       ═══════════════════════════════════════════════════ */}
       <div className="rounded-xl border border-emerald-200 bg-white p-3 flex flex-col gap-3 shadow-sm">
         <div className="flex items-center gap-2 pb-2 border-b border-emerald-100">
@@ -3905,164 +3856,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           </label>
         </div>
 
-        {/* 흐름 요약 · 우측 임금구성표와 동일한 3열 표 형식 (항목 · 내용 · 값) */}
-        {(() => {
-          const wd = Number(form.weekdayHourly) || 0;
-          const we = Number(form.weekendHourly) || 0;
-          const grossFromWage = computeWageFromHourlyDual(wd, we, form.wageComponents).total
-            + (form.wageComponents.mealAllowance || 0)
-            + (form.wageComponents.vehicleAllowance || 0);
-          const netAuto = Math.round(grossFromWage * (1 - 0.0909));
-          return (
-            <div className="rounded-lg border border-emerald-200 bg-white flex flex-col overflow-hidden">
-              {/* 상단 라벨 · 우측 임금구성표와 동일한 스타일 */}
-              <div className="text-[11px] font-black text-emerald-800 flex items-center gap-1 px-2 py-1 border-b border-emerald-100 bg-emerald-50/50">
-                <Calculator size={11} weight="fill" />
-                임금 계산 요약
-              </div>
-              <table className="w-full border-collapse text-[11px] tabular-nums">
-                <thead>
-                  <tr className="bg-slate-100 text-slate-700 font-black text-[10.5px]">
-                    <th className="border-b border-slate-300 px-1.5 py-1 text-left w-[28%]">항목</th>
-                    <th className="border-b border-slate-300 px-1.5 py-1 text-center w-[44%]">내용</th>
-                    <th className="border-b border-slate-300 px-1.5 py-1 text-right w-[28%]">값</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {/* ① 월 근로시간 */}
-                  <tr className="border-b border-slate-200">
-                    <td className="px-1.5 py-1 align-middle">
-                      <div className="text-[11px] font-bold text-slate-800 leading-tight">
-                        <span className="text-emerald-600 font-black mr-0.5">①</span>월 근로시간
-                      </div>
-                    </td>
-                    <td className="px-1.5 py-1 align-middle text-center text-[10px] text-slate-500 font-semibold">
-                      주중 {weeklyWeekdayDays}일 · 주말 {weeklyWeekendDays}일 · 4.345주
-                    </td>
-                    <td className="px-1.5 py-1 align-middle text-right text-[11px] font-black text-slate-900">
-                      {monthlyCalc ? `${monthlyCalc.monthlyHoursInt}h ${monthlyCalc.monthlyMinutesRem}m` : "-"}
-                    </td>
-                  </tr>
-                  {/* ② 통상시급 (주중) */}
-                  <tr className="border-b border-slate-100">
-                    <td className="px-1.5 py-1 align-middle">
-                      <div className="text-[11px] font-bold text-slate-800 leading-tight">
-                        <span className="text-emerald-600 font-black mr-0.5">②</span>통상시급 (주중)
-                      </div>
-                    </td>
-                    <td className="px-1.5 py-1 align-middle text-center text-[10px] text-slate-500 font-semibold italic">
-                      사용자 입력 or 자동 역산
-                    </td>
-                    <td className="px-1.5 py-1 align-middle text-right text-[11px] font-black text-slate-900">
-                      {fmtWon(wd)}
-                    </td>
-                  </tr>
-                  {/* 통상시급 (주말) */}
-                  <tr className="border-b border-slate-200">
-                    <td className="px-1.5 py-1 align-middle">
-                      <div className="text-[11px] font-bold text-slate-800 leading-tight pl-3">
-                        통상시급 (주말)
-                      </div>
-                    </td>
-                    <td className="px-1.5 py-1 align-middle text-center text-[10px] text-slate-500 font-semibold italic">
-                      &nbsp;
-                    </td>
-                    <td className="px-1.5 py-1 align-middle text-right text-[11px] font-black text-slate-900">
-                      {fmtWon(we)}
-                    </td>
-                  </tr>
-                  {/* ③ 세전 총액 */}
-                  <tr className="border-b border-slate-200">
-                    <td className="px-1.5 py-1 align-middle">
-                      <div className="text-[11px] font-bold text-slate-800 leading-tight">
-                        <span className="text-emerald-600 font-black mr-0.5">③</span>세전 총액
-                      </div>
-                    </td>
-                    <td className="px-1.5 py-1 align-middle text-center text-[10px] text-slate-500 font-semibold">
-                      시급 × 296.94h (포괄임금)
-                    </td>
-                    <td className="px-1.5 py-1 align-middle text-right text-[11px] font-black text-slate-900">
-                      {fmtWon(grossFromWage)}원
-                    </td>
-                  </tr>
-                  {/* ④ 예상 세후 · 합계 강조 행 */}
-                  <tr className="bg-emerald-50">
-                    <td className="px-1.5 py-1.5 align-middle text-left text-[11.5px] font-black text-emerald-900">
-                      <span className="text-emerald-600 font-black mr-0.5">④</span>예상 세후
-                    </td>
-                    <td className="px-1.5 py-1.5 align-middle text-center text-[10.5px] font-bold text-emerald-700">
-                      세전 × (1 - 4대보험 9.09%)
-                    </td>
-                    <td className="px-1.5 py-1.5 align-middle text-right text-[12px] font-black text-emerald-800">
-                      {fmtWon(netAuto)}원
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          );
-        })()}
-
-        {/* 목표 세후 역산 */}
-        {(() => {
-          const wd = Number(form.weekdayHourly) || 0;
-          const we = Number(form.weekendHourly) || 0;
-          const autoGross = computeWageFromHourlyDual(wd, we, form.wageComponents).total
-            + (form.wageComponents.mealAllowance || 0)
-            + (form.wageComponents.vehicleAllowance || 0);
-          const autoNet = Math.round(autoGross * (1 - 0.0909));
-          const hasUserInput = form.targetNetInput.trim() !== "";
-          return (
-            <div className="rounded-lg border-2 border-emerald-300 bg-emerald-50/30 px-3 py-2.5 flex flex-col gap-2">
-              <div className="flex items-center gap-1.5">
-                <Calculator size={13} weight="fill" className="text-emerald-600 shrink-0" />
-                <span className="text-[11px] font-black text-slate-700">목표 세후 설정</span>
-                <span className="text-[9.5px] text-slate-400 font-semibold">(입력 시 시급·구성표 자동 역산)</span>
-              </div>
-              <div className="relative">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={form.targetNetInput}
-                  onChange={(e) => {
-                    const raw = e.target.value.replace(/[^0-9]/g, "");
-                    const num = Number(raw) || 0;
-                    if (raw === "") {
-                      setForm(prev => ({ ...prev, targetNetInput: "" }));
-                      return;
-                    }
-                    setForm(prev => {
-                      const prevWd = Number(prev.weekdayHourly) || 0;
-                      const prevWe = Number(prev.weekendHourly) || 0;
-                      const { weekdayHourly, weekendHourly, wage } = reverseWageFromNetDual(
-                        num, prevWd, prevWe, prev.wageComponents,
-                      );
-                      return {
-                        ...prev,
-                        targetNetInput: raw,
-                        weekdayHourly: String(weekdayHourly),
-                        weekendHourly: String(weekendHourly),
-                        wageComponents: wage,
-                        useWageComponents: true,
-                      };
-                    });
-                  }}
-                  placeholder={autoNet > 0 ? fmtWon(autoNet) : "예: 6,000,000"}
-                  className="w-full bg-white border-2 border-emerald-300 rounded-lg pl-3 pr-9 py-2 text-[14px] text-slate-900 font-black focus:outline-none focus:ring-2 focus:ring-emerald-400/60 focus:border-emerald-500 transition text-right placeholder:text-emerald-400 placeholder:font-normal"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11.5px] text-emerald-700 font-black pointer-events-none">원</span>
-              </div>
-              {!hasUserInput && autoNet > 0 && (
-                <div className="text-[10px] text-emerald-600 font-semibold text-right">
-                  자동 계산값 {fmtWon(autoNet)}원 · 입력하면 역산 적용
-                </div>
-              )}
-              <div className="text-[9.5px] text-slate-400 leading-relaxed">
-                세후 = 세전 × (1 − 9.09%) · 4대보험 근로자 부담만 · 소득세 제외
-              </div>
-            </div>
-          );
-        })()}
+        {/* T-V (2026-08-05) · 4-col 요약 표 제거 · 목표세후 UI 제거 · 임금 구성표 = 주 컨텐츠 (아래 위치) */}
 
         {/* 실수령액 상세 */}
         {(() => {
@@ -4187,12 +3981,87 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           </div>
         </div>
 
-        {/* 임금 구성표 */}
-        {form.useWageComponents && (
-          <WageComponentsForm wage={form.wageComponents} onChange={(next) => upd("wageComponents", next)} />
-        )}
+        {/* 임금 구성표 · T-V (2026-08-05) · 항상 표시 · weekdayHourly 로 수식 계산 */}
+        <WageComponentsForm
+          wage={form.wageComponents}
+          onChange={(next) => upd("wageComponents", next)}
+          weekdayHourly={Number(form.weekdayHourly) || 0}
+        />
       </div>
-      {/* /카드 5 */}
+      {/* /카드 3 (임금 · T-V 재배치) */}
+
+      {/* ═══════════════════════════════════════════════════
+          카드 4 · 계약 기간 · 담당업무 · 4대보험 · 특약 (맨 아래)
+      ═══════════════════════════════════════════════════ */}
+      <div className={cardBase}>
+        <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+          <div className="w-6 h-6 rounded-md bg-amber-100 flex items-center justify-center shrink-0">
+            <CalendarBlank size={13} weight="fill" className="text-amber-600" />
+          </div>
+          <span className="text-[12px] font-black text-slate-700">계약 기간 · 담당업무</span>
+        </div>
+
+        {/* 계약 기간 */}
+        <div className={cardInner}>
+          <div className="flex items-center justify-between mb-0.5">
+            <div className={cardGroupLabel}><CalendarBlank size={10} weight="bold" /> 계약 기간</div>
+            <label className="inline-flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" checked={form.indefinite} onChange={(e) => upd("indefinite", e.target.checked)}
+                className="w-3.5 h-3.5 rounded accent-indigo-600" />
+              <span className="text-[11px] font-semibold text-slate-600">무기한</span>
+            </label>
+          </div>
+          <div className={`grid gap-2 ${form.indefinite ? "grid-cols-2" : "grid-cols-3"}`}>
+            <div>
+              <label className={fldLabel}>근무 시작일</label>
+              <input type="date" value={form.startDate} onChange={(e) => upd("startDate", e.target.value)}
+                className={fldInput}
+              />
+            </div>
+            <div>
+              <label className={fldLabel}>계약 체결일</label>
+              <input type="date" value={form.contractSignDate} onChange={(e) => upd("contractSignDate", e.target.value)}
+                className={fldInput}
+              />
+            </div>
+            {!form.indefinite && (
+              <div>
+                <label className={fldLabel}>계약 종료일</label>
+                <input type="date" value={form.endDate} onChange={(e) => upd("endDate", e.target.value)}
+                  className={fldInput}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 담당 업무 · 4대보험 한 그룹 */}
+        <div className={cardInner}>
+          <div className={cardGroupLabel}>담당업무 · 보험</div>
+          <input type="text" value={form.jobDuty} onChange={(e) => upd("jobDuty", e.target.value)}
+            placeholder="예: 약국 카운터 · OTC 판매 · 재고 관리"
+            className={fldInput}
+          />
+          <label className="inline-flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={form.socialInsurance} onChange={(e) => upd("socialInsurance", e.target.checked)}
+              className="w-4 h-4 rounded accent-indigo-600" />
+            <span className="text-[12px] font-semibold text-slate-700">4대보험 가입</span>
+            <span className="text-[10.5px] text-slate-400 font-semibold ml-1">고용·산재·국민연금·건강보험</span>
+          </label>
+        </div>
+
+        {/* 특약 */}
+        <div>
+          <label className={fldLabel}>
+            <Notepad size={10} weight="fill" className="inline mr-0.5" />추가 특약 (선택)
+          </label>
+          <textarea value={form.additionalContent} onChange={(e) => upd("additionalContent", e.target.value)} rows={2}
+            placeholder="예: 수습기간 3개월 · 명절 상여 별도"
+            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-[12.5px] text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition resize-y placeholder:text-slate-400 placeholder:font-normal"
+          />
+        </div>
+      </div>
+      {/* /카드 4 (계약기간 · 맨 아래) */}
 
       {/* ═══════════════════════════════════════════════════
           접기 · 임금 산정 비교 (심층)
