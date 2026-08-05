@@ -10,6 +10,7 @@ export {
   WEEKLY_LIMIT,
   MIN_WAGE_2026,
   NON_TAXABLE_LIMITS,
+  RECOGNIZED_HOURS,
 } from "./insuranceRates";
 
 export { approxIncomeTax } from "./simplifiedTax2026";

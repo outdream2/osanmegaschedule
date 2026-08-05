@@ -44,6 +44,7 @@ import kyustampUrl from "../../images/kyustamp.png";
 import {
   RATES_2026,
   MIN_WAGE_2026,
+  RECOGNIZED_HOURS,
   grossUp as payrollGrossUp,
   approxIncomeTax as payrollApproxIncomeTax,
 } from "../../lib/payroll";
@@ -204,6 +205,12 @@ interface ContractForm {
 
   // T-A (2026-08-05) · 희망 월 세후 수령액 (원 단위 · 입력 즉시 8항목 역산)
   targetNetInput: string;
+
+  // T-CTR-12 (2026-08-05) · 세전 월 총액 (원 단위 · 자동 흐름)
+  //   · 근무시간·시급 → 희망세후 (T-CTR-9) → gross-up → 세전 자동 채움
+  //   · 세전 = X 로 임금구조 4항목 자동 분배 (X / 296.94 × 각 항목 시간)
+  //   · 사용자 편집 시 자동 갱신 중단 (수동 우선) · 빈 값 초기화 시 재개
+  grossSalaryInput: string;
 
   // T6 · 카테고리별 이해·동의 (개별 조항 서명 대신 카테고리 하나씩)
   // - wage: 임금 조항 (단서 5개 전체)
@@ -923,6 +930,7 @@ const emptyForm = (): ContractForm => ({
   paymentDayText: "당월 01일부터 당월 말일 까지 근로한 부분에 대하여 당월 말일에 '을' 본인 명의의 통장으로 지급한다.",
   contractSignDate: todayIso(),
   targetNetInput: "",
+  grossSalaryInput: "",
   clauseAcks: { wage: false, workTime: false, etc: false },
   // T-CTR-7 · 임금 항목 명시적 비활성화 · 기본 · 연차 활성 (기본급은 별도 · 필드 없음)
   wageDisabled: {
@@ -3145,6 +3153,10 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const lastAutoHolidayHoursRef = useRef<{ h: number; m: number } | null>(null);
   useEffect(() => {
     setForm(prev => {
+      // T-CTR-12 (2026-08-05) · grossSalaryInput 설정 시 · fixed 296.94 흐름이 우선
+      //   · Step 4 useEffect 가 4항목 (기본·연장·휴일·연차) 을 fixed 시간으로 세팅함
+      //   · 이 dynamic-hours effect 는 우회 (충돌 방지)
+      if (prev.grossSalaryInput && prev.grossSalaryInput.trim() !== "") return prev;
       const wd = Number(prev.weekdayHourly) || 0;
       const we = Number(prev.weekendHourly) || 0;
       if (wd <= 0) return prev; // 시급 미입력 시 skip
@@ -3336,6 +3348,85 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       return { ...prev, targetNetInput: str };
     });
   }, [monthlyCalc, form.weekdayHourly, form.weekendHourly, weeklyWeekdayDays, weeklyWeekendDays]);
+
+  // T-CTR-12 · Step 3 (2026-08-05) · 희망세후 → 세전 자동 gross-up
+  //   · targetNetInput 변경 시 · payroll grossUp 반복 근사 (4대보험 + 누진소득세)
+  //   · nonTaxable · 식대 + 차량 (비과세) 반영
+  //   · dependents · 기본 1
+  //   · 사용자가 grossSalaryInput 을 수동 편집하면 자동 갱신 중단
+  const manualGrossSalaryRef = useRef(false);
+  useEffect(() => {
+    if (manualGrossSalaryRef.current) return;
+    const net = Number(form.targetNetInput.replace(/[^0-9]/g, "")) || 0;
+    if (!Number.isFinite(net) || net <= 0) return;
+    const nonTaxable = (Number(form.wageComponents.mealAllowance) || 0)
+                     + (Number(form.wageComponents.vehicleAllowance) || 0);
+    const { gross } = payrollGrossUp(net, nonTaxable, 1);
+    if (!Number.isFinite(gross) || gross <= 0) return;
+    setForm(prev => {
+      const str = String(gross);
+      if (prev.grossSalaryInput === str) return prev;
+      return { ...prev, grossSalaryInput: str };
+    });
+  }, [
+    form.targetNetInput,
+    form.wageComponents.mealAllowance,
+    form.wageComponents.vehicleAllowance,
+  ]);
+
+  // T-CTR-12 · Step 4 (2026-08-05) · 세전 → 임금구조 4항목 자동 분배
+  //   · 통상시급 = 세전 X / 296.94 (RECOGNIZED_HOURS.total)
+  //   · 기본급   = 통상시급 × 209
+  //   · 고정연장 = 통상시급 × 55.94 (가산 1.5배 이미 반영)
+  //   · 고정휴일 = 통상시급 × 22    (가산 1.5배 이미 반영)
+  //   · 고정연차 = 통상시급 × 10
+  //   · hours/minutes 는 사용자 편집 존중 (default 값이면 fixed 로 초기화)
+  //   · T-CTR-7 · 명시적 비활성 항목 (fixedOvertime·fixedHoliday·fixedAnnualLeave) · amount=0 유지
+  useEffect(() => {
+    const gross = Number(form.grossSalaryInput.replace(/[^0-9]/g, "")) || 0;
+    if (!Number.isFinite(gross) || gross <= 0) return;
+    const ordinaryHourly = gross / RECOGNIZED_HOURS.total;
+    if (!Number.isFinite(ordinaryHourly) || ordinaryHourly <= 0) return;
+
+    const basicAmt  = Math.round(ordinaryHourly * RECOGNIZED_HOURS.basic);
+    const otAmt     = Math.round(ordinaryHourly * RECOGNIZED_HOURS.fixedOvertime);
+    const holAmt    = Math.round(ordinaryHourly * RECOGNIZED_HOURS.fixedHoliday);
+    const annualAmt = Math.round(ordinaryHourly * RECOGNIZED_HOURS.fixedAnnualLeave);
+
+    setForm(prev => {
+      const disMap = prev.wageDisabled ?? {};
+      const wc = prev.wageComponents;
+      // 시간 default (55.94h → 55h 56m · 하위호환)
+      const nextBasic  = { hours: 209, minutes: 0,  amount: basicAmt };
+      const nextOt     = disMap.fixedOvertime    ? { hours: 0, minutes: 0, amount: 0 } : { hours: 55, minutes: 56, amount: otAmt };
+      const nextHol    = disMap.fixedHoliday     ? { hours: 0, minutes: 0, amount: 0 } : { hours: 22, minutes: 0,  amount: holAmt };
+      const nextAnnual = disMap.fixedAnnualLeave ? { hours: 0, minutes: 0, amount: 0 } : { hours: 10, minutes: 0,  amount: annualAmt };
+
+      // 변화 감지 (amount 만 체크 · hours 는 default 유지)
+      const noChange =
+        wc.basicSalary.amount      === nextBasic.amount &&
+        wc.fixedOvertime.amount    === nextOt.amount &&
+        wc.fixedHoliday.amount     === nextHol.amount &&
+        wc.fixedAnnualLeave.amount === nextAnnual.amount &&
+        wc.basicSalary.hours       === nextBasic.hours &&
+        wc.fixedOvertime.hours     === nextOt.hours &&
+        wc.fixedHoliday.hours      === nextHol.hours &&
+        wc.fixedAnnualLeave.hours  === nextAnnual.hours;
+      if (noChange) return prev;
+
+      return {
+        ...prev,
+        useWageComponents: true,
+        wageComponents: {
+          ...wc,
+          basicSalary:      { ...wc.basicSalary,      ...nextBasic },
+          fixedOvertime:    { ...wc.fixedOvertime,    ...nextOt },
+          fixedHoliday:     { ...wc.fixedHoliday,     ...nextHol },
+          fixedAnnualLeave: { ...wc.fixedAnnualLeave, ...nextAnnual },
+        },
+      };
+    });
+  }, [form.grossSalaryInput, form.wageDisabled]);
 
   // 직원 선택
   //   T-CTR-10 (2026-08-05) · 근로자 설정 시급 자동 반영
@@ -4519,6 +4610,48 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 >
                   반영
                 </button>
+              </div>
+              {/* T-CTR-12 (2026-08-05) · 세전 월 총액 (자동 gross-up · 편집 시 임금구조 재분배) */}
+              <div className="flex items-stretch gap-2">
+                <div className="flex-1 flex items-center gap-2 rounded-lg border border-emerald-200 bg-white/70 px-3 py-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 shrink-0">세전</span>
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={form.grossSalaryInput}
+                      onChange={(e) => {
+                        const cleaned = e.target.value.replace(/[^0-9]/g, "");
+                        // 수동 편집 감지 · 빈 값 초기화 시 자동 재개
+                        manualGrossSalaryRef.current = cleaned !== "";
+                        upd("grossSalaryInput", cleaned);
+                      }}
+                      placeholder="자동: 희망세후 + 세금"
+                      className="w-full bg-transparent text-[13px] text-slate-800 font-black text-right pr-6 focus:outline-none"
+                    />
+                    <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[10.5px] text-slate-400 font-semibold pointer-events-none">원</span>
+                  </div>
+                </div>
+                <div className="flex flex-col justify-center px-2 rounded-md bg-white/40 border border-emerald-100">
+                  <span className="text-[8.5px] font-black uppercase tracking-wider text-emerald-600">통상시급</span>
+                  <span className="tabular-nums text-[11px] font-black text-emerald-800">
+                    {(() => {
+                      const g = Number(form.grossSalaryInput.replace(/[^0-9]/g, "")) || 0;
+                      if (g <= 0) return "-";
+                      const oh = Math.round(g / RECOGNIZED_HOURS.total);
+                      return `${fmtWon(oh)} 원`;
+                    })()}
+                  </span>
+                </div>
+              </div>
+              {/* 세전 → 296.94h 분배 (자동 · 4항목) 힌트 */}
+              <div className="text-[9.5px] text-emerald-700 font-semibold px-1">
+                {(() => {
+                  const g = Number(form.grossSalaryInput.replace(/[^0-9]/g, "")) || 0;
+                  if (g <= 0) return "근무시간·시급 입력 시 · 자동 채움 (희망세후 → 세전 → 임금구조 296.94h 분배)";
+                  const oh = g / RECOGNIZED_HOURS.total;
+                  return `세전 ÷ 296.94h = 통상시급 · 기본 ${RECOGNIZED_HOURS.basic}h + 연장 ${RECOGNIZED_HOURS.fixedOvertime}h + 휴일 ${RECOGNIZED_HOURS.fixedHoliday}h + 연차 ${RECOGNIZED_HOURS.fixedAnnualLeave}h · 통상시급 ${fmtWon(Math.round(oh))}원`;
+                })()}
               </div>
               {/* 4-col 요약 (실시간) · T-CTR-9 · Step 1 · Number.isFinite guard */}
               <div className="grid grid-cols-4 gap-1.5 mt-1">

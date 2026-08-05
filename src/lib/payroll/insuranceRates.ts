@@ -15,6 +15,20 @@ export const RATES_2026 = {
 // 월 소정근로시간 · 주 40h + 주휴 8h × 4.3452주 ≈ 209h
 export const MONTHLY_STANDARD_HOURS = 209;
 
+// T-CTR-12 (2026-08-05) · 임금구성표 인정시간 (고정 상수) · 사용자 정본
+//   · basic 209h          : 주 40h + 주휴 8h × 4.3452주
+//   · fixedOvertime 55.94h: 약정 연장 실 37.3h × 1.5배 가산 포함
+//   · fixedHoliday 22h    : 연간 공휴일/12개월 × 1.5배 가산 포함
+//   · fixedAnnualLeave 10h: 월 1.25일 × 8h (연 15일 / 12개월)
+//   · total 296.94h       : 통상시급 분모 (세전 X → 통상시급 = X / 296.94)
+export const RECOGNIZED_HOURS = {
+  basic: 209,
+  fixedOvertime: 55.94,
+  fixedHoliday: 22,
+  fixedAnnualLeave: 10,
+  total: 296.94,
+} as const;
+
 // 월 평균 주 수 (52.1775주 / 12개월)
 export const WEEKS_PER_MONTH = 4.3452;
 
