@@ -100,10 +100,6 @@ CREATE INDEX IF NOT EXISTS idx_ec_is_active
 
 ## 🟡 승인 필요 · 대형 태스크
 
-### T-CTR-6 · 홈택스 엑셀 파싱 자동 갱신
-- 매년 2월 개정치 · JSON 스냅샷 갱신 스크립트
-- 예상 3~4h
-
 ### T39 · YOLO/OCR 모델 분리 (Render OOM 방어)
 - PaddleOCR Python 서비스 분리
 - 예상 4~6h · Render 대비
