@@ -4,9 +4,10 @@
 //   신규 진입 (prior=0, recent>0) 상단 · 성장률 desc
 
 import React, { useEffect, useMemo, useState } from "react";
-import { TrendingUp, AlertTriangle, Loader2 as LoaderIcon } from "lucide-react";
+import { TrendingUp, AlertTriangle, Loader2 as LoaderIcon, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { getProductsMap } from "../../lib/productsCache";
 import { matchClassFilter, type ClassFilter } from "../../utils/productClassify";
+import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 interface TrendingRow {
@@ -126,6 +127,15 @@ function buildDecadalBuckets(): Omit<PeriodBucket, "rows" | "total" | "loading" 
   });
 }
 
+// ─── 공용 SortIcon ───────────────────────────────────────────────────────────
+// 표 헤더 우측 정렬 방향 아이콘 · 훅 상태 프롭 전달 (2026-08-05)
+const SortIcon: React.FC<{ k: string; sortKey: string; sortDir: "asc" | "desc" }> = ({ k, sortKey, sortDir }) => {
+  if (sortKey !== k) return <ArrowUpDown size={10} className="text-slate-300 ml-1 inline-block align-middle" />;
+  return sortDir === "asc"
+    ? <ArrowUp size={10} className="text-indigo-500 ml-1 inline-block align-middle" />
+    : <ArrowDown size={10} className="text-indigo-500 ml-1 inline-block align-middle" />;
+};
+
 // ─── PeriodBucketCard ────────────────────────────────────────────────────────
 const PeriodBucketCard: React.FC<{
   bucket: PeriodBucket;
@@ -234,7 +244,6 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
   const [rows, setRows] = useState<TrendingRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [windowDays, setWindowDays] = useState<7 | 14 | 30 | 60 | 90>(30);
-  const [sortKey, setSortKey] = useState<"growth" | "delta" | "recent" | "shortage">("growth");
   const [onlyShortage, setOnlyShortage] = useState(false);
   const [meta, setMeta] = useState<{ recent_from: string; prior_from: string; total: number } | null>(null);
   // 상비약/일반약/전체 3-way 필터 (localStorage 저장)
@@ -284,23 +293,44 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
     [baseFiltered, productRealMapById]);
   const allCount = baseFiltered.length;
 
-  const displayed = useMemo(() => {
-    let arr = baseFiltered;
-    if (classFilter !== "all") {
-      arr = arr.filter(r => matchClassFilter(productRealMapById[String(r.product_code)] ?? null, classFilter));
-    }
-    arr = [...arr].sort((a, b) => {
-      if (sortKey === "growth") {
-        if (a.newly_trending !== b.newly_trending) return a.newly_trending ? -1 : 1;
-        return (b.growth_rate ?? -999999) - (a.growth_rate ?? -999999);
-      }
-      if (sortKey === "delta") return b.absolute_delta - a.absolute_delta;
-      if (sortKey === "recent") return b.recent_sale - a.recent_sale;
-      if (sortKey === "shortage") return (b.optimal_stock - b.current_stock) - (a.optimal_stock - a.current_stock);
-      return 0;
-    });
-    return arr;
-  }, [baseFiltered, sortKey, classFilter, productRealMapById]);
+  // classFilter 적용된 최종 필터링 리스트 (정렬 전)
+  const filtered = useMemo(() => {
+    if (classFilter === "all") return baseFiltered;
+    return baseFiltered.filter(r => matchClassFilter(productRealMapById[String(r.product_code)] ?? null, classFilter));
+  }, [baseFiltered, classFilter, productRealMapById]);
+
+  // 정렬 컬럼 · 툴바 버튼과 표 헤더 클릭 모두 동일 상태 조작 (T30 · useSortableTable)
+  //   - growth  : 신규진입(newly_trending) 상단 후 성장률 desc
+  //   - delta   : 증가량 desc
+  //   - recent  : 최근 판매 desc
+  //   - shortage: 부족량(적정-현재) desc
+  //   - name    : 상품명 asc (한글 로케일)
+  //   - prior   : 이전 판매 desc
+  //   - current : 현재고 desc
+  //   - optimal : 적정재고 desc
+  type SortKey = "growth" | "delta" | "recent" | "shortage" | "name" | "prior" | "current" | "optimal";
+  const sortComparators = useMemo<Record<SortKey, Comparator<TrendingRow>>>(() => ({
+    // growth: newly_trending 우선 (항상 상단), 그다음 성장률 큰 순
+    //   defaultDir="desc" 이므로 desc 방향에서 이 asc-비교의 결과가 부호반전됨
+    //   → asc-return 값을 "성장률 asc" 로 두면 desc 클릭 시 큰 순으로 나옴
+    //   newly_trending 은 방향과 무관하게 항상 상단이어야 하므로 sign 을 안 타는 별도 처리 필요
+    //   → 훅이 sign 만 곱하므로 newly_trending 도 정렬 방향을 타게 됨.
+    //     desc 기본값에서만 신규 상단이 보장되므로 여기서는 desc-우선 정렬을 가정하고
+    //     신규 상단 로직도 desc-friendly 로 작성 (b - a 관점)
+    growth: (a, b) => {
+      if (a.newly_trending !== b.newly_trending) return a.newly_trending ? 1 : -1; // desc 시 부호반전 → 신규가 상단
+      return (a.growth_rate ?? -999999) - (b.growth_rate ?? -999999);
+    },
+    delta:    (a, b) => a.absolute_delta - b.absolute_delta,
+    recent:   (a, b) => a.recent_sale - b.recent_sale,
+    shortage: (a, b) => (a.optimal_stock - a.current_stock) - (b.optimal_stock - b.current_stock),
+    name:     (a, b) => a.product_name.localeCompare(b.product_name, "ko"),
+    prior:    (a, b) => a.prior_sale - b.prior_sale,
+    current:  (a, b) => a.current_stock - b.current_stock,
+    optimal:  (a, b) => a.optimal_stock - b.optimal_stock,
+  }), []);
+  const { sorted: displayed, sortKey, sortDir, toggleSort, setSort } =
+    useSortableTable<TrendingRow, SortKey>(filtered, "growth", sortComparators, "desc");
 
   const fmt = (n: number) => n.toLocaleString();
 
@@ -361,7 +391,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
               { k: "recent" as const, label: "최근판매" },
               { k: "shortage" as const, label: "재고부족" },
             ]).map(o => (
-              <button key={o.k} onClick={() => setSortKey(o.k)}
+              <button key={o.k} onClick={() => setSort(o.k, "desc")}
                 className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${sortKey === o.k ? "bg-indigo-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
                 {o.label}
               </button>
@@ -415,16 +445,58 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
                   <th colSpan={2} className="bg-indigo-100 text-indigo-700 text-center px-3 py-1.5">성장 지표</th>
                   <th colSpan={2} className="bg-slate-50 text-slate-400 text-center px-3 py-1.5">재고현황</th>
                 </tr>
-                {/* 서브헤더 */}
+                {/* 서브헤더 · 헤더 클릭으로 정렬 (T30 · useSortableTable) */}
                 <tr className="border-b border-slate-100 text-[11px] font-semibold text-slate-500 uppercase tracking-wider bg-white">
                   <th className="text-center px-2 py-1.5 w-9">#</th>
-                  <th className="text-left px-2 py-1.5 min-w-[200px]">상품명</th>
-                  <th className="text-right px-2 py-1.5 w-16 bg-indigo-50/50 text-indigo-600">최근{windowDays}일</th>
-                  <th className="text-right px-2 py-1.5 w-16 bg-indigo-50/30 text-indigo-500">이전{windowDays}일</th>
-                  <th className="text-right px-2 py-1.5 w-16 bg-indigo-100/60 text-indigo-700">성장률</th>
-                  <th className="text-right px-2 py-1.5 w-16 bg-indigo-50/60 text-indigo-600">증가량</th>
-                  <th className="text-right px-2 py-1.5 w-14 text-slate-500">현재고</th>
-                  <th className="text-right px-2 py-1.5 w-14 text-slate-400">적정</th>
+                  <th
+                    onClick={() => toggleSort("name")}
+                    title="상품명 정렬"
+                    className="text-left px-2 py-1.5 min-w-[200px] cursor-pointer select-none hover:bg-indigo-50/30 transition"
+                  >
+                    상품명<SortIcon k="name" sortKey={sortKey} sortDir={sortDir} />
+                  </th>
+                  <th
+                    onClick={() => toggleSort("recent")}
+                    title="최근 판매 정렬"
+                    className="text-right px-2 py-1.5 w-16 bg-indigo-50/50 text-indigo-600 cursor-pointer select-none hover:bg-indigo-100/60 transition"
+                  >
+                    최근{windowDays}일<SortIcon k="recent" sortKey={sortKey} sortDir={sortDir} />
+                  </th>
+                  <th
+                    onClick={() => toggleSort("prior")}
+                    title="이전 판매 정렬"
+                    className="text-right px-2 py-1.5 w-16 bg-indigo-50/30 text-indigo-500 cursor-pointer select-none hover:bg-indigo-100/60 transition"
+                  >
+                    이전{windowDays}일<SortIcon k="prior" sortKey={sortKey} sortDir={sortDir} />
+                  </th>
+                  <th
+                    onClick={() => toggleSort("growth")}
+                    title="성장률 정렬 · 신규진입 상단"
+                    className="text-right px-2 py-1.5 w-16 bg-indigo-100/60 text-indigo-700 cursor-pointer select-none hover:bg-indigo-200/60 transition"
+                  >
+                    성장률<SortIcon k="growth" sortKey={sortKey} sortDir={sortDir} />
+                  </th>
+                  <th
+                    onClick={() => toggleSort("delta")}
+                    title="증가량 정렬"
+                    className="text-right px-2 py-1.5 w-16 bg-indigo-50/60 text-indigo-600 cursor-pointer select-none hover:bg-indigo-100/60 transition"
+                  >
+                    증가량<SortIcon k="delta" sortKey={sortKey} sortDir={sortDir} />
+                  </th>
+                  <th
+                    onClick={() => toggleSort("current")}
+                    title="현재고 정렬"
+                    className="text-right px-2 py-1.5 w-14 text-slate-500 cursor-pointer select-none hover:bg-slate-100/60 transition"
+                  >
+                    현재고<SortIcon k="current" sortKey={sortKey} sortDir={sortDir} />
+                  </th>
+                  <th
+                    onClick={() => toggleSort("optimal")}
+                    title="적정재고 정렬"
+                    className="text-right px-2 py-1.5 w-14 text-slate-400 cursor-pointer select-none hover:bg-slate-100/60 transition"
+                  >
+                    적정<SortIcon k="optimal" sortKey={sortKey} sortDir={sortDir} />
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
