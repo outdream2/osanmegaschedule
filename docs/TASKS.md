@@ -106,10 +106,6 @@ CREATE INDEX IF NOT EXISTS idx_ec_is_active
 - 대안 · Render Pro 티어 (2GB RAM) 로 분리 불필요할 수 있음
 - 예상 3~4h (범위 축소)
 
-### T29 · TanStack Table 도입
-- 정렬·필터·페이지네이션·리사이즈 통합
-- 예상 2~4h · T27 이후
-
 ### T-C · CMS 서버 이전 (localStorage → Supabase)
 - 예상 2~3h · 마이그레이션
 
