@@ -351,9 +351,10 @@ interface WageBaseHours {
  *   · 10.0h → basic 209  · OT 65.18
  */
 function calcWageBase(dailyHours: number, weekdays: number, weekendDays: number = 0): WageBaseHours {
-  const dh = Math.max(0, dailyHours);
-  const wd = Math.max(0, weekdays);
-  const we = Math.max(0, weekendDays);
+  // T-CTR-9 · Step 1 (2026-08-05) · NaN/Infinity 방어 · 입력 undefined/NaN → 0 대체
+  const dh = Number.isFinite(dailyHours) ? Math.max(0, dailyHours) : 0;
+  const wd = Number.isFinite(weekdays)   ? Math.max(0, weekdays)   : 0;
+  const we = Number.isFinite(weekendDays) ? Math.max(0, weekendDays) : 0;
   const dailyBasic = Math.min(dh, DAILY_LIMIT);
   const dailyOvertime = Math.max(0, dh - DAILY_LIMIT);
 
@@ -630,8 +631,13 @@ function computeWageFromHourlyDual(
   annualLeaveAmount: number;
   total: number;
 } {
-  const w = Math.max(0, weekdayHourly); // 통상시급 = 주중시급
-  const hoursOf = (e: WageComponentEntry) => Math.max(0, e.hours) + Math.max(0, e.minutes) / 60;
+  // T-CTR-9 · Step 1 · NaN 방어 · 통상시급·시간 · undefined 안전
+  const w = Number.isFinite(weekdayHourly) ? Math.max(0, weekdayHourly) : 0;
+  const safeN = (v: unknown): number => {
+    const n = Number(v);
+    return Number.isFinite(n) ? Math.max(0, n) : 0;
+  };
+  const hoursOf = (e: WageComponentEntry | undefined) => (e ? safeN(e.hours) + safeN(e.minutes) / 60 : 0);
   const basicH = hoursOf(wage.basicSalary);
   const overtimeH = hoursOf(wage.fixedOvertime);
   const holidayH = hoursOf(wage.fixedHoliday);
@@ -4323,18 +4329,24 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         {!isCardCollapsed("wage") && (<>
 
         {/* T-W (2026-08-05) · 희망 세후 수령액 → 임금구성 자동 역산 (사용자 요청 3번 복원) */}
+        {/* T-CTR-9 · Step 1 (2026-08-05) · NaN 방어 · fmtWon 통과 · Number.isFinite guard · 각 입력 undefined/NaN → 0 */}
         {(() => {
-          const wd = Number(form.weekdayHourly) || 0;
-          const currentGross = computeWageFromHourlyDual(wd, wd, form.wageComponents).total
-            + (form.wageComponents.mealAllowance || 0)
-            + (form.wageComponents.vehicleAllowance || 0);
+          const wdRaw = Number(form.weekdayHourly);
+          const wd = Number.isFinite(wdRaw) && wdRaw > 0 ? wdRaw : 0;
+          const currentGrossRaw = computeWageFromHourlyDual(wd, wd, form.wageComponents).total
+            + (Number(form.wageComponents.mealAllowance) || 0)
+            + (Number(form.wageComponents.vehicleAllowance) || 0);
+          const currentGross = Number.isFinite(currentGrossRaw) ? currentGrossRaw : 0;
           const currentIns = computeInsurance(currentGross);
           const currentTax = computeIncomeTax(currentGross);
           const currentNet = includeIncomeTax
             ? Math.max(0, currentGross - currentIns.total - currentTax.total)
             : Math.max(0, currentGross - currentIns.total);
-          const monthlyHours = form.wageComponents.basicSalary.hours
-            + form.wageComponents.basicSalary.minutes / 60;
+          // T-CTR-9 · Step 1 · basicSalary.hours/minutes 이 undefined/NaN 이어도 안전
+          const bH = Number(form.wageComponents.basicSalary?.hours) || 0;
+          const bM = Number(form.wageComponents.basicSalary?.minutes) || 0;
+          const monthlyHoursRaw = bH + bM / 60;
+          const monthlyHours = Number.isFinite(monthlyHoursRaw) ? monthlyHoursRaw : 0;
 
           const applyTargetNet = () => {
             const targetNet = Number(form.targetNetInput.replace(/[^0-9]/g, "")) || 0;
@@ -4453,23 +4465,31 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   반영
                 </button>
               </div>
-              {/* 4-col 요약 (실시간) */}
+              {/* 4-col 요약 (실시간) · T-CTR-9 · Step 1 · Number.isFinite guard */}
               <div className="grid grid-cols-4 gap-1.5 mt-1">
                 <div className="rounded-md bg-white border border-slate-200 px-2 py-1.5 flex flex-col gap-0.5">
                   <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">월근로</span>
-                  <span className="tabular-nums text-[11.5px] font-black text-slate-800">{monthlyHours.toFixed(1)}h</span>
+                  <span className="tabular-nums text-[11.5px] font-black text-slate-800">
+                    {Number.isFinite(monthlyHours) && monthlyHours > 0 ? `${monthlyHours.toFixed(1)}h` : "-"}
+                  </span>
                 </div>
                 <div className="rounded-md bg-white border border-slate-200 px-2 py-1.5 flex flex-col gap-0.5">
                   <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">시급</span>
-                  <span className="tabular-nums text-[11.5px] font-black text-indigo-700">{fmtWon(wd)}</span>
+                  <span className="tabular-nums text-[11.5px] font-black text-indigo-700">
+                    {Number.isFinite(wd) && wd > 0 ? fmtWon(wd) : "-"}
+                  </span>
                 </div>
                 <div className="rounded-md bg-white border border-slate-200 px-2 py-1.5 flex flex-col gap-0.5">
                   <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">세전</span>
-                  <span className="tabular-nums text-[11.5px] font-black text-slate-800">{fmtWon(currentGross)}</span>
+                  <span className="tabular-nums text-[11.5px] font-black text-slate-800">
+                    {Number.isFinite(currentGross) && currentGross > 0 ? fmtWon(currentGross) : "-"}
+                  </span>
                 </div>
                 <div className="rounded-md bg-emerald-50 border border-emerald-200 px-2 py-1.5 flex flex-col gap-0.5">
                   <span className="text-[9px] font-black uppercase tracking-wider text-emerald-600">예상세후</span>
-                  <span className="tabular-nums text-[11.5px] font-black text-emerald-800">{fmtWon(currentNet)}</span>
+                  <span className="tabular-nums text-[11.5px] font-black text-emerald-800">
+                    {Number.isFinite(currentNet) && currentNet > 0 ? fmtWon(currentNet) : "-"}
+                  </span>
                 </div>
               </div>
               {/* T-Y (2026-08-05) · 최저임금 warning · 통상시급 < 2026 최저시급 */}

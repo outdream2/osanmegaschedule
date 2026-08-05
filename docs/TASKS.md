@@ -10,6 +10,61 @@
 
 ## 🔴 진행 중 · 미완료 (2026-08-05)
 
+### T-CTR-11 · "근로계약서 작성" 헤더 텍스트 축소 (T-CTR-9 완료 후)
+
+**증상**: 근로계약서 작성 탭 페이지 상단 "근로계약서 작성" 제목이 너무 큼.
+
+**Fix**:
+- ContractWriterPage 헤더 · 제목 폰트 크기 축소 (text-2xl → text-lg or text-base)
+- 아이콘·서브텍스트 · 균형 맞게 조정
+- 컴팩트 배치 (UI 원칙 7-a)
+
+### T-CTR-10 · 설정 시급 자동 반영 (T-CTR-9 완료 후)
+
+**증상**: 근로자 설정 (SettingsModal · 직군별 시급 · 직원별 시급 override) 이 · 근로계약서 왼쪽 폼 시급 필드에 자동 채워지지 않음.
+
+**Fix**:
+- 근로자 선택 시 · `defaultWageForPosition` 또는 `employeeWageOverrides` 조회
+- form.weekdayHourly · form.weekendHourly · 자동 채움 (사용자 수동 편집 전 default)
+- `useSettings` 훅 재사용 (`src/hooks/useSettings.ts`)
+- 이미 import 되어 있음 (ContractWriterPage L40 · `useSettings, defaultWageForPosition, type WageRate`)
+- 실제 useEffect 로 · 근로자 선택 시 · form.weekdayHourly/weekendHourly 자동 세팅되는지 확인·수정
+
+### T-CTR-9 · 월근로 NaN + 희망세후 자동 흐름 fix (T-CTR-7+8 완료 후)
+
+**증상 (사용자 케이스 2026-08-05)**:
+- 근무조건: 하루 8h · 주 6일 (주중 5 + 주말 1) · 계약3 · 시급 32,083 · 희망 600만
+- 결과: 월근로 **NaNh** · 세전 0 · 예상세후 0
+
+**요구 흐름 (사용자 정본)**:
+```
+(주중일수 × 하루h × 주중시급 + 주말일수 × 하루h × 주말시급) × 4.3452
+= 희망 세후 실수령액 (자동 채움)
+```
+- 근무조건·시급 변경 시 · 희망세후 입력창에 자동 반영
+- 사용자는 이 자동값을 그대로 or 편집 가능
+- 편집한 희망세후 → gross-up 역산 → 세전 → 임금구성표
+
+**Fix 항목**:
+- 근무조건 값 · undefined/NaN → 0 처리 (guard)
+- 4-col 카드 · `Number.isFinite(x) ? x : "-"` guard
+- payroll 훅 · 입력 검증 (0 반환)
+- **자동 흐름 신설**: 근무조건+시급 → 희망세후 자동 계산 · 입력창 반영
+- 케이스 검증: 하루8h·주6일·시급32,083 → 월근로 271.14h · 세전 약 660만 · 세후 약 600만
+- **레이아웃 순서 (사용자 재강조 2026-08-05)**: 왼쪽 폼 임금계산 세션 · **희망세후 자동계산 위** · **임금구성표 아래**
+
+### T-PERM-1 · 권한 페이지 · 직원별 레벨 조정 표 (system-implementer 진행 중)
+- [ ] PermissionsPage 에 직원 레벨 조정 섹션 추가 (표 형태)
+- [ ] 컴팩트 배치 · 성명·직군·레벨 select · 한눈에
+- [ ] 약사 우선 정렬
+- [ ] 기존 PUT /api/employees/:id 재사용
+
+### T-PHARM-1 · 약사전용 교육탭 · 트리 상단 카테고리 추가 UI (system-implementer 진행 중)
+- [ ] 관리자 CRUD 완전 숨김 (level 관계없이)
+- [ ] 왼쪽 트리 위쪽 · "+ 카테고리 추가" 컨트롤 (제목·자료)
+- [ ] 커스텀 카테고리 저장 (app_settings JSON or 신규 테이블)
+- [ ] 기존 zone 기반 카테고리와 병합 표시
+
 ### T-CTR-8 · 왼쪽 폼 · 카테고리별 이해·동의·개인정보 섹션 제거 (T-CTR-6 완료 후)
 
 **사용자 요구 (2026-08-05)**: 왼쪽 폼에서 다음 UI 완전 제거 (프리뷰에는 유지 · 자동 반영):
