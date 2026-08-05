@@ -49,7 +49,9 @@ import vatRouter from "./server/routes/vat";
 // 2026-08-04 · 사용자 요청 · 재고세기(YOLO) 주석처리 · loadStockCountModel 도 비활성 (T39)
 // import { loadStockCountModel } from "./server/stockCounter";
 import { cleanupStaleLogs } from "./server/utils/logsCleanup";
-import { requireAuth, authorize } from "./server/middleware/requireAuth";
+// 2026-08-05 · T3 인증 미들웨어 · 사내 사용 중에는 미적용 (원복)
+//   · Render 클라우드 배포 직전 · 별도 세션에서 재도입 예정 · docs/TASKS.md 참조
+// import { requireAuth, authorize } from "./server/middleware/requireAuth";
 
 async function startServer() {
   const app = express();
@@ -86,54 +88,53 @@ async function startServer() {
   app.use(notificationsRouter);   // 푸시 알림 구독 (서비스워커)
   app.use(pharmacistMenuItemsRouter); // 약사 메뉴 표시 (공개 읽기)
 
-  // ── 2026-08-05 T3 · 인증 필요 라우터 ──────────────────────────────────
-  // Phase 1: 민감 라우터 우선 보호 (직원·스케줄·계약·급여·설정·HR)
-  // Phase 2: 나머지 라우터도 순차 적용 예정 (후속 세션)
+  // ── 2026-08-05 · 인증 미들웨어 원복 (사내 사용 · 문제 발생으로 롤백) ──
+  // Render 배포 직전 · 별도 세션에서 재도입 (docs/TASKS.md T3-defer)
 
   // 직원·스케줄 (개인정보 + DELETE 포함)
-  app.use(requireAuth, schedulesRouter);
-  app.use(requireAuth, staffRouter);
+  app.use(schedulesRouter);
+  app.use(staffRouter);
 
   // 설정 (앱 전역 설정 변경)
-  app.use(requireAuth, settingsRouter);
+  app.use(settingsRouter);
 
   // 공급사 결제·정산 (금전 데이터)
-  app.use(requireAuth, supplierPaymentsRouter);
-  app.use(requireAuth, supplierBalanceConfigRouter);
+  app.use(supplierPaymentsRouter);
+  app.use(supplierBalanceConfigRouter);
 
   // HR 서류 (근로계약서·사직서 등)
-  app.use(requireAuth, hrFormsRouter);
-  app.use(requireAuth, resignationsRouter);
-  app.use(requireAuth, employeeContractsRouter);
+  app.use(hrFormsRouter);
+  app.use(resignationsRouter);
+  app.use(employeeContractsRouter);
 
   // OCR·매입 (사업 데이터)
-  app.use(requireAuth, ocrRouter);
-  app.use(requireAuth, ocrConfirmedRouter);
+  app.use(ocrRouter);
+  app.use(ocrConfirmedRouter);
   app.use(ocrDeletedRowsRouter);    // Phase 2 예정
-  app.use(requireAuth, purchaseRouter);
-  app.use(requireAuth, purchaseHistoryRouter);
-  app.use(requireAuth, invoiceImagesRouter);
+  app.use(purchaseRouter);
+  app.use(purchaseHistoryRouter);
+  app.use(invoiceImagesRouter);
 
   // 재고·상품
-  app.use(requireAuth, stockManageRouter);
-  app.use(requireAuth, stockArrivalsRouter);
-  app.use(requireAuth, productArrivalsRouter);
-  app.use(requireAuth, returnRequestsRouter);
-  app.use(requireAuth, zoneLabelsRouter);
-  app.use(requireAuth, zoneAssignmentsRouter);
+  app.use(stockManageRouter);
+  app.use(stockArrivalsRouter);
+  app.use(productArrivalsRouter);
+  app.use(returnRequestsRouter);
+  app.use(zoneLabelsRouter);
+  app.use(zoneAssignmentsRouter);
 
   // 기타 (로그인 사용자 대상)
-  app.use(requireAuth, productsRouter);
-  app.use(requireAuth, requestsRouter);
-  app.use(requireAuth, mismatchesRouter);
-  app.use(requireAuth, leaveRouter);
-  app.use(requireAuth, lunchRouter);
-  app.use(requireAuth, reservationsRouter);
-  app.use(requireAuth, vendorsRouter);
-  app.use(requireAuth, boardRouter);
-  app.use(requireAuth, vatRouter);
-  // app.use(requireAuth, stockCountRouter); // 2026-08-04 · YOLO 비활성 (T39)
-  // app.use(requireAuth, inventorySalesRouter);
+  app.use(productsRouter);
+  app.use(requestsRouter);
+  app.use(mismatchesRouter);
+  app.use(leaveRouter);
+  app.use(lunchRouter);
+  app.use(reservationsRouter);
+  app.use(vendorsRouter);
+  app.use(boardRouter);
+  app.use(vatRouter);
+  // app.use(stockCountRouter); // 2026-08-04 · YOLO 비활성 (T39)
+  // app.use(inventorySalesRouter);
 
   // /products.json — 항상 DB에서 동적으로 제공 (브라우저 캐시 없음, 서버 메모리 캐시만 사용)
   app.get("/products.json", async (_req, res) => {

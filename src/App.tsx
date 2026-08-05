@@ -69,37 +69,8 @@ export default function App() {
   // 로그인 직후 웹푸시 자동 구독 (권한 팝업 1회 · 이미 구독됐으면 skip)
   usePushSubscription({ employeeId: authSession?.employeeId ?? null, auto: true });
 
-  // 2026-08-05 T3 hotfix · 부트 시 JWT 쿠키 유효성 체크
-  //   · localStorage 에 session 있지만 · 서버 JWT 쿠키 없음/만료 케이스 자동 로그아웃
-  //   · T3 배포 이전에 로그인한 사용자 · localStorage 는 있는데 쿠키 없어서 401 무한 발생 방지
-  //   · /api/auth/me · 200 이면 유효 · 401 이면 stale 세션 → 즉시 clear + landing 이동
-  //   · authOff (JWT_SECRET 미설정) · graceful skip
-  useEffect(() => {
-    if (!authSession) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/auth/me", { credentials: "same-origin" });
-        if (cancelled) return;
-        if (res.status === 401) {
-          // stale · 강제 로그아웃 + 재로그인 유도
-          console.warn("[Auth] stale session detected · JWT 쿠키 없음 · 자동 로그아웃");
-          Object.keys(localStorage)
-            .filter(k => k.startsWith("megatown_"))
-            .forEach(k => localStorage.removeItem(k));
-          // 서버 쿠키도 확실히 제거 (안전)
-          try { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); } catch { /* silent */ }
-          try { sessionStorage.setItem("megatown_session_expired", "1"); } catch { /* silent */ }
-          window.location.replace("/?stale=1");
-        }
-      } catch (e: any) {
-        // 네트워크 오류 · 온라인 복귀 시 재시도됨 · silent
-        console.warn("[Auth] /api/auth/me 확인 실패 (네트워크):", e?.message);
-      }
-    })();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authSession?.employeeId]);
+  // 2026-08-05 · T3 인증 미들웨어 원복으로 · 부트 세션 체크도 제거
+  //   · Render 배포 직전 T3 재도입 시 · 이 useEffect 도 함께 복구 필요 (docs/TASKS.md T3-defer)
 
   // Sync page state with browser History API so the back button works
   useEffect(() => {
