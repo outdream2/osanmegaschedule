@@ -782,34 +782,41 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                       >
                         구역 <SortIcon active={sortKey === "realMap"} dir={sortDir} />
                       </th>
-                      {/* 창고1 */}
-                      <th className="text-center px-1.5 py-2.5 w-[70px] sm:w-[80px] font-bold text-slate-400 whitespace-nowrap">
+                      {/* 창고1 · 데스크탑만 · lg 이상 개별 표시 */}
+                      <th className="hidden lg:table-cell text-center px-1.5 py-2.5 w-[80px] font-bold text-slate-400 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1">
                           <Warehouse size={11} className="text-orange-400" /> 창고1
                         </span>
                       </th>
                       {/* 창고2 */}
-                      <th className="text-center px-1.5 py-2.5 w-[70px] sm:w-[80px] font-bold text-slate-400 whitespace-nowrap">
+                      <th className="hidden lg:table-cell text-center px-1.5 py-2.5 w-[80px] font-bold text-slate-400 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1">
                           <Warehouse size={11} className="text-amber-400" /> 창고2
                         </span>
                       </th>
                       {/* 매장1 */}
-                      <th className="text-center px-1.5 py-2.5 w-[74px] sm:w-[84px] font-bold text-slate-400 whitespace-nowrap">
+                      <th className="hidden lg:table-cell text-center px-1.5 py-2.5 w-[84px] font-bold text-slate-400 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1">
                           <Store size={11} className="text-emerald-500" /> 매장1
                         </span>
                       </th>
                       {/* 매장2 */}
-                      <th className="text-center px-1.5 py-2.5 w-[74px] sm:w-[84px] font-bold text-slate-400 whitespace-nowrap">
+                      <th className="hidden lg:table-cell text-center px-1.5 py-2.5 w-[84px] font-bold text-slate-400 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1">
                           <Store size={11} className="text-sky-500" /> 매장2
                         </span>
                       </th>
                       {/* 매장3 */}
-                      <th className="text-center px-1.5 py-2.5 w-[74px] sm:w-[84px] font-bold text-slate-400 whitespace-nowrap">
+                      <th className="hidden lg:table-cell text-center px-1.5 py-2.5 w-[84px] font-bold text-slate-400 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1">
                           <Store size={11} className="text-violet-500" /> 매장3
+                        </span>
+                      </th>
+                      {/* 모바일·태블릿 통합 재고 헤더 · lg 미만 (2026-08-05 · 사용자 요청 반응형 wrap) */}
+                      <th className="lg:hidden text-center px-2 py-2.5 font-bold text-slate-400 whitespace-nowrap min-w-[240px]">
+                        <span className="inline-flex items-center gap-1">
+                          <Warehouse size={11} className="text-amber-500" /> 재고
+                          <span className="text-[10px] text-slate-300 font-normal">(창고1·2 / 매장1·2·3)</span>
                         </span>
                       </th>
                       {/* 합계 */}
@@ -886,8 +893,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                             )}
                           </td>
 
-                          {/* 창고1 */}
-                          <td className="px-1 py-2 align-middle">
+                          {/* 창고1 · 데스크탑만 */}
+                          <td className="hidden lg:table-cell px-1 py-2 align-middle">
                             <NumberInput
                               value={row.warehouse1Qty}
                               onChange={v => patchRow(row.key, { warehouse1Qty: v })}
@@ -895,8 +902,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                             />
                           </td>
 
-                          {/* 창고2 */}
-                          <td className="px-1 py-2 align-middle">
+                          {/* 창고2 · 데스크탑만 */}
+                          <td className="hidden lg:table-cell px-1 py-2 align-middle">
                             <NumberInput
                               value={row.warehouse2Qty}
                               onChange={v => patchRow(row.key, { warehouse2Qty: v })}
@@ -904,8 +911,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                             />
                           </td>
 
-                          {/* 매장1 · 수량 + 구역 편집 */}
-                          <td className="px-1 py-2 align-middle">
+                          {/* 매장1 · 데스크탑만 */}
+                          <td className="hidden lg:table-cell px-1 py-2 align-middle">
                             <div className="flex flex-col gap-0.5">
                               <NumberInput
                                 value={row.store1Qty}
@@ -921,8 +928,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                             </div>
                           </td>
 
-                          {/* 매장2 */}
-                          <td className="px-1 py-2 align-middle">
+                          {/* 매장2 · 데스크탑만 */}
+                          <td className="hidden lg:table-cell px-1 py-2 align-middle">
                             <div className="flex flex-col gap-0.5">
                               <NumberInput
                                 value={row.store2Qty}
@@ -938,8 +945,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                             </div>
                           </td>
 
-                          {/* 매장3 */}
-                          <td className="px-1 py-2 align-middle">
+                          {/* 매장3 · 데스크탑만 */}
+                          <td className="hidden lg:table-cell px-1 py-2 align-middle">
                             <div className="flex flex-col gap-0.5">
                               <NumberInput
                                 value={row.store3Qty}
@@ -952,6 +959,54 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                                 accentClass="text-violet-600 focus:border-violet-400"
                                 onChange={v => patchRow(row.key, { store3Zone: v })}
                               />
+                            </div>
+                          </td>
+
+                          {/* 모바일·태블릿 통합 재고 셀 · lg 미만 · 창고 그룹 위 · 매장 그룹 아래 (2026-08-05) */}
+                          <td className="lg:hidden px-1 py-2 align-middle">
+                            <div className="flex flex-col gap-1.5">
+                              {/* 창고 그룹 */}
+                              <div className="flex gap-1 items-center">
+                                <span className="text-[9px] font-bold text-orange-500 shrink-0 w-8">창고</span>
+                                <div className="flex-1 flex gap-1">
+                                  <NumberInput value={row.warehouse1Qty}
+                                    onChange={v => patchRow(row.key, { warehouse1Qty: v })}
+                                    accent="focus:border-orange-400" />
+                                  <NumberInput value={row.warehouse2Qty}
+                                    onChange={v => patchRow(row.key, { warehouse2Qty: v })}
+                                    accent="focus:border-amber-400" />
+                                </div>
+                              </div>
+                              {/* 매장 그룹 · 창고 아래 */}
+                              <div className="flex gap-1 items-start">
+                                <span className="text-[9px] font-bold text-emerald-500 shrink-0 w-8 pt-1.5">매장</span>
+                                <div className="flex-1 flex gap-1">
+                                  <div className="flex flex-col gap-0.5 flex-1">
+                                    <NumberInput value={row.store1Qty}
+                                      onChange={v => patchRow(row.key, { store1Qty: v })}
+                                      accent="focus:border-emerald-400" />
+                                    <ZoneInput value={row.store1Zone} placeholder="-"
+                                      accentClass="text-emerald-600 focus:border-emerald-400"
+                                      onChange={v => patchRow(row.key, { store1Zone: v })} />
+                                  </div>
+                                  <div className="flex flex-col gap-0.5 flex-1">
+                                    <NumberInput value={row.store2Qty}
+                                      onChange={v => patchRow(row.key, { store2Qty: v })}
+                                      accent="focus:border-sky-400" />
+                                    <ZoneInput value={row.store2Zone} placeholder="-"
+                                      accentClass="text-sky-600 focus:border-sky-400"
+                                      onChange={v => patchRow(row.key, { store2Zone: v })} />
+                                  </div>
+                                  <div className="flex flex-col gap-0.5 flex-1">
+                                    <NumberInput value={row.store3Qty}
+                                      onChange={v => patchRow(row.key, { store3Qty: v })}
+                                      accent="focus:border-violet-400" />
+                                    <ZoneInput value={row.store3Zone} placeholder="-"
+                                      accentClass="text-violet-600 focus:border-violet-400"
+                                      onChange={v => patchRow(row.key, { store3Zone: v })} />
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           </td>
 
