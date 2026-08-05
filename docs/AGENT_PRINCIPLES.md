@@ -64,6 +64,105 @@
 - 반응형 (모바일 · 데스크탑)
 - 예외 없음
 
+### 7-b. **하위 탭 · long-press 재정렬** (2026-08-05 · 사용자 원칙 · 반복 지시)
+
+**원칙**: 메인메뉴 아래 · **모든 하위 탭 메뉴** · 꾹 누르면 (long-press) 드래그로 순서 이동 가능. **공통 기능**으로 구현하여 · 전 페이지 자동 적용.
+
+**How to apply**:
+- 공용 컴포넌트 · `src/components/common/ReorderableTabs.tsx` (or 기존 TabBar 확장) · long-press 감지 + drag-drop + localStorage 순서 저장
+- 신규·기존 탭바 · 이 컴포넌트로 통일
+- 저장 key · 페이지별 unique (예: `tabOrder:staffManage`)
+- 마우스: 300ms hold → drag mode · 터치: 500ms hold → drag mode
+- 순서 초기화 · 컨텍스트 메뉴 or 우클릭 · "탭 순서 초기화"
+
+**금지**:
+- 개별 페이지마다 재구현 (반드시 공통 훅·컴포넌트)
+- localStorage 없이 세션 종료 시 순서 초기화
+
+### 7-a. **정보 밀도 · 컴팩트 배치** (2026-08-05 · 사용자 원칙 추가)
+
+**원칙**: 한 줄에 나타낼 수 있으면 · **한 줄에 나타냄**. 보기 좋게 · 컴팩트하게. PC 뷰에서 특히.
+
+**How to apply**:
+- 폼 필드 · 관련 정보 그룹핑 · 한 flex row 로 배치
+- 각 필드 · flex-1 or shrink-0 · min-w 로 조정
+- 반응형 · sm 미만만 세로 스택 (flex-col) · sm 이상 · 한 줄 (flex-row)
+- 여백 · gap-1 or gap-2 (넘치지 않게)
+- 라벨·값 · 위아래 배치 or 좌우 배치 (컨텍스트에 따라)
+- 정보 밀도 vs. 가독성 · 균형 · 너무 압박하지 X · 컴팩트하되 시각적으로 여유
+
+**금지**:
+- 한 줄에 넣을 수 있는데 · 별도 줄로 나눔 (공간 낭비)
+- 여백 과다 (py-3, mt-4 등 · 필드 사이 큰 여백)
+- PC 뷰에서 모바일 스택 layout 유지 (반응형 부재)
+
+## 7-c. **파생컬럼 금지 · 기존 테이블 활용** (2026-08-05 · 사용자 원칙 · 반복 강조)
+
+**원칙**: 파생컬럼 절대 금지. **정합성을 위해 · 웬만하면 · 기존 테이블 활용**하여 JOIN 으로 조회. 근로계약서 정보는 `employee_contracts` 에서 취합하여 표시.
+
+**Why**: 파생컬럼 · 원본 스냅샷과 최신값 사이 정합성 붕괴 원인. 이력 관리 필요한 경우만 예외 (계약 시점 이름 보존 등 · db_audit 리스트 참고).
+
+**How to apply**:
+- 신규 컬럼 추가 전 · 기존 테이블 JOIN 으로 조회 가능한지 우선 검토
+- 사용자 요청 예시: "직원리스트 계약유형 컬럼" → **파생컬럼 X · employee_contracts JOIN** 으로 표시
+- 사용자 요청 예시: "직원정보는 근로계약서 부분 그대로 읽어와서 보여주고" → employee_contracts 최신 row · JOIN or 서브쿼리
+- 신규 컬럼 필요 판단 시 · **반드시 사용자 확인** (memory/project_db_audit_2026-08-05.md 유지 파생컬럼 리스트 참조)
+- 성능 문제 시 · view · materialized view · index · JOIN 최적화 우선 (컬럼 복제 X)
+
+**금지**:
+- "표시 편의를 위해" 컬럼 복제 (파생컬럼)
+- 사용자 허락 없이 신규 컬럼 추가
+- 최신 관계형 데이터가 있는데 · snapshot 컬럼을 만드는 것
+
+## 7-d. **임금 계산 · 노무사 표준 계산법 준수** (2026-08-05 · 사용자 정본)
+
+**원칙**: 근로기준법 §50 (근로시간) · §56 (연장·야간·휴일 가산) · 노무사 표준 산정. 자체 판단 금지 · 아래 공식 그대로.
+
+**표준 공식**:
+- 하루 소정근로시간 상한 · **최대 8h** (초과분 → 고정연장수당)
+- 주 40h 한도 · 주휴 8h (1주 만근 · 40h 이상 시)
+- 월 환산 계수 · **4.3452주** (52.1786주 / 12개월)
+- 연장 (일 8h 초과 or 주 40h 초과) · **×1.5배 가산**
+- 휴일 (주휴일·공휴일 근로) · **×1.5배 가산**
+- 휴일 8h 초과 · **×2.0배 가산** (휴일+연장)
+- 야간 (22:00~06:00) · **×0.5배 추가 가산**
+
+**케이스별 (주 5일)**:
+| 일근무 | 월 기본급h | 월 연장(실) | 월 연장(가산×1.5) | 총 인정h |
+|---|---|---|---|---|
+| 7.5h | 195.5 | 0 | 0 | 195.5 |
+| 8.0h | 209 | 0 | 0 | 209 |
+| 8.5h | 209 | 10.86 | 16.29 | 225.29 |
+| 9.0h | 209 | 21.73 | 32.59 | 241.59 |
+| 10.0h | 209 | 43.45 | 65.18 | 274.18 |
+
+**공식 코드**:
+```typescript
+const WEEK_PER_MONTH = 4.3452;
+const DAILY_LIMIT = 8;
+
+function calcMonthlyHours(dailyH: number, workDays: number = 5, weekendDays: number = 0) {
+  const dailyBasic = Math.min(dailyH, DAILY_LIMIT);
+  const weeklyBasic = dailyBasic * workDays;              // 일 기본
+  const weeklyHoliday = weeklyBasic >= 40 ? 8 : dailyBasic; // 주휴
+  const weeklyOvertime = Math.max(0, (dailyH - DAILY_LIMIT) * workDays); // 일 초과
+  
+  const monthlyBasic = (weeklyBasic + weeklyHoliday) * WEEK_PER_MONTH;
+  const monthlyOvertimeReal = weeklyOvertime * WEEK_PER_MONTH;
+  const monthlyOvertimeGained = monthlyOvertimeReal * 1.5; // 가산
+  
+  const monthlyHoliday = weekendDays * dailyH * WEEK_PER_MONTH; // 실
+  const monthlyHolidayGained = monthlyHoliday * 1.5;
+  
+  return { monthlyBasic, monthlyOvertimeGained, monthlyHolidayGained };
+}
+```
+
+**금지**:
+- 하루 8h 초과분을 기본급에 산입
+- 296.94h · 335.91h 등 · 고정 divisor 하드코딩 (특정 케이스만 유효)
+- 자체 계산법 · 사용자 확인 없이 수정
+
 ## 8. 계약서 · 이미지 원본 우선
 
 - 근로계약서 렌더링 · **이미지 원본 그대로**

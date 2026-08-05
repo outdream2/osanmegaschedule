@@ -427,6 +427,29 @@ const InlineField: React.FC<{
 );
 
 // ─── 서브컴포넌트: 섹션 카드 (아코디언) — 그룹 컬러 헤더 ─────────────────────
+const SECTION_CARD_STORAGE_KEY = "staffManage:sectionOpen:v1";
+const readSectionCardOpen = (title: string, defaultOpen: boolean): boolean => {
+  try {
+    const raw = localStorage.getItem(SECTION_CARD_STORAGE_KEY);
+    if (!raw) return defaultOpen;
+    const map = JSON.parse(raw) as Record<string, boolean>;
+    if (typeof map[title] === "boolean") return map[title];
+    return defaultOpen;
+  } catch {
+    return defaultOpen;
+  }
+};
+const writeSectionCardOpen = (title: string, open: boolean) => {
+  try {
+    const raw = localStorage.getItem(SECTION_CARD_STORAGE_KEY);
+    const map = raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
+    map[title] = open;
+    localStorage.setItem(SECTION_CARD_STORAGE_KEY, JSON.stringify(map));
+  } catch {
+    // storage full or disabled · silent
+  }
+};
+
 const SectionCard: React.FC<{
   title: string;
   icon: React.ReactNode;
@@ -434,7 +457,14 @@ const SectionCard: React.FC<{
   defaultOpen?: boolean;
   group?: SectionGroup;
 }> = ({ title, icon, children, defaultOpen = true, group = "personal" }) => {
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpenState] = useState(() => readSectionCardOpen(title, defaultOpen));
+  const setOpen = (updater: boolean | ((prev: boolean) => boolean)) => {
+    setOpenState((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      writeSectionCardOpen(title, next);
+      return next;
+    });
+  };
   const headerCls = GROUP_HEADER[group];
   const iconCls   = GROUP_ICON[group];
   const textCls   = headerCls.split(" ").find(c => c.startsWith("text-")) ?? "";
@@ -1604,6 +1634,30 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                           {displayEmp.schedule_type}
                         </span>
                       ) : null}
+                      {/* 계약유형 (근무타입 옆) */}
+                      {editing ? (
+                        <select
+                          value={draft?.contract_type ?? ""}
+                          onChange={(e) => setField("contract_type", e.target.value)}
+                          className="text-[11px] border border-slate-300 rounded-md px-2 h-6 bg-white focus:outline-none focus:border-indigo-400"
+                        >
+                          <option value="">계약유형 없음</option>
+                          {CONTRACT_TYPES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                        </select>
+                      ) : (() => {
+                        const ctMeta = contractTypeMeta(displayEmp.contract_type);
+                        if (!ctMeta) return null;
+                        const count = contractCountByEmp.get(displayEmp.id) ?? 0;
+                        const badgeLabel =
+                          displayEmp.contract_type === "fixed_term" && count > 0
+                            ? `계약${count}`
+                            : ctMeta.short;
+                        return (
+                          <span className={`text-[10px] font-semibold px-1.5 py-px rounded border ${ctMeta.color}`} title={ctMeta.label}>
+                            {badgeLabel}
+                          </span>
+                        );
+                      })()}
                       {/* 레벨 */}
                       {displayEmp.level != null && (
                         <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-0.5">
