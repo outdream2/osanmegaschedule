@@ -99,6 +99,11 @@ function extractPayload(req: Request): JwtPayload | null {
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   const payload = extractPayload(req);
   if (!payload) {
+    // 2026-08-05 T3 hotfix debug · 401 원인 로깅 (일시적)
+    const hasCookie = !!req.cookies?.[COOKIE_NAME];
+    const hasHeader = typeof req.headers["authorization"] === "string";
+    const secretSet = !!JWT_SECRET;
+    console.warn(`[requireAuth 401] ${req.method} ${req.originalUrl} · cookie=${hasCookie} · authHeader=${hasHeader} · secretSet=${secretSet}`);
     res.status(401).json({ error: "인증이 필요합니다. 다시 로그인해주세요.", code: "UNAUTHORIZED" });
     return;
   }
