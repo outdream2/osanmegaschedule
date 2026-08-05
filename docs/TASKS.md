@@ -100,9 +100,11 @@ CREATE INDEX IF NOT EXISTS idx_ec_is_active
 
 ## 🟡 승인 필요 · 대형 태스크
 
-### T39 · YOLO/OCR 모델 분리 (Render OOM 방어)
-- PaddleOCR Python 서비스 분리
-- 예상 4~6h · Render 대비
+### T39 · PaddleOCR 분리 (Render OOM 대비 · YOLO 제거 후 축소 범위)
+- YOLO 재고세기 · **완전 제거됨** (커밋 `bf35419`)
+- 남은: PaddleOCR 별도 Python 서비스 분리 검토
+- 대안 · Render Pro 티어 (2GB RAM) 로 분리 불필요할 수 있음
+- 예상 3~4h (범위 축소)
 
 ### T29 · TanStack Table 도입
 - 정렬·필터·페이지네이션·리사이즈 통합
