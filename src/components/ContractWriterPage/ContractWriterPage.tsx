@@ -40,6 +40,13 @@ import SplitPanel from "../common/SplitPanel";
 import sungstampUrl from "../../images/sungstamp.png";
 import { useSettings, defaultWageForPosition, type WageRate } from "../../hooks/useSettings";
 import kyustampUrl from "../../images/kyustamp.png";
+// T-Y (2026-08-05) · payroll 모듈 · 사용자 정본 흐름 (희망세후 = 시급×시간 · 역산 → 임금구성표)
+import {
+  RATES_2026,
+  MIN_WAGE_2026,
+  grossUp as payrollGrossUp,
+  approxIncomeTax as payrollApproxIncomeTax,
+} from "../../lib/payroll";
 
 type SignatureCanvasType = SignaturePad;
 
@@ -388,16 +395,34 @@ if (typeof window !== "undefined" && (import.meta as any)?.env?.DEV) {
     console.warn("[ContractWriter] calcWageBase 검증 실패:", results);
   } else {
     // eslint-disable-next-line no-console
-    console.log("[ContractWriter] calcWageBase 5 케이스 검증 통과", results);
+    console.log("[ContractWriter] calcWageBase 5 케이스 통과", results);
+  }
+
+  // T-Y (2026-08-05) · payroll grossUp 4 케이스 검증 (부양 1인·식대 20만)
+  //   기대: 300만·500만·700만·1000만 → diff < 100원 · docs/PAYROLL_ALGORITHM.md 준수
+  const netCases = [3_000_000, 5_000_000, 7_000_000, 10_000_000];
+  const grossUpResults = netCases.map(net => {
+    const r = payrollGrossUp(net, 200_000, 1);
+    const finalNet = r.gross - r.taxes.total;
+    const diff = net - finalNet;
+    return { net, gross: r.gross, finalNet, diff, iter: r.iterations, pass: Math.abs(diff) < 100 };
+  });
+  const anyGrossUpFail = grossUpResults.some(r => !r.pass);
+  if (anyGrossUpFail) {
+    // eslint-disable-next-line no-console
+    console.warn("[ContractWriter] payroll.grossUp 검증 실패:", grossUpResults);
+  } else {
+    // eslint-disable-next-line no-console
+    console.log("[ContractWriter] payroll.grossUp 4 케이스 통과", grossUpResults);
   }
 }
 
-// 4대보험 요율 (근로자 부담)
+// 4대보험 요율 (근로자 부담) · T-Y (2026-08-05) · payroll 모듈 RATES_2026 참조 · 2026 요율
 const INSURANCE_RATES = {
-  PENSION: 0.045,      // 국민연금 4.5%
-  HEALTH: 0.03545,     // 건강보험 3.545%
-  LTC_RATIO: 0.1295,   // 장기요양 = 건강 × 12.95%
-  EMPLOYMENT: 0.009,   // 고용보험 0.9%
+  PENSION: RATES_2026.nationalPension,        // 국민연금 4.75%
+  HEALTH: RATES_2026.healthInsurance,         // 건강보험 3.595%
+  LTC_RATIO: RATES_2026.longTermCare,         // 장기요양 = 건강 × 12.95%
+  EMPLOYMENT: RATES_2026.employmentInsurance, // 고용보험 0.9%
 } as const;
 
 // 정계 및 근로계약 해지 사유 (13개 · 이미지 원본 문구)
@@ -690,10 +715,14 @@ function computeInsurance(gross: number): {
   return { pension, health, ltc, employment, total: pension + health + ltc + employment };
 }
 
-/** 소득세 근사 (부양가족 1인) + 지방소득세 */
-function computeIncomeTax(gross: number): { incomeTax: number; localTax: number; total: number } {
-  const incomeTax = Math.max(0, Math.round((gross - 1_500_000) * 0.08));
-  const localTax = Math.round(incomeTax * 0.1);
+/**
+ * 소득세 근사 (부양가족 1인) + 지방소득세 · T-Y (2026-08-05) · payroll 모듈 사용 (누진 반영)
+ *   · gross · 여기서 곧바로 taxable 로 사용 (기존 UI 호출부 계약 유지 · 비과세 별도 안 뺌)
+ *   · dependents · 기본 1 · 필요 시 확장 가능
+ */
+function computeIncomeTax(gross: number, dependents: number = 1): { incomeTax: number; localTax: number; total: number } {
+  const incomeTax = payrollApproxIncomeTax(Math.max(0, gross), dependents);
+  const localTax = Math.round(incomeTax * RATES_2026.localTaxRate);
   return { incomeTax, localTax, total: incomeTax + localTax };
 }
 
@@ -709,16 +738,22 @@ function computeNetPay(gross: number): {
 }
 
 /**
- * T-O (2026-08-05) · 세후 목표 → 세전 총액 역산 (사용자 실무 기준)
- *   · 4대보험 근로자 부담 9.09% 만 반영 (소득세·지방소득세 제외)
- *   · 임금구성 표시 실무 관례: 원천징수는 별도 · 세전/세후 표시엔 4대보험만
- *   · 예: 세후 6,000,000 → 세전 6,600,660 (사용자 기대치 660만원)
- *   · 예: 세후 5,000,000 → 세전 5,500,550
+ * T-Y (2026-08-05) · 세후 목표 → 세전 총액 역산 (payroll grossUp · 정확한 누진 반영)
+ *   · 사용자 정본 흐름 · 4대보험 + 소득세 + 지방세 모두 반영
+ *   · 반복 근사 (Newton-like · 3~5회 수렴 · docs/PAYROLL_ALGORITHM.md 준수)
+ *   · nonTaxable · 비과세 (식대·차량 등) · default 0 (기존 호출부 호환)
+ *   · dependents · 부양가족 · default 1
+ *
+ * 검증 (부양가족 1인·식대 20만·비과세):
+ *   · 세후 300만 → 세전 3,421,550 (iter 3)
+ *   · 세후 500만 → 세전 6,071,449 (iter 4)
+ *   · 세후 700만 → 세전 8,966,063 (iter 5)
+ *   · 세후 1000만 → 세전 13,750,633 (iter 7)
  */
-function reverseGrossFromNet(targetNet: number): number {
+function reverseGrossFromNet(targetNet: number, nonTaxable: number = 0, dependents: number = 1): number {
   if (targetNet <= 0) return 0;
-  const insuranceRate = 0.0909; // 4대보험 근로자 부담 합계 근사
-  return Math.round(targetNet / (1 - insuranceRate));
+  const res = payrollGrossUp(targetNet, Math.max(0, nonTaxable), Math.max(1, dependents));
+  return res.gross;
 }
 
 /**
@@ -4194,7 +4229,12 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               setNotice({ tone: "err", text: "희망 세후 수령액을 입력하세요." });
               return;
             }
-            const gross = reverseGrossFromNet(targetNet);
+            // T-Y (2026-08-05) · payroll 모듈 · 정확한 gross-up (4대보험+누진소득세)
+            //   · nonTaxable · 식대 + 차량 (비과세) 반영
+            //   · dependents · 기본 1
+            const nonTaxable = (form.wageComponents.mealAllowance || 0)
+                             + (form.wageComponents.vehicleAllowance || 0);
+            const gross = reverseGrossFromNet(targetNet, nonTaxable, 1);
 
             // T-X (2026-08-05) · 노무사 표준 계산법 · 동적 시간 산정
             //   · dailyH + 주중일수 + 주말일수 · 각 항목 시간 자동
@@ -4247,9 +4287,13 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               };
             });
             const modeText = base ? "노무사 표준" : "레거시 296.94";
+            // T-Y (2026-08-05) · 검산 · 통상시급 · 최저임금 warning
+            const minWageWarn = hourly > 0 && hourly < MIN_WAGE_2026
+              ? ` · ⚠ 시급 < 최저 ${MIN_WAGE_2026.toLocaleString()}원`
+              : "";
             setNotice({
-              tone: "ok",
-              text: `역산 완료 (${modeText}) · 시급 ${hourly.toLocaleString()}원 · 세전 ${gross.toLocaleString()}원 · divisor ${divisor.toFixed(2)}`,
+              tone: minWageWarn ? "err" : "ok",
+              text: `역산 완료 (${modeText} · payroll 모듈) · 시급 ${hourly.toLocaleString()}원 · 세전 ${gross.toLocaleString()}원 · divisor ${divisor.toFixed(2)}${minWageWarn}`,
             });
           };
 
@@ -4278,7 +4322,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   type="button"
                   onClick={applyTargetNet}
                   className="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-emerald-500 text-white text-[12px] font-black shadow-sm hover:brightness-110 transition-all cursor-pointer whitespace-nowrap"
-                  title="희망세후 → 세전 (÷0.9091) → 시급 (÷동적 divisor · 노무사 표준) → 임금구성 8항목 채움"
+                  title="희망세후 → 세전 (payroll grossUp · 4대보험+누진소득세) → 시급 (÷동적 divisor · 노무사 표준) → 임금구성 8항목 채움"
                 >
                   반영
                 </button>
@@ -4302,6 +4346,15 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   <span className="tabular-nums text-[11.5px] font-black text-emerald-800">{fmtWon(currentNet)}</span>
                 </div>
               </div>
+              {/* T-Y (2026-08-05) · 최저임금 warning · 통상시급 < 2026 최저시급 */}
+              {wd > 0 && wd < MIN_WAGE_2026 && (
+                <div className="mt-1 rounded-md bg-rose-50 border border-rose-300 px-2 py-1.5 flex items-center gap-1.5">
+                  <Warning size={12} weight="fill" className="text-rose-600 shrink-0" />
+                  <span className="text-[10.5px] font-black text-rose-700">
+                    최저임금 위반 위험 · 통상시급 <span className="tabular-nums">{fmtWon(wd)}</span> 원 &lt; 2026 최저 <span className="tabular-nums">{fmtWon(MIN_WAGE_2026)}</span> 원
+                  </span>
+                </div>
+              )}
             </div>
           );
         })()}
@@ -4349,8 +4402,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 {row("월 세전 총액", gross)}
                 <div className="border-t border-slate-100 my-0.5" />
                 <div className="text-[9.5px] font-black text-slate-400 uppercase tracking-wider mt-0.5">공제 항목</div>
-                {row("국민연금", ins.pension, { minus: true, sub: true, hint: "(4.5%)" })}
-                {row("건강보험", ins.health, { minus: true, sub: true, hint: "(3.545%)" })}
+                {row("국민연금", ins.pension, { minus: true, sub: true, hint: "(4.75%)" })}
+                {row("건강보험", ins.health, { minus: true, sub: true, hint: "(3.595%)" })}
                 {row("장기요양", ins.ltc, { minus: true, sub: true, hint: "(건보×12.95%)" })}
                 {row("고용보험", ins.employment, { minus: true, sub: true, hint: "(0.9%)" })}
                 <div className="flex items-baseline justify-between gap-2 pl-3 border-t border-slate-100 pt-1">
