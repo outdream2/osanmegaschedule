@@ -49,6 +49,7 @@ interface Employee {
   role?: string | null;
   contract_file_url?: string | null;
   resume_url?: string | null;  // T21 · 이력서 · Google Drive URL
+  bankbook_image_url?: string | null;  // 통장사본 · base64 or URL (ContractWriterPage 첨부 · employees 컬럼 optional)
   photo_url?: string | null;
   hire_date?: string | null;
   memo?: string | null;
@@ -685,6 +686,25 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
   const [latestContract, setLatestContract] = useState<LatestContract | null>(null);
   const [latestContractLoading, setLatestContractLoading] = useState(false);
 
+  // 2026-08-05 · 계약 이력 (직원 상세 · 최신순 · GET /api/employee-contracts?employeeId=X)
+  interface ContractHistoryItem {
+    id: number;
+    employee_id: number;
+    employee_name?: string | null;
+    contract_type?: string | null;
+    start_date?: string | null;
+    end_date?: string | null;
+    pdf_url?: string | null;
+    pdf_size?: number | null;
+    storage?: string | null;
+    approved_by?: string | null;
+    is_active?: boolean | null;
+    created_at?: string | null;
+  }
+  const [contractHistory, setContractHistory] = useState<ContractHistoryItem[]>([]);
+  const [contractHistoryLoading, setContractHistoryLoading] = useState(false);
+  const [contractHistoryError, setContractHistoryError] = useState<string | null>(null);
+
   // 2026-08-04 · 첫계약/재계약 표시 · employee_id 별 계약 총 count map (list 컬럼용)
   const [contractCountByEmp, setContractCountByEmp] = useState<Map<number, number>>(() => new Map());
   useEffect(() => {
@@ -809,6 +829,43 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
     return () => { cancelled = true; };
   }, [selectedId]);
 
+  // 2026-08-05 · 계약 이력 조회 · 선택된 직원 변경 시 · created_at DESC (서버 정렬)
+  //   · 실패 시 · 빈 배열 + 에러 메세지 · UI 는 계속 렌더 (회귀 방지)
+  useEffect(() => {
+    if (selectedId == null) {
+      setContractHistory([]);
+      setContractHistoryError(null);
+      setContractHistoryLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setContractHistoryLoading(true);
+      setContractHistoryError(null);
+      try {
+        const res = await fetch(`/api/employee-contracts?employeeId=${selectedId}`);
+        if (!res.ok) {
+          if (!cancelled) {
+            setContractHistory([]);
+            setContractHistoryError(`계약 이력 조회 실패 (${res.status})`);
+          }
+          return;
+        }
+        const rows = await res.json();
+        if (cancelled) return;
+        setContractHistory(Array.isArray(rows) ? rows : []);
+      } catch (err: any) {
+        if (!cancelled) {
+          setContractHistory([]);
+          setContractHistoryError(err?.message ?? "계약 이력 조회 실패");
+        }
+      } finally {
+        if (!cancelled) setContractHistoryLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedId, latestContract]);  // latestContract 변경 시(신규 계약 승인) 재조회
+
   // 개별 연차 삭제 · PUT /api/schedules with type="" (SchedulePage clear 방식)
   const deleteUsedLeave = async (empId: number, date: string) => {
     if (!window.confirm(`${date} 연차 기록을 삭제할까요?\n\n스케줄표(월차)에도 반영됩니다.`)) return;
@@ -861,7 +918,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
   }, [employees, search, filterPosition, filterStatus]);
 
   // ── 정렬 (T35 · 공용 useSortableTable 훅 사용 · 원칙 feedback_ui_principles) ──
-  type SortKey = "name" | "position" | "contract_type" | "tenure" | "performance_rating" | "contract_file" | "status";
+  type SortKey = "name" | "position" | "contract_type" | "tenure" | "performance_rating"
+    | "resume_file" | "bankbook_file" | "contract_file" | "status";
   const cmpStr = (a: string, b: string) => a.localeCompare(b, "ko");
   const tenureDays = (e: Employee): number => {
     if (!e.hire_date) return -Infinity;
@@ -874,6 +932,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
     contract_type:      (a, b) => cmpStr((a as any).contract_type ?? "", (b as any).contract_type ?? ""),
     tenure:             (a, b) => tenureDays(b) - tenureDays(a),  // asc = 오래된순
     performance_rating: (a, b) => cmpStr((a as any).performance_rating ?? "", (b as any).performance_rating ?? ""),
+    resume_file:        (a, b) => (((b as any).resume_url ? 1 : 0) - ((a as any).resume_url ? 1 : 0)),
+    bankbook_file:      (a, b) => (((b as any).bankbook_image_url ? 1 : 0) - ((a as any).bankbook_image_url ? 1 : 0)),
     contract_file:      (a, b) => (((b as any).contract_file_url ? 1 : 0) - ((a as any).contract_file_url ? 1 : 0)),
     status:             (a, b) => (((a as any).retire_date ? 1 : 0) - ((b as any).retire_date ? 1 : 0)),
   }), []);
@@ -1005,12 +1065,64 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
 
   const displayEmp = editing && draft ? { ...selectedEmp!, ...draft } : selectedEmp;
 
+  // ── 리스트 파일 셀 · 이력서/통장사본 업로드 헬퍼 (row 단위 · 편집모드 불필요) ───
+  //   · 이력서 · POST /api/employees/:id/resume (Google Drive)
+  //   · 통장사본 · PUT /api/employees/:id  (bankbook_image_url · base64 · 서버 컬럼 있을 때만 persist)
+  //   · 회귀 방지 · 실패 시 alert 만 · 로컬 employees state 즉시 갱신
+  const uploadResumeForRow = useCallback(async (emp: Employee, file: File) => {
+    try {
+      const fd = new FormData();
+      fd.append("resume", file);
+      const res = await fetch(`/api/employees/${emp.id}/resume`, { method: "POST", body: fd });
+      const j = await res.json().catch(() => ({} as any));
+      if (!res.ok) throw new Error(j?.error ?? "업로드 실패");
+      const url = String(j?.url ?? "");
+      setEmployees((prev) => prev.map((e) => e.id === emp.id ? { ...e, resume_url: url } : e));
+      alert(`이력서 업로드 완료 · ${emp.name}`);
+    } catch (err: any) {
+      alert(`이력서 업로드 실패 · ${err?.message ?? err}`);
+    }
+  }, []);
+
+  const uploadBankbookForRow = useCallback(async (emp: Employee, file: File) => {
+    // 5MB 제한 (ContractWriterPage 와 동일)
+    if (file.size > 5 * 1024 * 1024) {
+      alert(`파일 크기 초과 (${(file.size / 1024 / 1024).toFixed(1)}MB > 5MB)`);
+      return;
+    }
+    try {
+      // base64 로 인코딩 (bankbook_image_url 컬럼 · TEXT · dataURL 그대로)
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result ?? ""));
+        r.onerror = () => reject(new Error("파일 읽기 실패"));
+        r.readAsDataURL(file);
+      });
+      // PUT · 기존 employee 페이로드 + bankbook_image_url (서버 미지원 시 silently drop)
+      const res = await fetch(`/api/employees/${emp.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...emp, bankbook_image_url: dataUrl }),
+      });
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        throw new Error((b as any)?.error ?? `저장 실패 (${res.status})`);
+      }
+      setEmployees((prev) => prev.map((e) => e.id === emp.id ? { ...e, bankbook_image_url: dataUrl } : e));
+      alert(`통장사본 업로드 완료 · ${emp.name}\n(서버에 bankbook_image_url 컬럼이 없으면 반영되지 않을 수 있습니다)`);
+    } catch (err: any) {
+      alert(`통장사본 업로드 실패 · ${err?.message ?? err}`);
+    }
+  }, []);
+
   // ── 좌측 리스트 아이템 · 표 형식 · 한 줄 (2026-08-03) ────────────────────────
   const ListRow: React.FC<{ emp: Employee }> = ({ emp }) => {
     const isSelected = emp.id === selectedId;
     const ctMeta   = contractTypeMeta(emp.contract_type);
     const tenure   = calcTenure(emp.hire_date);
     const hasContractFile = !!emp.contract_file_url;
+    const hasResume       = !!emp.resume_url;
+    const hasBankbook     = !!emp.bankbook_image_url;
     const rating   = emp.performance_rating ? emp.performance_rating.toUpperCase() : null;
     const isRetired = !!(emp as any).retire_date;
     const openContract = (e: React.MouseEvent) => {
@@ -1020,6 +1132,14 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
       } else {
         alert(`${emp.name}님의 근로계약서가 등록되어 있지 않습니다.\n편집 모드에서 계약서 URL을 입력해 주세요.`);
       }
+    };
+    const openResume = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (emp.resume_url) window.open(emp.resume_url, "_blank", "noopener,noreferrer");
+    };
+    const openBankbook = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (emp.bankbook_image_url) window.open(emp.bankbook_image_url, "_blank", "noopener,noreferrer");
     };
     return (
       <tr
@@ -1080,6 +1200,68 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
             </span>
           ) : (
             <span className="text-[11px] text-slate-300">-</span>
+          )}
+        </td>
+        {/* 이력서 · 파일 있음=보기 · 없음=업로드 (Drive · POST /api/employees/:id/resume) */}
+        <td className="px-1 py-2 text-center">
+          {hasResume ? (
+            <button
+              type="button"
+              onClick={openResume}
+              className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-emerald-600 hover:text-emerald-800 hover:underline cursor-pointer whitespace-nowrap"
+              title={`이력서 · Google Drive · 새 창으로 보기\n${emp.resume_url ?? ""}`}
+            >
+              <ExternalLink size={10} />보기
+            </button>
+          ) : (
+            <label
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
+              title="이력서 업로드 · Google Drive (PDF·DOC·이미지 · 10MB)"
+            >
+              <Paperclip size={10} />업로드
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx,.hwp,image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = "";
+                  if (f) uploadResumeForRow(emp, f);
+                }}
+              />
+            </label>
+          )}
+        </td>
+        {/* 통장사본 · 파일 있음=보기 · 없음=업로드 (base64 · PUT /api/employees/:id) */}
+        <td className="px-1 py-2 text-center">
+          {hasBankbook ? (
+            <button
+              type="button"
+              onClick={openBankbook}
+              className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-sky-600 hover:text-sky-800 hover:underline cursor-pointer whitespace-nowrap"
+              title="통장사본 · 새 창으로 보기"
+            >
+              <ExternalLink size={10} />보기
+            </button>
+          ) : (
+            <label
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-500 hover:text-sky-700 hover:bg-sky-50 border border-slate-200 hover:border-sky-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
+              title="통장사본 업로드 · 이미지 (jpg/png · 5MB)"
+            >
+              <Paperclip size={10} />업로드
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = "";
+                  if (f) uploadBankbookForRow(emp, f);
+                }}
+              />
+            </label>
           )}
         </td>
         {/* 근로계약서 · 보기 or 작성 */}
@@ -1284,6 +1466,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                     <th className="px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("contract_type")}>계약유형<SortIcon k="contract_type" /></th>
                     <th className="px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("tenure")}>근속<SortIcon k="tenure" /></th>
                     <th className="px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("performance_rating")}>평가<SortIcon k="performance_rating" /></th>
+                    <th className="px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("resume_file")} title="이력서">이력서<SortIcon k="resume_file" /></th>
+                    <th className="px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("bankbook_file")} title="통장사본">통장<SortIcon k="bankbook_file" /></th>
                     <th className="px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("contract_file")}>계약서<SortIcon k="contract_file" /></th>
                     <th className="px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("status")}>상태<SortIcon k="status" /></th>
                   </tr>
@@ -1926,6 +2110,87 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                       )}
                     </div>
                   </div>
+                </SectionCard>
+
+                {/* §6-1 계약 이력 — amber 그룹 · GET /api/employee-contracts?employeeId=X · 최신순
+                    · 2026-08-05 · 사용자 요청 · 활성 계약 강조 · PDF 링크 · 계약기간·유형 배지 */}
+                <SectionCard title="계약 이력" icon={<FileText size={11} />} group="work" defaultOpen>
+                  {contractHistoryLoading ? (
+                    <div className="flex items-center justify-center py-4 text-slate-400 text-[11px] font-semibold gap-1.5">
+                      <Loader2 size={12} className="animate-spin" />불러오는 중...
+                    </div>
+                  ) : contractHistoryError ? (
+                    <div className="text-[11px] text-rose-600 font-semibold bg-rose-50 border border-rose-200 rounded-md px-2 py-1.5">
+                      {contractHistoryError}
+                    </div>
+                  ) : contractHistory.length === 0 ? (
+                    <div className="text-center text-[11px] text-slate-300 py-4 italic">
+                      등록된 계약 이력이 없습니다
+                    </div>
+                  ) : (
+                    <div className="max-h-64 overflow-y-auto overscroll-contain -mx-1 px-1">
+                      <ul className="divide-y divide-slate-100">
+                        {contractHistory.map((h) => {
+                          const ctMeta = contractTypeMeta(h.contract_type);
+                          const period = h.start_date
+                            ? `${h.start_date} ~ ${h.end_date ?? "무기한"}`
+                            : "-";
+                          const created = h.created_at
+                            ? new Date(h.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" })
+                            : "";
+                          const isActive = h.is_active === true;
+                          return (
+                            <li
+                              key={h.id}
+                              className={`py-2 px-2 rounded-md ${
+                                isActive ? "bg-emerald-50/70 border border-emerald-200 my-1" : ""
+                              }`}
+                            >
+                              <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                                {isActive && (
+                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md border bg-emerald-600 text-white border-emerald-700 leading-tight">
+                                    활성
+                                  </span>
+                                )}
+                                {!isActive && h.is_active === false && (
+                                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md border bg-slate-100 text-slate-500 border-slate-200 leading-tight">
+                                    이전
+                                  </span>
+                                )}
+                                {ctMeta ? (
+                                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md border leading-tight ${ctMeta.color}`}>
+                                    {ctMeta.label}
+                                  </span>
+                                ) : h.contract_type ? (
+                                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md border bg-slate-100 text-slate-600 border-slate-200 leading-tight">
+                                    {h.contract_type}
+                                  </span>
+                                ) : null}
+                                <span className="text-[11px] font-semibold text-slate-700 tabular-nums">
+                                  {period}
+                                </span>
+                                {h.pdf_url && (
+                                  <button
+                                    type="button"
+                                    onClick={() => window.open(h.pdf_url as string, "_blank", "noopener,noreferrer")}
+                                    className="ml-auto inline-flex items-center gap-0.5 h-6 px-2 text-[10px] font-semibold text-indigo-600 bg-white border border-indigo-200 rounded-md hover:bg-indigo-50 cursor-pointer transition-colors"
+                                    title="계약서 PDF · 새 창으로 보기"
+                                  >
+                                    <ExternalLink size={9} /> PDF
+                                  </button>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                                {created && <span>승인 {created}</span>}
+                                {h.approved_by && <span>· {h.approved_by}</span>}
+                                {h.storage && <span className="ml-auto italic opacity-70">{h.storage}</span>}
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
                 </SectionCard>
 
                 {/* §7 근로조건 · 임금 (통합) — amber 그룹 · 근로계약서 데이터 기반
