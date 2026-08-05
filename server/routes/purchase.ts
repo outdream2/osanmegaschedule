@@ -489,6 +489,8 @@ router.get("/api/purchase-details/coverage", async (req, res) => {
 // ═════════════════════════════════════════════════════════════════
 // GET /api/purchase-details
 //   query: product_code · supplier · from · to · limit
+//          page · per_page  (서버 페이지네이션 · 2026-08-05)
+//          no_cycle=1       (cycle_days 계산 스킵 · 2026-08-05)
 //   상품별 or 공급사별 매입 이력 조회
 // ═════════════════════════════════════════════════════════════════
 router.get("/api/purchase-details", async (req, res) => {
@@ -498,6 +500,16 @@ router.get("/api/purchase-details", async (req, res) => {
     const from = String(req.query.from ?? "").trim();
     const to = String(req.query.to ?? "").trim();
     const limit = Math.max(1, Math.min(5000, parseInt(String(req.query.limit ?? "500"), 10) || 500));
+    // 페이지네이션 파라미터 (2026-08-05)
+    //   page=1 · per_page=100 → 0-indexed range(0, 99)
+    //   응답에 has_more / total_fetched 포함 → 클라이언트 무한스크롤용
+    const pageParam = parseInt(String(req.query.page ?? "1"), 10) || 1;
+    const perPageRaw = parseInt(String(req.query.per_page ?? ""), 10);
+    // per_page 파라미터가 없으면 (NaN) 기존 limit 동작 유지 (하위 호환)
+    const usePagination = !isNaN(perPageRaw) && perPageRaw > 0;
+    const perPage = usePagination ? Math.max(10, Math.min(500, perPageRaw)) : 0;
+    // cycle_days 계산 스킵 플래그 (2026-08-05) · ledger/product 뷰는 불필요
+    const noCycle = String(req.query.no_cycle ?? "").trim() === "1";
     // 계절 필터 · 지정 시 년도 무관 · from/to 무시 (season 우선)
     const seasonParam = String(req.query.season ?? "").trim().toLowerCase();
     const seasonMonths = await resolveSeasonMonths(seasonParam);
@@ -506,12 +518,21 @@ router.get("/api/purchase-details", async (req, res) => {
       .from("purchase_details")
       .select("id, purchase_date, period_start_date, period_type, supplier_code, supplier_name, product_code, product_name, spec, quantity, unit_price, amount, vat, total")
       .order("purchase_date", { ascending: false });
-    // season 지정 시 전체 스캔 필요 → limit 확장 (필터 후 슬라이스)
-    q = q.limit(seasonMonths ? Math.max(limit * 6, 5000) : limit);
+
     if (productCode) q = q.eq("product_code", productCode);
     if (!seasonMonths) {
       if (from && /^\d{4}-\d{2}-\d{2}$/.test(from)) q = q.gte("purchase_date", from);
       if (to && /^\d{4}-\d{2}-\d{2}$/.test(to)) q = q.lte("purchase_date", to);
+    }
+
+    if (usePagination && !seasonMonths) {
+      // 서버 페이지네이션: range(start, end) · 0-indexed
+      const start = (pageParam - 1) * perPage;
+      const end = start + perPage - 1;
+      q = q.range(start, end);
+    } else {
+      // 기존 limit 동작 (season 필터 또는 per_page 없을 때)
+      q = q.limit(seasonMonths ? Math.max(limit * 6, 5000) : limit);
     }
 
     const { data, error } = await q;
@@ -569,7 +590,8 @@ router.get("/api/purchase-details", async (req, res) => {
     // 매입주기 계산: 각 product_code 별 전체 이력 조회 → (last - first) / (count - 1)
     //   결과 rows 의 각 행에 cycle_days · purchase_count 부착
     //   2026-07-29 · CHUNK 500→200 축소 + .range() 페이지네이션 + distinct dates count
-    if (codes.length > 0) {
+    //   2026-08-05 · no_cycle=1 시 스킵 (ledger/by-product 뷰는 cycle_days 미사용)
+    if (codes.length > 0 && !noCycle) {
       try {
         const cycleMap = new Map<string, { firstDate: string; lastDate: string; count: number; days: number }>();
         const PCHUNK = 200;
@@ -620,7 +642,17 @@ router.get("/api/purchase-details", async (req, res) => {
     // 공급사 필터 (조인 후 처리 · products.supplier 보강값도 인식)
     if (supplier) rows = rows.filter((r: any) => String(r.supplier_name ?? "").trim() === supplier);
 
-    res.json({ rows, season: seasonParam || undefined, season_months: seasonMonths ?? undefined });
+    res.json({
+      rows,
+      // 페이지네이션 메타 (2026-08-05) · per_page 사용 시만 포함
+      ...(usePagination && !seasonMonths ? {
+        page: pageParam,
+        per_page: perPage,
+        has_more: rows.length === perPage,
+      } : {}),
+      season: seasonParam || undefined,
+      season_months: seasonMonths ?? undefined,
+    });
   } catch (err: any) {
     res.status(500).json({ error: err?.message ?? "조회 실패" });
   }

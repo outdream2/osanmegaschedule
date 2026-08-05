@@ -291,11 +291,13 @@ export const PurchaseHistoryTab: React.FC = () => {
     return () => window.removeEventListener("vendors-changed", onChange);
   }, [loadVendors, loadSummary]);
 
-  // ─── 원장 (기간 필터) 로드 ─────────────────────────────────────────────
-  // 2026-08-04 · /api/purchase-details 로 전환 (해당 공급사 모든 상품 · products 조인 자동)
-  //   기존 /api/supplier-purchase-detail 은 fallback 오작동 · 서버 fix 반영 대기중
-  const loadLedger = useCallback(async (supplier: string) => {
+  // ─── 원장 + detail 통합 로드 (2026-08-05 · 단일 fetch · no_cycle=1) ────
+  //   기존 loadLedger / loadDetail 이 동일 URL 을 두 번 호출하던 N+1 패턴 제거.
+  //   한 번 fetch → ledgerRows / detailRows 동시 세팅.
+  //   no_cycle=1 → 서버 cycle_days 재귀 쿼리 완전 스킵 (공급사 원장에서 미사용).
+  const loadVendorData = useCallback(async (supplier: string) => {
     setLedgerLoading(true);
+    setDetailLoading(true);
     setLedgerError(null);
     try {
       const isDays10 = periodMonths === 0 && !periodSeason;
@@ -305,7 +307,8 @@ export const PurchaseHistoryTab: React.FC = () => {
       const fromDate = new Date();
       fromDate.setDate(fromDate.getDate() - days);
       const fromStr = fromDate.toISOString().slice(0, 10);
-      const params = new URLSearchParams({ supplier, from: fromStr, limit: "5000" });
+      // no_cycle=1 · cycle_days 계산 스킵 → 서버 응답 수십 배 빠름
+      const params = new URLSearchParams({ supplier, from: fromStr, limit: "5000", no_cycle: "1" });
       const res = await fetch(`/api/purchase-details?${params}`);
       if (!res.ok) throw new Error(String(res.status));
       const j = await res.json();
@@ -315,6 +318,7 @@ export const PurchaseHistoryTab: React.FC = () => {
         const rn = String(r.supplier_name ?? r.supplier ?? "").trim();
         return rn === supplier;
       });
+      // ledgerRows
       const purchaseRows: PurchaseLedgerRow[] = filtered.map((r: any) => ({
         id: r.id,
         invoice_date: r.purchase_date ?? r.invoice_date ?? null,
@@ -325,35 +329,8 @@ export const PurchaseHistoryTab: React.FC = () => {
         amount: Number(r.amount ?? r.total) || 0,
       }));
       setLedgerRows(purchaseRows);
-    } catch (e: any) {
-      setLedgerError(e?.message ?? "네트워크 오류");
-      setLedgerRows([]);
-    } finally { setLedgerLoading(false); }
-  }, [periodMonths, periodSeason]);
-
-  // ─── detail (기간 필터 반영 · 2026-08-05 · 3탭 공통 기간 적용) ──────────
-  //   periodMonths/periodSeason 변경 시 재로드 (Tab 2 상품별 집계 · Tab 3 매입추이 연동)
-  //   최소 기간: 1개월 · 최대: seasonKey 선택 시 365일
-  const loadDetail = useCallback(async (supplier: string) => {
-    setDetailLoading(true);
-    try {
-      const isDays10 = periodMonths === 0 && !periodSeason;
-      const days = periodSeason
-        ? 365
-        : isDays10 ? 10 : (periodMonths || 1) * 30;
-      const fromDate = new Date();
-      fromDate.setDate(fromDate.getDate() - days);
-      const fromStr = fromDate.toISOString().slice(0, 10);
-      const params = new URLSearchParams({ supplier, from: fromStr, limit: "5000" });
-      const res = await fetch(`/api/purchase-details?${params}`);
-      if (!res.ok) throw new Error(String(res.status));
-      const j = await res.json();
-      const rowsFromApi: any[] = Array.isArray(j.rows) ? j.rows : [];
-      const filtered = rowsFromApi.filter(r => {
-        const rn = String(r.supplier_name ?? r.supplier ?? "").trim();
-        return rn === supplier;
-      });
-      const rows: PurchaseDetailRow[] = filtered.map((r: any) => ({
+      // detailRows (동일 데이터 · PurchaseDetailRow 타입 변환)
+      const detRows: PurchaseDetailRow[] = filtered.map((r: any) => ({
         id: r.id,
         date: r.purchase_date ?? r.invoice_date ?? "",
         product_code: r.product_code ?? null,
@@ -361,37 +338,35 @@ export const PurchaseHistoryTab: React.FC = () => {
         quantity: Number(r.quantity) || 0,
         unit_price: Number(r.unit_price) || 0,
         amount: Number(r.amount ?? r.total) || 0,
-        vat_amount: Number(r.vat_amount ?? r.vat) || 0,
-        supply_amount: Number(r.supply_amount) || 0,
       }));
-      setDetailRows(rows);
+      setDetailRows(detRows);
       setDetailSource("purchase_details" as DataSource);
-    } catch {
+    } catch (e: any) {
+      setLedgerError(e?.message ?? "네트워크 오류");
+      setLedgerRows([]);
       setDetailRows([]);
       setDetailSource(null);
-    } finally { setDetailLoading(false); }
+    } finally {
+      setLedgerLoading(false);
+      setDetailLoading(false);
+    }
   }, [periodMonths, periodSeason]);
 
-  // 공급사 선택 시 · 원장 + detail 동시 로드
+  // 공급사 선택 시 · 단일 fetch
   useEffect(() => {
     if (!selectedVendor) {
       setLedgerRows([]);
       setDetailRows([]);
       return;
     }
-    loadLedger(selectedVendor.company_name);
-    loadDetail(selectedVendor.company_name);
-  // loadDetail 은 기간 필터에 무관 (365일 고정) · selectedVendor 변경 시만 재로드
+    loadVendorData(selectedVendor.company_name);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedVendor, loadDetail]);
+  }, [selectedVendor, loadVendorData]);
 
-  // 기간 필터 변경 시 원장 + detail 모두 재조회 (2026-08-05 · 3탭 공통 기간 반영)
-  //   · periodMonths / periodSeason 이 바뀌면 loadLedger/loadDetail 참조가 새로 생성
-  //   · selectedVendor 선택 상태에서만 재조회
+  // 기간 필터 변경 시 재조회 (2026-08-05 · 3탭 공통 기간 반영)
   useEffect(() => {
     if (!selectedVendor) return;
-    loadLedger(selectedVendor.company_name);
-    loadDetail(selectedVendor.company_name);
+    loadVendorData(selectedVendor.company_name);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [periodMonths, periodSeason]);
 
@@ -415,55 +390,37 @@ export const PurchaseHistoryTab: React.FC = () => {
 
   // ═══════════════════════════════════════════════════════════════════════
   //  상품별 뷰 · 데이터 로드 (#191)
-  //   - /api/purchase-details?limit=5000 (unfiltered · 최근 매입일 desc)
-  //   - 응답: rows = [{ id, purchase_date, supplier_name, product_code, product_name,
-  //                    quantity, unit_price, amount, ... }]
-  //   - 클라이언트에서 상품별 groupBy
+  //   2026-08-05 · 서버 페이지네이션 도입
+  //     · 첫 fetch: per_page=200&page=1 (빠른 초기 표시)
+  //     · has_more=true 이면 백그라운드로 나머지 페이지 누적 로드
+  //     · no_cycle=1 · cycle_days 계산 완전 스킵
+  //     · top-sales 는 첫 fetch 와 병렬 (기존 동일)
   // ═══════════════════════════════════════════════════════════════════════
+  const PER_PAGE_ALL = 200; // 첫 페이지 행 수
   const loadAllDetails = useCallback(async (force = false) => {
     if (allDetailsLoaded && !force) return;
     setAllDetailsLoading(true);
     setAllDetailsError(null);
     try {
-      // 최근 1년치 fetch · limit=5000 (서버 max)
       const now = new Date();
       const from = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
       const fromStr = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, "0")}-${String(from.getDate()).padStart(2, "0")}`;
-      const params = new URLSearchParams({ from: fromStr, limit: "5000" });
-      // 2026-08-04 · top-sales?months=1 병렬 fetch (product_code → sale_qty·sale_amount)
-      //   · 사용자 요청 · by-product 리스트 판매량·판매금액 컬럼·정렬
-      //   · top-sales 실패해도 매입은 계속 표시 (판매만 회색)
+      const firstParams = new URLSearchParams({
+        from: fromStr,
+        per_page: String(PER_PAGE_ALL),
+        page: "1",
+        no_cycle: "1",
+      });
+      // 첫 페이지 + top-sales 병렬
       const [res, salesRes] = await Promise.all([
-        fetch(`/api/purchase-details?${params}`),
+        fetch(`/api/purchase-details?${firstParams}`),
         fetch("/api/stock-manage/top-sales?months=1&limit=5000&sort=sale&dir=desc").catch(() => null),
       ]);
       if (!res.ok) throw new Error(String(res.status));
       const j = await res.json();
-      const rows: any[] = Array.isArray(j.rows) ? j.rows : [];
-
-      // PurchaseDetailRow 로 정규화 + supplier_name map 별도 저장
-      const details: PurchaseDetailRow[] = [];
-      const supMap = new Map<string | number, string | null>();
-      for (const r of rows) {
-        const id = r.id;
-        const date = String(r.purchase_date ?? "").slice(0, 10);
-        if (!id || !date) continue;
-        details.push({
-          id,
-          date,
-          product_code: r.product_code ?? null,
-          product_name: r.product_name ?? null,
-          quantity: Number(r.quantity) || 0,
-          unit_price: Number(r.unit_price) || 0,
-          amount: Number(r.amount ?? r.total) || 0,
-        });
-        supMap.set(id, r.supplier_name ?? null);
-      }
-      setAllDetails(details);
-      setDetailSupplierMap(supMap);
+      const firstRows: any[] = Array.isArray(j.rows) ? j.rows : [];
 
       // 판매지표 map 구성 (product_code 기준 · leading zero 형태도 함께 저장)
-      //   · 매입 코드와 판매 코드 형식 차이(leading zero) 대응 · 매칭율 개선
       const salesMap = new Map<string, { qty: number; amt: number }>();
       if (salesRes && salesRes.ok) {
         try {
@@ -487,13 +444,68 @@ export const PurchaseHistoryTab: React.FC = () => {
         } catch { /* 판매 데이터 실패는 무시 · 매입은 표시 */ }
       }
       setProductSalesMap(salesMap);
+
+      // 정규화 헬퍼
+      const normalizeRows = (raw: any[]): { details: PurchaseDetailRow[]; supMap: Map<string | number, string | null> } => {
+        const details: PurchaseDetailRow[] = [];
+        const supMap = new Map<string | number, string | null>();
+        for (const r of raw) {
+          const id = r.id;
+          const date = String(r.purchase_date ?? "").slice(0, 10);
+          if (!id || !date) continue;
+          details.push({
+            id,
+            date,
+            product_code: r.product_code ?? null,
+            product_name: r.product_name ?? null,
+            quantity: Number(r.quantity) || 0,
+            unit_price: Number(r.unit_price) || 0,
+            amount: Number(r.amount ?? r.total) || 0,
+          });
+          supMap.set(id, r.supplier_name ?? null);
+        }
+        return { details, supMap };
+      };
+
+      const { details: firstDetails, supMap: firstSupMap } = normalizeRows(firstRows);
+
+      // 첫 페이지로 즉시 표시 → 체감 로딩 빠름
+      setAllDetails(firstDetails);
+      setDetailSupplierMap(firstSupMap);
       setAllDetailsLoaded(true);
+      setAllDetailsLoading(false); // 스피너 off · 나머지는 백그라운드
+
+      // has_more=true 이면 나머지 페이지 누적 로드 (백그라운드)
+      if (j.has_more) {
+        let page = 2;
+        const accumulated = [...firstRows];
+        while (true) {
+          const moreParams = new URLSearchParams({
+            from: fromStr,
+            per_page: String(PER_PAGE_ALL),
+            page: String(page),
+            no_cycle: "1",
+          });
+          const moreRes = await fetch(`/api/purchase-details?${moreParams}`);
+          if (!moreRes.ok) break;
+          const mj = await moreRes.json();
+          const moreRows: any[] = Array.isArray(mj.rows) ? mj.rows : [];
+          if (moreRows.length === 0) break;
+          accumulated.push(...moreRows);
+          const { details: accDet, supMap: accSup } = normalizeRows(accumulated);
+          setAllDetails(accDet);
+          setDetailSupplierMap(accSup);
+          if (!mj.has_more) break;
+          page++;
+        }
+      }
     } catch (e: any) {
       setAllDetailsError(e?.message ?? "네트워크 오류");
       setAllDetails([]);
       setDetailSupplierMap(new Map());
       setProductSalesMap(new Map());
-    } finally { setAllDetailsLoading(false); }
+      setAllDetailsLoading(false);
+    }
   }, [allDetailsLoaded]);
 
   // 뷰 모드가 by-product 로 전환될 때 lazy load
@@ -846,8 +858,7 @@ export const PurchaseHistoryTab: React.FC = () => {
           <button
             type="button"
             onClick={() => {
-              loadLedger(selectedVendor.company_name);
-              loadDetail(selectedVendor.company_name);
+              loadVendorData(selectedVendor.company_name);
               loadSummary();
             }}
             disabled={ledgerLoading}
@@ -961,8 +972,7 @@ export const PurchaseHistoryTab: React.FC = () => {
                     onClick={() => {
                       setLedgerError(null);
                       if (selectedVendor) {
-                        loadLedger(selectedVendor.company_name);
-                        loadDetail(selectedVendor.company_name);
+                        loadVendorData(selectedVendor.company_name);
                       }
                     }}
                     className="inline-flex items-center gap-1 h-8 px-3 rounded-md bg-rose-600 text-white text-[12px] font-bold hover:bg-rose-700 transition cursor-pointer"
