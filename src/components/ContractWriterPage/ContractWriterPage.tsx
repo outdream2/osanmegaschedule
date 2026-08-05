@@ -34,6 +34,7 @@ import {
   loadContractSettings,
   DEFAULT_CONTRACT_SETTINGS,
   type ContractCategory,
+  loadContractClauses,
 } from "../ContractSettingsPage/ContractSettingsPage";
 import SplitPanel from "../common/SplitPanel";
 import sungstampUrl from "../../images/sungstamp.png";
@@ -1775,6 +1776,17 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
 }, ref) => {
   const workDayText = DAYS.filter(d => form.workDays[d]).join("·") || "(선택 안 됨)";
 
+  // 각 호 CMS (설정에서 편집한 조항) · 없으면 기본 상수 사용
+  const clauses = React.useMemo(() => {
+    try { return loadContractClauses(); }
+    catch { return null; }
+  }, []);
+  const wageClauses       = clauses?.wageClauses       ?? WAGE_CLAUSES;
+  const holidayClauses    = clauses?.holidayClauses    ?? HOLIDAY_CLAUSES;
+  const disciplineClauses = clauses?.disciplineClauses ?? DISCIPLINE_REASONS;
+  const etcClauses        = clauses?.etcClauses        ?? ETC_ITEMS;
+  const privacyClauses    = clauses?.privacyClauses    ?? PRIVACY_ITEMS;
+
   // 계약체결일 · 년/월/일 분리
   const csDate = form.contractSignDate ? form.contractSignDate.match(/^(\d{4})-(\d{2})-(\d{2})$/) : null;
   const csY = csDate ? csDate[1] : "";
@@ -1981,7 +1993,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
 
         {/* 임금 단서 조항 5개 · 문단형 */}
         <ol className="mt-2 space-y-1 text-[11px] text-slate-700 leading-snug list-decimal list-inside pl-1">
-          {WAGE_CLAUSES.map((clause, i) => (
+          {wageClauses.map((clause, i) => (
             <li key={i}><span className="align-middle">{clause}</span></li>
           ))}
         </ol>
@@ -2129,7 +2141,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
       {/* 7. 휴일 및 휴무 (4조항) */}
       <Section label="휴일 및 휴무">
         <ol className="list-decimal list-inside space-y-0.5 text-[11.5px] text-slate-800 pl-1">
-          {HOLIDAY_CLAUSES.map((c, i) => <li key={i} className="leading-snug">{c}</li>)}
+          {holidayClauses.map((c, i) => <li key={i} className="leading-snug">{c}</li>)}
         </ol>
       </Section>
 
@@ -2139,7 +2151,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
           다음 각 호의 어느 하나에 해당하는 경우 사업주는 근로자를 징계 또는 근로계약 해지할 수 있다.
         </div>
         <ol className="list-decimal list-inside space-y-0.5 text-[11.5px] text-slate-800 pl-1">
-          {DISCIPLINE_REASONS.map((r, i) => (
+          {disciplineClauses.map((r, i) => (
             <li key={i} className="leading-snug">{r}</li>
           ))}
         </ol>
@@ -2148,7 +2160,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
       {/* 9. 기타사항 5항목 */}
       <Section label="기타사항">
         <ol className="list-decimal list-inside space-y-0.5 text-[11.5px] text-slate-800 pl-1">
-          {ETC_ITEMS.map((r, i) => (
+          {etcClauses.map((r, i) => (
             <li key={i} className="leading-snug"><span className="align-middle">{r}</span></li>
           ))}
         </ol>
@@ -2332,7 +2344,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
               </td>
               <td className="border border-slate-300 px-2 py-1 text-slate-800 align-top" colSpan={3}>
                 <ol className="list-decimal list-inside space-y-0.5 text-[10.5px]">
-                  {PRIVACY_ITEMS.map((p, i) => <li key={i}>{p}</li>)}
+                  {privacyClauses.map((p, i) => <li key={i}>{p}</li>)}
                 </ol>
               </td>
             </tr>
