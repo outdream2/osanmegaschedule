@@ -607,105 +607,143 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             ) : !displayLoading && displayReqs.length === 0 ? (
               <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
             ) : (
-              <div className={`bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-50 ${displayLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-                {displayReqs.map(r => {
-                  const isDone     = r.status === "done";
-                  const isPrepared = r.status === "prepared";
-                  const isPending  = r.status === "pending" || (!isDone && !isPrepared);
-                  const completing = completingDisplay.has(r.id);
-                  // 상태 배지 색상
-                  const statusBadge = isDone
-                    ? { cls: "text-emerald-600 bg-emerald-50 border-emerald-200", label: "완료", Icon: CheckCircle2 }
-                    : isPrepared
-                    ? { cls: "text-sky-700 bg-sky-50 border-sky-200",             label: "창고준비완료", Icon: Package }
-                    : { cls: "text-blue-600 bg-blue-50 border-blue-200",           label: "대기", Icon: Clock };
-                  const rowLeftBorder = isDone
-                    ? "border-l-2 border-l-emerald-300"
-                    : isPrepared ? "border-l-2 border-l-sky-400"
-                    : "border-l-2 border-l-amber-400";
-                  return (
-                    <div
-                      key={r.id}
-                      className={`flex items-center gap-3 px-2 py-1.5 transition-all duration-150 ${rowLeftBorder} ${selectedDisplay.has(r.id) ? "bg-rose-50/50" : "hover:bg-slate-50/60"} ${isDone ? "opacity-60" : ""}`}
-                    >
-                      <Checkbox checked={selectedDisplay.has(r.id)} onChange={() => toggleOne(selectedDisplay, r.id, setSelectedDisplay)} />
-                      <div className="flex-1 min-w-0">
-                        {/* 담당자 · 구역 · 카테고리 · 상품 · 노트 */}
-                        <div className={`flex items-center gap-1.5 flex-wrap ${isDone ? "line-through text-slate-400" : ""}`}>
-                          {r.assigned_staff_name ? (
-                            <span className="text-[12px] font-black text-indigo-700">{r.assigned_staff_name}</span>
-                          ) : (
-                            <span className="text-[11px] text-slate-300">미지정</span>
-                          )}
-                          {r.zone_label && (
-                            <><span className="text-slate-300 text-[10px]">·</span>
-                            <span className="text-[12px] font-bold text-slate-800 break-keep">{r.zone_label}</span></>
-                          )}
-                          {r.category && (
-                            <><span className="text-slate-300 text-[10px]">·</span>
-                            <span className="text-[11px] text-slate-500 break-keep">{r.category}</span></>
-                          )}
-                          {r.note && (
-                            <><span className="text-slate-300 text-[10px]">·</span>
-                            <span className="text-[11px] text-indigo-500 break-keep">{r.note}</span></>
-                          )}
-                        </div>
-                        {/* 창고 준비 정보 (준비완료·완료 시) */}
-                        {(isPrepared || isDone) && (r.prepared_by_name || r.prepared_at) && (
-                          <div className="text-[10px] text-sky-600 mt-0.5 flex items-center gap-1">
-                            <Package size={9} />
-                            <span>창고 {r.prepared_by_name ?? ""}{r.prepared_at ? ` · ${fmtDate(r.prepared_at)}` : ""}</span>
-                            {isDone && r.completed_by_name && (
-                              <><span className="text-slate-300">·</span>
-                              <CheckCircle2 size={9} className="text-emerald-500" />
-                              <span className="text-emerald-600">진열 {r.completed_by_name}{r.completed_at ? ` · ${fmtDate(r.completed_at)}` : ""}</span></>
+              <div className={`bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto ${displayLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+                <table className="w-full min-w-[640px] border-collapse text-left">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/80">
+                      <th className="w-8 px-2 py-2">
+                        <button onClick={() => toggleAll(displayReqs, selectedDisplay, setSelectedDisplay)} className="shrink-0 cursor-pointer text-slate-400 hover:text-slate-600 transition">
+                          {selectedDisplay.size === displayReqs.length && displayReqs.length > 0
+                            ? <CheckSquare size={14} className="text-rose-500" />
+                            : <Square size={14} />}
+                        </button>
+                      </th>
+                      <th className="px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide">상품명</th>
+                      <th className="px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide whitespace-nowrap">진열구역</th>
+                      <th className="px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide whitespace-nowrap">담당자</th>
+                      <th className="px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide text-center whitespace-nowrap">창고준비</th>
+                      <th className="px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide text-center whitespace-nowrap">진열완료</th>
+                      <th className="px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide whitespace-nowrap">날짜</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {displayReqs.map(r => {
+                      const isDone     = r.status === "done";
+                      const isPrepared = r.status === "prepared";
+                      const isPending  = r.status === "pending" || (!isDone && !isPrepared);
+                      const completing = completingDisplay.has(r.id);
+                      // 상품명: note 에서 " 진열 요청" 접미어 제거 → fallback: category → zone_label
+                      const productName = (() => {
+                        if (r.note) {
+                          const cleaned = r.note.replace(/\s*진열\s*요청\s*$/u, "").trim();
+                          if (cleaned) return cleaned;
+                        }
+                        return r.category || r.zone_label || "—";
+                      })();
+                      const rowLeftBorder = isDone
+                        ? "border-l-2 border-l-emerald-300"
+                        : isPrepared ? "border-l-2 border-l-sky-400"
+                        : "border-l-2 border-l-amber-400";
+                      return (
+                        <tr
+                          key={r.id}
+                          className={`transition-all duration-150 ${rowLeftBorder} ${selectedDisplay.has(r.id) ? "bg-rose-50/50" : "hover:bg-slate-50/60"} ${isDone ? "opacity-60" : ""}`}
+                        >
+                          {/* 체크박스 */}
+                          <td className="w-8 px-2 py-2">
+                            <Checkbox checked={selectedDisplay.has(r.id)} onChange={() => toggleOne(selectedDisplay, r.id, setSelectedDisplay)} />
+                          </td>
+
+                          {/* 상품명 */}
+                          <td className="px-3 py-2 max-w-[200px]">
+                            <span className={`text-[12px] font-semibold break-words whitespace-normal leading-tight ${isDone ? "line-through text-slate-400" : "text-slate-800"}`}>
+                              {productName}
+                            </span>
+                          </td>
+
+                          {/* 진열구역 */}
+                          <td className="px-3 py-2 whitespace-nowrap">
+                            <span className="text-[12px] font-bold text-slate-700 break-keep">
+                              {r.zone_label || r.zone_id || "—"}
+                            </span>
+                          </td>
+
+                          {/* 담당자 */}
+                          <td className="px-3 py-2 whitespace-nowrap">
+                            {r.assigned_staff_name
+                              ? <span className="text-[12px] font-black text-indigo-700">{r.assigned_staff_name}</span>
+                              : <span className="text-[11px] text-slate-300">미지정</span>}
+                          </td>
+
+                          {/* 창고준비 */}
+                          <td className="px-3 py-2 text-center whitespace-nowrap">
+                            {isPending ? (
+                              <button
+                                onClick={() => handlePrepareDisplay(r)}
+                                disabled={!canPrepare || completing}
+                                title={canPrepare ? "창고 준비 완료 처리" : "창고담당만 가능"}
+                                className={`text-[10px] font-semibold px-2.5 h-6 rounded-md transition-all duration-150 inline-flex items-center gap-0.5 disabled:opacity-40 ${
+                                  canPrepare
+                                    ? "text-amber-700 bg-amber-50 border border-amber-300 hover:bg-amber-100 cursor-pointer"
+                                    : "text-slate-400 bg-slate-100 border border-slate-200 cursor-not-allowed"
+                                }`}
+                              >
+                                {completing ? <Loader2 size={9} className="animate-spin" /> : <Clock size={9} />}
+                                대기
+                              </button>
+                            ) : (
+                              <span
+                                title={`${r.prepared_by_name ?? ""}${r.prepared_at ? " · " + fmtDate(r.prepared_at) : ""}`}
+                                className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 cursor-default"
+                              >
+                                <Package size={9} />
+                                완료
+                              </span>
                             )}
-                          </div>
-                        )}
-                      </div>
-                      {/* 액션 버튼 · [준비완료] · [완료] · 상태 · 날짜 */}
-                      <div className="shrink-0 flex items-center gap-1.5">
-                        {/* pending 단계 · 창고담당 · [준비완료] */}
-                        {isPending && (
-                          <button
-                            onClick={() => handlePrepareDisplay(r)}
-                            disabled={!canPrepare || completing}
-                            title={canPrepare ? "창고 준비 완료 처리" : "창고담당만 가능"}
-                            className={`text-[10px] font-semibold px-2 h-6 rounded-md transition-all duration-150 flex items-center gap-0.5 disabled:opacity-40 ${
-                              canPrepare
-                                ? "text-sky-700 bg-sky-50 border border-sky-300 hover:bg-sky-100 cursor-pointer"
-                                : "text-slate-400 bg-slate-100 border border-slate-200 cursor-not-allowed"
-                            }`}
-                          >
-                            {completing ? <Loader2 size={9} className="animate-spin" /> : <Package size={9} />}
-                            준비완료
-                          </button>
-                        )}
-                        {/* pending·prepared 단계 · 진열담당 · [완료] (관리자 pending 상태에서도 강제완료 가능) */}
-                        {!isDone && (isPrepared || isAdminLevel8) && (
-                          <button
-                            onClick={() => handleCompleteDisplay(r)}
-                            disabled={!canComplete || completing}
-                            title={canComplete ? "진열 완료 처리" : "진열담당만 가능"}
-                            className={`text-[10px] font-semibold px-2 h-6 rounded-md transition-all duration-150 flex items-center gap-0.5 disabled:opacity-40 ${
-                              canComplete
-                                ? "text-emerald-700 bg-emerald-50 border border-emerald-300 hover:bg-emerald-100 cursor-pointer"
-                                : "text-slate-400 bg-slate-100 border border-slate-200 cursor-not-allowed"
-                            }`}
-                          >
-                            {completing ? <Loader2 size={9} className="animate-spin" /> : <CheckCircle2 size={9} />}
-                            완료
-                          </button>
-                        )}
-                        <span className={`flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-md border ${statusBadge.cls}`}>
-                          <statusBadge.Icon size={8} />
-                          {statusBadge.label}
-                        </span>
-                        <span className="text-[10px] text-slate-400">{fmtDate(r.requested_at)}</span>
-                      </div>
-                    </div>
-                  );
-                })}
+                          </td>
+
+                          {/* 진열완료 */}
+                          <td className="px-3 py-2 text-center whitespace-nowrap">
+                            {isDone ? (
+                              <span
+                                title={`${r.completed_by_name ?? ""}${r.completed_at ? " · " + fmtDate(r.completed_at) : ""}`}
+                                className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default"
+                              >
+                                <CheckCircle2 size={9} />
+                                완료
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => handleCompleteDisplay(r)}
+                                disabled={!canComplete || completing || (isPending && !isAdminLevel8)}
+                                title={
+                                  canComplete
+                                    ? isPending && !isAdminLevel8
+                                      ? "창고 준비 완료 후 진열완료 가능"
+                                      : "진열 완료 처리"
+                                    : "진열담당만 가능"
+                                }
+                                className={`text-[10px] font-semibold px-2.5 h-6 rounded-md transition-all duration-150 inline-flex items-center gap-0.5 disabled:opacity-40 ${
+                                  canComplete && (isPrepared || isAdminLevel8)
+                                    ? "text-amber-700 bg-amber-50 border border-amber-300 hover:bg-amber-100 cursor-pointer"
+                                    : "text-slate-400 bg-slate-100 border border-slate-200 cursor-not-allowed"
+                                }`}
+                              >
+                                {completing ? <Loader2 size={9} className="animate-spin" /> : <Clock size={9} />}
+                                대기
+                              </button>
+                            )}
+                          </td>
+
+                          {/* 날짜 */}
+                          <td className="px-3 py-2 whitespace-nowrap">
+                            <span className="text-[10px] text-slate-400 tabular-nums">{fmtDate(r.requested_at)}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
