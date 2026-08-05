@@ -45,6 +45,7 @@ import { ZoneAssignPopover } from "./ZoneAssignPopover";
 import { ZoneGroupPanel, type ZoneGroup } from "./ZoneGroupPanel";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import { DisplayRequestPanel } from "./DisplayRequestPanel";
+import { DisplayRequestListPage } from "./DisplayRequestListPage";
 // 2026-08-03 · StockManagePage 폐지 · 모든 탭이 OrderManagePage 서브탭으로 통합됨
 // 2026-07-29 · 판매추이 탭 제거 (사용자 요청) · CategoryTab · LossTrackerTab 은 재고관리 안에서만 lazy import (SalesTrendPage 파일에 남아있음)
 // 2026-07-28 · 재고·판매 통합 메뉴 제거 (사용자 요청) · 파일은 보관 · 사이드바/라우팅만 해제
@@ -328,7 +329,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       authSession?.role === "manager" ? 2 : authSession?.role === "employee" ? 1 : 0);
   const dpCanSeeStockManage = dpUserLevel >= 9;
   const dpCanSeeStockArrivals = dpUserLevel >= 3;
-  const [dpSubTab, setDpSubTab] = useState<"store" | "purchase-order" | "purchase" | "payment" | "statistics" | "stock-arrivals">(
+  const [dpSubTab, setDpSubTab] = useState<"store" | "purchase-order" | "purchase" | "payment" | "statistics" | "stock-arrivals" | "display-request">(
     dpCanSeeStockManage ? "purchase-order" : "store"
   );
   const [zones, setZones] = useState<DisplayZone[]>(() => loadZones());
@@ -1422,7 +1423,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       {/* 서브탭 · 2026-07-28 재설계 · Vercel Ink underline 계열 + 색상 아이덴티티 강조 */}
       {/* 2026-08-03 (#183) · 공통 TabBar (level 2) 로 리팩터 · duplicate 스타일 흡수 */}
       {(dpCanSeeStockManage || dpCanSeeStockArrivals) && (() => {
-        type DpSubTabKey = "purchase-order" | "purchase" | "payment" | "statistics" | "stock-arrivals" | "store";
+        type DpSubTabKey = "purchase-order" | "purchase" | "payment" | "statistics" | "stock-arrivals" | "display-request" | "store";
         const tabs: CommonTabDef<DpSubTabKey>[] = [
           // 2026-08-03 · 발주/사입관리 단일 탭 → 4개 서브탭으로 분해 (사용자 요청) · stock-manage 폐지
           { key: "purchase-order", label: "발주",         icon: ClipboardList, visible: dpCanSeeStockManage,   color: "sky"     },
@@ -1430,7 +1431,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           { key: "payment",        label: "결제",         icon: Wallet,        visible: dpCanSeeStockManage,   color: "teal"    },
           { key: "statistics",     label: "통계",         icon: BarChart2,     visible: dpCanSeeStockManage,   color: "indigo"  },
           { key: "stock-arrivals", label: "입고알림",     icon: Bell,          visible: dpCanSeeStockArrivals, color: "orange"  },
-          { key: "store",          label: "구역진열요청",  icon: Store,         visible: true,                  color: "rose"    },
+          // 2026-08-05 · 진열요청 Phase 3 · 상품별 3단계 워크플로우 리스트
+          { key: "display-request",label: "진열요청",     icon: Bell,          visible: true,                  color: "rose"    },
+          { key: "store",          label: "매장구역도",   icon: Store,         visible: true,                  color: "violet"  },
         ];
         return (
           <TabBar<DpSubTabKey>
@@ -1452,6 +1455,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             embedded
           />
         </main>
+      ) : dpSubTab === "display-request" ? (
+        <DisplayRequestListPage authSession={authSession} />
       ) : (dpSubTab === "purchase-order" || dpSubTab === "purchase" || dpSubTab === "payment" || dpSubTab === "statistics") && dpCanSeeStockManage ? (
         // 2026-08-03 · 4개 서브탭 각각 OrderManagePage · initialTopTab prop 만 · re-mount 없이 useEffect 로 감지
         // key prop 제거 · 재mount 시 매번 재fetch · 로딩 느림 유발 (이전 방식으로 원복)
