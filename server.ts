@@ -4,6 +4,7 @@ import express from "express";
 import http from "http";
 import path from "path";
 import compression from "compression";
+import cookieParser from "cookie-parser";
 import webpush from "web-push";
 import { createServer as createViteServer } from "vite";
 import { supabase } from "./src/supabase/client";
@@ -48,6 +49,7 @@ import vatRouter from "./server/routes/vat";
 // 2026-08-04 · 사용자 요청 · 재고세기(YOLO) 주석처리 · loadStockCountModel 도 비활성 (T39)
 // import { loadStockCountModel } from "./server/stockCounter";
 import { cleanupStaleLogs } from "./server/utils/logsCleanup";
+import { requireAuth, authorize } from "./server/middleware/requireAuth";
 
 async function startServer() {
   const app = express();
@@ -75,42 +77,63 @@ async function startServer() {
   // 2026-07-20: env 분기 제거 · 로컬↔Render 통일 · 페이지마다 dispose+gc 로 peak 안전
   //   100MB 는 다중 페이지 base64 배치를 충분히 허용하면서 Render OOM 도 피하는 절충치
   app.use(express.json({ limit: "100mb" }));
+  // 2026-08-05 T3 · JWT httpOnly 쿠키 파싱
+  app.use(cookieParser());
   app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
-  app.use(schedulesRouter);
-  app.use(staffRouter);
-  app.use(settingsRouter);
-  app.use(productsRouter);
-  app.use(requestsRouter);
-  app.use(mismatchesRouter);
-  app.use(authRouter);
-  app.use(notificationsRouter);
-  app.use(leaveRouter);
-  app.use(lunchRouter);
-  app.use(reservationsRouter);
-  app.use(vendorsRouter);
-  app.use(ocrRouter);
-  // app.use(stockCountRouter); // 2026-08-04 · YOLO 비활성 (T39)
-  app.use(stockManageRouter);
-  app.use(purchaseRouter);
-  app.use(stockArrivalsRouter);
-  app.use(productArrivalsRouter);
-  app.use(returnRequestsRouter);
-  app.use(zoneLabelsRouter);
-  app.use(zoneAssignmentsRouter);
-  app.use(supplierBalanceConfigRouter);
-  app.use(supplierPaymentsRouter);
-  app.use(ocrConfirmedRouter);
-  app.use(ocrDeletedRowsRouter);
-  app.use(boardRouter);
-  app.use(invoiceImagesRouter);
-  app.use(purchaseHistoryRouter);
-  app.use(hrFormsRouter);
-  app.use(pharmacistMenuItemsRouter);
-  app.use(resignationsRouter);
-  app.use(employeeContractsRouter);
-  app.use(vatRouter);
-  // app.use(inventorySalesRouter);
+  // ── 인증 불필요 (public) ──
+  app.use(authRouter);            // /api/auth/* — 로그인·비밀번호 변경
+  app.use(notificationsRouter);   // 푸시 알림 구독 (서비스워커)
+  app.use(pharmacistMenuItemsRouter); // 약사 메뉴 표시 (공개 읽기)
+
+  // ── 2026-08-05 T3 · 인증 필요 라우터 ──────────────────────────────────
+  // Phase 1: 민감 라우터 우선 보호 (직원·스케줄·계약·급여·설정·HR)
+  // Phase 2: 나머지 라우터도 순차 적용 예정 (후속 세션)
+
+  // 직원·스케줄 (개인정보 + DELETE 포함)
+  app.use(requireAuth, schedulesRouter);
+  app.use(requireAuth, staffRouter);
+
+  // 설정 (앱 전역 설정 변경)
+  app.use(requireAuth, settingsRouter);
+
+  // 공급사 결제·정산 (금전 데이터)
+  app.use(requireAuth, supplierPaymentsRouter);
+  app.use(requireAuth, supplierBalanceConfigRouter);
+
+  // HR 서류 (근로계약서·사직서 등)
+  app.use(requireAuth, hrFormsRouter);
+  app.use(requireAuth, resignationsRouter);
+  app.use(requireAuth, employeeContractsRouter);
+
+  // OCR·매입 (사업 데이터)
+  app.use(requireAuth, ocrRouter);
+  app.use(requireAuth, ocrConfirmedRouter);
+  app.use(ocrDeletedRowsRouter);    // Phase 2 예정
+  app.use(requireAuth, purchaseRouter);
+  app.use(requireAuth, purchaseHistoryRouter);
+  app.use(requireAuth, invoiceImagesRouter);
+
+  // 재고·상품
+  app.use(requireAuth, stockManageRouter);
+  app.use(requireAuth, stockArrivalsRouter);
+  app.use(requireAuth, productArrivalsRouter);
+  app.use(requireAuth, returnRequestsRouter);
+  app.use(requireAuth, zoneLabelsRouter);
+  app.use(requireAuth, zoneAssignmentsRouter);
+
+  // 기타 (로그인 사용자 대상)
+  app.use(requireAuth, productsRouter);
+  app.use(requireAuth, requestsRouter);
+  app.use(requireAuth, mismatchesRouter);
+  app.use(requireAuth, leaveRouter);
+  app.use(requireAuth, lunchRouter);
+  app.use(requireAuth, reservationsRouter);
+  app.use(requireAuth, vendorsRouter);
+  app.use(requireAuth, boardRouter);
+  app.use(requireAuth, vatRouter);
+  // app.use(requireAuth, stockCountRouter); // 2026-08-04 · YOLO 비활성 (T39)
+  // app.use(requireAuth, inventorySalesRouter);
 
   // /products.json — 항상 DB에서 동적으로 제공 (브라우저 캐시 없음, 서버 메모리 캐시만 사용)
   app.get("/products.json", async (_req, res) => {

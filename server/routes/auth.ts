@@ -1,6 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { supabase } from "../../src/supabase/client";
+import { issueToken, clearToken } from "../middleware/requireAuth";
 
 const router = Router();
 
@@ -24,6 +25,13 @@ router.post("/api/auth/login", async (req, res) => {
     const level: number = emp.level ?? 1;
     if (level === 0) return res.status(401).json({ error: "접근 권한이 없습니다", debug: "level_0" });
     const role = level >= 9 ? "superadmin" : level >= 2 ? "manager" : "employee";
+    const rememberMe = Boolean(req.body?.rememberMe);
+    // 서버 세션 토큰 발급 (httpOnly 쿠키)
+    try {
+      issueToken(res, { sub: emp.id, name: emp.name, role, level, rememberMe }, rememberMe);
+    } catch {
+      // JWT_SECRET 미설정 시 쿠키 없이 진행 (graceful degradation — 경고는 startup 에서 출력됨)
+    }
     return res.status(200).json({ id: emp.id, name: emp.name, role, level, rank: emp.rank ?? null });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
@@ -47,6 +55,11 @@ router.post("/api/auth/vendor-login", async (req, res) => {
     if (!vendor.password_hash) return res.status(401).json({ error: "비밀번호가 설정되지 않았습니다. 관리자에게 문의하세요." });
     const ok = await bcrypt.compare(password, vendor.password_hash);
     if (!ok) return res.status(401).json({ error: "전화번호 또는 비밀번호가 올바르지 않습니다" });
+    try {
+      issueToken(res, { sub: vendor.id, name: vendor.company_name, role: "vendor", level: 0 }, false);
+    } catch {
+      // JWT_SECRET 미설정 시 graceful degradation
+    }
     return res.status(200).json({
       id: vendor.id,
       name: vendor.company_name,
@@ -72,6 +85,12 @@ router.post("/api/auth/set-password", async (req, res) => {
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
+});
+
+// 로그아웃 — 서버 세션 쿠키 제거
+router.post("/api/auth/logout", (_req, res) => {
+  clearToken(res);
+  return res.status(200).json({ ok: true });
 });
 
 // 로그인한 직원 본인이 비밀번호 변경
