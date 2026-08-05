@@ -438,7 +438,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           )}
 
           <NotificationToggle authSession={authSession} />
-          <NotificationBell authSession={authSession} />
+          <NotificationBell authSession={authSession} onNavigate={onNavigate as unknown as (page: string) => void} />
 
           {rightSlot}
 

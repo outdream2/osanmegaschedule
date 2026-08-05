@@ -15,6 +15,29 @@ interface Notification {
 
 interface NotificationBellProps {
   authSession: AuthSession | null;
+  /** 알림 클릭 시 페이지 이동 · 없으면 이동 안 함 (2026-08-05 · 사용자 요청) */
+  onNavigate?: (page: string) => void;
+}
+
+/**
+ * 알림 title/body 패턴 기반 라우팅 (2026-08-05)
+ *  · 신규 URL 컬럼 없이 (파생컬럼 X · feedback_no_derived_columns) · 기존 데이터로 매칭
+ */
+function pickRouteForNotification(n: { title: string; body: string | null; type: string }): string | null {
+  const t = `${n.title ?? ""} ${n.body ?? ""}`;
+  // 진열요청·창고준비·진열완료 → 매장관리 (진열요청 서브탭이 나오면 그쪽)
+  if (/진열|보충 요청|창고 준비|픽업/i.test(t)) return "display";
+  // 발주요청·재고 → 매입관리
+  if (/발주|재고 부족|재고관리/i.test(t)) return "order-manage";
+  // 연차·휴가 → 승인 센터
+  if (/연차|휴가|승인/i.test(t)) return "approval";
+  // 스케줄 → 스케줄 페이지
+  if (/스케줄|근무|배정/i.test(t)) return "schedule";
+  // 이슈공유 · 게시판
+  if (/이슈|게시|댓글|@언급|멘션/i.test(t)) return "board";
+  // OCR · 거래명세서
+  if (/OCR|명세서|거래명세/i.test(t)) return "order-manage";
+  return null;
 }
 
 const TYPE_STYLES = {
@@ -36,7 +59,7 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
 }
 
-export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession }) => {
+export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession, onNavigate }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -210,7 +233,14 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession 
                 return (
                   <button
                     key={n.id}
-                    onClick={() => markRead(n.id)}
+                    onClick={() => {
+                      markRead(n.id);
+                      const route = pickRouteForNotification(n);
+                      if (route && onNavigate) {
+                        setOpen(false);
+                        onNavigate(route);
+                      }
+                    }}
                     className={`w-full text-left flex items-start gap-3 px-4 py-3 transition cursor-pointer ${n.read ? "bg-white hover:bg-slate-50" : "bg-indigo-50/40 hover:bg-indigo-50"}`}
                   >
                     <div className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${style.bg} ${style.border} border`}>
