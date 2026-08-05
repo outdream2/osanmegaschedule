@@ -15,10 +15,18 @@ interface RequestsPageProps {
   onLogout?: () => void;
 }
 
+// 2026-08-05 · T-SCAN-1 · 3단계 워크플로우 필드 통합 (pending → prepared → done)
 interface DisplayRequest {
   id: string; zone_id: string; zone_label: string; category: string;
   requested_at: string; assigned_staff_id: number | null;
-  assigned_staff_name: string; status: string; note: string;
+  assigned_staff_name: string; status: "pending" | "prepared" | "done" | string; note: string;
+  product_code?: string | null;
+  prepared_at?: string | null;
+  prepared_by?: number | null;
+  prepared_by_name?: string | null;
+  completed_at?: string | null;
+  completed_by?: number | null;
+  completed_by_name?: string | null;
 }
 interface OrderRequest {
   id: string; product_code: string; product_name: string;
@@ -141,8 +149,20 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const [dupOrderModal, setDupOrderModal] = useState<{existing: OrderRequest; product: ProductInfo; editStock: number | ""} | null>(null);
 
 
-  // 진열요청 개별 완료 처리 중인 id
+  // 진열요청 개별 완료 처리 중인 id (준비완료·진열완료 공용 busy state)
   const [completingDisplay, setCompletingDisplay] = useState<Set<string>>(new Set());
+
+  // 2026-08-05 · T-SCAN-1 · 3단계 권한 판별
+  //   · 창고담당 · [창고 준비완료] 버튼 표시
+  //   · 진열담당 · [진열 완료] 버튼 표시
+  //   · 관리자 (level ≥ 8) · 두 버튼 다 표시 · 강제 완료 가능
+  const authPos = ((authSession as any)?.position ?? "") as string;
+  const authRank = ((authSession as any)?.employeeRank ?? "") as string;
+  const isWarehouseStaff = authPos === "창고" || authPos === "물류" || authRank === "창고";
+  const isDisplayStaff   = authPos === "진열" || authPos === "매장" || authRank === "진열";
+  const isAdminLevel8    = (authSession?.level ?? 0) >= 8;
+  const canPrepare = isWarehouseStaff || isAdminLevel8;
+  const canComplete = isDisplayStaff  || isAdminLevel8;
 
   // 진열요청 완료 확인 (전체삭제)
   const [displayConfirmDelete, setDisplayConfirmDelete] = useState(false);
@@ -151,22 +171,65 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const [notifying, setNotifying] = useState(false);
   const [notifyToast, setNotifyToast] = useState<string | null>(null);
 
-  const handleCompleteDisplay = useCallback(async (req: DisplayRequest) => {
+  // 2026-08-05 · T-SCAN-1 · [창고 준비완료] · PATCH /prepare (pending → prepared)
+  //   · 진열담당(assigned)에게 픽업 알림 자동 발송
+  const handlePrepareDisplay = useCallback(async (req: DisplayRequest) => {
     setCompletingDisplay(prev => new Set([...prev, req.id]));
     try {
-      const res = await fetch(`/api/display-requests/${req.id}`, {
+      const res = await fetch(`/api/display-requests/${req.id}/prepare`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "done", zone_label: req.zone_label, assigned_staff_name: req.assigned_staff_name }),
+        body: JSON.stringify({
+          prepared_by: authSession?.employeeId ?? null,
+          prepared_by_name: authSession?.employeeName ?? "",
+        }),
       });
       if (res.ok) {
-        setDisplayReqs(prev => prev.map(r => r.id === req.id ? { ...r, status: "done" } : r));
+        const now = new Date().toISOString();
+        setDisplayReqs(prev => prev.map(r => r.id === req.id
+          ? { ...r, status: "prepared", prepared_at: now,
+              prepared_by: authSession?.employeeId ?? null,
+              prepared_by_name: authSession?.employeeName ?? "" }
+          : r));
+      } else {
+        const b = await res.json().catch(() => ({}));
+        alert(`창고 준비완료 실패: ${(b as any).error ?? res.statusText}`);
       }
     } catch { /* ignore */ }
     finally {
       setCompletingDisplay(prev => { const s = new Set(prev); s.delete(req.id); return s; });
     }
-  }, []);
+  }, [authSession?.employeeId, authSession?.employeeName]);
+
+  // 2026-08-05 · T-SCAN-1 · [진열 완료] · PATCH /complete (pending·prepared → done)
+  //   · 관리자(level≥8) 완료 알림 자동 발송
+  const handleCompleteDisplay = useCallback(async (req: DisplayRequest) => {
+    setCompletingDisplay(prev => new Set([...prev, req.id]));
+    try {
+      const res = await fetch(`/api/display-requests/${req.id}/complete`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          completed_by: authSession?.employeeId ?? null,
+          completed_by_name: authSession?.employeeName ?? "",
+        }),
+      });
+      if (res.ok) {
+        const now = new Date().toISOString();
+        setDisplayReqs(prev => prev.map(r => r.id === req.id
+          ? { ...r, status: "done", completed_at: now,
+              completed_by: authSession?.employeeId ?? null,
+              completed_by_name: authSession?.employeeName ?? "" }
+          : r));
+      } else {
+        const b = await res.json().catch(() => ({}));
+        alert(`완료 실패: ${(b as any).error ?? res.statusText}`);
+      }
+    } catch { /* ignore */ }
+    finally {
+      setCompletingDisplay(prev => { const s = new Set(prev); s.delete(req.id); return s; });
+    }
+  }, [authSession?.employeeId, authSession?.employeeName]);
 
   const handleNotifyAll = useCallback(async () => {
     const pending = displayReqs.filter(r => r.status === "pending" && r.assigned_staff_id);
@@ -546,13 +609,28 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             ) : (
               <div className={`bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-50 ${displayLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {displayReqs.map(r => {
-                  const isDone = r.status === "done";
+                  const isDone     = r.status === "done";
+                  const isPrepared = r.status === "prepared";
+                  const isPending  = r.status === "pending" || (!isDone && !isPrepared);
                   const completing = completingDisplay.has(r.id);
+                  // 상태 배지 색상
+                  const statusBadge = isDone
+                    ? { cls: "text-emerald-600 bg-emerald-50 border-emerald-200", label: "완료", Icon: CheckCircle2 }
+                    : isPrepared
+                    ? { cls: "text-sky-700 bg-sky-50 border-sky-200",             label: "창고준비완료", Icon: Package }
+                    : { cls: "text-blue-600 bg-blue-50 border-blue-200",           label: "대기", Icon: Clock };
+                  const rowLeftBorder = isDone
+                    ? "border-l-2 border-l-emerald-300"
+                    : isPrepared ? "border-l-2 border-l-sky-400"
+                    : "border-l-2 border-l-amber-400";
                   return (
-                    <div key={r.id} className={`flex items-center gap-3 px-2 py-1.5 transition-all duration-150 ${selectedDisplay.has(r.id) ? "bg-rose-50/50" : "hover:bg-slate-50/60"} ${isDone ? "opacity-60" : ""}`}>
+                    <div
+                      key={r.id}
+                      className={`flex items-center gap-3 px-2 py-1.5 transition-all duration-150 ${rowLeftBorder} ${selectedDisplay.has(r.id) ? "bg-rose-50/50" : "hover:bg-slate-50/60"} ${isDone ? "opacity-60" : ""}`}
+                    >
                       <Checkbox checked={selectedDisplay.has(r.id)} onChange={() => toggleOne(selectedDisplay, r.id, setSelectedDisplay)} />
                       <div className="flex-1 min-w-0">
-                        {/* 담당자 · 구역 · 카테고리 */}
+                        {/* 담당자 · 구역 · 카테고리 · 상품 · 노트 */}
                         <div className={`flex items-center gap-1.5 flex-wrap ${isDone ? "line-through text-slate-400" : ""}`}>
                           {r.assigned_staff_name ? (
                             <span className="text-[12px] font-black text-indigo-700">{r.assigned_staff_name}</span>
@@ -572,22 +650,56 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                             <span className="text-[11px] text-indigo-500 break-keep">{r.note}</span></>
                           )}
                         </div>
+                        {/* 창고 준비 정보 (준비완료·완료 시) */}
+                        {(isPrepared || isDone) && (r.prepared_by_name || r.prepared_at) && (
+                          <div className="text-[10px] text-sky-600 mt-0.5 flex items-center gap-1">
+                            <Package size={9} />
+                            <span>창고 {r.prepared_by_name ?? ""}{r.prepared_at ? ` · ${fmtDate(r.prepared_at)}` : ""}</span>
+                            {isDone && r.completed_by_name && (
+                              <><span className="text-slate-300">·</span>
+                              <CheckCircle2 size={9} className="text-emerald-500" />
+                              <span className="text-emerald-600">진열 {r.completed_by_name}{r.completed_at ? ` · ${fmtDate(r.completed_at)}` : ""}</span></>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      {/* 완료 버튼 + 상태 + 날짜 */}
+                      {/* 액션 버튼 · [준비완료] · [완료] · 상태 · 날짜 */}
                       <div className="shrink-0 flex items-center gap-1.5">
-                        {!isDone && (
+                        {/* pending 단계 · 창고담당 · [준비완료] */}
+                        {isPending && (
+                          <button
+                            onClick={() => handlePrepareDisplay(r)}
+                            disabled={!canPrepare || completing}
+                            title={canPrepare ? "창고 준비 완료 처리" : "창고담당만 가능"}
+                            className={`text-[10px] font-semibold px-2 h-6 rounded-md transition-all duration-150 flex items-center gap-0.5 disabled:opacity-40 ${
+                              canPrepare
+                                ? "text-sky-700 bg-sky-50 border border-sky-300 hover:bg-sky-100 cursor-pointer"
+                                : "text-slate-400 bg-slate-100 border border-slate-200 cursor-not-allowed"
+                            }`}
+                          >
+                            {completing ? <Loader2 size={9} className="animate-spin" /> : <Package size={9} />}
+                            준비완료
+                          </button>
+                        )}
+                        {/* pending·prepared 단계 · 진열담당 · [완료] (관리자 pending 상태에서도 강제완료 가능) */}
+                        {!isDone && (isPrepared || isAdminLevel8) && (
                           <button
                             onClick={() => handleCompleteDisplay(r)}
-                            disabled={completing}
-                            className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 h-6 rounded-md hover:bg-emerald-100 transition-all duration-150 cursor-pointer disabled:opacity-40 flex items-center gap-0.5"
+                            disabled={!canComplete || completing}
+                            title={canComplete ? "진열 완료 처리" : "진열담당만 가능"}
+                            className={`text-[10px] font-semibold px-2 h-6 rounded-md transition-all duration-150 flex items-center gap-0.5 disabled:opacity-40 ${
+                              canComplete
+                                ? "text-emerald-700 bg-emerald-50 border border-emerald-300 hover:bg-emerald-100 cursor-pointer"
+                                : "text-slate-400 bg-slate-100 border border-slate-200 cursor-not-allowed"
+                            }`}
                           >
                             {completing ? <Loader2 size={9} className="animate-spin" /> : <CheckCircle2 size={9} />}
                             완료
                           </button>
                         )}
-                        <span className={`flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-md border ${isDone ? "text-emerald-600 bg-emerald-50 border-emerald-200" : "text-blue-600 bg-blue-50 border-blue-200"}`}>
-                          {isDone ? <CheckCircle2 size={8} /> : <Clock size={8} />}
-                          {isDone ? "완료" : "대기"}
+                        <span className={`flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-md border ${statusBadge.cls}`}>
+                          <statusBadge.Icon size={8} />
+                          {statusBadge.label}
                         </span>
                         <span className="text-[10px] text-slate-400">{fmtDate(r.requested_at)}</span>
                       </div>

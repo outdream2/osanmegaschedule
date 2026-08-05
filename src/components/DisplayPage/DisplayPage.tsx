@@ -45,7 +45,8 @@ import { ZoneAssignPopover } from "./ZoneAssignPopover";
 import { ZoneGroupPanel, type ZoneGroup } from "./ZoneGroupPanel";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import { DisplayRequestPanel } from "./DisplayRequestPanel";
-import { DisplayRequestListPage } from "./DisplayRequestListPage";
+// 2026-08-05 · T-SCAN-1 · DisplayRequestListPage 중복 제거 (요청 메뉴 통합)
+//   · RequestsPage 진열요청 탭에 3단계 워크플로우 [준비완료]·[완료] 컬럼 반영됨
 // 2026-08-03 · StockManagePage 폐지 · 모든 탭이 OrderManagePage 서브탭으로 통합됨
 // 2026-07-29 · 판매추이 탭 제거 (사용자 요청) · CategoryTab · LossTrackerTab 은 재고관리 안에서만 lazy import (SalesTrendPage 파일에 남아있음)
 // 2026-07-28 · 재고·판매 통합 메뉴 제거 (사용자 요청) · 파일은 보관 · 사이드바/라우팅만 해제
@@ -60,14 +61,14 @@ import { useSortableTabs } from "../../hooks/useSortableTabs";
 import type { AuthSession } from "../../types";
 
 // ── DisplayPage 서브탭 (level 2) 정의 · 상수 · 컴포넌트 외부 배치 (참조 안정성 · 훅 재등록 방지) ──
-type DpSubTabKey = "purchase-order" | "purchase" | "payment" | "statistics" | "stock-arrivals" | "display-request" | "store";
+type DpSubTabKey = "purchase-order" | "purchase" | "payment" | "statistics" | "stock-arrivals" | "store";
 const DP_SUBTAB_DEFAULTS: CommonTabDef<DpSubTabKey>[] = [
   { key: "purchase-order", label: "발주",       icon: ClipboardList, color: "sky"    },
   { key: "purchase",       label: "매입",       icon: Package,       color: "amber"  },
   { key: "payment",        label: "결제",       icon: Wallet,        color: "teal"   },
   { key: "statistics",     label: "통계",       icon: BarChart2,     color: "indigo" },
   { key: "stock-arrivals", label: "입고알림",   icon: Bell,          color: "orange" },
-  { key: "display-request",label: "진열요청",   icon: Bell,          color: "rose"   },
+  // "display-request" 서브탭 제거 · RequestsPage 진열요청 탭으로 통합 (2026-08-05)
   { key: "store",          label: "매장구역도", icon: Store,         color: "violet" },
 ];
 
@@ -1450,7 +1451,6 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           "payment":        dpCanSeeStockManage,
           "statistics":     dpCanSeeStockManage,
           "stock-arrivals": dpCanSeeStockArrivals,
-          "display-request": true,
           "store":          true,
         };
         // sortable.tabs 는 localStorage 순서가 적용된 배열 · 여기서 visible 만 덮어씌움
@@ -1476,20 +1476,6 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             embedded
           />
         </main>
-      ) : dpSubTab === "display-request" ? (
-        /* 2026-08-05 · 구역도 기본 접힘 (collapsible+defaultCollapsed) + 진열요청 리스트 */
-        <div className="flex flex-col flex-1 min-h-0">
-          <div className="max-w-[1360px] mx-auto w-full px-3 sm:px-4 pt-3">
-            <StoreZoneMap
-              collapsible
-              defaultCollapsed
-              title="구역도 보기"
-              mobileTable
-              compact
-            />
-          </div>
-          <DisplayRequestListPage authSession={authSession} />
-        </div>
       ) : (dpSubTab === "purchase-order" || dpSubTab === "purchase" || dpSubTab === "payment" || dpSubTab === "statistics") && dpCanSeeStockManage ? (
         // 2026-08-03 · 4개 서브탭 각각 OrderManagePage · initialTopTab prop 만 · re-mount 없이 useEffect 로 감지
         // key prop 제거 · 재mount 시 매번 재fetch · 로딩 느림 유발 (이전 방식으로 원복)
