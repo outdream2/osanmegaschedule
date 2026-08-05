@@ -11,7 +11,7 @@ import {
   ListOrdered, Loader2, Package2,
 } from "lucide-react";
 import {
-  PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { SeasonButtons } from "../../common/SeasonButtons";
 import { type SeasonKey } from "../../../hooks/useSeasonRanges";

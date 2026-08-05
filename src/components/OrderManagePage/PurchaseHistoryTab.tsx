@@ -127,7 +127,7 @@ export const PurchaseHistoryTab: React.FC = () => {
   const [detailRows, setDetailRows] = useState<PurchaseDetailRow[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // 기간 필터 (원장 탭 전용)
+  // 기간 필터 (3탭 공통 · 2026-08-05 · 매입이력 전용 → 3탭 공통 이관)
   const [periodMonths, setPeriodMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(1);
   const [periodSeason, setPeriodSeason] = useState<SeasonKey | null>(null);
 
@@ -327,13 +327,19 @@ export const PurchaseHistoryTab: React.FC = () => {
     } finally { setLedgerLoading(false); }
   }, [periodMonths, periodSeason]);
 
-  // ─── detail (최근 1년) 로드 · /api/purchase-details 로 전환 (2026-08-04) ────
+  // ─── detail (기간 필터 반영 · 2026-08-05 · 3탭 공통 기간 적용) ──────────
+  //   periodMonths/periodSeason 변경 시 재로드 (Tab 2 상품별 집계 · Tab 3 매입추이 연동)
+  //   최소 기간: 1개월 · 최대: seasonKey 선택 시 365일
   const loadDetail = useCallback(async (supplier: string) => {
     setDetailLoading(true);
     try {
-      const now = new Date();
-      const from = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-      const fromStr = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, "0")}-${String(from.getDate()).padStart(2, "0")}`;
+      const isDays10 = periodMonths === 0 && !periodSeason;
+      const days = periodSeason
+        ? 365
+        : isDays10 ? 10 : (periodMonths || 1) * 30;
+      const fromDate = new Date();
+      fromDate.setDate(fromDate.getDate() - days);
+      const fromStr = fromDate.toISOString().slice(0, 10);
       const params = new URLSearchParams({ supplier, from: fromStr, limit: "5000" });
       const res = await fetch(`/api/purchase-details?${params}`);
       if (!res.ok) throw new Error(String(res.status));
@@ -360,7 +366,7 @@ export const PurchaseHistoryTab: React.FC = () => {
       setDetailRows([]);
       setDetailSource(null);
     } finally { setDetailLoading(false); }
-  }, []);
+  }, [periodMonths, periodSeason]);
 
   // 공급사 선택 시 · 원장 + detail 동시 로드
   useEffect(() => {
@@ -375,12 +381,13 @@ export const PurchaseHistoryTab: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedVendor, loadDetail]);
 
-  // Fix #2 · 기간 필터 변경 시 원장만 재조회 (detail 은 365일 고정이라 재로드 불필요)
-  //   · periodMonths / periodSeason 이 바뀌면 loadLedger 참조가 새로 생성되므로
-  //     selectedVendor 가 선택된 상태라면 즉시 원장 재조회
+  // 기간 필터 변경 시 원장 + detail 모두 재조회 (2026-08-05 · 3탭 공통 기간 반영)
+  //   · periodMonths / periodSeason 이 바뀌면 loadLedger/loadDetail 참조가 새로 생성
+  //   · selectedVendor 선택 상태에서만 재조회
   useEffect(() => {
     if (!selectedVendor) return;
     loadLedger(selectedVendor.company_name);
+    loadDetail(selectedVendor.company_name);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [periodMonths, periodSeason]);
 
@@ -954,9 +961,9 @@ export const PurchaseHistoryTab: React.FC = () => {
                     activeTab={subTab}
                     onTabChange={setSubTab}
                     highlightId={highlightId}
-                    ledgerPeriodMonths={periodMonths}
-                    ledgerPeriodSeason={periodSeason}
-                    onLedgerPeriodChange={(months, season) => {
+                    periodMonths={periodMonths}
+                    periodSeason={periodSeason}
+                    onPeriodChange={(months, season) => {
                       setPeriodMonths(months);
                       setPeriodSeason(season);
                     }}
