@@ -10,12 +10,28 @@
 
 ---
 
-## 🔄 진행 중
+## 🔄 진행 중 (자동 파이프라인)
 
-### T25 · useVendors 공용 훅 (safe-refactoring-expert 백그라운드)
-- 10개 파일 · 각자 vendor fetch → 공용 훅 통합
-- 7 파일 수정됨 · 커밋 대기 중
-- **자동 검증 프로토콜**: 완료 알림 시 TS+테스트+build → 자동 커밋 → T30-followup 자동 launch
+### T-CSS Phase 1 · 디자인 토큰 + 공통 컴포넌트 (mobile-ui-designer 백그라운드)
+- 신규 `src/styles/tokens.ts` · 타이포 5단계 · 색상 6팔레트 · className 상수
+- 신규 공통 컴포넌트: PageHeader · Toolbar · StatusBadge · EmptyState · LoadingState
+- 자동 검증·커밋 후 · **T26 자동 launch (사용자 승인 완료)**
+
+### 자동 파이프라인 (승인 완료 · 사용자 명시)
+```
+[진행중] T-CSS Phase 1
+    ↓ 자동 검증·커밋
+[대기]   T26 · select('*') 명시화 (4~6h)
+    ↓ 자동 검증·커밋
+[대기]   T-CSS Phase 2 · 페이지 마이그레이션 (8~12h)
+    ↓ 자동 검증·커밋
+```
+- 총 예상: **20~25h** 백그라운드
+- 각 단계 사이 · 사용자 "잠깐 멈춰" 로 중단 가능
+
+### ✅ 완료 · 자동 파이프라인 앞 단계
+- `38606e8` T25 · useVendors 훅 (8 파일 -101 lines)
+- `401cd2b` T30-followup · useSortableTable 확대 (3 파일 -31 lines)
 
 ---
 
