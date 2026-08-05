@@ -1,16 +1,20 @@
 // src/components/ResignationWriterPage/ResignationWriterPage.tsx
 // 사직서 작성 페이지 · 2026-08-03 · #179+#181
-// - 좌측: 조건 입력 폼 (직원·부서/직급·입사일·마지막근무일·사유·상세사유·인수인계·서명)
+// - 좌측: 조건 입력 폼 (직원·부서/직급·입사일·마지막근무일·사유·상세사유·인수인계)
+//   · 서명란은 좌측에서 제거 · 오른쪽 프리뷰 안에서 서명 spot 클릭
 // - 우측: 실시간 표준 사직서 렌더 (한국 표준 양식 · 근로기준법 관례)
-// - [사직서 제출·PDF 다운] · POST /api/resignations · 관리자 알림
+//   · 서명 spot 3개 (신청인·금품·기타) 클릭 → 서명 모달
+//   · 프리뷰 하단 · PDF 다운로드 버튼
+// - [사직서 제출] · POST /api/resignations · 관리자 알림
+// - PDF · A4 세로 1페이지 fit (넘치면 scale down)
 // - 직원 · 세션 자동 채움 · 자유 편집 가능
 // - iOS/Gemini/ContractWriterPage 참조만 · 절대 수정 안 함
 //
-// 2026-08-05 · 실제 사직서 스펙 반영 (강남성 · 코스트팜):
-//   1) [사직서 정보] · 성명·생년월일·사직일·사직서 제출일·수신·사유
-//   2) [임금·퇴직금 등 금품 지급기일 동의] · 지급일 + 동의 서명
-//   3) [기타 사항 동의] · 노동관계법령상 권리·영업비밀 2조항 + 동의 서명
-//   4) 퇴사 사유 4가지 (일신상의 사유·개인사정·이직·기타)
+// 2026-08-05 · 서명 UX 개편:
+//   1) 왼쪽 폼에서 서명 카드 3개 제거
+//   2) 프리뷰 안 서명 spot 클릭 → 모달 오픈 → SignaturePad → 저장
+//   3) PDF 다운 버튼 오른쪽 프리뷰 하단으로 이동
+//   4) PDF A4 1페이지 fit · 넘치면 scale down
 //
 // 준수 원칙:
 //   - memory feedback_ui_principles · 최소 14px · 3단 위계 · 고급 톤
@@ -20,7 +24,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   SignOut, User, ClipboardText, CalendarBlank, Notepad, Eraser,
   DownloadSimple, ArrowsClockwise, Warning, Check, Buildings, Signature,
-  PaperPlaneTilt, Cake, Money, ShieldCheck,
+  PaperPlaneTilt, Cake, Money, ShieldCheck, X,
 } from "@phosphor-icons/react";
 import SignaturePad from "react-signature-canvas";
 import html2canvas from "html2canvas-pro"; // 2026-08-04 · Tailwind v4 oklch 지원 · drop-in 교체
@@ -73,6 +77,9 @@ interface ResignationForm {
   companyName: string;        // 회사명
 }
 
+// 서명 slot 종류
+type SignSlot = "employee" | "payout" | "other";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 상수
 // ─────────────────────────────────────────────────────────────────────────────
@@ -93,6 +100,13 @@ const DEFAULT_COMPANY = {
 
 // 기본 수신처 (실제 사직서 스펙)
 const DEFAULT_RECIPIENT = "코스트팜(Costpharm) 대표";
+
+// 서명 slot label
+const SIGN_LABELS: Record<SignSlot, string> = {
+  employee: "신청인 서명",
+  payout: "금품 지급기일 동의 서명",
+  other: "기타 사항 동의 서명",
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 유틸
@@ -169,78 +183,155 @@ const emptyForm = (): ResignationForm => {
 // FieldLabel · 공통 컴포넌트 사용 (../common/FieldLabel) · 2026-08-03 (#199)
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 서명 캔버스 (react-signature-canvas)
+// 서명 모달 (오른쪽 프리뷰 서명 spot 클릭 시 오픈)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SignArea: React.FC<{
-  label: string;
-  padRef: React.MutableRefObject<SignatureCanvasType | null>;
-}> = ({ label, padRef }) => {
-  const [empty, setEmpty] = useState(true);
+const SignatureModal: React.FC<{
+  open: boolean;
+  slot: SignSlot | null;
+  initialDataUrl: string | null;
+  onSave: (dataUrl: string | null) => void;
+  onClose: () => void;
+}> = ({ open, slot, initialDataUrl, onSave, onClose }) => {
+  const padRef = useRef<SignatureCanvasType | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
-  const [size, setSize] = useState<{ w: number; h: number }>({ w: 300, h: 110 });
+  const [size, setSize] = useState<{ w: number; h: number }>({ w: 480, h: 200 });
+  const [empty, setEmpty] = useState(true);
 
+  // 모달 열릴 때 · 캔버스 초기화 + 이전 서명 로드
   useEffect(() => {
+    if (!open) return;
+    // 초기 렌더 · resize 후에 initialDataUrl 반영
+    const t = setTimeout(() => {
+      if (padRef.current) {
+        padRef.current.clear();
+        if (initialDataUrl) {
+          padRef.current.fromDataURL(initialDataUrl);
+          setEmpty(false);
+        } else {
+          setEmpty(true);
+        }
+      }
+    }, 80);
+    return () => clearTimeout(t);
+  }, [open, initialDataUrl]);
+
+  // 반응형 캔버스 사이즈 (모달 폭 기준)
+  useEffect(() => {
+    if (!open) return;
     const el = wrapperRef.current;
     if (!el) return;
     const ro = new ResizeObserver(entries => {
       for (const e of entries) {
-        const w = Math.max(200, Math.floor(e.contentRect.width) - 2);
-        setSize({ w, h: 110 });
+        const w = Math.max(280, Math.floor(e.contentRect.width) - 2);
+        setSize({ w, h: 200 });
       }
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [open]);
 
-  const handleEnd = () => {
-    if (padRef.current) setEmpty(padRef.current.isEmpty());
-  };
+  if (!open) return null;
+
   const handleClear = () => {
     padRef.current?.clear();
     setEmpty(true);
   };
+  const handleSave = () => {
+    if (!padRef.current || padRef.current.isEmpty()) {
+      onSave(null);
+      return;
+    }
+    try {
+      const url = padRef.current.toDataURL("image/png");
+      onSave(url);
+    } catch {
+      onSave(null);
+    }
+  };
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-black flex items-center gap-1 text-rose-700">
-          <Signature size={13} weight="fill" />
-          {label}
-        </span>
-        <button
-          type="button"
-          onClick={handleClear}
-          className="inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[11px] font-bold transition-colors cursor-pointer bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200"
-          title="서명 지우기"
-        >
-          <Eraser size={11} />
-          지우기
-        </button>
-      </div>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl border border-slate-200 flex flex-col">
+        {/* 헤더 */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <Signature size={18} weight="fill" className="text-rose-600" />
+            <h3 className="text-base font-black text-slate-800">
+              {slot ? SIGN_LABELS[slot] : "서명"}
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-100 flex items-center justify-center cursor-pointer transition-colors"
+            title="닫기"
+          >
+            <X size={18} weight="bold" />
+          </button>
+        </div>
 
-      <div
-        ref={wrapperRef}
-        className="relative bg-white border-2 border-dashed border-rose-200 rounded-lg overflow-hidden"
-        style={{ height: size.h + 2 }}
-      >
-        <SignaturePad
-          ref={(el) => { padRef.current = el; }}
-          canvasProps={{
-            width: size.w,
-            height: size.h,
-            className: "block bg-white touch-none",
-            style: { width: `${size.w}px`, height: `${size.h}px` },
-          }}
-          penColor="#0f172a"
-          onEnd={handleEnd}
-          onBegin={() => setEmpty(false)}
-        />
-        {empty && (
-          <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-300 text-xs font-bold select-none">
-            여기에 서명해 주세요
-          </span>
-        )}
+        {/* 캔버스 */}
+        <div className="p-4">
+          <div
+            ref={wrapperRef}
+            className="relative bg-white border-2 border-dashed border-rose-200 rounded-lg overflow-hidden"
+            style={{ height: size.h + 2 }}
+          >
+            <SignaturePad
+              ref={(el) => { padRef.current = el; }}
+              canvasProps={{
+                width: size.w,
+                height: size.h,
+                className: "block bg-white touch-none",
+                style: { width: `${size.w}px`, height: `${size.h}px` },
+              }}
+              penColor="#0f172a"
+              onEnd={() => { if (padRef.current) setEmpty(padRef.current.isEmpty()); }}
+              onBegin={() => setEmpty(false)}
+            />
+            {empty && (
+              <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-300 text-sm font-bold select-none">
+                여기에 서명해 주세요
+              </span>
+            )}
+          </div>
+          <p className="text-[11px] text-slate-400 mt-2">
+            * 마우스·터치로 서명하세요 · 저장 시 오른쪽 사직서에 즉시 반영됩니다.
+          </p>
+        </div>
+
+        {/* 액션 */}
+        <div className="flex items-center justify-between gap-2 px-4 py-3 border-t border-slate-100 bg-slate-50 rounded-b-xl">
+          <button
+            type="button"
+            onClick={handleClear}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-sm font-bold transition-colors cursor-pointer"
+          >
+            <Eraser size={14} />
+            지우기
+          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-sm font-bold transition-colors cursor-pointer"
+            >
+              취소
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-black shadow-sm transition-colors cursor-pointer"
+            >
+              <Check size={14} weight="bold" />
+              서명 저장
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -255,11 +346,33 @@ const ResignationPreview = React.forwardRef<HTMLDivElement, {
   employeeSignUrl: string | null;
   payoutSignUrl: string | null;
   otherSignUrl: string | null;
-}>(({ form, employeeSignUrl, payoutSignUrl, otherSignUrl }, ref) => {
+  onSignClick: (slot: SignSlot) => void;
+}>(({ form, employeeSignUrl, payoutSignUrl, otherSignUrl, onSignClick }, ref) => {
   const tenure = calcTenure(form.hireDate, form.lastWorkDate);
   const reasonText = form.reason === "기타" && form.reasonDetail
     ? form.reasonDetail
     : form.reason;
+
+  // 서명 spot 재사용 · 클릭하면 모달 오픈 · 인쇄/PDF 시에는 배경만 사라지고 서명만 보이도록
+  const SignSpot: React.FC<{
+    slot: SignSlot;
+    dataUrl: string | null;
+  }> = ({ slot, dataUrl }) => (
+    <button
+      type="button"
+      onClick={() => onSignClick(slot)}
+      className="w-32 h-14 border-b-2 border-slate-800 flex items-end justify-center relative group cursor-pointer transition-colors hover:bg-rose-50/40 print:hover:bg-transparent"
+      title={dataUrl ? "서명 수정" : "클릭하여 서명"}
+    >
+      {dataUrl ? (
+        <img src={dataUrl} alt="서명" className="max-h-14 max-w-full object-contain" />
+      ) : (
+        <span className="text-[11px] text-slate-400 font-bold group-hover:text-rose-500 transition-colors">
+          클릭하여 서명
+        </span>
+      )}
+    </button>
+  );
 
   return (
     <div
@@ -351,11 +464,7 @@ const ResignationPreview = React.forwardRef<HTMLDivElement, {
           <span className="font-semibold">동의자</span>
           <span className="font-black">{form.employeeName || "-"}</span>
           <span className="font-semibold">(서명)</span>
-          <div className="w-32 h-14 border-b-2 border-slate-800 flex items-end justify-center">
-            {payoutSignUrl && (
-              <img src={payoutSignUrl} alt="동의 서명" className="max-h-14 max-w-full object-contain" />
-            )}
-          </div>
+          <SignSpot slot="payout" dataUrl={payoutSignUrl} />
         </div>
       </div>
 
@@ -380,11 +489,7 @@ const ResignationPreview = React.forwardRef<HTMLDivElement, {
           <span className="font-semibold">동의자</span>
           <span className="font-black">{form.employeeName || "-"}</span>
           <span className="font-semibold">(서명)</span>
-          <div className="w-32 h-14 border-b-2 border-slate-800 flex items-end justify-center">
-            {otherSignUrl && (
-              <img src={otherSignUrl} alt="기타 동의 서명" className="max-h-14 max-w-full object-contain" />
-            )}
-          </div>
+          <SignSpot slot="other" dataUrl={otherSignUrl} />
         </div>
       </div>
 
@@ -399,11 +504,7 @@ const ResignationPreview = React.forwardRef<HTMLDivElement, {
             <span className="font-semibold">신청인</span>
             <span className="font-black">{form.employeeName || "-"}</span>
             <span className="font-semibold">(서명)</span>
-            <div className="w-32 h-14 border-b-2 border-slate-800 flex items-end justify-center">
-              {employeeSignUrl && (
-                <img src={employeeSignUrl} alt="서명" className="max-h-14 max-w-full object-contain" />
-              )}
-            </div>
+            <SignSpot slot="employee" dataUrl={employeeSignUrl} />
           </div>
         </div>
 
@@ -432,9 +533,6 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
   const [empError, setEmpError] = useState<string | null>(null);
   const [empSearchOpen, setEmpSearchOpen] = useState(false);
 
-  const employeePadRef = useRef<SignatureCanvasType | null>(null);
-  const payoutPadRef = useRef<SignatureCanvasType | null>(null);
-  const otherPadRef = useRef<SignatureCanvasType | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
@@ -444,6 +542,9 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
   const [employeeSignUrl, setEmployeeSignUrl] = useState<string | null>(null);
   const [payoutSignUrl, setPayoutSignUrl] = useState<string | null>(null);
   const [otherSignUrl, setOtherSignUrl] = useState<string | null>(null);
+
+  // 서명 모달 state
+  const [signModalSlot, setSignModalSlot] = useState<SignSlot | null>(null);
 
   // ── 직원 목록 로드 ────────────────────────────────────────────────────
   useEffect(() => {
@@ -512,45 +613,35 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
     }));
   };
 
-  const refreshSignaturePreview = () => {
-    try {
-      setEmployeeSignUrl(
-        employeePadRef.current && !employeePadRef.current.isEmpty()
-          ? employeePadRef.current.toDataURL("image/png")
-          : null
-      );
-      setPayoutSignUrl(
-        payoutPadRef.current && !payoutPadRef.current.isEmpty()
-          ? payoutPadRef.current.toDataURL("image/png")
-          : null
-      );
-      setOtherSignUrl(
-        otherPadRef.current && !otherPadRef.current.isEmpty()
-          ? otherPadRef.current.toDataURL("image/png")
-          : null
-      );
-    } catch {
-      // no-op
-    }
-  };
-
   const handleReset = () => {
     if (!window.confirm("입력한 모든 내용과 서명을 초기화합니다. 계속하시겠습니까?")) return;
     setForm(emptyForm());
-    employeePadRef.current?.clear();
-    payoutPadRef.current?.clear();
-    otherPadRef.current?.clear();
     setEmployeeSignUrl(null);
     setPayoutSignUrl(null);
     setOtherSignUrl(null);
     setNotice(null);
   };
 
-  // ── PDF 다운로드 (제출과 별도) ────────────────────────────────────────
-  const generatePdfBlob = async (): Promise<{ blob: Blob; dataUrl: string } | null> => {
-    // 서명 반영
-    refreshSignaturePreview();
-    await new Promise(r => setTimeout(r, 60));
+  // ── 서명 모달 open/save ───────────────────────────────────────────────
+  const currentSignUrl = signModalSlot === "employee" ? employeeSignUrl
+    : signModalSlot === "payout" ? payoutSignUrl
+    : signModalSlot === "other" ? otherSignUrl
+    : null;
+
+  const handleSignSave = (dataUrl: string | null) => {
+    if (signModalSlot === "employee") setEmployeeSignUrl(dataUrl);
+    else if (signModalSlot === "payout") setPayoutSignUrl(dataUrl);
+    else if (signModalSlot === "other") setOtherSignUrl(dataUrl);
+    setSignModalSlot(null);
+  };
+
+  // ── PDF 다운로드 (A4 1페이지 fit) ─────────────────────────────────────
+  // 전략:
+  //   1) html2canvas 로 프리뷰 캡처
+  //   2) A4 (210 x 297mm) 여백 (10mm 상하좌우)
+  //   3) 이미지 종횡비 유지하며 · 가로/세로 중 초과되는 축에 맞춰 스케일
+  //      → 가로에 맞춘 결과 세로가 페이지 초과하면 · 세로 기준으로 재계산
+  const generatePdfBlob = async (): Promise<{ blob: Blob } | null> => {
     const node = previewRef.current;
     if (!node) return null;
     const canvas = await html2canvas(node, {
@@ -562,26 +653,29 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
     });
     const imgData = canvas.toDataURL("image/png");
     const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-    const pdfW = pdf.internal.pageSize.getWidth();
-    const pdfH = pdf.internal.pageSize.getHeight();
-    const imgW = pdfW;
-    const imgH = (canvas.height * imgW) / canvas.width;
-    if (imgH <= pdfH) {
-      pdf.addImage(imgData, "PNG", 0, 0, imgW, imgH, undefined, "FAST");
-    } else {
-      let heightLeft = imgH;
-      let position = 0;
-      pdf.addImage(imgData, "PNG", 0, position, imgW, imgH, undefined, "FAST");
-      heightLeft -= pdfH;
-      while (heightLeft > 0) {
-        position -= pdfH;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, imgW, imgH, undefined, "FAST");
-        heightLeft -= pdfH;
-      }
+    const pdfW = pdf.internal.pageSize.getWidth();   // 210
+    const pdfH = pdf.internal.pageSize.getHeight();  // 297
+
+    // 여백 (mm)
+    const margin = 8;
+    const maxW = pdfW - margin * 2;
+    const maxH = pdfH - margin * 2;
+
+    // 캔버스 aspect ratio 유지하며 · maxW/maxH 안에 fit (contain)
+    const ratio = canvas.width / canvas.height;
+    let imgW = maxW;
+    let imgH = imgW / ratio;
+    if (imgH > maxH) {
+      imgH = maxH;
+      imgW = imgH * ratio;
     }
+    // 중앙 배치
+    const x = (pdfW - imgW) / 2;
+    const y = (pdfH - imgH) / 2;
+    pdf.addImage(imgData, "PNG", x, y, imgW, imgH, undefined, "FAST");
+
     const blob = pdf.output("blob");
-    return { blob, dataUrl: imgData };
+    return { blob };
   };
 
   const handleDownloadPdf = async () => {
@@ -626,18 +720,13 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
       setNotice({ tone: "err", text: "퇴사 사유를 선택하세요." });
       return;
     }
-    const emptySign = !employeePadRef.current || employeePadRef.current.isEmpty();
+    const emptySign = !employeeSignUrl;
     if (emptySign) {
-      if (!window.confirm("서명이 비어있습니다. 서명 없이 제출하시겠습니까?")) return;
+      if (!window.confirm("신청인 서명이 비어있습니다. 서명 없이 제출하시겠습니까?")) return;
     }
 
-    // 서명 dataURL (in-DB 저장용 · html2canvas 없이 서명 자체만)
-    let signatureDataUrl: string | null = null;
-    try {
-      if (employeePadRef.current && !employeePadRef.current.isEmpty()) {
-        signatureDataUrl = employeePadRef.current.toDataURL("image/png");
-      }
-    } catch { /* no-op */ }
+    // 서명 dataURL (in-DB 저장용 · 신청인 서명)
+    const signatureDataUrl: string | null = employeeSignUrl;
 
     setSubmitting(true);
     try {
@@ -702,7 +791,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
             <div>
               <h1 className="text-lg sm:text-xl font-black text-slate-800 leading-none">사직서 작성</h1>
               <p className="text-xs text-slate-500 mt-1">
-                좌측에서 조건을 입력하면 우측에 표준 사직서가 실시간 생성됩니다. 서명 후 [사직서 제출]하세요.
+                좌측에서 조건을 입력하면 우측에 표준 사직서가 실시간 생성됩니다. 서명 spot 클릭 후 [사직서 제출]하세요.
               </p>
             </div>
           </div>
@@ -959,7 +1048,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
               />
             </div>
 
-            {/* 금품 지급기일 동의 */}
+            {/* 금품 지급기일 */}
             <div className="flex flex-col gap-1.5 border-t border-slate-100 pt-2.5">
               <FieldLabel icon={<Money size={12} weight="fill" className="text-slate-400" />}>
                 금품 지급기일 (임금·퇴직금 등)
@@ -973,10 +1062,9 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
               <p className="text-[11px] text-slate-400 leading-snug">
                 * 근로기준법 § 36 · 퇴직 후 14일 이내 지급 원칙 · 당사자 합의로 연장 가능
               </p>
-              <SignArea label="금품 지급기일 동의 서명" padRef={payoutPadRef} />
             </div>
 
-            {/* 기타 사항 동의 */}
+            {/* 기타 사항 동의 안내 */}
             <div className="flex flex-col gap-1.5">
               <FieldLabel icon={<ShieldCheck size={12} weight="fill" className="text-slate-400" />}>
                 기타 사항 동의 (권리 확인 · 영업비밀 유지)
@@ -987,7 +1075,6 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                   <li>재직 중 알게된 영업비밀·고객정보·경영정보 누설 금지</li>
                 </ol>
               </div>
-              <SignArea label="기타 사항 동의 서명" padRef={otherPadRef} />
             </div>
 
             {/* 회사 정보 */}
@@ -1013,37 +1100,18 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
               </div>
             </div>
 
-            {/* 서명 영역 · 신청인 */}
+            {/* 서명 안내 · 사직서 제출 */}
             <div className="border-t border-slate-100 pt-2.5">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                  <Signature size={13} weight="fill" className="text-slate-400" />
-                  <span className="text-[12px] font-bold text-slate-600">신청인 서명</span>
+              <div className="bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 text-[12px] text-rose-700 leading-6 mb-3 flex items-start gap-2">
+                <Signature size={14} weight="fill" className="mt-0.5 flex-shrink-0" />
+                <div>
+                  <span className="font-black">서명 안내</span> · 우측 사직서 미리보기의{" "}
+                  <span className="font-black">서명 spot 3곳</span>(신청인·금품 지급기일·기타 사항)을 클릭하여 서명하세요.
                 </div>
-                <button
-                  type="button"
-                  onClick={refreshSignaturePreview}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold transition-colors cursor-pointer"
-                  title="우측 사직서에 서명 반영 (3개 서명 모두)"
-                >
-                  <ArrowsClockwise size={11} />
-                  미리보기 반영
-                </button>
               </div>
-              <SignArea label="신청인 서명" padRef={employeePadRef} />
 
-              {/* 사직서 제출 · PDF 다운 */}
-              <div className="mt-3 flex flex-col sm:flex-row items-stretch sm:justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={handleDownloadPdf}
-                  disabled={generating || submitting}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-black shadow-sm transition-colors cursor-pointer disabled:opacity-50"
-                  title="PDF 다운로드"
-                >
-                  <DownloadSimple size={16} weight="bold" />
-                  <span>{generating ? "생성 중..." : "PDF 다운"}</span>
-                </button>
+              {/* 사직서 제출 · PDF 다운은 오른쪽으로 이동 */}
+              <div className="mt-1 flex flex-col sm:flex-row items-stretch sm:justify-end gap-2">
                 <button
                   type="button"
                   onClick={handleSubmit}
@@ -1067,7 +1135,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
               <SignOut size={16} weight="fill" className="text-rose-600" />
               <h2 className="text-sm font-black text-slate-800">사직서 미리보기</h2>
               <span className="text-[11px] text-slate-400 font-semibold ml-1">
-                (우측 화면 그대로 PDF로 저장됩니다)
+                (서명 spot 클릭 · 우측 화면 그대로 A4 1페이지 PDF)
               </span>
             </div>
 
@@ -1078,11 +1146,35 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                 employeeSignUrl={employeeSignUrl}
                 payoutSignUrl={payoutSignUrl}
                 otherSignUrl={otherSignUrl}
+                onSignClick={(slot) => setSignModalSlot(slot)}
               />
+            </div>
+
+            {/* PDF 다운로드 버튼 · 프리뷰 아래 */}
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                disabled={generating || submitting}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-black shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                title="PDF 다운로드 (A4 1페이지)"
+              >
+                <DownloadSimple size={16} weight="bold" />
+                <span>{generating ? "생성 중..." : "PDF 다운 (A4 1페이지)"}</span>
+              </button>
             </div>
           </section>
         </div>
       </main>
+
+      {/* 서명 모달 */}
+      <SignatureModal
+        open={signModalSlot !== null}
+        slot={signModalSlot}
+        initialDataUrl={currentSignUrl}
+        onSave={handleSignSave}
+        onClose={() => setSignModalSlot(null)}
+      />
     </div>
   );
 };
