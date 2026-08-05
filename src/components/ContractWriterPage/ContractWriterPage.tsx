@@ -37,6 +37,7 @@ import {
 } from "../ContractSettingsPage/ContractSettingsPage";
 import SplitPanel from "../common/SplitPanel";
 import sungstampUrl from "../../images/sungstamp.png";
+import { useSettings } from "../../hooks/useSettings";
 import kyustampUrl from "../../images/kyustamp.png";
 
 type SignatureCanvasType = SignaturePad;
@@ -1946,6 +1947,9 @@ const DRAFT_STORAGE_KEY = "megatown_contract_writer_draft";
 const DRAFT_TIMESTAMP_KEY = "megatown_contract_writer_draft_ts";
 
 const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, onBack, onNavigate, onLogout, embedded = false }) => {
+  // ── T14/Phase B · 직급별 기본 시급 로드 (useSettings) · 사용자 편집 가능 유지
+  const settings = useSettings();
+
   // ── draft 로드 · 마이그레이션 (신규 필드 default) ──
   const [form, setForm] = useState<ContractForm>(() => {
     try {
@@ -2124,6 +2128,23 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           p.annualLeaveDays != null && p.annualLeaveDays !== ""
             ? String(p.annualLeaveDays)
             : prev.annualLeaveDays;
+        // T14/Phase B · 직급별 default 시급 자동 로드 (개인별 override 우선)
+        //   · 사용자 편집 가능 유지 · 기존 값이 default (12000/13500) 이면만 덮어씀
+        const isDefaultWage = (prev.weekdayHourly === "12000" || !prev.weekdayHourly) &&
+                              (prev.weekendHourly === "13500" || !prev.weekendHourly);
+        let wd = prev.weekdayHourly;
+        let we = prev.weekendHourly;
+        if (isDefaultWage) {
+          const rawPos = typeof p.position === "string" ? p.position : "";
+          const empId = typeof p.employeeId === "number" ? p.employeeId : null;
+          const override = empId != null ? settings.employeeWageOverrides?.[empId] : undefined;
+          const positionRate = rawPos ? settings.wageRates?.[rawPos] : undefined;
+          const rate = override ?? positionRate;
+          if (rate) {
+            wd = String(rate.weekday);
+            we = String(rate.weekend);
+          }
+        }
         return {
           ...prev,
           employeeId: typeof p.employeeId === "number" ? p.employeeId : prev.employeeId,
@@ -2135,13 +2156,37 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           employeeCategoryCustom: custom || prev.employeeCategoryCustom,
           contractType: mapContractType(typeof p.employmentType === "string" ? p.employmentType : "", prev.contractType),
           startDate: typeof p.hireDate === "string" && p.hireDate ? p.hireDate : prev.startDate,
+          weekdayHourly: wd,
+          weekendHourly: we,
         };
       });
       localStorage.removeItem("contract-writer-prefill");
     } catch { /* silent */ } finally {
       setPrefillConsumed(true);
     }
-  }, [prefillConsumed]);
+  }, [prefillConsumed, settings.wageRates, settings.employeeWageOverrides]);
+
+  // T14/Phase B · 직급 기본 시급 재적용 · 사용자 액션
+  //   폼의 employeeCategory 기반 · settings 에서 값 로드 · 개인별 override 있으면 그 값 우선
+  const applyDefaultHourly = useCallback(() => {
+    const catToPositionKey = (c: ContractForm["employeeCategory"]): string => {
+      // 폼 카테고리(약사/매장/창고/기타) → settings positions 키 매핑
+      if (c === "약사") return "약사";
+      if (c === "매장") return "매장";
+      if (c === "창고") return "창고";
+      return "";
+    };
+    const posKey = catToPositionKey(form.employeeCategory) || form.employeeCategoryCustom;
+    const empId = form.employeeId;
+    const override = empId != null ? settings.employeeWageOverrides?.[empId] : undefined;
+    const positionRate = posKey ? settings.wageRates?.[posKey] : undefined;
+    const rate = override ?? positionRate;
+    if (!rate) {
+      alert(`직급 "${posKey || "?"}" 기본 시급이 설정되지 않았습니다.\n설정 > 시급 설정 에서 등록해주세요.`);
+      return;
+    }
+    setForm(prev => ({ ...prev, weekdayHourly: String(rate.weekday), weekendHourly: String(rate.weekend) }));
+  }, [form.employeeCategory, form.employeeCategoryCustom, form.employeeId, settings.wageRates, settings.employeeWageOverrides]);
 
   // 계약 이력 조회
   useEffect(() => {
@@ -2859,7 +2904,17 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         </SectionHeader>
         <div className="grid md:grid-cols-2 gap-1.5">
           <div>
-            <div className="text-[10.5px] text-slate-400 font-semibold mb-0.5">주중 시급</div>
+            <div className="flex items-center justify-between mb-0.5">
+              <span className="text-[10.5px] text-slate-400 font-semibold">주중 시급</span>
+              <button
+                type="button"
+                onClick={applyDefaultHourly}
+                className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer"
+                title="설정 > 시급 설정 에서 등록한 직급 기본 시급을 자동 로드"
+              >
+                직급 기본
+              </button>
+            </div>
             <div className="relative">
               <input type="text" inputMode="numeric" value={form.weekdayHourly}
                 onChange={(e) => upd("weekdayHourly", e.target.value.replace(/[^0-9]/g, ""))}
@@ -2879,6 +2934,48 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             </div>
           </div>
         </div>
+        {/* T14/Phase B · 세후 실수령액 표시 (자동 계산) · 근기법 4대보험·소득세 근사 */}
+        {(() => {
+          const wd = Number(form.weekdayHourly) || 0;
+          const we = Number(form.weekendHourly) || 0;
+          if (wd === 0 && we === 0) return null;
+          // 시간 상수 · 계약서 원본 (기본급 209h · 연장 55.94h · 휴일 22h · 연차 10h)
+          const basicPay   = 209 * wd;
+          const overtimePay = 55.94 * wd * 1.5;
+          const holidayPay  = 22 * we * 1.5;
+          const leavePay    = 10 * wd;
+          const gross = Math.round(basicPay + overtimePay + holidayPay + leavePay);
+          // 4대보험 근로자 부담 (근사)
+          const nps   = Math.round(gross * 0.045);
+          const health = Math.round(gross * 0.03545);
+          const care  = Math.round(health * 0.1295);
+          const emp   = Math.round(gross * 0.009);
+          const insur = nps + health + care + emp;
+          // 소득세 근사 (부양가족 1인 기준 · project_contract_full_text_2026-08-04)
+          const tax = Math.max(0, Math.round((gross - 1500000) * 0.08));
+          const local = Math.round(tax * 0.1);
+          const net = gross - insur - tax - local;
+          const fmt = (n: number) => n.toLocaleString();
+          return (
+            <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50/60 px-3 py-2 flex flex-col gap-1 text-[11px]">
+              <div className="flex items-center gap-1 text-emerald-800 font-black">
+                <Calculator size={12} weight="fill" /> 자동 계산 (시급 × 시간 상수)
+              </div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 tabular-nums">
+                <div className="flex justify-between"><span className="text-slate-600">세전 총액</span><span className="font-black text-slate-900">{fmt(gross)}원</span></div>
+                <div className="flex justify-between"><span className="text-slate-600">4대보험</span><span className="text-rose-700">-{fmt(insur)}</span></div>
+                <div className="flex justify-between"><span className="text-slate-600">소득세+지방세</span><span className="text-rose-700">-{fmt(tax + local)}</span></div>
+                <div className="flex justify-between col-span-2 border-t border-emerald-200 pt-1 mt-0.5">
+                  <span className="text-emerald-800 font-black">세후 실수령액</span>
+                  <span className="font-black text-emerald-900 text-[13px]">{fmt(net)}원</span>
+                </div>
+              </div>
+              <div className="text-[9.5px] text-slate-500 italic">
+                * 4대보험 근사치 (9.09%) · 소득세 부양가족 1인 기준 (간이세액표 근사) · 실제 원천징수와 차이 있을 수 있음
+              </div>
+            </div>
+          );
+        })()}
         {form.useWageComponents && (
           <WageComponentsForm wage={form.wageComponents} onChange={(next) => upd("wageComponents", next)} />
         )}
