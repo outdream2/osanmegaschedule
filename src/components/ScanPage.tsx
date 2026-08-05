@@ -220,6 +220,12 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   // ── T20/Phase 2 · 상품별 진열요청 · 각 행 [📢 요청] state (핸들러는 showToast 아래)
   const [requestingKey, setRequestingKey]       = useState<string | null>(null);
 
+  // ── T-SCAN-1 (2026-08-05) · 바코드 스캔 즉시 상품정보 모달 팝업
+  //   · 스캔 → 리스트 행 추가 (기존) + 이 모달 팝업 (신규)
+  //   · 모달 안 [진열요청] 버튼 · [닫기] 버튼
+  //   · 닫아도 리스트 행은 유지 (실재고 입력 계속 가능)
+  const [scanModal, setScanModal] = useState<StockRow | null>(null);
+
   // ── 전체 저장
   const [saveStatus, setSaveStatus]             = useState<"idle" | "saving" | "done" | "error">("idle");
   const [saveError, setSaveError]               = useState<string | null>(null);
@@ -333,6 +339,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     setRows(prev => [newRow, ...prev]);
     setLastAddedKey(newRow.key);
     setSaveStatus("idle");
+    // T-SCAN-1 · 스캔 즉시 상품정보 모달 팝업 (진열요청 진입점)
+    setScanModal(newRow);
 
     // 기존 실재고 자동 로드 · 신규 컬럼 우선 · 없으면 레거시 fallback
     // 이력 건수/최근 저장 시각도 함께 저장 (덮어쓰기 confirm · 이력 배지에 사용)
@@ -1166,6 +1174,114 @@ export const ScanPage: React.FC<ScanPageProps> = ({
           )}
         </section>
       </main>
+
+      {/* ── T-SCAN-1 (2026-08-05) · 스캔 즉시 상품정보 모달 · [진열요청] 진입점 ── */}
+      {scanModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[9997] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/50 backdrop-blur-sm"
+          onClick={() => setScanModal(null)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="w-full sm:max-w-md max-h-[85vh] bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col"
+          >
+            {/* 헤더 */}
+            <div className="px-5 py-3.5 border-b border-slate-100 bg-gradient-to-r from-violet-50/60 to-transparent flex items-center justify-between gap-2">
+              <div className="min-w-0 flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
+                  <ScanLine size={16} className="text-violet-600" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[10px] font-bold text-violet-600 uppercase tracking-widest">스캔 완료</div>
+                  <div className="text-sm font-black text-slate-800 break-keep line-clamp-2 leading-tight">{scanModal.product.name}</div>
+                  <div className="text-[10px] text-slate-400 font-mono">{scanModal.code}</div>
+                </div>
+              </div>
+              <button
+                onClick={() => setScanModal(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer shrink-0"
+                title="닫기"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            {/* 본문 · 상품 요약 */}
+            <div className="flex-1 overflow-auto px-5 py-4 flex flex-col gap-3">
+              {/* 배정 구역 */}
+              {((scanModal.product as any).realMap ?? (scanModal.product as any).real_map) && (
+                <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2 flex items-center gap-2">
+                  <MapPin size={13} className="text-emerald-600 shrink-0" />
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">배정 구역</span>
+                  <span className="text-[13px] font-black text-slate-800 tabular-nums ml-auto">
+                    {(scanModal.product as any).realMap ?? (scanModal.product as any).real_map}
+                  </span>
+                </div>
+              )}
+              {/* 현재고·공급처 */}
+              <div className="grid grid-cols-2 gap-2">
+                {(scanModal.product as any).current_stock != null && (
+                  <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 flex flex-col gap-0.5">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">현재고</span>
+                    <span className="tabular-nums text-[13px] font-black text-slate-800">{(scanModal.product as any).current_stock}</span>
+                  </div>
+                )}
+                {(scanModal.product as any).supplier && (
+                  <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 flex flex-col gap-0.5">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">공급처</span>
+                    <span className="text-[12px] font-black text-slate-700 truncate">{(scanModal.product as any).supplier}</span>
+                  </div>
+                )}
+              </div>
+              {/* 카테고리 · 규격 */}
+              {((scanModal.product as any).category || (scanModal.product as any).spec) && (
+                <div className="flex flex-wrap gap-1.5">
+                  {(scanModal.product as any).category && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                      {(scanModal.product as any).category}
+                    </span>
+                  )}
+                  {(scanModal.product as any).spec && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-50 text-slate-600 border border-slate-200">
+                      {(scanModal.product as any).spec}
+                    </span>
+                  )}
+                </div>
+              )}
+              {/* 힌트 */}
+              <div className="text-[10.5px] text-slate-500 font-semibold text-center bg-slate-50/60 rounded-lg px-3 py-2 border border-slate-100">
+                리스트에 추가됐습니다 · 실재고 입력은 리스트에서 · 진열 필요시 아래 버튼
+              </div>
+            </div>
+            {/* 액션 버튼 · [진열요청] · [닫기] */}
+            <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/40 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setScanModal(null)}
+                className="flex-1 h-10 rounded-lg text-[12px] font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition cursor-pointer"
+              >
+                닫기
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await requestDisplay(scanModal);
+                  setScanModal(null);
+                }}
+                disabled={requestingKey === scanModal.key}
+                className="flex-1 h-10 rounded-lg text-[12px] font-black text-white bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:brightness-110 shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+              >
+                {requestingKey === scanModal.key ? (
+                  <><Loader2 size={13} className="animate-spin" /> 전송 중</>
+                ) : (
+                  <><Megaphone size={13} /> 진열요청</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── 실재고 이력 조회 모달 ─────────────────────────────── */}
       {historyModal && (
