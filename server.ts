@@ -76,9 +76,24 @@ async function startServer() {
   }
 
   app.use(compression());
-  // 2026-07-20: env 분기 제거 · 로컬↔Render 통일 · 페이지마다 dispose+gc 로 peak 안전
-  //   100MB 는 다중 페이지 base64 배치를 충분히 허용하면서 Render OOM 도 피하는 절충치
-  app.use(express.json({ limit: "100mb" }));
+  // 2026-08-05 T37 · DoS 방어 · 일반 API 는 10MB · 이미지 route 는 route-level 100MB
+  //   body-parser 는 req._body 플래그로 재파싱 skip · 앞의 파서가 실행되면 뒤 파서는 자동 skip
+  //   이미지·PDF·OCR 등 대용량 경로 를 먼저 100MB 로 파싱 · 나머지는 10MB 로 제한
+  const largeJson = express.json({ limit: "100mb" });
+  const LARGE_BODY_PATHS = [
+    "/api/ocr",                    // OCR base64 이미지 배치
+    "/api/invoice-images",         // 거래명세서 이미지 업로드
+    "/api/hr-forms",               // HR 서류 이미지·PDF
+    "/api/resignations",           // 사직서 서명 이미지
+    "/api/board",                  // 게시판 이미지 첨부
+    "/api/pharmacist-menu-items",  // 약사 자료 이미지
+    "/api/employee-contracts",     // 근로계약서 서명·통장사본 이미지
+    "/api/schedules",              // 스케줄 엑셀 대용량 (batch)
+  ];
+  for (const p of LARGE_BODY_PATHS) {
+    app.use(p, largeJson);
+  }
+  app.use(express.json({ limit: "10mb" })); // 나머지 API · DoS 방어
   // 2026-08-05 T3 · JWT httpOnly 쿠키 파싱
   app.use(cookieParser());
   app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
