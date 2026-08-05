@@ -17,7 +17,16 @@ router.get("/api/zone-labels", async (_req, res) => {
       .from("zone_labels")
       .select("zone_id, number, sub_label, updated_at")
       .order("number", { ascending: true });
-    if (error) throw new Error(error.message);
+    if (error) {
+      // 2026-08-05 · 테이블 미존재 (사용자 SQL 미실행) 은 warning 만 · 빈 배열 반환
+      //   · migrations/create_zone_labels_2026-08-05.sql 실행 후 자동 해결
+      const msg = error.message ?? "";
+      if (/could not find the table|does not exist|schema cache/i.test(msg)) {
+        console.warn("[zone-labels GET] zone_labels 테이블 미존재 · SQL 마이그레이션 실행 필요 · 빈 배열 반환");
+        return res.json({ mappings: [], _missing: true });
+      }
+      throw new Error(msg);
+    }
     res.json({ mappings: data ?? [] });
   } catch (err: any) {
     console.error("[zone-labels GET]", err?.message);
