@@ -1243,10 +1243,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
       </div>
 
       {/* ── 마스터-디테일 · 좌우 split · 2026-08-03 (#183) · 공통 CSS 클래스 (split-*) 로 통일 ── */}
-      <div
-        className="split-container"
-        style={{ height: "calc(100vh - 200px)" }}
-      >
+      {/* 2026-08-05 · 세로 스크롤 fix · 100vh-200px 하드코딩 제거 → flex-1 min-h-0 (BusinessManagePage 서브탭 embed 대응) */}
+      <div className="split-container flex-1 min-h-0">
         {/* ════ 좌측: 직원 리스트 카드 · 데스크탑에서 폭 조정 가능 ════ */}
         <aside
           className="split-left"
