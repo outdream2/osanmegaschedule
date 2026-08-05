@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Pencil, Loader2, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2, Warehouse, Store, ClipboardCheck, ScanLine, Check, X, DollarSign, Package, Info, EyeOff, Eye, TrendingUp, ChevronRight, ChevronDown } from "lucide-react";
 import { type ProductInfo } from "../../lib/productsCache";
 import { RealMapSelector } from "./RealMapSelector";
-import { StockCounterModal } from "../StockCounterModal";
+// 2026-08-05 · 재고세기(YOLO) 기능 제거 · StockCounterModal import 삭제
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
 
 // 인라인 편집 가능 필드 종류
@@ -107,7 +107,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
     } finally { setEditSaving(false); }
   };
   const [mapSelectorOpen, setMapSelectorOpen] = useState(false);
-  const [stockCounterOpen, setStockCounterOpen] = useState(false);
+  // 2026-08-05 · 재고세기 기능 제거 · stockCounterOpen state 삭제
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -555,14 +555,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                     <span className="text-[11px] tabular-nums font-semibold text-slate-500 ml-1 truncate">현재고 {cur ?? "-"} · 적정 {opt ?? "-"}</span>
                   )}
                 </button>
-                {S.actualStockInput && !stockSectionCollapsed && (
-                  <button
-                    onClick={() => setStockCounterOpen(true)}
-                    className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 min-h-9 bg-emerald-500 hover:bg-emerald-600 text-white text-[12px] font-black rounded-lg transition cursor-pointer shadow-sm"
-                  >
-                    <ScanLine size={11} /> 재고 세기
-                  </button>
-                )}
+                {/* 2026-08-05 · 재고세기(YOLO) 기능 제거 · [재고 세기] 버튼 삭제 */}
               </div>
 
               {/* 2026-08-03 · 상단 2열 · 현재고 · 추천적정재고 · 접힌 상태에서는 숨김 */}
@@ -928,15 +921,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
           onClose={() => setMapSelectorOpen(false)}
         />
       )}
-      {stockCounterOpen && (
-        <StockCounterModal
-          /* 2026-08-03 · 5분리 · Modal 은 창고/매장 2 타겟만 지원하므로
-             재고세기 결과는 창고1·매장1 로 매핑 (Modal props 유지) */
-          onApplyWarehouse={count => { setWarehouse1Stock(count); setW1Status("idle"); setStockCounterOpen(false); }}
-          onApplyStore={count => { setStore1Stock(count); setS1Status("idle"); setStockCounterOpen(false); }}
-          onClose={() => setStockCounterOpen(false)}
-        />
-      )}
+      {/* 2026-08-05 · 재고세기(YOLO) 기능 완전 제거 · StockCounterModal 삭제됨 */}
     </>
   );
 };

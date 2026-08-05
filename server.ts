@@ -23,8 +23,7 @@ import lunchRouter       from "./server/routes/lunch";
 import reservationsRouter from "./server/routes/reservations";
 import vendorsRouter     from "./server/routes/vendors";
 import ocrRouter         from "./server/routes/ocr";
-// 2026-08-04 · 사용자 요청 · 재고세기(YOLO) 일단 주석처리 · OOM 방어 (T39)
-// import stockCountRouter  from "./server/routes/stockCount";
+// 2026-08-05 · 재고세기(YOLO) 기능 완전 제거 · stockCount·stockCounter·stockCounterConfig 파일 삭제됨
 import stockManageRouter from "./server/routes/stockManage";
 import purchaseRouter    from "./server/routes/purchase";
 import stockArrivalsRouter from "./server/routes/stockArrivals";
@@ -46,8 +45,7 @@ import employeeContractsRouter from "./server/routes/employeeContracts";
 import vatRouter from "./server/routes/vat";
 // 2026-07-28 · 재고·판매 통합 메뉴 제거 (사용자 요청) · 파일 보관 · 라우터 등록만 해제
 // import inventorySalesRouter from "./server/routes/inventorySales";
-// 2026-08-04 · 사용자 요청 · 재고세기(YOLO) 주석처리 · loadStockCountModel 도 비활성 (T39)
-// import { loadStockCountModel } from "./server/stockCounter";
+// (재고세기 loadStockCountModel · 위에서 함께 제거됨)
 import { cleanupStaleLogs } from "./server/utils/logsCleanup";
 // 2026-08-05 · T3 인증 미들웨어 · 사내 사용 중에는 미적용 (원복)
 //   · Render 클라우드 배포 직전 · 별도 세션에서 재도입 예정 · docs/TASKS.md 참조
@@ -148,7 +146,7 @@ async function startServer() {
   app.use(vendorsRouter);
   app.use(boardRouter);
   app.use(vatRouter);
-  // app.use(stockCountRouter); // 2026-08-04 · YOLO 비활성 (T39)
+  // (재고세기 라우터 · 2026-08-05 파일 삭제됨)
   // app.use(inventorySalesRouter);
 
   // /products.json — 항상 DB에서 동적으로 제공 (브라우저 캐시 없음, 서버 메모리 캐시만 사용)
@@ -179,7 +177,7 @@ async function startServer() {
     });
   }
 
-  // loadStockCountModel(); // 2026-08-04 · YOLO 비활성 (T39 · OOM 방어)
+  // (loadStockCountModel · 2026-08-05 파일 삭제됨)
 
   // T38 · 부팅 시 오래된 로그 파일 자동 정리 (14일 초과)
   cleanupStaleLogs();
