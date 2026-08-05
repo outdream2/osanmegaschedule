@@ -69,16 +69,18 @@
 
 ---
 
-## 🟢 진열요청 재설계 · 진행 상태
+## 🟢 진열요청 재설계 · **전체 완료** (2026-08-05)
 
 - StoreMap [진열요청] 버튼 제거 ✅ (`8c8f515`)
-- 담당자 배정 · zone_assignments · 유지
-- 상태 3단계 · pending → prepared → done
-- 3역할 · 요청자 / 창고담당 / 진열담당
-- SQL · product_code · prepared_at/by/name · completed_at/by/name 실행 완료
-- **Phase 1 ✅** 서버 API (`b86f352`) · POST 확장 · PATCH /prepare · PATCH /complete
-- **Phase 2 ✅** ScanPage 진입점 (`d3a6504`) · 각 행 [📢 요청] · amber 강조
-- **Phase 3 대기** · 진열요청 리스트 페이지 · 매장관리 서브탭 · 구역별 그룹 · 플로우 스텝퍼
+- Phase 1 서버 API ✅ (`b86f352`) · POST 확장 · PATCH /prepare · PATCH /complete
+- Phase 2 ScanPage 진입점 ✅ (`d3a6504`) · 각 행 [📢 요청] · amber 강조
+- Phase 3 리스트 페이지 ✅ (`7b5bc97`) · 매장관리 > 진열요청 · 구역별 그룹 · 플로우 스텝퍼
+
+## 🟢 근로계약서 재설계 · **전체 완료** (2026-08-05)
+
+- Phase A · 시급 DB 설정 · 이미 SettingsModal 에 존재 (재활용)
+- Phase B ✅ (`5ad8ecc`) · useSettings 통합 · 직급 기본 시급 자동 로드 · 세후 실수령액 계산
+- Phase C ✅ (`1aac2ff`) · 프리뷰 하이브리드 · 문단형 전환 · VerticalLabel 폐기 · PDF 안정성 (fixed hex · page-break-inside)
 
 ---
 
@@ -146,13 +148,6 @@
 - 남은 채택: 20파일 (useSortableTable) · 9모달 (Modal.tsx) · 48파일 (useFilterState) · 3필터바
 - 각 페이지별 15~30분 · 총 8~12h · 매 파일 TS+build 검증
 
-### T40. 진열요청 Phase 3 · 리스트 페이지
-- 매장관리 > 진열요청 서브탭 · pending 카운트 badge
-- 구역별 그룹 카드 · border-l 색상 (amber/sky/emerald)
-- 각 상품 · 플로우 스텝퍼 시각화 (요청 → 창고준비 → 진열완료)
-- 상태별 필터 (전체/대기/준비/완료) · 완료 구역 기본 접힘
-- [준비완료] 버튼 (창고담당) · [완료] 버튼 (진열담당) · 권한 disabled + tooltip
-- 예상 2h · UI 에이전트 리포트 반영
 
 ### T34. 헤더 자동 정렬 검증 (일부 완료)
 - StaffManagePage · StockReconciliationTab 정렬 완료
@@ -197,15 +192,21 @@
 
 ---
 
-## ✅ 이번 세션 완료 (다음 갱신 시 삭제 · 참고용)
+## ✅ 이번 세션 완료 (참고용 · 다음 세션 시 삭제)
 
-- T1/T2/T33/T5/T16-18/T35/T30/T32/T6/T11/T20/T8/T23/T31 · 이전 세션 완료 확인
-- T38 · OCR 로그 자동 정리 (`b9c5df0`)
-- T39부분 · YOLO 비활성 (`b9c5df0`)
-- StoreMap [진열요청] 버튼 제거 (`8c8f515`)
-- 진열요청 Phase 1 · 서버 API (`b86f352`)
-- 진열요청 Phase 2 · ScanPage 진입점 (`d3a6504`)
-- NotificationBell 반응형 fix (`ae9cf78`)
-- LandingPage 서브액션 제거 + 설명 확대 (`144b40c`)
-- 알림 클릭 시 관련 페이지 이동 (`5016383`)
-- 원칙 #11 (기능+테스트 동시) · #12 (병렬 진행) 추가
+**진열요청 재설계 · 전체 완료**
+- StoreMap [진열요청] 제거 (`8c8f515`) · Phase 1 서버 (`b86f352`) · Phase 2 ScanPage 진입점 (`d3a6504`) · Phase 3 리스트 (`7b5bc97`)
+
+**근로계약서 재설계 · 전체 완료**
+- Phase B 시급 자동로드+세후계산 (`5ad8ecc`) · Phase C 프리뷰 하이브리드 (`1aac2ff`)
+
+**UI 개선**
+- NotificationBell 반응형 fix (`ae9cf78`) · 알림 클릭 페이지 이동 (`5016383`)
+- LandingPage 서브액션·> 화살표 제거 (`144b40c`)
+- BarcodeScanner 제목 가로 fix (`e1fd6a7`)
+- ScanPage 반응형 wrap · 창고 위 매장 아래 (`46403b1`)
+
+**서버 · 원칙**
+- T38 OCR 로그 자동 정리 · T39 YOLO 비활성 (`b9c5df0`)
+- contract-master 에이전트 신규 (`.claude/agents/contract-master.md`)
+- AGENT_PRINCIPLES 원칙 #11 (테스트 동시) · #12 (병렬 진행)
