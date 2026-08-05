@@ -1,5 +1,6 @@
 // src/components/common/StoreZoneMap.tsx
 // 매장 구역도 공용 컴포넌트 · 2026-08-03 (사용자 요청 · DisplayPage · SalesTrendPage 통합)
+// 2026-08-05 · 수평윙 여백 추가 · 모바일 테이블 구조 추가
 //
 // 하나의 구역도 컴포넌트를 · 두 곳에서 공용:
 //   1. SalesTrendPage · CategoryTab · 판매순위 rank ★BEST 배지 표시
@@ -21,6 +22,7 @@ import {
 } from "../../constants/storeMapLayout";
 import { ZONE_DEFS } from "../../constants/displayZones";
 import { getZoneLabel, getZoneSubLabel } from "../../constants/zoneLabels";
+import { MapPin, User } from "lucide-react";
 
 export interface StoreZoneMapProps {
   /** 구역별 상품 수 · key = zone id (예: "1A", "9B", "22") · 카테고리 페이지에서 사용 */
@@ -39,6 +41,17 @@ export interface StoreZoneMapProps {
   defaultCollapsed?: boolean;
   /** 헤더 타이틀 · collapsible=true 일 때만 표시 · default "🗺️ 매장 구역도" */
   title?: string;
+  /**
+   * 모바일 테이블 모드 · default false
+   * true 이면 sm 미만 화면에서 지도 대신 구역 목록 테이블을 표시
+   * 열: 번호 · 이름 · 담당자 · 상태
+   * sm 이상에서는 항상 지도 표시
+   */
+  mobileTable?: boolean;
+  /** 모바일 테이블에 표시할 구역별 담당자 · key=zoneId, value=담당자명 */
+  zoneMobileStaffMap?: Record<string, string>;
+  /** 모바일 테이블에 표시할 구역별 pending 건수 · key=zoneId, value=건수 */
+  zonePendingMap?: Record<string, number>;
 }
 
 /**
@@ -70,6 +83,9 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
   collapsible = false,
   defaultCollapsed = true,
   title = "🗺️ 매장 구역도",
+  mobileTable = false,
+  zoneMobileStaffMap,
+  zonePendingMap,
 }) => {
   // 2026-07-31 · zone-labels-changed 수신 → 강제 리렌더 (라벨 편집 반영)
   const [, setZoneLabelVersion] = useState(0);
@@ -216,6 +232,77 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
     );
   };
 
+  // ── 모바일 테이블 · mobileTable=true · sm 미만 에서 구역 목록 테이블 표시 ──
+  // 구역 순서: 상단벽 → 중앙(A/B 두 개) → 하단벽 → 동측 wing
+  const allZoneIds: string[] = [
+    ...STORE_TOP_WALL.map(n => String(n)),
+    ...STORE_AISLE_PAIRS.flatMap(n => [`${n}B`, `${n}A`]),
+    String(STORE_AISLE_CENTER),
+    ...STORE_BOTTOM_WALL.map(n => String(n)),
+    ...STORE_VERTICAL_WING.map(n => String(n)),
+  ];
+
+  const mobileTableEl = mobileTable ? (
+    <div className="sm:hidden">
+      <table className="w-full text-left border-collapse text-[11px]">
+        <thead>
+          <tr className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wide">
+            <th className="px-2 py-1.5 w-[20%]">번호</th>
+            <th className="px-2 py-1.5 w-[35%]">이름</th>
+            <th className="px-2 py-1.5 w-[25%]">담당자</th>
+            <th className="px-2 py-1.5 w-[20%] text-right">상황</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {allZoneIds.map(zoneId => {
+            const numPart = parseInt(zoneId, 10);
+            const zd = ZONE_DEFS.find(z => z.num === numPart);
+            const label = getZoneLabel(zoneId);
+            const sub   = getZoneSubLabel(zoneId) || (zd?.category ?? "");
+            const staff = zoneMobileStaffMap?.[zoneId] ?? "";
+            const pending = zonePendingMap?.[zoneId] ?? 0;
+            const count = zoneItemCounts?.[zoneId] ?? 0;
+            return (
+              <tr
+                key={zoneId}
+                className={`hover:bg-slate-50/60 transition ${onZoneClick ? "cursor-pointer" : ""}`}
+                onClick={onZoneClick ? () => onZoneClick(zoneId) : undefined}
+              >
+                <td className="px-2 py-1.5 align-middle">
+                  <span className="font-black text-slate-700 tabular-nums">{label}</span>
+                </td>
+                <td className="px-2 py-1.5 align-middle">
+                  <span className="text-slate-600 leading-tight break-words whitespace-normal">{sub || "-"}</span>
+                  {count > 0 && (
+                    <span className="ml-1 text-[10px] text-emerald-600 tabular-nums font-semibold">({count})</span>
+                  )}
+                </td>
+                <td className="px-2 py-1.5 align-middle">
+                  {staff ? (
+                    <span className="text-slate-600 inline-flex items-center gap-0.5">
+                      <User size={9} className="text-slate-400" />{staff}
+                    </span>
+                  ) : (
+                    <span className="text-slate-300">-</span>
+                  )}
+                </td>
+                <td className="px-2 py-1.5 align-middle text-right">
+                  {pending > 0 ? (
+                    <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5 tabular-nums">
+                      <MapPin size={8} /> 대기 {pending}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-slate-300">-</span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  ) : null;
+
   // ── 매장 배치 · 상단벽 · 중앙진열대 · 하단벽 · 동측 wing ───────────────
   const body = (
     <div className="flex flex-col gap-1.5 min-w-[720px]">
@@ -245,10 +332,10 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
         </div>
       </div>
 
-      {/* 하단 · 동측 wing · 수평 8셀 */}
-      <div className="border-t border-violet-200 pt-1.5">
-        <div className="text-[8px] font-black text-violet-600 uppercase tracking-wider mb-0.5 px-0.5">동측 wing (35→42) · 이벤트 · 카운터 · 조제실</div>
-        <div className="grid gap-0.5" style={{ gridTemplateColumns: "repeat(8, minmax(0, 1fr))" }}>
+      {/* 하단 · 동측 wing · 수평 8셀 · 2026-08-05 · 상하 여백 추가 (겹침 방지) */}
+      <div className="border-t border-violet-200 pt-3 mt-1.5">
+        <div className="text-[8px] font-black text-violet-600 uppercase tracking-wider mb-1 px-0.5">동측 wing (35→42) · 이벤트 · 카운터 · 조제실</div>
+        <div className="grid gap-0.5 pb-1" style={{ gridTemplateColumns: "repeat(8, minmax(0, 1fr))" }}>
           {STORE_VERTICAL_WING.map(n => wallCell(n))}
         </div>
       </div>
@@ -267,14 +354,26 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
           <span className="text-[11px] font-black text-violet-700 inline-flex items-center gap-1">{title}</span>
           <span className="text-[10px] font-black text-violet-600">{collapsed ? "펼치기 ▼" : "접기 ▲"}</span>
         </button>
-        {!collapsed && <div className="p-2 overflow-x-auto">{body}</div>}
+        {!collapsed && (
+          <>
+            {/* 모바일 테이블 (sm 미만) */}
+            {mobileTableEl}
+            {/* 지도 (sm 이상 · mobileTable=false 이면 전체) */}
+            <div className={`p-2 overflow-x-auto${mobileTable ? " hidden sm:block" : ""}`}>{body}</div>
+          </>
+        )}
       </div>
     );
   }
 
   // 비접이식 · 심플 컨테이너
   return (
-    <div className="p-2 overflow-x-auto">{body}</div>
+    <>
+      {/* 모바일 테이블 (sm 미만) */}
+      {mobileTableEl}
+      {/* 지도 (sm 이상 · mobileTable=false 이면 전체) */}
+      <div className={`p-2 overflow-x-auto${mobileTable ? " hidden sm:block" : ""}`}>{body}</div>
+    </>
   );
 };
 

@@ -1,13 +1,15 @@
 // src/components/DisplayPage/DisplayRequestListPage.tsx
 // 2026-08-05 · 진열요청 리스트 페이지 (Phase 3)
-// - 구역별 그룹 카드 · 플로우 스텝퍼 시각화 · 3상태 필터
+// - 데스크탑 5컬럼 테이블 · 모바일 카드 형식
+// - 상품명 · 위치 · 담당자 · 창고상황 · 완료 컬럼
+// - 상태별 색상: pending amber · prepared sky · done emerald
 // - [준비완료] 창고담당 (position ∈ 창고/물류) · [완료] 진열담당 (position ∈ 진열/매장 + zone_assignments)
 // - 관리자 (level ≥ 8) · 모든 상태 강제 전환 가능
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Bell, Loader2, CheckCircle2, Package, ChevronDown, ChevronRight,
-  Filter, RefreshCw, User, Clock, MapPin, Megaphone,
+  RefreshCw, User, Clock, MapPin, Megaphone, XCircle,
 } from "lucide-react";
 import type { AuthSession } from "../../types";
 
@@ -60,9 +62,18 @@ function relativeTime(iso: string): string {
   return `${d}일 전`;
 }
 
-// 창고담당 = position ∈ {"창고", "물류"} · 물류 세분화
-// 진열담당 = position ∈ {"진열", "매장"} 또는 zone_assignments 매핑
-// 관리자 = level ≥ 8
+/** note 필드에서 상품명 추출. "XXX 진열 요청" 형태면 앞부분 반환 */
+function extractProductName(req: DisplayRequest): string {
+  if (req.note) {
+    const m = req.note.match(/^(.+?) 진열 요청$/);
+    if (m) return m[1];
+    // note 앞부분이 상품명일 경우
+    const parts = req.note.split(" · ");
+    if (parts[0]) return parts[0];
+  }
+  return req.product_code ?? "";
+}
+
 function isWarehouseStaff(sess: AuthSession | null): boolean {
   const pos = (sess as any)?.position ?? "";
   return pos === "창고" || pos === "물류" || ((sess as any)?.employeeRank ?? "") === "창고";
@@ -75,29 +86,35 @@ function isAdmin(sess: AuthSession | null): boolean {
   return (sess?.level ?? 0) >= 8;
 }
 
-// ─── Sub-components ─────────────────────────────────────────────────────────
+// ─── Status Badge ────────────────────────────────────────────────────────────
 
-const FlowStepper: React.FC<{ req: DisplayRequest }> = ({ req }) => {
-  const step1Done = true;                              // 요청됨
-  const step2Done = req.status !== "pending";          // 창고 준비
-  const step3Done = req.status === "done";             // 진열 완료
-  const stepClass = (done: boolean, active: boolean) => {
-    if (done)  return "bg-emerald-500 text-white border-emerald-500";
-    if (active) return "bg-amber-500 text-white border-amber-500 ring-2 ring-amber-200 animate-pulse";
-    return "bg-slate-100 text-slate-400 border-slate-200";
-  };
-  const activeStep: number = req.status === "pending" ? 2 : req.status === "prepared" ? 3 : 0;
-  const line = (done: boolean) => (done ? "bg-emerald-300" : "bg-slate-200");
+const StatusChip: React.FC<{ status: DRStatus }> = ({ status }) => {
+  if (status === "pending")
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 whitespace-nowrap">
+        <Clock size={9} /> 대기
+      </span>
+    );
+  if (status === "prepared")
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-sky-700 bg-sky-50 border border-sky-200 rounded-full px-2 py-0.5 whitespace-nowrap">
+        <Package size={9} /> 준비완료
+      </span>
+    );
   return (
-    <div className="flex items-center gap-1 text-[10px]">
-      <div className={`w-6 h-6 rounded-full flex items-center justify-center border font-black ${stepClass(step1Done, activeStep === 1)}`} title="요청됨">1</div>
-      <div className={`h-px flex-1 ${line(step2Done)}`} />
-      <div className={`w-6 h-6 rounded-full flex items-center justify-center border font-black ${stepClass(step2Done, activeStep === 2)}`} title="창고 준비">2</div>
-      <div className={`h-px flex-1 ${line(step3Done)}`} />
-      <div className={`w-6 h-6 rounded-full flex items-center justify-center border font-black ${stepClass(step3Done, activeStep === 3)}`} title="진열 완료">3</div>
-    </div>
+    <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 whitespace-nowrap">
+      <CheckCircle2 size={9} /> 완료
+    </span>
   );
 };
+
+// ─── Row left border color by group dominant status ──────────────────────────
+
+function rowBorderClass(status: DRStatus): string {
+  if (status === "pending")  return "border-l-2 border-l-amber-400";
+  if (status === "prepared") return "border-l-2 border-l-sky-400";
+  return "border-l-2 border-l-emerald-300";
+}
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
@@ -106,12 +123,12 @@ export const DisplayRequestListPage: React.FC<DisplayRequestListPageProps> = ({ 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "pending" | "prepared" | "done">("all");
-  const [expandedZones, setExpandedZones] = useState<Set<string>>(new Set()); // 접힘 상태 (기본 열림 · done 만 접힘)
+  const [expandedZones, setExpandedZones] = useState<Set<string>>(new Set());
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const canWarehouse = isWarehouseStaff(authSession) || isAdmin(authSession);
-  const canDisplay = isDisplayStaff(authSession) || isAdmin(authSession);
-  const canAdmin = isAdmin(authSession);
+  const canDisplay   = isDisplayStaff(authSession)   || isAdmin(authSession);
+  const canAdmin     = isAdmin(authSession);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -130,7 +147,6 @@ export const DisplayRequestListPage: React.FC<DisplayRequestListPageProps> = ({ 
 
   useEffect(() => { load(); }, [load]);
 
-  // 30초마다 자동 새로고침 (실시간성)
   useEffect(() => {
     const id = setInterval(load, 30000);
     return () => clearInterval(id);
@@ -144,7 +160,7 @@ export const DisplayRequestListPage: React.FC<DisplayRequestListPageProps> = ({ 
   const zoneGroups = useMemo<ZoneGroup[]>(() => {
     const map = new Map<string, ZoneGroup>();
     for (const r of filteredRequests) {
-      const key = r.zone_id || "(구역 미지정)";
+      const key   = r.zone_id || "(구역 미지정)";
       const label = r.zone_label || key;
       let g = map.get(key);
       if (!g) {
@@ -152,11 +168,10 @@ export const DisplayRequestListPage: React.FC<DisplayRequestListPageProps> = ({ 
         map.set(key, g);
       }
       g.requests.push(r);
-      if (r.status === "pending") g.pendingCount++;
+      if (r.status === "pending")   g.pendingCount++;
       else if (r.status === "prepared") g.preparedCount++;
       else g.doneCount++;
     }
-    // 각 그룹 내 · pending → prepared → done 순 · 요청시각 desc
     for (const g of map.values()) {
       g.requests.sort((a, b) => {
         const statusOrder = { pending: 0, prepared: 1, done: 2 };
@@ -165,7 +180,6 @@ export const DisplayRequestListPage: React.FC<DisplayRequestListPageProps> = ({ 
         return new Date(b.requested_at).getTime() - new Date(a.requested_at).getTime();
       });
     }
-    // 구역별 · pending 있는 그룹 먼저 · 그 다음 prepared 있음 · 마지막 완료만
     return Array.from(map.values()).sort((a, b) => {
       const scoreA = a.pendingCount * 100 + a.preparedCount * 10;
       const scoreB = b.pendingCount * 100 + b.preparedCount * 10;
@@ -175,9 +189,9 @@ export const DisplayRequestListPage: React.FC<DisplayRequestListPageProps> = ({ 
   }, [filteredRequests]);
 
   const totalCounts = useMemo(() => ({
-    pending: requests.filter(r => r.status === "pending").length,
+    pending:  requests.filter(r => r.status === "pending").length,
     prepared: requests.filter(r => r.status === "prepared").length,
-    done: requests.filter(r => r.status === "done").length,
+    done:     requests.filter(r => r.status === "done").length,
   }), [requests]);
 
   const toggleZone = (zoneId: string) => {
@@ -189,6 +203,14 @@ export const DisplayRequestListPage: React.FC<DisplayRequestListPageProps> = ({ 
     });
   };
 
+  // 기본 접힘: done 만 있는 그룹
+  const isZoneDefaultCollapsed = (g: ZoneGroup) => g.pendingCount === 0 && g.preparedCount === 0;
+  const collapsed = (g: ZoneGroup): boolean => {
+    const inSet = expandedZones.has(g.zoneId);
+    if (isZoneDefaultCollapsed(g)) return !inSet;
+    return inSet;
+  };
+
   const handlePrepare = async (req: DisplayRequest) => {
     if (!canWarehouse) return;
     setBusyId(req.id);
@@ -197,7 +219,7 @@ export const DisplayRequestListPage: React.FC<DisplayRequestListPageProps> = ({ 
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prepared_by: authSession?.employeeId ?? null,
+          prepared_by:      authSession?.employeeId  ?? null,
           prepared_by_name: authSession?.employeeName ?? "",
         }),
       });
@@ -218,7 +240,7 @@ export const DisplayRequestListPage: React.FC<DisplayRequestListPageProps> = ({ 
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          completed_by: authSession?.employeeId ?? null,
+          completed_by:      authSession?.employeeId  ?? null,
           completed_by_name: authSession?.employeeName ?? "",
         }),
       });
@@ -232,30 +254,105 @@ export const DisplayRequestListPage: React.FC<DisplayRequestListPageProps> = ({ 
   };
 
   const borderClassForGroup = (g: ZoneGroup) => {
-    if (g.pendingCount > 0) return "border-l-4 border-l-amber-400";
+    if (g.pendingCount > 0)  return "border-l-4 border-l-amber-400";
     if (g.preparedCount > 0) return "border-l-4 border-l-sky-400";
     return "border-l-4 border-l-emerald-400 opacity-70";
   };
 
-  // done 만 있는 그룹 · 기본 접힘
-  const isZoneDefaultCollapsed = (g: ZoneGroup) => g.pendingCount === 0 && g.preparedCount === 0;
-  const isCollapsed = (g: ZoneGroup) => {
-    const inSet = expandedZones.has(g.zoneId);
-    return isZoneDefaultCollapsed(g) ? !inSet : inSet && false; // 기본 접힘 그룹 · toggle 시 열림; 기본 열림 그룹 · toggle 시 접힘
+  // ── 액션 셀 ────────────────────────────────────────────────────────────────
+  const ActionCell: React.FC<{ req: DisplayRequest }> = ({ req }) => {
+    const busy = busyId === req.id;
+    if (req.status === "pending") {
+      return (
+        <div className="flex items-center gap-1 flex-wrap">
+          <button
+            type="button"
+            onClick={() => handlePrepare(req)}
+            disabled={!canWarehouse || busy}
+            title={canWarehouse ? "창고 준비 완료 처리" : "창고담당만 가능"}
+            className={`h-7 px-2.5 text-[11px] font-bold rounded-md transition flex items-center gap-1 ${
+              canWarehouse
+                ? "bg-sky-500 hover:bg-sky-600 text-white shadow-sm cursor-pointer"
+                : "bg-slate-100 text-slate-400 cursor-not-allowed"
+            } disabled:opacity-50`}
+          >
+            {busy ? <Loader2 size={11} className="animate-spin" /> : <Package size={11} />}
+            준비완료
+          </button>
+          {canAdmin && (
+            <button
+              type="button"
+              onClick={() => handleComplete(req)}
+              disabled={busy}
+              title="관리자 · 바로 완료"
+              className="h-7 px-2 text-[10px] font-bold rounded-md bg-emerald-100 hover:bg-emerald-200 text-emerald-700 transition cursor-pointer disabled:opacity-50"
+            >
+              {busy ? <Loader2 size={10} className="animate-spin" /> : <CheckCircle2 size={10} />}
+            </button>
+          )}
+        </div>
+      );
+    }
+    if (req.status === "prepared") {
+      return (
+        <div className="flex items-center gap-1 flex-wrap">
+          <button
+            type="button"
+            onClick={() => handleComplete(req)}
+            disabled={(!canDisplay && !canAdmin) || busy}
+            title={canDisplay || canAdmin ? "진열 완료 처리" : "진열담당만 가능"}
+            className={`h-7 px-2.5 text-[11px] font-bold rounded-md transition flex items-center gap-1 ${
+              canDisplay || canAdmin
+                ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm cursor-pointer"
+                : "bg-slate-100 text-slate-400 cursor-not-allowed"
+            } disabled:opacity-50`}
+          >
+            {busy ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle2 size={11} />}
+            완료
+          </button>
+        </div>
+      );
+    }
+    // done
+    return (
+      <span className="text-[10px] text-emerald-600 font-semibold whitespace-nowrap inline-flex items-center gap-0.5">
+        <CheckCircle2 size={10} className="inline" />
+        {req.completed_by_name && <span>{req.completed_by_name}</span>}
+        {req.completed_at && <span className="text-slate-400">{relativeTime(req.completed_at)}</span>}
+      </span>
+    );
   };
-  // 위 로직이 복잡 · 정리: expandedZones = "다르게 처리하는 zone" 목록
-  // 기본 열림 (pending/prepared 있음) · in set = 접힘
-  // 기본 접힘 (done 만) · in set = 열림
-  const collapsed = (g: ZoneGroup): boolean => {
-    const inSet = expandedZones.has(g.zoneId);
-    if (isZoneDefaultCollapsed(g)) return !inSet;
-    return inSet;
+
+  // ── 창고상황 셀 (창고 준비 상황 표시) ────────────────────────────────────
+  const WarehouseCell: React.FC<{ req: DisplayRequest }> = ({ req }) => {
+    if (req.status === "pending") {
+      return (
+        <span className="text-[11px] text-amber-600 font-semibold whitespace-nowrap">
+          준비 전
+        </span>
+      );
+    }
+    if (req.status === "prepared" || req.status === "done") {
+      return (
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[11px] text-sky-700 font-bold whitespace-nowrap inline-flex items-center gap-0.5">
+            <CheckCircle2 size={9} className="inline" /> 창고 준비
+          </span>
+          {req.prepared_by_name && (
+            <span className="text-[10px] text-slate-400">{req.prepared_by_name}{req.prepared_at ? ` · ${relativeTime(req.prepared_at)}` : ""}</span>
+          )}
+        </div>
+      );
+    }
+    return null;
   };
-  void isCollapsed; // 미사용 방지
+
+  // ─── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <main className="flex-1 max-w-[1360px] mx-auto w-full px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-3">
-      {/* 헤더 · 카운트 KPI + 필터 + 새로고침 */}
+
+      {/* 헤더 · KPI 카운트 + 필터 + 새로고침 */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-sm shrink-0">
@@ -267,13 +364,15 @@ export const DisplayRequestListPage: React.FC<DisplayRequestListPageProps> = ({ 
           </div>
         </div>
         <div className="hidden sm:block w-px h-8 bg-slate-200" />
-        <div className="flex items-center gap-1.5">
+        {/* KPI 카운트 */}
+        <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[11px] tabular-nums px-2 py-1 rounded-full bg-amber-100 text-amber-700 font-bold">대기 {totalCounts.pending}</span>
           <span className="text-[11px] tabular-nums px-2 py-1 rounded-full bg-sky-100 text-sky-700 font-bold">준비 {totalCounts.prepared}</span>
           <span className="text-[11px] tabular-nums px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 font-bold">완료 {totalCounts.done}</span>
         </div>
+        {/* 필터 + 새로고침 */}
         <div className="ml-auto flex items-center gap-1.5">
-          <div className="inline-flex bg-slate-100 rounded-lg p-0.5 gap-0.5">
+          <div className="inline-flex bg-slate-100 rounded-lg p-0.5 gap-0.5 flex-wrap">
             {(["all", "pending", "prepared", "done"] as const).map(f => (
               <button
                 key={f}
@@ -298,15 +397,16 @@ export const DisplayRequestListPage: React.FC<DisplayRequestListPageProps> = ({ 
 
       {error && (
         <div className="bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 text-[12px] text-rose-700 font-semibold flex items-center justify-between">
-          {error}
-          <button onClick={load} className="ml-2 underline">재시도</button>
+          <span className="flex items-center gap-1"><XCircle size={13} /> {error}</span>
+          <button onClick={load} className="ml-2 underline cursor-pointer">재시도</button>
         </div>
       )}
 
       {/* 리스트 · 구역별 그룹 */}
       {loading && requests.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center py-16 text-slate-400 gap-2">
-          <Loader2 size={22} className="animate-spin" /> 불러오는 중...
+          <Loader2 size={22} className="animate-spin" />
+          <span className="text-[13px]">불러오는 중...</span>
         </div>
       ) : zoneGroups.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center py-16 text-slate-400 gap-2">
@@ -329,15 +429,15 @@ export const DisplayRequestListPage: React.FC<DisplayRequestListPageProps> = ({ 
                 <button
                   type="button"
                   onClick={() => toggleZone(g.zoneId)}
-                  className="w-full px-3 py-2.5 flex items-center gap-2 hover:bg-slate-50/50 rounded-t-xl transition cursor-pointer"
+                  className="w-full px-3 py-2.5 flex items-center gap-2 hover:bg-slate-50/60 rounded-t-xl transition cursor-pointer"
                 >
                   {isCol
                     ? <ChevronRight size={14} className="text-slate-400 shrink-0" />
                     : <ChevronDown  size={14} className="text-slate-400 shrink-0" />}
-                  <MapPin size={12} className="text-slate-500" />
+                  <MapPin size={12} className="text-slate-500 shrink-0" />
                   <span className="text-[13px] font-black text-slate-800">{g.zoneLabel}</span>
                   <span className="text-[11px] font-semibold text-slate-400 tabular-nums">· {g.requests.length}건</span>
-                  <div className="ml-auto flex items-center gap-1">
+                  <div className="ml-auto flex items-center gap-1 flex-wrap justify-end">
                     {g.pendingCount > 0 && (
                       <span className="text-[10px] tabular-nums px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold">대기 {g.pendingCount}</span>
                     )}
@@ -349,83 +449,132 @@ export const DisplayRequestListPage: React.FC<DisplayRequestListPageProps> = ({ 
                     )}
                   </div>
                 </button>
-                {/* 그룹 상세 리스트 */}
+
+                {/* 그룹 상세 */}
                 {!isCol && (
-                  <ul className="divide-y divide-slate-100 border-t border-slate-100">
-                    {g.requests.map(req => (
-                      <li key={req.id} className="px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 hover:bg-slate-50/40 transition">
-                        {/* 상품 · 요청자 */}
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[12.5px] font-bold text-slate-800 truncate">
-                            {req.product_code
-                              ? <span className="text-slate-700">{req.note?.split(" · ")[0] ?? req.product_code}</span>
-                              : <span className="text-slate-500 italic">{req.category || "구역 단위 요청"}</span>}
-                          </div>
-                          <div className="text-[10.5px] text-slate-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                            {req.product_code && <span className="font-mono">{req.product_code}</span>}
-                            {req.note && !req.note.includes(req.product_code ?? "###") && (
-                              <span className="italic">{req.note}</span>
-                            )}
-                            <span className="inline-flex items-center gap-0.5">
-                              <Clock size={9} /> {relativeTime(req.requested_at)}
-                            </span>
-                            {req.assigned_staff_name && (
-                              <span className="inline-flex items-center gap-0.5">
-                                <User size={9} /> {req.assigned_staff_name}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {/* 플로우 스텝퍼 */}
-                        <div className="sm:w-[140px] shrink-0">
-                          <FlowStepper req={req} />
-                        </div>
-                        {/* 액션 · 준비/완료 */}
-                        <div className="flex items-center gap-1 shrink-0">
-                          {req.status === "pending" ? (
-                            <button
-                              type="button"
-                              onClick={() => handlePrepare(req)}
-                              disabled={!canWarehouse || busyId === req.id}
-                              title={canWarehouse ? "창고 준비 완료 처리" : "창고담당만 가능"}
-                              className={`h-7 px-2.5 text-[11px] font-bold rounded-md transition cursor-pointer flex items-center gap-1 ${
-                                canWarehouse
-                                  ? "bg-sky-500 hover:bg-sky-600 text-white shadow-sm"
-                                  : "bg-slate-100 text-slate-400 cursor-not-allowed"
-                              } disabled:opacity-50`}
+                  <div className="border-t border-slate-100">
+                    {/* ── 데스크탑 테이블 (sm 이상) ─────────────────────────── */}
+                    <table className="hidden sm:table w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                          <th className="px-3 py-2 w-[30%]">상품명</th>
+                          <th className="px-3 py-2 w-[12%]">위치</th>
+                          <th className="px-3 py-2 w-[14%]">담당자</th>
+                          <th className="px-3 py-2 w-[20%]">창고상황</th>
+                          <th className="px-3 py-2 w-[24%]">완료</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {g.requests.map(req => {
+                          const productName = extractProductName(req);
+                          return (
+                            <tr
+                              key={req.id}
+                              className={`hover:bg-slate-50/60 transition ${rowBorderClass(req.status)}`}
                             >
-                              {busyId === req.id ? <Loader2 size={11} className="animate-spin" /> : <Package size={11} />}
-                              준비완료
-                            </button>
-                          ) : req.status === "prepared" ? (
-                            <>
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 font-semibold whitespace-nowrap" title={`준비: ${req.prepared_by_name || "?"} · ${req.prepared_at ? relativeTime(req.prepared_at) : ""}`}>
-                                <CheckCircle2 size={9} className="inline mr-0.5" />준비 {req.prepared_by_name || ""}
+                              {/* 상품명 */}
+                              <td className="px-3 py-2.5 align-top">
+                                <div className="flex flex-col gap-0.5">
+                                  <div className="text-[12.5px] font-bold text-slate-800 leading-tight break-words whitespace-normal">
+                                    {productName
+                                      ? productName
+                                      : <span className="text-slate-400 italic">{req.category || "구역 단위 요청"}</span>}
+                                  </div>
+                                  {req.product_code && (
+                                    <span className="text-[10px] text-slate-400 tabular-nums">{req.product_code}</span>
+                                  )}
+                                  <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                                    <StatusChip status={req.status} />
+                                    <span className="text-[10px] text-slate-400 inline-flex items-center gap-0.5">
+                                      <Clock size={8} /> {relativeTime(req.requested_at)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </td>
+                              {/* 위치 */}
+                              <td className="px-3 py-2.5 align-top">
+                                <span className="text-[12px] font-bold text-slate-700 whitespace-nowrap inline-flex items-center gap-0.5">
+                                  <MapPin size={10} className="text-slate-400" />
+                                  {req.zone_id || "-"}
+                                </span>
+                                {req.zone_label && req.zone_label !== req.zone_id && (
+                                  <div className="text-[10px] text-slate-400 mt-0.5 leading-tight break-words whitespace-normal">{req.zone_label}</div>
+                                )}
+                              </td>
+                              {/* 담당자 */}
+                              <td className="px-3 py-2.5 align-top">
+                                <span className="text-[12px] text-slate-700 whitespace-nowrap inline-flex items-center gap-0.5">
+                                  <User size={10} className="text-slate-400" />
+                                  {req.assigned_staff_name || <span className="text-slate-400 italic">미지정</span>}
+                                </span>
+                              </td>
+                              {/* 창고상황 */}
+                              <td className="px-3 py-2.5 align-top">
+                                <WarehouseCell req={req} />
+                              </td>
+                              {/* 완료 (액션) */}
+                              <td className="px-3 py-2.5 align-top">
+                                <ActionCell req={req} />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+
+                    {/* ── 모바일 카드 형식 (sm 미만) ────────────────────────── */}
+                    <ul className="sm:hidden divide-y divide-slate-100">
+                      {g.requests.map(req => {
+                        const productName = extractProductName(req);
+                        return (
+                          <li
+                            key={req.id}
+                            className={`px-3 py-3 flex flex-col gap-2 hover:bg-slate-50/40 transition ${rowBorderClass(req.status)}`}
+                          >
+                            {/* 상단: 상품명 + 상태칩 */}
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[13px] font-bold text-slate-800 leading-tight break-words whitespace-normal">
+                                  {productName
+                                    ? productName
+                                    : <span className="text-slate-400 italic">{req.category || "구역 단위 요청"}</span>}
+                                </div>
+                                {req.product_code && (
+                                  <span className="text-[10px] text-slate-400 tabular-nums">{req.product_code}</span>
+                                )}
+                              </div>
+                              <StatusChip status={req.status} />
+                            </div>
+
+                            {/* 메타: 위치 · 담당자 · 요청시각 */}
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <span className="text-[11px] text-slate-600 font-semibold inline-flex items-center gap-0.5">
+                                <MapPin size={9} className="text-slate-400" />
+                                {req.zone_id || "구역 미지정"}
+                                {req.zone_label && req.zone_label !== req.zone_id && ` · ${req.zone_label}`}
                               </span>
-                              <button
-                                type="button"
-                                onClick={() => handleComplete(req)}
-                                disabled={(!canDisplay && !canAdmin) || busyId === req.id}
-                                title={canDisplay || canAdmin ? "진열 완료 처리" : "진열담당만 가능"}
-                                className={`h-7 px-2.5 text-[11px] font-bold rounded-md transition cursor-pointer flex items-center gap-1 ${
-                                  canDisplay || canAdmin
-                                    ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm"
-                                    : "bg-slate-100 text-slate-400 cursor-not-allowed"
-                                } disabled:opacity-50`}
-                              >
-                                {busyId === req.id ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle2 size={11} />}
-                                완료
-                              </button>
-                            </>
-                          ) : (
-                            <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold whitespace-nowrap" title={`완료: ${req.completed_by_name || "?"} · ${req.completed_at ? relativeTime(req.completed_at) : ""}`}>
-                              <CheckCircle2 size={10} className="inline mr-0.5" />완료 {req.completed_by_name || ""}
-                            </span>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                              {req.assigned_staff_name && (
+                                <span className="text-[11px] text-slate-500 inline-flex items-center gap-0.5">
+                                  <User size={9} /> {req.assigned_staff_name}
+                                </span>
+                              )}
+                              <span className="text-[10px] text-slate-400 inline-flex items-center gap-0.5">
+                                <Clock size={8} /> {relativeTime(req.requested_at)}
+                              </span>
+                            </div>
+
+                            {/* 창고상황 + 액션 */}
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <div className="flex-1">
+                                <WarehouseCell req={req} />
+                              </div>
+                              <ActionCell req={req} />
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
                 )}
               </div>
             );
@@ -433,20 +582,17 @@ export const DisplayRequestListPage: React.FC<DisplayRequestListPageProps> = ({ 
         </div>
       )}
 
-      {/* 하단 필터 안내 */}
-      <div className="text-[10px] text-slate-400 text-center pt-2">
+      {/* 하단 안내 */}
+      <div className="text-[10px] text-slate-400 text-center pt-1 pb-2">
         완료 요청 · 7일 후 자동 정리 · 30초 자동 새로고침
         <span className="mx-1">·</span>
         {canWarehouse && <span className="text-sky-600 font-semibold mr-1">창고담당</span>}
-        {canDisplay && <span className="text-emerald-600 font-semibold mr-1">진열담당</span>}
-        {canAdmin && <span className="text-violet-600 font-semibold mr-1">관리자</span>}
+        {canDisplay   && <span className="text-emerald-600 font-semibold mr-1">진열담당</span>}
+        {canAdmin     && <span className="text-violet-600 font-semibold mr-1">관리자</span>}
         {!canWarehouse && !canDisplay && !canAdmin && <span>조회 전용 (버튼 비활성)</span>}
       </div>
     </main>
   );
 };
-
-// 미사용 import 제거 방지 (Filter, void 로 안전)
-void Filter;
 
 export default DisplayRequestListPage;

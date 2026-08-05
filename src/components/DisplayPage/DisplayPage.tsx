@@ -1456,7 +1456,19 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           />
         </main>
       ) : dpSubTab === "display-request" ? (
-        <DisplayRequestListPage authSession={authSession} />
+        /* 2026-08-05 · 구역도 기본 접힘 (collapsible+defaultCollapsed) + 진열요청 리스트 */
+        <div className="flex flex-col flex-1 min-h-0">
+          <div className="max-w-[1360px] mx-auto w-full px-3 sm:px-4 pt-3">
+            <StoreZoneMap
+              collapsible
+              defaultCollapsed
+              title="구역도 보기"
+              mobileTable
+              compact
+            />
+          </div>
+          <DisplayRequestListPage authSession={authSession} />
+        </div>
       ) : (dpSubTab === "purchase-order" || dpSubTab === "purchase" || dpSubTab === "payment" || dpSubTab === "statistics") && dpCanSeeStockManage ? (
         // 2026-08-03 · 4개 서브탭 각각 OrderManagePage · initialTopTab prop 만 · re-mount 없이 useEffect 로 감지
         // key prop 제거 · 재mount 시 매번 재fetch · 로딩 느림 유발 (이전 방식으로 원복)
