@@ -418,20 +418,23 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
 
   return (
     <>
-      <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+      <div className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-sm">
         {/* 상품명 */}
         {S.header && (<>
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <p className="text-[14px] font-black text-slate-800 break-words whitespace-normal leading-tight flex-1">{product.name}</p>
+          {/* 상품명 + 숨기기 버튼 · 좁은 화면에서 버튼이 아래로 내려가도록 flex-wrap */}
+          <div className="flex items-start gap-2 mb-1 flex-wrap">
+            <p className="text-[15px] font-black text-slate-800 whitespace-normal leading-snug flex-1 min-w-0 break-keep">
+              {product.name}
+            </p>
             <button
               type="button"
               onClick={toggleHidden}
               disabled={hideSaving}
               title={isHidden ? "숨김 해제 · 검색·발주 리스트에 다시 표시" : "이 상품 숨김 · 검색·발주 리스트에서 제외"}
-              className={`shrink-0 inline-flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-md border transition cursor-pointer ${
+              className={`shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition cursor-pointer ${
                 isHidden
                   ? "bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100"
-                  : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-400 hover:text-slate-700"
+                  : "bg-white border-slate-200 text-slate-400 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-600"
               } ${hideSaving ? "opacity-60 cursor-wait" : ""}`}
             >
               {hideSaving ? <Loader2 size={11} className="animate-spin" /> : (isHidden ? <Eye size={11} /> : <EyeOff size={11} />)}
@@ -439,8 +442,8 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
             </button>
           </div>
           {isHidden && (
-            <span className="inline-flex text-[12px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 border border-amber-300 mb-1.5">
-              숨김
+            <span className="inline-flex text-[11px] font-semibold px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 border border-amber-200 mb-1.5">
+              숨김 처리됨
             </span>
           )}
           {hideError && <p className="text-[11px] text-rose-600 mb-1.5">{hideError}</p>}
@@ -448,43 +451,47 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
 
         {/* ── 배정 구역: 전산/실제 인라인 ── */}
         {S.zoneAssignment && (<>
-        <div className="flex items-center gap-1.5 mb-2 px-2.5 py-2 rounded-xl border border-slate-200 bg-slate-50/60">
+        <div className="flex items-stretch gap-2 mb-2 px-2.5 py-2 rounded-xl border border-slate-200 bg-slate-50/60">
           {/* 전산배치구역 */}
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold text-slate-500 leading-none mb-0.5">전산</p>
-            <p className="text-[13px] font-black text-slate-800 leading-tight break-words whitespace-normal">{specZone}</p>
+            <p className="text-[10px] font-semibold text-slate-400 leading-none mb-1 uppercase tracking-wide">전산</p>
+            <p className="text-[13px] font-black text-slate-700 leading-snug break-keep whitespace-normal">{specZone}</p>
           </div>
 
           {/* 화살표 */}
-          <ArrowRight size={13} className={`shrink-0 ${hasMismatch ? "text-orange-400" : "text-slate-300"}`} />
+          <div className="flex items-center">
+            <ArrowRight size={14} className={`shrink-0 ${hasMismatch ? "text-orange-400" : "text-slate-300"}`} />
+          </div>
 
           {/* 실제배치구역 */}
-          <div className={`min-w-0 flex-1 rounded-lg px-2 py-1 ${
-            hasMismatch ? "bg-orange-50" : realMap ? "bg-teal-50" : "bg-white border border-dashed border-slate-300"
+          <div className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 ${
+            hasMismatch ? "bg-orange-50 border border-orange-200" : realMap ? "bg-teal-50 border border-teal-200" : "bg-white border border-dashed border-slate-200"
           }`}>
-            <p className={`text-[11px] font-semibold leading-none mb-0.5 ${
+            <p className={`text-[10px] font-semibold leading-none mb-1 uppercase tracking-wide ${
               hasMismatch ? "text-orange-500" : realMap ? "text-teal-600" : "text-slate-400"
             }`}>실제</p>
             {realMap ? (
-              <p className={`text-[13px] font-black leading-tight break-words whitespace-normal ${hasMismatch ? "text-red-500" : "text-teal-700"}`}>{realMap}</p>
+              <p className={`text-[13px] font-black leading-snug break-keep whitespace-normal ${hasMismatch ? "text-orange-700" : "text-teal-700"}`}>{realMap}</p>
             ) : (
-              <p className="text-[11px] font-semibold text-slate-400">미등록</p>
+              <p className="text-[12px] font-semibold text-slate-400">미등록</p>
             )}
           </div>
 
           {/* 변경/등록 버튼 */}
-          <button
-            onClick={() => setMapSelectorOpen(true)}
-            disabled={saving}
-            className={`shrink-0 flex items-center gap-0.5 px-2 py-1.5 rounded-lg border text-[11px] font-black transition cursor-pointer ${
-              realMap
-                ? "bg-white border-slate-300 text-slate-500 hover:border-teal-400 hover:text-teal-600"
-                : "bg-teal-500 border-teal-600 text-white hover:bg-teal-600"
-            }`}
-          >
-            {saving ? <Loader2 size={10} className="animate-spin" /> : <Pencil size={10} />}
-            {saving ? "" : realMap ? "변경" : "등록"}
-          </button>
+          <div className="flex items-center">
+            <button
+              onClick={() => setMapSelectorOpen(true)}
+              disabled={saving}
+              className={`shrink-0 flex items-center gap-1 px-2.5 py-2 rounded-lg border text-[11px] font-black transition cursor-pointer min-h-[44px] ${
+                realMap
+                  ? "bg-white border-slate-200 text-slate-500 hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50"
+                  : "bg-teal-500 border-teal-600 text-white hover:bg-teal-600"
+              }`}
+            >
+              {saving ? <Loader2 size={11} className="animate-spin" /> : <Pencil size={11} />}
+              {saving ? "" : realMap ? "변경" : "등록"}
+            </button>
+          </div>
         </div>
 
         </>)}
@@ -526,40 +533,40 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
           const zoneS3 = storeZones[2] ?? "";
           return (
             <div className={`rounded-xl border px-3 py-2 mb-2.5 ${isLow ? "bg-red-50 border-red-200" : "bg-slate-50 border-slate-200"}`}>
-              {/* 2026-07-16 · 헤더 · 재고현황 라벨(클릭 시 접기/펼치기) + 재고세기 버튼 + 부족 뱃지 */}
-              <div className="flex items-center justify-between mb-1.5">
+              {/* 2026-07-16 · 헤더 · 재고현황 라벨(클릭 시 접기/펼치기) + 재고세기 버튼 + 부족 표시 */}
+              <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
                 <button
                   type="button"
                   onClick={() => setStockSectionCollapsed(c => !c)}
-                  className="flex items-center gap-1.5 hover:bg-white/40 -mx-1 px-1 py-0.5 rounded transition cursor-pointer"
+                  className="flex items-center gap-1.5 hover:bg-white/40 -mx-1 px-1 py-0.5 rounded transition cursor-pointer flex-1 min-w-0"
                   title={stockSectionCollapsed ? "펼치기" : "접기"}
                 >
                   {stockSectionCollapsed
                     ? <ChevronRight size={13} className="text-slate-400 shrink-0" />
                     : <ChevronDown size={13} className="text-slate-500 shrink-0" />}
-                  <Package size={11} className={isLow ? "text-red-500" : "text-slate-500"} />
-                  <p className="text-[13px] font-black text-slate-800">재고현황</p>
+                  <Package size={11} className={`shrink-0 ${isLow ? "text-red-500" : "text-slate-500"}`} />
+                  <p className={`text-[13px] font-black ${isLow ? "text-red-600" : "text-slate-800"}`}>재고현황</p>
                   {isLow && (
-                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-red-100 text-red-600 text-[11px] font-black rounded-md border border-red-200">
-                      <AlertTriangle size={9} /> 부족
+                    <span className="text-[11px] font-semibold text-red-500 flex items-center gap-0.5 shrink-0">
+                      <AlertTriangle size={10} /> 부족
                     </span>
                   )}
                   {stockSectionCollapsed && (
-                    <span className="text-[12px] tabular-nums font-black text-slate-500 ml-1">현재고 {cur ?? "-"} · 적정 {opt ?? "-"}</span>
+                    <span className="text-[11px] tabular-nums font-semibold text-slate-500 ml-1 truncate">현재고 {cur ?? "-"} · 적정 {opt ?? "-"}</span>
                   )}
                 </button>
                 {S.actualStockInput && !stockSectionCollapsed && (
                   <button
                     onClick={() => setStockCounterOpen(true)}
-                    className="flex items-center gap-1 px-2 py-1 min-h-9 bg-green-500 hover:bg-green-600 text-white text-[12px] font-black rounded-lg transition cursor-pointer shadow-sm"
+                    className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 min-h-9 bg-emerald-500 hover:bg-emerald-600 text-white text-[12px] font-black rounded-lg transition cursor-pointer shadow-sm"
                   >
                     <ScanLine size={11} /> 재고 세기
                   </button>
                 )}
               </div>
 
-              {/* 2026-08-03 · 상단 2열 · 현재고 · 추천적정재고 */}
-              <div className="grid grid-cols-2 gap-1.5">
+              {/* 2026-08-03 · 상단 2열 · 현재고 · 추천적정재고 · 접힌 상태에서는 숨김 */}
+              {!stockSectionCollapsed && <div className="grid grid-cols-2 gap-1.5">
                 {/* 현재고 */}
                 <div className="text-center bg-white rounded-lg border border-slate-200 py-1.5 px-1">
                   <p className="text-[12px] font-semibold text-slate-500 mb-0.5">현재고</p>
@@ -595,13 +602,13 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                     >{opt ?? "-"}</button>
                   )}
                 </div>
-              </div>
+              </div>}
 
               {/* 2026-08-03 · 하단 5열 · 창고1 · 창고2 · 매장1 · 매장2 · 매장3
                     - 좁은 화면(360px 미만) · 5열이 wrap 될 수 있도록 grid-cols-2 fallback
                     - 창고: cyan 계열 (창고1 · 창고2 진하게)
                     - 매장1/2/3: violet 계열 */}
-              {S.actualStockInput && (
+              {S.actualStockInput && !stockSectionCollapsed && (
                 <div className="grid grid-cols-2 min-[360px]:grid-cols-3 min-[520px]:grid-cols-5 gap-1.5 mt-1.5">
                   {/* 창고1 */}
                   <div className="bg-white rounded-lg border border-cyan-200 py-1 px-1 text-center">
@@ -727,35 +734,35 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                 </div>
               )}
 
-              {/* 하단 · 합계 + 차이 (실재고 입력 시만) */}
-              {S.actualStockInput && hasInput && (
-                <div className="flex items-center justify-between text-[12px] font-semibold px-0.5 mt-1.5">
-                  <span className="text-slate-600">실재고 합계: <span className="text-purple-700">{totalActual}개</span></span>
+              {/* 하단 · 합계 + 차이 (실재고 입력 시만, 접히면 숨김) */}
+              {S.actualStockInput && !stockSectionCollapsed && hasInput && (
+                <div className="flex items-center justify-between text-[12px] font-semibold px-0.5 mt-1.5 flex-wrap gap-1">
+                  <span className="text-slate-600">실재고 합계: <span className="tabular-nums font-black text-violet-700">{totalActual}개</span></span>
                   {diff != null && (
-                    <span className={diff > 0 ? "text-emerald-600" : diff < 0 ? "text-red-600" : "text-gray-500"}>
+                    <span className={`tabular-nums font-black ${diff > 0 ? "text-emerald-600" : diff < 0 ? "text-red-600" : "text-slate-400"}`}>
                       현재고 대비 {diff > 0 ? "+" : ""}{diff}개
                     </span>
                   )}
                 </div>
               )}
               {/* 편집 에러 표시 */}
-              {editingKey === "optimal_stock" && editError && (
+              {!stockSectionCollapsed && editingKey === "optimal_stock" && editError && (
                 <p className="text-[11px] text-red-500 mt-1">{editError}</p>
               )}
               {/* 창고/매장 저장 에러 · 2026-08-03 · 5분리 */}
-              {S.actualStockInput && (w1Status === "error" && w1Error) && (
+              {S.actualStockInput && !stockSectionCollapsed && (w1Status === "error" && w1Error) && (
                 <p className="text-[11px] text-red-500 text-center mt-1">창고1: {w1Error}</p>
               )}
-              {S.actualStockInput && (w2Status === "error" && w2Error) && (
+              {S.actualStockInput && !stockSectionCollapsed && (w2Status === "error" && w2Error) && (
                 <p className="text-[11px] text-red-500 text-center mt-1">창고2: {w2Error}</p>
               )}
-              {S.actualStockInput && (s1Status === "error" && s1Error) && (
+              {S.actualStockInput && !stockSectionCollapsed && (s1Status === "error" && s1Error) && (
                 <p className="text-[11px] text-red-500 text-center mt-1">매장1: {s1Error}</p>
               )}
-              {S.actualStockInput && (s2Status === "error" && s2Error) && (
+              {S.actualStockInput && !stockSectionCollapsed && (s2Status === "error" && s2Error) && (
                 <p className="text-[11px] text-red-500 text-center mt-1">매장2: {s2Error}</p>
               )}
-              {S.actualStockInput && (s3Status === "error" && s3Error) && (
+              {S.actualStockInput && !stockSectionCollapsed && (s3Status === "error" && s3Error) && (
                 <p className="text-[11px] text-red-500 text-center mt-1">매장3: {s3Error}</p>
               )}
             </div>
@@ -993,15 +1000,15 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
         onClick={() => setCollapsed(c => !c)}
         className="w-full flex flex-col gap-1 text-left hover:bg-slate-50 -mx-2 px-2 py-1 rounded transition cursor-pointer"
       >
-        {/* 1행 · 아이콘 · 상품명 · "매입 이력" · 화살표 */}
-        <div className="flex items-center gap-1.5 flex-wrap">
+        {/* 1행 · 아이콘 · "매입 이력" 라벨 · 화살표 */}
+        <div className="flex items-center gap-1.5">
           <TrendingUp size={13} className="text-emerald-600 shrink-0" />
+          <span className="text-[13px] font-black text-slate-800">매입 이력</span>
           {productName && (
-            <span className="text-[12px] font-black text-slate-800 break-words whitespace-normal leading-tight">
+            <span className="text-[11px] font-semibold text-slate-400 break-keep whitespace-normal leading-tight min-w-0 flex-1 line-clamp-1">
               {productName}
             </span>
           )}
-          <span className="text-[11px] font-black text-emerald-700">· 매입 이력</span>
           {collapsed
             ? <ChevronRight size={14} className="ml-auto text-slate-400 shrink-0" />
             : <ChevronDown size={14} className="ml-auto text-slate-600 shrink-0" />}
