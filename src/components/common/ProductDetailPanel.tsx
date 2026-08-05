@@ -268,8 +268,8 @@ export const ProductDetailMobileHeader: React.FC<{
   product: ProductInfo;
   onClose: () => void;
 }> = ({ product, onClose }) => (
-  /* sm+ 에서 숨김 · 모바일 전용 sticky 헤더 */
-  <div className="sm:hidden sticky top-0 z-[60] bg-white border-b border-slate-200 shadow-sm">
+  /* lg+ 에서 숨김 · 모바일+태블릿 전용 sticky 헤더 */
+  <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-slate-200 shadow-sm">
     <div className="flex items-center gap-2 px-3 py-1.5">
       {/* 터치 대상 최소 44×44px */}
       <button
@@ -498,18 +498,18 @@ export const ProductDetailRightPanel: React.FC<ProductDetailRightPanelProps> = (
   <div
     className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 transition-transform duration-150 ${
       selected
-        ? /* 모바일: fullscreen 오버레이 · sm+: 정적 패널 */
-          "fixed inset-0 z-50 bg-slate-50 overflow-y-auto sm:static sm:z-auto sm:bg-transparent sm:overflow-visible"
+        ? /* 모바일+태블릿(<lg): fullscreen 오버레이 · lg+: 정적 패널 */
+          "fixed inset-0 z-50 bg-slate-50 overflow-y-auto lg:static lg:z-auto lg:bg-transparent lg:overflow-visible"
         : ""
     }`}
   >
-    {/* 모바일 전용 sticky 헤더 (sm+ 에서 sm:hidden 으로 자동 숨김) */}
+    {/* 모바일+태블릿 전용 sticky 헤더 (lg+ 에서 lg:hidden 으로 자동 숨김) */}
     {selected && <ProductDetailMobileHeader product={selected} onClose={onClose} />}
     {!selected ? (
       <ProductDetailEmpty message={emptyMessage} sub={emptySub} />
     ) : (
-      /* 모바일 fullscreen 내부 측면·하단 여백 · sm+ 에서 제거 */
-      <div className="flex flex-col gap-3 px-3 pb-8 pt-1 sm:px-0 sm:pb-0 sm:pt-0">
+      /* 모바일+태블릿 fullscreen 내부 측면·하단 여백 · lg+ 에서 제거 */
+      <div className="flex flex-col gap-3 px-3 pb-8 pt-1 lg:px-0 lg:pb-0 lg:pt-0">
         <ProductDetailPanel
           product={selected}
           onProductUpdate={onProductUpdate}
