@@ -96,10 +96,17 @@ function extractPayload(req: Request): JwtPayload | null {
 // ─────────────────────────────────────────────────
 // 미들웨어: 로그인 확인 (level 무관)
 // ─────────────────────────────────────────────────
+// 2026-08-05 T3 근본 픽스 · app.use(requireAuth, router) 는 requireAuth 를 `/` 에 mount 함
+//   → 요청 모든 경로 (SPA 루트, sw.js, assets, /api/* 등) 에 적용되던 버그
+//   해결: /api/ 로 시작하지 않는 요청 (SPA·정적자원·서비스워커) 은 skip
+//         공개 /api 경로 (/api/auth/, /api/products.json 등 authRouter 마운트) 는 그 라우터에서 처리됨
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
+  // 정적 자원 / SPA / 서비스워커 등 · /api/ 접두어 없으면 인증 skip (Vite·express.static 이 응답)
+  if (!req.path.startsWith("/api/")) {
+    return next();
+  }
   const payload = extractPayload(req);
   if (!payload) {
-    // 2026-08-05 T3 hotfix debug · 401 원인 로깅 (일시적)
     const hasCookie = !!req.cookies?.[COOKIE_NAME];
     const hasHeader = typeof req.headers["authorization"] === "string";
     const secretSet = !!JWT_SECRET;
@@ -107,7 +114,6 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     res.status(401).json({ error: "인증이 필요합니다. 다시 로그인해주세요.", code: "UNAUTHORIZED" });
     return;
   }
-  // req 에 payload 첨부 — 이후 핸들러에서 req.authUser 로 참조 가능
   (req as any).authUser = payload;
   next();
 }
