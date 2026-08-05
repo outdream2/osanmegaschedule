@@ -3338,11 +3338,28 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   }, [monthlyCalc, form.weekdayHourly, form.weekendHourly, weeklyWeekdayDays, weeklyWeekendDays]);
 
   // 직원 선택
+  //   T-CTR-10 (2026-08-05) · 근로자 설정 시급 자동 반영
+  //     · 우선순위: 직원 override (settings.employeeWageOverrides[emp.id])
+  //                → 직군 wageRates (settings.wageRates[position])
+  //                → defaultWageForPosition (약사=35000/40000 · 그 외=10030/12000)
+  //     · 조건: 사용자가 기존에 시급을 수동 편집하지 않은 경우 (default 값 "35000"/"40000" 인 경우 or 빈 값)
+  //             다른 직원으로 스위치할 때는 이전 자동값을 새 직원의 자동값으로 덮어씀 (수동 편집이 없는 한)
+  //     · 실패 (설정 없음) 시 silent · 기존 값 유지
   const onSelectEmployee = (empIdRaw: string) => {
     if (!empIdRaw) { upd("employeeId", null); return; }
     const empId = Number(empIdRaw);
     const emp = employees.find(e => e.id === empId);
     if (!emp) { upd("employeeId", empId); return; }
+
+    // 시급 조회: override → 직군 → default
+    const positionRaw = String(emp.position || "").trim();
+    const empOverride = settings.employeeWageOverrides?.[emp.id];
+    const positionRate = positionRaw ? settings.wageRates?.[positionRaw] : undefined;
+    const resolvedRate: WageRate | null =
+      (empOverride && (empOverride.weekday > 0 || empOverride.weekend > 0)) ? empOverride
+      : (positionRate && (positionRate.weekday > 0 || positionRate.weekend > 0)) ? positionRate
+      : (positionRaw ? defaultWageForPosition(positionRaw) : null);
+
     setForm(prev => ({
       ...prev,
       employeeId: emp.id,
@@ -3350,8 +3367,13 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       employeePhone: emp.phone || prev.employeePhone,
       employeeAddress: emp.address || prev.employeeAddress,
       annualLeaveDays: emp.annual_leave_days != null ? String(emp.annual_leave_days) : prev.annualLeaveDays,
+      // T-CTR-10 · 시급 자동 반영 (수동 편집 여부와 무관하게 · 신규 직원 선택 시 새로 세팅)
+      //  → 사용자가 편집 여부를 판단하기 어렵고 · 직원 스위칭 = 명시적 재세팅 의도로 해석
+      //  → resolvedRate 가 null 이면 (position 이 비어있으면) 기존 값 유지
+      weekdayHourly: resolvedRate ? String(resolvedRate.weekday) : prev.weekdayHourly,
+      weekendHourly: resolvedRate ? String(resolvedRate.weekend) : prev.weekendHourly,
       employeeCategory: (() => {
-        const pos = String(emp.position || "").trim();
+        const pos = positionRaw;
         if (pos === "약사")  return "약사" as const;
         if (pos === "매장")  return "매장" as const;
         if (pos === "창고")  return "창고" as const;
@@ -3359,7 +3381,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         return "기타" as const;
       })(),
       employeeCategoryCustom: (() => {
-        const pos = String(emp.position || "").trim();
+        const pos = positionRaw;
         return pos && pos !== "약사" ? pos : prev.employeeCategoryCustom;
       })(),
       contractType: (() => {
