@@ -15,6 +15,7 @@ import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 // 2026-08-04 · 매입이력 공통 리스트 컴포넌트
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
+import { fmtWonCompact } from "../../lib/format";
 
 interface VendorListEditorProps {
   // 기존 API 호환용 · 무시됨 (모달 방식으로 통일)
@@ -87,10 +88,7 @@ const formatBizNum = (s: string | null): string => {
   if (d.length !== 10) return d;
   return `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5)}`;
 };
-const fmtWon = (n: number): string =>
-  n >= 1_0000_0000 ? `${(n / 1_0000_0000).toFixed(1)}억` :
-  n >= 10000 ? `${(n / 10000).toFixed(1)}만` :
-  `${n.toLocaleString()}원`;
+const fmtWon = fmtWonCompact;
 
 // compact 모드 전용 · 분류별 좌측 컬러 바
 const CATEGORY_LEFT_BORDER: Record<string, string> = {

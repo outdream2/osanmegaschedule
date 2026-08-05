@@ -1,0 +1,71 @@
+// src/lib/format.ts
+// 공통 포맷 유틸 · fmtWon · fmtDate · fmtDateShort · fmtDateYMD · fmtDateMD
+// 2026-08-06 · T-SLIM · 중복 제거 통합
+
+// ─── 통화 ─────────────────────────────────────────────────────────────────────
+
+/**
+ * 원화 컴팩트 포맷 (null 없는 경우):
+ *   1억 이상 → "X.X억"
+ *   1만 이상 → "X.X만"
+ *   미만      → "X,XXX원"
+ * null/undefined/NaN 은 처리 안 함 — 호출자가 보장해야 함
+ */
+export function fmtWonCompact(n: number): string {
+  if (n >= 100_000_000) return `${(n / 100_000_000).toFixed(1)}억`;
+  if (n >= 10_000) return `${(n / 10_000).toFixed(1)}만`;
+  return `${n.toLocaleString()}원`;
+}
+
+/**
+ * 원화 컴팩트 포맷 (null-safe):
+ *   null / undefined / NaN → "-"
+ *   나머지 → fmtWonCompact
+ */
+export function fmtWon(n: number | null | undefined): string {
+  if (n == null) return "-";
+  const v = Number(n);
+  if (!Number.isFinite(v)) return "-";
+  return fmtWonCompact(v);
+}
+
+// ─── 날짜 ─────────────────────────────────────────────────────────────────────
+
+/**
+ * "M/D" 형식 — 게시판 날짜 등 짧은 표기
+ *   "2026-08-06T10:30:00Z" → "8/6"
+ */
+export function fmtDateShort(iso: string | null | undefined): string {
+  if (!iso) return "-";
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "-";
+    return `${d.getMonth() + 1}/${d.getDate()}`;
+  } catch { return "-"; }
+}
+
+/**
+ * "YYYY.MM.DD" 형식 — 휴가 기간, 사직서 날짜 등
+ *   "2026-08-06" → "2026.08.06"
+ */
+export function fmtDateYMD(iso: string | null | undefined): string {
+  if (!iso) return "-";
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "-";
+    return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+  } catch { return String(iso); }
+}
+
+/**
+ * "M/D HH:MM" 형식 — 요청 일시, 휴가 신청일 등 짧은 날짜+시간
+ *   "2026-08-06T10:30:00Z" → "8/6 10:30" (로컬 시간)
+ */
+export function fmtDateMD(iso: string | null | undefined): string {
+  if (!iso) return "-";
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "-";
+    return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  } catch { return String(iso); }
+}

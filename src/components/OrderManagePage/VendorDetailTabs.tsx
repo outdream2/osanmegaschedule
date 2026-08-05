@@ -12,6 +12,8 @@ import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
+// T-CSS Phase 2 · 2026-08-06
+import { CARD_BASE } from "../../styles/tokens";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -364,7 +366,7 @@ const HistoryContent: React.FC<{
 
       {/* SKU 집계 테이블 */}
       {viewMode === "sku" && (
-        <div className="flex-1 min-h-0 overflow-auto bg-white rounded-xl border border-slate-200 shadow-sm">
+        <div className={`${CARD_BASE} flex-1 min-h-0 overflow-auto`}>
           <table className="w-full text-xs min-w-[500px]">
             <thead className="sticky top-0 bg-white z-10 border-b border-slate-100">
               <tr className="text-[10px] text-slate-400 uppercase tracking-wider">
@@ -416,7 +418,7 @@ const HistoryContent: React.FC<{
 
       {/* 전체 원장 테이블 · 2026-08-04 공통 PurchaseHistoryList 사용 */}
       {viewMode === "all" && (
-        <div className="flex-1 min-h-0 overflow-hidden bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col">
+        <div className={`${CARD_BASE} flex-1 min-h-0 overflow-hidden flex flex-col`}>
           {selectedCode && (
             <div className="px-3 py-1.5 border-b border-emerald-100 bg-emerald-50/50 flex items-center gap-2 shrink-0">
               <Filter size={11} className="text-emerald-600" />
@@ -571,7 +573,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
       />
 
       {/* 기간 필터 + 새로고침 */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+      <div className={`${CARD_BASE} px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5`}>
         <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">기간</span>
         <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-lg p-0.5 gap-0.5">
           <button onClick={() => { setPeriodSeason(null); setPeriodMonths(0); }}
@@ -603,7 +605,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
       </div>
 
       {/* 탭 바 */}
-      <div className="flex bg-white rounded-xl border border-slate-200 shadow-sm p-1 gap-1">
+      <div className={`${CARD_BASE} flex p-1 gap-1`}>
         {TABS.map(tab => (
           <button
             key={tab.key}
@@ -623,7 +625,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
       {/* 탭 컨텐츠 */}
       <div className="flex-1 min-h-0 flex flex-col">
         {activeTab === "balance" && (
-          <div className="flex-1 min-h-0 flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className={`${CARD_BASE} flex-1 min-h-0 flex flex-col overflow-hidden`}>
             {/* 탭 내 KPI 3개 · 매입금액 · 결제금액 · 남은잔고 (미결제) */}
             {/* 2026-08-03 · #193 · VAT 소계 subtitle 추가 (vat_included 설정 시 · 부가세 신고 준비용) */}
             {ledger && !ledgerLoading && (() => {

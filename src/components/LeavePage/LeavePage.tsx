@@ -4,6 +4,7 @@ import {
   RefreshCw, Plus, X, Trash2, ChevronDown, Loader2,
 } from "lucide-react";
 import type { AuthSession } from "../../types";
+import { fmtDateYMD, fmtDateMD } from "../../lib/format";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 
 interface LeaveRequest {
@@ -45,19 +46,8 @@ const STATUS_COLOR: Record<string, string> = {
   rejected: "text-rose-600 bg-rose-50 border-rose-200",
 };
 
-function fmtDate(iso: string) {
-  try {
-    const d = new Date(iso);
-    return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
-  } catch { return iso; }
-}
-
-function fmtDateTime(iso: string) {
-  try {
-    const d = new Date(iso);
-    return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-  } catch { return iso; }
-}
+const fmtDate = fmtDateYMD;
+const fmtDateTime = fmtDateMD;
 
 function today() {
   return new Date().toISOString().slice(0, 10);

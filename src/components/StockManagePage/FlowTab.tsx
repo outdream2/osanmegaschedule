@@ -18,6 +18,7 @@ import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";
 import { matchClassFilter, type ClassFilter } from "../../utils/productClassify";
 import { EmptyState } from "../common/EmptyState";
+import { fmtWonCompact } from "../../lib/format";
 import { LoadingState } from "../common/LoadingState";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
 
@@ -55,11 +56,7 @@ function fmt(n: number): string {
   return n.toLocaleString();
 }
 
-function fmtWon(n: number): string {
-  if (n >= 10000_0000) return `${(n / 10000_0000).toFixed(1)}억`;
-  if (n >= 10000) return `${(n / 10000).toFixed(1)}만`;
-  return fmt(n) + "원";
-}
+const fmtWon = fmtWonCompact;
 
 // ─── Module-level cache (5분 TTL) ────────────────────────────────────────────
 

@@ -8,6 +8,8 @@ import { TrendingUp, AlertTriangle, Loader2 as LoaderIcon, ArrowUp, ArrowDown, A
 import { getProductsMap } from "../../lib/productsCache";
 import { matchClassFilter, type ClassFilter } from "../../utils/productClassify";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
+// T-CSS Phase 2 · 2026-08-06
+import { CARD_BASE } from "../../styles/tokens";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 interface TrendingRow {
@@ -143,7 +145,7 @@ const PeriodBucketCard: React.FC<{
 }> = ({ bucket, onProductClick }) => {
   const fmt = (n: number) => n.toLocaleString();
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+    <div className={`${CARD_BASE} overflow-hidden flex flex-col`}>
       <div className="px-4 py-3 bg-indigo-50/50 border-b border-indigo-100 flex items-start justify-between gap-2">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -337,7 +339,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
   return (
     <div className="flex flex-col gap-2">
       {/* ── 카드: 헤더 툴바 + 컨트롤 ── */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className={`${CARD_BASE} overflow-hidden`}>
         {/* h-12 툴바 */}
         <div className="flex items-center gap-2 px-4 h-12 border-b border-indigo-100 bg-indigo-50/40 shrink-0">
           <TrendingUp size={14} className="text-indigo-500 shrink-0" />
@@ -405,7 +407,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
       </div>
 
       {/* ── 테이블 카드 ── */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className={`${CARD_BASE} overflow-hidden`}>
         {/* 상비약/일반약/전체 3-way 필터 (좌측 리스트 상단) */}
         <div className="flex items-center gap-1 border-b-2 border-slate-200 bg-white px-2 pt-1">
           <button type="button" onClick={() => setClassFilter("stationery")}

@@ -14,6 +14,9 @@ import { useVendors } from "../../hooks/useVendors";
 import { Building2, Loader2, Package, RefreshCw } from "lucide-react";
 import { SplitPanel } from "../common/SplitPanel";
 import { ListLoading } from "../common/ListLoading";
+// T-CSS Phase 2 · 2026-08-06
+import { CARD_BASE } from "../../styles/tokens";
+import { EmptyState } from "../common/EmptyState";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import VendorRowCard, { type VendorSummary } from "./PurchaseHistoryTab/VendorRowCard";
 import VendorHeaderPanel, { type VendorFull } from "./PurchaseHistoryTab/VendorHeaderPanel";
@@ -946,10 +949,8 @@ export const PurchaseHistoryTab: React.FC = () => {
               /* 우측: 헤더 + 서브탭 */
               <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-2">
               {!selectedVendor ? (
-                <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
-                  <Package size={40} className="mb-3 opacity-30" />
-                  <div className="text-[11px] font-semibold">좌측에서 공급사를 선택하세요</div>
-                  <div className="text-[11px] mt-1">매입이력 · 상품별 집계 · 매입 추이가 표시됩니다</div>
+                <div className={`${CARD_BASE} flex-1 min-h-[400px]`}>
+                  <EmptyState icon={Package} title="좌측에서 공급사를 선택하세요" hint="매입이력 · 상품별 집계 · 매입 추이가 표시됩니다" />
                 </div>
               ) : ledgerError ? (
                 <div className="bg-white rounded-xl border border-rose-200 p-4 text-sm text-rose-700 space-y-2">

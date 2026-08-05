@@ -11,6 +11,9 @@ import { StoreZoneMap } from "../common/StoreZoneMap";
 import { getZoneLabel } from "../../constants/zoneLabels";
 import { ZONE_DEFS } from "../../constants/displayZones";
 import { type ClassFilter } from "../../utils/productClassify";
+// T-CSS Phase 2 · 2026-08-06
+import { CARD_BASE } from "../../styles/tokens";
+import { EmptyState } from "../common/EmptyState";
 
 // ─── 구역 코드 → 카테고리 설명 매핑 ──────────────────────────────────────────
 const ZONE_CATEGORY_MAP: Record<string, string> = (() => {
@@ -337,7 +340,7 @@ const ZoneCategoryContent: React.FC = () => {
             <span className="text-slate-500">비중 <span className="font-black text-orange-700">{pct.toFixed(1)}%</span></span>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex-1">
+        <div className={`${CARD_BASE} overflow-hidden flex-1`}>
           <div className="overflow-auto max-h-[55vh]">
             <table className="w-full text-xs sm:min-w-[540px]">
               <thead className="sticky top-0 bg-slate-50 border-b-2 border-slate-200 z-10 shadow-sm">
@@ -395,7 +398,7 @@ const ZoneCategoryContent: React.FC = () => {
   return (
     <div className="flex flex-col gap-2">
       {/* 상단 필터바 */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+      <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
         <div className="flex items-center gap-2">
           <PieChart size={14} className="text-amber-500 shrink-0" />
           <span className="text-[13px] font-semibold text-slate-800">카테고리별현황</span>
@@ -550,10 +553,8 @@ const ZoneCategoryContent: React.FC = () => {
             </div>
           )}
           {!selectedZone ? (
-            <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
-              <Layers size={40} className="mb-3 opacity-30" />
-              <div className="text-sm font-bold">구역을 선택하세요</div>
-              <div className="text-[11px] mt-1">해당 구역의 상품 판매 상세가 표시됩니다</div>
+            <div className={`${CARD_BASE} flex-1 min-h-[400px]`}>
+              <EmptyState icon={Layers} title="구역을 선택하세요" hint="해당 구역의 상품 판매 상세가 표시됩니다" />
             </div>
           ) : selectedGroup ? (
             renderDetailPanel(selectedGroup)

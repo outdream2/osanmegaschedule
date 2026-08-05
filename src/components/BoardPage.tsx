@@ -13,6 +13,7 @@ import {
 import type { AuthSession } from "../types";
 import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
 import { uploadImagesToCloudinary, type UploadedImage } from "../lib/cloudinaryUpload";
+import { fmtDateShort } from "../lib/format";
 
 interface Props {
   authSession: AuthSession | null;
@@ -271,13 +272,6 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
 };
 
 // ── 게시글 카드
-// 날짜 M/D (예: 7/14)
-function fmtDateShort(iso: string): string {
-  const d = new Date(iso);
-  const M = d.getMonth() + 1;
-  const D = d.getDate();
-  return `${M}/${D}`;
-}
 
 const PostCard: React.FC<{ post: BoardPost; onOpen: () => void; showEdit?: boolean; onEdit?: () => void }> = ({ post, onOpen, showEdit, onEdit }) => {
   const meta = TYPE_META[post.post_type] ?? TYPE_META.question;

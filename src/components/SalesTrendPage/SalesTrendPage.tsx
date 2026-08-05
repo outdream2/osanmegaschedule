@@ -13,6 +13,7 @@ import { type SeasonKey } from "../../hooks/useSeasonRanges";
 // 2026-08-03 · 매장구역도 공용 컴포넌트 · DisplayPage 와 통합
 import { StoreZoneMap } from "../common/StoreZoneMap";
 import { getZoneLabel } from "../../constants/zoneLabels";
+import { fmtWon } from "../../lib/format";
 // 구역 코드 → 카테고리 설명 매핑 (매장 구역도의 ZONE_DEFS 그대로 사용)
 //   real_map 형식 예: "1A", "1B", "2A", "9B", "22" 등
 //   ZONE_DEFS 의 num + section 으로 매칭 · subA/subB 있으면 side 로 세분화
@@ -37,14 +38,6 @@ const zoneCategoryLabel = (zone: string): string => {
 const fmt = (n: number | null | undefined): string => {
   if (n == null || !Number.isFinite(Number(n))) return "-";
   return Number(n).toLocaleString();
-};
-const fmtWon = (n: number | null | undefined): string => {
-  if (n == null) return "-";
-  const v = Number(n);
-  if (!Number.isFinite(v)) return "-";
-  if (Math.abs(v) >= 1_0000_0000) return `${(v / 1_0000_0000).toFixed(1)}억`;
-  if (Math.abs(v) >= 10000) return `${(v / 10000).toFixed(1)}만`;
-  return v.toLocaleString() + "원";
 };
 // 재고관리와 동일 · YYYY-M-D 형식에서 M/D 추출
 function extractMonthDay(raw: any): string | null {
@@ -1717,7 +1710,6 @@ const ZoneCategoryContent: React.FC = () => {
   }, [sales, products]);
   const total = grouped.reduce((s, g) => s + g.totalAmount, 0);
   const fmt = (n: number) => n.toLocaleString();
-  const fmtWon = (n: number) => n >= 1_0000_0000 ? `${(n / 1_0000_0000).toFixed(1)}억` : n >= 10000 ? `${(n / 10000).toFixed(1)}만` : `${n.toLocaleString()}원`;
   // 구역 색상 팔레트 (반복)
   const ZONE_COLORS = ["sky", "emerald", "amber", "rose", "indigo", "teal", "violet", "orange"];
   const colorForZone = (zone: string) => ZONE_COLORS[Math.abs(zone.split("").reduce((a, c) => a + c.charCodeAt(0), 0)) % ZONE_COLORS.length];

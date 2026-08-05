@@ -8,6 +8,9 @@ import { Loader2, Package, PackageCheck, RefreshCw, Search, Truck, ChevronRight,
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
+// T-CSS Phase 2 · 2026-08-06
+import { CARD_BASE } from "../../styles/tokens";
+import { EmptyState } from "../common/EmptyState";
 
 // ── 반품 요청서 모달 (발주서 포맷) · 2026-08-03 ─────────────────────────
 type ReturnReasonKey = "재고 과다" | "유통기한 임박" | "저조 판매" | "기타";
@@ -180,7 +183,7 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto"
       onClick={() => !sending && onClose()}
     >
       <div
@@ -682,7 +685,7 @@ export const ReturnListPanel: React.FC = () => {
   return (
     <div className="flex flex-col gap-2">
       {/* ── 상단 필터바 ── */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+      <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
         <div className="flex items-center gap-1.5">
           <PackageCheck size={14} className="text-rose-500 shrink-0" />
           <span className="text-[13px] font-semibold text-slate-800">반품필요</span>
@@ -788,7 +791,7 @@ export const ReturnListPanel: React.FC = () => {
           className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
           style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? returnPanelWidth : undefined }}
         >
-          <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-0">
+          <section className={`${CARD_BASE} overflow-hidden flex flex-col min-h-0`}>
             {/* 로딩 / 빈 상태 */}
             {returnLoading && returnList.length === 0 ? (
               <div className="flex items-center justify-center py-12 text-slate-400 text-xs font-bold gap-2">
@@ -1076,9 +1079,8 @@ export const ReturnListPanel: React.FC = () => {
         {/* 우측: 상품 상세 패널 · 탭 전환 */}
         {returnPanelLoading ? (
           <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0">
-            <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
-              <Loader2 size={32} className="animate-spin mb-3 opacity-50" />
-              <div className="text-sm font-bold">불러오는 중...</div>
+            <div className={`${CARD_BASE} flex-1 min-h-[400px]`}>
+              <EmptyState title="불러오는 중..." size="normal" />
             </div>
           </div>
         ) : returnPanelError ? (
@@ -1168,10 +1170,8 @@ export const ReturnListPanel: React.FC = () => {
           </div>
         ) : (
           <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0">
-            <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
-              <Package size={40} className="mb-3 opacity-30" />
-              <div className="text-[11px] font-semibold">상품을 클릭하세요</div>
-              <div className="text-[11px] mt-1 text-center">상품명 → 상품정보 · 매입주기 → 매입이력 · 판매량 → 판매정보</div>
+            <div className={`${CARD_BASE} flex-1 min-h-[400px]`}>
+              <EmptyState icon={Package} title="상품을 클릭하세요" hint="상품명 → 상품정보 · 매입주기 → 매입이력 · 판매량 → 판매정보" />
             </div>
           </div>
         )}

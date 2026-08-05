@@ -15,16 +15,13 @@ import { ProductPurchaseHistoryModal } from "./ProductPurchaseHistoryModal";
 import { LoadingState } from "../common/LoadingState";
 import { EmptyState } from "../common/EmptyState";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
+import { fmtWonCompact } from "../../lib/format";
 
 function fmt(n: number): string {
   if (!Number.isFinite(n)) return "0";
   return n.toLocaleString();
 }
-function fmtWon(n: number): string {
-  if (n >= 10000_0000) return `${(n / 10000_0000).toFixed(1)}억`;
-  if (n >= 10000) return `${(n / 10000).toFixed(1)}만`;
-  return fmt(n) + "원";
-}
+const fmtWon = fmtWonCompact;
 
 type SupplierAgg = {
   supplier: string;

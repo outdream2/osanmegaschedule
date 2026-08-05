@@ -5,6 +5,7 @@ import {
   Send, Loader2, Utensils, UtensilsCrossed, ChevronDown, ChevronUp, ScrollText,
 } from "lucide-react";
 import { getProductsMap, type ProductInfo } from "../lib/productsCache";
+import { fmtDateMD } from "../lib/format";
 import type { AuthSession } from "../types";
 import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
 
@@ -50,12 +51,7 @@ interface InventoryCheck {
 }
 type Tab = "display" | "order" | "mismatch" | "lunch" | "inventory";
 
-function fmtDate(iso: string) {
-  try {
-    const d = new Date(iso);
-    return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-  } catch { return iso; }
-}
+const fmtDate = fmtDateMD;
 
 /* ── 공통 툴바 ── */
 function ListToolbar({

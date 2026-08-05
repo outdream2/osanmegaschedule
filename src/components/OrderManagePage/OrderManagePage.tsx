@@ -39,6 +39,10 @@ import { VendorDetailTabs } from "./VendorDetailTabs";
 import { BarChart2, PieChart, ArrowLeftRight, Boxes, Wallet, Calculator } from "lucide-react";
 // 2026-08-03 (#183) · 공통 TabBar (level 1 · Level-1 발주/매입/결제/통계 탭) · duplicate 스타일 흡수
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
+// T-CSS Phase 2 · 2026-08-06 · 디자인 토큰 + 공통 컴포넌트 마이그레이션
+import { CARD_BASE, MODAL_BACKDROP } from "../../styles/tokens";
+import { EmptyState } from "../common/EmptyState";
+import { LoadingState } from "../common/LoadingState";
 
 interface OrderRequest {
   id: string;
@@ -2079,9 +2083,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         {/* 우측: 상품 상세 · ProductDetailRightPanel (공용) */}
         {needPanelLoading ? (
           <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0">
-            <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
-              <Loader2 size={32} className="animate-spin mb-3 opacity-50" />
-              <div className="text-sm font-bold">불러오는 중...</div>
+            <div className={`${CARD_BASE} flex-1 min-h-[400px]`}>
+              <LoadingState label="불러오는 중..." size="normal" />
             </div>
           </div>
         ) : needPanelError ? (
@@ -2324,10 +2327,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   </div>
                 )}
                 {!vendorSelected ? (
-                  <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
-                    <Building2 size={40} className="mb-3 opacity-30" />
-                    <div className="text-sm font-bold">리스트에서 공급사를 클릭하세요</div>
-                    <div className="text-[11px] mt-1">헤더 정보 + 결제잔고 + 매입이력이 표시됩니다</div>
+                  <div className={`${CARD_BASE} flex-1 min-h-[400px]`}>
+                    <EmptyState icon={Building2} title="리스트에서 공급사를 클릭하세요" hint="헤더 정보 + 결제잔고 + 매입이력이 표시됩니다" />
                   </div>
                 ) : (
                   <VendorDetailTabs vendor={vendorSelected} />
@@ -2716,9 +2717,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         {/* 우측: 상품 상세 · ProductDetailRightPanel (공용) */}
         {orderPanelLoading ? (
           <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0">
-            <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
-              <Loader2 size={32} className="animate-spin mb-3 opacity-50" />
-              <div className="text-sm font-bold">불러오는 중...</div>
+            <div className={`${CARD_BASE} flex-1 min-h-[400px]`}>
+              <LoadingState label="불러오는 중..." size="normal" />
             </div>
           </div>
         ) : orderPanelError ? (
@@ -2755,7 +2755,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {/* 발주서 (Purchase Order) 모달 — 표준 발주 포맷 */}
       {orderModal && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto"
+          className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto"
           onClick={() => !sendingBulk && setOrderModal(null)}
         >
           <div
@@ -2994,7 +2994,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {/* 상품 상세정보 모달 (상품명 클릭 시) */}
       {detailProduct && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => { setDetailProduct(null); reloadAllProductsMap(); loadInvMap(); loadOrderReqs(); }}
         >
           <div
@@ -3104,7 +3104,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
       {/* 2026-07-30 · 사용자 요청 · 공급사 정보 모달 (발주요청/발주필요 리스트 공급사 클릭 시) */}
       {supplierInfoModal && (
-        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setSupplierInfoModal(null)}>
+        <div className="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setSupplierInfoModal(null)}>
           <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
             <VendorDetailModal
               vendor={supplierInfoModal}
@@ -3118,7 +3118,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {/* #243 · 발주요청 리스트 실재고 상세 모달 · 창고1/2·매장1/2/3 · 2026-08-04 리디자인 */}
       {orderStockDetail && (
         <div
-          className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-3 sm:p-6"
+          className="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6"
           onClick={() => setOrderStockDetail(null)}
           onKeyDown={(e) => { if (e.key === "Escape") setOrderStockDetail(null); }}
         >

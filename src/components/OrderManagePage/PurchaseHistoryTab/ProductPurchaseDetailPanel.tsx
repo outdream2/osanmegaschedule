@@ -8,6 +8,8 @@ import React from "react";
 import { Package, Building2 } from "lucide-react";
 import { KpiCard } from "../../common/KpiCard";
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../../common/PurchaseHistoryList";
+// T-CSS Phase 2 · 2026-08-06
+import { CARD_BASE } from "../../../styles/tokens";
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -62,7 +64,7 @@ export const ProductPurchaseDetailPanel: React.FC<Props> = ({ product, rows, loa
   return (
     <>
       {/* 상단 · 상품 헤더 (KPI 4카드) */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-col gap-2">
+      <div className={`${CARD_BASE} px-4 py-3 flex flex-col gap-2`}>
         <div className="flex items-center gap-2 min-w-0">
           <Package size={16} className="text-sky-500 shrink-0" />
           <span className="text-[14px] font-black text-slate-800 truncate">{product.product_name}</span>
@@ -95,7 +97,7 @@ export const ProductPurchaseDetailPanel: React.FC<Props> = ({ product, rows, loa
       </div>
 
       {/* 하단 · 매입 원장 · 2026-08-04 · 공통 PurchaseHistoryList 사용 (사용자 요청) */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col min-h-0 flex-1 overflow-hidden">
+      <div className={`${CARD_BASE} flex flex-col min-h-0 flex-1 overflow-hidden`}>
         <div className="flex items-center border-b border-slate-200 bg-slate-50/50 px-4 py-2.5 shrink-0">
           <span className="text-[13px] font-black text-sky-700">매입 원장</span>
           <span className="ml-2 text-[11px] font-semibold text-slate-400 tabular-nums">

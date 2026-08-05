@@ -13,6 +13,7 @@ import {
   Warning, FileText, User, Calendar, ChatCenteredText,
 } from "@phosphor-icons/react";
 import type { AuthSession } from "../../types";
+import { fmtDateYMD, fmtDateMD } from "../../lib/format";
 
 interface Resignation {
   id: number;
@@ -53,20 +54,8 @@ const STATUS_COLOR: Record<string, string> = {
   withdrawn: "text-slate-500 bg-slate-50 border-slate-200",
 };
 
-function fmtDate(iso: string | null | undefined) {
-  if (!iso) return "-";
-  try {
-    const d = new Date(iso);
-    return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
-  } catch { return iso; }
-}
-function fmtDateTime(iso: string | null | undefined) {
-  if (!iso) return "-";
-  try {
-    const d = new Date(iso);
-    return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-  } catch { return iso; }
-}
+const fmtDate = fmtDateYMD;
+const fmtDateTime = fmtDateMD;
 
 const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authSession }) => {
   const canApprove = (authSession?.level ?? 0) >= 8;

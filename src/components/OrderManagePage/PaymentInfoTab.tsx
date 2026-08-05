@@ -24,6 +24,9 @@ import {
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { SplitPanel } from "../common/SplitPanel";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
+// T-CSS Phase 2 · 2026-08-06
+import { CARD_BASE } from "../../styles/tokens";
+import { EmptyState } from "../common/EmptyState";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -883,10 +886,8 @@ export const PaymentInfoTab: React.FC = () => {
           /* ── 우측 · 결제 입력 · 최근 결제 ─────────────────────── */
           <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-2 overflow-y-auto lg:overflow-hidden">
           {!selectedVendor ? (
-            <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
-              <Wallet size={44} className="mb-3 opacity-30" />
-              <div className="text-[13px] font-black">결제 등록 · 공급사를 선택하세요</div>
-              <div className="text-[11px] mt-1">좌측 공급사 리스트에서 대상 선택 후 결제 정보를 입력합니다</div>
+            <div className={`${CARD_BASE} flex-1 min-h-[400px]`}>
+              <EmptyState icon={Wallet} title="결제 등록 · 공급사를 선택하세요" hint="좌측 공급사 리스트에서 대상 선택 후 결제 정보를 입력합니다" />
             </div>
           ) : (
             <>

@@ -16,6 +16,8 @@ import {
 import { SeasonButtons } from "../../common/SeasonButtons";
 import { type SeasonKey } from "../../../hooks/useSeasonRanges";
 import { useSortableTable, type Comparator } from "../../../hooks/useSortableTable";
+// T-CSS Phase 2 · 2026-08-06
+import { CARD_BASE } from "../../../styles/tokens";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -558,14 +560,14 @@ export const CategoryPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows
 
   if (total === 0) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center justify-center h-48 text-[11px] text-slate-400">
+      <div className={`${CARD_BASE} p-4 flex items-center justify-center h-48 text-[11px] text-slate-400`}>
         데이터 없음
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col gap-3">
+    <div className={`${CARD_BASE} p-4 flex flex-col gap-3`}>
       <div className="text-[11px] font-black text-slate-600 uppercase tracking-wider">
         카테고리별 매입액 비중
       </div>
@@ -632,14 +634,14 @@ export const MonthlyPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows 
 
   if (total === 0) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center justify-center h-48 text-[11px] text-slate-400">
+      <div className={`${CARD_BASE} p-4 flex items-center justify-center h-48 text-[11px] text-slate-400`}>
         최근 6개월 데이터 없음
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col gap-3">
+    <div className={`${CARD_BASE} p-4 flex flex-col gap-3`}>
       <div className="text-[11px] font-black text-slate-600 uppercase tracking-wider">
         월별 매입액 분포 (최근 6개월)
       </div>
@@ -703,14 +705,14 @@ export const TopProductsPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ r
 
   if (total === 0) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center justify-center h-48 text-[11px] text-slate-400">
+      <div className={`${CARD_BASE} p-4 flex items-center justify-center h-48 text-[11px] text-slate-400`}>
         데이터 없음
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col gap-3">
+    <div className={`${CARD_BASE} p-4 flex flex-col gap-3`}>
       <div className="text-[11px] font-black text-slate-600 uppercase tracking-wider">
         상품별 매입 Top 10
       </div>
@@ -813,7 +815,7 @@ export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
   const hasPeriodFilter = handlePeriodChange != null;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col min-h-0 flex-1">
+    <div className={`${CARD_BASE} flex flex-col min-h-0 flex-1`}>
       {/* 탭 헤더 */}
       <div className="flex flex-wrap items-center border-b border-slate-200 bg-slate-50/50 px-2 pt-1 gap-0">
         {TABS.map(t => {
