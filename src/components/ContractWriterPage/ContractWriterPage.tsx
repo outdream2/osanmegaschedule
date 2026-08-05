@@ -217,6 +217,43 @@ const WEEKDAYS: DayKey[] = ["월", "화", "수", "목", "금"];
 const WEEKEND: DayKey[] = ["토", "일"];
 
 const CONTRACT_TYPES = ["정규직", "계약직", "알바", "일용", "인턴"];
+
+// T-Z (2026-08-05) · 계약유형 short label (저장·전송 형식)
+//   · "정규직"    → "정규"
+//   · "계약직" + N개월 → "계약N" (예: 계약2 · 계약12)
+//   · "알바"/"일용"/"인턴" → 그대로
+// 근거: 사용자 요청 · StaffManagePage 정렬·필터·자동배지 (autoContractBadge 는 개월수 유지)
+export function shortContractLabel(fullType: string, months?: string | number | null): string {
+  const t = String(fullType ?? "").trim();
+  if (!t) return "";
+  // 이미 short 형식 (정규 · 계약N) 이면 그대로
+  if (t === "정규" || /^계약\d+$/.test(t)) return t;
+  // 정규직 → 정규
+  if (t === "정규직" || t.startsWith("정규")) return "정규";
+  // 계약직 + N개월 → 계약N
+  if (t === "계약직" || t.startsWith("계약")) {
+    const m = String(months ?? "").trim();
+    if (m && /^\d+$/.test(m)) return `계약${m}`;
+    return "계약";
+  }
+  // 그 외 (알바 · 일용 · 인턴 · custom) 은 그대로
+  return t;
+}
+
+// T-Z · read 시 하위호환 · "정규직" · "계약직" · "계약2" 등을 { display, months } 로 정규화
+//   · 반환 display 는 form 내부 표시용 (UI 드롭다운 · 정규직 / 계약직 유지)
+//   · 반환 months 는 있으면 form.contractMonths 로 세팅
+export function parseContractTypeForRead(saved: string | null | undefined): { display: string; months: string | null } {
+  const s = String(saved ?? "").trim();
+  if (!s) return { display: "", months: null };
+  if (s === "정규" || s === "정규직") return { display: "정규직", months: null };
+  // "계약N" 형식
+  const m = s.match(/^계약(\d+)$/);
+  if (m) return { display: "계약직", months: m[1] };
+  if (s === "계약" || s === "계약직") return { display: "계약직", months: null };
+  // 알바·일용·인턴·custom
+  return { display: s, months: null };
+}
 const START_TIMES = ["08:00", "09:00", "09:30", "10:00", "11:00", "12:00", "13:00", "14:00"];
 const END_TIMES  = ["15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"];
 
@@ -3341,10 +3378,12 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     try {
       const { pdf, filename } = await buildPdfFromPreview();
       const pdfDataUrl = pdf.output("datauristring");
+      // T-Z (2026-08-05) · 저장 payload · short label ("정규" · "계약N")
+      const contractTypeShort = shortContractLabel(form.contractType, form.contractMonths);
       const body = {
         employee_id: form.employeeId,
         employee_name: form.employeeName,
-        contract_type: form.contractType || null,
+        contract_type: contractTypeShort || null,
         start_date: form.startDate || null,
         end_date: form.indefinite ? null : (form.endDate || null),
         pdf_data_url: pdfDataUrl,
@@ -3413,7 +3452,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       fd.append("contract", uploadFile);
       if (form.employeeId != null) fd.append("employee_id", String(form.employeeId));
       fd.append("employee_name", form.employeeName);
-      if (form.contractType) fd.append("contract_type", form.contractType);
+      // T-Z (2026-08-05) · 저장 payload · short label ("정규" · "계약N")
+      const contractTypeShortU = shortContractLabel(form.contractType, form.contractMonths);
+      if (contractTypeShortU) fd.append("contract_type", contractTypeShortU);
       if (form.startDate) fd.append("start_date", form.startDate);
       if (!form.indefinite && form.endDate) fd.append("end_date", form.endDate);
       if (authSession?.employeeName) fd.append("approved_by", authSession.employeeName);
@@ -3990,16 +4031,10 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           <div>
             <label className={fldLabel}>
               계약 유형
-              {/* T-W (2026-08-05) · 저장 라벨 프리뷰 (정규 / 계약N) */}
+              {/* T-Z (2026-08-05) · 저장 라벨 프리뷰 (shortContractLabel · "정규" / "계약N") */}
               {(() => {
-                const t = form.contractType?.trim();
-                let badge = "";
-                if (t === "정규직") badge = "정규";
-                else if (t === "계약직") {
-                  const m = form.contractMonths?.trim();
-                  badge = m ? `계약${m}` : "계약";
-                }
-                if (!badge) return null;
+                const badge = shortContractLabel(form.contractType, form.contractMonths);
+                if (!badge || badge === form.contractType) return null;
                 return (
                   <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-md bg-indigo-100 border border-indigo-200 text-indigo-700 text-[10px] font-black normal-case tracking-normal">
                     저장: {badge}
