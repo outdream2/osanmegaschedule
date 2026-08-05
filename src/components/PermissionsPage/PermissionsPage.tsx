@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import axios from "axios";
-import { Shield, Check, Loader2, AlertCircle, Settings as SettingsIcon } from "lucide-react";
+import { Shield, Check, Loader2, AlertCircle, Settings as SettingsIcon, Users } from "lucide-react";
 import type { AuthSession, PagePermissions } from "../../types";
 import { DEFAULT_PERMISSIONS } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
@@ -40,6 +40,10 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
   const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());
   const [loadError, setLoadError] = useState<string | null>(null);
   const [tab, setTab] = useState<"permissions" | "app-settings">("permissions");
+  // 직원별 레벨 조정 상태
+  const [empSavingId, setEmpSavingId] = useState<number | null>(null);
+  const [empSavedIds, setEmpSavedIds] = useState<Set<number>>(new Set());
+  const [empSearch, setEmpSearch] = useState<string>("");
 
   // 환경설정(구 톱니바퀴 모달) 통합 — useSettings + employees 로드
   const {
@@ -101,6 +105,74 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     }
   }, [perms, authSession?.employeeId]);
 
+  // 직원 개별 레벨 저장 (PUT /api/employees/:id · 전체 필드 payload · optimistic)
+  const handleEmployeeLevelChange = useCallback(async (empId: number, newLevel: number) => {
+    const target = employees.find(e => e.id === empId);
+    if (!target) return;
+    const prevLevel = target.level ?? null;
+    if (prevLevel === newLevel) return;
+
+    // Optimistic 갱신
+    setEmployees(prev => prev.map(e => e.id === empId ? { ...e, level: newLevel } : e));
+    setEmpSavingId(empId);
+    setEmpSavedIds(s => { const n = new Set(s); n.delete(empId); return n; });
+
+    try {
+      // PUT /api/employees/:id 는 기존 값이 default 로 덮일 수 있는 필드가 있어
+      // 대상 직원의 현재 값을 전부 실어 부분 업데이트 안전성 확보 (SchedulePage 관례 준수)
+      await axios.put(`/api/employees/${empId}`, {
+        name: target.name,
+        position: target.position,
+        rank: target.rank ?? null,
+        employmentType: target.employmentType,
+        hireDate: target.hireDate,
+        retireDate: target.retireDate ?? null,
+        description: target.description ?? "",
+        workplace: target.workplace ?? "매장",
+        gender: target.gender ?? null,
+        phone: target.phone ?? null,
+        annual_leave_days: target.annual_leave_days ?? null,
+        level: newLevel,
+        address: target.address ?? null,
+      });
+      setEmpSavedIds(s => new Set(s).add(empId));
+      // 2초 뒤 checkmark fade
+      window.setTimeout(() => {
+        setEmpSavedIds(s => { const n = new Set(s); n.delete(empId); return n; });
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to update employee level:", err);
+      // 실패 시 이전 값 복원
+      setEmployees(prev => prev.map(e => e.id === empId ? { ...e, level: prevLevel } : e));
+      alert(`레벨 저장 실패: ${target.name}`);
+    } finally {
+      setEmpSavingId(null);
+    }
+  }, [employees]);
+
+  // 활성 직원 리스트: 퇴사자 제외 · 약사 우선 → 이름순
+  const activeEmployees = useMemo(() => {
+    const list = employees.filter(e => !e.retireDate);
+    const pharmaFirst = (p?: string) => (p === "약사" ? 0 : 1);
+    list.sort((a, b) => {
+      const d = pharmaFirst(a.position) - pharmaFirst(b.position);
+      if (d !== 0) return d;
+      const pos = (a.position ?? "").localeCompare(b.position ?? "", "ko");
+      if (pos !== 0) return pos;
+      return (a.name ?? "").localeCompare(b.name ?? "", "ko");
+    });
+    return list;
+  }, [employees]);
+
+  const filteredEmployees = useMemo(() => {
+    const q = empSearch.trim().toLowerCase();
+    if (!q) return activeEmployees;
+    return activeEmployees.filter(e =>
+      (e.name ?? "").toLowerCase().includes(q) ||
+      (e.position ?? "").toLowerCase().includes(q),
+    );
+  }, [activeEmployees, empSearch]);
+
   if (userLevel < 9) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -124,7 +196,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         />
       )}
 
-      <div className="flex-1 max-w-3xl mx-auto w-full px-4 py-8">
+      <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
         {/* Header */}
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-1">
@@ -160,10 +232,14 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           <span className="font-bold">레벨 기준:</span>&nbsp; 1 = 직원 &nbsp;·&nbsp; 2–8 = 관리자 등급 &nbsp;·&nbsp; 9 = 최고관리자
         </div>
 
-        {/* Permissions table */}
+        {/* 섹션 1 · 페이지별 최소 권한 (컴팩트 · 1행 · desc 는 tooltip) */}
+        <div className="mb-2 flex items-center gap-1.5">
+          <Shield size={13} className="text-slate-500" />
+          <h2 className="text-[13px] font-black text-slate-700">페이지별 최소 권한</h2>
+        </div>
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           {/* Table header */}
-          <div className="grid grid-cols-[1fr_110px_110px] px-5 py-3 bg-slate-50 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          <div className="grid grid-cols-[1fr_110px_110px] px-5 py-2 bg-slate-50 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
             <span>페이지</span>
             <span className="text-center">읽기 최소</span>
             <span className="text-center">쓰기 최소</span>
@@ -174,15 +250,13 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
             return (
               <div
                 key={key}
-                className={`grid grid-cols-[1fr_110px_110px] px-5 py-3.5 items-center ${
+                title={desc}
+                className={`grid grid-cols-[1fr_110px_110px] px-5 py-2 items-center ${
                   i < PAGE_LABELS.length - 1 ? "border-b border-slate-100" : ""
                 }`}
               >
-                {/* Page name */}
-                <div>
-                  <div className="text-sm font-semibold text-slate-800">{label}</div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">{desc}</div>
-                </div>
+                {/* Page name (1행 · desc 는 title tooltip) */}
+                <div className="text-sm font-semibold text-slate-800 truncate">{label}</div>
 
                 {/* Read level */}
                 <div className="flex justify-center">
@@ -208,8 +282,76 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           })}
         </div>
 
-        <p className="text-center text-[11px] text-slate-400 mt-4">
-          레벨 9(최고관리자)는 항상 모든 페이지에 접근할 수 있습니다.
+        <p className="text-[11px] text-slate-400 mt-2 mb-6 pl-1">
+          레벨 9(최고관리자)는 항상 모든 페이지에 접근할 수 있습니다. 각 페이지 설명은 마우스를 올리면 표시됩니다.
+        </p>
+
+        {/* 섹션 2 · 직원별 개별 레벨 */}
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <Users size={13} className="text-slate-500" />
+            <h2 className="text-[13px] font-black text-slate-700">직원별 레벨</h2>
+            <span className="text-[11px] text-slate-400 font-medium">
+              ({filteredEmployees.length}명 · 약사 우선)
+            </span>
+          </div>
+          <input
+            type="text"
+            value={empSearch}
+            onChange={e => setEmpSearch(e.target.value)}
+            placeholder="이름·직군 검색"
+            className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 w-44"
+          />
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="grid grid-cols-[1fr_90px_130px_36px] px-5 py-2 bg-slate-50 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            <span>성명</span>
+            <span>직군</span>
+            <span className="text-center">레벨</span>
+            <span className="text-center">상태</span>
+          </div>
+          <div className="max-h-[420px] overflow-y-auto">
+            {filteredEmployees.length === 0 ? (
+              <div className="px-5 py-8 text-center text-xs text-slate-400">
+                {employees.length === 0 ? "직원 목록을 불러오는 중..." : "일치하는 직원이 없습니다."}
+              </div>
+            ) : filteredEmployees.map((emp, i) => {
+              const isPharma = emp.position === "약사";
+              return (
+                <div
+                  key={emp.id}
+                  className={`grid grid-cols-[1fr_90px_130px_36px] px-5 py-1.5 items-center ${
+                    i < filteredEmployees.length - 1 ? "border-b border-slate-100" : ""
+                  } ${isPharma ? "bg-violet-50/40" : ""}`}
+                >
+                  <div className="text-sm font-semibold text-slate-800 truncate">{emp.name}</div>
+                  <div className="flex items-center">
+                    <span className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded ${
+                      isPharma ? "bg-violet-100 text-violet-700" : "bg-slate-100 text-slate-600"
+                    }`}>{emp.position ?? "-"}</span>
+                  </div>
+                  <div className="flex justify-center">
+                    <LevelSelect
+                      value={emp.level ?? 1}
+                      onChange={v => handleEmployeeLevelChange(emp.id, v)}
+                      saving={empSavingId === emp.id}
+                      saved={empSavedIds.has(emp.id)}
+                    />
+                  </div>
+                  <div className="flex justify-center">
+                    {empSavingId === emp.id ? (
+                      <Loader2 size={12} className="text-indigo-400 animate-spin" />
+                    ) : empSavedIds.has(emp.id) ? (
+                      <Check size={12} className="text-emerald-500" />
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <p className="text-[11px] text-slate-400 mt-2 pl-1">
+          변경 즉시 서버에 저장됩니다. 실패 시 이전 값으로 되돌립니다.
         </p>
         </>)}
 
