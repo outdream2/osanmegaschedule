@@ -3455,11 +3455,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           )}
         </div>
 
-        {/* 그룹 B · 연락처 */}
+        {/* 그룹 B · 연락처 · 금융 통합 */}
         <div className={cardInner}>
-          <div className={cardGroupLabel}>
-            연락처 · 주소
-          </div>
+          <div className={cardGroupLabel}>연락처 · 금융</div>
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className={fldLabel}>전화번호</label>
@@ -3482,20 +3480,13 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 className={fldInput}
               />
             </div>
-          </div>
-        </div>
-
-        {/* 그룹 C · 금융 */}
-        <div className={cardInner}>
-          <div className={cardGroupLabel}>
-            금융 정보
-          </div>
-          <div>
-            <label className={fldLabel}>은행 / 계좌번호</label>
-            <input type="text" value={form.employeeBankAccount} onChange={(e) => upd("employeeBankAccount", e.target.value)}
-              placeholder="카카오뱅크 3333-12-3456789"
-              className={fldInput}
-            />
+            <div className="col-span-2">
+              <label className={fldLabel}>은행 / 계좌번호</label>
+              <input type="text" value={form.employeeBankAccount} onChange={(e) => upd("employeeBankAccount", e.target.value)}
+                placeholder="카카오뱅크 3333-12-3456789"
+                className={fldInput}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -3643,8 +3634,15 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
 
         {/* 계약 기간 */}
         <div className={cardInner}>
-          <div className={cardGroupLabel}><CalendarBlank size={10} weight="bold" /> 계약 기간</div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="flex items-center justify-between mb-0.5">
+            <div className={cardGroupLabel}><CalendarBlank size={10} weight="bold" /> 계약 기간</div>
+            <label className="inline-flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" checked={form.indefinite} onChange={(e) => upd("indefinite", e.target.checked)}
+                className="w-3.5 h-3.5 rounded accent-indigo-600" />
+              <span className="text-[11px] font-semibold text-slate-600">무기한</span>
+            </label>
+          </div>
+          <div className={`grid gap-2 ${form.indefinite ? "grid-cols-2" : "grid-cols-3"}`}>
             <div>
               <label className={fldLabel}>근무 시작일</label>
               <input type="date" value={form.startDate} onChange={(e) => upd("startDate", e.target.value)}
@@ -3658,7 +3656,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               />
             </div>
             {!form.indefinite && (
-              <div className="col-span-2">
+              <div>
                 <label className={fldLabel}>계약 종료일</label>
                 <input type="date" value={form.endDate} onChange={(e) => upd("endDate", e.target.value)}
                   className={fldInput}
@@ -3666,30 +3664,21 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               </div>
             )}
           </div>
-          <label className="inline-flex items-center gap-2 cursor-pointer mt-0.5">
-            <input type="checkbox" checked={form.indefinite} onChange={(e) => upd("indefinite", e.target.checked)}
-              className="w-4 h-4 rounded accent-indigo-600" />
-            <span className="text-[12px] font-semibold text-slate-700">무기한 (정규직) · 종료일 없음</span>
-          </label>
         </div>
 
-        {/* 담당 업무 */}
-        <div>
-          <label className={fldLabel}>담당 업무</label>
+        {/* 담당 업무 · 4대보험 한 그룹 */}
+        <div className={cardInner}>
+          <div className={cardGroupLabel}>담당업무 · 보험</div>
           <input type="text" value={form.jobDuty} onChange={(e) => upd("jobDuty", e.target.value)}
             placeholder="예: 약국 카운터 · OTC 판매 · 재고 관리"
             className={fldInput}
           />
-        </div>
-
-        {/* 4대보험 */}
-        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2">
-          <label className="inline-flex items-center gap-2 cursor-pointer flex-1">
+          <label className="inline-flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={form.socialInsurance} onChange={(e) => upd("socialInsurance", e.target.checked)}
               className="w-4 h-4 rounded accent-indigo-600" />
-            <span className="text-[12.5px] font-semibold text-slate-700">4대보험 가입</span>
+            <span className="text-[12px] font-semibold text-slate-700">4대보험 가입</span>
+            <span className="text-[10.5px] text-slate-400 font-semibold ml-1">고용·산재·국민연금·건강보험</span>
           </label>
-          <span className="text-[10.5px] text-slate-400 font-semibold">고용·산재·국민연금·건강보험</span>
         </div>
 
         {/* 특약 */}
@@ -3959,9 +3948,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           );
         })()}
 
-        {/* 시급 조정 */}
+        {/* 시급 조정 · 지급일 통합 */}
         <div className={cardInner}>
-          <div className={cardGroupLabel}>시급 조정</div>
+          <div className={cardGroupLabel}>시급 조정 · 지급일</div>
           <div className="grid grid-cols-2 gap-2">
             <div>
               <div className="flex items-center justify-between mb-1">
@@ -3994,21 +3983,19 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               </div>
             </div>
           </div>
+          <div>
+            <label className={fldLabel}>지급일</label>
+            <input type="text" value={form.paymentDayText} onChange={(e) => upd("paymentDayText", e.target.value)}
+              placeholder="예: 당월 01일 ~ 당월 말일, 당월 말일 지급"
+              className={fldInput}
+            />
+          </div>
         </div>
 
         {/* 임금 구성표 */}
         {form.useWageComponents && (
           <WageComponentsForm wage={form.wageComponents} onChange={(next) => upd("wageComponents", next)} />
         )}
-
-        {/* 지급일 */}
-        <div>
-          <label className={fldLabel}>지급일</label>
-          <input type="text" value={form.paymentDayText} onChange={(e) => upd("paymentDayText", e.target.value)}
-            placeholder="예: 당월 01일 ~ 당월 말일, 당월 말일 지급"
-            className={fldInput}
-          />
-        </div>
       </div>
       {/* /카드 5 */}
 
