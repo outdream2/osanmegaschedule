@@ -3796,7 +3796,25 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-start">
           {/* 계약 유형 */}
           <div>
-            <label className={fldLabel}>계약 유형</label>
+            <label className={fldLabel}>
+              계약 유형
+              {/* T-W (2026-08-05) · 저장 라벨 프리뷰 (정규 / 계약N) */}
+              {(() => {
+                const t = form.contractType?.trim();
+                let badge = "";
+                if (t === "정규직") badge = "정규";
+                else if (t === "계약직") {
+                  const m = form.contractMonths?.trim();
+                  badge = m ? `계약${m}` : "계약";
+                }
+                if (!badge) return null;
+                return (
+                  <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-md bg-indigo-100 border border-indigo-200 text-indigo-700 text-[10px] font-black normal-case tracking-normal">
+                    저장: {badge}
+                  </span>
+                );
+              })()}
+            </label>
             <SelectOrCustom value={form.contractType} options={CONTRACT_TYPES} onChange={(v) => upd("contractType", v)} placeholder="예: 프리랜서" />
             {form.contractType === "계약직" && (
               <div className="flex items-center gap-2 mt-1.5">
