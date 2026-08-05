@@ -2,11 +2,17 @@
 // 우측 하단 · 서브탭 3개 (2026-08-03)
 // Tab 1 · 매입원장 (default · 기존 원장 유지)
 // Tab 2 · 상품별 집계 (product_name groupBy)
-// Tab 3 · 매입 추이 (월별 bar + 카테고리 pie · 커스텀 SVG)
-// Progressive Disclosure · 결제·명세서 탭 · VendorDetailModal 과 중복이라 만들지 않음
+// Tab 3 · 매입 추이 (recharts 3종 파이차트 · 2026-08-05)
+// 2026-08-05 · 기간 필터 · 3탭 공통 상단 배치 (매입이력 전용 → 공통 이관)
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUpDown, BarChart3, ChevronDown, ChevronRight, ListOrdered, Loader2, Package2 } from "lucide-react";
+import {
+  ArrowUpDown, BarChart3, ChevronDown, ChevronRight,
+  ListOrdered, Loader2, Package2,
+} from "lucide-react";
+import {
+  PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
+} from "recharts";
 import { SeasonButtons } from "../../common/SeasonButtons";
 import { type SeasonKey } from "../../../hooks/useSeasonRanges";
 
@@ -47,12 +53,16 @@ interface PurchaseSubTabsProps {
   onTabChange?: (tab: TabKey) => void;
   /** 매입원장 탭에서 강조할 row id · null 이면 강조 없음 · 2~3초 후 자동 해제는 caller 책임 */
   highlightId?: string | number | null;
-  // ── 개선 3 · 매입이력 탭 내부 기간 필터 (2026-08-05) ──────────────────
+  // ── 2026-08-05 · 3탭 공통 기간 필터 ─────────────────────────────────────
   /** 현재 기간 (개월수 · 0=10일) */
-  ledgerPeriodMonths?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  periodMonths?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
   /** 현재 계절 기간 */
-  ledgerPeriodSeason?: SeasonKey | null;
+  periodSeason?: SeasonKey | null;
   /** 기간 변경 콜백 */
+  onPeriodChange?: (months: 0 | 1 | 2 | 3 | 4 | 5 | 6, season: SeasonKey | null) => void;
+  // ── 하위호환 · 기존 prop 별칭 (2026-08-05) ──────────────────────────────
+  ledgerPeriodMonths?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  ledgerPeriodSeason?: SeasonKey | null;
   onLedgerPeriodChange?: (months: 0 | 1 | 2 | 3 | 4 | 5 | 6, season: SeasonKey | null) => void;
 }
 
@@ -76,11 +86,6 @@ function dateLabel(iso: string | null): string {
 }
 
 // ─── Tab 1 · 매입 원장 · 매입일 그룹 + 화살표 확장 ──────────────────────────
-// 2026-08-04 · 사용자 요청 (Task 2)
-//   · 한 줄 그룹 헤더: [▶/▼] YYYY-MM-DD · {대표 상품} 외 N건 · 매입금액 XXX,XXX원
-//   · 클릭 시 아래 sub-table (상품명·수량·단가·금액) · 수정 X · 조회만
-//   · 매입일 desc 정렬 · 최상위(가장 최근) 그룹 자동 확장
-//   · highlightId · 해당 row 가 속한 그룹 자동 확장 + 스크롤 (원장 로드 후 최신 강조 훅과 연동)
 
 type SortDir = "asc" | "desc";
 
@@ -89,7 +94,7 @@ interface DateGroup {
   items: PurchaseLedgerRow[];
   totalAmount: number;
   itemCount: number;
-  repName: string; // 대표 상품명 (금액 최대)
+  repName: string;
 }
 
 const LedgerTab: React.FC<{
@@ -97,7 +102,6 @@ const LedgerTab: React.FC<{
   loading: boolean;
   highlightId?: string | number | null;
 }> = ({ rows, loading, highlightId = null }) => {
-  // 매입일 groupBy · items · totalAmount · itemCount · repName
   const groups = useMemo<DateGroup[]>(() => {
     const map = new Map<string, DateGroup>();
     for (const r of rows) {
@@ -111,7 +115,6 @@ const LedgerTab: React.FC<{
       g.totalAmount += Number(r.amount ?? 0) || 0;
       g.itemCount += 1;
     }
-    // 각 그룹 대표 상품 · 금액 max (동률 → 첫번째)
     for (const g of map.values()) {
       let best: PurchaseLedgerRow | null = null;
       for (const it of g.items) {
@@ -120,14 +123,11 @@ const LedgerTab: React.FC<{
       }
       g.repName = String(best?.product_name ?? "").trim() || "(이름없음)";
     }
-    // 최신 매입일 위 (desc)
     return Array.from(map.values()).sort((a, b) => b.date.localeCompare(a.date));
   }, [rows]);
 
-  // 확장된 그룹 date set
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
 
-  // 그룹 목록 변경 시 · 최상위(최신) 그룹 자동 확장 (매입 이력이 처음 로드될 때)
   const groupsSigRef = useRef<string>("");
   useEffect(() => {
     const sig = groups.map(g => g.date).join("|");
@@ -135,7 +135,6 @@ const LedgerTab: React.FC<{
     groupsSigRef.current = sig;
     setExpanded(prev => {
       if (groups.length === 0) return new Set();
-      // 이미 확장한 것이 있으면 유지 · 아니면 최신 그룹 자동 확장
       if (prev.size > 0) return prev;
       const s = new Set<string>();
       s.add(groups[0].date);
@@ -151,7 +150,6 @@ const LedgerTab: React.FC<{
     });
   };
 
-  // highlightId · 해당 row 가 속한 그룹 자동 확장 + 스크롤
   const highlightRowRef = useRef<HTMLTableRowElement | null>(null);
   useEffect(() => {
     if (highlightId == null) return;
@@ -166,7 +164,6 @@ const LedgerTab: React.FC<{
       if (prev.has(targetDate as string)) return prev;
       const n = new Set(prev); n.add(targetDate as string); return n;
     });
-    // 스크롤 · 확장 반영 후 다음 tick
     const t = window.setTimeout(() => {
       try { highlightRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); }
       catch { highlightRowRef.current?.scrollIntoView(); }
@@ -174,10 +171,8 @@ const LedgerTab: React.FC<{
     return () => window.clearTimeout(t);
   }, [highlightId, groups]);
 
-  // 전체 합계
   const totalAmount = useMemo(() => groups.reduce((s, g) => s + g.totalAmount, 0), [groups]);
   const totalItems = useMemo(() => groups.reduce((s, g) => s + g.itemCount, 0), [groups]);
-  // 합계 행 접기/펼치기 · 사용자 요청 2026-08-04
   const [sumCollapsed, setSumCollapsed] = useState(false);
 
   if (loading) {
@@ -325,7 +320,7 @@ const LedgerTab: React.FC<{
 // ─── Tab 2 · 상품별 집계 ────────────────────────────────────────────────────
 
 interface ProductAgg {
-  key: string; // product_name || product_code
+  key: string;
   product_name: string;
   product_code: string | null;
   total_qty: number;
@@ -371,7 +366,6 @@ const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> =
       if (r.date > a.last_date) a.last_date = r.date;
       if (!a.product_code && r.product_code) a.product_code = r.product_code;
     }
-    // 평균 단가 · 매입금액 / 매입수량 (가중평균)
     for (const a of map.values()) {
       a.avg_unit_price = a.total_qty > 0 ? a.total_amount / a.total_qty : 0;
     }
@@ -399,7 +393,7 @@ const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> =
     return <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[11px]">불러오는 중...</div>;
   }
   if (aggregated.length === 0) {
-    return <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[11px]">최근 1년 매입 상품 없음</div>;
+    return <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[11px]">해당 기간 매입 상품 없음</div>;
   }
   return (
     <div className="overflow-auto flex-1 min-h-0">
@@ -474,149 +468,312 @@ const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> =
   );
 };
 
-// ─── Tab 3 · 매입 추이 · 월별 bar + top 상품 pie ───────────────────────────
+// ─── Tab 3 · 매입 추이 · recharts 3종 파이차트 (2026-08-05) ──────────────────
 
-// 커스텀 SVG bar chart · 최근 12개월
-const MonthlyBarChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
-  const monthly = useMemo(() => {
-    // 최근 12개월 label 생성
-    const now = new Date();
-    const labels: { key: string; label: string }[] = [];
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      labels.push({ key, label: `${d.getMonth() + 1}월` });
-    }
-    const sum = new Map<string, number>();
-    for (const r of rows) {
-      const key = r.date.slice(0, 7);
-      sum.set(key, (sum.get(key) ?? 0) + r.amount);
-    }
-    return labels.map(l => ({ ...l, value: sum.get(l.key) ?? 0 }));
-  }, [rows]);
-  const max = Math.max(...monthly.map(m => m.value), 1);
+// 공통 팔레트 · 6색 + 기타 회색
+const CHART_COLORS = [
+  "#10b981", // emerald-500
+  "#3b82f6", // blue-500
+  "#f59e0b", // amber-500
+  "#8b5cf6", // violet-500
+  "#ec4899", // pink-500
+  "#06b6d4", // cyan-500
+  "#f97316", // orange-500
+  "#84cc16", // lime-500
+  "#64748b", // slate-500 (기타/초과)
+  "#a78bfa", // violet-400
+];
 
+// 공통 커스텀 툴팁
+const ChartTooltip: React.FC<{
+  active?: boolean;
+  payload?: Array<{ name: string; value: number; payload: { fill?: string } }>;
+  total: number;
+  unit?: string;
+}> = ({ active, payload, total, unit = "원" }) => {
+  if (!active || !payload?.length) return null;
+  const { name, value } = payload[0];
+  const pct = total > 0 ? ((value / total) * 100).toFixed(1) : "0.0";
   return (
-    <div className="bg-white rounded-lg border border-slate-200 p-3">
-      <div className="text-[11px] font-black text-slate-500 uppercase tracking-wider mb-2">월별 매입액 (12개월)</div>
-      <div className="flex items-end gap-1.5 h-32">
-        {monthly.map(m => {
-          const h = max > 0 ? (m.value / max) * 100 : 0;
-          return (
-            <div key={m.key} className="flex-1 flex flex-col items-center gap-1 min-w-0 group">
-              <div className="flex-1 w-full flex items-end justify-center relative min-h-0">
-                <div
-                  className={`w-full rounded-t transition-all ${
-                    m.value > 0 ? "bg-emerald-400 group-hover:bg-emerald-500" : "bg-slate-100"
-                  }`}
-                  style={{ height: `${Math.max(h, m.value > 0 ? 4 : 0)}%` }}
-                  title={`${m.label} · ${fmtWon(m.value)}`}
-                />
-                {m.value > 0 && (
-                  <div className="absolute -top-4 text-[9px] font-semibold text-slate-500 tabular-nums opacity-0 group-hover:opacity-100 transition whitespace-nowrap">
-                    {fmtWon(m.value)}
-                  </div>
-                )}
-              </div>
-              <div className="text-[10px] text-slate-400 tabular-nums">{m.label}</div>
-            </div>
-          );
-        })}
-      </div>
+    <div className="bg-white border border-slate-200 rounded-lg shadow-md px-3 py-2 text-[11px] min-w-[120px]">
+      <div className="font-semibold text-slate-700 mb-1 break-words whitespace-normal leading-snug">{name}</div>
+      <div className="tabular-nums text-emerald-700 font-black">{value.toLocaleString()}{unit}</div>
+      <div className="tabular-nums text-slate-500 mt-0.5">{pct}%</div>
     </div>
   );
 };
 
-// Top 5 상품 도넛 (SVG · pie 대신 도넛 · Odoo/Zoho 표준)
-const TopProductsDonut: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
-  const top = useMemo(() => {
+// 공통 범례 · 색깔 · 이름 · 퍼센트 세로 리스트
+const ChartLegendList: React.FC<{
+  items: Array<{ name: string; value: number; color: string }>;
+  total: number;
+}> = ({ items, total }) => (
+  <div className="flex flex-col gap-1 min-w-0">
+    {items.map((it, i) => (
+      <div key={i} className="flex items-center gap-1.5 min-w-0 text-[11px]">
+        <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: it.color }} />
+        <span className="flex-1 min-w-0 text-slate-700 font-semibold break-words whitespace-normal leading-snug">{it.name}</span>
+        <span className="tabular-nums text-slate-500 shrink-0">
+          {total > 0 ? ((it.value / total) * 100).toFixed(0) : 0}%
+        </span>
+      </div>
+    ))}
+  </div>
+);
+
+// ── 차트 1 · 카테고리별 매입액 비중 (top 5 + 기타) ─────────────────────────
+// product_name 에 카테고리 정보가 없으므로 · 상품명 앞 2~4글자 키워드를 카테고리로 추정
+// 실제로는 카테고리 필드가 있어야 하지만 · 현재 detailRows 는 카테고리 없음
+// → 공급사 기반(supplier 없음)이므로 · 상품명 첫 글자 분류 (의약품·건기식·위생·기타)
+// 단순 prefix 추출은 의미 없으므로 · keyword 기반 분류 사용
+const CATEGORY_KEYWORDS: Array<{ label: string; pattern: RegExp }> = [
+  { label: "의약품",  pattern: /정|캡슐|시럽|주사|연고|좌약|앰플|밀리/ },
+  { label: "건강기능식품", pattern: /비타민|오메가|유산균|프로바이|콜라겐|루테인|홍삼/ },
+  { label: "위생용품", pattern: /마스크|장갑|소독|밴드|패드|면봉/ },
+  { label: "의료기기", pattern: /혈압|체온|혈당|측정|검사/ },
+  { label: "화장품",  pattern: /크림|로션|선크림|세럼|토너/ },
+];
+
+function classifyProduct(name: string): string {
+  const n = name.toLowerCase();
+  for (const c of CATEGORY_KEYWORDS) {
+    if (c.pattern.test(n)) return c.label;
+  }
+  return "기타";
+}
+
+const CategoryPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
+  const { data, total } = useMemo(() => {
     const map = new Map<string, number>();
-    let total = 0;
+    let t = 0;
     for (const r of rows) {
-      const nm = String(r.product_name ?? "").trim() || "(이름없음)";
-      map.set(nm, (map.get(nm) ?? 0) + r.amount);
-      total += r.amount;
+      const cat = classifyProduct(String(r.product_name ?? ""));
+      map.set(cat, (map.get(cat) ?? 0) + r.amount);
+      t += r.amount;
     }
     const sorted = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+    // top 5 + 기타
     const top5 = sorted.slice(0, 5);
     const othersSum = sorted.slice(5).reduce((s, [, v]) => s + v, 0);
     const items = othersSum > 0
       ? [...top5, ["기타", othersSum] as [string, number]]
       : top5;
-    return { items, total };
+    return {
+      data: items.map(([name, value], i) => ({
+        name,
+        value,
+        color: CHART_COLORS[i % CHART_COLORS.length],
+      })),
+      total: t,
+    };
   }, [rows]);
 
-  const colors = ["#10b981", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899", "#64748b"];
-
-  // 도넛 · cumulative angle → path
-  const segments = useMemo(() => {
-    let acc = 0;
-    return top.items.map(([name, value], i) => {
-      const pct = top.total > 0 ? value / top.total : 0;
-      const startAngle = acc * 2 * Math.PI;
-      const endAngle = (acc + pct) * 2 * Math.PI;
-      acc += pct;
-      const cx = 60, cy = 60, rOuter = 55, rInner = 32;
-      const x1 = cx + rOuter * Math.sin(startAngle);
-      const y1 = cy - rOuter * Math.cos(startAngle);
-      const x2 = cx + rOuter * Math.sin(endAngle);
-      const y2 = cy - rOuter * Math.cos(endAngle);
-      const x3 = cx + rInner * Math.sin(endAngle);
-      const y3 = cy - rInner * Math.cos(endAngle);
-      const x4 = cx + rInner * Math.sin(startAngle);
-      const y4 = cy - rInner * Math.cos(startAngle);
-      const largeArc = pct > 0.5 ? 1 : 0;
-      const path = pct >= 0.999
-        ? `M ${cx - rOuter} ${cy} A ${rOuter} ${rOuter} 0 1 1 ${cx + rOuter} ${cy} A ${rOuter} ${rOuter} 0 1 1 ${cx - rOuter} ${cy} M ${cx - rInner} ${cy} A ${rInner} ${rInner} 0 1 0 ${cx + rInner} ${cy} A ${rInner} ${rInner} 0 1 0 ${cx - rInner} ${cy} Z`
-        : `M ${x1} ${y1} A ${rOuter} ${rOuter} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${rInner} ${rInner} 0 ${largeArc} 0 ${x4} ${y4} Z`;
-      return { name, value, pct, path, color: colors[i % colors.length] };
-    });
-  }, [top]);
-
-  if (top.total === 0) {
+  if (total === 0) {
     return (
-      <div className="bg-white rounded-lg border border-slate-200 p-3 flex items-center justify-center h-40 text-[11px] text-slate-400">
+      <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center justify-center h-48 text-[11px] text-slate-400">
         데이터 없음
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 p-3">
-      <div className="text-[11px] font-black text-slate-500 uppercase tracking-wider mb-2">TOP 5 상품 (매입액 기준)</div>
-      <div className="flex items-center gap-3">
-        <svg viewBox="0 0 120 120" className="w-28 h-28 shrink-0">
-          {segments.map((s, i) => (
-            <path key={i} d={s.path} fill={s.color}>
-              <title>{s.name} · {fmtWon(s.value)} ({(s.pct * 100).toFixed(1)}%)</title>
-            </path>
-          ))}
-        </svg>
-        <div className="flex-1 min-w-0 flex flex-col gap-1">
-          {segments.map((s, i) => (
-            <div key={i} className="flex items-center gap-1.5 min-w-0 text-[11px]">
-              <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: s.color }} />
-              <span className="truncate flex-1 text-slate-700 font-semibold">{s.name}</span>
-              <span className="tabular-nums text-slate-500 shrink-0">{(s.pct * 100).toFixed(0)}%</span>
-            </div>
-          ))}
+    <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col gap-3">
+      <div className="text-[11px] font-black text-slate-600 uppercase tracking-wider">
+        카테고리별 매입액 비중
+      </div>
+      <div className="flex items-center gap-4">
+        <div className="w-[120px] h-[120px] shrink-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius={34}
+                outerRadius={58}
+                strokeWidth={1}
+                stroke="#f8fafc"
+              >
+                {data.map((entry, i) => (
+                  <Cell key={`cat-${i}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip content={<ChartTooltip total={total} />} />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
+        <ChartLegendList items={data} total={total} />
+      </div>
+      <div className="text-right text-[10px] tabular-nums text-slate-400 font-semibold">
+        합계 {fmtWon(total)}원
       </div>
     </div>
   );
 };
 
+// ── 차트 2 · 월별 매입액 분포 (최근 6개월 파이차트) ───────────────────────
+const MonthlyPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
+  const { data, total } = useMemo(() => {
+    // 최근 6개월 label 생성
+    const now = new Date();
+    const labels: { key: string; label: string }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const label = `${d.getMonth() + 1}월`;
+      labels.push({ key, label });
+    }
+    const sumMap = new Map<string, number>();
+    let t = 0;
+    for (const r of rows) {
+      const key = r.date.slice(0, 7);
+      sumMap.set(key, (sumMap.get(key) ?? 0) + r.amount);
+      t += r.amount;
+    }
+    // 6개월 내 데이터만 (0인 달 제외)
+    const items = labels
+      .map(l => ({ name: l.label, value: sumMap.get(l.key) ?? 0 }))
+      .filter(it => it.value > 0);
+    return {
+      data: items.map((it, i) => ({ ...it, color: CHART_COLORS[i % CHART_COLORS.length] })),
+      total: items.reduce((s, it) => s + it.value, 0),
+    };
+  }, [rows]);
+
+  if (total === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center justify-center h-48 text-[11px] text-slate-400">
+        최근 6개월 데이터 없음
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col gap-3">
+      <div className="text-[11px] font-black text-slate-600 uppercase tracking-wider">
+        월별 매입액 분포 (최근 6개월)
+      </div>
+      <div className="flex items-center gap-4">
+        <div className="w-[120px] h-[120px] shrink-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius={34}
+                outerRadius={58}
+                strokeWidth={1}
+                stroke="#f8fafc"
+              >
+                {data.map((entry, i) => (
+                  <Cell key={`mon-${i}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip content={<ChartTooltip total={total} />} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <ChartLegendList items={data} total={total} />
+      </div>
+      <div className="text-right text-[10px] tabular-nums text-slate-400 font-semibold">
+        합계 {fmtWon(total)}원
+      </div>
+    </div>
+  );
+};
+
+// ── 차트 3 · 상품별 매입 Top 10 비중 ─────────────────────────────────────
+const TopProductsPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
+  const { data, total } = useMemo(() => {
+    const map = new Map<string, number>();
+    let t = 0;
+    for (const r of rows) {
+      const nm = String(r.product_name ?? "").trim() || "(이름없음)";
+      map.set(nm, (map.get(nm) ?? 0) + r.amount);
+      t += r.amount;
+    }
+    const sorted = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+    const top10 = sorted.slice(0, 10);
+    const othersSum = sorted.slice(10).reduce((s, [, v]) => s + v, 0);
+    const items = othersSum > 0
+      ? [...top10, ["기타", othersSum] as [string, number]]
+      : top10;
+    return {
+      data: items.map(([name, value], i) => ({
+        name,
+        value,
+        color: CHART_COLORS[i % CHART_COLORS.length],
+      })),
+      total: t,
+    };
+  }, [rows]);
+
+  if (total === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center justify-center h-48 text-[11px] text-slate-400">
+        데이터 없음
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col gap-3">
+      <div className="text-[11px] font-black text-slate-600 uppercase tracking-wider">
+        상품별 매입 Top 10
+      </div>
+      <div className="flex items-center gap-4">
+        <div className="w-[120px] h-[120px] shrink-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius={34}
+                outerRadius={58}
+                strokeWidth={1}
+                stroke="#f8fafc"
+              >
+                {data.map((entry, i) => (
+                  <Cell key={`top-${i}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip content={<ChartTooltip total={total} />} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <ChartLegendList items={data} total={total} />
+      </div>
+      <div className="text-right text-[10px] tabular-nums text-slate-400 font-semibold">
+        합계 {fmtWon(total)}원
+      </div>
+    </div>
+  );
+};
+
+// ── TrendTab · 3종 차트 컨테이너 (반응형 그리드) ─────────────────────────
 const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ rows, loading }) => {
   if (loading) {
     return <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[11px]">불러오는 중...</div>;
   }
   if (rows.length === 0) {
-    return <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[11px]">최근 1년 매입 데이터 없음</div>;
+    return <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[11px]">해당 기간 매입 데이터 없음</div>;
   }
   return (
-    <div className="flex-1 min-h-0 overflow-auto p-3 flex flex-col gap-3">
-      <MonthlyBarChart rows={rows} />
-      <TopProductsDonut rows={rows} />
+    // 반응형 그리드 · 모바일 1열 · 태블릿 2열 · 데스크탑 3열
+    <div className="flex-1 min-h-0 overflow-auto p-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+        <CategoryPieChart rows={rows} />
+        <MonthlyPieChart rows={rows} />
+        <TopProductsPieChart rows={rows} />
+      </div>
     </div>
   );
 };
@@ -624,9 +781,9 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
 // ─── PurchaseSubTabs · Container ──────────────────────────────────────────
 
 const TABS: { key: TabKey; label: string; icon: React.ElementType; hint: string; color: string }[] = [
-  { key: "ledger",  label: "매입이력", icon: ListOrdered, hint: "선택 기간 · 매입 원장", color: "emerald" },
-  { key: "product", label: "상품별 집계", icon: Package2,    hint: "최근 1년 · groupBy 상품명",    color: "sky"     },
-  { key: "trend",   label: "매입 추이",   icon: BarChart3,   hint: "12개월 bar · TOP 상품 도넛",   color: "violet"  },
+  { key: "ledger",  label: "매입이력",   icon: ListOrdered, hint: "선택 기간 · 매입 원장",         color: "emerald" },
+  { key: "product", label: "상품별 집계", icon: Package2,    hint: "선택 기간 · groupBy 상품명",    color: "sky"     },
+  { key: "trend",   label: "매입 추이",   icon: BarChart3,   hint: "선택 기간 · 3종 파이차트",      color: "violet"  },
 ];
 
 const PURCHASE_SUBTAB_COLORS: Record<string, { text: string; bar: string; hoverText: string }> = {
@@ -644,17 +801,28 @@ export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
   activeTab,
   onTabChange,
   highlightId = null,
+  // 신규 공통 prop
+  periodMonths: periodMonthsProp,
+  periodSeason: periodSeasonProp,
+  onPeriodChange,
+  // 하위호환 별칭
   ledgerPeriodMonths,
   ledgerPeriodSeason,
   onLedgerPeriodChange,
 }) => {
-  // controlled · uncontrolled 모드 모두 지원 (activeTab 제공 시 controlled)
+  // 신규 prop 우선 · 없으면 하위호환 prop 사용
+  const periodMonths = periodMonthsProp ?? ledgerPeriodMonths;
+  const periodSeason = periodSeasonProp ?? ledgerPeriodSeason;
+  const handlePeriodChange = onPeriodChange ?? onLedgerPeriodChange;
+
   const [internalTab, setInternalTab] = useState<TabKey>(initialTab);
   const tab = activeTab ?? internalTab;
   const setTab = (next: TabKey) => {
     if (activeTab === undefined) setInternalTab(next);
     onTabChange?.(next);
   };
+
+  const hasPeriodFilter = handlePeriodChange != null;
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col min-h-0 flex-1">
@@ -692,16 +860,16 @@ export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
         </div>
       </div>
 
-      {/* 개선 3 · 매입이력 탭 전용 기간 필터 (탭 바 아래 · 활성 시만 표시) */}
-      {tab === "ledger" && onLedgerPeriodChange != null && (
+      {/* 3탭 공통 기간 필터 (2026-08-05 · 탭 바 아래 항상 표시) */}
+      {hasPeriodFilter && (
         <div className="px-3 py-2 border-b border-slate-100 bg-slate-50/30 flex flex-wrap items-center gap-2 shrink-0">
           <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">조회기간</span>
           <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
             <button
               type="button"
-              onClick={() => onLedgerPeriodChange(0, null)}
+              onClick={() => handlePeriodChange!(0, null)}
               className={`px-2 h-6 text-[10px] font-semibold rounded transition cursor-pointer ${
-                !ledgerPeriodSeason && ledgerPeriodMonths === 0
+                !periodSeason && periodMonths === 0
                   ? "bg-emerald-500 text-white shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
               }`}
@@ -710,9 +878,9 @@ export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
               <button
                 key={m}
                 type="button"
-                onClick={() => onLedgerPeriodChange(m, null)}
+                onClick={() => handlePeriodChange!(m, null)}
                 className={`px-2 h-6 text-[10px] font-semibold rounded transition cursor-pointer ${
-                  !ledgerPeriodSeason && ledgerPeriodMonths === m
+                  !periodSeason && periodMonths === m
                     ? "bg-emerald-500 text-white shadow-sm"
                     : "text-slate-500 hover:text-slate-700"
                 }`}
@@ -720,8 +888,8 @@ export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
             ))}
           </div>
           <SeasonButtons
-            value={ledgerPeriodSeason ?? null}
-            onChange={(v) => onLedgerPeriodChange(ledgerPeriodMonths ?? 1, v)}
+            value={periodSeason ?? null}
+            onChange={(v) => handlePeriodChange!(periodMonths ?? 1, v)}
             size="sm"
             hideLabel
           />
