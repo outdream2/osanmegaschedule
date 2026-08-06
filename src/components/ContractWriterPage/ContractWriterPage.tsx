@@ -40,6 +40,7 @@ import {
   fetchContractWriterSettings,
 } from "../ContractSettingsPage/ContractSettingsPage";
 import SplitPanel from "../common/SplitPanel";
+import { matchHangul } from "../common/hangulSearch";
 import sungstampUrl from "../../images/sungstamp.png";
 import { useSettings, defaultWageForPosition, type WageRate } from "../../hooks/useSettings";
 import kyustampUrl from "../../images/kyustamp.png";
@@ -3934,10 +3935,16 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   autoComplete="off"
                   className={fldInput}
                 />
-                {empSearchOpen && form.employeeName.trim() && (() => {
-                  const q = form.employeeName.trim().toLowerCase();
-                  const matches = employees.filter(e => (e.name ?? "").toLowerCase().includes(q)).slice(0, 8);
-                  if (matches.length === 0) return null;
+                {empSearchOpen && (() => {
+                  const q = form.employeeName.trim();
+                  const matches = q
+                    ? employees.filter(e => matchHangul(e.name ?? "", q)).slice(0, 8)
+                    : employees.slice(0, 8);
+                  if (matches.length === 0) return (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-xl shadow-lg p-2.5 text-[12px] text-slate-400 text-center">
+                      일치하는 직원 없음 · 직접 입력
+                    </div>
+                  );
                   return (
                     <ul className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-xl shadow-lg max-h-52 overflow-y-auto divide-y divide-slate-100">
                       {matches.map(e => (
@@ -4088,9 +4095,11 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 autoComplete="off"
                 className={fldInput}
               />
-              {empSearchOpen && form.employeeName.trim() && (() => {
-                const q = form.employeeName.trim().toLowerCase();
-                const matches = employees.filter(e => (e.name ?? "").toLowerCase().includes(q)).slice(0, 8);
+              {empSearchOpen && (() => {
+                const q = form.employeeName.trim();
+                const matches = q
+                  ? employees.filter(e => matchHangul(e.name ?? "", q)).slice(0, 8)
+                  : employees.slice(0, 8);
                 if (matches.length === 0) return (
                   <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-xl shadow-lg p-2.5 text-[12px] text-slate-400 text-center">
                     일치하는 직원 없음 · 직접 입력
@@ -4098,6 +4107,11 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 );
                 return (
                   <ul className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-xl shadow-lg max-h-52 overflow-y-auto divide-y divide-slate-100">
+                    {!q && (
+                      <li className="px-3 py-1.5 text-[11px] text-slate-400 font-semibold bg-slate-50 border-b border-slate-100">
+                        직원 선택 또는 성명 입력
+                      </li>
+                    )}
                     {matches.map(e => (
                       <li key={e.id}>
                         <button
@@ -4126,39 +4140,25 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               />
             </div>
 
-            {/* 직군 + 연차 · 한 줄에 · 반응형 wrap (2026-08-05) */}
-            <div className="col-span-2 flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
-              {/* 직군 · flex-1 */}
-              <div className="flex-1 min-w-0">
-                <label className={fldLabel}>직군</label>
-                <div className="flex gap-1">
-                  {(["약사", "매장", "창고", "기타"] as const).map(cat => {
-                    const active = form.employeeCategory === cat;
-                    const activeCls =
-                      cat === "약사"  ? "bg-violet-500 text-white border-violet-500" :
-                      cat === "매장"  ? "bg-emerald-500 text-white border-emerald-500" :
-                      cat === "창고"  ? "bg-orange-500 text-white border-orange-500" :
-                                        "bg-slate-600 text-white border-slate-600";
-                    return (
-                      <button key={cat} type="button" onClick={() => upd("employeeCategory", cat)}
-                        className={`flex-1 min-w-[36px] py-1.5 rounded-lg border text-[11.5px] font-bold transition-colors cursor-pointer ${
-                          active ? activeCls : "bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700"
-                        }`}
-                      >{cat}</button>
-                    );
-                  })}
-                </div>
-              </div>
-              {/* 연차 일수 · 직군 옆 · 좁게 */}
-              <div className="shrink-0 sm:w-[110px]">
-                <label className={fldLabel}>연차</label>
-                <div className="relative">
-                  <input type="number" min={0} value={form.annualLeaveDays} onChange={(e) => upd("annualLeaveDays", e.target.value)}
-                    placeholder="15"
-                    className="w-full bg-white border border-slate-200 rounded-lg pl-3 pr-8 py-1.5 text-[13px] text-slate-800 font-semibold text-right focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 font-semibold pointer-events-none">일</span>
-                </div>
+            {/* 직군 (2026-08-06 · 연차 필드 근무조건 카드로 이동) */}
+            <div className="col-span-2">
+              <label className={fldLabel}>직군</label>
+              <div className="flex gap-1">
+                {(["약사", "매장", "창고", "기타"] as const).map(cat => {
+                  const active = form.employeeCategory === cat;
+                  const activeCls =
+                    cat === "약사"  ? "bg-violet-500 text-white border-violet-500" :
+                    cat === "매장"  ? "bg-emerald-500 text-white border-emerald-500" :
+                    cat === "창고"  ? "bg-orange-500 text-white border-orange-500" :
+                                      "bg-slate-600 text-white border-slate-600";
+                  return (
+                    <button key={cat} type="button" onClick={() => upd("employeeCategory", cat)}
+                      className={`flex-1 min-w-[36px] py-1.5 rounded-lg border text-[11.5px] font-bold transition-colors cursor-pointer ${
+                        active ? activeCls : "bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700"
+                      }`}
+                    >{cat}</button>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -4340,7 +4340,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             <div className="w-6 h-6 rounded-md bg-indigo-100 flex items-center justify-center shrink-0">
               <ClipboardText size={13} weight="fill" className="text-indigo-600" />
             </div>
-            <span className="text-[12px] font-black text-slate-700">근무조건</span>
+            <span className="text-[12px] font-black text-slate-700">근무조건 입력</span>
             <CaretDown size={11} weight="bold" className={`text-slate-400 transition-transform ${isCardCollapsed("workCondition") ? "-rotate-90" : ""}`} />
           </button>
           {monthlyCalc && (
@@ -5184,12 +5184,12 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 <span>연장</span>
               </button>
             )}
-            {/* T-N (2026-08-05) · 초기화 버튼 · outline 세련화 · rose hover · confirm dialog */}
+            {/* T-CTR-Collapse+Reset (2026-08-06) · 초기화 버튼 · 컴팩트 축소 · 눈에 덜 띄게 */}
             <button type="button" onClick={handleReset}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300 text-sm font-semibold transition-colors cursor-pointer shadow-sm"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded border border-slate-200 bg-white text-slate-400 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-200 text-[11px] font-medium transition-colors cursor-pointer"
               title="입력 내용·서명·임시저장 · 전체 초기화"
             >
-              <Eraser size={14} weight="bold" />
+              <Eraser size={12} weight="regular" />
               <span className="hidden sm:inline">초기화</span>
             </button>
           </div>
