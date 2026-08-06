@@ -1,74 +1,24 @@
 // src/components/OrderManagePage/PurchaseHistoryTab/VendorHeaderPanel.tsx
-// 우측 상단 · 공급사 정보 헤더 + KPI 4카드 (2026-08-03)
-// Procurement dashboard 표준 · 3~4 KPI · 5+ 지양
-// - 헤더 · 공급사명 (H2) + 분류 + 사업자번호 + 활성
-// - Sub · 연락처 · 담당자 · 결제조건 · 등록일
-// - KPI 4 · 누적매입 · 이번달(MoM%) · 평균매입주기 · 활성상품수
+// 우측 상단 · 공급사 정보 헤더 + KPI (2026-08-03)
+// 2026-08-06 · T-COMMON-VendorInfo · 표시 로직 → VendorInfoHeader 위임
+//   KPI 계산(calcKpis)은 이 파일에서 유지 · VendorInfoHeader에 kpis prop 전달
 
 import React, { useMemo } from "react";
-import { Building2, Phone, User2, Calendar, Package, TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { VendorCategoryBadge } from "../../common/VendorCategoryBadge";
+import { VendorInfoHeader, type VendorKpis, type VendorInfoFull } from "../../common/VendorInfoHeader";
 import type { PurchaseDetailRow } from "./PurchaseSubTabs";
 
-export interface VendorFull {
-  id: number;
-  company_name: string;
-  category: string | null;
-  contact_name?: string | null;
-  phone?: string | null;
-  email?: string | null;
-  business_number?: string | null;
-  note?: string | null;
-  created_at?: string | null;
-}
+// VendorFull · 기존 import 사용처 하위호환 (PurchaseHistoryTab 등)
+export type { VendorInfoFull as VendorFull } from "../../common/VendorInfoHeader";
 
 interface VendorHeaderPanelProps {
-  vendor: VendorFull;
+  vendor: VendorInfoFull;
   detailRows: PurchaseDetailRow[]; // 최근 365일 raw rows · KPI 산출용
   loading: boolean;
 }
 
-// ─── helpers ──────────────────────────────────────────────────────────────
-
-function fmtWon(n: number): string {
-  if (!Number.isFinite(n) || n === 0) return "0";
-  if (n >= 100_000_000) return `${(n / 100_000_000).toFixed(2)}억`;
-  if (n >= 10_000) return `${(n / 10_000).toFixed(1)}만`;
-  return n.toLocaleString();
-}
-
-function fmtBizNum(n: string | null | undefined): string {
-  if (!n) return "-";
-  const d = String(n).replace(/\D/g, "");
-  if (d.length !== 10) return String(n);
-  return `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5)}`;
-}
-
-function fmtPhone(n: string | null | undefined): string {
-  if (!n) return "-";
-  const d = String(n).replace(/\D/g, "");
-  if (d.length === 10) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
-  if (d.length === 11) return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
-  return String(n);
-}
-
-function fmtDate(iso: string | null | undefined): string {
-  if (!iso) return "-";
-  return String(iso).slice(0, 10);
-}
-
 // ─── KPI 계산 ─────────────────────────────────────────────────────────────
 
-interface Kpis {
-  totalAmount: number;
-  thisMonthAmount: number;
-  lastMonthAmount: number;
-  momPct: number | null;
-  avgCycleDays: number | null;
-  activeSkuCount: number;
-}
-
-function calcKpis(rows: PurchaseDetailRow[]): Kpis {
+function calcKpis(rows: PurchaseDetailRow[]): VendorKpis {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthStartYmd = `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, "0")}-01`;
@@ -116,123 +66,17 @@ function calcKpis(rows: PurchaseDetailRow[]): Kpis {
   };
 }
 
-// ─── KpiCard ──────────────────────────────────────────────────────────────
-
-interface KpiCardProps {
-  label: string;
-  value: string;
-  suffix?: string;
-  hint?: React.ReactNode;
-  tone?: "emerald" | "slate" | "amber" | "rose";
-  icon?: React.ReactNode;
-}
-
-const TONE: Record<string, { valueCls: string; badgeCls: string }> = {
-  emerald: { valueCls: "text-emerald-700", badgeCls: "bg-emerald-50 text-emerald-600" },
-  slate:   { valueCls: "text-slate-700",   badgeCls: "bg-slate-50 text-slate-500" },
-  amber:   { valueCls: "text-amber-700",   badgeCls: "bg-amber-50 text-amber-600" },
-  rose:    { valueCls: "text-rose-700",    badgeCls: "bg-rose-50 text-rose-600" },
-};
-
-const KpiCard: React.FC<KpiCardProps> = ({ label, value, suffix, hint, tone = "slate", icon }) => {
-  const t = TONE[tone];
-  return (
-    <div className="bg-white rounded-lg border border-slate-200 shadow-sm px-3 py-2.5 flex flex-col gap-1 min-w-0">
-      <div className="flex items-center gap-1.5">
-        {icon && <span className={`w-5 h-5 flex items-center justify-center rounded ${t.badgeCls}`}>{icon}</span>}
-        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider truncate">{label}</span>
-      </div>
-      <div className="flex items-baseline gap-1 min-w-0">
-        <span className={`text-[16px] font-black tabular-nums truncate ${t.valueCls}`}>{value}</span>
-        {suffix && <span className="text-[10px] font-semibold text-slate-400 shrink-0">{suffix}</span>}
-      </div>
-      {hint && <div className="text-[10px] text-slate-500 leading-tight">{hint}</div>}
-    </div>
-  );
-};
-
 // ─── VendorHeaderPanel ────────────────────────────────────────────────────
 
 export const VendorHeaderPanel: React.FC<VendorHeaderPanelProps> = ({ vendor, detailRows, loading }) => {
   const kpis = useMemo(() => calcKpis(detailRows), [detailRows]);
-  const momIcon = kpis.momPct == null ? <Minus size={10} /> : kpis.momPct > 0 ? <TrendingUp size={10} /> : kpis.momPct < 0 ? <TrendingDown size={10} /> : <Minus size={10} />;
-  const momTone: "emerald" | "rose" | "slate" = kpis.momPct == null ? "slate" : kpis.momPct > 5 ? "emerald" : kpis.momPct < -5 ? "rose" : "slate";
-  const momText = kpis.momPct == null
-    ? "전월 매입 없음"
-    : kpis.momPct === 0
-      ? "전월 대비 변동 없음"
-      : `전월 대비 ${kpis.momPct > 0 ? "+" : ""}${kpis.momPct.toFixed(1)}%`;
-
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 flex flex-col gap-3">
-      {/* 헤더 · 공급사명 라인 */}
-      <div className="flex items-start gap-2 flex-wrap">
-        <Building2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />
-        <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-[15px] font-black text-slate-800 break-words">{vendor.company_name}</h2>
-            <VendorCategoryBadge category={vendor.category} />
-            {vendor.business_number && (
-              <span className="text-[10px] font-semibold text-slate-500 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 tabular-nums">
-                {fmtBizNum(vendor.business_number)}
-              </span>
-            )}
-          </div>
-          {/* Sub-line · 담당자·연락처·등록일 */}
-          <div className="flex items-center gap-3 flex-wrap text-[11px] text-slate-500">
-            {vendor.contact_name && (
-              <span className="inline-flex items-center gap-1">
-                <User2 size={10} className="text-slate-400" />
-                {vendor.contact_name}
-              </span>
-            )}
-            {vendor.phone && (
-              <span className="inline-flex items-center gap-1 tabular-nums">
-                <Phone size={10} className="text-slate-400" />
-                {fmtPhone(vendor.phone)}
-              </span>
-            )}
-            {vendor.email && (
-              <span className="inline-flex items-center gap-1 truncate max-w-[200px]" title={vendor.email}>
-                @{vendor.email}
-              </span>
-            )}
-            {vendor.created_at && (
-              <span className="inline-flex items-center gap-1 tabular-nums">
-                <Calendar size={10} className="text-slate-400" />
-                등록 {fmtDate(vendor.created_at)}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* KPI · 텍스트로 깔끔하게 (2026-08-06 · 사용자 요청 · 카드 제거) */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px] leading-tight border-t border-slate-100 pt-2">
-        <span className="inline-flex items-center gap-1.5">
-          <span className="text-slate-400 font-semibold">누적 매입액 (1년)</span>
-          <span className="tabular-nums font-black text-emerald-700">{fmtWon(kpis.totalAmount)}원</span>
-          <span className="text-slate-400 tabular-nums">({loading ? "로딩" : `${detailRows.length}건`})</span>
-        </span>
-        <span className="text-slate-200">·</span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="text-slate-400 font-semibold">이번달</span>
-          <span className={`tabular-nums font-black ${momTone === "rose" ? "text-rose-700" : momTone === "emerald" ? "text-emerald-700" : "text-slate-700"}`}>{fmtWon(kpis.thisMonthAmount)}원</span>
-          <span className="text-slate-400 tabular-nums inline-flex items-center gap-0.5">{momIcon}{momText}</span>
-        </span>
-        <span className="text-slate-200">·</span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="text-slate-400 font-semibold">평균 매입주기</span>
-          <span className="tabular-nums font-black text-slate-700">{kpis.avgCycleDays != null ? `${kpis.avgCycleDays}일` : "-"}</span>
-        </span>
-        <span className="text-slate-200">·</span>
-        <span className="inline-flex items-center gap-1.5">
-          <Package size={11} className="text-slate-400 shrink-0" />
-          <span className="text-slate-400 font-semibold">활성 상품</span>
-          <span className="tabular-nums font-black text-slate-700">{kpis.activeSkuCount > 0 ? `${kpis.activeSkuCount.toLocaleString()}종` : "-"}</span>
-        </span>
-      </div>
-    </div>
+    <VendorInfoHeader
+      vendor={vendor}
+      kpis={kpis}
+      kpisLoading={loading}
+      detailRowCount={detailRows.length}
+    />
   );
 };
 

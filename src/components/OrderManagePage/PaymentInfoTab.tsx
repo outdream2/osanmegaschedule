@@ -18,10 +18,12 @@ import { useVendors } from "../../hooks/useVendors";
 import {
   Building2, Loader2, Wallet, CalendarDays, CreditCard, Banknote,
   FileText, Check, X, RefreshCw, Landmark, Coins, ScrollText, Layers,
-  Phone, User2, ReceiptText, ArrowRight, Plus, Calendar,
+  ReceiptText, ArrowRight, Plus, Calendar,
   ChevronUp, ChevronDown, ChevronsUpDown,
 } from "lucide-react";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
+// T-COMMON-VendorInfo · 공급사 헤더 공통 컴포넌트 (2026-08-06)
+import { VendorInfoHeader } from "../common/VendorInfoHeader";
 import { SplitPanel } from "../common/SplitPanel";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 // T-CSS Phase 2 · 2026-08-06
@@ -901,47 +903,9 @@ export const PaymentInfoTab: React.FC = () => {
             </div>
           ) : (
             <>
-              {/* ── 공급사 요약 카드 ──────────────────────────── */}
+              {/* ── 공급사 요약 카드 (T-COMMON-VendorInfo · VendorInfoHeader 위임) ── */}
               <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-2.5">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center shrink-0 ring-1 ring-sky-200">
-                    <Building2 size={18} className="text-sky-600" />
-                  </div>
-                  <div className="flex-1 min-w-0 flex flex-col gap-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="text-[15px] font-black text-slate-800 leading-tight break-words">
-                        {selectedVendor.company_name}
-                      </h2>
-                      <VendorCategoryBadge category={selectedVendor.category} />
-                      {vatIncluded && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-amber-50 text-amber-700 border border-amber-200">
-                          VAT포함
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 flex-wrap text-[11px] text-slate-500">
-                      {selectedVendor.business_number && (
-                        <span className="inline-flex items-center gap-1 tabular-nums">
-                          <span className="text-slate-400 text-[9px] font-black uppercase tracking-wider">사업자</span>
-                          {fmtBizNum(selectedVendor.business_number)}
-                        </span>
-                      )}
-                      {selectedVendor.contact_name && (
-                        <span className="inline-flex items-center gap-1">
-                          <User2 size={10} className="text-slate-400" />
-                          {selectedVendor.contact_name}
-                        </span>
-                      )}
-                      {selectedVendor.phone && (
-                        <a href={`tel:${selectedVendor.phone.replace(/\D/g, "")}`}
-                          className="inline-flex items-center gap-1 tabular-nums hover:text-sky-600 transition">
-                          <Phone size={10} className="text-slate-400" />
-                          {fmtPhone(selectedVendor.phone)}
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <VendorInfoHeader vendor={selectedVendor} />
 
                 {/* 월별 매입·결제·잔고 표 (2026-08-04 · #58 · 사용자 요청)
                     · 최근 3개월 + 누적 + 잔고 컬럼 · 3행 (총매입/총결제/잔고)
