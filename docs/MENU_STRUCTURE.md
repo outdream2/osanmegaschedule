@@ -1248,5 +1248,348 @@ npm run test        # vitest (필요 시)
 
 ---
 
+# Part IV — 페이지별 심층 액션·API·워크플로우·모달 (2026-08-06 확장 · research-strategist)
+
+Part I 이 서브탭·기능 요약이라면 · Part IV 는 **"어떤 버튼을 누르면 어떤 API 가 호출되고 어떤 상태가 바뀌는지"** 를 실무 관점으로 정리합니다. 코드 실측 (RequestsPage · DisplayPage · OrderManagePage · BusinessManagePage · ContractWriterPage 등) 기준.
+
+## IV-1. 재고관리 · 서브탭 액션 → API 매핑
+
+발주·매입·결제·통계는 **하나의 OrderManagePage 인스턴스** 가 `initialTopTab` prop 만 바꿔 재사용 (`OrderManagePage.tsx` L190-196 useEffect) · re-mount 없음 · 데이터 캐시 유지 · 서브탭 이동 즉시.
+
+**발주 (purchase-order · 3탭)** — `purchaseOrderDefaultTabs` L1203
+
+| key · 색 | 라벨 · 아이콘 | 액션 → API |
+|---------|--------------|-----------|
+| `order` (sky) | 발주요청 · ShoppingCart | **[발주 전송]** → `POST /api/order-requests/bulk-send` |
+| `need` (rose) | 발주필요 · ClipboardList | **[발주요청 등록]** → `POST /api/order-requests` · 중복 시 dupOrderModal |
+| `critical` (amber) | 품절임박 · AlertTriangle | 실재고 (창고+매장) 임계치 이하 · 2026-08-04 신규 |
+
+로드: `GET /api/order-requests` · `GET /api/stock-manage/low-stock` · `GET /api/inventory-checks`
+
+**매입 (purchase · 6탭)** — `purchaseDefaultTabs` L1208 · 첫 진입 시 재정렬된 첫 탭 리셋 (L1249)
+
+| key · 색 | 컴포넌트 · 주 액션 |
+|---------|-------------------|
+| `purchase-history` (sky) | `PurchaseHistoryTab` · 뷰 by-vendor/by-product · 매입 조회 |
+| `return` (rose) | `ReturnListPanel` · 배지 (`dispatchEvent("return-need-count")`) |
+| `receipt` (violet) | goods_receipts · **[OCR]** · **[확정]** → `PATCH /api/goods-receipts/:id/confirm` |
+| `scan` (amber) | `ScanPage` (embedded) |
+| `productarrival` (teal) | `ProductArrivalPage` (embedded) · 검수 |
+| `reconciliation` (emerald) | `StockReconciliationTab` · 시스템 vs 실재고 |
+
+매입이력 세부 (Phase A/B/C · #191): 좌 vendor (`SupplierTab` embedded) or product (`ProductRowCard`) · 우 KPI 4카드 (`VendorHeaderPanel`) + 매입원장/상품별/추이 3탭 (`PurchaseSubTabs`) + 3파이차트 (`CategoryPieChart` · `TopProductsPieChart` · `MonthlyPieChart`) · 계절 필터 (`SeasonButtons` · `useSeasonRanges` · MyPage 편집)
+
+**결제 (payment · 3탭)** — `paymentDefaultTabs` L1216
+
+- `vendor` (teal) · `PaymentInfoTab` · 잔고 자동 · 저장 시 `dispatchEvent("supplier-payment-added")`
+- `payment-input` (amber) · 수기 결제 (계좌·현금·카드)
+- `vat-prepare` (rose) · `VatPreparePage` 3탭 (매출·매입·신고서)
+  - 매출: `GET /api/vat/summary?period=Y-1H|2H|Q1..Q4` · stock_history 자동
+  - 매입: `GET /api/vat/vendor-breakdown` · `/api/vat/vendor-detail` · `vat_included` flag
+  - 신고서: Phase 3 예정
+
+**통계 (statistics · 5탭)** — `statDefaultTabs` L1221
+
+`trending` (indigo · `/api/stock-manage/top-sales?months=&sort=&dir=`) · `category` (amber · ZONE_DEFS 기반) · `flow` (sky · `/api/stock-manage/raw` · [숨김]) · `supplier` (emerald · `/api/sales-trend/supplier`) · `diff` (rose · 시스템/실재고 차이)
+
+**입고알림 (stock-arrivals)** — `StockArrivalPage.tsx`
+
+**[웹푸시 방송]** → `POST /api/stock-arrivals/:id/broadcast` · **[예약발송]** `scheduled_at` 서버 크론 · **[수정]** `PATCH` · **[삭제]** `DELETE` · **[익명 구독]** `POST /api/anon-push-subscribe` · VAPID `GET /api/vapid-public-key`
+
+**매장구역도 (store)** — 45개 구역 (aisle 1-8 A/B · 22 · 40 A/B/C · 벽면)
+
+**[구역 라벨 편집]** (관리자) → lazy `page="zone-labels"` → `POST /api/zone-labels` → `dispatchEvent("zone-labels-changed")` → 매장구역도·통계·약사교육자료 즉시 재빌드
+
+로드: `GET /api/zones` · `/api/zone-groups` · `/api/products-map` · `/api/inventory-latest`
+
+## IV-2. 경영관리 · 서브탭 액션 → API
+
+승인대기 배지: 60초 폴링 + `approval-count-updated` 이벤트 (`showApprovalBadge = level ≥ 2`)
+
+**직원관리 (`StaffManagePage.tsx`)**
+
+- **[직원 CRUD]** → `POST/PATCH/DELETE /api/employees(/:id)`
+- **[이력서 업/삭]** → `POST/DELETE /api/employees/:id/resume` (multipart)
+- **[스케줄 수정]** → `PATCH /api/schedules`
+- **[근로계약서 작성]** → `dispatchEvent("staff-write-contract", { detail: { employeeId }})` → 서류작성 자동 진입 + 직원 자동선택
+
+**승인대기 (approval-center · 2탭)** — `ApprovalCenterPage.tsx`
+
+`leave` (teal · leaveCount) · `resignation` (rose · resignCount) · 카운트 병렬 `GET /api/leave-requests/pending-count` + `/api/resignations/pending-count`
+
+**[연차 승인/반려]** → `PATCH /api/leave-requests/:id { status: "approved"|"denied" }` · **[사직서 승인]** → `PATCH /api/resignations/:id` (서명 필수) · `dispatchEvent("approval-count-updated")` · 부모(`BusinessManagePage`) `onCountsChange` 콜백
+
+**점심불참 (lunch)** — `isAdmin = level ≥ 2`
+
+로드: `GET /api/lunch-requests?date=` + `/api/lunch-attendance?date=` (병렬) · `/api/schedules` · `/api/settings?key=break_timeline_YYYY-MM-DD`
+
+**[관리자 저장]** `POST /api/lunch-requests` · **[취소]** `DELETE /api/lunch-requests?employee_id=&date=` · **[휴게시각]** `POST /api/settings`
+
+**각종양식 (hr-forms · `HrFormsPage.tsx`)** — 4카테고리 · `isManager = level ≥ 2`
+
+**[업로드]** → `POST /api/hr-forms` (multipart · 10MB · 드래그&드롭) · **[삭제]** `DELETE /api/hr-forms/:id?editor_level=` · **[다운로드]** `GET file_url` (모든 인증자)
+
+**서류작성 (document-writer · 3탭)** — `DocumentWriterPage.tsx` · lazy · 관리자 재정렬 (`tabOrder.documentWriter`)
+
+`contract` (emerald · `ContractWriterPage`):
+- 세전월급 자동 (시급 × 근무시간) · 서명 캔버스 · PDF
+- **[저장]** → `POST /api/employee-contracts { employeeId, formData }`
+- **[스캔 업로드]** → `POST /api/employee-contracts/upload` (multipart)
+- 시급: `settings.wageRates` (직군별 주중/주말)
+
+`resignation` (rose · `ResignationWriterPage`):
+- 13사유 · 5조항 · 서명 · 관리자 승인
+- **[저장]** → `POST /api/resignations` · `dispatchEvent("approval-count-updated")` (배지 즉시)
+
+`settings` (indigo · `ContractSettingsPage`):
+- 직군별 시급 · `settings.wageRates` 서버 저장 (모든 관리자 공유)
+- 6 CMS 카테고리 (임금단서·근로시간·휴일·징계·기타·개인정보) — `contract_clauses`
+- **[저장]** → `POST /api/contract-clauses` (T-C) · 로드 `GET /api/contract-clauses` · 실패 시 localStorage `contractClauses:v1` fallback + 1회 자동 마이그레이션
+
+## IV-3. 요청메뉴 · 진열요청 3단계 워크플로우 (T-SCAN-1)
+
+**탭 배지 카운트**: `GET /api/requests/pending-counts` · **30초 폴링** · 변화 시 현재 탭 재로드 · `inventory-checks-updated` 이벤트 시 inventory + order + products 재로드
+
+**진열요청 표 컬럼** (사용자 확정 · 2026-08-05): 체크 · 상품명 · 진열구역 · 담당자 · **창고준비** · **진열완료** · 날짜
+
+**상태 흐름**:
+```
+pending  (amber border-l)
+   ↓ [창고준비] · 창고담당 or 관리자 · PATCH /prepare
+prepared (sky border-l)
+   ↓ [진열완료] · 진열담당 or 관리자 · PATCH /complete
+done     (emerald border-l · opacity-60)
+```
+
+**권한 판별** (RequestsPage L155-161 · position/employeeRank):
+- `isWarehouseStaff` (position "창고"|"물류" or rank "창고") → **[창고준비]** 표시
+- `isDisplayStaff` (position "진열"|"매장" or rank "진열") → **[진열완료]** 표시
+- `isAdminLevel8` (level ≥ 8) → 양쪽 · 되돌리기 · 강제 완료
+
+**액션 & API**:
+- **[창고준비]** → `PATCH /api/display-requests/:id/prepare { prepared_by, prepared_by_name }` · 토글 (`reverted` 응답 시 pending으로)
+- **[진열완료]** → `PATCH /api/display-requests/:id/complete { completed_by, completed_by_name }` · 토글 (`revertedStatus` 응답으로 prepared/pending 되돌림)
+- **[알림전송]** (관리자만) → 담당자별 그룹핑 · `POST /api/notifications { employee_id, title, body, type: "alert" }`
+- **[선택/전체 삭제]** → `DELETE /api/display-requests/:id`
+- 상품명: `note`에서 "진열 요청" suffix 제거 → fallback: `category` → `zone_label`
+
+**다른 4탭 요약**:
+- `mismatch`: `products.real_map ≠ products.spec` · `/api/zone-mismatches`
+- `inventory`: `GET /api/inventory-checks` · 로그 모달 (`invLogOpen`) · **[발주요청]** 바로 등록
+- `lunch`: `/api/lunch-requests?date=` (경영관리와 동일)
+- `order`: 발주 탭과 데이터 공유 · 중복 감지 모달 (`dupOrderModal`)
+
+## IV-4. 약사전용 · PharmacistPage · 4탭 (lazy)
+
+관리자 재정렬 (`tabOrder.pharmacist`) · 교육 카테고리: `ZONE_DEFS` 기반 자동 (`buildEducationCategories()`) + 사용자 정의 (`app_settings.education_custom_categories`)
+
+**교육탭 UI**: 좌측 트리 (폴더 펼침/접힘 · `toggleCat` · `expandedCats`) · 나머지 3탭은 stacked
+
+**액션 & API** (관리자 level ≥ 8 · `PharmacistMenuSettingsPage.tsx`):
+- **[자료 업로드]** → `POST /api/pharmacist-menu-items` · 20MB 제한
+- **[수정]** → `PATCH /api/pharmacist-menu-items/:id`
+- **[삭제]** → `DELETE /api/pharmacist-menu-items/:id?editor_level=`
+- **[순서 변경]** → 2개 항목 order_index swap (2회 PATCH)
+- **[PDF 뷰어]** (`PdfViewerModal.tsx`) · 우클릭·복사·드래그·키보드 전방위 차단 · 워터마크
+- 좌우 split: `megatown_pharm_leftw` (240-560px 리사이즈)
+- `zone-labels-changed` 이벤트 → 교육 카테고리 재빌드
+
+## IV-5. 개별 페이지 액션 요약
+
+**실재고확인 (ScanPage.tsx · T-SCAN-1)** — 좌 스캐너 · 우 5분리 테이블 (창고1·창고2·매장1·매장2·매장3)
+
+스캔 즉시 → **상품정보 모달** (`ProductInfoCard.tsx`) 자동 팝업
+- 5칸 인라인 편집 · 매장 슬롯별 **[진열요청]** · 담당자 자동 매칭
+- **[숨김/보임]** 토글 → `dispatchEvent("products-hidden-changed")`
+- 저장 시 → `dispatchEvent("inventory-checks-updated")`
+- `parseRealMap("8A/냉/2B")` → 매장1/2/3 자동 분할
+
+**[전체 저장]** `POST /api/inventory-checks/bulk` · **[진열요청]** `POST /api/display-requests` · 이력 `GET /api/inventory-checks?product_code=`
+
+**스케줄표 (SchedulePage/SchedulePage.tsx)** — `isAdmin (level ≥ 2)` · Ctrl+Z undo · 인건비 표시
+
+**[셀 편집]** `PATCH /api/schedules { employeeId, date, type, workingHours }` · **[직원 편집]** (`EmployeeFormModal.tsx`) `POST/PATCH /api/employees` · **[휴게시각]** (`BreakModal.tsx`) `POST /api/settings` · **[일일 타임라인]** (`DayTimelineModal.tsx`) 롱프레스
+
+로드: `GET /api/schedules?year=&month=` · `GET /api/employee-contracts`
+
+**상품입고 (ProductArrivalPage.tsx)** — 상태: pending · match · mismatch + expiring (독립)
+
+**[최종 확인]** `POST /api/product-arrivals` · 이력 `GET /api/product-arrivals?limit=100&days=` · **[삭제]** `DELETE /api/product-arrivals/:id`
+
+**연차신청 (LeavePage/LeavePage.tsx)** — `isManager = level ≥ 2`
+
+**[신청]** `POST /api/leave-requests` · **[삭제]** `DELETE /api/leave-requests/:id` · **[승인/반려]** `PATCH /api/leave-requests/:id { status }`
+
+로드: `GET /api/leave-requests?employeeId=` or `?all=true`
+
+**게시판 (BoardPage.tsx)** — `isManager (level ≥ 2)` 공지 작성
+
+**[글]** `POST /api/board/posts` · **[수정]** `PATCH` · **[삭제]** `DELETE /api/board/posts/:id?editor_id=&editor_level=` · **[댓글]** `POST /api/board/posts/:id/comments` · `PATCH/DELETE /api/board/comments/:id` · **[좋아요]** `PATCH /api/board/posts/:id` (like_count++)
+
+**당직 예약 (ReservationPage/ReservationPage.tsx)** — TIME_SLOTS 09:00-21:00 30분 · PURPOSES 6종 · `isInternalStaff (level ≥ 2 · non-vendor)`
+
+로드: `GET /api/staff-monthly` · `/api/reservations?date=` · `/api/blocked-slots?date=` · `/api/staff-availability?date=` · **[예약 등록]** `POST /api/reservations` · **[시간대 차단]** `POST /api/blocked-slots`
+
+**OCR (OcrPage/OcrPage.tsx)** — 매입 > 거래명세서 진입
+
+**[OCR 실행]** `POST /api/ocr?stream=1` (SSE · Gemini + ONNX · **⚠ Gemini 코드 수정 금지**) · 동의어 `GET/POST/PATCH/DELETE /api/ocr-synonyms/*` · 공급사 별칭 `GET/POST/PATCH/DELETE /api/ocr-supplier-aliases/*` · 템플릿 `POST /api/ocr-templates` · 잔고 `GET /api/ocr/search-balance` · `GET /api/supplier-balances`
+
+**재고 확인 (StockCheckPage/StockCheckPage.tsx)** — 읽기 전용 · StockAxis + SellingAxis 독립 · **[검색]** `GET /api/stock-check?q=` (debounce · AbortController)
+
+**내 정보 (MyPage/MyPage.tsx)** — 프로필·전화·비밀번호 · **계절 정의** (`SeasonRangesEditor.tsx`) 관리자 level ≥ 9 만
+
+**권한 관리 (PermissionsPage/PermissionsPage.tsx)** — 탭 2개 (`permissions` · `app-settings`) · 11 페이지 최소 level · 직원별 0~9 슬라이더 · 환경설정 (`useSettings`)
+
+## IV-6. 커스텀 이벤트 카탈로그
+
+### 실시간 이벤트 (window CustomEvent)
+
+| 이벤트명 | 발행 위치 | 구독 위치 | 용도 |
+|---------|---------|---------|------|
+| `zone-labels-changed` | `constants/zoneLabels.ts` (라벨 저장) | DisplayPage · CategoryTab · StoreZoneMap · SalesTrendPage · PharmacistPage | 구역 라벨 즉시 반영 |
+| `vendors-changed` | VendorListEditor | `useVendors` · PurchaseHistoryTab | 공급사 리스트 재로드 |
+| `supplier-payment-added` | PaymentInfoTab (결제 저장) | PaymentInfoTab (다른 카드) | 잔고 자동 갱신 |
+| `return-need-count` | ReturnListPanel | OrderManagePage (반품 배지) | 배지 카운트 |
+| `approval-count-updated` | ResignationApprovalPage · ResignationWriterPage | BusinessManagePage · ApprovalCenterPage | 승인대기 배지 즉시 |
+| `products-hidden-changed` | ProductInfoCard · FlowTab · LowStockPanel | (구독 예정) | 숨김 상품 필터 |
+| `inventory-checks-updated` | ProductInfoCard (실재고 저장) | ScanPage · RequestsPage · OrderManagePage | 재고 자동 재조회 |
+| `staff-write-contract` | StaffManagePage (근로계약서 버튼) | DocumentWriterPage 진입 자동 선택 | 직원 자동 지정 |
+| `tabs-reordered-{key}` | useSortableTabs | (커스터마이징) | 재정렬 알림 |
+
+### 자동 폴링 · 세션
+
+| 주기 | 위치 | 엔드포인트 · 조건 |
+|------|-----|----------------|
+| 30초 | RequestsPage | `/api/requests/pending-counts` (상시) |
+| 60초 | ApprovalCenterPage · BusinessManagePage | pending-count (연차·사직서) · `showApprovalBadge (level ≥ 2)` |
+| 30분 무활동 | useAuth 내부 | SessionTimeoutWarning 자동 |
+
+### 웹푸시 (VAPID)
+
+- `usePushSubscription` · 로그인 직후 자동 구독 (권한 팝업 1회)
+- `POST /api/push-subscribe { employeeId, subscription }` · `POST /api/push-send { employeeId, title, body }`
+- **익명**: LandingPage `[알림 구독]` → `POST /api/anon-push-subscribe`
+- 진열요청 알림 · 입고알림 방송 등에 사용
+
+## IV-7. 모달·팝업 카탈로그 (22종)
+
+| 모달 | 파일 | 트리거 | 주 액션 |
+|------|-----|-------|--------|
+| 업로드 모달 (5탭) | LandingPage.tsx L1425 | LandingPage [업로드] | 상품·재고·공급사·매입·로그 xlsx |
+| 공급사 로그인 | LandingPage.tsx L2167 | 공급사 아이콘 | vendor 로그인 |
+| 비밀번호 입력 | LandingPage.tsx L2261 | 로그인 flow | 직원별 |
+| 직원 편집 | EmployeeFormModal.tsx | 직원 카드 (관리자) | 직원 CRUD |
+| 직원 캘린더 | EmployeeCalendarModal/EmployeeCalendarModal.tsx | 직원 이름 | 개인 월간 |
+| 일일 타임라인 | DayTimelineModal/DayTimelineModal.tsx | 스케줄 셀 롱프레스 | 하루 상세 |
+| 휴게 편집 | BreakModal.tsx | 스케줄 [휴게시간] (관리자) | 시간대 저장 |
+| 상품정보 (T-SCAN-1) | ScanPage/ProductInfoCard.tsx | 스캔 즉시 | 5칸 실재고 · [진열요청] · [숨김] |
+| 매입이력 (상품) | common/PurchaseHistoryList.tsx | 상품 클릭 | 공급사별 매입 |
+| 구역 상세 | DisplayPage.tsx L2694 | 구역 카드 | 구역별 상품 |
+| 직원 정보 | DisplayPage.tsx L2447 | 담당자 이름 | 오늘의 근무 |
+| PDF 뷰어 | PharmacistPage/PdfViewerModal.tsx | 자료 항목 | 우클릭·복사·드래그·키보드 차단 · 워터마크 |
+| 환경설정 | SettingsModal/SettingsModal.tsx | 톱니바퀴 | 직급/시급/근무지 |
+| 세션 종료 경고 | SessionTimeoutWarning.tsx | 30분 무활동 임박 | [연장] [로그아웃] |
+| 컬럼 매핑 (OCR) | OcrPage/ColumnMappingModal.tsx | OCR 결과 후 | 열 매핑 |
+| 상품 매입 이력 | StockManagePage/ProductPurchaseHistoryModal.tsx | 상품 클릭 | 공급사별 매입 |
+| 알림 벨 드롭다운 | NotificationBell.tsx | 헤더 벨 | 알림 · [모두읽음] |
+| 중복 발주 확인 | RequestsPage.tsx L144 | 중복 감지 | 기존 stock 수정 |
+| 실재고 이력 | RequestsPage.tsx L138 | inventory 로그 | 이력 조회 |
+| RealMap 선택 | ScanPage/RealMapSelector.tsx | 구역 편집 | 구역 pick |
+| 팝오버 (구역 배정) | DisplayPage/ZoneAssignPopover.tsx | 담당자 셀 | 담당자 pick |
+| 팝오버 (구역 그룹) | DisplayPage/ZoneGroupPanel.tsx | 그룹 편집 | 그룹 CRUD |
+
+## IV-8. 워크플로우 다이어그램 (5종)
+
+### 진열요청 (T-SCAN-1)
+```
+[ScanPage] 바코드 스캔
+   ↓ 상품정보 모달 자동 팝업
+   ↓ [진열요청] (매장 슬롯별)
+   ↓ POST /api/display-requests
+   ↓ 진열담당자 자동 지정 (구역 → 담당자 매핑)
+
+[RequestsPage · display 탭]
+pending  (amber) 
+   ↓ [창고준비] · PATCH /prepare
+prepared (sky)
+   ↓ [진열완료] · PATCH /complete
+done     (emerald · opacity-60)
+
+관리자 [알림전송] · POST /api/notifications (담당자별 그룹)
+```
+
+### 근로계약서
+```
+[StaffManagePage] 직원 카드
+   ↓ [근로계약서 작성] · dispatchEvent("staff-write-contract")
+   ↓ page=business-manage · subTab=document-writer · tab=contract
+[ContractWriterPage] 자동 직원 선택
+   ↓ settings.wageRates · 세전월급 자동
+   ↓ contract_clauses (6 CMS) · 서명
+   ↓ [저장] · POST /api/employee-contracts · PDF
+```
+
+### 사직서 (승인 흐름)
+```
+[ResignationWriterPage]
+   ↓ 13사유 · 5조항 · 서명
+   ↓ [저장] · POST /api/resignations · status="pending"
+   ↓ dispatchEvent("approval-count-updated") · 배지 +1
+
+[ApprovalCenterPage · resignation] 관리자
+pending (rose)
+   ↓ [승인] · PATCH /api/resignations/:id { status: "approved" }
+   ↓ dispatchEvent("approval-count-updated") · 배지 -1
+```
+
+### 연차 (승인 흐름)
+```
+[LeavePage] 직원
+   ↓ 날짜·사유 · [신청] · POST /api/leave-requests · status="pending"
+
+[ApprovalCenterPage · leave] 관리자 · 60초 폴링
+   ↓ [승인] · PATCH /api/leave-requests/:id { status: "approved" }
+   ↓ 신청자 push 알림 (자동)
+```
+
+### 발주요청 · 전송 · 매입 확정
+```
+[Requests · order] or [OrderManage · purchase-order · need]
+   ↓ [발주요청 등록] · POST /api/order-requests · 중복 시 dupOrderModal
+
+[OrderManage · purchase-order · order] 공급사별
+   ↓ [발주 전송] · POST /api/order-requests/bulk-send
+   ↓ 카톡/문자/이메일 · 완료 후 clear
+
+[재고관리 · 매입 · 거래명세서]
+   ↓ [OCR 실행] · page=ocr · POST /api/ocr?stream=1 (SSE)
+   ↓ Gemini/ONNX · 동의어·별칭 매칭
+   ↓ [확정] · PATCH /api/goods-receipts/:id/confirm
+   ↓ purchase_details 이관 · 매입이력 반영
+```
+
+## IV-9. 주요 액션 · 엔드포인트 매핑 (요약)
+
+| 액션 | Method · Path |
+|-----|--------------|
+| 진열요청 창고준비 | `PATCH /api/display-requests/:id/prepare` |
+| 진열요청 완료 | `PATCH /api/display-requests/:id/complete` |
+| 발주요청 전송 (bulk) | `POST /api/order-requests/bulk-send` |
+| 거래명세서 확정 | `PATCH /api/goods-receipts/:id/confirm` |
+| 실재고 저장 (bulk) | `POST /api/inventory-checks/bulk` |
+| 웹푸시 방송 (입고알림) | `POST /api/stock-arrivals/:id/broadcast` |
+| 근로계약서 저장 | `POST /api/employee-contracts` |
+| 근로계약서 스캔 업로드 | `POST /api/employee-contracts/upload` (multipart) |
+| 사직서 저장 | `POST /api/resignations` |
+| 이력서 업로드 | `POST /api/employees/:id/resume` (multipart) |
+| 대기 카운트 조회 | `GET /api/requests/pending-counts` |
+| 승인 카운트 (연차·사직서) | `GET /api/leave-requests/pending-count` · `/resignations/pending-count` |
+| 구역 라벨 저장 | `POST /api/zone-labels` |
+| 계약 조항 저장 | `POST /api/contract-clauses` |
+| VAPID public key | `GET /api/vapid-public-key` |
+| 익명 push 구독 | `POST /api/anon-push-subscribe` |
+
+---
+
 _이 문서는 코드 실측 기준 · 메뉴·자산 추가·변경 시 함께 업데이트 필요._
-_마지막 확장: 2026-08-06 (research-strategist · Part II 공통 자산 카탈로그 통합)_
+_마지막 확장: 2026-08-06 (research-strategist · Part II 공통 자산 카탈로그 + Part IV 심층 액션·API·워크플로우)_
