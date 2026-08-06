@@ -12,7 +12,7 @@ import { getProductMap } from "./server/productCache";
 
 import schedulesRouter   from "./server/routes/schedule/schedules";
 import staffRouter       from "./server/routes/staff";
-import settingsRouter    from "./server/routes/settings";
+import settingsRouter    from "./server/routes/settings/settings";
 import productsRouter    from "./server/routes/products";
 import requestsRouter    from "./server/routes/requests";
 import mismatchesRouter  from "./server/routes/mismatches";

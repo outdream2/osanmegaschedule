@@ -34,7 +34,7 @@
 import express from "express";
 import XLSX from "xlsx";
 import { supabase } from "../../src/supabase/client";
-import { resolveSeasonMonths } from "./settings";
+import { resolveSeasonMonths } from "./settings/settings";
 
 const router = express.Router();
 
