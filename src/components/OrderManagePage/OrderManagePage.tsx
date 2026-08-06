@@ -1391,65 +1391,66 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             </div>
 
             {/* ── Row 3: 발주 4조건 체크박스 + 조회/초기화 버튼 ── */}
-            <div className="px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-slate-100">
-              <span className="text-[12px] font-black uppercase tracking-wider text-slate-500 shrink-0 whitespace-nowrap">발주 조건</span>
+            {/* 2026-08-06 · 반응형 · 3조건 한 줄 강제 · overflow-x-auto (조회·초기화 버튼은 아래 줄) */}
+            <div className="px-3 py-2 border-b border-slate-100 flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 gap-y-2">
+              {/* 조건 3종 · 항상 한 줄 (nowrap · overflow-x-auto) */}
+              <div className="flex items-center gap-x-3 gap-y-2 flex-nowrap overflow-x-auto -mx-1 px-1 pb-1 sm:pb-0 sm:overflow-visible">
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 shrink-0 whitespace-nowrap">발주 조건</span>
 
-              {/* 조건 1 · 매입일 N일 이상 */}
-              <label className="inline-flex items-center gap-1.5 shrink-0">
-                <input type="checkbox" checked={needCycleEnabled} onChange={e => setNeedCycleEnabled(e.target.checked)}
-                  className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
-                <span className={`text-[12px] font-bold whitespace-nowrap ${needCycleEnabled ? "text-slate-700" : "text-slate-400"}`}>매입일</span>
-                <input
-                  type="number" min={0} step={1}
-                  disabled={!needCycleEnabled}
-                  value={needInlineMinCycle === 0 ? "" : needInlineMinCycle}
-                  onChange={e => updateInline("cycle", e.target.value)}
-                  placeholder="90"
-                  className="w-16 h-8 px-2 rounded-md border border-slate-200 text-[13px] font-bold text-slate-800 text-right tabular-nums bg-white
-                             focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
-                             hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
-                />
-                <span className={`text-[12px] whitespace-nowrap ${needCycleEnabled ? "text-slate-500" : "text-slate-300"}`}>일 이상</span>
-              </label>
+                {/* 조건 1 · 매입일 N일 이상 */}
+                <label className="inline-flex items-center gap-1 shrink-0">
+                  <input type="checkbox" checked={needCycleEnabled} onChange={e => setNeedCycleEnabled(e.target.checked)}
+                    className="w-3.5 h-3.5 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
+                  <span className={`text-[11px] font-bold whitespace-nowrap ${needCycleEnabled ? "text-slate-700" : "text-slate-400"}`}>매입일</span>
+                  <input
+                    type="number" min={0} step={1}
+                    disabled={!needCycleEnabled}
+                    value={needInlineMinCycle === 0 ? "" : needInlineMinCycle}
+                    onChange={e => updateInline("cycle", e.target.value)}
+                    placeholder="90"
+                    className="w-12 h-7 px-1.5 rounded-md border border-slate-200 text-[12px] font-bold text-slate-800 text-right tabular-nums bg-white
+                               focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
+                               hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
+                  />
+                  <span className={`text-[11px] whitespace-nowrap ${needCycleEnabled ? "text-slate-500" : "text-slate-300"}`}>일↑</span>
+                </label>
 
-              {/* 조건 2 · 재고 N개 이하 */}
-              {/* 재고 조건 · 2026-08-04 · 사용자 요청으로 제거 (매입주기·한달판매·3달판매만 유지) */}
+                {/* 조건 2 · 최근 한달 판매량 N개 이하 */}
+                <label className="inline-flex items-center gap-1 shrink-0">
+                  <input type="checkbox" checked={needSalesMonthEnabled} onChange={e => setNeedSalesMonthEnabled(e.target.checked)}
+                    className="w-3.5 h-3.5 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
+                  <span className={`text-[11px] font-bold whitespace-nowrap ${needSalesMonthEnabled ? "text-slate-700" : "text-slate-400"}`}>1M판매</span>
+                  <input
+                    type="number" min={0} step={1}
+                    disabled={!needSalesMonthEnabled}
+                    value={needInlineMaxSalesMonth === 0 ? "" : needInlineMaxSalesMonth}
+                    onChange={e => updateInline("salesMonth", e.target.value)}
+                    placeholder="50"
+                    className="w-12 h-7 px-1.5 rounded-md border border-slate-200 text-[12px] font-bold text-slate-800 text-right tabular-nums bg-white
+                               focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
+                               hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
+                  />
+                  <span className={`text-[11px] whitespace-nowrap ${needSalesMonthEnabled ? "text-slate-500" : "text-slate-300"}`}>개↓</span>
+                </label>
 
-              {/* 조건 2 · 최근 한달 판매량 N개 이하 */}
-              <label className="inline-flex items-center gap-1.5 shrink-0">
-                <input type="checkbox" checked={needSalesMonthEnabled} onChange={e => setNeedSalesMonthEnabled(e.target.checked)}
-                  className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
-                <span className={`text-[12px] font-bold whitespace-nowrap ${needSalesMonthEnabled ? "text-slate-700" : "text-slate-400"}`}>한달 판매</span>
-                <input
-                  type="number" min={0} step={1}
-                  disabled={!needSalesMonthEnabled}
-                  value={needInlineMaxSalesMonth === 0 ? "" : needInlineMaxSalesMonth}
-                  onChange={e => updateInline("salesMonth", e.target.value)}
-                  placeholder="50"
-                  className="w-16 h-8 px-2 rounded-md border border-slate-200 text-[13px] font-bold text-slate-800 text-right tabular-nums bg-white
-                             focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
-                             hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
-                />
-                <span className={`text-[12px] whitespace-nowrap ${needSalesMonthEnabled ? "text-slate-500" : "text-slate-300"}`}>개 이하</span>
-              </label>
-
-              {/* 조건 4 · 최근 3달 판매량 N개 이하 */}
-              <label className="inline-flex items-center gap-1.5 shrink-0">
-                <input type="checkbox" checked={needSalesQuarterEnabled} onChange={e => setNeedSalesQuarterEnabled(e.target.checked)}
-                  className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
-                <span className={`text-[12px] font-bold whitespace-nowrap ${needSalesQuarterEnabled ? "text-slate-700" : "text-slate-400"}`}>3달 판매</span>
-                <input
-                  type="number" min={0} step={1}
-                  disabled={!needSalesQuarterEnabled}
-                  value={needInlineMaxSalesQuarter === 0 ? "" : needInlineMaxSalesQuarter}
-                  onChange={e => updateInline("salesQuarter", e.target.value)}
-                  placeholder="100"
-                  className="w-16 h-8 px-2 rounded-md border border-slate-200 text-[13px] font-bold text-slate-800 text-right tabular-nums bg-white
-                             focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
-                             hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
-                />
-                <span className={`text-[12px] whitespace-nowrap ${needSalesQuarterEnabled ? "text-slate-500" : "text-slate-300"}`}>개 이하</span>
-              </label>
+                {/* 조건 3 · 최근 3달 판매량 N개 이하 */}
+                <label className="inline-flex items-center gap-1 shrink-0">
+                  <input type="checkbox" checked={needSalesQuarterEnabled} onChange={e => setNeedSalesQuarterEnabled(e.target.checked)}
+                    className="w-3.5 h-3.5 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
+                  <span className={`text-[11px] font-bold whitespace-nowrap ${needSalesQuarterEnabled ? "text-slate-700" : "text-slate-400"}`}>3M판매</span>
+                  <input
+                    type="number" min={0} step={1}
+                    disabled={!needSalesQuarterEnabled}
+                    value={needInlineMaxSalesQuarter === 0 ? "" : needInlineMaxSalesQuarter}
+                    onChange={e => updateInline("salesQuarter", e.target.value)}
+                    placeholder="100"
+                    className="w-12 h-7 px-1.5 rounded-md border border-slate-200 text-[12px] font-bold text-slate-800 text-right tabular-nums bg-white
+                               focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
+                               hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
+                  />
+                  <span className={`text-[11px] whitespace-nowrap ${needSalesQuarterEnabled ? "text-slate-500" : "text-slate-300"}`}>개↓</span>
+                </label>
+              </div>
 
               {/* 조회 버튼 */}
               <button

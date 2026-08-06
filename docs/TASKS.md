@@ -24,9 +24,10 @@
 
 ## 🔴 사용자 테스트 요청 (2026-08-06)
 
-### T-AUDIT-Supabase-1000-cap · 모든 라우터 fetchAllWithRange 적용
-- 대상: purchaseHistory · productArrivals · stockManage(잔여) · stockReconciliation · inventorySales · products (필요 시)
-- 파일: 각 `.limit(N > 1000)` or dynamic `.limit(변수)` 위치
+### T-TEST-발주필요-발주조건배치 · 반응형 UI
+- 위치: 재고관리 → 발주 → 발주필요 · 각 상품 카드
+- 요구: **발주조건 아래** · **매입일 · 1개월 판매량 · 3개월 판매량** · **한줄 배치**
+- 파일: OrderManagePage 발주필요 렌더링 부분
 
 ---
 
