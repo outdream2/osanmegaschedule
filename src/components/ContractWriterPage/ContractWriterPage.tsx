@@ -37,6 +37,7 @@ import {
   type ContractCategory,
   loadContractClauses,
   fetchContractClauses,
+  fetchContractWriterSettings,
 } from "../ContractSettingsPage/ContractSettingsPage";
 import SplitPanel from "../common/SplitPanel";
 import sungstampUrl from "../../images/sungstamp.png";
@@ -3058,7 +3059,23 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     }
   }, [form.contractType, form.contractMonths, form.startDate, form.indefinite]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 카테고리 → 업무 기본값
+  // 2026-08-06 · T-DB-Migrate-LocalStorage
+  //   mount 시 · 서버에서 contract writer settings (직군별 업무 텍스트) 를 fetch
+  //   → localStorage 캐시 갱신 → writerSettingsVersion++ → 아래 category effect 재실행
+  //   서버 실패 시 · 기존 localStorage 값 유지 (silent · loadContractSettings 가 그대로 반환)
+  const [writerSettingsVersion, setWriterSettingsVersion] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        await fetchContractWriterSettings(); // localStorage 캐시 자동 갱신
+        if (!cancelled) setWriterSettingsVersion(v => v + 1);
+      } catch { /* silent · fallback = localStorage */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // 카테고리 → 업무 기본값 (writerSettingsVersion 변경 시에도 재계산)
   useEffect(() => {
     const settings = loadContractSettings();
     const defaults: Record<ContractCategory, string> = {
@@ -3079,7 +3096,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     if (isDefault && nextDuty && nextDuty !== form.jobDuty) {
       setForm(prev => ({ ...prev, jobDuty: nextDuty }));
     }
-  }, [form.employeeCategory, form.employeeCategoryCustom]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [form.employeeCategory, form.employeeCategoryCustom, writerSettingsVersion]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 매장/창고 → primaryFocus 자동
   useEffect(() => {

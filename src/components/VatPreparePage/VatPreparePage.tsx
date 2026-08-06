@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import SalesTab from "./tabs/SalesTab";
 import SupplierVatTab from "./tabs/SupplierVatTab";
+import { useKvSetting } from "../../hooks/useKvSetting";
 
 // ─── 타입 ────────────────────────────────────────────────────────
 
@@ -78,7 +79,14 @@ interface VendorDetailRow {
 }
 
 // ─── 체크리스트 저장 ────────────────────────────────────────────
-const STORAGE_KEY = "megatown_vatPrepareState";
+// 2026-08-06 · T-DB-Migrate-LocalStorage
+//   · 이전: localStorage `megatown_vatPrepareState`
+//   · 현재: Supabase settings key `vat_prepare_state` · JSONB
+//           `{ [period]: { vatVerified, invoicesCollected, vatCalculated, filingReady } }`
+//   · 여러 관리자 반기별 체크리스트 진행 상태 공유
+//   · legacy localStorage 자동 마이그레이션 (useKvSetting 내부)
+const LEGACY_STORAGE_KEY = "megatown_vatPrepareState";
+const VAT_PREPARE_SETTINGS_KEY = "vat_prepare_state";
 
 interface VatChecklistState {
   vatVerified: boolean;
@@ -87,6 +95,8 @@ interface VatChecklistState {
   filingReady: boolean;
 }
 
+type VatPrepareMap = Record<string, VatChecklistState>;
+
 const DEFAULT_CHECKLIST: VatChecklistState = {
   vatVerified: false,
   invoicesCollected: false,
@@ -94,22 +104,24 @@ const DEFAULT_CHECKLIST: VatChecklistState = {
   filingReady: false,
 };
 
-function loadChecklist(period: string): VatChecklistState {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_CHECKLIST;
-    const obj = JSON.parse(raw);
-    return obj[period] ?? DEFAULT_CHECKLIST;
-  } catch { return DEFAULT_CHECKLIST; }
-}
+const EMPTY_PREPARE_MAP: VatPrepareMap = {};
 
-function saveChecklist(period: string, state: VatChecklistState) {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const obj = raw ? JSON.parse(raw) : {};
-    obj[period] = state;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
-  } catch { /* noop */ }
+/** 서버/legacy raw → VatPrepareMap · 각 period 값 정규화 */
+function sanitizeVatPrepareMap(raw: unknown): VatPrepareMap | null {
+  if (raw == null) return null;
+  if (typeof raw !== "object") return null;
+  const out: VatPrepareMap = {};
+  for (const [period, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!v || typeof v !== "object") continue;
+    const obj = v as Record<string, unknown>;
+    out[period] = {
+      vatVerified: obj.vatVerified === true,
+      invoicesCollected: obj.invoicesCollected === true,
+      vatCalculated: obj.vatCalculated === true,
+      filingReady: obj.filingReady === true,
+    };
+  }
+  return out;
 }
 
 // ─── 유틸 ────────────────────────────────────────────────────────
@@ -161,8 +173,29 @@ const VatPreparePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
 
-  // 체크리스트
-  const [checklist, setChecklist] = useState<VatChecklistState>(() => loadChecklist(period));
+  // 체크리스트 · Supabase settings 서버 저장 (legacy localStorage 자동 마이그레이션)
+  //   전체 map (반기별 4 flag) 을 하나의 settings row 로 저장
+  //   개별 period 는 map[period] 로 접근
+  const {
+    value: prepareMap,
+    setValue: setPrepareMap,
+  } = useKvSetting<VatPrepareMap>({
+    key: VAT_PREPARE_SETTINGS_KEY,
+    defaultValue: EMPTY_PREPARE_MAP,
+    legacyStorageKey: LEGACY_STORAGE_KEY,
+    sanitize: sanitizeVatPrepareMap,
+  });
+
+  const checklist: VatChecklistState = prepareMap[period] ?? DEFAULT_CHECKLIST;
+  const setChecklist = useCallback((next: VatChecklistState | ((prev: VatChecklistState) => VatChecklistState)) => {
+    setPrepareMap(prev => {
+      const currentForPeriod = prev[period] ?? DEFAULT_CHECKLIST;
+      const resolved = typeof next === "function"
+        ? (next as (p: VatChecklistState) => VatChecklistState)(currentForPeriod)
+        : next;
+      return { ...prev, [period]: resolved };
+    });
+  }, [period, setPrepareMap]);
 
   // 메인 탭 (매출/매입/신고서 미리보기)
   const [mainTab, setMainTab] = useState<MainTab>("sales");
@@ -178,10 +211,7 @@ const VatPreparePage: React.FC = () => {
     setSalesAgg(agg);
   }, []);
 
-  // period 변경 시 체크리스트 로드
-  useEffect(() => { setChecklist(loadChecklist(period)); }, [period]);
-  // 체크리스트 변경 시 저장
-  useEffect(() => { saveChecklist(period, checklist); }, [period, checklist]);
+  // 체크리스트는 useKvSetting 이 자동 로드·저장 (period 변경 시에도 map 에서 조회)
 
   // 요약·공급사별 조회
   const loadData = useCallback(async () => {
@@ -625,7 +655,7 @@ const VatPreparePage: React.FC = () => {
         <div className="flex items-center gap-2 mb-3">
           <CheckSquare size={14} className="text-sky-500" />
           <div className="text-[13px] font-black text-slate-800">신고 준비 체크리스트</div>
-          <div className="text-[10px] text-slate-400 ml-auto">자동 저장 · localStorage</div>
+          <div className="text-[10px] text-slate-400 ml-auto">자동 저장 · 서버 공유 (모든 관리자)</div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <ChecklistItem

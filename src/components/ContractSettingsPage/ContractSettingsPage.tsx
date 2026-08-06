@@ -47,7 +47,10 @@ export interface ContractWriterSettings {
   commonNotice?: string;
 }
 
+// 하위호환 · localStorage key 는 캐시로만 사용 (서버 정본 · 오프라인 fallback)
 export const CONTRACT_SETTINGS_KEY = "contract-writer-settings";
+// 신규 · Supabase settings 서버 저장 key
+export const CONTRACT_WRITER_SETTINGS_DB_KEY = "contract_writer_settings";
 
 /** ContractWriterPage 하드코딩 fallback 과 동일해야 함 · 초기값 · 하위 호환 */
 export const DEFAULT_CONTRACT_SETTINGS: ContractWriterSettings = {
@@ -58,25 +61,98 @@ export const DEFAULT_CONTRACT_SETTINGS: ContractWriterSettings = {
   commonNotice: "",
 };
 
+/** raw → 정규화된 ContractWriterSettings */
+function normalizeContractSettings(parsed: unknown): ContractWriterSettings {
+  if (!parsed || typeof parsed !== "object") return { ...DEFAULT_CONTRACT_SETTINGS };
+  const p = parsed as Record<string, unknown>;
+  return {
+    약사: typeof p.약사 === "string" ? p.약사 : DEFAULT_CONTRACT_SETTINGS.약사,
+    매장: typeof p.매장 === "string" ? p.매장 : DEFAULT_CONTRACT_SETTINGS.매장,
+    창고: typeof p.창고 === "string" ? p.창고 : DEFAULT_CONTRACT_SETTINGS.창고,
+    기타: typeof p.기타 === "string" ? p.기타 : DEFAULT_CONTRACT_SETTINGS.기타,
+    commonNotice: typeof p.commonNotice === "string" ? p.commonNotice : "",
+  };
+}
+
 /**
- * localStorage · 안전하게 로드 · JSON parse 실패 시 default
- * ContractWriterPage 에서 참조 · 편집 UI 는 삭제되었으나 저장값 있으면 여전히 유효.
+ * 동기 로더 · localStorage 캐시 기반 · 하위호환 유지
+ * · ContractWriterPage 가 useMemo 로 즉시 호출 (async 회피)
+ * · 신규 (2026-08-06): 서버에서 미리 fetch 한 값이 localStorage 캐시에 저장되어 있으므로 최신값 반영됨
  */
 export function loadContractSettings(): ContractWriterSettings {
   try {
     const raw = localStorage.getItem(CONTRACT_SETTINGS_KEY);
     if (!raw) return { ...DEFAULT_CONTRACT_SETTINGS };
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return { ...DEFAULT_CONTRACT_SETTINGS };
-    return {
-      약사: typeof parsed.약사 === "string" ? parsed.약사 : DEFAULT_CONTRACT_SETTINGS.약사,
-      매장: typeof parsed.매장 === "string" ? parsed.매장 : DEFAULT_CONTRACT_SETTINGS.매장,
-      창고: typeof parsed.창고 === "string" ? parsed.창고 : DEFAULT_CONTRACT_SETTINGS.창고,
-      기타: typeof parsed.기타 === "string" ? parsed.기타 : DEFAULT_CONTRACT_SETTINGS.기타,
-      commonNotice: typeof parsed.commonNotice === "string" ? parsed.commonNotice : "",
-    };
+    return normalizeContractSettings(JSON.parse(raw));
   } catch {
     return { ...DEFAULT_CONTRACT_SETTINGS };
+  }
+}
+
+/**
+ * 2026-08-06 · T-DB-Migrate-LocalStorage
+ * 서버 조회 · GET /api/settings?key=contract_writer_settings
+ * · 성공 → localStorage 캐시에 저장 (다음 loadContractSettings 호출 시 최신값)
+ * · 실패 → localStorage fallback (기존 캐시값 유지)
+ */
+export async function fetchContractWriterSettings(): Promise<ContractWriterSettings> {
+  try {
+    const res = await fetch(
+      `/api/settings?key=${encodeURIComponent(CONTRACT_WRITER_SETTINGS_DB_KEY)}`,
+      { credentials: "include" },
+    );
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const body = await res.json();
+    if (body?.value == null) {
+      // 서버 값 없음 · localStorage 에 값 있으면 마이그레이션
+      const legacyRaw = (() => { try { return localStorage.getItem(CONTRACT_SETTINGS_KEY); } catch { return null; } })();
+      if (legacyRaw) {
+        try {
+          const legacy = normalizeContractSettings(JSON.parse(legacyRaw));
+          // 서버로 upload (실패 silent · 다음 마운트에서 재시도)
+          fetch(`/api/settings`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ key: CONTRACT_WRITER_SETTINGS_DB_KEY, value: legacy }),
+          }).catch(() => { /* silent */ });
+          return legacy;
+        } catch { /* legacy parse 실패 · fallthrough */ }
+      }
+      return { ...DEFAULT_CONTRACT_SETTINGS };
+    }
+    const merged = normalizeContractSettings(body.value);
+    try { localStorage.setItem(CONTRACT_SETTINGS_KEY, JSON.stringify(merged)); } catch { /* silent */ }
+    return merged;
+  } catch {
+    return loadContractSettings();
+  }
+}
+
+/**
+ * 서버 저장 · POST /api/settings · key=contract_writer_settings
+ * · 성공 → localStorage 캐시도 동기화
+ * · 실패 → localStorage 만 저장 (fallback)
+ */
+export async function saveContractWriterSettingsToServer(
+  settings: ContractWriterSettings,
+): Promise<{ ok: boolean; savedToServer: boolean; error?: string }> {
+  // localStorage 는 항상 저장 (fallback 안전망)
+  try { localStorage.setItem(CONTRACT_SETTINGS_KEY, JSON.stringify(settings)); } catch { /* silent */ }
+  try {
+    const res = await fetch(`/api/settings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ key: CONTRACT_WRITER_SETTINGS_DB_KEY, value: settings }),
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      return { ok: true, savedToServer: false, error: errBody?.error ?? `HTTP ${res.status}` };
+    }
+    return { ok: true, savedToServer: true };
+  } catch (err: any) {
+    return { ok: true, savedToServer: false, error: err?.message ?? "네트워크 오류" };
   }
 }
 

@@ -1,9 +1,10 @@
 // src/components/VatPreparePage/tabs/SalesTab.tsx
 // 2026-08-04 · #253 · 월별 매출·매입·경비·부가세 통합 표
+// 2026-08-06 · T-DB-Migrate-LocalStorage · 경비/면세매출 · 서버(settings) 저장 (모든 관리자 공유)
 //   · 이전 · localStorage 매출 수동 입력 (useSalesLocal) · 삭제
 //   · 현재 · useMonthlyVat 로 DB 매출(stock_history) + 매입(purchase_details) 자동 조회
-//   · 경비 · localStorage `megatown_vat_expenses_v1` · 월별 사용자 입력
-//   · 면세(TAX FREE) 매출 · localStorage `megatown_vat_taxfree_sales_v1` · 월별 사용자 입력
+//   · 경비 · settings key `vat_expenses` · 월별 사용자 입력 · 서버 저장
+//   · 면세(TAX FREE) 매출 · settings key `vat_taxfree_sales` · 월별 사용자 입력 · 서버 저장
 //     - 유형: 외국인 즉시환급 (POS 자동 분류 불가 · 수동 입력)
 //     - 과세 매출 = 매출총액 - 면세 매출 · 매출세액 = 과세매출 / 11
 //   · 예상 부가세 = 과세 매출세액 - 매입세액공제 - 경비세액 · 실시간 재계산
@@ -231,7 +232,7 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
           <span className="mx-1 text-amber-500">·</span>
           현재 POS 데이터에는 과세/면세 구분이 없어 · 각 월별 <b>면세 매출액</b> 셀에 외국인 즉시환급 금액을 직접 입력하세요.
           <span className="mx-1 text-amber-500">·</span>
-          입력값은 이 브라우저(localStorage · <code className="text-[10px] bg-amber-100 px-1 rounded">megatown_vat_taxfree_sales_v1</code>)에 저장됩니다.
+          입력값은 서버(<code className="text-[10px] bg-amber-100 px-1 rounded">settings.vat_taxfree_sales</code>)에 저장 · 모든 관리자에게 공유됩니다.
         </div>
       </div>
 
