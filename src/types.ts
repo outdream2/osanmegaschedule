@@ -39,6 +39,8 @@ export interface Employee {
   gender?: "남" | "여";
   phone?: string; // 핸드폰번호 (로그인 ID로 사용)
   address?: string | null; // 주소 (마이페이지에서 본인이 수정 가능)
+  email?: string | null;             // 이메일
+  resident_number?: string | null;   // 주민등록번호 (마스킹 처리 주의)
   push_subscription?: object | null; // Web Push 구독 정보
   annual_leave_days?: number | null;
   level?: number | null; // 0-9: 1=직원, 8=대표, 9=최고관리자

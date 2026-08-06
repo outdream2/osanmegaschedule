@@ -145,6 +145,10 @@ interface ContractForm {
   bankAccountNumber: string;
   bankbookImageUrl: string;
   employeeEmail: string;
+  // T-CTR-EmployeeLink (2026-08-06) · 직원 자동 연동 신규 필드
+  employeeGender: string;    // 성별 (남|여|"")
+  employeeRank: string;      // 직급 (대표|부장|팀장|과장|사원|...)
+  employeeWorkplace: string; // 근무지 (매장|창고|...)
 
   // 계약 유형
   contractType: string;
@@ -885,6 +889,9 @@ const emptyForm = (): ContractForm => ({
   bankAccountNumber: "",
   bankbookImageUrl: "",
   employeeEmail: "",
+  employeeGender: "",
+  employeeRank: "",
+  employeeWorkplace: "",
   contractType: "정규직",
   contractMonths: "2",
   workDays: { "월": true, "화": true, "수": true, "목": true, "금": true, "토": false, "일": false },
@@ -2933,6 +2940,11 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           startDate: typeof p.hireDate === "string" && p.hireDate ? p.hireDate : prev.startDate,
           weekdayHourly: wd,
           weekendHourly: we,
+          // T-CTR-EmployeeLink (2026-08-06) · 신규 필드 prefill
+          employeeEmail: typeof p.employeeEmail === "string" && p.employeeEmail ? p.employeeEmail : prev.employeeEmail,
+          employeeGender: typeof p.gender === "string" && p.gender ? p.gender : prev.employeeGender,
+          employeeRank: typeof p.rank === "string" && p.rank ? p.rank : prev.employeeRank,
+          employeeWorkplace: typeof p.workplace === "string" && p.workplace ? p.workplace : prev.employeeWorkplace,
         };
       });
       localStorage.removeItem("contract-writer-prefill");
@@ -3065,12 +3077,23 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   //   → localStorage 캐시 갱신 → writerSettingsVersion++ → 아래 category effect 재실행
   //   서버 실패 시 · 기존 localStorage 값 유지 (silent · loadContractSettings 가 그대로 반환)
   const [writerSettingsVersion, setWriterSettingsVersion] = useState(0);
+  // T-CTR-Etc+JobFromDB · 직군 목록 · DB settings 키(약사/매장/창고/기타)에서 동적 로드
+  // fallback: DEFAULT_CONTRACT_SETTINGS 키 순서
+  const [jobCategories, setJobCategories] = useState<ContractCategory[]>(["약사", "매장", "창고", "기타"]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        await fetchContractWriterSettings(); // localStorage 캐시 자동 갱신
-        if (!cancelled) setWriterSettingsVersion(v => v + 1);
+        const fresh = await fetchContractWriterSettings(); // localStorage 캐시 자동 갱신
+        if (!cancelled) {
+          setWriterSettingsVersion(v => v + 1);
+          // DB 키 순서대로 직군 목록 재구성 (약사·매장·창고·기타 순 · 없으면 fallback)
+          const cats: ContractCategory[] = (["약사", "매장", "창고", "기타"] as ContractCategory[]).filter(
+            k => k in fresh && typeof (fresh as unknown as Record<string, unknown>)[k] === "string"
+          );
+          if (cats.length > 0) setJobCategories(cats);
+        }
       } catch { /* silent · fallback = localStorage */ }
     })();
     return () => { cancelled = true; };
@@ -3086,9 +3109,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       "기타": settings.기타 || DEFAULT_CONTRACT_SETTINGS.기타,
     };
     const key = form.employeeCategory;
-    const nextDuty = form.employeeCategory === "기타" && form.employeeCategoryCustom
-      ? `${form.employeeCategoryCustom} 관련 업무`
-      : defaults[key];
+    // T-CTR-Etc+JobFromDB · 기타 자유텍스트 제거 · defaults[key] 만 사용
+    const nextDuty = defaults[key] ?? DEFAULT_CONTRACT_SETTINGS.기타;
     const knownDefaults = new Set<string>([
       ...Object.values(defaults),
       ...Object.values(DEFAULT_CONTRACT_SETTINGS).filter((v): v is string => typeof v === "string" && v.length > 0),
@@ -3097,7 +3119,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     if (isDefault && nextDuty && nextDuty !== form.jobDuty) {
       setForm(prev => ({ ...prev, jobDuty: nextDuty }));
     }
-  }, [form.employeeCategory, form.employeeCategoryCustom, writerSettingsVersion]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [form.employeeCategory, writerSettingsVersion]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 매장/창고 → primaryFocus 자동
   useEffect(() => {
@@ -3522,6 +3544,16 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       primaryFocusPercent: (typeof emp.primary_focus_percent === "number" && emp.primary_focus_percent > 0)
         ? emp.primary_focus_percent
         : prev.primaryFocusPercent,
+      // T-CTR-EmployeeLink (2026-08-06) · 신규 필드 자동 채움
+      employeeEmail: (emp as any).email || prev.employeeEmail,
+      employeeBirth: (emp as any).resident_number || prev.employeeBirth,
+      employeeGender: emp.gender || prev.employeeGender,
+      employeeRank: emp.rank || prev.employeeRank,
+      employeeWorkplace: emp.workplace || prev.employeeWorkplace,
+      // 입사일 → 계약 시작일 기본값 (편집 가능 · 기존 값이 없거나 오늘 날짜인 경우만 덮어씀)
+      startDate: (emp.hireDate && (!prev.startDate || prev.startDate === todayIso()))
+        ? emp.hireDate
+        : prev.startDate,
     }));
   };
 
@@ -4140,11 +4172,43 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               />
             </div>
 
-            {/* 직군 (2026-08-06 · 연차 필드 근무조건 카드로 이동) */}
+            {/* T-CTR-EmployeeLink (2026-08-06) · 성별 · 직급 · 근무지 자동 연동 */}
+            <div>
+              <label className={fldLabel}>성별</label>
+              <div className="flex gap-1">
+                {(["남", "여"] as const).map(g => (
+                  <button key={g} type="button" onClick={() => upd("employeeGender", form.employeeGender === g ? "" : g)}
+                    className={`flex-1 py-1.5 rounded-lg border text-[12px] font-bold transition-colors cursor-pointer ${
+                      form.employeeGender === g
+                        ? (g === "남" ? "bg-blue-500 text-white border-blue-500" : "bg-rose-500 text-white border-rose-500")
+                        : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                    }`}
+                  >{g}</button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className={fldLabel}>직급</label>
+              <input type="text" value={form.employeeRank} onChange={(e) => upd("employeeRank", e.target.value)}
+                placeholder="사원 · 팀장 · 과장 ..."
+                className={fldInput}
+              />
+            </div>
+
+            <div className="col-span-2">
+              <label className={fldLabel}>근무지</label>
+              <input type="text" value={form.employeeWorkplace} onChange={(e) => upd("employeeWorkplace", e.target.value)}
+                placeholder="매장 · 창고 · 본사 ..."
+                className={fldInput}
+              />
+            </div>
+
+            {/* 직군 (2026-08-06 · T-CTR-Etc+JobFromDB · jobCategories DB 동적 로드 · 기타 자유입력 제거) */}
             <div className="col-span-2">
               <label className={fldLabel}>직군</label>
               <div className="flex gap-1">
-                {(["약사", "매장", "창고", "기타"] as const).map(cat => {
+                {jobCategories.map(cat => {
                   const active = form.employeeCategory === cat;
                   const activeCls =
                     cat === "약사"  ? "bg-violet-500 text-white border-violet-500" :
@@ -4162,13 +4226,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               </div>
             </div>
           </div>
-
-          {form.employeeCategory === "기타" && (
-            <input type="text" value={form.employeeCategoryCustom} onChange={(e) => upd("employeeCategoryCustom", e.target.value)}
-              placeholder="직군 명칭 (예: 인턴약사 · 청소 · 배송)"
-              className={fldInput}
-            />
-          )}
+          {/* T-CTR-Etc+JobFromDB · 기타 자유 텍스트 input 제거 (legacy employeeCategoryCustom state 는 하위호환 유지) */}
 
           {/* 우선업무 */}
           {(form.employeeCategory === "매장" || form.employeeCategory === "창고") && (
