@@ -60,6 +60,17 @@ import {
 } from "../../constants/jobCategories";
 import { START_TIMES as START_TIMES_CONST, END_TIMES as END_TIMES_CONST } from "../../constants/schedules";
 import { TIMING } from "../../constants/timing";
+import {
+  WAGE_HOURS, WAGE_DIVISOR, WEEK_PER_MONTH, DAILY_LIMIT,
+  type WageBaseHours, calcWageBase, calcDynamicDivisor,
+} from "../../lib/wageCalc";
+import { shortContractLabel, parseContractTypeForRead } from "../../utils/contractUtils";
+import {
+  DISCIPLINE_REASONS, HOLIDAY_CLAUSES, WAGE_CLAUSES, WAGE_CLAUSE_EXTRA, ETC_ITEMS, PRIVACY_ITEMS,
+} from "../../constants/contractClauses";
+import {
+  type SignKey, SIGN_KEYS, SIGN_LABEL, useContractSignatures,
+} from "../../hooks/useContractSignatures";
 
 type SignatureCanvasType = SignaturePad;
 
@@ -101,44 +112,7 @@ export interface PrivacyConsent {
   agreedCCTV: boolean;
 }
 
-// 서명 지점 keys (근로계약기간·퇴직금 제거 · 임금단서 3·4 추가)
-// T-D (2026-08-05): T6 카테고리 이해·동의 3개에 서명 pad 추가 (wageAck·workTimeAck·etcAck)
-type SignKey =
-  | "employer"        // 사업주 (갑) · 하단
-  | "employee"        // 근로자 (을) · 하단
-  | "privacy"         // 개인정보/CCTV
-  | "specialWork"     // 소정근로시간 특별 사용 동의 (레거시 · 미사용 · 데이터 하위호환)
-  | "breakChange"     // 휴게시간 변경 동의 (레거시 · 미사용 · 데이터 하위호환)
-  | "wageClause3"     // 임금단서 3번 (레거시 · 미사용 · 데이터 하위호환)
-  | "wageClause4"     // 임금단서 4번 (레거시 · 미사용 · 데이터 하위호환)
-  | "etc5"            // 기타사항 5번 (레거시 · 미사용 · 데이터 하위호환)
-  | "receipt"         // 수령자 확인 (계약서 교부)
-  | "wageAck"         // T-D 임금 조항 카테고리 이해·동의 (T6 pad)
-  | "workTimeAck"     // T-D 근로시간·휴게 카테고리 이해·동의 (T6 pad)
-  | "etcAck"          // T-D 기타사항 카테고리 이해·동의 (T6 pad)
-  ;
-
-// 활성 서명 지점 · 승인 검증에 카운트되는 것만 (레거시 5개 제외 · T-D 3개 신규)
-const SIGN_KEYS: SignKey[] = [
-  "employer", "employee", "privacy",
-  "wageAck", "workTimeAck", "etcAck",
-  "receipt",
-];
-
-const SIGN_LABEL: Record<SignKey, string> = {
-  employer:     "사업주 (갑) 하단",
-  employee:     "근로자 (을) 하단",
-  privacy:      "개인정보 · CCTV 동의",
-  specialWork:  "소정근로시간 특별 사용 동의",
-  breakChange:  "휴게시간 변경 동의",
-  wageClause3:  "임금단서 3 (연차 포괄)",
-  wageClause4:  "임금단서 4 (공휴일 포괄)",
-  etc5:         "기타사항 5 (퇴직 시 연차 공제)",
-  receipt:      "수령자 확인 (계약서 교부)",
-  wageAck:      "임금 조항 이해·동의",
-  workTimeAck:  "근로시간·휴게 조항 이해·동의",
-  etcAck:       "기타사항 이해·동의",
-};
+// SignKey · SIGN_KEYS · SIGN_LABEL → src/hooks/useContractSignatures.ts 로 이동 (god-phase1)
 
 interface ContractForm {
   // 근로자
@@ -261,42 +235,7 @@ const WEEKEND: DayKey[] = ["토", "일"];
 
 const CONTRACT_TYPES: string[] = Array.from(CONTRACT_TYPES_CONST);
 
-// T-Z (2026-08-05) · 계약유형 short label (저장·전송 형식)
-//   · "정규직"    → "정규"
-//   · "계약직" + N개월 → "계약N" (예: 계약2 · 계약12)
-//   · "알바"/"일용"/"인턴" → 그대로
-// 근거: 사용자 요청 · StaffManagePage 정렬·필터·자동배지 (autoContractBadge 는 개월수 유지)
-export function shortContractLabel(fullType: string, months?: string | number | null): string {
-  const t = String(fullType ?? "").trim();
-  if (!t) return "";
-  // 이미 short 형식 (정규 · 계약N) 이면 그대로
-  if (t === "정규" || /^계약\d+$/.test(t)) return t;
-  // 정규직 → 정규
-  if (t === "정규직" || t.startsWith("정규")) return "정규";
-  // 계약직 + N개월 → 계약N
-  if (t === "계약직" || t.startsWith("계약")) {
-    const m = String(months ?? "").trim();
-    if (m && /^\d+$/.test(m)) return `계약${m}`;
-    return "계약";
-  }
-  // 그 외 (알바 · 일용 · 인턴 · custom) 은 그대로
-  return t;
-}
-
-// T-Z · read 시 하위호환 · "정규직" · "계약직" · "계약2" 등을 { display, months } 로 정규화
-//   · 반환 display 는 form 내부 표시용 (UI 드롭다운 · 정규직 / 계약직 유지)
-//   · 반환 months 는 있으면 form.contractMonths 로 세팅
-export function parseContractTypeForRead(saved: string | null | undefined): { display: string; months: string | null } {
-  const s = String(saved ?? "").trim();
-  if (!s) return { display: "", months: null };
-  if (s === "정규" || s === "정규직") return { display: "정규직", months: null };
-  // "계약N" 형식
-  const m = s.match(/^계약(\d+)$/);
-  if (m) return { display: "계약직", months: m[1] };
-  if (s === "계약" || s === "계약직") return { display: "계약직", months: null };
-  // 알바·일용·인턴·custom
-  return { display: s, months: null };
-}
+// shortContractLabel · parseContractTypeForRead → src/utils/contractUtils.ts 로 이동 (god-phase1)
 const START_TIMES: string[] = Array.from(START_TIMES_CONST);
 const END_TIMES: string[]   = Array.from(END_TIMES_CONST);
 
@@ -323,92 +262,8 @@ const DEFAULT_EMPLOYER: Partial<ContractForm> = {
   companyRegNo: DEFAULT_COMPANY_INFO.regNo,
 };
 
-// 시간 상수 (포괄임금 산정 · 스펙 · 계약서 이미지 원본)
-// 중요: OVERTIME(55.94) · HOLIDAY(22.00) 은 "이미 1.5배 가산이 반영된 시간"
-//   · 실 연장 = 55.94 ÷ 1.5 = 37.29h · 주 8.58h
-//   · 실 휴일 = 22 ÷ 1.5 = 14.67h · 월 1.83일
-//   · 계산식에서 × 1.5 를 곱하면 안 됨 (2중 가산)
-const WAGE_HOURS = {
-  BASIC: 209,        // 기본급 (주40 + 주휴 8) × 4.3452 ≈ 209
-  OVERTIME: 55.94,   // 연장 (월평균) · 1.5배 가산 반영됨
-  HOLIDAY: 22.00,    // 휴일 (월평균) · 1.5배 가산 반영됨
-  ANNUAL_LEAVE: 10.00, // 연차 (월평균 · 가산 없음)
-} as const;
-
-// T-P (2026-08-05) · 세전 총액 divisor · 통상시급 하나로 모든 항목 계산 (레거시 · 하드코딩)
-//   세전 = 통상시급 × (209 + 55.94 + 22 + 10) = 통상시급 × 296.94
-const WAGE_DIVISOR = WAGE_HOURS.BASIC + WAGE_HOURS.OVERTIME + WAGE_HOURS.HOLIDAY + WAGE_HOURS.ANNUAL_LEAVE;
-
-// T-X (2026-08-05) · 노무사 표준 임금 계산법 (근로기준법 §50·§56·§55)
-//   · 하드코딩 divisor 대신 · 실제 근무시간·요일로 동적 산정
-//   · 입력: dailyHours (하루 소정 h), weekdays (주 근무일수), weekendDays (주말 근무 일수)
-//   · 출력: 월 기본급/연장/휴일 시간 (가산 반영)
-const WEEK_PER_MONTH = 4.3452;
-const DAILY_LIMIT = 8;
-
-interface WageBaseHours {
-  monthlyBasicH: number;           // 월 기본급 시간 (주휴 포함)
-  monthlyOvertimeGainedH: number;  // 월 연장 시간 (× 1.5 가산 반영)
-  monthlyHolidayGainedH: number;   // 월 휴일 시간 (× 1.5 가산 반영)
-  monthlyOvertimeRealH: number;    // 월 연장 실시간 (참고 · 미가산)
-  monthlyHolidayRealH: number;     // 월 휴일 실시간 (참고 · 미가산)
-  weeklyBasicH: number;            // 주 기본 (참고)
-  weeklyHolidayH: number;          // 주휴 (참고)
-}
-
-/**
- * T-X (2026-08-05) · 노무사 표준 계산법 · 동적 wage base
- *   · dailyBasic = min(dailyHours, 8)                        (일 기본 · 최대 8h · 법정근로시간)
- *   · dailyOvertime = max(0, dailyHours - 8)                 (일 연장)
- *   · weeklyBasic = dailyBasic × weekdays                    (주 소정)
- *   · weeklyHoliday = 40h 이상 → 8 · 15h 이상 → dailyBasic · 미만 → 0  (주휴수당 · 근기법 §55)
- *   · monthlyBasicH = (weeklyBasic + weeklyHoliday) × 4.3452
- *   · monthlyOvertimeRealH = weeklyOvertime × 4.3452
- *   · monthlyOvertimeGainedH = monthlyOvertimeRealH × 1.5    (연장 가산 · §56)
- *   · monthlyHolidayRealH = weekendDays × dailyHours × 4.3452
- *   · monthlyHolidayGainedH = monthlyHolidayRealH × 1.5      (휴일근로 · §56)
- *
- * 정본 케이스 (weekdays=5, weekendDays=0):
- *   · 7.5h → basic 195.5 · OT 0
- *   · 8.0h → basic 209   · OT 0
- *   · 8.5h → basic 209   · OT 16.29
- *   · 9.0h → basic 209   · OT 32.59
- *   · 10.0h → basic 209  · OT 65.18
- */
-function calcWageBase(dailyHours: number, weekdays: number, weekendDays: number = 0): WageBaseHours {
-  // T-CTR-9 · Step 1 (2026-08-05) · NaN/Infinity 방어 · 입력 undefined/NaN → 0 대체
-  const dh = Number.isFinite(dailyHours) ? Math.max(0, dailyHours) : 0;
-  const wd = Number.isFinite(weekdays)   ? Math.max(0, weekdays)   : 0;
-  const we = Number.isFinite(weekendDays) ? Math.max(0, weekendDays) : 0;
-  const dailyBasic = Math.min(dh, DAILY_LIMIT);
-  const dailyOvertime = Math.max(0, dh - DAILY_LIMIT);
-
-  const weeklyBasic = dailyBasic * wd;
-  const weeklyHoliday = weeklyBasic >= 40 ? 8 : (weeklyBasic >= 15 ? dailyBasic : 0);
-  const weeklyOvertime = dailyOvertime * wd;
-
-  const monthlyBasicH = (weeklyBasic + weeklyHoliday) * WEEK_PER_MONTH;
-  const monthlyOvertimeRealH = weeklyOvertime * WEEK_PER_MONTH;
-  const monthlyOvertimeGainedH = monthlyOvertimeRealH * 1.5;
-  const monthlyHolidayRealH = we * dh * WEEK_PER_MONTH;
-  const monthlyHolidayGainedH = monthlyHolidayRealH * 1.5;
-
-  return {
-    monthlyBasicH,
-    monthlyOvertimeGainedH,
-    monthlyHolidayGainedH,
-    monthlyOvertimeRealH,
-    monthlyHolidayRealH,
-    weeklyBasicH: weeklyBasic,
-    weeklyHolidayH: weeklyHoliday,
-  };
-}
-
-// T-X (2026-08-05) · 통상시급 산정용 · 동적 divisor (기본+연장가산+휴일가산+연차)
-function calcDynamicDivisor(dailyHours: number, weekdays: number, weekendDays: number, annualLeaveH: number = WAGE_HOURS.ANNUAL_LEAVE): number {
-  const b = calcWageBase(dailyHours, weekdays, weekendDays);
-  return b.monthlyBasicH + b.monthlyOvertimeGainedH + b.monthlyHolidayGainedH + Math.max(0, annualLeaveH);
-}
+// WAGE_HOURS · WAGE_DIVISOR · WEEK_PER_MONTH · DAILY_LIMIT · WageBaseHours
+// calcWageBase · calcDynamicDivisor → src/lib/wageCalc.ts 로 이동 (god-phase1)
 
 // T-X (2026-08-05) · dev-only 자체 검증 · 정본 5 케이스 (주5일 주중)
 //   개발 모드 · 콘솔에서 확인 가능 · 프로덕션 build 에는 영향 없음
@@ -463,58 +318,8 @@ const INSURANCE_RATES = {
   EMPLOYMENT: RATES_2026.employmentInsurance, // 고용보험 0.9%
 } as const;
 
-// 정계 및 근로계약 해지 사유 (13개 · 이미지 원본 문구)
-const DISCIPLINE_REASONS: string[] = [
-  "부정 및 허위 등의 방법으로 채용된 자",
-  "업무상 비밀 및 기밀을 누설하여 회사에 피해를 입힌 자",
-  "회사의 명예 또는 신용에 손상을 입힌 자",
-  "회사의 영업을 방해하는 언행을 한 자",
-  "회사의 규율과 상사의 정당한 지시를 어겨 질서를 문란하게 한 자",
-  "정당한 이유 없이 회사의 물품 및 금품을 반출한 자",
-  "직무를 이용하여 부당한 이익을 취한 자",
-  "회사가 정한 복무규정을 위반한 자",
-  "직장 내 성희롱 행위를 한 자",
-  "직장 내 괴롭힘 행위를 한 자",
-  "무단으로 결근한 자",
-  "근무태도나 근무성적이 극히 불량하고 개선의 여지가 없다고 판단되는 자",
-  "기타 이에 준하는 행위로 징계 및 근로계약 해지가 필요하다고 판단되는 행위를 한 경우",
-];
-
-// 휴일 및 휴무 (4조항)
-const HOLIDAY_CLAUSES: string[] = [
-  "1주 동안 소정근로일을 개근한 경우에는 주 1회의 유급주휴일을 부여하되, 주휴일은 일요일로 한다. 다만, 1주일의 소정근로시간이 15시간 미만인 경우와 해당 주에 결근 시에는 주휴수당을 지급하지 아니한다.",
-  "근로자의 날은 유급휴일로 한다.",
-  "토요일은 무급휴무일로 한다.",
-  "「관공서의 공휴일에 관한 규정」 제2조 각 호(제1호는 제외한다)에 따른 공휴일 및 같은 영 제3조에 따른 대체공휴일은 유급휴일로 한다. 다만, 근로자대표와 서면으로 합의한 경우 특정한 근로일로 대체할 수 있으며, 보상 휴가 부여도 가능합니다. (상시 근로자 수가 5인 미만인 경우에는 적용을 제외한다.)",
-];
-
-// 임금 단서 조항 5개
-const WAGE_CLAUSES: string[] = [
-  "상기 월 급여 총액에는 (고정)연장·휴일시간에 대한 (고정)연장·휴일근로수당이 포함되어 있으며, 추가 연장 및 휴일근무는 근무일 및 휴무일(휴일) 상황에 맞게 수행할 수 있고, 매달 수행 가능한 연장 및 휴일 근무의 범위는 상기에 기재된 연장 및 휴일근로시간으로 한다.",
-  "약국의 업무 특성상 불규칙한 근무로 인해 월 급여 총액에는 월간 기본근로일, 기본 근로시간 외 추가근무를 고려하여 책정한 상기의 연장, 휴일, 야간 근로시간에 대한 수당의 사전 산입에 을은 자유로운 의사로 동의한다.",
-  "\"을\"은 연차휴가수당을 월 지급액에 포괄하여 지급받음에 동의하고, \"갑\"은 \"을\"의 자유로운 연차휴가사용을 보장하되 \"을\"이 연차유급휴가를 사용할 경우 기 지급된 수당을 차감하여 정산한다. 또한, 연차휴가수당은 해당 월에 회사가 정한 징계사유에 해당하지 않아서 만근한 경우에 지급한다.",
-  "\"을\"은 관공서 공휴일 및 근로자의 날 근무로 발생하는 휴일근로 수당을 연봉에 포괄하여 (年 22일 근로에 가산을 반영한 휴일근로수당) 매달 임금으로 지급 받음에 자유로운 의사로 동의한다.",
-  "관리 편의상 사전에 책정한 상기의 (고정) 근로시간을 상회하여 연장·휴일근로를 한 경우에는 상기 총액과는 별도로 추가수당(상시 근로자가 5인 미만인 경우 근로기준법 제56조의 적용을 제외한다.)을 지급한다. 단, 추가수당을 인정하는 경우는 회사의 사전 지시나 승인이 있는 경우에 한한다.",
-];
-
-const WAGE_CLAUSE_EXTRA = "지각, 조퇴 시에는 해당 시간 분을 공제하며, 결근 및 해당 월에 중간 입·퇴사의 경우 일할 계산하여 임금을 지급한다.";
-
-// 기타 사항 (5개)
-const ETC_ITEMS: string[] = [
-  "임금 지급방법 : '을'에게 직접 지급 또는 '을'이 지정한 예금 통장에 입금한다.",
-  "'갑'과 '을'은 상기 임금내역을 회사 내의 타 근로자에게 누설하지 아니한다.",
-  "임의 퇴사하고자 하는 경우에는 30일 전에 미리 회사에 알려야 하며, 사직서 제출 후 사용자의 수리가 있기 전까지는 '갑'이 지정하는 자에게 인수인계를 하는 등 제반업무를 수행하여야 한다.",
-  "'갑'과 '을'은 성실한 근로관계가 형성되도록 노력하며 본 계약 이외의 사항에 대하여는 노동관계법, 취업규칙, 기타 회사가 정한 방침에 따른다.",
-  "'을'은 퇴직 시 과다 부여된 연차휴가 및 수당에 대해 '갑'이 '을'의 임금 및 퇴직금에 공제하여 지급하는 것에 동의한다.",
-];
-
-// 개인정보 항목 (4분류)
-const PRIVACY_ITEMS: string[] = [
-  "성명, 주민번호, 피부양자정보, 주소, 이메일, 휴대전화번호 등 연락처",
-  "학력, 근무경력과 계좌번호 등 금융정보",
-  "기타 근로와 관련된 개인정보",
-  "사진, 화상영상(CCTV)",
-];
+// DISCIPLINE_REASONS · HOLIDAY_CLAUSES · WAGE_CLAUSES · WAGE_CLAUSE_EXTRA · ETC_ITEMS · PRIVACY_ITEMS
+// → src/constants/contractClauses.ts 로 이동 (god-phase1)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 유틸
@@ -882,6 +687,116 @@ function reverseWageFromNetDual(
     // 식대·차량 · 사용자 입력 유지
   };
   return { weekdayHourly, weekendHourly, gross, wage };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// T-CTR-WageByType · 계약유형별 임금 계산 분기 유틸
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * 계약유형 → 월급제 여부 판별
+ *   · 월급제: 정규직 · 계약직 · 인턴 (통상시급 × 296.94 = 세전 직접)
+ *   · 시급제: 알바 · 일용 (주 예상 × 4.345 = 월 순액 bottom-up)
+ */
+function isMonthlyWageType(contractType: string): boolean {
+  return contractType === "정규직" || contractType === "계약직" || contractType === "인턴";
+}
+
+/**
+ * T-CTR-WageByType · 계약유형별 임금 5단계 계산
+ *
+ * 시급제 (알바·일용):
+ *   ① 주 예상 = 주중시간 × 주중시급 + 주말시간 × 주말시급
+ *   ② 월 순액 = ① × 4.345
+ *   ③ 세전   = grossUp(②)
+ *   ④ 통상시급 = 세전 ÷ divisor (역산)
+ *   ⑤ 8항목 분해
+ *
+ * 월급제 (정규직·계약직·인턴):
+ *   ① 통상시급 = 입력 시급 (직접 해석)
+ *   ② 세전 = 통상시급 × 296.94 (직접)
+ *   ③ 예상 세금 = grossUp 참고용
+ *   ④ 세후 = 세전 - 세금
+ *   ⑤ 8항목 분해
+ */
+function computeWageFlow(
+  contractType: string,
+  weekdayHourly: number,
+  weekendHourly: number,
+  weeklyWeekdayH: number,   // 주중 일일시간 × 주중일수
+  weeklyWeekendH: number,   // 주말 일일시간 × 주말일수
+  basicH: number,
+  otH: number,
+  holH: number,
+  annualH: number,
+): {
+  isMonthly: boolean;
+  // 시급제
+  weeklyPay: number;
+  monthlyNet: number;        // ② 시급제: 월 순액 / 월급제: 사용 안 함
+  // 공통
+  gross: number;             // 세전
+  taxTotal: number;          // 예상 세금
+  netAmount: number;         // 세후
+  ordinaryHourly: number;    // 통상시급
+  basic: number;
+  overtime: number;
+  holiday: number;
+  annualLeave: number;
+  divisor: number;
+  converged: boolean;
+} {
+  const isMonthly = isMonthlyWageType(contractType);
+  const wd = Math.max(0, weekdayHourly);
+  const we = Math.max(0, weekendHourly) || wd;
+  const divisor = basicH + otH + holH + annualH;
+
+  if (isMonthly) {
+    // 월급제: 통상시급 = 입력시급, 세전 직접 계산
+    const gross = divisor > 0 ? Math.round(wd * divisor) : 0;
+    const { taxes, converged } = payrollGrossUp(Math.max(0, gross - 1), 0, 1);
+    // 세금은 gross 자체에서 역계산 (참고용)
+    const ins = computeInsurance(gross);
+    const tax = computeIncomeTax(gross);
+    const taxTotal = ins.total + tax.total;
+    const netAmount = Math.max(0, gross - taxTotal);
+    const ordinaryHourly = wd; // 입력값 = 통상시급
+    const basic       = Math.round(wd * basicH);
+    const overtime    = Math.round(wd * otH);
+    const holiday     = Math.round(wd * holH);
+    const annualLeave = Math.round(wd * annualH);
+    return {
+      isMonthly: true,
+      weeklyPay: 0,
+      monthlyNet: 0,
+      gross, taxTotal, netAmount,
+      ordinaryHourly,
+      basic, overtime, holiday, annualLeave,
+      divisor,
+      converged,
+    };
+  } else {
+    // 시급제: bottom-up
+    const weeklyPay   = Math.round(weeklyWeekdayH * wd + weeklyWeekendH * we);
+    const monthlyNet  = Math.round(weeklyPay * 4.345);
+    const { gross, taxes, converged } = payrollGrossUp(monthlyNet, 0, 1);
+    const taxTotal    = taxes.total;
+    const netAmount   = Math.max(0, gross - taxTotal);
+    const ordinaryHourly = divisor > 0 ? Math.round(gross / divisor) : 0;
+    const basic       = Math.round(ordinaryHourly * basicH);
+    const overtime    = Math.round(ordinaryHourly * otH);
+    const holiday     = Math.round(ordinaryHourly * holH);
+    const annualLeave = Math.round(ordinaryHourly * annualH);
+    return {
+      isMonthly: false,
+      weeklyPay, monthlyNet,
+      gross, taxTotal, netAmount,
+      ordinaryHourly,
+      basic, overtime, holiday, annualLeave,
+      divisor,
+      converged,
+    };
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2806,26 +2721,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const [empError, setEmpError] = useState<string | null>(null);
   const [empSearchOpen, setEmpSearchOpen] = useState(false);
 
-  // ── 서명 URL · 7 활성 지점 (레거시 5 유지 · null 로) ──
-  const [signUrls, setSignUrls] = useState<Record<SignKey, string | null>>(() => ({
-    employer: null, employee: null, privacy: null,
-    specialWork: null, breakChange: null,
-    wageClause3: null, wageClause4: null,
-    etc5: null, receipt: null,
-    wageAck: null, workTimeAck: null, etcAck: null,
-  }));
-
-  // ── 서명 모달 상태 ──
-  const [signModal, setSignModal] = useState<{ open: boolean; key: SignKey | null }>({ open: false, key: null });
-  const openSign = useCallback((key: SignKey) => setSignModal({ open: true, key }), []);
-  const closeSign = useCallback(() => setSignModal({ open: false, key: null }), []);
-  const submitSign = useCallback((dataUrl: string) => {
-    setSignUrls(prev => (signModal.key ? { ...prev, [signModal.key]: dataUrl } : prev));
-    setSignModal({ open: false, key: null });
-  }, [signModal.key]);
-  const clearSign = useCallback((key: SignKey) => {
-    setSignUrls(prev => ({ ...prev, [key]: null }));
-  }, []);
+  // ── 서명 상태 (useContractSignatures 훅 · god-phase1) ──
+  const { signUrls, setSignUrls, signModal, openSign, closeSign, submitSign, clearSign } = useContractSignatures();
 
   // 도장 자동 (H)
   const employerStampUrl = useMemo(() =>
@@ -3049,6 +2946,30 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     wageAutoLoadedRef.current = true;
     lastAutoWageRef.current = { wd: nextWd, we: nextWe };
   }, [form.employeeCategory, form.employeeCategoryCustom, form.employeeId, resolveWageForCategory]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // T-CTR-WageLink · settings.wageRates 변경 시 자동 재적용
+  //   ContractSettingsPage 에서 시급 변경 → settings-updated 이벤트 → useSettings 인스턴스 업데이트
+  //   → settings.wageRates 변경 → resolveWageForCategory 재생성 → 아래 effect 실행
+  //   조건: wageAutoLoadedRef (자동 로드된 시급) 인 경우만 덮어씀
+  //   → 사용자가 직접 편집한 시급은 유지
+  useEffect(() => {
+    // wageAutoInitRef 가 false 면 mount 직후 · category effect 가 처리
+    if (!wageAutoInitRef.current) return;
+    // 자동 로드 상태가 아니면 사용자 입력으로 간주 → 유지
+    if (!wageAutoLoadedRef.current) return;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const wd = form.weekdayHourly;
+    const we = form.weekendHourly;
+    const last = lastAutoWageRef.current;
+    // 자동 로드된 값과 현재 폼 값이 다르면 사용자가 수동 변경 → 유지
+    if (last && (wd !== last.wd || we !== last.we)) return;
+    const { weekday, weekend } = resolveWageForCategory(form.employeeCategory, form.employeeCategoryCustom, form.employeeId);
+    const nextWd = String(weekday);
+    const nextWe = String(weekend);
+    if (nextWd === wd && nextWe === we) return; // 이미 동일
+    setForm(prev => ({ ...prev, weekdayHourly: nextWd, weekendHourly: nextWe }));
+    lastAutoWageRef.current = { wd: nextWd, we: nextWe };
+  }, [resolveWageForCategory]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 계약 이력 조회
   useEffect(() => {
@@ -4236,27 +4157,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               />
             </div>
 
-            {/* 직군 (2026-08-06 · T-CTR-Etc+JobFromDB · jobCategories DB 동적 로드 · 기타 자유입력 제거) */}
-            <div className="col-span-2">
-              <label className={fldLabel}>직군</label>
-              <div className="flex gap-1">
-                {jobCategories.map(cat => {
-                  const active = form.employeeCategory === cat;
-                  const activeCls =
-                    cat === "약사"  ? "bg-violet-500 text-white border-violet-500" :
-                    cat === "매장"  ? "bg-emerald-500 text-white border-emerald-500" :
-                    cat === "창고"  ? "bg-orange-500 text-white border-orange-500" :
-                                      "bg-slate-600 text-white border-slate-600";
-                  return (
-                    <button key={cat} type="button" onClick={() => upd("employeeCategory", cat)}
-                      className={`flex-1 min-w-[36px] py-1.5 rounded-lg border text-[11.5px] font-bold transition-colors cursor-pointer ${
-                        active ? activeCls : "bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700"
-                      }`}
-                    >{cat}</button>
-                  );
-                })}
-              </div>
-            </div>
           </div>
           {/* T-CTR-Etc+JobFromDB · 기타 자유 텍스트 input 제거 (legacy employeeCategoryCustom state 는 하위호환 유지) */}
 
@@ -4438,6 +4338,28 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
 
         {!isCardCollapsed("workCondition") && (<>
 
+        {/* 0행 · 직군 (T-CTR-Category-Move · 2026-08-07 · 근무조건과 논리적 그룹핑) */}
+        <div>
+          <label className={fldLabel}>직군</label>
+          <div className="flex gap-1">
+            {jobCategories.map(cat => {
+              const active = form.employeeCategory === cat;
+              const activeCls =
+                cat === "약사"  ? "bg-violet-500 text-white border-violet-500" :
+                cat === "매장"  ? "bg-emerald-500 text-white border-emerald-500" :
+                cat === "창고"  ? "bg-orange-500 text-white border-orange-500" :
+                                  "bg-slate-600 text-white border-slate-600";
+              return (
+                <button key={cat} type="button" onClick={() => upd("employeeCategory", cat)}
+                  className={`flex-1 min-w-[36px] py-1.5 rounded-lg border text-[11.5px] font-bold transition-colors cursor-pointer ${
+                    active ? activeCls : "bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700"
+                  }`}
+                >{cat}</button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* 1행 · 계약 유형 + 연차 · 근무 요일 */}
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-start">
           {/* 계약 유형 + 연차 나란히 · T-CTR-UI-Batch */}
@@ -4572,35 +4494,38 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const monthlyNet = Math.round(weeklyPay * 4.345);
           const hasWage = wdHourly > 0;
 
-          // Step 3~5 · Bottom-up 역산 (시급 있을 때만)
-          let buGross = 0;
-          let buTaxTotal = 0;
-          let buOrdinaryHourly = 0;
-          let buBasic = 0;
-          let buOvertime = 0;
-          let buHoliday = 0;
-          let buAnnualLeave = 0;
-          let buConverged = false;
-          if (hasWage && monthlyNet > 0) {
-            const { gross: gu, taxes: gt, converged: gc } = payrollGrossUp(monthlyNet, 0, 1);
-            buGross = gu;
-            buTaxTotal = gt.total;
-            buConverged = gc;
-            // 동적 divisor 기반 통상시급 산정
-            const annualH = WAGE_HOURS.ANNUAL_LEAVE;
-            const base = (weeklyWeekdayDays > 0)
-              ? calcWageBase(dailyH, weeklyWeekdayDays, weeklyWeekendDays)
-              : null;
-            const basicH  = base ? base.monthlyBasicH          : WAGE_HOURS.BASIC;
-            const otH     = base ? base.monthlyOvertimeGainedH  : WAGE_HOURS.OVERTIME;
-            const holH    = base ? base.monthlyHolidayGainedH   : WAGE_HOURS.HOLIDAY;
-            const divisor = basicH + otH + holH + annualH;
-            buOrdinaryHourly = divisor > 0 ? Math.round(buGross / divisor) : 0;
-            buBasic       = Math.round(buOrdinaryHourly * basicH);
-            buOvertime    = Math.round(buOrdinaryHourly * otH);
-            buHoliday     = Math.round(buOrdinaryHourly * holH);
-            buAnnualLeave = Math.round(buOrdinaryHourly * annualH);
-          }
+          // T-CTR-WageByType · 계약유형별 계산 분기
+          const isMonthly = isMonthlyWageType(form.contractType);
+
+          // 공통 divisor 계산 (동적 base 우선)
+          const _annualH = WAGE_HOURS.ANNUAL_LEAVE;
+          const _base = (weeklyWeekdayDays > 0)
+            ? calcWageBase(dailyH, weeklyWeekdayDays, weeklyWeekendDays)
+            : null;
+          const _basicH  = _base ? _base.monthlyBasicH          : WAGE_HOURS.BASIC;
+          const _otH     = _base ? _base.monthlyOvertimeGainedH  : WAGE_HOURS.OVERTIME;
+          const _holH    = _base ? _base.monthlyHolidayGainedH   : WAGE_HOURS.HOLIDAY;
+
+          // computeWageFlow · 계약유형별 5단계
+          const wf = hasWage
+            ? computeWageFlow(
+                form.contractType,
+                wdHourly, weHourly,
+                dailyH * weeklyWeekdayDays, dailyH * weeklyWeekendDays,
+                _basicH, _otH, _holH, _annualH,
+              )
+            : null;
+
+          const buGross          = wf?.gross ?? 0;
+          const buTaxTotal       = wf?.taxTotal ?? 0;
+          const buOrdinaryHourly = wf?.ordinaryHourly ?? 0;
+          const buBasic          = wf?.basic ?? 0;
+          const buOvertime       = wf?.overtime ?? 0;
+          const buHoliday        = wf?.holiday ?? 0;
+          const buAnnualLeave    = wf?.annualLeave ?? 0;
+          const buConverged      = wf?.converged ?? false;
+          const buMonthlyNet     = wf?.monthlyNet ?? 0;
+          const buWeeklyPay      = wf?.weeklyPay ?? 0;
 
           // "세전 반영" 핸들러 · grossSalaryInput + targetNetInput 동시 채움 → 기존 임금구조 재분배 트리거
           const applyBottomUp = () => {
@@ -4609,31 +4534,46 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             manualGrossSalaryRef.current = false;
             setForm(prev => ({
               ...prev,
-              targetNetInput: String(monthlyNet),
+              targetNetInput: isMonthly ? String(wf?.netAmount ?? 0) : String(buMonthlyNet),
               grossSalaryInput: String(buGross),
             }));
             setNotice({
               tone: "ok",
-              text: `Bottom-up 반영 · 월 순액 ${fmtWon(monthlyNet)}원 → 세전 ${fmtWon(buGross)}원 · 통상시급 ${fmtWon(buOrdinaryHourly)}원`,
+              text: isMonthly
+                ? `월급제 반영 · 통상시급 ${fmtWon(wdHourly)}원 × ${(wf?.divisor ?? 0).toFixed(2)}h = 세전 ${fmtWon(buGross)}원`
+                : `Bottom-up 반영 · 월 순액 ${fmtWon(buMonthlyNet)}원 → 세전 ${fmtWon(buGross)}원 · 통상시급 ${fmtWon(buOrdinaryHourly)}원`,
             });
           };
 
           return (
             <div className="flex flex-col gap-1.5">
-              {/* 기본 힌트 줄 */}
+              {/* 기본 힌트 줄 · 계약유형 배지 포함 */}
               <div className="rounded-lg bg-indigo-50/60 border border-indigo-100 px-3 py-2 text-[11px] text-indigo-700 leading-relaxed">
                 <span className="font-bold">주 {weeklyH.toFixed(1)}시간</span>
+                {/* T-CTR-WageByType · 계약유형 배지 */}
+                <span className={`ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wide ${isMonthly ? "bg-indigo-200 text-indigo-800" : "bg-amber-200 text-amber-800"}`}>
+                  {isMonthly ? "월급제" : "시급제"}
+                </span>
                 {hasWage && (
                   <>
                     <span className="mx-1 text-indigo-300">·</span>
-                    <span>시급 {fmtWon(wdHourly)}원</span>
-                    {weeklyWeekendDays > 0 && weHourly !== wdHourly && (
+                    <span>{isMonthly ? "통상시급" : "시급"} {fmtWon(wdHourly)}원</span>
+                    {!isMonthly && weeklyWeekendDays > 0 && weHourly !== wdHourly && (
                       <span className="ml-0.5">(주말 {fmtWon(weHourly)}원)</span>
                     )}
-                    <span className="mx-1 text-indigo-300">·</span>
-                    <span className="font-semibold">주 예상 {fmtWon(weeklyPay)}원</span>
-                    <span className="mx-1 text-indigo-300">·</span>
-                    <span className="font-black text-indigo-900">월 순액 {fmtWon(monthlyNet)}원</span>
+                    {isMonthly ? (
+                      <>
+                        <span className="mx-1 text-indigo-300">·</span>
+                        <span className="font-black text-indigo-900">세전 {fmtWon(buGross)}원</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="mx-1 text-indigo-300">·</span>
+                        <span className="font-semibold">주 예상 {fmtWon(weeklyPay)}원</span>
+                        <span className="mx-1 text-indigo-300">·</span>
+                        <span className="font-black text-indigo-900">월 순액 {fmtWon(monthlyNet)}원</span>
+                      </>
+                    )}
                   </>
                 )}
                 {!hasWage && (
@@ -4641,8 +4581,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 )}
               </div>
 
-              {/* 임금 자동 계산 5단계 시각화 · T-CTR-WageFlow-Rework */}
-              {hasWage && monthlyNet > 0 && (
+              {/* 임금 자동 계산 5단계 시각화 · T-CTR-WageByType 분기 */}
+              {hasWage && buGross > 0 && (
                 <div className="rounded-lg bg-emerald-50/70 border border-emerald-200 px-3 py-2.5 flex flex-col gap-2">
                   {/* 헤더 */}
                   <div className="flex items-center justify-between">
@@ -4650,6 +4590,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                       <Calculator size={11} weight="fill" className="text-emerald-700" />
                       <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700">
                         임금 자동 계산
+                      </span>
+                      <span className={`text-[9px] font-black px-1 py-0.5 rounded ${isMonthly ? "bg-indigo-100 text-indigo-700" : "bg-amber-100 text-amber-700"}`}>
+                        {isMonthly ? "월급제" : "시급제"}
                       </span>
                     </div>
                     {!buConverged && (
@@ -4660,114 +4603,153 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   {/* 구분선 */}
                   <div className="border-t border-emerald-200" />
 
-                  {/* ① 월 예상 순액 */}
-                  <div className="flex flex-col gap-0.5">
-                    <div className="flex items-center gap-1">
-                      <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-200 rounded-full w-4 h-4 flex items-center justify-center shrink-0">①</span>
-                      <span className="text-[10px] font-black text-emerald-800">월 예상 순액</span>
-                    </div>
-                    <div className="pl-5 text-[9.5px] text-slate-500 font-semibold leading-snug">
-                      {weeklyWeekendDays > 0 && weHourly !== wdHourly
-                        ? `주중 ${(dailyH * weeklyWeekdayDays).toFixed(1)}h × ${fmtWon(wdHourly)}원 + 주말 ${(dailyH * weeklyWeekendDays).toFixed(1)}h × ${fmtWon(weHourly)}원 × 4.345`
-                        : `주 ${weeklyH.toFixed(1)}h × ${fmtWon(wdHourly)}원 × 4.345`
-                      }
-                    </div>
-                    <div className="pl-5 tabular-nums text-[12px] font-black text-indigo-700">
-                      = {fmtWon(monthlyNet)} 원
-                    </div>
-                  </div>
+                  {isMonthly ? (
+                    /* ── 월급제 5단계 ── */
+                    <>
+                      {/* ① 통상시급 (입력값 = 통상시급) */}
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-200 rounded-full w-4 h-4 flex items-center justify-center shrink-0">①</span>
+                          <span className="text-[10px] font-black text-emerald-800">통상시급 (입력값)</span>
+                        </div>
+                        <div className="pl-5 text-[9.5px] text-slate-500 font-semibold leading-snug">
+                          시급 입력 = 통상시급으로 직접 해석 (월급제·포괄임금)
+                        </div>
+                        <div className="pl-5 tabular-nums text-[12px] font-black text-indigo-700">
+                          = {fmtWon(wdHourly)} 원
+                        </div>
+                      </div>
 
-                  {/* ② 예상 세금 */}
-                  <div className="flex flex-col gap-0.5">
-                    <div className="flex items-center gap-1">
-                      <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-200 rounded-full w-4 h-4 flex items-center justify-center shrink-0">②</span>
-                      <span className="text-[10px] font-black text-emerald-800">예상 세금 (4대보험 + 소득세)</span>
-                    </div>
-                    <div className="pl-5 text-[9.5px] text-slate-500 font-semibold leading-snug">
-                      grossUp 역산 ≈ {buGross > 0 ? Math.round(buTaxTotal / buGross * 100) : 0}%
-                    </div>
-                    <div className="pl-5 tabular-nums text-[12px] font-black text-rose-600">
-                      ≈ {fmtWon(buTaxTotal)} 원
-                    </div>
-                  </div>
+                      {/* ② 세전 월급 (통상시급 × 296.94h) */}
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-200 rounded-full w-4 h-4 flex items-center justify-center shrink-0">②</span>
+                          <span className="text-[10px] font-black text-emerald-800">세전 월급 (통상시급 × {(wf?.divisor ?? 0).toFixed(2)}h)</span>
+                        </div>
+                        <div className="pl-5 text-[9.5px] text-slate-500 font-semibold leading-snug">
+                          {fmtWon(wdHourly)} × {(wf?.divisor ?? 0).toFixed(2)}h
+                        </div>
+                        <div className="pl-5 tabular-nums text-[12px] font-black text-emerald-900 bg-emerald-100 rounded-md px-2 py-0.5 inline-block w-fit">
+                          = {fmtWon(buGross)} 원
+                        </div>
+                      </div>
 
-                  {/* ③ 세전 월급 */}
-                  <div className="flex flex-col gap-0.5">
-                    <div className="flex items-center gap-1">
-                      <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-200 rounded-full w-4 h-4 flex items-center justify-center shrink-0">③</span>
-                      <span className="text-[10px] font-black text-emerald-800">세전 월급 (① + ②)</span>
-                    </div>
-                    <div className="pl-5 text-[9.5px] text-slate-500 font-semibold leading-snug">
-                      {fmtWon(monthlyNet)} + {fmtWon(buTaxTotal)}
-                    </div>
-                    <div className="pl-5 tabular-nums text-[12px] font-black text-emerald-900 bg-emerald-100 rounded-md px-2 py-0.5 inline-block w-fit">
-                      = {fmtWon(buGross)} 원
-                    </div>
-                  </div>
+                      {/* ③ 예상 세금 (참고용) */}
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-200 rounded-full w-4 h-4 flex items-center justify-center shrink-0">③</span>
+                          <span className="text-[10px] font-black text-emerald-800">예상 세금 (4대보험 + 소득세 · 참고)</span>
+                        </div>
+                        <div className="pl-5 text-[9.5px] text-slate-500 font-semibold leading-snug">
+                          ≈ {buGross > 0 ? Math.round(buTaxTotal / buGross * 100) : 0}%
+                        </div>
+                        <div className="pl-5 tabular-nums text-[12px] font-black text-rose-600">
+                          ≈ {fmtWon(buTaxTotal)} 원
+                        </div>
+                      </div>
 
-                  {/* ④ 통상시급 역산 */}
-                  <div className="flex flex-col gap-0.5">
-                    <div className="flex items-center gap-1">
-                      <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-200 rounded-full w-4 h-4 flex items-center justify-center shrink-0">④</span>
-                      <span className="text-[10px] font-black text-emerald-800">통상시급 (문서용 · 역산)</span>
-                    </div>
-                    {(() => {
-                      const annualH = WAGE_HOURS.ANNUAL_LEAVE;
-                      const base = (weeklyWeekdayDays > 0)
-                        ? calcWageBase(dailyH, weeklyWeekdayDays, weeklyWeekendDays)
-                        : null;
-                      const basicH = base ? base.monthlyBasicH : WAGE_HOURS.BASIC;
-                      const otH    = base ? base.monthlyOvertimeGainedH : WAGE_HOURS.OVERTIME;
-                      const holH   = base ? base.monthlyHolidayGainedH  : WAGE_HOURS.HOLIDAY;
-                      const divisor = basicH + otH + holH + annualH;
-                      return (
-                        <>
-                          <div className="pl-5 text-[9.5px] text-slate-500 font-semibold leading-snug">
-                            {fmtWon(buGross)} ÷ {divisor.toFixed(2)}h
-                          </div>
-                          <div className="pl-5 tabular-nums text-[12px] font-black text-slate-800">
-                            = {fmtWon(buOrdinaryHourly)} 원
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </div>
+                      {/* ④ 세후 (세전 - 세금) */}
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-200 rounded-full w-4 h-4 flex items-center justify-center shrink-0">④</span>
+                          <span className="text-[10px] font-black text-emerald-800">예상 세후 (② - ③)</span>
+                        </div>
+                        <div className="pl-5 text-[9.5px] text-slate-500 font-semibold leading-snug">
+                          {fmtWon(buGross)} - {fmtWon(buTaxTotal)}
+                        </div>
+                        <div className="pl-5 tabular-nums text-[12px] font-black text-indigo-700">
+                          = {fmtWon(wf?.netAmount ?? 0)} 원
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    /* ── 시급제 5단계 (기존 로직 유지) ── */
+                    <>
+                      {/* ① 월 예상 순액 */}
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-200 rounded-full w-4 h-4 flex items-center justify-center shrink-0">①</span>
+                          <span className="text-[10px] font-black text-emerald-800">월 예상 순액</span>
+                        </div>
+                        <div className="pl-5 text-[9.5px] text-slate-500 font-semibold leading-snug">
+                          {weeklyWeekendDays > 0 && weHourly !== wdHourly
+                            ? `주중 ${(dailyH * weeklyWeekdayDays).toFixed(1)}h × ${fmtWon(wdHourly)}원 + 주말 ${(dailyH * weeklyWeekendDays).toFixed(1)}h × ${fmtWon(weHourly)}원 × 4.345`
+                            : `주 ${weeklyH.toFixed(1)}h × ${fmtWon(wdHourly)}원 × 4.345`
+                          }
+                        </div>
+                        <div className="pl-5 tabular-nums text-[12px] font-black text-indigo-700">
+                          = {fmtWon(buMonthlyNet)} 원
+                        </div>
+                      </div>
 
-                  {/* ⑤ 8항목 분해 */}
+                      {/* ② 예상 세금 */}
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-200 rounded-full w-4 h-4 flex items-center justify-center shrink-0">②</span>
+                          <span className="text-[10px] font-black text-emerald-800">예상 세금 (4대보험 + 소득세)</span>
+                        </div>
+                        <div className="pl-5 text-[9.5px] text-slate-500 font-semibold leading-snug">
+                          grossUp 역산 ≈ {buGross > 0 ? Math.round(buTaxTotal / buGross * 100) : 0}%
+                        </div>
+                        <div className="pl-5 tabular-nums text-[12px] font-black text-rose-600">
+                          ≈ {fmtWon(buTaxTotal)} 원
+                        </div>
+                      </div>
+
+                      {/* ③ 세전 월급 */}
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-200 rounded-full w-4 h-4 flex items-center justify-center shrink-0">③</span>
+                          <span className="text-[10px] font-black text-emerald-800">세전 월급 (① + ②)</span>
+                        </div>
+                        <div className="pl-5 text-[9.5px] text-slate-500 font-semibold leading-snug">
+                          {fmtWon(buMonthlyNet)} + {fmtWon(buTaxTotal)}
+                        </div>
+                        <div className="pl-5 tabular-nums text-[12px] font-black text-emerald-900 bg-emerald-100 rounded-md px-2 py-0.5 inline-block w-fit">
+                          = {fmtWon(buGross)} 원
+                        </div>
+                      </div>
+
+                      {/* ④ 통상시급 역산 */}
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-200 rounded-full w-4 h-4 flex items-center justify-center shrink-0">④</span>
+                          <span className="text-[10px] font-black text-emerald-800">통상시급 (문서용 · 역산)</span>
+                        </div>
+                        <div className="pl-5 text-[9.5px] text-slate-500 font-semibold leading-snug">
+                          {fmtWon(buGross)} ÷ {(wf?.divisor ?? 0).toFixed(2)}h
+                        </div>
+                        <div className="pl-5 tabular-nums text-[12px] font-black text-slate-800">
+                          = {fmtWon(buOrdinaryHourly)} 원
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* ⑤ 8항목 분해 (공통) */}
                   <div className="flex flex-col gap-0.5">
                     <div className="flex items-center gap-1">
                       <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-200 rounded-full w-4 h-4 flex items-center justify-center shrink-0">⑤</span>
                       <span className="text-[10px] font-black text-emerald-800">8항목 분해</span>
                     </div>
-                    {(() => {
-                      const annualH = WAGE_HOURS.ANNUAL_LEAVE;
-                      const base = (weeklyWeekdayDays > 0)
-                        ? calcWageBase(dailyH, weeklyWeekdayDays, weeklyWeekendDays)
-                        : null;
-                      const basicH = base ? base.monthlyBasicH : WAGE_HOURS.BASIC;
-                      const otH    = base ? base.monthlyOvertimeGainedH : WAGE_HOURS.OVERTIME;
-                      const holH   = base ? base.monthlyHolidayGainedH  : WAGE_HOURS.HOLIDAY;
-                      return (
-                        <div className="pl-5 grid grid-cols-2 gap-x-3 gap-y-0.5 text-[9.5px]">
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-500 font-semibold">기본급 <span className="text-slate-400">{basicH.toFixed(1)}h</span></span>
-                            <span className="tabular-nums font-black text-slate-700">{fmtWon(buBasic)} 원</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-500 font-semibold">연장 <span className="text-slate-400">{otH.toFixed(2)}h</span></span>
-                            <span className="tabular-nums font-black text-slate-700">{fmtWon(buOvertime)} 원</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-500 font-semibold">휴일 <span className="text-slate-400">{holH.toFixed(1)}h</span></span>
-                            <span className="tabular-nums font-black text-slate-700">{fmtWon(buHoliday)} 원</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-500 font-semibold">연차 <span className="text-slate-400">{annualH.toFixed(1)}h</span></span>
-                            <span className="tabular-nums font-black text-slate-700">{fmtWon(buAnnualLeave)} 원</span>
-                          </div>
-                        </div>
-                      );
-                    })()}
+                    <div className="pl-5 grid grid-cols-2 gap-x-3 gap-y-0.5 text-[9.5px]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500 font-semibold">기본급 <span className="text-slate-400">{_basicH.toFixed(1)}h</span></span>
+                        <span className="tabular-nums font-black text-slate-700">{fmtWon(buBasic)} 원</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500 font-semibold">연장 <span className="text-slate-400">{_otH.toFixed(2)}h</span></span>
+                        <span className="tabular-nums font-black text-slate-700">{fmtWon(buOvertime)} 원</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500 font-semibold">휴일 <span className="text-slate-400">{_holH.toFixed(1)}h</span></span>
+                        <span className="tabular-nums font-black text-slate-700">{fmtWon(buHoliday)} 원</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500 font-semibold">연차 <span className="text-slate-400">{_annualH.toFixed(1)}h</span></span>
+                        <span className="tabular-nums font-black text-slate-700">{fmtWon(buAnnualLeave)} 원</span>
+                      </div>
+                    </div>
                   </div>
 
                   {/* 구분선 */}
@@ -4778,7 +4760,10 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     type="button"
                     onClick={applyBottomUp}
                     className="w-full py-1.5 rounded-md bg-gradient-to-r from-emerald-500 to-indigo-500 text-white text-[11px] font-black shadow-sm hover:brightness-110 transition-all cursor-pointer"
-                    title="이 세전 금액을 임금 카드의 세전 월급 입력란에 자동 채움 · 기존 임금구조 8항목 재분배 트리거"
+                    title={isMonthly
+                      ? "월급제 · 통상시급 × 296.94h = 세전 → 임금구조 8항목 채움"
+                      : "이 세전 금액을 임금 카드의 세전 월급 입력란에 자동 채움 · 기존 임금구조 8항목 재분배 트리거"
+                    }
                   >
                     이 값으로 세전 월급 반영 ({fmtWon(buGross)} 원)
                   </button>
@@ -4924,11 +4909,18 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             });
           };
 
+          // T-CTR-WageByType · 카드3 · 계약유형 분류
+          const isMonthlyCard3 = isMonthlyWageType(form.contractType);
+
           return (
             <div className="rounded-lg border border-indigo-200 bg-gradient-to-br from-indigo-50/40 to-emerald-50/40 p-3 flex flex-col gap-2">
               <div className="text-[10.5px] font-black uppercase tracking-wider text-indigo-700 flex items-center gap-1.5">
                 <Calculator size={11} weight="fill" />
                 희망 세후 수령액 (역산 입력)
+                {/* T-CTR-WageByType · 계약유형 배지 */}
+                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded normal-case ${isMonthlyCard3 ? "bg-indigo-200 text-indigo-800" : "bg-amber-200 text-amber-800"}`}>
+                  {isMonthlyCard3 ? "월급제 · 통상시급 × 296.94h" : "시급제 · bottom-up"}
+                </span>
                 <span className="ml-auto text-[9.5px] font-semibold text-indigo-400 normal-case">
                   입력 · [반영] · 임금구성표 자동 채움
                 </span>
