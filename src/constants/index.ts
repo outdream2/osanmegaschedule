@@ -1,5 +1,9 @@
 // src/constants/index.ts
 // Moved from src/constants.ts (2026-08-06 · T-Restructure Phase 3-D)
+// Re-exports from sibling domain files (T-SLIM F · 2026-08-06)
+export * from "./displayZones";
+export * from "./storeMapLayout";
+export * from "./zoneLabels";
 
 export interface ScheduleTypeEntry {
   type: string;
