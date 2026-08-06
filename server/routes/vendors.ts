@@ -60,7 +60,7 @@ router.post("/api/upload-vendors", express.raw({ type: "application/octet-stream
     const { data: existing, error: exErr } = await supabase.from("vendors").select("id, company_name");
     if (exErr) throw new Error(exErr.message);
     const existingMap = new Map<string, number>();
-    for (const v of (existing ?? []) as any[]) existingMap.set(String(v.company_name).trim(), v.id);
+    for (const v of existing ?? []) existingMap.set(String(v.company_name).trim(), v.id);
 
     let inserted = 0, updated = 0, failed = 0;
     const errors: string[] = [];
@@ -89,7 +89,7 @@ router.post("/api/upload-vendors", express.raw({ type: "application/octet-stream
       if (error && hasBizNumCol && /business_number/.test(error.message)) {
         hasBizNumCol = false;
         console.warn(`[upload-vendors] business_number 컬럼 미존재 · 마이그레이션 필요 · 이후 skip`);
-        delete (payload as any).business_number;
+        delete payload.business_number;
         ({ error } = await doOp());
       }
       if (error) { failed++; if (errors.length < 5) errors.push(`${r.company_name}: ${error.message}`); }
@@ -282,7 +282,7 @@ router.post("/api/vendors/bulk-import", async (req, res) => {
     .select("id, company_name");
   if (exErr) return res.status(500).json({ error: exErr.message });
   const existingMap = new Map<string, number>();
-  for (const v of (existing ?? []) as any[]) existingMap.set(String(v.company_name).trim(), v.id);
+  for (const v of existing ?? []) existingMap.set(String(v.company_name).trim(), v.id);
 
   let inserted = 0, updated = 0, failed = 0;
   const errors: string[] = [];

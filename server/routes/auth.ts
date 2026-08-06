@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { supabase } from "../../src/supabase/client";
-import { issueToken, clearToken } from "../middleware/requireAuth";
+import { issueToken, clearToken, JwtPayload } from "../middleware/requireAuth";
 
 const router = Router();
 
@@ -116,12 +116,12 @@ router.get("/api/auth/me", (req, res) => {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const jwt = require("jsonwebtoken");
-    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] });
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] }) as JwtPayload;
     return res.status(200).json({
-      id: (decoded as any).sub,
-      name: (decoded as any).name,
-      role: (decoded as any).role,
-      level: (decoded as any).level,
+      id: decoded.sub,
+      name: decoded.name,
+      role: decoded.role,
+      level: decoded.level,
     });
   } catch {
     return res.status(401).json({ error: "invalid_token" });

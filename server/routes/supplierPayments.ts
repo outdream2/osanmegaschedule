@@ -60,10 +60,10 @@ async function fetchVatIncluded(supplier: string): Promise<boolean | null> {
       .eq("company_name", supplier)
       .maybeSingle();
     if (error) return inferVatFromName(supplier);
-    const v = (data as any)?.vat_included;
+    const v = data?.vat_included;
     if (v === true || v === false) return v;
     // vendor 있으나 vat_included 미설정 · 이름으로 추론
-    return inferVatFromName((data as any)?.company_name ?? supplier);
+    return inferVatFromName(data?.company_name ?? supplier);
   } catch {
     return inferVatFromName(supplier);
   }
@@ -150,12 +150,12 @@ router.get("/api/supplier-payments/latest-per-supplier", async (_req, res) => {
     }
     // 이미 desc 정렬 · 각 supplier 첫 row 가 최근
     const map = new Map<string, { latest_payment_date: string; latest_payment_amount: number }>();
-    for (const r of (data ?? []) as any[]) {
-      const nm = String(r?.supplier_name ?? "").trim();
+    for (const r of data ?? []) {
+      const nm = String(r.supplier_name ?? "").trim();
       if (!nm || map.has(nm)) continue;
       map.set(nm, {
-        latest_payment_date: String(r?.payment_date ?? ""),
-        latest_payment_amount: Number(r?.amount) || 0,
+        latest_payment_date: String(r.payment_date ?? ""),
+        latest_payment_amount: Number(r.amount) || 0,
       });
     }
     const rows = Array.from(map.entries()).map(([supplier_name, v]) => ({
@@ -358,7 +358,7 @@ router.get("/api/supplier-balance/:supplier", async (req, res) => {
         .eq("supplier", supplier);
       if (error && !/relation .* does not exist/i.test(error.message)) throw new Error(error.message);
       for (const r of data ?? []) {
-        totalPurchase += Number((r as any).amount) || 0;
+        totalPurchase += Number(r.amount) || 0;
         purchaseCount++;
       }
     }
@@ -373,7 +373,7 @@ router.get("/api/supplier-balance/:supplier", async (req, res) => {
         .eq("supplier_name", supplier);
       if (error && !/relation .* does not exist/i.test(error.message)) throw new Error(error.message);
       for (const r of data ?? []) {
-        totalPayment += Number((r as any).amount) || 0;
+        totalPayment += Number(r.amount) || 0;
         paymentCount++;
       }
     }
@@ -433,18 +433,18 @@ router.get("/api/supplier-ledger", async (req, res) => {
       } else if (!/relation .* does not exist/i.test(r1.error.message)) throw new Error(r1.error.message);
 
       for (const r of data ?? []) {
-        const date = ((r as any).invoice_date && /^\d{4}-\d{2}-\d{2}$/.test((r as any).invoice_date))
-          ? (r as any).invoice_date
-          : (r as any).saved_at;
+        const date = (r.invoice_date && /^\d{4}-\d{2}-\d{2}$/.test(r.invoice_date))
+          ? r.invoice_date
+          : r.saved_at;
         purchases.push({
           type: "purchase",
-          id: (r as any).id,
+          id: r.id,
           date,
-          amount: Number((r as any).amount) || 0,
-          _raw_vat: Number((r as any).vat_amount) || 0,
-          _raw_supply: Number((r as any).supply_amount) || 0,
+          amount: Number(r.amount) || 0,
+          _raw_vat: Number(r.vat_amount) || 0,
+          _raw_supply: Number(r.supply_amount) || 0,
           method: null,
-          memo: (r as any).product_name ?? null,
+          memo: r.product_name ?? null,
           allocations: null,
         });
       }
@@ -473,13 +473,13 @@ router.get("/api/supplier-ledger", async (req, res) => {
       for (const r of data ?? []) {
         payments.push({
           type: "payment",
-          id: (r as any).id,
-          date: (r as any).payment_date,
-          amount: Number((r as any).amount) || 0,
-          _raw_vat: Number((r as any).vat_amount) || 0,
-          method: (r as any).method ?? null,
-          memo: (r as any).memo ?? null,
-          tax_invoice_no: (r as any).tax_invoice_no ?? null,
+          id: r.id,
+          date: r.payment_date,
+          amount: Number(r.amount) || 0,
+          _raw_vat: Number(r.vat_amount) || 0,
+          method: r.method ?? null,
+          memo: r.memo ?? null,
+          tax_invoice_no: r.tax_invoice_no ?? null,
           allocations: null,
         });
       }
@@ -579,7 +579,7 @@ router.get("/api/supplier-open-invoices", async (req, res) => {
     if (invList.length === 0) return res.json({ rows: [] });
 
     // 각 invoice 에 배분된 금액 합
-    const invIds = invList.map(i => (i as any).id);
+    const invIds = invList.map(i => i.id);
     const allocSumMap = new Map<number, number>();
     {
       const { data: allocs, error: aErr } = await supabase
@@ -590,8 +590,8 @@ router.get("/api/supplier-open-invoices", async (req, res) => {
         console.warn("[supplier-open-invoices] allocations sum 실패:", aErr.message);
       }
       for (const a of allocs ?? []) {
-        const iid = (a as any).ocr_confirmed_item_id as number;
-        allocSumMap.set(iid, (allocSumMap.get(iid) ?? 0) + (Number((a as any).allocated_amount) || 0));
+        const iid = a.ocr_confirmed_item_id;
+        allocSumMap.set(iid, (allocSumMap.get(iid) ?? 0) + (Number(a.allocated_amount) || 0));
       }
     }
 
@@ -666,7 +666,7 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
         .select("purchase_date")
         .order("purchase_date", { ascending: false })
         .limit(1);
-      const l = (latestRow ?? [])[0] as any;
+      const l = (latestRow ?? [])[0];
       pdLatestDate = l?.purchase_date ? String(l.purchase_date).slice(0, 10) : null;
     } catch (e: any) {
       if (/relation .* does not exist/i.test(String(e?.message ?? ""))) pdRelationMissing = true;
@@ -682,7 +682,7 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
         .from("vendors")
         .select("company_name, note");
       if (!verr) {
-        for (const v of (vdata ?? []) as any[]) {
+        for (const v of vdata ?? []) {
           const code = String(v.note ?? "").trim();
           const name = String(v.company_name ?? "").trim();
           // note 는 자유형식 텍스트 · 숫자 3~5자리 code 만 매핑 (오탐 방지)
@@ -695,9 +695,9 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
           .from("vendors")
           .select("company_name, supplier_code");
         if (!serr) {
-          for (const v of (sdata ?? []) as any[]) {
-            const code = String((v as any).supplier_code ?? "").trim();
-            const name = String((v as any).company_name ?? "").trim();
+          for (const v of sdata ?? []) {
+            const code = String(v.supplier_code ?? "").trim();
+            const name = String(v.company_name ?? "").trim();
             if (code && name) codeToName.set(code, name); // supplier_code 우선 덮어씀
           }
         }
@@ -717,9 +717,9 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
           .range(pfrom, pfrom + PPAGE - 1);
         if (error) break;
         if (!data || data.length === 0) break;
-        for (const p of data as any[]) {
-          const pc = String((p as any).product_code ?? "").trim();
-          const sup = String((p as any).supplier ?? "").trim();
+        for (const p of data) {
+          const pc = String(p.product_code ?? "").trim();
+          const sup = String(p.supplier ?? "").trim();
           if (pc && sup) productCodeToSupplier.set(pc, sup);
         }
         if (data.length < PPAGE) break;
@@ -741,7 +741,7 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
           throw new Error(error.message);
         }
         if (!data || data.length === 0) break;
-        for (const r of data as any[]) {
+        for (const r of data) {
           // supplier_name 결정 순서 (2026-08-04):
           //   1. raw supplier_name
           //   2. supplier_code → vendors.note or vendors.supplier_code
@@ -806,7 +806,7 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
         if (/relation .* does not exist/i.test(error.message)) return res.json({ suppliers: [] });
         throw new Error(error.message);
       }
-      for (const r of (data ?? []) as any[]) {
+      for (const r of data ?? []) {
         const supplier = String(r.supplier ?? "").trim();
         if (!supplier) continue;
         const date: string = (r.invoice_date && /^\d{4}-\d{2}-\d{2}$/.test(r.invoice_date))
@@ -960,7 +960,7 @@ router.get("/api/supplier-purchase-detail", async (req, res) => {
         .eq("company_name", supplier)
         .limit(1);
       if (!vnerr) {
-        const c = String(((vn ?? [])[0] as any)?.note ?? "").trim();
+        const c = String((vn ?? [])[0]?.note ?? "").trim();
         if (c && /^\d{1,5}$/.test(c)) supplierCode = c;
       }
       // supplier_code 컬럼 있으면 우선 사용 (미래 호환)
@@ -971,7 +971,7 @@ router.get("/api/supplier-purchase-detail", async (req, res) => {
           .eq("company_name", supplier)
           .limit(1);
         if (!vserr) {
-          const c = String(((vs ?? [])[0] as any)?.supplier_code ?? "").trim();
+          const c = String((vs ?? [])[0]?.supplier_code ?? "").trim();
           if (c) supplierCode = c;
         }
       } catch { /* silent · 컬럼 없어도 무관 */ }
@@ -991,8 +991,8 @@ router.get("/api/supplier-purchase-detail", async (req, res) => {
           .range(pfrom, pfrom + PPAGE - 1);
         if (error) break;
         if (!data || data.length === 0) break;
-        for (const p of data as any[]) {
-          const pc = String((p as any).product_code ?? "").trim();
+        for (const p of data) {
+          const pc = String(p.product_code ?? "").trim();
           if (pc) productCodesForSupplier.push(pc);
         }
         if (data.length < PPAGE) break;
@@ -1037,7 +1037,7 @@ router.get("/api/supplier-purchase-detail", async (req, res) => {
       const [rn, rc, rp] = await Promise.all([byName, byCode, byProductCodes()]);
       if (rn.error) return rn;
       const merged: any[] = [...(rn.data ?? [])];
-      const seen = new Set(merged.map((x: any) => x.id));
+      const seen = new Set(merged.map(x => x.id));
       for (const r of ((rc as any).data ?? [])) {
         if (!seen.has((r as any).id)) { merged.push(r); seen.add((r as any).id); }
       }

@@ -39,12 +39,12 @@ router.get("/api/inventory-latest", async (_req, res) => {
   const buildMap = (rows: any[]): Record<string, InvRow> => {
     const map: Record<string, InvRow> = {};
     for (const r of rows) {
-      const code = String((r as any).product_code ?? "").trim();
+      const code = String(r.product_code ?? "").trim();
       if (!code || map[code]) continue;
       map[code] = {
-        warehouse_stock: (r as any).warehouse_stock != null ? Number((r as any).warehouse_stock) : null,
-        store_stock:     (r as any).store_stock     != null ? Number((r as any).store_stock)     : null,
-        checked_at:      (r as any).checked_at ?? null,
+        warehouse_stock: r.warehouse_stock != null ? Number(r.warehouse_stock) : null,
+        store_stock:     r.store_stock     != null ? Number(r.store_stock)     : null,
+        checked_at:      r.checked_at ?? null,
       };
     }
     return map;
@@ -153,12 +153,12 @@ router.get("/api/products-search", async (req, res) => {
           .in("product_code", codes)
           .order("checked_at", { ascending: false });
         for (const r of iv ?? []) {
-          const c = String((r as any).product_code ?? "").trim();
+          const c = String(r.product_code ?? "").trim();
           if (!c || invByCode.has(c)) continue;
           invByCode.set(c, {
-            warehouse_stock: (r as any).warehouse_stock != null ? Number((r as any).warehouse_stock) : null,
-            store_stock: (r as any).store_stock != null ? Number((r as any).store_stock) : null,
-            checked_at: (r as any).checked_at ?? null,
+            warehouse_stock: r.warehouse_stock != null ? Number(r.warehouse_stock) : null,
+            store_stock: r.store_stock != null ? Number(r.store_stock) : null,
+            checked_at: r.checked_at ?? null,
           });
         }
       } catch { /* silent */ }
@@ -177,11 +177,11 @@ router.get("/api/products-search", async (req, res) => {
           if (pdErr) throw new Error(pdErr.message);
           if (!pd || pd.length === 0) break;
           for (const r of pd) {
-            const c = String((r as any).product_code ?? "").trim();
+            const c = String(r.product_code ?? "").trim();
             if (!c || histByCode.has(c)) continue;  // 최근 매입일 우선 (desc 정렬)
             histByCode.set(c, {
-              last_snapshot: (r as any).purchase_date ?? null,
-              last_purchase_qty: (r as any).quantity != null ? Number((r as any).quantity) : null,
+              last_snapshot: r.purchase_date ?? null,
+              last_purchase_qty: r.quantity != null ? Number(r.quantity) : null,
             });
           }
           if (pd.length < PAGE) break;
@@ -231,7 +231,7 @@ router.post("/api/upload-products", express.raw({ type: "application/octet-strea
     if (!isXlsx && !isXls) return res.status(400).json({ error: "형식이 다른 파일입니다. 상품리스트를 업로드해주세요." });
     const wbCheck = XLSX.read(buf, { sheetRows: 1 });
     const wsCheck = wbCheck.Sheets[wbCheck.SheetNames[0]];
-    const headerRow = (XLSX.utils.sheet_to_json<any[]>(wsCheck, { header: 1 })[0] ?? []) as any[];
+    const headerRow = XLSX.utils.sheet_to_json<any[]>(wsCheck, { header: 1 })[0] ?? [];
     if (headerRow.length < COL_KEYS.length) {
       return res.status(400).json({ error: "형식이 다른 파일입니다. 상품리스트를 업로드해주세요." });
     }
@@ -271,7 +271,7 @@ router.post("/api/upload-products", express.raw({ type: "application/octet-strea
     }
     resetProductCache();
     const { data: logData } = await supabase.from("app_settings").select("value").eq("key", "product_import_log").maybeSingle();
-    const prevLogs = Array.isArray(logData?.value) ? (logData.value as any[]) : [];
+    const prevLogs: unknown[] = Array.isArray(logData?.value) ? logData.value : [];
     const newEntry = { timestamp: new Date().toISOString(), count: rows.length, restored: restoredCount };
     const logs = [newEntry, ...prevLogs].slice(0, 20);
     await supabase.from("app_settings").upsert({ key: "product_import_log", value: logs, updated_at: new Date().toISOString() }, { onConflict: "key" });
@@ -329,7 +329,7 @@ router.get("/api/products/:code", async (req, res) => {
       data = r2.data;
     }
     if (!data) return res.status(404).json({ error: "상품을 찾을 수 없습니다" });
-    const productCode = (data as any).product_code ?? code;
+    const productCode = data.product_code ?? code;
 
     // inventory_checks 병합 (창고·매장 실재고)
     let warehouseStock: number | null = null;
@@ -343,9 +343,9 @@ router.get("/api/products/:code", async (req, res) => {
         .order("checked_at", { ascending: false })
         .limit(1);
       if (iv && iv.length > 0) {
-        warehouseStock = (iv[0] as any).warehouse_stock != null ? Number((iv[0] as any).warehouse_stock) : null;
-        storeStock     = (iv[0] as any).store_stock     != null ? Number((iv[0] as any).store_stock)     : null;
-        invCheckedAt   = (iv[0] as any).checked_at ?? null;
+        warehouseStock = iv[0].warehouse_stock != null ? Number(iv[0].warehouse_stock) : null;
+        storeStock     = iv[0].store_stock     != null ? Number(iv[0].store_stock)     : null;
+        invCheckedAt   = iv[0].checked_at ?? null;
       }
     } catch { /* silent */ }
 
@@ -361,16 +361,16 @@ router.get("/api/products/:code", async (req, res) => {
         .order("purchase_date", { ascending: false })
         .limit(1);
       if (pd && pd.length > 0) {
-        lastPurchase = (pd[0] as any).purchase_date ?? null;
+        lastPurchase = pd[0].purchase_date ?? null;
       }
     } catch { /* silent */ }
 
     res.json({
       ...data,
-      realMap: (data as any).real_map ?? null,
+      realMap: data.real_map ?? null,
       // 재고 DB에서 병합
-      warehouse_stock: (data as any).warehouse_stock ?? warehouseStock,
-      store_stock: (data as any).store_stock ?? storeStock,
+      warehouse_stock: data.warehouse_stock ?? warehouseStock,
+      store_stock: data.store_stock ?? storeStock,
       inv_checked_at: invCheckedAt,
       // 매입 · purchase_details 만 신뢰
       last_purchase_date: lastPurchase,
@@ -441,9 +441,9 @@ router.post("/api/products/refill-optimal-stock", async (req, res) => {
       }
       if (!data || data.length === 0) break;
       for (const r of data) {
-        const code = String((r as any).product_code ?? "").trim();
+        const code = String(r.product_code ?? "").trim();
         if (!code) continue;
-        const q = Number((r as any).sale_qty ?? 0) || 0;
+        const q = Number(r.sale_qty ?? 0) || 0;
         if (q <= 0) continue;
         salesMap.set(code, (salesMap.get(code) ?? 0) + q);
       }
