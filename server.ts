@@ -18,9 +18,9 @@ import requestsRouter    from "./server/routes/requests";
 import mismatchesRouter  from "./server/routes/mismatches";
 import authRouter        from "./server/routes/auth/auth";
 import notificationsRouter from "./server/routes/board/notifications";
-import leaveRouter       from "./server/routes/leave";
-import lunchRouter       from "./server/routes/lunch";
-import reservationsRouter from "./server/routes/reservations";
+import leaveRouter       from "./server/routes/daily/leave";
+import lunchRouter       from "./server/routes/daily/lunch";
+import reservationsRouter from "./server/routes/daily/reservations";
 import vendorsRouter     from "./server/routes/vendors";
 import ocrRouter         from "./server/routes/ocr";
 // 2026-08-05 · 재고세기(YOLO) 기능 완전 제거 · stockCount·stockCounter·stockCounterConfig 파일 삭제됨
