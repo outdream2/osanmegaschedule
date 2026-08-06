@@ -9,6 +9,7 @@ import { fmtDateMD } from "../lib/format";
 import type { AuthSession } from "../types";
 import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
 import { useColumnResize, RESIZER_CLS } from "../hooks/useColumnResize";
+import { useConfirm } from "../hooks/useConfirm";
 
 interface RequestsPageProps {
   onBack: () => void;
@@ -102,6 +103,7 @@ function ListToolbar({
 }
 
 export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
+  const confirm = useConfirm();
   const [tab, setTab] = useState<Tab>("display");
   const isManager = (authSession?.level ?? 0) >= 2;
   const { getWidth: rw, resizerProps: rr } = useColumnResize("requestsDisplay", {
@@ -597,7 +599,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               allChecked={selectedDisplay.size === displayReqs.length && displayReqs.length > 0}
               onToggleAll={() => toggleAll(displayReqs, selectedDisplay, setSelectedDisplay)}
               onDeleteSelected={() => deleteDisplay([...selectedDisplay])}
-              onDeleteAll={() => { if (confirm(`진열요청 전체 ${displayReqs.length}건을 삭제할까요?`)) deleteDisplay(displayReqs.map(r => r.id)); }}
+              onDeleteAll={async () => { if (await confirm({ message: `진열요청 전체 ${displayReqs.length}건을 삭제할까요?`, danger: true })) deleteDisplay(displayReqs.map(r => r.id)); }}
               onRefresh={loadDisplayReqs} loading={displayLoading} accentColor="text-blue-600"
               hideDeleteAll={!isManager}
               extraActions={
@@ -806,7 +808,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 allChecked={selectedOrder.size === orderReqs.length && orderReqs.length > 0}
                 onToggleAll={() => toggleAll(orderReqs, selectedOrder, setSelectedOrder)}
                 onDeleteSelected={() => deleteOrder([...selectedOrder])}
-                onDeleteAll={() => { if (confirm(`발주요청 전체 ${orderReqs.length}건을 삭제할까요?`)) deleteOrder(orderReqs.map(r => r.id)); }}
+                onDeleteAll={async () => { if (await confirm({ message: `발주요청 전체 ${orderReqs.length}건을 삭제할까요?`, danger: true })) deleteOrder(orderReqs.map(r => r.id)); }}
                 onRefresh={loadOrderReqs} loading={orderLoading} accentColor="text-red-600"
               />
               {orderError && (
@@ -927,7 +929,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               allChecked={selectedMismatch.size === mismatches.length && mismatches.length > 0}
               onToggleAll={() => toggleAll(mismatches, selectedMismatch, setSelectedMismatch)}
               onDeleteSelected={() => deleteMismatch([...selectedMismatch])}
-              onDeleteAll={() => { if (confirm(`구역불일치 전체 ${mismatches.length}건을 삭제할까요?`)) deleteMismatch(mismatches.map(r => r.id)); }}
+              onDeleteAll={async () => { if (await confirm({ message: `구역불일치 전체 ${mismatches.length}건을 삭제할까요?`, danger: true })) deleteMismatch(mismatches.map(r => r.id)); }}
               onRefresh={loadMismatches} loading={mismatchLoading} accentColor="text-orange-600"
             />
             {mismatchLoading && mismatches.length > 0 && (
@@ -1004,7 +1006,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               allChecked={selectedInventory.size === inventoryChecks.length && inventoryChecks.length > 0}
               onToggleAll={() => toggleAll(inventoryChecks, selectedInventory, setSelectedInventory)}
               onDeleteSelected={() => deleteInventory([...selectedInventory])}
-              onDeleteAll={() => { if (confirm(`실재고 점검 내역 전체 ${inventoryChecks.length}건을 삭제할까요?`)) deleteInventory(inventoryChecks.map(r => r.id)); }}
+              onDeleteAll={async () => { if (await confirm({ message: `실재고 점검 내역 전체 ${inventoryChecks.length}건을 삭제할까요?`, danger: true })) deleteInventory(inventoryChecks.map(r => r.id)); }}
               onRefresh={loadInventoryChecks} loading={inventoryLoading} accentColor="text-purple-600"
             />
             {inventoryLoading && inventoryChecks.length > 0 && (

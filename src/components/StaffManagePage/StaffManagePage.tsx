@@ -4,6 +4,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSortableTable } from "../../hooks/useSortableTable";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
+import { useConfirm } from "../../hooks/useConfirm";
 import {
   Award,
   Briefcase,
@@ -621,6 +622,7 @@ interface StaffManagePageProps {
 }
 
 const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) => {
+  const confirm = useConfirm();
   // ── 상태 ──
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading]   = useState(false);
@@ -899,7 +901,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
 
   // 개별 연차 삭제 · PUT /api/schedules with type="" (SchedulePage clear 방식)
   const deleteUsedLeave = async (empId: number, date: string) => {
-    if (!window.confirm(`${date} 연차 기록을 삭제할까요?\n\n스케줄표(월차)에도 반영됩니다.`)) return;
+    if (!await confirm({ message: `${date} 연차 기록을 삭제할까요?\n\n스케줄표(월차)에도 반영됩니다.`, danger: true })) return;
     setDeletingLeaveDate(date);
     try {
       const res = await fetch(`/api/schedules`, {
@@ -992,8 +994,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
   );
 
   // ── 선택 ──
-  const handleSelect = (emp: Employee) => {
-    if (editing && !window.confirm("편집 중인 내용이 있습니다. 이동할까요?")) return;
+  const handleSelect = async (emp: Employee) => {
+    if (editing && !await confirm({ message: "편집 중인 내용이 있습니다. 이동할까요?" })) return;
     setSelectedId(emp.id);
     setEditing(false);
     setDraft(null);
@@ -1060,7 +1062,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
 
   // ── 삭제 ──
   const deleteEmployee = async (emp: Employee) => {
-    if (!window.confirm(`직원 [${emp.name}] 삭제할까요?\n\n관련 스케줄·배정 데이터도 영향을 받을 수 있습니다.`)) return;
+    if (!await confirm({ message: `직원 [${emp.name}] 삭제할까요?\n\n관련 스케줄·배정 데이터도 영향을 받을 수 있습니다.`, danger: true })) return;
     try {
       const res = await fetch(`/api/employees/${emp.id}`, { method: "DELETE" });
       if (!res.ok) {
@@ -2117,7 +2119,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                                   type="button"
                                   onClick={async () => {
                                     if (!selectedEmp) return;
-                                    if (!window.confirm("이력서를 삭제하시겠습니까?")) return;
+                                    if (!await confirm({ message: "이력서를 삭제하시겠습니까?", danger: true })) return;
                                     try {
                                       const res = await fetch(`/api/employees/${selectedEmp.id}/resume`, { method: "DELETE" });
                                       if (!res.ok) throw new Error("삭제 실패");

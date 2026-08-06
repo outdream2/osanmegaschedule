@@ -19,6 +19,7 @@
 //   K. 주 근무일수 자동 계산 (요일 체크박스 → 개수)
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useConfirm } from "../../hooks/useConfirm";
 import {
   NotePencil, User, ClipboardText, CalendarBlank, ClockClockwise, Money,
   Coffee, Notepad, Eraser, DownloadSimple, Warning, Check,
@@ -2681,6 +2682,8 @@ function saveCardCollapsedMap(map: CardCollapsedMap): void {
 }
 
 const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, onBack, onNavigate, onLogout, embedded = false }) => {
+  const confirm = useConfirm();
+
   // ── T14/Phase B · 직급별 기본 시급 로드 (useSettings) · 사용자 편집 가능 유지
   const settings = useSettings();
 
@@ -3559,8 +3562,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   };
 
   // 폼 리셋 · T-N (2026-08-05) · 임시저장(localStorage) 도 함께 삭제
-  const handleReset = () => {
-    if (!window.confirm("입력한 모든 내용 · 서명 · 임시저장까지 전체 초기화합니다.\n계속하시겠습니까?")) return;
+  const handleReset = async () => {
+    if (!await confirm({ message: "입력한 모든 내용 · 서명 · 임시저장까지 전체 초기화합니다.\n계속하시겠습니까?", danger: true })) return;
     setForm(emptyForm());
     clearAllSignatures();
     clearDraft();
@@ -3646,7 +3649,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   }, [signUrls]);
 
   // 검증
-  const validateBeforeAction = (opts: { requireAllSignatures: boolean }): boolean => {
+  const validateBeforeAction = async (opts: { requireAllSignatures: boolean }): Promise<boolean> => {
     if (!form.employeeName.trim()) {
       setNotice({ tone: "err", text: "근로자 성명을 입력하세요." });
       return false;
@@ -3666,7 +3669,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         setNotice({ tone: "err", text: `서명 누락 (${missing.length}/${SIGN_KEYS.length}): ${names.join(" · ")}` });
         return false;
       } else {
-        if (!window.confirm(`서명이 ${missing.length}/${SIGN_KEYS.length} 비어있습니다:\n${names.join(" · ")}\n\n서명 없이 PDF를 생성하시겠습니까?`)) return false;
+        if (!await confirm({ message: `서명이 ${missing.length}/${SIGN_KEYS.length} 비어있습니다:\n${names.join(" · ")}\n\n서명 없이 PDF를 생성하시겠습니까?` })) return false;
       }
     }
     return true;
@@ -3675,7 +3678,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   // 계약 완료 → PDF 로컬 저장
   const handleComplete = async () => {
     setNotice(null);
-    if (!validateBeforeAction({ requireAllSignatures: false })) return;
+    if (!await validateBeforeAction({ requireAllSignatures: false })) return;
     setGenerating(true);
     await new Promise(r => setTimeout(r, 60));
     try {
@@ -3692,7 +3695,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   // 계약완료 승인 · DB 저장
   const handleApproveAndSave = async () => {
     setNotice(null);
-    if (!validateBeforeAction({ requireAllSignatures: true })) return;
+    if (!await validateBeforeAction({ requireAllSignatures: true })) return;
     setGenerating(true);
     await new Promise(r => setTimeout(r, 60));
     try {

@@ -7,6 +7,7 @@ import { RawOcrTable, type ConfirmedItem } from "./RawOcrTable";
 import type { OcrPageResult } from "./types";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import type { AuthSession } from "../../types";
+import { useConfirm } from "../../hooks/useConfirm";
 
 pdfjsLib.GlobalWorkerOptions.workerPort = new Worker(
   new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url),
@@ -277,6 +278,7 @@ const toNum = (v: number | string | null | undefined): number => {
 };
 
 const ConfirmedRecordsTab: React.FC = () => {
+  const confirm = useConfirm();
   const [dateFilter, setDateFilter] = React.useState<string>("");
   const [supplierFilter, setSupplierFilter] = React.useState<string>("");
   const [showBalanceOnly, setShowBalanceOnly] = React.useState<boolean>(false);
@@ -344,7 +346,7 @@ const ConfirmedRecordsTab: React.FC = () => {
   React.useEffect(() => { fetchItems(); }, [fetchItems]);
 
   const handleDelete = async (id: number) => {
-    if (!confirm("이 항목을 삭제하시겠습니까?")) return;
+    if (!await confirm({ message: "이 항목을 삭제하시겠습니까?", danger: true })) return;
     setDeletingId(id);
     try {
       await axios.delete(`/api/ocr-confirmed-items/${id}`);
@@ -359,7 +361,7 @@ const ConfirmedRecordsTab: React.FC = () => {
 
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return;
-    if (!confirm(`선택한 ${selectedIds.size}건을 삭제하시겠습니까?`)) return;
+    if (!await confirm({ message: `선택한 ${selectedIds.size}건을 삭제하시겠습니까?`, danger: true })) return;
     setBulkDeleting(true);
     const ids = [...selectedIds];
     let ok = 0, fail = 0;
@@ -781,6 +783,7 @@ const ConfirmedRecordsTab: React.FC = () => {
 };
 
 export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigate, onLogout, embedded = false }) => {
+  const confirm = useConfirm();
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);

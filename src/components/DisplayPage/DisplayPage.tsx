@@ -56,6 +56,7 @@ import OrderManagePage from "../OrderManagePage/OrderManagePage";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 // 2026-08-05 · 관리자(level>=8) long-press 드래그 재정렬 · localStorage 순서 저장
 import { useSortableTabs } from "../../hooks/useSortableTabs";
+import { useConfirm } from "../../hooks/useConfirm";
 // 2026-08-03 · StaffManagePage · 매장관리 서브탭에서 제거 · 경영관리 통합 페이지(BusinessManagePage)로 이동
 import type { AuthSession } from "../../types";
 
@@ -337,6 +338,7 @@ const MULTI_ASSIGN_ZONE_NUMS = new Set([36, 42]);
 
 // ─── Main component ────────────────────────────────────────────────────────────
 export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployeeEdit, authSession, onNavigate, onLogout }) => {
+  const confirm = useConfirm();
   // 서브탭: 재고관리(기본 · level 9 전용) · 매장관리(그 외 기본)
   const dpUserLevel = authSession?.level ??
     (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9 :
@@ -543,12 +545,13 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     const d = new Date(selectedDate + "T00:00:00");
     const dow = d.getDay(); // 0=일 ~ 6=토
     const dowLabel = dayNames[dow];
-    const proceed = window.confirm(
-      `현재 배정 상태를 매주 ${dowLabel}에 적용할까요?\n\n` +
-      `• 각 담당자의 dowMap에 ${dowLabel} 활성 비트 추가\n` +
-      `• zone_assignments 테이블에 DB 저장 (${zones.length}개 구역)\n` +
-      `※ 다른 요일 설정은 그대로 유지됩니다.`
-    );
+    const proceed = await confirm({
+      message:
+        `현재 배정 상태를 매주 ${dowLabel}에 적용할까요?\n\n` +
+        `• 각 담당자의 dowMap에 ${dowLabel} 활성 비트 추가\n` +
+        `• zone_assignments 테이블에 DB 저장 (${zones.length}개 구역)\n` +
+        `※ 다른 요일 설정은 그대로 유지됩니다.`,
+    });
     if (!proceed) return;
 
     const dowBit = 1 << dow;
@@ -599,16 +602,16 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   }, [zones, requests, selectedDate]);
 
   // ── 자동 구역 배치 (기본배정 우선 + 미배정자 임의배치) ─────────────────────
-  const handleAutoAssign = useCallback(() => {
+  const handleAutoAssign = useCallback(async () => {
     const logistics = todayStaff.filter(s => s.employee.position.includes("물류"));
     if (logistics.length === 0) {
       alert("오늘 출근한 물류직원이 없습니다.");
       return;
     }
     // 간단 확인 — 미리보기만 적용 (DB 저장·알림 전송은 하지 않음)
-    const proceed = window.confirm(
-      `물류 출근직원 ${logistics.length}명을 총 45구역 (수평윙 42 + 베스트존 3)에 근접성 세트 기반으로 임의배치할까요?`
-    );
+    const proceed = await confirm({
+      message: `물류 출근직원 ${logistics.length}명을 총 45구역 (수평윙 42 + 베스트존 3)에 근접성 세트 기반으로 임의배치할까요?`,
+    });
     if (!proceed) return;
 
     // ── 근접성 세트 (총 11개 세트 · 45구역) ─────────────────────────────

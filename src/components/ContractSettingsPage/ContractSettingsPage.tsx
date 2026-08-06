@@ -22,6 +22,7 @@
 //   · feedback_ui_consult: 카테고리 색 분류 · 통일된 카드
 //   · embedded 모드 · DocumentWriterPage 임베드 시 자체 헤더 skip
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useConfirm } from "../../hooks/useConfirm";
 import {
   Gear, FloppyDisk, ArrowsClockwise, Check, Warning, Info,
   CaretDown, CaretRight, Plus, Trash, ArrowUp, ArrowDown,
@@ -358,6 +359,8 @@ interface ContractSettingsPageProps {
 const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
   authSession, onBack, onNavigate, onLogout, embedded = false,
 }) => {
+  const confirm = useConfirm();
+
   // ── 시급 · 서버 저장 (settings.wageRates · 모든 관리자 공유)
   //   ContractWriterPage 가 참조하는 유일한 소스와 통일
   //   즉시 저장 (debounce · useSettings 내부)
@@ -522,8 +525,8 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
     setClauses(prev => ({ ...prev, [group]: [...prev[group], ""] }));
   }, []);
 
-  const removeClause = useCallback((group: ClauseGroupKey, idx: number) => {
-    if (!window.confirm(`이 항목을 삭제하시겠습니까?`)) return;
+  const removeClause = useCallback(async (group: ClauseGroupKey, idx: number) => {
+    if (!await confirm({ message: "이 항목을 삭제하시겠습니까?", danger: true })) return;
     setClauses(prev => {
       const arr = prev[group].slice();
       arr.splice(idx, 1);
@@ -569,8 +572,8 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
   };
 
   // ── 기본값 (전체 · 시급은 wageRates 비우기 → default fallback)
-  const handleResetToDefault = () => {
-    if (!window.confirm("모든 시급 및 각 호 내용을 기본값으로 되돌립니다. 계속하시겠습니까?")) return;
+  const handleResetToDefault = async () => {
+    if (!await confirm({ message: "모든 시급 및 각 호 내용을 기본값으로 되돌립니다. 계속하시겠습니까?", danger: true })) return;
     updateSettings({ wageRates: {} });
     setClauses(cloneClauses(DEFAULT_CLAUSES));
     setNotice({ tone: "info", text: "기본값으로 되돌렸습니다. 각 호는 [저장] 버튼을 눌러야 확정됩니다." });
@@ -583,8 +586,8 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
   };
 
   // ── 그룹별 기본값 복원
-  const handleResetGroup = (group: ClauseGroupKey) => {
-    if (!window.confirm(`[${CLAUSE_GROUP_META.find(g => g.key === group)?.label}] 항목을 기본값으로 되돌립니다. 계속하시겠습니까?`)) return;
+  const handleResetGroup = async (group: ClauseGroupKey) => {
+    if (!await confirm({ message: `[${CLAUSE_GROUP_META.find(g => g.key === group)?.label}] 항목을 기본값으로 되돌립니다. 계속하시겠습니까?`, danger: true })) return;
     setClauses(prev => ({ ...prev, [group]: DEFAULT_CLAUSES[group].slice() }));
   };
 

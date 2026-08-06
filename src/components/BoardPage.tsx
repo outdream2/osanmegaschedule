@@ -14,6 +14,7 @@ import type { AuthSession } from "../types";
 import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
 import { uploadImagesToCloudinary, type UploadedImage } from "../lib/cloudinaryUpload";
 import { fmtDateShort } from "../lib/format";
+import { useConfirm } from "../hooks/useConfirm";
 
 interface Props {
   authSession: AuthSession | null;
@@ -724,6 +725,7 @@ function DetailModal({
 }: {
   postId: number; authSession: AuthSession | null; employees: Employee[]; isManager: boolean; initialEdit?: boolean; onClose: () => void; onChanged: () => void;
 }) {
+  const confirm = useConfirm();
   const [post, setPost] = useState<BoardPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [commentBody, setCommentBody] = useState("");
@@ -889,7 +891,7 @@ function DetailModal({
 
   const deletePost = async () => {
     if (!canEdit || !authSession) return;
-    if (!confirm("이 글을 삭제할까요?")) return;
+    if (!await confirm({ message: "이 글을 삭제할까요?", danger: true })) return;
     await fetch(`/api/board/posts/${postId}?editor_id=${authSession.employeeId}&editor_level=${authSession.level ?? 0}`, { method: "DELETE" });
     onChanged(); onClose();
   };

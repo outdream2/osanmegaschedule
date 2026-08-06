@@ -3,6 +3,7 @@
 // 기존 요청목록의 '발주요청' 탭 컨텐츠를 독립 페이지로 분리
 // 거래명세서 서브탭에서는 거래명세서 OCR(OcrPage) 노출
 import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useConfirm } from "../../hooks/useConfirm";
 import { useVendors } from "../../hooks/useVendors";
 // 2026-08-03 (#201) · 발주필요 검색 · 공통 SearchBar · SearchFilterChips · 한글 초성
 import { SearchBar } from "../common/SearchBar";
@@ -189,6 +190,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   initialTopTab,
   hideTopTabs = false,
 }) => {
+  const confirm = useConfirm();
+
   // Level-1 탭 (발주 / 매입 / 결제 / 통계) — 2026-08-03 재구성
   // initialTopTab 이 있으면 해당 탭으로 초기화 · props 변경 시 useEffect 로 감지 (재mount 없이)
   const [topTab, setTopTab] = useState<"purchase-order" | "purchase" | "payment" | "statistics">(initialTopTab ?? "purchase-order");
@@ -733,11 +736,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
   // 입고 확정 (부분/완전)
   const markReceived = async (receipt: GoodsReceipt, receivedQtyMap?: Record<string, number>) => {
-    const proceed = window.confirm(
-      receivedQtyMap
+    const proceed = await confirm({
+      message: receivedQtyMap
         ? `${receipt.supplier} · #${receipt.order_number} 입고 확정할까요?\n(부분입고: 수량 조정됨)`
-        : `${receipt.supplier} · #${receipt.order_number} 완전 입고 확정할까요?`
-    );
+        : `${receipt.supplier} · #${receipt.order_number} 완전 입고 확정할까요?`,
+    });
     if (!proceed) return;
     try {
       const res = await fetch(`/api/goods-receipts/${receipt.id}/confirm`, {
@@ -1054,9 +1057,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     if (!orderModal) return;
     if (!orderModal.channels.email && !orderModal.channels.sms) { alert("이메일 또는 문자 중 하나 이상 선택해주세요."); return; }
     const totalItems = orderModal.suppliers.reduce((n, s) => n + s.items.length, 0);
-    const proceed = window.confirm(
-      `${orderModal.suppliers.length}개 공급사 · ${totalItems}개 상품에 발주서 ${orderModal.suppliers.length}건을 각각 발송합니다.\n\n계속하시겠습니까?`
-    );
+    const proceed = await confirm({
+      message: `${orderModal.suppliers.length}개 공급사 · ${totalItems}개 상품에 발주서 ${orderModal.suppliers.length}건을 각각 발송합니다.\n\n계속하시겠습니까?`,
+    });
     if (!proceed) return;
     setSendingBulk(true);
     try {
@@ -2499,7 +2502,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 {allChecked ? <CheckSquare size={12} className="text-rose-500" /> : <Square size={12} />}
                 전체선택
               </button>
-              <button onClick={() => selectedOrder.size > 0 && confirm(`${selectedOrder.size}건 삭제할까요?`) && deleteOrder([...selectedOrder])}
+              <button onClick={async () => { if (selectedOrder.size > 0 && await confirm({ message: `${selectedOrder.size}건 삭제할까요?`, danger: true })) deleteOrder([...selectedOrder]); }}
                 disabled={selectedOrder.size === 0}
                 className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[11px] font-medium text-slate-500 border border-slate-200 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shrink-0">
                 <Trash2 size={12} />

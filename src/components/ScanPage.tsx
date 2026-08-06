@@ -31,6 +31,7 @@ import {
 } from "../lib/productsCache";
 import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
 import type { AuthSession } from "../types";
+import { useConfirm } from "../hooks/useConfirm";
 
 // ─────────────────────────────────────────────────────────────
 // Props
@@ -213,6 +214,7 @@ const SCAN_SORT_CMP: Record<ScanSortKey, Comparator<any>> = {
 export const ScanPage: React.FC<ScanPageProps> = ({
   onBack, authSession, onNavigate, onLogout, embedded = false,
 }) => {
+  const confirm = useConfirm();
   // ── scanner
   const [scannerOpen, setScannerOpen]           = useState(false);
   const [mapLoading, setMapLoading]             = useState(false);
@@ -285,7 +287,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     // 구역별 요청 시 confirm 생략 (모달 안 직접 클릭 · 이중 확인 제거)
     if (!zoneOverride) {
       const confirmMsg = `[${row.product.name}] 진열요청?\n· 배정 구역: ${rm || "미지정"}\n· 현재 매장: ${storeSum}개 · 창고: ${warehouseSum}개\n· 노트: ${autoNote}`;
-      if (!window.confirm(confirmMsg)) return;
+      if (!await confirm({ message: confirmMsg })) return;
     }
     setRequestingKey(row.key);
     try {
@@ -408,9 +410,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     setRows(prev => prev.filter(r => r.key !== key));
   }, []);
 
-  const resetAll = () => {
+  const resetAll = async () => {
     if (rows.length === 0) return;
-    if (!window.confirm(`등록된 ${rows.length}개 항목을 모두 초기화할까요?`)) return;
+    if (!await confirm({ message: `등록된 ${rows.length}개 항목을 모두 초기화할까요?`, danger: true })) return;
     setRows([]);
     setLastAddedKey(null);
     setLastProduct(null);
@@ -442,9 +444,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     if (sameDayRows.length > 0) {
       const preview = sameDayRows.slice(0, 5).map(r => `· ${r.product.name}`).join("\n");
       const more = sameDayRows.length > 5 ? `\n외 ${sameDayRows.length - 5}건` : "";
-      const ok = window.confirm(
-        `오늘(${todayYmd}) 이미 저장된 상품이 ${sameDayRows.length}건 있습니다.\n덮어쓰시겠습니까?\n\n${preview}${more}`
-      );
+      const ok = await confirm({
+        message: `오늘(${todayYmd}) 이미 저장된 상품이 ${sameDayRows.length}건 있습니다.\n덮어쓰시겠습니까?\n\n${preview}${more}`,
+      });
       if (!ok) return;
     }
     setSaveStatus("saving");

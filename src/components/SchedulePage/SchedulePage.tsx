@@ -12,6 +12,7 @@ import { EmployeeFormModal } from "../EmployeeFormModal";
 import { ScheduleFilterBar } from "../ScheduleFilterBar";
 import { BreakModal } from "../BreakModal";
 import { useSettings } from "../../hooks/useSettings";
+import { useConfirm } from "../../hooks/useConfirm";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import EmployeeNameCell from "./EmployeeNameCell";
 import {
@@ -48,6 +49,7 @@ interface SchedulePageProps {
 }
 
 export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, onNavigate, initialEditEmployeeId, onEditEmployeeHandled, authSession }) => {
+  const confirm = useConfirm();
   // ── Auth-derived flags (level-based, with role fallback for old sessions) ───
   const userLevel = authSession?.level ??
     (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9
@@ -604,8 +606,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       const parts: string[] = [];
       if (needsScheduleOverwrite) parts.push("월별 스케쥴");
       if (needsDayOverwrite)      parts.push("일별 근무설정");
-      if (!confirm(`${currentMonth}월에 이미 ${parts.join(" / ")} 데이터가 있습니다.\n${prevYear}년 ${prevMonth}월 데이터로 덮어쓰시겠습니까?`)) return;
-      if (!confirm(`정말 덮어쓰시겠습니까?\n현재 ${currentMonth}월 ${parts.join(" / ")}이(가) 교체됩니다.`)) return;
+      if (!await confirm({ message: `${currentMonth}월에 이미 ${parts.join(" / ")} 데이터가 있습니다.\n${prevYear}년 ${prevMonth}월 데이터로 덮어쓰시겠습니까?` })) return;
+      if (!await confirm({ message: `정말 덮어쓰시겠습니까?\n현재 ${currentMonth}월 ${parts.join(" / ")}이(가) 교체됩니다.`, danger: true })) return;
     }
 
     setIsCopying(true);
@@ -640,7 +642,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   const handleToggleMonthLock = async () => {
     const next = !isMonthLocked;
     const label = next ? "확정" : "확정해제";
-    if (!confirm(`${currentYear}년 ${currentMonth}월 스케줄을 ${label}하시겠습니까?${next ? "\n확정 후에는 관리자도 수정할 수 없습니다." : ""}`)) return;
+    if (!await confirm({ message: `${currentYear}년 ${currentMonth}월 스케줄을 ${label}하시겠습니까?${next ? "\n확정 후에는 관리자도 수정할 수 없습니다." : ""}` })) return;
     setIsLockLoading(true);
     try {
       const key = `schedule_lock_${currentYear}-${String(currentMonth).padStart(2, "0")}`;
@@ -1069,7 +1071,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       };
 
       if (empModalMode === "edit" && selectedEmpForEdit) {
-        if (!window.confirm(`${empName} 직원의 정보를 수정하시겠습니까?`)) return;
+        if (!await confirm({ message: `${empName} 직원의 정보를 수정하시겠습니까?` })) return;
         await axios.put(`/api/employees/${selectedEmpForEdit.id}`, {
           name: empName,
           position: finalPosition,
@@ -1139,7 +1141,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
   // Delete Employee Handler
   const handleDeleteEmployee = async (id: number, name: string) => {
-    if (!window.confirm(`${name} 직원을 목록에서 삭제하시겠습니까? 등록된 모든 스케줄이 삭제됩니다.`)) {
+    if (!await confirm({ message: `${name} 직원을 목록에서 삭제하시겠습니까? 등록된 모든 스케줄이 삭제됩니다.`, danger: true })) {
       return;
     }
 
