@@ -10,7 +10,7 @@ import { createServer as createViteServer } from "vite";
 import { supabase } from "./src/supabase/client";
 import { getProductMap } from "./server/productCache";
 
-import schedulesRouter   from "./server/routes/schedules";
+import schedulesRouter   from "./server/routes/schedule/schedules";
 import staffRouter       from "./server/routes/staff";
 import settingsRouter    from "./server/routes/settings";
 import productsRouter    from "./server/routes/products";

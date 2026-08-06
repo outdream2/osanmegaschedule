@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { scheduleController } from "../controllers/scheduleController";
-import { supabase } from "../../src/supabase/client";
+import { scheduleController } from "../../controllers/scheduleController";
+import { supabase } from "../../../src/supabase/client";
 import path from "path";
 import fs from "fs";
 import multer from "multer";
-import { uploadToDrive, deleteFromDrive, extractDriveFileId, isDriveReady } from "../services/googleDriveService";
+import { uploadToDrive, deleteFromDrive, extractDriveFileId, isDriveReady } from "../../services/googleDriveService";
 
 const router = Router();
 
