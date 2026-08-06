@@ -827,7 +827,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                   onClick={() => openSupplierDetailModal(supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim() ?? "")}
                   className="ml-auto inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-black text-sky-700 bg-sky-50 border border-sky-300 hover:bg-sky-100 cursor-pointer transition"
                   title="공급사 정보 조회·수정">
-                  <Building2 size={11} /> 조회
+                  <Building2 size={11} /> 조회·수정
                 </button>
               </div>
               {(() => {

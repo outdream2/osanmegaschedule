@@ -20,6 +20,7 @@ import { EmptyState } from "../common/EmptyState";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import VendorRowCard, { type VendorSummary } from "./PurchaseHistoryTab/VendorRowCard";
 import VendorHeaderPanel, { type VendorFull } from "./PurchaseHistoryTab/VendorHeaderPanel";
+import type { Vendor as VendorRecord } from "../LandingPage/VendorListEditor";
 import PurchaseSubTabs, {
   type PurchaseLedgerRow,
   type PurchaseDetailRow,
@@ -34,6 +35,7 @@ import ProductPurchaseDetailPanel, {
   type ProductPurchaseRow,
 } from "./PurchaseHistoryTab/ProductPurchaseDetailPanel";
 import { useLedgerHighlight } from "../../hooks/useLedgerHighlight";
+import { useVendorInfoModal } from "../common/VendorInfoModal";
 // 2026-08-04 · by-vendor 좌측 리스트 · SupplierTab embedded 모드 재사용 (사용자 요청)
 //   · 기존 VendorRowCard 리스트 → SupplierTab 좌측 (재고자산·상품수·매입·판매량·판매액 컬럼)
 //   · 우측 상세 (VendorHeaderPanel + PurchaseSubTabs) 는 100% 유지
@@ -81,6 +83,9 @@ export const PurchaseHistoryTab: React.FC = () => {
   //  뷰 모드 (#191 · 공급사별 / 상품별)
   // ═══════════════════════════════════════════════════════════════════════
   const [viewMode, setViewMode] = useState<ViewMode>("by-vendor");
+
+  // ─── 공급사 상세 모달 (T-COMMON-VendorInfoModal · 2026-08-06) ─────────────
+  const { openVendorInfo, modalElement: vendorModalElement } = useVendorInfoModal();
 
   // ═══════════════════════════════════════════════════════════════════════
   //  공급사별 뷰 (기존)
@@ -749,6 +754,7 @@ export const PurchaseHistoryTab: React.FC = () => {
   }, [filteredAllDetails, detailSupplierMap, selectedProductKey]);
 
   return (
+    <>
     <div className="flex flex-col gap-2 h-full min-h-0">
       {/* 상단 필터바 */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -980,6 +986,7 @@ export const PurchaseHistoryTab: React.FC = () => {
                     vendor={selectedVendor}
                     detailRows={detailRows}
                     loading={detailLoading}
+                    onEdit={() => openVendorInfo(selectedVendor as unknown as VendorRecord)}
                   />
                   {/* Phase C · 서브탭 3개 (매입원장 · 상품별 · 매입추이)
                       · controlled · 공급사 클릭 시 ledger 로 자동 전환 + 최신 row highlight */}
@@ -1185,6 +1192,9 @@ export const PurchaseHistoryTab: React.FC = () => {
         )}
       </div>
     </div>
+    {/* 공급사 상세 모달 (T-COMMON-VendorInfoModal) */}
+    {vendorModalElement}
+    </>
   );
 };
 

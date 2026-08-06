@@ -2290,7 +2290,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           {/* ── 반품필요 서브탭 ── */}
           {purchaseSubTab === "return" && (
             <div className="flex-1 min-h-0">
-              <ReturnListPanel />
+              <ReturnListPanel onSupplierClick={openSupplierInfo} />
             </div>
           )}
           {/* ── 매입이력 서브탭 ── */}

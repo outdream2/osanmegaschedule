@@ -14,6 +14,8 @@ interface VendorHeaderPanelProps {
   vendor: VendorInfoFull;
   detailRows: PurchaseDetailRow[]; // 최근 365일 raw rows · KPI 산출용
   loading: boolean;
+  /** [조회·수정] 버튼 클릭 콜백 · VendorInfoModal 열기는 부모 담당 */
+  onEdit?: () => void;
 }
 
 // ─── KPI 계산 ─────────────────────────────────────────────────────────────
@@ -68,7 +70,7 @@ function calcKpis(rows: PurchaseDetailRow[]): VendorKpis {
 
 // ─── VendorHeaderPanel ────────────────────────────────────────────────────
 
-export const VendorHeaderPanel: React.FC<VendorHeaderPanelProps> = ({ vendor, detailRows, loading }) => {
+export const VendorHeaderPanel: React.FC<VendorHeaderPanelProps> = ({ vendor, detailRows, loading, onEdit }) => {
   const kpis = useMemo(() => calcKpis(detailRows), [detailRows]);
   return (
     <VendorInfoHeader
@@ -76,6 +78,7 @@ export const VendorHeaderPanel: React.FC<VendorHeaderPanelProps> = ({ vendor, de
       kpis={kpis}
       kpisLoading={loading}
       detailRowCount={detailRows.length}
+      onEdit={onEdit}
     />
   );
 };

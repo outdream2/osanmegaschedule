@@ -422,8 +422,13 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
   );
 };
 
+interface ReturnListPanelProps {
+  /** 공급사명 클릭 시 공급사 상세 모달 열기 콜백 */
+  onSupplierClick?: (name: string) => void;
+}
+
 // ── ReturnListPanel (메인 export) ────────────────────────────────────────
-export const ReturnListPanel: React.FC = () => {
+export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClick }) => {
   // ── state ──────────────────────────────────────────────────────────────
   // 2026-08-03 · 반품필요 컬럼 재편 · 실재고 컬럼 추가 · 1/2/3달 판매량 컬럼 (판매액 제거)
   type ReturnItem = {
@@ -685,17 +690,14 @@ export const ReturnListPanel: React.FC = () => {
   };
 
   // ── 컬럼 리사이저 (메인 반품필요 리스트 테이블) ─────────────────────────
-  const { getWidth, resizerProps: colResizerProps } = useColumnResize("returnList", {
+  // 2026-08-06 · v3 · 현재고·실재고 제거 · 판매 3컬럼 통합 · localStorage 캐시 무효화
+  const { getWidth, resizerProps: colResizerProps } = useColumnResize("returnList_v4", {
     num:          { default: 28,  min: 24, max: 60  },
-    name:         { default: 180, min: 100, max: 360 },
-    supplier:     { default: 80,  min: 60, max: 200 },
-    current_stock:{ default: 56,  min: 40, max: 100 },
-    actual_stock: { default: 56,  min: 40, max: 100 },
-    stock_value:  { default: 88,  min: 60, max: 160 },
-    purchase_cycle:{ default: 112, min: 80, max: 200 },
-    sale_qty_month:{ default: 64,  min: 40, max: 100 },
-    sale_qty_60d: { default: 64,  min: 40, max: 100 },
-    sale_qty_90d: { default: 64,  min: 40, max: 100 },
+    name:         { default: 300, min: 160, max: 480 },
+    supplier:     { default: 120, min: 70, max: 240 },
+    stock_value:  { default: 100, min: 60, max: 180 },
+    purchase_cycle:{ default: 120, min: 80, max: 220 },
+    sales_qty:    { default: 140, min: 90, max: 240 },
     action:       { default: 64,  min: 52, max: 100 },
   });
 
@@ -854,22 +856,22 @@ export const ReturnListPanel: React.FC = () => {
                           {isReturnGroupCollapsed("stock") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}재고
                         </span>
                       </th>
-                      {/* 매입정보 (emerald) */}
-                      <th colSpan={isReturnGroupCollapsed("purchase") ? 1 : 1}
+                      {/* 매입 (emerald) */}
+                      <th colSpan={1}
                         className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-emerald-100 transition"
                         onClick={() => toggleReturnGroup("purchase")}
-                        title={isReturnGroupCollapsed("purchase") ? "매입정보 펼치기" : "매입정보 접기"}>
+                        title={isReturnGroupCollapsed("purchase") ? "매입 펼치기" : "매입 접기"}>
                         <span className="inline-flex items-center gap-1">
-                          {isReturnGroupCollapsed("purchase") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}매입정보
+                          {isReturnGroupCollapsed("purchase") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}매입
                         </span>
                       </th>
-                      {/* 판매정보 (rose) · 3개 컬럼 · 1달 · 2달 · 3달 판매량 */}
-                      <th colSpan={isReturnGroupCollapsed("sales") ? 1 : 3}
+                      {/* 판매 (rose) · 1/2/3 달 판매량 · 통합 컬럼 (2026-08-06) */}
+                      <th colSpan={1}
                         className="text-center py-1.5 bg-rose-50 text-rose-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-rose-100 transition"
                         onClick={() => toggleReturnGroup("sales")}
-                        title={isReturnGroupCollapsed("sales") ? "판매정보 펼치기" : "판매정보 접기"}>
+                        title={isReturnGroupCollapsed("sales") ? "판매 펼치기" : "판매 접기"}>
                         <span className="inline-flex items-center gap-1">
-                          {isReturnGroupCollapsed("sales") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}판매정보
+                          {isReturnGroupCollapsed("sales") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}판매
                         </span>
                       </th>
                       {/* 액션 (slate) */}
@@ -924,30 +926,16 @@ export const ReturnListPanel: React.FC = () => {
                           <span {...colResizerProps("purchase_cycle")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                         </th>
                       )}
-                      {/* 판매 서브 · 1달 · 2달 · 3달 판매량 */}
+                      {/* 판매 서브 · 1/2/3 달 판매량 통합 · 클릭 시 1달 기준 정렬 (2026-08-06) */}
                       {isReturnGroupCollapsed("sales") ? (
                         <th className="bg-rose-50/20 w-4"></th>
                       ) : (
-                        <>
-                          <th onClick={() => handleReturnSort("sale_qty_month")} title="최근 30일 (1달) 판매량 정렬"
-                            className="relative text-right px-1 py-1.5 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none"
-                            style={{ width: getWidth("sale_qty_month"), minWidth: getWidth("sale_qty_month") }}>
-                            1달{retArrow("sale_qty_month")}
-                            <span {...colResizerProps("sale_qty_month")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                          </th>
-                          <th onClick={() => handleReturnSort("sale_qty_60d")} title="최근 60일 (2달) 판매량 정렬"
-                            className="relative text-right px-1 py-1.5 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none"
-                            style={{ width: getWidth("sale_qty_60d"), minWidth: getWidth("sale_qty_60d") }}>
-                            2달{retArrow("sale_qty_60d")}
-                            <span {...colResizerProps("sale_qty_60d")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                          </th>
-                          <th onClick={() => handleReturnSort("sale_qty_90d")} title="최근 90일 (3달) 판매량 정렬"
-                            className="relative text-right px-1 py-1.5 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none"
-                            style={{ width: getWidth("sale_qty_90d"), minWidth: getWidth("sale_qty_90d") }}>
-                            3달{retArrow("sale_qty_90d")}
-                            <span {...colResizerProps("sale_qty_90d")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                          </th>
-                        </>
+                        <th onClick={() => handleReturnSort("sale_qty_month")} title="1달 / 2달 / 3달 판매량 · 클릭 시 1달 기준 정렬"
+                          className="relative text-right px-1 py-1.5 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none tabular-nums"
+                          style={{ width: getWidth("sales_qty"), minWidth: getWidth("sales_qty") }}>
+                          1/2/3달{retArrow("sale_qty_month")}
+                          <span {...colResizerProps("sales_qty")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
+                        </th>
                       )}
                       <th className="relative text-center px-0.5 py-1.5 bg-slate-50/60 text-slate-500 cursor-default select-none"
                         style={{ width: getWidth("action"), minWidth: getWidth("action") }}>
@@ -1008,7 +996,16 @@ export const ReturnListPanel: React.FC = () => {
                               <td className="px-0.5 py-1.5 align-top bg-sky-50/10">
                                 <div className="flex flex-col leading-tight">
                                   {x.supplier && <VendorCategoryBadge category={vendorCategoryMap[x.supplier.trim()] ?? null} />}
-                                  <span className="text-[12px] font-semibold text-sky-700 whitespace-nowrap">{x.supplier ?? "-"}</span>
+                                  {onSupplierClick && x.supplier ? (
+                                    <button
+                                      type="button"
+                                      className="text-[12px] font-semibold text-sky-700 hover:underline text-left whitespace-nowrap cursor-pointer"
+                                      onClick={(e) => { e.stopPropagation(); onSupplierClick(x.supplier!); }}
+                                      title="공급사 정보 조회·수정"
+                                    >{x.supplier}</button>
+                                  ) : (
+                                    <span className="text-[12px] font-semibold text-sky-700 whitespace-nowrap">{x.supplier ?? "-"}</span>
+                                  )}
                                 </div>
                               </td>
                             </>
@@ -1044,39 +1041,23 @@ export const ReturnListPanel: React.FC = () => {
                               </span>
                             </td>
                           )}
-                          {/* 판매 그룹 · 1달 · 2달 · 3달 판매량 (2026-08-03) */}
+                          {/* 판매 그룹 · 1/2/3 달 판매량 · 통합 셀 (2026-08-06) */}
                           {isReturnGroupCollapsed("sales") ? (
                             <td className="bg-rose-50/20 w-4"></td>
                           ) : (
-                            <>
-                              <td
-                                className="text-right px-1 py-1.5 tabular-nums bg-rose-50/20 align-top cursor-pointer"
-                                onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("sales"); }}
-                                title="최근 30일 (1달) 판매량"
-                              >
-                                <span className="font-black text-[12px] text-rose-600 hover:underline">
-                                  {x.sale_qty_month != null ? `${x.sale_qty_month.toLocaleString()}` : "-"}
-                                </span>
-                              </td>
-                              <td
-                                className="text-right px-1 py-1.5 tabular-nums bg-rose-50/20 align-top cursor-pointer"
-                                onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("sales"); }}
-                                title="최근 60일 (2달) 판매량"
-                              >
-                                <span className="font-black text-[12px] text-rose-600 hover:underline">
-                                  {x.sale_qty_60d != null ? `${x.sale_qty_60d.toLocaleString()}` : "-"}
-                                </span>
-                              </td>
-                              <td
-                                className="text-right px-1 py-1.5 tabular-nums bg-rose-50/20 align-top cursor-pointer"
-                                onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("sales"); }}
-                                title="최근 90일 (3달) 판매량"
-                              >
-                                <span className="font-black text-[12px] text-rose-700 hover:underline">
-                                  {x.sale_qty_90d != null ? `${x.sale_qty_90d.toLocaleString()}` : "-"}
-                                </span>
-                              </td>
-                            </>
+                            <td
+                              className="text-right px-1 py-1.5 tabular-nums bg-rose-50/20 align-top cursor-pointer"
+                              onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("sales"); }}
+                              title="1달 / 2달 / 3달 판매량"
+                            >
+                              <span className="font-black text-[12px] text-rose-700 hover:underline">
+                                {x.sale_qty_month != null ? x.sale_qty_month.toLocaleString() : "-"}
+                                <span className="text-slate-300 font-normal"> / </span>
+                                {x.sale_qty_60d != null ? x.sale_qty_60d.toLocaleString() : "-"}
+                                <span className="text-slate-300 font-normal"> / </span>
+                                {x.sale_qty_90d != null ? x.sale_qty_90d.toLocaleString() : "-"}
+                              </span>
+                            </td>
                           )}
                           <td className="text-center px-1 py-1.5 align-top bg-slate-50/30">
                             <button

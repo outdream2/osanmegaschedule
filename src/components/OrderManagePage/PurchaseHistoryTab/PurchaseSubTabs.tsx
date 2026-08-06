@@ -18,6 +18,7 @@ import { type SeasonKey } from "../../../hooks/useSeasonRanges";
 import { useSortableTable, type Comparator } from "../../../hooks/useSortableTable";
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../../styles/tokens";
+import { useColumnResize, RESIZER_CLS } from "../../../hooks/useColumnResize";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -128,6 +129,13 @@ const LedgerTab: React.FC<{
   }, [rows]);
 
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const { getWidth: lw, resizerProps: lr } = useColumnResize("purchaseLedger", {
+    expand:  { default: 32,  min: 28, max: 48  },
+    date:    { default: 112, min: 72, max: 200 },
+    name:    { default: 220, min: 100, max: 400 },
+    count:   { default: 64,  min: 48, max: 100 },
+    amount:  { default: 112, min: 80, max: 200 },
+  });
 
   // 2026-08-06 · T-TEST-매입이력-그룹기본접힘 (사용자 요청)
   //   · 기본 접힌 상태 유지 · 사용자 클릭 시에만 펼침
@@ -185,14 +193,28 @@ const LedgerTab: React.FC<{
 
   return (
     <div className="overflow-auto flex-1 min-h-0 bg-white">
-      <table className="w-full text-[12px] min-w-[420px]" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
+      <table className="w-full text-[12px] min-w-[420px]" style={{ borderCollapse: "separate", borderSpacing: 0, tableLayout: "fixed" }}>
         <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
           <tr className="text-[11px] text-slate-500 uppercase tracking-wider">
-            <th className="text-center w-8 py-2"></th>
-            <th className="text-left px-3 py-2 w-28">매입일</th>
-            <th className="text-left px-3 py-2">상품 (대표 · 외 N건)</th>
-            <th className="text-right px-3 py-2 w-16">건수</th>
-            <th className="text-right px-3 py-2 w-28 text-emerald-600">매입금액</th>
+            <th className="relative text-center py-2" style={{ width: lw("expand"), minWidth: lw("expand") }}>
+              <span {...lr("expand")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+            </th>
+            <th className="relative text-left px-3 py-2" style={{ width: lw("date"), minWidth: lw("date") }}>
+              매입일
+              <span {...lr("date")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+            </th>
+            <th className="relative text-left px-3 py-2" style={{ width: lw("name"), minWidth: lw("name") }}>
+              상품 (대표 · 외 N건)
+              <span {...lr("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+            </th>
+            <th className="relative text-right px-3 py-2" style={{ width: lw("count"), minWidth: lw("count") }}>
+              건수
+              <span {...lr("count")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+            </th>
+            <th className="relative text-right px-3 py-2 text-emerald-600" style={{ width: lw("amount"), minWidth: lw("amount") }}>
+              매입금액
+              <span {...lr("amount")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -397,6 +419,16 @@ const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> =
 
   const { sorted, sortKey, sortDir, toggleSort } = useSortableTable<ProductAgg, ProductSortKey>(aggregated, "total_amount", PRODUCT_AGG_CMP, "desc");
   const arrow = (k: ProductSortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
+  const { getWidth: aw, resizerProps: ar } = useColumnResize("productAgg", {
+    num:      { default: 28,  min: 24, max: 48  },
+    name:     { default: 200, min: 100, max: 400 },
+    qty:      { default: 80,  min: 56, max: 140 },
+    unit:     { default: 80,  min: 56, max: 140 },
+    interval: { default: 56,  min: 40, max: 100 },
+    last_date:{ default: 56,  min: 40, max: 100 },
+    count:    { default: 56,  min: 40, max: 100 },
+    amount:   { default: 96,  min: 64, max: 160 },
+  });
 
   const totalAmount = useMemo(() => aggregated.reduce((s, a) => s + a.total_amount, 0), [aggregated]);
 
