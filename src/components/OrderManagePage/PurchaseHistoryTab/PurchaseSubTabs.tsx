@@ -866,7 +866,7 @@ const Top10Card: React.FC<{
                 it.rank <= 3 ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"
               }`}>{it.rank}</span>
               <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-                <span className="truncate font-semibold text-slate-700" title={it.name}>{it.name}</span>
+                <span className="font-semibold text-slate-700 break-words whitespace-normal leading-snug" title={it.name}>{it.name}</span>
                 <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
                   <div className={`h-full ${valueColor.replace("text-", "bg-")}`} style={{ width: `${pct}%` }} />
                 </div>
@@ -953,9 +953,18 @@ const TopIntervalCard: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
   return <Top10Card title="매입간격 Top 10 (짧을수록 자주)" items={items} formatValue={v => `${v}일`} valueColor="text-sky-700" />;
 };
 
-// ── TrendTab · Top 10 랭킹 3종 컨테이너 (반응형 그리드) ─────────────────────
+// ── TrendTab · Top 10 랭킹 · 3 metric 탭 + 하단 원형 차트 (2026-08-06 · 사용자 요청) ─────
+type TrendMetric = "quantity" | "unitPrice" | "interval";
+const METRIC_TABS: { k: TrendMetric; label: string; hint: string; color: string }[] = [
+  { k: "quantity",  label: "매입수량",    hint: "총 수량 합",       color: "amber"   },
+  { k: "unitPrice", label: "단가",       hint: "평균 단가",         color: "emerald" },
+  { k: "interval",  label: "매입간격",    hint: "짧을수록 자주",     color: "sky"     },
+];
+
 const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ rows, loading }) => {
-  // 2026-08-06 · 데이터 실제 기간 표시 (사용자 요청 · 제목 옆 " - " 형태)
+  const [metric, setMetric] = useState<TrendMetric>("quantity");
+
+  // 데이터 실제 기간 (사용자 요청 · 제목 옆 " - " 형태)
   const dateRange = useMemo(() => {
     if (rows.length === 0) return null;
     const dates = rows.map(r => String(r.date ?? "").slice(0, 10)).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
@@ -966,28 +975,151 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
     };
     return `${fmt(dates[0])} ~ ${fmt(dates[dates.length - 1])}`;
   }, [rows]);
+
+  // 파이 차트 · 선택된 metric 기준 top10 분포 (interval 은 매입 횟수 기준)
+  const pieData = useMemo(() => {
+    if (metric === "quantity") {
+      const map = new Map<string, number>();
+      let t = 0;
+      for (const r of rows) {
+        const nm = String(r.product_name ?? "").trim() || "(이름없음)";
+        const v = Number(r.quantity) || 0;
+        map.set(nm, (map.get(nm) ?? 0) + v);
+        t += v;
+      }
+      const sorted = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+      const top = sorted.slice(0, 10);
+      const othersSum = sorted.slice(10).reduce((s, [, v]) => s + v, 0);
+      const items = othersSum > 0 ? [...top, ["기타", othersSum] as [string, number]] : top;
+      return {
+        data: items.map(([name, value], i) => ({ name, value, color: CHART_COLORS[i % CHART_COLORS.length] })),
+        total: t,
+        unitLabel: "개",
+      };
+    }
+    if (metric === "unitPrice") {
+      // 상품별 총 매입 금액 (amount) 기준 · 단가 자체는 avg 라 pie 부적합 → 매입액 분포로 표시
+      const map = new Map<string, number>();
+      let t = 0;
+      for (const r of rows) {
+        const nm = String(r.product_name ?? "").trim() || "(이름없음)";
+        map.set(nm, (map.get(nm) ?? 0) + r.amount);
+        t += r.amount;
+      }
+      const sorted = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+      const top = sorted.slice(0, 10);
+      const othersSum = sorted.slice(10).reduce((s, [, v]) => s + v, 0);
+      const items = othersSum > 0 ? [...top, ["기타", othersSum] as [string, number]] : top;
+      return {
+        data: items.map(([name, value], i) => ({ name, value, color: CHART_COLORS[i % CHART_COLORS.length] })),
+        total: t,
+        unitLabel: "원",
+      };
+    }
+    // interval → 매입 횟수 분포 (자주 매입 = 큰 조각)
+    const map = new Map<string, number>();
+    let t = 0;
+    for (const r of rows) {
+      const nm = String(r.product_name ?? "").trim() || "(이름없음)";
+      map.set(nm, (map.get(nm) ?? 0) + 1);
+      t += 1;
+    }
+    const sorted = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+    const top = sorted.slice(0, 10);
+    const othersSum = sorted.slice(10).reduce((s, [, v]) => s + v, 0);
+    const items = othersSum > 0 ? [...top, ["기타", othersSum] as [string, number]] : top;
+    return {
+      data: items.map(([name, value], i) => ({ name, value, color: CHART_COLORS[i % CHART_COLORS.length] })),
+      total: t,
+      unitLabel: "회",
+    };
+  }, [rows, metric]);
+
   if (loading) {
     return <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[11px]">불러오는 중...</div>;
   }
   if (rows.length === 0) {
     return <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[11px]">해당 기간 매입 데이터 없음</div>;
   }
+
+  const pieTitle =
+    metric === "quantity"  ? "상품별 매입수량 분포"
+    : metric === "unitPrice" ? "상품별 매입액 분포 (단가·평균 참고용)"
+    : "상품별 매입 횟수 분포";
+
   return (
-    <div className="flex-1 min-h-0 overflow-auto p-3">
-      {/* 제목 + 기간 표시 (사용자 요청 · 2026-08-06) */}
-      <div className="flex items-baseline gap-2 mb-2 px-1">
+    <div className="flex-1 min-h-0 overflow-auto p-3 flex flex-col gap-3">
+      {/* 제목 + 기간 */}
+      <div className="flex items-baseline gap-2 px-1">
         <span className="text-[12px] font-black text-slate-700">매입추이 Top 10</span>
         {dateRange && (
           <span className="text-[10.5px] text-slate-400 font-semibold tabular-nums">({dateRange})</span>
         )}
         <span className="text-[10px] text-slate-400 tabular-nums ml-auto">{rows.length.toLocaleString()}건</span>
       </div>
-      {/* 반응형 그리드 · 모바일 1열 · 태블릿 2열 · 데스크탑 3열 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-        <TopQuantityCard rows={rows} />
-        <TopUnitPriceCard rows={rows} />
-        <TopIntervalCard rows={rows} />
+      {/* 3-metric 탭 */}
+      <div className="flex items-center gap-1 border-b border-slate-100 pb-0.5">
+        {METRIC_TABS.map(t => {
+          const active = t.k === metric;
+          const activeCls =
+            t.color === "amber"   ? "text-amber-700 border-amber-500"
+            : t.color === "emerald" ? "text-emerald-700 border-emerald-500"
+            : "text-sky-700 border-sky-500";
+          return (
+            <button key={t.k}
+              type="button"
+              onClick={() => setMetric(t.k)}
+              className={`inline-flex items-center gap-1 h-8 px-3 border-b-2 text-[12px] font-black cursor-pointer transition ${
+                active ? `${activeCls} bg-white` : "text-slate-400 border-transparent hover:text-slate-600"
+              }`}
+              title={t.hint}
+            >
+              {t.label}
+              <span className="text-[10px] font-normal text-slate-400">{t.hint}</span>
+            </button>
+          );
+        })}
       </div>
+      {/* 선택된 Top10 (풀 폭) */}
+      {metric === "quantity"  && <TopQuantityCard rows={rows} />}
+      {metric === "unitPrice" && <TopUnitPriceCard rows={rows} />}
+      {metric === "interval"  && <TopIntervalCard rows={rows} />}
+      {/* 하단 원형 차트 */}
+      {pieData.total > 0 && (
+        <div className={`${CARD_BASE} p-4 flex flex-col gap-3`}>
+          <div className="text-[11px] font-black text-slate-600 uppercase tracking-wider">{pieTitle}</div>
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="w-[140px] h-[140px] shrink-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData.data}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={66}
+                    strokeWidth={1}
+                    stroke="#f8fafc"
+                  >
+                    {pieData.data.map((entry, i) => (
+                      <Cell key={`trend-pie-${i}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<ChartTooltip total={pieData.total} />} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex-1 min-w-[200px]">
+              <ChartLegendList items={pieData.data} total={pieData.total} />
+            </div>
+          </div>
+          <div className="text-right text-[10px] tabular-nums text-slate-400 font-semibold">
+            합계 {pieData.total.toLocaleString()}{pieData.unitLabel}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
