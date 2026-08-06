@@ -32,6 +32,24 @@
 
 ---
 
+## 🔴 큐 · 사용자 요청 (2026-08-06 · 후속)
+
+### T-COMMON-VendorInfoHeader · 공급사 정보 헤더 · 공통화
+- **VendorHeaderPanel** (매입이력 우측 상단 · 공급사 KPI+정보) 를 공통 컴포넌트로 이관
+- **PaymentInfoTab** (결제 공급사 우측 상단) 에도 동일 컴포넌트 사용
+- 부가세 포함/불포함 표시 · 이미 KPI 텍스트 옆에 추가 필요
+- **[조회 및 수정]** 버튼 · 공급사 상세 편집 모달 연결 (StockManagePage · VendorEditModal 재사용)
+- **공급사 상세정보** 자체도 공통 컴포넌트 (VendorDetailPanel or VendorInfoModal)
+- 파일: `src/components/common/VendorInfoHeader.tsx` (신규) · 재사용 여러 위치
+
+### T-TEST-공급사리스트-최근결제
+- PaymentInfoTab 왼쪽 공급사 리스트 · 컬럼 확장
+  · 최근결제일 (기존 매입 컬럼과 병렬)
+  · 최근결제액
+- 데이터 · 서버 latest_payment 조회 or 클라이언트 aggregate
+
+---
+
 ## 🔴 사용자 테스트 요청 (2026-08-06)
 
 ### T-TEST-반품필요-반응형-3조건 (진행중)
