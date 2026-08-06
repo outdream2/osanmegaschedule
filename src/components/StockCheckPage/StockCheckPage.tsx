@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Package, Search, X } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import type { AuthSession } from "../../types";
+import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 
 interface StockItem {
   product_name: string;
@@ -58,13 +59,24 @@ const STATE_META: Record<StockState, { label: string; bg: string; text: string; 
 };
 
 type StockSortKey = "product_name" | "current_stock" | "real_map" | "supplier";
+const STOCK_SORT_CMP: Record<StockSortKey, Comparator<StockItem>> = {
+  current_stock: (a, b) => {
+    const va = Number.isFinite(Number(a.current_stock)) ? Number(a.current_stock) : -Infinity;
+    const vb = Number.isFinite(Number(b.current_stock)) ? Number(b.current_stock) : -Infinity;
+    return va - vb;
+  },
+  product_name: (a, b) => String(a.product_name ?? "").localeCompare(String(b.product_name ?? ""), "ko"),
+  real_map:     (a, b) => String(a.real_map     ?? "").localeCompare(String(b.real_map     ?? ""), "ko"),
+  supplier:     (a, b) => String(a.supplier     ?? "").localeCompare(String(b.supplier     ?? ""), "ko"),
+};
 
 export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
   const isLoggedIn = !!(authSession && (authSession.role === "employee" || authSession.role === "manager" || authSession.role === "admin" || authSession.role === "superadmin"));
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<StockItem[] | null>(null);
-  const [sortKey, setSortKey] = useState<StockSortKey>("product_name");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const { sorted: _sortedItems, sortKey, sortDir, toggleSort } =
+    useSortableTable<StockItem, StockSortKey>(results ?? [], "product_name", STOCK_SORT_CMP, "asc");
+  const sortedResults = results === null ? null : _sortedItems;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -106,27 +118,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
     debounceRef.current = setTimeout(() => doSearch(val), 300);
   };
 
-  const handleSort = (k: StockSortKey) => {
-    if (sortKey === k) setSortDir(d => d === "asc" ? "desc" : "asc");
-    else { setSortKey(k); setSortDir("asc"); }
-  };
   const arrow = (k: StockSortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
-
-  const sortedResults = useMemo(() => {
-    if (!results) return null;
-    return results.slice().sort((a, b) => {
-      const sign = sortDir === "asc" ? 1 : -1;
-      let va: string | number, vb: string | number;
-      if (sortKey === "current_stock") {
-        va = Number(a.current_stock ?? ""); vb = Number(b.current_stock ?? "");
-        if (!Number.isFinite(va)) va = -Infinity;
-        if (!Number.isFinite(vb)) vb = -Infinity;
-        return sign * ((va as number) - (vb as number));
-      }
-      va = (a[sortKey] ?? ""); vb = (b[sortKey] ?? "");
-      return sign * String(va).localeCompare(String(vb), "ko");
-    });
-  }, [results, sortKey, sortDir]);
 
   const sortBtnCls = (k: StockSortKey) =>
     `px-2 py-0.5 rounded-md text-[11px] font-semibold border cursor-pointer transition-all duration-150 ${
@@ -186,11 +178,11 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
         {results && results.length > 0 && (
           <div className="flex items-center gap-1.5 mb-2 flex-wrap">
             <span className="text-[10px] text-slate-400 font-bold shrink-0">정렬:</span>
-            <button onClick={() => handleSort("product_name")} className={sortBtnCls("product_name")} title="상품명 정렬">상품명{arrow("product_name")}</button>
-            <button onClick={() => handleSort("current_stock")} className={sortBtnCls("current_stock")} title="재고수량 정렬">재고{arrow("current_stock")}</button>
+            <button onClick={() => toggleSort("product_name")} className={sortBtnCls("product_name")} title="상품명 정렬">상품명{arrow("product_name")}</button>
+            <button onClick={() => toggleSort("current_stock")} className={sortBtnCls("current_stock")} title="재고수량 정렬">재고{arrow("current_stock")}</button>
             {isLoggedIn && <>
-              <button onClick={() => handleSort("real_map")} className={sortBtnCls("real_map")} title="실제배치구역 정렬">구역{arrow("real_map")}</button>
-              <button onClick={() => handleSort("supplier")} className={sortBtnCls("supplier")} title="공급처 정렬">공급처{arrow("supplier")}</button>
+              <button onClick={() => toggleSort("real_map")} className={sortBtnCls("real_map")} title="실제배치구역 정렬">구역{arrow("real_map")}</button>
+              <button onClick={() => toggleSort("supplier")} className={sortBtnCls("supplier")} title="공급처 정렬">공급처{arrow("supplier")}</button>
             </>}
           </div>
         )}
