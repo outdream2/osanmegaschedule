@@ -2500,10 +2500,14 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           <div className="text-center text-[11px] text-slate-300 py-6">발주 요청 내역 없음</div>
         ) : (
           <>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-1">
             <span className="inline-block w-1 h-3.5 rounded-full bg-rose-400 shrink-0"></span>
             <span className="text-[11px] font-semibold text-slate-500">발주요청 리스트</span>
             <span className="text-[11px] text-slate-400 font-normal">{orderReqsFiltered.length}건</span>
+          </div>
+          {/* 2026-08-06 · 사용자 요청 · 손실 확인 유도 코멘트 */}
+          <div className="mb-2 text-[11px] text-amber-700 bg-amber-50/60 border border-amber-200/60 rounded-md px-2 py-1 leading-snug">
+            손실 확정이 되었는지 확인하세요 <span className="text-amber-500">(ERP재고 vs 실재고 차이 · 손실추적 탭 참조)</span>
           </div>
           <div className={`max-h-[50vh] overflow-auto relative ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             <table className="w-full text-xs sm:min-w-[540px]">
@@ -2519,7 +2523,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       {isOrderGroupCollapsed("info") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}상품 정보
                     </span>
                   </th>
-                  <th colSpan={isOrderGroupCollapsed("stock") ? 1 : 4}
+                  {/* 2026-08-06 · 실재고 컬럼 주석처리 · 재고현황 그룹 4→3 컬럼 (사용자 요청) */}
+                  <th colSpan={isOrderGroupCollapsed("stock") ? 1 : 3}
                     className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-amber-100 transition"
                     onClick={() => toggleOrderGroup("stock")}
                     title={isOrderGroupCollapsed("stock") ? "재고 현황 펼치기" : "재고 현황 접기"}>
@@ -2554,7 +2559,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   ) : (
                     <>
                       <th onClick={() => handleOrderSort("current")} title="ERP재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none"><div className="leading-tight">ERP<br/>재고{orderArrow("current")}<br/><span className="text-[10px] text-slate-400 font-normal">(현재고)</span></div></th>
+                      {/* 2026-08-06 · 실재고 헤더 주석처리 (사용자 요청 · 손실추적 참조 유도)
                       <th onClick={() => handleOrderSort("inv")} title="실재고 정렬" className="text-right px-0.5 py-1.5 w-16 bg-violet-50/40 text-violet-500 cursor-pointer hover:bg-violet-100 select-none">실재고{orderArrow("inv")}</th>
+                      */}
                       <th onClick={() => handleOrderSort("optimal")} title="추천적정재고 정렬" className="text-right px-0.5 py-1.5 w-12 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none">추천적정{orderArrow("optimal")}</th>
                       <th onClick={() => handleOrderSort("short")} title="부족량 정렬" className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">부족{orderArrow("short")}</th>
                     </>
@@ -2685,6 +2692,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                             {displayCurrentStock ?? "-"}
                             {stockChanged && <span className="block text-[10px] font-normal text-slate-400 leading-none mt-0.5">전 {r.current_stock}</span>}
                           </td>
+                          {/* 2026-08-06 · 실재고 셀 주석처리 (사용자 요청 · 손실추적 참조 유도)
                           <td
                             className={`text-right px-0.5 py-1.5 tabular-nums font-black text-[12px] bg-violet-50/40 align-top ${inv ? "text-violet-700" : "text-slate-300"}`}
                             title={inv ? `창고1 ${inv.w1 ?? "-"} · 창고2 ${inv.w2 ?? "-"} · 매장1 ${inv.s1 ?? "-"} · 매장2 ${inv.s2 ?? "-"} · 매장3 ${inv.s3 ?? "-"} = ${inv.total}` : "실재고 미입력"}
@@ -2710,6 +2718,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                               )}
                             </div>
                           </td>
+                          */}
                           <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-slate-50/40 align-top">{displayOptimal ?? "-"}</td>
                           <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-top">
                             <span className="tabular-nums font-black text-[12px] text-rose-600">{displayShort > 0 ? `-${displayShort}` : "0"}</span>
