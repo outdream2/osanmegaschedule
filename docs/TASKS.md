@@ -3,13 +3,17 @@
 **규칙**:
 - 완료 태스크는 이 파일에서 **삭제** (아카이브 X)
 - 새 태스크 즉시 추가
-- 세션 시작 시 반드시 read
+- **🚨 세션 시작 시 반드시 read** · 이 파일 + `docs/MENU_STRUCTURE.md` 두 개 다 (신규 대화·세션 만료 후 재개 포함)
 - 매 milestone 후 update
 - **회귀 절대 금지** · TS + build + test 통과 후 커밋
 - **리모트 푸시 · 사용자 명시 승인 시에만** (기본 로컬 커밋)
 - **DB · 파생컬럼 사용 금지** · 원래 테이블 활용이 최우선 · 사용자 명시 (2026-08-05 재강조)
   · 파생컬럼 필요 시 · 반드시 사용자 승인 후
   · 조회는 JOIN · 계산은 서버·클라이언트 로직 우선
+- **문서 관리는 project-registrar 에이전트 전담** (2026-08-06)
+  · 태스크·기능·구조 변경 시 · project-registrar 호출 · MENU_STRUCTURE.md + TASKS.md 반영
+  · 다른 에이전트는 이 두 파일 편집 금지 (read 만 OK)
+  · 정의: `.claude/agents/project-registrar.md`
 
 ---
 
