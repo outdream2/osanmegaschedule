@@ -525,24 +525,42 @@ router.get("/api/purchase-details", async (req, res) => {
       if (to && /^\d{4}-\d{2}-\d{2}$/.test(to)) q = q.lte("purchase_date", to);
     }
 
+    // 2026-08-06 · Supabase 기본 max rows 1000 캡 우회
+    //   · 사용자 요구 limit (예: 5000) 만족을 위해 · range(0, N-1) 로 명시적 페이지 loop
+    //   · 사용자 제보: "기간별 임포트 다 했는데 데이터 없어" · 원인은 1000행 cap · from 필터 무관
+    let rows: any[] = [];
     if (usePagination && !seasonMonths) {
-      // 서버 페이지네이션: range(start, end) · 0-indexed
+      // 클라이언트 페이지네이션: range(start, end) · 단일 요청
       const start = (pageParam - 1) * perPage;
       const end = start + perPage - 1;
-      q = q.range(start, end);
-    } else {
-      // 기존 limit 동작 (season 필터 또는 per_page 없을 때)
-      q = q.limit(seasonMonths ? Math.max(limit * 6, 5000) : limit);
-    }
-
-    const { data, error } = await q;
-    if (error) {
-      if (/relation .* does not exist/i.test(error.message)) {
-        return res.json({ rows: [], warning: "purchase_details 테이블 없음 (임포트 필요)" });
+      const { data, error } = await q.range(start, end);
+      if (error) {
+        if (/relation .* does not exist/i.test(error.message)) {
+          return res.json({ rows: [], warning: "purchase_details 테이블 없음 (임포트 필요)" });
+        }
+        throw new Error(error.message);
       }
-      throw new Error(error.message);
+      rows = data ?? [];
+    } else {
+      // 기존 limit 동작 · 필요 시 1000행씩 반복 loop 로 채움 (Supabase 캡 우회)
+      const effectiveLimit = seasonMonths ? Math.max(limit * 6, 5000) : limit;
+      const PAGE = 1000;
+      let offset = 0;
+      while (offset < effectiveLimit) {
+        const take = Math.min(PAGE, effectiveLimit - offset);
+        const { data, error } = await q.range(offset, offset + take - 1);
+        if (error) {
+          if (/relation .* does not exist/i.test(error.message)) {
+            return res.json({ rows: [], warning: "purchase_details 테이블 없음 (임포트 필요)" });
+          }
+          throw new Error(error.message);
+        }
+        const batch = data ?? [];
+        rows.push(...batch);
+        if (batch.length < take) break; // 더 이상 없음
+        offset += take;
+      }
     }
-    let rows = data ?? [];
     // 계절 월 필터 (년도 무관) — SQL EXTRACT 미지원이므로 후처리
     if (seasonMonths) {
       rows = rows.filter(r => purchaseDateInSeason(String((r as any).purchase_date ?? ""), seasonMonths)).slice(0, limit);
