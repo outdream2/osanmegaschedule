@@ -31,7 +31,7 @@ import SignaturePad from "react-signature-canvas";
 import html2canvas from "html2canvas-pro"; // 2026-08-04 · Tailwind v4 oklch 지원 · drop-in 교체
 import jsPDF from "jspdf";
 
-import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
+import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { FieldLabel } from "../common/FieldLabel";
 import type { AuthSession, Employee } from "../../types";
 

@@ -3,7 +3,7 @@ import axios from "axios";
 import { Shield, Check, Loader2, AlertCircle, Settings as SettingsIcon, Users } from "lucide-react";
 import type { AuthSession, PagePermissions } from "../../types";
 import { DEFAULT_PERMISSIONS } from "../../types";
-import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
+import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { SettingsModal } from "../SettingsModal";
 import { useSettings } from "../../hooks/useSettings";
 import type { Employee } from "../../types";

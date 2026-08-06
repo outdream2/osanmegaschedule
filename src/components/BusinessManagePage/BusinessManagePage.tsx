@@ -5,7 +5,7 @@
 //   각 서브탭 · 기존 페이지 임베드 (embedded prop 전달 → 자체 AppNavHeader skip)
 import React, { Suspense, useCallback, useEffect, useState } from "react";
 import { UserGear, CalendarDots, ForkKnife, FileText, NotePencil, type Icon as PhIcon } from "@phosphor-icons/react";
-import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
+import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { LunchPage } from "../LunchPage/LunchPage";
 import { useSortableTabs } from "../../hooks/useSortableTabs";
 import type { AuthSession } from "../../types";

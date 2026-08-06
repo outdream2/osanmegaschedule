@@ -12,7 +12,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useConfirm } from "../../hooks/useConfirm";
 import { FirstAid, BookOpen, Video, FileText, GraduationCap, Folder, FolderOpen, File as FileIcon } from "@phosphor-icons/react";
 import { Settings2, Plus, Eye, FileText as FileTextIcon, Loader2, ChevronRight, ChevronDown, CloudUpload, Trash2, X as XIcon } from "lucide-react";
-import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
+import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
 import { ZONE_DEFS } from "../../constants/displayZones";

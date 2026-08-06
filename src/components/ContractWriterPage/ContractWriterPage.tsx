@@ -29,7 +29,7 @@ import SignaturePad from "react-signature-canvas";
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
 
-import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
+import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession, Employee } from "../../types";
 import {
   loadContractSettings,

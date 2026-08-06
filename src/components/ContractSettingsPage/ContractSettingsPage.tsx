@@ -29,7 +29,7 @@ import {
   CurrencyKrw, Coins, Clock, Calendar, Shield, ListChecks, Lock,
 } from "@phosphor-icons/react";
 
-import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
+import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { useSettings, defaultWageForPosition, type WageRate } from "../../hooks/useSettings";
 

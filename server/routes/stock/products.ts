@@ -1,10 +1,10 @@
 import { Router } from "express";
 import express from "express";
 import XLSX from "xlsx";
-import { supabase } from "../../src/supabase/client";
-import { getProductMap, resetProductCache } from "../productCache";
-import { COL_KEYS, xlsxToRows } from "../utils/xlsx";
-import { sanitizeOrValue } from "../utils/sanitize";
+import { supabase } from "../../../src/supabase/client";
+import { getProductMap, resetProductCache } from "../../productCache";
+import { COL_KEYS, xlsxToRows } from "../../utils/xlsx";
+import { sanitizeOrValue } from "../../utils/sanitize";
 
 const router = Router();
 

@@ -318,7 +318,7 @@ import { TEXT, BUTTON_PRIMARY, CARD_BASE } from "@/styles/tokens";
 
 ## 10. 공통 컴포넌트 (`src/components/common/`)
 
-**실측 목록** (`src/components/common/` · 22개):
+**실측 목록** (`src/components/common/` · 31개 · 2026-08-06 갱신):
 
 ### 10-1. 레이아웃 · 페이지 골격
 
@@ -347,6 +347,7 @@ import { TEXT, BUTTON_PRIMARY, CARD_BASE } from "@/styles/tokens";
 | `SearchBar` | 검색 input + 초기화 버튼 |
 | `SearchFilterChips` | 활성 필터 칩 나열 · 클릭으로 제거 |
 | `SortableHeader` | 정렬 가능한 컬럼 헤더 · asc/desc 아이콘 · useSortableTable 훅과 조합 |
+| `ResizableHeader` | 컬럼 폭 조정 헤더 · useColumnResize 훅과 조합 (2026-08-06 신규) |
 | `FilterBar` | 카드 형태 필터바 (TOOLBAR_BASE 와 다른 세로형) |
 | `FieldLabel` | 폼 필드 라벨 · required 별표 · description |
 | `SeasonButtons` | 봄·여름·가을·겨울 4버튼 · useSeasonRanges 훅과 연동 |
@@ -356,12 +357,24 @@ import { TEXT, BUTTON_PRIMARY, CARD_BASE } from "@/styles/tokens";
 | 컴포넌트 | 용도 |
 |---------|-----|
 | `StoreZoneMap` | 매장 5구역 (창고1/2·매장1/2/3) 시각화 · 카테고리 배치 |
-| `PurchaseHistoryList` | 매입이력 리스트 (공급사별/상품별) · 페이지네이션 |
+| `PurchaseHistoryList` | 매입이력 리스트 (공급사별/상품별) · 페이지네이션 · 컬럼 리사이저 |
 | `PurchaseHistoryModal` | 매입이력 상세 모달 · 상품별 매입 상세 |
 | `ProductDetailPanel` | 상품 상세 우측 패널 · 재고·매입·판매 통합 |
 | `ProductClassFilter` | 상품 분류 (일반/의약외품/의약품) 필터 |
 | `VendorCategoryBadge` | 공급사 카테고리 색상 뱃지 |
+| `VendorInfoHeader` | 공급사 정보 헤더 공통 (2026-08-06 신규) |
+| `VendorInfoModal` | 공급사 상세 모달 공통 (2026-08-06 신규 · useVendorInfoModal 훅 동봉) |
+| `InventoryEditModal` | 실재고 입력 공통 · 누적 UX · zone별 저장 (2026-08-06 신규 · fabd95f) |
+| `InventoryEditPanel` | 실재고 입력 패널 (2026-08-06 신규) |
 | `hangulSearch.ts` | 한글 초성·자모 검색 유틸 (컴포넌트 X · 유틸이지만 common 폴더 안) |
+
+### 10-6. 상호작용 · 다이얼로그 (2026-08-06 신규)
+
+| 컴포넌트 | 용도 |
+|---------|-----|
+| `ConfirmDialog` | window.confirm 대체 · Promise-based · useConfirm 훅과 조합 (T-SLIM D · 6a2f45f) |
+| `BreakModal` | 휴게시간 입력 모달 (기존) |
+| `SessionTimeoutWarning` | 세션 만료 경고 (기존 · useAuth 연동) |
 
 ### 10-5. 사용 원칙
 
@@ -374,7 +387,7 @@ import { TEXT, BUTTON_PRIMARY, CARD_BASE } from "@/styles/tokens";
 
 ## 11. 공통 훅 (`src/hooks/`)
 
-**실측 목록** (`src/hooks/` · 10개):
+**실측 목록** (`src/hooks/` · 14개 · 2026-08-06 갱신):
 
 ### 11-1. 인증 · 세션
 
@@ -391,14 +404,18 @@ import { TEXT, BUTTON_PRIMARY, CARD_BASE } from "@/styles/tokens";
 | `useVendors` | 공급사 목록 · 모듈 레벨 캐시 (5분 TTL) + in-flight dedup · CustomEvent `vendors-changed` 구독 |
 | `useSettings` | 앱 설정 (positions·employmentTypes·workplaces·scheduleTypes·wageRates·employeeWageOverrides) · localStorage + 서버 |
 | `useSeasonRanges` | 계절 → 월 매핑 (spring/summer/autumn/winter) · 앱 시작 시 1회 fetch · 모듈 캐시 + localStorage |
+| `useKvSetting` | settings 테이블 KV 훅 · VAT·계약서 이관용 (2026-08-06 신규 · e036766) |
+| `useFetch` | 공용 GET 훅 · 미래용 신규 도입 (2026-08-06 신규) |
 
 ### 11-3. UX · UI 상태
 
 | 훅 | 용도 |
 |----|-----|
-| `useSortableTable` | 테이블 정렬 · asc/desc · toggleSort · 23파일 중복 통합용 |
+| `useSortableTable` | 테이블 정렬 · asc/desc · toggleSort · 23+ 파일 중복 통합용 · 2026-08-06 세션 7 파일 확대 |
 | `useSortableTabs` | 관리자 (level ≥ 8) 만 · long-press 500ms → 드래그 · localStorage 순서 저장 · CustomEvent 발행 |
+| `useColumnResize` | 리스트 컬럼 폭 조정 · localStorage 저장 (2026-08-06 신규 · T-UI-컬럼리사이저 · 6a3dcd2) |
 | `useLedgerHighlight` | 특정 id 잠깐 하이라이트 (기본 3초) · 매입원장 등 · 재사용 가능 UX 훅 |
+| `useConfirm` | Promise-based 확인 dialog · window.confirm 대체 (2026-08-06 신규 · T-SLIM D · 6a2f45f) |
 
 ### 11-4. 알림 · 검색
 
@@ -604,18 +621,31 @@ export interface AuthSession {
 
 ## 16. 서버 API 규칙
 
-### 16-1. 라우트 구조 (`server/routes/` · 35개)
+### 16-1. 라우트 구조 (`server/routes/` · 도메인 그룹 재구성 · 2026-08-06 갱신)
 
+**Phase 2 재구성 완료** — 도메인 그룹 서브폴더 · 진행중 (`d56aff4`~`f1c1dbc`):
 ```
-auth · board · contractClauses · employeeContracts · hrForms
-inventorySales · invoiceImages · leave · lunch · mismatches
-notifications · ocr · ocrConfirmed · ocrDeletedRows
-pharmacistMenuItems · productArrivals · products · purchase
-purchaseHistory · requests · reservations · resignations
-returnRequests · schedules · settings · staff · stockArrivals
-stockManage · stockReconciliation · supplierBalanceConfig
-supplierPayments · vat · vendors · zoneAssignments · zoneLabels
+server/routes/
+├─ auth/         · auth.ts
+├─ board/        · board.ts · notifications.ts · pharmacistMenuItems.ts
+├─ daily/        · leave.ts · lunch.ts · reservations.ts
+├─ schedule/     · schedules.ts
+├─ settings/     · settings.ts
+├─ staff/        · staff.ts · contractClauses.ts · employeeContracts.ts · hrForms.ts · resignations.ts
+└─ 루트          · invoiceImages · lossTracking · mismatches · ocr · ocrConfirmed · ocrDeletedRows
+                · productArrivals · products · purchase · purchaseHistory · requests
+                · returnRequests · stockArrivals · stockManage · supplierBalanceConfig
+                · supplierPayments · vat · vendors · zoneAssignments · zoneLabels
 ```
+
+**신규 라우터** (2026-08-06):
+- `lossTracking.ts` · 손실추적 이력 (T-LOSS-HISTORY · `859c37f`)
+
+**삭제됨** (dead code · `03ec97b`): `inventorySales.ts` · `stockReconciliation.ts` (mount 안 됨)
+
+**신규 엔드포인트** (2026-08-06):
+- `GET /api/supplier-payments/latest-per-supplier` · 최근결제일·결제액 (`a6c8e8d`)
+- `GET /api/vapid-public-key` · 웹푸시 구독용 (T-VAPID-Route · `f9ba80e`)
 
 ### 16-2. 응답 형식 표준
 
@@ -647,7 +677,7 @@ supplierPayments · vat · vendors · zoneAssignments · zoneLabels
 
 ## 17. DB 마이그레이션 · 인덱스
 
-### 17-1. 마이그레이션 목록 (`migrations/*.sql` · 실측 19개)
+### 17-1. 마이그레이션 목록 (`migrations/*.sql` · 실측 21개 · 2026-08-06 갱신)
 
 | 파일 | 역할 |
 |------|-----|
@@ -667,16 +697,25 @@ supplierPayments · vat · vendors · zoneAssignments · zoneLabels
 | `db_improvements_top3.sql` | DB 개선 Top 3 |
 | `db_top4_signature_storage.sql` | 서명 이미지 Storage |
 | `db_top5_status_check.sql` | 상태 체크 제약 |
-| `perf_indexes_2026-08-05.sql` | **성능 인덱스 Block A** |
+| `loss_tracking_daily.sql` | **손실 이력 테이블** (2026-08-06 신규 · T-LOSS-HISTORY) |
+| `perf_indexes_2026-08-05.sql` | 성능 인덱스 Block A |
+| `perf_indexes_2026-08-06.sql` | **성능 인덱스 · 4개 추가** (2026-08-06 신규 · T-DB-Audit · `c0b9af5`) |
 | `rpc_only_2026-08-05.sql` | `get_inventory_latest` RPC 등 |
 | `vat_integration.sql` | 부가세 통합 |
 
-### 17-2. 완료된 실행 (2026-08-05)
+### 17-2. 완료된 실행
 
+**2026-08-05**:
 - `create_zone_labels_2026-08-05.sql` — zone_labels 테이블
 - `create_contract_clauses_2026-08-05.sql` — contract_clauses 테이블
 - `rpc_only_2026-08-05.sql` — `get_inventory_latest()` RPC
 - `perf_indexes_2026-08-05.sql` — 인덱스 Block A (조회 성능 개선)
+
+**2026-08-06**:
+- `perf_indexes_2026-08-06.sql` — 인덱스 4개 (T-DB-Audit)
+- `loss_tracking_daily.sql` — 손실 스냅샷 테이블 (T-LOSS-HISTORY)
+- **T-DB-Migrate-LocalStorage** (`e036766`) · localStorage → settings 테이블 4건
+  - `vat_expenses` · `vat_taxfree_sales` · `vat_prepare_state` · `contract_writer_settings`
 
 ### 17-3. 파생컬럼 사용 금지 원칙
 
@@ -1216,6 +1255,62 @@ npm run test        # vitest (필요 시)
 ---
 
 ## CHANGELOG · 변경 이력
+
+### 2026-08-06 (6차 · 대규모 세션 · 100+ 커밋 · 구조 재정비 · UI/공통화/보안/Dead code)
+
+**요약**: 이번 세션은 로컬 커밋 100건 이상 · 세션 전체 통합 정리. UI/UX 다듬기 → 공통 자산 확장 (7종) → 보안·타입 강화 → 서버·프론트 폴더 재구성 → dead code 대량 삭제 → localStorage → DB 이관.
+
+#### UI/UX (사용자 요청 반영)
+- **발주요청** · 공급사 분류 필터 추가 (`25dce84`)
+- **손실추적** · 서브탭 (현황/이력) · 날짜별 스냅샷·이력·집계 (`859c37f`) · 구역·단가·판매가 컬럼 (`fe08712`, `b18419b`)
+- **반품필요** · 판매 통합 · 이름 정제 (`058e92d`) · VAT 배지 → 텍스트 (`258e845`)
+- **부가세** · 자동 감지 · 이름 힌트 · 요약 텍스트화 (`cc4ccae`)
+- **매입추이** · 3-metric 탭 + 원형 차트 재구성 (`7d88c03`)
+- **품절임박 ERP 기준** · 서브탭 배지·정렬 정리 (`92ec007`)
+- **결제 탭** · 최근결제일·결제액 컬럼 (`a6c8e8d`) · 기간 내 결제 컬럼 제거 (`b0e5c52`)
+- **랜딩 페이지 파스텔 톤 통일** (`ed93328` · mobile-ui-designer)
+- **실재고 입력** · 누적 (add) UX · zone별 저장 (`4113741`)
+- **CATEGORY rename**: 60일회전 → 60회전 · 90일회전 → 90회전 (`44459b6`)
+
+#### 공통화 (Part II 자산 확장)
+- 신규 컴포넌트 5종 · `VendorInfoHeader` · `VendorInfoModal` · `InventoryEditModal` · `InventoryEditPanel` · `ConfirmDialog`
+- 신규 훅 4종 · `useConfirm` · `useKvSetting` · `useFetch` · `useColumnResize`
+- 실재고 입력창 · InventoryEditModal 공통화 (`fabd95f`) · 발주요청 상세 모달 교체
+- **컬럼 리사이저** · PurchaseHistoryList (T-UI-컬럼리사이저 · `6a3dcd2`) · 전 프로젝트 원칙
+- **fmtWon·fmtDate** 유틸 통합 · 8 파일 (T-SLIM A Phase 2 · `8a5675b`)
+- **useSortableTable** 확대 · ScanPage · StockArrivalPage · StockCheckPage · PurchaseHistoryList · HrFormsPage · SalesTrendPage LossTrackerTab · 7 파일 (`4d6b703`~`1750b15`)
+- **window.confirm** → useConfirm 통합 · 10 파일 (T-SLIM D · `6a2f45f`, `6e6690e`)
+- **CSS Phase 2** · 디자인 토큰 통일 · SupplierTab · SalesTrendPage · BusinessManagePage · RequestsPage · BoardPage · StaffManagePage (`8fdf697`~`481d6d5`)
+
+#### 보안·타입
+- **password_hash 응답 노출 제거** (security-architect · `71a58e4`)
+- **T-SLIM · as any 정리** · server 6 파일 (`9673da1`) · frontend hooks/lib/common (`7a08a33`)
+- **T26 · `select('*')` → 명시 컬럼** · Group1/2/3 (`34a9a3f`~`3b78425`)
+- **응답 shape 표준화** · 6 라우터 · T-SLIM E (`3d3de7f`)
+
+#### 아키텍처 재구성
+- **`server/ocr/` 재구성** · 기능별 서브폴더 (engines · tables · parsing · logging · rules · pipeline) · barrel re-export 하위 호환 (`3e7c150` · T-OCR-Restructure)
+- **`server/routes/` 재구성 Phase 2** · 도메인 그룹 서브폴더 · auth · board · daily · schedule · settings · staff (`d56aff4`~`f1c1dbc`)
+- **T-Restructure Phase 1** · shim 삭제 · service·utils 통합 (`d9864df`)
+- **scheduleService** · src → server 이동 · 프론트 번들 분리 (`3cd7aff`)
+- 샘플 xlsx 파일 · src/ → data/samples/ 이동 (`a709c8b`)
+
+#### 신규 서버 라우터·엔드포인트
+- `server/routes/lossTracking.ts` · 손실추적 이력 (T-LOSS-HISTORY)
+- `GET /api/supplier-payments/latest-per-supplier` · 최근결제일·결제액 (`a6c8e8d`)
+- `GET /api/vapid-public-key` · 웹푸시 구독용 (T-VAPID-Route · `f9ba80e`)
+
+#### DB 마이그레이션 · 이관
+- `migrations/perf_indexes_2026-08-06.sql` · 성능 인덱스 4개 (T-DB-Audit · `c0b9af5`)
+- `migrations/loss_tracking_daily.sql` · 손실 이력 테이블
+- **T-DB-Migrate-LocalStorage** · localStorage → settings 테이블 4건 (`e036766`)
+  - `vat_expenses` · `vat_taxfree_sales` · `vat_prepare_state` · `contract_writer_settings`
+
+#### Dead code 삭제 (레포 슬림화)
+- `server/ocr/barcode.ts` · `barcodeService.ts` · 미사용 (`ed149cb`)
+- `server/routes/stockReconciliation.ts` · `inventorySales.ts` · mount 안 됨 (`03ec97b`)
+- `src/components/OcrPage/{ItemsTable · MetaAccordion}.tsx` · `src/components/DayTimelineModal/DragBar.tsx` · `src/constants/index.ts` · `src/images/{사직서·cetegory·제품존수평윙·map·근로계약서1·근로계약서2}` · `public/products.json` · `prisma/` · `.vercel/` · `assets/.aistudio` (`f09b191`, `46f7fd7`)
+- **scripts/ 49개** 일회성 스크립트 일괄 삭제 (`18e1118`, `c9ff8e3`)
 
 ### 2026-08-06 (5차 · Supabase cap audit 완료 · 잔여 라우터 마이그레이션)
 

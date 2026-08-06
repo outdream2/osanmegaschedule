@@ -3,17 +3,17 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import { ZONE_DEFS, ZONES_STORAGE_KEY } from "../../constants/displayZones";
 import { Employee, MonthlySummary, Schedule, AuthSession } from "../../types";
-import { ScheduleCell } from "../ScheduleCell";
-import { SummaryRow } from "../SummaryRow";
+import { ScheduleCell } from "./ScheduleCell";
+import { SummaryRow } from "./SummaryRow";
 import { DayTimelineModal } from "../DayTimelineModal";
 import { EmployeeCalendarModal, type LogisticsZoneProps } from "../EmployeeCalendarModal";
 import { SettingsModal } from "../SettingsModal";
 import { EmployeeFormModal } from "../EmployeeFormModal";
-import { ScheduleFilterBar } from "../ScheduleFilterBar";
-import { BreakModal } from "../BreakModal";
+import { ScheduleFilterBar } from "./ScheduleFilterBar";
+import { BreakModal } from "../common/BreakModal";
 import { useSettings } from "../../hooks/useSettings";
 import { useConfirm } from "../../hooks/useConfirm";
-import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
+import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import EmployeeNameCell from "./EmployeeNameCell";
 import {
   Calendar,

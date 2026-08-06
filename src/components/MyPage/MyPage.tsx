@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { User, Phone, Briefcase, Calendar, Award, Save, Loader2, Lock, MapPin, Eye, EyeOff, Check } from "lucide-react";
-import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
+import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession, Employee } from "../../types";
 import { SeasonRangesEditor } from "./SeasonRangesEditor";
 

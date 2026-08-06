@@ -19,7 +19,7 @@ import {
   LockOpen,
 } from "lucide-react";
 import type { AuthSession } from "../../types";
-import { AppNavHeader } from "../AppNavHeader";
+import { AppNavHeader } from "../layout/AppNavHeader";
 
 interface ReservationPageProps {
   onBack: () => void;

@@ -43,13 +43,13 @@ import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ZoneCell } from "./ZoneCell";
 import { ZoneAssignPopover } from "./ZoneAssignPopover";
 import { ZoneGroupPanel, type ZoneGroup } from "./ZoneGroupPanel";
-import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
+import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { DisplayRequestPanel } from "./DisplayRequestPanel";
 // DisplayRequestListPage · 2026-08-05 T-SCAN-1 · RequestsPage 로 통합 · 파일 삭제됨
 // 2026-08-03 · StockManagePage 폐지 · 모든 탭이 OrderManagePage 서브탭으로 통합됨
 // 2026-07-29 · 판매추이 탭 제거 (사용자 요청) · CategoryTab · LossTrackerTab 은 재고관리 안에서만 lazy import (SalesTrendPage 파일에 남아있음)
 // 2026-07-28 · 재고·판매 통합 메뉴 제거 (사용자 요청) · 파일은 보관 · 사이드바/라우팅만 해제
-import { StockArrivalPage } from "../StockArrivalPage";
+import { StockArrivalPage } from "../StockArrivalPage/StockArrivalPage";
 import { OcrPage } from "../OcrPage";
 import OrderManagePage from "../OrderManagePage/OrderManagePage";
 // 2026-08-03 (#183) · 공통 탭바 컴포넌트 · duplicate 스타일 흡수

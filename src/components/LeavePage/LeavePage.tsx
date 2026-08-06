@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import type { AuthSession } from "../../types";
 import { fmtDateYMD, fmtDateMD } from "../../lib/format";
-import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
+import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 
 interface LeaveRequest {
   id: string;

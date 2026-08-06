@@ -7,7 +7,7 @@
 import React, { Suspense, useState } from "react";
 import { NotePencil, SignOut, Gear } from "@phosphor-icons/react";
 import type { AuthSession } from "../../types";
-import type { AppNavPage } from "../AppNavHeader";
+import type { AppNavPage } from "../layout/AppNavHeader";
 import { TabBar, type TabDef } from "../common/TabBar";
 import { useSortableTabs } from "../../hooks/useSortableTabs";
 

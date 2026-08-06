@@ -17,7 +17,7 @@ import {
   FileSpreadsheet, FileImage, File, AlertCircle, CloudUpload,
   CheckCircle2,
 } from "lucide-react";
-import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
+import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { FilterBar } from "../common/FilterBar";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import type { AuthSession } from "../../types";

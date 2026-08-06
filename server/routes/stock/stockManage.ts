@@ -11,9 +11,9 @@
 import { Router } from "express";
 import express from "express";
 import XLSX from "xlsx";
-import { supabase } from "../../src/supabase/client";
-import { resolveSeasonMonths } from "./settings/settings";
-import { fetchAllWithRange } from "../utils/supabaseFetchAll";
+import { supabase } from "../../../src/supabase/client";
+import { resolveSeasonMonths } from "../settings/settings";
+import { fetchAllWithRange } from "../../utils/supabaseFetchAll";
 
 const router = Router();
 

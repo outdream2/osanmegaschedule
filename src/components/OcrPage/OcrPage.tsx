@@ -5,7 +5,7 @@ import * as pdfjsLib from "pdfjs-dist";
 import { PageImageViewer } from "./PageImageViewer";
 import { RawOcrTable, type ConfirmedItem } from "./RawOcrTable";
 import type { OcrPageResult } from "./types";
-import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
+import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { useConfirm } from "../../hooks/useConfirm";
 

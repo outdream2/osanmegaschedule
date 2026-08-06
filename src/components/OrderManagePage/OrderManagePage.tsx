@@ -16,10 +16,10 @@ import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
 import { OcrPage } from "../OcrPage";
 // 2026-08-03 · 매입 서브탭 임베드용 · ScanPage · ProductArrivalPage
-import { ScanPage } from "../ScanPage";
-import { ProductArrivalPage } from "../ProductArrivalPage";
+import { ScanPage } from "../ScanPage/ScanPage";
+import { ProductArrivalPage } from "../ProductArrivalPage/ProductArrivalPage";
 import type { AuthSession } from "../../types";
-import type { AppNavPage } from "../AppNavHeader";
+import type { AppNavPage } from "../layout/AppNavHeader";
 // VendorListEditor · VendorDetailModal · Vendor — split 패널 구성 (static import · panel 모드 지원)
 import { VendorListEditor, VendorDetailModal } from "../LandingPage/VendorListEditor";
 import type { Vendor } from "../LandingPage/VendorListEditor";

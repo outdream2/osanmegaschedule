@@ -6,7 +6,7 @@
 //   - DELETE /api/product-arrivals/:id · 삭제
 
 import { Router } from "express";
-import { supabase } from "../../src/supabase/client";
+import { supabase } from "../../../src/supabase/client";
 
 const router = Router();
 

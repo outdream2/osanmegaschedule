@@ -15,8 +15,8 @@
 //   - inventory-checks 자동 트리거는 fire-and-forget (원 요청 실패 유발 X)
 
 import { Router } from "express";
-import { supabase } from "../../src/supabase/client";
-import { fetchAllWithRange } from "../utils/supabaseFetchAll";
+import { supabase } from "../../../src/supabase/client";
+import { fetchAllWithRange } from "../../utils/supabaseFetchAll";
 
 const router = Router();
 

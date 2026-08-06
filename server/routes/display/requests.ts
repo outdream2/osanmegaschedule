@@ -1,11 +1,11 @@
 import { Router } from "express";
 import webpush from "web-push";
-import { supabase } from "../../src/supabase/client";
-import { notificationsService } from "../services/notificationsService";
+import { supabase } from "../../../src/supabase/client";
+import { notificationsService } from "../../services/notificationsService";
 // 2026-08-05 · T-PERF-1a · inventory-checks 변경 시 low-stock 캐시 무효화
-import { clearLowStockCache } from "./stockManage";
+import { clearLowStockCache } from "../stock/stockManage";
 // 2026-08-06 · T-LOSS-HISTORY · 실재고 저장 시 · 오늘 손실 스냅샷 fire-and-forget
-import { scheduleSnapshotBackground } from "./lossTracking";
+import { scheduleSnapshotBackground } from "../stock/lossTracking";
 
 const router = Router();
 

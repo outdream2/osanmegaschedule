@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { supabase } from "../../src/supabase/client";
-import { clearOcrAggCache } from "./stockManage";
+import { clearOcrAggCache } from "./stock/stockManage";
 
 const router = Router();
 const TABLE = "ocr_confirmed_items";

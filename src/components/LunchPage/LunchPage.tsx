@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { UtensilsCrossed, Clock, RefreshCw, Users, ChevronLeft, ChevronRight, Stethoscope, UserRound, Coffee } from "lucide-react";
-import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
+import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 
 interface LunchRequest {
