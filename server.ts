@@ -46,6 +46,8 @@ import resignationsRouter from "./server/routes/staff/resignations";
 import employeeContractsRouter from "./server/routes/staff/employeeContracts";
 import contractClausesRouter from "./server/routes/staff/contractClauses";
 import vatRouter from "./server/routes/purchase/vat";
+// 2026-08-06 · T-DualStorage-Connect · 5개 도메인 reference 값 조회
+import referenceValuesRouter from "./server/routes/reference/referenceValues";
 // 2026-07-28 · 재고·판매 통합 메뉴 제거 (사용자 요청) · 파일 보관 · 라우터 등록만 해제
 // import inventorySalesRouter from "./server/routes/inventorySales";
 // (재고세기 loadStockCountModel · 위에서 함께 제거됨)
@@ -151,6 +153,7 @@ async function startServer() {
   app.use(vendorsRouter);
   app.use(boardRouter);
   app.use(vatRouter);
+  app.use(referenceValuesRouter); // 2026-08-06 · T-DualStorage-Connect
   // (재고세기 라우터 · 2026-08-05 파일 삭제됨)
   // app.use(inventorySalesRouter);
 
