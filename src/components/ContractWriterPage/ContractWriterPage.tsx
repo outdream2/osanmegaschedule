@@ -3884,17 +3884,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const leftFormNode = (
     <section className="bg-slate-50 flex flex-col gap-3 h-full overflow-y-auto p-0.5">
 
-      {/* ── 폼 헤더 ── */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-          <ClipboardText size={16} weight="fill" className="text-indigo-600" />
-        </div>
-        <div>
-          <h2 className="text-[13px] font-black text-slate-800 leading-tight">계약 조건 입력</h2>
-          <p className="text-[10.5px] text-slate-400 font-semibold mt-0.5">근로자 정보와 근무조건을 입력하세요</p>
-        </div>
-      </div>
-
       {/* ── T-R (2026-08-05) · 작성 방식 토글 ── */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-2">
         <div className="grid grid-cols-2 gap-1">
@@ -4286,7 +4275,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               />
             </div>
             {/* T-Q (2026-08-05) · 은행 · 계좌번호 · 통장사본 업로드 (분리) */}
-            <div className="col-span-2 grid grid-cols-[130px_1fr_auto] gap-2 items-end">
+            <div className="col-span-2 grid grid-cols-[90px_1fr_auto] gap-2 items-end">
               <div>
                 <label className={fldLabel}>은행</label>
                 <select
@@ -4423,24 +4412,27 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
 
         {!isCardCollapsed("workCondition") && (<>
 
-        {/* 1행 · 계약 유형 · 근무 요일 */}
+        {/* 1행 · 계약 유형 + 연차 · 근무 요일 */}
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-start">
-          {/* 계약 유형 */}
+          {/* 계약 유형 + 연차 나란히 · T-CTR-UI-Batch */}
           <div>
-            <label className={fldLabel}>
-              계약 유형
-              {/* T-Z (2026-08-05) · 저장 라벨 프리뷰 (shortContractLabel · "정규" / "계약N") */}
-              {(() => {
-                const badge = shortContractLabel(form.contractType, form.contractMonths);
-                if (!badge || badge === form.contractType) return null;
-                return (
-                  <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-md bg-indigo-100 border border-indigo-200 text-indigo-700 text-[10px] font-black normal-case tracking-normal">
-                    저장: {badge}
-                  </span>
-                );
-              })()}
-            </label>
-            <SelectOrCustom value={form.contractType} options={CONTRACT_TYPES} onChange={(v) => upd("contractType", v)} placeholder="예: 프리랜서" />
+            <label className={fldLabel}>계약 유형</label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <SelectOrCustom value={form.contractType} options={CONTRACT_TYPES} onChange={(v) => upd("contractType", v)} placeholder="예: 프리랜서" />
+              </div>
+              {/* 연차 일수 · 계약유형 옆 나란히 */}
+              <div className="shrink-0 w-[100px]">
+                <div className="relative">
+                  <input type="number" min={0} value={form.annualLeaveDays} onChange={(e) => upd("annualLeaveDays", e.target.value)}
+                    placeholder="15"
+                    title="연차 일수"
+                    className="w-full bg-white border border-slate-200 rounded-lg pl-2 pr-10 py-1.5 text-[13px] text-slate-800 font-semibold text-right focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition"
+                  />
+                  <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9.5px] text-slate-400 font-semibold pointer-events-none leading-tight">일/연차</span>
+                </div>
+              </div>
+            </div>
             {form.contractType === "계약직" && (
               <div className="flex items-center gap-2 mt-1.5">
                 <span className="text-[10.5px] text-slate-400 font-semibold shrink-0">계약 기간</span>
@@ -4531,19 +4523,41 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           </div>
         </div>
 
-        {/* 4행 · 연차 일수 · T-CTR-AnnualLeave-Move (2026-08-06 · 근무조건 섹션으로 이동) */}
-        <div className="flex items-end gap-2">
-          <div className="shrink-0 w-[130px]">
-            <label className={fldLabel}>연차</label>
-            <div className="relative">
-              <input type="number" min={0} value={form.annualLeaveDays} onChange={(e) => upd("annualLeaveDays", e.target.value)}
-                placeholder="15"
-                className="w-full bg-white border border-slate-200 rounded-lg pl-3 pr-8 py-1.5 text-[13px] text-slate-800 font-semibold text-right focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 font-semibold pointer-events-none">일</span>
+        {/* 4행 · 근무조건 자동 계산 힌트 (시간 × 시급) · T-CTR-UI-Batch */}
+        {(() => {
+          if (!monthlyCalc) return null;
+          const dailyH = monthlyCalc.dailyMinutes / 60;
+          if (dailyH <= 0) return null;
+          const weeklyH = dailyH * weeklyDays;
+          const wdHourly = Number(form.weekdayHourly) || 0;
+          const weHourly = Number(form.weekendHourly) || wdHourly;
+          const weeklyWdH = dailyH * weeklyWeekdayDays;
+          const weeklyWeH = dailyH * weeklyWeekendDays;
+          const weeklyPay = Math.round(weeklyWdH * wdHourly + weeklyWeH * weHourly);
+          const monthlyPay = Math.round(weeklyPay * 4.345);
+          const hasWage = wdHourly > 0;
+          return (
+            <div className="rounded-lg bg-indigo-50/60 border border-indigo-100 px-3 py-2 text-[11px] text-indigo-700 leading-relaxed">
+              <span className="font-bold">주 {weeklyH.toFixed(1)}시간</span>
+              {hasWage && (
+                <>
+                  <span className="mx-1 text-indigo-300">·</span>
+                  <span>시급 {fmtWon(wdHourly)}원</span>
+                  {weeklyWeekendDays > 0 && weHourly !== wdHourly && (
+                    <span className="ml-0.5">(주말 {fmtWon(weHourly)}원)</span>
+                  )}
+                  <span className="mx-1 text-indigo-300">·</span>
+                  <span className="font-semibold">주 예상 {fmtWon(weeklyPay)}원</span>
+                  <span className="mx-1 text-indigo-300">·</span>
+                  <span className="font-black text-indigo-900">월 예상 {fmtWon(monthlyPay)}원</span>
+                </>
+              )}
+              {!hasWage && (
+                <span className="ml-1 text-indigo-400">(시급 입력 시 월 예상액 표시)</span>
+              )}
             </div>
-          </div>
-        </div>
+          );
+        })()}
         </>)}
       </div>
       {/* /카드 2 (통합) */}
