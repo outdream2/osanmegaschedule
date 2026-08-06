@@ -1,12 +1,19 @@
 # TASKS
 
-**상태 요약** (2026-08-06 갱신 · 세션 15+ 커밋 반영):
-- 진행중 (백그라운드): 1건 (T-SLIM C useFetch 마이그레이션 · a8e3be2a)
+**상태 요약** (2026-08-06 갱신 · 세션 15+ 커밋 추가 반영):
+- 진행중 (백그라운드):
+  · T-PROJECT-Restructure Phase 1·2 (ae105a52) · 백엔드 shim 삭제 + routes/ 10 도메인 서브폴더
+  · T-PROJECT-Restructure Phase 3 (aa8ec23d) · 프론트 구조 정리
+- 완료 (2026-08-06 세션): 100+ 로컬 커밋
+  · UI/UX 개선 · 공통화·리팩토링 · 보안·타입 강화
+  · dead code 정리 · 서버 응답 표준화
+  · OCR 폴더 재구성 (3e7c150) · localStorage → DB 이관
 - 사용자 액션 대기 (Supabase): perf_indexes · vat_integration · loss_tracking_daily · T-CTR-3
 - 검증 대기: 20+ 커밋 (2026-08-06 세션)
 - 남은 큰 태스크: God Component 5개 · T-SLIM B/F · requireAuth (T3-defer)
 - 보류: 1건 (T-PERF-5)
-- 이번 세션 완료 · 삭제: T-CSS Phase 2 Priority A/B · T-Audit-DeadCode · T-DB-Audit · 미사용 파일 정리 · as any 서버/프론트 부분 · T-SLIM E
+- 이번 세션 완료 · 삭제: T-CSS Phase 2 Priority A/B · T-Audit-DeadCode · T-DB-Audit · 미사용 파일 정리 · as any 서버/프론트 부분 · T-SLIM E · T-VAPID-Route · OCR 재구성 · .vercel/assets 정리
+- 폴더 구조 결정 (사용자 승인): **By-Feature (도메인 기반)** · 옵션 A (10 그룹 세분화)
 
 **규칙**:
 - 완료 태스크는 이 파일에서 **삭제** (아카이브 X)
@@ -74,13 +81,20 @@
 - dead-code-auditor 발견 (`a3a8ebf6`)
 - 정합성 확인 후 · 사용자 승인 필요
 
-### T-VAPID-Route · `/api/vapid-public-key` 서버 route 누락
-- 프론트 `StockArrivalPage` 호출 · silent fail
-- 서버 route 추가 or 프론트 호출 제거 · 결정 필요
-
 ---
 
-## 🔄 진행 중 (자동 파이프라인)
+## 🔄 진행 중 (자동 파이프라인 · 백그라운드)
+
+### T-PROJECT-Restructure Phase 1·2 (백그라운드 · ae105a52)
+- 백엔드 shim 삭제 + `server/routes/` 10 도메인 서브폴더 재구성
+- 폴더 방식: **By-Feature (도메인 기반)** · 옵션 A (10 그룹 세분화) · 사용자 승인
+- 코드 편집 · docs/ 미접촉 · 이 파일과 겹침 X
+- 완료 알림 대기
+
+### T-PROJECT-Restructure Phase 3 (백그라운드 · aa8ec23d)
+- 프론트 구조 정리 · pages/ · components/ 도메인별 재편
+- 코드 편집 · docs/ 미접촉 · 이 파일과 겹침 X
+- 완료 알림 대기
 
 ### T-SLIM C · useFetch 마이그레이션 (백그라운드 · a8e3be2a)
 - useFetch 훅 신규 완료 (`c9ff8e3` 부산물)
@@ -91,7 +105,17 @@
 - OrderManage · ContractWriter · RawOcrTable · DisplayPage · StaffManage
 - 각 파일 God Component 분해 병행 필요 (아래 God Component 항목 참고)
 
+### T-Restructure-Phase4 · productCache · models 이동 (대기)
+- dead-code-auditor 후속 · OCR 참조 정리 후 · 별도 세션
+- Phase 1·2·3 완료 후 착수
+
 ### ✅ 완료 · 자동 파이프라인 앞 단계
+- `f9ba80e` T-VAPID-Route · `/api/vapid-public-key` 라우터 추가 (신규 발견 완료)
+- `46f7fd7` `.vercel` · `assets/.aistudio` 삭제
+- `ed149cb` `server/ocr` · barcode 파일 2개 삭제
+- `3e7c150` T-OCR-Restructure · OCR 폴더 기능별 서브폴더 정리
+- `c9ff8e3` scripts/ 34개 일회성 파일 삭제
+- Prisma · public/products.json · 미참조 이미지 삭제
 - `8fdf697` T-CSS Phase 2 Priority A · SupplierTab · SalesTrendPage · BusinessManagePage
 - `792835a` `80ab6ed` `481d6d5` T-CSS Phase 2 Priority B · RequestsPage · BoardPage · StaffManagePage
 - `a3a8ebf6` T-Audit-DeadCode 감사 완료
