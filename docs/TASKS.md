@@ -1,18 +1,21 @@
 # TASKS
 
-**상태 요약** (2026-08-06 갱신 · 세션 15+ 커밋 추가 반영):
+**상태 요약** (2026-08-06 갱신 · 세션 100+ 커밋 · UI 개선 다수):
 - 진행중 (백그라운드):
   · T-PROJECT-Restructure Phase 1·2 (ae105a52) · 백엔드 shim 삭제 + routes/ 10 도메인 서브폴더
   · T-PROJECT-Restructure Phase 3 (aa8ec23d) · 프론트 구조 정리
+  · T-CTR-UI (a29f41d5) · 근로계약서 UI 4건 (자동계산·연차·계약유형·계좌 폭)
 - 완료 (2026-08-06 세션): 100+ 로컬 커밋
   · UI/UX 개선 · 공통화·리팩토링 · 보안·타입 강화
   · dead code 정리 · 서버 응답 표준화
   · OCR 폴더 재구성 (3e7c150) · localStorage → DB 이관
+  · 근로계약서 다중 개선 (v 아이콘 좌측·성명 검색·자동연동·계약조건 정리 등)
+  · 결제 탭 통계 헤더·기간 조회 · 급상승 탭 재구성 (기본 최근판매·상비약 기본)
 - 사용자 액션 대기 (Supabase): perf_indexes · vat_integration · loss_tracking_daily · T-CTR-3
-- 검증 대기: 20+ 커밋 (2026-08-06 세션)
+- 검증 대기: 30+ 커밋 (2026-08-06 세션)
 - 남은 큰 태스크: God Component 5개 · T-SLIM B/F · requireAuth (T3-defer)
 - 보류: 1건 (T-PERF-5)
-- 이번 세션 완료 · 삭제: T-CSS Phase 2 Priority A/B · T-Audit-DeadCode · T-DB-Audit · 미사용 파일 정리 · as any 서버/프론트 부분 · T-SLIM E · T-VAPID-Route · OCR 재구성 · .vercel/assets 정리
+- 이번 세션 완료 · 삭제: T-CSS Phase 2 Priority A/B · T-Audit-DeadCode · T-DB-Audit · 미사용 파일 정리 · as any 서버/프론트 부분 · T-SLIM E · T-VAPID-Route · OCR 재구성 · .vercel/assets 정리 · T-CTR-SearchWorker · T-CTR-Collapse+Reset · T-CTR-Chevron(All) · T-CTR-Cleanup · payment-tab 통계 헤더 · trending 재구성 · ConfirmProvider 마운트 hotfix
 - 폴더 구조 결정 (사용자 승인): **By-Feature (도메인 기반)** · 옵션 A (10 그룹 세분화)
 
 **규칙**:

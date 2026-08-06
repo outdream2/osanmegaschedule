@@ -111,6 +111,7 @@
 - 신규 컬럼: **최근결제일·결제액** (T-TEST-공급사리스트-최근결제 · `a6c8e8d`)
 - 제거: 기간 내 결제 컬럼 (최근결제일·결제액이 대체 · `b0e5c52`)
 - 신규 API: `GET /api/supplier-payments/latest-per-supplier`
+- **헤더 자동정렬·공통 CSS** (`5fabc6e` · safe-refactoring-expert) · 통계 헤더 · **기간 조회** UI 추가
 
 **공급사 · VAT 표시 개선** (2026-08-06):
 - 이름 정제 표시 + VAT 자동 추론 (`058e92d`)
@@ -1281,6 +1282,29 @@ npm run test        # vitest (필요 시)
 
 ## CHANGELOG · 변경 이력
 
+### 2026-08-06 (7차 · UI 개선 세션 · 근로계약서·결제·급상승 · 11 커밋)
+
+**요약**: e61d20f 이후 · 근로계약서 다중 UI 개선 (7건) + 결제 탭 통계 헤더·기간 조회 + 급상승 탭 재구성 + ConfirmProvider 마운트 hotfix.
+
+#### 근로계약서 (contract-master · 7 커밋)
+- **T-CTR-SearchWorker** · 성명 검색·선택 (`d352690`)
+- **T-CTR-Collapse+Reset** · 근로자정보 접기 · 초기화 컴팩트 축소 · 한글 초성 검색 (`1e55f00`)
+- **T-CTR 통합** · 연차 이동·기타 제거·직군 DB·인적사항 자동연동·라벨 (4 태스크) (`1fb35a3`)
+- **T-CTR-Chevron** · 근로자 정보 카드 · v 아이콘 좌측 (`6f894ce`)
+- **T-CTR-Chevron-All** · 4 카드 헤더 · v 아이콘 좌측 통일 (`1052e2d`)
+- **T-CTR-Cleanup** · 계약조건 헤더 제거 + 자동계산 안내 코멘트 (`2017046`)
+- **fix · 월 근로시간 173h 표시 제거** · 계산 오류 (실제 209h 기준) (`7b70f13`)
+
+#### 결제 탭 (safe-refactoring-expert · 1 커밋)
+- **payment-tab** · 헤더 자동정렬 · 공통 CSS · 통계 헤더 · **기간 조회** (`5fabc6e`)
+
+#### 급상승 (trending · 2 커밋)
+- **상비약 기본 탭** · 좌측 리스트 공통 CSS 적용 (`c9656f5`)
+- **기본 정렬 · 최근판매** · 컬럼 재배치 · 비교기간 4옵션 (10일/1개월/3개월/6개월) · 정렬 축소 · 재고부족 필터 제거 (`da79536`)
+
+#### Hotfix (1 커밋)
+- **ConfirmProvider · main.tsx 마운트** · 첫페이지 크래시 수정 (`6da8c43`) · 신규 자산 아님
+
 ### 2026-08-06 (6차 · 대규모 세션 · 100+ 커밋 · 구조 재정비 · UI/공통화/보안/Dead code)
 
 **요약**: 이번 세션은 로컬 커밋 100건 이상 · 세션 전체 통합 정리. UI/UX 다듬기 → 공통 자산 확장 (7종) → 보안·타입 강화 → 서버·프론트 폴더 재구성 → dead code 대량 삭제 → localStorage → DB 이관.
@@ -1450,6 +1474,10 @@ Part I 이 서브탭·기능 요약이라면 · Part IV 는 **"어떤 버튼을 
 
 `trending` (indigo · `/api/stock-manage/top-sales?months=&sort=&dir=`) · `category` (amber · ZONE_DEFS 기반) · `flow` (sky · `/api/stock-manage/raw` · [숨김]) · `supplier` (emerald · `/api/sales-trend/supplier`) · `diff` (rose · 시스템/실재고 차이)
 
+**급상승 (trending) 재구성** (2026-08-06):
+- **상비약 기본 탭** · 좌측 리스트 공통 CSS 적용 (`c9656f5`)
+- **기본 정렬 · 최근판매** · 컬럼 재배치 · 비교기간 4옵션 (10일/1개월/3개월/6개월) · 정렬 축소 · 재고부족 필터 제거 (`da79536`)
+
 **입고알림 (stock-arrivals)** — `StockArrivalPage.tsx`
 
 **[웹푸시 방송]** → `POST /api/stock-arrivals/:id/broadcast` · **[예약발송]** `scheduled_at` 서버 크론 · **[수정]** `PATCH` · **[삭제]** `DELETE` · **[익명 구독]** `POST /api/anon-push-subscribe` · VAPID `GET /api/vapid-public-key`
@@ -1494,6 +1522,13 @@ Part I 이 서브탭·기능 요약이라면 · Part IV 는 **"어떤 버튼을 
 - **[저장]** → `POST /api/employee-contracts { employeeId, formData }`
 - **[스캔 업로드]** → `POST /api/employee-contracts/upload` (multipart)
 - 시급: `settings.wageRates` (직군별 주중/주말)
+- **UI 개선** (2026-08-06 · contract-master):
+  - **성명 검색·선택** · 한글 초성 지원 · 근로자 정보 자동 연동 (`d352690`, `1e55f00`)
+  - **근로자정보 접기·초기화 축소** · 컴팩트 UX (`1e55f00`)
+  - **T-CTR 통합** · 연차 이동·기타 제거·직군 DB·인적사항 자동연동·라벨 (`1fb35a3`)
+  - **v 아이콘 좌측 통일** · 근로자 정보 카드 · 4 카드 헤더 (`6f894ce`, `1052e2d`)
+  - **계약조건 헤더 제거** + 자동계산 안내 코멘트 (`2017046`)
+  - **173h 표시 제거** · 계산 오류 (실제 209h 기준) (`7b70f13`)
 
 `resignation` (rose · `ResignationWriterPage`):
 - 13사유 · 5조항 · 서명 · 관리자 승인
