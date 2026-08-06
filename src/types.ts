@@ -100,3 +100,20 @@ export interface MonthlySummary {
   staffCount: number;  // 약사·알바 제외 사원
   otherCount: number;  // 알바(기타)
 }
+
+// T-CompanyInfo-DB · 근로계약서 사업주 정보 · settings "company_info" key 로 서버 저장
+export interface CompanyInfo {
+  name: string;
+  address: string;
+  regNo: string;
+  representativeName: string;
+  representativeTitle?: string;
+  phone?: string;
+}
+
+export const DEFAULT_COMPANY_INFO: CompanyInfo = {
+  name: "오산 메가타운 약국",
+  address: "경기도 오산시 경기대로 868-4 2층",
+  regNo: "",
+  representativeName: "강남성",
+};

@@ -32,6 +32,8 @@ import {
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { useSettings, defaultWageForPosition, type WageRate } from "../../hooks/useSettings";
+import { useKvSetting } from "../../hooks/useKvSetting";
+import { type CompanyInfo, DEFAULT_COMPANY_INFO } from "../../types";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 하위호환 · 기존 export (ContractWriterPage 가 import 하므로 유지)
@@ -442,6 +444,18 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
   //   즉시 저장 (debounce · useSettings 내부)
   const { wageRates, update: updateSettings } = useSettings();
 
+  // ── 회사 정보 · 서버 저장 (settings "company_info" key)
+  //   · ContractWriterPage 가 이 값으로 form 초기화 (하드코딩 fallback 대체)
+  const {
+    value: companyInfo,
+    setValue: setCompanyInfo,
+    loaded: companyInfoLoaded,
+    saveState: companyInfoSaveState,
+  } = useKvSetting<CompanyInfo>({
+    key: "company_info",
+    defaultValue: DEFAULT_COMPANY_INFO,
+  });
+
   // ── 기존 localStorage(contractJobWages:v1) 마이그레이션 (1회)
   //   저장된 값이 wageRates 에 없으면 병합 후 삭제
   useEffect(() => {
@@ -742,6 +756,106 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
           </div>
         )}
 
+        {/* ── 섹션 0 · 회사 정보 ────────────────────────────────────────── */}
+        <section className="bg-white border border-slate-200 rounded-xl shadow-sm p-3 sm:p-4 flex flex-col gap-3">
+          <header className="flex items-center gap-2 pb-1 border-b border-slate-100">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+              <Info size={16} weight="fill" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-[15px] font-black text-emerald-700">회사 정보</h2>
+              <p className="text-[11px] text-slate-500 font-semibold">근로계약서 사업주란에 자동 채워지는 기본값입니다. 편집 즉시 서버에 저장됩니다.</p>
+            </div>
+            {!companyInfoLoaded && (
+              <span className="text-[11px] text-slate-400 font-semibold">로딩 중...</span>
+            )}
+            {companyInfoLoaded && companyInfoSaveState === "saving" && (
+              <span className="text-[11px] text-indigo-500 font-semibold">저장 중...</span>
+            )}
+            {companyInfoLoaded && companyInfoSaveState === "saved" && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 font-semibold">
+                <Check size={11} weight="bold" /> 저장됨
+              </span>
+            )}
+            {companyInfoLoaded && companyInfoSaveState === "error" && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-rose-500 font-semibold">
+                <Warning size={11} weight="fill" /> 저장 실패
+              </span>
+            )}
+          </header>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* 상호 */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-bold text-slate-600">상호</label>
+              <input
+                type="text"
+                value={companyInfo.name}
+                onChange={(e) => setCompanyInfo(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="예) 오산 메가타운 약국"
+                disabled={!companyInfoLoaded}
+                className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+              />
+            </div>
+            {/* 대표자 이름 */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-bold text-slate-600">대표자 이름</label>
+              <input
+                type="text"
+                value={companyInfo.representativeName}
+                onChange={(e) => setCompanyInfo(prev => ({ ...prev, representativeName: e.target.value }))}
+                placeholder="예) 강남성"
+                disabled={!companyInfoLoaded}
+                className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+              />
+            </div>
+            {/* 사업장 주소 */}
+            <div className="flex flex-col gap-1 sm:col-span-2">
+              <label className="text-[12px] font-bold text-slate-600">사업장 주소</label>
+              <input
+                type="text"
+                value={companyInfo.address}
+                onChange={(e) => setCompanyInfo(prev => ({ ...prev, address: e.target.value }))}
+                placeholder="예) 경기도 오산시 경기대로 868-4 2층"
+                disabled={!companyInfoLoaded}
+                className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+              />
+            </div>
+            {/* 사업자등록번호 */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-bold text-slate-600">사업자등록번호 <span className="text-slate-400 font-normal">(선택)</span></label>
+              <input
+                type="text"
+                value={companyInfo.regNo}
+                onChange={(e) => setCompanyInfo(prev => ({ ...prev, regNo: e.target.value }))}
+                placeholder="예) 123-45-67890"
+                disabled={!companyInfoLoaded}
+                className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+              />
+            </div>
+            {/* 대표자 직함 */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-bold text-slate-600">대표자 직함 <span className="text-slate-400 font-normal">(선택)</span></label>
+              <input
+                type="text"
+                value={companyInfo.representativeTitle ?? ""}
+                onChange={(e) => setCompanyInfo(prev => ({ ...prev, representativeTitle: e.target.value }))}
+                placeholder="예) 대표약사"
+                disabled={!companyInfoLoaded}
+                className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+              />
+            </div>
+          </div>
+
+          <div className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-2.5 py-1.5 font-semibold flex items-start gap-1.5">
+            <Info size={12} weight="fill" className="mt-[2px] shrink-0" />
+            <span>
+              회사 정보는 <b>편집 즉시 서버에 저장</b>되며 모든 관리자에게 공유됩니다.
+              근로계약서 작성 시 사업주 섹션에 자동으로 채워집니다.
+            </span>
+          </div>
+        </section>
+
         {/* ── 섹션 1 · 직군별 시급 ─────────────────────────────────────── */}
         <section className="bg-white border border-slate-200 rounded-xl shadow-sm p-3 sm:p-4 flex flex-col gap-3">
           <header className="flex items-center gap-2 pb-1 border-b border-slate-100">
@@ -945,9 +1059,9 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
         </div>
 
         <div className="text-[11px] text-slate-400 font-semibold text-center py-2 leading-relaxed">
-          시급 · 서버 저장 (모든 관리자 공유) · <code className="bg-slate-100 px-1 rounded">settings.wageRates</code>
+          회사정보 · 시급 · 서버 저장 (즉시 · 모든 관리자 공유)
           <br />
-          각 호 · 서버 저장 (모든 관리자 공유) · <code className="bg-slate-100 px-1 rounded">contract_clauses</code>
+          각 호 · <code className="bg-slate-100 px-1 rounded">contract_clauses</code> · [저장] 버튼 필요
           {!serverLoaded && <span className="ml-1 text-slate-300">· 서버 로드 중...</span>}
         </div>
       </main>

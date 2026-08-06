@@ -31,6 +31,7 @@ import jsPDF from "jspdf";
 
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession, Employee } from "../../types";
+import { type CompanyInfo, DEFAULT_COMPANY_INFO } from "../../types";
 import {
   loadContractSettings,
   DEFAULT_CONTRACT_SETTINGS,
@@ -43,6 +44,7 @@ import SplitPanel from "../common/SplitPanel";
 import { matchHangul } from "../common/hangulSearch";
 import sungstampUrl from "../../images/sungstamp.png";
 import { useSettings, defaultWageForPosition, type WageRate } from "../../hooks/useSettings";
+import { useKvSetting } from "../../hooks/useKvSetting";
 import kyustampUrl from "../../images/kyustamp.png";
 // T-Y (2026-08-05) · payroll 모듈 · 사용자 정본 흐름 (희망세후 = 시급×시간 · 역산 → 임금구성표)
 import {
@@ -311,12 +313,14 @@ const BREAK_TIME_OPTIONS: string[] = [
   "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00",
 ];
 
-// 회사 기본값 (오산 메가타운 약국)
+// 회사 기본값 · CompanyInfo · DEFAULT_COMPANY_INFO 는 types.ts 에서 import
+// · emptyForm 에서 사용 (컴포넌트 외부 · 훅 호출 불가) · fallback 상수
+// · 서버에서 company_info 로드 후 · 컴포넌트 내 useEffect 에서 form 업데이트
 const DEFAULT_EMPLOYER: Partial<ContractForm> = {
-  employerName: "강남성",
-  companyName: "오산 메가타운 약국",
-  companyAddress: "경기도 오산시 경기대로 868-4 2층",
-  companyRegNo: "",
+  employerName: DEFAULT_COMPANY_INFO.representativeName,
+  companyName: DEFAULT_COMPANY_INFO.name,
+  companyAddress: DEFAULT_COMPANY_INFO.address,
+  companyRegNo: DEFAULT_COMPANY_INFO.regNo,
 };
 
 // 시간 상수 (포괄임금 산정 · 스펙 · 계약서 이미지 원본)
@@ -2702,6 +2706,14 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   // ── T14/Phase B · 직급별 기본 시급 로드 (useSettings) · 사용자 편집 가능 유지
   const settings = useSettings();
 
+  // ── T-CompanyInfo-DB · 회사 정보 서버 로드 (settings "company_info" key)
+  //   · 서버 값 로드 완료 시 · form 의 회사 필드가 하드코딩 default 와 같으면 덮어씀
+  //   · 사용자가 직접 편집한 값은 유지
+  const { value: companyInfo, loaded: companyInfoLoaded } = useKvSetting<CompanyInfo>({
+    key: "company_info",
+    defaultValue: DEFAULT_COMPANY_INFO,
+  });
+
   // ── draft 로드 · 마이그레이션 (신규 필드 default) ──
   const [form, setForm] = useState<ContractForm>(() => {
     try {
@@ -2958,6 +2970,31 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       setPrefillConsumed(true);
     }
   }, [prefillConsumed, settings.wageRates, settings.employeeWageOverrides]);
+
+  // T-CompanyInfo-DB · 서버에서 company_info 로드 완료 시 · form 회사 필드 반영
+  //   · 조건: companyInfoLoaded && form 의 회사 필드가 하드코딩 default 와 같은 경우만 덮어씀
+  //   · draft 에 사용자가 직접 수정한 값이 있으면 그대로 유지
+  const companyInfoAppliedRef = useRef(false);
+  useEffect(() => {
+    if (!companyInfoLoaded) return;
+    if (companyInfoAppliedRef.current) return;
+    companyInfoAppliedRef.current = true;
+    setForm(prev => {
+      const isDefaultName    = prev.companyName    === DEFAULT_COMPANY_INFO.name    || prev.companyName    === "";
+      const isDefaultAddr    = prev.companyAddress === DEFAULT_COMPANY_INFO.address || prev.companyAddress === "";
+      const isDefaultRegNo   = prev.companyRegNo   === DEFAULT_COMPANY_INFO.regNo;
+      const isDefaultEmpName = prev.employerName   === DEFAULT_COMPANY_INFO.representativeName || prev.employerName === "";
+      // 모든 필드가 default 와 같을 때만 서버 값으로 교체 (사용자 편집 보호)
+      if (!isDefaultName && !isDefaultAddr && !isDefaultEmpName) return prev;
+      return {
+        ...prev,
+        companyName:    isDefaultName    ? companyInfo.name                : prev.companyName,
+        companyAddress: isDefaultAddr    ? companyInfo.address             : prev.companyAddress,
+        companyRegNo:   isDefaultRegNo   ? companyInfo.regNo               : prev.companyRegNo,
+        employerName:   isDefaultEmpName ? companyInfo.representativeName  : prev.employerName,
+      };
+    });
+  }, [companyInfoLoaded, companyInfo]);
 
   // T14/Phase B · 직급 기본 시급 재적용 · 사용자 액션
   //   폼의 employeeCategory 기반 · settings 에서 값 로드 · 개인별 override 있으면 그 값 우선
