@@ -24,6 +24,7 @@ import { SessionTimeoutWarning } from "./components/common/SessionTimeoutWarning
 import { useAuth } from "./hooks/useAuth";
 import { usePushSubscription } from "./hooks/usePushSubscription";
 import type { AuthSession } from "./types";
+import type { AppNavPage } from "./components/layout/AppNavHeader";
 import { prefetchProducts } from "./lib/productsCache";
 import { loadZoneLabelsFromServer } from "./constants/zoneLabels";
 
@@ -78,7 +79,7 @@ export default function App() {
     history.replaceState({ page: "landing" }, "");
 
     const onPop = (e: PopStateEvent) => {
-      const p = (e.state as any)?.page as Page | undefined;
+      const p = (e.state as { page?: Page } | null)?.page;
       setPage(p ?? "landing");
     };
     window.addEventListener("popstate", onPop);
@@ -121,7 +122,7 @@ export default function App() {
 
   // Simple navigation wrapper used by the shared AppNavHeader on inner pages.
   // The user is already authenticated here, so no AuthSession is required.
-  const navigateInner = (next: "landing" | "schedule" | "display" | "requests" | "leave" | "scan" | "productarrival" | "ocr" | "lunch" | "board" | "mypage" | "business-manage" | "stockcheck" | "zone-labels" | "hr-forms") => navigate(next as Page);
+  const navigateInner = (next: AppNavPage) => navigate(next as Page);
 
   let pageContent: React.ReactElement;
 
@@ -206,7 +207,7 @@ export default function App() {
       />
     );
   } else if (page === "stockcheck") {
-    pageContent = <StockCheckPage onBack={goBack} authSession={authSession} onNavigate={navigateInner as any} onLogout={handleLogout} />;
+    pageContent = <StockCheckPage onBack={goBack} authSession={authSession} onNavigate={navigateInner} onLogout={handleLogout} />;
   } else if (page === "stockarrivals") {
     pageContent = <StockArrivalPage authSession={authSession} onBack={goBack} onNavigate={navigateInner} onLogout={handleLogout} />;
   } else if (page === "board") {
@@ -214,7 +215,7 @@ export default function App() {
       <BoardPage
         authSession={authSession}
         onBack={goBack}
-        onNavigate={navigateInner as any}
+        onNavigate={navigateInner}
         onLogout={handleLogout}
       />
     );
@@ -223,7 +224,7 @@ export default function App() {
       <MyPage
         authSession={authSession}
         onBack={goBack}
-        onNavigate={navigateInner as any}
+        onNavigate={navigateInner}
         onLogout={handleLogout}
       />
     );

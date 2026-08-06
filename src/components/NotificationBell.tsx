@@ -74,7 +74,8 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
   // 짧은 알림 소리 재생 (Web Audio · 외부 파일 없이 tone 합성)
   const playChime = useCallback(() => {
     try {
-      const AC: any = (window as any).AudioContext || (window as any).webkitAudioContext;
+      const AC = (window as Window & { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext }).AudioContext
+        ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AC) return;
       const ctx = new AC();
       const now = ctx.currentTime;

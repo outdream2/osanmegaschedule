@@ -139,7 +139,7 @@ export const LowStockPanel: React.FC = () => {
       }
       setLowStock(prev => prev.map(p =>
         String(p.product_code) === optimalEditCode
-          ? { ...p, optimal_stock: num as any }
+          ? { ...p, optimal_stock: num }
           : p
       ));
       setOptimalEditCode(null);

@@ -394,7 +394,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     }
     setEmpPhone(emp.phone ?? "");
     setEmpContractFile(null);
-    setEmpContractUrl((emp as any).contract_file_url ?? null);
+    setEmpContractUrl(emp.contract_file_url ?? null);
     // Reset inline password set form
     setShowPasswordSet(false);
     setNewEmpPassword("");
