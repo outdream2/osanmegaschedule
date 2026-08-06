@@ -129,18 +129,15 @@ const LedgerTab: React.FC<{
 
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
 
+  // 2026-08-06 · T-TEST-매입이력-그룹기본접힘 (사용자 요청)
+  //   · 기본 접힌 상태 유지 · 사용자 클릭 시에만 펼침
+  //   · groups 변경 시에도 · 자동 펼침 X (기존 auto-expand first 제거)
   const groupsSigRef = useRef<string>("");
   useEffect(() => {
     const sig = groups.map(g => g.date).join("|");
     if (sig === groupsSigRef.current) return;
     groupsSigRef.current = sig;
-    setExpanded(prev => {
-      if (groups.length === 0) return new Set();
-      if (prev.size > 0) return prev;
-      const s = new Set<string>();
-      s.add(groups[0].date);
-      return s;
-    });
+    // 자동 펼침 로직 제거 · 기본 접힘 유지
   }, [groups]);
 
   const toggle = (date: string) => {
@@ -219,7 +216,17 @@ const LedgerTab: React.FC<{
                       : <ChevronRight size={13} className="text-slate-400 mx-auto" />}
                   </td>
                   <td className="px-3 py-2 font-mono text-[12px] font-semibold text-slate-700 whitespace-nowrap">
-                    {g.date}
+                    {/* 2026-08-06 · T-TEST-매입이력-날짜포맷 (사용자 요청) · 2026 줄바꿈 7/20 */}
+                    {(() => {
+                      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(g.date);
+                      if (m) return (
+                        <span className="inline-flex flex-col leading-tight items-start">
+                          <span className="text-[10px] text-slate-400">{m[1]}</span>
+                          <span>{String(parseInt(m[2], 10))}/{String(parseInt(m[3], 10))}</span>
+                        </span>
+                      );
+                      return g.date;
+                    })()}
                     {containsHighlight && <span className="ml-1 text-[10px] text-amber-600 font-black">◀</span>}
                   </td>
                   <td className="px-3 py-2 text-slate-700 break-words whitespace-normal leading-snug">
