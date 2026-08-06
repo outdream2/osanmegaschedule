@@ -14,6 +14,7 @@ import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/Purchase
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
+import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -129,6 +130,15 @@ const LedgerContent: React.FC<{
   const rawRows = useMemo(() => ledger?.rows ?? [], [ledger]);
   const { sorted: rows, sortKey, sortDir, toggleSort } = useSortableTable<LedgerRow, LedgerSortKey>(rawRows, "date", LEDGER_CMP, "desc");
   const arrow = (k: LedgerSortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
+  const { getWidth: lw, resizerProps: lr } = useColumnResize("vendorLedger", {
+    num:     { default: 24,  min: 20, max: 48  },
+    date:    { default: 96,  min: 60, max: 160 },
+    type:    { default: 56,  min: 40, max: 80  },
+    memo:    { default: 180, min: 80, max: 360 },
+    method:  { default: 56,  min: 40, max: 100 },
+    amount:  { default: 96,  min: 60, max: 160 },
+    balance: { default: 96,  min: 60, max: 160 },
+  });
 
   if (loading) return (
     <div className="flex-1 flex items-center justify-center py-16 text-slate-400 gap-2">
@@ -150,32 +160,49 @@ const LedgerContent: React.FC<{
 
   return (
     <div className="flex-1 min-h-0 overflow-auto">
-      <table className="w-full text-xs min-w-[520px]">
+      <table className="w-full text-xs min-w-[520px]" style={{ tableLayout: "fixed" }}>
         <thead className="sticky top-0 bg-white z-10 border-b border-slate-100">
           <tr className="text-[10px] text-slate-400 uppercase tracking-wider">
-            <th className="text-left px-3 py-2 w-6 text-slate-300">#</th>
+            <th className="relative text-left px-3 py-2 text-slate-300" style={{ width: lw("num"), minWidth: lw("num") }}>
+              #
+              <span {...lr("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+            </th>
             <th onClick={() => toggleSort("date")}
-              className="text-left px-3 py-2 w-24 cursor-pointer select-none hover:bg-slate-50 transition">
+              className="relative text-left px-3 py-2 cursor-pointer select-none hover:bg-slate-50 transition"
+              style={{ width: lw("date"), minWidth: lw("date") }}>
               날짜{arrow("date")}
+              <span {...lr("date")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
             <th onClick={() => toggleSort("type")}
-              className="text-left px-3 py-2 w-14 cursor-pointer select-none hover:bg-slate-50 transition">
+              className="relative text-left px-3 py-2 cursor-pointer select-none hover:bg-slate-50 transition"
+              style={{ width: lw("type"), minWidth: lw("type") }}>
               구분{arrow("type")}
+              <span {...lr("type")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
-            <th className="text-left px-3 py-2">메모</th>
-            <th className="text-left px-3 py-2 w-14">방법</th>
+            <th className="relative text-left px-3 py-2" style={{ width: lw("memo"), minWidth: lw("memo") }}>
+              메모
+              <span {...lr("memo")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+            </th>
+            <th className="relative text-left px-3 py-2" style={{ width: lw("method"), minWidth: lw("method") }}>
+              방법
+              <span {...lr("method")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+            </th>
             <th onClick={() => toggleSort("amount")}
-              className="text-right px-3 py-2 w-24 cursor-pointer select-none hover:bg-slate-50 transition">
+              className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-slate-50 transition"
+              style={{ width: lw("amount"), minWidth: lw("amount") }}>
               금액{arrow("amount")}
+              <span {...lr("amount")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
             {showVatCol && (
-              <th className="text-right px-3 py-2 w-20 text-slate-400" title="부가세 (row 저장값 또는 vendor.vat_included 기반 계산)">
+              <th className="text-right px-3 py-2 text-slate-400 w-20" title="부가세 (row 저장값 또는 vendor.vat_included 기반 계산)">
                 VAT
               </th>
             )}
             <th onClick={() => toggleSort("running_balance")}
-              className="text-right px-3 py-2 w-24 cursor-pointer select-none hover:bg-slate-50 transition">
+              className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-slate-50 transition"
+              style={{ width: lw("balance"), minWidth: lw("balance") }}>
               잔고{arrow("running_balance")}
+              <span {...lr("balance")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
           </tr>
         </thead>
@@ -258,6 +285,15 @@ const HistoryContent: React.FC<{
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"sku" | "all">("sku");
   // 2026-08-04 · 전체원장 뷰는 공통 PurchaseHistoryList 가 정렬 관리 (헤더 클릭)
+  const { getWidth: sw, resizerProps: sr } = useColumnResize("vendorSku", {
+    num:      { default: 24,  min: 20, max: 48  },
+    name:     { default: 180, min: 100, max: 360 },
+    count:    { default: 56,  min: 40, max: 100 },
+    qty:      { default: 64,  min: 48, max: 120 },
+    amount:   { default: 80,  min: 56, max: 140 },
+    unit:     { default: 64,  min: 48, max: 120 },
+    last_date:{ default: 80,  min: 60, max: 140 },
+  });
 
   // 상품별 집계
   const productStats = useMemo<ProductStat[]>(() => {
@@ -367,16 +403,37 @@ const HistoryContent: React.FC<{
       {/* SKU 집계 테이블 */}
       {viewMode === "sku" && (
         <div className={`${CARD_BASE} flex-1 min-h-0 overflow-auto`}>
-          <table className="w-full text-xs min-w-[500px]">
+          <table className="w-full text-xs min-w-[500px]" style={{ tableLayout: "fixed" }}>
             <thead className="sticky top-0 bg-white z-10 border-b border-slate-100">
               <tr className="text-[10px] text-slate-400 uppercase tracking-wider">
-                <th className="text-left px-3 py-2 w-6 text-slate-300">#</th>
-                <th className="text-left px-3 py-2">상품명</th>
-                <th className="text-right px-3 py-2 w-14">매입건</th>
-                <th className="text-right px-3 py-2 w-16">총수량</th>
-                <th className="text-right px-3 py-2 w-20">총매입액</th>
-                <th className="text-right px-3 py-2 w-16">최근단가</th>
-                <th className="text-left px-3 py-2 w-20">최근매입</th>
+                <th className="relative text-left px-3 py-2 text-slate-300" style={{ width: sw("num"), minWidth: sw("num") }}>
+                  #
+                  <span {...sr("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                </th>
+                <th className="relative text-left px-3 py-2" style={{ width: sw("name"), minWidth: sw("name") }}>
+                  상품명
+                  <span {...sr("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                </th>
+                <th className="relative text-right px-3 py-2" style={{ width: sw("count"), minWidth: sw("count") }}>
+                  매입건
+                  <span {...sr("count")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                </th>
+                <th className="relative text-right px-3 py-2" style={{ width: sw("qty"), minWidth: sw("qty") }}>
+                  총수량
+                  <span {...sr("qty")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                </th>
+                <th className="relative text-right px-3 py-2" style={{ width: sw("amount"), minWidth: sw("amount") }}>
+                  총매입액
+                  <span {...sr("amount")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                </th>
+                <th className="relative text-right px-3 py-2" style={{ width: sw("unit"), minWidth: sw("unit") }}>
+                  최근단가
+                  <span {...sr("unit")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                </th>
+                <th className="relative text-left px-3 py-2" style={{ width: sw("last_date"), minWidth: sw("last_date") }}>
+                  최근매입
+                  <span {...sr("last_date")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">

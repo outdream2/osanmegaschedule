@@ -14,6 +14,7 @@ import { type ClassFilter } from "../../utils/productClassify";
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
+import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 
 // ─── 구역 코드 → 카테고리 설명 매핑 ──────────────────────────────────────────
 const ZONE_CATEGORY_MAP: Record<string, string> = (() => {
@@ -57,6 +58,15 @@ const ZoneCategoryContent: React.FC = () => {
   const toggleItemSort = (k: ZoneItemSortKey) => {
     setItemSort(prev => prev.key === k ? { key: k, dir: prev.dir === "asc" ? "desc" : "asc" } : { key: k, dir: k === "name" ? "asc" : "desc" });
   };
+  const { getWidth, resizerProps } = useColumnResize("categoryTab", {
+    num:      { default: 24,  min: 20, max: 48  },
+    supplier: { default: 96,  min: 60, max: 180 },
+    name:     { default: 200, min: 100, max: 400 },
+    sale:     { default: 56,  min: 40, max: 100 },
+    amount:   { default: 64,  min: 48, max: 120 },
+    last_pur: { default: 64,  min: 48, max: 120 },
+    optimal:  { default: 56,  min: 40, max: 100 },
+  });
 
   // 카테고리 패널 폭 (localStorage 저장)
   const [categoryPanelWidth, setCategoryPanelWidth] = useState<number>(() => {
@@ -300,17 +310,19 @@ const ZoneCategoryContent: React.FC = () => {
         default: return sign * (a.amount - b.amount);
       }
     });
-    const sortableTh = (k: ZoneItemSortKey, label: string, extraCls: string) => {
+    const sortableTh = (k: ZoneItemSortKey, label: string, extraCls: string, colKey: Parameters<typeof getWidth>[0]) => {
       const active = itemSort.key === k;
       return (
         <th onClick={() => toggleItemSort(k)}
-          className={`cursor-pointer select-none hover:bg-slate-50 transition ${extraCls} ${active ? "font-black" : ""}`}
+          className={`relative cursor-pointer select-none hover:bg-slate-50 transition ${extraCls} ${active ? "font-black" : ""}`}
+          style={{ width: getWidth(colKey), minWidth: getWidth(colKey) }}
           title={`${label} 정렬 (${active ? (itemSort.dir === "asc" ? "오름차순 · 클릭 → 내림차순" : "내림차순 · 클릭 → 오름차순") : "클릭하여 정렬"})`}>
           <span className="inline-flex items-center gap-0.5">{label}
             {active
               ? <span className="text-[9px]">{itemSort.dir === "asc" ? "▲" : "▼"}</span>
               : <span className="text-[8px] text-slate-300">⇅</span>}
           </span>
+          <span {...resizerProps(colKey)} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
         </th>
       );
     };
@@ -342,16 +354,28 @@ const ZoneCategoryContent: React.FC = () => {
         </div>
         <div className={`${CARD_BASE} overflow-hidden flex-1`}>
           <div className="overflow-auto max-h-[55vh]">
-            <table className="w-full text-xs sm:min-w-[540px]">
+            <table className="w-full text-xs sm:min-w-[540px]" style={{ tableLayout: "fixed" }}>
               <thead className="sticky top-0 bg-slate-50 border-b-2 border-slate-200 z-10 shadow-sm">
                 <tr className="text-[11px] text-slate-500 uppercase tracking-wider">
-                  <th className="text-left px-1 py-1.5 w-6">#</th>
-                  <th className="text-left px-0.5 py-1.5 w-24">공급사</th>
-                  {sortableTh("name", "상품명", "text-left px-0.5 py-1.5")}
-                  {sortableTh("sale", "판매량", "text-right px-0.5 py-1.5 w-14 text-orange-500 bg-orange-50/40")}
-                  {sortableTh("amount", "판매금액", "text-right px-0.5 py-1.5 w-16 text-emerald-500 bg-emerald-50/40")}
-                  <th className="text-right px-0.5 py-1.5 w-16 text-amber-600 bg-amber-50/40">최근매입</th>
-                  <th className="text-right px-0.5 py-1.5 w-14 text-slate-600 bg-slate-50/40">추천적정</th>
+                  <th className="relative text-left px-1 py-1.5" style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
+                    #
+                    <span {...resizerProps("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                  </th>
+                  <th className="relative text-left px-0.5 py-1.5" style={{ width: getWidth("supplier"), minWidth: getWidth("supplier") }}>
+                    공급사
+                    <span {...resizerProps("supplier")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                  </th>
+                  {sortableTh("name", "상품명", "text-left px-0.5 py-1.5", "name")}
+                  {sortableTh("sale", "판매량", "text-right px-0.5 py-1.5 text-orange-500 bg-orange-50/40", "sale")}
+                  {sortableTh("amount", "판매금액", "text-right px-0.5 py-1.5 text-emerald-500 bg-emerald-50/40", "amount")}
+                  <th className="relative text-right px-0.5 py-1.5 text-amber-600 bg-amber-50/40" style={{ width: getWidth("last_pur"), minWidth: getWidth("last_pur") }}>
+                    최근매입
+                    <span {...resizerProps("last_pur")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                  </th>
+                  <th className="relative text-right px-0.5 py-1.5 text-slate-600 bg-slate-50/40" style={{ width: getWidth("optimal"), minWidth: getWidth("optimal") }}>
+                    추천적정
+                    <span {...resizerProps("optimal")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
