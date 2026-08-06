@@ -27,6 +27,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
+import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
 
 export interface PurchaseHistoryRow {
   id?: string | number;
@@ -72,7 +73,6 @@ interface PurchaseHistoryListProps {
 }
 
 type SortKey = "date" | "supplier_name" | "product_name" | "quantity" | "unit_price" | "amount";
-type SortDir = "asc" | "desc";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -104,6 +104,16 @@ const rowUnit = (r: PurchaseHistoryRow): number => {
   return Number(r.unit_price ?? 0) || 0;
 };
 
+// ─── 정렬 비교 함수 (컴포넌트 외부 · 안정 참조) ───────────────────────────
+const PURCHASE_SORT_CMP: Record<SortKey, Comparator<PurchaseHistoryRow>> = {
+  date:          (a, b) => rowDate(a).localeCompare(rowDate(b)),
+  supplier_name: (a, b) => String(a.supplier_name ?? "").localeCompare(String(b.supplier_name ?? ""), "ko"),
+  product_name:  (a, b) => String(a.product_name  ?? "").localeCompare(String(b.product_name  ?? ""), "ko"),
+  quantity:      (a, b) => rowQty(a)    - rowQty(b),
+  unit_price:    (a, b) => rowUnit(a)   - rowUnit(b),
+  amount:        (a, b) => rowAmount(a) - rowAmount(b),
+};
+
 // ─── Component ────────────────────────────────────────────────────────────
 
 export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
@@ -123,12 +133,13 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
   emptyText = "매입 이력 없음",
   footerHint,
 }) => {
-  const [sortKey, setSortKey] = useState<SortKey>(initialSortKey);
-  const [sortDir, setSortDir] = useState<SortDir>(initialSortDir);
-
+  // ── 정렬 (T30-followup · useSortableTable)
+  const { sorted, sortKey, sortDir, toggleSort: _toggleSort, setSort: _setSort } =
+    useSortableTable<PurchaseHistoryRow, SortKey>(rows, initialSortKey, PURCHASE_SORT_CMP, initialSortDir);
+  // 새 컬럼: "date" → desc · 나머지 → asc (원본 동작 유지)
   const toggleSort = (k: SortKey) => {
-    if (sortKey === k) setSortDir(d => (d === "asc" ? "desc" : "asc"));
-    else { setSortKey(k); setSortDir(k === "date" ? "desc" : "asc"); }
+    if (sortKey === k) _toggleSort(k);
+    else _setSort(k, k === "date" ? "desc" : "asc");
   };
   const arrow = (k: SortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
   const { getWidth, resizerProps } = useColumnResize("purchaseHistoryList", {
@@ -141,23 +152,6 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
     unit:     { default: 80,  min: 56, max: 140 },
     amount:   { default: 96,  min: 64, max: 160 },
   });
-
-  const sorted = useMemo<PurchaseHistoryRow[]>(() => {
-    const sign = sortDir === "asc" ? 1 : -1;
-    const arr = [...rows];
-    arr.sort((a, b) => {
-      switch (sortKey) {
-        case "date":          return sign * rowDate(a).localeCompare(rowDate(b));
-        case "supplier_name": return sign * String(a.supplier_name ?? "").localeCompare(String(b.supplier_name ?? ""), "ko");
-        case "product_name":  return sign * String(a.product_name ?? "").localeCompare(String(b.product_name ?? ""), "ko");
-        case "quantity":      return sign * (rowQty(a) - rowQty(b));
-        case "unit_price":    return sign * (rowUnit(a) - rowUnit(b));
-        case "amount":        return sign * (rowAmount(a) - rowAmount(b));
-        default:              return 0;
-      }
-    });
-    return arr;
-  }, [rows, sortKey, sortDir]);
 
   // 매입 간격 계산 (desc 정렬 기준: 다음 row = 이전 매입)
   const gapByIndex = useMemo<Array<number | null>>(() => {
