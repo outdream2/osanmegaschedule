@@ -31,6 +31,7 @@ import { useSortableTable, type Comparator } from "../../hooks/useSortableTable"
 import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
+import { useReferenceValues } from "../../hooks/useReferenceValues";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -273,6 +274,9 @@ function computeVat(amount: number, vatIncluded: boolean): { supply: number; vat
 // ─── PaymentInfoTab ──────────────────────────────────────────────────────────
 
 export const PaymentInfoTab: React.FC = () => {
+  // DB + 하드코딩 병합 reference 값
+  const { vendorCategories: dbVendorCategories } = useReferenceValues();
+
   // 공급사 상세 모달 (T-COMMON-VendorInfoModal · 2026-08-06)
   const { openVendorInfo, modalElement: vendorModalElement } = useVendorInfoModal();
 
@@ -298,8 +302,7 @@ export const PaymentInfoTab: React.FC = () => {
     };
   }), [rawVendors]);
   const [vendorSearch, setVendorSearch] = useState("");
-  const [vendorCategoryFilter, setVendorCategoryFilter] =
-    useState<"전체" | "위탁" | "선결제" | "60회전" | "90회전" | "기타">("전체");
+  const [vendorCategoryFilter, setVendorCategoryFilter] = useState<string>("전체");
 
   // 기간 필터 · Task #103 (2026-08-04) · 매입·결제 집계 기간
   const [periodDays, setPeriodDaysState] = useState<PeriodDays>(() => loadPeriodPref());
@@ -841,13 +844,13 @@ export const PaymentInfoTab: React.FC = () => {
               className="w-full h-7 px-2.5 text-[11px] border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-sky-400 focus:border-sky-400 transition"
             />
             <div className="flex flex-wrap gap-0.5">
-              {(["전체", "위탁", "선결제", "60회전", "90회전", "기타"] as const).map(cat => (
+              {(["전체", ...dbVendorCategories] as string[]).map(cat => (
                 <button
                   key={cat}
                   onClick={() => setVendorCategoryFilter(cat)}
                   className={`h-6 px-2 text-[10px] font-semibold rounded-lg transition cursor-pointer ${
                     vendorCategoryFilter === cat
-                      ? CATEGORY_COLORS[cat]
+                      ? CATEGORY_COLORS[cat as keyof typeof CATEGORY_COLORS] ?? "bg-slate-500 text-white shadow-sm"
                       : "bg-slate-50 text-slate-500 border border-slate-200 hover:text-slate-700"
                   }`}
                 >

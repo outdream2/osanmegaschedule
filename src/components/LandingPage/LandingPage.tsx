@@ -39,6 +39,7 @@ import {
 } from "@phosphor-icons/react";
 import type { AuthSession, AuthRole } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
+import { TIMING } from "../../constants/timing";
 // VendorListEditor 는 발주관리 공급사관리 에서만 사용 (LandingPage 데이터 업로드 에서 제거됨 · 2026-07-15)
 
 interface LandingPageProps {
@@ -884,7 +885,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     }
     if (requiresManager && !isManagerOrAdmin) {
       setUnauthorizedToast(true);
-      setTimeout(() => setUnauthorizedToast(false), 2500);
+      setTimeout(() => setUnauthorizedToast(false), TIMING.TOAST_SHORT);
       return;
     }
     onNavigate(page, authSession);

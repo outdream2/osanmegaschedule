@@ -4,6 +4,7 @@
 //   원본 로직: RawOcrTable.tsx line ~2789~2873
 
 import { useCallback } from "react";
+import { TIMING } from "../../../constants/timing";
 import type { Dispatch, SetStateAction } from "react";
 import type { MatchedItem } from "./types";
 
@@ -117,7 +118,7 @@ export function usePurchaseHistoryMatch({
       console.log(`[matchRawToPurchaseHistory] page ${pn}: ${targets.length}행 대상 · 수량 매칭 ${matchedQty} · 단가 매칭 ${matchedPri}`);
       if (matchedQty + matchedPri > 0) {
         setSaveConfirmedToast({ type: "success", msg: `📚 매입이력 매칭 · ${pn}번 · 수량 ${matchedQty}건 · 단가 ${matchedPri}건 자동 채움` });
-        setTimeout(() => setSaveConfirmedToast(null), 3000);
+        setTimeout(() => setSaveConfirmedToast(null), TIMING.TOAST_MEDIUM);
       }
     } catch (e: any) {
       console.warn(`[matchRawToPurchaseHistory] page ${pn}: 실패`, e?.message);

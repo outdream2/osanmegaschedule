@@ -11,6 +11,7 @@
  *   filterData · 삭제/숨김 필터
  */
 import { useCallback } from "react";
+import { TIMING } from "../../../constants/timing";
 import type { ConfirmedItem, MatchedItem, BarcodeProduct, CandidateInfo } from "./types";
 import { parseNumber } from "./utils";
 
@@ -119,7 +120,7 @@ export function useSaveConfirmed({
       const pagesLabel = missingSupplierPages.join(", ");
       window.alert(`공급사가 지정되지 않은 페이지가 있습니다: ${pagesLabel}번\n\n1차보정 표의 "공급처" 셀을 클릭하여 공급사명을 먼저 입력하세요.`);
       setSaveConfirmedToast({ type: "error", msg: `공급사 미입력 (${pagesLabel}번 페이지)` });
-      setTimeout(() => setSaveConfirmedToast(null), 3000);
+      setTimeout(() => setSaveConfirmedToast(null), TIMING.TOAST_MEDIUM);
       return;
     }
     const expiryIdx = dispHeaders.indexOf("유통기한");
@@ -225,7 +226,7 @@ export function useSaveConfirmed({
 
     if (items.length === 0) {
       setSaveConfirmedToast({ type: "error", msg: "저장할 항목이 없습니다." });
-      setTimeout(() => setSaveConfirmedToast(null), 2500);
+      setTimeout(() => setSaveConfirmedToast(null), TIMING.TOAST_SHORT);
       return;
     }
 
@@ -291,7 +292,7 @@ export function useSaveConfirmed({
       setSaveConfirmedToast({ type: "error", msg: e?.message ?? "저장 실패" });
     } finally {
       setSavingConfirmed(false);
-      setTimeout(() => setSaveConfirmedToast(null), 2500);
+      setTimeout(() => setSaveConfirmedToast(null), TIMING.TOAST_SHORT);
     }
   }, [
     onSaveConfirmed, nameIdx, dispHeaders, effectiveDispRows, pageNums, structuredPages,

@@ -13,6 +13,7 @@ import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
+import { useReferenceValues } from "../../hooks/useReferenceValues";
 
 // ── 반품 요청서 모달 (발주서 포맷) · 2026-08-03 ─────────────────────────
 type ReturnReasonKey = "재고 과다" | "유통기한 임박" | "저조 판매" | "기타";
@@ -430,6 +431,9 @@ interface ReturnListPanelProps {
 
 // ── ReturnListPanel (메인 export) ────────────────────────────────────────
 export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClick }) => {
+  // DB + 하드코딩 병합 reference 값
+  const { vendorCategories: dbVendorCategories } = useReferenceValues();
+
   // ── state ──────────────────────────────────────────────────────────────
   // 2026-08-03 · 반품필요 컬럼 재편 · 실재고 컬럼 추가 · 1/2/3달 판매량 컬럼 (판매액 제거)
   type ReturnItem = {
@@ -455,8 +459,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
   const [returnSalesQuarterMax, setReturnSalesQuarterMax] = useState<number>(15);
   // 2026-07-31 · 사용자 요청 · 공급사 검색 필터 (부분일치 · 대소문자 무시)
   const [returnSupplierSearch, setReturnSupplierSearch] = useState<string>("");
-  type ReturnCategoryFilter = "전체" | "위탁" | "선결제" | "60회전" | "90회전" | "기타";
-  const [returnCategoryFilter, setReturnCategoryFilter] = useState<ReturnCategoryFilter>("전체");
+  const [returnCategoryFilter, setReturnCategoryFilter] = useState<string>("전체");
 
   type ReturnSortKey = "product_name" | "supplier" | "current_stock" | "actual_stock" | "purchase_cycle" | "sale_qty_month" | "sale_qty_60d" | "sale_qty_90d" | "last_purchase_date" | "last_purchase_qty" | "stock_value";
   const [returnSortKey, setReturnSortKey] = useState<ReturnSortKey>("purchase_cycle");
@@ -764,7 +767,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
         </div>
         {/* 분류 세그먼트 필터 */}
         <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
-          {(["전체", "위탁", "선결제", "60회전", "90회전", "기타"] as const).map(cat => (
+          {(["전체", ...dbVendorCategories] as string[]).map(cat => (
             <button key={cat} onClick={() => setReturnCategoryFilter(cat)}
               className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${
                 returnCategoryFilter === cat

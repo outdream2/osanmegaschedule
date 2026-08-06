@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import { TIMING } from "../../constants/timing";
 import {
   Bell, Package, MapPin,
   CheckCircle2, Clock, RefreshCw, ShoppingCart, Square, CheckSquare,
@@ -255,7 +256,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     const pending = displayReqs.filter(r => r.status === "pending" && r.assigned_staff_id);
     if (pending.length === 0) {
       setNotifyToast("전송할 대기 중인 진열요청이 없습니다");
-      setTimeout(() => setNotifyToast(null), 3000);
+      setTimeout(() => setNotifyToast(null), TIMING.TOAST_MEDIUM);
       return;
     }
     setNotifying(true);
@@ -289,7 +290,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
       setNotifyToast("알림 전송 중 오류가 발생했습니다");
     } finally {
       setNotifying(false);
-      setTimeout(() => setNotifyToast(null), 3500);
+      setTimeout(() => setNotifyToast(null), TIMING.TOAST_LONG);
     }
   }, [displayReqs]);
 

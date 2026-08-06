@@ -1,4 +1,5 @@
 ﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { TIMING } from "../../constants/timing";
 import { useConfirm } from "../../hooks/useConfirm";
 import * as XLSX from "xlsx";
 import { Wand2, Loader2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, BookmarkPlus, BookOpen, Check, Save } from "lucide-react";
@@ -2530,12 +2531,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
             } catch (e: any) {
               setSaveConfirmedToast({ type: "error", msg: `❌ ${pn}번 · 재추출 실패 · ${e?.message ?? "오류"}` });
             }
-            setTimeout(() => setSaveConfirmedToast(null), 3000);
+            setTimeout(() => setSaveConfirmedToast(null), TIMING.TOAST_MEDIUM);
           }
         })();
       } else {
         setSaveConfirmedToast({ type: "error", msg: `⚠ 소계 0 페이지 ${zeroSubtotalPages.length}건 · 수동 재추출 필요 (pn: ${zeroSubtotalPages.join(",")})` });
-        setTimeout(() => setSaveConfirmedToast(null), 5000);
+        setTimeout(() => setSaveConfirmedToast(null), TIMING.TOAST_EXTRA_LONG);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -1,5 +1,6 @@
 // src/components/NotificationBell.tsx
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import { TIMING } from "../constants/timing";
 import { Bell, BellOff, CheckCheck, X, Info, AlertTriangle, CheckCircle, AlertCircle } from "lucide-react";
 import type { AuthSession } from "../types";
 
@@ -106,7 +107,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
         if (prevMaxIdRef.current > 0 && maxId > prevMaxIdRef.current) {
           setJustArrived(true);
           playChime();
-          setTimeout(() => setJustArrived(false), 3500);
+          setTimeout(() => setJustArrived(false), TIMING.TOAST_LONG);
         }
         prevMaxIdRef.current = Math.max(prevMaxIdRef.current, maxId);
         setNotifications(list);

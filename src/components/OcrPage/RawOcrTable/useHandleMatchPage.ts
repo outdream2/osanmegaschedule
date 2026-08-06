@@ -4,6 +4,7 @@
 //   원본 로직: RawOcrTable.tsx line ~2530~2782
 
 import { useCallback, useState } from "react";
+import { TIMING } from "../../../constants/timing";
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 import type { MatchedItem } from "./types";
 import { parseNumber } from "./utils";
@@ -136,7 +137,7 @@ export function useHandleMatchPage({
         if (supForBal0) saveSupplierBalance(supForBal0, currentBal0, dateForBal0);
       }
       setSaveConfirmedToast({ type: "error", msg: `⚠ ${targetPage}번 · 매칭 가능한 행 없음 (품명 없음/저스코어)` });
-      setTimeout(() => setSaveConfirmedToast(null), 3000);
+      setTimeout(() => setSaveConfirmedToast(null), TIMING.TOAST_MEDIUM);
       return;
     }
     const names = activePairs.map(p => p.name);
@@ -198,7 +199,7 @@ export function useHandleMatchPage({
         ? `✅ ${targetPage}번 · 매칭 ${matchedCount}건 (autoSyn 유지 ${autoSynPreservedCount}) · 저스코어 ${lowScoreCount}건`
         : `⚠ ${targetPage}번 · 매칭 없음 · 요청 ${activePairs.length}건 모두 저스코어`;
       setSaveConfirmedToast({ type: matchedCount > 0 ? "success" : "error", msg });
-      setTimeout(() => setSaveConfirmedToast(null), 3500);
+      setTimeout(() => setSaveConfirmedToast(null), TIMING.TOAST_LONG);
       setConfirmedPages(prev => new Set([...prev, targetPage]));
       // 2026-07-24 · 확정 누르면 공급사별로 잔고 저장
       const currentBal = pageBalanceOverride[targetPage] ?? pageSupplierBalances[targetPage];

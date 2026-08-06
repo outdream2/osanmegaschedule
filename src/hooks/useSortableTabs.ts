@@ -18,8 +18,9 @@
 //   - isArmed        : long-press 완료 · 드래그 준비 상태 (전체 탭바에 소프트 shake 적용 가능)
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { TIMING } from "../constants/timing";
 
-const LONG_PRESS_MS = 500;
+const LONG_PRESS_MS = TIMING.PRESS_LONG;
 const STORAGE_PREFIX = "megatown_"; // 앱 관례 (useAuth · settings 등과 동일)
 
 export interface SortableTabBase {

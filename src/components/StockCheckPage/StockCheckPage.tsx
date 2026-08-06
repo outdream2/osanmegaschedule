@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { TIMING } from "../../constants/timing";
 import { Package, Search, X } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
@@ -115,7 +116,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!val.trim()) { setResults(null); setError(null); setLoading(false); return; }
     setLoading(true);
-    debounceRef.current = setTimeout(() => doSearch(val), 300);
+    debounceRef.current = setTimeout(() => doSearch(val), TIMING.POLL_FAST);
   };
 
   const arrow = (k: StockSortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";

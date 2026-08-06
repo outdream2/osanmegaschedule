@@ -4,6 +4,7 @@
 //   원본 로직: RawOcrTable.tsx line ~3060~3143
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { TIMING } from "../../../constants/timing";
 import type { Dispatch, SetStateAction } from "react";
 import type { RawPage } from "./types";
 
@@ -80,7 +81,7 @@ export function useAutoPipeline({
               ? `✅ ${pn}번 자동정리 완료 · 매칭 +${matchDelta}건 · 셀 +${cellDelta}건`
               : `ℹ️ ${pn}번 자동정리 완료 · 변경 없음 (이미 매칭됨)`;
             setSaveConfirmedToast({ type: "success", msg });
-            setTimeout(() => setSaveConfirmedToast(null), 3000);
+            setTimeout(() => setSaveConfirmedToast(null), TIMING.TOAST_MEDIUM);
             return latestMatches;
           });
           return latestCellEdits;
