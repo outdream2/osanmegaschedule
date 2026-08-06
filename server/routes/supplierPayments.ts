@@ -724,6 +724,23 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
       }
       if (pdSkippedNullSupplier > 0) {
         console.warn(`[supplier-purchase-summary] purchase_details · supplier_name NULL 로 스킵된 행 ${pdSkippedNullSupplier}개 (supplier_code 매핑 실패)`);
+        // 2026-08-06 · 진단 강화 · 실패 케이스 · 어떤 supplier_code · product_code 가 매핑 안 됐는지
+        //   사용자가 vendors 등록 or products.supplier 채워서 해결 가능
+        try {
+          const { data: skipRows } = await supabase
+            .from("purchase_details")
+            .select("supplier_code, product_code, purchase_date")
+            .is("supplier_name", null)
+            .gte("purchase_date", cutoffYmd)
+            .limit(50);
+          if (skipRows && skipRows.length > 0) {
+            const codes = Array.from(new Set(skipRows.map((r: any) => r.supplier_code).filter(Boolean))).slice(0, 10);
+            const prodCodes = Array.from(new Set(skipRows.map((r: any) => r.product_code).filter(Boolean))).slice(0, 10);
+            console.warn(`[supplier-purchase-summary] 매핑 실패 supplier_code 예시 (최대 10):`, codes);
+            console.warn(`[supplier-purchase-summary] 매핑 실패 product_code 예시 (최대 10):`, prodCodes);
+            console.warn(`[supplier-purchase-summary] 조치: vendors 테이블에 supplier_code 등록 or products.supplier 채우기`);
+          }
+        } catch { /* silent */ }
       }
     } catch (e: any) {
       console.warn("[supplier-purchase-summary] purchase_details 실패 · fallback:", e?.message);
