@@ -257,7 +257,7 @@ const DAYS: DayKey[] = ["월", "화", "수", "목", "금", "토", "일"];
 const WEEKDAYS: DayKey[] = ["월", "화", "수", "목", "금"];
 const WEEKEND: DayKey[] = ["토", "일"];
 
-const CONTRACT_TYPES = CONTRACT_TYPES_CONST;
+const CONTRACT_TYPES: string[] = Array.from(CONTRACT_TYPES_CONST);
 
 // T-Z (2026-08-05) · 계약유형 short label (저장·전송 형식)
 //   · "정규직"    → "정규"
@@ -295,8 +295,8 @@ export function parseContractTypeForRead(saved: string | null | undefined): { di
   // 알바·일용·인턴·custom
   return { display: s, months: null };
 }
-const START_TIMES = START_TIMES_CONST;
-const END_TIMES   = END_TIMES_CONST;
+const START_TIMES: string[] = Array.from(START_TIMES_CONST);
+const END_TIMES: string[]   = Array.from(END_TIMES_CONST);
 
 const CUSTOM_OPTION = "__custom__";
 

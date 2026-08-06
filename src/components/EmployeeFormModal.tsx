@@ -2,6 +2,8 @@
 import React, { useEffect, useRef } from "react";
 import { X, Users, Calendar, MapPin, FileText, ExternalLink, Upload } from "lucide-react";
 import { ZONE_DEFS, SECTION_LABEL } from "../constants/displayZones";
+// POSITIONS · RANKS · WORKPLACES → useReferenceValues 로 이관 (2026-08-06 · T-DualStorage-Connect)
+import { useReferenceValues } from "../hooks/useReferenceValues";
 
 interface EmployeeFormModalProps {
   empModalMode: "create" | "edit";
@@ -45,9 +47,7 @@ interface EmployeeFormModalProps {
 const SELECT_CLS = "w-full text-xs rounded border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 p-2 bg-white text-slate-800 focus:outline-none transition-all";
 const LABEL_CLS = "block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1";
 
-const POSITIONS = ["약사", "캐셔", "진열", "물류", "기타"];
-const RANKS     = ["", "대표", "이사", "부장", "팀장", "과장", "약사", "사원", "알바"];
-const WORKPLACES = ["매장", "창고", "본사", "기타"];
+// POSITIONS · RANKS · WORKPLACES → src/constants/jobCategories.ts
 const GENDERS   = [{ v: "", label: "미지정" }, { v: "남", label: "남자" }, { v: "여", label: "여자" }];
 const LEVELS    = [
   { v: 0,  label: "0 — 미지정" },
@@ -84,6 +84,8 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
   onSubmit, onClose,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // DB + 하드코딩 병합 reference 값
+  const { positions: dbPositions, ranks: dbRanks, workplaces: dbWorkplaces } = useReferenceValues();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -177,7 +179,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                       className={SELECT_CLS}
                     >
                       <option value="">선택</option>
-                      {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
+                      {dbPositions.map(p => <option key={p} value={p}>{p}</option>)}
                     </select>
                     {(primary === "기타" || isCustom) && (
                       <input
@@ -214,7 +216,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                 onChange={e => setEmpRank(e.target.value)}
                 className={SELECT_CLS}
               >
-                {RANKS.map(r => <option key={r} value={r}>{r || "선택 안 함"}</option>)}
+                {dbRanks.map(r => <option key={r} value={r}>{r || "선택 안 함"}</option>)}
               </select>
             </div>
           </div>
@@ -311,7 +313,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                 onChange={e => setEmpWorkplace(e.target.value)}
                 className={SELECT_CLS}
               >
-                {WORKPLACES.map(w => <option key={w} value={w}>{w}</option>)}
+                {dbWorkplaces.map(w => <option key={w} value={w}>{w}</option>)}
               </select>
             </div>
           </div>
