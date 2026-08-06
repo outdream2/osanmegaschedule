@@ -4390,24 +4390,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             </div>
             <span className="text-[12px] font-black text-slate-700">근무조건 입력</span>
           </button>
-          {monthlyCalc && (
-            <span
-              className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800"
-              title="선택한 근무요일·시간 기준 · 근기법 4.345주"
-            >
-              <Calculator size={11} weight="fill" className="text-emerald-600" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">월 근로</span>
-              <span className="tabular-nums text-[12px] font-black text-emerald-900">
-                {monthlyCalc.monthlyHoursInt}h {monthlyCalc.monthlyMinutesRem}m
-              </span>
-              <button type="button" onClick={applyMonthlyHoursToBasic}
-                className="ml-1 px-1.5 py-0.5 rounded bg-emerald-600 text-white text-[9.5px] font-black hover:bg-emerald-700 transition-colors cursor-pointer"
-                title="계산된 월 근로시간을 임금표의 기본급 시간에 반영"
-              >
-                반영
-              </button>
-            </span>
-          )}
+          {/* 2026-08-06 · 월 근로 173h 표시 제거 · 계산 오류 · 실제는 209h 기준 (사용자 요청) */}
         </div>
 
         {!isCardCollapsed("workCondition") && (<>
