@@ -9,7 +9,7 @@ import { getProductsMap } from "../../lib/productsCache";
 import { matchClassFilter, type ClassFilter } from "../../utils/productClassify";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 // T-CSS Phase 2 · 2026-08-06
-import { CARD_BASE } from "../../styles/tokens";
+import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
@@ -200,8 +200,12 @@ const PeriodBucketCard: React.FC<{
                   <span className="text-slate-300">·</span>
                   <span className="text-slate-400">이전 {fmt(r.prior_sale)}</span>
                   <span className="text-slate-300">·</span>
-                  <span className={`font-bold ${r.newly_trending ? "text-indigo-600" : (r.growth_rate ?? 0) > 0 ? "text-indigo-600" : "text-slate-400"}`}>
-                    {r.newly_trending ? "NEW" : r.growth_rate != null ? `+${r.growth_rate}%` : "-"}
+                  <span className={`font-bold ${r.absolute_delta > 0 ? "text-indigo-600" : r.absolute_delta < 0 ? "text-rose-500" : "text-slate-400"}`}>
+                    {r.absolute_delta > 0 ? `+${fmt(r.absolute_delta)}` : fmt(r.absolute_delta)}
+                  </span>
+                  <span className="text-slate-300">·</span>
+                  <span className={`font-semibold ${r.newly_trending ? "text-indigo-600" : (r.growth_rate ?? 0) > 0 ? "text-indigo-500" : "text-slate-400"}`}>
+                    {r.newly_trending ? "NEW" : r.growth_rate != null ? `${r.growth_rate > 0 ? "+" : ""}${r.growth_rate}%` : "-"}
                   </span>
                   {r.current_stock > 0 && (
                     <>
@@ -259,12 +263,12 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
   const [windowDays, setWindowDays] = useState<7 | 14 | 30 | 60 | 90>(30);
   const [onlyShortage, setOnlyShortage] = useState(false);
   const [meta, setMeta] = useState<{ recent_from: string; prior_from: string; total: number } | null>(null);
-  // 상비약/일반약/전체 3-way 필터 (localStorage 저장)
+  // 상비약/일반약/전체 3-way 필터 (localStorage 저장) · 기본값: 상비약
   const [classFilter, setClassFilter] = useState<ClassFilter>(() => {
     try {
       const v = localStorage.getItem("megatown_trending_classfilter");
-      return v === "stationery" || v === "general" || v === "all" ? v : "all";
-    } catch { return "all"; }
+      return v === "stationery" || v === "general" || v === "all" ? v : "stationery";
+    } catch { return "stationery"; }
   });
   useEffect(() => { try { localStorage.setItem("megatown_trending_classfilter", classFilter); } catch { /**/ } }, [classFilter]);
   // 상품 real_map 매핑 (products.json 캐시)
@@ -293,9 +297,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
   }, [windowDays]);
 
   // classFilter 를 제외한 기타 조건이 적용된 base list (탭 카운트 계산용)
-  const baseFiltered = useMemo(() => {
-    return onlyShortage ? rows.filter(r => r.below_optimal) : rows;
-  }, [rows, onlyShortage]);
+  const baseFiltered = rows;
 
   // 3-way tab 카운트 (상비약/일반약/전체)
   const essentialCount = useMemo(() =>
@@ -306,11 +308,13 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
     [baseFiltered, productRealMapById]);
   const allCount = baseFiltered.length;
 
-  // classFilter 적용된 최종 필터링 리스트 (정렬 전)
+  // classFilter + onlyShortage 적용된 최종 필터링 리스트 (정렬 전)
   const filtered = useMemo(() => {
-    if (classFilter === "all") return baseFiltered;
-    return baseFiltered.filter(r => matchClassFilter(productRealMapById[String(r.product_code)] ?? null, classFilter));
-  }, [baseFiltered, classFilter, productRealMapById]);
+    let list = classFilter === "all" ? baseFiltered :
+      baseFiltered.filter(r => matchClassFilter(productRealMapById[String(r.product_code)] ?? null, classFilter));
+    if (onlyShortage) list = list.filter(r => r.below_optimal);
+    return list;
+  }, [baseFiltered, classFilter, productRealMapById, onlyShortage]);
 
   // 정렬 컬럼 · 툴바 버튼과 표 헤더 클릭 모두 동일 상태 조작 (T30 · useSortableTable)
   //   - growth  : 신규진입(newly_trending) 상단 후 성장률 desc
@@ -390,7 +394,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
           <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">비교기간</span>
           <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
             {([7, 14, 30, 60, 90] as const).map(w => (
-              <button key={w} onClick={() => setWindowDays(w)}
+              <button key={w} onClick={() => setWindowDays(w as 7 | 14 | 30 | 60 | 90)}
                 className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${windowDays === w ? "bg-indigo-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
                 {w}일
               </button>
@@ -422,18 +426,18 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
         {/* 상비약/일반약/전체 3-way 필터 (좌측 리스트 상단) */}
         <div className="flex items-center gap-1 border-b-2 border-slate-200 bg-white px-2 pt-1">
           <button type="button" onClick={() => setClassFilter("stationery")}
-            className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-slate-400 hover:text-slate-600"}`}>
-            상비약 <span className="text-[11px] font-semibold text-slate-400 ml-1 tabular-nums">({essentialCount})</span>
+            className={`relative px-4 py-2 ${TEXT.body} font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-slate-400 hover:text-slate-600"}`}>
+            상비약 <span className={`${TEXT.caption} text-slate-400 ml-1 tabular-nums`}>({essentialCount})</span>
             {classFilter === "stationery" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-violet-500" />}
           </button>
           <button type="button" onClick={() => setClassFilter("general")}
-            className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "general" ? "text-sky-700" : "text-slate-400 hover:text-slate-600"}`}>
-            일반약 <span className="text-[11px] font-semibold text-slate-400 ml-1 tabular-nums">({generalCount})</span>
+            className={`relative px-4 py-2 ${TEXT.body} font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "general" ? "text-sky-700" : "text-slate-400 hover:text-slate-600"}`}>
+            일반약 <span className={`${TEXT.caption} text-slate-400 ml-1 tabular-nums`}>({generalCount})</span>
             {classFilter === "general" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-sky-500" />}
           </button>
           <button type="button" onClick={() => setClassFilter("all")}
-            className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "all" ? "text-slate-800" : "text-slate-400 hover:text-slate-600"}`}>
-            전체 <span className="text-[11px] font-semibold text-slate-400 ml-1 tabular-nums">({allCount})</span>
+            className={`relative px-4 py-2 ${TEXT.body} font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "all" ? "text-slate-800" : "text-slate-400 hover:text-slate-600"}`}>
+            전체 <span className={`${TEXT.caption} text-slate-400 ml-1 tabular-nums`}>({allCount})</span>
             {classFilter === "all" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-slate-500" />}
           </button>
         </div>
