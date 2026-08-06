@@ -1,4 +1,5 @@
-// src/constants.ts
+// src/constants/index.ts
+// Moved from src/constants.ts (2026-08-06 · T-Restructure Phase 3-D)
 
 export interface ScheduleTypeEntry {
   type: string;

@@ -11,8 +11,8 @@ import { Router } from "express";
 import webpush from "web-push";
 import fs from "fs";
 import path from "path";
-import { supabase } from "../../src/supabase/client";
-import { sanitizeOrValue } from "../utils/sanitize";
+import { supabase } from "../../../src/supabase/client";
+import { sanitizeOrValue } from "../../utils/sanitize";
 
 const router = Router();
 
