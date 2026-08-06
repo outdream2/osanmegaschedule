@@ -1,9 +1,20 @@
-# 메뉴 구조 · 공통 자산 카탈로그 · 오산 메가타운 약국
+# 프로젝트 정리 · 메가타운 약국 스케줄러 (megatown-staff-scheduler)
+
+> **이 파일은 프로젝트 전체 참조 문서입니다.**
+> **모든 시스템 구현 에이전트·개발자는 이 파일을 먼저 읽고 시작해야 합니다.**
+> **기능·구조·API 변경 시 · 반드시 이 파일에 반영 (변경 날짜 · YYYY-MM-DD)**
+>
+> **관리 원칙**:
+>  - 새 페이지·기능·컴포넌트 추가 시 즉시 관련 섹션 업데이트 (CHANGELOG 최상단 누적)
+>  - 파일 위치·컴포넌트명·API endpoint 변경 시 · 관련 표만 편집 · 전체 재작성 금지
+>  - 이 문서는 "실측 기반" · 코드가 진실 · 문서가 코드보다 앞서지 않음
+>  - 다른 참조 문서 만들지 말고 이 파일 하나에 통합 (사용자 명시 요구 · 2026-08-06)
 
 **프로젝트**: megatown-staff-scheduler
-**생성**: 2026-08-05 (초판) · **확장**: 2026-08-06 (공통 자산 통합)
+**최종 업데이트**: 2026-08-06
+**생성**: 2026-08-05 (초판) · **확장**: 2026-08-06 (공통 자산 통합 · 백엔드/DB/RPC 심화)
 **출처**: 코드 실측 (LandingPage · 각 페이지 컴포넌트 · TAB 정의 · src/styles · src/components/common · src/hooks · migrations · server/routes)
-**용도**: 새 페이지·기능 추가 시 **먼저 참고**해야 할 단일 소스 · 다른 참조 문서 만들지 말고 이 파일 하나에 통합
+**용도**: 새 페이지·기능 추가 시 · 새 세션 진입 시 · 다른 에이전트 위임 시 · **먼저 참고**해야 할 단일 소스
 
 ---
 
@@ -23,7 +34,7 @@
 8-C. [워크플로우 다이어그램 (5종)](#8-c-워크플로우-다이어그램-5종)
 8-D. [API 엔드포인트 요약 (34 라우트 파일 · 228건)](#8-d-api-엔드포인트-요약-34-라우트-파일--228건)
 
-### Part II — 공통 자산 카탈로그
+### Part II — 공통 자산 · UI (6-B)
 9.  [디자인 토큰 (`src/styles/tokens.ts`)](#9-디자인-토큰-srcstylestokensts)
 10. [공통 컴포넌트 (`src/components/common/`)](#10-공통-컴포넌트-srccomponentscommon)
 11. [공통 훅 (`src/hooks/`)](#11-공통-훅-srchooks)
@@ -31,11 +42,18 @@
 13. [권한 · 세션](#13-권한--세션)
 14. [알림 시스템 (DB · 웹푸시)](#14-알림-시스템-db--웹푸시)
 15. [localStorage 규약](#15-localstorage-규약)
+
+### Part III — 백엔드 · DB · 인프라 (6-A 구조 + 6-C 백엔드)
 16. [서버 API 규칙](#16-서버-api-규칙)
 17. [DB 마이그레이션 · 인덱스](#17-db-마이그레이션--인덱스)
 18. [새 페이지 추가 체크리스트 (10항목)](#18-새-페이지-추가-체크리스트-10항목)
 19. [성능 최적화 요약](#19-성능-최적화-요약)
 20. [개발 환경 · 빌드 · 테스트](#20-개발-환경--빌드--테스트)
+21. [DB 스키마 · 테이블별 상세 (필드·역할·연결 페이지)](#21-db-스키마--테이블별-상세)
+22. [Supabase RPC · 서버 함수](#22-supabase-rpc--서버-함수)
+23. [백엔드 아키텍처 상세 (6-A 구조 + 6-C 백엔드)](#23-백엔드-아키텍처-상세)
+24. [OCR 파이프라인 · 11 stages 상세](#24-ocr-파이프라인--11-stages-상세)
+25. [프로젝트 명명 규칙 · import · 파일 규약](#25-프로젝트-명명-규칙--import--파일-규약)
 
 ---
 ---
@@ -775,13 +793,423 @@ npm run test        # (필요 시) 테스트
 
 ---
 
+---
+
+## 21. DB 스키마 · 테이블별 상세
+
+**Supabase Postgres · service role key 사용 · RLS off** (서버가 모든 권한 제어)
+**클라이언트**: `src/supabase/client.ts` (서버·브라우저 공용)
+**참조 SQL**: `docs/supabase_functions_and_tables.sql` · `migrations/*.sql`
+
+### 21-1. 인사 · 조직 · 인증
+
+| 테이블 | 역할 | 주요 컬럼 | 관련 페이지·컴포넌트 | 마이그레이션 |
+|-------|-----|---------|--------------------|-----------|
+| `employees` | 직원 마스터 | id, name, position (약사/캐셔/진열/물류/알바/기타), rank (대표/부장/팀장/과장/사원), employment_type, hire_date, retire_date, workplace (매장/창고), gender, phone (login ID), password_hash, level (0-9), address, annual_leave_days, break_time_minutes (기본 60), break_apply_paid, primary_focus (매장/창고), primary_focus_percent (기본 70), contract_file_url, resume_url, push_subscription (JSONB) | StaffManagePage · SchedulePage · ContractWriter · MyPage · LeavePage | `migrations/add_employee_level.sql` |
+| `schedules` | 근무 스케줄 | id, employee_id, date (YYYY-MM-DD), type (오픈/마감/휴무/월차/지정휴무/오전반차/오후반차), working_hours, actual_hours, memo | SchedulePage | (초기 스키마) |
+| `zone_assignments` | 요일별 구역 배정 | dow (0-6), zone_id, employee_id | SchedulePage · DayTimelineModal | (초기) |
+| `zone_labels` | 구역 번호 매핑 | zone_id (PK), number (1-60), sub_label, updated_at | ZoneLabelsEditor · StoreZoneMap · ScanPage | `create_zone_labels_2026-08-05.sql` |
+| `zone_groups` | 구역 그룹 (매장/창고 구분) | id, name, zone_ids (JSONB) | SchedulePage | (초기) |
+| `blocked_slots` | 근무 차단 슬롯 | date, employee_id, reason | SchedulePage | (초기) |
+| `zones` | 구역 마스터 | id, name, spec | SchedulePage · ScanPage | (초기) |
+
+### 21-2. 상품 · 재고 · 매입
+
+| 테이블 | 역할 | 주요 컬럼 | 관련 페이지 |
+|-------|-----|---------|---------|
+| `products` | 상품 마스터 (ERP xlsx 임포트) | product_code (PK), product_name, supplier, spec, **real_map** (실제배정구역 · JS: `realMap`), sale_price, purchase_price, current_stock, optimal_stock, min_order, hidden | Scan · Display · Stock · Order · OCR |
+| `stock_history` | 재고 스냅샷 (일별 · 초/중/하순) | product_code, snapshot_date, opening_stock, purchase_qty, sale_qty, disposal_qty, closing_stock, total_amount, product_name, supplier_name, spec | StockManagePage · SalesTrend · get_stock_flow RPC |
+| `purchase_details` | ERP 매입 세부 (거래명세서 확정) | product_code, purchase_date, quantity, amount, total, supplier | PurchaseHistory · Order · get_stock_flow RPC |
+| `inventory_checks` | 실재고 스캔 | product_code, warehouse_stock, warehouse_stock_2, store_stock, store_stock_2, store_stock_3, checked_at, checked_by | Scan · Requests(실재고차이) |
+| `product_arrivals` | 상품입고 헤더 | arrival_date, checked_by, checked_by_id, total_items, total_qty, match_count, mismatch_count, expiring_count, final_decision (all_match/has_mismatch), supplier_summary, note | ProductArrivalPage |
+| `product_arrival_items` | 상품입고 아이템 | arrival_id (FK CASCADE), product_code, product_name, supplier, qty, status (pending/match/mismatch/expiring) | ProductArrivalPage |
+| `return_requests` | 반품 요청 | product_code, product_name, supplier, qty, current_stock, purchase_price, reason, requested_by, requested_by_id, status (pending/sent/done/cancelled) | Order · ReturnListPanel |
+| `stock_reconciliation` | 재고 정산 세션 | id, period_start, period_end, status, created_by | StockReconciliationTab |
+| `stock_reconciliation_items` | 재고 정산 아이템 | reconciliation_id, product_code, adjustment_qty, reason, confirmed | StockReconciliationTab |
+
+**중요 컬럼명 매핑** (project_product_columns 규칙 준수):
+- 실제배정구역: DB `real_map` ↔ JS `realMap` (product.real_map)
+
+### 21-3. 발주 · 진열 요청
+
+| 테이블 | 역할 | 주요 컬럼 |
+|-------|-----|---------|
+| `order_requests` | 발주 요청 | product_code, qty, requested_by, requested_at, status (pending/sent/done), supplier |
+| `display_requests` | 진열 요청 (3단계 워크플로우) | product_code, product_name, zone, requester_id, assignee_id, status (pending/prepared/done), created_at, prepared_at, completed_at, prepared_by, completed_by |
+| `zone_mismatches` | 구역 불일치 캐시 | product_code, real_map, spec, updated_at (products 원본에서 파생) |
+
+### 21-4. 공급사 · 결제 · 정산
+
+| 테이블 | 역할 | 주요 컬럼 |
+|-------|-----|---------|
+| `vendors` | 공급사 마스터 | id, company_name, biz_num, phone, contact_name, category (위탁/선결제/회전/기타), password_hash (로그인용) |
+| `supplier_balances` | 잔고 스냅샷 (OCR 확정 시) | id, supplier, amount, snapshot_type, saved_at |
+| `supplier_payments` | 결제 원장 (2026-07-31) | supplier_name, payment_date, amount, method (transfer/cash/card/check/offset/etc), memo, created_by, created_by_id |
+| `supplier_payment_allocations` | 결제→매입건 배분 M:N | payment_id, ocr_confirmed_item_id, allocated_amount |
+| `supplier_balance_configs` | 공급사별 잔고 설정 | name (PK), opening_balance, opening_date, note |
+| `ocr_confirmed_items` | OCR 확정 매입 아이템 | supplier, product_name, quantity, amount, purchase_date, saved_at |
+
+**잔액 계산**: `SUM(ocr_confirmed_items.amount) - SUM(supplier_payments.amount)` (allocations 로 세부 배분)
+
+### 21-5. OCR 부가
+
+| 테이블 | 역할 |
+|-------|-----|
+| `ocr_synonyms` | 상품명 동의어 학습 (오인식 → 정정) |
+| `ocr_supplier_aliases` | 공급사 별칭 (아톰팜=아톰파마 등) |
+| `ocr_templates` | 공급사별 컬럼 매핑 템플릿 |
+| `ocr_deleted_rows` | OCR 삭제 이력 (되돌리기용) |
+| `invoice_images` | 원본 거래명세서 이미지 (Cloudinary URL) |
+
+**중요 컨텍스트**: 코스트팜은 **수신처** (약국 체인) · OCR 에서 공급처로 나오면 오인식 (project_ocr_context)
+
+### 21-6. HR · 계약 · 사직 · 연차
+
+| 테이블 | 역할 | 컬럼 요약 |
+|-------|-----|----------|
+| `leave_requests` | 연차 신청 | employee_id, start_date, end_date, days, reason, status (pending/approved/rejected), approved_by, approved_at |
+| `resignation_requests` | 사직서 | employee_id, resign_date, reason (13사유 카탈로그), signature (base64), status, approved_by |
+| `lunch_requests` | 점심 불참 | employee_id, date, attended (bool), reason |
+| `employee_contracts` | 근로계약서 저장 | employee_id, contract_data (JSONB), signature, pdf_url (Google Drive), signed_at |
+| `contract_clauses` | 계약서 조항 CMS (2026-08-05) | key (PK), title, content (긴 텍스트), order_index, updated_at |
+| `hr_forms` | HR 양식 템플릿 | id, title, category, file_url (Cloudinary/Drive), uploaded_by, created_at |
+
+**정본**: `project_contract_full_text_2026-08-04` (8항목·13사유·5조항) · **원본 참조**: `src/images/근로계약서1,2.jpg` (고용노동부 표준보다 우선)
+
+### 21-7. 게시판 · 커뮤니티 · 약사
+
+| 테이블 | 역할 |
+|-------|-----|
+| `board_posts` | 게시글 (title, body, category, author, author_id, created_at) |
+| `board_post_images` | 첨부 이미지 (Cloudinary URL) |
+| `board_post_comments` | 댓글 (accepted 플래그 · 채택 기능) |
+| `board_post_reactions` | 이모지 반응 |
+| `pharmacist_menu_items` | 약사 자료 (title, category, url, thumbnail, uploaded_by) |
+
+### 21-8. 알림 · 설정 · 이력
+
+| 테이블 | 역할 |
+|-------|-----|
+| `notifications` | 인앱 알림 (employee_id, title, body, type: info/success/warning/alert, read, created_at) |
+| `settings` | 앱 전역 설정 (key/value JSONB · `wageRates`, `seasonRanges`, `defaultScheduleTypes`, `employeeWageOverrides` 등) |
+| `permissions` | 페이지별 read/write 최소 level |
+| `product_import_log` · `stock_import_log` · `ocr_import_log` | 각 임포트 이력 (진단용) |
+| `reservations` | 당직·특별 근무 예약 |
+
+### 21-9. 완료된 인덱스 (성능)
+
+**핵심 인덱스** (실측 · migrations 및 `supabase_functions_and_tables.sql`):
+- `idx_ocr_confirmed_saved_supplier` ON `ocr_confirmed_items(saved_at DESC, supplier)` → suppliers/top-products 50~70% 단축
+- `idx_inventory_checks_code_date` ON `inventory_checks(product_code, checked_at DESC)` → inventory-latest 최신값
+- `idx_stock_history_snapshot_date` · `idx_stock_history_product_code` · `idx_stock_history_snapshot_product` (복합)
+- `idx_purchase_details_product_code` · `idx_purchase_details_purchase_date` (DESC)
+- `idx_products_product_code` · `idx_products_hidden` (partial · hidden IS TRUE 만)
+- `idx_product_arrivals_date` · `idx_product_arrival_items_arrival` · `idx_product_arrival_items_code`
+- `idx_return_requests_*` (created, supplier, status, code)
+- `idx_vendors_category` · `idx_zone_labels_number`
+- `idx_sup_pay_supplier_date` · `idx_sup_pay_date` · `idx_alloc_payment` · `idx_alloc_invoice`
+
+---
+
+## 22. Supabase RPC · 서버 함수
+
+**호출 방식**: `supabase.rpc('function_name', { p_from: ..., p_to: ... })`
+**정의 파일**: `docs/supabase_functions_and_tables.sql` (Section 2)
+
+### 22-1. `get_stock_flow(p_from date, p_to date)`
+
+**용도**: 재고관리 상품현황 · 단일 SQL 조인으로 60~100 API → **1 RPC** 통합
+**성능**: 기존 10~30초 → **<500ms** (수십배 향상)
+**언어**: PL/pgSQL (v1) · SQL STABLE (v2 · 하위 호환용)
+**호출 위치**: `server/routes/stockManage.ts` · SupplierTab · FlowTab
+
+**반환 컬럼** (23필드):
+
+| 컬럼 | 타입 | 설명 |
+|-----|-----|-----|
+| product_code | text | 상품 코드 |
+| product_name · supplier · spec | text | 상품·공급사·규격 |
+| opening_stock · purchase_qty · sale_qty · disposal_qty · closing_stock | int | 재고 흐름 |
+| total_amount | numeric | 총 금액 |
+| optimal_stock · sale_price · purchase_price · current_stock · min_order | numeric/int | 상품 정보 |
+| last_purchase_date · first_purchase_date | text | 매입 기간 |
+| purchase_count · purchase_total_qty · purchase_total_amount | int/numeric | 매입 집계 |
+| **sale_qty_month** | int | (확장 2026-07-30) 최근 30일 판매량 합산 |
+| **sale_amount_month** | numeric | (확장) 최근 30일 판매액 합산 |
+| **last_purchase_qty** | int | (확장) 최근 매입일의 매입 수량 |
+
+**필터**: `p.hidden IS NOT TRUE` AND (기간 내 판매/매입 이력 있거나 현재고 > 0)
+
+**CTE 구조**:
+- `sh_agg` — stock_history 기간 집계 (text→numeric 안전 캐스팅)
+- `sh_month` — 최근 30일 판매량+판매액
+- `pd_agg` — purchase_details 매입 이력 집계
+- `pd_last` — DISTINCT ON · 각 상품 최근 매입일의 수량
+
+### 22-2. `get_inventory_latest()` (rpc_only_2026-08-05.sql)
+
+**용도**: 각 product_code · 가장 최근 inventory_check 스냅샷 반환
+**대체 구현**: `server/routes/products.ts` `GET /api/inventory-latest` (in-code SQL fallback)
+
+### 22-3. 향후 RPC 후보
+
+- `get_supplier_ledger(supplier, from, to)` · 결제·매입 통합 원장 (현재 `server/routes/supplierPayments.ts` SQL 로직)
+- `get_purchase_summary_by_period(from, to, groupBy)` · 매입 집계 (현재 `server/routes/purchase.ts`)
+
+---
+
+## 23. 백엔드 아키텍처 상세
+
+### 23-1. 디렉토리 (6-A 구조)
+
+```
+megatown-staff-scheduler/
+├── server.ts                     # Entry point (Express + Vite middleware · 193 lines)
+├── package.json                  # Node 20+ · dev: tsx · build: vite + esbuild
+├── vite.config.ts · vitest.config.ts · tsconfig.json
+├── render.yaml                   # Render 배포 설정
+├── docs/                         # 이 문서 · TASKS · PAYROLL · AGENT_PRINCIPLES · SQL
+├── migrations/                   # 19개 DDL SQL 파일 (수동 apply)
+├── scripts/                      # 진단·마이그레이션 스크립트 (mjs · ts · py)
+├── public/                       # sw.js · products.json · YOLO 모델 (best.onnx · ppocr)
+├── prisma/                       # (미사용 · 정리 후보)
+├── uploads/                      # multer 업로드 임시
+├── logs/                         # 서버 로그 (14일 자동 정리)
+├── src/                          # React 프론트엔드 (118 tsx · 74 ts)
+│   ├── App.tsx                   # Page 라우팅 (History API · react-router 없음)
+│   ├── main.tsx · index.css
+│   ├── types.ts                  # AuthSession · Employee · Schedule · PagePermissions
+│   ├── components/               # 페이지·서브·공통
+│   │   ├── common/               # 22개 공통 컴포넌트 (섹션 10 참조)
+│   │   ├── shared/               # 도메인 재사용 (HiddenManagerModal 등)
+│   │   ├── LandingPage/          # 2428 lines · God Component
+│   │   ├── SchedulePage/ · DisplayPage/ · OrderManagePage/ (3224 lines)
+│   │   ├── OcrPage/RawOcrTable/  # 5268 lines · God Component · 훅 20+ 분리
+│   │   ├── ContractWriterPage/   # 2680+ lines · God Component
+│   │   ├── StaffManagePage/      # 2773 lines
+│   │   ├── ScanPage/ · ScanPage.tsx (1392 lines)
+│   │   └── AppNavHeader.tsx · AppFooter.tsx · BottomNav.tsx
+│   ├── hooks/                    # 10 훅 (섹션 11 참조)
+│   ├── lib/                      # 유틸
+│   │   ├── format.ts             # fmtWon · fmtDate 통합
+│   │   ├── productsCache.ts      # 상품 맵 캐시
+│   │   ├── cloudinaryUpload.ts · ocrRowFilter.ts · stockPeriodUtils.tsx
+│   │   └── payroll/              # 인건비 계산 6파일 + index.ts barrel
+│   ├── services/                 # 직접 Supabase 호출 (예외 2건)
+│   │   ├── scheduleService.ts    # 스케줄 CRUD · 프론트 번들 혼입 문제 · 리팩 예정
+│   │   └── notificationsService.ts
+│   ├── controllers/              # scheduleController (서버 실행 · 프론트 번들 혼입)
+│   ├── styles/tokens.ts          # 디자인 토큰 (섹션 9 참조)
+│   ├── constants/                # zoneLabels · storeMapLayout · displayZones
+│   ├── utils/                    # productClassify · vendorNameNormalize
+│   ├── supabase/client.ts        # Supabase 클라이언트 (service role key)
+│   └── keys/                     # Google OAuth JSON (실측 커밋됨 · 검토 필요)
+└── server/                       # Express 백엔드
+    ├── config/ocrConfig.ts       # OCR 엔진 설정
+    ├── middleware/requireAuth.ts # JWT 인증 (T3 · 원복 상태)
+    ├── models/                   # (미사용 · 정리 대상)
+    ├── routes/                   # 36 라우터 파일 · 228+ endpoints (섹션 8-D 참조)
+    ├── ocr/                      # OCR 파이프라인 (섹션 24 참조)
+    │   ├── gemini.ts             # ★ 수정 금지 (feedback_gemini_untouchable)
+    │   ├── mistral.ts · ppuPaddle.ts · slanetTable.ts · tableLayout.ts
+    │   └── pipeline/stages/      # 01~11 stages
+    ├── utils/                    # logsCleanup · sanitize
+    ├── googleDrive.ts            # 계약서 PDF Drive 업로드 (Service Account)
+    ├── productCache.ts           # in-memory 상품 맵 · /products.json 응답
+    └── xlsx.ts                   # 공통 xlsx 파서
+```
+
+### 23-2. server.ts 부팅 순서
+
+1. `dotenv/config` · 환경변수 로드
+2. Supabase `products.real_map` 컬럼 존재 확인 (경고만)
+3. VAPID 키 있으면 `webpush.setVapidDetails()`
+4. `compression()` · `express.json()` 2계층 (10MB 기본 · 100MB 대용량 경로)
+5. `cookieParser()` · `express.static("uploads")`
+6. Public 라우터: `authRouter` · `notificationsRouter` · `pharmacistMenuItemsRouter`
+7. 인증 미들웨어 (**T3 원복 상태** · 사내 사용 문제 · Render 직전 재도입)
+8. 나머지 라우터 등록 (36개)
+9. `/products.json` 동적 엔드포인트 (in-memory 캐시)
+10. Vite dev middleware (개발) OR `express.static("dist")` + SPA fallback (프로덕션)
+11. `cleanupStaleLogs()` · 14일 초과 로그 삭제
+12. `httpServer.listen(PORT)` · 기본 3000
+
+### 23-3. 미들웨어 카탈로그 (`server/middleware/`)
+
+| 미들웨어 | 상태 | 역할 | 파일 |
+|--------|-----|-----|-----|
+| `requireAuth(req, res, next)` | **원복** (T3-defer) | `/api/` 접두어만 인증 · SPA·정적자원 skip · 미인증 401 | `requireAuth.ts` |
+| `authorize(minLevel)` | 원복 | 최소 level 확인 · 부족 시 403 | `requireAuth.ts` |
+| `issueToken(res, payload, rememberMe)` | 활성 (auth.ts) | JWT 발급 · httpOnly 쿠키 `mt_auth` · HS256 · 24h/30d | `requireAuth.ts` |
+| `clearToken(res)` | 활성 (auth.ts) | 로그아웃 쿠키 제거 | `requireAuth.ts` |
+| `cookieParser` | 활성 | 쿠키 파싱 | (npm 패키지) |
+| `compression()` | 활성 | gzip 압축 | (npm 패키지) |
+
+**Body parser 상세** (2026-08-05 T37 · DoS 방어):
+- 일반 API: `express.json({ limit: "10mb" })`
+- 대용량 경로 (100MB) · LARGE_BODY_PATHS 배열 우선 등록:
+  `/api/ocr`, `/api/invoice-images`, `/api/hr-forms`, `/api/resignations`, `/api/board`, `/api/pharmacist-menu-items`, `/api/employee-contracts`, `/api/schedules`
+- xlsx raw: `express.raw({ type: "application/octet-stream" })` · products 100MB · stock 50MB · vendors 20MB
+- `req._body` 플래그로 재파싱 자동 skip (앞선 parser 가 실행되면 뒤 parser 는 no-op)
+
+### 23-4. 서비스 레이어 (`src/services/` · 6-C)
+
+| 파일 | 역할 | 이슈 |
+|-----|-----|-----|
+| `scheduleService.ts` | 스케줄 CRUD 직접 Supabase 호출 | **프론트 번들 혼입 문제** (T-arch #6 · 리팩 예정) |
+| `notificationsService.ts` | 알림 CRUD 직접 Supabase 호출 | notifications 테이블 전용 |
+
+**원칙**: 프론트는 원칙적으로 `fetch()` → Express BFF 경유 · 위 2건은 예외.
+
+### 23-5. 유틸 (`server/utils/`)
+
+| 파일 | 역할 |
+|-----|-----|
+| `logsCleanup.ts` | `cleanupStaleLogs()` · 14일 초과 로그 파일 삭제 · 부팅 시 1회 |
+| `sanitize.ts` | 입력 sanitize (HTML tag 제거 등) |
+
+### 23-6. 캐시 계층
+
+| 대상 | 위치 | TTL | 무효화 |
+|-----|-----|----|------|
+| 상품 맵 | `server/productCache.ts` | 10분 | 상품 편집 시 flush |
+| 저재고 | `/api/stock-manage/low-stock` | 2분 | products-hidden-changed 이벤트 |
+| 공급사 (프론트) | `useVendors` 훅 | 5분 | vendors-changed 이벤트 |
+| 상품 (프론트) | `src/lib/productsCache.ts` | 세션 | 페이지 진입 시 prefetch |
+| 세션 (JWT) | httpOnly 쿠키 | 24h/30d | logout · 만료 |
+
+### 23-7. 외부 서비스 연동
+
+| 서비스 | 용도 | SDK · 파일 |
+|-------|-----|----------|
+| **Supabase** | Postgres DB · Storage | `@supabase/supabase-js@2.108` · `src/supabase/client.ts` |
+| **Google Drive** | 계약서·이력서 PDF 저장 | `googleapis@174` · `server/googleDrive.ts` · Service Account (`src/keys/*.json`) |
+| **Cloudinary** | 게시판·양식·서명 이미지 | `cloudinary@2.10` · `src/lib/cloudinaryUpload.ts` |
+| **Google Gemini** | OCR 기본 엔진 (★수정 금지) | `@google/genai@2.4` · `server/ocr/gemini.ts` |
+| **Mistral (Pixtral)** | OCR 대체 | HTTP · `server/ocr/mistral.ts` |
+| **web-push** | 웹푸시 알림 | `web-push@3.6` · `public/sw.js` |
+| **ONNX Runtime** | 테이블 구조 인식 (실험) | `onnxruntime-node@1.27` · `sku110k-yolo11-n640.onnx`, `best.onnx`, `ppocr/` |
+
+### 23-8. 통신 표준 (6-A)
+
+- 원칙: 프론트 `fetch()` → Express BFF → Supabase (직접 Supabase 접근 최소화)
+- 표준 응답: `{ ok: true, data: ... }` / 리스트 `{ rows: [...], has_more: bool }` / 에러 `{ error: "...", code: "UNAUTHORIZED"|"FORBIDDEN" }`
+- 에러 status: 400 (잘못된 요청) · 401 (미인증) · 403 (권한 부족) · 404 (없음) · 500 (서버)
+
+### 23-9. 로깅 규칙
+
+- 서버 부팅: `[Server] ...`, `[SETUP REQUIRED] ...`
+- 미들웨어: `[requireAuth 401] ${req.method} ${req.originalUrl} · cookie=... · authHeader=... · secretSet=...`
+- OCR: `[OCR ${stage}] ...`
+- 로그 파일: `logs/*.log` · 부팅 시 14일 초과 자동 정리 (`cleanupStaleLogs()`)
+
+### 23-10. 상태 관리 (프론트 · 6-A)
+
+- Redux/Zustand 등 미사용 · `useState` + `useEffect` + `useCallback` 순수 React
+- 전역 이벤트: `window.dispatchEvent(new CustomEvent(...))` (섹션 8-A 참조)
+- 세션: `useAuth()` 훅 + localStorage (`megatown_auth_session`)
+- 상품 캐시: `src/lib/productsCache.ts` (prefetch + Map)
+- 서버 캐시: `server/productCache.ts` (in-memory · 10분 TTL)
+
+---
+
+## 24. OCR 파이프라인 · 11 stages 상세
+
+**엔진 파일** (`server/ocr/`):
+- `gemini.ts` — Google Gemini 2.0 Flash (기본) · **★수정 금지** (feedback_gemini_untouchable)
+- `mistral.ts` — Pixtral (대체)
+- `ppuPaddle.ts` — PPU-Paddle OCR (한국어)
+- `slanetTable.ts` — SLANet 테이블 구조 인식 (ONNX)
+- `tableLayout.ts` · `tableStructure.ts` — 테이블 후처리
+
+**파이프라인 11 stages** (`server/ocr/pipeline/stages/`):
+
+| # | 파일 | 역할 |
+|---|-----|-----|
+| 01 | `01-preprocess.ts` | 이미지 전처리 (sharp · 리사이즈 · 대비 조정) |
+| 02 | `02-ocr-engine.ts` | OCR 엔진 호출 (Gemini/Mistral 선택) |
+| 03 | `03-vendor-match.ts` | 공급사 자동 매칭 (aliases + fuzzy) |
+| 04 | `04-template.ts` | 공급사별 컬럼 매핑 템플릿 적용 |
+| 05 | `05-normalize.ts` | 데이터 정규화 (숫자·날짜·상품명) |
+| 06 | `06-math-fill.ts` | 수량·단가·금액 상호 추론 |
+| 07 | `07-filter.ts` | 노이즈 행 제거 |
+| 08 | `08-verify.ts` | 검증 (총액·합계 일치) |
+| 09 | `09-totals.ts` | 총계 산출 |
+| 10 | `10-fallback.ts` · `10b-rearrange.ts` | 실패 시 재배치 |
+| 11 | `11-learn.ts` | 학습 데이터 저장 (synonyms · aliases · templates) |
+
+**부가 파일**:
+- `preprocess.ts` · `parse.ts` · `match.ts` · `schema.ts` · `barcode.ts`
+- `invoice-vocab.ts` — 거래명세서 도메인 어휘
+- `excludedSuppliers.ts` — 오인식 잘 되는 공급사 제외 (예: 코스트팜)
+- `metadataKV.ts` · `fieldMatchLog.ts` — 매칭 로그
+
+**검증 실패 엔진** (feedback_ocr_failed_engines · 재시도 금지):
+- multilingual-purejs-ocr 등
+
+**중요 컨텍스트** (project_ocr_context): 코스트팜은 수신처(약국 체인) · OCR 에서 공급처로 나오면 오인식
+
+---
+
+## 25. 프로젝트 명명 규칙 · import · 파일 규약
+
+### 25-1. 파일 명명 규칙
+
+| 종류 | 규칙 | 예 |
+|------|-----|----|
+| 페이지 컴포넌트 | PascalCase · `XxxPage.tsx` · 폴더 단위 (index.ts export) | `DisplayPage/DisplayPage.tsx` |
+| 훅 | `useXxx.ts` · camelCase | `useVendors.ts` |
+| 유틸 | camelCase · `xxxUtils.ts` 지양 (동사·명사 명확) | `format.ts`, `vendorNameNormalize.ts` |
+| 서버 라우터 | camelCase · `xxx.ts` (routes 폴더) | `purchaseHistory.ts` |
+| SQL 마이그레이션 | `create_xxx.sql` · `add_xxx.sql` · `perf_xxx.sql` + `_YYYY-MM-DD.sql` 접미 | `create_zone_labels_2026-08-05.sql` |
+| 문서 | UPPER_CASE.md · `docs/` | `MENU_STRUCTURE.md`, `TASKS.md` |
+
+### 25-2. import 규칙
+
+- alias 미설정 (`@/...` 없음) · 상대경로 `../` 사용
+- 배럴 export: `src/lib/payroll/index.ts` · `src/components/DisplayPage/index.ts` 등
+- type import 명시: `import type { AuthSession } from "../types";`
+- 서버 imports: `import { supabase } from "../../src/supabase/client";` (server/routes 에서 접근)
+
+### 25-3. 커밋 메시지
+
+- Conventional (`feat` · `fix` · `refactor` · `docs` · `style` · `perf` · `test` · `chore`)
+- 한국어 본문 허용
+- 예: `refactor(contract-settings): 시급 UI를 settings.wageRates 로 통일 (즉시 서버 저장)`
+- Co-authored 태그: `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>`
+
+### 25-4. 절대 수정 금지 파일 (사용자 명시)
+
+- **iOS 바코드 스캐너**: `src/components/BarcodeScanner/` · 특히 `zbar.ts`, `hooks/`, `imageProcessing.ts` (feedback_ios_untouchable)
+- **Gemini OCR**: `server/ocr/gemini.ts` (feedback_gemini_untouchable · ONNX 쪽만 수정 가능)
+
+### 25-5. 파생컬럼 사용 금지 (feedback_no_derived_columns)
+
+- 계산된 값을 저장한 컬럼 = 파생컬럼 = **사용자 허락 후에만**
+- 원칙: 있는 테이블에서 조회 · 계산은 서버/클라이언트 로직
+- 예: `total_amount = quantity * unit_price` 저장 X → SELECT 시 계산 (또는 인덱스로 대체)
+
+### 25-6. 회귀 방지 워크플로우
+
+**필수 검증 (매 편집 후)**:
+```powershell
+npm run lint        # tsc --noEmit · TS 통과
+npm run build       # vite build + esbuild · 빌드 성공
+npm run test        # vitest (필요 시)
+```
+
+3개 통과 → 로컬 자동 커밋 (사용자 확인 없이 · feedback_auto_commit)
+**Remote push 는 절대 안 함** (사용자 명시 승인 시에만 · feedback_git_push)
+
+---
+
 ## 부록 — 참고 문서 (프로젝트 내)
 
-- `docs/TASKS.md` — 현재 진행중·대기 작업 목록
-- `docs/PAYROLL_ALGORITHM.md` — 인건비 계산 알고리즘
+- `docs/TASKS.md` — 현재 진행중·대기 작업 목록 (**세션 시작 시 필독**)
+- `docs/PAYROLL_ALGORITHM.md` — 인건비 계산 알고리즘 (payroll/ 정본)
 - `docs/AGENT_PRINCIPLES.md` — 에이전트 위임 원칙
 - `docs/db_top6_uuid_migration_plan.md` — DB UUID 전환 계획
-- `docs/supabase_functions_and_tables.sql` — Supabase RPC · 테이블 스냅샷
+- `docs/supabase_functions_and_tables.sql` — Supabase RPC · 테이블 스냅샷 (인덱스·get_stock_flow 등)
 
 **중요**: 프로젝트 전체 정리는 **오직 이 파일** (`docs/MENU_STRUCTURE.md`) 하나에 통합. 별도 정리 파일 생성 금지 (사용자 명시 요구 · 2026-08-06).
 
@@ -789,7 +1217,19 @@ npm run test        # (필요 시) 테스트
 
 ## CHANGELOG · 변경 이력
 
-### 2026-08-06
+### 2026-08-06 (2차 · research-strategist 최종 통합)
+
+- **MENU_STRUCTURE.md 전체 통합 최종화** · Part III 백엔드/DB/RPC 상세 5개 섹션 추가 (섹션 21~25)
+  - 섹션 21 · DB 스키마 · 테이블별 상세 (인사·상품·발주·공급사·OCR·HR·게시판·알림 9영역)
+  - 섹션 22 · Supabase RPC (`get_stock_flow` 23필드 반환 · `get_inventory_latest`)
+  - 섹션 23 · 백엔드 아키텍처 상세 (디렉토리 · server.ts 부팅 순서 · 미들웨어 · 서비스 레이어 · 캐시 · 외부 서비스 8종)
+  - 섹션 24 · OCR 파이프라인 11 stages 상세 (엔진 파일 · stages · 부가 · 검증 실패 목록)
+  - 섹션 25 · 명명 규칙 · import · 파일 규약 · 절대 수정 금지 · 회귀 방지 워크플로우
+- 파일 최상단 **핵심 원칙 강조** (모든 에이전트·개발자 필독 · 변경 시 이 파일 즉시 반영)
+- 목차 · Part I/II/III 3분할 (메뉴 · UI · 백엔드/DB)
+- 사용자 확정 요구 반영 (6-A 구조 · 6-B UI · 6-C 백엔드 통합 · SQL/RPC 정리)
+
+### 2026-08-06 (1차)
 
 - **T-TEST-매입이력-반응형** (커밋 `11e8f92`)
   - `PurchaseHistoryTab` by-vendor 뷰 · SplitPanel leftClassName
