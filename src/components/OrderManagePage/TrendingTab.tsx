@@ -260,8 +260,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
   });
   const [rows, setRows] = useState<TrendingRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [windowDays, setWindowDays] = useState<7 | 14 | 30 | 60 | 90>(30);
-  const [onlyShortage, setOnlyShortage] = useState(false);
+  const [windowDays, setWindowDays] = useState<10 | 30 | 90 | 180>(30);
   const [meta, setMeta] = useState<{ recent_from: string; prior_from: string; total: number } | null>(null);
   // 상비약/일반약/전체 3-way 필터 (localStorage 저장) · 기본값: 상비약
   const [classFilter, setClassFilter] = useState<ClassFilter>(() => {
@@ -306,27 +305,25 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
   const generalCount = useMemo(() =>
     baseFiltered.filter(r => matchClassFilter(productRealMapById[String(r.product_code)] ?? null, "general")).length,
     [baseFiltered, productRealMapById]);
-  const allCount = baseFiltered.length;
+  const allCount = rows.length;
 
-  // classFilter + onlyShortage 적용된 최종 필터링 리스트 (정렬 전)
+  // classFilter 적용된 최종 필터링 리스트 (정렬 전)
   const filtered = useMemo(() => {
-    let list = classFilter === "all" ? baseFiltered :
-      baseFiltered.filter(r => matchClassFilter(productRealMapById[String(r.product_code)] ?? null, classFilter));
-    if (onlyShortage) list = list.filter(r => r.below_optimal);
-    return list;
-  }, [baseFiltered, classFilter, productRealMapById, onlyShortage]);
+    if (classFilter === "all") return rows;
+    return rows.filter(r => matchClassFilter(productRealMapById[String(r.product_code)] ?? null, classFilter));
+  }, [rows, classFilter, productRealMapById]);
 
-  // 정렬 컬럼 · 툴바 버튼과 표 헤더 클릭 모두 동일 상태 조작 (T30 · useSortableTable)
+  // 정렬 컬럼 · 툴바 버튼(최근판매·성장률)과 표 헤더 클릭 모두 동일 상태 조작 (T30 · useSortableTable)
+  //   - recent  : 최근 판매 desc (기본)
   //   - growth  : 신규진입(newly_trending) 상단 후 성장률 desc
-  //   - delta   : 증가량 desc
-  //   - recent  : 최근 판매 desc
-  //   - shortage: 부족량(적정-현재) desc
-  //   - name    : 상품명 asc (한글 로케일)
-  //   - prior   : 이전 판매 desc
-  //   - current : 현재고 desc
-  //   - optimal : 적정재고 desc
-  type SortKey = "growth" | "delta" | "recent" | "shortage" | "name" | "prior" | "current" | "optimal";
+  //   - name    : 상품명 asc (한글 로케일) — 헤더 클릭용
+  //   - prior   : 이전 판매 desc — 헤더 클릭용
+  //   - current : 현재고 desc — 헤더 클릭용
+  //   - optimal : 적정재고 desc — 헤더 클릭용
+  //   - delta   : 증가량 desc — 헤더 클릭용
+  type SortKey = "recent" | "growth" | "name" | "prior" | "current" | "optimal" | "delta";
   const sortComparators = useMemo<Record<SortKey, Comparator<TrendingRow>>>(() => ({
+    recent:  (a, b) => a.recent_sale - b.recent_sale,
     // growth: newly_trending 우선 (항상 상단), 그다음 성장률 큰 순
     //   defaultDir="desc" 이므로 desc 방향에서 이 asc-비교의 결과가 부호반전됨
     //   → asc-return 값을 "성장률 asc" 로 두면 desc 클릭 시 큰 순으로 나옴
@@ -338,16 +335,14 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
       if (a.newly_trending !== b.newly_trending) return a.newly_trending ? 1 : -1; // desc 시 부호반전 → 신규가 상단
       return (a.growth_rate ?? -999999) - (b.growth_rate ?? -999999);
     },
-    delta:    (a, b) => a.absolute_delta - b.absolute_delta,
-    recent:   (a, b) => a.recent_sale - b.recent_sale,
-    shortage: (a, b) => (a.optimal_stock - a.current_stock) - (b.optimal_stock - b.current_stock),
-    name:     (a, b) => a.product_name.localeCompare(b.product_name, "ko"),
-    prior:    (a, b) => a.prior_sale - b.prior_sale,
-    current:  (a, b) => a.current_stock - b.current_stock,
-    optimal:  (a, b) => a.optimal_stock - b.optimal_stock,
+    name:    (a, b) => a.product_name.localeCompare(b.product_name, "ko"),
+    prior:   (a, b) => a.prior_sale - b.prior_sale,
+    current: (a, b) => a.current_stock - b.current_stock,
+    optimal: (a, b) => a.optimal_stock - b.optimal_stock,
+    delta:   (a, b) => a.absolute_delta - b.absolute_delta,
   }), []);
   const { sorted: displayed, sortKey, sortDir, toggleSort, setSort } =
-    useSortableTable<TrendingRow, SortKey>(filtered, "growth", sortComparators, "desc");
+    useSortableTable<TrendingRow, SortKey>(filtered, "recent", sortComparators, "desc");
 
   const fmt = (n: number) => n.toLocaleString();
 
@@ -391,22 +386,24 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
         </div>
         {/* 컨트롤 행 */}
         <div className="flex items-center gap-3 px-4 py-2.5 flex-wrap border-b border-slate-100 bg-white">
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">비교기간</span>
+          {/* 비교기간 · 두 줄 라벨 */}
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0 leading-tight text-center">
+            비교<br />기간
+          </span>
           <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
-            {([7, 14, 30, 60, 90] as const).map(w => (
-              <button key={w} onClick={() => setWindowDays(w as 7 | 14 | 30 | 60 | 90)}
+            {([10, 30, 90, 180] as const).map(w => (
+              <button key={w} onClick={() => setWindowDays(w)}
                 className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${windowDays === w ? "bg-indigo-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
-                {w}일
+                {w === 10 ? "10일" : w === 30 ? "1개월" : w === 90 ? "3개월" : "6개월"}
               </button>
             ))}
           </div>
           <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">정렬</span>
+          {/* 정렬 옵션 · 최근판매·성장률 2개만 (T-TRENDING-Rework) */}
           <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
             {([
-              { k: "growth" as const, label: "성장률" },
-              { k: "delta" as const, label: "증가량" },
               { k: "recent" as const, label: "최근판매" },
-              { k: "shortage" as const, label: "재고부족" },
+              { k: "growth" as const, label: "성장률" },
             ]).map(o => (
               <button key={o.k} onClick={() => setSort(o.k, "desc")}
                 className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${sortKey === o.k ? "bg-indigo-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
@@ -414,10 +411,6 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
               </button>
             ))}
           </div>
-          <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 cursor-pointer ml-auto">
-            <input type="checkbox" checked={onlyShortage} onChange={e => setOnlyShortage(e.target.checked)} className="w-3.5 h-3.5 accent-indigo-500" />
-            재고 부족만
-          </label>
         </div>
       </div>
 
@@ -449,7 +442,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
         ) : displayed.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-14 gap-2 text-slate-400">
             <TrendingUp size={28} className="opacity-20" />
-            <div className="text-[12px] font-semibold">{onlyShortage ? "재고 부족인 급상승 상품 없음" : "급상승 상품 없음"}</div>
+            <div className="text-[12px] font-semibold">급상승 상품 없음</div>
           </div>
         ) : (
           <div className="overflow-auto max-h-[70vh]">
