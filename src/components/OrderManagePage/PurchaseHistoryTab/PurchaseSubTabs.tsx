@@ -334,9 +334,11 @@ interface ProductAgg {
   avg_unit_price: number;
   last_date: string;
   purchase_count: number;
+  avg_interval: number | null; // 2026-08-06 · 평균 매입주기 (일) · 2회+ 만 계산
+  _dates: Set<string>; // 계산 임시
 }
 
-type ProductSortKey = "product_name" | "total_qty" | "avg_unit_price" | "last_date" | "purchase_count" | "total_amount";
+type ProductSortKey = "product_name" | "total_qty" | "avg_unit_price" | "last_date" | "purchase_count" | "total_amount" | "avg_interval";
 
 const PRODUCT_AGG_CMP: Record<ProductSortKey, Comparator<ProductAgg>> = {
   product_name:   (a, b) => a.product_name.localeCompare(b.product_name, "ko"),
@@ -345,6 +347,7 @@ const PRODUCT_AGG_CMP: Record<ProductSortKey, Comparator<ProductAgg>> = {
   last_date:      (a, b) => a.last_date.localeCompare(b.last_date),
   purchase_count: (a, b) => a.purchase_count - b.purchase_count,
   total_amount:   (a, b) => a.total_amount - b.total_amount,
+  avg_interval:   (a, b) => (a.avg_interval ?? 999) - (b.avg_interval ?? 999),
 };
 
 const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ rows, loading }) => {
@@ -364,6 +367,8 @@ const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> =
           avg_unit_price: 0,
           last_date: r.date,
           purchase_count: 0,
+          avg_interval: null,
+          _dates: new Set<string>(),
         };
         map.set(key, a);
       }
@@ -372,9 +377,20 @@ const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> =
       a.purchase_count += 1;
       if (r.date > a.last_date) a.last_date = r.date;
       if (!a.product_code && r.product_code) a.product_code = r.product_code;
+      const d = String(r.date ?? "").slice(0, 10);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(d)) a._dates.add(d);
     }
     for (const a of map.values()) {
       a.avg_unit_price = a.total_qty > 0 ? a.total_amount / a.total_qty : 0;
+      // 평균 매입주기 · 2회+ 매입 · 정렬 dates · 인접 간격 평균 (일)
+      if (a._dates.size >= 2) {
+        const dates = Array.from(a._dates).sort();
+        let total = 0;
+        for (let i = 1; i < dates.length; i++) {
+          total += Math.round((new Date(dates[i]).getTime() - new Date(dates[i - 1]).getTime()) / 86400000);
+        }
+        a.avg_interval = Math.round(total / (dates.length - 1));
+      }
     }
     return Array.from(map.values());
   }, [rows]);
@@ -408,13 +424,17 @@ const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> =
               className="text-right px-2 py-2 w-20 cursor-pointer select-none hover:bg-slate-50 transition">
               평균단가{arrow("avg_unit_price")}
             </th>
+            <th onClick={() => toggleSort("avg_interval")}
+              className="text-right px-2 py-2 w-14 cursor-pointer select-none hover:bg-slate-50 transition leading-tight">
+              평균<br />매입주기{arrow("avg_interval")}
+            </th>
             <th onClick={() => toggleSort("last_date")}
-              className="text-left px-2 py-2 w-24 cursor-pointer select-none hover:bg-slate-50 transition">
-              최근매입일{arrow("last_date")}
+              className="text-left px-2 py-2 w-14 cursor-pointer select-none hover:bg-slate-50 transition leading-tight">
+              최근<br />매입일{arrow("last_date")}
             </th>
             <th onClick={() => toggleSort("purchase_count")}
-              className="text-right px-2 py-2 w-16 cursor-pointer select-none hover:bg-slate-50 transition">
-              매입횟수{arrow("purchase_count")}
+              className="text-right px-2 py-2 w-14 cursor-pointer select-none hover:bg-slate-50 transition leading-tight">
+              매입<br />횟수{arrow("purchase_count")}
             </th>
             <th onClick={() => toggleSort("total_amount")}
               className="text-right px-2 py-2 w-24 text-emerald-600 cursor-pointer select-none hover:bg-emerald-50 transition">
@@ -440,8 +460,23 @@ const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> =
               <td className="px-2 py-1.5 text-right tabular-nums text-[12px] text-slate-600 align-top">
                 {a.avg_unit_price > 0 ? fmt(Math.round(a.avg_unit_price)) : "-"}
               </td>
+              {/* 평균 매입주기 (2026-08-06) · 일수 · 2회 미만이면 '-' */}
+              <td className={`px-2 py-1.5 text-right tabular-nums text-[12px] align-top ${a.avg_interval == null ? "text-slate-300" : "text-slate-600"}`}
+                  title={a.avg_interval == null ? "매입 2회 미만" : `평균 ${a.avg_interval}일`}>
+                {a.avg_interval == null ? "—" : `${a.avg_interval}일`}
+              </td>
+              {/* 최근매입일 (2026-08-06) · 2026 (10px 회색) 줄바꿈 7/20 형식 */}
               <td className="px-2 py-1.5 tabular-nums text-[11px] text-slate-500 align-top whitespace-nowrap">
-                {dateLabel(a.last_date)}
+                {(() => {
+                  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(a.last_date);
+                  if (m) return (
+                    <span className="inline-flex flex-col leading-tight items-start">
+                      <span className="text-[9px] text-slate-400">{m[1]}</span>
+                      <span>{String(parseInt(m[2], 10))}/{String(parseInt(m[3], 10))}</span>
+                    </span>
+                  );
+                  return dateLabel(a.last_date);
+                })()}
               </td>
               <td className="px-2 py-1.5 text-right tabular-nums text-[12px] text-slate-600 align-top">
                 {fmt(a.purchase_count)}
@@ -454,7 +489,7 @@ const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> =
         </tbody>
         <tfoot className="sticky bottom-0 bg-white border-t-2 border-slate-200">
           <tr>
-            <td colSpan={6} className="px-2 py-2 text-right text-[11px] font-black text-slate-500">합계</td>
+            <td colSpan={7} className="px-2 py-2 text-right text-[11px] font-black text-slate-500">합계</td>
             <td className="px-2 py-2 text-right tabular-nums text-[13px] font-black text-emerald-700">{fmtWon(totalAmount)}</td>
           </tr>
         </tfoot>
