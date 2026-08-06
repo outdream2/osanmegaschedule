@@ -150,12 +150,21 @@ async function fetchAllSettings(): Promise<AppSettings | null> {
   }
 }
 
+const SETTINGS_UPDATED_EVENT = "settings-updated";
+
 async function saveAllSettings(s: AppSettings): Promise<void> {
   await fetch("/api/settings", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ key: DB_KEY, value: s }),
   });
+}
+
+/** 모든 useSettings 인스턴스에 변경을 알리는 이벤트 */
+function dispatchSettingsUpdated(next: AppSettings): void {
+  try {
+    window.dispatchEvent(new CustomEvent<AppSettings>(SETTINGS_UPDATED_EVENT, { detail: next }));
+  } catch { /* silent */ }
 }
 
 export function useSettings() {
@@ -174,18 +183,38 @@ export function useSettings() {
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, []);
 
+  // 다른 useSettings 인스턴스(다른 탭/컴포넌트)에서 발행한 settings-updated 이벤트 수신
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const next = (e as CustomEvent<AppSettings>).detail;
+      if (!next) return;
+      setSettings(next);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+    };
+    window.addEventListener(SETTINGS_UPDATED_EVENT, handler);
+    return () => window.removeEventListener(SETTINGS_UPDATED_EVENT, handler);
+  }, []);
+
   const update = useCallback((partial: Partial<AppSettings>) => {
+    let nextSnapshot: AppSettings = DEFAULT_SETTINGS;
     setSettings((prev) => {
       const next = { ...prev, ...partial };
+      nextSnapshot = next;
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
       return next;
     });
+
+    // 같은 세션의 다른 useSettings 인스턴스에 즉시 전파
+    // (setTimeout 0 으로 setSettings 완료 후 dispatch)
+    setTimeout(() => dispatchSettingsUpdated(nextSnapshot), 0);
 
     // Debounced save to DB
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       const next = { ...settingsRef.current, ...partial };
       saveAllSettings(next).catch(console.error);
+      // DB 저장 완료 후 다시 dispatch (최신 DB 값 반영)
+      dispatchSettingsUpdated(next);
     }, 800);
   }, []);
 
