@@ -1524,7 +1524,8 @@ router.get("/api/stock-manage/low-stock", async (_req, res) => {
     while (true) {
       const { data, error } = await supabase
         .from("products")
-        .select("product_name, product_code, spec, current_stock, optimal_stock, supplier, real_map")
+        // 2026-08-06 · 손실추적 확장 · purchase_price·sale_price 추가 (DiffTab 컬럼)
+        .select("product_name, product_code, spec, current_stock, optimal_stock, supplier, real_map, purchase_price, sale_price")
         .eq("hidden", false)
         .range(from, from + PAGE - 1);
       if (error) throw new Error(error.message);
@@ -1582,8 +1583,10 @@ router.get("/api/stock-manage/low-stock", async (_req, res) => {
         //   products 테이블의 xlsx import 특성상 string 으로 저장된 경우 대응
         return {
           ...rest,
-          current_stock:  rest.current_stock  != null && rest.current_stock  !== "" ? Number(rest.current_stock)  : null,
-          optimal_stock:  rest.optimal_stock  != null && rest.optimal_stock  !== "" ? Number(rest.optimal_stock)  : null,
+          current_stock:   rest.current_stock   != null && rest.current_stock   !== "" ? Number(rest.current_stock)   : null,
+          optimal_stock:   rest.optimal_stock   != null && rest.optimal_stock   !== "" ? Number(rest.optimal_stock)   : null,
+          purchase_price:  rest.purchase_price  != null && rest.purchase_price  !== "" ? Number(rest.purchase_price)  : null,
+          sale_price:      rest.sale_price      != null && rest.sale_price      !== "" ? Number(rest.sale_price)      : null,
           warehouse_stock: inv?.warehouse_stock ?? null,
           store_stock:     inv?.store_stock     ?? null,
           inv_checked_at:  inv?.checked_at ?? null,

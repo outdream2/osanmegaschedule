@@ -29,16 +29,23 @@ interface ProductLite {
   real_map: string | null;
   warehouse_stock?: number | null;
   store_stock?: number | null;
+  // 2026-08-06 · 손실추적 확장 · 단가·판매가 표시용
+  purchase_price?: number | null;
+  sale_price?: number | null;
 }
 
 export const DiffTab: React.FC = () => {
   const { findVendorByName } = useVendors();
-  const { getWidth, resizerProps } = useColumnResize("diffTab", {
+  // 2026-08-06 · 손실추적 확장 · 구역·단가·판매가 컬럼 추가 · v2 로 캐시 무효화
+  const { getWidth, resizerProps } = useColumnResize("diffTab_v2", {
     num:    { default: 28,  min: 24, max: 60  },
-    name:   { default: 150, min: 80, max: 360 },
+    name:   { default: 200, min: 100, max: 400 },
+    zone:   { default: 80,  min: 50, max: 160 },
     erp:    { default: 56,  min: 40, max: 120 },
     actual: { default: 64,  min: 40, max: 120 },
     diff:   { default: 56,  min: 40, max: 120 },
+    price:  { default: 72,  min: 50, max: 140 },
+    sale:   { default: 72,  min: 50, max: 140 },
   });
   const [lowStock, setLowStock] = useState<ProductLite[]>([]);
   const [loading, setLoading] = useState(false);
@@ -206,9 +213,9 @@ export const DiffTab: React.FC = () => {
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs sm:min-w-[280px]" style={{ tableLayout: "fixed" }}>
                     <thead className="sticky top-0 z-10">
-                      {/* 카테고리 그룹 헤더 (1단) */}
+                      {/* 카테고리 그룹 헤더 (1단) · 2026-08-06 · 구역·가격 추가 */}
                       <tr className="text-[10px] font-semibold uppercase tracking-wider border-b border-slate-200">
-                        <th colSpan={2} className="bg-slate-50 text-slate-400 text-left px-2 py-1.5">기본정보</th>
+                        <th colSpan={3} className="bg-slate-50 text-slate-400 text-left px-2 py-1.5">기본정보</th>
                         <th className="bg-slate-100/60 text-slate-500 text-right px-2 py-1.5 cursor-pointer select-none hover:bg-slate-200/60 transition"
                           onClick={() => toggleDiffGroup("erp")}
                           title={isDiffGroupCollapsed("erp") ? "ERP 펼치기" : "ERP 접기"}>
@@ -224,6 +231,7 @@ export const DiffTab: React.FC = () => {
                           </span>
                         </th>
                         <th className="bg-violet-100 text-violet-700 text-right px-2 py-1.5">차이</th>
+                        <th colSpan={2} className="bg-amber-50 text-amber-700 text-right px-2 py-1.5">가격</th>
                       </tr>
                       {/* 컬럼 헤더 (2단) · 리사이즈 지원 */}
                       <tr className="border-b border-slate-100 text-[11px] font-semibold text-slate-500 uppercase tracking-wider bg-white">
@@ -234,6 +242,10 @@ export const DiffTab: React.FC = () => {
                         <th className="relative text-left px-2 py-1.5" style={{ width: getWidth("name"), minWidth: getWidth("name") }}>
                           상품명
                           <span {...resizerProps("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                        </th>
+                        <th className="relative text-left px-2 py-1.5 text-slate-500" style={{ width: getWidth("zone"), minWidth: getWidth("zone") }}>
+                          구역
+                          <span {...resizerProps("zone")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                         </th>
                         {isDiffGroupCollapsed("erp") ? (
                           <th className="bg-slate-50/20" style={{ width: 16, minWidth: 16 }}></th>
@@ -255,6 +267,14 @@ export const DiffTab: React.FC = () => {
                           차이
                           <span {...resizerProps("diff")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                         </th>
+                        <th className="relative text-right px-2 py-1.5 bg-amber-50/40 text-amber-700" style={{ width: getWidth("price"), minWidth: getWidth("price") }}>
+                          단가
+                          <span {...resizerProps("price")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                        </th>
+                        <th className="relative text-right px-2 py-1.5 bg-amber-50/40 text-amber-700" style={{ width: getWidth("sale"), minWidth: getWidth("sale") }}>
+                          판매가
+                          <span {...resizerProps("sale")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
@@ -273,6 +293,9 @@ export const DiffTab: React.FC = () => {
                               </button>
                               {p.supplier && <div className="text-[10px] text-slate-400 break-words whitespace-normal mt-0.5">{p.supplier}</div>}
                             </td>
+                            <td className="px-2 py-2 align-top text-[11px] text-slate-600 break-words whitespace-normal leading-snug">
+                              {p.real_map ?? <span className="text-slate-300">-</span>}
+                            </td>
                             {isDiffGroupCollapsed("erp") ? (
                               <td className="bg-slate-50/10 w-4"></td>
                             ) : (
@@ -285,6 +308,12 @@ export const DiffTab: React.FC = () => {
                             )}
                             <td className={`text-right px-2 py-2 tabular-nums text-[12px] font-bold align-top ${p.diff > 0 ? "text-emerald-600" : "text-rose-500"}`}>
                               {p.diff > 0 ? `+${fmt(p.diff)}` : fmt(p.diff)}
+                            </td>
+                            <td className="text-right px-2 py-2 tabular-nums text-[12px] font-normal bg-amber-50/20 text-amber-700 align-top">
+                              {p.purchase_price != null && p.purchase_price > 0 ? fmt(p.purchase_price) : "-"}
+                            </td>
+                            <td className="text-right px-2 py-2 tabular-nums text-[12px] font-normal bg-amber-50/20 text-amber-700 align-top">
+                              {p.sale_price != null && p.sale_price > 0 ? fmt(p.sale_price) : "-"}
                             </td>
                           </tr>
                         );
