@@ -10,6 +10,7 @@ import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { EmptyState } from "../common/EmptyState";
 import { LoadingState } from "../common/LoadingState";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
+import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 
 // ── ProductLite (low-stock API 응답 shape) ───────────────────────────────
 interface ProductLite {
@@ -32,6 +33,17 @@ function fmt(n: number): string {
 
 // ── LowStockPanel (메인 export) ──────────────────────────────────────────
 export const LowStockPanel: React.FC = () => {
+  const { getWidth, resizerProps } = useColumnResize("lowStock", {
+    num:     { default: 28,  min: 24, max: 60  },
+    name:    { default: 150, min: 80, max: 360 },
+    erp:     { default: 56,  min: 40, max: 120 },
+    wh:      { default: 56,  min: 40, max: 120 },
+    st:      { default: 56,  min: 40, max: 120 },
+    actual:  { default: 56,  min: 40, max: 120 },
+    optimal: { default: 56,  min: 40, max: 120 },
+    need:    { default: 56,  min: 40, max: 120 },
+    order:   { default: 80,  min: 60, max: 140 },
+  });
   // ── 데이터 ──────────────────────────────────────────────────────────────
   const [lowStock, setLowStock] = useState<ProductLite[]>([]);
   const [loading, setLoading] = useState(false);
@@ -255,12 +267,11 @@ export const LowStockPanel: React.FC = () => {
                   />
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-xs sm:min-w-[480px]">
+                    <table className="w-full text-xs sm:min-w-[480px]" style={{ tableLayout: "fixed" }}>
                       <thead className="sticky top-0 z-10">
                         {/* 그룹 컬러 헤더 */}
                         <tr className="text-[10px] font-semibold uppercase tracking-wider border-b border-slate-200">
                           <th colSpan={2} className="bg-slate-50 text-slate-400 text-left px-2 py-1.5">기본정보</th>
-                          {/* ERP재고 (rose) */}
                           <th className="bg-rose-50 text-rose-600 text-center px-2 py-1.5 cursor-pointer select-none hover:bg-rose-100 transition"
                             onClick={() => toggleLowGroup("stock")}
                             title={isLowGroupCollapsed("stock") ? "ERP재고 펼치기" : "ERP재고 접기"}>
@@ -268,7 +279,6 @@ export const LowStockPanel: React.FC = () => {
                               {isLowGroupCollapsed("stock") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}ERP
                             </span>
                           </th>
-                          {/* 실재고 (slate) */}
                           <th colSpan={isLowGroupCollapsed("inv") ? 1 : 3}
                             className="bg-slate-100/60 text-slate-500 text-center px-2 py-1.5 cursor-pointer select-none hover:bg-slate-200/60 transition"
                             onClick={() => toggleLowGroup("inv")}
@@ -281,27 +291,54 @@ export const LowStockPanel: React.FC = () => {
                           <th className="bg-rose-100 text-rose-700 text-right px-2 py-1.5">필요</th>
                           <th className="bg-slate-50 text-slate-400 text-center px-2 py-1.5">발주</th>
                         </tr>
-                        {/* 컬럼 서브헤더 */}
+                        {/* 컬럼 서브헤더 · 리사이즈 지원 */}
                         <tr className="border-b border-slate-100 text-[11px] font-semibold text-slate-500 uppercase tracking-wider bg-white">
-                          <th className="text-left px-2 py-1.5 w-7">#</th>
-                          <th className="text-left px-2 py-1.5">상품명</th>
+                          <th className="relative text-left px-2 py-1.5" style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
+                            #
+                            <span {...resizerProps("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                          </th>
+                          <th className="relative text-left px-2 py-1.5" style={{ width: getWidth("name"), minWidth: getWidth("name") }}>
+                            상품명
+                            <span {...resizerProps("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                          </th>
                           {isLowGroupCollapsed("stock") ? (
-                            <th className="bg-rose-50/20 w-4"></th>
+                            <th className="bg-rose-50/20" style={{ width: 16, minWidth: 16 }}></th>
                           ) : (
-                            <th className="text-right px-2 py-1.5 w-14 bg-rose-50/40 text-rose-600" title="ERP 현재고 (products.current_stock)">현재고</th>
+                            <th className="relative text-right px-2 py-1.5 bg-rose-50/40 text-rose-600" style={{ width: getWidth("erp"), minWidth: getWidth("erp") }} title="ERP 현재고 (products.current_stock)">
+                              현재고
+                              <span {...resizerProps("erp")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                            </th>
                           )}
                           {isLowGroupCollapsed("inv") ? (
-                            <th className="bg-slate-50/20 w-4"></th>
+                            <th className="bg-slate-50/20" style={{ width: 16, minWidth: 16 }}></th>
                           ) : (
                             <>
-                              <th className="text-right px-2 py-1.5 w-14 bg-slate-50/60 text-slate-500" title="실재고 · 바코드스캔 창고">창고</th>
-                              <th className="text-right px-2 py-1.5 w-14 bg-slate-50/60 text-slate-500" title="실재고 · 바코드스캔 매장">매장</th>
-                              <th className="text-right px-2 py-1.5 w-14 bg-rose-50/30 text-rose-500" title="실재고 합계 (창고+매장)">실재고</th>
+                              <th className="relative text-right px-2 py-1.5 bg-slate-50/60 text-slate-500" style={{ width: getWidth("wh"), minWidth: getWidth("wh") }} title="실재고 · 창고">
+                                창고
+                                <span {...resizerProps("wh")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                              </th>
+                              <th className="relative text-right px-2 py-1.5 bg-slate-50/60 text-slate-500" style={{ width: getWidth("st"), minWidth: getWidth("st") }} title="실재고 · 매장">
+                                매장
+                                <span {...resizerProps("st")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                              </th>
+                              <th className="relative text-right px-2 py-1.5 bg-rose-50/30 text-rose-500" style={{ width: getWidth("actual"), minWidth: getWidth("actual") }} title="실재고 합계 (창고+매장)">
+                                실재고
+                                <span {...resizerProps("actual")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                              </th>
                             </>
                           )}
-                          <th className="text-right px-2 py-1.5 w-14 bg-indigo-50/40 text-indigo-600" title="추천 적정재고 (편집 가능 · 클릭하여 수정)">적정재고</th>
-                          <th className="text-right px-2 py-1.5 w-14 text-rose-600 bg-rose-50/60">필요</th>
-                          <th className="text-center px-2 py-1.5 w-20" title="발주요청 리스트에 추가">발주요청</th>
+                          <th className="relative text-right px-2 py-1.5 bg-indigo-50/40 text-indigo-600" style={{ width: getWidth("optimal"), minWidth: getWidth("optimal") }} title="추천 적정재고 (편집 가능)">
+                            적정재고
+                            <span {...resizerProps("optimal")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                          </th>
+                          <th className="relative text-right px-2 py-1.5 text-rose-600 bg-rose-50/60" style={{ width: getWidth("need"), minWidth: getWidth("need") }}>
+                            필요
+                            <span {...resizerProps("need")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                          </th>
+                          <th className="relative text-center px-2 py-1.5" style={{ width: getWidth("order"), minWidth: getWidth("order") }} title="발주요청 리스트에 추가">
+                            발주요청
+                            <span {...resizerProps("order")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50">

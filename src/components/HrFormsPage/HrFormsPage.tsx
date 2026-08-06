@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import { FilterBar } from "../common/FilterBar";
-import { useColumnResize } from "../../hooks/useColumnResize";
+import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import type { AuthSession } from "../../types";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -793,7 +793,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                     style={{ width: getWidth("_icon"), minWidth: getWidth("_icon") }}
                   >
                     <span {...resizerProps("_icon" as any)}
-                      className="absolute right-0 top-0 bottom-0 w-3 flex items-center justify-center z-10 cursor-col-resize select-none after:content-[''] after:absolute after:right-1 after:top-1/4 after:bottom-1/4 after:w-px after:bg-slate-300 after:rounded-full hover:after:bg-sky-400 hover:after:w-[2px] after:transition-all after:duration-100"
+                      className={RESIZER_CLS}
                       style={{ touchAction: "none" }}
                     />
                   </th>
@@ -809,7 +809,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                       {sortKey === "title" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-slate-300 opacity-60">▲▼</span>}
                     </span>
                     <span {...resizerProps("title" as any)}
-                      className="absolute right-0 top-0 bottom-0 w-3 flex items-center justify-center z-10 cursor-col-resize select-none after:content-[''] after:absolute after:right-1 after:top-1/4 after:bottom-1/4 after:w-px after:bg-slate-300 after:rounded-full hover:after:bg-sky-400 hover:after:w-[2px] after:transition-all after:duration-100"
+                      className={RESIZER_CLS}
                       style={{ touchAction: "none" }}
                       onClick={(e: React.MouseEvent) => e.stopPropagation()}
                     />
@@ -826,7 +826,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                       {sortKey === "category" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-slate-300 opacity-60">▲▼</span>}
                     </span>
                     <span {...resizerProps("category" as any)}
-                      className="absolute right-0 top-0 bottom-0 w-3 flex items-center justify-center z-10 cursor-col-resize select-none after:content-[''] after:absolute after:right-1 after:top-1/4 after:bottom-1/4 after:w-px after:bg-slate-300 after:rounded-full hover:after:bg-sky-400 hover:after:w-[2px] after:transition-all after:duration-100"
+                      className={RESIZER_CLS}
                       style={{ touchAction: "none" }}
                       onClick={(e: React.MouseEvent) => e.stopPropagation()}
                     />
@@ -843,7 +843,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                       {sortKey === "file_name" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-slate-300 opacity-60">▲▼</span>}
                     </span>
                     <span {...resizerProps("file_name" as any)}
-                      className="absolute right-0 top-0 bottom-0 w-3 flex items-center justify-center z-10 cursor-col-resize select-none after:content-[''] after:absolute after:right-1 after:top-1/4 after:bottom-1/4 after:w-px after:bg-slate-300 after:rounded-full hover:after:bg-sky-400 hover:after:w-[2px] after:transition-all after:duration-100"
+                      className={RESIZER_CLS}
                       style={{ touchAction: "none" }}
                       onClick={(e: React.MouseEvent) => e.stopPropagation()}
                     />
@@ -860,7 +860,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                       {sortKey === "file_size" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-slate-300 opacity-60">▲▼</span>}
                     </span>
                     <span {...resizerProps("file_size" as any)}
-                      className="absolute right-0 top-0 bottom-0 w-3 flex items-center justify-center z-10 cursor-col-resize select-none after:content-[''] after:absolute after:right-1 after:top-1/4 after:bottom-1/4 after:w-px after:bg-slate-300 after:rounded-full hover:after:bg-sky-400 hover:after:w-[2px] after:transition-all after:duration-100"
+                      className={RESIZER_CLS}
                       style={{ touchAction: "none" }}
                       onClick={(e: React.MouseEvent) => e.stopPropagation()}
                     />
@@ -877,7 +877,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                       {sortKey === "uploaded_by" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-slate-300 opacity-60">▲▼</span>}
                     </span>
                     <span {...resizerProps("uploaded_by" as any)}
-                      className="absolute right-0 top-0 bottom-0 w-3 flex items-center justify-center z-10 cursor-col-resize select-none after:content-[''] after:absolute after:right-1 after:top-1/4 after:bottom-1/4 after:w-px after:bg-slate-300 after:rounded-full hover:after:bg-sky-400 hover:after:w-[2px] after:transition-all after:duration-100"
+                      className={RESIZER_CLS}
                       style={{ touchAction: "none" }}
                       onClick={(e: React.MouseEvent) => e.stopPropagation()}
                     />
@@ -894,7 +894,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                       {sortKey === "created_at" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-slate-300 opacity-60">▲▼</span>}
                     </span>
                     <span {...resizerProps("created_at" as any)}
-                      className="absolute right-0 top-0 bottom-0 w-3 flex items-center justify-center z-10 cursor-col-resize select-none after:content-[''] after:absolute after:right-1 after:top-1/4 after:bottom-1/4 after:w-px after:bg-slate-300 after:rounded-full hover:after:bg-sky-400 hover:after:w-[2px] after:transition-all after:duration-100"
+                      className={RESIZER_CLS}
                       style={{ touchAction: "none" }}
                       onClick={(e: React.MouseEvent) => e.stopPropagation()}
                     />
@@ -906,7 +906,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   >
                     <span>액션</span>
                     <span {...resizerProps("_action" as any)}
-                      className="absolute right-0 top-0 bottom-0 w-3 flex items-center justify-center z-10 cursor-col-resize select-none after:content-[''] after:absolute after:right-1 after:top-1/4 after:bottom-1/4 after:w-px after:bg-slate-300 after:rounded-full hover:after:bg-sky-400 hover:after:w-[2px] after:transition-all after:duration-100"
+                      className={RESIZER_CLS}
                       style={{ touchAction: "none" }}
                     />
                   </th>

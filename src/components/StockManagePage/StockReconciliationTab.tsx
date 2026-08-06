@@ -26,6 +26,7 @@ import { useSortableTable } from "../../hooks/useSortableTable";
 import { EmptyState } from "../common/EmptyState";
 import { LoadingState } from "../common/LoadingState";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
+import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -106,6 +107,15 @@ export const StockReconciliationTab: React.FC<{
   onOpenOcr?: () => void;
   authSession?: AuthSession | null;
 }> = () => {
+  const { getWidth, resizerProps } = useColumnResize("stockRecon", {
+    num:        { default: 40,  min: 28, max: 60  },
+    name:       { default: 200, min: 80, max: 400 },
+    supplier:   { default: 140, min: 80, max: 280 },
+    erp:        { default: 80,  min: 50, max: 160 },
+    actual:     { default: 80,  min: 50, max: 160 },
+    diff:       { default: 80,  min: 50, max: 160 },
+    checked_at: { default: 120, min: 80, max: 200 },
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<DiffRow[]>([]);
@@ -316,47 +326,62 @@ export const StockReconciliationTab: React.FC<{
           />
         ) : (
           <div className="overflow-auto flex-1 min-h-0">
-            <table className="w-full text-[12px] border-collapse">
+            <table className="w-full text-[12px] border-collapse" style={{ tableLayout: "fixed" }}>
               <thead className="bg-emerald-50/50 border-b border-emerald-100 sticky top-0 z-10">
                 <tr>
-                  <th className="px-2 py-2 text-left font-bold text-emerald-800 w-10">#</th>
+                  <th className="relative px-2 py-2 text-left font-bold text-emerald-800" style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
+                    #
+                    <span {...resizerProps("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                  </th>
                   <th
-                    className="px-2 py-2 text-left font-bold text-emerald-800 cursor-pointer select-none hover:bg-emerald-100/40 transition"
+                    className="relative px-2 py-2 text-left font-bold text-emerald-800 cursor-pointer select-none hover:bg-emerald-100/40 transition"
+                    style={{ width: getWidth("name"), minWidth: getWidth("name") }}
                     onClick={() => toggleSort("name")}
                   >
                     <span className="inline-flex items-center gap-1"><Package size={11} className="text-emerald-500" />상품명</span>
                     <SortIcon k="name" />
+                    <span {...resizerProps("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                   </th>
                   <th
-                    className="px-2 py-2 text-left font-bold text-emerald-800 w-40 cursor-pointer select-none hover:bg-emerald-100/40 transition"
+                    className="relative px-2 py-2 text-left font-bold text-emerald-800 cursor-pointer select-none hover:bg-emerald-100/40 transition"
+                    style={{ width: getWidth("supplier"), minWidth: getWidth("supplier") }}
                     onClick={() => toggleSort("supplier")}
                   >
                     <span className="inline-flex items-center gap-1"><Building2 size={11} className="text-emerald-500" />공급사</span>
                     <SortIcon k="supplier" />
+                    <span {...resizerProps("supplier")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                   </th>
                   <th
-                    className="px-2 py-2 text-right font-bold text-slate-700 w-20 cursor-pointer select-none hover:bg-emerald-100/40 transition"
+                    className="relative px-2 py-2 text-right font-bold text-slate-700 cursor-pointer select-none hover:bg-emerald-100/40 transition"
+                    style={{ width: getWidth("erp"), minWidth: getWidth("erp") }}
                     onClick={() => toggleSort("erp")}
                   >
                     ERP재고<SortIcon k="erp" />
+                    <span {...resizerProps("erp")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                   </th>
                   <th
-                    className="px-2 py-2 text-right font-bold text-teal-700 w-20 cursor-pointer select-none hover:bg-emerald-100/40 transition"
+                    className="relative px-2 py-2 text-right font-bold text-teal-700 cursor-pointer select-none hover:bg-emerald-100/40 transition"
+                    style={{ width: getWidth("actual"), minWidth: getWidth("actual") }}
                     onClick={() => toggleSort("actual")}
                   >
                     실재고<SortIcon k="actual" />
+                    <span {...resizerProps("actual")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                   </th>
                   <th
-                    className="px-2 py-2 text-right font-bold text-rose-700 w-20 cursor-pointer select-none hover:bg-emerald-100/40 transition"
+                    className="relative px-2 py-2 text-right font-bold text-rose-700 cursor-pointer select-none hover:bg-emerald-100/40 transition"
+                    style={{ width: getWidth("diff"), minWidth: getWidth("diff") }}
                     onClick={() => toggleSort("diff")}
                   >
                     차이<SortIcon k="diff" />
+                    <span {...resizerProps("diff")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                   </th>
                   <th
-                    className="px-2 py-2 text-center font-bold text-slate-500 w-32 cursor-pointer select-none hover:bg-emerald-100/40 transition"
+                    className="relative px-2 py-2 text-center font-bold text-slate-500 cursor-pointer select-none hover:bg-emerald-100/40 transition"
+                    style={{ width: getWidth("checked_at"), minWidth: getWidth("checked_at") }}
                     onClick={() => toggleSort("checked_at")}
                   >
                     조정일<SortIcon k="checked_at" />
+                    <span {...resizerProps("checked_at")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                   </th>
                 </tr>
               </thead>

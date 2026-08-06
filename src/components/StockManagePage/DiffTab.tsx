@@ -12,6 +12,7 @@ import { useVendors } from "../../hooks/useVendors";
 import { EmptyState } from "../common/EmptyState";
 import { LoadingState } from "../common/LoadingState";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
+import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 
 function fmt(n: number): string {
   if (!Number.isFinite(n)) return "0";
@@ -32,6 +33,13 @@ interface ProductLite {
 
 export const DiffTab: React.FC = () => {
   const { findVendorByName } = useVendors();
+  const { getWidth, resizerProps } = useColumnResize("diffTab", {
+    num:    { default: 28,  min: 24, max: 60  },
+    name:   { default: 150, min: 80, max: 360 },
+    erp:    { default: 56,  min: 40, max: 120 },
+    actual: { default: 64,  min: 40, max: 120 },
+    diff:   { default: 56,  min: 40, max: 120 },
+  });
   const [lowStock, setLowStock] = useState<ProductLite[]>([]);
   const [loading, setLoading] = useState(false);
   // 상비약/일반약/전체 3-way 필터 (localStorage 저장)
@@ -196,8 +204,9 @@ export const DiffTab: React.FC = () => {
                 />
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-xs sm:min-w-[280px]">
+                  <table className="w-full text-xs sm:min-w-[280px]" style={{ tableLayout: "fixed" }}>
                     <thead className="sticky top-0 z-10">
+                      {/* 카테고리 그룹 헤더 (1단) */}
                       <tr className="text-[10px] font-semibold uppercase tracking-wider border-b border-slate-200">
                         <th colSpan={2} className="bg-slate-50 text-slate-400 text-left px-2 py-1.5">기본정보</th>
                         <th className="bg-slate-100/60 text-slate-500 text-right px-2 py-1.5 cursor-pointer select-none hover:bg-slate-200/60 transition"
@@ -216,20 +225,36 @@ export const DiffTab: React.FC = () => {
                         </th>
                         <th className="bg-violet-100 text-violet-700 text-right px-2 py-1.5">차이</th>
                       </tr>
+                      {/* 컬럼 헤더 (2단) · 리사이즈 지원 */}
                       <tr className="border-b border-slate-100 text-[11px] font-semibold text-slate-500 uppercase tracking-wider bg-white">
-                        <th className="text-left px-2 py-1.5 w-7">#</th>
-                        <th className="text-left px-2 py-1.5">상품명</th>
+                        <th className="relative text-left px-2 py-1.5" style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
+                          #
+                          <span {...resizerProps("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                        </th>
+                        <th className="relative text-left px-2 py-1.5" style={{ width: getWidth("name"), minWidth: getWidth("name") }}>
+                          상품명
+                          <span {...resizerProps("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                        </th>
                         {isDiffGroupCollapsed("erp") ? (
-                          <th className="bg-slate-50/20 w-4"></th>
+                          <th className="bg-slate-50/20" style={{ width: 16, minWidth: 16 }}></th>
                         ) : (
-                          <th className="text-right px-2 py-1.5 w-14 bg-slate-50/40 text-slate-500">현재고</th>
+                          <th className="relative text-right px-2 py-1.5 bg-slate-50/40 text-slate-500" style={{ width: getWidth("erp"), minWidth: getWidth("erp") }}>
+                            현재고
+                            <span {...resizerProps("erp")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                          </th>
                         )}
                         {isDiffGroupCollapsed("actual") ? (
-                          <th className="bg-violet-50/10 w-4"></th>
+                          <th className="bg-violet-50/10" style={{ width: 16, minWidth: 16 }}></th>
                         ) : (
-                          <th className="text-right px-2 py-1.5 w-16 bg-violet-50/40 text-violet-600">실재고</th>
+                          <th className="relative text-right px-2 py-1.5 bg-violet-50/40 text-violet-600" style={{ width: getWidth("actual"), minWidth: getWidth("actual") }}>
+                            실재고
+                            <span {...resizerProps("actual")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                          </th>
                         )}
-                        <th className="text-right px-2 py-1.5 w-14 text-violet-700">차이</th>
+                        <th className="relative text-right px-2 py-1.5 text-violet-700" style={{ width: getWidth("diff"), minWidth: getWidth("diff") }}>
+                          차이
+                          <span {...resizerProps("diff")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
