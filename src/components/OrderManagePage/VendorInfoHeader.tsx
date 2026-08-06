@@ -9,6 +9,7 @@ import {
   Building2, Phone, User2, Mail, Calendar, Wallet,
 } from "lucide-react";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
+import { fmtWonFull, fmtDateSlice } from "../../lib/format";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -66,12 +67,6 @@ interface MonthlyAgg {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
-function fmtWonFull(n: number): string {
-  if (!Number.isFinite(n)) return "-";
-  if (n === 0) return "0";
-  return `${Math.round(n).toLocaleString()}원`;
-}
-
 function fmtBizNum(n: string | null | undefined): string {
   if (!n) return "-";
   const d = String(n).replace(/\D/g, "");
@@ -87,10 +82,7 @@ function fmtPhone(n: string | null | undefined): string {
   return String(n);
 }
 
-function fmtDate(iso: string | null | undefined): string {
-  if (!iso) return "-";
-  return String(iso).slice(0, 10);
-}
+const fmtDate = fmtDateSlice;
 
 /** "YYYY-MM" 라벨 → 짧은 라벨 "26/08" */
 function fmtYmShort(ym: string): string {

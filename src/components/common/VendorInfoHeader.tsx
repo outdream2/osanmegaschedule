@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { VendorCategoryBadge } from "./VendorCategoryBadge";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
+import { fmtWonNoUnit, fmtDateSlice } from "../../lib/format";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -67,12 +68,7 @@ export interface VendorInfoHeaderProps {
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
-function fmtWon(n: number): string {
-  if (!Number.isFinite(n) || n === 0) return "0";
-  if (n >= 100_000_000) return `${(n / 100_000_000).toFixed(2)}억`;
-  if (n >= 10_000) return `${(n / 10_000).toFixed(1)}만`;
-  return n.toLocaleString();
-}
+const fmtWon = fmtWonNoUnit;
 
 function fmtBizNum(n: string | null | undefined): string {
   if (!n) return "-";
@@ -89,10 +85,7 @@ function fmtPhone(n: string | null | undefined): string {
   return String(n);
 }
 
-function fmtDate(iso: string | null | undefined): string {
-  if (!iso) return "-";
-  return String(iso).slice(0, 10);
-}
+const fmtDate = fmtDateSlice;
 
 // ─── VendorInfoHeader ──────────────────────────────────────────────────────
 

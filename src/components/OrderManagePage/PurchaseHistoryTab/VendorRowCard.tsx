@@ -7,6 +7,7 @@
 
 import React from "react";
 import { VendorCategoryBadge } from "../../common/VendorCategoryBadge";
+import { fmtWonNoUnit } from "../../../lib/format";
 
 export interface VendorSummary {
   last_purchase_date: string | null;
@@ -35,12 +36,7 @@ interface VendorRowCardProps {
 
 // ─── helpers ──────────────────────────────────────────────────────────────
 
-function fmtWon(n: number): string {
-  if (!Number.isFinite(n) || n === 0) return "0";
-  if (n >= 100_000_000) return `${(n / 100_000_000).toFixed(1)}억`;
-  if (n >= 10_000) return `${(n / 10_000).toFixed(1)}만`;
-  return n.toLocaleString();
-}
+const fmtWon = fmtWonNoUnit;
 
 function daysAgo(iso: string | null): number | null {
   if (!iso || !/^\d{4}-\d{2}-\d{2}/.test(iso)) return null;

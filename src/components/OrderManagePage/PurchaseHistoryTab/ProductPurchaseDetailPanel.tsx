@@ -10,6 +10,7 @@ import { KpiCard } from "../../common/KpiCard";
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../../common/PurchaseHistoryList";
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../../styles/tokens";
+import { fmtWonNoUnit, fmtDateSlice } from "../../../lib/format";
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -45,16 +46,8 @@ function fmt(n: number): string {
   if (!Number.isFinite(n)) return "0";
   return n.toLocaleString();
 }
-function fmtWon(n: number): string {
-  if (!Number.isFinite(n) || n === 0) return "0";
-  if (n >= 100_000_000) return `${(n / 100_000_000).toFixed(1)}억`;
-  if (n >= 10_000) return `${(n / 10_000).toFixed(1)}만`;
-  return n.toLocaleString();
-}
-function dateLabel(iso: string | null): string {
-  if (!iso) return "-";
-  return String(iso).slice(0, 10);
-}
+const fmtWon = fmtWonNoUnit;
+const dateLabel = fmtDateSlice;
 
 // ─── Panel ───────────────────────────────────────────────────────────────
 

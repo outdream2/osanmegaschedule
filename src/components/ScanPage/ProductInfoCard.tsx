@@ -4,6 +4,7 @@ import { type ProductInfo } from "../../lib/productsCache";
 import { RealMapSelector } from "./RealMapSelector";
 // 2026-08-05 · 재고세기(YOLO) 기능 제거 · StockCounterModal import 삭제
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
+import { fmtWonCompact } from "../../lib/format";
 
 // 인라인 편집 가능 필드 종류
 type InlineEditableKey = "optimal_stock" | "sale_price" | "purchase_price" | "cost_price" | "brand" | "manufacturer" | "barcode" | "expiry_date" | "memo";
@@ -943,7 +944,7 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
       .finally(() => setLoading(false));
   }, [productCode]);
   const fmt = (n: number) => n.toLocaleString();
-  const fmtWon = (n: number) => n >= 1_0000_0000 ? `${(n/1_0000_0000).toFixed(1)}억` : n >= 10000 ? `${(n/10000).toFixed(1)}만` : `${n.toLocaleString()}원`;
+  const fmtWon = fmtWonCompact;
   const totalQty = rows.reduce((s, r) => s + (Number(r.quantity) || 0), 0);
   const totalAmt = rows.reduce((s, r) => s + (Number(r.total ?? r.amount) || 0), 0);
   // 2026-07-16 · 평균 매입 (건당 평균 매입액)

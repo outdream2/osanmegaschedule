@@ -13,6 +13,7 @@ import { ZONE_DEFS } from "../../constants/displayZones";
 import { type ClassFilter } from "../../utils/productClassify";
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
+import { fmtWonCompact } from "../../lib/format";
 import { EmptyState } from "../common/EmptyState";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 
@@ -137,7 +138,7 @@ const ZoneCategoryContent: React.FC = () => {
 
   const total = grouped.reduce((s, g) => s + g.totalAmount, 0);
   const fmt = (n: number) => n.toLocaleString();
-  const fmtWon = (n: number) => n >= 1_0000_0000 ? `${(n / 1_0000_0000).toFixed(1)}억` : n >= 10000 ? `${(n / 10000).toFixed(1)}만` : `${n.toLocaleString()}원`;
+  const fmtWon = fmtWonCompact;
   const ZONE_COLORS = ["sky", "emerald", "amber", "rose", "indigo", "teal", "violet", "orange"];
   const colorForZone = (zone: string) => ZONE_COLORS[Math.abs(zone.split("").reduce((a, c) => a + c.charCodeAt(0), 0)) % ZONE_COLORS.length];
 

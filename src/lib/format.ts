@@ -1,6 +1,6 @@
 // src/lib/format.ts
 // 공통 포맷 유틸 · fmtWon · fmtDate · fmtDateShort · fmtDateYMD · fmtDateMD
-// 2026-08-06 · T-SLIM · 중복 제거 통합
+// 2026-08-06 · T-SLIM · 중복 제거 통합 (Phase 2: fmtWonNoUnit · fmtWonFull · fmtDateSlice 추가)
 
 // ─── 통화 ─────────────────────────────────────────────────────────────────────
 
@@ -27,6 +27,33 @@ export function fmtWon(n: number | null | undefined): string {
   const v = Number(n);
   if (!Number.isFinite(v)) return "-";
   return fmtWonCompact(v);
+}
+
+/**
+ * 원화 컴팩트 포맷 (단위 접미사 없음, NaN/0 → "0"):
+ *   0 → "0"
+ *   1억 이상 → "X.X억"
+ *   1만 이상 → "X.X만"
+ *   미만      → "X,XXX"
+ * PurchaseHistoryTab / VendorInfoHeader(common) 등 "원" 단위를 별도 표기하는 UI용
+ */
+export function fmtWonNoUnit(n: number): string {
+  if (!Number.isFinite(n) || n === 0) return "0";
+  if (n >= 100_000_000) return `${(n / 100_000_000).toFixed(1)}억`;
+  if (n >= 10_000) return `${(n / 10_000).toFixed(1)}만`;
+  return n.toLocaleString();
+}
+
+/**
+ * 원화 풀 포맷 (toLocaleString + "원" 접미사, NaN/0 → "0"):
+ *   0 → "0"
+ *   나머지 → "X,XXX원"
+ * OrderManagePage/VendorInfoHeader 등 정밀 표기용
+ */
+export function fmtWonFull(n: number): string {
+  if (!Number.isFinite(n)) return "-";
+  if (n === 0) return "0";
+  return `${Math.round(n).toLocaleString()}원`;
 }
 
 // ─── 날짜 ─────────────────────────────────────────────────────────────────────
@@ -68,4 +95,15 @@ export function fmtDateMD(iso: string | null | undefined): string {
     if (Number.isNaN(d.getTime())) return "-";
     return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   } catch { return String(iso); }
+}
+
+/**
+ * "YYYY-MM-DD" 슬라이스 포맷 — ISO 문자열의 앞 10자만 취함
+ *   "2026-08-06T10:30:00" → "2026-08-06"
+ *   null/undefined → "-"
+ * VendorInfoHeader · PurchaseHistoryTab 등 시간 없이 날짜만 표기하는 UI용
+ */
+export function fmtDateSlice(iso: string | null | undefined): string {
+  if (!iso) return "-";
+  return String(iso).slice(0, 10);
 }
