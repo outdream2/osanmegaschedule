@@ -848,6 +848,16 @@ export const PaymentInfoTab: React.FC = () => {
                       }`}
                     >
                       <span className="w-[42px] shrink-0"><VendorCategoryBadge category={v.category} /></span>
+                      {/* VAT 배지 · 포함/불포함 · 2026-08-06 · 사용자 요청 */}
+                      <span className="w-[36px] shrink-0 text-center">
+                        {v.vat_included == null ? (
+                          <span className="text-[9.5px] text-slate-300">-</span>
+                        ) : v.vat_included ? (
+                          <span className="inline-flex px-1 py-0.5 rounded text-[9.5px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">포함</span>
+                        ) : (
+                          <span className="inline-flex px-1 py-0.5 rounded text-[9.5px] font-black bg-slate-50 text-slate-500 border border-slate-200">불포함</span>
+                        )}
+                      </span>
                       <span className={`text-[12px] font-semibold break-words whitespace-normal leading-tight flex-1 min-w-0 ${
                         selectedVendor?.id === v.id ? "text-sky-800" : "text-slate-700"
                       }`}>
@@ -1619,6 +1629,8 @@ const VendorListHeader: React.FC<{
   <div className="px-2 py-1.5 border-b border-slate-200 bg-slate-50/70 shrink-0 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider">
     {/* 분류 · 정렬 X (badge column) */}
     <span className="w-[42px] shrink-0 text-slate-400">분류</span>
+    {/* VAT · 포함/불포함 · 2026-08-06 · 사용자 요청 */}
+    <span className="w-[36px] shrink-0 text-slate-400 text-center">VAT</span>
     {/* 공급사명 · flex */}
     <span className="flex-1 min-w-0">
       <SortHeaderBtn label={`공급사 (${count})`} columnKey="name" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="left" />
