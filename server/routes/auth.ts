@@ -21,6 +21,8 @@ router.post("/api/auth/login", async (req, res) => {
     if (!emp) return res.status(401).json({ error: "전화번호를 찾을 수 없습니다", debug: "no_employee" });
     if (!emp.password_hash) return res.status(401).json({ error: "비밀번호가 설정되지 않았습니다", debug: "no_hash" });
     const ok = await bcrypt.compare(password, emp.password_hash);
+    // password_hash 는 bcrypt 비교 후 즉시 제거 — 응답 객체에 절대 포함되지 않도록 방어
+    delete (emp as any).password_hash;
     if (!ok) return res.status(401).json({ error: "전화번호 또는 비밀번호가 올바르지 않습니다" });
     const level: number = emp.level ?? 1;
     if (level === 0) return res.status(401).json({ error: "접근 권한이 없습니다", debug: "level_0" });
@@ -54,6 +56,8 @@ router.post("/api/auth/vendor-login", async (req, res) => {
     if (!vendor) return res.status(401).json({ error: "등록된 거래처를 찾을 수 없습니다" });
     if (!vendor.password_hash) return res.status(401).json({ error: "비밀번호가 설정되지 않았습니다. 관리자에게 문의하세요." });
     const ok = await bcrypt.compare(password, vendor.password_hash);
+    // password_hash 는 bcrypt 비교 후 즉시 제거 — 응답 객체에 절대 포함되지 않도록 방어
+    delete (vendor as any).password_hash;
     if (!ok) return res.status(401).json({ error: "전화번호 또는 비밀번호가 올바르지 않습니다" });
     try {
       issueToken(res, { sub: vendor.id, name: vendor.company_name, role: "vendor", level: 0 }, false);
@@ -146,6 +150,8 @@ router.post("/api/auth/change-password", async (req, res) => {
     if (!emp.password_hash)
       return res.status(400).json({ error: "비밀번호가 설정되어 있지 않습니다. 관리자에게 문의하세요." });
     const ok = await bcrypt.compare(currentPassword, emp.password_hash);
+    // password_hash 는 bcrypt 비교 후 즉시 제거 — 이후 코드에서 실수로 직렬화되지 않도록 방어
+    delete (emp as any).password_hash;
     if (!ok) return res.status(401).json({ error: "현재 비밀번호가 올바르지 않습니다" });
     const password_hash = await bcrypt.hash(newPassword, 10);
     const { error: updErr } = await supabase
