@@ -1217,6 +1217,21 @@ npm run test        # vitest (필요 시)
 
 ## CHANGELOG · 변경 이력
 
+### 2026-08-06 (4차 · Supabase cap 우회 확장 + fetchAllWithRange 유틸)
+
+- **feat · server/utils/supabaseFetchAll.ts** 공통 유틸 신규 (커밋 `8b739b5`)
+  - `fetchAllWithRange<T>(queryFactory, maxRows, pageSize)` · 페이지 loop 로 1000행 캡 우회
+  - 모든 서버 라우터에서 재사용 가능
+
+- **fix · stockManage.ts · 3곳 마이그레이션**
+  - `/api/stock-manage/suppliers` · .limit(50000) → fetchAllWithRange (공급사 집계 · 재고관리 핵심)
+  - `/api/stock-manage/top-products` · .limit(50000) → fetchAllWithRange
+  - `/api/stock-manage/product-history` · .limit(5000) → fetchAllWithRange
+
+- **남은 audit** (향후):
+  - inventorySales.ts (deprecated) · purchaseHistory.ts · productArrivals.ts · products.ts · stockReconciliation.ts
+  - 사용 빈도 별 우선순위
+
 ### 2026-08-06 (3차 · Supabase cap 우회 · 사용자 제보 픽스)
 
 - **fix · Supabase 1000행 cap 우회** (커밋 `7b3f843`)

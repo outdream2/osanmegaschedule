@@ -22,15 +22,6 @@
 
 ---
 
-## 🔴 사용자 테스트 요청 (2026-08-06)
-
-### T-TEST-공급사현황-10개표시
-- 공급사별 현황 · 반응형(모바일) · 리스트 데이터 **10개씩 표시**
-- 현재 · 각 row 높이 커서 · 3~5개만 보임
-- 파일: `src/components/StockManagePage/SupplierTab.tsx` (embedded mode row height)
-
----
-
 ## 🔄 진행 중 (자동 파이프라인)
 
 ### T-CSS Phase 1 · 디자인 토큰 + 공통 컴포넌트 (mobile-ui-designer 백그라운드)
