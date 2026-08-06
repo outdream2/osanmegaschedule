@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { supabase } from "../../src/supabase/client";
-import { issueToken, clearToken, JwtPayload } from "../middleware/requireAuth";
+import { supabase } from "../../../src/supabase/client";
+import { issueToken, clearToken, JwtPayload } from "../../middleware/requireAuth";
 
 const router = Router();
 

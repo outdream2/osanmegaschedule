@@ -16,7 +16,7 @@ import settingsRouter    from "./server/routes/settings";
 import productsRouter    from "./server/routes/products";
 import requestsRouter    from "./server/routes/requests";
 import mismatchesRouter  from "./server/routes/mismatches";
-import authRouter        from "./server/routes/auth";
+import authRouter        from "./server/routes/auth/auth";
 import notificationsRouter from "./server/routes/notifications";
 import leaveRouter       from "./server/routes/leave";
 import lunchRouter       from "./server/routes/lunch";
