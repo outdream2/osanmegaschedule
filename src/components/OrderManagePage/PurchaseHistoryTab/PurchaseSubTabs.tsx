@@ -158,10 +158,8 @@ const LedgerTab: React.FC<{
       }
     }
     if (!targetDate) return;
-    setExpanded(prev => {
-      if (prev.has(targetDate as string)) return prev;
-      const n = new Set(prev); n.add(targetDate as string); return n;
-    });
+    // 2026-08-06 · T-TEST-매입이력-그룹기본접힘 · highlight 발생해도 자동 펼침 X (사용자 요청)
+    //   · 전체 접힌 상태 기본 유지 · 사용자가 명시적으로 클릭해야 펼침
     const t = window.setTimeout(() => {
       try { highlightRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); }
       catch { highlightRowRef.current?.scrollIntoView(); }
