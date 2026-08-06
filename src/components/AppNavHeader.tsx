@@ -78,17 +78,18 @@ const TABS: TabDef[] = [
   { key: "requests",      label: "요청",     mobileLabel: "요청",   icon: Chat,        managerOnly: false, color: "cyan"    },
 ];
 
+// 2026-08-06 · 랜딩 파스텔 톤 통일 · 활성 탭: 파스텔 배경 + 진한 텍스트 + border (흰 배경+진한gradient 제거)
 const TAB_COLOR_MAP: Record<string, { activeBg: string; activeText: string; inactiveText: string; inactiveHoverText: string; }> = {
-  slate:   { activeBg: "from-slate-500 to-slate-600",     activeText: "text-white", inactiveText: "text-slate-600",   inactiveHoverText: "hover:text-slate-800"   },
-  blue:    { activeBg: "from-blue-500 to-blue-600",       activeText: "text-white", inactiveText: "text-blue-600",    inactiveHoverText: "hover:text-blue-800"    },
-  red:     { activeBg: "from-red-500 to-red-600",         activeText: "text-white", inactiveText: "text-red-600",     inactiveHoverText: "hover:text-red-800"     },
-  sky:     { activeBg: "from-sky-500 to-sky-600",         activeText: "text-white", inactiveText: "text-sky-600",     inactiveHoverText: "hover:text-sky-800"     },
-  indigo:  { activeBg: "from-indigo-500 to-indigo-600",   activeText: "text-white", inactiveText: "text-indigo-600",  inactiveHoverText: "hover:text-indigo-800"  },
-  orange:  { activeBg: "from-orange-500 to-orange-600",   activeText: "text-white", inactiveText: "text-orange-600",  inactiveHoverText: "hover:text-orange-800"  },
-  emerald: { activeBg: "from-emerald-500 to-emerald-600", activeText: "text-white", inactiveText: "text-emerald-600", inactiveHoverText: "hover:text-emerald-800" },
-  violet:  { activeBg: "from-violet-500 to-violet-600",   activeText: "text-white", inactiveText: "text-violet-600",  inactiveHoverText: "hover:text-violet-800"  },
-  amber:   { activeBg: "from-amber-600 to-amber-700",     activeText: "text-white", inactiveText: "text-amber-700",   inactiveHoverText: "hover:text-amber-900"   },
-  cyan:    { activeBg: "from-cyan-500 to-cyan-600",       activeText: "text-white", inactiveText: "text-cyan-600",    inactiveHoverText: "hover:text-cyan-800"    },
+  slate:   { activeBg: "bg-slate-100 border border-slate-300",     activeText: "text-slate-800",   inactiveText: "text-slate-500",   inactiveHoverText: "hover:text-slate-700"   },
+  blue:    { activeBg: "bg-blue-100 border border-blue-300",       activeText: "text-blue-800",    inactiveText: "text-blue-500",    inactiveHoverText: "hover:text-blue-700"    },
+  red:     { activeBg: "bg-red-100 border border-red-300",         activeText: "text-red-700",     inactiveText: "text-red-500",     inactiveHoverText: "hover:text-red-700"     },
+  sky:     { activeBg: "bg-sky-100 border border-sky-300",         activeText: "text-sky-700",     inactiveText: "text-sky-500",     inactiveHoverText: "hover:text-sky-700"     },
+  indigo:  { activeBg: "bg-indigo-100 border border-indigo-300",   activeText: "text-indigo-700",  inactiveText: "text-indigo-500",  inactiveHoverText: "hover:text-indigo-700"  },
+  orange:  { activeBg: "bg-orange-100 border border-orange-300",   activeText: "text-orange-700",  inactiveText: "text-orange-500",  inactiveHoverText: "hover:text-orange-700"  },
+  emerald: { activeBg: "bg-emerald-100 border border-emerald-300", activeText: "text-emerald-700", inactiveText: "text-emerald-500", inactiveHoverText: "hover:text-emerald-700" },
+  violet:  { activeBg: "bg-violet-100 border border-violet-300",   activeText: "text-violet-700",  inactiveText: "text-violet-500",  inactiveHoverText: "hover:text-violet-700"  },
+  amber:   { activeBg: "bg-amber-100 border border-amber-300",     activeText: "text-amber-800",   inactiveText: "text-amber-600",   inactiveHoverText: "hover:text-amber-800"   },
+  cyan:    { activeBg: "bg-cyan-100 border border-cyan-300",       activeText: "text-cyan-700",    inactiveText: "text-cyan-500",    inactiveHoverText: "hover:text-cyan-700"    },
 };
 
 // 경영관리 탭이 활성인 페이지들 (통합 페이지 + 서브 페이지들 · 헤더 활성 표시용)
@@ -277,7 +278,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       const bizOnClick = () => onNavigate?.("business-manage");
       if (isActive) {
         return (
-          <span key="business" className={`${base} bg-gradient-to-br ${c.activeBg} ${c.activeText} border-transparent shadow-sm font-bold`}>
+          <span key="business" className={`${base} ${c.activeBg} ${c.activeText} shadow-sm font-bold`}>
             <Icon size={24} weight="fill" /> {tab.label}
           </span>
         );
@@ -288,7 +289,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           type="button"
           onClick={bizOnClick}
           disabled={!onNavigate}
-          className={`${base} bg-white ${c.inactiveText} ${c.inactiveHoverText} border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm active:scale-95 cursor-pointer disabled:opacity-40`}
+          className={`${base} bg-white/70 ${c.inactiveText} ${c.inactiveHoverText} border-slate-200/80 hover:bg-white hover:border-slate-300 hover:shadow-sm active:scale-95 cursor-pointer disabled:opacity-40`}
         >
           <Icon size={24} weight="fill" /> {tab.label}
         </button>
@@ -299,7 +300,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const onClick = tab.key === "landing" ? (onBack ?? (() => onNavigate?.("landing"))) : () => onNavigate?.(tab.key as AppNavPage);
     if (isActive) {
       return (
-        <span key={tab.key} className={`${base} bg-gradient-to-br ${c.activeBg} ${c.activeText} border-transparent shadow-sm font-bold`}>
+        <span key={tab.key} className={`${base} ${c.activeBg} ${c.activeText} shadow-sm font-bold`}>
           <Icon size={24} weight="fill" /> {tab.label}
         </span>
       );
@@ -309,7 +310,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         key={tab.key}
         onClick={onClick}
         disabled={!onNavigate && !onBack}
-        className={`${base} bg-white ${c.inactiveText} ${c.inactiveHoverText} border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm active:scale-95 cursor-pointer disabled:opacity-40`}
+        className={`${base} bg-white/70 ${c.inactiveText} ${c.inactiveHoverText} border-slate-200/80 hover:bg-white hover:border-slate-300 hover:shadow-sm active:scale-95 cursor-pointer disabled:opacity-40`}
       >
         <Icon size={24} weight="fill" /> {tab.label}
       </button>
@@ -327,7 +328,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       const bizOnClick = () => onNavigate?.("business-manage");
       if (isActive) {
         return (
-          <span key="business" className={`${base} bg-gradient-to-br ${c.activeBg} ${c.activeText} shadow-md font-black`}>
+          <span key="business" className={`${base} ${c.activeBg} ${c.activeText} shadow-sm font-black`}>
             <Icon size={26} weight="fill" />
             <span className="leading-tight text-center whitespace-nowrap">경영</span>
           </span>
@@ -339,7 +340,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           type="button"
           onClick={bizOnClick}
           disabled={!onNavigate}
-          className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white cursor-pointer disabled:opacity-40`}
+          className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white/80 cursor-pointer disabled:opacity-40`}
         >
           <Icon size={26} weight="fill" />
           <span className="leading-tight text-center">경영</span>
@@ -351,7 +352,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const onClick = tab.key === "landing" ? (onBack ?? (() => onNavigate?.("landing"))) : () => onNavigate?.(tab.key as AppNavPage);
     if (isActive) {
       return (
-        <span key={tab.key} className={`${base} bg-gradient-to-br ${c.activeBg} ${c.activeText} shadow-md font-black`}>
+        <span key={tab.key} className={`${base} ${c.activeBg} ${c.activeText} shadow-sm font-black`}>
           <Icon size={26} weight="fill" />
           <span className="leading-tight text-center">
             {(() => {
@@ -377,7 +378,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         key={tab.key}
         onClick={onClick}
         disabled={!onNavigate && !onBack}
-        className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white cursor-pointer disabled:opacity-40`}
+        className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white/80 cursor-pointer disabled:opacity-40`}
       >
         <Icon size={26} weight="fill" />
         <span className="leading-tight text-center whitespace-nowrap">
@@ -394,7 +395,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   };
 
   return (
-    <header className="bg-white border-b border-[#e2e8f0] shrink-0 shadow-sm">
+    <header className="border-b border-[#e2e8f0] shrink-0 shadow-sm" style={{ background: "linear-gradient(160deg, #f8faff 0%, #f3f4ff 50%, #f0fdf4 100%)" }}>
       {/* ── Row 1 (상단): 로고 + 서비스명 · 로그인정보 · 알림 · 로그아웃 (PC/모바일 동일 · 2026-08-04 사용자 요청) ── */}
       <div className="px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
         {/* Left: logo (클릭 시 랜딩 이동) */}
@@ -460,7 +461,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       </div>
 
       {/* ── Row 2 (하단): Desktop/태블릿 nav tabs · 2단 구조 · sm+ (2026-08-04 사용자 요청 · PC 도 반응형처럼 메뉴 아래로) ── */}
-      <div className="hidden sm:block px-4 sm:px-6 pt-1 pb-2 border-t border-slate-100/70 bg-slate-50/30">
+      <div className="hidden sm:block px-4 sm:px-6 pt-1 pb-2 border-t border-slate-100/50">
         <div ref={desktopContainerRef} className="flex flex-wrap items-center gap-1 gap-y-1.5 min-w-0 relative">
           {/* 측정용 hidden 영역 · 실제 탭 폭 계산 */}
           <div
@@ -511,7 +512,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                         onClick={onClickTab}
                         className={`w-full flex items-center gap-2.5 px-3 py-2 text-[13px] font-bold transition ${
                           isActive
-                            ? `bg-gradient-to-r ${c.activeBg} ${c.activeText}`
+                            ? `${c.activeBg} ${c.activeText}`
                             : `${c.inactiveText} hover:bg-slate-50 cursor-pointer`
                         }`}
                       >
@@ -530,7 +531,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       {/* ── Mobile 전용 탭 행: 태블릿·PC 는 상단 탭 사용 (2026-07-16) ── */}
       {visibleTabs.length > 1 && (
         <div className="sm:hidden px-4 pb-2">
-          <div ref={mobileContainerRef} className="flex items-stretch gap-1 bg-gray-100 rounded-xl px-2 py-1 relative">
+          <div ref={mobileContainerRef} className="flex items-stretch gap-1 bg-slate-100/70 rounded-xl px-2 py-1 relative">
             {/* 측정용 hidden 영역 · 실제 탭 폭 계산 */}
             <div
               ref={mobileMeasureRef}
