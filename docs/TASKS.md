@@ -14,6 +14,11 @@
   · 태스크·기능·구조 변경 시 · project-registrar 호출 · MENU_STRUCTURE.md + TASKS.md 반영
   · 다른 에이전트는 이 두 파일 편집 금지 (read 만 OK)
   · 정의: `.claude/agents/project-registrar.md`
+- **테스트·수정 요청 워크플로우** (2026-08-06)
+  1. 사용자가 테스트·수정 요청 → **즉시 TASKS.md 에 저장** (project-registrar)
+  2. 해당 도메인 에이전트 · 코드 수정 (test/fix)
+  3. **소스코드 변경 사항 · MENU_STRUCTURE.md 에 업데이트** (project-registrar · 날짜 기록 · CHANGELOG)
+  4. TASKS.md 완료 태스크 · 삭제 (project-registrar)
 
 ---
 
