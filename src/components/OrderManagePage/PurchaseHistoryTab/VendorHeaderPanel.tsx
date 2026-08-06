@@ -207,37 +207,30 @@ export const VendorHeaderPanel: React.FC<VendorHeaderPanelProps> = ({ vendor, de
         </div>
       </div>
 
-      {/* KPI 4개 · 최근 365일 기준 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-        <KpiCard
-          label="누적 매입액 (1년)"
-          value={fmtWon(kpis.totalAmount)}
-          suffix={kpis.totalAmount >= 10_000 ? "원" : ""}
-          hint={loading ? "로딩 중" : `${detailRows.length}건`}
-          tone="emerald"
-        />
-        <KpiCard
-          label="이번달 매입액"
-          value={fmtWon(kpis.thisMonthAmount)}
-          suffix={kpis.thisMonthAmount >= 10_000 ? "원" : ""}
-          hint={<span className="inline-flex items-center gap-0.5">{momIcon}{momText}</span>}
-          tone={momTone}
-        />
-        <KpiCard
-          label="평균 매입주기"
-          value={kpis.avgCycleDays != null ? String(kpis.avgCycleDays) : "-"}
-          suffix={kpis.avgCycleDays != null ? "일" : ""}
-          hint="매입일 간 평균 간격"
-          tone="slate"
-        />
-        <KpiCard
-          label="활성 상품수"
-          value={kpis.activeSkuCount > 0 ? kpis.activeSkuCount.toLocaleString() : "-"}
-          suffix={kpis.activeSkuCount > 0 ? "종" : ""}
-          hint="Distinct SKU (1년)"
-          tone="slate"
-          icon={<Package size={12} />}
-        />
+      {/* KPI · 텍스트로 깔끔하게 (2026-08-06 · 사용자 요청 · 카드 제거) */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px] leading-tight border-t border-slate-100 pt-2">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="text-slate-400 font-semibold">누적 매입액 (1년)</span>
+          <span className="tabular-nums font-black text-emerald-700">{fmtWon(kpis.totalAmount)}원</span>
+          <span className="text-slate-400 tabular-nums">({loading ? "로딩" : `${detailRows.length}건`})</span>
+        </span>
+        <span className="text-slate-200">·</span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="text-slate-400 font-semibold">이번달</span>
+          <span className={`tabular-nums font-black ${momTone === "rose" ? "text-rose-700" : momTone === "emerald" ? "text-emerald-700" : "text-slate-700"}`}>{fmtWon(kpis.thisMonthAmount)}원</span>
+          <span className="text-slate-400 tabular-nums inline-flex items-center gap-0.5">{momIcon}{momText}</span>
+        </span>
+        <span className="text-slate-200">·</span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="text-slate-400 font-semibold">평균 매입주기</span>
+          <span className="tabular-nums font-black text-slate-700">{kpis.avgCycleDays != null ? `${kpis.avgCycleDays}일` : "-"}</span>
+        </span>
+        <span className="text-slate-200">·</span>
+        <span className="inline-flex items-center gap-1.5">
+          <Package size={11} className="text-slate-400 shrink-0" />
+          <span className="text-slate-400 font-semibold">활성 상품</span>
+          <span className="tabular-nums font-black text-slate-700">{kpis.activeSkuCount > 0 ? `${kpis.activeSkuCount.toLocaleString()}종` : "-"}</span>
+        </span>
       </div>
     </div>
   );

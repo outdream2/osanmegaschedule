@@ -1324,13 +1324,27 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {topTab === "purchase-order" && (
         <div className="flex flex-col gap-3">
           {renderSubTabs<PurchaseOrderKey>(
-            purchaseOrderSortable.tabs.map(t => ({
-              k: t.key,
-              label: t.label,
-              icon: t.icon,
-              color: t.color,
-              badge: t.key === "need" ? lowStockFiltered.length : undefined,
-            })),
+            purchaseOrderSortable.tabs.map(t => {
+              // 2026-08-06 · 발주 서브탭 배지 · 발주필요·발주요청·품절임박 갯수 (사용자 요청)
+              let badge: number | undefined;
+              if (t.key === "need") badge = lowStockFiltered.length;
+              else if (t.key === "order") badge = orderReqsFiltered.length;
+              else if (t.key === "critical") {
+                badge = products.filter(p => {
+                  const code = getCode(p);
+                  const inv = invStockMap.get(code);
+                  if (!inv || !Number.isFinite(inv.total)) return false;
+                  return Number(inv.total) <= 3;
+                }).length;
+              }
+              return {
+                k: t.key,
+                label: t.label,
+                icon: t.icon,
+                color: t.color,
+                badge: badge && badge > 0 ? badge : undefined,
+              };
+            }),
             purchaseOrderSubTab,
             setPurchaseOrderSubTab,
             { getTabProps: purchaseOrderSortable.getTabProps, isDragging: purchaseOrderSortable.isDragging },

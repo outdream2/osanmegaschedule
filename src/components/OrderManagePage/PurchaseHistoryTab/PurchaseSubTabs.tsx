@@ -906,6 +906,17 @@ const TopIntervalCard: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
 
 // ── TrendTab · Top 10 랭킹 3종 컨테이너 (반응형 그리드) ─────────────────────
 const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ rows, loading }) => {
+  // 2026-08-06 · 데이터 실제 기간 표시 (사용자 요청 · 제목 옆 " - " 형태)
+  const dateRange = useMemo(() => {
+    if (rows.length === 0) return null;
+    const dates = rows.map(r => String(r.date ?? "").slice(0, 10)).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+    if (dates.length === 0) return null;
+    const fmt = (s: string) => {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+      return m ? `${m[1]}.${m[2]}.${m[3]}` : s;
+    };
+    return `${fmt(dates[0])} ~ ${fmt(dates[dates.length - 1])}`;
+  }, [rows]);
   if (loading) {
     return <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[11px]">불러오는 중...</div>;
   }
@@ -913,8 +924,16 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
     return <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[11px]">해당 기간 매입 데이터 없음</div>;
   }
   return (
-    // 반응형 그리드 · 모바일 1열 · 태블릿 2열 · 데스크탑 3열
     <div className="flex-1 min-h-0 overflow-auto p-3">
+      {/* 제목 + 기간 표시 (사용자 요청 · 2026-08-06) */}
+      <div className="flex items-baseline gap-2 mb-2 px-1">
+        <span className="text-[12px] font-black text-slate-700">매입추이 Top 10</span>
+        {dateRange && (
+          <span className="text-[10.5px] text-slate-400 font-semibold tabular-nums">({dateRange})</span>
+        )}
+        <span className="text-[10px] text-slate-400 tabular-nums ml-auto">{rows.length.toLocaleString()}건</span>
+      </div>
+      {/* 반응형 그리드 · 모바일 1열 · 태블릿 2열 · 데스크탑 3열 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
         <TopQuantityCard rows={rows} />
         <TopUnitPriceCard rows={rows} />

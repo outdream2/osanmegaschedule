@@ -19,6 +19,19 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+/**
+ * 리사이저 핸들 <span> 에 공통으로 쓸 Tailwind className
+ * th 에 `position: relative` 필요
+ * 사용: <span {...resizerProps("col")} className={RESIZER_CLS} style={{ touchAction:"none" }} />
+ */
+export const RESIZER_CLS =
+  "absolute right-0 top-0 bottom-0 w-3 " +
+  "flex items-center justify-center z-10 " +
+  "cursor-col-resize select-none " +
+  "after:content-[''] after:absolute after:right-1 after:top-1/4 after:bottom-1/4 " +
+  "after:w-px after:bg-slate-300 after:rounded-full " +
+  "hover:after:bg-sky-400 hover:after:w-[2px] after:transition-all after:duration-100";
+
 export interface ColDef {
   /** 기본 폭(px) */
   default: number;
@@ -196,8 +209,7 @@ export function useColumnResize<K extends string>(
         onTouchStart: startTouch,
         role: "separator" as const,
         "aria-label": `${col} 컬럼 폭 조절`,
-        // className 은 사용처에서 직접 지정 · 여기서는 제공 안 함 (충돌 방지)
-        // style 은 touchAction 고정
+        className: "cursor-col-resize select-none",
         style: {
           touchAction: "none",
         } as React.CSSProperties,
