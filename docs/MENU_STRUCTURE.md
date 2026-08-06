@@ -1217,6 +1217,16 @@ npm run test        # vitest (필요 시)
 
 ## CHANGELOG · 변경 이력
 
+### 2026-08-06 (3차 · Supabase cap 우회 · 사용자 제보 픽스)
+
+- **fix · Supabase 1000행 cap 우회** (커밋 `7b3f843`)
+  - `server/routes/purchase.ts` · GET `/api/purchase-details`
+  - 원인: Supabase REST API 기본 `max_rows: 1000` · `.limit(5000)` 지정해도 서버가 1000 캡핑
+  - 증상: 매입이력 조회 · 5000행 요청해도 최신 1000행만 반환 · 기간 필터 무관하게 최근 데이터만 보임
+  - 해결: `.limit(N)` → `range(0, PAGE-1)` + PAGE=1000 loop · effectiveLimit 까지 반복 fetch
+  - 임포트 이력 정상 (20 배치 · 5개월치 16,655행 · coverage endpoint 확인)
+  - 다른 라우터 · 같은 패턴 있을 수 있음 (향후 audit)
+
 ### 2026-08-06 (2차 · research-strategist 최종 통합)
 
 - **MENU_STRUCTURE.md 전체 통합 최종화** · Part III 백엔드/DB/RPC 상세 5개 섹션 추가 (섹션 21~25)
