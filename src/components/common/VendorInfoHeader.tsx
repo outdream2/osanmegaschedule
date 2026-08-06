@@ -123,15 +123,18 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
   const pad = dense ? "p-2.5" : "p-3";
 
   // 2026-08-06 · 표시명: (주)·주식회사·(vat미포함) 등 부가정보 제거
-  // 2026-08-06 · vat_included 자동 추정: 이름에 "vat미포함"/"VAT미포함" 이 있으면 false 로 override
+  // 2026-08-06 · vat_included 자동 추정 · 기본 true (VAT포함)
+  //   1. vendor.vat_included 명시값 우선
+  //   2. 이름에 "vat미포함/별도/없음" 있으면 false (부가세 별도)
+  //   3. 그 외 (null) 는 true 로 기본 표시 (사용자 요청)
   const rawName = vendor.company_name ?? "";
   const displayName = displayVendorName(rawName);
   const nameHintsVatExcluded = /vat\s*(미포함|별도|없음)/i.test(rawName);
-  const effectiveVatIncluded: boolean | null =
+  const effectiveVatIncluded: boolean =
     vendor.vat_included === true ? true
     : vendor.vat_included === false ? false
     : nameHintsVatExcluded ? false
-    : null;
+    : true;
 
   return (
     <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${pad} flex flex-col gap-2.5 ${className}`}>

@@ -1266,39 +1266,44 @@ export const VendorDetailModal: React.FC<{
               </Field>
             </div>
 
-            {/* Right · 공급 요약 (정보 탭에서만 · 매입이력은 탭 이동) */}
-            <div className="space-y-4">
+            {/* Right · 공급 요약 · 텍스트 스타일 (2026-08-06 · 사용자 요청 · 카드 → 글씨) */}
+            <div className="space-y-3">
               <SectionTitle icon={<TrendingUp size={13} />} title="공급 요약" color="emerald" />
 
-              {/* 4-way stat cards */}
-              <div className="grid grid-cols-2 gap-2.5">
-                <StatCard
-                  icon={<DollarSign size={12} />} color="emerald" label="현재 잔액"
-                  value={balanceInfo ? fmtWon(balanceInfo.balance) : (vendor.latestBalance?.balance != null ? fmtWon(vendor.latestBalance.balance) : "-")}
-                  sub={balanceInfo ? `매입 ${balanceInfo.purchase_count} · 결제 ${balanceInfo.payment_count}` : undefined}
-                />
-                <StatCard
-                  icon={<TrendingUp size={12} />} color="indigo" label="총 매입액"
-                  value={summary ? fmtWon(summary.totalAmount) : "-"}
-                  sub={summary ? `${summary.count.toLocaleString()}건` : undefined}
-                />
-                <StatCard
-                  icon={<Package size={12} />} color="violet" label="매입 상품"
-                  value={summary ? `${summary.uniqueProducts.toLocaleString()}종` : "-"}
-                  sub={summary?.totalQty ? `총 ${summary.totalQty.toLocaleString()}개` : undefined}
-                />
-                <StatCard
-                  icon={<Calendar size={12} />} color="rose" label="최근 매입일"
-                  value={summary?.latestDate ?? "-"}
-                  sub={summary?.earliestDate ? `첫 ${summary.earliestDate}` : undefined}
-                />
+              {/* 4항목 · 텍스트 · 라벨 + 값 + sub */}
+              <div className="flex flex-wrap gap-x-5 gap-y-2 text-[12px] leading-tight">
+                <span className="inline-flex items-baseline gap-1.5">
+                  <span className="text-slate-400 font-semibold">현재 잔액</span>
+                  <span className="tabular-nums font-black text-emerald-700">
+                    {balanceInfo ? fmtWon(balanceInfo.balance) : (vendor.latestBalance?.balance != null ? fmtWon(vendor.latestBalance.balance) : "-")}
+                  </span>
+                  {balanceInfo && (
+                    <span className="text-[10.5px] text-slate-400 tabular-nums">(매입 {balanceInfo.purchase_count} · 결제 {balanceInfo.payment_count})</span>
+                  )}
+                </span>
+                <span className="text-slate-200">·</span>
+                <span className="inline-flex items-baseline gap-1.5">
+                  <span className="text-slate-400 font-semibold">총 매입액</span>
+                  <span className="tabular-nums font-black text-indigo-700">{summary ? fmtWon(summary.totalAmount) : "-"}</span>
+                  {summary && <span className="text-[10.5px] text-slate-400 tabular-nums">({summary.count.toLocaleString()}건)</span>}
+                </span>
+                <span className="text-slate-200">·</span>
+                <span className="inline-flex items-baseline gap-1.5">
+                  <span className="text-slate-400 font-semibold">매입 상품</span>
+                  <span className="tabular-nums font-black text-violet-700">{summary ? `${summary.uniqueProducts.toLocaleString()}종` : "-"}</span>
+                  {summary?.totalQty && <span className="text-[10.5px] text-slate-400 tabular-nums">(총 {summary.totalQty.toLocaleString()}개)</span>}
+                </span>
+                <span className="text-slate-200">·</span>
+                <span className="inline-flex items-baseline gap-1.5">
+                  <span className="text-slate-400 font-semibold">최근 매입일</span>
+                  <span className="tabular-nums font-black text-rose-700">{summary?.latestDate ?? "-"}</span>
+                  {summary?.earliestDate && <span className="text-[10.5px] text-slate-400 tabular-nums">(첫 {summary.earliestDate})</span>}
+                </span>
               </div>
 
-              <div className="rounded-lg bg-slate-50 border border-slate-200 p-3 text-[11px] text-slate-500 leading-relaxed">
-                <div className="font-bold text-slate-600 mb-1 flex items-center gap-1">
-                  <ChevronRight size={11} /> 안내
-                </div>
-                결제·잔고 관리는 상단 <span className="font-bold text-emerald-700">결제·잔고</span> 탭 · 매입 이력은 <span className="font-bold text-amber-700">매입이력</span> 탭에서 확인하세요.
+              <div className="text-[11px] text-slate-500 leading-relaxed border-t border-slate-100 pt-2">
+                <span className="text-slate-400">💡 </span>
+                결제·잔고 관리는 <span className="font-bold text-emerald-700">결제·잔고</span> 탭 · 매입 이력은 <span className="font-bold text-amber-700">매입이력</span> 탭
               </div>
             </div>
           </div>

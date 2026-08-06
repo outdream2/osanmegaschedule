@@ -663,9 +663,16 @@ export const PaymentInfoTab: React.FC = () => {
     });
   }, [vendors, vendorSearch, vendorCategoryFilter, sortKey, sortDir, purchaseByVendor, paymentByVendor]);
 
-  // ── VAT 자동 계산 ────────────────────────────────────────────
+  // ── VAT 자동 계산 (2026-08-06 · null 기본 true · 이름 힌트 반영) ─
   const amountNum = Number(String(amount).replace(/[^0-9]/g, "")) || 0;
-  const vatIncluded = selectedVendor?.vat_included === true;
+  const vatIncluded = useMemo(() => {
+    if (!selectedVendor) return true;
+    if (selectedVendor.vat_included === true) return true;
+    if (selectedVendor.vat_included === false) return false;
+    // null · 이름 힌트로 추론 · 없으면 true 기본
+    const nm = selectedVendor.company_name ?? "";
+    return /vat\s*(미포함|별도|없음)/i.test(nm) ? false : true;
+  }, [selectedVendor]);
   const { supply: supplyAmt, vat: vatAmt } = useMemo(
     () => computeVat(amountNum, vatIncluded),
     [amountNum, vatIncluded]
@@ -864,15 +871,16 @@ export const PaymentInfoTab: React.FC = () => {
                       }`}
                     >
                       <span className="w-[42px] shrink-0"><VendorCategoryBadge category={v.category} /></span>
-                      {/* VAT 배지 · 포함/불포함 · 2026-08-06 · 사용자 요청 */}
+                      {/* VAT 배지 · 포함/별도 · 2026-08-06 · null 기본 포함 · 이름 힌트 반영 */}
                       <span className="w-[36px] shrink-0 text-center">
-                        {v.vat_included == null ? (
-                          <span className="text-[9.5px] text-slate-300">-</span>
-                        ) : v.vat_included ? (
-                          <span className="inline-flex px-1 py-0.5 rounded text-[9.5px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">포함</span>
-                        ) : (
-                          <span className="inline-flex px-1 py-0.5 rounded text-[9.5px] font-black bg-slate-50 text-slate-500 border border-slate-200">불포함</span>
-                        )}
+                        {(() => {
+                          const nm = v.company_name ?? "";
+                          const hint = /vat\s*(미포함|별도|없음)/i.test(nm);
+                          const eff = v.vat_included === false ? false : v.vat_included === true ? true : hint ? false : true;
+                          return eff
+                            ? <span className="inline-flex px-1 py-0.5 rounded text-[9.5px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">포함</span>
+                            : <span className="inline-flex px-1 py-0.5 rounded text-[9.5px] font-black bg-slate-50 text-slate-500 border border-slate-200">별도</span>;
+                        })()}
                       </span>
                       <span className={`text-[12px] font-semibold break-words whitespace-normal leading-tight flex-1 min-w-0 ${
                         selectedVendor?.id === v.id ? "text-sky-800" : "text-slate-700"

@@ -26,38 +26,46 @@ const isYmd = (s: unknown): s is string =>
   typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
 
 // ─────────────────────────────────────────────────────────────────────
-// VAT 유틸 (2026-08-03 · #193)
+// VAT 유틸 (2026-08-03 · #193 · 2026-08-06 개선 · null → true 기본)
 //   splitVat(amount, vat_included)
 //     · vat_included=true  · 총액에 VAT 포함 → vat = amount/11 · supply = amount - vat
 //     · vat_included=false · 총액은 공급가액 (별도과세) → vat = amount*0.1 · supply = amount
-//     · vat_included=null  · 세액 산정 불가 → vat=0 · supply=amount (VAT 미설정 안내용)
+//     · vat_included=null  · true 로 기본 처리 (사용자 요청 · 기본 VAT포함)
 // ─────────────────────────────────────────────────────────────────────
 export function splitVat(amount: number, vatIncluded: boolean | null): { vat: number; supply: number } {
   if (!Number.isFinite(amount) || amount <= 0) return { vat: 0, supply: 0 };
-  if (vatIncluded === true) {
+  const eff = vatIncluded === false ? false : true; // null → true (default)
+  if (eff) {
     const vat = Math.round(amount / 11);
     return { vat, supply: amount - vat };
   }
-  if (vatIncluded === false) {
-    const vat = Math.round(amount * 0.1);
-    return { vat, supply: amount };
-  }
-  return { vat: 0, supply: amount };
+  const vat = Math.round(amount * 0.1);
+  return { vat, supply: amount };
 }
 
-/** 공급사명으로 vat_included lookup · 실패해도 null 반환 (컬럼 없는 DB 안전) */
+/** 공급사명에서 vat 별도 힌트 감지 · 이름에 "vat미포함/별도/없음" 있으면 false */
+function inferVatFromName(name: string | null | undefined): boolean | null {
+  if (!name) return null;
+  return /vat\s*(미포함|별도|없음)/i.test(String(name)) ? false : null;
+}
+
+/** 공급사명으로 vat_included lookup · 실패해도 null 반환 (컬럼 없는 DB 안전)
+ *  · vendor.vat_included 우선 · 없으면 이름 힌트 · 그래도 없으면 null (호출측이 default 처리)
+ */
 async function fetchVatIncluded(supplier: string): Promise<boolean | null> {
   try {
     const { data, error } = await supabase
       .from("vendors")
-      .select("vat_included")
+      .select("vat_included, company_name")
       .eq("company_name", supplier)
       .maybeSingle();
-    if (error) return null;
+    if (error) return inferVatFromName(supplier);
     const v = (data as any)?.vat_included;
-    return v === true || v === false ? v : null;
+    if (v === true || v === false) return v;
+    // vendor 있으나 vat_included 미설정 · 이름으로 추론
+    return inferVatFromName((data as any)?.company_name ?? supplier);
   } catch {
-    return null;
+    return inferVatFromName(supplier);
   }
 }
 
