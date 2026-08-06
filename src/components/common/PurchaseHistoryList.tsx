@@ -26,6 +26,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 
 export interface PurchaseHistoryRow {
   id?: string | number;
@@ -130,6 +131,16 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
     else { setSortKey(k); setSortDir(k === "date" ? "desc" : "asc"); }
   };
   const arrow = (k: SortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
+  const { getWidth, resizerProps } = useColumnResize("purchaseHistoryList", {
+    num:      { default: 32,  min: 28, max: 60  },
+    date:     { default: 96,  min: 60, max: 160 },
+    gap:      { default: 56,  min: 40, max: 100 },
+    supplier: { default: 140, min: 80, max: 280 },
+    product:  { default: 160, min: 80, max: 320 },
+    qty:      { default: 64,  min: 48, max: 100 },
+    unit:     { default: 80,  min: 56, max: 140 },
+    amount:   { default: 96,  min: 64, max: 160 },
+  });
 
   const sorted = useMemo<PurchaseHistoryRow[]>(() => {
     const sign = sortDir === "asc" ? 1 : -1;
@@ -223,54 +234,72 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
       className={`overflow-auto ${maxHeight ? "" : "flex-1 min-h-0"} bg-white`}
       style={containerStyle}
     >
-      <table className="w-full text-[12px] min-w-[420px]">
+      <table className="w-full text-[12px] min-w-[420px]" style={{ tableLayout: "fixed" }}>
         <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
           <tr className="text-[11px] text-slate-500 uppercase tracking-wider">
             {showRowNumber && (
-              <th className="text-left px-2 py-2 w-8 text-slate-300">#</th>
+              <th className="relative text-left px-2 py-2 text-slate-300" style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
+                #
+                <span {...resizerProps("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+              </th>
             )}
             <th
               onClick={() => toggleSort("date")}
-              className="text-left px-3 py-2 w-24 cursor-pointer select-none hover:bg-slate-100 transition"
+              className="relative text-left px-3 py-2 cursor-pointer select-none hover:bg-slate-100 transition"
+              style={{ width: getWidth("date"), minWidth: getWidth("date") }}
             >
               매입일{arrow("date")}
+              <span {...resizerProps("date")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
             {showGap && (
-              <th className="text-right px-2 py-2 w-14" title="이전 매입일과의 일수 차이">간격</th>
+              <th className="relative text-right px-2 py-2" title="이전 매입일과의 일수 차이" style={{ width: getWidth("gap"), minWidth: getWidth("gap") }}>
+                간격
+                <span {...resizerProps("gap")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+              </th>
             )}
             {showSupplier && (
               <th
                 onClick={() => toggleSort("supplier_name")}
-                className="text-left px-3 py-2 cursor-pointer select-none hover:bg-slate-100 transition"
+                className="relative text-left px-3 py-2 cursor-pointer select-none hover:bg-slate-100 transition"
+                style={{ width: getWidth("supplier"), minWidth: getWidth("supplier") }}
               >
                 공급사{arrow("supplier_name")}
+                <span {...resizerProps("supplier")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
               </th>
             )}
             {showProduct && (
               <th
                 onClick={() => toggleSort("product_name")}
-                className="text-left px-3 py-2 cursor-pointer select-none hover:bg-slate-100 transition"
+                className="relative text-left px-3 py-2 cursor-pointer select-none hover:bg-slate-100 transition"
+                style={{ width: getWidth("product"), minWidth: getWidth("product") }}
               >
                 상품{arrow("product_name")}
+                <span {...resizerProps("product")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
               </th>
             )}
             <th
               onClick={() => toggleSort("quantity")}
-              className="text-right px-3 py-2 w-16 cursor-pointer select-none hover:bg-slate-100 transition"
+              className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-slate-100 transition"
+              style={{ width: getWidth("qty"), minWidth: getWidth("qty") }}
             >
               수량{arrow("quantity")}
+              <span {...resizerProps("qty")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
             <th
               onClick={() => toggleSort("unit_price")}
-              className="text-right px-3 py-2 w-20 cursor-pointer select-none hover:bg-slate-100 transition"
+              className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-slate-100 transition"
+              style={{ width: getWidth("unit"), minWidth: getWidth("unit") }}
             >
               단가{arrow("unit_price")}
+              <span {...resizerProps("unit")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
             <th
               onClick={() => toggleSort("amount")}
-              className="text-right px-3 py-2 w-24 text-emerald-600 cursor-pointer select-none hover:bg-emerald-50 transition"
+              className="relative text-right px-3 py-2 text-emerald-600 cursor-pointer select-none hover:bg-emerald-50 transition"
+              style={{ width: getWidth("amount"), minWidth: getWidth("amount") }}
             >
               금액{arrow("amount")}
+              <span {...resizerProps("amount")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
           </tr>
         </thead>
