@@ -123,7 +123,7 @@ router.post(
       const row0S = scoreRow(arr[0]);
       const row1S = scoreRow(arr[1] ?? []);
       // Row0 병합 여부 판정: 같은 값 반복이 많으면 병합 카테고리 헤더
-      const row0Arr = (arr[0] ?? []) as any[];
+      const row0Arr = arr[0] ?? [];
       const row0HasDup = row0Arr.length > 0 && new Set(row0Arr.map(v => String(v ?? "").trim()).filter(Boolean)).size < row0Arr.filter(v => String(v ?? "").trim()).length;
       // 결합 헤더 생성 (Row0가 병합 카테고리인 경우) or Row1 단독 (일반)
       let headers: string[] = [];
@@ -132,7 +132,7 @@ router.post(
         // Row0 = 카테고리 병합 · Row1 = 실제 컬럼 · Row2+ = 데이터
         // 중복되는 label ("수량"·"금액" 같은 것)만 카테고리 접두어 붙임 (유니크는 그대로)
         //   예: "코드"(유니크) → "코드" · "수량"(3중복) → "정상매입_수량", "반품_수량", "매입합계_수량"
-        const row1Arr = (arr[1] ?? []) as any[];
+        const row1Arr = arr[1] ?? [];
         const labelCounts = new Map<string, number>();
         row1Arr.forEach(h => {
           const l = String(h ?? "").trim();
@@ -148,7 +148,7 @@ router.post(
         dataRows = arr.slice(2);
       } else {
         const headerRowIdx = row1S > row0S ? 1 : 0;
-        headers = (arr[headerRowIdx] as any[]).map(h => String(h ?? "").trim());
+        headers = arr[headerRowIdx].map(h => String(h ?? "").trim());
         dataRows = arr.slice(headerRowIdx + 1);
       }
 
@@ -563,11 +563,11 @@ router.get("/api/purchase-details", async (req, res) => {
     }
     // 계절 월 필터 (년도 무관) — SQL EXTRACT 미지원이므로 후처리
     if (seasonMonths) {
-      rows = rows.filter(r => purchaseDateInSeason(String((r as any).purchase_date ?? ""), seasonMonths)).slice(0, limit);
+      rows = rows.filter(r => purchaseDateInSeason(String(r.purchase_date ?? ""), seasonMonths)).slice(0, limit);
     }
 
     // 조회 시 products 조인: xlsx 에 없는 supplier/name/spec 보강 + min_order (2026-07-15)
-    const codes = Array.from(new Set(rows.map(r => String((r as any).product_code ?? "")).filter(Boolean)));
+    const codes = Array.from(new Set(rows.map(r => String(r.product_code ?? "")).filter(Boolean)));
     if (codes.length > 0) {
       try {
         const PCHUNK = 500;
@@ -579,12 +579,12 @@ router.get("/api/purchase-details", async (req, res) => {
             .select("product_code, supplier, supplier_code, product_name, spec, min_order")
             .in("product_code", chunk);
           for (const p of pd ?? []) {
-            pMap.set(String((p as any).product_code), {
-              supplier: (p as any).supplier ?? null,
-              supplier_code: (p as any).supplier_code ?? null,
-              product_name: (p as any).product_name ?? null,
-              spec: (p as any).spec ?? null,
-              min_order: Number((p as any).min_order ?? 0) || 0,
+            pMap.set(String(p.product_code), {
+              supplier: p.supplier ?? null,
+              supplier_code: p.supplier_code ?? null,
+              product_name: p.product_name ?? null,
+              spec: p.spec ?? null,
+              min_order: Number(p.min_order ?? 0) || 0,
             });
           }
         }
@@ -627,8 +627,8 @@ router.get("/api/purchase-details", async (req, res) => {
             if (histErr) throw new Error(histErr.message);
             if (!hist || hist.length === 0) break;
             for (const r of hist) {
-              const c = String((r as any).product_code ?? "");
-              const d = String((r as any).purchase_date ?? "");
+              const c = String(r.product_code ?? "");
+              const d = String(r.purchase_date ?? "");
               if (!c || !d) continue;
               const set = byCode.get(c) ?? new Set<string>();
               set.add(d);
