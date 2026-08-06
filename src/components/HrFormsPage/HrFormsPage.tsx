@@ -16,8 +16,8 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
-import { SortableHeader, type SortableColumn } from "../common/SortableHeader";
 import { FilterBar } from "../common/FilterBar";
+import { useColumnResize } from "../../hooks/useColumnResize";
 import type { AuthSession } from "../../types";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -361,6 +361,18 @@ const EmptyState: React.FC<{
 const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNavigate, onLogout, embedded = false }) => {
   const isManager = (authSession?.level ?? 0) >= 2;
 
+  // 컬럼 리사이즈
+  const { getWidth, resizerProps } = useColumnResize("hrForms", {
+    _icon:       { default: 52,  min: 44,  max: 80  },
+    title:       { default: 220, min: 100, max: 500 },
+    category:    { default: 120, min: 80,  max: 200 },
+    file_name:   { default: 200, min: 100, max: 400 },
+    file_size:   { default: 90,  min: 60,  max: 160 },
+    uploaded_by: { default: 110, min: 60,  max: 200 },
+    created_at:  { default: 150, min: 100, max: 240 },
+    _action:     { default: 160, min: 100, max: 260 },
+  });
+
   // 데이터
   const [forms, setForms] = useState<HrForm[]>([]);
   const [loading, setLoading] = useState(false);
@@ -438,16 +450,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
     setSortDir(dir);
   };
 
-  const sortableColumns: SortableColumn<SortKey>[] = useMemo(() => [
-    { key: "_icon" as SortKey,   label: "",         align: "left",   sortable: false },
-    { key: "title",              label: "양식명",   align: "left" },
-    { key: "category",           label: "분류",     align: "left" },
-    { key: "file_name",          label: "파일명",   align: "left" },
-    { key: "file_size",          label: "크기",     align: "right" },
-    { key: "uploaded_by",        label: "업로더",   align: "left" },
-    { key: "created_at",         label: "업로드일", align: "left" },
-    { key: "_action" as SortKey, label: "액션",     align: "center", sortable: false },
-  ], []);
+  // sortableColumns · SortableHeader 는 리사이즈 헤더로 교체 · 제거됨
 
   // ── 파일 선택 ─────────────────────────────────────────────────────────────
   const onFileChosen = useCallback((file: File | null) => {
@@ -781,24 +784,133 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
 
           {/* 데스크톱 테이블 */}
           <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-sm border-collapse">
-              <colgroup>
-                <col style={{ minWidth: 48, width: 52 }} />
-                <col style={{ minWidth: 200 }} />
-                <col style={{ minWidth: 110, width: 130 }} />
-                <col style={{ minWidth: 180 }} />
-                <col style={{ minWidth: 90, width: 100 }} />
-                <col style={{ minWidth: 100, width: 120 }} />
-                <col style={{ minWidth: 140, width: 160 }} />
-                <col style={{ minWidth: 140, width: isManager ? 170 : 100 }} />
-              </colgroup>
+            <table className="text-sm border-collapse" style={{ tableLayout: "fixed", width: (["_icon","title","category","file_name","file_size","uploaded_by","created_at","_action"] as const).reduce((s, k) => s + getWidth(k as any), 0) }}>
               <thead className="bg-slate-50">
-                <SortableHeader<SortKey>
-                  columns={sortableColumns}
-                  activeKey={sortKey}
-                  activeDir={sortDir}
-                  onSort={handleSort}
-                />
+                <tr className="border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  {/* 파일 아이콘 컬럼 */}
+                  <th
+                    className="relative select-none text-left px-2.5 py-2"
+                    style={{ width: getWidth("_icon"), minWidth: getWidth("_icon") }}
+                  >
+                    <span {...resizerProps("_icon" as any)}
+                      className="absolute right-0 top-0 bottom-0 w-3 flex items-center justify-center z-10 cursor-col-resize select-none after:content-[''] after:absolute after:right-1 after:top-1/4 after:bottom-1/4 after:w-px after:bg-slate-300 after:rounded-full hover:after:bg-sky-400 hover:after:w-[2px] after:transition-all after:duration-100"
+                      style={{ touchAction: "none" }}
+                    />
+                  </th>
+                  {/* 양식명 */}
+                  <th
+                    className="relative select-none text-left px-2.5 py-2 cursor-pointer hover:text-slate-700 transition-colors"
+                    style={{ width: getWidth("title"), minWidth: getWidth("title") }}
+                    onClick={() => handleSort("title", sortKey === "title" ? (sortDir === "asc" ? "desc" : "asc") : "asc")}
+                    title="양식명 · 클릭하여 정렬"
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      <span>양식명</span>
+                      {sortKey === "title" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-slate-300 opacity-60">▲▼</span>}
+                    </span>
+                    <span {...resizerProps("title" as any)}
+                      className="absolute right-0 top-0 bottom-0 w-3 flex items-center justify-center z-10 cursor-col-resize select-none after:content-[''] after:absolute after:right-1 after:top-1/4 after:bottom-1/4 after:w-px after:bg-slate-300 after:rounded-full hover:after:bg-sky-400 hover:after:w-[2px] after:transition-all after:duration-100"
+                      style={{ touchAction: "none" }}
+                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                    />
+                  </th>
+                  {/* 분류 */}
+                  <th
+                    className="relative select-none text-left px-2.5 py-2 cursor-pointer hover:text-slate-700 transition-colors"
+                    style={{ width: getWidth("category"), minWidth: getWidth("category") }}
+                    onClick={() => handleSort("category", sortKey === "category" ? (sortDir === "asc" ? "desc" : "asc") : "asc")}
+                    title="분류 · 클릭하여 정렬"
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      <span>분류</span>
+                      {sortKey === "category" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-slate-300 opacity-60">▲▼</span>}
+                    </span>
+                    <span {...resizerProps("category" as any)}
+                      className="absolute right-0 top-0 bottom-0 w-3 flex items-center justify-center z-10 cursor-col-resize select-none after:content-[''] after:absolute after:right-1 after:top-1/4 after:bottom-1/4 after:w-px after:bg-slate-300 after:rounded-full hover:after:bg-sky-400 hover:after:w-[2px] after:transition-all after:duration-100"
+                      style={{ touchAction: "none" }}
+                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                    />
+                  </th>
+                  {/* 파일명 */}
+                  <th
+                    className="relative select-none text-left px-2.5 py-2 cursor-pointer hover:text-slate-700 transition-colors"
+                    style={{ width: getWidth("file_name"), minWidth: getWidth("file_name") }}
+                    onClick={() => handleSort("file_name", sortKey === "file_name" ? (sortDir === "asc" ? "desc" : "asc") : "asc")}
+                    title="파일명 · 클릭하여 정렬"
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      <span>파일명</span>
+                      {sortKey === "file_name" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-slate-300 opacity-60">▲▼</span>}
+                    </span>
+                    <span {...resizerProps("file_name" as any)}
+                      className="absolute right-0 top-0 bottom-0 w-3 flex items-center justify-center z-10 cursor-col-resize select-none after:content-[''] after:absolute after:right-1 after:top-1/4 after:bottom-1/4 after:w-px after:bg-slate-300 after:rounded-full hover:after:bg-sky-400 hover:after:w-[2px] after:transition-all after:duration-100"
+                      style={{ touchAction: "none" }}
+                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                    />
+                  </th>
+                  {/* 크기 */}
+                  <th
+                    className="relative select-none text-right px-2.5 py-2 cursor-pointer hover:text-slate-700 transition-colors"
+                    style={{ width: getWidth("file_size"), minWidth: getWidth("file_size") }}
+                    onClick={() => handleSort("file_size", sortKey === "file_size" ? (sortDir === "asc" ? "desc" : "asc") : "asc")}
+                    title="크기 · 클릭하여 정렬"
+                  >
+                    <span className="inline-flex items-center gap-1 justify-end w-full">
+                      <span>크기</span>
+                      {sortKey === "file_size" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-slate-300 opacity-60">▲▼</span>}
+                    </span>
+                    <span {...resizerProps("file_size" as any)}
+                      className="absolute right-0 top-0 bottom-0 w-3 flex items-center justify-center z-10 cursor-col-resize select-none after:content-[''] after:absolute after:right-1 after:top-1/4 after:bottom-1/4 after:w-px after:bg-slate-300 after:rounded-full hover:after:bg-sky-400 hover:after:w-[2px] after:transition-all after:duration-100"
+                      style={{ touchAction: "none" }}
+                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                    />
+                  </th>
+                  {/* 업로더 */}
+                  <th
+                    className="relative select-none text-left px-2.5 py-2 cursor-pointer hover:text-slate-700 transition-colors"
+                    style={{ width: getWidth("uploaded_by"), minWidth: getWidth("uploaded_by") }}
+                    onClick={() => handleSort("uploaded_by", sortKey === "uploaded_by" ? (sortDir === "asc" ? "desc" : "asc") : "asc")}
+                    title="업로더 · 클릭하여 정렬"
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      <span>업로더</span>
+                      {sortKey === "uploaded_by" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-slate-300 opacity-60">▲▼</span>}
+                    </span>
+                    <span {...resizerProps("uploaded_by" as any)}
+                      className="absolute right-0 top-0 bottom-0 w-3 flex items-center justify-center z-10 cursor-col-resize select-none after:content-[''] after:absolute after:right-1 after:top-1/4 after:bottom-1/4 after:w-px after:bg-slate-300 after:rounded-full hover:after:bg-sky-400 hover:after:w-[2px] after:transition-all after:duration-100"
+                      style={{ touchAction: "none" }}
+                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                    />
+                  </th>
+                  {/* 업로드일 */}
+                  <th
+                    className="relative select-none text-left px-2.5 py-2 cursor-pointer hover:text-slate-700 transition-colors"
+                    style={{ width: getWidth("created_at"), minWidth: getWidth("created_at") }}
+                    onClick={() => handleSort("created_at", sortKey === "created_at" ? (sortDir === "asc" ? "desc" : "asc") : "asc")}
+                    title="업로드일 · 클릭하여 정렬"
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      <span>업로드일</span>
+                      {sortKey === "created_at" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-slate-300 opacity-60">▲▼</span>}
+                    </span>
+                    <span {...resizerProps("created_at" as any)}
+                      className="absolute right-0 top-0 bottom-0 w-3 flex items-center justify-center z-10 cursor-col-resize select-none after:content-[''] after:absolute after:right-1 after:top-1/4 after:bottom-1/4 after:w-px after:bg-slate-300 after:rounded-full hover:after:bg-sky-400 hover:after:w-[2px] after:transition-all after:duration-100"
+                      style={{ touchAction: "none" }}
+                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                    />
+                  </th>
+                  {/* 액션 */}
+                  <th
+                    className="relative select-none text-center px-2.5 py-2"
+                    style={{ width: getWidth("_action"), minWidth: getWidth("_action") }}
+                  >
+                    <span>액션</span>
+                    <span {...resizerProps("_action" as any)}
+                      className="absolute right-0 top-0 bottom-0 w-3 flex items-center justify-center z-10 cursor-col-resize select-none after:content-[''] after:absolute after:right-1 after:top-1/4 after:bottom-1/4 after:w-px after:bg-slate-300 after:rounded-full hover:after:bg-sky-400 hover:after:w-[2px] after:transition-all after:duration-100"
+                      style={{ touchAction: "none" }}
+                    />
+                  </th>
+                </tr>
               </thead>
               <tbody>
                 {loading && (
