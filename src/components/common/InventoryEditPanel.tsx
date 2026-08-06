@@ -1,13 +1,13 @@
 // src/components/common/InventoryEditPanel.tsx
-// 실재고 입력 패널 · 창고1/창고2/매장1/매장2/매장3 수량 + 매장 구역 편집
-// controlled 컴포넌트 — 부모가 values/onChange 를 제공
-// InventoryEditModal 에 내장되거나 단독으로 사용 가능
+// 실재고 입력 패널 · 창고1/창고2/매장1/매장2/매장3 누적(add) 방식
+// 각 zone: 현재값(readonly) + 추가수량(delta input) + zone별 [저장] 버튼
+// 매장 zone: 구역 라벨 편집 가능 유지
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Package, MapPin } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────
-// Types
+// Types (InventoryValues 는 backwards compat 용 export 유지)
 // ─────────────────────────────────────────────────────────────
 export interface InventoryValues {
   w1: number | "";
@@ -20,36 +20,53 @@ export interface InventoryValues {
   s3z: string | null;
 }
 
+export type ZoneKey = "w1" | "w2" | "s1" | "s2" | "s3";
+
+export interface CurrentValues {
+  w1: number;
+  w2: number;
+  s1: number;
+  s2: number;
+  s3: number;
+  s1z: string | null;
+  s2z: string | null;
+  s3z: string | null;
+}
+
 export interface InventoryEditPanelProps {
   productCode: string;
   productName: string;
-  values: InventoryValues;
-  onChange: (v: InventoryValues) => void;
-  /** 저장 버튼 표시 (기본 false · 모달 footer 에서 저장할 경우 false) */
-  showSaveButton?: boolean;
-  onSave?: () => void;
-  saving?: boolean;
+  currentValues: CurrentValues;
+  /** zone 별 저장 콜백 · newTotal = current + delta · zone label 함께 전달 */
+  onSaveZone: (
+    zone: ZoneKey,
+    newTotal: number,
+    zoneLabel?: string | null,
+  ) => Promise<void>;
+  savingZone?: ZoneKey | null;
   /** compact 모드 (패딩 최소화) */
   dense?: boolean;
 }
 
+type Deltas = Record<ZoneKey, number | "">;
+
 // ─────────────────────────────────────────────────────────────
 // Sub-components
 // ─────────────────────────────────────────────────────────────
-interface NumberInputProps {
+interface DeltaInputProps {
   value: number | "";
   onChange: (v: number | "") => void;
   disabled?: boolean;
   accent?: string;
 }
-const NumberInput: React.FC<NumberInputProps> = ({
+const DeltaInput: React.FC<DeltaInputProps> = ({
   value, onChange, disabled = false, accent = "focus:border-teal-400",
 }) => {
-  const cur = value === "" ? 0 : Number(value) || 0;
+  const cur = value === "" ? 0 : Math.max(0, Number(value) || 0);
   const dec = () => {
     if (disabled) return;
     const n = Math.max(0, cur - 1);
-    onChange(n === 0 && value === "" ? "" : n);
+    onChange(n);
   };
   const inc = () => { if (disabled) return; onChange(cur + 1); };
   return (
@@ -66,8 +83,12 @@ const NumberInput: React.FC<NumberInputProps> = ({
         type="number"
         inputMode="numeric"
         value={value}
+        min={0}
         disabled={disabled}
-        onChange={e => onChange(e.target.value === "" ? "" : Number(e.target.value))}
+        onChange={e => {
+          const n = e.target.value === "" ? "" : Math.max(0, Number(e.target.value) || 0);
+          onChange(n);
+        }}
         placeholder="0"
         className={`flex-1 min-w-0 h-full text-center px-1 bg-transparent border-0 text-[13px] font-black tabular-nums focus:outline-none disabled:text-slate-300 ${accent}`}
       />
@@ -102,34 +123,172 @@ const ZoneInput: React.FC<ZoneInputProps> = ({ value, placeholder = "-", accentC
 );
 
 // ─────────────────────────────────────────────────────────────
-// Total helper
+// ZoneRow — 창고용 (현재 + delta + 저장 버튼)
 // ─────────────────────────────────────────────────────────────
-function calcTotal(v: InventoryValues): number {
-  return (v.w1 !== "" ? Number(v.w1) : 0)
-    + (v.w2 !== "" ? Number(v.w2) : 0)
-    + (v.s1 !== "" ? Number(v.s1) : 0)
-    + (v.s2 !== "" ? Number(v.s2) : 0)
-    + (v.s3 !== "" ? Number(v.s3) : 0);
+interface ZoneRowProps {
+  label: string;
+  current: number;
+  delta: number | "";
+  onDeltaChange: (v: number | "") => void;
+  onSave: () => void;
+  saving: boolean;
+  accent: string;
 }
+const ZoneRow: React.FC<ZoneRowProps> = ({
+  label, current, delta, onDeltaChange, onSave, saving, accent,
+}) => {
+  const d = delta === "" ? 0 : Number(delta);
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between gap-1">
+        <span className={`text-[10px] font-semibold ${accent} block`}>{label}</span>
+        <span className="text-[10px] text-slate-400 tabular-nums">현재 <span className="font-black text-slate-700">{current}</span></span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <div className="flex-1">
+          <DeltaInput
+            value={delta}
+            onChange={onDeltaChange}
+            disabled={saving}
+            accent={`focus:border-${accent.includes("orange") ? "orange" : "teal"}-400`}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saving || d <= 0}
+          className="h-9 px-2.5 rounded-lg bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-[11px] font-bold transition-colors disabled:opacity-40 cursor-pointer shrink-0"
+        >
+          {saving ? "…" : "+저장"}
+        </button>
+      </div>
+      {d > 0 && (
+        <div className="text-[10px] text-slate-400 text-right tabular-nums">
+          저장 후: <span className="font-black text-violet-700">{current + d}</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────
+// StoreZoneRow — 매장용 (구역 편집 포함)
+// ─────────────────────────────────────────────────────────────
+interface StoreZoneRowProps extends ZoneRowProps {
+  zoneLabel: string | null;
+  onZoneLabelChange: (v: string | null) => void;
+}
+const StoreZoneRow: React.FC<StoreZoneRowProps> = ({
+  label, current, delta, onDeltaChange, onSave, saving, accent,
+  zoneLabel, onZoneLabelChange,
+}) => {
+  const d = delta === "" ? 0 : Number(delta);
+  return (
+    <div className="px-2.5 py-2 rounded-xl bg-emerald-50 border border-emerald-100 space-y-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[10px] font-bold text-emerald-700 shrink-0">{label}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-slate-400 tabular-nums">현재 <span className="font-black text-slate-700">{current}</span></span>
+          <div className="max-w-[80px]">
+            <ZoneInput
+              value={zoneLabel}
+              accentClass="text-emerald-600 focus:border-emerald-400"
+              placeholder="구역"
+              onChange={onZoneLabelChange}
+            />
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <div className="flex-1">
+          <DeltaInput
+            value={delta}
+            onChange={onDeltaChange}
+            disabled={saving}
+            accent="focus:border-emerald-400"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saving || d <= 0}
+          className="h-9 px-2.5 rounded-lg bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-[11px] font-bold transition-colors disabled:opacity-40 cursor-pointer shrink-0"
+        >
+          {saving ? "…" : "+저장"}
+        </button>
+      </div>
+      {d > 0 && (
+        <div className="text-[10px] text-slate-400 text-right tabular-nums">
+          저장 후: <span className="font-black text-violet-700">{current + d}</span>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ─────────────────────────────────────────────────────────────
 // InventoryEditPanel
 // ─────────────────────────────────────────────────────────────
+const EMPTY_DELTAS: Deltas = { w1: "", w2: "", s1: "", s2: "", s3: "" };
+
 export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
   productCode,
   productName,
-  values,
-  onChange,
-  showSaveButton = false,
-  onSave,
-  saving = false,
+  currentValues,
+  onSaveZone,
+  savingZone = null,
   dense = false,
 }) => {
   const pad = dense ? "p-3 space-y-3" : "p-4 space-y-4";
 
-  const set = (patch: Partial<InventoryValues>) => onChange({ ...values, ...patch });
+  // delta per zone (로컬 state · 저장 성공 시 해당 zone 리셋)
+  const [deltas, setDeltas] = useState<Deltas>(EMPTY_DELTAS);
 
-  const total = calcTotal(values);
+  // 매장 구역 라벨 (로컬 편집 · zone 별 저장 시 함께 전달)
+  const [zones, setZones] = useState({
+    s1z: currentValues.s1z,
+    s2z: currentValues.s2z,
+    s3z: currentValues.s3z,
+  });
+
+  // currentValues 가 바뀌면 (부모가 저장 성공 후 업데이트) zone labels 동기화
+  useEffect(() => {
+    setZones({
+      s1z: currentValues.s1z,
+      s2z: currentValues.s2z,
+      s3z: currentValues.s3z,
+    });
+  }, [currentValues.s1z, currentValues.s2z, currentValues.s3z]);
+
+  const setDelta = (zone: ZoneKey, v: number | "") =>
+    setDeltas(prev => ({ ...prev, [zone]: v }));
+
+  const resetDelta = (zone: ZoneKey) =>
+    setDeltas(prev => ({ ...prev, [zone]: "" }));
+
+  const handleSave = async (zone: ZoneKey) => {
+    const d = deltas[zone];
+    const delta = d === "" ? 0 : Number(d);
+    if (delta <= 0) return;
+    const current = currentValues[zone];
+    const newTotal = current + delta;
+    const zoneLabel =
+      zone === "s1" ? zones.s1z
+      : zone === "s2" ? zones.s2z
+      : zone === "s3" ? zones.s3z
+      : undefined;
+    await onSaveZone(zone, newTotal, zoneLabel);
+    resetDelta(zone);
+  };
+
+  // 합계: 현재 + 미저장 delta 합산
+  const totalCurrent = currentValues.w1 + currentValues.w2 + currentValues.s1 + currentValues.s2 + currentValues.s3;
+  const totalDelta =
+    (deltas.w1 === "" ? 0 : Number(deltas.w1)) +
+    (deltas.w2 === "" ? 0 : Number(deltas.w2)) +
+    (deltas.s1 === "" ? 0 : Number(deltas.s1)) +
+    (deltas.s2 === "" ? 0 : Number(deltas.s2)) +
+    (deltas.s3 === "" ? 0 : Number(deltas.s3));
 
   return (
     <div className={pad}>
@@ -151,22 +310,24 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
           <span className="text-[10px] font-bold text-orange-500 tracking-wide uppercase">창고</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <span className="text-[10px] font-semibold text-orange-600 block">창고 1</span>
-            <NumberInput
-              value={values.w1}
-              onChange={v => set({ w1: v })}
-              accent="focus:border-orange-400"
-            />
-          </div>
-          <div className="space-y-1">
-            <span className="text-[10px] font-semibold text-orange-600 block">창고 2</span>
-            <NumberInput
-              value={values.w2}
-              onChange={v => set({ w2: v })}
-              accent="focus:border-orange-400"
-            />
-          </div>
+          <ZoneRow
+            label="창고 1"
+            current={currentValues.w1}
+            delta={deltas.w1}
+            onDeltaChange={v => setDelta("w1", v)}
+            onSave={() => handleSave("w1")}
+            saving={savingZone === "w1"}
+            accent="text-orange-600"
+          />
+          <ZoneRow
+            label="창고 2"
+            current={currentValues.w2}
+            delta={deltas.w2}
+            onDeltaChange={v => setDelta("w2", v)}
+            onSave={() => handleSave("w2")}
+            saving={savingZone === "w2"}
+            accent="text-orange-600"
+          />
         </div>
       </div>
 
@@ -177,83 +338,51 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
           <span className="text-[10px] font-bold text-emerald-600 tracking-wide uppercase">매장</span>
         </div>
         <div className="space-y-2">
-          {/* 매장 1 */}
-          <div className="px-2.5 py-2 rounded-xl bg-emerald-50 border border-emerald-100 space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-bold text-emerald-700 shrink-0">매장 1</span>
-              <div className="flex-1 max-w-[80px]">
-                <ZoneInput
-                  value={values.s1z}
-                  accentClass="text-emerald-600 focus:border-emerald-400"
-                  placeholder="구역"
-                  onChange={v => set({ s1z: v })}
-                />
-              </div>
-            </div>
-            <NumberInput
-              value={values.s1}
-              onChange={v => set({ s1: v })}
-              accent="focus:border-emerald-400"
-            />
-          </div>
-          {/* 매장 2 */}
-          <div className="px-2.5 py-2 rounded-xl bg-emerald-50 border border-emerald-100 space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-bold text-emerald-700 shrink-0">매장 2</span>
-              <div className="flex-1 max-w-[80px]">
-                <ZoneInput
-                  value={values.s2z}
-                  accentClass="text-emerald-600 focus:border-emerald-400"
-                  placeholder="구역"
-                  onChange={v => set({ s2z: v })}
-                />
-              </div>
-            </div>
-            <NumberInput
-              value={values.s2}
-              onChange={v => set({ s2: v })}
-              accent="focus:border-emerald-400"
-            />
-          </div>
-          {/* 매장 3 */}
-          <div className="px-2.5 py-2 rounded-xl bg-emerald-50 border border-emerald-100 space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-bold text-emerald-700 shrink-0">매장 3</span>
-              <div className="flex-1 max-w-[80px]">
-                <ZoneInput
-                  value={values.s3z}
-                  accentClass="text-emerald-600 focus:border-emerald-400"
-                  placeholder="구역"
-                  onChange={v => set({ s3z: v })}
-                />
-              </div>
-            </div>
-            <NumberInput
-              value={values.s3}
-              onChange={v => set({ s3: v })}
-              accent="focus:border-emerald-400"
-            />
-          </div>
+          <StoreZoneRow
+            label="매장 1"
+            current={currentValues.s1}
+            delta={deltas.s1}
+            onDeltaChange={v => setDelta("s1", v)}
+            onSave={() => handleSave("s1")}
+            saving={savingZone === "s1"}
+            accent="text-emerald-600"
+            zoneLabel={zones.s1z}
+            onZoneLabelChange={v => setZones(z => ({ ...z, s1z: v }))}
+          />
+          <StoreZoneRow
+            label="매장 2"
+            current={currentValues.s2}
+            delta={deltas.s2}
+            onDeltaChange={v => setDelta("s2", v)}
+            onSave={() => handleSave("s2")}
+            saving={savingZone === "s2"}
+            accent="text-emerald-600"
+            zoneLabel={zones.s2z}
+            onZoneLabelChange={v => setZones(z => ({ ...z, s2z: v }))}
+          />
+          <StoreZoneRow
+            label="매장 3"
+            current={currentValues.s3}
+            delta={deltas.s3}
+            onDeltaChange={v => setDelta("s3", v)}
+            onSave={() => handleSave("s3")}
+            saving={savingZone === "s3"}
+            accent="text-emerald-600"
+            zoneLabel={zones.s3z}
+            onZoneLabelChange={v => setZones(z => ({ ...z, s3z: v }))}
+          />
         </div>
       </div>
 
-      {/* 합계 */}
+      {/* 합계 (현재 + 미저장 delta 합산 미리보기) */}
       <div className="px-3 py-2.5 rounded-xl bg-violet-600 flex items-center justify-between">
-        <span className="text-[11px] font-bold text-violet-100">합계 (창고 + 매장)</span>
-        <span className="tabular-nums text-[15px] font-black text-white">{total}</span>
+        <span className="text-[11px] font-bold text-violet-100">
+          합계 (현재{totalDelta > 0 ? ` + 추가 ${totalDelta}` : ""})
+        </span>
+        <span className="tabular-nums text-[15px] font-black text-white">
+          {totalCurrent}{totalDelta > 0 ? ` → ${totalCurrent + totalDelta}` : ""}
+        </span>
       </div>
-
-      {/* 저장 버튼 (옵션) */}
-      {showSaveButton && onSave && (
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={saving}
-          className="w-full h-10 rounded-xl bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-[13px] font-bold transition-colors disabled:opacity-60 cursor-pointer"
-        >
-          {saving ? "저장 중…" : "저장"}
-        </button>
-      )}
     </div>
   );
 };
