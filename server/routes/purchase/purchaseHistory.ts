@@ -2,8 +2,8 @@
 //   목적 · 1차보정 상품명 확정 후 · 매입 DB 최근 이력 조회 → raw data 매칭 재료 제공
 //   소스 · ocr_confirmed_items (실제 매입 확정 이력) · 상품별 최근 N건 집계
 import { Router } from "express";
-import { supabase } from "../../src/supabase/client";
-import { fetchAllWithRange } from "../utils/supabaseFetchAll";
+import { supabase } from "../../../src/supabase/client";
+import { fetchAllWithRange } from "../../utils/supabaseFetchAll";
 
 const router = Router();
 

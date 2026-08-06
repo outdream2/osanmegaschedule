@@ -7,7 +7,7 @@
 // 2026-08-03 · #193 · VAT 통합 · supplier-ledger · supplier-purchase-detail 응답에
 //   vat_amount·supply_amount 필드 추가 (vendor.vat_included 반영 · row 저장값 있으면 우선)
 import { Router } from "express";
-import { supabase } from "../../src/supabase/client";
+import { supabase } from "../../../src/supabase/client";
 
 const router = Router();
 

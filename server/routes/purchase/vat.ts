@@ -18,7 +18,7 @@
 //   · 홈택스 신고서 서식: 매입처별 세금계산서 합계표 · 신용카드 매출전표 수령명세서 등
 //
 import { Router } from "express";
-import { supabase } from "../../src/supabase/client";
+import { supabase } from "../../../src/supabase/client";
 
 const router = Router();
 

@@ -8,7 +8,7 @@
 //   - POST   /api/return-requests/bulk-send     · 선택 반품요청 · 공급사별 그룹 발송 (이메일·문자)
 
 import { Router } from "express";
-import { supabase } from "../../src/supabase/client";
+import { supabase } from "../../../src/supabase/client";
 
 const router = Router();
 

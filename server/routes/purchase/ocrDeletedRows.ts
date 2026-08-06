@@ -5,8 +5,8 @@
 //   같은 공급사 + 같은 (정규화) 품명 조합은 유일하게 결정됨
 
 import { Router } from "express";
-import { supabase } from "../../src/supabase/client";
-import { normSupplier } from "../ocr/match";
+import { supabase } from "../../../src/supabase/client";
+import { normSupplier } from "../../ocr/match";
 
 /** 품명 정규화 (서명용): 소문자·공백·특수문자·괄호 제거 */
 function normName(s: string | null | undefined): string {

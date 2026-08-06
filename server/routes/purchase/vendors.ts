@@ -2,7 +2,7 @@ import { Router } from "express";
 import express from "express";
 import XLSX from "xlsx";
 import bcrypt from "bcryptjs";
-import { supabase } from "../../src/supabase/client";
+import { supabase } from "../../../src/supabase/client";
 
 const router = Router();
 

@@ -21,31 +21,31 @@ import notificationsRouter from "./server/routes/board/notifications";
 import leaveRouter       from "./server/routes/daily/leave";
 import lunchRouter       from "./server/routes/daily/lunch";
 import reservationsRouter from "./server/routes/daily/reservations";
-import vendorsRouter     from "./server/routes/vendors";
+import vendorsRouter     from "./server/routes/purchase/vendors";
 import ocrRouter         from "./server/routes/ocr";
 // 2026-08-05 · 재고세기(YOLO) 기능 완전 제거 · stockCount·stockCounter·stockCounterConfig 파일 삭제됨
 import stockManageRouter from "./server/routes/stock/stockManage";
 // 2026-08-06 · T-LOSS-HISTORY · 손실추적 (DiffTab) 날짜별 스냅샷·이력·집계
 import lossTrackingRouter from "./server/routes/stock/lossTracking";
-import purchaseRouter    from "./server/routes/purchase";
+import purchaseRouter    from "./server/routes/purchase/purchase";
 import stockArrivalsRouter from "./server/routes/stock/stockArrivals";
 import productArrivalsRouter from "./server/routes/stock/productArrivals";
-import returnRequestsRouter from "./server/routes/returnRequests";
+import returnRequestsRouter from "./server/routes/purchase/returnRequests";
 import zoneLabelsRouter from "./server/routes/display/zoneLabels";
 import zoneAssignmentsRouter from "./server/routes/display/zoneAssignments";
-import supplierBalanceConfigRouter from "./server/routes/supplierBalanceConfig";
-import supplierPaymentsRouter from "./server/routes/supplierPayments";
-import ocrConfirmedRouter from "./server/routes/ocrConfirmed";
-import { ocrDeletedRowsRouter } from "./server/routes/ocrDeletedRows";
+import supplierBalanceConfigRouter from "./server/routes/purchase/supplierBalanceConfig";
+import supplierPaymentsRouter from "./server/routes/purchase/supplierPayments";
+import ocrConfirmedRouter from "./server/routes/purchase/ocrConfirmed";
+import { ocrDeletedRowsRouter } from "./server/routes/purchase/ocrDeletedRows";
 import boardRouter from "./server/routes/board/board";
-import invoiceImagesRouter from "./server/routes/invoiceImages";
-import purchaseHistoryRouter from "./server/routes/purchaseHistory";
+import invoiceImagesRouter from "./server/routes/purchase/invoiceImages";
+import purchaseHistoryRouter from "./server/routes/purchase/purchaseHistory";
 import hrFormsRouter from "./server/routes/staff/hrForms";
 import pharmacistMenuItemsRouter from "./server/routes/board/pharmacistMenuItems";
 import resignationsRouter from "./server/routes/staff/resignations";
 import employeeContractsRouter from "./server/routes/staff/employeeContracts";
 import contractClausesRouter from "./server/routes/staff/contractClauses";
-import vatRouter from "./server/routes/vat";
+import vatRouter from "./server/routes/purchase/vat";
 // 2026-07-28 · 재고·판매 통합 메뉴 제거 (사용자 요청) · 파일 보관 · 라우터 등록만 해제
 // import inventorySalesRouter from "./server/routes/inventorySales";
 // (재고세기 loadStockCountModel · 위에서 함께 제거됨)
