@@ -18,7 +18,7 @@ export const notificationsService = {
   async getForEmployee(employeeId: number, limit = 30): Promise<Notification[]> {
     const { data, error } = await supabase
       .from("notifications")
-      .select("*")
+      .select("id, employee_id, title, body, type, read, created_at")
       .eq("employee_id", employeeId)
       .order("created_at", { ascending: false })
       .limit(limit);

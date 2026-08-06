@@ -148,7 +148,7 @@ router.get("/api/board/posts", async (req, res) => {
 
   let q = supabase
     .from("board_posts")
-    .select("*")
+    .select("id, author_id, author_name, author_rank, post_type, title, body, status, category, pinned, resolved_at, resolved_by, mentions, created_at, updated_at")
     .order("pinned", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -237,7 +237,7 @@ router.post("/api/board/posts", async (req, res) => {
     category: b.category ?? null,
     mentions,
   };
-  const { data, error } = await supabase.from("board_posts").insert([insertRow]).select("*").single();
+  const { data, error } = await supabase.from("board_posts").insert([insertRow]).select("id").single();
   if (error) return res.status(500).json({ error: error.message });
 
   // 이미지 batch insert
@@ -376,7 +376,7 @@ router.post("/api/board/posts/:id/comments", async (req, res) => {
     parent_id: b.parent_id ?? null,
     body: String(b.body),
     mentions,
-  }]).select("*").single();
+  }]).select("id").single();
   if (error) return res.status(500).json({ error: error.message });
 
   // 이미지 batch (댓글 첨부)

@@ -105,7 +105,7 @@ router.get("/api/resignations", async (req, res) => {
   try {
     let q = supabase
       .from("resignation_requests")
-      .select("*")
+      .select("id, employee_id, employee_name, position, hire_date, last_work_date, reason, reason_detail, handover_notes, signature_url, pdf_url, status, approved_by, approved_by_id, approved_at, reject_reason, created_at")
       .order("created_at", { ascending: false });
 
     if (status && typeof status === "string" && status !== "all") {

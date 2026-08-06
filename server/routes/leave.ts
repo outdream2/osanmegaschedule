@@ -25,7 +25,7 @@ router.get("/api/leave-stats", async (req, res) => {
 router.get("/api/leave-requests", async (req, res) => {
   const { employeeId, all } = req.query;
   try {
-    let q = supabase.from("leave_requests").select("*").order("created_at", { ascending: false });
+    let q = supabase.from("leave_requests").select("id, employee_id, employee_name, leave_type, start_date, end_date, reason, status, reviewer_note, created_at, reviewed_at").order("created_at", { ascending: false });
     if (all !== "true" && employeeId) q = q.eq("employee_id", Number(employeeId));
     const { data, error } = await q;
     if (error) throw new Error(error.message);

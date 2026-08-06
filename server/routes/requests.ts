@@ -373,7 +373,7 @@ router.delete("/api/display-requests/:id", async (req, res) => {
 });
 
 router.get("/api/order-requests", async (req, res) => {
-  let q = supabase.from("order_requests").select("*").order("requested_at", { ascending: false });
+  let q = supabase.from("order_requests").select("id, product_code, product_name, current_stock, optimal_stock, note, requested_at").order("requested_at", { ascending: false });
   if (req.query.product_code) q = q.eq("product_code", String(req.query.product_code));
   const { data, error } = await q;
   if (error) return res.status(500).json({ error: error.message });
