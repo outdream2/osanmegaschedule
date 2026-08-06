@@ -394,9 +394,9 @@ function clausesEqual(a: ContractClauses, b: ContractClauses): boolean {
 const JOB_META: Array<{
   key: ContractCategory;
   label: string;
-  color: string;    // 텍스트
-  bg: string;       // 배경
-  border: string;   // 테두리
+  color: string;
+  bg: string;
+  border: string;
 }> = [
   { key: "약사", label: "약사", color: "text-violet-700",  bg: "bg-violet-50",  border: "border-violet-200"  },
   { key: "매장", label: "매장", color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200" },
@@ -413,12 +413,12 @@ const CLAUSE_GROUP_META: Array<{
   bg: string;
   border: string;
 }> = [
-  { key: "wageClauses",       label: "임금 단서",        desc: "임금·수당 지급에 관한 사전 동의 및 약정",       icon: Coins,      color: "text-amber-700",   bg: "bg-amber-50",   border: "border-amber-200"   },
-  { key: "workTimeClauses",   label: "근로시간·휴게",    desc: "근로시간·휴게시간·간주근로 등 약정",          icon: Clock,      color: "text-sky-700",     bg: "bg-sky-50",     border: "border-sky-200"     },
-  { key: "holidayClauses",    label: "휴일",             desc: "주휴일·공휴일·근로자의 날 등",                icon: Calendar,   color: "text-teal-700",    bg: "bg-teal-50",    border: "border-teal-200"    },
-  { key: "disciplineClauses", label: "징계·해지 사유",   desc: "근로계약 해지 및 징계 사유 각 호",             icon: Shield,     color: "text-rose-700",    bg: "bg-rose-50",    border: "border-rose-200"    },
-  { key: "etcClauses",        label: "기타",             desc: "지급방법·비밀유지·인수인계 등",                icon: ListChecks, color: "text-indigo-700",  bg: "bg-indigo-50",  border: "border-indigo-200"  },
-  { key: "privacyClauses",    label: "개인정보",         desc: "개인정보·CCTV 수집·이용",                     icon: Lock,       color: "text-slate-700",   bg: "bg-slate-50",   border: "border-slate-200"   },
+  { key: "wageClauses",       label: "임금 단서",      desc: "임금·수당 지급 약정",     icon: Coins,      color: "text-amber-700",   bg: "bg-amber-50",   border: "border-amber-200"   },
+  { key: "workTimeClauses",   label: "근로시간·휴게",  desc: "근로시간·간주근로 약정",  icon: Clock,      color: "text-sky-700",     bg: "bg-sky-50",     border: "border-sky-200"     },
+  { key: "holidayClauses",    label: "휴일",           desc: "주휴일·공휴일·휴무",      icon: Calendar,   color: "text-teal-700",    bg: "bg-teal-50",    border: "border-teal-200"    },
+  { key: "disciplineClauses", label: "징계·해지 사유", desc: "근로계약 해지 각 호",      icon: Shield,     color: "text-rose-700",    bg: "bg-rose-50",    border: "border-rose-200"    },
+  { key: "etcClauses",        label: "기타",           desc: "지급방법·비밀·인수인계",  icon: ListChecks, color: "text-indigo-700",  bg: "bg-indigo-50",  border: "border-indigo-200"  },
+  { key: "privacyClauses",    label: "개인정보",       desc: "개인정보·CCTV 수집",      icon: Lock,       color: "text-slate-700",   bg: "bg-slate-50",   border: "border-slate-200"   },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -566,10 +566,10 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── UI · 카드 접기/펴기 (기본 전체 펼침)
+  // ── UI · 카드 접기/펴기 (기본 전체 접힘 · 컴팩트 뷰)
   const [open, setOpen] = useState<Record<ClauseGroupKey, boolean>>({
-    wageClauses: true, workTimeClauses: true, holidayClauses: true,
-    disciplineClauses: true, etcClauses: true, privacyClauses: true,
+    wageClauses: false, workTimeClauses: false, holidayClauses: false,
+    disciplineClauses: false, etcClauses: false, privacyClauses: false,
   });
 
   const [notice, setNotice] = useState<{ tone: "ok" | "err" | "info"; text: string } | null>(null);
@@ -638,6 +638,16 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
     setOpen(prev => ({ ...prev, [group]: !prev[group] }));
   }, []);
 
+  // ── 전체 펼치기/접기
+  const allOpen = Object.values(open).every(Boolean);
+  const toggleAllOpen = useCallback(() => {
+    const next = !allOpen;
+    setOpen({
+      wageClauses: next, workTimeClauses: next, holidayClauses: next,
+      disciplineClauses: next, etcClauses: next, privacyClauses: next,
+    });
+  }, [allOpen]);
+
   // ── 저장 (각 호만 · 시급은 즉시 저장되므로 여기서 처리 안 함)
   //   T-C · 서버 저장 · 실패 시 localStorage fallback (saveContractClausesToServer 내부)
   const handleSave = async () => {
@@ -693,37 +703,38 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
         />
       )}
 
-      <main className="flex-1 max-w-[1000px] mx-auto w-full px-3 sm:px-5 py-5 flex flex-col gap-4">
-        {/* 페이지 헤더 */}
-        <div className="flex items-center justify-between gap-3 flex-wrap">
+      <main className="flex-1 max-w-[1100px] mx-auto w-full px-3 sm:px-5 py-4 flex flex-col gap-3">
+
+        {/* ── 페이지 헤더 · 컴팩트 ──────────────────────────────────────── */}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
-              <Gear size={20} weight="fill" />
+            <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+              <Gear size={17} weight="fill" />
             </div>
             <div>
-              <h1 className="text-lg sm:text-xl font-black text-slate-800 leading-none">근로계약서 설정</h1>
-              <p className="text-xs text-slate-500 mt-1">
-                직군별 시급은 편집 즉시 저장 · 각 호 내용은 [저장] 버튼으로 확정합니다.
+              <h1 className="text-base sm:text-lg font-black text-slate-800 leading-none">근로계약서 설정</h1>
+              <p className="text-[11px] text-slate-500 mt-0.5 font-semibold">
+                시급·회사정보 · 즉시 저장 &nbsp;·&nbsp; 각 호 · 저장 버튼으로 확정
+                {!serverLoaded && <span className="ml-1.5 text-slate-400">· 서버 로드 중...</span>}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={handleResetToDefault}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-sm font-semibold transition-colors cursor-pointer"
-              title="기본값으로 초기화 (저장 필요)"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 text-[12px] font-semibold transition-colors cursor-pointer"
+              title="기본값 초기화"
             >
-              <ArrowsClockwise size={14} />
+              <ArrowsClockwise size={13} />
               <span className="hidden sm:inline">기본값</span>
             </button>
             <button
               type="button"
               onClick={handleRevert}
               disabled={!dirty}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-semibold transition-colors cursor-pointer"
-              title="각 호 편집 취소 · 마지막 저장값으로 복원"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-[12px] font-semibold transition-colors cursor-pointer"
             >
               취소
             </button>
@@ -731,10 +742,9 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
               type="button"
               onClick={handleSave}
               disabled={!dirty || saving}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white text-sm font-black shadow-sm transition-colors cursor-pointer"
-              title="각 호 저장 (시급은 편집 즉시 자동 저장됨)"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white text-[12px] font-black shadow-sm transition-colors cursor-pointer"
             >
-              <FloppyDisk size={14} weight="bold" />
+              <FloppyDisk size={13} weight="bold" />
               {saving ? "저장 중..." : "각 호 저장"}
             </button>
           </div>
@@ -743,214 +753,219 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
         {/* 안내 배너 */}
         {notice && (
           <div
-            className={`rounded-lg border px-3 py-2 text-sm font-semibold flex items-center gap-2 ${
-              notice.tone === "ok"    ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-              notice.tone === "err"   ? "bg-rose-50 text-rose-700 border-rose-200" :
-                                        "bg-slate-50 text-slate-700 border-slate-200"
+            className={`rounded-lg border px-3 py-2 text-[12px] font-semibold flex items-center gap-2 ${
+              notice.tone === "ok"  ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+              notice.tone === "err" ? "bg-rose-50 text-rose-700 border-rose-200" :
+                                      "bg-slate-50 text-slate-700 border-slate-200"
             }`}
           >
-            {notice.tone === "ok"    ? <Check size={14} weight="bold" /> :
-             notice.tone === "err"   ? <Warning size={14} weight="fill" /> :
-                                       <Info size={14} weight="fill" />}
+            {notice.tone === "ok"  ? <Check size={13} weight="bold" /> :
+             notice.tone === "err" ? <Warning size={13} weight="fill" /> :
+                                     <Info size={13} weight="fill" />}
             {notice.text}
           </div>
         )}
 
-        {/* ── 섹션 0 · 회사 정보 ────────────────────────────────────────── */}
-        <section className="bg-white border border-slate-200 rounded-xl shadow-sm p-3 sm:p-4 flex flex-col gap-3">
-          <header className="flex items-center gap-2 pb-1 border-b border-slate-100">
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
-              <Info size={16} weight="fill" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-[15px] font-black text-emerald-700">회사 정보</h2>
-              <p className="text-[11px] text-slate-500 font-semibold">근로계약서 사업주란에 자동 채워지는 기본값입니다. 편집 즉시 서버에 저장됩니다.</p>
-            </div>
-            {!companyInfoLoaded && (
-              <span className="text-[11px] text-slate-400 font-semibold">로딩 중...</span>
-            )}
-            {companyInfoLoaded && companyInfoSaveState === "saving" && (
-              <span className="text-[11px] text-indigo-500 font-semibold">저장 중...</span>
-            )}
-            {companyInfoLoaded && companyInfoSaveState === "saved" && (
-              <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 font-semibold">
-                <Check size={11} weight="bold" /> 저장됨
-              </span>
-            )}
-            {companyInfoLoaded && companyInfoSaveState === "error" && (
-              <span className="inline-flex items-center gap-1 text-[11px] text-rose-500 font-semibold">
-                <Warning size={11} weight="fill" /> 저장 실패
-              </span>
-            )}
-          </header>
+        {/* ── 2컬럼 그리드 · 회사정보 (좌) + 시급 (우) ─────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* 상호 */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[12px] font-bold text-slate-600">상호</label>
-              <input
-                type="text"
-                value={companyInfo.name}
-                onChange={(e) => setCompanyInfo(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="예) 오산 메가타운 약국"
-                disabled={!companyInfoLoaded}
-                className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
-              />
+          {/* 섹션 0 · 회사 정보 */}
+          <section className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <header className="flex items-center gap-2 px-3 py-2.5 border-b border-slate-100 bg-slate-50/60">
+              <div className="w-7 h-7 rounded-md bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                <Info size={14} weight="fill" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-[13px] font-black text-emerald-700 leading-none">회사 정보</h2>
+                <p className="text-[11px] text-slate-500 font-semibold mt-0.5">근로계약서 사업주란 자동 채움 · 편집 즉시 저장</p>
+              </div>
+              {!companyInfoLoaded && (
+                <span className="text-[11px] text-slate-400 font-semibold shrink-0">로딩 중...</span>
+              )}
+              {companyInfoLoaded && companyInfoSaveState === "saving" && (
+                <span className="text-[11px] text-indigo-500 font-semibold shrink-0">저장 중...</span>
+              )}
+              {companyInfoLoaded && companyInfoSaveState === "saved" && (
+                <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 font-semibold shrink-0">
+                  <Check size={11} weight="bold" /> 저장됨
+                </span>
+              )}
+              {companyInfoLoaded && companyInfoSaveState === "error" && (
+                <span className="inline-flex items-center gap-1 text-[11px] text-rose-500 font-semibold shrink-0">
+                  <Warning size={11} weight="fill" /> 저장 실패
+                </span>
+              )}
+            </header>
+
+            <div className="p-3 grid grid-cols-2 gap-2.5">
+              {/* 상호 */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-bold text-slate-500">상호</label>
+                <input
+                  type="text"
+                  value={companyInfo.name}
+                  onChange={(e) => setCompanyInfo(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="예) 오산 메가타운 약국"
+                  disabled={!companyInfoLoaded}
+                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+                />
+              </div>
+              {/* 대표자 이름 */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-bold text-slate-500">대표자 이름</label>
+                <input
+                  type="text"
+                  value={companyInfo.representativeName}
+                  onChange={(e) => setCompanyInfo(prev => ({ ...prev, representativeName: e.target.value }))}
+                  placeholder="예) 강남성"
+                  disabled={!companyInfoLoaded}
+                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+                />
+              </div>
+              {/* 사업장 주소 */}
+              <div className="flex flex-col gap-1 col-span-2">
+                <label className="text-[11px] font-bold text-slate-500">사업장 주소</label>
+                <input
+                  type="text"
+                  value={companyInfo.address}
+                  onChange={(e) => setCompanyInfo(prev => ({ ...prev, address: e.target.value }))}
+                  placeholder="예) 경기도 오산시 경기대로 868-4 2층"
+                  disabled={!companyInfoLoaded}
+                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+                />
+              </div>
+              {/* 사업자등록번호 */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-bold text-slate-500">사업자등록번호 <span className="text-slate-400 font-normal">(선택)</span></label>
+                <input
+                  type="text"
+                  value={companyInfo.regNo}
+                  onChange={(e) => setCompanyInfo(prev => ({ ...prev, regNo: e.target.value }))}
+                  placeholder="예) 123-45-67890"
+                  disabled={!companyInfoLoaded}
+                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+                />
+              </div>
+              {/* 대표자 직함 */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-bold text-slate-500">대표자 직함 <span className="text-slate-400 font-normal">(선택)</span></label>
+                <input
+                  type="text"
+                  value={companyInfo.representativeTitle ?? ""}
+                  onChange={(e) => setCompanyInfo(prev => ({ ...prev, representativeTitle: e.target.value }))}
+                  placeholder="예) 대표약사"
+                  disabled={!companyInfoLoaded}
+                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+                />
+              </div>
             </div>
-            {/* 대표자 이름 */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[12px] font-bold text-slate-600">대표자 이름</label>
-              <input
-                type="text"
-                value={companyInfo.representativeName}
-                onChange={(e) => setCompanyInfo(prev => ({ ...prev, representativeName: e.target.value }))}
-                placeholder="예) 강남성"
-                disabled={!companyInfoLoaded}
-                className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
-              />
+          </section>
+
+          {/* 섹션 1 · 직군별 시급 */}
+          <section className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <header className="flex items-center gap-2 px-3 py-2.5 border-b border-slate-100 bg-slate-50/60">
+              <div className="w-7 h-7 rounded-md bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
+                <CurrencyKrw size={14} weight="fill" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-[13px] font-black text-indigo-700 leading-none">직군별 시급</h2>
+                <p className="text-[11px] text-slate-500 font-semibold mt-0.5">편집 즉시 서버 저장 · 근로계약서 자동 반영</p>
+              </div>
+            </header>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-[11px] text-slate-500 font-black bg-slate-50 border-b border-slate-200">
+                    <th className="text-left px-3 py-2 min-w-[72px]">직군</th>
+                    <th className="text-right px-2 py-2 min-w-[120px]">주중 (원)</th>
+                    <th className="text-right px-2 py-2 min-w-[120px]">주말 (원)</th>
+                    <th className="text-center px-2 py-2 w-9">초기화</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {JOB_META.map(job => {
+                    const stored = wageRates?.[job.key];
+                    const fallback = defaultWageForPosition(job.key);
+                    const rate = stored ?? fallback;
+                    const isDefault = !stored;
+                    return (
+                      <tr key={job.key} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50 transition-colors">
+                        <td className="px-3 py-2">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md ${job.bg} ${job.color} text-[12px] font-black`}>
+                            {job.label}
+                            {isDefault && (
+                              <span className="text-[9px] font-bold text-slate-400 bg-white/80 border border-slate-200 rounded px-0.5" title="기본값 사용 중">
+                                기본
+                              </span>
+                            )}
+                          </span>
+                        </td>
+                        <td className="px-2 py-2">
+                          <input
+                            type="number"
+                            min={0}
+                            step={10}
+                            value={rate.weekday || ""}
+                            placeholder={String(fallback.weekday)}
+                            onChange={(e) => updWage(job.key, "weekday", Math.max(0, Number(e.target.value) || 0))}
+                            className={`w-full block bg-white border rounded-lg px-2 py-1 text-[12px] font-bold text-right tabular-nums focus:outline-none focus:border-indigo-500 focus:shadow-sm transition ${isDefault ? "border-slate-200 text-slate-400" : "border-slate-300 text-slate-800"}`}
+                          />
+                        </td>
+                        <td className="px-2 py-2">
+                          <input
+                            type="number"
+                            min={0}
+                            step={10}
+                            value={rate.weekend || ""}
+                            placeholder={String(fallback.weekend)}
+                            onChange={(e) => updWage(job.key, "weekend", Math.max(0, Number(e.target.value) || 0))}
+                            className={`w-full block bg-white border rounded-lg px-2 py-1 text-[12px] font-bold text-right tabular-nums focus:outline-none focus:border-indigo-500 focus:shadow-sm transition ${isDefault ? "border-slate-200 text-slate-400" : "border-slate-300 text-slate-800"}`}
+                          />
+                        </td>
+                        <td className="px-2 py-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => resetWage(job.key)}
+                            disabled={isDefault}
+                            className="inline-flex items-center justify-center w-6 h-6 rounded-md border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                            title="이 직군 기본값으로 되돌리기"
+                          >
+                            <ArrowsClockwise size={11} weight="bold" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-            {/* 사업장 주소 */}
-            <div className="flex flex-col gap-1 sm:col-span-2">
-              <label className="text-[12px] font-bold text-slate-600">사업장 주소</label>
-              <input
-                type="text"
-                value={companyInfo.address}
-                onChange={(e) => setCompanyInfo(prev => ({ ...prev, address: e.target.value }))}
-                placeholder="예) 경기도 오산시 경기대로 868-4 2층"
-                disabled={!companyInfoLoaded}
-                className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
-              />
+          </section>
+        </div>
+
+        {/* ── 각 호 CMS 섹션 헤더 ───────────────────────────────────────── */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+              <ListChecks size={14} weight="fill" />
             </div>
-            {/* 사업자등록번호 */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[12px] font-bold text-slate-600">사업자등록번호 <span className="text-slate-400 font-normal">(선택)</span></label>
-              <input
-                type="text"
-                value={companyInfo.regNo}
-                onChange={(e) => setCompanyInfo(prev => ({ ...prev, regNo: e.target.value }))}
-                placeholder="예) 123-45-67890"
-                disabled={!companyInfoLoaded}
-                className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
-              />
-            </div>
-            {/* 대표자 직함 */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[12px] font-bold text-slate-600">대표자 직함 <span className="text-slate-400 font-normal">(선택)</span></label>
-              <input
-                type="text"
-                value={companyInfo.representativeTitle ?? ""}
-                onChange={(e) => setCompanyInfo(prev => ({ ...prev, representativeTitle: e.target.value }))}
-                placeholder="예) 대표약사"
-                disabled={!companyInfoLoaded}
-                className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
-              />
+            <div>
+              <h2 className="text-[13px] font-black text-slate-800 leading-none">각 호 내용 편집</h2>
+              <p className="text-[11px] text-slate-500 font-semibold mt-0.5">근로계약서에 삽입되는 조항 · 그룹 클릭해서 펼치기</p>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={toggleAllOpen}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 text-[11px] font-bold transition-colors cursor-pointer shrink-0"
+          >
+            {allOpen ? <CaretDown size={11} weight="bold" /> : <CaretRight size={11} weight="bold" />}
+            {allOpen ? "전체 접기" : "전체 펼치기"}
+          </button>
+        </div>
 
-          <div className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-2.5 py-1.5 font-semibold flex items-start gap-1.5">
-            <Info size={12} weight="fill" className="mt-[2px] shrink-0" />
-            <span>
-              회사 정보는 <b>편집 즉시 서버에 저장</b>되며 모든 관리자에게 공유됩니다.
-              근로계약서 작성 시 사업주 섹션에 자동으로 채워집니다.
-            </span>
-          </div>
-        </section>
-
-        {/* ── 섹션 1 · 직군별 시급 ─────────────────────────────────────── */}
-        <section className="bg-white border border-slate-200 rounded-xl shadow-sm p-3 sm:p-4 flex flex-col gap-3">
-          <header className="flex items-center gap-2 pb-1 border-b border-slate-100">
-            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
-              <CurrencyKrw size={16} weight="fill" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-[15px] font-black text-indigo-700">직군별 시급</h2>
-              <p className="text-[11px] text-slate-500 font-semibold">주중·주말 시급을 직군별로 설정합니다. 이 값은 근로계약서 작성 시 자동 채워집니다.</p>
-            </div>
-          </header>
-
-          {/* 안내 · 즉시 저장 · 서버 공유 */}
-          <div className="text-[11px] text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-2.5 py-1.5 font-semibold flex items-start gap-1.5">
-            <Info size={12} weight="fill" className="mt-[2px] shrink-0" />
-            <span>
-              시급 값은 <b>편집 즉시 서버에 저장</b>되며 모든 관리자에게 공유됩니다.
-              값을 비우면 기본값 (약사 35,000/40,000 · 그 외 10,030/12,000) 이 자동 사용됩니다.
-            </span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-[12px] text-slate-500 font-black bg-slate-50 border-b border-slate-200">
-                  <th className="text-left px-3 py-2 min-w-[100px]">직군</th>
-                  <th className="text-right px-3 py-2">주중 시급 (원)</th>
-                  <th className="text-right px-3 py-2">주말 시급 (원)</th>
-                  <th className="text-center px-2 py-2 w-[60px]">기본값</th>
-                </tr>
-              </thead>
-              <tbody>
-                {JOB_META.map(job => {
-                  const stored = wageRates?.[job.key];
-                  const fallback = defaultWageForPosition(job.key);
-                  const rate = stored ?? fallback;
-                  const isDefault = !stored;
-                  return (
-                    <tr key={job.key} className="border-b border-slate-100 last:border-b-0">
-                      <td className="px-3 py-2">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md ${job.bg} ${job.color} text-[13px] font-black`}>
-                          {job.label}
-                          {isDefault && (
-                            <span
-                              className="text-[9px] font-bold text-slate-500 bg-white/70 border border-slate-200 rounded px-1 py-[1px]"
-                              title="저장된 값이 없어 기본값 사용 중 · 편집 시 저장됩니다"
-                            >
-                              기본
-                            </span>
-                          )}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          type="number"
-                          min={0}
-                          step={10}
-                          value={rate.weekday || ""}
-                          placeholder={String(fallback.weekday)}
-                          onChange={(e) => updWage(job.key, "weekday", Math.max(0, Number(e.target.value) || 0))}
-                          className={`w-full max-w-[180px] ml-auto block bg-white border rounded-lg px-2.5 py-1.5 text-[14px] font-bold text-right focus:outline-none focus:border-indigo-500 focus:shadow-sm transition ${isDefault ? "border-slate-200 text-slate-500" : "border-slate-300 text-slate-800"}`}
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          type="number"
-                          min={0}
-                          step={10}
-                          value={rate.weekend || ""}
-                          placeholder={String(fallback.weekend)}
-                          onChange={(e) => updWage(job.key, "weekend", Math.max(0, Number(e.target.value) || 0))}
-                          className={`w-full max-w-[180px] ml-auto block bg-white border rounded-lg px-2.5 py-1.5 text-[14px] font-bold text-right focus:outline-none focus:border-indigo-500 focus:shadow-sm transition ${isDefault ? "border-slate-200 text-slate-500" : "border-slate-300 text-slate-800"}`}
-                        />
-                      </td>
-                      <td className="px-2 py-2 text-center">
-                        <button
-                          type="button"
-                          onClick={() => resetWage(job.key)}
-                          disabled={isDefault}
-                          className="inline-flex items-center justify-center w-7 h-7 rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                          title="이 직군만 기본값으로 되돌리기"
-                        >
-                          <ArrowsClockwise size={12} weight="bold" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {/* ── 섹션 2 · 각 호 내용 CMS ──────────────────────────────────── */}
-        <div className="flex flex-col gap-3">
+        {/* 각 호 그룹 · 2컬럼 그리드 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {CLAUSE_GROUP_META.map(grp => {
             const Icon = grp.icon;
             const list = clauses[grp.key];
@@ -960,29 +975,31 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                 key={grp.key}
                 className={`bg-white border ${grp.border} rounded-xl shadow-sm overflow-hidden`}
               >
+                {/* 아코디언 헤더 */}
                 <header
-                  className="flex items-center gap-2 px-3 sm:px-4 py-3 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-slate-50/60 transition-colors"
                   onClick={() => toggleOpen(grp.key)}
                   role="button"
                   aria-expanded={isOpen}
                 >
-                  <div className={`w-8 h-8 rounded-lg ${grp.bg} ${grp.color} flex items-center justify-center shrink-0`}>
-                    <Icon size={16} weight="fill" />
+                  <div className={`w-7 h-7 rounded-md ${grp.bg} ${grp.color} flex items-center justify-center shrink-0`}>
+                    <Icon size={13} weight="fill" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h2 className={`text-[14px] font-black ${grp.color}`}>{grp.label}</h2>
-                    <p className="text-[11px] text-slate-500 font-semibold">{grp.desc}</p>
+                    <h3 className={`text-[13px] font-black ${grp.color} leading-none`}>{grp.label}</h3>
+                    <p className="text-[11px] text-slate-500 font-semibold mt-0.5">{grp.desc}</p>
                   </div>
-                  <span className="text-[11px] font-black text-slate-400">{list.length}개</span>
+                  <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${grp.bg} ${grp.color} shrink-0`}>{list.length}</span>
                   {isOpen
-                    ? <CaretDown size={14} weight="bold" className="text-slate-400" />
-                    : <CaretRight size={14} weight="bold" className="text-slate-400" />}
+                    ? <CaretDown size={12} weight="bold" className="text-slate-400 shrink-0" />
+                    : <CaretRight size={12} weight="bold" className="text-slate-400 shrink-0" />}
                 </header>
 
+                {/* 펼쳐진 내용 */}
                 {isOpen && (
-                  <div className="p-3 sm:p-4 flex flex-col gap-2">
+                  <div className={`border-t ${grp.border} p-3 flex flex-col gap-2`}>
                     {list.length === 0 && (
-                      <div className="text-[12px] text-slate-400 font-semibold text-center py-4 border border-dashed border-slate-200 rounded-lg">
+                      <div className="text-[11px] text-slate-400 font-semibold text-center py-3 border border-dashed border-slate-200 rounded-lg">
                         등록된 항목이 없습니다.
                       </div>
                     )}
@@ -992,42 +1009,42 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                         key={idx}
                         className="flex items-start gap-2 p-2 rounded-lg border border-slate-100 bg-slate-50/40 hover:border-slate-200 transition-colors"
                       >
-                        <div className={`flex items-center justify-center min-w-[26px] h-[26px] rounded-md ${grp.bg} ${grp.color} text-[11px] font-black shrink-0 mt-1`}>
+                        <div className={`flex items-center justify-center min-w-[22px] h-[22px] rounded-md ${grp.bg} ${grp.color} text-[10px] font-black shrink-0 mt-1`}>
                           {idx + 1}
                         </div>
                         <textarea
                           value={text}
                           onChange={(e) => updClause(grp.key, idx, e.target.value)}
-                          rows={Math.max(2, Math.min(6, Math.ceil(text.length / 60) || 2))}
+                          rows={Math.max(2, Math.min(5, Math.ceil(text.length / 55) || 2))}
                           placeholder="내용을 입력하세요."
-                          className="flex-1 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-indigo-500 focus:shadow-sm transition resize-y leading-relaxed"
+                          className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-indigo-500 focus:shadow-sm transition resize-y leading-relaxed"
                         />
                         <div className="flex flex-col gap-1 shrink-0 pt-0.5">
                           <button
                             type="button"
                             onClick={() => moveClause(grp.key, idx, -1)}
                             disabled={idx === 0}
-                            className="w-7 h-7 rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer transition-colors"
+                            className="w-6 h-6 rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer transition-colors"
                             title="위로 이동"
                           >
-                            <ArrowUp size={12} weight="bold" />
+                            <ArrowUp size={10} weight="bold" />
                           </button>
                           <button
                             type="button"
                             onClick={() => moveClause(grp.key, idx, 1)}
                             disabled={idx === list.length - 1}
-                            className="w-7 h-7 rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer transition-colors"
+                            className="w-6 h-6 rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer transition-colors"
                             title="아래로 이동"
                           >
-                            <ArrowDown size={12} weight="bold" />
+                            <ArrowDown size={10} weight="bold" />
                           </button>
                           <button
                             type="button"
                             onClick={() => removeClause(grp.key, idx)}
-                            className="w-7 h-7 rounded-md border border-rose-200 bg-white text-rose-500 hover:bg-rose-50 flex items-center justify-center cursor-pointer transition-colors"
+                            className="w-6 h-6 rounded-md border border-rose-200 bg-white text-rose-500 hover:bg-rose-50 flex items-center justify-center cursor-pointer transition-colors"
                             title="삭제"
                           >
-                            <Trash size={12} weight="bold" />
+                            <Trash size={10} weight="bold" />
                           </button>
                         </div>
                       </div>
@@ -1037,18 +1054,18 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                       <button
                         type="button"
                         onClick={() => addClause(grp.key)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-dashed border-slate-300 bg-white text-slate-600 hover:bg-slate-50 hover:border-indigo-400 hover:text-indigo-600 text-[12px] font-bold transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-dashed border-slate-300 bg-white text-slate-500 hover:bg-slate-50 hover:border-indigo-400 hover:text-indigo-600 text-[11px] font-bold transition-colors cursor-pointer"
                       >
-                        <Plus size={12} weight="bold" />
+                        <Plus size={11} weight="bold" />
                         항목 추가
                       </button>
                       <button
                         type="button"
                         onClick={() => handleResetGroup(grp.key)}
-                        className="text-[11px] font-bold text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer"
-                        title="이 그룹만 기본값으로 되돌리기"
+                        className="text-[10px] font-bold text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer"
+                        title="이 그룹 기본값으로 되돌리기"
                       >
-                        이 그룹 기본값
+                        기본값 복원
                       </button>
                     </div>
                   </div>
@@ -1058,12 +1075,6 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
           })}
         </div>
 
-        <div className="text-[11px] text-slate-400 font-semibold text-center py-2 leading-relaxed">
-          회사정보 · 시급 · 서버 저장 (즉시 · 모든 관리자 공유)
-          <br />
-          각 호 · <code className="bg-slate-100 px-1 rounded">contract_clauses</code> · [저장] 버튼 필요
-          {!serverLoaded && <span className="ml-1 text-slate-300">· 서버 로드 중...</span>}
-        </div>
       </main>
     </div>
   );
