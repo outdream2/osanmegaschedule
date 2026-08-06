@@ -21,6 +21,7 @@ import { EmptyState } from "../common/EmptyState";
 import { fmtWonCompact } from "../../lib/format";
 import { LoadingState } from "../common/LoadingState";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
+import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -66,6 +67,25 @@ const FLOW_CACHE_TTL = 5 * 60 * 1000;
 // ─── FlowTab ─────────────────────────────────────────────────────────────────
 
 export const FlowTab: React.FC = () => {
+  const { getWidth, resizerProps } = useColumnResize("flowTab", {
+    sel:             { default: 48,  min: 40,  max: 80  },
+    name:            { default: 260, min: 120, max: 500 },
+    // 재고현황
+    stock_sale:      { default: 56,  min: 40,  max: 120 },
+    stock_cur:       { default: 48,  min: 40,  max: 100 },
+    stock_opt:       { default: 56,  min: 40,  max: 120 },
+    stock_month:     { default: 64,  min: 40,  max: 120 },
+    // 매입현황
+    pur_cycle:       { default: 48,  min: 40,  max: 100 },
+    pur_last:        { default: 44,  min: 40,  max: 100 },
+    pur_qty:         { default: 48,  min: 40,  max: 100 },
+    // 판매현황
+    sal_qty:         { default: 64,  min: 40,  max: 120 },
+    sal_amount:      { default: 80,  min: 50,  max: 160 },
+    sal_unit:        { default: 64,  min: 40,  max: 120 },
+    sal_price:       { default: 64,  min: 40,  max: 120 },
+    sal_profit:      { default: 56,  min: 40,  max: 100 },
+  });
   // 정렬
   const [flowSort, setFlowSort] = useState<SortKey>("sale");
   const [flowDir, setFlowDir] = useState<SortDir>("desc");
@@ -692,7 +712,7 @@ export const FlowTab: React.FC = () => {
                             const arrowFor = (key: SortKey) => flowSort !== key ? "⇅" : flowDir === "desc" ? "▼" : "▲";
                             return (
                               <>
-                                <th className="text-center px-1 py-1.5" style={{ width: 48, minWidth: 48, maxWidth: 48 }}>
+                                <th className="relative text-center px-1 py-1.5" style={{ width: getWidth("sel"), minWidth: getWidth("sel") }}>
                                   <div className="flex items-center justify-center gap-1.5">
                                     <button onClick={() => {
                                       if (selectedFlowCodes.size === filteredFlow.length) setSelectedFlowCodes(new Set());
@@ -704,87 +724,114 @@ export const FlowTab: React.FC = () => {
                                     </button>
                                     <span className="text-[14px] font-black text-slate-500">#</span>
                                   </div>
+                                  <span {...resizerProps("sel")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                                 </th>
                                 <th onClick={() => toggleFlowSort("name")}
-                                  className={`text-left px-1 py-1.5 min-w-[260px] cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "name" ? "text-slate-800 font-black" : "text-slate-500"}`}>
+                                  className={`relative text-left px-1 py-1.5 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "name" ? "text-slate-800 font-black" : "text-slate-500"}`}
+                                  style={{ width: getWidth("name"), minWidth: getWidth("name") }}>
                                   <span className="flex flex-col leading-tight items-start">
                                     <span>상품명</span>
                                     <span className="text-[10px] opacity-70">{arrowFor("name")}</span>
                                   </span>
+                                  <span {...resizerProps("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                 </th>
                                 {/* 재고현황 그룹 */}
                                 {isFlowGroupCollapsed("stock") && <th className="bg-sky-50/20" />}
                                 {!isFlowGroupCollapsed("stock") && <>
                                   <th onClick={() => toggleFlowSort("sale")}
-                                    className={`text-right px-0.5 py-1.5 w-14 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition ${flowSort === "sale" ? "text-sky-800 font-black" : "text-sky-600 font-black"}`}>
+                                    className={`relative text-right px-0.5 py-1.5 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition ${flowSort === "sale" ? "text-sky-800 font-black" : "text-sky-600 font-black"}`}
+                                    style={{ width: getWidth("stock_sale"), minWidth: getWidth("stock_sale") }}>
                                     <span className="flex flex-col leading-tight items-end"><span>판매량</span><span className="text-[10px] opacity-70">{arrowFor("sale")}</span></span>
+                                    <span {...resizerProps("stock_sale")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
                                   <th onClick={() => toggleFlowSort("current")}
-                                    className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition ${flowSort === "current" ? "text-sky-800 font-black" : "text-sky-600 font-black"}`}>
+                                    className={`relative text-right px-0.5 py-1.5 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition ${flowSort === "current" ? "text-sky-800 font-black" : "text-sky-600 font-black"}`}
+                                    style={{ width: getWidth("stock_cur"), minWidth: getWidth("stock_cur") }}>
                                     <span className="flex flex-col leading-tight items-end"><span>현재고</span><span className="text-[10px] opacity-70">{arrowFor("current")}</span></span>
+                                    <span {...resizerProps("stock_cur")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
                                   <th onClick={() => toggleFlowSort("optimal" as any)}
-                                    className={`text-right px-0.5 py-1.5 w-14 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition text-sky-600 font-black`}>
+                                    className={`relative text-right px-0.5 py-1.5 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition text-sky-600 font-black`}
+                                    style={{ width: getWidth("stock_opt"), minWidth: getWidth("stock_opt") }}>
                                     <span className="flex flex-col leading-tight items-end"><span>추천적정재고</span><span className="text-[10px] opacity-70">{arrowFor("optimal" as any)}</span></span>
+                                    <span {...resizerProps("stock_opt")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
-                                  <th className="text-right px-0.5 py-1.5 w-16 bg-sky-50/40 text-sky-600 font-black">
+                                  <th className="relative text-right px-0.5 py-1.5 bg-sky-50/40 text-sky-600 font-black"
+                                    style={{ width: getWidth("stock_month"), minWidth: getWidth("stock_month") }}>
                                     <span className="flex flex-col leading-tight items-end"><span>최근30일</span><span className="text-[10px] opacity-70">판매</span></span>
+                                    <span {...resizerProps("stock_month")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                                   </th>
                                 </>}
                                 {/* 매입현황 그룹 */}
                                 {isFlowGroupCollapsed("purchase") && <th className="bg-amber-50/20" />}
                                 {!isFlowGroupCollapsed("purchase") && <>
                                   <th onClick={() => toggleFlowSort("cycle")}
-                                    className={`text-right px-0.5 py-1.5 w-12 text-[11px] font-black cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "cycle" ? "text-amber-800" : "text-amber-600"}`}>
+                                    className={`relative text-right px-0.5 py-1.5 text-[11px] font-black cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "cycle" ? "text-amber-800" : "text-amber-600"}`}
+                                    style={{ width: getWidth("pur_cycle"), minWidth: getWidth("pur_cycle") }}>
                                     <span className="flex flex-col leading-tight items-end">
                                       <span className="text-[12px] font-semibold text-amber-500">평균</span>
                                       <span>매입주기</span>
                                       <span className="text-[10px] opacity-70">{arrowFor("cycle")}</span>
                                     </span>
+                                    <span {...resizerProps("pur_cycle")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
                                   <th onClick={() => toggleFlowSort("last_purchase")}
-                                    className={`text-right px-0.5 py-1.5 w-11 text-[11px] font-black cursor-pointer select-none bg-amber-50/40 hover:bg-amber-100 transition ${flowSort === "last_purchase" ? "text-amber-800" : "text-amber-600"}`}>
+                                    className={`relative text-right px-0.5 py-1.5 text-[11px] font-black cursor-pointer select-none bg-amber-50/40 hover:bg-amber-100 transition ${flowSort === "last_purchase" ? "text-amber-800" : "text-amber-600"}`}
+                                    style={{ width: getWidth("pur_last"), minWidth: getWidth("pur_last") }}>
                                     <span className="flex flex-col leading-tight items-end">
                                       <span className="text-[12px] font-semibold text-amber-500">최근</span>
                                       <span>매입일</span>
                                       <span className="text-[10px] opacity-70">{arrowFor("last_purchase")}</span>
                                     </span>
+                                    <span {...resizerProps("pur_last")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
                                   <th onClick={() => toggleFlowSort("purchase")}
-                                    className={`text-right px-0.5 py-1.5 w-12 text-[11px] font-black cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "purchase" ? "text-amber-800" : "text-amber-600"}`}>
+                                    className={`relative text-right px-0.5 py-1.5 text-[11px] font-black cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "purchase" ? "text-amber-800" : "text-amber-600"}`}
+                                    style={{ width: getWidth("pur_qty"), minWidth: getWidth("pur_qty") }}>
                                     <span className="flex flex-col leading-tight items-end">
                                       <span className="text-[12px] font-semibold text-amber-500">최근</span>
                                       <span>매입량</span>
                                       <span className="text-[10px] opacity-70">{arrowFor("purchase")}</span>
                                     </span>
+                                    <span {...resizerProps("pur_qty")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
                                 </>}
                                 {/* 판매현황 그룹 */}
                                 {isFlowGroupCollapsed("sales") && <th className="bg-rose-50/20" />}
                                 {!isFlowGroupCollapsed("sales") && <>
                                   <th onClick={() => toggleFlowSort("sale")}
-                                    className={`text-right px-0.5 py-1.5 w-16 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale" ? "text-rose-800" : "text-rose-700"}`}>
+                                    className={`relative text-right px-0.5 py-1.5 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale" ? "text-rose-800" : "text-rose-700"}`}
+                                    style={{ width: getWidth("sal_qty"), minWidth: getWidth("sal_qty") }}>
                                     <span className="flex flex-col leading-tight items-end"><span>판매량</span><span className="text-[10px] opacity-70">{arrowFor("sale")}</span></span>
+                                    <span {...resizerProps("sal_qty")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
                                   <th onClick={() => toggleFlowSort("amount")}
-                                    className={`text-right px-0.5 py-1.5 w-20 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "amount" ? "text-rose-800" : "text-rose-700"}`}>
+                                    className={`relative text-right px-0.5 py-1.5 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "amount" ? "text-rose-800" : "text-rose-700"}`}
+                                    style={{ width: getWidth("sal_amount"), minWidth: getWidth("sal_amount") }}>
                                     <span className="flex flex-col leading-tight items-end"><span>판매금액</span><span className="text-[10px] opacity-70">{arrowFor("amount")}</span></span>
+                                    <span {...resizerProps("sal_amount")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
                                   <th onClick={() => toggleFlowSort("last_purchase_price")}
-                                    className={`text-right px-0.5 py-1.5 w-16 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "last_purchase_price" ? "text-rose-800" : "text-rose-600"}`}>
+                                    className={`relative text-right px-0.5 py-1.5 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "last_purchase_price" ? "text-rose-800" : "text-rose-600"}`}
+                                    style={{ width: getWidth("sal_unit"), minWidth: getWidth("sal_unit") }}>
                                     <span className="flex flex-col leading-tight items-end">
                                       <span className="font-semibold text-rose-500">ERP</span>
                                       <span>단가</span>
                                       <span className="text-[10px] opacity-70">{arrowFor("last_purchase_price")}</span>
                                     </span>
+                                    <span {...resizerProps("sal_unit")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
                                   <th onClick={() => toggleFlowSort("sale_price")}
-                                    className={`text-right px-0.5 py-1.5 w-16 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale_price" ? "text-rose-800" : "text-rose-600"}`}>
+                                    className={`relative text-right px-0.5 py-1.5 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale_price" ? "text-rose-800" : "text-rose-600"}`}
+                                    style={{ width: getWidth("sal_price"), minWidth: getWidth("sal_price") }}>
                                     <span className="flex flex-col leading-tight items-end"><span>판매가</span><span className="text-[10px] opacity-70">{arrowFor("sale_price")}</span></span>
+                                    <span {...resizerProps("sal_price")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
                                   <th onClick={() => toggleFlowSort("profit_rate")}
-                                    className={`text-right px-0.5 py-1.5 w-14 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "profit_rate" ? "text-rose-800" : "text-rose-600"}`}>
+                                    className={`relative text-right px-0.5 py-1.5 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "profit_rate" ? "text-rose-800" : "text-rose-600"}`}
+                                    style={{ width: getWidth("sal_profit"), minWidth: getWidth("sal_profit") }}>
                                     <span className="flex flex-col leading-tight items-end"><span>이익률</span><span className="text-[10px] opacity-70">{arrowFor("profit_rate")}</span></span>
+                                    <span {...resizerProps("sal_profit")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
                                 </>}
                               </>
