@@ -10,6 +10,7 @@ import { matchClassFilter, type ClassFilter } from "../../utils/productClassify"
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
+import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 interface TrendingRow {
@@ -243,6 +244,16 @@ const PeriodTrendingSection: React.FC<{
 
 // ─── TrendingTab (main export) ───────────────────────────────────────────────
 export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProductClick }) => {
+  const { getWidth, resizerProps } = useColumnResize("trendingTab", {
+    num:     { default: 36,  min: 28, max: 60  },
+    name:    { default: 200, min: 100, max: 400 },
+    recent:  { default: 64,  min: 40, max: 120 },
+    prior:   { default: 64,  min: 40, max: 120 },
+    growth:  { default: 64,  min: 40, max: 120 },
+    delta:   { default: 64,  min: 40, max: 120 },
+    current: { default: 56,  min: 40, max: 100 },
+    optimal: { default: 56,  min: 40, max: 100 },
+  });
   const [rows, setRows] = useState<TrendingRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [windowDays, setWindowDays] = useState<7 | 14 | 30 | 60 | 90>(30);
@@ -438,7 +449,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
           </div>
         ) : (
           <div className="overflow-auto max-h-[70vh]">
-            <table className="w-full text-[12px]">
+            <table className="w-full text-[12px]" style={{ tableLayout: "fixed" }}>
               <thead className="sticky top-0 z-10">
                 {/* 컬럼 그룹 헤더 */}
                 <tr className="text-[10px] font-semibold uppercase tracking-wider border-b border-slate-200">
@@ -447,57 +458,74 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
                   <th colSpan={2} className="bg-indigo-100 text-indigo-700 text-center px-3 py-1.5">성장 지표</th>
                   <th colSpan={2} className="bg-slate-50 text-slate-400 text-center px-3 py-1.5">재고현황</th>
                 </tr>
-                {/* 서브헤더 · 헤더 클릭으로 정렬 (T30 · useSortableTable) */}
+                {/* 서브헤더 · 리사이즈 지원 */}
                 <tr className="border-b border-slate-100 text-[11px] font-semibold text-slate-500 uppercase tracking-wider bg-white">
-                  <th className="text-center px-2 py-1.5 w-9">#</th>
+                  <th className="relative text-center px-2 py-1.5" style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
+                    #
+                    <span {...resizerProps("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                  </th>
                   <th
                     onClick={() => toggleSort("name")}
                     title="상품명 정렬"
-                    className="text-left px-2 py-1.5 min-w-[200px] cursor-pointer select-none hover:bg-indigo-50/30 transition"
+                    className="relative text-left px-2 py-1.5 cursor-pointer select-none hover:bg-indigo-50/30 transition"
+                    style={{ width: getWidth("name"), minWidth: getWidth("name") }}
                   >
                     상품명<SortIcon k="name" sortKey={sortKey} sortDir={sortDir} />
+                    <span {...resizerProps("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                   </th>
                   <th
                     onClick={() => toggleSort("recent")}
                     title="최근 판매 정렬"
-                    className="text-right px-2 py-1.5 w-16 bg-indigo-50/50 text-indigo-600 cursor-pointer select-none hover:bg-indigo-100/60 transition"
+                    className="relative text-right px-2 py-1.5 bg-indigo-50/50 text-indigo-600 cursor-pointer select-none hover:bg-indigo-100/60 transition"
+                    style={{ width: getWidth("recent"), minWidth: getWidth("recent") }}
                   >
                     최근{windowDays}일<SortIcon k="recent" sortKey={sortKey} sortDir={sortDir} />
+                    <span {...resizerProps("recent")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                   </th>
                   <th
                     onClick={() => toggleSort("prior")}
                     title="이전 판매 정렬"
-                    className="text-right px-2 py-1.5 w-16 bg-indigo-50/30 text-indigo-500 cursor-pointer select-none hover:bg-indigo-100/60 transition"
+                    className="relative text-right px-2 py-1.5 bg-indigo-50/30 text-indigo-500 cursor-pointer select-none hover:bg-indigo-100/60 transition"
+                    style={{ width: getWidth("prior"), minWidth: getWidth("prior") }}
                   >
                     이전{windowDays}일<SortIcon k="prior" sortKey={sortKey} sortDir={sortDir} />
+                    <span {...resizerProps("prior")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                   </th>
                   <th
                     onClick={() => toggleSort("growth")}
                     title="성장률 정렬 · 신규진입 상단"
-                    className="text-right px-2 py-1.5 w-16 bg-indigo-100/60 text-indigo-700 cursor-pointer select-none hover:bg-indigo-200/60 transition"
+                    className="relative text-right px-2 py-1.5 bg-indigo-100/60 text-indigo-700 cursor-pointer select-none hover:bg-indigo-200/60 transition"
+                    style={{ width: getWidth("growth"), minWidth: getWidth("growth") }}
                   >
                     성장률<SortIcon k="growth" sortKey={sortKey} sortDir={sortDir} />
+                    <span {...resizerProps("growth")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                   </th>
                   <th
                     onClick={() => toggleSort("delta")}
                     title="증가량 정렬"
-                    className="text-right px-2 py-1.5 w-16 bg-indigo-50/60 text-indigo-600 cursor-pointer select-none hover:bg-indigo-100/60 transition"
+                    className="relative text-right px-2 py-1.5 bg-indigo-50/60 text-indigo-600 cursor-pointer select-none hover:bg-indigo-100/60 transition"
+                    style={{ width: getWidth("delta"), minWidth: getWidth("delta") }}
                   >
                     증가량<SortIcon k="delta" sortKey={sortKey} sortDir={sortDir} />
+                    <span {...resizerProps("delta")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                   </th>
                   <th
                     onClick={() => toggleSort("current")}
                     title="현재고 정렬"
-                    className="text-right px-2 py-1.5 w-14 text-slate-500 cursor-pointer select-none hover:bg-slate-100/60 transition"
+                    className="relative text-right px-2 py-1.5 text-slate-500 cursor-pointer select-none hover:bg-slate-100/60 transition"
+                    style={{ width: getWidth("current"), minWidth: getWidth("current") }}
                   >
                     현재고<SortIcon k="current" sortKey={sortKey} sortDir={sortDir} />
+                    <span {...resizerProps("current")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                   </th>
                   <th
                     onClick={() => toggleSort("optimal")}
                     title="적정재고 정렬"
-                    className="text-right px-2 py-1.5 w-14 text-slate-400 cursor-pointer select-none hover:bg-slate-100/60 transition"
+                    className="relative text-right px-2 py-1.5 text-slate-400 cursor-pointer select-none hover:bg-slate-100/60 transition"
+                    style={{ width: getWidth("optimal"), minWidth: getWidth("optimal") }}
                   >
                     적정<SortIcon k="optimal" sortKey={sortKey} sortDir={sortDir} />
+                    <span {...resizerProps("optimal")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                   </th>
                 </tr>
               </thead>

@@ -11,6 +11,7 @@ import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
+import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 
 // ── 반품 요청서 모달 (발주서 포맷) · 2026-08-03 ─────────────────────────
 type ReturnReasonKey = "재고 과다" | "유통기한 임박" | "저조 판매" | "기타";
@@ -683,6 +684,21 @@ export const ReturnListPanel: React.FC = () => {
     setReturnRequestItem(selectedItems[0]);
   };
 
+  // ── 컬럼 리사이저 (메인 반품필요 리스트 테이블) ─────────────────────────
+  const { getWidth, resizerProps: colResizerProps } = useColumnResize("returnList", {
+    num:          { default: 28,  min: 24, max: 60  },
+    name:         { default: 130, min: 80, max: 300 },
+    supplier:     { default: 80,  min: 60, max: 200 },
+    current_stock:{ default: 56,  min: 40, max: 100 },
+    actual_stock: { default: 56,  min: 40, max: 100 },
+    stock_value:  { default: 88,  min: 60, max: 160 },
+    purchase_cycle:{ default: 112, min: 80, max: 200 },
+    sale_qty_month:{ default: 64,  min: 40, max: 100 },
+    sale_qty_60d: { default: 64,  min: 40, max: 100 },
+    sale_qty_90d: { default: 64,  min: 40, max: 100 },
+    action:       { default: 64,  min: 52, max: 100 },
+  });
+
   // ── 렌더 ────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-2">
@@ -815,7 +831,7 @@ export const ReturnListPanel: React.FC = () => {
               </div>
             ) : (
               <div className={`overflow-auto flex-1 min-h-0 ${returnLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-                <table className="w-full text-xs">
+                <table className="w-full text-xs" style={{ tableLayout: "fixed" }}>
                   <thead className="sticky top-0 bg-white z-10">
                     {/* 그룹 컬러 헤더 · 2026-08-03 · 재고 그룹 (현재고·실재고·재고금액) · 판매 그룹 (1/2/3달) */}
                     <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider">
@@ -861,18 +877,26 @@ export const ReturnListPanel: React.FC = () => {
                     </tr>
                     {/* 서브 헤더 */}
                     <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
-                      <th className="text-center px-0.5 py-1.5 w-7 bg-slate-50/60">#</th>
+                      <th className="relative text-center px-0.5 py-1.5 bg-slate-50/60"
+                        style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
+                        #
+                        <span {...colResizerProps("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                      </th>
                       {isReturnGroupCollapsed("info") ? (
                         <th className="bg-sky-50/20 w-4"></th>
                       ) : (
                         <>
                           <th onClick={() => handleReturnSort("product_name")} title="상품명 정렬"
-                            className="text-left px-1 py-1.5 min-w-[130px] cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">
+                            className="relative text-left px-1 py-1.5 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30"
+                            style={{ width: getWidth("name"), minWidth: getWidth("name") }}>
                             상품{retArrow("product_name")}
+                            <span {...colResizerProps("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                           </th>
                           <th onClick={() => handleReturnSort("supplier")} title="공급사 정렬"
-                            className="text-left px-0.5 py-1.5 w-20 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">
+                            className="relative text-left px-0.5 py-1.5 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30"
+                            style={{ width: getWidth("supplier"), minWidth: getWidth("supplier") }}>
                             공급사{retArrow("supplier")}
+                            <span {...colResizerProps("supplier")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                           </th>
                         </>
                       )}
@@ -882,16 +906,22 @@ export const ReturnListPanel: React.FC = () => {
                       ) : (
                         <>
                           <th onClick={() => handleReturnSort("current_stock")} title="ERP 현재고 정렬"
-                            className="text-right px-1 py-1.5 w-14 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none">
+                            className="relative text-right px-1 py-1.5 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none"
+                            style={{ width: getWidth("current_stock"), minWidth: getWidth("current_stock") }}>
                             현재고{retArrow("current_stock")}
+                            <span {...colResizerProps("current_stock")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                           </th>
                           <th onClick={() => handleReturnSort("actual_stock")} title="실재고 (창고·매장 합계) 정렬"
-                            className="text-right px-1 py-1.5 w-14 bg-amber-50/40 text-amber-700 cursor-pointer hover:bg-amber-100 select-none">
+                            className="relative text-right px-1 py-1.5 bg-amber-50/40 text-amber-700 cursor-pointer hover:bg-amber-100 select-none"
+                            style={{ width: getWidth("actual_stock"), minWidth: getWidth("actual_stock") }}>
                             실재고{retArrow("actual_stock")}
+                            <span {...colResizerProps("actual_stock")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                           </th>
                           <th onClick={() => handleReturnSort("stock_value")} title="재고금액 정렬"
-                            className="text-right px-1 py-1.5 w-22 bg-amber-50/40 text-indigo-700 cursor-pointer hover:bg-amber-100 select-none">
+                            className="relative text-right px-1 py-1.5 bg-amber-50/40 text-indigo-700 cursor-pointer hover:bg-amber-100 select-none"
+                            style={{ width: getWidth("stock_value"), minWidth: getWidth("stock_value") }}>
                             재고금액{retArrow("stock_value")}
+                            <span {...colResizerProps("stock_value")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                           </th>
                         </>
                       )}
@@ -899,11 +929,13 @@ export const ReturnListPanel: React.FC = () => {
                         <th className="bg-emerald-50/20 w-4"></th>
                       ) : (
                         <th onClick={() => handleReturnSort("purchase_cycle")} title="매입주기 정렬"
-                          className="text-right px-1 py-1.5 w-28 bg-emerald-50/40 text-emerald-700 cursor-pointer hover:bg-emerald-100 select-none">
+                          className="relative text-right px-1 py-1.5 bg-emerald-50/40 text-emerald-700 cursor-pointer hover:bg-emerald-100 select-none"
+                          style={{ width: getWidth("purchase_cycle"), minWidth: getWidth("purchase_cycle") }}>
                           <span className="flex flex-col items-end leading-none gap-0.5">
                             <span>매입주기{retArrow("purchase_cycle")}</span>
                             <span className="text-[9px] text-slate-400 font-normal">최근매입일·량</span>
                           </span>
+                          <span {...colResizerProps("purchase_cycle")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                         </th>
                       )}
                       {/* 판매 서브 · 1달 · 2달 · 3달 판매량 */}
@@ -912,21 +944,29 @@ export const ReturnListPanel: React.FC = () => {
                       ) : (
                         <>
                           <th onClick={() => handleReturnSort("sale_qty_month")} title="최근 30일 (1달) 판매량 정렬"
-                            className="text-right px-1 py-1.5 w-16 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none">
+                            className="relative text-right px-1 py-1.5 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none"
+                            style={{ width: getWidth("sale_qty_month"), minWidth: getWidth("sale_qty_month") }}>
                             1달{retArrow("sale_qty_month")}
+                            <span {...colResizerProps("sale_qty_month")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                           </th>
                           <th onClick={() => handleReturnSort("sale_qty_60d")} title="최근 60일 (2달) 판매량 정렬"
-                            className="text-right px-1 py-1.5 w-16 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none">
+                            className="relative text-right px-1 py-1.5 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none"
+                            style={{ width: getWidth("sale_qty_60d"), minWidth: getWidth("sale_qty_60d") }}>
                             2달{retArrow("sale_qty_60d")}
+                            <span {...colResizerProps("sale_qty_60d")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                           </th>
                           <th onClick={() => handleReturnSort("sale_qty_90d")} title="최근 90일 (3달) 판매량 정렬"
-                            className="text-right px-1 py-1.5 w-16 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none">
+                            className="relative text-right px-1 py-1.5 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none"
+                            style={{ width: getWidth("sale_qty_90d"), minWidth: getWidth("sale_qty_90d") }}>
                             3달{retArrow("sale_qty_90d")}
+                            <span {...colResizerProps("sale_qty_90d")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                           </th>
                         </>
                       )}
-                      <th className="text-center px-0.5 py-1.5 w-16 bg-slate-50/60 text-slate-500 cursor-default select-none">
+                      <th className="relative text-center px-0.5 py-1.5 bg-slate-50/60 text-slate-500 cursor-default select-none"
+                        style={{ width: getWidth("action"), minWidth: getWidth("action") }}>
                         반품
+                        <span {...colResizerProps("action")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                       </th>
                     </tr>
                   </thead>
