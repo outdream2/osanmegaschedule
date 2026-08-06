@@ -8,6 +8,7 @@ import { Loader2, Package, PackageCheck, RefreshCw, Search, Truck, ChevronRight,
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
@@ -999,12 +1000,12 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                                   {onSupplierClick && x.supplier ? (
                                     <button
                                       type="button"
-                                      className="text-[12px] font-semibold text-sky-700 hover:underline text-left whitespace-nowrap cursor-pointer"
+                                      className="text-[12px] font-normal text-sky-700 hover:underline text-left whitespace-nowrap cursor-pointer"
                                       onClick={(e) => { e.stopPropagation(); onSupplierClick(x.supplier!); }}
-                                      title="공급사 정보 조회·수정"
-                                    >{x.supplier}</button>
+                                      title={`공급사 정보 조회·수정 (${x.supplier})`}
+                                    >{displayVendorName(x.supplier)}</button>
                                   ) : (
-                                    <span className="text-[12px] font-semibold text-sky-700 whitespace-nowrap">{x.supplier ?? "-"}</span>
+                                    <span className="text-[12px] font-normal text-sky-700 whitespace-nowrap">{x.supplier ? displayVendorName(x.supplier) : "-"}</span>
                                   )}
                                 </div>
                               </td>
@@ -1014,7 +1015,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                           {isReturnGroupCollapsed("stock") ? (
                             <td className="bg-amber-50/20 w-4"></td>
                           ) : (
-                            <td className="text-right px-1 py-1.5 tabular-nums font-black text-[12px] text-indigo-700 bg-amber-50/20 align-top">
+                            <td className="text-right px-1 py-1.5 tabular-nums font-normal text-[12px] text-indigo-700 bg-amber-50/20 align-top">
                               {x.current_stock > 0 && x.purchase_price > 0 ? `${(x.current_stock * x.purchase_price).toLocaleString()}` : "-"}
                             </td>
                           )}
@@ -1026,7 +1027,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                               onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("purchase"); }}
                               title="매입이력 보기"
                             >
-                              <span className="font-black text-[12px] text-emerald-700 hover:underline">
+                              <span className="font-normal text-[12px] text-emerald-700 hover:underline tabular-nums">
                                 {x.purchase_cycle != null ? `${x.purchase_cycle}일` : "-"}
                               </span>
                               {/* 2026-08-06 · 최근 매입일 · M/D 짧은 포맷 · 최근 매입량 함께 */}
@@ -1050,11 +1051,11 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                               onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("sales"); }}
                               title="1달 / 2달 / 3달 판매량"
                             >
-                              <span className="font-black text-[12px] text-rose-700 hover:underline">
+                              <span className="font-normal text-[12px] text-rose-700 hover:underline tabular-nums">
                                 {x.sale_qty_month != null ? x.sale_qty_month.toLocaleString() : "-"}
-                                <span className="text-slate-300 font-normal"> / </span>
+                                <span className="text-slate-300"> / </span>
                                 {x.sale_qty_60d != null ? x.sale_qty_60d.toLocaleString() : "-"}
-                                <span className="text-slate-300 font-normal"> / </span>
+                                <span className="text-slate-300"> / </span>
                                 {x.sale_qty_90d != null ? x.sale_qty_90d.toLocaleString() : "-"}
                               </span>
                             </td>
