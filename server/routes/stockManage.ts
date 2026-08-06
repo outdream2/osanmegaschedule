@@ -13,6 +13,7 @@ import express from "express";
 import XLSX from "xlsx";
 import { supabase } from "../../src/supabase/client";
 import { resolveSeasonMonths } from "./settings";
+import { fetchAllWithRange } from "../utils/supabaseFetchAll";
 
 const router = Router();
 
@@ -57,12 +58,12 @@ router.get("/api/stock-manage/suppliers", async (req, res) => {
   const cached = ocrAggCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return res.json(cached.data);
   try {
-    const { data, error } = await supabase
+    // 2026-08-06 · Supabase 1000행 cap 우회 · fetchAllWithRange loop (사용자 제보 픽스)
+    const data = await fetchAllWithRange<any>(() => supabase
       .from("ocr_confirmed_items")
       .select("supplier, product_name, quantity, amount")
       .gte("saved_at", since)
-      .limit(50000);
-    if (error) throw new Error(error.message);
+      .order("saved_at", { ascending: false }), 50000);
     const map = new Map<string, { supplier: string; purchaseAmount: number; purchaseQty: number; items: Set<string> }>();
     for (const r of data ?? []) {
       const sup = (r.supplier ?? "").trim();
@@ -93,12 +94,12 @@ router.get("/api/stock-manage/top-products", async (req, res) => {
   const cached = ocrAggCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return res.json(cached.data);
   try {
-    const { data, error } = await supabase
+    // 2026-08-06 · Supabase 1000행 cap 우회 · fetchAllWithRange
+    const data = await fetchAllWithRange<any>(() => supabase
       .from("ocr_confirmed_items")
       .select("product_name, product_code, supplier, quantity, amount")
       .gte("saved_at", since)
-      .limit(50000);
-    if (error) throw new Error(error.message);
+      .order("saved_at", { ascending: false }), 50000);
     const map = new Map<string, { product_name: string; product_code: string | null; supplier: string | null; totalAmount: number; totalQty: number }>();
     for (const r of data ?? []) {
       const key = String(r.product_code ?? r.product_name ?? "").trim();
@@ -1660,16 +1661,17 @@ router.get("/api/stock-manage/product-history", async (req, res) => {
   if (!name && !code) return res.status(400).json({ error: "product_name 또는 product_code 필요" });
   const since = daysAgoISO(days);
   try {
-    let query = supabase
-      .from("ocr_confirmed_items")
-      .select("supplier, product_name, product_code, quantity, amount, saved_at")
-      .gte("saved_at", since)
-      .order("saved_at", { ascending: true })
-      .limit(5000);
-    if (code) query = query.eq("product_code", code);
-    else      query = query.eq("product_name", name);
-    const { data, error } = await query;
-    if (error) throw new Error(error.message);
+    // 2026-08-06 · Supabase 1000행 cap 우회 · fetchAllWithRange
+    const data = await fetchAllWithRange<any>(() => {
+      let query = supabase
+        .from("ocr_confirmed_items")
+        .select("supplier, product_name, product_code, quantity, amount, saved_at")
+        .gte("saved_at", since)
+        .order("saved_at", { ascending: true });
+      if (code) query = query.eq("product_code", code);
+      else      query = query.eq("product_name", name);
+      return query;
+    }, 5000);
     res.json(data ?? []);
   } catch (err: any) {
     res.status(500).json({ error: err.message });

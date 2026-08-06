@@ -592,11 +592,11 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                     onClick={() => { toggleSupplierExpand(sup); setSupplierSelectedKey(key); }}
                     className={`cursor-pointer transition-colors ${isSelected ? "bg-sky-50 hover:bg-sky-100/70" : "hover:bg-slate-50/60"}`}
                     title="클릭 → 오른쪽 패널에 상세">
-                    <td className="text-center align-middle py-2.5">
+                    <td className="text-center align-middle py-1.5">
                       {isExpanded ? <ChevronDown size={13} className="text-sky-400 mx-auto" /> : <ChevronRight size={13} className="text-slate-300 mx-auto" />}
                     </td>
-                    <td className="text-center align-middle py-2.5 text-[11px] font-semibold text-slate-400 tabular-nums">{i + 1}</td>
-                    <td className="text-left px-3 py-2.5 align-middle">
+                    <td className="text-center align-middle py-1.5 text-[11px] font-semibold text-slate-400 tabular-nums">{i + 1}</td>
+                    <td className="text-left px-3 py-1.5 align-middle">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {(() => {
                           const nm = sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim() ?? "";
@@ -612,21 +612,21 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                     </td>
                     {isSupplierGroupCollapsed("stock") ? <td className="bg-sky-50/20 w-4"></td> : (
                       <>
-                        <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-sky-700 tabular-nums bg-sky-50/40" title="재고자산">{fmtWon(sup.totalStockAmount)}</td>
-                        <td className="text-right px-3 py-2.5 align-middle text-[12px] font-semibold text-sky-600 tabular-nums bg-sky-50/20" title="취급 상품 종수">{sup.itemCount}</td>
+                        <td className="text-right px-3 py-1.5 align-middle text-[13px] font-semibold text-sky-700 tabular-nums bg-sky-50/40" title="재고자산">{fmtWon(sup.totalStockAmount)}</td>
+                        <td className="text-right px-3 py-1.5 align-middle text-[12px] font-semibold text-sky-600 tabular-nums bg-sky-50/20" title="취급 상품 종수">{sup.itemCount}</td>
                       </>
                     )}
                     {isSupplierGroupCollapsed("purchase") ? <td className="bg-amber-50/20 w-4"></td> : (
                       <>
-                        <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-amber-700 tabular-nums bg-amber-50/30" title="매입수량">{fmt(sup.purchaseQty)}</td>
+                        <td className="text-right px-3 py-1.5 align-middle text-[13px] font-semibold text-amber-700 tabular-nums bg-amber-50/30" title="매입수량">{fmt(sup.purchaseQty)}</td>
                         {showExtraPurchaseColumns && (
-                          <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-amber-800 tabular-nums bg-amber-50/50" title="매입액 (공급가액 합계)">{fmtWon(Number(sup.purchaseAmount ?? 0))}</td>
+                          <td className="text-right px-3 py-1.5 align-middle text-[13px] font-semibold text-amber-800 tabular-nums bg-amber-50/50" title="매입액 (공급가액 합계)">{fmtWon(Number(sup.purchaseAmount ?? 0))}</td>
                         )}
                         {showCycleColumn && (() => {
                           const c = cycleFor(sup.supplier);
                           return (
                             <td
-                              className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-amber-700 tabular-nums bg-amber-50/40"
+                              className="text-right px-3 py-1.5 align-middle text-[13px] font-semibold text-amber-700 tabular-nums bg-amber-50/40"
                               title={c == null ? "최근 90일 매입 이력 부족" : `평균 매입주기 ${c}일 (최근 90일)`}
                             >
                               {c == null ? <span className="text-slate-300">-</span> : `${c}일`}
@@ -638,8 +638,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                     {!hideSaleColumns && (
                       isSupplierGroupCollapsed("sale") ? <td className="bg-rose-50/20 w-4"></td> : (
                         <>
-                          <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-rose-600 tabular-nums bg-rose-50/20" title="판매수량">{fmt(sup.saleQty)}</td>
-                          <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-rose-700 tabular-nums bg-rose-50/30" title="판매액">{fmtWon(Number(sup.saleAmount ?? 0))}</td>
+                          <td className="text-right px-3 py-1.5 align-middle text-[13px] font-semibold text-rose-600 tabular-nums bg-rose-50/20" title="판매수량">{fmt(sup.saleQty)}</td>
+                          <td className="text-right px-3 py-1.5 align-middle text-[13px] font-semibold text-rose-700 tabular-nums bg-rose-50/30" title="판매액">{fmtWon(Number(sup.saleAmount ?? 0))}</td>
                         </>
                       )
                     )}
