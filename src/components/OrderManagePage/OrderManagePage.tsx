@@ -286,6 +286,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [orderError, setOrderError] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Set<string>>(new Set());
   const [orderSearch, setOrderSearch] = useState("");
+  // 2026-08-06 · 사용자 요청 · 발주요청 리스트 · 공급사 분류 필터
+  const [orderCategoryFilter, setOrderCategoryFilter] = useState<NeedCategoryFilterKey>("all");
 
   // ── 발주필요(need) 탭 정렬 ──
   //   · 2026-08-03 (#189) · "sale_month" · "cycle" 추가 · orderNeedConfig.defaultSort* 로 초기화
@@ -1127,13 +1129,28 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   };
   const allChecked = selectedOrder.size === orderReqs.length && orderReqs.length > 0;
 
-  // 검색 필터링
+  // 검색 + 공급사 분류 필터링 (2026-08-06 · 사용자 요청)
   const orderReqsFiltered = orderReqs.filter(r => {
-    if (!orderSearch.trim()) return true;
-    const q = orderSearch.trim().toLowerCase();
-    return (r.product_name?.toLowerCase().includes(q) ||
-            r.product_code?.toLowerCase().includes(q) ||
-            r.supplier?.toLowerCase().includes(q));
+    // 1) 검색
+    if (orderSearch.trim()) {
+      const q = orderSearch.trim().toLowerCase();
+      const ok = (r.product_name?.toLowerCase().includes(q) ||
+                  r.product_code?.toLowerCase().includes(q) ||
+                  r.supplier?.toLowerCase().includes(q));
+      if (!ok) return false;
+    }
+    // 2) 카테고리 필터 (전체 · 위탁 · 선결제 · 60회전 · 90회전 · 기타)
+    if (orderCategoryFilter !== "all") {
+      const supplierName = String(r.supplier ?? "").trim();
+      const cat = supplierName ? getVendorCategory(supplierName) : null;
+      if (orderCategoryFilter === "기타") {
+        const validCats = ["위탁", "선결제", "60회전", "90회전", "기타"];
+        if (cat && validCats.includes(cat) && cat !== "기타") return false;
+      } else {
+        if (cat !== orderCategoryFilter) return false;
+      }
+    }
+    return true;
   });
   // 2026-08-03 (#201) · React 18 useDeferredValue · 입력 즉시 · 필터링만 유예 (60fps 유지)
   //   · matchHangul · 원문 부분일치 + 한글 초성 매칭 (자체 구현 · zero-dep)
@@ -2437,6 +2454,27 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               placeholder="상품·코드·공급사"
               className="text-[11px] border border-slate-200 rounded-md pl-3 pr-3 h-7 w-36 min-w-0 focus:outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 transition"
             />
+            {/* 2026-08-06 · 공급사 분류 필터 · 사용자 요청 */}
+            <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
+              {(["all","위탁","선결제","60회전","90회전","기타"] as const).map(cat => {
+                const active = orderCategoryFilter === cat;
+                const label = cat === "all" ? "전체" : cat;
+                const activeCls =
+                  cat === "all"    ? "bg-slate-700 text-white shadow-sm"
+                  : cat === "위탁"   ? "bg-violet-500 text-white shadow-sm"
+                  : cat === "선결제" ? "bg-rose-500 text-white shadow-sm"
+                  : cat === "60회전" ? "bg-emerald-500 text-white shadow-sm"
+                  : cat === "90회전" ? "bg-teal-500 text-white shadow-sm"
+                  : "bg-slate-500 text-white shadow-sm";
+                return (
+                  <button key={cat}
+                    type="button"
+                    onClick={() => setOrderCategoryFilter(cat)}
+                    className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${active ? activeCls : "text-slate-500 hover:text-slate-700"}`}
+                  >{label}</button>
+                );
+              })}
+            </div>
             {/* 발송 채널 토글 */}
             <div className="flex items-center gap-1.5">
               <label className={`inline-flex items-center gap-1 h-7 px-2 rounded-md border text-[11px] font-medium cursor-pointer transition-colors select-none ${bulkChannels.email ? "bg-emerald-50 text-emerald-700 border-emerald-300" : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"}`}>
