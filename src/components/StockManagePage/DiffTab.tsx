@@ -3,7 +3,7 @@
 // 2026-08-03 · StockManagePage 에서 분리 · OrderManagePage 통계 탭에서도 사용
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Layers, Loader2 as LoaderIcon, ChevronRight, ChevronDown } from "lucide-react";
+import { Layers, Loader2 as LoaderIcon, ChevronRight, ChevronDown, ListChecks, History } from "lucide-react";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
@@ -14,6 +14,12 @@ import { EmptyState } from "../common/EmptyState";
 import { LoadingState } from "../common/LoadingState";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
+// 2026-08-06 · T-LOSS-HISTORY · 서브탭 (현황/이력) · TabBar 공용
+import { TabBar, type TabDef } from "../common/TabBar";
+import { LossHistoryTab } from "./LossHistoryTab";
+
+// 2026-08-06 · T-LOSS-HISTORY · 서브탭 종류
+type SubTabKey = "current" | "history";
 
 function fmt(n: number): string {
   if (!Number.isFinite(n)) return "0";
@@ -36,6 +42,19 @@ interface ProductLite {
 }
 
 export const DiffTab: React.FC = () => {
+  // 2026-08-06 · T-LOSS-HISTORY · 상단 서브탭 (현황/이력) · localStorage 저장
+  const [subTab, setSubTab] = useState<SubTabKey>(() => {
+    try {
+      const v = localStorage.getItem("megatown_difftab_subtab");
+      return v === "history" ? "history" : "current";
+    } catch { return "current"; }
+  });
+  useEffect(() => { try { localStorage.setItem("megatown_difftab_subtab", subTab); } catch { /**/ } }, [subTab]);
+  const subTabs: TabDef<SubTabKey>[] = useMemo(() => [
+    { key: "current", label: "현황", icon: ListChecks, color: "violet" },
+    { key: "history", label: "이력", icon: History,    color: "sky"    },
+  ], []);
+
   const { findVendorByName } = useVendors();
   // 2026-08-06 · 손실추적 최종 · 상품·공급사·ERP재고·실재고·손실·사입단가·판매가 (v3)
   const { getWidth, resizerProps } = useColumnResize("diffTab_v3", {
@@ -150,6 +169,20 @@ export const DiffTab: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-2">
+      {/* ── 서브탭 (현황/이력) · 2026-08-06 T-LOSS-HISTORY ── */}
+      <TabBar<SubTabKey>
+        level={3}
+        tabs={subTabs}
+        activeKey={subTab}
+        onSelect={setSubTab}
+        variant="nested"
+        maxWidth="100%"
+      />
+
+      {subTab === "history" ? (
+        <LossHistoryTab />
+      ) : (
+      <>
       {/* ── 상단 필터바 ── */}
       <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
         <div className="flex items-center gap-2">
@@ -360,6 +393,8 @@ export const DiffTab: React.FC = () => {
             />
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );

@@ -4,6 +4,8 @@ import { supabase } from "../../src/supabase/client";
 import { notificationsService } from "../../src/services/notificationsService";
 // 2026-08-05 · T-PERF-1a · inventory-checks 변경 시 low-stock 캐시 무효화
 import { clearLowStockCache } from "./stockManage";
+// 2026-08-06 · T-LOSS-HISTORY · 실재고 저장 시 · 오늘 손실 스냅샷 fire-and-forget
+import { scheduleSnapshotBackground } from "./lossTracking";
 
 const router = Router();
 
@@ -635,6 +637,7 @@ router.post("/api/inventory-checks", async (req, res) => {
   }
   if (result?.error) return res.status(500).json({ error: result.error });
   clearLowStockCache(); // 2026-08-05 · T-PERF-1a
+  scheduleSnapshotBackground(); // 2026-08-06 · T-LOSS-HISTORY · 오늘 손실 스냅샷 자동
   return res.json({ ok: true, updated: !!existing });
 });
 
@@ -724,6 +727,7 @@ router.post("/api/inventory-checks/bulk", async (req, res) => {
       if (error) { failed++; } else { saved++; }
     }
     clearLowStockCache(); // 2026-08-05 · T-PERF-1a
+    scheduleSnapshotBackground(); // 2026-08-06 · T-LOSS-HISTORY · 오늘 손실 스냅샷 자동
     res.json({ ok: true, saved, failed, total: items.length, downgraded });
   } catch (err: any) {
     console.error("[inventory-checks/bulk POST]", err?.message);
