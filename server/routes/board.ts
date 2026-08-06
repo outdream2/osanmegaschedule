@@ -192,11 +192,11 @@ router.get("/api/board/posts/:id", async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "invalid id" });
   const [postRes, imgRes, cmtRes, cmtImgRes, reactRes] = await Promise.all([
-    supabase.from("board_posts").select("*").eq("id", id).maybeSingle(),
-    supabase.from("board_post_images").select("*").eq("post_id", id).is("comment_id", null).order("id"),
-    supabase.from("board_post_comments").select("*").eq("post_id", id).order("created_at", { ascending: true }),
-    supabase.from("board_post_images").select("*").eq("post_id", id).not("comment_id", "is", null),
-    supabase.from("board_post_reactions").select("*").eq("post_id", id),
+    supabase.from("board_posts").select("id, author_id, author_name, author_rank, post_type, title, body, status, category, pinned, resolved_at, resolved_by, mentions, created_at, updated_at").eq("id", id).maybeSingle(),
+    supabase.from("board_post_images").select("id, post_id, comment_id, image_url, public_id, width, height, created_at").eq("post_id", id).is("comment_id", null).order("id"),
+    supabase.from("board_post_comments").select("id, post_id, author_id, author_name, author_rank, parent_id, body, is_answer, mentions, created_at").eq("post_id", id).order("created_at", { ascending: true }),
+    supabase.from("board_post_images").select("id, post_id, comment_id, image_url, public_id, width, height, created_at").eq("post_id", id).not("comment_id", "is", null),
+    supabase.from("board_post_reactions").select("post_id, employee_id, reaction, created_at").eq("post_id", id),
   ]);
   if (postRes.error) return res.status(500).json({ error: postRes.error.message });
   if (!postRes.data) return res.status(404).json({ error: "not found" });

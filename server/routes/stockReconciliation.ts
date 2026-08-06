@@ -268,7 +268,7 @@ router.get("/api/stock-reconciliation", async (req, res) => {
 
   let query = supabase
     .from(SESSION_TABLE)
-    .select("*")
+    .select("id, session_date, supplier, title, status, source_confirmed_ids, memo, created_by, created_at, updated_at, finalized_at")
     .order("session_date", { ascending: false })
     .order("id", { ascending: false })
     .limit(limitVal);
@@ -291,10 +291,10 @@ router.get("/api/stock-reconciliation/:id", async (req, res) => {
   if (!Number.isFinite(id) || id <= 0) return res.status(400).json({ error: "유효한 id가 필요합니다." });
 
   const [sessionRes, itemsRes] = await Promise.all([
-    supabase.from(SESSION_TABLE).select("*").eq("id", id).single(),
+    supabase.from(SESSION_TABLE).select("id, session_date, supplier, title, status, source_confirmed_ids, memo, created_by, created_at, updated_at, finalized_at").eq("id", id).single(),
     supabase
       .from(ITEMS_TABLE)
-      .select("*")
+      .select("id, session_id, product_code, product_name, receiving_qty, invoice_qty, erp_qty, receiving_note, invoice_note, erp_note, created_at, updated_at, receiving_confirmed_by, receiving_confirmed_at, invoice_confirmed_by, invoice_confirmed_at")
       .eq("session_id", id)
       .order("product_code", { ascending: true }),
   ]);
