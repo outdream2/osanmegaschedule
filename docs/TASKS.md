@@ -1,12 +1,12 @@
 # TASKS
 
-**상태 요약** (2026-08-06 갱신):
-- 진행중: 3건 (T-CSS Phase 1 · T-TEST-공급사리스트-최근결제 · 발주요청 공급사 분류 필터)
-- 대기 · 자동 파이프라인: 2건 (T26 · T-CSS Phase 2)
-- 사용자 액션 대기: 5건 (T-CTR-3 · T-VAT-Migration · T-LOSS-Migration · pharmacist-materials 버킷 · resume_url 컬럼)
+**상태 요약** (2026-08-06 갱신 · 세션 후반):
+- 진행중 (백그라운드): 2건 (T-CSS Phase 2 · T-Audit-DeadCode)
+- 사용자 액션 대기 (Supabase): 4건 (T-Migration-Indexes · T-VAT-Migration · T-LOSS-Migration · T-CTR-3)
 - 검증 대기: 15건 (2026-08-05 커밋 실 UI)
 - 보류: 1건 (T-PERF-5)
-- 이번 세션 완료 · 삭제: 4건 (T-COMMON-VendorInfoHeader · T-UI-컬럼리사이저 · T-TEST-매입추이-3차트변경 · T-TEST-반품필요-반응형-3조건)
+- T3-defer: Render 배포 직전 재도입 (requireAuth)
+- 이번 세션 완료 · 삭제: 10건 (T-TEST-공급사리스트-최근결제 · T26(부분·31/56) · T30-followup · T-SLIM A · T-SLIM D · T-DB-Migrate-LocalStorage · password_hash 제거 · src/ xlsx 이동 · fmtWon 통합 · scheduleService 이동)
 
 **규칙**:
 - 완료 태스크는 이 파일에서 **삭제** (아카이브 X)
@@ -40,21 +40,12 @@
 
 ---
 
-## 🔴 큐 · 사용자 요청 (2026-08-06 · 후속)
+## 🔴 사용자 액션 대기 · Supabase SQL (2026-08-06)
 
-### T-TEST-공급사리스트-최근결제 (진행중 · 다른 에이전트)
-- PaymentInfoTab 왼쪽 공급사 리스트 · 컬럼 확장
-  · 최근결제일 (기존 매입 컬럼과 병렬)
-  · 최근결제액
-- 데이터 · 서버 latest_payment 조회 or 클라이언트 aggregate
-
----
-
-## 🔴 사용자 테스트 요청 (2026-08-06)
-
-### 발주요청 공급사 분류 필터 (진행중 · 본체 담당)
-- 발주요청 리스트 · 공급사 카테고리별 필터 · 진행 중
-- 담당: main claude
+### T-Migration-Indexes · Supabase SQL 실행 대기 (신규 · 2026-08-06)
+- 파일: `migrations/perf_indexes_2026-08-06.sql`
+- 액션: 사용자 · Supabase SQL Editor 실행
+- 내용: 성능 인덱스 4개 (매입이력·상품 검색 등)
 
 ### T-VAT-Migration · Supabase SQL 실행 대기
 - 파일: `migrations/vat_integration.sql`
@@ -70,40 +61,22 @@
 
 ## 🔄 진행 중 (자동 파이프라인)
 
-### T-CSS Phase 1 · 디자인 토큰 + 공통 컴포넌트 (mobile-ui-designer 백그라운드)
-- 신규 `src/styles/tokens.ts` · 타이포 5단계 · 색상 6팔레트 · className 상수
-- 신규 공통 컴포넌트: PageHeader · Toolbar · StatusBadge · EmptyState · LoadingState
-- 자동 검증·커밋 후 · **T26 자동 launch (사용자 승인 완료)**
+### T-CSS Phase 2 · 페이지 마이그레이션 (mobile-ui-designer 백그라운드)
+- 진행중 · Phase 1 (디자인 토큰 + 공통 컴포넌트) 완료 후 이어짐
+- 재고관리 → 매입관리 → 진열요청 → 근로계약서 → 스케줄 → 경영관리 순
+- 파일 단위 · 회귀 시 즉시 revert
 
-### 자동 파이프라인 (승인 완료 · 사용자 명시)
-```
-[진행중] T-CSS Phase 1
-    ↓ 자동 검증·커밋
-[대기]   T26 · select('*') 명시화 (4~6h)
-    ↓ 자동 검증·커밋
-[대기]   T-CSS Phase 2 · 페이지 마이그레이션 (8~12h)
-    ↓ 자동 검증·커밋
-```
-- 총 예상: **20~25h** 백그라운드
-- 각 단계 사이 · 사용자 "잠깐 멈춰" 로 중단 가능
+### T-Audit-DeadCode · dead-code-auditor 백그라운드 (신규 · 2026-08-06)
+- 미사용 컴포넌트·훅·상수·유틸 스캔
+- 결과 나오면 · 정리 태스크 신규 추가 예정
 
 ### ✅ 완료 · 자동 파이프라인 앞 단계
 - `38606e8` T25 · useVendors 훅 (8 파일 -101 lines)
-- `401cd2b` T30-followup · useSortableTable 확대 (3 파일 -31 lines)
+- `401cd2b` `4d6b703` T30-followup · useSortableTable 확대 (6 파일)
+- `34a9a3f` `81ce398` `3b78425` T26 · select('*') 명시화 (31/56 · 25건 skip)
+- T-CSS Phase 1 · 디자인 토큰 + 공통 컴포넌트 완료
 
 ---
-
-## 🟢 대기 · 사용자 승인 후 진행
-
-### T30-followup · useSortableTable · Modal · useFilterState 채택 확대
-- 10+ 파일 · 각자 수동 sortKey/sortDir → 통일
-- 파일별 순차 마이그레이션 · 회귀 시 파일 단위 revert 가능
-- 예상 4~6h · 위험 낮음
-- **T25 완료 후 자동 launch 승인 됨**
-
-### T26 · select('*') → 명시 컬럼 (20 파일)
-- 보안 부가 · payload 5~30% 축소
-- 예상 4~6h · 위험 중
 
 ## 🔍 project-architect 분석 결과 (2026-08-05)
 
@@ -120,22 +93,18 @@
 | # | 카테고리 | 문제 | 시간 | 상태 |
 |---|---------|------|------|-----|
 | 1 | 🚨보안 | requireAuth 미들웨어 전체 비활성 (Render 시 critical) | 2h | T3-defer |
-| 2 | 코드품질 | fmtWon/fmtDate 16+ 파일 중복 정의 | 3~4h | T-SLIM A |
-| 3 | 아키텍처 | God Component 5개 (RawOcrTable 5268 · ContractWriter 5256 · OrderManage 3224 · DisplayPage 2890 · StaffManage 2773) | 1~3일/파일 | 별도 |
-| 4 | 성능 | select('*') 56곳 | 4~6h | **T26 진행중** |
-| 5 | 코드품질 | `as any` 1322건 (front 490 · server 832) | 10h+ | T-SLIM 부수 |
-| 6 | 아키텍처 | scheduleService · frontend 번들 혼입 | 2~3h | 신규 |
-| 7 | 보안 | password_hash · 로그인 응답 노출 위험 | 30분 | **즉시** |
-| 8 | UX | window.confirm 146건 | 4~6h | T-SLIM D |
-| 9 | 유지보수 | 타입 정의 산재 | 5~8h | T-SLIM E |
-| 10 | 유지보수 | src/ 루트 · 엑셀 4개 혼입 | 10분 | **즉시** |
+| 2 | 코드품질 | fmtWon/fmtDate 16+ 파일 중복 정의 | 3~4h | ✅ T-SLIM A 완료 (`8a5675b`) |
+| 3 | 아키텍처 | God Component 5개 (RawOcrTable 5268 · ContractWriter 5256 · OrderManage 3224 · DisplayPage 2890 · StaffManage 2773) | 1~3일/파일 | 별도 · 대기 |
+| 4 | 성능 | select('*') 56곳 | 4~6h | ✅ T26 부분완료 (31/56 · 25 skip) |
+| 5 | 코드품질 | `as any` 1322건 (front 490 · server 832) | 10h+ | 대기 |
+| 6 | 아키텍처 | scheduleService · frontend 번들 혼입 | 2~3h | ✅ 완료 (`3cd7aff`) |
+| 7 | 보안 | password_hash · 로그인 응답 노출 위험 | 30분 | ✅ 완료 (`71a58e4`) |
+| 8 | UX | window.confirm 146건 | 4~6h | ✅ T-SLIM D 완료 (`6e6690e`) |
+| 9 | 유지보수 | 타입 정의 산재 | 5~8h | T-SLIM E · 대기 |
+| 10 | 유지보수 | src/ 루트 · 엑셀 4개 혼입 | 10분 | ✅ 완료 (`a709c8b`) |
 
-**즉시 실행 가능 (2h 이하 · 5건)**:
-1. `password_hash` 응답 제거 · 30분 · **보안**
-2. src/ xlsx 이동 · 10분 · 정리
-3. `fmtWon` 통합 시작 · 1~2h · T-SLIM A 개시
-4. requireAuth 최소 적용 · 1~2h · **Render 대비**
-5. scheduleService src→server 이동 · 1h · 번들 분리
+**즉시 실행 가능 · 잔여 1건**:
+1. requireAuth 최소 적용 · 1~2h · **Render 배포 직전 재도입** (T3-defer)
 
 **Render 배포 CRITICAL**:
 - 인증 미들웨어 재도입
@@ -150,10 +119,9 @@
 
 **후보 (project-architect 분석 후 확정)**:
 
-**A. 유틸리티 통합**
-- `fmtDate` · `fmtWon` · `fmtNumber` 등 · 파일마다 로컬 정의 → `src/lib/format.ts` 통합
-- date-fns / dayjs 도입 검토 (자체 구현 대체)
-- 전화번호 · 사업자번호 포맷터 · 정규식 통합
+**A. 유틸리티 통합** — ✅ Phase 2 완료 (`8a5675b`) · fmtWon 통합 (잔여 fmtDate/fmtNumber 미완)
+- date-fns / dayjs 도입 검토 (자체 구현 대체) · 대기
+- 전화번호 · 사업자번호 포맷터 · 정규식 통합 · 대기
 
 **B. 폼·검증 통합**
 - react-hook-form + zod 도입 검토
@@ -165,9 +133,8 @@
 - 공통 fetch 훅 (`useFetch<T>(url)`) 신규 검토
 - 에러·로딩 상태 표준화
 
-**D. 알림·확인·토스트 통합**
-- `window.confirm` 남용 → 커스텀 ConfirmDialog 컴포넌트
-- toast 상태 · 페이지마다 개별 useState → useToast 훅 or context
+**D. 알림·확인·토스트 통합** — ✅ 완료 (`6e6690e`) · window.confirm 통합 · 잔여 0
+- toast 상태 · 페이지마다 개별 useState → useToast 훅 or context · 대기
 
 **E. 서버 응답 shape 정규화**
 - 라우터별 응답 형식 통일 (`{ data, error }` vs 배열 직접 반환)
