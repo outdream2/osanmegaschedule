@@ -9,6 +9,8 @@
 // - embedded 모드 · BusinessManagePage 안 서브탭 · 자체 AppNavHeader skip
 // #209 UI 세련화: 드래그&드롭 업로드 · 파일타입 아이콘 · 개선된 empty state · 카테고리 segmented control
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
+import { useConfirm } from "../../hooks/useConfirm";
 import {
   FileText, Download, Upload, Trash2, Plus, X, RefreshCw, Loader2,
   Filter, FileEdit, FileSignature, FilePlus, FileArchive,
@@ -100,7 +102,26 @@ const CATEGORY_MAP: Record<CategoryKey, (typeof CATEGORIES)[number]> =
   }, {} as Record<CategoryKey, (typeof CATEGORIES)[number]>);
 
 type SortKey = "title" | "category" | "file_name" | "file_size" | "uploaded_by" | "created_at";
-type SortDir = "asc" | "desc";
+// HrForm 정렬 비교 함수 (컴포넌트 외부 · 안정 참조)
+function hrFormCmp(key: SortKey): Comparator<HrForm> {
+  return (a, b) => {
+    const av = (a as any)[key];
+    const bv = (b as any)[key];
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    if (typeof av === "number" && typeof bv === "number") return av - bv;
+    return String(av).localeCompare(String(bv), "ko");
+  };
+}
+const HR_FORM_SORT_CMP: Record<SortKey, Comparator<HrForm>> = {
+  title:       hrFormCmp("title"),
+  category:    hrFormCmp("category"),
+  file_name:   hrFormCmp("file_name"),
+  file_size:   hrFormCmp("file_size"),
+  uploaded_by: hrFormCmp("uploaded_by"),
+  created_at:  hrFormCmp("created_at"),
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 유틸
@@ -359,6 +380,8 @@ const EmptyState: React.FC<{
 // ─────────────────────────────────────────────────────────────────────────────
 
 const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNavigate, onLogout, embedded = false }) => {
+  const confirm = useConfirm();
+
   const isManager = (authSession?.level ?? 0) >= 2;
 
   // 컬럼 리사이즈
@@ -382,9 +405,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
   const [categoryFilter, setCategoryFilter] = useState<"all" | CategoryKey>("all");
   const [searchQ, setSearchQ] = useState("");
 
-  // 정렬
-  const [sortKey, setSortKey] = useState<SortKey>("created_at");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  // 정렬 (T30-followup · useSortableTable)
 
   // 업로드 상태
   const [showUploadForm, setShowUploadForm] = useState(false);
@@ -419,36 +440,24 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
 
   useEffect(() => { load(); }, [load]);
 
-  // ── 정렬/필터 적용된 목록 ─────────────────────────────────────────────────
-  const displayForms = useMemo(() => {
+  // ── 필터 (검색어) ─────────────────────────────────────────────────────────
+  const filteredForms = useMemo(() => {
     const q = searchQ.trim().toLowerCase();
-    const filtered = q
-      ? forms.filter(f =>
-          (f.title || "").toLowerCase().includes(q) ||
-          (f.file_name || "").toLowerCase().includes(q) ||
-          (f.uploaded_by || "").toLowerCase().includes(q)
-        )
-      : forms.slice();
+    if (!q) return forms;
+    return forms.filter(f =>
+      (f.title || "").toLowerCase().includes(q) ||
+      (f.file_name || "").toLowerCase().includes(q) ||
+      (f.uploaded_by || "").toLowerCase().includes(q)
+    );
+  }, [forms, searchQ]);
 
-    const dir = sortDir === "asc" ? 1 : -1;
-    filtered.sort((a, b) => {
-      const av = (a as any)[sortKey];
-      const bv = (b as any)[sortKey];
-      if (av == null && bv == null) return 0;
-      if (av == null) return 1 * dir;
-      if (bv == null) return -1 * dir;
-      if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
-      return String(av).localeCompare(String(bv), "ko") * dir;
-    });
-    return filtered;
-  }, [forms, searchQ, sortKey, sortDir]);
+  // ── 정렬 (T30-followup · useSortableTable) ───────────────────────────────
+  const { sorted: displayForms, sortKey, sortDir, setSort } =
+    useSortableTable<HrForm, SortKey>(filteredForms, "created_at", HR_FORM_SORT_CMP, "desc");
 
   const isFiltered = searchQ.trim() !== "" || categoryFilter !== "all";
 
-  const handleSort = (key: SortKey, dir: SortDir) => {
-    setSortKey(key);
-    setSortDir(dir);
-  };
+  const handleSort = (key: SortKey, dir: SortDir) => setSort(key, dir);
 
   // sortableColumns · SortableHeader 는 리사이즈 헤더로 교체 · 제거됨
 
@@ -528,7 +537,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
   // ── 삭제 ──────────────────────────────────────────────────────────────────
   const handleDelete = async (row: HrForm) => {
     if (!isManager) return;
-    if (!window.confirm(`정말 삭제하시겠습니까?\n\n${row.title}`)) return;
+    if (!await confirm({ message: `정말 삭제하시겠습니까?\n\n${row.title}`, danger: true })) return;
     setDeletingId(row.id);
     try {
       const editorLevel = authSession?.level ?? 0;
