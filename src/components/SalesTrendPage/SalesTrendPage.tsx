@@ -15,6 +15,7 @@ import { StoreZoneMap } from "../common/StoreZoneMap";
 import { getZoneLabel } from "../../constants/zoneLabels";
 import { fmtWon } from "../../lib/format";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
+import { CARD_BASE, TEXT } from "../../styles/tokens";
 // 구역 코드 → 카테고리 설명 매핑 (매장 구역도의 ZONE_DEFS 그대로 사용)
 //   real_map 형식 예: "1A", "1B", "2A", "9B", "22" 등
 //   ZONE_DEFS 의 num + section 으로 매칭 · subA/subB 있으면 side 로 세분화
@@ -591,10 +592,10 @@ const ProductTrendTab: React.FC<{
                 <X size={16} strokeWidth={2.4} />
               </button>
               <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-black text-slate-800 truncate leading-tight">
+                <div className={`${TEXT.body} text-slate-800 break-keep whitespace-normal leading-tight`}>
                   {rows[0]?.product_name ?? selected.product_name}
                 </div>
-                <div className="text-[10px] tabular-nums text-slate-500 truncate">
+                <div className="text-[10px] tabular-nums text-slate-500 break-keep whitespace-normal">
                   #{selected.product_code} · {rows[0]?.supplier_name ?? selected.supplier ?? "-"}
                 </div>
               </div>
@@ -714,7 +715,7 @@ const ProductTrendTab: React.FC<{
             </div>
 
             {/* 표 · 그래프에 표시된 값(매입·판매·종료재고)만 · 재고리스트 스타일 */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className={`${CARD_BASE} overflow-hidden`}>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead className="sticky top-0 bg-slate-50 border-b-2 border-slate-200 z-10 shadow-sm">
@@ -1318,7 +1319,7 @@ export const StockFlowPanel: React.FC<{
   }, [rows, sort, dir, query, saleMin, saleMax]);
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden">
+    <div className={`${CARD_BASE} flex flex-col h-full overflow-hidden`}>
       {/* ── 헤더 · 상품별/공급사별 탭 + 스냅샷 날짜 + 안내 ── */}
       <div className="flex flex-col gap-1.5 px-3 py-2 border-b border-slate-200 bg-slate-50/50">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -1904,7 +1905,7 @@ const ZoneCategoryContent: React.FC = () => {
           </div>
         </div>
         {/* 상품 테이블 */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex-1">
+        <div className={`${CARD_BASE} overflow-hidden flex-1`}>
           <div className="overflow-auto max-h-[55vh]">
             <table className="w-full text-xs sm:min-w-[540px]">
               <thead className="sticky top-0 bg-slate-50 border-b-2 border-slate-200 z-10 shadow-sm">
@@ -1964,11 +1965,11 @@ const ZoneCategoryContent: React.FC = () => {
   return (
     <div className="flex flex-col gap-2">
       {/* ── 상단 필터바 (full-width · 통일 규격) ── */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+      <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
         {/* 아이콘 + 제목 + 카운트배지 + 부제 */}
         <div className="flex items-center gap-2">
           <PieChart size={14} className="text-amber-500 shrink-0" />
-          <span className="text-[13px] font-semibold text-slate-800">카테고리별현황</span>
+          <span className={`${TEXT.body} text-slate-800`}>카테고리별현황</span>
           <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 rounded-full px-2 py-0.5 border border-amber-200 tabular-nums">{grouped.length}개 구역</span>
           <span className="text-[11px] text-slate-400 hidden sm:inline">real_map 기반 · 구역 클릭 → 상품 상세</span>
         </div>
@@ -2104,10 +2105,10 @@ const ZoneCategoryContent: React.FC = () => {
                 <X size={16} strokeWidth={2.4} />
               </button>
               <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-black text-slate-800 truncate leading-tight">
+                <div className={`${TEXT.body} text-slate-800 break-keep whitespace-normal leading-tight`}>
                   구역 {getZoneLabel(selectedZone)}{zoneCategoryLabel(selectedZone) ? ` · ${zoneCategoryLabel(selectedZone)}` : ""}
                 </div>
-                <div className="text-[10px] tabular-nums text-slate-500 truncate">
+                <div className="text-[10px] tabular-nums text-slate-500 break-keep whitespace-normal">
                   {grouped.find(g => g.zone === selectedZone)?.items.length ?? 0}개 상품
                 </div>
               </div>

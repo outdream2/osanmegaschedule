@@ -687,7 +687,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
     return (
       <div className="w-full h-full min-h-0 flex flex-col gap-2">
         {/* 컴팩트 상단 필터바 (기간 · Top N · 새로고침) */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 shrink-0">
+        <div className={`${CARD_BASE} px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 shrink-0`}>
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">기간</span>
             <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
@@ -807,13 +807,13 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
             </div>
           )}
           {!supplierSelectedObj ? (
-            <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
+            <div className={`${CARD_BASE} flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]`}>
               <Building2 size={40} className="mb-3 opacity-30" />
               <div className="text-sm font-bold">리스트에서 공급사를 클릭하세요</div>
               <div className="text-[11px] mt-1">재고자산 요약 · 상품 리스트</div>
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-4 flex flex-col gap-3">
+            <div className={`${CARD_BASE} overflow-hidden p-4 flex flex-col gap-3`}>
               <div className="flex items-center gap-2 flex-wrap">
                 <Building2 size={16} className="text-sky-600 shrink-0" />
                 {(() => {
