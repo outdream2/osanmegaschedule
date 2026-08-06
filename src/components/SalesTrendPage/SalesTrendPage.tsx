@@ -14,6 +14,7 @@ import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { StoreZoneMap } from "../common/StoreZoneMap";
 import { getZoneLabel } from "../../constants/zoneLabels";
 import { fmtWon } from "../../lib/format";
+import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 // 구역 코드 → 카테고리 설명 매핑 (매장 구역도의 ZONE_DEFS 그대로 사용)
 //   real_map 형식 예: "1A", "1B", "2A", "9B", "22" 등
 //   ZONE_DEFS 의 num + section 으로 매칭 · subA/subB 있으면 side 로 세분화
@@ -2160,6 +2161,16 @@ export const CategoryTab: React.FC = () => {
 
 // ─── 손실추적 탭 (2026-07-15 · closing_stock > current_stock 상품) ─────────
 type LossSortKey = "name" | "supplier" | "opening" | "sale" | "current" | "expected" | "purchase" | "loss";
+const LOSS_SORT_CMP: Record<LossSortKey, Comparator<any>> = {
+  name:     (a, b) => String(a.product_name ?? "").localeCompare(String(b.product_name ?? ""), "ko"),
+  supplier: (a, b) => String(a.supplier ?? "").localeCompare(String(b.supplier ?? ""), "ko"),
+  opening:  (a, b) => Number(a.opening_stock ?? 0) - Number(b.opening_stock ?? 0),
+  sale:     (a, b) => Number(a.sale_qty ?? 0) - Number(b.sale_qty ?? 0),
+  current:  (a, b) => Number(a.closing_stock ?? 0) - Number(b.closing_stock ?? 0),
+  expected: (a, b) => (Number(a.opening_stock ?? 0) - Number(a.sale_qty ?? 0)) - (Number(b.opening_stock ?? 0) - Number(b.sale_qty ?? 0)),
+  purchase: (a, b) => Number(a.purchase_qty ?? 0) - Number(b.purchase_qty ?? 0),
+  loss:     (a, b) => Number(a.loss ?? 0) - Number(b.loss ?? 0),
+};
 // 2026-07-28 · 사용자 요청 · 손실추적 · 재고관리로 이동 · export 추가
 export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> = ({ onOpenProductInfo }) => {
   const [rows, setRows] = useState<any[]>([]);
@@ -2171,8 +2182,6 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
   const [minLoss, setMinLoss] = useState<string>(""); // 음수 허용 · string 으로 유지
   const [maxLoss, setMaxLoss] = useState<string>(""); // 빈 문자열이면 상한 없음
   const [topN, setTopN] = useState<number>(0); // Top N · 0(전체)/100/300/1000/2000
-  const [sortKey, setSortKey] = useState<LossSortKey>("loss");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   // 계절 필터 · 지정 시 년도 무관 해당 월들 aggregation
   const [season, setSeason] = useState<SeasonKey | null>(null);
   useEffect(() => {
@@ -2185,37 +2194,23 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
       .catch(() => setRows([]))
       .finally(() => setLoading(false));
   }, [season]);
-  const filtered = useMemo(() => {
-    const minN = minLoss.trim() === "" ? -Infinity : (Number(minLoss));  // 음수 허용
+  // 1단계: 필터+enrich (정렬 제외)
+  const enrichedFiltered = useMemo(() => {
+    const minN = minLoss.trim() === "" ? -Infinity : Number(minLoss);
     const maxN = maxLoss.trim() === "" ? Infinity : (Number(maxLoss) || Infinity);
-    const enriched = rows
-      .map(r => ({ ...r, loss: calcLoss(r) }))
-      .filter(r => r.loss >= minN && r.loss <= maxN);
-    const sign = sortDir === "asc" ? 1 : -1;
-    const getVal = (r: any): any => {
-      switch (sortKey) {
-        case "name": return String(r.product_name ?? "");
-        case "supplier": return String(r.supplier ?? "");
-        case "opening": return Number(r.opening_stock ?? 0);
-        case "sale": return Number(r.sale_qty ?? 0);
-        case "current": return Number(r.closing_stock ?? 0);
-        case "expected": return Number(r.opening_stock ?? 0) - Number(r.sale_qty ?? 0);
-        case "purchase": return Number(r.purchase_qty ?? 0);
-        case "loss": return Number(r.loss ?? 0);
-      }
-    };
-    const sorted = [...enriched].sort((a, b) => {
-      const va = getVal(a), vb = getVal(b);
-      if (typeof va === "number" && typeof vb === "number") return sign * (va - vb);
-      return sign * String(va).localeCompare(String(vb), "ko");
-    });
-    return topN === 0 ? sorted : sorted.slice(0, topN);
-  }, [rows, minLoss, maxLoss, sortKey, sortDir, topN]);
-  const fmt = (n: number) => n.toLocaleString();
+    return rows.map(r => ({ ...r, loss: calcLoss(r) })).filter(r => r.loss >= minN && r.loss <= maxN);
+  }, [rows, minLoss, maxLoss]);
+  // 2단계: 정렬 (T30-followup · useSortableTable)
+  const { sorted: _sortedLoss, sortKey, sortDir, toggleSort: _toggleLossSort, setSort: _setLossSort } =
+    useSortableTable<any, LossSortKey>(enrichedFiltered, "loss", LOSS_SORT_CMP, "asc");
+  // 새 컬럼: name/supplier → asc · 나머지 → desc (원본 동작 유지)
   const handleSort = (k: LossSortKey) => {
-    if (sortKey === k) setSortDir(d => (d === "asc" ? "desc" : "asc"));
-    else { setSortKey(k); setSortDir(k === "name" || k === "supplier" ? "asc" : "desc"); }
+    if (sortKey === k) _toggleLossSort(k);
+    else _setLossSort(k, k === "name" || k === "supplier" ? "asc" : "desc");
   };
+  // topN 적용
+  const filtered = topN === 0 ? _sortedLoss : _sortedLoss.slice(0, topN);
+  const fmt = (n: number) => n.toLocaleString();
   const arrow = (k: LossSortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col gap-3">
