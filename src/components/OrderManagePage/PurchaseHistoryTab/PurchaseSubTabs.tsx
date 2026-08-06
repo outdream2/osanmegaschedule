@@ -440,37 +440,54 @@ const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> =
   }
   return (
     <div className="overflow-auto flex-1 min-h-0">
-      <table className="w-full text-xs min-w-[600px]">
+      <table className="w-full text-xs min-w-[600px]" style={{ tableLayout: "fixed" }}>
         <thead className="sticky top-0 bg-white z-10 border-b border-slate-100">
           <tr className="text-[11px] text-slate-400 uppercase tracking-wider">
-            <th className="text-left px-2 py-2 w-7 text-slate-300">#</th>
+            <th className="relative text-left px-2 py-2 text-slate-300" style={{ width: aw("num"), minWidth: aw("num") }}>
+              #
+              <span {...ar("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+            </th>
             <th onClick={() => toggleSort("product_name")}
-              className="text-left px-2 py-2 cursor-pointer select-none hover:bg-slate-50 transition">
+              className="relative text-left px-2 py-2 cursor-pointer select-none hover:bg-slate-50 transition"
+              style={{ width: aw("name"), minWidth: aw("name") }}>
               상품{arrow("product_name")}
+              <span {...ar("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
             <th onClick={() => toggleSort("total_qty")}
-              className="text-right px-2 py-2 w-20 cursor-pointer select-none hover:bg-slate-50 transition">
+              className="relative text-right px-2 py-2 cursor-pointer select-none hover:bg-slate-50 transition"
+              style={{ width: aw("qty"), minWidth: aw("qty") }}>
               총매입수량{arrow("total_qty")}
+              <span {...ar("qty")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
             <th onClick={() => toggleSort("avg_unit_price")}
-              className="text-right px-2 py-2 w-20 cursor-pointer select-none hover:bg-slate-50 transition">
+              className="relative text-right px-2 py-2 cursor-pointer select-none hover:bg-slate-50 transition"
+              style={{ width: aw("unit"), minWidth: aw("unit") }}>
               평균단가{arrow("avg_unit_price")}
+              <span {...ar("unit")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
             <th onClick={() => toggleSort("avg_interval")}
-              className="text-right px-2 py-2 w-14 cursor-pointer select-none hover:bg-slate-50 transition leading-tight">
+              className="relative text-right px-2 py-2 cursor-pointer select-none hover:bg-slate-50 transition leading-tight"
+              style={{ width: aw("interval"), minWidth: aw("interval") }}>
               평균<br />매입주기{arrow("avg_interval")}
+              <span {...ar("interval")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
             <th onClick={() => toggleSort("last_date")}
-              className="text-left px-2 py-2 w-14 cursor-pointer select-none hover:bg-slate-50 transition leading-tight">
+              className="relative text-left px-2 py-2 cursor-pointer select-none hover:bg-slate-50 transition leading-tight"
+              style={{ width: aw("last_date"), minWidth: aw("last_date") }}>
               최근<br />매입일{arrow("last_date")}
+              <span {...ar("last_date")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
             <th onClick={() => toggleSort("purchase_count")}
-              className="text-right px-2 py-2 w-14 cursor-pointer select-none hover:bg-slate-50 transition leading-tight">
+              className="relative text-right px-2 py-2 cursor-pointer select-none hover:bg-slate-50 transition leading-tight"
+              style={{ width: aw("count"), minWidth: aw("count") }}>
               매입<br />횟수{arrow("purchase_count")}
+              <span {...ar("count")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
             <th onClick={() => toggleSort("total_amount")}
-              className="text-right px-2 py-2 w-24 text-emerald-600 cursor-pointer select-none hover:bg-emerald-50 transition">
+              className="relative text-right px-2 py-2 text-emerald-600 cursor-pointer select-none hover:bg-emerald-50 transition"
+              style={{ width: aw("amount"), minWidth: aw("amount") }}>
               총매입액{arrow("total_amount")}
+              <span {...ar("amount")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
           </tr>
         </thead>

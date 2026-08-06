@@ -3,6 +3,7 @@
 // 좌측: 슬림 원라인 리스트 / 우측: 이력서 형식 상세 + 인라인 편집
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSortableTable } from "../../hooks/useSortableTable";
+import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import {
   Award,
   Briefcase,
@@ -973,6 +974,17 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
       ? (sortDir === "asc" ? <ArrowUp size={10} className="text-indigo-500 inline ml-0.5" /> : <ArrowDown size={10} className="text-indigo-500 inline ml-0.5" />)
       : <ArrowUpDown size={10} className="text-slate-300 inline ml-0.5" />
   );
+  const { getWidth: sw, resizerProps: sr } = useColumnResize("staffList", {
+    name:         { default: 100, min: 60, max: 200 },
+    position:     { default: 64,  min: 48, max: 120 },
+    contract_type:{ default: 72,  min: 48, max: 120 },
+    tenure:       { default: 52,  min: 40, max: 100 },
+    rating:       { default: 40,  min: 32, max: 80  },
+    resume:       { default: 44,  min: 36, max: 80  },
+    bankbook:     { default: 40,  min: 36, max: 80  },
+    contract:     { default: 44,  min: 36, max: 80  },
+    status:       { default: 44,  min: 36, max: 80  },
+  });
 
   const selectedEmp = useMemo(
     () => employees.find((e) => e.id === selectedId) ?? null,
@@ -1488,18 +1500,45 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
             ) : !loading && filtered.length === 0 ? (
               <div className="text-center text-[11px] text-slate-300 py-8">해당 조건의 직원이 없습니다</div>
             ) : (
-              <table className={`w-full border-collapse ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+              <table className={`w-full border-collapse ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`} style={{ tableLayout: "fixed" }}>
                 <thead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur">
                   <tr className="border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                    <th className="px-2 py-1.5 text-left cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("name")}>이름<SortIcon k="name" /></th>
-                    <th className="px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("position")}>직책<SortIcon k="position" /></th>
-                    <th className="px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("contract_type")}>계약유형<SortIcon k="contract_type" /></th>
-                    <th className="px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("tenure")}>근속<SortIcon k="tenure" /></th>
-                    <th className="px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("performance_rating")}>평가<SortIcon k="performance_rating" /></th>
-                    <th className="px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("resume_file")} title="이력서">이력서<SortIcon k="resume_file" /></th>
-                    <th className="px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("bankbook_file")} title="통장사본">통장<SortIcon k="bankbook_file" /></th>
-                    <th className="px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("contract_file")}>계약서<SortIcon k="contract_file" /></th>
-                    <th className="px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("status")}>상태<SortIcon k="status" /></th>
+                    <th className="relative px-2 py-1.5 text-left cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("name")} style={{ width: sw("name"), minWidth: sw("name") }}>
+                      이름<SortIcon k="name" />
+                      <span {...sr("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
+                    </th>
+                    <th className="relative px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("position")} style={{ width: sw("position"), minWidth: sw("position") }}>
+                      직책<SortIcon k="position" />
+                      <span {...sr("position")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
+                    </th>
+                    <th className="relative px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("contract_type")} style={{ width: sw("contract_type"), minWidth: sw("contract_type") }}>
+                      계약유형<SortIcon k="contract_type" />
+                      <span {...sr("contract_type")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
+                    </th>
+                    <th className="relative px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("tenure")} style={{ width: sw("tenure"), minWidth: sw("tenure") }}>
+                      근속<SortIcon k="tenure" />
+                      <span {...sr("tenure")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
+                    </th>
+                    <th className="relative px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("performance_rating")} style={{ width: sw("rating"), minWidth: sw("rating") }}>
+                      평가<SortIcon k="performance_rating" />
+                      <span {...sr("rating")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
+                    </th>
+                    <th className="relative px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("resume_file")} title="이력서" style={{ width: sw("resume"), minWidth: sw("resume") }}>
+                      이력서<SortIcon k="resume_file" />
+                      <span {...sr("resume")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
+                    </th>
+                    <th className="relative px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("bankbook_file")} title="통장사본" style={{ width: sw("bankbook"), minWidth: sw("bankbook") }}>
+                      통장<SortIcon k="bankbook_file" />
+                      <span {...sr("bankbook")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
+                    </th>
+                    <th className="relative px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("contract_file")} style={{ width: sw("contract"), minWidth: sw("contract") }}>
+                      계약서<SortIcon k="contract_file" />
+                      <span {...sr("contract")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
+                    </th>
+                    <th className="relative px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("status")} style={{ width: sw("status"), minWidth: sw("status") }}>
+                      상태<SortIcon k="status" />
+                      <span {...sr("status")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">

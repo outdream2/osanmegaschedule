@@ -8,6 +8,7 @@ import { getProductsMap, type ProductInfo } from "../lib/productsCache";
 import { fmtDateMD } from "../lib/format";
 import type { AuthSession } from "../types";
 import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
+import { useColumnResize, RESIZER_CLS } from "../hooks/useColumnResize";
 
 interface RequestsPageProps {
   onBack: () => void;
@@ -103,6 +104,15 @@ function ListToolbar({
 export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
   const [tab, setTab] = useState<Tab>("display");
   const isManager = (authSession?.level ?? 0) >= 2;
+  const { getWidth: rw, resizerProps: rr } = useColumnResize("requestsDisplay", {
+    check:   { default: 32,  min: 28, max: 48  },
+    name:    { default: 200, min: 100, max: 400 },
+    zone:    { default: 80,  min: 60, max: 160 },
+    staff:   { default: 72,  min: 52, max: 140 },
+    wh_prep: { default: 72,  min: 52, max: 100 },
+    disp:    { default: 72,  min: 52, max: 100 },
+    date:    { default: 72,  min: 52, max: 120 },
+  });
 
   // 진열요청
   const [displayReqs, setDisplayReqs] = useState<DisplayRequest[]>([]);
@@ -615,22 +625,41 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
             ) : (
               <div className={`bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto ${displayLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-                <table className="w-full min-w-[640px] border-collapse text-left">
+                <table className="w-full min-w-[640px] border-collapse text-left" style={{ tableLayout: "fixed" }}>
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/80">
-                      <th className="w-8 px-2 py-2">
+                      <th className="relative px-2 py-2" style={{ width: rw("check"), minWidth: rw("check") }}>
                         <button onClick={() => toggleAll(displayReqs, selectedDisplay, setSelectedDisplay)} className="shrink-0 cursor-pointer text-slate-400 hover:text-slate-600 transition">
                           {selectedDisplay.size === displayReqs.length && displayReqs.length > 0
                             ? <CheckSquare size={14} className="text-rose-500" />
                             : <Square size={14} />}
                         </button>
+                        <span {...rr("check")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                       </th>
-                      <th className="px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide">상품명</th>
-                      <th className="px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide whitespace-nowrap">진열구역</th>
-                      <th className="px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide whitespace-nowrap">담당자</th>
-                      <th className="px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide text-center whitespace-nowrap">창고준비</th>
-                      <th className="px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide text-center whitespace-nowrap">진열완료</th>
-                      <th className="px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide whitespace-nowrap">날짜</th>
+                      <th className="relative px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide" style={{ width: rw("name"), minWidth: rw("name") }}>
+                        상품명
+                        <span {...rr("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                      </th>
+                      <th className="relative px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide" style={{ width: rw("zone"), minWidth: rw("zone") }}>
+                        진열구역
+                        <span {...rr("zone")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                      </th>
+                      <th className="relative px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide" style={{ width: rw("staff"), minWidth: rw("staff") }}>
+                        담당자
+                        <span {...rr("staff")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                      </th>
+                      <th className="relative px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide text-center" style={{ width: rw("wh_prep"), minWidth: rw("wh_prep") }}>
+                        창고준비
+                        <span {...rr("wh_prep")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                      </th>
+                      <th className="relative px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide text-center" style={{ width: rw("disp"), minWidth: rw("disp") }}>
+                        진열완료
+                        <span {...rr("disp")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                      </th>
+                      <th className="relative px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide" style={{ width: rw("date"), minWidth: rw("date") }}>
+                        날짜
+                        <span {...rr("date")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
