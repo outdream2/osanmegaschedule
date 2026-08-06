@@ -871,15 +871,15 @@ export const PaymentInfoTab: React.FC = () => {
                       }`}
                     >
                       <span className="w-[42px] shrink-0"><VendorCategoryBadge category={v.category} /></span>
-                      {/* VAT 배지 · 포함/별도 · 2026-08-06 · null 기본 포함 · 이름 힌트 반영 */}
-                      <span className="w-[36px] shrink-0 text-center">
+                      {/* VAT · 텍스트 · 2026-08-06 · 배지 → 깔끔한 텍스트 */}
+                      <span className="w-[42px] shrink-0 text-center">
                         {(() => {
                           const nm = v.company_name ?? "";
                           const hint = /vat\s*(미포함|별도|없음)/i.test(nm);
                           const eff = v.vat_included === false ? false : v.vat_included === true ? true : hint ? false : true;
                           return eff
-                            ? <span className="inline-flex px-1 py-0.5 rounded text-[9.5px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">포함</span>
-                            : <span className="inline-flex px-1 py-0.5 rounded text-[9.5px] font-black bg-slate-50 text-slate-500 border border-slate-200">별도</span>;
+                            ? <span className="text-[10px] font-semibold text-emerald-700">포함</span>
+                            : <span className="text-[10px] font-semibold text-slate-500">별도</span>;
                         })()}
                       </span>
                       <span className={`text-[12px] font-semibold break-words whitespace-normal leading-tight flex-1 min-w-0 ${

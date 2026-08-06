@@ -151,15 +151,13 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
                 {fmtBizNum(vendor.business_number)}
               </span>
             )}
-            {/* 부가세 포함/불포함 뱃지 · vat_included 없으면 이름에서 자동 추론 */}
+            {/* 부가세 · 텍스트 · 2026-08-06 · 사용자 요청 · 배지 → 깔끔한 텍스트 */}
             {effectiveVatIncluded === true && (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
-                VAT포함
-              </span>
+              <span className="text-[11px] font-semibold text-emerald-700">VAT 포함</span>
             )}
             {effectiveVatIncluded === false && (
               <span
-                className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-slate-50 text-slate-500 border border-slate-200"
+                className="text-[11px] font-semibold text-slate-500"
                 title={vendor.vat_included == null && nameHintsVatExcluded ? "공급사명에서 자동 추론" : undefined}
               >
                 부가세 별도
@@ -233,10 +231,10 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
               : "text-slate-700"
             }`}>{fmtWon(kpis.thisMonthAmount)}원</span>
             {effectiveVatIncluded === true && (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9.5px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">VAT포함</span>
+              <span className="text-[10.5px] font-semibold text-emerald-700">VAT 포함</span>
             )}
             {effectiveVatIncluded === false && (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9.5px] font-black bg-slate-50 text-slate-500 border border-slate-200">부가세 별도</span>
+              <span className="text-[10.5px] font-semibold text-slate-500">부가세 별도</span>
             )}
             <span className="text-slate-400 tabular-nums inline-flex items-center gap-0.5">
               {momIcon}{momText}
