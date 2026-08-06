@@ -221,7 +221,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
             // 10day 모드 · N월 초순/중순/하순
             const m = /^(\d{4})-(\d{2})/.exec(r.period_start_date);
             const monthLabel = m ? `${Number(m[2])}월` : r.period_start_date;
-            const part = partLabel(r.period_type as any);
+            const part = partLabel(r.period_type);
             return part ? `${monthLabel} ${part}` : monthLabel;
           }),
           series: [
@@ -551,9 +551,9 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }>
     setOrdersLoading(true);
     fetch(`/api/order-requests?product_code=${encodeURIComponent(productCode)}`)
       .then(r => r.ok ? r.json() : { rows: [] })
-      .then(j => {
-        const rows: any = j?.rows ?? j;
-        setOrders(Array.isArray(rows) ? rows : []);
+      .then((j: { rows?: unknown } | unknown) => {
+        const raw = (j != null && typeof j === "object" && "rows" in j) ? (j as { rows: unknown }).rows : j;
+        setOrders(Array.isArray(raw) ? (raw as OrderRequestRow[]) : []);
       })
       .catch(() => setOrders([]))
       .finally(() => setOrdersLoading(false));

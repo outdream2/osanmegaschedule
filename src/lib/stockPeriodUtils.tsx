@@ -282,49 +282,58 @@ export function fillPeriodsWithRows<T extends { period_start_date: string; snaps
 }
 
 // ─── 10일 기간 rows → 월별 aggregation ──────────────────────────────────────
+
+/** 월별 집계 중간 누적용 타입 · _first_snap/_last_snap 은 최종 반환 전 제거됨 */
+type MonthAgg<T> = T & { _first_snap: string; _last_snap: string };
+
 export function aggregateToMonths<T extends {
   period_start_date: string; snapshot_date: string; period_type: string | null;
   opening_stock?: number; purchase_qty?: number; sale_qty?: number; disposal_qty?: number;
   closing_stock?: number; supply_amount?: number; total_amount?: number; product_count?: number;
   supplier_name?: string | null; product_name?: string | null; spec?: string | null;
 }>(rows: T[]): T[] {
-  const byMonth = new Map<string, T>();
+  const byMonth = new Map<string, MonthAgg<T>>();
   for (const r of rows) {
     const m = /^(\d{4})-(\d{2})-\d{2}$/.exec(r.period_start_date);
     if (!m) continue;
     const key = `${m[1]}-${m[2]}`;
     if (!byMonth.has(key)) {
-      byMonth.set(key, { ...r, period_start_date: `${key}-01`, snapshot_date: r.snapshot_date, period_type: null } as T);
-      const agg = byMonth.get(key)! as any;
-      agg.opening_stock = Number(r.opening_stock ?? 0) || 0;
-      agg.purchase_qty = 0;
-      agg.sale_qty = 0;
-      agg.disposal_qty = 0;
-      agg.closing_stock = Number(r.closing_stock ?? 0) || 0;
-      agg.supply_amount = 0;
-      agg.total_amount = 0;
-      agg.product_count = 0;
-      agg._first_snap = r.snapshot_date;
-      agg._last_snap = r.snapshot_date;
+      const agg: MonthAgg<T> = {
+        ...r,
+        period_start_date: `${key}-01`,
+        snapshot_date: r.snapshot_date,
+        period_type: null,
+        opening_stock: Number(r.opening_stock ?? 0) || 0,
+        purchase_qty: 0,
+        sale_qty: 0,
+        disposal_qty: 0,
+        closing_stock: Number(r.closing_stock ?? 0) || 0,
+        supply_amount: 0,
+        total_amount: 0,
+        product_count: 0,
+        _first_snap: r.snapshot_date,
+        _last_snap: r.snapshot_date,
+      };
+      byMonth.set(key, agg);
     }
-    const agg = byMonth.get(key)! as any;
-    agg.purchase_qty += Number(r.purchase_qty ?? 0) || 0;
-    agg.sale_qty += Number(r.sale_qty ?? 0) || 0;
-    agg.disposal_qty += Number(r.disposal_qty ?? 0) || 0;
-    agg.supply_amount += Number(r.supply_amount ?? 0) || 0;
-    agg.total_amount += Number(r.total_amount ?? 0) || 0;
-    if (r.snapshot_date < (agg._first_snap ?? r.snapshot_date)) {
-      agg._first_snap = r.snapshot_date;
+    const agg = byMonth.get(key)!;
+    agg.purchase_qty  = (agg.purchase_qty  ?? 0) + (Number(r.purchase_qty  ?? 0) || 0);
+    agg.sale_qty      = (agg.sale_qty      ?? 0) + (Number(r.sale_qty      ?? 0) || 0);
+    agg.disposal_qty  = (agg.disposal_qty  ?? 0) + (Number(r.disposal_qty  ?? 0) || 0);
+    agg.supply_amount = (agg.supply_amount ?? 0) + (Number(r.supply_amount ?? 0) || 0);
+    agg.total_amount  = (agg.total_amount  ?? 0) + (Number(r.total_amount  ?? 0) || 0);
+    if (r.snapshot_date < agg._first_snap) {
+      agg._first_snap  = r.snapshot_date;
       agg.opening_stock = Number(r.opening_stock ?? 0) || 0;
     }
-    if (r.snapshot_date > (agg._last_snap ?? "")) {
-      agg._last_snap = r.snapshot_date;
+    if (r.snapshot_date > agg._last_snap) {
+      agg._last_snap    = r.snapshot_date;
       agg.snapshot_date = r.snapshot_date;
       agg.closing_stock = Number(r.closing_stock ?? 0) || 0;
     }
-    agg.product_count = Math.max(agg.product_count, Number(r.product_count ?? 0) || 0);
+    agg.product_count = Math.max(agg.product_count ?? 0, Number(r.product_count ?? 0) || 0);
   }
   return Array.from(byMonth.values())
-    .map(v => { const { _first_snap, _last_snap, ...rest } = v as any; void _first_snap; void _last_snap; return rest as T; })
+    .map(({ _first_snap: _f, _last_snap: _l, ...rest }) => { void _f; void _l; return rest as unknown as T; })
     .sort((a, b) => a.period_start_date.localeCompare(b.period_start_date));
 }

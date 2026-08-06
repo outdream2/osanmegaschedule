@@ -59,16 +59,15 @@ export function useVendorInfoModal(opts?: { onSaved?: () => void }) {
 
       // Vendor 객체 직접 전달
       if (typeof ref === "object" && "company_name" in ref) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setOpenVendor(ref as any);
+        setOpenVendor(ref as Vendor);
         return;
       }
 
       // id(number)
       if (typeof ref === "number") {
         const found = vendors.find((v) => v.id === ref);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (found) { setOpenVendor(found as any); return; }
+        // useVendors.Vendor has an index signature; cast to VendorListEditor.Vendor
+        if (found) { setOpenVendor(found as unknown as Vendor); return; }
         alert(`공급사 정보 없음 (id: ${ref})`);
         return;
       }
@@ -77,8 +76,8 @@ export function useVendorInfoModal(opts?: { onSaved?: () => void }) {
       const name = String(ref).trim();
       if (!name) return;
       const found = findVendorByName(name);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (found) { setOpenVendor(found as any); return; }
+      // useVendors.Vendor has an index signature; cast to VendorListEditor.Vendor
+      if (found) { setOpenVendor(found as unknown as Vendor); return; }
       alert(`공급사 정보 없음: ${ref}`);
     },
     [vendors, findVendorByName],

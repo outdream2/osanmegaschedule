@@ -109,8 +109,11 @@ export const InventoryEditModal: React.FC<InventoryEditModalProps> = ({
         }),
       });
       if (!res.ok) {
-        const b = await res.json().catch(() => ({}));
-        throw new Error((b as any).error ?? `저장 실패 (${res.status})`);
+        const b: unknown = await res.json().catch(() => ({}));
+        const errMsg = (b != null && typeof b === "object" && "error" in b && typeof (b as { error: unknown }).error === "string")
+          ? (b as { error: string }).error
+          : `저장 실패 (${res.status})`;
+        throw new Error(errMsg);
       }
       // 성공: currentValues 업데이트 (Panel 의 현재값 표시 갱신)
       setCurrentValues(next);

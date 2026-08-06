@@ -54,7 +54,7 @@ export function usePushSubscription({ employeeId, auto = true }: Params) {
     }
     try {
       const reg = await navigator.serviceWorker.ready;
-      const vapidKey = (import.meta as any).env?.VITE_VAPID_PUBLIC_KEY;
+      const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
       if (!vapidKey) {
         console.warn("[push] VITE_VAPID_PUBLIC_KEY 미설정");
         return { ok: false as const, reason: "no_vapid_key" };

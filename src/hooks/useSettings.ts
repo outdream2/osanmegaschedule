@@ -76,15 +76,27 @@ function sanitizeEmployeeOverrides(input: unknown): Record<number, WageRate> {
   return out;
 }
 
-function migrateScheduleTypes(raw: any, parsed: Partial<any>): ScheduleTypeEntry[] {
+/** 구버전 localStorage 포맷 · scheduleTypes 가 string[] 였을 때 저장된 개별 시간 필드 */
+interface LegacyScheduleFields {
+  openShiftHour?: string;
+  openShiftHourPharm?: string;
+  middleShiftHour?: string;
+  middleShiftHourPharm?: string;
+  closeShiftHour?: string;
+  closeShiftHourPharm?: string;
+  openCloseShiftHour?: string;
+  openCloseShiftHourPharm?: string;
+}
+
+function migrateScheduleTypes(raw: unknown, parsed: Partial<AppSettings> & LegacyScheduleFields): ScheduleTypeEntry[] {
   if (!Array.isArray(raw) || raw.length === 0) return DEFAULT_SCHEDULE_TYPES;
   if (typeof raw[0] === "string") {
     // Old string[] format — migrate
     const hoursByType: Record<string, { hours: string; pharmHours: string }> = {
-      "오픈":     { hours: (parsed as any).openShiftHour || "10:00-18:00",     pharmHours: (parsed as any).openShiftHourPharm || "" },
-      "미들":     { hours: (parsed as any).middleShiftHour || "11:00-18:00",   pharmHours: (parsed as any).middleShiftHourPharm || "" },
-      "마감":     { hours: (parsed as any).closeShiftHour || "12:00-20:00",    pharmHours: (parsed as any).closeShiftHourPharm || "" },
-      "오픈마감": { hours: (parsed as any).openCloseShiftHour || "10:00-22:00", pharmHours: (parsed as any).openCloseShiftHourPharm || "" },
+      "오픈":     { hours: parsed.openShiftHour || "10:00-18:00",     pharmHours: parsed.openShiftHourPharm || "" },
+      "미들":     { hours: parsed.middleShiftHour || "11:00-18:00",   pharmHours: parsed.middleShiftHourPharm || "" },
+      "마감":     { hours: parsed.closeShiftHour || "12:00-20:00",    pharmHours: parsed.closeShiftHourPharm || "" },
+      "오픈마감": { hours: parsed.openCloseShiftHour || "10:00-22:00", pharmHours: parsed.openCloseShiftHourPharm || "" },
     };
     return (raw as string[]).map(s => ({ type: s, hours: hoursByType[s]?.hours ?? "", pharmHours: hoursByType[s]?.pharmHours ?? "", logisticsHours: "", partTimeHours: "" }));
   }
@@ -110,7 +122,7 @@ function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
       ? parsed.employmentTypes : DEFAULT_SETTINGS.employmentTypes,
     workplaces: Array.isArray(parsed.workplaces) && parsed.workplaces.length > 0
       ? parsed.workplaces : DEFAULT_SETTINGS.workplaces,
-    scheduleTypes: migrateScheduleTypes((parsed as any).scheduleTypes, parsed),
+    scheduleTypes: migrateScheduleTypes((parsed as Partial<AppSettings> & LegacyScheduleFields).scheduleTypes, parsed as Partial<AppSettings> & LegacyScheduleFields),
     wageRates: sanitizeWageRates(parsed.wageRates),
     employeeWageOverrides: sanitizeEmployeeOverrides(parsed.employeeWageOverrides),
   };
