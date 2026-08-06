@@ -753,7 +753,123 @@ export const TopProductsPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ r
   );
 };
 
-// ── TrendTab · 3종 차트 컨테이너 (반응형 그리드) ─────────────────────────
+// ── Top10 랭킹 카드 · 매입수량 · 단가 · 매입간격 (2026-08-06 · 사용자 요청) ────
+type Top10Item = { rank: number; name: string; value: number; sub?: string };
+
+const Top10Card: React.FC<{
+  title: string;
+  items: Top10Item[];
+  formatValue: (v: number) => string;
+  valueColor: string; // e.g. "text-amber-700"
+}> = ({ title, items, formatValue, valueColor }) => {
+  if (items.length === 0) {
+    return (
+      <div className={`${CARD_BASE} p-4 flex items-center justify-center h-48 text-[11px] text-slate-400`}>
+        데이터 없음
+      </div>
+    );
+  }
+  const max = Math.max(...items.map(i => i.value), 1);
+  return (
+    <div className={`${CARD_BASE} p-3 flex flex-col gap-2`}>
+      <div className="text-[11px] font-black text-slate-600 uppercase tracking-wider">{title}</div>
+      <div className="flex flex-col gap-1">
+        {items.map(it => {
+          const pct = (it.value / max) * 100;
+          return (
+            <div key={`${it.rank}-${it.name}`} className="flex items-center gap-2 text-[11px]">
+              <span className={`shrink-0 w-6 h-5 rounded-md flex items-center justify-center font-black tabular-nums ${
+                it.rank <= 3 ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"
+              }`}>{it.rank}</span>
+              <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                <span className="truncate font-semibold text-slate-700" title={it.name}>{it.name}</span>
+                <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+                  <div className={`h-full ${valueColor.replace("text-", "bg-")}`} style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+              <span className={`shrink-0 tabular-nums font-black ${valueColor}`}>{formatValue(it.value)}</span>
+              {it.sub && <span className="shrink-0 text-[10px] text-slate-400 tabular-nums">{it.sub}</span>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// 매입수량 Top10 (product_name 기준 · 총 수량 합)
+const TopQuantityCard: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
+  const items = useMemo<Top10Item[]>(() => {
+    const map = new Map<string, number>();
+    for (const r of rows) {
+      const nm = String(r.product_name ?? "").trim() || "(이름없음)";
+      map.set(nm, (map.get(nm) ?? 0) + (Number(r.quantity) || 0));
+    }
+    return Array.from(map.entries())
+      .filter(([, v]) => v > 0)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([name, value], i) => ({ rank: i + 1, name, value }));
+  }, [rows]);
+  return <Top10Card title="매입수량 Top 10" items={items} formatValue={v => `${v.toLocaleString()}`} valueColor="text-amber-700" />;
+};
+
+// 단가 Top10 (product_name 기준 · 평균 단가)
+const TopUnitPriceCard: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
+  const items = useMemo<Top10Item[]>(() => {
+    const map = new Map<string, { sum: number; count: number }>();
+    for (const r of rows) {
+      const nm = String(r.product_name ?? "").trim() || "(이름없음)";
+      const up = Number(r.unit_price) || 0;
+      if (up <= 0) continue;
+      const cur = map.get(nm) ?? { sum: 0, count: 0 };
+      cur.sum += up;
+      cur.count += 1;
+      map.set(nm, cur);
+    }
+    return Array.from(map.entries())
+      .map(([name, { sum, count }]) => ({ name, avg: sum / count, count }))
+      .sort((a, b) => b.avg - a.avg)
+      .slice(0, 10)
+      .map((x, i) => ({ rank: i + 1, name: x.name, value: Math.round(x.avg), sub: `${x.count}회` }));
+  }, [rows]);
+  return <Top10Card title="단가 Top 10 (평균)" items={items} formatValue={v => `${fmtWon(v)}원`} valueColor="text-emerald-700" />;
+};
+
+// 매입간격 Top10 (product_name 기준 · 평균 매입 간격 일수 · 짧을수록 상위 = 자주 매입)
+const TopIntervalCard: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
+  const items = useMemo<Top10Item[]>(() => {
+    const byProduct = new Map<string, Set<string>>();
+    for (const r of rows) {
+      const nm = String(r.product_name ?? "").trim() || "(이름없음)";
+      const dt = String(r.date ?? "").slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dt)) continue;
+      const set = byProduct.get(nm) ?? new Set<string>();
+      set.add(dt);
+      byProduct.set(nm, set);
+    }
+    const result: Array<{ name: string; interval: number; count: number }> = [];
+    for (const [name, dateSet] of byProduct) {
+      if (dateSet.size < 2) continue; // 2회 이상 매입만 · 간격 계산 가능
+      const dates = Array.from(dateSet).sort();
+      let totalDays = 0;
+      for (let i = 1; i < dates.length; i++) {
+        const prev = new Date(dates[i - 1]).getTime();
+        const cur = new Date(dates[i]).getTime();
+        totalDays += Math.round((cur - prev) / 86400000);
+      }
+      const avgInterval = totalDays / (dates.length - 1);
+      result.push({ name, interval: avgInterval, count: dateSet.size });
+    }
+    return result
+      .sort((a, b) => a.interval - b.interval) // 짧을수록 상위 (자주 매입)
+      .slice(0, 10)
+      .map((x, i) => ({ rank: i + 1, name: x.name, value: Math.round(x.interval), sub: `${x.count}회` }));
+  }, [rows]);
+  return <Top10Card title="매입간격 Top 10 (짧을수록 자주)" items={items} formatValue={v => `${v}일`} valueColor="text-sky-700" />;
+};
+
+// ── TrendTab · Top 10 랭킹 3종 컨테이너 (반응형 그리드) ─────────────────────
 const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ rows, loading }) => {
   if (loading) {
     return <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[11px]">불러오는 중...</div>;
@@ -765,9 +881,9 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
     // 반응형 그리드 · 모바일 1열 · 태블릿 2열 · 데스크탑 3열
     <div className="flex-1 min-h-0 overflow-auto p-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-        <CategoryPieChart rows={rows} />
-        <MonthlyPieChart rows={rows} />
-        <TopProductsPieChart rows={rows} />
+        <TopQuantityCard rows={rows} />
+        <TopUnitPriceCard rows={rows} />
+        <TopIntervalCard rows={rows} />
       </div>
     </div>
   );
