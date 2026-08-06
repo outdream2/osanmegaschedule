@@ -1,5 +1,13 @@
 # TASKS
 
+**상태 요약** (2026-08-06 갱신):
+- 진행중: 3건 (T-CSS Phase 1 · T-TEST-공급사리스트-최근결제 · 발주요청 공급사 분류 필터)
+- 대기 · 자동 파이프라인: 2건 (T26 · T-CSS Phase 2)
+- 사용자 액션 대기: 5건 (T-CTR-3 · T-VAT-Migration · T-LOSS-Migration · pharmacist-materials 버킷 · resume_url 컬럼)
+- 검증 대기: 15건 (2026-08-05 커밋 실 UI)
+- 보류: 1건 (T-PERF-5)
+- 이번 세션 완료 · 삭제: 4건 (T-COMMON-VendorInfoHeader · T-UI-컬럼리사이저 · T-TEST-매입추이-3차트변경 · T-TEST-반품필요-반응형-3조건)
+
 **규칙**:
 - 완료 태스크는 이 파일에서 **삭제** (아카이브 X)
 - 새 태스크 즉시 추가
@@ -34,15 +42,7 @@
 
 ## 🔴 큐 · 사용자 요청 (2026-08-06 · 후속)
 
-### T-COMMON-VendorInfoHeader · 공급사 정보 헤더 · 공통화
-- **VendorHeaderPanel** (매입이력 우측 상단 · 공급사 KPI+정보) 를 공통 컴포넌트로 이관
-- **PaymentInfoTab** (결제 공급사 우측 상단) 에도 동일 컴포넌트 사용
-- 부가세 포함/불포함 표시 · 이미 KPI 텍스트 옆에 추가 필요
-- **[조회 및 수정]** 버튼 · 공급사 상세 편집 모달 연결 (StockManagePage · VendorEditModal 재사용)
-- **공급사 상세정보** 자체도 공통 컴포넌트 (VendorDetailPanel or VendorInfoModal)
-- 파일: `src/components/common/VendorInfoHeader.tsx` (신규) · 재사용 여러 위치
-
-### T-TEST-공급사리스트-최근결제
+### T-TEST-공급사리스트-최근결제 (진행중 · 다른 에이전트)
 - PaymentInfoTab 왼쪽 공급사 리스트 · 컬럼 확장
   · 최근결제일 (기존 매입 컬럼과 병렬)
   · 최근결제액
@@ -52,22 +52,19 @@
 
 ## 🔴 사용자 테스트 요청 (2026-08-06)
 
-### T-TEST-반품필요-반응형-3조건 (진행중)
-- 매입주기 · 1M판매 · 3M판매 · 한 줄 배치
-- 각 · [입력] 단위 · ↑ (이상) 표시
+### 발주요청 공급사 분류 필터 (진행중 · 본체 담당)
+- 발주요청 리스트 · 공급사 카테고리별 필터 · 진행 중
+- 담당: main claude
 
-### T-UI-컬럼리사이저 · 모든 리스트 컬럼 폭 조정
-- 대상: 재고관리 · 매입관리 · 진열요청 · 스케줄 · 직원관리 · 게시판 등 · 모든 표 형태 리스트
-- 카테고리 그룹 헤더 · 개별 컬럼 헤더 · 모두 리사이즈 지원
-- localStorage 저장 (페이지·컬럼별 key)
-- 공통 훅 신규 · useColumnResize
-- **크게 · mobile-ui-designer 에이전트 위임**
+### T-VAT-Migration · Supabase SQL 실행 대기
+- 파일: `migrations/vat_integration.sql`
+- 액션: 사용자 · Supabase 대시보드에서 실행
+- 관련 커밋: `058e92d` VendorInfo 이름 정제 + VAT 자동 추론 · `cc4ccae` VAT 기본 포함
 
-### T-TEST-매입추이-3차트변경
-- 위치: 재고관리 → 매입 → 매입이력 → 매입추이 서브탭 (by-vendor 우측 · by-product 우측)
-- 현재: 카테고리별 · 상품별 Top10 · 월별 (3종 파이차트)
-- 변경: **Top 1~10** · 매입수량 · 단가 · 매입간격 (3종)
-- 파일: `PurchaseSubTabs.tsx` (CategoryPieChart · TopProductsPieChart · MonthlyPieChart)
+### T-LOSS-Migration · Supabase SQL 실행 대기
+- 파일: `migrations/loss_tracking_daily.sql`
+- 액션: 사용자 · Supabase 대시보드에서 실행
+- 관련 커밋: `fe08712` 손실추적 · `b18419b` 손실추적 컬럼 확정 · `859c37f` T-LOSS-HISTORY
 
 ---
 
