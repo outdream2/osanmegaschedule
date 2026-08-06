@@ -22,7 +22,7 @@ import leaveRouter       from "./server/routes/daily/leave";
 import lunchRouter       from "./server/routes/daily/lunch";
 import reservationsRouter from "./server/routes/daily/reservations";
 import vendorsRouter     from "./server/routes/purchase/vendors";
-import ocrRouter         from "./server/routes/ocr";
+import ocrRouter         from "./server/routes/ocr/ocr";
 // 2026-08-05 · 재고세기(YOLO) 기능 완전 제거 · stockCount·stockCounter·stockCounterConfig 파일 삭제됨
 import stockManageRouter from "./server/routes/stock/stockManage";
 // 2026-08-06 · T-LOSS-HISTORY · 손실추적 (DiffTab) 날짜별 스냅샷·이력·집계

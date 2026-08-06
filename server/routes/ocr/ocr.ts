@@ -1,17 +1,17 @@
 import { Router } from "express";
-import { supabase } from "../../src/supabase/client";
-import { ocrConfig } from "../config/ocrConfig";
-import { computeFieldMatchSummary, logFieldMatchSummary } from "../ocr/fieldMatchLog";
-import { getProductMap, getSynonymMap, resetSynonymCache, getSupplierAliasMap, resetSupplierAliasCache, getVendorNames } from "../productCache";
-import { cleanCellValues, mergeAdjacentHeaders, normalizeInvoiceCols, extractSpecFromName, repairColumnShift, fixAmountsBySubtotal, crossValidateIntraPage, sanitizeOcrMeta, filterCodeOnlyRows, filterMetadataBleedRows, validateCellTypes, applyPositionalHints, detectSuspiciousEqualPriceAmount, mergeSplitProductRows, verifyRowsAgainstRawText, auditRowSumVsTotal, autoFillMissingMathField, inferMissingTotals, extractCommonMetadataLines, fixDateInAmountColumns, sanitizeBalanceContamination, fallbackParseRowsFromRawText, mergeAdjacentSplitRows } from "../ocr/parse";
-import { buildOnnxPipeline, runPipeline, makeInitialContext } from "../ocr/pipeline";
-import { callGeminiOcr, callMistralOcr, getGeminiKeys, getMistralKeys, geminiState, extractSupplierFromImage } from "../ocr/llm";
-import { preprocessImageForOcr, preprocessForEasyOcr, rotateImage, preprocessHighContrast } from "../ocr/preprocess";
-import { callPpuOcr } from "../ocr/ppuPaddle";
-import { SUPPLIER_EXTRACT_RE } from "../ocr/invoice-vocab";
-import { saveMatchDiagnostic, type RowMatchTrace, type MatchDiagnostic } from "../ocr/diagnostics";
-import { invoiceMatchScore, makeMatchResult, norm, normSupplier, bigramSim } from "../ocr/match";
-import type { GeminiResult } from "../ocr/schema";
+import { supabase } from "../../../src/supabase/client";
+import { ocrConfig } from "../../config/ocrConfig";
+import { computeFieldMatchSummary, logFieldMatchSummary } from "../../ocr/fieldMatchLog";
+import { getProductMap, getSynonymMap, resetSynonymCache, getSupplierAliasMap, resetSupplierAliasCache, getVendorNames } from "../../productCache";
+import { cleanCellValues, mergeAdjacentHeaders, normalizeInvoiceCols, extractSpecFromName, repairColumnShift, fixAmountsBySubtotal, crossValidateIntraPage, sanitizeOcrMeta, filterCodeOnlyRows, filterMetadataBleedRows, validateCellTypes, applyPositionalHints, detectSuspiciousEqualPriceAmount, mergeSplitProductRows, verifyRowsAgainstRawText, auditRowSumVsTotal, autoFillMissingMathField, inferMissingTotals, extractCommonMetadataLines, fixDateInAmountColumns, sanitizeBalanceContamination, fallbackParseRowsFromRawText, mergeAdjacentSplitRows } from "../../ocr/parse";
+import { buildOnnxPipeline, runPipeline, makeInitialContext } from "../../ocr/pipeline";
+import { callGeminiOcr, callMistralOcr, getGeminiKeys, getMistralKeys, geminiState, extractSupplierFromImage } from "../../ocr/llm";
+import { preprocessImageForOcr, preprocessForEasyOcr, rotateImage, preprocessHighContrast } from "../../ocr/preprocess";
+import { callPpuOcr } from "../../ocr/ppuPaddle";
+import { SUPPLIER_EXTRACT_RE } from "../../ocr/invoice-vocab";
+import { saveMatchDiagnostic, type RowMatchTrace, type MatchDiagnostic } from "../../ocr/diagnostics";
+import { invoiceMatchScore, makeMatchResult, norm, normSupplier, bigramSim } from "../../ocr/match";
+import type { GeminiResult } from "../../ocr/schema";
 
 // ── 세션 단위 rawText 캐시 (2026-07-10 v4c) ────────────────────────────────
 // 사용자 통찰: "여러 명세서에 공통으로 나오는 정보 = 수신처 (공급받는쪽)"
@@ -959,7 +959,7 @@ router.post("/api/ocr", async (req, res) => {
       const imgs = images as { data: string; mimeType: string }[];
 
       // 파이프라인 조립 (한 번만) · parseMode=raw 면 raw 파이프라인 (rawText 추출만)
-      const { buildRawOnnxPipeline } = await import("../ocr/pipeline");
+      const { buildRawOnnxPipeline } = await import("../../ocr/pipeline");
       const pipeline = parseMode === "raw"
         ? buildRawOnnxPipeline()
         : buildOnnxPipeline({
@@ -1572,7 +1572,7 @@ router.post("/api/ocr", async (req, res) => {
 router.post("/api/ocr/parse-local", async (req, res) => {
   const reqStart = Date.now();
   try {
-    const { buildPostParsePipeline } = await import("../ocr/pipeline");
+    const { buildPostParsePipeline } = await import("../../ocr/pipeline");
     const { pages } = req.body as {
       pages: Array<{
         page: number; rawText: string;
@@ -1646,8 +1646,8 @@ router.post("/api/ocr/parse-local", async (req, res) => {
 router.post("/api/ocr/parse-gemini", async (req, res) => {
   const reqStart = Date.now();
   try {
-    const { callGeminiTextParse } = await import("../ocr/geminiTextParse");
-    const { getGeminiKeys, geminiState, parseGeminiText } = await import("../ocr/gemini");
+    const { callGeminiTextParse } = await import("../../ocr/geminiTextParse");
+    const { getGeminiKeys, geminiState, parseGeminiText } = await import("../../ocr/gemini");
     void parseGeminiText;  // silence unused
     const { pages } = req.body as { pages: Array<{ page: number; rawText: string }> };
     if (!Array.isArray(pages) || pages.length === 0) {
