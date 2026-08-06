@@ -4087,11 +4087,11 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           className="flex items-center gap-2 pb-2 border-b border-slate-100 cursor-pointer hover:opacity-80 transition-opacity w-full text-left"
           aria-expanded={!isCardCollapsed("employee")}
         >
+          <CaretDown size={11} weight="bold" className={`text-slate-400 transition-transform shrink-0 ${isCardCollapsed("employee") ? "-rotate-90" : ""}`} />
           <div className="w-6 h-6 rounded-md bg-violet-100 flex items-center justify-center shrink-0">
             <User size={13} weight="fill" className="text-violet-600" />
           </div>
           <span className="text-[12px] font-black text-slate-700">근로자 정보</span>
-          <CaretDown size={11} weight="bold" className={`ml-auto text-slate-400 transition-transform ${isCardCollapsed("employee") ? "-rotate-90" : ""}`} />
         </button>
 
         {!isCardCollapsed("employee") && (<>
@@ -4395,11 +4395,11 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity text-left"
             aria-expanded={!isCardCollapsed("workCondition")}
           >
+            <CaretDown size={11} weight="bold" className={`text-slate-400 transition-transform shrink-0 ${isCardCollapsed("workCondition") ? "-rotate-90" : ""}`} />
             <div className="w-6 h-6 rounded-md bg-indigo-100 flex items-center justify-center shrink-0">
               <ClipboardText size={13} weight="fill" className="text-indigo-600" />
             </div>
             <span className="text-[12px] font-black text-slate-700">근무조건 입력</span>
-            <CaretDown size={11} weight="bold" className={`text-slate-400 transition-transform ${isCardCollapsed("workCondition") ? "-rotate-90" : ""}`} />
           </button>
           {monthlyCalc && (
             <span
@@ -4559,11 +4559,11 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity text-left"
             aria-expanded={!isCardCollapsed("wage")}
           >
+            <CaretDown size={11} weight="bold" className={`text-slate-400 transition-transform shrink-0 ${isCardCollapsed("wage") ? "-rotate-90" : ""}`} />
             <div className="w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center shrink-0">
               <Money size={13} weight="fill" className="text-emerald-600" />
             </div>
             <span className="text-[12px] font-black text-slate-700">임금 계산</span>
-            <CaretDown size={11} weight="bold" className={`text-slate-400 transition-transform ${isCardCollapsed("wage") ? "-rotate-90" : ""}`} />
           </button>
           <label className="ml-auto inline-flex items-center gap-1.5 cursor-pointer select-none">
             <input type="checkbox" checked={form.useWageComponents} onChange={(e) => upd("useWageComponents", e.target.checked)}
@@ -4944,11 +4944,11 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           className="flex items-center gap-2 pb-2 border-b border-slate-100 cursor-pointer hover:opacity-80 transition-opacity w-full text-left"
           aria-expanded={!isCardCollapsed("period")}
         >
+          <CaretDown size={11} weight="bold" className={`text-slate-400 transition-transform shrink-0 ${isCardCollapsed("period") ? "-rotate-90" : ""}`} />
           <div className="w-6 h-6 rounded-md bg-amber-100 flex items-center justify-center shrink-0">
             <CalendarBlank size={13} weight="fill" className="text-amber-600" />
           </div>
           <span className="text-[12px] font-black text-slate-700">계약 기간 · 담당업무</span>
-          <CaretDown size={11} weight="bold" className={`ml-auto text-slate-400 transition-transform ${isCardCollapsed("period") ? "-rotate-90" : ""}`} />
         </button>
 
         {!isCardCollapsed("period") && (<>
