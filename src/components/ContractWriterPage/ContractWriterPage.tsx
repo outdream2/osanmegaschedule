@@ -4472,6 +4472,20 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             </select>
           </div>
         </div>
+
+        {/* 4행 · 연차 일수 · T-CTR-AnnualLeave-Move (2026-08-06 · 근무조건 섹션으로 이동) */}
+        <div className="flex items-end gap-2">
+          <div className="shrink-0 w-[130px]">
+            <label className={fldLabel}>연차</label>
+            <div className="relative">
+              <input type="number" min={0} value={form.annualLeaveDays} onChange={(e) => upd("annualLeaveDays", e.target.value)}
+                placeholder="15"
+                className="w-full bg-white border border-slate-200 rounded-lg pl-3 pr-8 py-1.5 text-[13px] text-slate-800 font-semibold text-right focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 font-semibold pointer-events-none">일</span>
+            </div>
+          </div>
+        </div>
         </>)}
       </div>
       {/* /카드 2 (통합) */}
