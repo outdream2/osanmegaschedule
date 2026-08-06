@@ -10,6 +10,7 @@ import type { AuthSession } from "../types";
 import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
 import { useColumnResize, RESIZER_CLS } from "../hooks/useColumnResize";
 import { useConfirm } from "../hooks/useConfirm";
+import { CARD_BASE } from "../styles/tokens";
 
 interface RequestsPageProps {
   onBack: () => void;
@@ -626,7 +627,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             ) : !displayLoading && displayReqs.length === 0 ? (
               <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
             ) : (
-              <div className={`bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto ${displayLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+              <div className={`${CARD_BASE} overflow-x-auto ${displayLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 <table className="w-full min-w-[640px] border-collapse text-left" style={{ tableLayout: "fixed" }}>
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/80">
@@ -827,7 +828,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               ) : !orderLoading && orderReqs.length === 0 && !orderError ? (
                 <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
               ) : (
-                <div className={`bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-50 ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+                <div className={`${CARD_BASE} divide-y divide-slate-50 ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                   {orderReqs.map(r => {
                     const short = (r.optimal_stock ?? 0) - (r.current_stock ?? 0);
                     const inv = invStockMap.get(r.product_code);
@@ -836,7 +837,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                         <Checkbox checked={selectedOrder.has(r.id)} onChange={() => toggleOne(selectedOrder, r.id, setSelectedOrder)} />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[10px] font-mono text-slate-400 shrink-0">{r.product_code}</span>
+                            <span className="text-[10px] font-semibold text-slate-400 shrink-0">{r.product_code}</span>
                             <span className="text-gray-300 text-[10px]">·</span>
                             <span className="text-[12px] font-black text-slate-800 break-keep">{r.product_name || "(상품명 없음)"}</span>
                             <span className="text-gray-300 text-[10px]">·</span>
@@ -878,7 +879,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               ) : !productsLoading && lowStock.length === 0 ? (
                 <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
               ) : (
-                <div className={`bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-50 ${productsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+                <div className={`${CARD_BASE} divide-y divide-slate-50 ${productsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                   {lowStock.map(p => {
                     const cur = Number(p.current_stock), opt = Number(p.optimal_stock);
                     const code = (p as any).code ?? (p as any).product_code ?? "";
@@ -890,7 +891,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                       <div key={code} className="flex items-center gap-3 px-0.5 py-1.5 hover:bg-slate-50/60 transition-all duration-150">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-[10px] font-mono text-slate-400 shrink-0">{code}</span>
+                                <span className="text-[10px] font-semibold text-slate-400 shrink-0">{code}</span>
                                 <span className="text-gray-300 text-[10px]">·</span>
                                 <span className="text-[12px] font-black text-slate-800 break-keep">{name || "(상품명 없음)"}</span>
                                 <span className="text-gray-300 text-[10px]">·</span>
@@ -943,13 +944,13 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
 
               <div className="flex flex-col items-center justify-center py-10 gap-2">
                 <p className="text-sm font-bold text-red-500">불러오기 오류</p>
-                <p className="text-xs text-red-400 font-mono text-center px-4">{mismatchError}</p>
+                <p className="text-xs text-red-400 text-center px-4">{mismatchError}</p>
                 <button onClick={loadMismatches} className="mt-2 text-xs text-orange-600 underline cursor-pointer">다시 시도</button>
               </div>
             ) : !mismatchLoading && mismatches.length === 0 ? (
               <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
             ) : (
-              <div className={`bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-50 ${mismatchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+              <div className={`${CARD_BASE} divide-y divide-slate-50 ${mismatchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {mismatches.map(m => (
                   <div key={m.id} className={`flex items-center gap-3 px-0.5 py-1.5 transition-all duration-150 ${selectedMismatch.has(m.id) ? "bg-rose-50/50" : "hover:bg-slate-50/60"}`}>
                     <Checkbox checked={selectedMismatch.has(m.id)} onChange={() => toggleOne(selectedMismatch, m.id, setSelectedMismatch)} />
@@ -957,7 +958,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="text-[12px] font-black text-slate-800 break-keep">{m.product_name}</span>
                         <span className="text-gray-300 text-[10px]">·</span>
-                        <span className="text-[10px] font-mono text-slate-400">{m.product_code}</span>
+                        <span className="text-[10px] font-semibold text-slate-400">{m.product_code}</span>
                         <span className="text-gray-300 text-[10px]">·</span>
                         <span className="text-[11px] text-slate-500" title="전산배치구역">전산 <span className="font-bold text-slate-700">{m.spec_zone || "미지정"}</span></span>
                         <span className="text-gray-300 text-[10px]">→</span>
@@ -1019,7 +1020,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             ) : !inventoryLoading && inventoryChecks.length === 0 ? (
               <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
             ) : (
-              <div className={`bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-50 ${inventoryLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+              <div className={`${CARD_BASE} divide-y divide-slate-50 ${inventoryLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {inventoryChecks.map(r => {
                   const totalActual = (r.warehouse_stock ?? 0) + (r.store_stock ?? 0);
                   const diff = r.system_stock != null ? totalActual - r.system_stock : null;
@@ -1032,7 +1033,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-[12px] font-black text-slate-800 break-keep">{r.product_name}</span>
                           <span className="text-gray-300 text-[10px]">·</span>
-                          <span className="text-[10px] font-mono text-slate-400">{r.product_code}</span>
+                          <span className="text-[10px] font-semibold text-slate-400">{r.product_code}</span>
                           <span className="text-gray-300 text-[10px]">·</span>
                           <span className="text-[11px] text-slate-500">
                             창고 <span className="font-bold text-slate-700">{r.warehouse_stock ?? "—"}</span>
@@ -1101,7 +1102,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                     groups.get(key)!.push(r);
                   }
                   return (
-                    <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm mt-1">
+                    <div className={`${CARD_BASE} overflow-hidden mt-1`}>
                       {[...groups.entries()].map(([date, rows]) => (
                         <div key={date}>
                           <div className="px-4 py-1.5 bg-gray-50 border-b border-gray-100">
@@ -1114,7 +1115,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                             const time = `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
                             return (
                               <div key={r.id} className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-50 last:border-0 hover:bg-purple-50/30 transition">
-                                <span className="text-[10px] text-gray-400 font-mono shrink-0 w-10">{time}</span>
+                                <span className="text-[10px] text-gray-400 tabular-nums shrink-0 w-10">{time}</span>
                                 <div className="flex-1 min-w-0">
                                   <span className="text-[12px] font-bold text-gray-800 break-keep">{r.product_name}</span>
                                   <span className="text-[10px] text-gray-400">
@@ -1176,7 +1177,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             ) : !lunchLoading && lunchRequests.length === 0 ? (
               <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
             ) : (
-              <div className={`bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-50 ${lunchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+              <div className={`${CARD_BASE} divide-y divide-slate-50 ${lunchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {lunchRequests.map(r => (
                   <div key={r.id} className="flex items-center gap-3 px-0.5 py-1.5 hover:bg-slate-50/60 transition-all duration-150">
                     <span className={`w-2 h-2 rounded-full shrink-0 ${r.eating ? "bg-emerald-500" : "bg-gray-300"}`} />
@@ -1214,7 +1215,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 flex flex-col gap-1.5">
               <p className="text-[10px] font-black text-orange-600 uppercase tracking-wide">기존 발주요청</p>
               <p className="text-sm font-bold text-gray-900">{dupOrderModal.existing.product_name}</p>
-              <p className="text-[11px] text-gray-500 font-mono">{dupOrderModal.existing.product_code}</p>
+              <p className="text-[11px] text-gray-500 font-semibold">{dupOrderModal.existing.product_code}</p>
               <div className="flex gap-3 mt-0.5">
                 <span className="text-[11px] text-gray-500">기록 현재고: <strong className="text-gray-800">{dupOrderModal.existing.current_stock ?? "—"}</strong></span>
                 <span className="text-[11px] text-gray-500">추천적정재고: <strong className="text-gray-800">{dupOrderModal.existing.optimal_stock ?? "—"}</strong></span>
