@@ -1,12 +1,12 @@
 # TASKS
 
-**상태 요약** (2026-08-06 갱신 · 세션 후반):
-- 진행중 (백그라운드): 2건 (T-CSS Phase 2 · T-Audit-DeadCode)
-- 사용자 액션 대기 (Supabase): 4건 (T-Migration-Indexes · T-VAT-Migration · T-LOSS-Migration · T-CTR-3)
-- 검증 대기: 15건 (2026-08-05 커밋 실 UI)
+**상태 요약** (2026-08-06 갱신 · 세션 15+ 커밋 반영):
+- 진행중 (백그라운드): 1건 (T-SLIM C useFetch 마이그레이션 · a8e3be2a)
+- 사용자 액션 대기 (Supabase): perf_indexes · vat_integration · loss_tracking_daily · T-CTR-3
+- 검증 대기: 20+ 커밋 (2026-08-06 세션)
+- 남은 큰 태스크: God Component 5개 · T-SLIM B/F · requireAuth (T3-defer)
 - 보류: 1건 (T-PERF-5)
-- T3-defer: Render 배포 직전 재도입 (requireAuth)
-- 이번 세션 완료 · 삭제: 10건 (T-TEST-공급사리스트-최근결제 · T26(부분·31/56) · T30-followup · T-SLIM A · T-SLIM D · T-DB-Migrate-LocalStorage · password_hash 제거 · src/ xlsx 이동 · fmtWon 통합 · scheduleService 이동)
+- 이번 세션 완료 · 삭제: T-CSS Phase 2 Priority A/B · T-Audit-DeadCode · T-DB-Audit · 미사용 파일 정리 · as any 서버/프론트 부분 · T-SLIM E
 
 **규칙**:
 - 완료 태스크는 이 파일에서 **삭제** (아카이브 X)
@@ -59,18 +59,47 @@
 
 ---
 
+## 🆕 신규 발견 · 추가 (2026-08-06)
+
+### T-DB-Audit-B · 중기 마이그레이션 (미실행)
+- 파일: `migrations/db_improvements_top3.sql`
+- 내용: `invoice_date TEXT → DATE` 타입 변환
+- 액션: 사용자 승인 · 백업 후 실행
+
+### T-DB-Audit-C · 장기 (Render 배포 전 검토)
+- 내용: `vendors` FK 정규화
+- 데이터 영향 큼 · 별도 롤백 플랜 필요
+
+### T-Inventory-Legacy-Drop · `inventory_checks` 레거시 컬럼 DROP
+- dead-code-auditor 발견 (`a3a8ebf6`)
+- 정합성 확인 후 · 사용자 승인 필요
+
+### T-VAPID-Route · `/api/vapid-public-key` 서버 route 누락
+- 프론트 `StockArrivalPage` 호출 · silent fail
+- 서버 route 추가 or 프론트 호출 제거 · 결정 필요
+
+---
+
 ## 🔄 진행 중 (자동 파이프라인)
 
-### T-CSS Phase 2 · 페이지 마이그레이션 (mobile-ui-designer 백그라운드)
-- 진행중 · Phase 1 (디자인 토큰 + 공통 컴포넌트) 완료 후 이어짐
-- 재고관리 → 매입관리 → 진열요청 → 근로계약서 → 스케줄 → 경영관리 순
-- 파일 단위 · 회귀 시 즉시 revert
+### T-SLIM C · useFetch 마이그레이션 (백그라운드 · a8e3be2a)
+- useFetch 훅 신규 완료 (`c9ff8e3` 부산물)
+- 페이지별 fetch 패턴 → useFetch 로 마이그레이션 중
+- 완료 알림 대기
 
-### T-Audit-DeadCode · dead-code-auditor 백그라운드 (신규 · 2026-08-06)
-- 미사용 컴포넌트·훅·상수·유틸 스캔
-- 결과 나오면 · 정리 태스크 신규 추가 예정
+### T-CSS Phase 2 Priority C · God Component 마이그레이션 (별도 태스크)
+- OrderManage · ContractWriter · RawOcrTable · DisplayPage · StaffManage
+- 각 파일 God Component 분해 병행 필요 (아래 God Component 항목 참고)
 
 ### ✅ 완료 · 자동 파이프라인 앞 단계
+- `8fdf697` T-CSS Phase 2 Priority A · SupplierTab · SalesTrendPage · BusinessManagePage
+- `792835a` `80ab6ed` `481d6d5` T-CSS Phase 2 Priority B · RequestsPage · BoardPage · StaffManagePage
+- `a3a8ebf6` T-Audit-DeadCode 감사 완료
+- `a90269e3` T-DB-Audit 감사 완료
+- `f09b191` `03ec97b` `18e1118` `c9ff8e3` 미사용 파일 정리 (11 컴포넌트/이미지 + 2 라우터 + 49 스크립트)
+- `03ec97b` `9673da1` 서버 as any 265+ → 18 필수
+- `7a08a33` 프론트 as any 부분 14건 제거
+- `3d3de7f` T-SLIM E · 응답 shape 표준화
 - `38606e8` T25 · useVendors 훅 (8 파일 -101 lines)
 - `401cd2b` `4d6b703` T30-followup · useSortableTable 확대 (6 파일)
 - `34a9a3f` `81ce398` `3b78425` T26 · select('*') 명시화 (31/56 · 25건 skip)
@@ -96,7 +125,7 @@
 | 2 | 코드품질 | fmtWon/fmtDate 16+ 파일 중복 정의 | 3~4h | ✅ T-SLIM A 완료 (`8a5675b`) |
 | 3 | 아키텍처 | God Component 5개 (RawOcrTable 5268 · ContractWriter 5256 · OrderManage 3224 · DisplayPage 2890 · StaffManage 2773) | 1~3일/파일 | 별도 · 대기 |
 | 4 | 성능 | select('*') 56곳 | 4~6h | ✅ T26 부분완료 (31/56 · 25 skip) |
-| 5 | 코드품질 | `as any` 1322건 (front 490 · server 832) | 10h+ | 대기 |
+| 5 | 코드품질 | `as any` 서버 265+ → 18 필수 (`03ec97b`·`9673da1`) · 프론트 476건 남음 (God·OCR 제외) | 10h+ | ✅ 서버 완료 · 프론트 진행중 |
 | 6 | 아키텍처 | scheduleService · frontend 번들 혼입 | 2~3h | ✅ 완료 (`3cd7aff`) |
 | 7 | 보안 | password_hash · 로그인 응답 노출 위험 | 30분 | ✅ 완료 (`71a58e4`) |
 | 8 | UX | window.confirm 146건 | 4~6h | ✅ T-SLIM D 완료 (`6e6690e`) |
@@ -128,16 +157,17 @@
 - 유효성 검증 로직 (전화번호 · 이메일 · 숫자) 통합
 - 폼 필드 컴포넌트 (`TextField` · `NumberField` · `Select`) 신규
 
-**C. 데이터 fetch 패턴 통합**
+**C. 데이터 fetch 패턴 통합** — 🔄 진행중 (a8e3be2a)
 - useVendors · useProducts · useEmployees 같은 도메인별 훅 (T25 useVendors 이미 완료)
-- 공통 fetch 훅 (`useFetch<T>(url)`) 신규 검토
+- ✅ 공통 fetch 훅 `useFetch<T>(url)` 신규 (`c9ff8e3` 부산물)
+- 페이지별 마이그레이션 진행 중
 - 에러·로딩 상태 표준화
 
 **D. 알림·확인·토스트 통합** — ✅ 완료 (`6e6690e`) · window.confirm 통합 · 잔여 0
 - toast 상태 · 페이지마다 개별 useState → useToast 훅 or context · 대기
 
-**E. 서버 응답 shape 정규화**
-- 라우터별 응답 형식 통일 (`{ data, error }` vs 배열 직접 반환)
+**E. 서버 응답 shape 정규화** — ✅ 완료 (`3d3de7f`)
+- 라우터별 응답 형식 통일
 - 페이지네이션 응답 통일 (T-PERF-1a/b 에서 `has_more` 등)
 
 **F. 상수 파일 정리**
