@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useConfirm } from "../hooks/useConfirm";
 import {
   Bell, BellOff, Calendar, Check, Clock,
   Package, Pencil, RefreshCw, Send, Trash2, X, Loader2,
 } from "lucide-react";
 import type { AuthSession } from "../types";
 import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
+import { useSortableTable, type Comparator } from "../hooks/useSortableTable";
 
 interface StockArrivalPageProps {
   authSession: AuthSession | null;
@@ -39,12 +41,24 @@ function fmtDT(iso: string) {
 }
 
 type ArrivalSortKey = "created_at" | "scheduled_at" | "title" | "broadcast_sent";
+const ARRIVAL_SORT_CMP: Record<ArrivalSortKey, Comparator<StockArrival>> = {
+  broadcast_sent: (a, b) => Number(a.broadcast_sent) - Number(b.broadcast_sent),
+  created_at:     (a, b) => String(a.created_at  ?? "").localeCompare(String(b.created_at  ?? ""), "ko"),
+  scheduled_at:   (a, b) => String(a.scheduled_at ?? "").localeCompare(String(b.scheduled_at ?? ""), "ko"),
+  title:          (a, b) => String(a.title        ?? "").localeCompare(String(b.title        ?? ""), "ko"),
+};
 
 export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession, onBack, onNavigate, onLogout, embedded = false }) => {
+  const confirm = useConfirm();
+
   const [arrivals, setArrivals] = useState<StockArrival[]>([]);
   const [loading, setLoading] = useState(false);
-  const [sortKey, setSortKey] = useState<ArrivalSortKey>("created_at");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const { sorted: sortedArrivals, sortKey, sortDir, toggleSort: _toggleSort, setSort: _setSort } =
+    useSortableTable<StockArrival, ArrivalSortKey>(arrivals, "created_at", ARRIVAL_SORT_CMP, "desc");
+  const handleSort = (k: ArrivalSortKey) => {
+    if (sortKey === k) _toggleSort(k);
+    else _setSort(k, k === "title" ? "asc" : "desc");
+  };
 
   // 작성 폼
   const [newTitle, setNewTitle] = useState("");
@@ -204,7 +218,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("이 입고 알림을 삭제하시겠습니까?")) return;
+    if (!await confirm({ message: "이 입고 알림을 삭제하시겠습니까?", danger: true })) return;
     await fetch(`/api/stock-arrivals/${id}`, {
       method: "DELETE", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ employeeId }),
@@ -212,22 +226,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
     setArrivals(prev => prev.filter(a => a.id !== id));
   };
 
-  const handleSort = (k: ArrivalSortKey) => {
-    if (sortKey === k) setSortDir(d => d === "asc" ? "desc" : "asc");
-    else { setSortKey(k); setSortDir(k === "title" ? "asc" : "desc"); }
-  };
   const arrow = (k: ArrivalSortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
-
-  const sortedArrivals = useMemo(() => {
-    return arrivals.slice().sort((a, b) => {
-      const sign = sortDir === "asc" ? 1 : -1;
-      if (sortKey === "broadcast_sent") {
-        return sign * (Number(a.broadcast_sent) - Number(b.broadcast_sent));
-      }
-      const va = (a[sortKey] ?? ""); const vb = (b[sortKey] ?? "");
-      return sign * String(va).localeCompare(String(vb), "ko");
-    });
-  }, [arrivals, sortKey, sortDir]);
 
   const sortBtnCls = (k: ArrivalSortKey) =>
     `px-2 py-0.5 rounded text-[11px] font-bold border cursor-pointer transition ${
