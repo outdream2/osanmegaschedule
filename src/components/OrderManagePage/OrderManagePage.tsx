@@ -1391,11 +1391,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             </div>
 
             {/* ── Row 3: 발주 4조건 체크박스 + 조회/초기화 버튼 ── */}
-            {/* 2026-08-06 · 반응형 · 3조건 한 줄 강제 · overflow-x-auto (조회·초기화 버튼은 아래 줄) */}
-            <div className="px-3 py-2 border-b border-slate-100 flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 gap-y-2">
-              {/* 조건 3종 · 항상 한 줄 (nowrap · overflow-x-auto) */}
-              <div className="flex items-center gap-x-3 gap-y-2 flex-nowrap overflow-x-auto -mx-1 px-1 pb-1 sm:pb-0 sm:overflow-visible">
-                <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 shrink-0 whitespace-nowrap">발주 조건</span>
+            {/* 2026-08-06 (2차) · 3조건 무조건 한 줄 · 스크롤 X · 발주조건 라벨/버튼은 필요시 줄바꿈 */}
+            <div className="px-3 py-2 border-b border-slate-100 flex flex-wrap items-center gap-x-3 gap-y-2">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 shrink-0 whitespace-nowrap">발주 조건</span>
+              {/* 조건 3종 · 한 그룹 · nowrap · 스크롤 X · 아주 컴팩트 (모바일 320px 도 fit) */}
+              <div className="flex items-center gap-1.5 flex-nowrap shrink-0">
+                {/* 빈 span (기존 label 제거 · 위 span 사용) */}
+                <span className="sr-only">발주 조건 (컴팩트)</span>
 
                 {/* 조건 1 · 매입일 N일 이상 */}
                 <label className="inline-flex items-center gap-1 shrink-0">
