@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { AuthSession } from "../types";
 import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
+import { CARD_BASE } from "../styles/tokens";
 import { uploadImagesToCloudinary, type UploadedImage } from "../lib/cloudinaryUpload";
 import { fmtDateShort } from "../lib/format";
 import { useConfirm } from "../hooks/useConfirm";
@@ -207,13 +208,13 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
         ) : !loading && filtered.length === 0 ? (
           <div className="text-center text-[11px] text-slate-300 py-6">등록된 글 없음</div>
         ) : (
-          <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+          <div className={`${CARD_BASE} ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             {/* 이슈리스트 제목 */}
             <div className="flex items-center justify-between px-4 py-3 gap-2 flex-wrap border-b border-slate-100">
               <div className="flex items-center gap-1.5">
                 <StickyNote size={14} className="text-orange-600" />
                 <span className="text-sm font-black text-slate-700">이슈리스트</span>
-                <span className="text-[10px] font-mono text-slate-400">({filtered.length}건)</span>
+                <span className="text-[10px] font-semibold text-slate-400 tabular-nums">({filtered.length}건)</span>
               </div>
               <span className="text-[10px] text-slate-400 font-semibold">항목 클릭 → 상세</span>
             </div>
@@ -291,7 +292,7 @@ const PostCard: React.FC<{ post: BoardPost; onOpen: () => void; showEdit?: boole
       {/* ── 모바일: 단일 flex 행 ── */}
       <div className="flex items-center gap-2 sm:hidden">
         {/* 날짜 */}
-        <span className="shrink-0 text-[10px] font-mono font-black text-slate-400 tabular-nums w-[36px]">
+        <span className="shrink-0 text-[10px] font-black text-slate-400 tabular-nums w-[36px]">
           {fmtDateShort(post.created_at)}
         </span>
         {/* 상태 dot */}
@@ -362,7 +363,7 @@ const PostCard: React.FC<{ post: BoardPost; onOpen: () => void; showEdit?: boole
         </div>
         {/* 2행: 날짜 · 작성자 */}
         <div className="flex items-center gap-2 pl-[38px]">
-          <span className="text-[11px] font-mono font-semibold text-slate-400 tabular-nums">
+          <span className="text-[11px] font-semibold text-slate-400 tabular-nums">
             {fmtDateShort(post.created_at)}
           </span>
           <span className="text-slate-200">·</span>
