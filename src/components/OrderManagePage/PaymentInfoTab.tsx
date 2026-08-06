@@ -24,11 +24,13 @@ import {
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 // T-COMMON-VendorInfo · 공급사 헤더 공통 컴포넌트 (2026-08-06)
 import { VendorInfoHeader } from "../common/VendorInfoHeader";
+import { useVendorInfoModal } from "../common/VendorInfoModal";
 import { SplitPanel } from "../common/SplitPanel";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
+import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -269,6 +271,9 @@ function computeVat(amount: number, vatIncluded: boolean): { supply: number; vat
 // ─── PaymentInfoTab ──────────────────────────────────────────────────────────
 
 export const PaymentInfoTab: React.FC = () => {
+  // 공급사 상세 모달 (T-COMMON-VendorInfoModal · 2026-08-06)
+  const { openVendorInfo, modalElement: vendorModalElement } = useVendorInfoModal();
+
   // 공급사 목록 · useVendors 캐시 (inline fetch 제거)
   const { vendors: rawVendors, loading: vendorsLoading, refresh: reloadVendors } = useVendors();
   // latestBalance.balance 파싱 · VendorItem 형태로 변환
@@ -365,6 +370,14 @@ export const PaymentInfoTab: React.FC = () => {
     sortDir: prodSortDir,
     toggleSort: toggleProdSort,
   } = useSortableTable<ProductPurchaseSummary, ProdSortKey>(productSummary, "totalAmount", productSortComparators, "desc");
+  const { getWidth: pw, resizerProps: pr } = useColumnResize("paymentProdSummary", {
+    name:     { default: 200, min: 100, max: 400 },
+    code:     { default: 80,  min: 60, max: 160  },
+    qty:      { default: 64,  min: 48, max: 100  },
+    amount:   { default: 80,  min: 56, max: 140  },
+    count:    { default: 48,  min: 40, max: 80   },
+    last_date:{ default: 80,  min: 60, max: 140  },
+  });
 
   // 폼 상태
   const [paymentDate, setPaymentDate] = useState<string>(todayYmd());
@@ -743,6 +756,7 @@ export const PaymentInfoTab: React.FC = () => {
 
   // ═══════════════════════════════════════════════════════════════════
   return (
+    <>
     <div className="flex flex-col gap-2 h-full min-h-0">
       <SplitPanel
         storageKey="paymentInfo.leftWidth"
@@ -905,7 +919,10 @@ export const PaymentInfoTab: React.FC = () => {
             <>
               {/* ── 공급사 요약 카드 (T-COMMON-VendorInfo · VendorInfoHeader 위임) ── */}
               <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-2.5">
-                <VendorInfoHeader vendor={selectedVendor} />
+                <VendorInfoHeader
+                  vendor={selectedVendor}
+                  onEdit={() => openVendorInfo(selectedVendor as any)}
+                />
 
                 {/* 월별 매입·결제·잔고 표 (2026-08-04 · #58 · 사용자 요청)
                     · 최근 3개월 + 누적 + 잔고 컬럼 · 3행 (총매입/총결제/잔고)
@@ -1401,13 +1418,14 @@ export const PaymentInfoTab: React.FC = () => {
                   </button>
                   {showProductGroup && (
                     <div className="p-2 overflow-x-auto">
-                      <table className="w-full text-[12px] tabular-nums">
+                      <table className="w-full text-[12px] tabular-nums" style={{ tableLayout: "fixed" }}>
                         <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-wider text-slate-500">
                           <tr>
                             <th
                               onClick={() => toggleProdSort("product_name")}
                               title="상품명 정렬"
-                              className="text-left px-2 py-1.5 cursor-pointer select-none hover:bg-emerald-50/60 transition"
+                              className="relative text-left px-2 py-1.5 cursor-pointer select-none hover:bg-emerald-50/60 transition"
+                              style={{ width: pw("name"), minWidth: pw("name") }}
                             >
                               상품명
                               {prodSortKey === "product_name"
@@ -1415,11 +1433,13 @@ export const PaymentInfoTab: React.FC = () => {
                                     ? <ChevronUp size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />
                                     : <ChevronDown size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />)
                                 : <ChevronsUpDown size={9} strokeWidth={2.25} className="inline-block align-middle ml-0.5 text-slate-300" />}
+                              <span {...pr("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                             </th>
                             <th
                               onClick={() => toggleProdSort("product_code")}
                               title="코드 정렬"
-                              className="text-left px-2 py-1.5 font-mono cursor-pointer select-none hover:bg-emerald-50/60 transition"
+                              className="relative text-left px-2 py-1.5 cursor-pointer select-none hover:bg-emerald-50/60 transition"
+                              style={{ width: pw("code"), minWidth: pw("code") }}
                             >
                               코드
                               {prodSortKey === "product_code"
@@ -1427,11 +1447,13 @@ export const PaymentInfoTab: React.FC = () => {
                                     ? <ChevronUp size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />
                                     : <ChevronDown size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />)
                                 : <ChevronsUpDown size={9} strokeWidth={2.25} className="inline-block align-middle ml-0.5 text-slate-300" />}
+                              <span {...pr("code")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                             </th>
                             <th
                               onClick={() => toggleProdSort("totalQty")}
                               title="총 수량 정렬"
-                              className="text-right px-2 py-1.5 cursor-pointer select-none hover:bg-emerald-50/60 transition"
+                              className="relative text-right px-2 py-1.5 cursor-pointer select-none hover:bg-emerald-50/60 transition"
+                              style={{ width: pw("qty"), minWidth: pw("qty") }}
                             >
                               총 수량
                               {prodSortKey === "totalQty"
@@ -1439,11 +1461,13 @@ export const PaymentInfoTab: React.FC = () => {
                                     ? <ChevronUp size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />
                                     : <ChevronDown size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />)
                                 : <ChevronsUpDown size={9} strokeWidth={2.25} className="inline-block align-middle ml-0.5 text-slate-300" />}
+                              <span {...pr("qty")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                             </th>
                             <th
                               onClick={() => toggleProdSort("totalAmount")}
                               title="총 매입액 정렬"
-                              className="text-right px-2 py-1.5 cursor-pointer select-none hover:bg-emerald-50/60 transition"
+                              className="relative text-right px-2 py-1.5 cursor-pointer select-none hover:bg-emerald-50/60 transition"
+                              style={{ width: pw("amount"), minWidth: pw("amount") }}
                             >
                               총 매입액
                               {prodSortKey === "totalAmount"
@@ -1451,11 +1475,13 @@ export const PaymentInfoTab: React.FC = () => {
                                     ? <ChevronUp size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />
                                     : <ChevronDown size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />)
                                 : <ChevronsUpDown size={9} strokeWidth={2.25} className="inline-block align-middle ml-0.5 text-slate-300" />}
+                              <span {...pr("amount")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                             </th>
                             <th
                               onClick={() => toggleProdSort("invoiceCount")}
                               title="건수 정렬"
-                              className="text-center px-2 py-1.5 cursor-pointer select-none hover:bg-emerald-50/60 transition"
+                              className="relative text-center px-2 py-1.5 cursor-pointer select-none hover:bg-emerald-50/60 transition"
+                              style={{ width: pw("count"), minWidth: pw("count") }}
                             >
                               건수
                               {prodSortKey === "invoiceCount"
@@ -1463,11 +1489,13 @@ export const PaymentInfoTab: React.FC = () => {
                                     ? <ChevronUp size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />
                                     : <ChevronDown size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />)
                                 : <ChevronsUpDown size={9} strokeWidth={2.25} className="inline-block align-middle ml-0.5 text-slate-300" />}
+                              <span {...pr("count")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                             </th>
                             <th
                               onClick={() => toggleProdSort("latestDate")}
                               title="최근 매입일 정렬"
-                              className="text-right px-2 py-1.5 cursor-pointer select-none hover:bg-emerald-50/60 transition"
+                              className="relative text-right px-2 py-1.5 cursor-pointer select-none hover:bg-emerald-50/60 transition"
+                              style={{ width: pw("last_date"), minWidth: pw("last_date") }}
                             >
                               최근 매입일
                               {prodSortKey === "latestDate"
@@ -1475,6 +1503,7 @@ export const PaymentInfoTab: React.FC = () => {
                                     ? <ChevronUp size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />
                                     : <ChevronDown size={9} strokeWidth={3} className="inline-block align-middle ml-0.5 text-emerald-600" />)
                                 : <ChevronsUpDown size={9} strokeWidth={2.25} className="inline-block align-middle ml-0.5 text-slate-300" />}
+                              <span {...pr("last_date")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                             </th>
                           </tr>
                         </thead>
@@ -1506,6 +1535,9 @@ export const PaymentInfoTab: React.FC = () => {
         }
       />
     </div>
+    {/* 공급사 상세 모달 (T-COMMON-VendorInfoModal) */}
+    {vendorModalElement}
+    </>
   );
 };
 
