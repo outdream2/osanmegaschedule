@@ -4,7 +4,7 @@ import { supabase } from "../../src/supabase/client";
 import path from "path";
 import fs from "fs";
 import multer from "multer";
-import { uploadToDrive, deleteFromDrive, extractDriveFileId, isDriveReady } from "../googleDrive";
+import { uploadToDrive, deleteFromDrive, extractDriveFileId, isDriveReady } from "../services/googleDriveService";
 
 const router = Router();
 

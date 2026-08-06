@@ -20,7 +20,7 @@ import type { drive_v3 } from "googleapis";
 import { Readable } from "stream";
 import fs from "fs";
 import path from "path";
-import { supabase } from "../src/supabase/client";
+import { supabase } from "../../src/supabase/client";
 
 // 사용자 제공 · Drive 폴더 ID
 const DRIVE_FOLDERS_DEFAULT = {
