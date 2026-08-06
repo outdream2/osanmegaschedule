@@ -9,15 +9,19 @@
 
 ## 목차 (TOC)
 
-### Part I — 메뉴 · 페이지 구조
+### Part I — 메뉴 · 페이지 구조 (심층 · 액션·API·워크플로우·모달)
 1. [메인 메뉴 (LandingPage · 12개)](#1-메인-메뉴-landingpage--12개)
 2. [재고관리 (DisplayPage) · 하위 탭 6개](#2-재고관리-displaypage--하위-탭-6개)
 3. [경영관리 (BusinessManagePage) · 하위 탭 5개](#3-경영관리-businessmanagepage--하위-탭-5개)
 4. [요청메뉴 (RequestsPage) · 하위 탭 최대 5개](#4-요청메뉴-requestspage--하위-탭-최대-5개)
 5. [약사전용 (PharmacistPage) · 하위 탭 4개](#5-약사전용-pharmacistpage--하위-탭-4개)
-6. [스케줄 · 스캔 · 실재고확인](#6-스케줄--스캔--실재고확인)
-7. [관리자 전용 기능](#7-관리자-전용-기능)
+6. [개별 페이지 (스캔·스케줄·연차·점심·게시판·당직예약·기타)](#6-개별-페이지-스캔스케줄연차점심게시판당직예약기타)
+7. [관리자 전용 · 권한 체계](#7-관리자-전용--권한-체계)
 8. [페이지 서브탭 요약 · 색상 코드](#8-페이지--하위-탭-요약--색상-코드)
+8-A. [데이터 흐름 & 커스텀 이벤트 카탈로그](#8-a-데이터-흐름--커스텀-이벤트-카탈로그)
+8-B. [모달·팝업 카탈로그](#8-b-모달팝업-카탈로그)
+8-C. [워크플로우 다이어그램 (5종)](#8-c-워크플로우-다이어그램-5종)
+8-D. [API 엔드포인트 요약 (34 라우트 파일 · 228건)](#8-d-api-엔드포인트-요약-34-라우트-파일--228건)
 
 ### Part II — 공통 자산 카탈로그
 9.  [디자인 토큰 (`src/styles/tokens.ts`)](#9-디자인-토큰-srcstylestokensts)
@@ -780,6 +784,27 @@ npm run test        # (필요 시) 테스트
 - `docs/supabase_functions_and_tables.sql` — Supabase RPC · 테이블 스냅샷
 
 **중요**: 프로젝트 전체 정리는 **오직 이 파일** (`docs/MENU_STRUCTURE.md`) 하나에 통합. 별도 정리 파일 생성 금지 (사용자 명시 요구 · 2026-08-06).
+
+---
+
+## CHANGELOG · 변경 이력
+
+### 2026-08-06
+
+- **T-TEST-매입이력-반응형** (커밋 `11e8f92`)
+  - `PurchaseHistoryTab` by-vendor 뷰 · SplitPanel leftClassName
+  - 모바일 max-h `60vh` → `calc(100vh-160px)` 확대
+  - 원인: SupplierTab 필터바 wrap 시 · 리스트 영역 압축되어 안 보임
+  - 파일: `src/components/OrderManagePage/PurchaseHistoryTab.tsx:888`
+
+- **project-registrar 에이전트 신규** · 문서 관리 전담 (`.claude/agents/project-registrar.md`)
+- **TASKS.md 원칙 확장** · 세션 시작 시 두 파일 read · 테스트·수정 워크플로우 4단계
+- **MENU_STRUCTURE.md 전체 확장** (커밋 `d642156`) · Part I 메뉴 + Part II 공통 자산 12항목 · 630줄
+
+### 2026-08-05
+
+- **초판 MENU_STRUCTURE.md** (커밋 `8e0b59c`) · 180줄 · 메인 12 + 서브 30+
+- 대량 세션 · T-C 근로계약서 CMS · T-PERF-1a/b 페이지네이션 · T25 useVendors · T-CSS Phase 1/2 (재고관리) · T-SLIM 통합 · 진열요청 3단계 토글 등
 
 ---
 
