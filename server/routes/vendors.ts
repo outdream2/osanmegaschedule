@@ -105,6 +105,9 @@ router.post("/api/upload-vendors", express.raw({ type: "application/octet-stream
 });
 
 // 전체 거래처 목록 (관리자)
+// T-SLIM E · 표준 shape 주석 · List endpoint
+// 현재: res.json(array) · 직접 배열 반환 · 프론트 소비 패턴과 breaking 없이 유지
+// 미래 v2: { rows: array, count: number } 로 전환 예정 (프론트 마이그레이션 후)
 router.get("/api/vendors", async (req, res) => {
   // 2026-07-15: email 컬럼이 없는 DB 도 호환 (첫 시도에 email 포함 → 실패 시 email 없이 재시도)
   // 2026-08-03 · #193 · vat_included 추가 (마이그레이션 미적용 DB 도 호환 · 3단계 fallback)

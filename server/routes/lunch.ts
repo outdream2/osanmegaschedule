@@ -36,7 +36,8 @@ router.get("/api/lunch-requests", async (req, res) => {
   const { data, error } = await supabase
     .from("lunch_requests").select("id, employee_id, employee_name, date, eating, memo, updated_at").eq("date", date).order("updated_at", { ascending: true });
   if (error) return res.status(500).json({ error: error.message });
-  return res.json({ requests: data ?? [] });
+  // T-SLIM E · 표준 shape · { requests, count } · 프론트는 requests 만 소비 (count 추가 필드)
+  return res.json({ requests: data ?? [], count: (data ?? []).length });
 });
 
 router.put("/api/lunch-requests", async (req, res) => {

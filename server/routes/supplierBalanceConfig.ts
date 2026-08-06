@@ -22,6 +22,9 @@ CREATE TABLE IF NOT EXISTS supplier_balance_configs (
 })();
 
 // GET /api/supplier-balance-configs  →  [{ supplier_name, balance_field, column_layout? }]
+// T-SLIM E · 표준 shape 주석 · List endpoint
+// 현재: res.json(array) · 직접 배열 반환 · 프론트 소비 패턴과 breaking 없이 유지
+// 미래 v2: { rows: array, count: number } 로 전환 예정 (프론트 마이그레이션 후)
 router.get("/api/supplier-balance-configs", async (_req, res) => {
   // column_layout 컬럼 포함 조회, 없으면 fallback
   let data: any[] | null = null;

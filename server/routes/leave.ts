@@ -22,6 +22,9 @@ router.get("/api/leave-stats", async (req, res) => {
   } catch (err: any) { return res.status(500).json({ error: err.message }); }
 });
 
+// T-SLIM E · 표준 shape 주석 · List endpoint
+// 현재: res.json(array) · 직접 배열 반환 · 프론트 소비 패턴과 breaking 없이 유지
+// 미래 v2: { rows: array, count: number } 로 전환 예정 (프론트 마이그레이션 후)
 router.get("/api/leave-requests", async (req, res) => {
   const { employeeId, all } = req.query;
   try {

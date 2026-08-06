@@ -33,7 +33,8 @@ router.get("/api/zone-labels", async (_req, res) => {
       }
       throw new Error(msg);
     }
-    res.json({ mappings: data ?? [] });
+    // T-SLIM E · 표준 shape · { mappings, count } · 프론트는 mappings 만 소비 (count 추가 필드)
+    res.json({ mappings: data ?? [], count: (data ?? []).length });
   } catch (err: any) {
     console.error("[zone-labels GET]", err?.message);
     res.status(500).json({ error: err?.message ?? "구역 라벨 조회 실패" });

@@ -62,10 +62,11 @@ router.get("/api/return-requests", async (req, res) => {
     if (status) q = q.eq("status", status);
     const { data, error } = await q;
     if (error) {
-      if (/relation .* does not exist/i.test(error.message)) return res.json({ rows: [], warning: "return_requests 테이블 없음" });
+      if (/relation .* does not exist/i.test(error.message)) return res.json({ rows: [], count: 0, warning: "return_requests 테이블 없음" });
       throw new Error(error.message);
     }
-    res.json({ rows: data ?? [] });
+    // T-SLIM E · 표준 shape · { rows, count } · 프론트는 rows 만 소비 (count 추가 필드)
+    res.json({ rows: data ?? [], count: (data ?? []).length });
   } catch (err: any) {
     res.status(500).json({ error: err?.message ?? "반품요청 조회 실패" });
   }
