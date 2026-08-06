@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { scheduleController } from "../../src/controllers/scheduleController";
+import { scheduleController } from "../controllers/scheduleController";
 import { supabase } from "../../src/supabase/client";
 import path from "path";
 import fs from "fs";

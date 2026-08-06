@@ -1,7 +1,7 @@
 import { Router } from "express";
 import webpush from "web-push";
 import { supabase } from "../../src/supabase/client";
-import { notificationsService } from "../../src/services/notificationsService";
+import { notificationsService } from "../services/notificationsService";
 
 const router = Router();
 

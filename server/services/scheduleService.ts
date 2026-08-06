@@ -1,0 +1,279 @@
+import { supabase } from "../../src/supabase/client";
+
+export class ScheduleService {
+  async getMonthlySchedule(year: number, month: number) {
+    const monthStr = String(month).padStart(2, "0");
+    const datePrefix = `${year}-${monthStr}-`;
+
+    const { data: employees, error: empErr } = await supabase
+      .from("employees")
+      .select("*")
+      .order("id");
+    if (empErr) throw new Error(empErr.message);
+
+    const { data: schedules, error: schedErr } = await supabase
+      .from("schedules")
+      .select("*")
+      .like("date", `${datePrefix}%`);
+    if (schedErr) throw new Error(schedErr.message);
+
+    const employeesWithSchedules = (employees ?? []).map((emp) => ({
+      ...emp,
+      schedules: (schedules ?? []).filter((s) => s.employeeId === emp.id),
+    }));
+
+    const totalDays = new Date(year, month, 0).getDate();
+    const summaryList = [];
+    for (let day = 1; day <= totalDays; day++) {
+      const dayStr = String(day).padStart(2, "0");
+      const currentDate = `${year}-${monthStr}-${dayStr}`;
+      const daySchedules = (schedules ?? []).filter((s) => s.date === currentDate);
+      const openCount = daySchedules.filter((s) => s.type === "오픈").length;
+      const closeCount = daySchedules.filter((s) => s.type === "마감").length;
+      summaryList.push({ day, date: currentDate, openCount, closeCount, totalCount: openCount + closeCount });
+    }
+
+    return { employees: employeesWithSchedules, summary: summaryList };
+  }
+
+  async updateOrCreateSchedule(data: {
+    employeeId: number;
+    date: string;
+    type: string;
+    workingHours: string;
+    actualHours: string;
+    memo?: string;
+  }) {
+    const { data: result, error } = await supabase
+      .from("schedules")
+      .upsert(
+        {
+          employeeId: data.employeeId,
+          date: data.date,
+          type: data.type,
+          workingHours: data.workingHours,
+          actualHours: data.actualHours,
+          memo: data.memo ?? "",
+        },
+        { onConflict: "employeeId,date" }
+      )
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return result;
+  }
+
+  async copySchedulesFromPreviousMonth(targetYear: number, targetMonth: number) {
+    const prevMonth = targetMonth === 1 ? 12 : targetMonth - 1;
+    const prevYear = targetMonth === 1 ? targetYear - 1 : targetYear;
+    const prevPrefix = `${prevYear}-${String(prevMonth).padStart(2, "0")}-`;
+    const targetMonthStr = String(targetMonth).padStart(2, "0");
+    const targetMaxDays = new Date(targetYear, targetMonth, 0).getDate();
+
+    const { data: prevSchedules, error } = await supabase
+      .from("schedules")
+      .select("*")
+      .like("date", `${prevPrefix}%`);
+    if (error) throw new Error(error.message);
+
+    // Build per-employee weekday template via majority vote
+    // structure: empId → dayOfWeek (0=Sun…6=Sat) → { type, workingHours, actualHours, memo, count }
+    type DowData = { type: string; workingHours: string; actualHours: string; memo: string; count: number };
+    const empDowMap = new Map<number, Map<number, DowData>>();
+
+    for (const sched of (prevSchedules ?? [])) {
+      if (!sched.type?.trim()) continue;
+      const dow = new Date(sched.date + "T00:00:00").getDay();
+      if (!empDowMap.has(sched.employeeId)) empDowMap.set(sched.employeeId, new Map());
+      const dowMap = empDowMap.get(sched.employeeId)!;
+      const existing = dowMap.get(dow);
+      if (!existing || sched.type === existing.type) {
+        // Same type: accumulate (majority); first occurrence sets baseline
+        dowMap.set(dow, {
+          type: sched.type,
+          workingHours: sched.workingHours ?? "",
+          actualHours: sched.actualHours ?? "",
+          memo: sched.memo ?? "",
+          count: (existing?.count ?? 0) + 1,
+        });
+      } else if ((existing.count ?? 1) < 2) {
+        // Replace if current entry only had 1 occurrence and this type differs
+        dowMap.set(dow, { type: sched.type, workingHours: sched.workingHours ?? "", actualHours: sched.actualHours ?? "", memo: sched.memo ?? "", count: 1 });
+      }
+    }
+
+    // Generate one row per (employee × day) where the weekday has a template entry
+    const rows: object[] = [];
+    for (const [empId, dowMap] of empDowMap) {
+      for (let day = 1; day <= targetMaxDays; day++) {
+        const dateStr = `${targetYear}-${targetMonthStr}-${String(day).padStart(2, "0")}`;
+        const dow = new Date(dateStr + "T00:00:00").getDay();
+        const tmpl = dowMap.get(dow);
+        if (tmpl?.type.trim()) {
+          rows.push({
+            employeeId: empId,
+            date: dateStr,
+            type: tmpl.type,
+            workingHours: tmpl.workingHours,
+            actualHours: tmpl.actualHours,
+            memo: tmpl.memo,
+          });
+        }
+      }
+    }
+
+    if (rows.length === 0) return { count: 0 };
+
+    const { error: upsertErr } = await supabase
+      .from("schedules")
+      .upsert(rows, { onConflict: "employeeId,date" });
+    if (upsertErr) throw new Error(upsertErr.message);
+
+    return { count: rows.length };
+  }
+
+  async batchUpdateSchedules(items: Array<{
+    employeeId: number;
+    date: string;
+    type: string;
+    workingHours: string;
+    actualHours: string;
+    memo?: string;
+  }>) {
+    if (items.length === 0) return { count: 0 };
+    const rows = items.map(item => ({
+      employeeId: item.employeeId,
+      date: item.date,
+      type: item.type,
+      workingHours: item.workingHours,
+      actualHours: item.actualHours,
+      memo: item.memo ?? "",
+    }));
+    const { data: saved, error } = await supabase
+      .from("schedules")
+      .upsert(rows, { onConflict: "employeeId,date" })
+      .select();
+    if (error) throw new Error(error.message);
+    return { count: saved?.length ?? rows.length };
+  }
+
+  async createEmployee(data: { name: string; position: string; employmentType?: string; hireDate: string; retireDate?: string | null; description: string; workplace?: string; rank?: string | null; gender?: string | null; phone?: string | null; annual_leave_days?: number; level?: number; contract_file_url?: string | null; address?: string | null }) {
+    // retireDate가 없는 스키마의 경우를 대비해 fallback 시도
+    const base = { ...data, workplace: data.workplace ?? "매장", employmentType: data.employmentType ?? "정직원", level: data.level ?? 1 };
+    let { data: result, error } = await supabase.from("employees").insert(base).select().single();
+    if (error && /column .*retireDate.* does not exist/i.test(error.message)) {
+      const { retireDate: _rd, ...noRetire } = base;
+      void _rd;
+      ({ data: result, error } = await supabase.from("employees").insert(noRetire).select().single());
+    }
+    if (error) throw new Error(error.message);
+    return result;
+  }
+
+  async updateEmployee(id: number, data: {
+    // 기존 필드
+    name: string;
+    position: string;
+    employmentType?: string;
+    hireDate: string;
+    retireDate?: string | null;
+    description: string;
+    workplace?: string;
+    rank?: string | null;
+    gender?: string | null;
+    phone?: string | null;
+    annual_leave_days?: number | null;
+    level?: number | null;
+    contract_file_url?: string | null;
+    address?: string | null;
+    break_time_minutes?: number | null;
+    break_apply_paid?: boolean;
+    // 신규 HR 필드
+    contract_type?: string | null;
+    contract_start?: string | null;
+    contract_end?: string | null;
+    probation_end_date?: string | null;
+    birth_date?: string | null;
+    emergency_contact_name?: string | null;
+    emergency_contact_phone?: string | null;
+    emergency_contact_rel?: string | null;
+    schedule_type?: string | null;
+    work_area?: string | null;
+    work_location?: string | null;
+    job_duties?: string | null;
+    working_hours_per_week?: number | null;
+    weekly_holiday?: string | null;
+    wage_calc_type?: string | null;
+    wage_amount?: number | null;
+    wage_pay_day?: number | null;
+    wage_pay_method?: string | null;
+    bank_name?: string | null;
+    bank_account_no?: string | null;
+    insurance_nps_date?: string | null;
+    insurance_nhis_date?: string | null;
+    insurance_ei_date?: string | null;
+    insurance_wcia_date?: string | null;
+    insurance_excluded?: boolean;
+    pharmacist_license_no?: string | null;
+    health_check_expiry?: string | null;
+    careers?: any;
+    educations?: any;
+    certifications?: any;
+    performance_rating?: string | null;
+  }) {
+    // 핵심 필드 + 존재하는 선택 필드로 페이로드 구성
+    const payload: Record<string, any> = {
+      name: data.name,
+      position: data.position,
+      employmentType: data.employmentType ?? "정직원",
+      hireDate: data.hireDate,
+      description: data.description,
+      workplace: data.workplace ?? "매장",
+    };
+    if (data.retireDate !== undefined) payload.retireDate = data.retireDate;
+    // 기존 선택 필드 목록 유지 + 신규 HR 필드 추가 (조건부 add 패턴 그대로)
+    const optionalKeys = [
+      // 기존
+      "rank", "gender", "phone", "annual_leave_days", "level", "contract_file_url",
+      "address", "break_time_minutes", "break_apply_paid",
+      // 신규 HR 필드
+      "contract_type", "contract_start", "contract_end", "probation_end_date",
+      "birth_date", "emergency_contact_name", "emergency_contact_phone", "emergency_contact_rel",
+      "schedule_type", "work_area", "work_location", "job_duties",
+      "working_hours_per_week", "weekly_holiday",
+      "wage_calc_type", "wage_amount", "wage_pay_day", "wage_pay_method",
+      "bank_name", "bank_account_no",
+      "insurance_nps_date", "insurance_nhis_date", "insurance_ei_date", "insurance_wcia_date",
+      "insurance_excluded",
+      "pharmacist_license_no", "health_check_expiry",
+      "careers", "educations", "certifications",
+      "performance_rating",
+    ] as const;
+    for (const k of optionalKeys) {
+      if ((data as any)[k] !== undefined) payload[k] = (data as any)[k];
+    }
+
+    // 컬럼 없음 오류 시 해당 컬럼 제거하고 최대 재시도 (필드 수 증가로 재시도 상한도 확장)
+    const maxAttempts = optionalKeys.length + 2;
+    for (let attempt = 0; attempt <= maxAttempts; attempt++) {
+      const { data: rows, error } = await supabase
+        .from("employees").update(payload).eq("id", id).select();
+      if (!error) return rows?.[0] ?? { id };
+
+      const missing = error.message.match(/column "?(\w+)"? of relation/)?.[1];
+      if (missing && missing in payload) {
+        delete payload[missing];
+        continue;
+      }
+      throw new Error(error.message);
+    }
+    throw new Error("수정 실패: DB 컬럼 불일치");
+  }
+
+  async deleteEmployee(id: number) {
+    const { error } = await supabase.from("employees").delete().eq("id", id);
+    if (error) throw new Error(error.message);
+  }
+}
+
+export const scheduleService = new ScheduleService();
