@@ -105,7 +105,7 @@ router.get("/api/pharmacist-menu-items", async (req, res) => {
     const category = typeof req.query.category === "string" ? req.query.category : "";
     let q = supabase
       .from("pharmacist_menu_items")
-      .select("*")
+      .select("id, tab_key, category_key, title, file_url, file_name, file_size, mime_type, storage_path, storage, sort_order, uploaded_by, uploaded_by_id, created_at, updated_at")
       .order("sort_order", { ascending: true })
       .order("id", { ascending: true });
     if (tab && ALLOWED_TABS.has(tab)) q = q.eq("tab_key", tab);
@@ -242,7 +242,7 @@ router.post("/api/pharmacist-menu-items", async (req, res) => {
     const { data, error } = await supabase
       .from("pharmacist_menu_items")
       .insert([insertRow])
-      .select("*")
+      .select("id, tab_key, category_key, title, file_url, file_name, file_size, mime_type, storage_path, storage, sort_order, uploaded_by, uploaded_by_id, created_at, updated_at")
       .single();
 
     if (error) {
@@ -291,7 +291,7 @@ router.patch("/api/pharmacist-menu-items/:id", async (req, res) => {
       .from("pharmacist_menu_items")
       .update(patch)
       .eq("id", id)
-      .select("*")
+      .select("id, tab_key, category_key, title, file_url, file_name, file_size, mime_type, storage_path, storage, sort_order, uploaded_by, uploaded_by_id, created_at, updated_at")
       .single();
     if (error) throw new Error(error.message);
     return res.json(data);

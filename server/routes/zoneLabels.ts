@@ -57,7 +57,7 @@ router.put("/api/zone-labels", async (req, res) => {
     const { data, error } = await supabase
       .from("zone_labels")
       .upsert(rows, { onConflict: "zone_id" })
-      .select("*");
+      .select("zone_id, number, sub_label, updated_at");
     if (error) throw new Error(error.message);
     res.json({ ok: true, updated: data?.length ?? 0 });
   } catch (err: any) {
@@ -83,7 +83,7 @@ router.post("/api/zone-labels", async (req, res) => {
     const { data, error } = await supabase
       .from("zone_labels")
       .upsert([row], { onConflict: "zone_id" })
-      .select("*")
+      .select("zone_id, number, sub_label, updated_at")
       .single();
     if (error) throw new Error(error.message);
     res.json({ ok: true, row: data });
