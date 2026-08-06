@@ -485,6 +485,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [deferredSalesMonthEnabled,   setDeferredSalesMonthEnabled]   = useState(needSalesMonthEnabled);
   const [deferredSalesQuarterEnabled, setDeferredSalesQuarterEnabled] = useState(needSalesQuarterEnabled);
   const inlineDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 2026-08-06 · 실시간 필터 반영 · 조회 중 표시 (사용자 요청)
+  const [inlineFiltering, setInlineFiltering] = useState(false);
   const updateInline = useCallback((field: "cycle" | "current" | "salesMonth" | "salesQuarter", raw: string) => {
     const n = raw === "" ? 0 : Math.max(0, Math.floor(Number(raw)));
     if (!Number.isFinite(n)) return;
@@ -492,11 +494,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     if (field === "current")      setNeedInlineMaxCurrent(n);
     if (field === "salesMonth")   setNeedInlineMaxSalesMonth(n);
     if (field === "salesQuarter") setNeedInlineMaxSalesQuarter(n);
-    // 실시간 반영 X · [조회] 버튼 클릭 시만 필터 적용 (사용자 요청)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [needInlineMinCycle, needInlineMaxCurrent, needInlineMaxSalesMonth, needInlineMaxSalesQuarter]);
-  // [조회] 버튼 · 명시적 필터 적용
-  const applyInlineFilter = () => {
+  }, []);
+  // [조회] 버튼 · 명시적 필터 적용 (기존 유지 · 사용자가 명시적 조회 원할 때)
+  const applyInlineFilter = useCallback(() => {
     if (inlineDebounceRef.current) clearTimeout(inlineDebounceRef.current);
     setDeferredInlineCycle(needInlineMinCycle);
     setDeferredInlineCurrent(needInlineMaxCurrent);
@@ -506,6 +507,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     setDeferredCurrentEnabled(needCurrentEnabled);
     setDeferredSalesMonthEnabled(needSalesMonthEnabled);
     setDeferredSalesQuarterEnabled(needSalesQuarterEnabled);
+    setInlineFiltering(false);
     try {
       localStorage.setItem(ORDER_NEED_INLINE_KEY, JSON.stringify({
         minCycle: needInlineMinCycle,
@@ -518,7 +520,18 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         salesQuarterEnabled: needSalesQuarterEnabled,
       }));
     } catch { /**/ }
-  };
+  }, [needInlineMinCycle, needInlineMaxCurrent, needInlineMaxSalesMonth, needInlineMaxSalesQuarter, needCycleEnabled, needCurrentEnabled, needSalesMonthEnabled, needSalesQuarterEnabled]);
+
+  // 2026-08-06 · 실시간 필터 · 체크박스/입력 변경 시 400ms debounce 후 자동 적용 (사용자 요청)
+  //   · 조회중 배지로 로딩 표시 · 완료 시 자동 사라짐
+  useEffect(() => {
+    setInlineFiltering(true);
+    if (inlineDebounceRef.current) clearTimeout(inlineDebounceRef.current);
+    inlineDebounceRef.current = setTimeout(() => {
+      applyInlineFilter();
+    }, 400);
+    return () => { if (inlineDebounceRef.current) clearTimeout(inlineDebounceRef.current); };
+  }, [needInlineMinCycle, needInlineMaxCurrent, needInlineMaxSalesMonth, needInlineMaxSalesQuarter, needCycleEnabled, needCurrentEnabled, needSalesMonthEnabled, needSalesQuarterEnabled, applyInlineFilter]);
   const resetInlineFilter = () => {
     if (inlineDebounceRef.current) clearTimeout(inlineDebounceRef.current);
     setNeedCycleEnabled(false); setNeedCurrentEnabled(false); setNeedSalesMonthEnabled(false); setNeedSalesQuarterEnabled(false);
@@ -1454,16 +1467,16 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 </label>
               </div>
 
-              {/* 조회 버튼 */}
-              <button
-                type="button"
-                onClick={applyInlineFilter}
-                className="ml-auto inline-flex items-center gap-1.5 h-8 px-4 rounded-md bg-emerald-600 hover:bg-emerald-700
-                           text-white text-[13px] font-black shadow-sm transition cursor-pointer whitespace-nowrap shrink-0"
-                title="입력값으로 리스트 조회"
-              >
-                <Search size={13} strokeWidth={2.5} className="shrink-0" />조회
-              </button>
+              {/* 2026-08-06 · 조회 버튼 제거 · 입력·체크 변경 시 400ms debounce 후 자동 반영 · 조회중 배지로 표시 */}
+              {inlineFiltering ? (
+                <span className="ml-auto inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[12px] font-black whitespace-nowrap shrink-0">
+                  <Loader2 size={12} className="animate-spin" />조회중...
+                </span>
+              ) : (
+                <span className="ml-auto inline-flex items-center gap-1 h-8 px-3 rounded-md bg-slate-50 text-slate-500 border border-slate-200 text-[11px] font-semibold whitespace-nowrap shrink-0">
+                  <CheckCircle2 size={12} className="text-emerald-500" />실시간
+                </span>
+              )}
 
               {/* 초기화 버튼 (조건 활성 시) */}
               {inlineActive && (

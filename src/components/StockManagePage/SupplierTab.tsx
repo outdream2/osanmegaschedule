@@ -116,9 +116,12 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   const isSupplierGroupCollapsed = (g: SupplierGroup) => supplierGroupCollapsed.has(g);
 
   // 합계 행 접기/펼치기 (사용자 요청 · 2026-08-06 · T-TEST-매입이력-합계접기)
-  //   · localStorage 저장 · 다음 방문 시 상태 유지
+  //   · 기본 접힘 (사용자 명시) · localStorage 명시적 "0" 저장 시 펼침
   const [totalsCollapsed, setTotalsCollapsed] = useState<boolean>(() => {
-    try { return localStorage.getItem("megatown_supplier_totals_collapsed") === "1"; } catch { return false; }
+    try {
+      const v = localStorage.getItem("megatown_supplier_totals_collapsed");
+      return v !== "0"; // "0" 명시적 펼침 · 그 외 (null·"1") 접힘
+    } catch { return true; }
   });
   useEffect(() => {
     try { localStorage.setItem("megatown_supplier_totals_collapsed", totalsCollapsed ? "1" : "0"); } catch { /* noop */ }
