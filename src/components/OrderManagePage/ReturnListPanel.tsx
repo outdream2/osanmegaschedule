@@ -4,7 +4,7 @@
 // 2026-08-03 · 반품 요청서 모달 · 발주서 스타일로 재설계 (#188)
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useVendors } from "../../hooks/useVendors";
-import { Loader2, Package, PackageCheck, RefreshCw, Search, Truck, ChevronRight, ChevronDown, Mail, MessageSquare, Send, Trash2 } from "lucide-react";
+import { Loader2, Package, PackageCheck, Search, Truck, ChevronRight, ChevronDown, Mail, MessageSquare, Send, Trash2 } from "lucide-react";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
@@ -710,6 +710,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
         <div className="flex items-center gap-1.5">
           <PackageCheck size={14} className="text-rose-500 shrink-0" />
           <span className="text-[13px] font-semibold text-slate-800">반품필요</span>
+          <span className="text-[10.5px] text-slate-400 whitespace-nowrap">입력하면 자동 조회</span>
           {(() => {
             const q = returnSupplierSearch.trim().toLowerCase();
             const filteredCount = returnList.filter(x => {
@@ -803,15 +804,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
           <Truck size={12} strokeWidth={2.5} />
           일괄 반품 ({returnSelected.size})
         </button>
-        <button
-          type="button"
-          onClick={loadReturnList}
-          disabled={returnLoading}
-          className="w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-300 text-slate-400 hover:text-rose-500 transition disabled:opacity-40 cursor-pointer"
-          title="다시 조회"
-        >
-          <RefreshCw size={13} className={returnLoading ? "animate-spin" : ""} />
-        </button>
+        {/* 2026-08-06 · 사용자 요청 · 조회 버튼 제거 · 필터 변경 시 자동 조회 (제목 옆 코멘트로 안내) */}
       </div>
 
       {/* ── 좌우 split 레이아웃 ── */}

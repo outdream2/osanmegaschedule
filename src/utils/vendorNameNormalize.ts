@@ -35,8 +35,11 @@ export function isVatAnnotation(text: string | null | undefined): boolean {
  *  · "대웅제약 주식회사"    → "대웅제약"
  * 데이터 자체는 변경하지 않고 · 표시 전용
  */
-const CORP_PREFIX_RE = /^(?:\(?주\)?|㈜|㈔|㈕|주식회사)\s*/;
-const CORP_SUFFIX_RE = /\s*(?:\(?주\)?|㈜|㈔|㈕|주식회사)\s*$/;
+// 주의 · 순서 중요 · "주식회사" 를 "(주)"·"주" 보다 먼저 시도
+// "주식회사대웅제약" 이 "주" 만 매칭돼서 "식회사대웅제약" 되는 버그 방지 (2026-08-06)
+// 그리고 "(주)" 는 반드시 괄호 필수 · 단독 "주" 매칭 금지 (성씨 "주"·상품명 "주" 등 오인 방지)
+const CORP_PREFIX_RE = /^(?:주식회사|㈜|㈔|㈕|\(주\))\s*/;
+const CORP_SUFFIX_RE = /\s*(?:주식회사|㈜|㈔|㈕|\(주\))\s*$/;
 
 export function stripCorporatePrefix(name: string | null | undefined): string {
   if (!name) return "";
