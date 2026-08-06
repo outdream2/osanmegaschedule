@@ -1338,18 +1338,18 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
     if (dbCol && !supplierFilter && !supplierCodeFilter) {
       // 서버 정렬 지원 · limit 확장 (hidden 제거 후에도 채우기 위해)
       const fetchLimit = Math.max(limit * 3, 300);
-      let q = supabase
-        .from("stock_history")
-        .select("product_code, product_name, supplier_code, supplier_name, spec, opening_stock, purchase_qty, sale_qty, disposal_qty, internal_qty, adjustment_qty, closing_stock, total_amount")
-        .eq("snapshot_date", targetDate)
-        .order(dbCol, { ascending: dir === "asc" })
-        .limit(fetchLimit);
-      const { data: page, error } = await q;
-      if (error) {
-        if (/relation|does not exist/i.test(error.message)) return res.json({ snapshot_date: null, dates: [], rows: [] });
-        throw new Error(error.message);
+      // 2026-08-06 · Supabase 1000행 cap 우회 · fetchAllWithRange
+      try {
+        const page = await fetchAllWithRange<any>(() => supabase
+          .from("stock_history")
+          .select("product_code, product_name, supplier_code, supplier_name, spec, opening_stock, purchase_qty, sale_qty, disposal_qty, internal_qty, adjustment_qty, closing_stock, total_amount")
+          .eq("snapshot_date", targetDate)
+          .order(dbCol, { ascending: dir === "asc" }), fetchLimit);
+        data.push(...page);
+      } catch (err: any) {
+        if (/relation|does not exist/i.test(err?.message ?? "")) return res.json({ snapshot_date: null, dates: [], rows: [] });
+        throw err;
       }
-      data.push(...(page ?? []));
     } else {
       // fallback: 공급사 필터 있거나 정렬 컬럼 미지원 → 기존 전체 페이지네이션
       const PAGE = 1000;
@@ -1604,18 +1604,22 @@ router.get("/api/stock-manage/raw", async (req, res) => {
   const dateParam = String(req.query.snapshot_date ?? "").trim();
   const limit = Math.max(1, Math.min(20000, parseInt(String(req.query.limit ?? "5000"), 10) || 5000));
   try {
-    let query = supabase
-      .from("stock_history")
-      .select("*")
-      .order("supplier_name", { ascending: true })
-      .limit(limit);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
-      query = query.eq("snapshot_date", dateParam);
-    }
-    const { data, error } = await query;
-    if (error) {
-      if (/relation|does not exist/i.test(error.message)) return res.json({ dates: [], rows: [] });
-      throw new Error(error.message);
+    // 2026-08-06 · Supabase 1000행 cap 우회 · fetchAllWithRange (limit 최대 20000 케이스)
+    let data: any[] = [];
+    try {
+      data = await fetchAllWithRange<any>(() => {
+        let query = supabase
+          .from("stock_history")
+          .select("*")
+          .order("supplier_name", { ascending: true });
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+          query = query.eq("snapshot_date", dateParam);
+        }
+        return query;
+      }, limit);
+    } catch (err: any) {
+      if (/relation|does not exist/i.test(err?.message ?? "")) return res.json({ dates: [], rows: [] });
+      throw err;
     }
     // 사용가능한 스냅샷 날짜 목록도 함께 반환
     const { data: allDates } = await supabase

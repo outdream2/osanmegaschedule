@@ -4,6 +4,7 @@
 //   Phase 1 · 회전율·DOH·GMROI·유통기한·ABC·등급 서버 계산 · 프론트는 표시만
 import { Router } from "express";
 import { supabase } from "../../src/supabase/client";
+import { fetchAllWithRange } from "../utils/supabaseFetchAll";
 
 const router = Router();
 
@@ -304,13 +305,13 @@ router.get("/api/inventory-sales/suppliers", async (req, res) => {
     }
 
     // 잔고 조회 · ocr_confirmed_items 최신 balance
-    const { data: balData } = await supabase
+    // 2026-08-06 · Supabase 1000행 cap 우회 · fetchAllWithRange
+    const balData = await fetchAllWithRange<any>(() => supabase
       .from("ocr_confirmed_items")
       .select("supplier, balance, saved_at")
       .not("balance", "is", null)
       .gt("balance", 0)
-      .order("saved_at", { ascending: false })
-      .limit(2000);
+      .order("saved_at", { ascending: false }), 2000).catch(() => [] as any[]);
     const latestBal = new Map<string, number>();
     if (Array.isArray(balData)) {
       for (const b of balData) {

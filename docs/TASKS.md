@@ -22,6 +22,14 @@
 
 ---
 
+## 🔴 사용자 테스트 요청 (2026-08-06)
+
+### T-AUDIT-Supabase-1000-cap · 모든 라우터 fetchAllWithRange 적용
+- 대상: purchaseHistory · productArrivals · stockManage(잔여) · stockReconciliation · inventorySales · products (필요 시)
+- 파일: 각 `.limit(N > 1000)` or dynamic `.limit(변수)` 위치
+
+---
+
 ## 🔄 진행 중 (자동 파이프라인)
 
 ### T-CSS Phase 1 · 디자인 토큰 + 공통 컴포넌트 (mobile-ui-designer 백그라운드)

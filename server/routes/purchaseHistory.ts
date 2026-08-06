@@ -3,6 +3,7 @@
 //   소스 · ocr_confirmed_items (실제 매입 확정 이력) · 상품별 최근 N건 집계
 import { Router } from "express";
 import { supabase } from "../../src/supabase/client";
+import { fetchAllWithRange } from "../utils/supabaseFetchAll";
 
 const router = Router();
 
@@ -31,18 +32,19 @@ router.get("/api/products/purchase-history", async (req, res) => {
   try {
     // 상품 코드별 최근 이력 · saved_at desc · 각 코드당 perCodeLimit 만큼 필요
     //   Supabase 는 GROUP BY LIMIT 을 SQL 하나로 표현 어려움 · 전체 조회 후 코드별 slice
-    const { data, error } = await supabase
-      .from("ocr_confirmed_items")
-      .select("product_code, quantity, unit_price, invoice_date, saved_at")
-      .in("product_code", codes)
-      .not("product_code", "is", null)
-      .order("invoice_date", { ascending: false, nullsFirst: false })
-      .order("saved_at", { ascending: false })
-      .limit(codes.length * perCodeLimit * 3);  // 여유롭게 · 코드별 slice
-
-    if (error) {
-      console.warn(`[purchase-history] 조회 실패: ${error.message}`);
-      return res.json({ history: {}, note: error.message });
+    // 2026-08-06 · Supabase 1000행 cap 우회 · fetchAllWithRange
+    let data: any[] = [];
+    try {
+      data = await fetchAllWithRange<any>(() => supabase
+        .from("ocr_confirmed_items")
+        .select("product_code, quantity, unit_price, invoice_date, saved_at")
+        .in("product_code", codes)
+        .not("product_code", "is", null)
+        .order("invoice_date", { ascending: false, nullsFirst: false })
+        .order("saved_at", { ascending: false }), codes.length * perCodeLimit * 3);
+    } catch (e: any) {
+      console.warn(`[purchase-history] 조회 실패: ${e?.message}`);
+      return res.json({ history: {}, note: e?.message });
     }
 
     // 코드별 grouping
