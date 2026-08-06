@@ -1,4 +1,5 @@
 ﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useConfirm } from "../../hooks/useConfirm";
 import * as XLSX from "xlsx";
 import { Wand2, Loader2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, BookmarkPlus, BookOpen, Check, Save } from "lucide-react";
 import { isNonProductText, isValidSupplierHint, isValidProductName, scoreProductRow, cleanProductName } from "../../lib/ocrRowFilter";
@@ -64,6 +65,8 @@ import { useSaveConfirmed } from "./RawOcrTable/useSaveConfirmed";
 export type { ConfirmedItem };
 
 export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps, pageImages, rotation = -90, onReparsePage, barcodeMatches, balanceConfig: balanceConfigProp, onSaveConfirmed, onUserEdit }) => {
+  const confirm = useConfirm();
+
   // 공급사 목록 · 자동완성·조회 공용 (inline fetch 제거)
   const { vendors: _ocrVendors, refresh: refreshVendors } = useVendors();
   // 2026-07-24 · 리팩터 · 페이지 snapshot 은 usePagesSnapshot 훅으로 분리
@@ -87,7 +90,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     if (!match) match = (_ocrVendors as unknown as Vendor[]).find(v => norm(String(v.company_name ?? "")).includes(target) || target.includes(norm(String(v.company_name ?? ""))));
     if (match) { setVendorEditModal(match); return; }
     // 신규 공급사 등록 유도
-    if (window.confirm(`"${name}" 은(는) 공급사 DB 에 없습니다.\n신규 등록하시겠습니까?`)) {
+    if (await confirm({ message: `"${name}" 은(는) 공급사 DB 에 없습니다.\n신규 등록하시겠습니까?` })) {
       try {
         const created = await fetch("/api/vendors", {
           method: "POST",
@@ -324,7 +327,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   // ── 확정 삭제된 행 (렌더에서 완전 제외) ──────────────────────────────────
   const [permanentlyDeletedRawRows, setPermanentlyDeletedRawRows] = useState<Set<number>>(new Set());
   // "🗑 선택 삭제" 버튼: 삭제 함수는 effectiveDispRows/makeRowSignature 선언 뒤에 정의됨 (아래)
-  const commitRawRowsDeletionRef = useRef<() => void>(() => {});
+  const commitRawRowsDeletionRef = useRef<() => void | Promise<void>>(() => {});
   const commitRawRowsDeletion = useCallback(() => commitRawRowsDeletionRef.current(), []);
   // "🔄 다시 읽어오기" 버튼: 선택된 행들의 셀 편집·자동보정·삭제 상태를 모두 초기화 → raw OCR 원본으로 복원
   const revertSelectedRawRows = useCallback(() => {
@@ -1119,10 +1122,10 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
 
   // 실제 "🗑 선택 삭제" 로직 (effectiveDispRows/makeRowSignature 참조를 위해 여기서 세팅)
   //   → 체크된 여러 행을 한 번의 확인 다이얼로그로 일괄 완전삭제 + DB 서명 저장
-  commitRawRowsDeletionRef.current = () => {
+  commitRawRowsDeletionRef.current = async () => {
     if (hiddenRawRows.size === 0) return;
     const cnt = hiddenRawRows.size;
-    if (!window.confirm(`체크된 ${cnt}개 행을 완전히 삭제하시겠습니까?\n· DB에 서명이 저장되어 다음 스캔에도 자동 필터됩니다.`)) return;
+    if (!await confirm({ message: `체크된 ${cnt}개 행을 완전히 삭제하시겠습니까?\n· DB에 서명이 저장되어 다음 스캔에도 자동 필터됩니다.`, danger: true })) return;
     const items: Array<{ supplier: string; name: string }> = [];
     hiddenRawRows.forEach(ri => {
       const row = effectiveDispRows[ri] ?? dispRows[ri];
@@ -2855,7 +2858,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
         ) : nameEditResults.map((p, pi) => (
           <button key={pi}
             onMouseDown={e => e.preventDefault()}
-            onClick={() => {
+            onClick={async () => {
               // 2026-07-24 · state 지워졌으면 ref 폴백 · 클릭 항상 작동
               const ri = editingNameRow ?? editingNameRowRef.current;
               if (ri == null) { console.warn("[dropdown click] editingNameRow null · 무시"); return; }
@@ -2891,7 +2894,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
               // 2026-07-28 · 사용자 요청 (재변경) · 동의어보정사전 등록 confirm 다시 활성화
               //   흐름 · 재추출 → 상품명 클릭 → 기존 저장 → 입력 후 선택 → 확인창 → DB 등록
               if (origName && origName !== p.product_name) {
-                if (window.confirm(`동의어보정사전에 등록할까요?\n\n· 보정 전: ${origName}\n· 보정 후: ${p.product_name}`)) {
+                if (await confirm({ message: `동의어보정사전에 등록할까요?\n\n· 보정 전: ${origName}\n· 보정 후: ${p.product_name}` })) {
                   saveSynonym(ri, origName, p.product_code, supplier || undefined, p.product_name);
                 }
               }
@@ -3564,12 +3567,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                             <input
                               type="checkbox"
                               checked={false}
-                              onChange={() => {
+                              onChange={async () => {
                                 // 2026-07-28 · 사용자 요청 "체크된 데이터 자체를 삭제 · 숨기는게 아니고"
                                 //   체크 즉시 · 확인 후 · 완전 삭제 (DB signature 저장 · 다음 스캔 자동 필터)
                                 const nmIdx = dispHeaders.indexOf("품명");
                                 const rowName = nmIdx >= 0 ? String(effectiveDispRows[ri]?.[nmIdx] ?? "").trim() : "";
-                                if (!window.confirm(`이 행을 완전 삭제하시겠습니까?\n${rowName ? `· 품명: ${rowName}` : ""}\n· DB 서명 저장 · 다음 스캔에도 자동 필터`)) return;
+                                if (!await confirm({ message: `이 행을 완전 삭제하시겠습니까?\n${rowName ? `· 품명: ${rowName}` : ""}\n· DB 서명 저장 · 다음 스캔에도 자동 필터`, danger: true })) return;
                                 setPermanentlyDeletedRawRows(prev => { const n = new Set(prev); n.add(ri); return n; });
                                 const supplier = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
                                 if (supplier && rowName) {
@@ -4017,7 +4020,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                         }
                                       }, 280);
                                     }}
-                                    onKeyDown={e => {
+                                    onKeyDown={async e => {
                                       if (e.key === "Escape") {
                                         setEditingNameRow(null);
                                         setNameEditResults([]);
@@ -4038,7 +4041,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                             setCancelledAutoSyn(prev => { const s = new Set(prev); s.delete(ri); return s; });
                                             setCancelledAutoMap(prev => { const s = new Set(prev); s.delete(ri); return s; });
                                             if (orig !== topMatch.product_name) {
-                                              if (window.confirm(`동의어보정사전에 등록할까요?\n\n· 보정 전: ${orig}\n· 보정 후: ${topMatch.product_name}`)) {
+                                              if (await confirm({ message: `동의어보정사전에 등록할까요?\n\n· 보정 전: ${orig}\n· 보정 후: ${topMatch.product_name}` })) {
                                                 saveSynonym(ri, orig, topMatch.product_code, rawSupplierForRow || undefined, topMatch.product_name);
                                               }
                                             }
@@ -4046,7 +4049,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                             setCellEdits(prev => ({ ...prev, [ri]: { ...(prev[ri] ?? {}), [ci]: v } }));
                                             if (orig && orig !== v) {
                                               const existingCode = autoSynonymMatches[ri]?.code;
-                                              if (window.confirm(`동의어보정사전에 등록할까요?\n\n· 보정 전: ${orig}\n· 보정 후: ${v}`)) {
+                                              if (await confirm({ message: `동의어보정사전에 등록할까요?\n\n· 보정 전: ${orig}\n· 보정 후: ${v}` })) {
                                                 saveSynonym(ri, orig, existingCode ?? "", rawSupplierForRow || undefined, v);
                                               }
                                             }
@@ -4633,7 +4636,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                                     onClick={async () => {
                                                       // 2026-07-27 · 사용자 요청 "확정 누르면 확정하시겠습니까 알림창"
                                                       const supp = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "미상";
-                                                      if (!window.confirm(`${pn}번 명세서 · "${supp}" · 확정하시겠습니까?\n(3차 거래명세서 확정표에 추가됩니다)`)) return;
+                                                      if (!await confirm({ message: `${pn}번 명세서 · "${supp}" · 확정하시겠습니까?\n(3차 거래명세서 확정표에 추가됩니다)` })) return;
                                                       if (!matchItems || !hasErpSubRow) {
                                                         await handleMatchPage(pn);
                                                         setErpSubRowPages(prev => new Set([...prev, pn]));
@@ -5002,7 +5005,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                             const invDate = pageDateOverride[pn] ?? structuredPages.find(p => p.page === pn)?.meta?.date ?? "";
                                             const supp = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta?.supplier ?? "";
                                             if (!supp) { alert(`${pn}번 명세서 · 공급사 없음 · 저장 불가`); return; }
-                                            if (!window.confirm(`${pn}번 · "${supp}" · ${invDate || "날짜미상"}\n· DB 저장하시겠습니까?`)) return;
+                                            if (!await confirm({ message: `${pn}번 · "${supp}" · ${invDate || "날짜미상"}\n· DB 저장하시겠습니까?` })) return;
                                             try {
                                               const q = new URLSearchParams();
                                               if (invDate) q.set("invoice_date", invDate);
@@ -5011,7 +5014,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                               const chk = chkRes.ok ? await chkRes.json() : { items: [] };
                                               const existing = Array.isArray(chk?.items) ? chk.items : [];
                                               if (existing.length > 0) {
-                                                if (!window.confirm(`이미 ${existing.length}건 저장됨 · 덮어쓰시겠습니까?`)) return;
+                                                if (!await confirm({ message: `이미 ${existing.length}건 저장됨 · 덮어쓰시겠습니까?`, danger: true })) return;
                                                 for (const it of existing) if (it.id) await fetch(`/api/ocr-confirmed-items/${it.id}`, { method: "DELETE" });
                                               }
                                             } catch { /* skip check */ }

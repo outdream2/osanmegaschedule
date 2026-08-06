@@ -1,5 +1,6 @@
 // src/components/ScheduleFilterBar.tsx
 import React from "react";
+import { useConfirm } from "../hooks/useConfirm";
 import { X, Search, Building2, Warehouse, Layers, UserPlus } from "lucide-react";
 import { Employee } from "../types";
 
@@ -44,6 +45,8 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
   onResetCustomOrder,
   onCreateEmployee,
 }) => {
+  const confirm = useConfirm();
+
   return (
     <div className="bg-white border-b border-slate-200 px-3 sm:px-6 py-2 sm:py-2.5 flex flex-col gap-2 sm:gap-3 shrink-0 shadow-sm">
         {/* Filter Tabs: two independent groups */}
@@ -156,7 +159,7 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
               <button
                 type="button"
                 onClick={async () => {
-                  if (window.confirm("드래그 앤 드롭으로 재배치한 순서를 지우고, 원래 기본 순서로 복구하시겠습니까?")) {
+                  if (await confirm({ message: "드래그 앤 드롭으로 재배치한 순서를 지우고, 원래 기본 순서로 복구하시겠습니까?", danger: true })) {
                     await onResetCustomOrder();
                   }
                 }}

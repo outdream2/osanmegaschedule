@@ -6,6 +6,7 @@
 //   - 번호 중복 검증 · dirty 실시간 감지
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useConfirm } from "../../hooks/useConfirm";
 import {
   ArrowLeft,
   MapPin,
@@ -132,6 +133,8 @@ function sortByZoneId(a: ZoneMapping, b: ZoneMapping): number {
 // 컴포넌트
 // ───────────────────────────────────────────────────────────────
 const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack }) => {
+  const confirm = useConfirm();
+
   const userLevel = authSession?.level ??
     (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9
       : authSession?.role === "manager" ? 2
@@ -185,10 +188,10 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
     if (!def) return;
     setMappings((prev) => prev.map(m => m.zoneId === zoneId ? { ...def } : m));
   }, [defaultByZoneId]);
-  const resetAll = useCallback(() => {
-    if (!window.confirm("모든 구역 라벨을 기본값으로 되돌립니다. 계속할까요?")) return;
+  const resetAll = useCallback(async () => {
+    if (!await confirm({ message: "모든 구역 라벨을 기본값으로 되돌립니다. 계속할까요?", danger: true })) return;
     setMappings([...DEFAULT_MAPPINGS]);
-  }, []);
+  }, [confirm]);
 
   // ── 중복 검증 ──
   const duplicateNumbers = useMemo(() => {

@@ -2,6 +2,7 @@
 // 적정재고 이하(low) 탭을 독립 컴포넌트로 추출 (2026-07-31 · 탭 스왑 · OrderManagePage 이동용)
 // 기존 StockManagePage의 stockTab === "low" 블록 state/fetch/JSX 를 그대로 캡슐화
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useConfirm } from "../../hooks/useConfirm";
 import { useVendors } from "../../hooks/useVendors";
 import { AlertTriangle, Check, X as XIcon, Loader2 as LoaderIcon, Pencil, ChevronRight, ChevronDown, CheckCircle2, ShoppingCart } from "lucide-react";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
@@ -33,6 +34,8 @@ function fmt(n: number): string {
 
 // ── LowStockPanel (메인 export) ──────────────────────────────────────────
 export const LowStockPanel: React.FC = () => {
+  const confirm = useConfirm();
+
   const { getWidth, resizerProps } = useColumnResize("lowStock", {
     num:     { default: 28,  min: 24, max: 60  },
     name:    { default: 150, min: 80, max: 360 },
@@ -78,7 +81,7 @@ export const LowStockPanel: React.FC = () => {
   const requestOrderFromLow = useCallback(async (p: any) => {
     const code = String(p.product_code ?? "").trim();
     if (!code) return;
-    if (!window.confirm(`'${p.product_name}' 을(를) 발주요청 리스트에 추가하시겠습니까?`)) return;
+    if (!await confirm({ message: `'${p.product_name}' 을(를) 발주요청 리스트에 추가하시겠습니까?` })) return;
     setOrderRequestingCode(code);
     try {
       const res = await fetch("/api/order-requests", {

@@ -15,6 +15,7 @@
 //   />
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useConfirm } from "../../hooks/useConfirm";
 import {
   Plus, Trash2, Loader2, AlertCircle, X, Save, Pencil,
   ArrowUp, ArrowDown, CheckCircle2, FileText, CloudUpload,
@@ -84,6 +85,8 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
   authSession,
   onChanged,
 }) => {
+  const confirm = useConfirm();
+
   const editorLevel = authSession?.level ?? 0;
   const isAdmin = editorLevel >= 8;
 
@@ -271,7 +274,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
   // ── 삭제 ─────────────────────────────────────────
   const handleDelete = async (row: PharmMenuItem) => {
     if (!isAdmin) return;
-    if (!window.confirm(`정말 삭제하시겠습니까?\n\n${row.title}`)) return;
+    if (!await confirm({ message: `정말 삭제하시겠습니까?\n\n${row.title}`, danger: true })) return;
     setDeletingId(row.id);
     try {
       const res = await fetch(`/api/pharmacist-menu-items/${row.id}?editor_level=${editorLevel}`, {

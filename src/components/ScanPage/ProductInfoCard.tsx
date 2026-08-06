@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useConfirm } from "../../hooks/useConfirm";
 import { Pencil, Loader2, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2, Warehouse, Store, ClipboardCheck, ScanLine, Check, X, DollarSign, Package, Info, EyeOff, Eye, TrendingUp, ChevronRight, ChevronDown } from "lucide-react";
 import { type ProductInfo } from "../../lib/productsCache";
 import { RealMapSelector } from "./RealMapSelector";
@@ -64,6 +65,8 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
   editable,
   onProductUpdate,
 }) => {
+  const confirm = useConfirm();
+
   // 섹션 병합 (context default + override)
   const S = { ...SECTION_PRESETS[context], ...(sections ?? {}) };
   const inlineEditEnabled = editable ?? context === "stock-manage";
@@ -122,7 +125,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
     const confirmMsg = next
       ? `"${product.name}" 상품을 숨김 처리할까요?\n\n검색·발주 리스트에서 노출되지 않으며, 나중에 [숨김 항목 관리]에서 다시 표시할 수 있습니다.`
       : `"${product.name}" 상품의 숨김을 해제하고 다시 표시할까요?`;
-    if (!window.confirm(confirmMsg)) return;
+    if (!await confirm({ message: confirmMsg, danger: next })) return;
     setHideSaving(true); setHideError(null);
     try {
       const res = await fetch(`/api/products/${encodeURIComponent(product.code)}`, {

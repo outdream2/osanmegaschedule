@@ -9,6 +9,7 @@
 // 관리자만 CRUD · 약사(및 관리자) 조회·PDF 열람 · 미로그인 접근 제한
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useConfirm } from "../../hooks/useConfirm";
 import { FirstAid, BookOpen, Video, FileText, GraduationCap, Folder, FolderOpen, File as FileIcon } from "@phosphor-icons/react";
 import { Settings2, Plus, Eye, FileText as FileTextIcon, Loader2, ChevronRight, ChevronDown, CloudUpload, Trash2, X as XIcon } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
@@ -108,6 +109,8 @@ function buildEducationCategories(): CategoryItem[] {
 }
 
 export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onBack, onNavigate, onLogout }) => {
+  const confirm = useConfirm();
+
   const isAdmin = (authSession?.level ?? 0) >= 8;
 
   // 탭 재정렬 · admin 만 (useSortableTabs 는 { key } 오브젝트 배열)
@@ -340,7 +343,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
   };
 
   const handleDeleteCustomCat = async (key: string, title: string) => {
-    if (!window.confirm(`정말 삭제하시겠습니까?\n\n${title}\n\n(이 카테고리와 그 하위 자료가 리스트에서 제거됩니다)`)) return;
+    if (!await confirm({ message: `정말 삭제하시겠습니까?\n\n${title}\n\n(이 카테고리와 그 하위 자료가 리스트에서 제거됩니다)`, danger: true })) return;
     try {
       const next = customCats.filter(c => c.key !== key);
       await persistCustomCats(next);

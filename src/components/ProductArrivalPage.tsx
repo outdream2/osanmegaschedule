@@ -6,6 +6,7 @@
 // 하단: 전체 품목일치 · 품목불일치 최종 확인
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useConfirm } from "../hooks/useConfirm";
 import {
   ScanLine, Loader2, AlertCircle, PackagePlus, CheckCircle2, XCircle, Clock,
   Trash2, Minus, Plus, RotateCcw, ClipboardCheck, ClipboardX,
@@ -105,6 +106,8 @@ const ARRIVAL_CMP: Record<ArrivalSortKey, Comparator<ArrivalItem>> = {
 export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
   onBack, authSession, onNavigate, onLogout, embedded = false,
 }) => {
+  const confirm = useConfirm();
+
   // 2026-08-03 · 내부 탭 (상품입고 / 입고내역) · 입고내역 로직 · OrderManagePage 에서 이동
   const [arrivalTab, setArrivalTab]             = useState<"input" | "history">("input");
   const [scannerOpen, setScannerOpen]           = useState(false);
@@ -171,7 +174,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       .finally(() => setArrivalDetailLoading(false));
   }, [selectedArrivalId]);
   const deleteArrival = async (id: number) => {
-    if (!window.confirm("이 입고내역을 삭제하시겠습니까? (관련 아이템 모두 삭제)")) return;
+    if (!await confirm({ message: "이 입고내역을 삭제하시겠습니까? (관련 아이템 모두 삭제)", danger: true })) return;
     try {
       const res = await fetch(`/api/product-arrivals/${id}`, { method: "DELETE" });
       if (res.ok) {
@@ -272,9 +275,9 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
     setItems(prev => prev.filter(it => it.key !== key));
   };
 
-  const resetAll = () => {
+  const resetAll = async () => {
     if (items.length === 0) return;
-    if (!window.confirm("리스트를 모두 초기화하시겠습니까?")) return;
+    if (!await confirm({ message: "리스트를 모두 초기화하시겠습니까?", danger: true })) return;
     setItems([]);
     setFinalDecision(null);
     setNotFoundCode(null);

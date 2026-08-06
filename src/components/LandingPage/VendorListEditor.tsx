@@ -4,6 +4,7 @@
 //   모달:   헤더 gradient · 폼 h-9 · 매입이력 shadcn 스타일 · 하단 저장/닫기 통일
 
 import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { useConfirm } from "../../hooks/useConfirm";
 import { useVendors } from "../../hooks/useVendors";
 import {
   Search, Check, X, Loader2, Building2, Package, Calendar,
@@ -129,6 +130,8 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   onEditRequest,
   compact = false,
 }) => {
+  const confirm = useConfirm();
+
   const { vendors: _rawVendors, loading, refresh: loadVendors } = useVendors();
   // 로컬 Vendor 타입으로 캐스팅 (latestBalance 등 추가 필드 접근용)
   const vendors = _rawVendors as unknown as Vendor[];
@@ -905,6 +908,8 @@ export const VendorDetailModal: React.FC<{
   onSaved: () => void;
   panel?: boolean;
 }> = ({ vendor, onClose, onSaved, panel }) => {
+  const confirm = useConfirm();
+
   const [draft, setDraft] = useState<EditDraft>(emptyDraft(vendor));
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
@@ -957,7 +962,7 @@ export const VendorDetailModal: React.FC<{
 
   // 결제 삭제
   const handleDeletePayment = async (id: number) => {
-    if (!window.confirm("결제 기록을 삭제하시겠습니까? 배분(allocations) 도 함께 삭제됩니다.")) return;
+    if (!await confirm({ message: "결제 기록을 삭제하시겠습니까? 배분(allocations) 도 함께 삭제됩니다.", danger: true })) return;
     try {
       const res = await fetch(`/api/supplier-payments/${id}`, { method: "DELETE" });
       if (!res.ok) {

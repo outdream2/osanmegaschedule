@@ -8,6 +8,7 @@
 //
 // LeavePage 관리자 뷰 벤치마크 · UI 스타일 통일
 import React, { useCallback, useEffect, useState } from "react";
+import { useConfirm } from "../../hooks/useConfirm";
 import {
   Clock, CheckCircle, XCircle, ArrowsClockwise,
   Warning, FileText, User, Calendar, ChatCenteredText,
@@ -58,6 +59,8 @@ const fmtDate = fmtDateYMD;
 const fmtDateTime = fmtDateMD;
 
 const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authSession }) => {
+  const confirm = useConfirm();
+
   const canApprove = (authSession?.level ?? 0) >= 8;
   const approverName = authSession?.employeeName ?? "관리자";
   const approverId = authSession?.employeeId;
@@ -121,9 +124,9 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
       alert("반려 사유를 입력하세요.");
       return;
     }
-    if (status === "approved" && !window.confirm(
-      "이 사직서를 승인하시겠습니까?\n승인 시 · 해당 직원의 퇴사일이 자동으로 반영됩니다."
-    )) return;
+    if (status === "approved" && !await confirm({
+      message: "이 사직서를 승인하시겠습니까?\n승인 시 · 해당 직원의 퇴사일이 자동으로 반영됩니다.",
+    })) return;
 
     setProcessingId(id);
     try {

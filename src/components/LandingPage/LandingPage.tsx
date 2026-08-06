@@ -1,6 +1,7 @@
 // src/components/LandingPage.tsx
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import axios from "axios";
+import { useConfirm } from "../../hooks/useConfirm";
 import {
   ChevronRight,
   Clock,
@@ -206,6 +207,8 @@ const PeriodCoverageWidget: React.FC<{ endpoint: string; label: string; color: "
 };
 
 export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigate, onLogout, onAuthOnly }) => {
+  const confirm = useConfirm();
+
   // 세션 만료 배너 표시 (URL 쿼리 또는 sessionStorage 플래그로 감지 · 2026-07-14)
   const [sessionExpiredNotice, setSessionExpiredNotice] = useState(() => {
     try {
@@ -576,7 +579,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   };
 
   const handleClearImportLog = async () => {
-    if (!confirm("임포트 이력을 모두 삭제할까요?")) return;
+    if (!await confirm({ message: "임포트 이력을 모두 삭제할까요?", danger: true })) return;
     await axios.delete("/api/product-import-log");
     setImportLog([]);
   };
@@ -589,7 +592,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   };
 
   const handleClearStockImportLog = async () => {
-    if (!confirm("재고 임포트 이력을 모두 삭제할까요?")) return;
+    if (!await confirm({ message: "재고 임포트 이력을 모두 삭제할까요?", danger: true })) return;
     await axios.delete("/api/stock-import-log");
     setStockImportLog([]);
   };
@@ -625,11 +628,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       } catch (err: any) {
         if (err?.response?.status === 409) {
           const j = err.response.data ?? {};
-          const ok = window.confirm(
-            `기간 ${j.period?.from ?? "?"} ~ ${j.period?.to ?? "?"} 에 ` +
-            `이미 ${j.existingCount ?? "?"}행 재고 스냅샷이 있습니다.\n\n` +
-            `[확인] 덮어쓰기\n[취소] 임포트 취소`
-          );
+          const ok = await confirm({
+            message:
+              `기간 ${j.period?.from ?? "?"} ~ ${j.period?.to ?? "?"} 에 ` +
+              `이미 ${j.existingCount ?? "?"}행 재고 스냅샷이 있습니다.\n\n` +
+              `[확인] 덮어쓰기\n[취소] 임포트 취소`,
+            confirmLabel: "덮어쓰기",
+          });
           if (!ok) {
             setStockUploadResult({ ok: false, msg: "임포트 취소 (기존 데이터 유지)" });
             setStockUploadLoading(false);
@@ -727,11 +732,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       // 409 = 기존 데이터 존재 · 덮어쓰기 확인
       if (res.status === 409) {
         const j = await res.json().catch(() => ({}));
-        const ok = window.confirm(
-          `기간 ${j.period?.from ?? "?"} ~ ${j.period?.to ?? "?"} 에 ` +
-          `이미 ${j.existingCount ?? "?"}행 매입 데이터가 있습니다.\n\n` +
-          `[확인] 덮어쓰기\n[취소] 임포트 취소`
-        );
+        const ok = await confirm({
+          message:
+            `기간 ${j.period?.from ?? "?"} ~ ${j.period?.to ?? "?"} 에 ` +
+            `이미 ${j.existingCount ?? "?"}행 매입 데이터가 있습니다.\n\n` +
+            `[확인] 덮어쓰기\n[취소] 임포트 취소`,
+          confirmLabel: "덮어쓰기",
+        });
         if (!ok) {
           setPurchaseUploadResult({ ok: false, msg: "임포트 취소 (기존 데이터 유지)" });
           setPurchaseUploadLoading(false);

@@ -21,6 +21,7 @@
 //   - memory feedback_ui_consult · 통일된 디자인 · slate + rose 팔레트 · rounded-xl · shadow-sm
 //   - memory feedback_git_push · remote push 절대 금지
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useConfirm } from "../../hooks/useConfirm";
 import {
   SignOut, User, ClipboardText, CalendarBlank, Notepad, Eraser,
   DownloadSimple, ArrowsClockwise, Warning, Check, Buildings, Signature,
@@ -527,6 +528,8 @@ ResignationPreview.displayName = "ResignationPreview";
 const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
   authSession, onBack, onNavigate, onLogout, embedded = false,
 }) => {
+  const confirm = useConfirm();
+
   const [form, setForm] = useState<ResignationForm>(() => emptyForm());
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [empLoading, setEmpLoading] = useState(false);
@@ -613,8 +616,8 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
     }));
   };
 
-  const handleReset = () => {
-    if (!window.confirm("입력한 모든 내용과 서명을 초기화합니다. 계속하시겠습니까?")) return;
+  const handleReset = async () => {
+    if (!await confirm({ message: "입력한 모든 내용과 서명을 초기화합니다. 계속하시겠습니까?", danger: true })) return;
     setForm(emptyForm());
     setEmployeeSignUrl(null);
     setPayoutSignUrl(null);
@@ -722,7 +725,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
     }
     const emptySign = !employeeSignUrl;
     if (emptySign) {
-      if (!window.confirm("신청인 서명이 비어있습니다. 서명 없이 제출하시겠습니까?")) return;
+      if (!await confirm({ message: "신청인 서명이 비어있습니다. 서명 없이 제출하시겠습니까?" })) return;
     }
 
     // 서명 dataURL (in-DB 저장용 · 신청인 서명)
