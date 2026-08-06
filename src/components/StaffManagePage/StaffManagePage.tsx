@@ -2,6 +2,7 @@
 // 직원관리 페이지 — 마스터-디테일 레이아웃 (이력서 스타일 우측 패널)
 // 좌측: 슬림 원라인 리스트 / 우측: 이력서 형식 상세 + 인라인 편집
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CARD_BASE } from "../../styles/tokens";
 import { useSortableTable } from "../../hooks/useSortableTable";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -471,7 +472,7 @@ const SectionCard: React.FC<{
   const iconCls   = GROUP_ICON[group];
   const textCls   = headerCls.split(" ").find(c => c.startsWith("text-")) ?? "";
   return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+    <div className={`${CARD_BASE} overflow-hidden`}>
       <button
         onClick={() => setOpen((o) => !o)}
         className={`w-full px-3 py-2 border-b ${open ? headerCls : "bg-white border-slate-100"} flex items-center justify-between cursor-pointer transition-colors duration-150`}
@@ -1369,7 +1370,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
     <main className="flex-1 max-w-[1360px] mx-auto w-full px-4 py-4 flex flex-col gap-3 min-h-0">
 
       {/* ── 상단 필터바 (full-width · StockManagePage 벤치마크) ── */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+      <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
         {/* 페이지 아이콘 + 타이틀 */}
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm shrink-0">
