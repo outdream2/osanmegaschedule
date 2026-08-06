@@ -50,3 +50,18 @@ export function stripCorporatePrefix(name: string | null | undefined): string {
 export function displayVendorName(name: string | null | undefined): string {
   return stripCorporatePrefix(stripVendorAnnotation(name));
 }
+
+/**
+ * DB 저장된 구 카테고리명 → 현행 카테고리명으로 정규화 (legacy 호환)
+ *  · "60일회전" → "60회전"   (2026-08-06 이전 DB 저장값)
+ *  · "90일회전" → "90회전"   (2026-08-06 이전 DB 저장값)
+ *  · 그 외 값은 그대로 반환
+ * Read 시 호출 · Write 시에는 새 이름("60회전"/"90회전")을 직접 사용
+ */
+export function normalizeVendorCategory(cat: string | null | undefined): string | null {
+  if (!cat) return cat ?? null;
+  const s = String(cat).trim();
+  if (s === "60일회전") return "60회전";
+  if (s === "90일회전") return "90회전";
+  return s;
+}

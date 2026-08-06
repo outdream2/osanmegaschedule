@@ -94,15 +94,15 @@ const fmtWon = fmtWonCompact;
 const CATEGORY_LEFT_BORDER: Record<string, string> = {
   위탁:       "border-l-violet-400",
   선결제:     "border-l-rose-400",
-  "60일회전": "border-l-emerald-400",
-  "90일회전": "border-l-teal-400",
+  "60회전": "border-l-emerald-400",
+  "90회전": "border-l-teal-400",
   기타:       "border-l-slate-300",
 };
 const CATEGORY_LEFT_BG: Record<string, string> = {
   위탁:       "bg-violet-50/40",
   선결제:     "bg-rose-50/40",
-  "60일회전": "bg-emerald-50/40",
-  "90일회전": "bg-teal-50/40",
+  "60회전": "bg-emerald-50/40",
+  "90회전": "bg-teal-50/40",
   기타:       "bg-slate-50/30",
 };
 
@@ -306,18 +306,18 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
           </div>
           {/* 분류 필터 · 가로 스크롤 */}
           <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-none pb-0.5">
-            {(["전체", "위탁", "선결제", "60일회전", "90일회전", "기타"] as const).map(cat => (
+            {(["전체", "위탁", "선결제", "60회전", "90회전", "기타"] as const).map(cat => (
               <button
                 key={cat}
                 onClick={() => setCategoryFilter(cat)}
                 className={`h-6 px-2 rounded-md text-[10px] font-black transition cursor-pointer whitespace-nowrap shrink-0 ${
                   categoryFilter === cat
-                    ? cat === "전체"     ? "bg-slate-700 text-white shadow-sm"
-                    : cat === "위탁"     ? "bg-violet-500 text-white shadow-sm"
-                    : cat === "선결제"   ? "bg-rose-500 text-white shadow-sm"
-                    : cat === "60일회전" ? "bg-emerald-500 text-white shadow-sm"
-                    : cat === "90일회전" ? "bg-teal-500 text-white shadow-sm"
-                    :                     "bg-slate-500 text-white shadow-sm"
+                    ? cat === "전체"    ? "bg-slate-700 text-white shadow-sm"
+                    : cat === "위탁"    ? "bg-violet-500 text-white shadow-sm"
+                    : cat === "선결제"  ? "bg-rose-500 text-white shadow-sm"
+                    : cat === "60회전" ? "bg-emerald-500 text-white shadow-sm"
+                    : cat === "90회전" ? "bg-teal-500 text-white shadow-sm"
+                    :                    "bg-slate-500 text-white shadow-sm"
                     : "text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md"
                 }`}
               >
@@ -350,18 +350,18 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
             />
           </div>
           <div className="inline-flex items-center bg-slate-100 border border-slate-200 rounded-lg p-0.5 gap-0.5 flex-wrap">
-            {(["전체", "위탁", "선결제", "60일회전", "90일회전", "기타"] as const).map(cat => (
+            {(["전체", "위탁", "선결제", "60회전", "90회전", "기타"] as const).map(cat => (
               <button
                 key={cat}
                 onClick={() => setCategoryFilter(cat)}
                 className={`h-7 px-2.5 rounded-md text-[11px] font-black transition cursor-pointer whitespace-nowrap ${
                   categoryFilter === cat
-                    ? cat === "전체"     ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
-                    : cat === "위탁"     ? "bg-violet-500 text-white shadow-sm"
-                    : cat === "선결제"   ? "bg-rose-500 text-white shadow-sm"
-                    : cat === "60일회전" ? "bg-emerald-500 text-white shadow-sm"
-                    : cat === "90일회전" ? "bg-teal-500 text-white shadow-sm"
-                    :                     "bg-slate-500 text-white shadow-sm"
+                    ? cat === "전체"    ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
+                    : cat === "위탁"    ? "bg-violet-500 text-white shadow-sm"
+                    : cat === "선결제"  ? "bg-rose-500 text-white shadow-sm"
+                    : cat === "60회전" ? "bg-emerald-500 text-white shadow-sm"
+                    : cat === "90회전" ? "bg-teal-500 text-white shadow-sm"
+                    :                    "bg-slate-500 text-white shadow-sm"
                     : "text-slate-500 hover:text-slate-700 hover:bg-white/60"
                 }`}
               >
@@ -1182,8 +1182,8 @@ export const VendorDetailModal: React.FC<{
                     <option value="">(없음)</option>
                     <option value="위탁">위탁</option>
                     <option value="선결제">선결제</option>
-                    <option value="60일회전">60일회전</option>
-                    <option value="90일회전">90일회전</option>
+                    <option value="60회전">60회전</option>
+                    <option value="90회전">90회전</option>
                     <option value="기타">기타</option>
                   </select>
                 </Field>

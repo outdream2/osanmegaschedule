@@ -107,7 +107,7 @@ export const FlowTab: React.FC = () => {
   const [salesQtyMin, setSalesQtyMin] = useState<string>("");
   const [salesQtyMax, setSalesQtyMax] = useState<string>("");
   // 분류 필터
-  type FlowCategoryFilter = "전체" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타";
+  type FlowCategoryFilter = "전체" | "위탁" | "선결제" | "60회전" | "90회전" | "기타";
   const [flowCategoryFilter, setFlowCategoryFilter] = useState<FlowCategoryFilter>("전체");
   // 상비약/일반약/전체 3-way 필터 (localStorage 저장)
   const [classFilter, setClassFilter] = useState<ClassFilter>(() => {
@@ -576,15 +576,15 @@ export const FlowTab: React.FC = () => {
 
         {/* 분류 세그먼트 필터 */}
         <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
-          {(["전체", "위탁", "선결제", "60일회전", "90일회전", "기타"] as const).map(cat => (
+          {(["전체", "위탁", "선결제", "60회전", "90회전", "기타"] as const).map(cat => (
             <button key={cat} onClick={() => setFlowCategoryFilter(cat)}
               className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${
                 flowCategoryFilter === cat
-                  ? cat === "전체" ? "bg-slate-700 text-white shadow-sm"
-                  : cat === "위탁" ? "bg-violet-500 text-white shadow-sm"
+                  ? cat === "전체"   ? "bg-slate-700 text-white shadow-sm"
+                  : cat === "위탁"   ? "bg-violet-500 text-white shadow-sm"
                   : cat === "선결제" ? "bg-rose-500 text-white shadow-sm"
-                  : cat === "60일회전" ? "bg-emerald-500 text-white shadow-sm"
-                  : cat === "90일회전" ? "bg-teal-500 text-white shadow-sm"
+                  : cat === "60회전" ? "bg-emerald-500 text-white shadow-sm"
+                  : cat === "90회전" ? "bg-teal-500 text-white shadow-sm"
                   : "bg-slate-500 text-white shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
               }`}>{cat}</button>

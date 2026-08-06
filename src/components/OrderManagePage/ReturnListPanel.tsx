@@ -455,7 +455,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
   const [returnSalesQuarterMax, setReturnSalesQuarterMax] = useState<number>(15);
   // 2026-07-31 · 사용자 요청 · 공급사 검색 필터 (부분일치 · 대소문자 무시)
   const [returnSupplierSearch, setReturnSupplierSearch] = useState<string>("");
-  type ReturnCategoryFilter = "전체" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타";
+  type ReturnCategoryFilter = "전체" | "위탁" | "선결제" | "60회전" | "90회전" | "기타";
   const [returnCategoryFilter, setReturnCategoryFilter] = useState<ReturnCategoryFilter>("전체");
 
   type ReturnSortKey = "product_name" | "supplier" | "current_stock" | "actual_stock" | "purchase_cycle" | "sale_qty_month" | "sale_qty_60d" | "sale_qty_90d" | "last_purchase_date" | "last_purchase_qty" | "stock_value";
@@ -764,15 +764,15 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
         </div>
         {/* 분류 세그먼트 필터 */}
         <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
-          {(["전체", "위탁", "선결제", "60일회전", "90일회전", "기타"] as const).map(cat => (
+          {(["전체", "위탁", "선결제", "60회전", "90회전", "기타"] as const).map(cat => (
             <button key={cat} onClick={() => setReturnCategoryFilter(cat)}
               className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${
                 returnCategoryFilter === cat
-                  ? cat === "전체" ? "bg-slate-700 text-white shadow-sm"
-                  : cat === "위탁" ? "bg-violet-500 text-white shadow-sm"
+                  ? cat === "전체"   ? "bg-slate-700 text-white shadow-sm"
+                  : cat === "위탁"   ? "bg-violet-500 text-white shadow-sm"
                   : cat === "선결제" ? "bg-rose-500 text-white shadow-sm"
-                  : cat === "60일회전" ? "bg-emerald-500 text-white shadow-sm"
-                  : cat === "90일회전" ? "bg-teal-500 text-white shadow-sm"
+                  : cat === "60회전" ? "bg-emerald-500 text-white shadow-sm"
+                  : cat === "90회전" ? "bg-teal-500 text-white shadow-sm"
                   : "bg-slate-500 text-white shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
               }`}>{cat}</button>

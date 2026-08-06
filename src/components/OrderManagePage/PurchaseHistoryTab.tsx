@@ -96,7 +96,7 @@ export const PurchaseHistoryTab: React.FC = () => {
   const vendors = useMemo<VendorItem[]>(() => _rawVendors as unknown as VendorItem[], [_rawVendors]);
   const [vendorSearch, setVendorSearch] = useState("");
   const [vendorCategoryFilter, setVendorCategoryFilter] =
-    useState<"전체" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타">("전체");
+    useState<"전체" | "위탁" | "선결제" | "60회전" | "90회전" | "기타">("전체");
 
   // 좌측 요약 (VendorRowCard 용)
   const [summaryMap, setSummaryMap] = useState<Map<string, VendorSummary>>(new Map());

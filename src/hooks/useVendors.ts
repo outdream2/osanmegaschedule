@@ -3,7 +3,7 @@
 // 사용처: OrderManagePage · ReturnListPanel · LowStockPanel · FlowTab · SupplierTab
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { displayVendorName, stripVendorAnnotation } from "../utils/vendorNameNormalize";
+import { displayVendorName, stripVendorAnnotation, normalizeVendorCategory } from "../utils/vendorNameNormalize";
 
 export interface Vendor {
   id: number;
@@ -34,7 +34,12 @@ async function _fetchVendors(force = false): Promise<Vendor[]> {
       const res = await fetch("/api/vendors?withBalances=1");
       if (!res.ok) throw new Error(String(res.status));
       const data = await res.json();
-      _cache = { vendors: Array.isArray(data) ? data : [], time: Date.now() };
+      // legacy 정규화: DB에 저장된 "60일회전"/"90일회전" → "60회전"/"90회전"
+      const normalized = (Array.isArray(data) ? data : []).map((v: Vendor) => ({
+        ...v,
+        category: normalizeVendorCategory(v.category),
+      }));
+      _cache = { vendors: normalized, time: Date.now() };
       _notify();
       return _cache.vendors;
     } finally {

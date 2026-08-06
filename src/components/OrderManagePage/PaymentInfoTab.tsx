@@ -151,8 +151,8 @@ const METHOD_OPTIONS: Array<{
 const CATEGORY_COLORS: Record<string, string> = {
   "위탁":     "bg-violet-500 text-white",
   "선결제":   "bg-rose-500 text-white",
-  "60일회전": "bg-emerald-500 text-white",
-  "90일회전": "bg-teal-500 text-white",
+  "60회전": "bg-emerald-500 text-white",
+  "90회전": "bg-teal-500 text-white",
   "기타":     "bg-slate-500 text-white",
   "전체":     "bg-slate-700 text-white",
 };
@@ -297,7 +297,7 @@ export const PaymentInfoTab: React.FC = () => {
   }), [rawVendors]);
   const [vendorSearch, setVendorSearch] = useState("");
   const [vendorCategoryFilter, setVendorCategoryFilter] =
-    useState<"전체" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타">("전체");
+    useState<"전체" | "위탁" | "선결제" | "60회전" | "90회전" | "기타">("전체");
 
   // 기간 필터 · Task #103 (2026-08-04) · 매입·결제 집계 기간
   const [periodDays, setPeriodDaysState] = useState<PeriodDays>(() => loadPeriodPref());
@@ -783,7 +783,7 @@ export const PaymentInfoTab: React.FC = () => {
               className="w-full h-7 px-2.5 text-[11px] border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-sky-400 focus:border-sky-400 transition"
             />
             <div className="flex flex-wrap gap-0.5">
-              {(["전체", "위탁", "선결제", "60일회전", "90일회전", "기타"] as const).map(cat => (
+              {(["전체", "위탁", "선결제", "60회전", "90회전", "기타"] as const).map(cat => (
                 <button
                   key={cat}
                   onClick={() => setVendorCategoryFilter(cat)}

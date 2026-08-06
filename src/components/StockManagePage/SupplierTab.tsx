@@ -119,7 +119,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
     setSupListSort(prev => prev.key === k ? { key: k, dir: prev.dir === "asc" ? "desc" : "asc" } : { key: k, dir: k === "supplier" ? "asc" : "desc" });
   };
   const [supListLimit, setSupListLimit] = useState<number>(999999);
-  const [supListCategory, setSupListCategory] = useState<"전체" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타">("전체");
+  const [supListCategory, setSupListCategory] = useState<"전체" | "위탁" | "선결제" | "60회전" | "90회전" | "기타">("전체");
 
   // 그룹 헤더 접기 · embedded (매입이력 컨텍스트) 는 매입현황만 펼치기 · 재고/판매 접기 (사용자 요청 2026-08-04)
   const [supplierGroupCollapsed, setSupplierGroupCollapsed] = useState<Set<SupplierGroup>>(
@@ -407,8 +407,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
           { k: "전체" as const, activeCls: "bg-slate-700 text-white shadow-sm" },
           { k: "위탁" as const, activeCls: "bg-violet-500 text-white shadow-sm" },
           { k: "선결제" as const, activeCls: "bg-rose-500 text-white shadow-sm" },
-          { k: "60일회전" as const, activeCls: "bg-emerald-500 text-white shadow-sm" },
-          { k: "90일회전" as const, activeCls: "bg-teal-500 text-white shadow-sm" },
+          { k: "60회전" as const, activeCls: "bg-emerald-500 text-white shadow-sm" },
+          { k: "90회전" as const, activeCls: "bg-teal-500 text-white shadow-sm" },
           { k: "기타" as const, activeCls: "bg-slate-500 text-white shadow-sm" },
         ]).map(o => (
           <button key={o.k} onClick={() => setSupListCategory(o.k)}

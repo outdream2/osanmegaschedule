@@ -148,7 +148,7 @@ export const LowStockPanel: React.FC = () => {
   }, [optimalEditCode, optimalEditValue]);
 
   // ── 분류 필터 + 공급사 카테고리 맵 ──────────────────────────────────────
-  type CategoryFilter = "전체" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타";
+  type CategoryFilter = "전체" | "위탁" | "선결제" | "60회전" | "90회전" | "기타";
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("전체");
   const { vendorCategoryMap } = useVendors();
 
@@ -217,15 +217,15 @@ export const LowStockPanel: React.FC = () => {
         <span className={`${TEXT.caption} text-slate-400`}>현재고 &lt; 추천적정재고 · 상품명 클릭 → 상세</span>
         {/* 분류 세그먼트 필터 */}
         <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
-          {(["전체", "위탁", "선결제", "60일회전", "90일회전", "기타"] as const).map(cat => (
+          {(["전체", "위탁", "선결제", "60회전", "90회전", "기타"] as const).map(cat => (
             <button key={cat} onClick={() => setCategoryFilter(cat)}
               className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${
                 categoryFilter === cat
-                  ? cat === "전체" ? "bg-slate-700 text-white shadow-sm"
-                  : cat === "위탁" ? "bg-violet-500 text-white shadow-sm"
+                  ? cat === "전체"   ? "bg-slate-700 text-white shadow-sm"
+                  : cat === "위탁"   ? "bg-violet-500 text-white shadow-sm"
                   : cat === "선결제" ? "bg-rose-500 text-white shadow-sm"
-                  : cat === "60일회전" ? "bg-emerald-500 text-white shadow-sm"
-                  : cat === "90일회전" ? "bg-teal-500 text-white shadow-sm"
+                  : cat === "60회전" ? "bg-emerald-500 text-white shadow-sm"
+                  : cat === "90회전" ? "bg-teal-500 text-white shadow-sm"
                   : "bg-slate-500 text-white shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
               }`}>{cat}</button>

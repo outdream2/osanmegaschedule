@@ -114,7 +114,7 @@ interface OrderManagePageProps {
 // ── 발주필요 탭 · 조건 설정 (localStorage 저장) ─────────────────────
 //   · 사용자 요청 (2026-08-03) · 발주필요 상품 필터 조건 커스텀 + 저장
 //   · 페이지 로딩 시 저장된 조건으로 초기화
-type NeedCategoryFilterKey = "all" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타";
+type NeedCategoryFilterKey = "all" | "위탁" | "선결제" | "60회전" | "90회전" | "기타";
 type OrderNeedShortageBasis = "optimal" | "min" | "realStock";
 // 2026-08-03 (#189) · 정렬 기본값 · 매입주기·최근 한달 판매량 필터와 함께 저장
 //   · "sale_month" · 최근 한달 판매량 (top-sales?months 로 enrich)
@@ -162,7 +162,7 @@ const loadOrderNeedConfig = (): OrderNeedFilterConfig => {
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return DEFAULT_ORDER_NEED_CONFIG;
     const validBasis: OrderNeedShortageBasis[] = ["optimal", "min", "realStock"];
-    const validCat: NeedCategoryFilterKey[] = ["all", "위탁", "선결제", "60일회전", "90일회전", "기타"];
+    const validCat: NeedCategoryFilterKey[] = ["all", "위탁", "선결제", "60회전", "90회전", "기타"];
     const validSortKey: OrderNeedDefaultSortKey[] = [
       "supplier", "contact", "name", "current", "inv", "optimal", "short",
       "sale_month", "cycle",
@@ -1149,12 +1149,12 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       const ok = matchHangul(name, q) || matchHangul(code, q) || matchHangul(sup, q);
       if (!ok) return false;
     }
-    // 2) 카테고리 필터 (전체 · 위탁 · 선결제 · 60일회전 · 90일회전 · 기타)
+    // 2) 카테고리 필터 (전체 · 위탁 · 선결제 · 60회전 · 90회전 · 기타)
     if (needCategoryFilter !== "all") {
       const supplierName = String(p.supplier ?? "").trim();
       const cat = supplierName ? getVendorCategory(supplierName) : null;
       if (needCategoryFilter === "기타") {
-        const validCats = ["위탁", "선결제", "60일회전", "90일회전", "기타"];
+        const validCats = ["위탁", "선결제", "60회전", "90회전", "기타"];
         if (cat && validCats.includes(cat) && cat !== "기타") return false;
       } else {
         if (cat !== needCategoryFilter) return false;
@@ -1182,7 +1182,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         const supplierName = String(p.supplier ?? "").trim();
         const cat = supplierName ? getVendorCategory(supplierName) : null;
         if (needCategoryFilter === "기타") {
-          const validCats = ["위탁", "선결제", "60일회전", "90일회전", "기타"];
+          const validCats = ["위탁", "선결제", "60회전", "90회전", "기타"];
           if (cat && validCats.includes(cat) && cat !== "기타") continue;
         } else {
           if (cat !== needCategoryFilter) continue;
@@ -1389,8 +1389,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   { k: "all"      as NeedCategoryFilter, label: "전체",     activeCls: "bg-slate-100    text-slate-800   border-slate-300"  },
                   { k: "위탁"      as NeedCategoryFilter, label: "위탁",     activeCls: "bg-violet-50    text-violet-700  border-violet-300" },
                   { k: "선결제"    as NeedCategoryFilter, label: "선결제",   activeCls: "bg-rose-50      text-rose-700    border-rose-300"   },
-                  { k: "60일회전"  as NeedCategoryFilter, label: "60일회전", activeCls: "bg-emerald-50   text-emerald-700 border-emerald-300"},
-                  { k: "90일회전"  as NeedCategoryFilter, label: "90일회전", activeCls: "bg-teal-50      text-teal-700    border-teal-300"   },
+                  { k: "60회전"   as NeedCategoryFilter, label: "60회전",  activeCls: "bg-emerald-50   text-emerald-700 border-emerald-300"},
+                  { k: "90회전"   as NeedCategoryFilter, label: "90회전",  activeCls: "bg-teal-50      text-teal-700    border-teal-300"   },
                   { k: "기타"      as NeedCategoryFilter, label: "기타",     activeCls: "bg-slate-50     text-slate-700   border-slate-300"  },
                 ]).map(b => {
                   const active = needCategoryFilter === b.k;
@@ -1741,8 +1741,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         { k: "all"     as NeedCategoryFilterKey, label: "전체" },
                         { k: "위탁"     as NeedCategoryFilterKey, label: "위탁" },
                         { k: "선결제"   as NeedCategoryFilterKey, label: "선결제" },
-                        { k: "60일회전" as NeedCategoryFilterKey, label: "60일회전" },
-                        { k: "90일회전" as NeedCategoryFilterKey, label: "90일회전" },
+                        { k: "60회전" as NeedCategoryFilterKey, label: "60회전" },
+                        { k: "90회전" as NeedCategoryFilterKey, label: "90회전" },
                         { k: "기타"     as NeedCategoryFilterKey, label: "기타" },
                       ]).map(opt => (
                         <button
