@@ -832,7 +832,7 @@ export const PaymentInfoTab: React.FC = () => {
         left={
           /* ── 좌측 · 공급사 리스트 ─────────────────────────────── */
           <div className="w-full lg:flex-col shrink-0 flex flex-col gap-2 h-full min-h-0">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2.5 flex flex-col gap-2 shrink-0">
+          <div className={`${CARD_BASE} px-3 py-2.5 flex flex-col gap-2 shrink-0`}>
             <input
               type="text"
               value={vendorSearch}
@@ -886,7 +886,48 @@ export const PaymentInfoTab: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 max-h-[42vh] lg:max-h-none flex flex-col overflow-hidden">
+          {/* ── KPI 텍스트 한 줄 (2026-08-06 · T-PAYMENT-Enhance #3) ───────────
+               총 잔고 · 최근 결제일 · 최근 결제액 · 텍스트 inline 형태
+               라벨: text-slate-400 / 값: text-emerald-700 or text-sky-700 */}
+          {(() => {
+            const totalBalance = vendors.reduce((s, v) => s + (Number(v.balance ?? 0)), 0);
+            // latestPaymentByVendor 전체 중 가장 최근 결제 찾기
+            let latestDate = "";
+            let latestAmount = 0;
+            for (const [, v] of latestPaymentByVendor) {
+              if (!latestDate || v.date > latestDate) {
+                latestDate = v.date;
+                latestAmount = v.amount;
+              }
+            }
+            const latestDateShort = latestDate && /^\d{4}-\d{2}-\d{2}$/.test(latestDate)
+              ? latestDate.slice(2) // "YY-MM-DD"
+              : latestDate || "-";
+            return (
+              <div className="flex items-center gap-3 px-1 py-0.5 text-[10px] shrink-0 flex-wrap">
+                <span className="flex items-center gap-1">
+                  <span className="text-slate-400 font-semibold">총 잔고</span>
+                  <span className={`font-black tabular-nums ${totalBalance > 0 ? "text-amber-700" : totalBalance < 0 ? "text-rose-700" : "text-slate-400"}`}>
+                    {totalBalance === 0 ? "-" : fmtWonShort(Math.abs(totalBalance))}
+                  </span>
+                </span>
+                <span className="text-slate-200 select-none">·</span>
+                <span className="flex items-center gap-1">
+                  <span className="text-slate-400 font-semibold">최근 결제일</span>
+                  <span className="font-black text-slate-600 tabular-nums">{latestDateShort}</span>
+                </span>
+                <span className="text-slate-200 select-none">·</span>
+                <span className="flex items-center gap-1">
+                  <span className="text-slate-400 font-semibold">최근 결제액</span>
+                  <span className={`font-black tabular-nums ${latestAmount > 0 ? "text-sky-700" : "text-slate-400"}`}>
+                    {latestAmount > 0 ? fmtWonShort(latestAmount) : "-"}
+                  </span>
+                </span>
+              </div>
+            );
+          })()}
+
+          <div className={`${CARD_BASE} flex-1 min-h-0 max-h-[42vh] lg:max-h-none flex flex-col overflow-hidden`}>
             {/* 헤더 · 자동 정렬 (Task #103 · 2026-08-04)
                 · 컬럼: 분류 / 공급사명 / 매입 / 결제 / 잔고
                 · 클릭 시 asc/desc 토글 · 활성 컬럼 화살표 표시 */}
