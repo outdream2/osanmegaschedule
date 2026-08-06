@@ -4523,11 +4523,19 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           </div>
         </div>
 
-        {/* 4행 · 근무조건 자동 계산 힌트 (시간 × 시급) · T-CTR-UI-Batch */}
+        {/* 4행 · 근무조건 자동 계산 힌트 (시간 × 시급) · T-CTR-UI-Batch / T-CTR-Cleanup */}
         {(() => {
-          if (!monthlyCalc) return null;
+          if (!monthlyCalc) return (
+            <p className="text-[11px] text-slate-400 font-semibold text-center pt-0.5">
+              근무조건을 입력하면 임금이 자동 계산됩니다
+            </p>
+          );
           const dailyH = monthlyCalc.dailyMinutes / 60;
-          if (dailyH <= 0) return null;
+          if (dailyH <= 0) return (
+            <p className="text-[11px] text-slate-400 font-semibold text-center pt-0.5">
+              근무조건을 입력하면 임금이 자동 계산됩니다
+            </p>
+          );
           const weeklyH = dailyH * weeklyDays;
           const wdHourly = Number(form.weekdayHourly) || 0;
           const weHourly = Number(form.weekendHourly) || wdHourly;
