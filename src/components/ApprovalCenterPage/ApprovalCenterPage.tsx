@@ -11,7 +11,7 @@ import React, { Suspense, useCallback, useEffect, useMemo, useState } from "reac
 import { CalendarDots, SignOut } from "@phosphor-icons/react";
 import { LeavePage } from "../LeavePage/LeavePage";
 import type { AuthSession } from "../../types";
-import type { AppNavPage } from "../AppNavHeader";
+import type { AppNavPage } from "../layout/AppNavHeader";
 import { TabBar, type TabDef } from "../common/TabBar";
 import { useSortableTabs } from "../../hooks/useSortableTabs";
 

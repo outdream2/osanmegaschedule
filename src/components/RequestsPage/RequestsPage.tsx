@@ -4,13 +4,13 @@ import {
   CheckCircle2, Clock, RefreshCw, ShoppingCart, Square, CheckSquare,
   Send, Loader2, Utensils, UtensilsCrossed, ChevronDown, ChevronUp, ScrollText,
 } from "lucide-react";
-import { getProductsMap, type ProductInfo } from "../lib/productsCache";
-import { fmtDateMD } from "../lib/format";
-import type { AuthSession } from "../types";
-import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
-import { useColumnResize, RESIZER_CLS } from "../hooks/useColumnResize";
-import { useConfirm } from "../hooks/useConfirm";
-import { CARD_BASE } from "../styles/tokens";
+import { getProductsMap, type ProductInfo } from "../../lib/productsCache";
+import { fmtDateMD } from "../../lib/format";
+import type { AuthSession } from "../../types";
+import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
+import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
+import { useConfirm } from "../../hooks/useConfirm";
+import { CARD_BASE } from "../../styles/tokens";
 
 interface RequestsPageProps {
   onBack: () => void;

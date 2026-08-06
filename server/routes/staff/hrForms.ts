@@ -30,7 +30,7 @@
 import { Router } from "express";
 import fs from "fs";
 import path from "path";
-import { supabase } from "../../src/supabase/client";
+import { supabase } from "../../../src/supabase/client";
 
 const router = Router();
 

@@ -1,8 +1,8 @@
 // src/components/ScheduleFilterBar.tsx
 import React from "react";
-import { useConfirm } from "../hooks/useConfirm";
+import { useConfirm } from "../../hooks/useConfirm";
 import { X, Search, Building2, Warehouse, Layers, UserPlus } from "lucide-react";
-import { Employee } from "../types";
+import { Employee } from "../../types";
 
 export type WorkplaceTab = "전체" | "매장" | "창고";
 export type PositionTab = "전체" | "약사" | "창고" | "진열" | "매장";

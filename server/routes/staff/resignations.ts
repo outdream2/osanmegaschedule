@@ -24,8 +24,8 @@
 // leave.ts 라우터를 벤치마크 · 동일한 push+notifications 흐름 유지
 import { Router } from "express";
 import webpush from "web-push";
-import { supabase } from "../../src/supabase/client";
-import { notificationsService } from "../services/notificationsService";
+import { supabase } from "../../../src/supabase/client";
+import { notificationsService } from "../../services/notificationsService";
 
 // ─── Storage 설정 ────────────────────────────────────────────────────────────
 // Supabase 대시보드에서 "resignation-signatures" 버킷을 Public으로 생성 필요

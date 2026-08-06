@@ -6,22 +6,22 @@
 // 하단: 전체 품목일치 · 품목불일치 최종 확인
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useConfirm } from "../hooks/useConfirm";
+import { useConfirm } from "../../hooks/useConfirm";
 import {
   ScanLine, Loader2, AlertCircle, PackagePlus, CheckCircle2, XCircle, Clock,
   Trash2, Minus, Plus, RotateCcw, ClipboardCheck, ClipboardX,
   Barcode, Building2, Box, Hash, ArrowUpDown, ArrowUp, ArrowDown,
   Sparkles, ShieldCheck, Package, RefreshCw,
 } from "lucide-react";
-import { BarcodeScanner } from "./BarcodeScanner";
-import { loadZBar } from "./BarcodeScanner/zbar";
+import { BarcodeScanner } from "../BarcodeScanner";
+import { loadZBar } from "../BarcodeScanner/zbar";
 import {
   getProductsMap, lookupProduct, isProductsLoaded,
   type ProductInfo,
-} from "../lib/productsCache";
-import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
-import type { AuthSession } from "../types";
-import { useSortableTable, type Comparator, type SortDir } from "../hooks/useSortableTable";
+} from "../../lib/productsCache";
+import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
+import type { AuthSession } from "../../types";
+import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
 
 interface ProductArrivalPageProps {
   onBack: () => void;

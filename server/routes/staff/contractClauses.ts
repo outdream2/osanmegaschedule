@@ -26,7 +26,7 @@
 //   - 인증 미들웨어 없음 (server.ts 주석 참조 · 사내용 · Render 배포 시 재도입 예정)
 
 import { Router } from "express";
-import { supabase } from "../../src/supabase/client";
+import { supabase } from "../../../src/supabase/client";
 
 const router = Router();
 

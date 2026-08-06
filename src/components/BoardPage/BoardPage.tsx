@@ -10,12 +10,12 @@ import {
   ChevronLeft, Pin, MessageCircle, Trash2, Loader2,
   Camera, AtSign, Pencil, Check,
 } from "lucide-react";
-import type { AuthSession } from "../types";
-import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
-import { CARD_BASE } from "../styles/tokens";
-import { uploadImagesToCloudinary, type UploadedImage } from "../lib/cloudinaryUpload";
-import { fmtDateShort } from "../lib/format";
-import { useConfirm } from "../hooks/useConfirm";
+import type { AuthSession } from "../../types";
+import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
+import { CARD_BASE } from "../../styles/tokens";
+import { uploadImagesToCloudinary, type UploadedImage } from "../../lib/cloudinaryUpload";
+import { fmtDateShort } from "../../lib/format";
+import { useConfirm } from "../../hooks/useConfirm";
 
 interface Props {
   authSession: AuthSession | null;

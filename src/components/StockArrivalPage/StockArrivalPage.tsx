@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useConfirm } from "../hooks/useConfirm";
+import { useConfirm } from "../../hooks/useConfirm";
 import {
   Bell, BellOff, Calendar, Check, Clock,
   Package, Pencil, RefreshCw, Send, Trash2, X, Loader2,
 } from "lucide-react";
-import type { AuthSession } from "../types";
-import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
-import { useSortableTable, type Comparator } from "../hooks/useSortableTable";
+import type { AuthSession } from "../../types";
+import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
+import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 
 interface StockArrivalPageProps {
   authSession: AuthSession | null;

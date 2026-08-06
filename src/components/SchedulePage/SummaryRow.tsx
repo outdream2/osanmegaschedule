@@ -1,6 +1,6 @@
 // src/components/SummaryRow.tsx
 import React from "react";
-import { MonthlySummary } from "../types";
+import { MonthlySummary } from "../../types";
 
 interface SummaryRowProps {
   summaries: MonthlySummary[];

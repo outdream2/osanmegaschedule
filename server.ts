@@ -11,7 +11,7 @@ import { supabase } from "./src/supabase/client";
 import { getProductMap } from "./server/productCache";
 
 import schedulesRouter   from "./server/routes/schedule/schedules";
-import staffRouter       from "./server/routes/staff";
+import staffRouter       from "./server/routes/staff/staff";
 import settingsRouter    from "./server/routes/settings/settings";
 import productsRouter    from "./server/routes/products";
 import requestsRouter    from "./server/routes/requests";
@@ -40,11 +40,11 @@ import { ocrDeletedRowsRouter } from "./server/routes/ocrDeletedRows";
 import boardRouter from "./server/routes/board/board";
 import invoiceImagesRouter from "./server/routes/invoiceImages";
 import purchaseHistoryRouter from "./server/routes/purchaseHistory";
-import hrFormsRouter from "./server/routes/hrForms";
+import hrFormsRouter from "./server/routes/staff/hrForms";
 import pharmacistMenuItemsRouter from "./server/routes/board/pharmacistMenuItems";
-import resignationsRouter from "./server/routes/resignations";
-import employeeContractsRouter from "./server/routes/employeeContracts";
-import contractClausesRouter from "./server/routes/contractClauses";
+import resignationsRouter from "./server/routes/staff/resignations";
+import employeeContractsRouter from "./server/routes/staff/employeeContracts";
+import contractClausesRouter from "./server/routes/staff/contractClauses";
 import vatRouter from "./server/routes/vat";
 // 2026-07-28 · 재고·판매 통합 메뉴 제거 (사용자 요청) · 파일 보관 · 라우터 등록만 해제
 // import inventorySalesRouter from "./server/routes/inventorySales";

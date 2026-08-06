@@ -16,22 +16,22 @@
 //   ALTER TABLE inventory_checks ADD COLUMN IF NOT EXISTS store3_zone TEXT;
 
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { useSortableTable, type Comparator, type SortDir } from "../hooks/useSortableTable";
+import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
 import {
   ScanLine, Loader2, AlertCircle, Package,
   CheckCircle2, Trash2, RotateCcw, Warehouse, Store,
   Hash, Building2, Box, MapPin, ArrowUpDown, ArrowUp, ArrowDown,
   SaveAll, Sparkles, History, X, Megaphone,
 } from "lucide-react";
-import { BarcodeScanner } from "./BarcodeScanner";
-import { loadZBar } from "./BarcodeScanner/zbar";
+import { BarcodeScanner } from "../BarcodeScanner";
+import { loadZBar } from "../BarcodeScanner/zbar";
 import {
   getProductsMap, lookupProduct, isProductsLoaded,
   type ProductInfo,
-} from "../lib/productsCache";
-import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
-import type { AuthSession } from "../types";
-import { useConfirm } from "../hooks/useConfirm";
+} from "../../lib/productsCache";
+import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
+import type { AuthSession } from "../../types";
+import { useConfirm } from "../../hooks/useConfirm";
 
 // ─────────────────────────────────────────────────────────────
 // Props

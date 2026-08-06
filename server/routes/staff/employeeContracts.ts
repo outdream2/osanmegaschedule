@@ -20,8 +20,8 @@ import { Router } from "express";
 import fs from "fs";
 import path from "path";
 import multer from "multer";
-import { supabase } from "../../src/supabase/client";
-import { uploadToDrive } from "../services/googleDriveService";
+import { supabase } from "../../../src/supabase/client";
+import { uploadToDrive } from "../../services/googleDriveService";
 
 const router = Router();
 

@@ -15,10 +15,10 @@ import {
   Briefcase,
   FirstAid,
 } from "@phosphor-icons/react";
-import type { AuthSession } from "../types";
-import { NotificationBell } from "./NotificationBell";
-import { NotificationToggle } from "./NotificationToggle";
-import logoImg from "../images/logo.png";
+import type { AuthSession } from "../../types";
+import { NotificationBell } from "../NotificationBell";
+import { NotificationToggle } from "../NotificationToggle";
+import logoImg from "../../images/logo.png";
 
 export type AppNavPage =
   | "landing"

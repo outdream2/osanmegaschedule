@@ -10,7 +10,7 @@ import {
   LayoutGrid, ScanLine, FileText, UtensilsCrossed, CalendarDays,
   Lock, LogOut, Package, Bell,
 } from "lucide-react";
-import type { AuthSession } from "../types";
+import type { AuthSession } from "../../types";
 import type { AppNavPage } from "./AppNavHeader";
 
 interface Props {
