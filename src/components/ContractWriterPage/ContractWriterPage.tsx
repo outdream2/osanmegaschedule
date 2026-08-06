@@ -4604,60 +4604,137 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 )}
               </div>
 
-              {/* Bottom-up 역산 미리보기 · 시급 있을 때만 표시 */}
+              {/* 임금 자동 계산 5단계 시각화 · T-CTR-WageFlow-Rework */}
               {hasWage && monthlyNet > 0 && (
-                <div className="rounded-lg bg-emerald-50/70 border border-emerald-200 px-3 py-2 flex flex-col gap-1.5">
+                <div className="rounded-lg bg-emerald-50/70 border border-emerald-200 px-3 py-2.5 flex flex-col gap-2">
                   {/* 헤더 */}
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700">
-                      순액 → 세전 역산 미리보기
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <Calculator size={11} weight="fill" className="text-emerald-700" />
+                      <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700">
+                        임금 자동 계산
+                      </span>
+                    </div>
                     {!buConverged && (
                       <span className="text-[9px] text-amber-600 font-semibold">근사값</span>
                     )}
                   </div>
 
-                  {/* Step 3 · 세금 + 세전 */}
-                  <div className="grid grid-cols-3 gap-1">
-                    <div className="rounded-md bg-white border border-slate-200 px-2 py-1 flex flex-col">
-                      <span className="text-[8.5px] font-black text-slate-400 uppercase">월 순액</span>
-                      <span className="tabular-nums text-[10.5px] font-black text-indigo-700">{fmtWon(monthlyNet)}</span>
+                  {/* 구분선 */}
+                  <div className="border-t border-emerald-200" />
+
+                  {/* ① 월 예상 순액 */}
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-200 rounded-full w-4 h-4 flex items-center justify-center shrink-0">①</span>
+                      <span className="text-[10px] font-black text-emerald-800">월 예상 순액</span>
                     </div>
-                    <div className="rounded-md bg-white border border-slate-200 px-2 py-1 flex flex-col">
-                      <span className="text-[8.5px] font-black text-slate-400 uppercase">예상 세금</span>
-                      <span className="tabular-nums text-[10.5px] font-black text-rose-600">{fmtWon(buTaxTotal)}</span>
+                    <div className="pl-5 text-[9.5px] text-slate-500 font-semibold leading-snug">
+                      {weeklyWeekendDays > 0 && weHourly !== wdHourly
+                        ? `주중 ${(dailyH * weeklyWeekdayDays).toFixed(1)}h × ${fmtWon(wdHourly)}원 + 주말 ${(dailyH * weeklyWeekendDays).toFixed(1)}h × ${fmtWon(weHourly)}원 × 4.345`
+                        : `주 ${weeklyH.toFixed(1)}h × ${fmtWon(wdHourly)}원 × 4.345`
+                      }
                     </div>
-                    <div className="rounded-md bg-emerald-100 border border-emerald-300 px-2 py-1 flex flex-col">
-                      <span className="text-[8.5px] font-black text-emerald-700 uppercase">세전 월급</span>
-                      <span className="tabular-nums text-[10.5px] font-black text-emerald-900">{fmtWon(buGross)}</span>
+                    <div className="pl-5 tabular-nums text-[12px] font-black text-indigo-700">
+                      = {fmtWon(monthlyNet)} 원
                     </div>
                   </div>
 
-                  {/* Step 4~5 · 통상시급 + 8항목 미리보기 */}
+                  {/* ② 예상 세금 */}
                   <div className="flex flex-col gap-0.5">
-                    <div className="flex items-center gap-1 text-[9.5px] text-emerald-700 font-semibold">
-                      <span>통상시급 {fmtWon(buOrdinaryHourly)}원</span>
-                      <span className="text-emerald-300 mx-0.5">÷ 동적 divisor</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-200 rounded-full w-4 h-4 flex items-center justify-center shrink-0">②</span>
+                      <span className="text-[10px] font-black text-emerald-800">예상 세금 (4대보험 + 소득세)</span>
                     </div>
-                    <div className="grid grid-cols-4 gap-1">
-                      <div className="rounded bg-white/80 border border-slate-100 px-1.5 py-1 flex flex-col">
-                        <span className="text-[8px] text-slate-400 font-bold">기본급</span>
-                        <span className="tabular-nums text-[10px] font-black text-slate-700">{fmtWon(buBasic)}</span>
-                      </div>
-                      <div className="rounded bg-white/80 border border-slate-100 px-1.5 py-1 flex flex-col">
-                        <span className="text-[8px] text-slate-400 font-bold">고정연장</span>
-                        <span className="tabular-nums text-[10px] font-black text-slate-700">{fmtWon(buOvertime)}</span>
-                      </div>
-                      <div className="rounded bg-white/80 border border-slate-100 px-1.5 py-1 flex flex-col">
-                        <span className="text-[8px] text-slate-400 font-bold">고정휴일</span>
-                        <span className="tabular-nums text-[10px] font-black text-slate-700">{fmtWon(buHoliday)}</span>
-                      </div>
-                      <div className="rounded bg-white/80 border border-slate-100 px-1.5 py-1 flex flex-col">
-                        <span className="text-[8px] text-slate-400 font-bold">연차수당</span>
-                        <span className="tabular-nums text-[10px] font-black text-slate-700">{fmtWon(buAnnualLeave)}</span>
-                      </div>
+                    <div className="pl-5 text-[9.5px] text-slate-500 font-semibold leading-snug">
+                      grossUp 역산 ≈ {buGross > 0 ? Math.round(buTaxTotal / buGross * 100) : 0}%
+                    </div>
+                    <div className="pl-5 tabular-nums text-[12px] font-black text-rose-600">
+                      ≈ {fmtWon(buTaxTotal)} 원
                     </div>
                   </div>
+
+                  {/* ③ 세전 월급 */}
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-200 rounded-full w-4 h-4 flex items-center justify-center shrink-0">③</span>
+                      <span className="text-[10px] font-black text-emerald-800">세전 월급 (① + ②)</span>
+                    </div>
+                    <div className="pl-5 text-[9.5px] text-slate-500 font-semibold leading-snug">
+                      {fmtWon(monthlyNet)} + {fmtWon(buTaxTotal)}
+                    </div>
+                    <div className="pl-5 tabular-nums text-[12px] font-black text-emerald-900 bg-emerald-100 rounded-md px-2 py-0.5 inline-block w-fit">
+                      = {fmtWon(buGross)} 원
+                    </div>
+                  </div>
+
+                  {/* ④ 통상시급 역산 */}
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-200 rounded-full w-4 h-4 flex items-center justify-center shrink-0">④</span>
+                      <span className="text-[10px] font-black text-emerald-800">통상시급 (문서용 · 역산)</span>
+                    </div>
+                    {(() => {
+                      const annualH = WAGE_HOURS.ANNUAL_LEAVE;
+                      const base = (weeklyWeekdayDays > 0)
+                        ? calcWageBase(dailyH, weeklyWeekdayDays, weeklyWeekendDays)
+                        : null;
+                      const basicH = base ? base.monthlyBasicH : WAGE_HOURS.BASIC;
+                      const otH    = base ? base.monthlyOvertimeGainedH : WAGE_HOURS.OVERTIME;
+                      const holH   = base ? base.monthlyHolidayGainedH  : WAGE_HOURS.HOLIDAY;
+                      const divisor = basicH + otH + holH + annualH;
+                      return (
+                        <>
+                          <div className="pl-5 text-[9.5px] text-slate-500 font-semibold leading-snug">
+                            {fmtWon(buGross)} ÷ {divisor.toFixed(2)}h
+                          </div>
+                          <div className="pl-5 tabular-nums text-[12px] font-black text-slate-800">
+                            = {fmtWon(buOrdinaryHourly)} 원
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+
+                  {/* ⑤ 8항목 분해 */}
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-200 rounded-full w-4 h-4 flex items-center justify-center shrink-0">⑤</span>
+                      <span className="text-[10px] font-black text-emerald-800">8항목 분해</span>
+                    </div>
+                    {(() => {
+                      const annualH = WAGE_HOURS.ANNUAL_LEAVE;
+                      const base = (weeklyWeekdayDays > 0)
+                        ? calcWageBase(dailyH, weeklyWeekdayDays, weeklyWeekendDays)
+                        : null;
+                      const basicH = base ? base.monthlyBasicH : WAGE_HOURS.BASIC;
+                      const otH    = base ? base.monthlyOvertimeGainedH : WAGE_HOURS.OVERTIME;
+                      const holH   = base ? base.monthlyHolidayGainedH  : WAGE_HOURS.HOLIDAY;
+                      return (
+                        <div className="pl-5 grid grid-cols-2 gap-x-3 gap-y-0.5 text-[9.5px]">
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-500 font-semibold">기본급 <span className="text-slate-400">{basicH.toFixed(1)}h</span></span>
+                            <span className="tabular-nums font-black text-slate-700">{fmtWon(buBasic)} 원</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-500 font-semibold">연장 <span className="text-slate-400">{otH.toFixed(2)}h</span></span>
+                            <span className="tabular-nums font-black text-slate-700">{fmtWon(buOvertime)} 원</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-500 font-semibold">휴일 <span className="text-slate-400">{holH.toFixed(1)}h</span></span>
+                            <span className="tabular-nums font-black text-slate-700">{fmtWon(buHoliday)} 원</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-500 font-semibold">연차 <span className="text-slate-400">{annualH.toFixed(1)}h</span></span>
+                            <span className="tabular-nums font-black text-slate-700">{fmtWon(buAnnualLeave)} 원</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* 구분선 */}
+                  <div className="border-t border-emerald-200" />
 
                   {/* 적용 버튼 */}
                   <button
@@ -4666,7 +4743,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     className="w-full py-1.5 rounded-md bg-gradient-to-r from-emerald-500 to-indigo-500 text-white text-[11px] font-black shadow-sm hover:brightness-110 transition-all cursor-pointer"
                     title="이 세전 금액을 임금 카드의 세전 월급 입력란에 자동 채움 · 기존 임금구조 8항목 재분배 트리거"
                   >
-                    이 값으로 세전 월급 반영 ({fmtWon(buGross)}원)
+                    이 값으로 세전 월급 반영 ({fmtWon(buGross)} 원)
                   </button>
                 </div>
               )}
