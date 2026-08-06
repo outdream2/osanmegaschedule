@@ -444,6 +444,8 @@ export const ReturnListPanel: React.FC = () => {
   const [returnLoading, setReturnLoading] = useState(false);
   const [returnCycleMin, setReturnCycleMin] = useState<number>(90);
   const [returnSalesMax, setReturnSalesMax] = useState<number>(5);
+  // 2026-08-06 · 3개월 판매 조건 신규 (사용자 요청 · 반품필요 반응형 UI)
+  const [returnSalesQuarterMax, setReturnSalesQuarterMax] = useState<number>(15);
   // 2026-07-31 · 사용자 요청 · 공급사 검색 필터 (부분일치 · 대소문자 무시)
   const [returnSupplierSearch, setReturnSupplierSearch] = useState<string>("");
   type ReturnCategoryFilter = "전체" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타";
@@ -535,7 +537,7 @@ export const ReturnListPanel: React.FC = () => {
       });
       const filtered = items.filter(x => {
         if (x.current_stock <= 0) return false;
-        if (x.purchase_cycle != null && x.purchase_cycle >= returnCycleMin && x.sale_qty_cycle <= returnSalesMax) return true;
+        if (x.purchase_cycle != null && x.purchase_cycle >= returnCycleMin && x.sale_qty_cycle <= returnSalesMax && (x.sale_qty_90d ?? 0) <= returnSalesQuarterMax) return true;
         return false;
       });
       filtered.sort((a, b) => (b.purchase_cycle ?? 0) - (a.purchase_cycle ?? 0));
@@ -707,29 +709,39 @@ export const ReturnListPanel: React.FC = () => {
             );
           })()}
         </div>
-        <label className="inline-flex items-center gap-1.5 text-[11px] text-slate-600">
-          <span className="font-medium text-slate-500">매입주기</span>
-          <span className="text-slate-400 font-semibold">≥</span>
-          <input
-            type="number"
-            value={returnCycleMin}
-            onChange={e => setReturnCycleMin(Math.max(0, Number(e.target.value) || 0))}
-            className="w-14 h-7 px-2 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 tabular-nums text-right transition"
-          />
-          <span className="text-slate-500">일</span>
-        </label>
-        <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">AND</span>
-        <label className="inline-flex items-center gap-1.5 text-[11px] text-slate-600">
-          <span className="font-medium text-slate-500">최근한달판매</span>
-          <span className="text-slate-400 font-semibold">≤</span>
-          <input
-            type="number"
-            value={returnSalesMax}
-            onChange={e => setReturnSalesMax(Math.max(0, Number(e.target.value) || 0))}
-            className="w-14 h-7 px-2 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 tabular-nums text-right transition"
-          />
-          <span className="text-slate-500">개</span>
-        </label>
+        {/* 2026-08-06 · 반응형 · 3조건 한 줄 강제 · nowrap 그룹 · shrink-0 (사용자 요청) */}
+        <div className="flex items-center gap-1.5 flex-nowrap shrink-0 basis-full sm:basis-auto">
+          <label className="inline-flex items-center gap-1 text-[11px] text-slate-600 shrink-0">
+            <span className="font-medium text-slate-500">매입주기</span>
+            <input
+              type="number"
+              value={returnCycleMin}
+              onChange={e => setReturnCycleMin(Math.max(0, Number(e.target.value) || 0))}
+              className="w-11 h-7 px-1.5 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 tabular-nums text-right transition"
+            />
+            <span className="text-slate-500 whitespace-nowrap">일 ↑</span>
+          </label>
+          <label className="inline-flex items-center gap-1 text-[11px] text-slate-600 shrink-0">
+            <span className="font-medium text-slate-500">1M판매</span>
+            <input
+              type="number"
+              value={returnSalesMax}
+              onChange={e => setReturnSalesMax(Math.max(0, Number(e.target.value) || 0))}
+              className="w-11 h-7 px-1.5 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 tabular-nums text-right transition"
+            />
+            <span className="text-slate-500 whitespace-nowrap">개 ↑</span>
+          </label>
+          <label className="inline-flex items-center gap-1 text-[11px] text-slate-600 shrink-0">
+            <span className="font-medium text-slate-500">3M판매</span>
+            <input
+              type="number"
+              value={returnSalesQuarterMax}
+              onChange={e => setReturnSalesQuarterMax(Math.max(0, Number(e.target.value) || 0))}
+              className="w-11 h-7 px-1.5 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 tabular-nums text-right transition"
+            />
+            <span className="text-slate-500 whitespace-nowrap">개 ↑</span>
+          </label>
+        </div>
         {/* 분류 세그먼트 필터 */}
         <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
           {(["전체", "위탁", "선결제", "60일회전", "90일회전", "기타"] as const).map(cat => (
