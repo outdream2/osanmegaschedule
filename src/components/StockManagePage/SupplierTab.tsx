@@ -115,6 +115,15 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   const toggleSupplierGroup = (g: SupplierGroup) => setSupplierGroupCollapsed(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
   const isSupplierGroupCollapsed = (g: SupplierGroup) => supplierGroupCollapsed.has(g);
 
+  // 합계 행 접기/펼치기 (사용자 요청 · 2026-08-06 · T-TEST-매입이력-합계접기)
+  //   · localStorage 저장 · 다음 방문 시 상태 유지
+  const [totalsCollapsed, setTotalsCollapsed] = useState<boolean>(() => {
+    try { return localStorage.getItem("megatown_supplier_totals_collapsed") === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("megatown_supplier_totals_collapsed", totalsCollapsed ? "1" : "0"); } catch { /* noop */ }
+  }, [totalsCollapsed]);
+
   // 좌우 패널 폭
   const [supplierPanelWidth, setSupplierPanelWidth] = useState<number>(() => {
     const defaultW = typeof window !== "undefined" ? Math.floor(window.innerWidth * 0.6) : 800;
@@ -521,9 +530,30 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {/* 합계 요약 행 · 필터/제한된 visible 공급사 기준 */}
+              {/* 합계 요약 행 · 필터/제한된 visible 공급사 기준 · 접기/펼치기 (2026-08-06) */}
+              {totalsCollapsed ? (
+                <tr className="bg-slate-50 border-b border-slate-200 text-[11px]">
+                  <td colSpan={99} className="px-3 py-1 text-center">
+                    <button
+                      type="button"
+                      onClick={() => setTotalsCollapsed(false)}
+                      className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-700 font-semibold cursor-pointer"
+                      title="합계 펼치기"
+                    >
+                      <span className="text-[13px]">▾</span> Σ 합계 펼치기 ({displayedXlsxSuppliers.length}개 사)
+                    </button>
+                  </td>
+                </tr>
+              ) : (
               <tr className="bg-slate-100 border-b-2 border-slate-300 font-black text-slate-800 text-[12px]">
-                <td className="text-center py-1.5">Σ</td>
+                <td className="text-center py-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setTotalsCollapsed(true)}
+                    className="text-slate-500 hover:text-slate-700 cursor-pointer text-[10px]"
+                    title="합계 접기"
+                  >▴ Σ</button>
+                </td>
                 <td className="text-center py-1.5 text-slate-500">-</td>
                 <td className="text-left px-3 py-1.5 text-slate-800 font-black">합계 <span className="text-slate-500 font-bold">({displayedXlsxSuppliers.length}개 사)</span></td>
                 {isSupplierGroupCollapsed("stock") ? <td className="bg-slate-100" /> : (
@@ -552,6 +582,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                   )
                 )}
               </tr>
+              )}
               {displayedXlsxSuppliers.map((sup, i) => {
                 const key = `${sup.supplier_code ?? "-"}::${sup.supplier}`;
                 const isExpanded = supplierRowsMap[key] != null;
