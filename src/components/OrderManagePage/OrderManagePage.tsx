@@ -1420,7 +1420,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             {/* ── Row 3: 발주 4조건 체크박스 + 조회/초기화 버튼 ── */}
             {/* 2026-08-06 (2차) · 3조건 무조건 한 줄 · 스크롤 X · 발주조건 라벨/버튼은 필요시 줄바꿈 */}
             <div className="px-3 py-2 border-b border-slate-100 flex flex-wrap items-center gap-x-3 gap-y-2">
-              <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 shrink-0 whitespace-nowrap">발주 조건</span>
+              <span className="text-[13px] font-black tracking-tight text-slate-700 shrink-0 whitespace-nowrap">발주 조건</span>
+              <span className="text-[10.5px] text-slate-400 shrink-0 whitespace-nowrap">체크·입력 시 자동 조회</span>
               {/* 조건 3종 · 한 그룹 · nowrap · 스크롤 X · 아주 컴팩트 (모바일 320px 도 fit) */}
               <div className="flex items-center gap-1.5 flex-nowrap shrink-0">
                 {/* 빈 span (기존 label 제거 · 위 span 사용) */}
@@ -1481,14 +1482,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 </label>
               </div>
 
-              {/* 2026-08-06 · 조회 버튼 제거 · 입력·체크 변경 시 400ms debounce 후 자동 반영 · 조회중 배지로 표시 */}
-              {inlineFiltering ? (
+              {/* 2026-08-06 · 실시간 배지 제거 · 조회중일 때만 표시 (사용자 요청) */}
+              {inlineFiltering && (
                 <span className="ml-auto inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[12px] font-black whitespace-nowrap shrink-0">
                   <Loader2 size={12} className="animate-spin" />조회중...
-                </span>
-              ) : (
-                <span className="ml-auto inline-flex items-center gap-1 h-8 px-3 rounded-md bg-slate-50 text-slate-500 border border-slate-200 text-[11px] font-semibold whitespace-nowrap shrink-0">
-                  <CheckCircle2 size={12} className="text-emerald-500" />실시간
                 </span>
               )}
 

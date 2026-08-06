@@ -687,7 +687,7 @@ export const ReturnListPanel: React.FC = () => {
   // ── 컬럼 리사이저 (메인 반품필요 리스트 테이블) ─────────────────────────
   const { getWidth, resizerProps: colResizerProps } = useColumnResize("returnList", {
     num:          { default: 28,  min: 24, max: 60  },
-    name:         { default: 130, min: 80, max: 300 },
+    name:         { default: 180, min: 100, max: 360 },
     supplier:     { default: 80,  min: 60, max: 200 },
     current_stock:{ default: 56,  min: 40, max: 100 },
     actual_stock: { default: 56,  min: 40, max: 100 },
@@ -845,11 +845,11 @@ export const ReturnListPanel: React.FC = () => {
                           {isReturnGroupCollapsed("info") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}상품정보
                         </span>
                       </th>
-                      {/* 재고 (amber) · 3개 컬럼 · 현재고 · 실재고 · 재고금액 */}
-                      <th colSpan={isReturnGroupCollapsed("stock") ? 1 : 3}
+                      {/* 재고 (amber) · 재고금액 (2026-08-06 · 현재고·실재고 제거) */}
+                      <th colSpan={1}
                         className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-amber-100 transition"
                         onClick={() => toggleReturnGroup("stock")}
-                        title={isReturnGroupCollapsed("stock") ? "재고 펼치기" : "재고 접기"}>
+                        title={isReturnGroupCollapsed("stock") ? "재고금액 펼치기" : "재고금액 접기"}>
                         <span className="inline-flex items-center gap-1">
                           {isReturnGroupCollapsed("stock") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}재고
                         </span>
@@ -900,30 +900,16 @@ export const ReturnListPanel: React.FC = () => {
                           </th>
                         </>
                       )}
-                      {/* 재고 서브 · 현재고 · 실재고 · 재고금액 */}
+                      {/* 재고 서브 · 재고금액만 (2026-08-06 · 현재고·실재고 제거) */}
                       {isReturnGroupCollapsed("stock") ? (
                         <th className="bg-amber-50/20 w-4"></th>
                       ) : (
-                        <>
-                          <th onClick={() => handleReturnSort("current_stock")} title="ERP 현재고 정렬"
-                            className="relative text-right px-1 py-1.5 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none"
-                            style={{ width: getWidth("current_stock"), minWidth: getWidth("current_stock") }}>
-                            현재고{retArrow("current_stock")}
-                            <span {...colResizerProps("current_stock")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                          </th>
-                          <th onClick={() => handleReturnSort("actual_stock")} title="실재고 (창고·매장 합계) 정렬"
-                            className="relative text-right px-1 py-1.5 bg-amber-50/40 text-amber-700 cursor-pointer hover:bg-amber-100 select-none"
-                            style={{ width: getWidth("actual_stock"), minWidth: getWidth("actual_stock") }}>
-                            실재고{retArrow("actual_stock")}
-                            <span {...colResizerProps("actual_stock")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                          </th>
-                          <th onClick={() => handleReturnSort("stock_value")} title="재고금액 정렬"
-                            className="relative text-right px-1 py-1.5 bg-amber-50/40 text-indigo-700 cursor-pointer hover:bg-amber-100 select-none"
-                            style={{ width: getWidth("stock_value"), minWidth: getWidth("stock_value") }}>
-                            재고금액{retArrow("stock_value")}
-                            <span {...colResizerProps("stock_value")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
-                          </th>
-                        </>
+                        <th onClick={() => handleReturnSort("stock_value")} title="재고금액 정렬"
+                          className="relative text-right px-1 py-1.5 bg-amber-50/40 text-indigo-700 cursor-pointer hover:bg-amber-100 select-none"
+                          style={{ width: getWidth("stock_value"), minWidth: getWidth("stock_value") }}>
+                          재고금액{retArrow("stock_value")}
+                          <span {...colResizerProps("stock_value")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
+                        </th>
                       )}
                       {isReturnGroupCollapsed("purchase") ? (
                         <th className="bg-emerald-50/20 w-4"></th>
@@ -1027,23 +1013,13 @@ export const ReturnListPanel: React.FC = () => {
                               </td>
                             </>
                           )}
-                          {/* 재고 그룹 · 현재고 · 실재고 · 재고금액 (2026-08-03) */}
+                          {/* 재고 그룹 · 재고금액만 (2026-08-06 · 현재고·실재고 제거) */}
                           {isReturnGroupCollapsed("stock") ? (
                             <td className="bg-amber-50/20 w-4"></td>
                           ) : (
-                            <>
-                              <td className="text-right px-1 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-amber-50/30 align-top">{x.current_stock.toLocaleString()}</td>
-                              <td className="text-right px-1 py-1.5 tabular-nums font-bold text-[12px] bg-amber-50/30 align-top">
-                                {x.actual_stock != null ? (
-                                  <span className={x.actual_stock !== x.current_stock ? "text-amber-700" : "text-slate-700"}>{x.actual_stock.toLocaleString()}</span>
-                                ) : (
-                                  <span className="text-slate-300">-</span>
-                                )}
-                              </td>
-                              <td className="text-right px-1 py-1.5 tabular-nums font-black text-[12px] text-indigo-700 bg-amber-50/20 align-top">
-                                {x.current_stock > 0 && x.purchase_price > 0 ? `${(x.current_stock * x.purchase_price).toLocaleString()}` : "-"}
-                              </td>
-                            </>
+                            <td className="text-right px-1 py-1.5 tabular-nums font-black text-[12px] text-indigo-700 bg-amber-50/20 align-top">
+                              {x.current_stock > 0 && x.purchase_price > 0 ? `${(x.current_stock * x.purchase_price).toLocaleString()}` : "-"}
+                            </td>
                           )}
                           {isReturnGroupCollapsed("purchase") ? (
                             <td className="bg-emerald-50/20 w-4"></td>
@@ -1056,10 +1032,14 @@ export const ReturnListPanel: React.FC = () => {
                               <span className="font-black text-[12px] text-emerald-700 hover:underline">
                                 {x.purchase_cycle != null ? `${x.purchase_cycle}일` : "-"}
                               </span>
-                              <span className="block text-[10px] text-slate-500 leading-snug mt-0.5 font-normal">
-                                {x.last_purchase_date ?? "-"}
+                              {/* 2026-08-06 · 최근 매입일 · M/D 짧은 포맷 · 최근 매입량 함께 */}
+                              <span className="block text-[10px] text-slate-500 leading-snug mt-0.5 font-normal tabular-nums">
+                                {x.last_purchase_date ? (() => {
+                                  const [_, m, d] = x.last_purchase_date.split("-");
+                                  return `${Number(m)}/${Number(d)}`;
+                                })() : "-"}
                                 {x.last_purchase_qty != null && (
-                                  <> · <span className="tabular-nums">{x.last_purchase_qty}개</span></>
+                                  <> · <span>{x.last_purchase_qty}개</span></>
                                 )}
                               </span>
                             </td>
