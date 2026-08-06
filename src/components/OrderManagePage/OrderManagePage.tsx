@@ -2530,7 +2530,17 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   <th className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-l border-slate-100">발주 액션</th>
                 </tr>
                 <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
-                  <th className="text-center px-0.5 py-1.5 w-6"></th>
+                  {/* 2026-08-06 · 사용자 요청 · 헤더 첫 컬럼 · 전체선택 체크박스 + 텍스트 */}
+                  <th className="text-center px-0.5 py-1.5 w-6">
+                    <button
+                      onClick={toggleAll}
+                      className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-slate-500 hover:text-rose-600 transition cursor-pointer"
+                      title={allChecked ? "전체 선택 해제" : "전체 선택"}
+                    >
+                      {allChecked ? <CheckSquare size={11} className="text-rose-500" /> : <Square size={11} />}
+                      <span>전체</span>
+                    </button>
+                  </th>
                   {isOrderGroupCollapsed("info") ? (
                     <th className="bg-sky-50/20 w-4"></th>
                   ) : (

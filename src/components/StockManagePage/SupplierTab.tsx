@@ -426,8 +426,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
           { k: "saleQty" as SupListSortKey, label: "판매량", color: "emerald", hideWhenNoSale: true, showOnlyWithCycle: false },
           { k: "saleAmount" as SupListSortKey, label: "판매액", color: "emerald", hideWhenNoSale: true, showOnlyWithCycle: false },
           { k: "purchaseQty" as SupListSortKey, label: "매입", color: "amber", hideWhenNoSale: false, showOnlyWithCycle: false },
-          { k: "avgCycleDays" as SupListSortKey, label: "주기", color: "amber", hideWhenNoSale: false, showOnlyWithCycle: true },
-          { k: "itemCount" as SupListSortKey, label: "상품수", color: "slate", hideWhenNoSale: false, showOnlyWithCycle: false },
+          // 2026-08-06 · 사용자 요청 · 주기·상품수 정렬 옵션 제거
           { k: "supplier" as SupListSortKey, label: "공급사명", color: "sky", hideWhenNoSale: false, showOnlyWithCycle: false },
         ]).filter(o => !(hideSaleColumns && o.hideWhenNoSale) && !(o.showOnlyWithCycle && !showCycleColumn)).map(o => {
           const active = supListSort.key === o.k;
