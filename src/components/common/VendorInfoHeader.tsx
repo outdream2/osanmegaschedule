@@ -21,6 +21,7 @@ import {
   TrendingUp, TrendingDown, Minus, Pencil,
 } from "lucide-react";
 import { VendorCategoryBadge } from "./VendorCategoryBadge";
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -121,30 +122,44 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
 
   const pad = dense ? "p-2.5" : "p-3";
 
+  // 2026-08-06 · 표시명: (주)·주식회사·(vat미포함) 등 부가정보 제거
+  // 2026-08-06 · vat_included 자동 추정: 이름에 "vat미포함"/"VAT미포함" 이 있으면 false 로 override
+  const rawName = vendor.company_name ?? "";
+  const displayName = displayVendorName(rawName);
+  const nameHintsVatExcluded = /vat\s*(미포함|별도|없음)/i.test(rawName);
+  const effectiveVatIncluded: boolean | null =
+    vendor.vat_included === true ? true
+    : vendor.vat_included === false ? false
+    : nameHintsVatExcluded ? false
+    : null;
+
   return (
     <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${pad} flex flex-col gap-2.5 ${className}`}>
       {/* ── 공급사 헤더 라인 ── */}
       <div className="flex items-start gap-2 flex-wrap">
         <Building2 size={dense ? 14 : 16} className="text-emerald-600 shrink-0 mt-0.5" />
         <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-          {/* 공급사명 · 분류 · 사업자번호 */}
+          {/* 공급사명 · 분류 · 사업자번호 · 2026-08-06 · 정제 이름 사용 */}
           <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-[15px] font-black text-slate-800 break-words">{vendor.company_name}</h2>
+            <h2 className="text-[15px] font-black text-slate-800 break-words" title={rawName}>{displayName}</h2>
             <VendorCategoryBadge category={vendor.category} />
             {vendor.business_number && (
               <span className="text-[10px] font-semibold text-slate-500 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 tabular-nums">
                 {fmtBizNum(vendor.business_number)}
               </span>
             )}
-            {/* 부가세 포함/불포함 뱃지 */}
-            {vendor.vat_included === true && (
+            {/* 부가세 포함/불포함 뱃지 · vat_included 없으면 이름에서 자동 추론 */}
+            {effectiveVatIncluded === true && (
               <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
                 VAT포함
               </span>
             )}
-            {vendor.vat_included === false && (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-slate-50 text-slate-500 border border-slate-200">
-                VAT불포함
+            {effectiveVatIncluded === false && (
+              <span
+                className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-slate-50 text-slate-500 border border-slate-200"
+                title={vendor.vat_included == null && nameHintsVatExcluded ? "공급사명에서 자동 추론" : undefined}
+              >
+                부가세 별도
               </span>
             )}
           </div>
@@ -206,14 +221,20 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
             </span>
           </span>
           <span className="text-slate-200">·</span>
-          {/* 이번달 + MoM */}
+          {/* 이번달 매입 + MoM + VAT 정보 (2026-08-06 · 사용자 요청) */}
           <span className="inline-flex items-center gap-1.5">
-            <span className="text-slate-400 font-semibold">이번달</span>
+            <span className="text-slate-400 font-semibold">이번달 매입</span>
             <span className={`tabular-nums font-black ${
               momTone === "rose" ? "text-rose-700"
               : momTone === "emerald" ? "text-emerald-700"
               : "text-slate-700"
             }`}>{fmtWon(kpis.thisMonthAmount)}원</span>
+            {effectiveVatIncluded === true && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9.5px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">VAT포함</span>
+            )}
+            {effectiveVatIncluded === false && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9.5px] font-black bg-slate-50 text-slate-500 border border-slate-200">부가세 별도</span>
+            )}
             <span className="text-slate-400 tabular-nums inline-flex items-center gap-0.5">
               {momIcon}{momText}
             </span>
