@@ -885,7 +885,8 @@ export const PurchaseHistoryTab: React.FC = () => {
             dividerColor="emerald"
             wrapLeft={false}
             wrapRight={false}
-            leftClassName="max-h-[60vh] lg:max-h-none"
+            /* 2026-08-06 · T-TEST-매입이력-반응형 · 60vh → calc(100vh-160px) · 필터바 wrap 감안 · 리스트 노출 확대 */
+            leftClassName="max-h-[calc(100vh-160px)] lg:max-h-none"
             className="flex-1 min-h-0 gap-2 lg:gap-0"
             mobileRightAsModal={true}
             mobileModalTitle={selectedVendor?.company_name ?? "공급사 상세"}
