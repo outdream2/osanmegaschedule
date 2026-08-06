@@ -16,6 +16,7 @@ import { CARD_BASE } from "../../styles/tokens";
 import { fmtWonCompact } from "../../lib/format";
 import { EmptyState } from "../common/EmptyState";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
+import { API_LIMITS } from "../../constants/apiLimits";
 
 // ─── 구역 코드 → 카테고리 설명 매핑 ──────────────────────────────────────────
 const ZONE_CATEGORY_MAP: Record<string, string> = (() => {
@@ -87,7 +88,7 @@ const ZoneCategoryContent: React.FC = () => {
 
   useEffect(() => {
     setLoading(true);
-    const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: "50000" });
+    const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: String(API_LIMITS.MAX) });
     if (season) params.set("season", season);
     else if (months > 0) params.set("months", String(months));
     Promise.all([
@@ -451,7 +452,7 @@ const ZoneCategoryContent: React.FC = () => {
           type="button"
           onClick={() => {
             setLoading(true);
-            const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: "50000" });
+            const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: String(API_LIMITS.MAX) });
             if (season) params.set("season", season);
             else if (months > 0) params.set("months", String(months));
             Promise.all([

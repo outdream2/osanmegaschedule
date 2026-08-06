@@ -40,6 +40,7 @@ import { useVendorInfoModal } from "../common/VendorInfoModal";
 //   · 기존 VendorRowCard 리스트 → SupplierTab 좌측 (재고자산·상품수·매입·판매량·판매액 컬럼)
 //   · 우측 상세 (VendorHeaderPanel + PurchaseSubTabs) 는 100% 유지
 import { SupplierTab } from "../StockManagePage/SupplierTab";
+import { API_LIMITS } from "../../constants/apiLimits";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -95,8 +96,7 @@ export const PurchaseHistoryTab: React.FC = () => {
   const { vendors: _rawVendors, loading: vendorsLoading } = useVendors();
   const vendors = useMemo<VendorItem[]>(() => _rawVendors as unknown as VendorItem[], [_rawVendors]);
   const [vendorSearch, setVendorSearch] = useState("");
-  const [vendorCategoryFilter, setVendorCategoryFilter] =
-    useState<"전체" | "위탁" | "선결제" | "60회전" | "90회전" | "기타">("전체");
+  const [vendorCategoryFilter, setVendorCategoryFilter] = useState<string>("전체");
 
   // 좌측 요약 (VendorRowCard 용)
   const [summaryMap, setSummaryMap] = useState<Map<string, VendorSummary>>(new Map());
@@ -295,7 +295,7 @@ export const PurchaseHistoryTab: React.FC = () => {
       fromDate.setDate(fromDate.getDate() - days);
       const fromStr = fromDate.toISOString().slice(0, 10);
       // no_cycle=1 · cycle_days 계산 스킵 → 서버 응답 수십 배 빠름
-      const params = new URLSearchParams({ supplier, from: fromStr, limit: "5000", no_cycle: "1" });
+      const params = new URLSearchParams({ supplier, from: fromStr, limit: String(API_LIMITS.LARGE), no_cycle: "1" });
       const res = await fetch(`/api/purchase-details?${params}`);
       if (!res.ok) throw new Error(String(res.status));
       const j = await res.json();

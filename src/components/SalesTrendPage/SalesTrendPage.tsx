@@ -16,6 +16,7 @@ import { getZoneLabel } from "../../constants/zoneLabels";
 import { fmtWon } from "../../lib/format";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
+import { API_LIMITS } from "../../constants/apiLimits";
 // 구역 코드 → 카테고리 설명 매핑 (매장 구역도의 ZONE_DEFS 그대로 사용)
 //   real_map 형식 예: "1A", "1B", "2A", "9B", "22" 등
 //   ZONE_DEFS 의 num + section 으로 매칭 · subA/subB 있으면 side 로 세분화
@@ -895,7 +896,7 @@ const SupplierTrendTab: React.FC<{
     setLoading(true);
     (async () => {
       try {
-        const params = new URLSearchParams({ limit: "500" });
+        const params = new URLSearchParams({ limit: String(API_LIMITS.MEDIUM) });
         if (season) params.set("season", season);
         else if (periodMonths > 0) params.set("months", String(periodMonths));
         const res = await fetch(`/api/stock-manage/supplier-purchases?${params}`);
@@ -943,7 +944,7 @@ const SupplierTrendTab: React.FC<{
     supplierInflightRef.current.add(key);
     setSupplierRowsLoading(prev => { const n = new Set(prev); n.add(key); return n; });
     try {
-      const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: "5000" });
+      const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: String(API_LIMITS.LARGE) });
       if (sup.supplier_code) params.set("supplier_code", sup.supplier_code);
       else if (sup.supplier) params.set("supplier", sup.supplier);
       if (season) params.set("season", season);
@@ -1660,7 +1661,7 @@ const ZoneCategoryContent: React.FC = () => {
 
   useEffect(() => {
     setLoading(true);
-    const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: "50000" });
+    const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: String(API_LIMITS.MAX) });
     if (season) params.set("season", season);
     else if (months > 0) params.set("months", String(months));
     Promise.all([
@@ -1995,7 +1996,7 @@ const ZoneCategoryContent: React.FC = () => {
           type="button"
           onClick={() => {
             setLoading(true);
-            const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: "50000" });
+            const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: String(API_LIMITS.MAX) });
             if (season) params.set("season", season);
             else if (months > 0) params.set("months", String(months));
             Promise.all([
@@ -2187,7 +2188,7 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
   const [season, setSeason] = useState<SeasonKey | null>(null);
   useEffect(() => {
     setLoading(true);
-    const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: "5000" });
+    const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: String(API_LIMITS.LARGE) });
     if (season) params.set("season", season);
     fetch(`/api/stock-manage/top-sales?${params}`)
       .then(r => r.ok ? r.json() : { rows: [] })

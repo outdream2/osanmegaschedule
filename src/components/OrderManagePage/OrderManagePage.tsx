@@ -47,6 +47,7 @@ import { LoadingState } from "../common/LoadingState";
 // T-COMMON-InventoryEditModal · 2026-08-06 · 실재고 입력·편집 공통 모달
 import { InventoryEditModal } from "../common/InventoryEditModal";
 import type { InventoryEditModalInitialValues } from "../common/InventoryEditModal";
+import { useReferenceValues } from "../../hooks/useReferenceValues";
 
 interface OrderRequest {
   id: string;
@@ -115,7 +116,7 @@ interface OrderManagePageProps {
 // ── 발주필요 탭 · 조건 설정 (localStorage 저장) ─────────────────────
 //   · 사용자 요청 (2026-08-03) · 발주필요 상품 필터 조건 커스텀 + 저장
 //   · 페이지 로딩 시 저장된 조건으로 초기화
-type NeedCategoryFilterKey = "all" | "위탁" | "선결제" | "60회전" | "90회전" | "기타";
+type NeedCategoryFilterKey = string; // DB 동적 카테고리 지원 · "all" + 임의 카테고리
 type OrderNeedShortageBasis = "optimal" | "min" | "realStock";
 // 2026-08-03 (#189) · 정렬 기본값 · 매입주기·최근 한달 판매량 필터와 함께 저장
 //   · "sale_month" · 최근 한달 판매량 (top-sales?months 로 enrich)
@@ -190,6 +191,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   initialTopTab,
   hideTopTabs = false,
 }) => {
+  // DB + 하드코딩 병합 reference 값
+  const { vendorCategories: dbVendorCategories } = useReferenceValues();
   const confirm = useConfirm();
 
   // Level-1 탭 (발주 / 매입 / 결제 / 통계) — 2026-08-03 재구성
@@ -1405,26 +1408,27 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             <div className="px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-slate-100 bg-slate-50/40">
               <span className="text-[12px] font-black uppercase tracking-wider text-slate-500 shrink-0">분류</span>
               <div className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-0.5 gap-0.5 flex-wrap">
-                {([
-                  { k: "all"      as NeedCategoryFilter, label: "전체",     activeCls: "bg-slate-100    text-slate-800   border-slate-300"  },
-                  { k: "위탁"      as NeedCategoryFilter, label: "위탁",     activeCls: "bg-violet-50    text-violet-700  border-violet-300" },
-                  { k: "선결제"    as NeedCategoryFilter, label: "선결제",   activeCls: "bg-rose-50      text-rose-700    border-rose-300"   },
-                  { k: "60회전"   as NeedCategoryFilter, label: "60회전",  activeCls: "bg-emerald-50   text-emerald-700 border-emerald-300"},
-                  { k: "90회전"   as NeedCategoryFilter, label: "90회전",  activeCls: "bg-teal-50      text-teal-700    border-teal-300"   },
-                  { k: "기타"      as NeedCategoryFilter, label: "기타",     activeCls: "bg-slate-50     text-slate-700   border-slate-300"  },
-                ]).map(b => {
-                  const active = needCategoryFilter === b.k;
+                {(["all", ...dbVendorCategories] as string[]).map(cat => {
+                  const label = cat === "all" ? "전체" : cat;
+                  const activeCls =
+                    cat === "all"    ? "bg-slate-100  text-slate-800  border-slate-300"
+                    : cat === "위탁"   ? "bg-violet-50  text-violet-700 border-violet-300"
+                    : cat === "선결제" ? "bg-rose-50    text-rose-700   border-rose-300"
+                    : cat === "60회전" ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                    : cat === "90회전" ? "bg-teal-50    text-teal-700   border-teal-300"
+                    : "bg-slate-50   text-slate-700  border-slate-300";
+                  const active = needCategoryFilter === cat;
                   return (
                     <button
-                      key={b.k}
+                      key={cat}
                       type="button"
-                      onClick={() => setNeedCategoryFilter(b.k)}
+                      onClick={() => setNeedCategoryFilter(cat)}
                       className={[
                         "px-3 h-8 rounded-md text-[13px] font-black leading-none border transition-colors cursor-pointer whitespace-nowrap",
-                        active ? b.activeCls : "bg-white text-slate-500 border-transparent hover:text-slate-800 hover:bg-slate-50",
+                        active ? activeCls : "bg-white text-slate-500 border-transparent hover:text-slate-800 hover:bg-slate-50",
                       ].join(" ")}
-                      title={`${b.label} 카테고리만 표시`}
-                    >{b.label}</button>
+                      title={`${label} 카테고리만 표시`}
+                    >{label}</button>
                   );
                 })}
               </div>
@@ -1757,31 +1761,27 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   <div className="flex flex-col gap-1.5">
                     <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider">카테고리 초기값</span>
                     <div className="flex flex-wrap gap-1">
-                      {([
-                        { k: "all"     as NeedCategoryFilterKey, label: "전체" },
-                        { k: "위탁"     as NeedCategoryFilterKey, label: "위탁" },
-                        { k: "선결제"   as NeedCategoryFilterKey, label: "선결제" },
-                        { k: "60회전" as NeedCategoryFilterKey, label: "60회전" },
-                        { k: "90회전" as NeedCategoryFilterKey, label: "90회전" },
-                        { k: "기타"     as NeedCategoryFilterKey, label: "기타" },
-                      ]).map(opt => (
-                        <button
-                          key={opt.k}
-                          type="button"
-                          onClick={() => {
-                            const next = { ...orderNeedConfig, defaultCategory: opt.k };
-                            setOrderNeedConfig(next);
-                            setNeedCategoryFilter(opt.k);
-                            try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(next)); } catch { /**/ }
-                          }}
-                          className={[
-                            "px-2.5 h-7 rounded-md text-[12px] font-bold border transition cursor-pointer",
-                            orderNeedConfig.defaultCategory === opt.k
-                              ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                              : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600",
-                          ].join(" ")}
-                        >{opt.label}</button>
-                      ))}
+                      {(["all", ...dbVendorCategories] as string[]).map(cat => {
+                        const label = cat === "all" ? "전체" : cat;
+                        return (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => {
+                              const next = { ...orderNeedConfig, defaultCategory: cat };
+                              setOrderNeedConfig(next);
+                              setNeedCategoryFilter(cat);
+                              try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(next)); } catch { /**/ }
+                            }}
+                            className={[
+                              "px-2.5 h-7 rounded-md text-[12px] font-bold border transition cursor-pointer",
+                              orderNeedConfig.defaultCategory === cat
+                                ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                                : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600",
+                            ].join(" ")}
+                          >{label}</button>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -2457,9 +2457,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               placeholder="상품·코드·공급사"
               className="text-[11px] border border-slate-200 rounded-md pl-3 pr-3 h-7 w-36 min-w-0 focus:outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 transition"
             />
-            {/* 2026-08-06 · 공급사 분류 필터 · 사용자 요청 */}
+            {/* 2026-08-06 · 공급사 분류 필터 · DB 동적 카테고리 */}
             <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
-              {(["all","위탁","선결제","60회전","90회전","기타"] as const).map(cat => {
+              {(["all", ...dbVendorCategories] as string[]).map(cat => {
                 const active = orderCategoryFilter === cat;
                 const label = cat === "all" ? "전체" : cat;
                 const activeCls =

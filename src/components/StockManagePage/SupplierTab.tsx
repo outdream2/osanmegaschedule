@@ -17,6 +17,7 @@ import { EmptyState } from "../common/EmptyState";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { fmtWonCompact } from "../../lib/format";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
+import { API_LIMITS } from "../../constants/apiLimits";
 
 function fmt(n: number): string {
   if (!Number.isFinite(n)) return "0";
@@ -270,7 +271,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
     supplierInflightRef.current.add(key);
     setSupplierRowsLoading(prev => { const n = new Set(prev); n.add(key); return n; });
     try {
-      const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: "5000" });
+      const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: String(API_LIMITS.LARGE) });
       if (sup.supplier_code) params.set("supplier_code", sup.supplier_code);
       else if (sup.supplier) params.set("supplier", sup.supplier);
       const res = await fetch(`/api/stock-manage/top-sales?${params}`);
@@ -327,7 +328,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ limit: "50000" });
+      const params = new URLSearchParams({ limit: String(API_LIMITS.MAX) });
       if (supplierSeason) params.set("season", supplierSeason);
       else if (supplierMonths > 0) params.set("months", String(supplierMonths));
       const res = await fetch(`/api/stock-manage/supplier-purchases?${params}`);

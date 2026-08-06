@@ -4,6 +4,7 @@
 // 2026-08-04 · 내부 표 UI → 공통 PurchaseHistoryList 컴포넌트로 교체 (사용자 요청 · 통일)
 
 import React, { useEffect, useState } from "react";
+import { API_LIMITS } from "../../constants/apiLimits";
 import { TrendingUp, X as XIcon } from "lucide-react";
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
 
@@ -24,7 +25,7 @@ export const ProductPurchaseHistoryModal: React.FC<{
 
   useEffect(() => {
     setLoading(true); setError(null);
-    const params = new URLSearchParams({ product_code: productCode, limit: "500" });
+    const params = new URLSearchParams({ product_code: productCode, limit: String(API_LIMITS.MEDIUM) });
     fetch(`/api/purchase-details?${params}`)
       .then(r => r.ok ? r.json() : { rows: [] })
       .then(j => setRows(Array.isArray(j.rows) ? j.rows : []))
