@@ -16,6 +16,7 @@
 //   ALTER TABLE inventory_checks ADD COLUMN IF NOT EXISTS store3_zone TEXT;
 
 import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { useSortableTable, type Comparator, type SortDir } from "../hooks/useSortableTable";
 import {
   ScanLine, Loader2, AlertCircle, Package,
   CheckCircle2, Trash2, RotateCcw, Warehouse, Store,
@@ -114,7 +115,6 @@ const Toast: React.FC<ToastProps> = ({ message }) => (
 // ─────────────────────────────────────────────────────────────
 // SortIcon
 // ─────────────────────────────────────────────────────────────
-type SortDir = "asc" | "desc";
 const SortIcon: React.FC<{ active: boolean; dir: SortDir }> = ({ active, dir }) => {
   if (!active) return <ArrowUpDown size={10} className="text-slate-300 ml-0.5 inline" />;
   return dir === "asc"
@@ -193,6 +193,21 @@ const ZoneInput: React.FC<ZoneInputProps> = ({ value, placeholder = "-", accentC
 );
 
 // ─────────────────────────────────────────────────────────────
+// 정렬 비교 함수 (컴포넌트 외부 · 안정 참조)
+// ─────────────────────────────────────────────────────────────
+type ScanSortKey = "addedAt" | "name" | "supplier" | "realMap";
+const SCAN_SORT_CMP: Record<ScanSortKey, Comparator<any>> = {
+  addedAt:  (a, b) => a.addedAt - b.addedAt,
+  name:     (a, b) => a.product.name.localeCompare(b.product.name, "ko"),
+  supplier: (a, b) => ((a.product as any).supplier ?? "").localeCompare(((b.product as any).supplier ?? ""), "ko"),
+  realMap:  (a, b) => {
+    const ra = (a.product as any).realMap ?? (a.product as any).real_map ?? "";
+    const rb = (b.product as any).realMap ?? (b.product as any).real_map ?? "";
+    return String(ra).localeCompare(String(rb), "ko");
+  },
+};
+
+// ─────────────────────────────────────────────────────────────
 // Main Component
 // ─────────────────────────────────────────────────────────────
 export const ScanPage: React.FC<ScanPageProps> = ({
@@ -231,10 +246,13 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   const [saveError, setSaveError]               = useState<string | null>(null);
   const [savedCount, setSavedCount]             = useState<number>(0);
 
-  // ── 정렬
-  type SortKey = "addedAt" | "name" | "supplier" | "realMap";
-  const [sortKey, setSortKey]                   = useState<SortKey>("addedAt");
-  const [sortDir, setSortDir]                   = useState<SortDir>("desc");
+  // ── 정렬 (T30-followup · useSortableTable)
+  const { sorted: sortedRows, sortKey, sortDir, toggleSort: _toggleSort, setSort: _setSort } =
+    useSortableTable<any, ScanSortKey>(rows, "addedAt", SCAN_SORT_CMP, "desc");
+  const handleSort = (k: ScanSortKey) => {
+    if (sortKey === k) _toggleSort(k);
+    else _setSort(k, "desc");
+  };
 
   useEffect(() => { loadZBar(); }, []);
   useEffect(() => {
@@ -473,29 +491,6 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       setSaveStatus("error");
     }
   };
-
-  // ── 정렬
-  const handleSort = (k: SortKey) => {
-    if (sortKey === k) setSortDir(d => d === "asc" ? "desc" : "asc");
-    else { setSortKey(k); setSortDir("desc"); }
-  };
-
-  const sortedRows = useMemo(() => {
-    const sign = sortDir === "asc" ? 1 : -1;
-    return rows.slice().sort((a, b) => {
-      switch (sortKey) {
-        case "addedAt":  return sign * (a.addedAt - b.addedAt);
-        case "name":     return sign * a.product.name.localeCompare(b.product.name, "ko");
-        case "supplier": return sign * ((a.product as any).supplier ?? "").localeCompare(((b.product as any).supplier ?? ""), "ko");
-        case "realMap": {
-          const ra = (a.product as any).realMap ?? (a.product as any).real_map ?? "";
-          const rb = (b.product as any).realMap ?? (b.product as any).real_map ?? "";
-          return sign * String(ra).localeCompare(String(rb), "ko");
-        }
-        default: return 0;
-      }
-    });
-  }, [rows, sortKey, sortDir]);
 
   // 합계 계산 헬퍼
   const total = (r: StockRow): number => {
