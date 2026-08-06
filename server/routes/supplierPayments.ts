@@ -128,6 +128,48 @@ router.get("/api/supplier-payments", async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────
+// GET /api/supplier-payments/latest-per-supplier
+//   · 각 공급사별 최근 결제 1건 (payment_date desc + id desc tiebreak)
+//   · 응답: { rows: [{ supplier_name, latest_payment_date, latest_payment_amount }] }
+//   · PaymentInfoTab 좌측 리스트 · 최근결제일·최근결제액 컬럼용 (T-TEST-공급사리스트-최근결제)
+//   · 서버측 groupBy · N+1 request 회피 (100개 공급사면 100 요청 방지)
+//   · supplier_payments 테이블 없으면 rows: [] 빈 배열 반환 (안전)
+// ─────────────────────────────────────────────────────────────────────
+router.get("/api/supplier-payments/latest-per-supplier", async (_req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("supplier_payments")
+      .select("supplier_name, payment_date, amount, id")
+      .order("payment_date", { ascending: false })
+      .order("id", { ascending: false });
+    if (error) {
+      if (/relation .* does not exist/i.test(error.message)) {
+        return res.json({ rows: [], warning: "supplier_payments 테이블 없음" });
+      }
+      throw new Error(error.message);
+    }
+    // 이미 desc 정렬 · 각 supplier 첫 row 가 최근
+    const map = new Map<string, { latest_payment_date: string; latest_payment_amount: number }>();
+    for (const r of (data ?? []) as any[]) {
+      const nm = String(r?.supplier_name ?? "").trim();
+      if (!nm || map.has(nm)) continue;
+      map.set(nm, {
+        latest_payment_date: String(r?.payment_date ?? ""),
+        latest_payment_amount: Number(r?.amount) || 0,
+      });
+    }
+    const rows = Array.from(map.entries()).map(([supplier_name, v]) => ({
+      supplier_name,
+      ...v,
+    }));
+    return res.json({ rows });
+  } catch (err: any) {
+    console.error("[GET supplier-payments/latest-per-supplier] error:", err.message);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────
 // POST /api/supplier-payments
 //   body: { supplier_name, payment_date, amount, method?, memo?,
 //           created_by?, created_by_id?,
