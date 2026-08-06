@@ -66,6 +66,15 @@ setInterval(async () => {
 }, 60_000);
 
 // ── GET 목록 ─────────────────────────────────────────────────────────────────
+// ── GET /api/vapid-public-key · 2026-08-06 · T-VAPID-Route ─────────────
+//   · 프론트 (StockArrivalPage 익명 푸시 구독) 에서 조회
+//   · VAPID_PUBLIC_KEY env 미설정 시 · 404 (프론트는 silent skip)
+router.get("/api/vapid-public-key", (_req, res) => {
+  const publicKey = process.env.VAPID_PUBLIC_KEY;
+  if (!publicKey) return res.status(404).json({ error: "VAPID_PUBLIC_KEY 미설정" });
+  return res.json({ publicKey });
+});
+
 router.get("/api/stock-arrivals", async (_req, res) => {
   try {
     const { data, error } = await supabase
