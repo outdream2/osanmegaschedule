@@ -1217,6 +1217,19 @@ npm run test        # vitest (필요 시)
 
 ## CHANGELOG · 변경 이력
 
+### 2026-08-06 (5차 · Supabase cap audit 완료 · 잔여 라우터 마이그레이션)
+
+- **fix · 잔여 라우터 3곳 마이그레이션** (커밋 `82ff368`)
+  - purchaseHistory.ts · /api/purchase-history · fetchAllWithRange
+  - stockManage.ts · /api/stock-manage/stock-history · limit 최대 20000 케이스
+  - stockManage.ts · dbCol 정렬 경로 · fetchLimit
+  - inventorySales.ts · balance 2000 (deprecated 안전 조치)
+- **safe (변경 X · 이미 ≤ 1000)**: productArrivals · products · stockReconciliation · stockManage 잔여
+
+- **diag · supplier-purchase-summary** (커밋 `1eddbb9`)
+  - `[supplier-purchase-summary] supplier_name NULL 스킵 30개` 진단 강화
+  - 실패 supplier_code · product_code · 로그 출력 (사용자 조치 가이드)
+
 ### 2026-08-06 (4차 · Supabase cap 우회 확장 + fetchAllWithRange 유틸)
 
 - **feat · server/utils/supabaseFetchAll.ts** 공통 유틸 신규 (커밋 `8b739b5`)
