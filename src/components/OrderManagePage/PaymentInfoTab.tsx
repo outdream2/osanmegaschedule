@@ -909,7 +909,7 @@ export const PaymentInfoTab: React.FC = () => {
                   const bal = Number(v.balance ?? 0);
                   const hasBal = v.balance != null && bal !== 0;
                   const purAmt = purchaseByVendor.get(v.company_name) ?? 0;
-                  const payAmt = paymentByVendor.get(v.company_name) ?? 0;
+                  // payAmt (기간 내 결제) · 2026-08-06 · 사용자 요청 · 표시 제거 · 정렬만 유지
                   // T-TEST-공급사리스트-최근결제 (2026-08-06) · 최근결제일·최근결제액
                   const latestPay = latestPaymentByVendor.get(v.company_name);
                   const latestPayDate = latestPay?.date ?? "";
@@ -951,12 +951,7 @@ export const PaymentInfoTab: React.FC = () => {
                       }`} title={purAmt > 0 ? `최근 ${periodDays}일 매입 ${purAmt.toLocaleString()}원` : "매입 없음"}>
                         {purAmt > 0 ? fmtWonShort(purAmt) : "-"}
                       </span>
-                      {/* 결제 (기간 내) */}
-                      <span className={`w-[52px] text-right text-[11px] font-black tabular-nums shrink-0 ${
-                        payAmt > 0 ? "text-sky-700" : "text-slate-300"
-                      }`} title={payAmt > 0 ? `최근 ${periodDays}일 결제 ${payAmt.toLocaleString()}원` : "결제 없음"}>
-                        {payAmt > 0 ? fmtWonShort(payAmt) : "-"}
-                      </span>
+                      {/* 기간 내 결제 셀 · 2026-08-06 · 사용자 요청 · 제거 */}
                       {/* T-TEST-공급사리스트-최근결제 (2026-08-06) · 최근결제일 · MM-DD 축약 */}
                       <span className={`w-[48px] text-right text-[10px] font-semibold tabular-nums shrink-0 ${
                         latestPayDateShort ? "text-slate-600" : "text-slate-300"
@@ -1713,10 +1708,7 @@ const VendorListHeader: React.FC<{
     <span className="w-[52px] shrink-0">
       <SortHeaderBtn label="매입" columnKey="purchase" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-emerald-700" title="선택 기간 내 매입 합계 · 클릭하여 정렬" />
     </span>
-    {/* 결제 (기간 내) */}
-    <span className="w-[52px] shrink-0">
-      <SortHeaderBtn label="결제" columnKey="payment" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-sky-700" title="선택 기간 내 결제 합계 · 클릭하여 정렬" />
-    </span>
+    {/* 기간 내 결제 컬럼 · 2026-08-06 · 사용자 요청 · 제거 (최근결제일·결제액이 대체) */}
     {/* 최근결제일 · T-TEST-공급사리스트-최근결제 (2026-08-06) */}
     <span className="w-[48px] shrink-0">
       <SortHeaderBtn label="결제일" columnKey="latestPaymentDate" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-slate-600" title="최근 결제일 · 클릭하여 정렬" />
