@@ -704,6 +704,33 @@ function isMonthlyWageType(contractType: string): boolean {
 }
 
 /**
+ * 통상시급 자동 반복 근사 · 세후(target)를 세전 - 4대보험 (소득세 제외) 로 맞춤
+ * @param target 목표 세후 (근무조건 · 시급 × 주시간 × 4.345)
+ * @param wdRate 주중시급 (fallback 시작값)
+ * @param extras 선택 항목 합계 (휴일연장 + 야간 + 식대 + 차량)
+ * @returns 통상시급 (소수점 1자리)
+ */
+function computeAutoHourly(target: number, wdRate: number, extras: number): number {
+  if (target <= 0) return Math.round(Math.max(0, wdRate) * 10) / 10;
+  let h = wdRate > 0 ? wdRate : 25000;
+  for (let i = 0; i < 10; i++) {
+    const basic = h * WAGE_HOURS.BASIC;
+    const g = h * WAGE_DIVISOR + extras;
+    const p = basic * INSURANCE_RATES.PENSION;
+    const hh = basic * INSURANCE_RATES.HEALTH;
+    const lt = hh * INSURANCE_RATES.LTC_RATIO;
+    const em = basic * INSURANCE_RATES.EMPLOYMENT;
+    const insSum = p + hh + lt + em;
+    const net = g - insSum;
+    const delta = target - net;
+    if (Math.abs(delta) < 50) break;
+    h += delta / WAGE_DIVISOR;
+    if (h < 0) h = 0;
+  }
+  return Math.round(h * 10) / 10;
+}
+
+/**
  * T-CTR-WageByType · 계약유형별 임금 5단계 계산
  *
  * 시급제 (알바·일용):
@@ -2658,6 +2685,10 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   // 2026-08-07 · 통상시급 override (null 이면 자동 = 주중시급)
   const [wageHourlyOverride, setWageHourlyOverride] = useState<number | null>(null);
 
+  // 2026-08-07 · 통상시급/근무조건/선택항목 변경 시 · form.wageComponents 4자동항목 자동 반영
+  //   · 왼쪽 임금구성표 (통상시급×시간) → 오른쪽 계약서 프리뷰 (form.wageComponents.*.amount) 동기화
+  //   · WageComponentsTable · basicSalary·fixedOvertime·fixedHoliday·fixedAnnualLeave 참조
+
 
   // T-W (2026-08-05) · 좌측 카드 접기/펴기 상태 · localStorage 지속
   const [cardCollapsed, setCardCollapsed] = useState<CardCollapsedMap>(() => loadCardCollapsedMap());
@@ -3109,6 +3140,60 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       weeklyDays,
     );
   }, [form.startTime, form.endTime, form.breakMinutes, weeklyDays]);
+
+  // 2026-08-07 · 통상시급 → form.wageComponents 4자동항목 자동 동기화 (프리뷰 반영)
+  useEffect(() => {
+    const dailyH = monthlyCalc ? monthlyCalc.dailyMinutes / 60 : 0;
+    const wd = Number(form.weekdayHourly) || 0;
+    const we = Number(form.weekendHourly) || wd;
+    const wdH = dailyH * weeklyWeekdayDays;
+    const weH = dailyH * weeklyWeekendDays;
+    const weeklyPay = Math.round(wdH * wd + weH * we);
+    const autoMonthlyNet = Math.round(weeklyPay * 4.345);
+    const extras = (Number(form.wageComponents.fixedHolidayOvertime?.amount) || 0)
+                 + (Number(form.wageComponents.fixedNight?.amount) || 0)
+                 + (Number(form.wageComponents.mealAllowance) || 0)
+                 + (Number(form.wageComponents.vehicleAllowance) || 0);
+    const autoHourly = computeAutoHourly(autoMonthlyNet, wd, extras);
+    const hourly = wageHourlyOverride != null && wageHourlyOverride > 0
+      ? Math.round(wageHourlyOverride * 10) / 10
+      : autoHourly;
+    if (hourly <= 0) return;
+    const basicAmt    = Math.round(hourly * WAGE_HOURS.BASIC);
+    const overtimeAmt = Math.round(hourly * WAGE_HOURS.OVERTIME);
+    const holidayAmt  = Math.round(hourly * WAGE_HOURS.HOLIDAY);
+    const annualAmt   = Math.round(hourly * WAGE_HOURS.ANNUAL_LEAVE);
+    setForm(prev => {
+      const wc = prev.wageComponents;
+      if (
+        wc.basicSalary?.amount === basicAmt
+        && wc.fixedOvertime?.amount === overtimeAmt
+        && wc.fixedHoliday?.amount === holidayAmt
+        && wc.fixedAnnualLeave?.amount === annualAmt
+      ) return prev;
+      return {
+        ...prev,
+        wageComponents: {
+          ...wc,
+          basicSalary:      { ...wc.basicSalary,      amount: basicAmt },
+          fixedOvertime:    { ...wc.fixedOvertime,    amount: overtimeAmt },
+          fixedHoliday:     { ...wc.fixedHoliday,     amount: holidayAmt },
+          fixedAnnualLeave: { ...wc.fixedAnnualLeave, amount: annualAmt },
+        },
+      };
+    });
+  }, [
+    wageHourlyOverride,
+    form.weekdayHourly,
+    form.weekendHourly,
+    weeklyWeekdayDays,
+    weeklyWeekendDays,
+    monthlyCalc,
+    form.wageComponents.fixedHolidayOvertime?.amount,
+    form.wageComponents.fixedNight?.amount,
+    form.wageComponents.mealAllowance,
+    form.wageComponents.vehicleAllowance,
+  ]);
 
   // 자동계산 적용 → 기본급 시간·분 세팅
   const applyMonthlyHoursToBasic = useCallback(() => {
@@ -4581,36 +4666,13 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           //   ③ 세전 = 통상시급 × 296.94 (= 4자동항목 합)
           //   ④ 공제 = 4대보험 + 소득세 (세전 기준 실제 계산)
           //   ⑤ 세후 = 세전 - 공제
-          // autoHourly · 반복 근사로 희망월수령액을 세후로 맞추는 통상시급 자동 산출
-          //   · 실수령 = 세전 - 4대보험 (소득세 제외) 방식과 일치 · 오차 <50원 수렴
+          // autoHourly · computeAutoHourly 유틸 · 반복 근사 · 오차 <50원 수렴
           //   · 사용자 수동 편집 시 wageHourlyOverride 우선
-          let autoHourly = 0;
-          if (autoMonthlyNet > 0) {
-            const holidayOtAmt0 = Number(form.wageComponents.fixedHolidayOvertime?.amount) || 0;
-            const nightAmt0     = Number(form.wageComponents.fixedNight?.amount) || 0;
-            const meal0         = Number(form.wageComponents.mealAllowance) || 0;
-            const vehicle0      = Number(form.wageComponents.vehicleAllowance) || 0;
-            const extras0       = holidayOtAmt0 + nightAmt0 + meal0 + vehicle0;
-            let h = wd > 0 ? wd : 25000;
-            for (let i = 0; i < 10; i++) {
-              const basic = h * WAGE_HOURS.BASIC;
-              const g = h * WAGE_DIVISOR + extras0;
-              const p = basic * INSURANCE_RATES.PENSION;
-              const hh = basic * INSURANCE_RATES.HEALTH;
-              const lt = hh * INSURANCE_RATES.LTC_RATIO;
-              const em = basic * INSURANCE_RATES.EMPLOYMENT;
-              const insSum0 = p + hh + lt + em;
-              // 실수령 = 세전 - 4대보험 (소득세 제외 · monthlyNet 산식과 동일)
-              const net = g - insSum0;
-              const delta = autoMonthlyNet - net;
-              if (Math.abs(delta) < 50) break;
-              h += delta / WAGE_DIVISOR;
-              if (h < 0) h = 0;
-            }
-            autoHourly = Math.round(h * 10) / 10;
-          } else {
-            autoHourly = Math.round(wd * 10) / 10;
-          }
+          const extras0 = (Number(form.wageComponents.fixedHolidayOvertime?.amount) || 0)
+                        + (Number(form.wageComponents.fixedNight?.amount) || 0)
+                        + (Number(form.wageComponents.mealAllowance) || 0)
+                        + (Number(form.wageComponents.vehicleAllowance) || 0);
+          const autoHourly = computeAutoHourly(autoMonthlyNet, wd, extras0);
           const hourly = wageHourlyOverride != null && wageHourlyOverride > 0
             ? Math.round(wageHourlyOverride * 10) / 10  // 소수점 1자리
             : autoHourly;
