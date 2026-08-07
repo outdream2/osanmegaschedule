@@ -118,3 +118,6 @@ export const DEFAULT_COMPANY_INFO: CompanyInfo = {
   regNo: "",
   representativeName: "강남성",
 };
+
+// T-Contract-PaymentDay · 근로계약서 임금지급일 · settings "payment_day_text" key
+export const DEFAULT_PAYMENT_DAY_TEXT = "당월 01일부터 당월 말일 까지 근로한 부분에 대하여 당월 말일에 '을' 본인 명의의 통장으로 지급한다.";

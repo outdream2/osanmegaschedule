@@ -31,7 +31,7 @@ import jsPDF from "jspdf";
 
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession, Employee } from "../../types";
-import { type CompanyInfo, DEFAULT_COMPANY_INFO } from "../../types";
+import { type CompanyInfo, DEFAULT_COMPANY_INFO, DEFAULT_PAYMENT_DAY_TEXT } from "../../types";
 import {
   loadContractSettings,
   DEFAULT_CONTRACT_SETTINGS,
@@ -1821,10 +1821,11 @@ interface ContractPreviewProps {
   employeeStampUrl: string | null;
   onOpenSign: (key: SignKey) => void;
   onClearSign: (key: SignKey) => void;
+  paymentDayText: string;
 }
 
 const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>(({
-  form, signUrls, employerStampUrl, employeeStampUrl, onOpenSign, onClearSign,
+  form, signUrls, employerStampUrl, employeeStampUrl, onOpenSign, onClearSign, paymentDayText,
 }, ref) => {
   const workDayText = DAYS.filter(d => form.workDays[d]).join("·") || "(선택 안 됨)";
 
@@ -2095,7 +2096,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
           className="mt-2 rounded-sm px-2 py-1 text-[11.5px]"
           style={{ backgroundColor: HEX.amberSoft, border: `1px solid ${HEX.amberBd}` }}
         >
-          <b>2. 임금지급일:</b> {form.paymentDayText}
+          <b>2. 임금지급일:</b> {paymentDayText}
         </div>
       </Section>
 
@@ -2603,6 +2604,13 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const { value: companyInfo, loaded: companyInfoLoaded } = useKvSetting<CompanyInfo>({
     key: "company_info",
     defaultValue: DEFAULT_COMPANY_INFO,
+  });
+
+  // T-Contract-PaymentDay · 임금지급일 · settings "payment_day_text" key · 계약서 렌더링에 반영
+  const { value: paymentDayText } = useKvSetting<string>({
+    key: "payment_day_text",
+    defaultValue: DEFAULT_PAYMENT_DAY_TEXT,
+    sanitize: (raw) => (typeof raw === "string" && raw.trim() ? raw : null),
   });
 
   // ── draft 로드 · 마이그레이션 (신규 필드 default) ──
@@ -4506,60 +4514,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           );
         })()}
 
-        {/* 시급 조정 · 지급일 통합 */}
-        <div className={cardInner}>
-          <div className={cardGroupLabel}>시급 조정 · 지급일</div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">주중 시급</label>
-                <button
-                  type="button"
-                  onClick={applyDefaultHourly}
-                  className="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 hover:underline cursor-pointer"
-                  title="설정 > 시급 설정 에서 등록한 직급 기본 시급 로드"
-                >
-                  직급 기본
-                </button>
-              </div>
-              <div className="relative">
-                <input type="text" inputMode="numeric" value={form.weekdayHourly}
-                  onChange={(e) => {
-                    // T-CTR-WageLoad-Deep · 수동 입력 시 자동 로드 flag 리셋 → 이후 직군 변경 시 덮어쓰지 않음
-                    wageAutoLoadedRef.current = false;
-                    lastAutoWageRef.current = null;
-                    upd("weekdayHourly", e.target.value.replace(/[^0-9]/g, ""));
-                  }}
-                  className="w-full bg-white border border-slate-200 rounded-lg pl-3 pr-7 py-2 text-[13px] text-slate-800 font-black focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition text-right"
-                />
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-semibold pointer-events-none">원</span>
-              </div>
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">주말 시급</label>
-              <div className="relative">
-                <input type="text" inputMode="numeric" value={form.weekendHourly}
-                  onChange={(e) => {
-                    // T-CTR-WageLoad-Deep · 수동 입력 시 자동 로드 flag 리셋
-                    wageAutoLoadedRef.current = false;
-                    lastAutoWageRef.current = null;
-                    upd("weekendHourly", e.target.value.replace(/[^0-9]/g, ""));
-                  }}
-                  className="w-full bg-white border border-slate-200 rounded-lg pl-3 pr-7 py-2 text-[13px] text-slate-800 font-black focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition text-right"
-                />
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-semibold pointer-events-none">원</span>
-              </div>
-            </div>
-          </div>
-          <div>
-            <label className={fldLabel}>지급일</label>
-            <input type="text" value={form.paymentDayText} onChange={(e) => upd("paymentDayText", e.target.value)}
-              placeholder="예: 당월 01일 ~ 당월 말일, 당월 말일 지급"
-              className={fldInput}
-            />
-          </div>
-        </div>
-
         {/* 임금 구성표 · T-V (2026-08-05) · 항상 표시 · weekdayHourly 로 수식 계산 · T-CTR-7 · 체크박스 활성화 */}
         <WageComponentsForm
           wage={form.wageComponents}
@@ -4808,6 +4762,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           employeeStampUrl={employeeStampUrl}
           onOpenSign={openSign}
           onClearSign={clearSign}
+          paymentDayText={paymentDayText}
         />
       </div>
 

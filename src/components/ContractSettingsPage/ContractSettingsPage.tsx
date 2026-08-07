@@ -33,7 +33,7 @@ import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { useSettings, defaultWageForPosition, type WageRate } from "../../hooks/useSettings";
 import { useKvSetting } from "../../hooks/useKvSetting";
-import { type CompanyInfo, DEFAULT_COMPANY_INFO } from "../../types";
+import { type CompanyInfo, DEFAULT_COMPANY_INFO, DEFAULT_PAYMENT_DAY_TEXT } from "../../types";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 하위호환 · 기존 export (ContractWriterPage 가 import 하므로 유지)
@@ -458,6 +458,19 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
     defaultValue: DEFAULT_COMPANY_INFO,
   });
 
+  // ── 임금지급일 · 서버 저장 (settings "payment_day_text" key)
+  //   · ContractWriterPage 렌더링 (2. 임금지급일) 에 직접 반영
+  const {
+    value: paymentDayText,
+    setValue: setPaymentDayText,
+    loaded: paymentDayLoaded,
+    saveNow: savePaymentDayNow,
+  } = useKvSetting<string>({
+    key: "payment_day_text",
+    defaultValue: DEFAULT_PAYMENT_DAY_TEXT,
+    sanitize: (raw) => (typeof raw === "string" && raw.trim() ? raw : null),
+  });
+
   // ── 기존 localStorage(contractJobWages:v1) 마이그레이션 (1회)
   //   저장된 값이 wageRates 에 없으면 병합 후 삭제
   useEffect(() => {
@@ -689,6 +702,10 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
       // 1. 회사 정보 즉시 저장
       const ciOk = await saveCompanyInfoNow();
       if (!ciOk) errors.push("회사 정보 서버 저장 실패");
+
+      // 1-b. 임금지급일 즉시 저장
+      const pdOk = await savePaymentDayNow();
+      if (!pdOk) errors.push("임금지급일 서버 저장 실패");
 
       // 2. 시급(wageRates) 포함 전체 settings 즉시 저장
       const wsOk = await saveSettingsNow();
@@ -937,11 +954,27 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                   className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
                 />
               </div>
+              {/* 임금지급일 · 계약서 "2. 임금지급일" 항목에 그대로 표시 */}
+              <div className="flex flex-col gap-1 col-span-2">
+                <label className="text-[11px] font-bold text-slate-500">
+                  임금지급일 <span className="text-slate-400 font-normal">(근로계약서에 자동 반영)</span>
+                </label>
+                <textarea
+                  value={paymentDayText}
+                  onChange={(e) => setPaymentDayText(e.target.value)}
+                  placeholder="예) 당월 01일부터 당월 말일 까지 근로한 부분에 대하여 당월 말일에 '을' 본인 명의의 통장으로 지급한다."
+                  disabled={!paymentDayLoaded}
+                  rows={2}
+                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50 resize-none"
+                />
+              </div>
               {/* 회사 정보 개별 저장 버튼 */}
               <div className="col-span-2 flex justify-end pt-1">
                 <button
                   type="button"
-                  onClick={saveCompanyInfoNow}
+                  onClick={async () => {
+                    await Promise.all([saveCompanyInfoNow(), savePaymentDayNow()]);
+                  }}
                   disabled={!companyInfoLoaded || companyInfoSaveState === "saving"}
                   className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-[12px] font-black shadow-sm transition-colors cursor-pointer"
                 >
