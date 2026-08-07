@@ -584,8 +584,9 @@ function computeIncomeTax(
   dependents: number = 1,
   withholdingRate: WithholdingRate = DEFAULT_WITHHOLDING_RATE,
   childrenCount: number = 0,
+  extraDeduction: number = 0,
 ): { incomeTax: number; localTax: number; total: number } {
-  return payrollCalcMonthlyIncomeTax(Math.max(0, gross), 0, dependents, 0, withholdingRate, childrenCount);
+  return payrollCalcMonthlyIncomeTax(Math.max(0, gross), Math.max(0, extraDeduction), dependents, 0, withholdingRate, childrenCount);
 }
 
 /** 실수령액 = 세전 - 4대보험 - 소득세 - 지방소득세 */
@@ -2703,6 +2704,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const [withholdingRate, setWithholdingRate] = useState<WithholdingRate>(DEFAULT_WITHHOLDING_RATE);
   // 2026-08-07 · 자녀 세액공제 대상 자녀 수 (8~20세 · 소득세법 §59-2 · default 0)
   const [childrenCount, setChildrenCount] = useState<number>(0);
+  // 2026-08-07 · 공제항목 (사용자 입력 · 소득세 M에서 차감 · 세후 증가)
+  const [extraDeduction, setExtraDeduction] = useState<number>(0);
 
   // 2026-08-07 · 통상시급/근무조건/선택항목 변경 시 · form.wageComponents 4자동항목 자동 반영
   //   · 왼쪽 임금구성표 (통상시급×시간) → 오른쪽 계약서 프리뷰 (form.wageComponents.*.amount) 동기화
@@ -4691,7 +4694,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               const lt = hh * INSURANCE_RATES.LTC_RATIO;
               const em = basic * INSURANCE_RATES.EMPLOYMENT;
               const insSumH = p + hh + lt + em;
-              const tx = computeIncomeTax(Math.round(basic), dependentsCount, withholdingRate, childrenCount);
+              const tx = computeIncomeTax(Math.round(basic), dependentsCount, withholdingRate, childrenCount, extraDeduction);
               const dedH = insSumH + tx.total;
               const net = g - dedH;
               const delta = target - net;
@@ -4722,7 +4725,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               const lt = hh * INSURANCE_RATES.LTC_RATIO;
               const em = basic * INSURANCE_RATES.EMPLOYMENT;
               const insSumH = p + hh + lt + em;
-              const tx = computeIncomeTax(Math.round(basic), dependentsCount, withholdingRate, childrenCount);
+              const tx = computeIncomeTax(Math.round(basic), dependentsCount, withholdingRate, childrenCount, extraDeduction);
               const dedH = insSumH + tx.total;
               const net = g - dedH;
               const delta = target - net;
@@ -4761,7 +4764,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const ltc     = Math.round(health * INSURANCE_RATES.LTC_RATIO);
           const emp     = Math.round(basicAmt * INSURANCE_RATES.EMPLOYMENT);
           const insSum  = pension + health + ltc + emp;
-          const taxObj  = computeIncomeTax(basicAmt, dependentsCount, withholdingRate, childrenCount);
+          const taxObj  = computeIncomeTax(basicAmt, dependentsCount, withholdingRate, childrenCount, extraDeduction);
           const taxSum  = taxObj.total;
           // 예상공제 = 4대보험 + 소득세·지방세 (기본급 기준 · 국세청 7단계 공식)
           const deductionTotal = insSum + taxSum;
@@ -4940,6 +4943,22 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                         <option key={r} value={r}>{Math.round(r * 100)}%</option>
                       ))}
                     </select>
+                  </span>
+                  <span className="flex items-baseline gap-x-1.5">
+                    <span className="text-slate-500">공제항목</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={extraDeduction ? extraDeduction.toLocaleString("ko-KR") : ""}
+                      onChange={(e) => {
+                        const v = Number(e.target.value.replace(/[^0-9]/g, "")) || 0;
+                        setExtraDeduction(Math.max(0, v));
+                      }}
+                      placeholder="0"
+                      className="w-20 tabular-nums bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[11px] font-black text-slate-800 text-right focus:outline-none focus:border-indigo-400"
+                      title="추가 공제항목 (비과세·특별공제 등) · 소득세 과세대상 M에서 차감"
+                    />
+                    <span className="text-slate-500">원</span>
                   </span>
                 </div>
               </div>
