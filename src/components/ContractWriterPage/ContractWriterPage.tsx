@@ -2704,8 +2704,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const [withholdingRate, setWithholdingRate] = useState<WithholdingRate>(DEFAULT_WITHHOLDING_RATE);
   // 2026-08-07 · 자녀 세액공제 대상 자녀 수 (8~20세 · 소득세법 §59-2 · default 0)
   const [childrenCount, setChildrenCount] = useState<number>(0);
-  // 2026-08-07 · 월 비과세 (식대·차량·자녀양육 등 · 소득세 M에서 차감)
-  const [nonTaxableAmount, setNonTaxableAmount] = useState<number>(0);
+  // 2026-08-07 · 월 기타 공제항목 (노조비·학자금 상환·기타 · 세후 실수령에서 추가 차감)
+  const [customDeductionAmount, setCustomDeductionAmount] = useState<number>(0);
 
   // 2026-08-07 · '희망 맞춤' 반복 근사 실패 시 · 조건 조합 시뮬 후보 리스트
   type MatchCandidate = {
@@ -4700,8 +4700,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               const lt = hh * INSURANCE_RATES.LTC_RATIO;
               const em = basic * INSURANCE_RATES.EMPLOYMENT;
               const insSumH = p + hh + lt + em;
-              const tx = computeIncomeTax(Math.round(basic), dep, wRate, ch, nonTaxableAmount);
-              const dedH = insSumH + tx.total;
+              const tx = computeIncomeTax(Math.round(basic), dep, wRate, ch, 0);
+              const dedH = insSumH + tx.total + customDeductionAmount;
               lastNet = g - dedH;
               lastDelta = target - lastNet;
               if (Math.abs(lastDelta) < 50) break;
@@ -4770,10 +4770,10 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const ltc     = Math.round(health * INSURANCE_RATES.LTC_RATIO);
           const emp     = Math.round(basicAmt * INSURANCE_RATES.EMPLOYMENT);
           const insSum  = pension + health + ltc + emp;
-          const taxObj  = computeIncomeTax(basicAmt, dependentsCount, withholdingRate, childrenCount, nonTaxableAmount);
+          const taxObj  = computeIncomeTax(basicAmt, dependentsCount, withholdingRate, childrenCount, 0);
           const taxSum  = taxObj.total;
-          // 예상공제 = 4대보험 + 소득세·지방세 (기본급 기준 · 국세청 7단계 공식)
-          const deductionTotal = insSum + taxSum;
+          // 예상공제 = 4대보험 + 소득세·지방세 + 기타 공제항목
+          const deductionTotal = insSum + taxSum + customDeductionAmount;
           const deductionPct = basicAmt > 0 ? (deductionTotal / basicAmt * 100) : 0;
           // 월급여총액 (세전) = 4자동항목 + 선택 항목 (식대·차량 · 비과세 포함)
           const grossTotal = gross + holidayOtAmt + nightAmt + meal + vehicle;
@@ -4903,15 +4903,10 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   </span>
                 </div>
                 <div className="flex items-baseline flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-400 font-semibold">
-                  <span>참고 · 약사 주중 근무 시 통상시급 예시 <span className="tabular-nums font-black text-slate-500">22,350.8</span>원 (기본급 4,671,298원 ÷ 209h)</span>
-                  <span className="ml-auto flex items-baseline gap-x-1.5">
+                  <span className="flex items-baseline gap-x-1.5">
                     <span className="text-slate-500">부양</span>
                     <input
-                      type="number"
-                      min={1}
-                      max={10}
-                      step={1}
-                      value={dependentsCount}
+                      type="number" min={1} max={10} step={1} value={dependentsCount}
                       onChange={(e) => {
                         const v = Number(e.target.value);
                         setDependentsCount(Number.isFinite(v) && v >= 1 ? Math.floor(v) : 1);
@@ -4923,11 +4918,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   <span className="flex items-baseline gap-x-1.5">
                     <span className="text-slate-500">자녀</span>
                     <input
-                      type="number"
-                      min={0}
-                      max={10}
-                      step={1}
-                      value={childrenCount}
+                      type="number" min={0} max={10} step={1} value={childrenCount}
                       onChange={(e) => {
                         const v = Number(e.target.value);
                         setChildrenCount(Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
@@ -4951,18 +4942,17 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     </select>
                   </span>
                   <span className="flex items-baseline gap-x-1.5">
-                    <span className="text-slate-500">비과세</span>
+                    <span className="text-slate-500">공제항목</span>
                     <input
-                      type="text"
-                      inputMode="numeric"
-                      value={nonTaxableAmount ? nonTaxableAmount.toLocaleString("ko-KR") : ""}
+                      type="text" inputMode="numeric"
+                      value={customDeductionAmount ? customDeductionAmount.toLocaleString("ko-KR") : ""}
                       onChange={(e) => {
                         const v = Number(e.target.value.replace(/[^0-9]/g, "")) || 0;
-                        setNonTaxableAmount(Math.max(0, v));
+                        setCustomDeductionAmount(Math.max(0, v));
                       }}
                       placeholder="0"
                       className="w-20 tabular-nums bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[11px] font-black text-slate-800 text-right focus:outline-none focus:border-indigo-400"
-                      title="월 비과세 소득 (식대 최대 20만·차량 최대 20만·자녀양육 20만 등) · 소득세 M에서 차감"
+                      title="월 기타 공제항목 (노조비·학자금 상환 등) · 세후 실수령에서 차감"
                     />
                     <span className="text-slate-500">원</span>
                   </span>
@@ -5124,7 +5114,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     <span className="text-slate-700 font-bold text-[11.5px] min-w-[74px]">근로소득세</span>
                     <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">간이세액표 7단계</span>
                     <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">
-                      국세청 공식 · 부양 {dependentsCount}인 (인적공제 {dependentsCount * 150}만원){childrenCount > 0 ? ` · 자녀 ${childrenCount}인 (세액공제 ${(childrenCount === 1 ? 25 : childrenCount === 2 ? 55 : 55 + (childrenCount - 2) * 40)}만원/연)` : ""}{nonTaxableAmount > 0 ? ` · 비과세 ${fmtWon(nonTaxableAmount)}원` : ""} · 원천징수 {Math.round(withholdingRate * 100)}%
+                      국세청 공식 · 부양 {dependentsCount}인 (인적공제 {dependentsCount * 150}만원){childrenCount > 0 ? ` · 자녀 ${childrenCount}인 (세액공제 ${(childrenCount === 1 ? 25 : childrenCount === 2 ? 55 : 55 + (childrenCount - 2) * 40)}만원/연)` : ""} · 원천징수 {Math.round(withholdingRate * 100)}%
                     </span>
                     <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(taxObj.incomeTax)}원</span>
                   </div>
@@ -5177,26 +5167,31 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     </button>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    {matchCandidates.map((c, idx) => (
-                      <button
-                        key={`${c.dependents}-${c.children}-${c.withholdingRate}`}
-                        type="button"
-                        onClick={() => applyCandidate(c)}
-                        className="flex items-baseline gap-x-2 px-2 py-1 rounded hover:bg-amber-100 text-left text-[10.5px] cursor-pointer"
-                      >
-                        <span className="text-slate-400 font-black w-4">#{idx + 1}</span>
-                        <span className="text-slate-700 font-bold">부양 {c.dependents}인</span>
-                        <span className="text-slate-700 font-bold">자녀 {c.children}인</span>
-                        <span className="text-slate-700 font-bold">원천 {Math.round(c.withholdingRate * 100)}%</span>
-                        <span className="text-slate-400">→ 통상시급</span>
-                        <span className="tabular-nums font-black text-indigo-700">{fmtWon(c.hourly)}원</span>
-                        <span className="text-slate-400">· 실수령</span>
-                        <span className="tabular-nums font-black text-emerald-700">{fmtWon(c.net)}원</span>
-                        <span className={`tabular-nums text-[10px] ml-auto ${c.deltaAbs < 50 ? "text-emerald-600" : c.deltaAbs < 500 ? "text-amber-600" : "text-rose-500"}`}>
-                          오차 ±{fmtWon(c.deltaAbs)}원
-                        </span>
-                      </button>
-                    ))}
+                    {matchCandidates.map((c, idx) => {
+                      const basicOfCand = Math.round(c.hourly * WAGE_HOURS.BASIC);
+                      return (
+                        <button
+                          key={`${c.dependents}-${c.children}-${c.withholdingRate}`}
+                          type="button"
+                          onClick={() => applyCandidate(c)}
+                          className="flex items-baseline gap-x-2 px-2 py-1 rounded hover:bg-amber-100 text-left text-[10.5px] cursor-pointer"
+                        >
+                          <span className="text-slate-400 font-black w-4">#{idx + 1}</span>
+                          <span className="text-slate-700 font-bold">부양 {c.dependents}</span>
+                          <span className="text-slate-700 font-bold">자녀 {c.children}</span>
+                          <span className="text-slate-700 font-bold">원천 {Math.round(c.withholdingRate * 100)}%</span>
+                          <span className="text-slate-400">→ 기본급</span>
+                          <span className="tabular-nums font-black text-slate-800">{fmtWon(basicOfCand)}원</span>
+                          <span className="text-slate-400">· 통상시급</span>
+                          <span className="tabular-nums font-black text-indigo-700">{fmtWon(c.hourly)}원</span>
+                          <span className="text-slate-400">· 실수령</span>
+                          <span className="tabular-nums font-black text-emerald-700">{fmtWon(c.net)}원</span>
+                          <span className={`tabular-nums text-[10px] ml-auto ${c.deltaAbs < 50 ? "text-emerald-600" : c.deltaAbs < 500 ? "text-amber-600" : "text-rose-500"}`}>
+                            오차 ±{fmtWon(c.deltaAbs)}원
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
