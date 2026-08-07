@@ -751,12 +751,38 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
 
       <main className="flex-1 max-w-[1100px] mx-auto w-full px-3 sm:px-5 py-4 flex flex-col gap-3">
 
+        {/* ── 상단 sticky · 전체 저장 배너 ──────────────────────────────── */}
+        <div className="sticky top-0 z-20 -mx-3 sm:-mx-5 px-3 sm:px-5 py-2 bg-white/95 backdrop-blur-sm border-b border-slate-200 shadow-sm flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+              <Gear size={15} weight="fill" />
+            </div>
+            <span className="text-[13px] font-black text-slate-800 leading-none hidden sm:block">근로계약서 설정</span>
+            {overallSaveState === "saved" && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 font-bold">
+                <Check size={11} weight="bold" /> 모든 항목 저장됨
+              </span>
+            )}
+            {overallSaveState === "error" && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-rose-500 font-bold">
+                <Warning size={11} weight="fill" /> 일부 저장 실패
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleSaveAll}
+            disabled={overallSaving}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white text-[12px] font-black shadow-sm transition-colors cursor-pointer shrink-0"
+          >
+            <FloppyDisk size={13} weight="bold" />
+            {overallSaving ? "저장 중..." : "모두 저장"}
+          </button>
+        </div>
+
         {/* ── 페이지 헤더 · 컴팩트 ──────────────────────────────────────── */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
-              <Gear size={17} weight="fill" />
-            </div>
             <div>
               <h1 className="text-base sm:text-lg font-black text-slate-800 leading-none">근로계약서 설정</h1>
               <p className="text-[11px] text-slate-500 mt-0.5 font-semibold">
@@ -911,6 +937,18 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                   className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
                 />
               </div>
+              {/* 회사 정보 개별 저장 버튼 */}
+              <div className="col-span-2 flex justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={saveCompanyInfoNow}
+                  disabled={!companyInfoLoaded || companyInfoSaveState === "saving"}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-[12px] font-black shadow-sm transition-colors cursor-pointer"
+                >
+                  <FloppyDisk size={12} weight="bold" />
+                  {companyInfoSaveState === "saving" ? "저장 중..." : "회사 정보 저장"}
+                </button>
+              </div>
             </div>
             )}
           </section>
@@ -927,8 +965,8 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
               </div>
             </header>
 
-            {/* PC: 2컬럼 2행 · 모바일: 1컬럼 */}
-            <div className="p-3 grid grid-cols-1 lg:grid-cols-2 gap-2.5">
+            {/* md+: 2x2 그리드 · 모바일: 1컬럼 */}
+            <div className="p-3 grid grid-cols-1 md:grid-cols-2 gap-2">
               {JOB_META.map(job => {
                 const stored = wageRates?.[job.key];
                 const fallback = defaultWageForPosition(job.key);
@@ -937,32 +975,33 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                 return (
                   <div
                     key={job.key}
-                    className={`flex flex-col gap-2 p-2.5 rounded-xl border ${job.border} ${job.bg}`}
+                    className={`flex flex-col rounded-xl border ${job.border} border-l-4 ${job.accent} bg-white overflow-hidden shadow-sm`}
                   >
-                    {/* 직군 레이블 + 초기화 */}
-                    <div className="flex items-center justify-between">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/70 ${job.color} text-[12px] font-black border ${job.border}`}>
-                        {job.label}
+                    {/* 카드 헤더 · 직군명 + 리셋 */}
+                    <div className={`flex items-center justify-between px-3 py-2 ${job.bg}`}>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className={`text-[13px] font-black ${job.color} leading-none`}>{job.label}</span>
                         {isDefault && (
-                          <span className="text-[9px] font-bold text-slate-400 bg-white/80 border border-slate-200 rounded px-0.5" title="기본값 사용 중">
-                            기본
+                          <span className="text-[9px] font-semibold text-slate-400 leading-none" title="기본값 사용 중">
+                            기본값
                           </span>
                         )}
-                      </span>
+                      </div>
                       <button
                         type="button"
                         onClick={() => resetWage(job.key)}
                         disabled={isDefault}
-                        className="inline-flex items-center justify-center w-6 h-6 rounded-md border border-slate-200 bg-white text-slate-400 hover:bg-white hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                        className={`inline-flex items-center justify-center w-5 h-5 rounded-md border ${job.border} bg-white/80 ${job.color} hover:bg-white disabled:opacity-25 disabled:cursor-not-allowed cursor-pointer transition-colors`}
                         title="이 직군 기본값으로 되돌리기"
                       >
-                        <ArrowsClockwise size={11} weight="bold" />
+                        <ArrowsClockwise size={10} weight="bold" />
                       </button>
                     </div>
-                    {/* 주중 · 주말 시급 입력 · 2컬럼 */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold text-slate-500">주중 (원)</label>
+
+                    {/* 주중 · 주말 나란히 */}
+                    <div className="flex items-stretch divide-x divide-slate-100 px-3 py-2.5">
+                      <div className="flex-1 flex flex-col gap-1 pr-3">
+                        <label className="text-[10px] font-bold text-slate-400 tracking-wide">주중 (원)</label>
                         <input
                           type="number"
                           min={0}
@@ -970,11 +1009,11 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                           value={rate.weekday || ""}
                           placeholder={String(fallback.weekday)}
                           onChange={(e) => updWage(job.key, "weekday", Math.max(0, Number(e.target.value) || 0))}
-                          className={`w-full bg-white border rounded-lg px-2 py-1.5 text-[12px] font-bold text-right tabular-nums focus:outline-none focus:border-indigo-500 focus:shadow-sm transition ${isDefault ? "border-slate-200 text-slate-400" : "border-slate-300 text-slate-800"}`}
+                          className={`w-full bg-slate-50 border rounded-lg px-2 py-1.5 text-[13px] font-black text-right tabular-nums focus:outline-none focus:bg-white focus:border-indigo-400 transition ${isDefault ? "border-slate-200 text-slate-400" : "border-slate-200 text-slate-800"}`}
                         />
                       </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold text-slate-500">주말 (원)</label>
+                      <div className="flex-1 flex flex-col gap-1 pl-3">
+                        <label className="text-[10px] font-bold text-slate-400 tracking-wide">주말 (원)</label>
                         <input
                           type="number"
                           min={0}
@@ -982,13 +1021,25 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                           value={rate.weekend || ""}
                           placeholder={String(fallback.weekend)}
                           onChange={(e) => updWage(job.key, "weekend", Math.max(0, Number(e.target.value) || 0))}
-                          className={`w-full bg-white border rounded-lg px-2 py-1.5 text-[12px] font-bold text-right tabular-nums focus:outline-none focus:border-indigo-500 focus:shadow-sm transition ${isDefault ? "border-slate-200 text-slate-400" : "border-slate-300 text-slate-800"}`}
+                          className={`w-full bg-slate-50 border rounded-lg px-2 py-1.5 text-[13px] font-black text-right tabular-nums focus:outline-none focus:bg-white focus:border-indigo-400 transition ${isDefault ? "border-slate-200 text-slate-400" : "border-slate-200 text-slate-800"}`}
                         />
                       </div>
                     </div>
                   </div>
                 );
               })}
+              {/* 시급 개별 저장 버튼 · full-width */}
+              <div className="md:col-span-2 flex justify-end pt-0.5">
+                <button
+                  type="button"
+                  onClick={saveSettingsNow}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[12px] font-black shadow-sm transition-colors cursor-pointer"
+                  title="시급 즉시 서버 저장 (자동 저장 중이지만 명시적 저장도 가능)"
+                >
+                  <FloppyDisk size={12} weight="bold" />
+                  시급 저장
+                </button>
+              </div>
             </div>
           </section>
         </div>

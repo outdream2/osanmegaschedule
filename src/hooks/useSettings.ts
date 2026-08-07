@@ -218,6 +218,17 @@ export function useSettings() {
     }, 800);
   }, []);
 
+  /** debounce 취소 후 현재 settings 즉시 서버 저장 */
+  const saveNow = useCallback(async (): Promise<boolean> => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    try {
+      await saveAllSettings(settingsRef.current);
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
   return {
     positions: settings.positions,
     employmentTypes: settings.employmentTypes,
@@ -226,5 +237,6 @@ export function useSettings() {
     wageRates: settings.wageRates,
     employeeWageOverrides: settings.employeeWageOverrides,
     update,
+    saveNow,
   };
 }

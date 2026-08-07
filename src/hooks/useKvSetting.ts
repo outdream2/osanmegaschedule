@@ -73,6 +73,8 @@ export interface UseKvSettingResult<T> {
   saveState: "idle" | "saving" | "saved" | "error";
   /** 강제 서버 재조회 */
   reload: () => Promise<void>;
+  /** debounce 취소 후 현재 값 즉시 서버 저장 */
+  saveNow: () => Promise<boolean>;
 }
 
 function safeJsonParse(raw: string | null): unknown {
@@ -282,7 +284,16 @@ export function useKvSetting<T>(opts: UseKvSettingOptions<T>): UseKvSettingResul
     };
   }, []);
 
-  return { value, setValue, loaded, saveState, reload };
+  /** debounce 취소 후 현재 값 즉시 서버 저장 */
+  const saveNow = useCallback(async (): Promise<boolean> => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    setSaveState("saving");
+    const ok = await saveToServer(valueRef.current);
+    setSaveState(ok ? "saved" : "error");
+    return ok;
+  }, [saveToServer]);
+
+  return { value, setValue, loaded, saveState, reload, saveNow };
 }
 
 export default useKvSetting;
