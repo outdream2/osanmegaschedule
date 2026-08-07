@@ -53,6 +53,7 @@ interface Employee {
   level?: number | null;
   role?: string | null;
   contract_file_url?: string | null;
+  resignation_file_url?: string | null; // T-Staff-ResignationColumn · 사직서 파일 URL · 퇴사자 전용
   resume_url?: string | null;  // T21 · 이력서 · Google Drive URL
   bankbook_image_url?: string | null;  // 통장사본 · base64 or URL (ContractWriterPage 첨부 · employees 컬럼 optional)
   photo_url?: string | null;
@@ -843,7 +844,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
 
   // ── 정렬 (T35 · 공용 useSortableTable 훅 사용 · 원칙 feedback_ui_principles) ──
   type SortKey = "name" | "position" | "contract_type" | "tenure" | "performance_rating"
-    | "resume_file" | "bankbook_file" | "contract_file" | "status";
+    | "resume_file" | "bankbook_file" | "contract_file" | "resignation_file" | "status";
   const cmpStr = (a: string, b: string) => a.localeCompare(b, "ko");
   const tenureDays = (e: Employee): number => {
     if (!e.hire_date) return -Infinity;
@@ -859,6 +860,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
     resume_file:        (a, b) => (((b as any).resume_url ? 1 : 0) - ((a as any).resume_url ? 1 : 0)),
     bankbook_file:      (a, b) => (((b as any).bankbook_image_url ? 1 : 0) - ((a as any).bankbook_image_url ? 1 : 0)),
     contract_file:      (a, b) => (((b as any).contract_file_url ? 1 : 0) - ((a as any).contract_file_url ? 1 : 0)),
+    resignation_file:   (a, b) => (((b as any).resignation_file_url ? 1 : 0) - ((a as any).resignation_file_url ? 1 : 0)),
     status:             (a, b) => (((a as any).retire_date ? 1 : 0) - ((b as any).retire_date ? 1 : 0)),
   }), []);
   const { sorted: filtered, sortKey, sortDir, toggleSort } = useSortableTable<Employee, SortKey>(filteredRaw, "name", sortComparators);
@@ -876,6 +878,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
     resume:       { default: 44,  min: 36, max: 80  },
     bankbook:     { default: 40,  min: 36, max: 80  },
     contract:     { default: 44,  min: 36, max: 80  },
+    resignation:  { default: 44,  min: 36, max: 80  },
     status:       { default: 44,  min: 36, max: 80  },
   });
 
@@ -1050,14 +1053,31 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
     }
   }, []);
 
+  // T-Staff-ResignationColumn · 사직서 파일 업로드 (퇴사자 전용 · POST /api/employees/:id/resignation-file)
+  const uploadResignationFileForRow = useCallback(async (emp: Employee, file: File) => {
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`/api/employees/${emp.id}/resignation-file`, { method: "POST", body: fd });
+      const j = await res.json().catch(() => ({} as any));
+      if (!res.ok) throw new Error(j?.error ?? "업로드 실패");
+      const url = String(j?.url ?? "");
+      setEmployees((prev) => prev.map((e) => e.id === emp.id ? { ...e, resignation_file_url: url } : e));
+      alert(`사직서 업로드 완료 · ${emp.name}`);
+    } catch (err: any) {
+      alert(`사직서 업로드 실패 · ${err?.message ?? err}`);
+    }
+  }, []);
+
   // ── 좌측 리스트 아이템 · 표 형식 · 한 줄 (2026-08-03) ────────────────────────
   const ListRow: React.FC<{ emp: Employee }> = ({ emp }) => {
     const isSelected = emp.id === selectedId;
     const ctMeta   = contractTypeMeta(emp.contract_type);
     const tenure   = calcTenure(emp.hire_date);
-    const hasContractFile = !!emp.contract_file_url;
-    const hasResume       = !!emp.resume_url;
-    const hasBankbook     = !!emp.bankbook_image_url;
+    const hasContractFile    = !!emp.contract_file_url;
+    const hasResume          = !!emp.resume_url;
+    const hasBankbook        = !!emp.bankbook_image_url;
+    const hasResignationFile = !!emp.resignation_file_url;
     const rating   = emp.performance_rating ? emp.performance_rating.toUpperCase() : null;
     const isRetired = !!(emp as any).retire_date;
     const openContract = (e: React.MouseEvent) => {
@@ -1075,6 +1095,10 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
     const openBankbook = (e: React.MouseEvent) => {
       e.stopPropagation();
       if (emp.bankbook_image_url) window.open(emp.bankbook_image_url, "_blank", "noopener,noreferrer");
+    };
+    const openResignationFile = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (emp.resignation_file_url) window.open(emp.resignation_file_url, "_blank", "noopener,noreferrer");
     };
     return (
       <tr
@@ -1241,6 +1265,41 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
             >
               <NotePencilIcon size={10} />작성
             </button>
+          )}
+        </td>
+        {/* 사직서 · 퇴사자만 표시 · 파일 있음=보기 · 없음=업로드 */}
+        <td className="px-1 py-2 text-center">
+          {isRetired ? (
+            hasResignationFile ? (
+              <button
+                type="button"
+                onClick={openResignationFile}
+                className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-rose-600 hover:text-rose-800 hover:underline cursor-pointer whitespace-nowrap"
+                title={`사직서 · 새 창으로 보기\n${emp.resignation_file_url ?? ""}`}
+              >
+                <ExternalLink size={10} />보기
+              </button>
+            ) : (
+              <label
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-500 hover:text-rose-700 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
+                title="사직서 업로드 · PDF 또는 이미지 · 20MB"
+              >
+                <Paperclip size={10} />업로드
+                <input
+                  type="file"
+                  accept=".pdf,image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = "";
+                    if (f) uploadResignationFileForRow(emp, f);
+                  }}
+                />
+              </label>
+            )
+          ) : (
+            <span className="text-[11px] text-slate-200">-</span>
           )}
         </td>
         {/* 상태 배지 · 퇴사·퇴사예정 */}
@@ -1427,6 +1486,10 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                     <th className="relative px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("contract_file")} style={{ width: sw("contract"), minWidth: sw("contract") }}>
                       계약서<SortIcon k="contract_file" />
                       <span {...sr("contract")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
+                    </th>
+                    <th className="relative px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("resignation_file")} title="사직서 · 퇴사자 전용" style={{ width: sw("resignation"), minWidth: sw("resignation") }}>
+                      사직서<SortIcon k="resignation_file" />
+                      <span {...sr("resignation")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                     </th>
                     <th className="relative px-1 py-1.5 text-center cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("status")} style={{ width: sw("status"), minWidth: sw("status") }}>
                       상태<SortIcon k="status" />

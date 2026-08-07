@@ -45,6 +45,7 @@ export interface Employee {
   annual_leave_days?: number | null;
   level?: number | null; // 0-9: 1=직원, 8=대표, 9=최고관리자
   contract_file_url?: string | null;
+  resignation_file_url?: string | null; // T-Staff-ResignationColumn · 사직서 파일 URL (Supabase Storage · resignations 버킷)
   resume_url?: string | null; // T21 · 이력서 파일 URL (Supabase Storage · resumes 버킷)
   break_time_minutes?: number | null; // 일일 휴게시간 (분) · 기본 60
   break_apply_paid?: boolean | null;  // 인건비 계산 시 휴게 차감 여부 · 기본 true
