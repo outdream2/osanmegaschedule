@@ -4421,36 +4421,31 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           </div>
         </div>
 
-        {/* 2행 · 근무시간 + 휴게분 */}
-        <div className="flex flex-wrap items-end gap-2">
+        {/* 2·3행 통합 · PC(lg+) 5필드 한 줄 · 모바일 wrap */}
+        <div className="flex flex-wrap items-end gap-2 lg:flex-nowrap">
           <div className="flex-1 min-w-[80px]">
             <label className={fldLabel}>
               <ClockClockwise size={10} className="inline mr-0.5 text-emerald-600" />출근
             </label>
             <SelectOrCustom value={form.startTime} options={START_TIMES} onChange={(v) => upd("startTime", v)} placeholder="HH:MM" />
           </div>
-          <span className="text-[13px] text-slate-400 font-black pb-2">~</span>
           <div className="flex-1 min-w-[80px]">
             <label className={fldLabel}>퇴근</label>
             <SelectOrCustom value={form.endTime} options={END_TIMES} onChange={(v) => upd("endTime", v)} placeholder="HH:MM" />
           </div>
-          <div className="w-20">
+          <div className="flex-1 min-w-[64px] max-w-[80px]">
             <label className={fldLabel}>
-              <Coffee size={10} className="inline mr-0.5" />휴게
+              <Coffee size={10} className="inline mr-0.5" />휴게(분)
             </label>
             <div className="relative">
               <input type="number" min={0} value={form.breakMinutes} onChange={(e) => upd("breakMinutes", e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg pl-2 pr-6 py-1.5 text-[13px] text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition text-right"
+                className="w-full bg-white border border-slate-200 rounded-lg pl-2 pr-5 py-1.5 text-[13px] text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition text-right"
               />
               <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-semibold pointer-events-none">분</span>
             </div>
           </div>
-        </div>
-
-        {/* 3행 · 휴게시간대 (드롭다운) · default 12:00~13:00 */}
-        <div className="flex flex-wrap items-end gap-2">
           <div className="flex-1 min-w-[80px]">
-            <label className={fldLabel}>휴게시간대 시작</label>
+            <label className={fldLabel}>휴게시작</label>
             <select
               value={form.breakStart}
               onChange={(e) => upd("breakStart", e.target.value)}
@@ -4459,9 +4454,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               {BREAK_TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
-          <span className="text-[13px] text-slate-400 font-black pb-2">~</span>
           <div className="flex-1 min-w-[80px]">
-            <label className={fldLabel}>종료</label>
+            <label className={fldLabel}>휴게종료</label>
             <select
               value={form.breakEnd}
               onChange={(e) => upd("breakEnd", e.target.value)}
@@ -4549,41 +4543,83 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           return (
             <div className="flex flex-col gap-1.5">
               {/* 기본 힌트 줄 · 계약유형 배지 포함 */}
-              <div className="rounded-lg bg-indigo-50/60 border border-indigo-100 px-3 py-2 text-[11px] text-indigo-700 leading-relaxed">
-                <span className="font-bold">주 {weeklyH.toFixed(1)}시간</span>
-                {/* T-CTR-WageByType · 계약유형 배지 */}
-                <span className={`ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wide ${isMonthly ? "bg-indigo-200 text-indigo-800" : "bg-amber-200 text-amber-800"}`}>
-                  {isMonthly ? "월급제" : "시급제"}
-                </span>
-                {hasWage && (
-                  <>
-                    <span className="mx-1 text-indigo-300">·</span>
-                    <span>{isMonthly ? "통상시급" : "시급"} {fmtWon(wdHourly)}원</span>
-                    {!isMonthly && weeklyWeekendDays > 0 && weHourly !== wdHourly && (
-                      <span className="ml-0.5">(주말 {fmtWon(weHourly)}원)</span>
-                    )}
-                    {isMonthly ? (
-                      <>
-                        <span className="mx-1 text-indigo-300">·</span>
-                        <span className="font-black text-indigo-900">세전 {fmtWon(buGross)}원</span>
-                        <span className="mx-1 text-indigo-300">·</span>
-                        <span className="font-black text-emerald-700">월 희망 예상 수령액 {fmtWon(wf?.netAmount ?? 0)}원</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="mx-1 text-indigo-300">·</span>
-                        <span className="font-semibold">주 예상 {fmtWon(weeklyPay)}원</span>
-                        <span className="mx-1 text-indigo-300">·</span>
-                        <span className="font-black text-indigo-900">월 순액 {fmtWon(monthlyNet)}원</span>
-                        <span className="mx-1 text-indigo-300">·</span>
-                        <span className="font-black text-emerald-700">월 희망 예상 수령액 {fmtWon(wf?.netAmount ?? 0)}원</span>
-                      </>
-                    )}
-                  </>
-                )}
-                {!hasWage && (
-                  <span className="ml-1 text-indigo-400">(시급 입력 시 월 예상액 표시)</span>
-                )}
+              <div className="rounded-lg bg-indigo-50/60 border border-indigo-100 px-3 py-2 text-[11px] text-indigo-700 leading-relaxed flex flex-col gap-0.5">
+                {/* 1행 · 주 시간 + 계약유형 배지 + 시급 요약 */}
+                <div className="flex items-center flex-wrap gap-x-1">
+                  <span className="font-bold">주 {weeklyH.toFixed(1)}시간</span>
+                  {/* T-CTR-WageByType · 계약유형 배지 */}
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wide ${isMonthly ? "bg-indigo-200 text-indigo-800" : "bg-amber-200 text-amber-800"}`}>
+                    {isMonthly ? "월급제" : "시급제"}
+                  </span>
+                  {hasWage && (
+                    <>
+                      <span className="text-indigo-300">·</span>
+                      <span>{isMonthly ? "통상시급" : "시급"} {fmtWon(wdHourly)}원</span>
+                      {!isMonthly && weeklyWeekendDays > 0 && weHourly !== wdHourly && (
+                        <span>(주말 {fmtWon(weHourly)}원)</span>
+                      )}
+                      {isMonthly && (
+                        <>
+                          <span className="text-indigo-300">·</span>
+                          <span className="font-black text-indigo-900">세전 {fmtWon(buGross)}원</span>
+                          <span className="text-indigo-300">·</span>
+                          <span className="font-black text-emerald-700">월 희망 예상 수령액 {fmtWon(wf?.netAmount ?? 0)}원</span>
+                        </>
+                      )}
+                    </>
+                  )}
+                  {!hasWage && (
+                    <span className="text-indigo-400">(시급 입력 시 월 예상액 표시)</span>
+                  )}
+                </div>
+                {/* T-CTR-Header-Formula · 시급제 전용 · 계산식 명시 2줄 */}
+                {!isMonthly && hasWage && (() => {
+                  const wdH = dailyH * weeklyWeekdayDays;
+                  const weH = dailyH * weeklyWeekendDays;
+                  const hasDual = weeklyWeekendDays > 0 && weHourly !== wdHourly;
+                  return (
+                    <div className="mt-0.5 flex flex-col gap-0.5 border-t border-indigo-100 pt-1">
+                      {/* 주 예상 계산식 */}
+                      {hasDual ? (
+                        <div className="flex items-center flex-wrap gap-x-1">
+                          <span className="text-slate-500">주중</span>
+                          <span className="tabular-nums text-slate-700">{fmtWon(wdHourly)}원</span>
+                          <span className="text-slate-400">×</span>
+                          <span className="tabular-nums text-slate-700">{wdH.toFixed(1)}h</span>
+                          <span className="text-slate-400">+</span>
+                          <span className="text-slate-500">주말</span>
+                          <span className="tabular-nums text-slate-700">{fmtWon(weHourly)}원</span>
+                          <span className="text-slate-400">×</span>
+                          <span className="tabular-nums text-slate-700">{weH.toFixed(1)}h</span>
+                          <span className="text-slate-400">=</span>
+                          <span className="tabular-nums font-black text-indigo-800">{fmtWon(weeklyPay)}원</span>
+                          <span className="text-slate-500 text-[9.5px]">(주 예상)</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center flex-wrap gap-x-1">
+                          <span className="tabular-nums text-slate-700">{fmtWon(wdHourly)}원</span>
+                          <span className="text-slate-400">×</span>
+                          <span className="tabular-nums text-slate-700">{weeklyH.toFixed(1)}h</span>
+                          <span className="text-slate-400">=</span>
+                          <span className="tabular-nums font-black text-indigo-800">{fmtWon(weeklyPay)}원</span>
+                          <span className="text-slate-500 text-[9.5px]">(주 예상)</span>
+                        </div>
+                      )}
+                      {/* 월 순액 계산식 */}
+                      <div className="flex items-center flex-wrap gap-x-1">
+                        <span className="tabular-nums text-slate-700">{fmtWon(weeklyPay)}원</span>
+                        <span className="text-slate-400">×</span>
+                        <span className="text-slate-600">4.345</span>
+                        <span className="text-slate-400">=</span>
+                        <span className="tabular-nums font-black text-indigo-900">{fmtWon(monthlyNet)}원</span>
+                        <span className="text-slate-500 text-[9.5px]">(월 순액)</span>
+                        <span className="text-slate-300 text-[9.5px]">·</span>
+                        <span className="tabular-nums font-black text-emerald-700">{fmtWon(wf?.netAmount ?? 0)}원</span>
+                        <span className="text-slate-500 text-[9.5px]">(월 희망 예상 수령액)</span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* 임금 자동 계산 5단계 시각화 · T-CTR-WageByType 분기 */}
