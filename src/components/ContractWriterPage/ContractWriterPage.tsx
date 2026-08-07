@@ -4579,10 +4579,39 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           //   ③ 세전 = 통상시급 × 296.94 (= 4자동항목 합)
           //   ④ 공제 = 4대보험 + 소득세 (세전 기준 실제 계산)
           //   ⑤ 세후 = 세전 - 공제
-          const autoHourly = wd; // 주중시급 (계약서 표준 · 약국 관례) · 없으면 0
+          // autoHourly · 반복 근사로 희망월수령액을 세후로 맞추는 통상시급 자동 산출
+          //   · 실수령 = 세전 - 4대보험 (소득세 제외) 방식과 일치 · 오차 <50원 수렴
+          //   · 사용자 수동 편집 시 wageHourlyOverride 우선
+          let autoHourly = 0;
+          if (autoMonthlyNet > 0) {
+            const holidayOtAmt0 = Number(form.wageComponents.fixedHolidayOvertime?.amount) || 0;
+            const nightAmt0     = Number(form.wageComponents.fixedNight?.amount) || 0;
+            const meal0         = Number(form.wageComponents.mealAllowance) || 0;
+            const vehicle0      = Number(form.wageComponents.vehicleAllowance) || 0;
+            const extras0       = holidayOtAmt0 + nightAmt0 + meal0 + vehicle0;
+            let h = wd > 0 ? wd : 25000;
+            for (let i = 0; i < 10; i++) {
+              const basic = h * WAGE_HOURS.BASIC;
+              const g = h * WAGE_DIVISOR + extras0;
+              const p = basic * INSURANCE_RATES.PENSION;
+              const hh = basic * INSURANCE_RATES.HEALTH;
+              const lt = hh * INSURANCE_RATES.LTC_RATIO;
+              const em = basic * INSURANCE_RATES.EMPLOYMENT;
+              const insSum0 = p + hh + lt + em;
+              // 실수령 = 세전 - 4대보험 (소득세 제외 · monthlyNet 산식과 동일)
+              const net = g - insSum0;
+              const delta = autoMonthlyNet - net;
+              if (Math.abs(delta) < 50) break;
+              h += delta / WAGE_DIVISOR;
+              if (h < 0) h = 0;
+            }
+            autoHourly = Math.round(h * 10) / 10;
+          } else {
+            autoHourly = Math.round(wd * 10) / 10;
+          }
           const hourly = wageHourlyOverride != null && wageHourlyOverride > 0
             ? Math.round(wageHourlyOverride * 10) / 10  // 소수점 1자리
-            : Math.round(autoHourly * 10) / 10;
+            : autoHourly;
           if (hourly <= 0) {
             return (
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-4 text-center text-[11px] text-slate-500 font-semibold">
@@ -4634,32 +4663,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const mealChecked = meal > 0;
           const vehicleChecked = vehicle > 0;
 
-          // '희망 맞춤' · 근무조건 희망월수령액(autoMonthlyNet)을 세후로 맞추는 통상시급 반복 근사
-          //   · 각 항목·공제 모두 고려 · Newton-like 반복 (5~8회 수렴)
-          //   · 결과값을 wageHourlyOverride 에 세팅 · 사용자 편집 가능
-          const applyHopeMatch = () => {
-            const target = autoMonthlyNet;
-            if (target <= 0) return;
-            let h = hourly > 0 ? hourly : wd;
-            if (h <= 0) h = 25000;
-            const extras = holidayOtAmt + nightAmt + meal + vehicle;
-            for (let i = 0; i < 10; i++) {
-              const basic = h * WAGE_HOURS.BASIC;
-              const g = h * WAGE_DIVISOR + extras;
-              const p = basic * INSURANCE_RATES.PENSION;
-              const hh = basic * INSURANCE_RATES.HEALTH;
-              const lt = hh * INSURANCE_RATES.LTC_RATIO;
-              const em = basic * INSURANCE_RATES.EMPLOYMENT;
-              const tx = computeIncomeTax(Math.round(basic));
-              const ded = p + hh + lt + em + tx.total;
-              const net = g - ded;
-              const delta = target - net;
-              if (Math.abs(delta) < 50) break;
-              h += delta / WAGE_DIVISOR;
-              if (h < 0) h = 0;
-            }
-            setWageHourlyOverride(Math.round(h * 10) / 10);
-          };
 
           const tdItem = "px-3 py-2 text-slate-800 font-bold align-top";
           const tdMid  = "px-3 py-2 text-slate-500 text-[11px] align-top";
@@ -4695,19 +4698,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     type="button"
                     onClick={() => setWageHourlyOverride(null)}
                     className="text-[10px] text-indigo-500 hover:text-indigo-700 hover:underline cursor-pointer"
-                    title={`자동 (주중시급 ${fmtWon(autoHourly)}원)`}
+                    title={`자동 (희망월수령액 ${fmtWon(autoMonthlyNet)}원 맞춤 · 통상시급 ${fmtWon(autoHourly)}원)`}
                   >
                     자동
-                  </button>
-                )}
-                {autoMonthlyNet > 0 && (
-                  <button
-                    type="button"
-                    onClick={applyHopeMatch}
-                    className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-black cursor-pointer"
-                    title={`근무조건 희망월수령액 ${fmtWon(autoMonthlyNet)}원 을 세후로 맞추는 통상시급으로 자동 조정`}
-                  >
-                    희망 맞춤
                   </button>
                 )}
                 <span className="text-slate-400 text-[10.5px]">→ 기본급</span>
