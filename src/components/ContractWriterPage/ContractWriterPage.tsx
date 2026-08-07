@@ -71,7 +71,7 @@ import {
   DISCIPLINE_REASONS, HOLIDAY_CLAUSES, WAGE_CLAUSES, WAGE_CLAUSE_EXTRA, ETC_ITEMS, PRIVACY_ITEMS,
 } from "../../constants/contractClauses";
 import {
-  type SignKey, SIGN_KEYS, SIGN_LABEL, useContractSignatures,
+  type SignKey, SIGN_KEYS, SIGN_LABEL, REQUIRED_SIGN_COUNT, useContractSignatures,
 } from "../../hooks/useContractSignatures";
 
 type SignatureCanvasType = SignaturePad;
@@ -3873,7 +3873,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     }
   };
 
-  const canApprove = signatureStatus.filled === signatureStatus.total;
+  const canApprove = signatureStatus.filled >= REQUIRED_SIGN_COUNT;
 
   // ────────────────────────────────────────────────────────────────
   // 좌측 폼 · 재디자인 (2026-08-05) · BambooHR/Rippling/Notion 벤치마크

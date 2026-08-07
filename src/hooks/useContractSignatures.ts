@@ -20,12 +20,16 @@ export type SignKey =
   | "etcAck"          // T-D 기타사항 카테고리 이해·동의 (T6 pad)
   ;
 
-// 활성 서명 지점 · 6곳 (2026-08-07 · 사용자 확정)
-//   · receipt (수령자 확인) 은 UI 렌더링은 유지되나 필수 검증에서 제외
+// 활성 서명 지점 · UI 렌더링 7개 (표시용 total)
+//   · 필수 활성화 임계 · REQUIRED_SIGN_COUNT (6곳 이상 서명 시 canApprove)
 export const SIGN_KEYS: SignKey[] = [
   "employer", "employee", "privacy",
   "wageAck", "workTimeAck", "etcAck",
+  "receipt",
 ];
+
+/** 계약 완료 승인·PDF 저장 활성화 최소 서명 수 (사용자 확정 · 2026-08-07) */
+export const REQUIRED_SIGN_COUNT = 6;
 
 export const SIGN_LABEL: Record<SignKey, string> = {
   employer:     "사업주 (갑) 하단",
