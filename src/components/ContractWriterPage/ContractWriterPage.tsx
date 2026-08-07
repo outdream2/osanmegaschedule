@@ -579,8 +579,13 @@ function computeInsurance(gross: number): {
  *   · 지방소득세 = 소득세 × 10%
  * @param gross 기본급 (basicAmt = 통상시급 × 209h)
  */
-function computeIncomeTax(gross: number, dependents: number = 1, withholdingRate: WithholdingRate = DEFAULT_WITHHOLDING_RATE): { incomeTax: number; localTax: number; total: number } {
-  return payrollCalcMonthlyIncomeTax(Math.max(0, gross), 0, dependents, 0, withholdingRate);
+function computeIncomeTax(
+  gross: number,
+  dependents: number = 1,
+  withholdingRate: WithholdingRate = DEFAULT_WITHHOLDING_RATE,
+  childrenCount: number = 0,
+): { incomeTax: number; localTax: number; total: number } {
+  return payrollCalcMonthlyIncomeTax(Math.max(0, gross), 0, dependents, 0, withholdingRate, childrenCount);
 }
 
 /** 실수령액 = 세전 - 4대보험 - 소득세 - 지방소득세 */
@@ -2696,6 +2701,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const [dependentsCount, setDependentsCount] = useState<number>(1);
   // 2026-08-07 · 원천징수 비율 (80/100/120% · 근로자 선택 · 근소세법 §137 · default 100%)
   const [withholdingRate, setWithholdingRate] = useState<WithholdingRate>(DEFAULT_WITHHOLDING_RATE);
+  // 2026-08-07 · 자녀 세액공제 대상 자녀 수 (8~20세 · 소득세법 §59-2 · default 0)
+  const [childrenCount, setChildrenCount] = useState<number>(0);
 
   // 2026-08-07 · 통상시급/근무조건/선택항목 변경 시 · form.wageComponents 4자동항목 자동 반영
   //   · 왼쪽 임금구성표 (통상시급×시간) → 오른쪽 계약서 프리뷰 (form.wageComponents.*.amount) 동기화
@@ -4684,7 +4691,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               const lt = hh * INSURANCE_RATES.LTC_RATIO;
               const em = basic * INSURANCE_RATES.EMPLOYMENT;
               const insSumH = p + hh + lt + em;
-              const tx = computeIncomeTax(Math.round(basic), dependentsCount, withholdingRate);
+              const tx = computeIncomeTax(Math.round(basic), dependentsCount, withholdingRate, childrenCount);
               const dedH = insSumH + tx.total;
               const net = g - dedH;
               const delta = target - net;
@@ -4723,7 +4730,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const ltc     = Math.round(health * INSURANCE_RATES.LTC_RATIO);
           const emp     = Math.round(basicAmt * INSURANCE_RATES.EMPLOYMENT);
           const insSum  = pension + health + ltc + emp;
-          const taxObj  = computeIncomeTax(basicAmt, dependentsCount, withholdingRate);
+          const taxObj  = computeIncomeTax(basicAmt, dependentsCount, withholdingRate, childrenCount);
           const taxSum  = taxObj.total;
           // 예상공제 = 4대보험 + 소득세·지방세 (기본급 기준 · 국세청 7단계 공식)
           const deductionTotal = insSum + taxSum;
@@ -4870,6 +4877,23 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                         setDependentsCount(Number.isFinite(v) && v >= 1 ? Math.floor(v) : 1);
                       }}
                       className="w-12 tabular-nums bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[11px] font-black text-slate-800 text-right focus:outline-none focus:border-indigo-400"
+                    />
+                    <span className="text-slate-500">인</span>
+                  </span>
+                  <span className="flex items-baseline gap-x-1.5">
+                    <span className="text-slate-500">자녀</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={10}
+                      step={1}
+                      value={childrenCount}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        setChildrenCount(Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
+                      }}
+                      className="w-12 tabular-nums bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[11px] font-black text-slate-800 text-right focus:outline-none focus:border-indigo-400"
+                      title="자녀 세액공제 · 8~20세 자녀 (1인 25만/2인 55만/3인+ 55만+40만×(n-2))"
                     />
                     <span className="text-slate-500">인</span>
                   </span>
@@ -5044,7 +5068,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     <span className="text-slate-700 font-bold text-[11.5px] min-w-[74px]">근로소득세</span>
                     <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">간이세액표 7단계</span>
                     <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">
-                      국세청 공식 · 부양 {dependentsCount}인 (인적공제 {dependentsCount * 150}만원) · 원천징수 {Math.round(withholdingRate * 100)}%
+                      국세청 공식 · 부양 {dependentsCount}인 (인적공제 {dependentsCount * 150}만원){childrenCount > 0 ? ` · 자녀 ${childrenCount}인 (세액공제 ${(childrenCount === 1 ? 25 : childrenCount === 2 ? 55 : 55 + (childrenCount - 2) * 40)}만원/연)` : ""} · 원천징수 {Math.round(withholdingRate * 100)}%
                     </span>
                     <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(taxObj.incomeTax)}원</span>
                   </div>

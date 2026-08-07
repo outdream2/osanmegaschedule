@@ -81,12 +81,27 @@ export type WithholdingRate = 0.8 | 1.0 | 1.2;
 export const WITHHOLDING_RATES: readonly WithholdingRate[] = [0.8, 1.0, 1.2] as const;
 export const DEFAULT_WITHHOLDING_RATE: WithholdingRate = 1.0;
 
+/**
+ * 자녀 세액공제 (연 · 소득세법 §59-2 · 8~20세 자녀)
+ *   · 1인 · 25만원
+ *   · 2인 · 55만원
+ *   · 3인 이상 · 55만원 + (n-2) × 40만원
+ */
+export function childTaxCreditAnnual(childrenCount: number): number {
+  const n = Math.max(0, Math.floor(childrenCount));
+  if (n === 0) return 0;
+  if (n === 1) return 250_000;
+  if (n === 2) return 550_000;
+  return 550_000 + (n - 2) * 400_000;
+}
+
 export function calcMonthlyIncomeTax(
   monthlyGross: number,
   nonTaxable: number = 0,
   dependents: number = 1,
   basicSpecialDeduction: number = 0,
   withholdingRate: WithholdingRate = DEFAULT_WITHHOLDING_RATE,
+  childrenCount: number = 0,
 ): { incomeTax: number; localTax: number; total: number } {
   // 1단계 · 과세대상 월급여
   const M = Math.max(0, monthlyGross - Math.max(0, nonTaxable));
@@ -111,8 +126,10 @@ export function calcMonthlyIncomeTax(
   else if (K <= 500_000_000)  T = 94_060_000    + (K - 300_000_000)  * 0.40;
   else if (K <= 1_000_000_000) T = 174_060_000  + (K - 500_000_000)  * 0.42;
   else                        T = 384_060_000   + (K - 1_000_000_000) * 0.45;
-  // 5단계 · 근로소득 세액공제
-  const C = T <= 1_300_000 ? T * 0.55 : 715_000 + (T - 1_300_000) * 0.30;
+  // 5단계 · 근로소득 세액공제 + 자녀 세액공제 (8~20세 자녀 · §59-2)
+  const workCredit = T <= 1_300_000 ? T * 0.55 : 715_000 + (T - 1_300_000) * 0.30;
+  const childCredit = childTaxCreditAnnual(childrenCount);
+  const C = workCredit + childCredit;
   // 6단계 · 월 근로소득세 (음수 방어 · 원천징수 비율 적용)
   const incomeTax = Math.max(0, Math.round(((T - C) / 12) * withholdingRate));
   // 7단계 · 지방소득세 (소득세 × 10%)

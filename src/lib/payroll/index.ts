@@ -16,6 +16,7 @@ export {
 export {
   approxIncomeTax,
   calcMonthlyIncomeTax,
+  childTaxCreditAnnual,
   WITHHOLDING_RATES,
   DEFAULT_WITHHOLDING_RATE,
   type WithholdingRate,
