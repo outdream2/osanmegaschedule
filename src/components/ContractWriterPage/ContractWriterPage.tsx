@@ -4490,11 +4490,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             </div>
             <span className="text-[12px] font-black text-slate-700">임금구성표 산출</span>
           </button>
-          <label className="ml-auto inline-flex items-center gap-1.5 cursor-pointer select-none">
-            <input type="checkbox" checked={form.useWageComponents} onChange={(e) => upd("useWageComponents", e.target.checked)}
-              className="w-4 h-4 rounded accent-indigo-600 cursor-pointer" />
-            <span className="text-[11px] font-bold text-indigo-700">임금 구성표</span>
-          </label>
         </div>
 
         {!isCardCollapsed("wage") && (<>
@@ -4541,139 +4536,223 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const total = items.reduce((s, it) => s + Math.round(hourly * it.hours), 0);
           const basicAmount = Math.round(hourly * WAGE_HOURS.BASIC);
 
+          // 4자동항목 (통상시급 × 시간)
+          const basicAmt    = Math.round(hourly * WAGE_HOURS.BASIC);
+          const overtimeAmt = Math.round(hourly * WAGE_HOURS.OVERTIME);
+          const holidayAmt  = Math.round(hourly * WAGE_HOURS.HOLIDAY);
+          const annualAmt   = Math.round(hourly * WAGE_HOURS.ANNUAL_LEAVE);
+          const autoSum = basicAmt + overtimeAmt + holidayAmt + annualAmt;  // = monthlyNet 근사 (세후)
+          // 선택 항목 (별도)
+          const holidayOtHours = Number(form.wageComponents.fixedHolidayOvertime?.hours) || 0;
+          const holidayOtMins  = Number(form.wageComponents.fixedHolidayOvertime?.minutes) || 0;
+          const holidayOtAmt   = Number(form.wageComponents.fixedHolidayOvertime?.amount) || 0;
+          const nightHours     = Number(form.wageComponents.fixedNight?.hours) || 0;
+          const nightMins      = Number(form.wageComponents.fixedNight?.minutes) || 0;
+          const nightAmt       = Number(form.wageComponents.fixedNight?.amount) || 0;
+          const meal    = Number(form.wageComponents.mealAllowance) || 0;
+          const vehicle = Number(form.wageComponents.vehicleAllowance) || 0;
+          // 세금 · 기본급 기준
+          const pension = Math.round(basicAmt * INSURANCE_RATES.PENSION);
+          const health  = Math.round(basicAmt * INSURANCE_RATES.HEALTH);
+          const ltc     = Math.round(health   * INSURANCE_RATES.LTC_RATIO);
+          const emp     = Math.round(basicAmt * INSURANCE_RATES.EMPLOYMENT);
+          const insTotal = pension + health + ltc + emp;
+          const taxObj  = computeIncomeTax(basicAmt);
+          const taxTotal = taxObj.total;
+          const deductionTotal = insTotal + taxTotal;
+          const deductionPct = autoSum > 0 ? (deductionTotal / autoSum * 100) : 0;
+          // 세전 급여 = 세후 (autoSum) + 공제 + 선택 항목
+          const grossTotal = autoSum + deductionTotal + holidayOtAmt + nightAmt + meal + vehicle;
+
+          const setMeal = (v: number) => setForm(prev => ({
+            ...prev,
+            wageComponents: { ...prev.wageComponents, mealAllowance: Math.max(0, v) },
+          }));
+          const setVehicle = (v: number) => setForm(prev => ({
+            ...prev,
+            wageComponents: { ...prev.wageComponents, vehicleAllowance: Math.max(0, v) },
+          }));
+          const mealChecked = meal > 0;
+          const vehicleChecked = vehicle > 0;
+
+          const tdItem = "px-3 py-2 text-slate-800 font-bold align-top";
+          const tdMid  = "px-3 py-2 text-slate-500 text-[11px] align-top";
+          const tdAmt  = "px-3 py-2 text-right tabular-nums font-black text-slate-900 align-top whitespace-nowrap";
+
+          const deductionRows = [
+            { label: "국민연금",   rate: `${(INSURANCE_RATES.PENSION * 100).toFixed(2)}%`,        amount: pension, desc: "노후 소득 보장 · 사용자·근로자 각각 부담 (근로자 부담분)" },
+            { label: "건강보험",   rate: `${(INSURANCE_RATES.HEALTH * 100).toFixed(3)}%`,         amount: health,  desc: "국민건강보험 · 질병·부상 진료 급여 · 근로자 부담분" },
+            { label: "장기요양",   rate: `건강 × ${(INSURANCE_RATES.LTC_RATIO * 100).toFixed(2)}%`, amount: ltc,     desc: "노인장기요양 · 건강보험료의 12.95% 가산" },
+            { label: "고용보험",   rate: `${(INSURANCE_RATES.EMPLOYMENT * 100).toFixed(2)}%`,     amount: emp,     desc: "실업급여 재원 · 근로자 부담분 (사용자 별도 부담)" },
+            { label: "소득세",     rate: "간이세액표",                                             amount: taxObj.incomeTax, desc: "근로소득 간이세액표 (부양 1인 기준 · 원천징수)" },
+            { label: "지방소득세", rate: "소득세 × 10%",                                           amount: taxObj.localTax,  desc: "소득세의 10% · 지자체 재원" },
+          ];
+
           return (
-            <div className="border border-slate-200 rounded-lg bg-white px-4 py-3 flex flex-col gap-2.5 text-[12px] leading-relaxed">
-              {/* 1행 · 통상시급 역산 */}
-              <div className="flex items-baseline flex-wrap gap-x-2 pb-2 border-b border-slate-100">
-                <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-400">통상시급</span>
-                <span className="text-slate-600">
-                  {fmtWon(monthlyNet)}원 ÷ {WAGE_DIVISOR.toFixed(2)}h
+            <div className="border border-slate-200 rounded-lg bg-white overflow-hidden flex flex-col">
+              {/* 헤더 · 통상시급 산출 */}
+              <div className="px-4 py-2.5 bg-slate-50/60 border-b border-slate-200 flex items-baseline flex-wrap gap-x-2">
+                <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-500">통상시급</span>
+                <span className="text-[11px] text-slate-500">
+                  {fmtWon(monthlyNet)}원 ÷ {WAGE_DIVISOR.toFixed(2)}h =
                 </span>
-                <span className="text-slate-300">=</span>
-                <span className="tabular-nums font-black text-slate-900">{fmtWon(hourly)}</span>
-                <span className="text-slate-500">원</span>
+                <span className="tabular-nums text-[13px] font-black text-slate-900">{fmtWon(hourly)}원</span>
               </div>
 
-              {/* 4항목 · 텍스트 라인 */}
-              <div className="flex flex-col gap-1">
-                {items.map(it => {
-                  const amt = Math.round(hourly * it.hours);
-                  return (
-                    <div key={it.key} className="flex items-baseline gap-x-2">
-                      <span className="text-slate-700 font-bold min-w-[70px]">{it.label}</span>
-                      <span className="tabular-nums text-slate-500 text-[11px] min-w-[54px]">
-                        {it.hours.toFixed(2)}h
-                      </span>
-                      <span className="text-slate-300 text-[10.5px]">×</span>
-                      <span className="tabular-nums text-slate-500 text-[11px]">{fmtWon(hourly)}원</span>
-                      <span className="tabular-nums font-black text-slate-900 ml-auto">
-                        {fmtWon(amt)}원
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+              {/* 임금구성표 · 4자동항목 표 */}
+              <table className="w-full text-[11.5px]">
+                <thead className="bg-slate-50 text-slate-500">
+                  <tr>
+                    <th className="px-3 py-1.5 text-left font-black w-[36%]">구성 항목</th>
+                    <th className="px-3 py-1.5 text-left font-black">내용</th>
+                    <th className="px-3 py-1.5 text-right font-black w-[22%]">금액</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-t border-slate-100">
+                    <td className={tdItem}>기본급 <span className="text-slate-400 font-normal text-[10.5px]">(주휴수당 포함)</span></td>
+                    <td className={tdMid}>월평균 {WAGE_HOURS.BASIC.toFixed(2)} 시간</td>
+                    <td className={tdAmt}>{fmtWon(basicAmt)}원</td>
+                  </tr>
+                  <tr className="border-t border-slate-100">
+                    <td className={tdItem}>(고정)연장근로수당 <span className="text-slate-400 font-normal text-[10.5px]">(1.5배 가산 포함)</span></td>
+                    <td className={tdMid}>월평균 {WAGE_HOURS.OVERTIME.toFixed(2)} 시간 · 통상시급 × 시간 × <b>1.5</b></td>
+                    <td className={tdAmt}>{fmtWon(overtimeAmt)}원</td>
+                  </tr>
+                  <tr className="border-t border-slate-100">
+                    <td className={tdItem}>(고정)휴일근로수당 <span className="text-slate-400 font-normal text-[10.5px]">(1.5배 가산 포함)</span></td>
+                    <td className={tdMid}>월평균 {WAGE_HOURS.HOLIDAY.toFixed(2)} 시간 · 통상시급 × 시간 × <b>1.5</b></td>
+                    <td className={tdAmt}>{fmtWon(holidayAmt)}원</td>
+                  </tr>
+                  <tr className="border-t border-slate-100">
+                    <td className={tdItem}>(고정)연차휴가수당</td>
+                    <td className={tdMid}>월평균 {WAGE_HOURS.ANNUAL_LEAVE.toFixed(2)} 시간</td>
+                    <td className={tdAmt}>{fmtWon(annualAmt)}원</td>
+                  </tr>
+                  {/* 합계 = 세후 수령액 */}
+                  <tr className="border-t-2 border-slate-300 bg-slate-50">
+                    <td className="px-3 py-2 text-slate-800 font-black">
+                      합계 <span className="text-slate-500 font-bold text-[10.5px]">(세후 수령액)</span>
+                    </td>
+                    <td className="px-3 py-2 text-[10.5px] text-slate-500 tabular-nums">{(WAGE_HOURS.BASIC + WAGE_HOURS.OVERTIME + WAGE_HOURS.HOLIDAY + WAGE_HOURS.ANNUAL_LEAVE).toFixed(2)}h</td>
+                    <td className="px-3 py-2 text-right tabular-nums font-black text-slate-900 text-[12.5px] whitespace-nowrap">
+                      {fmtWon(autoSum)}원
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
 
-              {/* 합계 · 세액 기준 */}
-              <div className="flex items-baseline gap-x-2 pt-2 border-t border-slate-100">
-                <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-400">합계</span>
-                <span className="tabular-nums text-slate-500 text-[11px]">{totalHours.toFixed(2)}h</span>
-                <span className="tabular-nums font-black text-slate-900 ml-auto">{fmtWon(total)}원</span>
-              </div>
-              <div className="text-[10.5px] text-slate-500 leading-snug">
-                <span className="text-slate-400">※ 세액 기준</span> · 기본급 <span className="tabular-nums font-black text-slate-700">{fmtWon(basicAmount)}</span>원 (통상시급 × {WAGE_HOURS.BASIC}h)
-              </div>
-
-              {/* 4대보험·소득세 · 기본급 기준 요율 적용 */}
-              {(() => {
-                const base = basicAmount;
-                const pension = Math.round(base * INSURANCE_RATES.PENSION);
-                const health  = Math.round(base * INSURANCE_RATES.HEALTH);
-                const ltc     = Math.round(health * INSURANCE_RATES.LTC_RATIO);
-                const emp     = Math.round(base * INSURANCE_RATES.EMPLOYMENT);
-                const insTotal = pension + health + ltc + emp;
-                const taxObj = computeIncomeTax(base);
-                const incomeTax = taxObj.incomeTax;
-                const localTax  = taxObj.localTax;
-                const taxTotal  = taxObj.total;
-                const grand = insTotal + taxTotal;
-                const grandPct = base > 0 ? (grand / base * 100) : 0;
-
-                const rows = [
-                  {
-                    label: "국민연금",
-                    rate: `${(INSURANCE_RATES.PENSION * 100).toFixed(2)}%`,
-                    amount: pension,
-                    desc: "노후 소득 보장 · 사용자·근로자 각각 부담 (근로자 부담분)",
-                  },
-                  {
-                    label: "건강보험",
-                    rate: `${(INSURANCE_RATES.HEALTH * 100).toFixed(3)}%`,
-                    amount: health,
-                    desc: "국민건강보험 · 질병·부상 진료 급여 · 근로자 부담분",
-                  },
-                  {
-                    label: "장기요양",
-                    rate: `건강 × ${(INSURANCE_RATES.LTC_RATIO * 100).toFixed(2)}%`,
-                    amount: ltc,
-                    desc: "노인장기요양 · 건강보험료의 12.95% 가산",
-                  },
-                  {
-                    label: "고용보험",
-                    rate: `${(INSURANCE_RATES.EMPLOYMENT * 100).toFixed(2)}%`,
-                    amount: emp,
-                    desc: "실업급여 재원 · 근로자 부담분 (사용자 별도 부담)",
-                  },
-                  {
-                    label: "소득세",
-                    rate: "간이세액표",
-                    amount: incomeTax,
-                    desc: "근로소득 간이세액표 (부양 1인 기준 · 원천징수)",
-                  },
-                  {
-                    label: "지방소득세",
-                    rate: "소득세 × 10%",
-                    amount: localTax,
-                    desc: "소득세의 10% · 지자체 재원",
-                  },
-                ];
-
-                return (
-                  <div className="pt-2 mt-1 border-t border-slate-100 flex flex-col gap-1.5">
-                    <div className="flex items-baseline gap-x-2">
-                      <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-400">공제</span>
-                      <span className="text-[10.5px] text-slate-500">기본급 {fmtWon(base)}원 기준</span>
-                      <span className="tabular-nums text-[10.5px] text-slate-400 ml-auto">
-                        총 {grandPct.toFixed(1)}% · {fmtWon(grand)}원
-                      </span>
+              {/* 공제 · 접기 (기본급 기준) */}
+              <details className="border-t border-slate-200 bg-indigo-50/30">
+                <summary className="px-3 py-2 flex items-baseline gap-x-2 cursor-pointer hover:bg-indigo-50/60 list-none select-none">
+                  <span className="text-slate-400 text-[10px]">▼</span>
+                  <span className="text-[10.5px] font-black uppercase tracking-wider text-indigo-700">+ 공제</span>
+                  <span className="text-[10.5px] text-slate-500">기본급 {fmtWon(basicAmt)}원 기준 · 총 {deductionPct.toFixed(1)}%</span>
+                  <span className="tabular-nums font-black text-indigo-800 ml-auto text-[12px]">+{fmtWon(deductionTotal)}원</span>
+                </summary>
+                <div className="px-3 pb-2.5 flex flex-col gap-1">
+                  {deductionRows.map(r => (
+                    <div key={r.label} className="pt-1.5 border-t border-indigo-100/60 flex items-baseline gap-x-2 flex-wrap">
+                      <span className="text-slate-700 font-bold text-[11.5px] min-w-[74px]">{r.label}</span>
+                      <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">{r.rate}</span>
+                      <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">{r.desc}</span>
+                      <span className="tabular-nums font-black text-indigo-700 ml-auto text-[11.5px] whitespace-nowrap">+{fmtWon(r.amount)}원</span>
                     </div>
-                    <div className="flex flex-col gap-0.5">
-                      {rows.map(r => (
-                        <div key={r.label} className="flex flex-col">
-                          <div className="flex items-baseline gap-x-2">
-                            <span className="text-slate-700 font-bold min-w-[70px]">{r.label}</span>
-                            <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">{r.rate}</span>
-                            <span className="tabular-nums font-black text-rose-600 ml-auto">−{fmtWon(r.amount)}원</span>
-                          </div>
-                          <div className="text-[10px] text-slate-400 font-medium pl-[70px] leading-snug">
-                            {r.desc}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex items-baseline gap-x-2 pt-1.5 border-t border-slate-100">
-                      <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-500">공제 합계</span>
-                      <span className="tabular-nums text-[11px] text-slate-500">4대보험 {fmtWon(insTotal)} + 소득세 {fmtWon(taxTotal)}</span>
-                      <span className="tabular-nums font-black text-rose-700 ml-auto">−{fmtWon(grand)}원</span>
-                    </div>
-                    <div className="flex items-baseline gap-x-2 pt-1.5 border-t border-slate-100">
-                      <span className="text-[10.5px] font-black uppercase tracking-wider text-emerald-700">기본급 실수령</span>
-                      <span className="text-[10.5px] text-slate-500">{fmtWon(base)} − {fmtWon(grand)}</span>
-                      <span className="tabular-nums font-black text-emerald-800 ml-auto">{fmtWon(Math.max(0, base - grand))}원</span>
-                    </div>
+                  ))}
+                  <div className="flex items-baseline gap-x-2 pt-1.5 border-t border-indigo-200">
+                    <span className="text-[10.5px] font-black uppercase tracking-wider text-indigo-700">공제 합계</span>
+                    <span className="tabular-nums text-[11px] text-slate-500">4대보험 {fmtWon(insTotal)} + 소득세 {fmtWon(taxTotal)}</span>
+                    <span className="tabular-nums font-black text-indigo-800 ml-auto text-[12px]">+{fmtWon(deductionTotal)}원</span>
                   </div>
-                );
-              })()}
+                </div>
+              </details>
+
+              {/* 선택 항목 · 휴일연장·야간·식대·차량 (있을 때만 표시 or 항상 체크박스) */}
+              <table className="w-full text-[11.5px] border-t border-slate-200">
+                <tbody>
+                  {/* (고정)휴일연장근로수당 · 0.5배 가산 */}
+                  <tr className="border-t border-slate-100">
+                    <td className={tdItem}>(고정)휴일연장근로수당 <span className="text-slate-400 font-normal text-[10.5px]">(0.5배 가산 포함)</span></td>
+                    <td className={tdMid}>월평균 {holidayOtHours} 시간 {holidayOtMins} 분 · 통상시급 × 시간 × <b>0.5</b></td>
+                    <td className={tdAmt}>{holidayOtAmt > 0 ? `${fmtWon(holidayOtAmt)}원` : "-"}</td>
+                  </tr>
+                  {/* (고정)야간근로수당 · 0.5배 가산 */}
+                  <tr className="border-t border-slate-100">
+                    <td className={tdItem}>(고정)야간근로수당 <span className="text-slate-400 font-normal text-[10.5px]">(0.5배 가산 포함)</span></td>
+                    <td className={tdMid}>월평균 {nightHours} 시간 {nightMins} 분 · 통상시급 × 시간 × <b>0.5</b></td>
+                    <td className={tdAmt}>{nightAmt > 0 ? `${fmtWon(nightAmt)}원` : "-"}</td>
+                  </tr>
+                  {/* 식대 (비과세) · 체크박스 */}
+                  <tr className="border-t border-slate-100">
+                    <td className={tdItem}>식대 <span className="text-slate-400 font-normal text-[10.5px]">(비과세)</span></td>
+                    <td className={tdMid}>
+                      <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={mealChecked}
+                          onChange={(e) => setMeal(e.target.checked ? (meal > 0 ? meal : 200_000) : 0)}
+                          className="w-3.5 h-3.5 rounded accent-indigo-600 cursor-pointer"
+                        />
+                        <span className="text-slate-500">해당자에 한함</span>
+                      </label>
+                      {mealChecked && (
+                        <span className="inline-flex items-center ml-2">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={meal ? meal.toLocaleString("ko-KR") : ""}
+                            onChange={(e) => setMeal(Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
+                            className="w-24 bg-white border border-slate-200 rounded px-2 py-0.5 text-right text-[11px] font-bold text-slate-800 focus:outline-none focus:border-indigo-400"
+                          />
+                          <span className="ml-1 text-slate-400 text-[10.5px]">원</span>
+                        </span>
+                      )}
+                    </td>
+                    <td className={tdAmt}>{mealChecked ? `${fmtWon(meal)}원` : "-"}</td>
+                  </tr>
+                  {/* 차량유지비 (비과세) · 체크박스 */}
+                  <tr className="border-t border-slate-100">
+                    <td className={tdItem}>차량유지비 <span className="text-slate-400 font-normal text-[10.5px]">(비과세)</span></td>
+                    <td className={tdMid}>
+                      <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={vehicleChecked}
+                          onChange={(e) => setVehicle(e.target.checked ? (vehicle > 0 ? vehicle : 200_000) : 0)}
+                          className="w-3.5 h-3.5 rounded accent-indigo-600 cursor-pointer"
+                        />
+                        <span className="text-slate-500">해당자에 한함</span>
+                      </label>
+                      {vehicleChecked && (
+                        <span className="inline-flex items-center ml-2">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={vehicle ? vehicle.toLocaleString("ko-KR") : ""}
+                            onChange={(e) => setVehicle(Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
+                            className="w-24 bg-white border border-slate-200 rounded px-2 py-0.5 text-right text-[11px] font-bold text-slate-800 focus:outline-none focus:border-indigo-400"
+                          />
+                          <span className="ml-1 text-slate-400 text-[10.5px]">원</span>
+                        </span>
+                      )}
+                    </td>
+                    <td className={tdAmt}>{vehicleChecked ? `${fmtWon(vehicle)}원` : "-"}</td>
+                  </tr>
+                  {/* 월급여총액 · 세전 */}
+                  <tr className="border-t-2 border-emerald-300 bg-emerald-50/70">
+                    <td className="px-3 py-2 text-emerald-900 font-black text-[12.5px]">
+                      월급여총액 <span className="text-emerald-600 font-bold text-[10.5px]">(세전)</span>
+                    </td>
+                    <td className="px-3 py-2 text-[10.5px] text-emerald-700 font-semibold">
+                      세후 {fmtWon(autoSum)} + 공제 {fmtWon(deductionTotal)}
+                      {(holidayOtAmt + nightAmt + meal + vehicle) > 0 && ` + 선택 ${fmtWon(holidayOtAmt + nightAmt + meal + vehicle)}`}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums font-black text-emerald-900 text-[13px] whitespace-nowrap">
+                      {fmtWon(grossTotal)}원
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           );
         })()}
