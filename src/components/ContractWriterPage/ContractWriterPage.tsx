@@ -4514,14 +4514,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           );
         })()}
 
-        {/* 임금 구성표 · T-V (2026-08-05) · 항상 표시 · weekdayHourly 로 수식 계산 · T-CTR-7 · 체크박스 활성화 */}
-        <WageComponentsForm
-          wage={form.wageComponents}
-          onChange={(next) => upd("wageComponents", next)}
-          weekdayHourly={Number(form.weekdayHourly) || 0}
-          wageDisabled={form.wageDisabled}
-          onWageDisabledChange={(next) => upd("wageDisabled", next)}
-        />
+        {/* 임금 구성표 · 삭제 완료 · 재작성 대기 (2026-08-07) */}
 
         </>)}
       </div>
