@@ -556,6 +556,33 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
   // 서명 모달 state
   const [signModalSlot, setSignModalSlot] = useState<SignSlot | null>(null);
 
+  // ── T-CompanyInfo-Universal (2026-08-07) · 사업장 정보 서버 로드 ─────
+  //   · settings.company_info 에서 회사명·대표자·주소·사업자번호 로드
+  //   · 로드 완료 시 · form 의 회사 필드가 하드코딩 default 와 동일한 경우만 덮어씀
+  //     (사용자가 이미 편집했으면 유지 · ContractWriterPage 와 동일 패턴)
+  const { info: companyInfo, loaded: companyInfoLoaded } = useCompanyInfo();
+  const companyInfoAppliedRef = useRef(false);
+  useEffect(() => {
+    if (!companyInfoLoaded) return;
+    if (companyInfoAppliedRef.current) return;
+    companyInfoAppliedRef.current = true;
+    setForm(prev => {
+      const isDefaultCompanyName = prev.companyName === DEFAULT_COMPANY.companyName || prev.companyName === "";
+      const isDefaultEmployerName = prev.employerName === DEFAULT_COMPANY.employerName || prev.employerName === "";
+      // recipient · 기본형(`<회사명> 대표`) 인 경우에만 갱신
+      const isDefaultRecipient =
+        prev.recipient === DEFAULT_RECIPIENT ||
+        prev.recipient === buildDefaultRecipient(DEFAULT_COMPANY.companyName) ||
+        prev.recipient === "";
+      return {
+        ...prev,
+        companyName: isDefaultCompanyName ? companyInfo.name : prev.companyName,
+        employerName: isDefaultEmployerName ? companyInfo.representativeName : prev.employerName,
+        recipient: isDefaultRecipient ? buildDefaultRecipient(companyInfo.name) : prev.recipient,
+      };
+    });
+  }, [companyInfoLoaded, companyInfo]);
+
   // ── 직원 목록 로드 ────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;

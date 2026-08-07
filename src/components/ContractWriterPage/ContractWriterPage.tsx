@@ -3683,6 +3683,11 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   // 계약 완료 → PDF 로컬 저장
   const handleComplete = async () => {
     setNotice(null);
+    // T-PDF-SignatureRequired: 사업주·근로자 서명 필수
+    if (!signUrls.employer || !signUrls.employee) {
+      setNotice({ tone: "err", text: "서명 후 저장 가능합니다. 사업주(갑)와 근로자(을) 서명이 필요합니다." });
+      return;
+    }
     if (!await validateBeforeAction({ requireAllSignatures: false })) return;
     setGenerating(true);
     await new Promise(r => setTimeout(r, 60));
@@ -5468,13 +5473,22 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             </span>
           )}
         </button>
-        <button type="button" onClick={handleComplete} disabled={generating}
-          className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-[12px] font-bold shadow-sm transition-colors cursor-pointer whitespace-nowrap"
-          title="PDF 로컬 다운로드"
-        >
-          <DownloadSimple size={13} weight="bold" />
-          <span>{generating ? "생성 중..." : "PDF"}</span>
-        </button>
+        {/* T-PDF-SignatureRequired: 사업주·근로자 서명 필수 · disabled */}
+        {(() => {
+          const hasBothSigns = !!signUrls.employer && !!signUrls.employee;
+          return (
+            <button type="button" onClick={handleComplete} disabled={generating || !hasBothSigns}
+              className={`inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-[12px] font-bold shadow-sm transition-colors whitespace-nowrap
+                ${hasBothSigns && !generating
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                  : "bg-slate-300 text-slate-500 cursor-not-allowed opacity-60"}`}
+              title={hasBothSigns ? "PDF 로컬 다운로드" : "서명 후 저장 가능합니다 (사업주·근로자 서명 필요)"}
+            >
+              <DownloadSimple size={13} weight="bold" />
+              <span>{generating ? "생성 중..." : "PDF"}</span>
+            </button>
+          );
+        })()}
       </div>
     </section>
   );
