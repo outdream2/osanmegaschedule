@@ -3305,15 +3305,15 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     });
   }, [form.employeeName, form.employeeAddress]);
 
-  // T-CTR-9 · Step 2 (2026-08-05) · 자동 희망세후 (실수령액) 계산
-  //   · 사용자 정본 흐름:
-  //     (주중일 × 하루h × 주중시급 + 주말일 × 하루h × 주말시급) × 4.3452
-  //     = 희망세후 실수령액 (자동 입력창 반영)
-  //   · 사용자가 targetNetInput 편집한 후엔 자동 갱신 중단 (수동 우선)
+  // T-CTR-9 · Step 2 (2026-08-05, 2026-08-07 통일)
+  //   · 근무조건 헤더의 buMonthlyNet 과 동일 산식으로 targetNetInput 자동 반영
+  //     weeklyPay  = round(주중일 × 하루h × 주중시급 + 주말일 × 하루h × 주말시급)
+  //     monthlyNet = round(weeklyPay × 4.345)
+  //   · 사용자가 targetNetInput 편집 시 · 자동 갱신 중단 (수동 우선)
   //   · targetNetInput 을 빈 값으로 초기화하면 자동 재개
   const manualTargetNetRef = useRef(false);
   useEffect(() => {
-    if (manualTargetNetRef.current) return; // 수동 편집 후엔 스킵
+    if (manualTargetNetRef.current) return;
     const dailyH = monthlyCalc ? monthlyCalc.dailyMinutes / 60 : 0;
     const wdRate = Number(form.weekdayHourly) || 0;
     const weRate = Number(form.weekendHourly) || wdRate;
@@ -3321,9 +3321,11 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     if (!Number.isFinite(wdRate) || wdRate <= 0) return;
     if (!Number.isFinite(weeklyWeekdayDays) || weeklyWeekdayDays <= 0) return;
 
-    const monthlyWeekdayHours = weeklyWeekdayDays * dailyH * WEEK_PER_MONTH;
-    const monthlyWeekendHours = (weeklyWeekendDays || 0) * dailyH * WEEK_PER_MONTH;
-    const autoNet = Math.round(monthlyWeekdayHours * wdRate + monthlyWeekendHours * weRate);
+    // 헤더 buMonthlyNet 과 동일 · weeklyPay × 4.345
+    const weeklyWdH = weeklyWeekdayDays * dailyH;
+    const weeklyWeH = (weeklyWeekendDays || 0) * dailyH;
+    const weeklyPay = Math.round(weeklyWdH * wdRate + weeklyWeH * weRate);
+    const autoNet = Math.round(weeklyPay * 4.345);
     if (!Number.isFinite(autoNet) || autoNet <= 0) return;
 
     setForm(prev => {
@@ -4638,75 +4640,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   반영
                 </button>
               </div>
-              {/* T-CTR-12 (2026-08-05) · 세전 월 총액 (자동 gross-up · 편집 시 임금구조 재분배) */}
-              <div className="flex items-stretch gap-2">
-                <div className="flex-1 flex items-center gap-2 rounded-lg border border-emerald-200 bg-white/70 px-3 py-2">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 shrink-0">세전</span>
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={form.grossSalaryInput}
-                      onChange={(e) => {
-                        const cleaned = e.target.value.replace(/[^0-9]/g, "");
-                        // 수동 편집 감지 · 빈 값 초기화 시 자동 재개
-                        manualGrossSalaryRef.current = cleaned !== "";
-                        upd("grossSalaryInput", cleaned);
-                      }}
-                      placeholder="자동: 희망세후 + 세금"
-                      className="w-full bg-transparent text-[13px] text-slate-800 font-black text-right pr-6 focus:outline-none"
-                    />
-                    <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[10.5px] text-slate-400 font-semibold pointer-events-none">원</span>
-                  </div>
-                </div>
-                <div className="flex flex-col justify-center px-2 rounded-md bg-white/40 border border-emerald-100">
-                  <span className="text-[8.5px] font-black uppercase tracking-wider text-emerald-600">통상시급</span>
-                  <span className="tabular-nums text-[11px] font-black text-emerald-800">
-                    {(() => {
-                      const g = Number(form.grossSalaryInput.replace(/[^0-9]/g, "")) || 0;
-                      if (g <= 0) return "-";
-                      const oh = Math.round(g / RECOGNIZED_HOURS.total);
-                      return `${fmtWon(oh)} 원`;
-                    })()}
-                  </span>
-                </div>
-              </div>
-              {/* 세전 → 296.94h 분배 (자동 · 4항목) 힌트 */}
-              <div className="text-[9.5px] text-emerald-700 font-semibold px-1">
-                {(() => {
-                  const g = Number(form.grossSalaryInput.replace(/[^0-9]/g, "")) || 0;
-                  if (g <= 0) return "근무시간·시급 입력 시 · 자동 채움 (희망세후 → 세전 → 임금구조 296.94h 분배)";
-                  const oh = g / RECOGNIZED_HOURS.total;
-                  return `세전 ÷ 296.94h = 통상시급 · 기본 ${RECOGNIZED_HOURS.basic}h + 연장 ${RECOGNIZED_HOURS.fixedOvertime}h + 휴일 ${RECOGNIZED_HOURS.fixedHoliday}h + 연차 ${RECOGNIZED_HOURS.fixedAnnualLeave}h · 통상시급 ${fmtWon(Math.round(oh))}원`;
-                })()}
-              </div>
-              {/* 4-col 요약 (실시간) · T-CTR-9 · Step 1 · Number.isFinite guard */}
-              <div className="grid grid-cols-4 gap-1.5 mt-1">
-                <div className="rounded-md bg-white border border-slate-200 px-2 py-1.5 flex flex-col gap-0.5">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">월근로</span>
-                  <span className="tabular-nums text-[11.5px] font-black text-slate-800">
-                    {Number.isFinite(monthlyHours) && monthlyHours > 0 ? `${monthlyHours.toFixed(1)}h` : "-"}
-                  </span>
-                </div>
-                <div className="rounded-md bg-white border border-slate-200 px-2 py-1.5 flex flex-col gap-0.5">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">시급</span>
-                  <span className="tabular-nums text-[11.5px] font-black text-indigo-700">
-                    {Number.isFinite(wd) && wd > 0 ? fmtWon(wd) : "-"}
-                  </span>
-                </div>
-                <div className="rounded-md bg-white border border-slate-200 px-2 py-1.5 flex flex-col gap-0.5">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">세전</span>
-                  <span className="tabular-nums text-[11.5px] font-black text-slate-800">
-                    {Number.isFinite(currentGross) && currentGross > 0 ? fmtWon(currentGross) : "-"}
-                  </span>
-                </div>
-                <div className="rounded-md bg-emerald-50 border border-emerald-200 px-2 py-1.5 flex flex-col gap-0.5">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-emerald-600">예상세후</span>
-                  <span className="tabular-nums text-[11.5px] font-black text-emerald-800">
-                    {Number.isFinite(currentNet) && currentNet > 0 ? fmtWon(currentNet) : "-"}
-                  </span>
-                </div>
-              </div>
               {/* T-Y (2026-08-05) · 최저임금 warning · 통상시급 < 2026 최저시급 */}
               {wd > 0 && wd < MIN_WAGE_2026 && (
                 <div className="mt-1 rounded-md bg-rose-50 border border-rose-300 px-2 py-1.5 flex items-center gap-1.5">
@@ -4717,85 +4650,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 </div>
               )}
             </div>
-          );
-        })()}
-
-        {/* 실수령액 상세 */}
-        {(() => {
-          const wd = Number(form.weekdayHourly) || 0;
-          const we = Number(form.weekendHourly) || 0;
-          const gross = computeWageFromHourlyDual(wd, we, form.wageComponents).total
-            + (form.wageComponents.mealAllowance || 0)
-            + (form.wageComponents.vehicleAllowance || 0);
-          const ins = computeInsurance(gross);
-          const tax = computeIncomeTax(gross);
-          const netFinal = includeIncomeTax
-            ? Math.max(0, gross - ins.total - tax.total)
-            : Math.max(0, gross - ins.total);
-          const row = (label: string, amount: number, opts?: { minus?: boolean; sub?: boolean; hint?: string }) => (
-            <div className={`flex items-baseline justify-between gap-2 ${opts?.sub ? "pl-3" : ""}`}>
-              <span className={`${opts?.sub ? "text-[10.5px] text-slate-500 font-semibold" : "text-[11.5px] text-slate-700 font-bold"}`}>
-                {label}
-                {opts?.hint && <span className="ml-1 text-[9.5px] text-slate-400 font-medium">{opts.hint}</span>}
-              </span>
-              <span className={`tabular-nums ${opts?.sub ? "text-[10.5px] text-slate-600 font-bold" : "text-[12px] text-slate-900 font-black"}`}>
-                {opts?.minus ? "−" : ""}{fmtWon(amount)} 원
-              </span>
-            </div>
-          );
-          return (
-            <details className="rounded-lg border border-slate-200 bg-white px-3 py-2" open={netDetailOpen} onToggle={(e) => setNetDetailOpen((e.currentTarget as HTMLDetailsElement).open)}>
-              <summary className="text-[11.5px] font-black text-slate-700 cursor-pointer hover:text-emerald-700 flex items-center gap-1.5 list-none select-none">
-                <CaretDown size={11} weight="bold" className={`transition-transform ${netDetailOpen ? "" : "-rotate-90"}`} />
-                <Calculator size={12} weight="fill" className="text-emerald-600" />
-                실수령액 상세
-                <label className="ml-auto inline-flex items-center gap-1.5 cursor-pointer select-none" onClick={(e) => e.stopPropagation()}>
-                  <input
-                    type="checkbox"
-                    checked={includeIncomeTax}
-                    onChange={(e) => setIncludeIncomeTax(e.target.checked)}
-                    className="w-3.5 h-3.5 rounded accent-indigo-600 cursor-pointer"
-                  />
-                  <span className="text-[10.5px] font-bold text-slate-600">소득세 포함</span>
-                </label>
-              </summary>
-              <div className="mt-2.5 flex flex-col gap-1.5">
-                {row("월 세전 총액", gross)}
-                <div className="border-t border-slate-100 my-0.5" />
-                <div className="text-[9.5px] font-black text-slate-400 uppercase tracking-wider mt-0.5">공제 항목</div>
-                {row("국민연금", ins.pension, { minus: true, sub: true, hint: "(4.75%)" })}
-                {row("건강보험", ins.health, { minus: true, sub: true, hint: "(3.595%)" })}
-                {row("장기요양", ins.ltc, { minus: true, sub: true, hint: "(건보×12.95%)" })}
-                {row("고용보험", ins.employment, { minus: true, sub: true, hint: "(0.9%)" })}
-                <div className="flex items-baseline justify-between gap-2 pl-3 border-t border-slate-100 pt-1">
-                  <span className="text-[10.5px] text-slate-600 font-black">4대보험 합계</span>
-                  <span className="tabular-nums text-[11px] text-rose-600 font-black">−{fmtWon(ins.total)} 원</span>
-                </div>
-                <div className={`mt-0.5 ${includeIncomeTax ? "" : "opacity-50"}`}>
-                  {row("소득세", tax.incomeTax, { minus: true, sub: true, hint: "(간이 근사·부양 1인)" })}
-                  {row("지방소득세", tax.localTax, { minus: true, sub: true, hint: "(소득세×10%)" })}
-                  <div className="flex items-baseline justify-between gap-2 pl-3 border-t border-slate-100 pt-1">
-                    <span className="text-[10.5px] text-slate-600 font-black">소득세 합계</span>
-                    <span className="tabular-nums text-[11px] text-rose-600 font-black">−{fmtWon(tax.total)} 원</span>
-                  </div>
-                  {!includeIncomeTax && (
-                    <div className="text-[9.5px] text-slate-400 italic pl-3 mt-0.5">
-                      참고용 · "소득세 포함" 체크 시 실수령액에 반영
-                    </div>
-                  )}
-                </div>
-                <div className="mt-1.5 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 flex items-baseline justify-between gap-2">
-                  <span className="text-[12px] font-black text-emerald-900 flex items-center gap-1.5">
-                    <Money size={13} weight="fill" />
-                    월 실수령액
-                    <span className="text-[9.5px] font-semibold text-emerald-600">
-                      ({includeIncomeTax ? "4대보험+소득세" : "4대보험만"})
-                    </span>
-                  </span>
-                  <span className="tabular-nums text-[18px] font-black text-emerald-800">{fmtWon(netFinal)} 원</span>
-                </div>
-              </div>
-            </details>
           );
         })()}
 
