@@ -749,11 +749,12 @@ function computeWageFlow(
   const isMonthly = isMonthlyWageType(contractType);
   const wd = Math.max(0, weekdayHourly);
   const we = Math.max(0, weekendHourly) || wd;
-  const divisor = basicH + otH + holH + annualH;
+  // 2026-08-07 · 월급제 = 포괄임금 296.94h 고정 · 시급제 = 실 근무 기준 dynamic
+  const divisor = isMonthly ? WAGE_DIVISOR : (basicH + otH + holH + annualH);
 
   if (isMonthly) {
-    // 월급제: 통상시급 = 입력시급, 세전 직접 계산
-    const gross = divisor > 0 ? Math.round(wd * divisor) : 0;
+    // 월급제: 통상시급 = 입력시급, 세전 = 시급 × 296.94 (포괄임금 표준)
+    const gross = Math.round(wd * WAGE_DIVISOR);
     const { taxes, converged } = payrollGrossUp(Math.max(0, gross - 1), 0, 1);
     // 세금은 gross 자체에서 역계산 (참고용)
     const ins = computeInsurance(gross);
@@ -761,10 +762,10 @@ function computeWageFlow(
     const taxTotal = ins.total + tax.total;
     const netAmount = Math.max(0, gross - taxTotal);
     const ordinaryHourly = wd; // 입력값 = 통상시급
-    const basic       = Math.round(wd * basicH);
-    const overtime    = Math.round(wd * otH);
-    const holiday     = Math.round(wd * holH);
-    const annualLeave = Math.round(wd * annualH);
+    const basic       = Math.round(wd * WAGE_HOURS.BASIC);         // × 209
+    const overtime    = Math.round(wd * WAGE_HOURS.OVERTIME);      // × 55.94
+    const holiday     = Math.round(wd * WAGE_HOURS.HOLIDAY);       // × 22
+    const annualLeave = Math.round(wd * WAGE_HOURS.ANNUAL_LEAVE);  // × 10
     return {
       isMonthly: true,
       weeklyPay: 0,

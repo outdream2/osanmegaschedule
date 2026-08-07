@@ -571,6 +571,8 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
     wageClauses: false, workTimeClauses: false, holidayClauses: false,
     disciplineClauses: false, etcClauses: false, privacyClauses: false,
   });
+  // 2026-08-07 · 회사 정보 · 기본 접힘 (사용자 요청)
+  const [companyInfoOpen, setCompanyInfoOpen] = useState(false);
 
   const [notice, setNotice] = useState<{ tone: "ok" | "err" | "info"; text: string } | null>(null);
 
@@ -769,13 +771,19 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
         {/* ── 2컬럼 그리드 · 회사정보 (좌) + 시급 (우) ─────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
 
-          {/* 섹션 0 · 회사 정보 */}
+          {/* 섹션 0 · 회사 정보 · 2026-08-07 · 기본 접힘 (사용자 요청) */}
           <section className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <header className="flex items-center gap-2 px-3 py-2.5 border-b border-slate-100 bg-slate-50/60">
+            <button
+              type="button"
+              onClick={() => setCompanyInfoOpen(o => !o)}
+              className="w-full flex items-center gap-2 px-3 py-2.5 border-b border-slate-100 bg-slate-50/60 hover:bg-slate-100/60 transition cursor-pointer"
+              aria-expanded={companyInfoOpen}
+            >
+              <span className={`text-slate-400 transition-transform ${companyInfoOpen ? "" : "-rotate-90"}`}>▼</span>
               <div className="w-7 h-7 rounded-md bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
                 <Info size={14} weight="fill" />
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 text-left">
                 <h2 className="text-[13px] font-black text-emerald-700 leading-none">회사 정보</h2>
                 <p className="text-[11px] text-slate-500 font-semibold mt-0.5">근로계약서 사업주란 자동 채움 · 편집 즉시 저장</p>
               </div>
@@ -795,8 +803,9 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                   <Warning size={11} weight="fill" /> 저장 실패
                 </span>
               )}
-            </header>
+            </button>
 
+            {companyInfoOpen && (
             <div className="p-3 grid grid-cols-2 gap-2.5">
               {/* 상호 */}
               <div className="flex flex-col gap-1">
@@ -859,6 +868,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                 />
               </div>
             </div>
+            )}
           </section>
 
           {/* 섹션 1 · 직군별 시급 */}
