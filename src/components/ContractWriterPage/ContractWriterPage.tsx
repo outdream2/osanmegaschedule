@@ -4480,7 +4480,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             <div className="w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center shrink-0">
               <Money size={13} weight="fill" className="text-emerald-600" />
             </div>
-            <span className="text-[12px] font-black text-slate-700">임금 계산</span>
+            <span className="text-[12px] font-black text-slate-700">임금구성표 산출</span>
           </button>
           <label className="ml-auto inline-flex items-center gap-1.5 cursor-pointer select-none">
             <input type="checkbox" checked={form.useWageComponents} onChange={(e) => upd("useWageComponents", e.target.checked)}
@@ -4491,164 +4491,17 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
 
         {!isCardCollapsed("wage") && (<>
 
-        {/* T-W (2026-08-05) · 희망 세후 수령액 → 임금구성 자동 역산 (사용자 요청 3번 복원) */}
-        {/* T-CTR-9 · Step 1 (2026-08-05) · NaN 방어 · fmtWon 통과 · Number.isFinite guard · 각 입력 undefined/NaN → 0 */}
+        {/* T-Y (2026-08-05) · 최저임금 warning · 통상시급 < 2026 최저시급 */}
         {(() => {
           const wdRaw = Number(form.weekdayHourly);
           const wd = Number.isFinite(wdRaw) && wdRaw > 0 ? wdRaw : 0;
-          const currentGrossRaw = computeWageFromHourlyDual(wd, wd, form.wageComponents).total
-            + (Number(form.wageComponents.mealAllowance) || 0)
-            + (Number(form.wageComponents.vehicleAllowance) || 0);
-          const currentGross = Number.isFinite(currentGrossRaw) ? currentGrossRaw : 0;
-          const currentIns = computeInsurance(currentGross);
-          const currentTax = computeIncomeTax(currentGross);
-          const currentNet = includeIncomeTax
-            ? Math.max(0, currentGross - currentIns.total - currentTax.total)
-            : Math.max(0, currentGross - currentIns.total);
-          // T-CTR-9 · Step 1 · basicSalary.hours/minutes 이 undefined/NaN 이어도 안전
-          const bH = Number(form.wageComponents.basicSalary?.hours) || 0;
-          const bM = Number(form.wageComponents.basicSalary?.minutes) || 0;
-          const monthlyHoursRaw = bH + bM / 60;
-          const monthlyHours = Number.isFinite(monthlyHoursRaw) ? monthlyHoursRaw : 0;
-
-          const applyTargetNet = () => {
-            const targetNet = Number(form.targetNetInput.replace(/[^0-9]/g, "")) || 0;
-            if (targetNet <= 0) {
-              setNotice({ tone: "err", text: "희망 세후 수령액을 입력하세요." });
-              return;
-            }
-            // T-Y (2026-08-05) · payroll 모듈 · 정확한 gross-up (4대보험+누진소득세)
-            //   · nonTaxable · 식대 + 차량 (비과세) 반영
-            //   · dependents · 기본 1
-            const nonTaxable = (form.wageComponents.mealAllowance || 0)
-                             + (form.wageComponents.vehicleAllowance || 0);
-            const gross = reverseGrossFromNet(targetNet, nonTaxable, 1);
-
-            // T-X (2026-08-05) · 노무사 표준 계산법 · 동적 시간 산정
-            //   · dailyH + 주중일수 + 주말일수 · 각 항목 시간 자동
-            //   · divisor = 기본h + 연장가산h + 휴일가산h + 연차h
-            // T-CTR-7 · 명시적 비활성 항목 · divisor 에서 제외 · 시급 재산정 · amount=0 유지
-            const disMap = form.wageDisabled ?? {};
-            const dailyH = monthlyCalc ? monthlyCalc.dailyMinutes / 60 : 0;
-            const useDynamic = dailyH > 0 && weeklyWeekdayDays > 0;
-            const base = useDynamic
-              ? calcWageBase(dailyH, weeklyWeekdayDays, weeklyWeekendDays)
-              : null;
-            const annualLeaveH = form.wageComponents.fixedAnnualLeave.hours
-                                + form.wageComponents.fixedAnnualLeave.minutes / 60
-                              || WAGE_HOURS.ANNUAL_LEAVE;
-            const otH = base ? base.monthlyOvertimeGainedH : WAGE_HOURS.OVERTIME;
-            const holH = base ? base.monthlyHolidayGainedH : WAGE_HOURS.HOLIDAY;
-            const basicH = base ? base.monthlyBasicH : WAGE_HOURS.BASIC;
-            const divisor = basicH
-              + (disMap.fixedOvertime    ? 0 : otH)
-              + (disMap.fixedHoliday     ? 0 : holH)
-              + (disMap.fixedAnnualLeave ? 0 : annualLeaveH);
-            const hourly = divisor > 0 ? Math.round(gross / divisor) : 0;
-
-            const splitHM = (totalH: number): { h: number; m: number } => {
-              if (totalH <= 0) return { h: 0, m: 0 };
-              const totalMin = Math.round(totalH * 60);
-              return { h: Math.floor(totalMin / 60), m: totalMin % 60 };
-            };
-
-            setForm(prev => {
-              const nextBasic = base
-                ? { ...splitHM(base.monthlyBasicH),          amount: Math.round(base.monthlyBasicH * hourly) }
-                : { hours: 209, minutes: 0,  amount: Math.round(WAGE_HOURS.BASIC * hourly) };
-              // T-CTR-7 · disabled 시 · 시간·금액 0 유지
-              const nextOt = disMap.fixedOvertime
-                ? { hours: 0, minutes: 0, amount: 0 }
-                : (base
-                    ? { ...splitHM(base.monthlyOvertimeGainedH), amount: Math.round(base.monthlyOvertimeGainedH * hourly) }
-                    : { hours: 55,  minutes: 56, amount: Math.round(WAGE_HOURS.OVERTIME * hourly) });
-              const nextHoliday = disMap.fixedHoliday
-                ? { hours: 0, minutes: 0, amount: 0 }
-                : (base
-                    ? { ...splitHM(base.monthlyHolidayGainedH),  amount: Math.round(base.monthlyHolidayGainedH * hourly) }
-                    : { hours: 22,  minutes: 0,  amount: Math.round(WAGE_HOURS.HOLIDAY * hourly) });
-              const nextAnnual = disMap.fixedAnnualLeave
-                ? { hours: 0, minutes: 0, amount: 0 }
-                : {
-                    hours: prev.wageComponents.fixedAnnualLeave.hours || 10,
-                    minutes: prev.wageComponents.fixedAnnualLeave.minutes,
-                    amount: Math.round((prev.wageComponents.fixedAnnualLeave.hours + prev.wageComponents.fixedAnnualLeave.minutes / 60 || WAGE_HOURS.ANNUAL_LEAVE) * hourly),
-                  };
-              return {
-                ...prev,
-                weekdayHourly: String(hourly),
-                weekendHourly: String(hourly),
-                wageComponents: {
-                  ...prev.wageComponents,
-                  basicSalary:      { ...prev.wageComponents.basicSalary,      ...nextBasic },
-                  fixedOvertime:    { ...prev.wageComponents.fixedOvertime,    ...nextOt },
-                  fixedHoliday:     { ...prev.wageComponents.fixedHoliday,     ...nextHoliday },
-                  fixedAnnualLeave: { ...prev.wageComponents.fixedAnnualLeave, ...nextAnnual },
-                },
-              };
-            });
-            const modeText = base ? "노무사 표준" : "레거시 296.94";
-            // T-Y (2026-08-05) · 검산 · 통상시급 · 최저임금 warning
-            const minWageWarn = hourly > 0 && hourly < MIN_WAGE_2026
-              ? ` · ⚠ 시급 < 최저 ${MIN_WAGE_2026.toLocaleString()}원`
-              : "";
-            setNotice({
-              tone: minWageWarn ? "err" : "ok",
-              text: `역산 완료 (${modeText} · payroll 모듈) · 시급 ${hourly.toLocaleString()}원 · 세전 ${gross.toLocaleString()}원 · divisor ${divisor.toFixed(2)}${minWageWarn}`,
-            });
-          };
-
-          // T-CTR-WageByType · 카드3 · 계약유형 분류
-          const isMonthlyCard3 = isMonthlyWageType(form.contractType);
-
+          if (!(wd > 0 && wd < MIN_WAGE_2026)) return null;
           return (
-            <div className="rounded-lg border border-indigo-200 bg-gradient-to-br from-indigo-50/40 to-emerald-50/40 p-3 flex flex-col gap-2">
-              <div className="text-[10.5px] font-black uppercase tracking-wider text-indigo-700 flex items-center gap-1.5">
-                <Calculator size={11} weight="fill" />
-                희망 세후 수령액 (역산 입력)
-                {/* T-CTR-WageByType · 계약유형 배지 */}
-                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded normal-case ${isMonthlyCard3 ? "bg-indigo-200 text-indigo-800" : "bg-amber-200 text-amber-800"}`}>
-                  {isMonthlyCard3 ? "월급제" : "시급제"} · 시급 × 주시간 × 4.345
-                </span>
-                <span className="ml-auto text-[9.5px] font-semibold text-indigo-400 normal-case">
-                  입력 · [반영] · 임금구성표 자동 채움
-                </span>
-              </div>
-              <div className="flex items-stretch gap-2">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={form.targetNetInput}
-                    onChange={(e) => {
-                      const cleaned = e.target.value.replace(/[^0-9]/g, "");
-                      // T-CTR-9 · Step 2 · 사용자 편집 감지 · 빈 값이면 자동 재개
-                      manualTargetNetRef.current = cleaned !== "";
-                      upd("targetNetInput", cleaned);
-                    }}
-                    placeholder="예: 3000000"
-                    className="w-full bg-white border border-indigo-200 rounded-lg pl-3 pr-8 py-2 text-[14px] text-slate-800 font-black text-right focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 font-semibold pointer-events-none">원</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={applyTargetNet}
-                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-emerald-500 text-white text-[12px] font-black shadow-sm hover:brightness-110 transition-all cursor-pointer whitespace-nowrap"
-                  title="희망세후 → 세전 (payroll grossUp · 4대보험+누진소득세) → 시급 (÷동적 divisor · 노무사 표준) → 임금구성 8항목 채움"
-                >
-                  반영
-                </button>
-              </div>
-              {/* T-Y (2026-08-05) · 최저임금 warning · 통상시급 < 2026 최저시급 */}
-              {wd > 0 && wd < MIN_WAGE_2026 && (
-                <div className="mt-1 rounded-md bg-rose-50 border border-rose-300 px-2 py-1.5 flex items-center gap-1.5">
-                  <Warning size={12} weight="fill" className="text-rose-600 shrink-0" />
-                  <span className="text-[10.5px] font-black text-rose-700">
-                    최저임금 위반 위험 · 통상시급 <span className="tabular-nums">{fmtWon(wd)}</span> 원 &lt; 2026 최저 <span className="tabular-nums">{fmtWon(MIN_WAGE_2026)}</span> 원
-                  </span>
-                </div>
-              )}
+            <div className="rounded-md bg-rose-50 border border-rose-300 px-2 py-1.5 flex items-center gap-1.5">
+              <Warning size={12} weight="fill" className="text-rose-600 shrink-0" />
+              <span className="text-[10.5px] font-black text-rose-700">
+                최저임금 위반 위험 · 통상시급 <span className="tabular-nums">{fmtWon(wd)}</span> 원 &lt; 2026 최저 <span className="tabular-nums">{fmtWon(MIN_WAGE_2026)}</span> 원
+              </span>
             </div>
           );
         })()}
