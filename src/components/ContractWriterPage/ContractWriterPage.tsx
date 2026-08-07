@@ -4688,14 +4688,16 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                              + (Number(form.wageComponents.vehicleAllowance) || 0);
             let h = wd > 0 ? wd : 25000;
             for (let i = 0; i < 20; i++) {
-              const basic = h * WAGE_HOURS.BASIC;
               const g = h * WAGE_DIVISOR + extrasAuto;
-              const p  = basic * INSURANCE_RATES.PENSION;
-              const hh = basic * INSURANCE_RATES.HEALTH;
+              // 4대보험 · 세전월급(g) 기준 · 국민연금 상한 6,590,000
+              const pBaseAuto = Math.min(g, 6_590_000);
+              const p  = pBaseAuto * INSURANCE_RATES.PENSION;
+              const hh = g * INSURANCE_RATES.HEALTH;
               const lt = hh * INSURANCE_RATES.LTC_RATIO;
-              const em = basic * INSURANCE_RATES.EMPLOYMENT;
+              const em = g * INSURANCE_RATES.EMPLOYMENT;
               const insSumH = p + hh + lt + em;
-              const tx = computeIncomeTax(Math.round(basic), dependentsCount, withholdingRate, childrenCount, nonTaxableAmount);
+              // 소득세 · 세전월급 기준 · 비과세 반영
+              const tx = computeIncomeTax(Math.round(g), dependentsCount, withholdingRate, childrenCount, nonTaxableAmount);
               const dedH = insSumH + tx.total;
               const net = g - dedH;
               const delta = autoMonthlyNet - net;
@@ -4721,14 +4723,14 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             let lastNet = 0;
             let lastDelta = target;
             for (let i = 0; i < 20; i++) {
-              const basic = h * WAGE_HOURS.BASIC;
               const g = h * WAGE_DIVISOR + extras0;
-              const p  = basic * INSURANCE_RATES.PENSION;
-              const hh = basic * INSURANCE_RATES.HEALTH;
+              const pBaseSim = Math.min(g, 6_590_000);
+              const p  = pBaseSim * INSURANCE_RATES.PENSION;
+              const hh = g * INSURANCE_RATES.HEALTH;
               const lt = hh * INSURANCE_RATES.LTC_RATIO;
-              const em = basic * INSURANCE_RATES.EMPLOYMENT;
+              const em = g * INSURANCE_RATES.EMPLOYMENT;
               const insSumH = p + hh + lt + em;
-              const tx = computeIncomeTax(Math.round(basic), dep, wRate, ch, nonTaxableAmount);
+              const tx = computeIncomeTax(Math.round(g), dep, wRate, ch, nonTaxableAmount);
               const dedH = insSumH + tx.total;
               lastNet = g - dedH;
               lastDelta = target - lastNet;
@@ -4792,20 +4794,23 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const nightAmt       = Number(form.wageComponents.fixedNight?.amount) || 0;
           const meal    = Number(form.wageComponents.mealAllowance) || 0;
           const vehicle = Number(form.wageComponents.vehicleAllowance) || 0;
-          // 공제 · 기본급 (basicAmt = 통상시급 × 209h) 기준 4대보험 + 소득세
-          const pension = Math.round(basicAmt * INSURANCE_RATES.PENSION);
-          const health  = Math.round(basicAmt * INSURANCE_RATES.HEALTH);
+          // 월급여총액 (세전) = 4자동항목 + 선택 항목 (식대·차량 · 비과세 포함)
+          const grossTotal = gross + holidayOtAmt + nightAmt + meal + vehicle;
+          // 공제 · 세전월급 (grossTotal) 기준 4대보험 (실무 표준) + 소득세
+          //   · 국민연금 · 기준소득월액 상한 6,590,000원 (2026-07~) · 초과 시 313,025원 고정
+          const PENSION_CAP = 6_590_000;
+          const pensionBase = Math.min(grossTotal, PENSION_CAP);
+          const pension = Math.round(pensionBase * INSURANCE_RATES.PENSION);
+          const health  = Math.round(grossTotal * INSURANCE_RATES.HEALTH);
           const ltc     = Math.round(health * INSURANCE_RATES.LTC_RATIO);
-          const emp     = Math.round(basicAmt * INSURANCE_RATES.EMPLOYMENT);
+          const emp     = Math.round(grossTotal * INSURANCE_RATES.EMPLOYMENT);
           const insSum  = pension + health + ltc + emp;
-          const taxObj  = computeIncomeTax(basicAmt, dependentsCount, withholdingRate, childrenCount, nonTaxableAmount);
+          const taxObj  = computeIncomeTax(grossTotal, dependentsCount, withholdingRate, childrenCount, nonTaxableAmount);
           const taxSum  = taxObj.total;
           // 예상공제 = 4대보험 + 소득세·지방세 + 기타 공제항목 (비과세는 소득세 M 차감으로 이미 반영)
           const deductionTotal = insSum + taxSum + otherDeductionAmount;
-          const deductionPct = basicAmt > 0 ? (deductionTotal / basicAmt * 100) : 0;
-          // 월급여총액 (세전) = 4자동항목 + 선택 항목 (식대·차량 · 비과세 포함)
-          const grossTotal = gross + holidayOtAmt + nightAmt + meal + vehicle;
-          // 예상 실수령 (세후) = 세전 총액 - (4대보험 + 소득세)
+          const deductionPct = grossTotal > 0 ? (deductionTotal / grossTotal * 100) : 0;
+          // 예상 실수령 (세후) = 세전 총액 - (4대보험 + 소득세 + 기타 공제)
           const monthlyNet = Math.max(0, grossTotal - deductionTotal);
 
           const setMeal = (v: number) => setForm(prev => ({
