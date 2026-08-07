@@ -4666,14 +4666,33 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const hourly = wageHourlyOverride != null && wageHourlyOverride > 0
             ? Math.round(wageHourlyOverride * 10) / 10  // 소수점 1자리
             : autoHourly;
-          // '희망 맞춤' 버튼용 · 반복 근사 (autoMonthlyNet 세후 맞춤)
+          // '희망 맞춤' 버튼용 · 반복 근사 · 4대보험 + 소득세 (부양·원천징수 반영) 모두 포함
+          //   · monthlyNet (실수령) 산식과 완전 일치 · 오차 <50원 수렴
           const applyHopeMatch = () => {
+            const target = autoMonthlyNet;
+            if (target <= 0) return;
             const extras0 = (Number(form.wageComponents.fixedHolidayOvertime?.amount) || 0)
                           + (Number(form.wageComponents.fixedNight?.amount) || 0)
                           + (Number(form.wageComponents.mealAllowance) || 0)
                           + (Number(form.wageComponents.vehicleAllowance) || 0);
-            const h = computeAutoHourly(autoMonthlyNet, wd, extras0);
-            setWageHourlyOverride(h);
+            let h = wd > 0 ? wd : 25000;
+            for (let i = 0; i < 12; i++) {
+              const basic = h * WAGE_HOURS.BASIC;
+              const g = h * WAGE_DIVISOR + extras0;
+              const p  = basic * INSURANCE_RATES.PENSION;
+              const hh = basic * INSURANCE_RATES.HEALTH;
+              const lt = hh * INSURANCE_RATES.LTC_RATIO;
+              const em = basic * INSURANCE_RATES.EMPLOYMENT;
+              const insSumH = p + hh + lt + em;
+              const tx = computeIncomeTax(Math.round(basic), dependentsCount, withholdingRate);
+              const dedH = insSumH + tx.total;
+              const net = g - dedH;
+              const delta = target - net;
+              if (Math.abs(delta) < 50) break;
+              h += delta / WAGE_DIVISOR;
+              if (h < 0) h = 0;
+            }
+            setWageHourlyOverride(Math.round(h * 10) / 10);
           };
           if (hourly <= 0) {
             return (
