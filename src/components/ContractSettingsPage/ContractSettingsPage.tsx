@@ -397,11 +397,12 @@ const JOB_META: Array<{
   color: string;
   bg: string;
   border: string;
+  accent: string;
 }> = [
-  { key: "약사", label: "약사", color: "text-violet-700",  bg: "bg-violet-50",  border: "border-violet-200"  },
-  { key: "매장", label: "매장", color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200" },
-  { key: "창고", label: "창고", color: "text-orange-700",  bg: "bg-orange-50",  border: "border-orange-200"  },
-  { key: "기타", label: "기타", color: "text-slate-700",   bg: "bg-slate-50",   border: "border-slate-200"   },
+  { key: "약사", label: "약사", color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-200", accent: "border-l-violet-400" },
+  { key: "매장", label: "매장", color: "text-sky-700",    bg: "bg-sky-50",   border: "border-sky-200",   accent: "border-l-sky-400"    },
+  { key: "창고", label: "창고", color: "text-amber-700",  bg: "bg-amber-50",  border: "border-amber-200",  accent: "border-l-amber-400"  },
+  { key: "기타", label: "기타", color: "text-slate-700",  bg: "bg-slate-50",  border: "border-slate-200",  accent: "border-l-slate-400"  },
 ];
 
 const CLAUSE_GROUP_META: Array<{
@@ -442,7 +443,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
   // ── 시급 · 서버 저장 (settings.wageRates · 모든 관리자 공유)
   //   ContractWriterPage 가 참조하는 유일한 소스와 통일
   //   즉시 저장 (debounce · useSettings 내부)
-  const { wageRates, update: updateSettings } = useSettings();
+  const { wageRates, update: updateSettings, saveNow: saveSettingsNow } = useSettings();
 
   // ── 회사 정보 · 서버 저장 (settings "company_info" key)
   //   · ContractWriterPage 가 이 값으로 form 초기화 (하드코딩 fallback 대체)
@@ -451,6 +452,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
     setValue: setCompanyInfo,
     loaded: companyInfoLoaded,
     saveState: companyInfoSaveState,
+    saveNow: saveCompanyInfoNow,
   } = useKvSetting<CompanyInfo>({
     key: "company_info",
     defaultValue: DEFAULT_COMPANY_INFO,
@@ -483,6 +485,10 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
   const [initialClauses, setInitialClauses] = useState<ContractClauses>(() => loadContractClauses());
   const [serverLoaded, setServerLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // ── 전체 저장 상태
+  const [overallSaving, setOverallSaving] = useState(false);
+  const [overallSaveState, setOverallSaveState] = useState<"idle" | "saved" | "error">("idle");
 
   // ── 서버 초기 로드 (mount 1회) · 실패 시 기존 localStorage 값 유지
   //   자동 마이그레이션: 서버가 빈 값(모든 그룹이 DEFAULT 와 동일) 이고
@@ -670,6 +676,44 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
       setNotice({ tone: "err", text: err?.message ?? "설정 저장에 실패했습니다." });
     } finally {
       setSaving(false);
+    }
+  };
+
+  // ── 전체 저장 (회사정보 · 시급 · 각 호 · 순차)
+  const handleSaveAll = async () => {
+    if (overallSaving) return;
+    setOverallSaving(true);
+    setOverallSaveState("idle");
+    const errors: string[] = [];
+    try {
+      // 1. 회사 정보 즉시 저장
+      const ciOk = await saveCompanyInfoNow();
+      if (!ciOk) errors.push("회사 정보 서버 저장 실패");
+
+      // 2. 시급(wageRates) 포함 전체 settings 즉시 저장
+      const wsOk = await saveSettingsNow();
+      if (!wsOk) errors.push("시급 서버 저장 실패");
+
+      // 3. 각 호 저장
+      const clauseResult = await saveContractClausesToServer(clauses, authSession?.employeeId ?? null);
+      if (clauseResult.savedToServer) {
+        setInitialClauses(cloneClauses(clauses));
+      } else {
+        errors.push(`각 호 서버 저장 실패 (${clauseResult.error ?? "네트워크 오류"})`);
+      }
+
+      if (errors.length === 0) {
+        setOverallSaveState("saved");
+        setNotice({ tone: "ok", text: "모든 항목이 서버에 저장되었습니다. (회사 정보 · 시급 · 각 호)" });
+      } else {
+        setOverallSaveState("error");
+        setNotice({ tone: "err", text: `일부 저장 실패: ${errors.join(" / ")}` });
+      }
+    } catch (err: any) {
+      setOverallSaveState("error");
+      setNotice({ tone: "err", text: err?.message ?? "전체 저장 중 오류가 발생했습니다." });
+    } finally {
+      setOverallSaving(false);
     }
   };
 
@@ -970,8 +1014,8 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
           </button>
         </div>
 
-        {/* 각 호 그룹 · 2컬럼 그리드 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {/* 각 호 그룹 · 1컬럼 세로 나열 (내용이 길어 2컬럼 가독성 저하) */}
+        <div className="grid grid-cols-1 gap-3">
           {CLAUSE_GROUP_META.map(grp => {
             const Icon = grp.icon;
             const list = clauses[grp.key];
