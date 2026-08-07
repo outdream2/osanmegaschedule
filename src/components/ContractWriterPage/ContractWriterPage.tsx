@@ -2938,7 +2938,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       (wd === "" && we === "");
     const last = lastAutoWageRef.current;
     const isPreviousAuto = last && wd === last.wd && we === last.we;
-    if (!isInitialDefault && !isPreviousAuto) return; // 사용자가 직접 입력한 값 → 유지
+    // wageAutoLoadedRef: 자동 로드된 상태 (onSelectEmployee / prefill / 이전 category effect) → 재로드 허용
+    const isAutoLoaded = wageAutoLoadedRef.current;
+    if (!isInitialDefault && !isPreviousAuto && !isAutoLoaded) return; // 사용자가 직접 입력한 값 → 유지
     const { weekday, weekend } = resolveWageForCategory(form.employeeCategory, form.employeeCategoryCustom, form.employeeId);
     const nextWd = String(weekday);
     const nextWe = String(weekend);
@@ -3472,6 +3474,17 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       : (positionRate && (positionRate.weekday > 0 || positionRate.weekend > 0)) ? positionRate
       : (positionRaw ? defaultWageForPosition(positionRaw) : null);
 
+    // T-CTR-WageAutoLoad-Bug fix · 직원 선택 시 wageAutoLoadedRef / lastAutoWageRef 동기화
+    //   → 이후 직군 변경(employeeCategory) 시 category effect 가 "자동 로드 값" 으로 인식해 재로드 허용
+    //   → onSelectEmployee 에서 직접 시급을 설정하므로 ref 업데이트 필수
+    if (resolvedRate) {
+      wageAutoLoadedRef.current = true;
+      lastAutoWageRef.current = {
+        wd: String(resolvedRate.weekday),
+        we: String(resolvedRate.weekend),
+      };
+    }
+
     setForm(prev => ({
       ...prev,
       employeeId: emp.id,
@@ -3608,46 +3621,23 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     const pdfW = pdf.internal.pageSize.getWidth();   // A4 = 210mm
     const pdfH = pdf.internal.pageSize.getHeight();  // A4 = 297mm
 
-    // 컨텐츠 원본 비율 (mm 단위)
-    const naturalImgW = pdfW;
-    const naturalImgH = (canvas.height * naturalImgW) / canvas.width;
+    // T-PDF-FullWidth · 가로 A4 풀폭 (margin 없음) · 세로 비율 계산 후 페이지 분할
+    //   imgW = pdfW 항상 고정 · 세로만 canvas 비율로 계산
+    const imgW = pdfW;
+    const imgH = (canvas.height * imgW) / canvas.width;
 
-    // T-Y · 정확히 2페이지 강제 · 컨텐츠가 2페이지 초과 시 스케일 축소
-    //   · 최대 컨텐츠 높이 = pdfH × 2 (594mm)
-    //   · 스케일 팩터 = min(1, pdfH*2 / naturalImgH)
-    //   · 스케일 후 imgW 축소 · 좌우 여백 발생 → centering (x offset)
-    const maxTwoPageH = pdfH * 2;
-    let imgW: number;
-    let imgH: number;
-    if (naturalImgH <= pdfH) {
-      // 1페이지 이내 · 자연 크기 유지 · 1페이지 발행
-      imgW = naturalImgW;
-      imgH = naturalImgH;
+    if (imgH <= pdfH) {
+      // 1페이지 이내 · 가로 풀폭 · 상단 붙임
       pdf.addImage(imgData, "PNG", 0, 0, imgW, imgH, undefined, "FAST");
     } else {
-      // 2페이지 이상 필요 · 스케일 팩터 계산 (2페이지 초과 시 축소)
-      const scale = naturalImgH <= maxTwoPageH ? 1 : (maxTwoPageH / naturalImgH);
-      imgH = naturalImgH * scale;
-      imgW = naturalImgW * scale;
-      const xOffset = (pdfW - imgW) / 2; // 좌우 여백 · 중앙 정렬
-
-      // T-Y · 2페이지 강제 분할 (자연 크기든 축소든 · 항상 2페이지)
-      //   상반부 · 페이지 1
-      pdf.addImage(imgData, "PNG", xOffset, 0, imgW, imgH, undefined, "FAST");
-      //   하반부 · 페이지 2 (동일 이미지 · y offset -pdfH 로 하단만 보임)
-      pdf.addPage();
-      pdf.addImage(imgData, "PNG", xOffset, -pdfH, imgW, imgH, undefined, "FAST");
-
-      // 안전장치 · imgH 가 여전히 2*pdfH 초과 (매우 긴 컨텐츠) → 추가 페이지
-      if (imgH > maxTwoPageH + 1) {
-        let heightLeft = imgH - maxTwoPageH;
-        let position = -pdfH * 2;
-        while (heightLeft > 0) {
-          pdf.addPage();
-          pdf.addImage(imgData, "PNG", xOffset, position, imgW, imgH, undefined, "FAST");
-          heightLeft -= pdfH;
-          position -= pdfH;
-        }
+      // 다중 페이지 · pdfH 씩 슬라이스 · 가로 풀폭 유지
+      let yOffset = 0;
+      let remaining = imgH;
+      while (remaining > 0) {
+        pdf.addImage(imgData, "PNG", 0, -yOffset, imgW, imgH, undefined, "FAST");
+        remaining -= pdfH;
+        yOffset += pdfH;
+        if (remaining > 0) pdf.addPage();
       }
     }
 
