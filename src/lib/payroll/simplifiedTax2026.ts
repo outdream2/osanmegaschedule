@@ -57,6 +57,59 @@ function dependentsFactor(dependents: number): number {
 }
 
 /**
+ * 국세청 근로소득 간이세액표 7단계 정식 산출 공식 (2026 기준)
+ *   1. 과세대상 월급여 M = 급여 - 비과세
+ *   2. 연 환산 Y = M × 12 · 근로소득공제 D1 (5구간 · 최대 2,000만)
+ *   3. 과세표준 K = Y - D1 - (부양가족 × 150만) - 기본특별공제
+ *   4. 연 산출세액 T (누진 · 6% ~ 45% · 8구간)
+ *   5. 근로소득 세액공제 C (T ≤ 130만 · 55% · 초과 · 71.5만 + 30%)
+ *   6. 월 근로소득세 = (T - C) / 12
+ *   7. 지방소득세 = 근로소득세 × 10%
+ *
+ * @param monthlyGross 월 세전 급여 (원)
+ * @param nonTaxable 월 비과세 소득 (식대·차량 등 · default 0)
+ * @param dependents 부양가족 수 (본인 포함 · default 1)
+ * @param basicSpecialDeduction 기본 특별공제 (표준세액공제 등 · default 0 · 필요 시 확장)
+ */
+export function calcMonthlyIncomeTax(
+  monthlyGross: number,
+  nonTaxable: number = 0,
+  dependents: number = 1,
+  basicSpecialDeduction: number = 0,
+): { incomeTax: number; localTax: number; total: number } {
+  // 1단계 · 과세대상 월급여
+  const M = Math.max(0, monthlyGross - Math.max(0, nonTaxable));
+  if (M <= 0) return { incomeTax: 0, localTax: 0, total: 0 };
+  // 2단계 · 연 환산 + 근로소득공제
+  const Y = M * 12;
+  let D1: number;
+  if (Y <= 5_000_000)        D1 = Y * 0.7;
+  else if (Y <= 15_000_000)  D1 = 3_500_000  + (Y - 5_000_000)   * 0.4;
+  else if (Y <= 45_000_000)  D1 = 7_500_000  + (Y - 15_000_000)  * 0.15;
+  else if (Y <= 100_000_000) D1 = 12_000_000 + (Y - 45_000_000)  * 0.05;
+  else                       D1 = Math.min(20_000_000, 14_750_000 + (Y - 100_000_000) * 0.02);
+  // 3단계 · 과세표준
+  const K = Math.max(0, Y - D1 - Math.max(1, dependents) * 1_500_000 - basicSpecialDeduction);
+  // 4단계 · 연간 산출세액 (누진)
+  let T: number;
+  if (K <= 14_000_000)        T = K * 0.06;
+  else if (K <= 50_000_000)   T = 840_000       + (K - 14_000_000)   * 0.15;
+  else if (K <= 88_000_000)   T = 6_240_000     + (K - 50_000_000)   * 0.24;
+  else if (K <= 150_000_000)  T = 15_360_000    + (K - 88_000_000)   * 0.35;
+  else if (K <= 300_000_000)  T = 37_060_000    + (K - 150_000_000)  * 0.38;
+  else if (K <= 500_000_000)  T = 94_060_000    + (K - 300_000_000)  * 0.40;
+  else if (K <= 1_000_000_000) T = 174_060_000  + (K - 500_000_000)  * 0.42;
+  else                        T = 384_060_000   + (K - 1_000_000_000) * 0.45;
+  // 5단계 · 근로소득 세액공제
+  const C = T <= 1_300_000 ? T * 0.55 : 715_000 + (T - 1_300_000) * 0.30;
+  // 6단계 · 월 근로소득세 (음수 방어)
+  const incomeTax = Math.max(0, Math.round((T - C) / 12));
+  // 7단계 · 지방소득세 (소득세 × 10%)
+  const localTax = Math.round(incomeTax * 0.10);
+  return { incomeTax, localTax, total: incomeTax + localTax };
+}
+
+/**
  * 소득세 근사 (홈택스 간이세액표 기반 · 부양가족 반영)
  * @param taxableGross 월 과세급여 (세전 - 비과세)
  * @param dependents 부양가족 수 (본인 포함 · default 1)

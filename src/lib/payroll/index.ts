@@ -13,7 +13,7 @@ export {
   RECOGNIZED_HOURS,
 } from "./insuranceRates";
 
-export { approxIncomeTax } from "./simplifiedTax2026";
+export { approxIncomeTax, calcMonthlyIncomeTax } from "./simplifiedTax2026";
 
 export { calcTaxes, type TaxBreakdown } from "./calcTaxes";
 

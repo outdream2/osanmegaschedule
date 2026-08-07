@@ -54,6 +54,7 @@ import {
   RECOGNIZED_HOURS,
   grossUp as payrollGrossUp,
   approxIncomeTax as payrollApproxIncomeTax,
+  calcMonthlyIncomeTax as payrollCalcMonthlyIncomeTax,
 } from "../../lib/payroll";
 import {
   CONTRACT_TYPES as CONTRACT_TYPES_CONST,
@@ -569,10 +570,14 @@ function computeInsurance(gross: number): {
  *   · gross · 여기서 곧바로 taxable 로 사용 (기존 UI 호출부 계약 유지 · 비과세 별도 안 뺌)
  *   · dependents · 기본 1 · 필요 시 확장 가능
  */
+/**
+ * 소득세 · 국세청 간이세액표 7단계 정식 공식 (2026)
+ *   · M(월급여) = 기본급 기준 (사용자 확정 · 비과세 = 0 · 기본특별공제 = 0)
+ *   · 지방소득세 = 소득세 × 10%
+ * @param gross 기본급 (basicAmt = 통상시급 × 209h)
+ */
 function computeIncomeTax(gross: number, dependents: number = 1): { incomeTax: number; localTax: number; total: number } {
-  const incomeTax = payrollApproxIncomeTax(Math.max(0, gross), dependents);
-  const localTax = Math.round(incomeTax * RATES_2026.localTaxRate);
-  return { incomeTax, localTax, total: incomeTax + localTax };
+  return payrollCalcMonthlyIncomeTax(Math.max(0, gross), 0, dependents, 0);
 }
 
 /** 실수령액 = 세전 - 4대보험 - 소득세 - 지방소득세 */
@@ -4694,13 +4699,12 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const insSum  = pension + health + ltc + emp;
           const taxObj  = computeIncomeTax(basicAmt);
           const taxSum  = taxObj.total;
-          // 예상공제 (표시용) = 4대보험 (실제 매달 원천징수 · 세후 계산에 반영)
-          //   · 소득세는 참고용 · 연말정산 조정 · 매달 세후 계산에서는 제외 (원본 계약서 관례)
-          const deductionTotal = insSum;
+          // 예상공제 = 4대보험 + 소득세·지방세 (기본급 기준 · 국세청 7단계 공식)
+          const deductionTotal = insSum + taxSum;
           const deductionPct = basicAmt > 0 ? (deductionTotal / basicAmt * 100) : 0;
           // 월급여총액 (세전) = 4자동항목 + 선택 항목 (식대·차량 · 비과세 포함)
           const grossTotal = gross + holidayOtAmt + nightAmt + meal + vehicle;
-          // 예상 실수령 (세후) = 세전 총액 - 4대보험 (소득세 별도)
+          // 예상 실수령 (세후) = 세전 총액 - (4대보험 + 소득세)
           const monthlyNet = Math.max(0, grossTotal - deductionTotal);
 
           const setMeal = (v: number) => setForm(prev => ({
@@ -4732,8 +4736,21 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const hasDual = weeklyWeekendDays > 0 && we !== wd;
           return (
             <div className="border border-slate-200 rounded-lg bg-white overflow-hidden flex flex-col">
-              {/* 근무조건 산식 · 주시간·계약유형·시급×주시간×4.345=희망월수령액 */}
+              {/* 근무조건 산식 · 직군·주시간·계약유형·시급×주시간×4.345=희망월수령액 */}
               <div className="px-4 py-2 bg-indigo-50/40 border-b border-indigo-100 flex items-baseline flex-wrap gap-x-1.5 text-[11px]">
+                {form.employeeCategory && (() => {
+                  const cat = form.employeeCategory;
+                  const cls =
+                    cat === "약사"  ? "bg-violet-500 text-white" :
+                    cat === "매장"  ? "bg-emerald-500 text-white" :
+                    cat === "창고"  ? "bg-orange-500 text-white" :
+                                      "bg-slate-600 text-white";
+                  return (
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9.5px] font-black ${cls}`}>
+                      {cat}
+                    </span>
+                  );
+                })()}
                 <span className="font-black text-indigo-900">주 {weeklyH.toFixed(1)}시간</span>
                 <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wide ${isMonthly ? "bg-indigo-200 text-indigo-800" : "bg-amber-200 text-amber-800"}`}>
                   {isMonthly ? "월급제" : "시급제"}
@@ -4968,17 +4985,25 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">실업급여 재원 · 근로자 부담분</span>
                     <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(emp)}원</span>
                   </div>
-                  <div className="pt-1.5 border-t border-rose-100/60 flex items-baseline gap-x-2 flex-wrap opacity-60">
-                    <span className="text-slate-500 font-bold text-[11.5px] min-w-[74px]">소득세·지방세</span>
-                    <span className="tabular-nums text-slate-400 text-[11px] min-w-[110px]">간이세액표 참고</span>
+                  <div className="pt-1.5 border-t border-rose-100/60 flex items-baseline gap-x-2 flex-wrap">
+                    <span className="text-slate-700 font-bold text-[11.5px] min-w-[74px]">근로소득세</span>
+                    <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">간이세액표 7단계</span>
                     <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">
-                      원천징수 근사 · <b>실수령 계산 제외</b> (연말정산 조정)
+                      국세청 공식 · 근로소득공제·세액공제 반영 (부양 1인)
                     </span>
-                    <span className="tabular-nums text-slate-500 text-[11px] ml-auto whitespace-nowrap">≈ {fmtWon(taxSum)}원 (참고)</span>
+                    <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(taxObj.incomeTax)}원</span>
+                  </div>
+                  <div className="pt-1.5 border-t border-rose-100/60 flex items-baseline gap-x-2 flex-wrap">
+                    <span className="text-slate-700 font-bold text-[11.5px] min-w-[74px]">지방소득세</span>
+                    <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">소득세 × 10%</span>
+                    <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">
+                      지자체 재원 · 근로소득세의 10%
+                    </span>
+                    <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(taxObj.localTax)}원</span>
                   </div>
                   <div className="flex items-baseline gap-x-2 pt-1.5 border-t border-rose-200">
-                    <span className="text-[10.5px] font-black uppercase tracking-wider text-rose-700">예상공제 (4대보험)</span>
-                    <span className="text-[10.5px] text-slate-500">국민연금 + 건강 + 장기요양 + 고용</span>
+                    <span className="text-[10.5px] font-black uppercase tracking-wider text-rose-700">예상공제 합계</span>
+                    <span className="text-[10.5px] text-slate-500">4대보험 {fmtWon(insSum)} + 소득세 {fmtWon(taxSum)}</span>
                     <span className="tabular-nums font-black text-rose-700 ml-auto text-[12px]">−{fmtWon(deductionTotal)}원</span>
                   </div>
                 </div>

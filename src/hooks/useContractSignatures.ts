@@ -20,11 +20,11 @@ export type SignKey =
   | "etcAck"          // T-D 기타사항 카테고리 이해·동의 (T6 pad)
   ;
 
-// 활성 서명 지점 · 승인 검증에 카운트되는 것만 (레거시 5개 제외 · T-D 3개 신규)
+// 활성 서명 지점 · 6곳 (2026-08-07 · 사용자 확정)
+//   · receipt (수령자 확인) 은 UI 렌더링은 유지되나 필수 검증에서 제외
 export const SIGN_KEYS: SignKey[] = [
   "employer", "employee", "privacy",
   "wageAck", "workTimeAck", "etcAck",
-  "receipt",
 ];
 
 export const SIGN_LABEL: Record<SignKey, string> = {
