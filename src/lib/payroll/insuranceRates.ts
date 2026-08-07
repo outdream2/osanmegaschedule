@@ -7,7 +7,7 @@
 export const RATES_2026 = {
   nationalPension: 0.0475,      // 국민연금 (근로자 부담률)
   healthInsurance: 0.03595,     // 건강보험 (근로자 부담률)
-  longTermCare: 0.1295,         // 장기요양 (건강보험료 대비)
+  longTermCare: 0.1314,         // 장기요양 (건강보험료 대비 · 2026 기준 · 보건복지부 0.9448%/7.19%)
   employmentInsurance: 0.009,   // 고용보험 (근로자 부담률)
   localTaxRate: 0.10,           // 지방소득세 (소득세 × 10%)
 } as const;

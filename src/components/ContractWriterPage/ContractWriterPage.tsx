@@ -54,6 +54,9 @@ import {
   RECOGNIZED_HOURS,
   grossUp as payrollGrossUp,
   approxIncomeTax as payrollApproxIncomeTax,
+  WITHHOLDING_RATES,
+  DEFAULT_WITHHOLDING_RATE,
+  type WithholdingRate,
 } from "../../lib/payroll";
 import {
   CONTRACT_TYPES as CONTRACT_TYPES_CONST,
@@ -315,7 +318,7 @@ if (typeof window !== "undefined" && (import.meta as any)?.env?.DEV) {
 const INSURANCE_RATES = {
   PENSION: RATES_2026.nationalPension,        // 국민연금 4.75%
   HEALTH: RATES_2026.healthInsurance,         // 건강보험 3.595%
-  LTC_RATIO: RATES_2026.longTermCare,         // 장기요양 = 건강 × 12.95%
+  LTC_RATIO: RATES_2026.longTermCare,         // 장기요양 = 건강 × 13.14%
   EMPLOYMENT: RATES_2026.employmentInsurance, // 고용보험 0.9%
 } as const;
 
@@ -569,8 +572,8 @@ function computeInsurance(gross: number): {
  *   · gross · 여기서 곧바로 taxable 로 사용 (기존 UI 호출부 계약 유지 · 비과세 별도 안 뺌)
  *   · dependents · 기본 1 · 필요 시 확장 가능
  */
-function computeIncomeTax(gross: number, dependents: number = 1): { incomeTax: number; localTax: number; total: number } {
-  const incomeTax = payrollApproxIncomeTax(Math.max(0, gross), dependents);
+function computeIncomeTax(gross: number, dependents: number = 1, withholdingRate: WithholdingRate = DEFAULT_WITHHOLDING_RATE): { incomeTax: number; localTax: number; total: number } {
+  const incomeTax = payrollApproxIncomeTax(Math.max(0, gross), dependents, withholdingRate);
   const localTax = Math.round(incomeTax * RATES_2026.localTaxRate);
   return { incomeTax, localTax, total: incomeTax + localTax };
 }
@@ -2657,6 +2660,41 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
 
   // 2026-08-07 · 통상시급 override (null 이면 자동 = 주중시급)
   const [wageHourlyOverride, setWageHourlyOverride] = useState<number | null>(null);
+  // 2026-08-07 · 원천징수 비율 (80/100/120% · 근로자 선택)
+  const [withholdingRate, setWithholdingRate] = useState<WithholdingRate>(DEFAULT_WITHHOLDING_RATE);
+
+  // 2026-08-07 · 통상시급 변경 시 · form.wageComponents 4자동항목 자동 반영 (오른쪽 프리뷰 임금구성표에 반영)
+  useEffect(() => {
+    const wdRate = Number(form.weekdayHourly) || 0;
+    const hourly = wageHourlyOverride != null && wageHourlyOverride > 0
+      ? Math.round(wageHourlyOverride * 10) / 10
+      : wdRate;
+    if (hourly <= 0) return;
+    const basicAmt    = Math.round(hourly * WAGE_HOURS.BASIC);
+    const overtimeAmt = Math.round(hourly * WAGE_HOURS.OVERTIME);
+    const holidayAmt  = Math.round(hourly * WAGE_HOURS.HOLIDAY);
+    const annualAmt   = Math.round(hourly * WAGE_HOURS.ANNUAL_LEAVE);
+    setForm(prev => {
+      const wc = prev.wageComponents;
+      // 값이 같으면 skip (무한 렌더 방지)
+      if (
+        wc.basicSalary?.amount === basicAmt
+        && wc.fixedOvertime?.amount === overtimeAmt
+        && wc.fixedHoliday?.amount === holidayAmt
+        && wc.fixedAnnualLeave?.amount === annualAmt
+      ) return prev;
+      return {
+        ...prev,
+        wageComponents: {
+          ...wc,
+          basicSalary:      { ...wc.basicSalary,      amount: basicAmt },
+          fixedOvertime:    { ...wc.fixedOvertime,    amount: overtimeAmt },
+          fixedHoliday:     { ...wc.fixedHoliday,     amount: holidayAmt },
+          fixedAnnualLeave: { ...wc.fixedAnnualLeave, amount: annualAmt },
+        },
+      };
+    });
+  }, [wageHourlyOverride, form.weekdayHourly]);
 
 
   // T-W (2026-08-05) · 좌측 카드 접기/펴기 상태 · localStorage 지속
@@ -4554,12 +4592,15 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const meal    = Number(form.wageComponents.mealAllowance) || 0;
           const vehicle = Number(form.wageComponents.vehicleAllowance) || 0;
           // 공제 · 기본급 (basicAmt = 통상시급 × 209h) 기준 4대보험 + 소득세
-          const pension = Math.round(basicAmt * INSURANCE_RATES.PENSION);
+          //   · 국민연금 · 기준소득월액 상한 6,590,000원 (2026-07~) · 초과 시 313,025원 고정
+          const PENSION_CAP = 6_590_000;
+          const pensionBase = Math.min(basicAmt, PENSION_CAP);
+          const pension = Math.round(pensionBase * INSURANCE_RATES.PENSION);
           const health  = Math.round(basicAmt * INSURANCE_RATES.HEALTH);
           const ltc     = Math.round(health * INSURANCE_RATES.LTC_RATIO);
           const emp     = Math.round(basicAmt * INSURANCE_RATES.EMPLOYMENT);
           const insSum  = pension + health + ltc + emp;
-          const taxObj  = computeIncomeTax(basicAmt);
+          const taxObj  = computeIncomeTax(basicAmt, 1, withholdingRate);
           const taxSum  = taxObj.total;
           const deductionTotal = insSum + taxSum;
           const deductionPct = basicAmt > 0 ? (deductionTotal / basicAmt * 100) : 0;
@@ -4586,7 +4627,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const deductionRows = [
             { label: "국민연금",   rate: `${(INSURANCE_RATES.PENSION * 100).toFixed(2)}%`,        amount: pension, desc: "노후 소득 보장 · 사용자·근로자 각각 부담 (근로자 부담분)" },
             { label: "건강보험",   rate: `${(INSURANCE_RATES.HEALTH * 100).toFixed(3)}%`,         amount: health,  desc: "국민건강보험 · 질병·부상 진료 급여 · 근로자 부담분" },
-            { label: "장기요양",   rate: `건강 × ${(INSURANCE_RATES.LTC_RATIO * 100).toFixed(2)}%`, amount: ltc,     desc: "노인장기요양 · 건강보험료의 12.95% 가산" },
+            { label: "장기요양",   rate: `건강 × ${(INSURANCE_RATES.LTC_RATIO * 100).toFixed(2)}%`, amount: ltc,     desc: "노인장기요양 · 건강보험료의 13.14% 가산" },
             { label: "고용보험",   rate: `${(INSURANCE_RATES.EMPLOYMENT * 100).toFixed(2)}%`,     amount: emp,     desc: "실업급여 재원 · 근로자 부담분 (사용자 별도 부담)" },
             { label: "소득세·지방세", rate: "간이세액표", amount: taxSum, desc: "근로소득 간이세액표 근사" },
           ];
@@ -4757,7 +4798,10 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   <div className="pt-1.5 border-t border-rose-100/60 flex items-baseline gap-x-2 flex-wrap">
                     <span className="text-slate-700 font-bold text-[11.5px] min-w-[74px]">국민연금</span>
                     <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">{(INSURANCE_RATES.PENSION * 100).toFixed(2)}%</span>
-                    <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">노후 소득 보장 · 근로자 부담분</span>
+                    <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">
+                      노후 소득 보장 · 상한 {(PENSION_CAP / 10_000).toLocaleString()}만원 (초과 시 {fmtWon(Math.round(PENSION_CAP * INSURANCE_RATES.PENSION))}원 고정)
+                      {basicAmt > PENSION_CAP && <span className="text-amber-600 font-black"> · 상한 적용</span>}
+                    </span>
                     <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(pension)}원</span>
                   </div>
                   <div className="pt-1.5 border-t border-rose-100/60 flex items-baseline gap-x-2 flex-wrap">
@@ -4769,7 +4813,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   <div className="pt-1.5 border-t border-rose-100/60 flex items-baseline gap-x-2 flex-wrap">
                     <span className="text-slate-700 font-bold text-[11.5px] min-w-[74px]">장기요양</span>
                     <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">건강 × {(INSURANCE_RATES.LTC_RATIO * 100).toFixed(2)}%</span>
-                    <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">노인장기요양 · 건강보험료의 12.95%</span>
+                    <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">노인장기요양 · 건강보험료의 13.14%</span>
                     <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(ltc)}원</span>
                   </div>
                   <div className="pt-1.5 border-t border-rose-100/60 flex items-baseline gap-x-2 flex-wrap">
@@ -4780,8 +4824,21 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   </div>
                   <div className="pt-1.5 border-t border-rose-100/60 flex items-baseline gap-x-2 flex-wrap">
                     <span className="text-slate-700 font-bold text-[11.5px] min-w-[74px]">소득세·지방세</span>
-                    <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">간이세액표 근사</span>
-                    <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">근로소득 · 부양 1인 기준</span>
+                    <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">
+                      간이세액표 ×
+                      <select
+                        value={withholdingRate}
+                        onChange={(e) => setWithholdingRate(Number(e.target.value) as WithholdingRate)}
+                        className="ml-1 bg-white border border-slate-200 rounded px-1 py-0.5 text-[10.5px] font-black text-slate-700 focus:outline-none focus:border-indigo-400 cursor-pointer"
+                      >
+                        {WITHHOLDING_RATES.map(r => (
+                          <option key={r} value={r}>{Math.round(r * 100)}%</option>
+                        ))}
+                      </select>
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">
+                      근로소득 · 부양 1인 · 원천징수 비율 선택 (80% 적게·120% 많이·100% 표준)
+                    </span>
                     <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(taxSum)}원</span>
                   </div>
                   <div className="flex items-baseline gap-x-2 pt-1.5 border-t border-rose-200">
