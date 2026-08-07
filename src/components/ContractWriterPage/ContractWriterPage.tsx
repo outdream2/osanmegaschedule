@@ -4517,24 +4517,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const buMonthlyNet     = wf?.monthlyNet ?? 0;
           const buWeeklyPay      = wf?.weeklyPay ?? 0;
 
-          // "세전 반영" 핸들러 · grossSalaryInput + targetNetInput 동시 채움 → 기존 임금구조 재분배 트리거
-          const applyBottomUp = () => {
-            if (buGross <= 0) return;
-            manualTargetNetRef.current = false;
-            manualGrossSalaryRef.current = false;
-            setForm(prev => ({
-              ...prev,
-              targetNetInput: isMonthly ? String(wf?.netAmount ?? 0) : String(buMonthlyNet),
-              grossSalaryInput: String(buGross),
-            }));
-            setNotice({
-              tone: "ok",
-              text: isMonthly
-                ? `월급제 반영 · 통상시급 ${fmtWon(wdHourly)}원 × ${(wf?.divisor ?? 0).toFixed(2)}h = 세전 ${fmtWon(buGross)}원`
-                : `Bottom-up 반영 · 월 순액 ${fmtWon(buMonthlyNet)}원 → 세전 ${fmtWon(buGross)}원 · 통상시급 ${fmtWon(buOrdinaryHourly)}원`,
-            });
-          };
-
           return (
             <div className="flex flex-col gap-1.5">
               {/* 기본 힌트 줄 · 계약유형 배지 포함 */}
@@ -4788,21 +4770,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     </div>
                   </div>
 
-                  {/* 구분선 */}
-                  <div className="border-t border-emerald-200" />
-
-                  {/* 적용 버튼 */}
-                  <button
-                    type="button"
-                    onClick={applyBottomUp}
-                    className="w-full py-1.5 rounded-md bg-gradient-to-r from-emerald-500 to-indigo-500 text-white text-[11px] font-black shadow-sm hover:brightness-110 transition-all cursor-pointer"
-                    title={isMonthly
-                      ? "월급제 · 통상시급 × 296.94h = 세전 → 임금구조 8항목 채움"
-                      : "이 세전 금액을 임금 카드의 세전 월급 입력란에 자동 채움 · 기존 임금구조 8항목 재분배 트리거"
-                    }
-                  >
-                    이 값으로 세전 월급 반영 ({fmtWon(buGross)} 원)
-                  </button>
                 </div>
               )}
             </div>
