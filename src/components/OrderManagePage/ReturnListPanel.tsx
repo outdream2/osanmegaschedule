@@ -2,7 +2,7 @@
 // 반품필요 탭을 독립 컴포넌트로 추출 (2026-07-31 · 탭 스왑 · StockManagePage 이동용)
 // 기존 OrderManagePage의 return 탭 state/fetch/JSX 를 그대로 캡슐화
 // 2026-08-03 · 반품 요청서 모달 · 발주서 스타일로 재설계 (#188)
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useVendors } from "../../hooks/useVendors";
 import { Loader2, Package, PackageCheck, Search, Truck, ChevronRight, ChevronDown, Mail, MessageSquare, Send, Trash2 } from "lucide-react";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
@@ -14,6 +14,7 @@ import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
+import { useResizablePanel } from "../../hooks/useResizablePanel";
 
 // ── 반품 요청서 모달 (발주서 포맷) · 2026-08-03 ─────────────────────────
 type ReturnReasonKey = "재고 과다" | "유통기한 임박" | "저조 판매" | "기타";
@@ -574,20 +575,13 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
   const [returnPanelLoading, setReturnPanelLoading] = useState(false);
   const [returnPanelError, setReturnPanelError] = useState<string | null>(null);
   const [returnDetailTab, setReturnDetailTab] = useState<"info" | "purchase" | "sales">("info");
-  const [returnPanelWidth, setReturnPanelWidth] = useState<number>(() => {
-    try { const v = Number(localStorage.getItem("megatown_return_panel_w")); return Number.isFinite(v) && v > 0 ? v : 560; } catch { return 560; }
+  // 반품 패널 폭 (useResizablePanel 훅 · god-phase1)
+  const { width: returnPanelWidth, startResize: onReturnResizeStart } = useResizablePanel({
+    storageKey: "megatown_return_panel_w",
+    defaultWidth: 560,
+    minWidth: 320,
+    maxWidth: 1000,
   });
-  useEffect(() => { try { localStorage.setItem("megatown_return_panel_w", String(returnPanelWidth)); } catch {} }, [returnPanelWidth]);
-  const returnPanelWidthRef = useRef(returnPanelWidth);
-  useEffect(() => { returnPanelWidthRef.current = returnPanelWidth; }, [returnPanelWidth]);
-  const returnResizeRef = useRef<{ startX: number; startW: number } | null>(null);
-  const onReturnResizeStart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    returnResizeRef.current = { startX: e.clientX, startW: returnPanelWidthRef.current };
-    const move = (ev: MouseEvent) => { const r = returnResizeRef.current; if (!r) return; setReturnPanelWidth(Math.min(1000, Math.max(320, r.startW + (ev.clientX - r.startX)))); };
-    const up = () => { returnResizeRef.current = null; window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
-    window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
-  };
 
   useEffect(() => {
     if (!returnSelectedProduct) { setReturnPanelFull(null); setReturnPanelError(null); return; }

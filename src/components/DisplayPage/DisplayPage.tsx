@@ -1,6 +1,10 @@
 // src/components/DisplayPage/DisplayPage.tsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ZONE_DEFS, ZONES_STORAGE_KEY, type ZoneSection } from "../../constants/displayZones";
+import { ZONE_DEFS, ZONES_STORAGE_KEY } from "../../constants/displayZones";
+import {
+  type ZoneStatus, type DowMap, type DisplayZone,
+  expandZoneDef, buildDefaultZones,
+} from "../../utils/zoneUtils";
 // 2026-07-29 · shared constants · CategoryTab MiniStoreZoneMap 과 동일 소스 (사용자 요청 통합)
 import {
   STORE_TOP_WALL, STORE_AISLE_CENTER, STORE_AISLE_PAIRS, STORE_BOTTOM_WALL, STORE_VERTICAL_WING,
@@ -57,6 +61,7 @@ import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 // 2026-08-05 · 관리자(level>=8) long-press 드래그 재정렬 · localStorage 순서 저장
 import { useSortableTabs } from "../../hooks/useSortableTabs";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useResizablePanel } from "../../hooks/useResizablePanel";
 // 2026-08-03 · StaffManagePage · 매장관리 서브탭에서 제거 · 경영관리 통합 페이지(BusinessManagePage)로 이동
 import type { AuthSession } from "../../types";
 
@@ -81,28 +86,14 @@ interface DisplayPageProps {
 }
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-type ZoneStatus = "normal" | "low" | "empty";
+// ZoneStatus · DowMap · DisplayZone → src/utils/zoneUtils.ts 로 이동 (god-phase1)
 
 // ─── DOW(요일) 마스크 유틸 ───────────────────────────────────────────
 // 비트: 일(1) 월(2) 화(4) 수(8) 목(16) 금(32) 토(64) → 모든요일=127
 export const DOW_ALL = 127;
 export const DOW_LABELS = ["일", "월", "화", "수", "목", "금", "토"] as const;
-export type DowMap = { [nameKey: string]: number } | null; // {"*":mask} 단일, {"이름":mask,...} 다중
 export const isDowActive = (mask: number | undefined | null, dow: number): boolean =>
   mask == null ? true : ((mask >> dow) & 1) === 1;
-
-interface DisplayZone {
-  id: string;
-  num: number;
-  label: string;
-  category: string;
-  section: ZoneSection;
-  assignedStaffId: number | null;
-  assignedStaffName: string;
-  status: ZoneStatus;
-  products: string;
-  dowMap: DowMap; // 요일별 다중선택 마스크. null이면 모든 요일 적용 (하위호환)
-}
 
 interface DisplayRequest {
   id: string;
@@ -126,51 +117,7 @@ interface PopoverAnchor {
   rect: DOMRect;
 }
 
-// 진열대 1~8은 A/B 두 서브존으로 확장 · 계산대 40은 A/B/C 3-way 확장
-const expandZoneDef = (d: typeof ZONE_DEFS[0]): DisplayZone[] => {
-  const isAisleWithAB = d.section === "aisle" && d.num >= 1 && d.num <= 8 && (d.subA || d.subB);
-  const isCounter3Way = d.num === 40 && d.subA && d.subB && d.subC;
-  if (isCounter3Way) {
-    return (["A", "B", "C"] as const).map((side) => ({
-      id: `${d.num}${side}`, num: d.num, label: `${d.label} ${side}`,
-      category: (side === "A" ? d.subA : side === "B" ? d.subB : d.subC) ?? d.category,
-      section: d.section,
-      assignedStaffId: null, assignedStaffName: "", status: "normal" as const,
-      products: "", dowMap: null,
-    }));
-  }
-  if (!isAisleWithAB) {
-    return [{
-      id: String(d.num),
-      num: d.num,
-      label: d.label,
-      category: d.category,
-      section: d.section,
-      assignedStaffId: null,
-      assignedStaffName: "",
-      status: "normal",
-      products: "",
-      dowMap: null,
-    }];
-  }
-  return [
-    {
-      id: `${d.num}B`, num: d.num, label: `${d.label} B`,
-      category: d.subB ?? d.category, section: d.section,
-      assignedStaffId: null, assignedStaffName: "", status: "normal",
-      products: "", dowMap: null,
-    },
-    {
-      id: `${d.num}A`, num: d.num, label: `${d.label} A`,
-      category: d.subA ?? d.category, section: d.section,
-      assignedStaffId: null, assignedStaffName: "", status: "normal",
-      products: "", dowMap: null,
-    },
-  ];
-};
-
-const buildDefaultZones = (): DisplayZone[] =>
-  ZONE_DEFS.flatMap(expandZoneDef);
+// expandZoneDef · buildDefaultZones → src/utils/zoneUtils.ts 로 이동 (god-phase1)
 
 // ─── localStorage helpers ─────────────────────────────────────────────────────
 const ZONES_KEY = ZONES_STORAGE_KEY;
@@ -954,28 +901,13 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     return () => clearTimeout(t);
   }, [zoneGroups, zoneGroupsLoaded]);
 
-  // 좌우 폭 조절 (실시간 보충요청 폭 · localStorage 저장)
-  const [reqPanelWidth, setReqPanelWidth] = useState<number>(() => {
-    try { const v = Number(localStorage.getItem("megatown_req_panel_w")); return Number.isFinite(v) && v > 0 ? v : 380; } catch { return 380; }
+  // 좌우 폭 조절 (실시간 보충요청 폭 · useResizablePanel 훅 · god-phase1)
+  const { width: reqPanelWidth, startResize: startReqPanelResize } = useResizablePanel({
+    storageKey: "megatown_req_panel_w",
+    defaultWidth: 380,
+    minWidth: 240,
+    maxWidth: 720,
   });
-  const startReqPanelResize = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    const startX = e.clientX;
-    const startW = reqPanelWidth;
-    const onMove = (ev: MouseEvent) => {
-      const next = Math.max(240, Math.min(720, startW + (ev.clientX - startX)));
-      setReqPanelWidth(next);
-    };
-    const onUp = () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-    };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-  }, [reqPanelWidth]);
-  useEffect(() => {
-    try { localStorage.setItem("megatown_req_panel_w", String(reqPanelWidth)); } catch { /* silent */ }
-  }, [reqPanelWidth]);
 
   // ── Persist: save to localStorage immediately; debounce DB save ──────────────
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");

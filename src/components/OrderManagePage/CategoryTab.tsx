@@ -2,7 +2,7 @@
 // 카테고리별 판매현황 탭 · 2026-08-03 · SalesTrendPage.tsx 에서 이동
 //   real_map 기반 구역별 판매금액·수량 집계 + 매장 구역도
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { X, Loader2, Layers, PieChart } from "lucide-react";
 import { getProductsMap } from "../../lib/productsCache";
 import { SeasonButtons } from "../common/SeasonButtons";
@@ -17,6 +17,7 @@ import { fmtWonCompact } from "../../lib/format";
 import { EmptyState } from "../common/EmptyState";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { API_LIMITS } from "../../constants/apiLimits";
+import { useResizablePanel } from "../../hooks/useResizablePanel";
 
 // ─── 구역 코드 → 카테고리 설명 매핑 ──────────────────────────────────────────
 const ZONE_CATEGORY_MAP: Record<string, string> = (() => {
@@ -70,21 +71,13 @@ const ZoneCategoryContent: React.FC = () => {
     optimal:  { default: 56,  min: 40, max: 100 },
   });
 
-  // 카테고리 패널 폭 (localStorage 저장)
-  const [categoryPanelWidth, setCategoryPanelWidth] = useState<number>(() => {
-    try { const v = Number(localStorage.getItem("megatown_salestrend_category_w")); return Number.isFinite(v) && v > 0 ? v : 400; } catch { return 400; }
+  // 카테고리 패널 폭 (useResizablePanel 훅 · god-phase1)
+  const { width: categoryPanelWidth, startResize: onCategoryResizeStart } = useResizablePanel({
+    storageKey: "megatown_salestrend_category_w",
+    defaultWidth: 400,
+    minWidth: 260,
+    maxWidth: 800,
   });
-  useEffect(() => { try { localStorage.setItem("megatown_salestrend_category_w", String(categoryPanelWidth)); } catch { /**/ } }, [categoryPanelWidth]);
-  const categoryPanelWidthRef = useRef(categoryPanelWidth);
-  useEffect(() => { categoryPanelWidthRef.current = categoryPanelWidth; }, [categoryPanelWidth]);
-  const categoryResizeRef = useRef<{ startX: number; startW: number } | null>(null);
-  const onCategoryResizeStart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    categoryResizeRef.current = { startX: e.clientX, startW: categoryPanelWidthRef.current };
-    const move = (ev: MouseEvent) => { const r = categoryResizeRef.current; if (!r) return; setCategoryPanelWidth(Math.min(800, Math.max(260, r.startW + (ev.clientX - r.startX)))); };
-    const up = () => { categoryResizeRef.current = null; window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
-    window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
-  };
 
   useEffect(() => {
     setLoading(true);

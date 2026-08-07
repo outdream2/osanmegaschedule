@@ -47,6 +47,7 @@ import { LoadingState } from "../common/LoadingState";
 // T-COMMON-InventoryEditModal · 2026-08-06 · 실재고 입력·편집 공통 모달
 import { InventoryEditModal } from "../common/InventoryEditModal";
 import type { InventoryEditModalInitialValues } from "../common/InventoryEditModal";
+import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 
 interface OrderRequest {
@@ -223,20 +224,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [vendorPreselectId, setVendorPreselectId] = useState<number | null>(null);
 
   // ── 공급사관리(vendor) 탭 · 좌우 분할 레이아웃 state ──
-  const [vendorPanelWidth, setVendorPanelWidth] = useState<number>(() => {
-    try { const v = Number(localStorage.getItem("megatown_order_vendor_w")); return Number.isFinite(v) && v > 0 ? v : 640; } catch { return 640; }
+  // 공급사 패널 폭 (useResizablePanel 훅 · god-phase1)
+  const { width: vendorPanelWidth, startResize: onVendorResizeStart } = useResizablePanel({
+    storageKey: "megatown_order_vendor_w",
+    defaultWidth: 640,
+    minWidth: 320,
+    maxWidth: 1000,
   });
-  useEffect(() => { try { localStorage.setItem("megatown_order_vendor_w", String(vendorPanelWidth)); } catch {} }, [vendorPanelWidth]);
-  const vendorPanelWidthRef = useRef(vendorPanelWidth);
-  useEffect(() => { vendorPanelWidthRef.current = vendorPanelWidth; }, [vendorPanelWidth]);
-  const vendorResizeRef = useRef<{ startX: number; startW: number } | null>(null);
-  const onVendorResizeStart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    vendorResizeRef.current = { startX: e.clientX, startW: vendorPanelWidthRef.current };
-    const move = (ev: MouseEvent) => { const r = vendorResizeRef.current; if (!r) return; setVendorPanelWidth(Math.min(1000, Math.max(320, r.startW + (ev.clientX - r.startX)))); };
-    const up = () => { vendorResizeRef.current = null; window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
-    window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
-  };
   // 우측 패널용 선택된 공급사 (vendor 탭)
   const [vendorSelected, setVendorSelected] = useState<Vendor | null>(null);
   const [vendorReloadKey, setVendorReloadKey] = useState(0);
@@ -366,20 +360,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   }, [detailProduct]);
 
   // ── 발주요청(order) 탭 · 좌우 분할 레이아웃 state ──
-  const [orderPanelWidth, setOrderPanelWidth] = useState<number>(() => {
-    try { const v = Number(localStorage.getItem("megatown_ordermanage_order_w")); return Number.isFinite(v) && v > 0 ? v : 640; } catch { return 640; }
+  // 발주 패널 폭 (useResizablePanel 훅 · god-phase1)
+  const { width: orderPanelWidth, startResize: onOrderResizeStart } = useResizablePanel({
+    storageKey: "megatown_ordermanage_order_w",
+    defaultWidth: 640,
+    minWidth: 320,
+    maxWidth: 1000,
   });
-  useEffect(() => { try { localStorage.setItem("megatown_ordermanage_order_w", String(orderPanelWidth)); } catch { /**/ } }, [orderPanelWidth]);
-  const orderPanelWidthRef = useRef(orderPanelWidth);
-  useEffect(() => { orderPanelWidthRef.current = orderPanelWidth; }, [orderPanelWidth]);
-  const orderResizeRef = useRef<{ startX: number; startW: number } | null>(null);
-  const onOrderResizeStart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    orderResizeRef.current = { startX: e.clientX, startW: orderPanelWidthRef.current };
-    const move = (ev: MouseEvent) => { const r = orderResizeRef.current; if (!r) return; setOrderPanelWidth(Math.min(1000, Math.max(320, r.startW + (ev.clientX - r.startX)))); };
-    const up = () => { orderResizeRef.current = null; window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
-    window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
-  };
   // 우측 패널용 선택 상품 (발주요청 탭)
   const [orderPanelProduct, setOrderPanelProduct] = useState<{ code: string; name: string } | null>(null);
   const [orderPanelFull, setOrderPanelFull] = useState<Record<string, any> | null>(null);
@@ -399,20 +386,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   }, [orderPanelProduct]);
 
   // ── 발주필요(need) 탭 · 좌우 분할 레이아웃 state ──
-  const [needPanelWidth, setNeedPanelWidth] = useState<number>(() => {
-    try { const v = Number(localStorage.getItem("megatown_ordermanage_need_w")); return Number.isFinite(v) && v > 0 ? v : 600; } catch { return 600; }
+  // 발주필요 패널 폭 (useResizablePanel 훅 · god-phase1)
+  const { width: needPanelWidth, startResize: onNeedResizeStart } = useResizablePanel({
+    storageKey: "megatown_ordermanage_need_w",
+    defaultWidth: 600,
+    minWidth: 320,
+    maxWidth: 1000,
   });
-  useEffect(() => { try { localStorage.setItem("megatown_ordermanage_need_w", String(needPanelWidth)); } catch { /**/ } }, [needPanelWidth]);
-  const needPanelWidthRef = useRef(needPanelWidth);
-  useEffect(() => { needPanelWidthRef.current = needPanelWidth; }, [needPanelWidth]);
-  const needResizeRef = useRef<{ startX: number; startW: number } | null>(null);
-  const onNeedResizeStart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    needResizeRef.current = { startX: e.clientX, startW: needPanelWidthRef.current };
-    const move = (ev: MouseEvent) => { const r = needResizeRef.current; if (!r) return; setNeedPanelWidth(Math.min(1000, Math.max(320, r.startW + (ev.clientX - r.startX)))); };
-    const up = () => { needResizeRef.current = null; window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
-    window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
-  };
   // ── 발주필요(need) 탭 · 조건 설정 (localStorage · 저장·로딩) ──
   //   · 사용자 요청 (2026-08-03) · 필터 조건 커스텀 · 페이지 진입 시 저장된 조건 로딩
   //   · 저장 키: megatown_orderNeedFilterConfig

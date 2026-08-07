@@ -6,6 +6,8 @@ import { CARD_BASE } from "../../styles/tokens";
 import { useSortableTable } from "../../hooks/useSortableTable";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useResizablePanel } from "../../hooks/useResizablePanel";
+import { useLeaveManager } from "../../hooks/useLeaveManager";
 import {
   Award,
   Briefcase,
@@ -632,44 +634,14 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
   const [filterPosition, setFilterPosition] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<"active" | "retired" | "all">("active");
 
-  // 좌측 리스트 폭 (px) · localStorage 저장 · 데스크탑만 반영 (lg:)
-  const LIST_WIDTH_KEY = "megatown_staffManage.listWidth";
-  const [listWidth, setListWidth] = useState<number>(() => {
-    try {
-      const s = localStorage.getItem(LIST_WIDTH_KEY);
-      const n = s ? parseInt(s, 10) : NaN;
-      return Number.isFinite(n) && n >= 200 && n <= 640 ? n : 288;
-    } catch { return 288; }
+  // 좌측 리스트 폭 (px) · useResizablePanel 훅 (god-phase1)
+  const { width: listWidth, startResize: startResizeList, isDesktop } = useResizablePanel({
+    storageKey: "megatown_staffManage.listWidth",
+    defaultWidth: 288,
+    minWidth: 200,
+    maxWidth: 640,
+    detectDesktop: true,
   });
-  useEffect(() => {
-    try { localStorage.setItem(LIST_WIDTH_KEY, String(listWidth)); } catch { /* ignore */ }
-  }, [listWidth]);
-  const [isDesktop, setIsDesktop] = useState<boolean>(() => typeof window !== "undefined" && window.innerWidth >= 1024);
-  useEffect(() => {
-    const onResize = () => setIsDesktop(window.innerWidth >= 1024);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-  const startResizeList = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const startX = e.clientX;
-    const startW = listWidth;
-    const onMove = (ev: MouseEvent) => {
-      const delta = ev.clientX - startX;
-      const next = Math.max(200, Math.min(640, startW + delta));
-      setListWidth(next);
-    };
-    const onUp = () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-  };
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
@@ -691,22 +663,17 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
 
   const photoInputRef = useRef<HTMLInputElement>(null);
 
-  // ── 연차 · 유급휴가 상태 (선택된 직원 · 연 단위) ──────────────────────────
+  // ── 연차 · 유급휴가 상태 (useLeaveManager 훅 · god-phase1) ──────────────────
   // schedules 테이블에서 type ∈ {"월차","오전반차","오후반차"} 항목을 사용한 연차로 집계
   // 연차 승인(POST/PUT /api/leave-requests approved) → 서버가 schedules에 자동 upsert
   // 삭제 → PUT /api/schedules { type: "" } (SchedulePage와 동일한 clear 방식)
-  interface UsedLeaveItem {
-    date: string;              // YYYY-MM-DD
-    type: string;              // 월차 / 오전반차 / 오후반차
-    memo: string;
-    weight: number;            // 월차=1, 반차=0.5
-  }
-  const currentYearNow = new Date().getFullYear();
-  const [leaveYear, setLeaveYear] = useState<number>(currentYearNow);
-  const [usedLeaves, setUsedLeaves] = useState<UsedLeaveItem[]>([]);
-  const [leaveLoading, setLeaveLoading] = useState(false);
-  const [leaveError, setLeaveError]     = useState<string | null>(null);
-  const [deletingLeaveDate, setDeletingLeaveDate] = useState<string | null>(null);
+  const {
+    leaveYear, setLeaveYear, currentYearNow,
+    usedLeaves,
+    leaveLoading, leaveError,
+    deletingLeaveDate,
+    loadUsedLeaves, deleteUsedLeave,
+  } = useLeaveManager(selectedId, confirm);
 
   // #219 · 선택된 직원의 최신 근로계약서 (start_date/end_date · 자동 계약타입 산출용)
   interface LatestContract {
@@ -785,55 +752,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
 
   useEffect(() => { loadEmployees(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── 연차 사용 이력 로드 (선택된 직원 · 지정 연도 12개월 병렬) ──────────────
-  const LEAVE_TYPES_SET = useMemo(() => new Set(["월차", "오전반차", "오후반차"]), []);
-  const leaveWeight = (t: string) => (t === "오전반차" || t === "오후반차") ? 0.5 : 1;
-
-  const loadUsedLeaves = useCallback(async (empId: number, year: number) => {
-    setLeaveLoading(true);
-    setLeaveError(null);
-    try {
-      const results = await Promise.all(
-        Array.from({ length: 12 }, (_, i) => i + 1).map(async (m) => {
-          const res = await fetch(`/api/schedules?year=${year}&month=${m}`);
-          if (!res.ok) return null;
-          return res.json().catch(() => null);
-        })
-      );
-      const items: UsedLeaveItem[] = [];
-      for (const monthData of results) {
-        const emps: Employee[] = Array.isArray(monthData?.employees) ? monthData.employees : [];
-        const target = emps.find(e => e.id === empId);
-        const schedules: any[] = Array.isArray((target as any)?.schedules) ? (target as any).schedules : [];
-        for (const s of schedules) {
-          const t = String(s?.type ?? "");
-          const d = String(s?.date ?? "");
-          if (!t || !d) continue;
-          if (!LEAVE_TYPES_SET.has(t)) continue;
-          if (!d.startsWith(`${year}-`)) continue;
-          items.push({ date: d, type: t, memo: String(s?.memo ?? ""), weight: leaveWeight(t) });
-        }
-      }
-      items.sort((a, b) => a.date.localeCompare(b.date));
-      setUsedLeaves(items);
-    } catch (err: unknown) {
-      setLeaveError(err instanceof Error ? err.message : "연차 이력 조회 실패");
-      setUsedLeaves([]);
-    } finally {
-      setLeaveLoading(false);
-    }
-  }, [LEAVE_TYPES_SET]);
-
-  // 선택된 직원 · 연도 변경 시 재조회
-  useEffect(() => {
-    if (selectedId == null) {
-      setUsedLeaves([]);
-      setLeaveError(null);
-      setLeaveLoading(false);
-      return;
-    }
-    loadUsedLeaves(selectedId, leaveYear);
-  }, [selectedId, leaveYear, loadUsedLeaves]);
+  // 연차 이력 로드·삭제 → useLeaveManager 훅으로 이동 (god-phase1)
 
   // #219 · 선택된 직원의 최신 근로계약서 조회 (자동 계약타입 배지용)
   //   · GET /api/employee-contracts?employeeId=X · created_at DESC 첫번째
@@ -900,36 +819,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
     return () => { cancelled = true; };
   }, [selectedId, latestContract]);  // latestContract 변경 시(신규 계약 승인) 재조회
 
-  // 개별 연차 삭제 · PUT /api/schedules with type="" (SchedulePage clear 방식)
-  const deleteUsedLeave = async (empId: number, date: string) => {
-    if (!await confirm({ message: `${date} 연차 기록을 삭제할까요?\n\n스케줄표(월차)에도 반영됩니다.`, danger: true })) return;
-    setDeletingLeaveDate(date);
-    try {
-      const res = await fetch(`/api/schedules`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          employeeId: empId,
-          date,
-          type: "",
-          workingHours: "",
-          actualHours: "",
-          memo: "",
-        }),
-      });
-      if (!res.ok) {
-        const b = await res.json().catch(() => ({}));
-        alert(`삭제 실패: ${(b as { error?: string }).error ?? res.statusText}`);
-        return;
-      }
-      // 로컬 상태 즉시 반영
-      setUsedLeaves(prev => prev.filter(l => l.date !== date));
-    } catch (err: unknown) {
-      alert(`삭제 오류: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
-      setDeletingLeaveDate(null);
-    }
-  };
+  // deleteUsedLeave → useLeaveManager 훅 (god-phase1)
 
   // ── 필터링 ──
   const filteredRaw = useMemo(() => {
