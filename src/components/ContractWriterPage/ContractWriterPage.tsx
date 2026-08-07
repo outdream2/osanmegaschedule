@@ -5122,6 +5122,18 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                       {fmtWon(grossTotal)}원
                     </td>
                   </tr>
+                  {/* 연봉 (세전 × 12) */}
+                  <tr className="border-t border-slate-200 bg-slate-50/60">
+                    <td className="px-3 py-1.5 text-slate-700 font-black text-[11.5px]">
+                      연봉 <span className="text-slate-400 font-bold text-[10px]">(세전 × 12)</span>
+                    </td>
+                    <td className="px-3 py-1.5 text-[10px] text-slate-400">
+                      {fmtWon(grossTotal)} × 12
+                    </td>
+                    <td className="px-3 py-1.5 text-right tabular-nums font-black text-slate-700 text-[12.5px] whitespace-nowrap">
+                      {fmtWon(grossTotal * 12)}원
+                    </td>
+                  </tr>
                 </tbody>
               </table>
 
