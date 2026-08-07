@@ -34,6 +34,8 @@ import jsPDF from "jspdf";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { FieldLabel } from "../common/FieldLabel";
 import type { AuthSession, Employee } from "../../types";
+import { DEFAULT_COMPANY_INFO } from "../../types";
+import { useCompanyInfo } from "../../hooks/useCompanyInfo";
 
 type SignatureCanvasType = SignaturePad;
 
@@ -93,14 +95,19 @@ const REASON_OPTIONS = [
   "기타",
 ];
 
-// 회사 기본값 (오산 메가타운 약국)
+// 회사 기본값 · T-CompanyInfo-Universal (2026-08-07)
+//   · 하드코딩 제거 · types.ts DEFAULT_COMPANY_INFO 를 fallback 으로 사용
+//   · 실제 값은 마운트 후 useCompanyInfo() 로부터 서버 로드된 값으로 대체됨
 const DEFAULT_COMPANY = {
-  employerName: "강남성",
-  companyName: "오산 메가타운 약국",
+  employerName: DEFAULT_COMPANY_INFO.representativeName,
+  companyName: DEFAULT_COMPANY_INFO.name,
 };
 
-// 기본 수신처 (실제 사직서 스펙)
-const DEFAULT_RECIPIENT = "코스트팜(Costpharm) 대표";
+// 기본 수신처 · "<회사명> 대표" 형식 (사용자 편집 시 자유)
+//   · settings.company_info 로부터 회사명 반영 (마운트 후 useEffect 로 갱신)
+const buildDefaultRecipient = (companyName: string): string =>
+  `${companyName || DEFAULT_COMPANY_INFO.name} 대표`;
+const DEFAULT_RECIPIENT = buildDefaultRecipient(DEFAULT_COMPANY_INFO.name);
 
 // 서명 slot label
 const SIGN_LABELS: Record<SignSlot, string> = {
@@ -638,12 +645,11 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
     setSignModalSlot(null);
   };
 
-  // ── PDF 다운로드 (A4 1페이지 fit) ─────────────────────────────────────
-  // 전략:
+  // ── PDF 다운로드 (A4 풀폭 · 페이지 분할) ─────────────────────────────
+  // T-PDF-FullWidth 전략:
   //   1) html2canvas 로 프리뷰 캡처
-  //   2) A4 (210 x 297mm) 여백 (10mm 상하좌우)
-  //   3) 이미지 종횡비 유지하며 · 가로/세로 중 초과되는 축에 맞춰 스케일
-  //      → 가로에 맞춘 결과 세로가 페이지 초과하면 · 세로 기준으로 재계산
+  //   2) imgW = A4 풀폭(210mm) · margin 없음
+  //   3) 세로 비율 계산 후 · 1페이지 초과 시 pdfH 씩 슬라이스 분할
   const generatePdfBlob = async (): Promise<{ blob: Blob } | null> => {
     const node = previewRef.current;
     if (!node) return null;
@@ -659,23 +665,24 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
     const pdfW = pdf.internal.pageSize.getWidth();   // 210
     const pdfH = pdf.internal.pageSize.getHeight();  // 297
 
-    // 여백 (mm)
-    const margin = 8;
-    const maxW = pdfW - margin * 2;
-    const maxH = pdfH - margin * 2;
+    // 가로 풀폭 고정 · 세로 비율 계산
+    const imgW = pdfW;
+    const imgH = (canvas.height * imgW) / canvas.width;
 
-    // 캔버스 aspect ratio 유지하며 · maxW/maxH 안에 fit (contain)
-    const ratio = canvas.width / canvas.height;
-    let imgW = maxW;
-    let imgH = imgW / ratio;
-    if (imgH > maxH) {
-      imgH = maxH;
-      imgW = imgH * ratio;
+    if (imgH <= pdfH) {
+      // 1페이지 이내 · 상단 붙임
+      pdf.addImage(imgData, "PNG", 0, 0, imgW, imgH, undefined, "FAST");
+    } else {
+      // 다중 페이지 · pdfH 씩 슬라이스
+      let yOffset = 0;
+      let remaining = imgH;
+      while (remaining > 0) {
+        pdf.addImage(imgData, "PNG", 0, -yOffset, imgW, imgH, undefined, "FAST");
+        remaining -= pdfH;
+        yOffset += pdfH;
+        if (remaining > 0) pdf.addPage();
+      }
     }
-    // 중앙 배치
-    const x = (pdfW - imgW) / 2;
-    const y = (pdfH - imgH) / 2;
-    pdf.addImage(imgData, "PNG", x, y, imgW, imgH, undefined, "FAST");
 
     const blob = pdf.output("blob");
     return { blob };
@@ -683,6 +690,11 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
 
   const handleDownloadPdf = async () => {
     setNotice(null);
+    // T-PDF-SignatureRequired: 신청인 서명 필수
+    if (!employeeSignUrl) {
+      setNotice({ tone: "err", text: "서명 후 저장 가능합니다. 신청인 서명이 필요합니다." });
+      return;
+    }
     setGenerating(true);
     try {
       const out = await generatePdfBlob();
@@ -1154,14 +1166,17 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
               />
             </div>
 
-            {/* PDF 다운로드 버튼 · 프리뷰 아래 */}
+            {/* PDF 다운로드 버튼 · 프리뷰 아래 · T-PDF-SignatureRequired: 신청인 서명 필수 */}
             <div className="flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={handleDownloadPdf}
-                disabled={generating || submitting}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-black shadow-sm transition-colors cursor-pointer disabled:opacity-50"
-                title="PDF 다운로드 (A4 1페이지)"
+                disabled={generating || submitting || !employeeSignUrl}
+                className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-black shadow-sm transition-colors
+                  ${employeeSignUrl && !generating && !submitting
+                    ? "border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 cursor-pointer"
+                    : "bg-slate-300 text-slate-500 cursor-not-allowed opacity-60"}`}
+                title={employeeSignUrl ? "PDF 다운로드 (A4 1페이지)" : "서명 후 저장 가능합니다"}
               >
                 <DownloadSimple size={16} weight="bold" />
                 <span>{generating ? "생성 중..." : "PDF 다운 (A4 1페이지)"}</span>
