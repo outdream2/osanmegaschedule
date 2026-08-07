@@ -4528,8 +4528,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           //   ⑤ 세후 = 세전 - 공제
           const autoHourly = wd; // 주중시급 (계약서 표준 · 약국 관례) · 없으면 0
           const hourly = wageHourlyOverride != null && wageHourlyOverride > 0
-            ? Math.round(wageHourlyOverride)
-            : autoHourly;
+            ? Math.round(wageHourlyOverride * 10) / 10  // 소수점 1자리
+            : Math.round(autoHourly * 10) / 10;
           if (hourly <= 0) {
             return (
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-4 text-center text-[11px] text-slate-500 font-semibold">
@@ -4553,7 +4553,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const nightAmt       = Number(form.wageComponents.fixedNight?.amount) || 0;
           const meal    = Number(form.wageComponents.mealAllowance) || 0;
           const vehicle = Number(form.wageComponents.vehicleAllowance) || 0;
-          // 공제 · 기본급 기준 4대보험 + 소득세 실제 계산 (사용자 확정)
+          // 공제 · 기본급 (basicAmt = 통상시급 × 209h) 기준 4대보험 + 소득세
           const pension = Math.round(basicAmt * INSURANCE_RATES.PENSION);
           const health  = Math.round(basicAmt * INSURANCE_RATES.HEALTH);
           const ltc     = Math.round(health * INSURANCE_RATES.LTC_RATIO);
@@ -4598,7 +4598,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-500">통상시급</span>
                 <input
                   type="number"
-                  step="100"
+                  step="0.1"
                   min="0"
                   value={hourly}
                   onChange={(e) => {
@@ -4719,7 +4719,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
 
               {/* 실수령 (세후) · 세전 − 공제 파생 */}
               <div className="px-3 py-2 bg-emerald-50/60 border-t border-emerald-200 flex items-baseline gap-x-2">
-                <span className="text-[10.5px] font-black uppercase tracking-wider text-emerald-700">실수령 (세후)</span>
+                <span className="text-[10.5px] font-black uppercase tracking-wider text-emerald-700">예상 실수령 (세후)</span>
                 <span className="text-[10.5px] text-emerald-600 font-semibold">세전 {fmtWon(gross)} − 예상공제 {fmtWon(deductionTotal)}</span>
                 <span className="tabular-nums font-black text-emerald-800 ml-auto text-[13px] whitespace-nowrap">{fmtWon(monthlyNet)}원</span>
               </div>
