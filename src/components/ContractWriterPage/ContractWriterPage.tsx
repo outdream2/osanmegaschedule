@@ -65,7 +65,6 @@ import {
   WAGE_HOURS, WAGE_DIVISOR, WEEK_PER_MONTH, DAILY_LIMIT,
   type WageBaseHours, calcWageBase, calcDynamicDivisor,
 } from "../../lib/wageCalc";
-import { grossUpFromNet, GROSSUP_COEFFICIENTS } from "../../lib/wageGrossUpCoefficient";
 import { shortContractLabel, parseContractTypeForRead } from "../../utils/contractUtils";
 import {
   DISCIPLINE_REASONS, HOLIDAY_CLAUSES, WAGE_CLAUSES, WAGE_CLAUSE_EXTRA, ETC_ITEMS, PRIVACY_ITEMS,
@@ -2656,10 +2655,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   // T-Q · 실수령액 상세 카드 접기/펼치기 · default 펼침
   const [netDetailOpen, setNetDetailOpen] = useState<boolean>(true);
 
-  // 2026-08-07 · 세후·계수·통상시급 override (null 이면 자동)
-  //   · 세 값은 상호 파생 · 한쪽 편집 시 다른쪽은 자동 재계산
-  const [wageNetOverride, setWageNetOverride]       = useState<number | null>(null);
-  const [wageCoefOverride, setWageCoefOverride]     = useState<number | null>(null);
+  // 2026-08-07 · 통상시급 override (null 이면 자동 = 주중시급)
   const [wageHourlyOverride, setWageHourlyOverride] = useState<number | null>(null);
 
 
@@ -4524,52 +4520,30 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const we = Number(form.weekendHourly) || wd;
           const wdH = dailyH * weeklyWeekdayDays;
           const weH = dailyH * weeklyWeekendDays;
-          const weeklyPay = Math.round(wdH * wd + weH * we);
-          const autoMonthlyNet = Math.round(weeklyPay * 4.345);
-          // 사용자가 세후를 직접 입력한 경우 override 우선
-          const monthlyNet = wageNetOverride != null && wageNetOverride > 0 ? wageNetOverride : autoMonthlyNet;
-          if (monthlyNet <= 0) {
+          // 2026-08-07 · 통상시급 시작 흐름 (사용자 확정 · 계수 제거)
+          //   ① 통상시급 = 사용자 입력 (default = 주중시급)
+          //   ② 각 항목 = 통상시급 × 시간 (가산은 시간에 이미 반영)
+          //   ③ 세전 = 통상시급 × 296.94 (= 4자동항목 합)
+          //   ④ 공제 = 4대보험 + 소득세 (세전 기준 실제 계산)
+          //   ⑤ 세후 = 세전 - 공제
+          const autoHourly = wd; // 주중시급 (계약서 표준 · 약국 관례) · 없으면 0
+          const hourly = wageHourlyOverride != null && wageHourlyOverride > 0
+            ? Math.round(wageHourlyOverride)
+            : autoHourly;
+          if (hourly <= 0) {
             return (
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-4 text-center text-[11px] text-slate-500 font-semibold">
-                근무시간·시급 입력 시 · 임금구성표 자동 산출
+                시급 입력 시 · 임금구성표 자동 산출
               </div>
             );
           }
-          // 2026-08-07 · 올바른 역산 흐름 (사용자 확정)
-          //   ① 세전 = 세후 × 계수(구간)  · grossUpFromNet
-          //   ② 통상시급 = 세전 ÷ 296.94
-          //   ③ 각 항목 = 통상시급 × 시간  (55.94/22는 이미 1.5배 가산 반영된 시간 · × 1.5 하지 않음)
-          //   ④ 합계 = 각 항목 합 = 세전 총액
-          //   ⑤ 공제 = 세전 - 세후
-          //   ⑥ 실수령 = 세후 (= monthlyNet)
-          const gu = grossUpFromNet(monthlyNet);
-          // 사용자 override 우선순위 · 통상시급 > 계수 > 자동 (구간별)
-          let gross: number;
-          let hourly: number;
-          let activeCoef: number;
-          if (wageHourlyOverride != null && wageHourlyOverride > 0) {
-            hourly = Math.round(wageHourlyOverride);
-            gross  = Math.round(hourly * WAGE_DIVISOR);
-            activeCoef = monthlyNet > 0 ? gross / monthlyNet : gu.coefficient;
-          } else {
-            activeCoef = wageCoefOverride ?? gu.coefficient;
-            gross  = Math.round(monthlyNet * activeCoef);
-            hourly = Math.round(gross / WAGE_DIVISOR);
-          }
-          // 계수 구간 · 앞뒤 이웃 구간으로 기본급 range 산출
-          const bracketIdx = GROSSUP_COEFFICIENTS.findIndex(b => b === gu.bracket);
-          const prevCoef = bracketIdx > 0 ? GROSSUP_COEFFICIENTS[bracketIdx - 1].coefficient : gu.bracket.coefficient;
-          const nextCoef = bracketIdx < GROSSUP_COEFFICIENTS.length - 1 ? GROSSUP_COEFFICIENTS[bracketIdx + 1].coefficient : gu.bracket.coefficient;
-          const minCoef = Math.min(prevCoef, activeCoef);
-          const maxCoef = Math.max(nextCoef, activeCoef);
-          const basicRangeMin = Math.round(Math.round(monthlyNet * minCoef) / WAGE_DIVISOR * WAGE_HOURS.BASIC);
-          const basicRangeMax = Math.round(Math.round(monthlyNet * maxCoef) / WAGE_DIVISOR * WAGE_HOURS.BASIC);
-          // 4자동항목 (통상시급 × 시간 · 가산은 시간에 이미 반영)
+          // 4자동항목 (통상시급 × 시간)
           const basicAmt    = Math.round(hourly * WAGE_HOURS.BASIC);
           const overtimeAmt = Math.round(hourly * WAGE_HOURS.OVERTIME);
           const holidayAmt  = Math.round(hourly * WAGE_HOURS.HOLIDAY);
           const annualAmt   = Math.round(hourly * WAGE_HOURS.ANNUAL_LEAVE);
-          const autoSum = basicAmt + overtimeAmt + holidayAmt + annualAmt;  // ≈ gross (세전)
+          const gross       = basicAmt + overtimeAmt + holidayAmt + annualAmt; // = 통상시급 × 296.94
+          const autoSum     = gross;
           // 선택 항목
           const holidayOtHours = Number(form.wageComponents.fixedHolidayOvertime?.hours) || 0;
           const holidayOtMins  = Number(form.wageComponents.fixedHolidayOvertime?.minutes) || 0;
@@ -4579,17 +4553,19 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const nightAmt       = Number(form.wageComponents.fixedNight?.amount) || 0;
           const meal    = Number(form.wageComponents.mealAllowance) || 0;
           const vehicle = Number(form.wageComponents.vehicleAllowance) || 0;
-          // 공제 = 세전 - 세후 (계수 기반 실제 공제 · 정확)
-          const deductionTotal = Math.max(0, gross - monthlyNet);
-          const deductionPct = gross > 0 ? (deductionTotal / gross * 100) : 0;
-          // 참고 · 세전 기준 4대보험 근사 표시용
+          // 공제 · 세전 기준 4대보험 + 소득세 실제 계산
           const pension = Math.round(gross * INSURANCE_RATES.PENSION);
           const health  = Math.round(gross * INSURANCE_RATES.HEALTH);
           const ltc     = Math.round(health * INSURANCE_RATES.LTC_RATIO);
           const emp     = Math.round(gross * INSURANCE_RATES.EMPLOYMENT);
           const insSum  = pension + health + ltc + emp;
-          const taxSum  = Math.max(0, deductionTotal - insSum);  // 계수 - 4대보험 잔여 ≈ 소득세 근사
-          // 월급여총액 (세전) = 4자동항목 세전 + 선택 항목 (식대·차량 · 비과세 별도)
+          const taxObj  = computeIncomeTax(gross);
+          const taxSum  = taxObj.total;
+          const deductionTotal = insSum + taxSum;
+          const deductionPct = gross > 0 ? (deductionTotal / gross * 100) : 0;
+          // 세후 = 세전 - 공제
+          const monthlyNet = Math.max(0, gross - deductionTotal);
+          // 월급여총액 (세전) = 4자동항목 + 선택 항목 (식대·차량 · 비과세 별도)
           const grossTotal = gross + holidayOtAmt + nightAmt + meal + vehicle;
 
           const setMeal = (v: number) => setForm(prev => ({
@@ -4617,124 +4593,38 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
 
           return (
             <div className="border border-slate-200 rounded-lg bg-white overflow-hidden flex flex-col">
-              {/* 헤더 · 통상시급 산출 + 계수 편집 + 기본급 range */}
-              <div className="px-4 py-2.5 bg-slate-50/60 border-b border-slate-200 flex flex-col gap-1.5">
-                {/* 1행 · 통상시급 · 직접 입력 가능 (편집 시 세전·계수 재계산) */}
-                <div className="flex items-baseline flex-wrap gap-x-2">
-                  <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-500">통상시급</span>
-                  <span className="text-[11px] text-slate-500">
-                    세전 {fmtWon(gross)}원 ÷ {WAGE_DIVISOR.toFixed(2)}h =
-                  </span>
-                  <input
-                    type="number"
-                    step="100"
-                    min="0"
-                    value={hourly}
-                    onChange={(e) => {
-                      const v = Number(e.target.value);
-                      if (!Number.isFinite(v) || v <= 0) {
-                        setWageHourlyOverride(null);
-                      } else {
-                        setWageHourlyOverride(v);
-                        setWageCoefOverride(null); // 통상시급 우선
-                      }
-                    }}
-                    className="w-24 tabular-nums bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[13px] font-black text-slate-900 text-right focus:outline-none focus:border-indigo-400"
-                  />
-                  <span className="text-slate-500 text-[11px]">원</span>
-                  {wageHourlyOverride != null && (
-                    <button
-                      type="button"
-                      onClick={() => setWageHourlyOverride(null)}
-                      className="text-[10px] text-indigo-500 hover:text-indigo-700 hover:underline cursor-pointer"
-                      title="자동 산출 값으로 복원"
-                    >
-                      자동
-                    </button>
-                  )}
-                </div>
-                {/* 2행 · 세후 × 계수 = 세전 · 세후·계수 모두 편집 가능 */}
-                <div className="flex items-baseline flex-wrap gap-x-2 text-[10.5px]">
-                  <span className="text-slate-500">세후</span>
-                  <input
-                    type="number"
-                    step="10000"
-                    min="0"
-                    value={monthlyNet}
-                    onChange={(e) => {
-                      const v = Number(e.target.value);
-                      if (!Number.isFinite(v) || v <= 0) setWageNetOverride(null);
-                      else setWageNetOverride(v);
-                    }}
-                    className="w-28 tabular-nums bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[11px] font-black text-slate-800 text-right focus:outline-none focus:border-indigo-400"
-                  />
-                  <span className="text-slate-500">원</span>
-                  {wageNetOverride != null && (
-                    <button
-                      type="button"
-                      onClick={() => setWageNetOverride(null)}
-                      className="text-[10px] text-indigo-500 hover:text-indigo-700 hover:underline cursor-pointer"
-                      title={`자동값 (${fmtWon(autoMonthlyNet)}원) 복원`}
-                    >
-                      자동
-                    </button>
-                  )}
-                  <span className="text-slate-500">× 계수</span>
-                  <input
-                    type="number"
-                    step="0.001"
-                    min="1"
-                    max="2"
-                    value={activeCoef.toFixed(3)}
-                    onChange={(e) => {
-                      const v = Number(e.target.value);
-                      setWageCoefOverride(Number.isFinite(v) && v > 0 ? v : null);
-                      setWageHourlyOverride(null); // 계수 편집 시 · 통상시급 override 해제
-                    }}
-                    className="w-20 tabular-nums bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[11px] font-black text-slate-800 text-right focus:outline-none focus:border-indigo-400"
-                  />
-                  {wageCoefOverride != null && (
-                    <button
-                      type="button"
-                      onClick={() => setWageCoefOverride(null)}
-                      className="text-[10px] text-indigo-500 hover:text-indigo-700 hover:underline cursor-pointer"
-                      title={`자동값 (${gu.coefficient.toFixed(3)}) 복원`}
-                    >
-                      자동
-                    </button>
-                  )}
-                  <span className="text-slate-400" title={`공제율 ${gu.bracket.ratioLabel}`}>
-                    자동 {gu.coefficient.toFixed(3)} ({gu.bracket.ratioLabel})
-                  </span>
-                  <span className="text-slate-500 ml-auto">= 세전 <span className="tabular-nums font-black text-slate-800">{fmtWon(gross)}원</span></span>
-                </div>
-                {/* 3행 · 기본급 range · 앞뒤 구간 계수 적용 */}
-                <div className="flex items-baseline flex-wrap gap-x-2 text-[10.5px] border-t border-slate-200 pt-1.5">
-                  <span className="text-slate-500 font-semibold">기본급 range</span>
-                  <span className="text-slate-400">계수 {minCoef.toFixed(3)} ~ {maxCoef.toFixed(3)} 적용 시</span>
-                  <span className="text-slate-500 ml-auto tabular-nums">
-                    <span className="text-slate-700 font-black">{fmtWon(basicRangeMin)}</span> ~ <span className="text-slate-700 font-black">{fmtWon(basicRangeMax)}</span> 원
-                  </span>
-                </div>
-                {/* 4행 · 계수 참고표 · 접기 */}
-                <details className="border-t border-slate-200 pt-1.5">
-                  <summary className="text-[10px] text-slate-400 hover:text-slate-600 cursor-pointer list-none select-none flex items-center gap-1">
-                    <span>▼</span>
-                    <span>계수표 참고 (세후 구간 · 공제율 · 계수)</span>
-                  </summary>
-                  <div className="mt-1 grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-0.5 text-[10px]">
-                    {GROSSUP_COEFFICIENTS.map(b => {
-                      const active = Math.abs(activeCoef - b.coefficient) < 0.0005;
-                      return (
-                        <div key={b.coefficient} className={`flex items-baseline gap-x-1.5 py-0.5 px-1 rounded ${active ? "bg-indigo-50 text-indigo-800 font-black" : "text-slate-500"}`}>
-                          <span className="tabular-nums font-black w-9">{b.coefficient.toFixed(3)}</span>
-                          <span className="tabular-nums text-slate-400 w-16">{(b.minNet / 10_000).toLocaleString()}~{(b.maxNet / 10_000).toLocaleString()}만</span>
-                          <span className="tabular-nums text-slate-400">{b.ratioLabel}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </details>
+              {/* 헤더 · 통상시급 입력 + 기본급 실시간 · 세전 표시 */}
+              <div className="px-4 py-2.5 bg-slate-50/60 border-b border-slate-200 flex items-baseline flex-wrap gap-x-2">
+                <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-500">통상시급</span>
+                <input
+                  type="number"
+                  step="100"
+                  min="0"
+                  value={hourly}
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    setWageHourlyOverride(Number.isFinite(v) && v > 0 ? v : null);
+                  }}
+                  className="w-24 tabular-nums bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[13px] font-black text-slate-900 text-right focus:outline-none focus:border-indigo-400"
+                />
+                <span className="text-slate-500 text-[11px]">원</span>
+                {wageHourlyOverride != null && (
+                  <button
+                    type="button"
+                    onClick={() => setWageHourlyOverride(null)}
+                    className="text-[10px] text-indigo-500 hover:text-indigo-700 hover:underline cursor-pointer"
+                    title={`자동 (주중시급 ${fmtWon(autoHourly)}원)`}
+                  >
+                    자동
+                  </button>
+                )}
+                <span className="text-slate-400 text-[10.5px]">→ 기본급</span>
+                <span className="tabular-nums font-black text-slate-700 text-[11.5px]">{fmtWon(basicAmt)}원</span>
+                <span className="text-slate-400 text-[10px]">(× {WAGE_HOURS.BASIC}h)</span>
+                <span className="ml-auto text-slate-500 text-[10.5px]">
+                  세전 <span className="tabular-nums font-black text-slate-800">{fmtWon(gross)}원</span>
+                  <span className="text-slate-400"> (× {WAGE_DIVISOR.toFixed(2)}h)</span>
+                </span>
               </div>
 
               {/* 임금구성표 · 4자동항목 표 · 세전 기준 · 각 항목 = 통상시급 × 시간 (가산 반영 시간) */}
@@ -4780,12 +4670,12 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 </tbody>
               </table>
 
-              {/* 공제 · 접기 · 세전 - 세후 = 실제 공제 (계수 기반) · 상세는 참고 근사 */}
-              <details className="border-t border-slate-200 bg-rose-50/30">
+              {/* 예상공제액 · 접기 · 세전 기준 4대보험 + 소득세 */}
+              <details className="border-t border-slate-200 bg-rose-50/30 group">
                 <summary className="px-3 py-2 flex items-baseline gap-x-2 cursor-pointer hover:bg-rose-50/60 list-none select-none">
-                  <span className="text-slate-400 text-[10px]">▼</span>
-                  <span className="text-[10.5px] font-black uppercase tracking-wider text-rose-700">− 공제</span>
-                  <span className="text-[10.5px] text-slate-500">세전 {fmtWon(gross)}원 기준 · 실효 {deductionPct.toFixed(1)}% <span className="text-slate-400">(공제율 {gu.bracket.ratioLabel})</span></span>
+                  <span className="text-slate-400 text-[10px] transition-transform group-open:rotate-90 inline-block">▶</span>
+                  <span className="text-[10.5px] font-black uppercase tracking-wider text-rose-700">− 예상공제액</span>
+                  <span className="text-[10.5px] text-slate-500">세전 {fmtWon(gross)}원 기준 · 실효 {deductionPct.toFixed(1)}%</span>
                   <span className="tabular-nums font-black text-rose-700 ml-auto text-[12px]">−{fmtWon(deductionTotal)}원</span>
                 </summary>
                 <div className="px-3 pb-2.5 flex flex-col gap-1">
@@ -4820,17 +4710,17 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(taxSum)}원</span>
                   </div>
                   <div className="flex items-baseline gap-x-2 pt-1.5 border-t border-rose-200">
-                    <span className="text-[10.5px] font-black uppercase tracking-wider text-rose-700">실제 공제</span>
-                    <span className="text-[10.5px] text-slate-500">세전 − 세후</span>
+                    <span className="text-[10.5px] font-black uppercase tracking-wider text-rose-700">예상공제액 합계</span>
+                    <span className="text-[10.5px] text-slate-500">4대보험 {fmtWon(insSum)} + 소득세 {fmtWon(taxSum)}</span>
                     <span className="tabular-nums font-black text-rose-700 ml-auto text-[12px]">−{fmtWon(deductionTotal)}원</span>
                   </div>
                 </div>
               </details>
 
-              {/* 실수령 (세후) · 강조 */}
+              {/* 실수령 (세후) · 세전 − 공제 파생 */}
               <div className="px-3 py-2 bg-emerald-50/60 border-t border-emerald-200 flex items-baseline gap-x-2">
                 <span className="text-[10.5px] font-black uppercase tracking-wider text-emerald-700">실수령 (세후)</span>
-                <span className="text-[10.5px] text-emerald-600 font-semibold">세전 {fmtWon(gross)} − 공제 {fmtWon(deductionTotal)}</span>
+                <span className="text-[10.5px] text-emerald-600 font-semibold">세전 {fmtWon(gross)} − 예상공제 {fmtWon(deductionTotal)}</span>
                 <span className="tabular-nums font-black text-emerald-800 ml-auto text-[13px] whitespace-nowrap">{fmtWon(monthlyNet)}원</span>
               </div>
 
@@ -4849,10 +4739,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     <td className={tdMid}>월평균 {nightHours} 시간 {nightMins} 분 · 통상시급 × 시간 × <b>0.5</b></td>
                     <td className={tdAmt}>{nightAmt > 0 ? `${fmtWon(nightAmt)}원` : "-"}</td>
                   </tr>
-                  {/* 식대 (비과세) · 체크박스 */}
+                  {/* 식대 (비과세) · 체크박스 · 항목 앞 */}
                   <tr className="border-t border-slate-100">
-                    <td className={tdItem}>식대 <span className="text-slate-400 font-normal text-[10.5px]">(비과세)</span></td>
-                    <td className={tdMid}>
+                    <td className={tdItem}>
                       <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
                         <input
                           type="checkbox"
@@ -4860,10 +4749,12 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                           onChange={(e) => setMeal(e.target.checked ? (meal > 0 ? meal : 200_000) : 0)}
                           className="w-3.5 h-3.5 rounded accent-indigo-600 cursor-pointer"
                         />
-                        <span className="text-slate-500">해당자에 한함</span>
+                        <span>식대 <span className="text-slate-400 font-normal text-[10.5px]">(비과세)</span></span>
                       </label>
-                      {mealChecked && (
-                        <span className="inline-flex items-center ml-2">
+                    </td>
+                    <td className={tdMid}>
+                      {mealChecked ? (
+                        <span className="inline-flex items-center">
                           <input
                             type="text"
                             inputMode="numeric"
@@ -4873,14 +4764,15 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                           />
                           <span className="ml-1 text-slate-400 text-[10.5px]">원</span>
                         </span>
+                      ) : (
+                        <span className="text-slate-400">해당자에 한함</span>
                       )}
                     </td>
                     <td className={tdAmt}>{mealChecked ? `${fmtWon(meal)}원` : "-"}</td>
                   </tr>
-                  {/* 차량유지비 (비과세) · 체크박스 */}
+                  {/* 차량유지비 (비과세) · 체크박스 · 항목 앞 */}
                   <tr className="border-t border-slate-100">
-                    <td className={tdItem}>차량유지비 <span className="text-slate-400 font-normal text-[10.5px]">(비과세)</span></td>
-                    <td className={tdMid}>
+                    <td className={tdItem}>
                       <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
                         <input
                           type="checkbox"
@@ -4888,10 +4780,12 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                           onChange={(e) => setVehicle(e.target.checked ? (vehicle > 0 ? vehicle : 200_000) : 0)}
                           className="w-3.5 h-3.5 rounded accent-indigo-600 cursor-pointer"
                         />
-                        <span className="text-slate-500">해당자에 한함</span>
+                        <span>차량유지비 <span className="text-slate-400 font-normal text-[10.5px]">(비과세)</span></span>
                       </label>
-                      {vehicleChecked && (
-                        <span className="inline-flex items-center ml-2">
+                    </td>
+                    <td className={tdMid}>
+                      {vehicleChecked ? (
+                        <span className="inline-flex items-center">
                           <input
                             type="text"
                             inputMode="numeric"
@@ -4901,6 +4795,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                           />
                           <span className="ml-1 text-slate-400 text-[10.5px]">원</span>
                         </span>
+                      ) : (
+                        <span className="text-slate-400">해당자에 한함</span>
                       )}
                     </td>
                     <td className={tdAmt}>{vehicleChecked ? `${fmtWon(vehicle)}원` : "-"}</td>
@@ -4911,7 +4807,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                       월급여총액 <span className="text-emerald-600 font-bold text-[10.5px]">(세전)</span>
                     </td>
                     <td className="px-3 py-2 text-[10.5px] text-emerald-700 font-semibold">
-                      세후 {fmtWon(autoSum)} + 공제 {fmtWon(deductionTotal)}
+                      세전 {fmtWon(gross)}
                       {(holidayOtAmt + nightAmt + meal + vehicle) > 0 && ` + 선택 ${fmtWon(holidayOtAmt + nightAmt + meal + vehicle)}`}
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums font-black text-emerald-900 text-[13px] whitespace-nowrap">
