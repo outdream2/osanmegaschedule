@@ -4583,6 +4583,97 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               <div className="text-[10.5px] text-slate-500 leading-snug">
                 <span className="text-slate-400">※ 세액 기준</span> · 기본급 <span className="tabular-nums font-black text-slate-700">{fmtWon(basicAmount)}</span>원 (통상시급 × {WAGE_HOURS.BASIC}h)
               </div>
+
+              {/* 4대보험·소득세 · 기본급 기준 요율 적용 */}
+              {(() => {
+                const base = basicAmount;
+                const pension = Math.round(base * INSURANCE_RATES.PENSION);
+                const health  = Math.round(base * INSURANCE_RATES.HEALTH);
+                const ltc     = Math.round(health * INSURANCE_RATES.LTC_RATIO);
+                const emp     = Math.round(base * INSURANCE_RATES.EMPLOYMENT);
+                const insTotal = pension + health + ltc + emp;
+                const taxObj = computeIncomeTax(base);
+                const incomeTax = taxObj.incomeTax;
+                const localTax  = taxObj.localTax;
+                const taxTotal  = taxObj.total;
+                const grand = insTotal + taxTotal;
+                const grandPct = base > 0 ? (grand / base * 100) : 0;
+
+                const rows = [
+                  {
+                    label: "국민연금",
+                    rate: `${(INSURANCE_RATES.PENSION * 100).toFixed(2)}%`,
+                    amount: pension,
+                    desc: "노후 소득 보장 · 사용자·근로자 각각 부담 (근로자 부담분)",
+                  },
+                  {
+                    label: "건강보험",
+                    rate: `${(INSURANCE_RATES.HEALTH * 100).toFixed(3)}%`,
+                    amount: health,
+                    desc: "국민건강보험 · 질병·부상 진료 급여 · 근로자 부담분",
+                  },
+                  {
+                    label: "장기요양",
+                    rate: `건강 × ${(INSURANCE_RATES.LTC_RATIO * 100).toFixed(2)}%`,
+                    amount: ltc,
+                    desc: "노인장기요양 · 건강보험료의 12.95% 가산",
+                  },
+                  {
+                    label: "고용보험",
+                    rate: `${(INSURANCE_RATES.EMPLOYMENT * 100).toFixed(2)}%`,
+                    amount: emp,
+                    desc: "실업급여 재원 · 근로자 부담분 (사용자 별도 부담)",
+                  },
+                  {
+                    label: "소득세",
+                    rate: "간이세액표",
+                    amount: incomeTax,
+                    desc: "근로소득 간이세액표 (부양 1인 기준 · 원천징수)",
+                  },
+                  {
+                    label: "지방소득세",
+                    rate: "소득세 × 10%",
+                    amount: localTax,
+                    desc: "소득세의 10% · 지자체 재원",
+                  },
+                ];
+
+                return (
+                  <div className="pt-2 mt-1 border-t border-slate-100 flex flex-col gap-1.5">
+                    <div className="flex items-baseline gap-x-2">
+                      <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-400">공제</span>
+                      <span className="text-[10.5px] text-slate-500">기본급 {fmtWon(base)}원 기준</span>
+                      <span className="tabular-nums text-[10.5px] text-slate-400 ml-auto">
+                        총 {grandPct.toFixed(1)}% · {fmtWon(grand)}원
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      {rows.map(r => (
+                        <div key={r.label} className="flex flex-col">
+                          <div className="flex items-baseline gap-x-2">
+                            <span className="text-slate-700 font-bold min-w-[70px]">{r.label}</span>
+                            <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">{r.rate}</span>
+                            <span className="tabular-nums font-black text-rose-600 ml-auto">−{fmtWon(r.amount)}원</span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-medium pl-[70px] leading-snug">
+                            {r.desc}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-baseline gap-x-2 pt-1.5 border-t border-slate-100">
+                      <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-500">공제 합계</span>
+                      <span className="tabular-nums text-[11px] text-slate-500">4대보험 {fmtWon(insTotal)} + 소득세 {fmtWon(taxTotal)}</span>
+                      <span className="tabular-nums font-black text-rose-700 ml-auto">−{fmtWon(grand)}원</span>
+                    </div>
+                    <div className="flex items-baseline gap-x-2 pt-1.5 border-t border-slate-100">
+                      <span className="text-[10.5px] font-black uppercase tracking-wider text-emerald-700">기본급 실수령</span>
+                      <span className="text-[10.5px] text-slate-500">{fmtWon(base)} − {fmtWon(grand)}</span>
+                      <span className="tabular-nums font-black text-emerald-800 ml-auto">{fmtWon(Math.max(0, base - grand))}원</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           );
         })()}
