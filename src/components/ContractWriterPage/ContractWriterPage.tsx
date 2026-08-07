@@ -4674,9 +4674,34 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           //   ③ 세전 = 통상시급 × 296.94 (= 4자동항목 합)
           //   ④ 공제 = 4대보험 + 소득세 (세전 기준 실제 계산)
           //   ⑤ 세후 = 세전 - 공제
-          // autoHourly · 주중시급 그대로 (계약서 표준 · 약국 관례)
-          //   · 사용자가 '희망 맞춤' 버튼 클릭 시에만 반복 근사 결과로 override
-          const autoHourly = Math.round(wd * 10) / 10;
+          // autoHourly · 반복 근사 (부양·자녀·원천·공제항목 모두 반영)
+          //   · 조건 변경 시 자동 재계산 · 세후 = 희망월수령액 유지
+          //   · 사용자가 통상시급 직접 편집 시 wageHourlyOverride 우선
+          const autoHourly = (() => {
+            if (autoMonthlyNet <= 0) return Math.round(wd * 10) / 10;
+            const extrasAuto = (Number(form.wageComponents.fixedHolidayOvertime?.amount) || 0)
+                             + (Number(form.wageComponents.fixedNight?.amount) || 0)
+                             + (Number(form.wageComponents.mealAllowance) || 0)
+                             + (Number(form.wageComponents.vehicleAllowance) || 0);
+            let h = wd > 0 ? wd : 25000;
+            for (let i = 0; i < 20; i++) {
+              const basic = h * WAGE_HOURS.BASIC;
+              const g = h * WAGE_DIVISOR + extrasAuto;
+              const p  = basic * INSURANCE_RATES.PENSION;
+              const hh = basic * INSURANCE_RATES.HEALTH;
+              const lt = hh * INSURANCE_RATES.LTC_RATIO;
+              const em = basic * INSURANCE_RATES.EMPLOYMENT;
+              const insSumH = p + hh + lt + em;
+              const tx = computeIncomeTax(Math.round(basic), dependentsCount, withholdingRate, childrenCount, 0);
+              const dedH = insSumH + tx.total + customDeductionAmount;
+              const net = g - dedH;
+              const delta = autoMonthlyNet - net;
+              if (Math.abs(delta) < 50) break;
+              h += delta / WAGE_DIVISOR * 0.85;
+              if (h < 0) h = 0;
+            }
+            return Math.round(h * 10) / 10;
+          })();
           const hourly = wageHourlyOverride != null && wageHourlyOverride > 0
             ? Math.round(wageHourlyOverride * 10) / 10  // 소수점 1자리
             : autoHourly;
