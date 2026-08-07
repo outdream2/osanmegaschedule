@@ -883,72 +883,68 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
               </div>
             </header>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-[11px] text-slate-500 font-black bg-slate-50 border-b border-slate-200">
-                    <th className="text-left px-3 py-2 min-w-[72px]">직군</th>
-                    <th className="text-right px-2 py-2 min-w-[120px]">주중 (원)</th>
-                    <th className="text-right px-2 py-2 min-w-[120px]">주말 (원)</th>
-                    <th className="text-center px-2 py-2 w-9">초기화</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {JOB_META.map(job => {
-                    const stored = wageRates?.[job.key];
-                    const fallback = defaultWageForPosition(job.key);
-                    const rate = stored ?? fallback;
-                    const isDefault = !stored;
-                    return (
-                      <tr key={job.key} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50 transition-colors">
-                        <td className="px-3 py-2">
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md ${job.bg} ${job.color} text-[12px] font-black`}>
-                            {job.label}
-                            {isDefault && (
-                              <span className="text-[9px] font-bold text-slate-400 bg-white/80 border border-slate-200 rounded px-0.5" title="기본값 사용 중">
-                                기본
-                              </span>
-                            )}
+            {/* PC: 2컬럼 2행 · 모바일: 1컬럼 */}
+            <div className="p-3 grid grid-cols-1 lg:grid-cols-2 gap-2.5">
+              {JOB_META.map(job => {
+                const stored = wageRates?.[job.key];
+                const fallback = defaultWageForPosition(job.key);
+                const rate = stored ?? fallback;
+                const isDefault = !stored;
+                return (
+                  <div
+                    key={job.key}
+                    className={`flex flex-col gap-2 p-2.5 rounded-xl border ${job.border} ${job.bg}`}
+                  >
+                    {/* 직군 레이블 + 초기화 */}
+                    <div className="flex items-center justify-between">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/70 ${job.color} text-[12px] font-black border ${job.border}`}>
+                        {job.label}
+                        {isDefault && (
+                          <span className="text-[9px] font-bold text-slate-400 bg-white/80 border border-slate-200 rounded px-0.5" title="기본값 사용 중">
+                            기본
                           </span>
-                        </td>
-                        <td className="px-2 py-2">
-                          <input
-                            type="number"
-                            min={0}
-                            step={10}
-                            value={rate.weekday || ""}
-                            placeholder={String(fallback.weekday)}
-                            onChange={(e) => updWage(job.key, "weekday", Math.max(0, Number(e.target.value) || 0))}
-                            className={`w-full block bg-white border rounded-lg px-2 py-1 text-[12px] font-bold text-right tabular-nums focus:outline-none focus:border-indigo-500 focus:shadow-sm transition ${isDefault ? "border-slate-200 text-slate-400" : "border-slate-300 text-slate-800"}`}
-                          />
-                        </td>
-                        <td className="px-2 py-2">
-                          <input
-                            type="number"
-                            min={0}
-                            step={10}
-                            value={rate.weekend || ""}
-                            placeholder={String(fallback.weekend)}
-                            onChange={(e) => updWage(job.key, "weekend", Math.max(0, Number(e.target.value) || 0))}
-                            className={`w-full block bg-white border rounded-lg px-2 py-1 text-[12px] font-bold text-right tabular-nums focus:outline-none focus:border-indigo-500 focus:shadow-sm transition ${isDefault ? "border-slate-200 text-slate-400" : "border-slate-300 text-slate-800"}`}
-                          />
-                        </td>
-                        <td className="px-2 py-2 text-center">
-                          <button
-                            type="button"
-                            onClick={() => resetWage(job.key)}
-                            disabled={isDefault}
-                            className="inline-flex items-center justify-center w-6 h-6 rounded-md border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                            title="이 직군 기본값으로 되돌리기"
-                          >
-                            <ArrowsClockwise size={11} weight="bold" />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        )}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => resetWage(job.key)}
+                        disabled={isDefault}
+                        className="inline-flex items-center justify-center w-6 h-6 rounded-md border border-slate-200 bg-white text-slate-400 hover:bg-white hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                        title="이 직군 기본값으로 되돌리기"
+                      >
+                        <ArrowsClockwise size={11} weight="bold" />
+                      </button>
+                    </div>
+                    {/* 주중 · 주말 시급 입력 · 2컬럼 */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold text-slate-500">주중 (원)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          step={10}
+                          value={rate.weekday || ""}
+                          placeholder={String(fallback.weekday)}
+                          onChange={(e) => updWage(job.key, "weekday", Math.max(0, Number(e.target.value) || 0))}
+                          className={`w-full bg-white border rounded-lg px-2 py-1.5 text-[12px] font-bold text-right tabular-nums focus:outline-none focus:border-indigo-500 focus:shadow-sm transition ${isDefault ? "border-slate-200 text-slate-400" : "border-slate-300 text-slate-800"}`}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold text-slate-500">주말 (원)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          step={10}
+                          value={rate.weekend || ""}
+                          placeholder={String(fallback.weekend)}
+                          onChange={(e) => updWage(job.key, "weekend", Math.max(0, Number(e.target.value) || 0))}
+                          className={`w-full bg-white border rounded-lg px-2 py-1.5 text-[12px] font-bold text-right tabular-nums focus:outline-none focus:border-indigo-500 focus:shadow-sm transition ${isDefault ? "border-slate-200 text-slate-400" : "border-slate-300 text-slate-800"}`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </section>
         </div>
