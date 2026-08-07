@@ -4520,6 +4520,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const we = Number(form.weekendHourly) || wd;
           const wdH = dailyH * weeklyWeekdayDays;
           const weH = dailyH * weeklyWeekendDays;
+          // 근무조건 목표 · 시급 × 주시간 × 4.345 = 희망 월 수령액
+          const weeklyPay = Math.round(wdH * wd + weH * we);
+          const autoMonthlyNet = Math.round(weeklyPay * 4.345);
           // 2026-08-07 · 통상시급 시작 흐름 (사용자 확정 · 계수 제거)
           //   ① 통상시급 = 사용자 입력 (default = 주중시급)
           //   ② 각 항목 = 통상시급 × 시간 (가산은 시간에 이미 반영)
@@ -4579,6 +4582,33 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const mealChecked = meal > 0;
           const vehicleChecked = vehicle > 0;
 
+          // '희망 맞춤' · 근무조건 희망월수령액(autoMonthlyNet)을 세후로 맞추는 통상시급 반복 근사
+          //   · 각 항목·공제 모두 고려 · Newton-like 반복 (5~8회 수렴)
+          //   · 결과값을 wageHourlyOverride 에 세팅 · 사용자 편집 가능
+          const applyHopeMatch = () => {
+            const target = autoMonthlyNet;
+            if (target <= 0) return;
+            let h = hourly > 0 ? hourly : wd;
+            if (h <= 0) h = 25000;
+            const extras = holidayOtAmt + nightAmt + meal + vehicle;
+            for (let i = 0; i < 10; i++) {
+              const basic = h * WAGE_HOURS.BASIC;
+              const g = h * WAGE_DIVISOR + extras;
+              const p = basic * INSURANCE_RATES.PENSION;
+              const hh = basic * INSURANCE_RATES.HEALTH;
+              const lt = hh * INSURANCE_RATES.LTC_RATIO;
+              const em = basic * INSURANCE_RATES.EMPLOYMENT;
+              const tx = computeIncomeTax(Math.round(basic));
+              const ded = p + hh + lt + em + tx.total;
+              const net = g - ded;
+              const delta = target - net;
+              if (Math.abs(delta) < 50) break;
+              h += delta / WAGE_DIVISOR;
+              if (h < 0) h = 0;
+            }
+            setWageHourlyOverride(Math.round(h * 10) / 10);
+          };
+
           const tdItem = "px-3 py-2 text-slate-800 font-bold align-top";
           const tdMid  = "px-3 py-2 text-slate-500 text-[11px] align-top";
           const tdAmt  = "px-3 py-2 text-right tabular-nums font-black text-slate-900 align-top whitespace-nowrap";
@@ -4616,6 +4646,16 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     title={`자동 (주중시급 ${fmtWon(autoHourly)}원)`}
                   >
                     자동
+                  </button>
+                )}
+                {autoMonthlyNet > 0 && (
+                  <button
+                    type="button"
+                    onClick={applyHopeMatch}
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-black cursor-pointer"
+                    title={`근무조건 희망월수령액 ${fmtWon(autoMonthlyNet)}원 을 세후로 맞추는 통상시급으로 자동 조정`}
+                  >
+                    희망 맞춤
                   </button>
                 )}
                 <span className="text-slate-400 text-[10.5px]">→ 기본급</span>
@@ -4792,10 +4832,21 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 </div>
               </details>
 
-              {/* 예상 실수령 (세후) · 세전 총액 − 예상공제 파생 */}
-              <div className="px-3 py-2 bg-emerald-50/60 border-t border-emerald-200 flex items-baseline gap-x-2">
+              {/* 예상 실수령 (세후) · 세전 총액 − 예상공제 파생 · 희망월수령액 대비 차이 표시 */}
+              <div className="px-3 py-2 bg-emerald-50/60 border-t border-emerald-200 flex items-baseline flex-wrap gap-x-2 gap-y-1">
                 <span className="text-[10.5px] font-black uppercase tracking-wider text-emerald-700">예상 실수령 (세후)</span>
                 <span className="text-[10.5px] text-emerald-600 font-semibold">세전 {fmtWon(grossTotal)} − 예상공제 {fmtWon(deductionTotal)}</span>
+                {autoMonthlyNet > 0 && (() => {
+                  const diff = monthlyNet - autoMonthlyNet;
+                  const absDiff = Math.abs(diff);
+                  const near = absDiff < 1000;
+                  const cls = near ? "text-emerald-500" : (diff > 0 ? "text-indigo-500" : "text-amber-600");
+                  return (
+                    <span className={`text-[10px] font-black ${cls}`} title={`희망월수령액 ${fmtWon(autoMonthlyNet)}원 대비`}>
+                      희망 대비 {diff > 0 ? "+" : diff < 0 ? "−" : "="}{fmtWon(absDiff)}원 {near && "✓"}
+                    </span>
+                  );
+                })()}
                 <span className="tabular-nums font-black text-emerald-800 ml-auto text-[13px] whitespace-nowrap">{fmtWon(monthlyNet)}원</span>
               </div>
             </div>
