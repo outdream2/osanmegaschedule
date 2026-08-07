@@ -4903,7 +4903,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   </span>
                 </div>
                 <div className="flex items-baseline flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-400 font-semibold">
-                  <span className="flex items-baseline gap-x-1.5">
+                  <span>참고 · 약사 주중 근무 시 통상시급 예시 <span className="tabular-nums font-black text-slate-500">22,350.8</span>원</span>
+                  <span className="flex items-baseline gap-x-1.5 ml-auto">
                     <span className="text-slate-500">부양</span>
                     <input
                       type="number" min={1} max={10} step={1} value={dependentsCount}
