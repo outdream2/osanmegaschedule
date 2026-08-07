@@ -2689,6 +2689,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
 
   // 2026-08-07 · 통상시급 override (null 이면 자동 = 주중시급)
   const [wageHourlyOverride, setWageHourlyOverride] = useState<number | null>(null);
+  // 2026-08-07 · 부양가족 수 (본인 포함 · default 1) · 소득세 인적공제 반영
+  const [dependentsCount, setDependentsCount] = useState<number>(1);
 
   // 2026-08-07 · 통상시급/근무조건/선택항목 변경 시 · form.wageComponents 4자동항목 자동 반영
   //   · 왼쪽 임금구성표 (통상시급×시간) → 오른쪽 계약서 프리뷰 (form.wageComponents.*.amount) 동기화
@@ -4697,7 +4699,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const ltc     = Math.round(health * INSURANCE_RATES.LTC_RATIO);
           const emp     = Math.round(basicAmt * INSURANCE_RATES.EMPLOYMENT);
           const insSum  = pension + health + ltc + emp;
-          const taxObj  = computeIncomeTax(basicAmt);
+          const taxObj  = computeIncomeTax(basicAmt, dependentsCount);
           const taxSum  = taxObj.total;
           // 예상공제 = 4대보험 + 소득세·지방세 (기본급 기준 · 국세청 7단계 공식)
           const deductionTotal = insSum + taxSum;
@@ -4829,8 +4831,25 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     <span className="text-slate-400"> (× {WAGE_DIVISOR.toFixed(2)}h)</span>
                   </span>
                 </div>
-                <div className="text-[10px] text-slate-400 font-semibold">
-                  참고 · 약사 주중 근무 시 통상시급 예시 <span className="tabular-nums font-black text-slate-500">22,350.8</span>원 (기본급 4,671,298원 ÷ 209h)
+                <div className="flex items-baseline flex-wrap gap-x-2 text-[10px] text-slate-400 font-semibold">
+                  <span>참고 · 약사 주중 근무 시 통상시급 예시 <span className="tabular-nums font-black text-slate-500">22,350.8</span>원 (기본급 4,671,298원 ÷ 209h)</span>
+                  <span className="ml-auto flex items-baseline gap-x-1.5">
+                    <span className="text-slate-500">부양가족 수 (본인 포함)</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={10}
+                      step={1}
+                      value={dependentsCount}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        setDependentsCount(Number.isFinite(v) && v >= 1 ? Math.floor(v) : 1);
+                      }}
+                      className="w-14 tabular-nums bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[11px] font-black text-slate-800 text-right focus:outline-none focus:border-indigo-400"
+                    />
+                    <span className="text-slate-500">인</span>
+                    <span className="text-slate-400" title="소득세 인적공제 · 1인당 150만원">(소득세 감소)</span>
+                  </span>
                 </div>
               </div>
 
@@ -4989,7 +5008,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     <span className="text-slate-700 font-bold text-[11.5px] min-w-[74px]">근로소득세</span>
                     <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">간이세액표 7단계</span>
                     <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">
-                      국세청 공식 · 근로소득공제·세액공제 반영 (부양 1인)
+                      국세청 공식 · 부양 {dependentsCount}인 (인적공제 {dependentsCount * 150}만원)
                     </span>
                     <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(taxObj.incomeTax)}원</span>
                   </div>
