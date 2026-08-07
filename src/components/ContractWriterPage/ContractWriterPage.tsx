@@ -3143,18 +3143,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
 
   // 2026-08-07 · 통상시급 → form.wageComponents 4자동항목 자동 동기화 (프리뷰 반영)
   useEffect(() => {
-    const dailyH = monthlyCalc ? monthlyCalc.dailyMinutes / 60 : 0;
     const wd = Number(form.weekdayHourly) || 0;
-    const we = Number(form.weekendHourly) || wd;
-    const wdH = dailyH * weeklyWeekdayDays;
-    const weH = dailyH * weeklyWeekendDays;
-    const weeklyPay = Math.round(wdH * wd + weH * we);
-    const autoMonthlyNet = Math.round(weeklyPay * 4.345);
-    const extras = (Number(form.wageComponents.fixedHolidayOvertime?.amount) || 0)
-                 + (Number(form.wageComponents.fixedNight?.amount) || 0)
-                 + (Number(form.wageComponents.mealAllowance) || 0)
-                 + (Number(form.wageComponents.vehicleAllowance) || 0);
-    const autoHourly = computeAutoHourly(autoMonthlyNet, wd, extras);
+    const autoHourly = Math.round(wd * 10) / 10;
     const hourly = wageHourlyOverride != null && wageHourlyOverride > 0
       ? Math.round(wageHourlyOverride * 10) / 10
       : autoHourly;
@@ -3185,14 +3175,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   }, [
     wageHourlyOverride,
     form.weekdayHourly,
-    form.weekendHourly,
-    weeklyWeekdayDays,
-    weeklyWeekendDays,
-    monthlyCalc,
-    form.wageComponents.fixedHolidayOvertime?.amount,
-    form.wageComponents.fixedNight?.amount,
-    form.wageComponents.mealAllowance,
-    form.wageComponents.vehicleAllowance,
   ]);
 
   // 자동계산 적용 → 기본급 시간·분 세팅
@@ -4666,16 +4648,21 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           //   ③ 세전 = 통상시급 × 296.94 (= 4자동항목 합)
           //   ④ 공제 = 4대보험 + 소득세 (세전 기준 실제 계산)
           //   ⑤ 세후 = 세전 - 공제
-          // autoHourly · computeAutoHourly 유틸 · 반복 근사 · 오차 <50원 수렴
-          //   · 사용자 수동 편집 시 wageHourlyOverride 우선
-          const extras0 = (Number(form.wageComponents.fixedHolidayOvertime?.amount) || 0)
-                        + (Number(form.wageComponents.fixedNight?.amount) || 0)
-                        + (Number(form.wageComponents.mealAllowance) || 0)
-                        + (Number(form.wageComponents.vehicleAllowance) || 0);
-          const autoHourly = computeAutoHourly(autoMonthlyNet, wd, extras0);
+          // autoHourly · 주중시급 그대로 (계약서 표준 · 약국 관례)
+          //   · 사용자가 '희망 맞춤' 버튼 클릭 시에만 반복 근사 결과로 override
+          const autoHourly = Math.round(wd * 10) / 10;
           const hourly = wageHourlyOverride != null && wageHourlyOverride > 0
             ? Math.round(wageHourlyOverride * 10) / 10  // 소수점 1자리
             : autoHourly;
+          // '희망 맞춤' 버튼용 · 반복 근사 (autoMonthlyNet 세후 맞춤)
+          const applyHopeMatch = () => {
+            const extras0 = (Number(form.wageComponents.fixedHolidayOvertime?.amount) || 0)
+                          + (Number(form.wageComponents.fixedNight?.amount) || 0)
+                          + (Number(form.wageComponents.mealAllowance) || 0)
+                          + (Number(form.wageComponents.vehicleAllowance) || 0);
+            const h = computeAutoHourly(autoMonthlyNet, wd, extras0);
+            setWageHourlyOverride(h);
+          };
           if (hourly <= 0) {
             return (
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-4 text-center text-[11px] text-slate-500 font-semibold">
@@ -4740,40 +4727,94 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             { label: "소득세·지방세", rate: "간이세액표", amount: taxSum, desc: "근로소득 간이세액표 근사" },
           ];
 
+          const weeklyH = wdH + weH;
+          const isMonthly = isMonthlyWageType(form.contractType);
+          const hasDual = weeklyWeekendDays > 0 && we !== wd;
           return (
             <div className="border border-slate-200 rounded-lg bg-white overflow-hidden flex flex-col">
-              {/* 헤더 · 통상시급 입력 + 기본급 실시간 · 세전 표시 */}
-              <div className="px-4 py-2.5 bg-slate-50/60 border-b border-slate-200 flex items-baseline flex-wrap gap-x-2">
-                <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-500">통상시급</span>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  value={hourly}
-                  onChange={(e) => {
-                    const v = Number(e.target.value);
-                    setWageHourlyOverride(Number.isFinite(v) && v > 0 ? v : null);
-                  }}
-                  className="w-24 tabular-nums bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[13px] font-black text-slate-900 text-right focus:outline-none focus:border-indigo-400"
-                />
-                <span className="text-slate-500 text-[11px]">원</span>
-                {wageHourlyOverride != null && (
-                  <button
-                    type="button"
-                    onClick={() => setWageHourlyOverride(null)}
-                    className="text-[10px] text-indigo-500 hover:text-indigo-700 hover:underline cursor-pointer"
-                    title={`자동 (희망월수령액 ${fmtWon(autoMonthlyNet)}원 맞춤 · 통상시급 ${fmtWon(autoHourly)}원)`}
-                  >
-                    자동
-                  </button>
-                )}
-                <span className="text-slate-400 text-[10.5px]">→ 기본급</span>
-                <span className="tabular-nums font-black text-slate-700 text-[11.5px]">{fmtWon(basicAmt)}원</span>
-                <span className="text-slate-400 text-[10px]">(× {WAGE_HOURS.BASIC}h)</span>
-                <span className="ml-auto text-slate-500 text-[10.5px]">
-                  세전 <span className="tabular-nums font-black text-slate-800">{fmtWon(gross)}원</span>
-                  <span className="text-slate-400"> (× {WAGE_DIVISOR.toFixed(2)}h)</span>
+              {/* 근무조건 산식 · 주시간·계약유형·시급×주시간×4.345=희망월수령액 */}
+              <div className="px-4 py-2 bg-indigo-50/40 border-b border-indigo-100 flex items-baseline flex-wrap gap-x-1.5 text-[11px]">
+                <span className="font-black text-indigo-900">주 {weeklyH.toFixed(1)}시간</span>
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wide ${isMonthly ? "bg-indigo-200 text-indigo-800" : "bg-amber-200 text-amber-800"}`}>
+                  {isMonthly ? "월급제" : "시급제"}
                 </span>
+                {autoMonthlyNet > 0 && (
+                  <>
+                    {hasDual ? (
+                      <>
+                        <span className="text-slate-500 text-[10px] ml-1">주중</span>
+                        <span className="tabular-nums font-bold text-slate-700">{fmtWon(wd)}원</span>
+                        <span className="text-slate-400">×</span>
+                        <span className="tabular-nums text-slate-600">{wdH.toFixed(1)}h</span>
+                        <span className="text-slate-400">+</span>
+                        <span className="text-slate-500 text-[10px]">주말</span>
+                        <span className="tabular-nums font-bold text-slate-700">{fmtWon(we)}원</span>
+                        <span className="text-slate-400">×</span>
+                        <span className="tabular-nums text-slate-600">{weH.toFixed(1)}h</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-slate-500 text-[10px] ml-1">시급</span>
+                        <span className="tabular-nums font-bold text-slate-700">{fmtWon(wd)}원</span>
+                        <span className="text-slate-400">×</span>
+                        <span className="tabular-nums text-slate-600">{weeklyH.toFixed(1)}h</span>
+                      </>
+                    )}
+                    <span className="text-slate-400">×</span>
+                    <span className="text-slate-600">4.345</span>
+                    <span className="text-slate-400">=</span>
+                    <span className="tabular-nums font-black text-emerald-700">{fmtWon(autoMonthlyNet)}원</span>
+                    <span className="text-[9.5px] text-slate-400 bg-emerald-100 px-1 rounded">(희망 월 수령액)</span>
+                  </>
+                )}
+              </div>
+              {/* 헤더 · 통상시급 입력 + 기본급 실시간 · 세전 표시 */}
+              <div className="px-4 py-2.5 bg-slate-50/60 border-b border-slate-200 flex flex-col gap-1">
+                <div className="flex items-baseline flex-wrap gap-x-2">
+                  <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-500">통상시급</span>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={hourly}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      setWageHourlyOverride(Number.isFinite(v) && v > 0 ? v : null);
+                    }}
+                    className="w-24 tabular-nums bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[13px] font-black text-slate-900 text-right focus:outline-none focus:border-indigo-400"
+                  />
+                  <span className="text-slate-500 text-[11px]">원</span>
+                  {autoMonthlyNet > 0 && (
+                    <button
+                      type="button"
+                      onClick={applyHopeMatch}
+                      className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-black cursor-pointer"
+                      title={`근무조건 희망월수령액 ${fmtWon(autoMonthlyNet)}원을 세후로 맞추는 통상시급으로 자동 조정`}
+                    >
+                      희망 맞춤
+                    </button>
+                  )}
+                  {wageHourlyOverride != null && (
+                    <button
+                      type="button"
+                      onClick={() => setWageHourlyOverride(null)}
+                      className="text-[10px] text-indigo-500 hover:text-indigo-700 hover:underline cursor-pointer"
+                      title={`자동 (주중시급 ${fmtWon(autoHourly)}원)`}
+                    >
+                      자동
+                    </button>
+                  )}
+                  <span className="text-slate-400 text-[10.5px]">→ 기본급</span>
+                  <span className="tabular-nums font-black text-slate-700 text-[11.5px]">{fmtWon(basicAmt)}원</span>
+                  <span className="text-slate-400 text-[10px]">(× {WAGE_HOURS.BASIC}h)</span>
+                  <span className="ml-auto text-slate-500 text-[10.5px]">
+                    세전 <span className="tabular-nums font-black text-slate-800">{fmtWon(gross)}원</span>
+                    <span className="text-slate-400"> (× {WAGE_DIVISOR.toFixed(2)}h)</span>
+                  </span>
+                </div>
+                <div className="text-[10px] text-slate-400 font-semibold">
+                  참고 · 약사 주중 근무 시 통상시급 예시 <span className="tabular-nums font-black text-slate-500">22,350.8</span>원 (기본급 4,671,298원 ÷ 209h)
+                </div>
               </div>
 
               {/* 임금구성표 · 8항목 통합 표 · 원본 계약서 순서 · 각 항목 = 통상시급 × 시간 */}
