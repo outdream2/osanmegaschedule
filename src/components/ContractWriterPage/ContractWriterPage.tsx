@@ -4553,16 +4553,16 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const nightAmt       = Number(form.wageComponents.fixedNight?.amount) || 0;
           const meal    = Number(form.wageComponents.mealAllowance) || 0;
           const vehicle = Number(form.wageComponents.vehicleAllowance) || 0;
-          // 공제 · 세전 기준 4대보험 + 소득세 실제 계산
-          const pension = Math.round(gross * INSURANCE_RATES.PENSION);
-          const health  = Math.round(gross * INSURANCE_RATES.HEALTH);
+          // 공제 · 기본급 기준 4대보험 + 소득세 실제 계산 (사용자 확정)
+          const pension = Math.round(basicAmt * INSURANCE_RATES.PENSION);
+          const health  = Math.round(basicAmt * INSURANCE_RATES.HEALTH);
           const ltc     = Math.round(health * INSURANCE_RATES.LTC_RATIO);
-          const emp     = Math.round(gross * INSURANCE_RATES.EMPLOYMENT);
+          const emp     = Math.round(basicAmt * INSURANCE_RATES.EMPLOYMENT);
           const insSum  = pension + health + ltc + emp;
-          const taxObj  = computeIncomeTax(gross);
+          const taxObj  = computeIncomeTax(basicAmt);
           const taxSum  = taxObj.total;
           const deductionTotal = insSum + taxSum;
-          const deductionPct = gross > 0 ? (deductionTotal / gross * 100) : 0;
+          const deductionPct = basicAmt > 0 ? (deductionTotal / basicAmt * 100) : 0;
           // 세후 = 세전 - 공제
           const monthlyNet = Math.max(0, gross - deductionTotal);
           // 월급여총액 (세전) = 4자동항목 + 선택 항목 (식대·차량 · 비과세 별도)
@@ -4675,7 +4675,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 <summary className="px-3 py-2 flex items-baseline gap-x-2 cursor-pointer hover:bg-rose-50/60 list-none select-none">
                   <span className="text-slate-400 text-[10px] transition-transform group-open:rotate-90 inline-block">▶</span>
                   <span className="text-[10.5px] font-black uppercase tracking-wider text-rose-700">− 예상공제액</span>
-                  <span className="text-[10.5px] text-slate-500">세전 {fmtWon(gross)}원 기준 · 실효 {deductionPct.toFixed(1)}%</span>
+                  <span className="text-[10.5px] text-slate-500">기본급 {fmtWon(basicAmt)}원 기준 · 실효 {deductionPct.toFixed(1)}%</span>
                   <span className="tabular-nums font-black text-rose-700 ml-auto text-[12px]">−{fmtWon(deductionTotal)}원</span>
                 </summary>
                 <div className="px-3 pb-2.5 flex flex-col gap-1">
