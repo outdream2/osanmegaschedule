@@ -42,6 +42,8 @@ import {
   ArrowDown,
   ArrowUpDown,
 } from "lucide-react";
+import { EmployeeInfoForm } from "../common/EmployeeInfoForm";
+import { AddressSearchModal } from "../common/AddressSearchModal";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 interface Employee {
@@ -661,6 +663,9 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
     return () => window.removeEventListener("keydown", onKey);
   }, [mobileDetail]);
   const [createSaving, setCreateSaving] = useState(false);
+
+  // 주소 검색 모달 (react-daum-postcode · T-Address-Impl)
+  const [addrModalOpen, setAddrModalOpen] = useState(false);
 
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -1776,47 +1781,26 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
 
                 {/* §1 인적사항 — sky 그룹 */}
                 <SectionCard title="인적사항" icon={<User size={11} />} group="personal" defaultOpen>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                    <InlineField
-                      label="연락처" value={editing ? (draft?.phone ?? "") : (displayEmp.phone ?? "")}
-                      editing={editing} icon={<Phone size={9} />} placeholder="010-0000-0000" monospace
-                      onChange={(v) => setField("phone", v)}
-                    />
-                    <InlineField
-                      label="이메일" value={editing ? (draft?.email ?? "") : (displayEmp.email ?? "")}
-                      editing={editing} icon={<Mail size={9} />} type="email" placeholder="name@example.com"
-                      onChange={(v) => setField("email", v)}
-                    />
-                    <InlineField
-                      label="생년월일" value={editing ? (draft?.birth_date ?? "") : (displayEmp.birth_date ?? "")}
-                      editing={editing} icon={<Calendar size={9} />} type="date"
-                      onChange={(v) => setField("birth_date", v)}
-                    />
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none">
-                        <User size={9} /> 성별
-                      </span>
-                      {editing ? (
-                        <select
-                          value={draft?.gender ?? ""}
-                          onChange={(e) => setField("gender", e.target.value)}
-                          className="border border-indigo-300 rounded-md px-2 py-0.5 text-[13px] bg-white focus:outline-none focus:border-indigo-500 bg-indigo-50/40 h-7"
-                        >
-                          <option value="">선택 안 함</option>
-                          {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
-                        </select>
-                      ) : (
-                        <span className={`text-[13px] font-semibold leading-snug min-h-[20px] ${displayEmp.gender ? "text-slate-700" : "text-slate-300 italic"}`}>
-                          {displayEmp.gender || "(없음)"}
-                        </span>
-                      )}
-                    </div>
-                    <InlineField
-                      label="주소" value={editing ? (draft?.address ?? "") : (displayEmp.address ?? "")}
-                      editing={editing} icon={<MapPin size={9} />} placeholder="주소 입력"
-                      onChange={(v) => setField("address", v)} wide
-                    />
-                  </div>
+                  <EmployeeInfoForm
+                    layout="grid"
+                    editing={editing}
+                    fields={["phone", "email", "birthDate", "gender", "address"]}
+                    values={{
+                      phone:     editing ? (draft?.phone     ?? "") : (displayEmp.phone     ?? ""),
+                      email:     editing ? (draft?.email     ?? "") : (displayEmp.email     ?? ""),
+                      birthDate: editing ? (draft?.birth_date ?? "") : (displayEmp.birth_date ?? ""),
+                      gender:    editing ? (draft?.gender    ?? "") : (displayEmp.gender    ?? ""),
+                      address:   editing ? (draft?.address   ?? "") : (displayEmp.address   ?? ""),
+                    }}
+                    onChange={(v) => {
+                      if (v.phone     !== undefined) setField("phone",      v.phone);
+                      if (v.email     !== undefined) setField("email",      v.email);
+                      if (v.birthDate !== undefined) setField("birth_date", v.birthDate);
+                      if (v.gender    !== undefined) setField("gender",     v.gender);
+                      if (v.address   !== undefined) setField("address",    v.address);
+                    }}
+                    onAddressSearch={editing ? () => setAddrModalOpen(true) : undefined}
+                  />
                 </SectionCard>
 
                 {/* §2 근무 정보 · 2026-08-04 · 사용자 요청으로 제거 · 필드는 §6 계약·서류에서 접근 */}
@@ -2761,6 +2745,13 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
           saving={createSaving}
         />
       )}
+
+      {/* ── 주소 검색 모달 (react-daum-postcode · T-Address-Impl) ── */}
+      <AddressSearchModal
+        open={addrModalOpen}
+        onClose={() => setAddrModalOpen(false)}
+        onSelect={(data) => setField("address", data.formatted)}
+      />
     </main>
   );
 };
