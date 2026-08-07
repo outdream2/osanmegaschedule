@@ -584,8 +584,9 @@ function computeIncomeTax(
   dependents: number = 1,
   withholdingRate: WithholdingRate = DEFAULT_WITHHOLDING_RATE,
   childrenCount: number = 0,
+  nonTaxable: number = 0,
 ): { incomeTax: number; localTax: number; total: number } {
-  return payrollCalcMonthlyIncomeTax(Math.max(0, gross), 0, dependents, 0, withholdingRate, childrenCount);
+  return payrollCalcMonthlyIncomeTax(Math.max(0, gross), Math.max(0, nonTaxable), dependents, 0, withholdingRate, childrenCount);
 }
 
 /** 실수령액 = 세전 - 4대보험 - 소득세 - 지방소득세 */
@@ -2703,6 +2704,19 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const [withholdingRate, setWithholdingRate] = useState<WithholdingRate>(DEFAULT_WITHHOLDING_RATE);
   // 2026-08-07 · 자녀 세액공제 대상 자녀 수 (8~20세 · 소득세법 §59-2 · default 0)
   const [childrenCount, setChildrenCount] = useState<number>(0);
+  // 2026-08-07 · 월 비과세 (식대·차량·자녀양육 등 · 소득세 M에서 차감)
+  const [nonTaxableAmount, setNonTaxableAmount] = useState<number>(0);
+
+  // 2026-08-07 · '희망 맞춤' 반복 근사 실패 시 · 조건 조합 시뮬 후보 리스트
+  type MatchCandidate = {
+    dependents: number;
+    children: number;
+    withholdingRate: WithholdingRate;
+    hourly: number;
+    net: number;
+    deltaAbs: number;
+  };
+  const [matchCandidates, setMatchCandidates] = useState<MatchCandidate[] | null>(null);
 
   // 2026-08-07 · 통상시급/근무조건/선택항목 변경 시 · form.wageComponents 4자동항목 자동 반영
   //   · 왼쪽 임금구성표 (통상시급×시간) → 오른쪽 계약서 프리뷰 (form.wageComponents.*.amount) 동기화
@@ -4486,33 +4500,26 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           </div>
         </div>
 
-        {/* 4행 · 근무조건 자동 계산 힌트 + Bottom-up 역산 미리보기 · T-CTR-WageFlow-Bottomup */}
+        {/* 4행 · 근무조건 자동 계산 힌트 (희망월수령액 산식은 카드3 상단으로 이동됨 · 2026-08-07) */}
         {(() => {
-          if (!monthlyCalc) return (
+          if (!monthlyCalc || (monthlyCalc.dailyMinutes / 60) <= 0) return (
             <p className="text-[11px] text-slate-400 font-semibold text-center pt-0.5">
               근무조건을 입력하면 임금이 자동 계산됩니다
             </p>
           );
-          const dailyH = monthlyCalc.dailyMinutes / 60;
-          if (dailyH <= 0) return (
-            <p className="text-[11px] text-slate-400 font-semibold text-center pt-0.5">
-              근무조건을 입력하면 임금이 자동 계산됩니다
-            </p>
-          );
+          return null;
+        })()}
+        {false && (() => {
+          const dailyH = monthlyCalc ? monthlyCalc.dailyMinutes / 60 : 0;
           const weeklyH = dailyH * weeklyDays;
           const wdHourly = Number(form.weekdayHourly) || 0;
           const weHourly = Number(form.weekendHourly) || wdHourly;
           const weeklyWdH = dailyH * weeklyWeekdayDays;
           const weeklyWeH = dailyH * weeklyWeekendDays;
           const weeklyPay = Math.round(weeklyWdH * wdHourly + weeklyWeH * weHourly);
-          // Step 2 · 월 예상 순액 (시급 × 시간 × 4.345)
           const monthlyNet = Math.round(weeklyPay * 4.345);
           const hasWage = wdHourly > 0;
-
-          // T-CTR-WageByType · 계약유형별 계산 분기
           const isMonthly = isMonthlyWageType(form.contractType);
-
-          // 공통 divisor 계산 (동적 base 우선)
           const _annualH = WAGE_HOURS.ANNUAL_LEAVE;
           const _base = (weeklyWeekdayDays > 0)
             ? calcWageBase(dailyH, weeklyWeekdayDays, weeklyWeekendDays)
@@ -4675,15 +4682,17 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             : autoHourly;
           // '희망 맞춤' 버튼용 · 반복 근사 · 4대보험 + 소득세 (부양·원천징수 반영) 모두 포함
           //   · monthlyNet (실수령) 산식과 완전 일치 · 오차 <50원 수렴
-          const applyHopeMatch = () => {
+          //   · 12회 반복 후 수렴 실패 시 · 부양·자녀·원천 조합 60개 시뮬 · 상위 5개 리스트 표시
+          const runSim = (dep: number, ch: number, wRate: WithholdingRate): { hourly: number; net: number; deltaAbs: number } => {
             const target = autoMonthlyNet;
-            if (target <= 0) return;
             const extras0 = (Number(form.wageComponents.fixedHolidayOvertime?.amount) || 0)
                           + (Number(form.wageComponents.fixedNight?.amount) || 0)
                           + (Number(form.wageComponents.mealAllowance) || 0)
                           + (Number(form.wageComponents.vehicleAllowance) || 0);
             let h = wd > 0 ? wd : 25000;
-            for (let i = 0; i < 12; i++) {
+            let lastNet = 0;
+            let lastDelta = target;
+            for (let i = 0; i < 20; i++) {
               const basic = h * WAGE_HOURS.BASIC;
               const g = h * WAGE_DIVISOR + extras0;
               const p  = basic * INSURANCE_RATES.PENSION;
@@ -4691,15 +4700,46 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               const lt = hh * INSURANCE_RATES.LTC_RATIO;
               const em = basic * INSURANCE_RATES.EMPLOYMENT;
               const insSumH = p + hh + lt + em;
-              const tx = computeIncomeTax(Math.round(basic), dependentsCount, withholdingRate, childrenCount);
+              const tx = computeIncomeTax(Math.round(basic), dep, wRate, ch, nonTaxableAmount);
               const dedH = insSumH + tx.total;
-              const net = g - dedH;
-              const delta = target - net;
-              if (Math.abs(delta) < 50) break;
-              h += delta / WAGE_DIVISOR;
+              lastNet = g - dedH;
+              lastDelta = target - lastNet;
+              if (Math.abs(lastDelta) < 50) break;
+              h += lastDelta / WAGE_DIVISOR * 0.85; // dampening 0.85 · 진동 방지
               if (h < 0) h = 0;
             }
-            setWageHourlyOverride(Math.round(h * 10) / 10);
+            return { hourly: Math.round(h * 10) / 10, net: Math.round(lastNet), deltaAbs: Math.abs(Math.round(lastDelta)) };
+          };
+          const applyHopeMatch = () => {
+            const target = autoMonthlyNet;
+            if (target <= 0) return;
+            // 현재 조건으로 시뮬
+            const primary = runSim(dependentsCount, childrenCount, withholdingRate);
+            if (primary.deltaAbs < 50) {
+              setWageHourlyOverride(primary.hourly);
+              setMatchCandidates(null);
+              return;
+            }
+            // 수렴 실패 · 조건 조합 시뮬 (부양 1~5인 · 자녀 0~3인 · 원천 80/100/120%)
+            const results: MatchCandidate[] = [];
+            for (let dep = 1; dep <= 5; dep++) {
+              for (let ch = 0; ch <= 3; ch++) {
+                for (const wRate of WITHHOLDING_RATES) {
+                  const r = runSim(dep, ch, wRate);
+                  results.push({ dependents: dep, children: ch, withholdingRate: wRate, hourly: r.hourly, net: r.net, deltaAbs: r.deltaAbs });
+                }
+              }
+            }
+            // 오차 작은 순 · 상위 5개
+            results.sort((a, b) => a.deltaAbs - b.deltaAbs);
+            setMatchCandidates(results.slice(0, 5));
+          };
+          const applyCandidate = (c: MatchCandidate) => {
+            setDependentsCount(c.dependents);
+            setChildrenCount(c.children);
+            setWithholdingRate(c.withholdingRate);
+            setWageHourlyOverride(c.hourly);
+            setMatchCandidates(null);
           };
           if (hourly <= 0) {
             return (
@@ -4730,7 +4770,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const ltc     = Math.round(health * INSURANCE_RATES.LTC_RATIO);
           const emp     = Math.round(basicAmt * INSURANCE_RATES.EMPLOYMENT);
           const insSum  = pension + health + ltc + emp;
-          const taxObj  = computeIncomeTax(basicAmt, dependentsCount, withholdingRate, childrenCount);
+          const taxObj  = computeIncomeTax(basicAmt, dependentsCount, withholdingRate, childrenCount, nonTaxableAmount);
           const taxSum  = taxObj.total;
           // 예상공제 = 4대보험 + 소득세·지방세 (기본급 기준 · 국세청 7단계 공식)
           const deductionTotal = insSum + taxSum;
@@ -4910,6 +4950,22 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                       ))}
                     </select>
                   </span>
+                  <span className="flex items-baseline gap-x-1.5">
+                    <span className="text-slate-500">비과세</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={nonTaxableAmount ? nonTaxableAmount.toLocaleString("ko-KR") : ""}
+                      onChange={(e) => {
+                        const v = Number(e.target.value.replace(/[^0-9]/g, "")) || 0;
+                        setNonTaxableAmount(Math.max(0, v));
+                      }}
+                      placeholder="0"
+                      className="w-20 tabular-nums bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[11px] font-black text-slate-800 text-right focus:outline-none focus:border-indigo-400"
+                      title="월 비과세 소득 (식대 최대 20만·차량 최대 20만·자녀양육 20만 등) · 소득세 M에서 차감"
+                    />
+                    <span className="text-slate-500">원</span>
+                  </span>
                 </div>
               </div>
 
@@ -5068,7 +5124,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     <span className="text-slate-700 font-bold text-[11.5px] min-w-[74px]">근로소득세</span>
                     <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">간이세액표 7단계</span>
                     <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">
-                      국세청 공식 · 부양 {dependentsCount}인 (인적공제 {dependentsCount * 150}만원){childrenCount > 0 ? ` · 자녀 ${childrenCount}인 (세액공제 ${(childrenCount === 1 ? 25 : childrenCount === 2 ? 55 : 55 + (childrenCount - 2) * 40)}만원/연)` : ""} · 원천징수 {Math.round(withholdingRate * 100)}%
+                      국세청 공식 · 부양 {dependentsCount}인 (인적공제 {dependentsCount * 150}만원){childrenCount > 0 ? ` · 자녀 ${childrenCount}인 (세액공제 ${(childrenCount === 1 ? 25 : childrenCount === 2 ? 55 : 55 + (childrenCount - 2) * 40)}만원/연)` : ""}{nonTaxableAmount > 0 ? ` · 비과세 ${fmtWon(nonTaxableAmount)}원` : ""} · 원천징수 {Math.round(withholdingRate * 100)}%
                     </span>
                     <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(taxObj.incomeTax)}원</span>
                   </div>
@@ -5105,6 +5161,45 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 })()}
                 <span className="tabular-nums font-black text-emerald-800 ml-auto text-[13px] whitespace-nowrap">{fmtWon(monthlyNet)}원</span>
               </div>
+
+              {/* 희망 맞춤 후보 리스트 · 반복 근사 수렴 실패 시 · 조건 조합 시뮬 상위 5개 */}
+              {matchCandidates && matchCandidates.length > 0 && (
+                <div className="px-3 py-2 bg-amber-50/60 border-t border-amber-200 flex flex-col gap-1">
+                  <div className="flex items-baseline gap-x-2">
+                    <span className="text-[10.5px] font-black uppercase tracking-wider text-amber-700">희망 맞춤 · 근사 조건 후보</span>
+                    <span className="text-[10px] text-slate-500">현재 조건으로 수렴 안 됨 · 아래 조합 선택 시 자동 적용</span>
+                    <button
+                      type="button"
+                      onClick={() => setMatchCandidates(null)}
+                      className="ml-auto text-[10px] text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      닫기
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    {matchCandidates.map((c, idx) => (
+                      <button
+                        key={`${c.dependents}-${c.children}-${c.withholdingRate}`}
+                        type="button"
+                        onClick={() => applyCandidate(c)}
+                        className="flex items-baseline gap-x-2 px-2 py-1 rounded hover:bg-amber-100 text-left text-[10.5px] cursor-pointer"
+                      >
+                        <span className="text-slate-400 font-black w-4">#{idx + 1}</span>
+                        <span className="text-slate-700 font-bold">부양 {c.dependents}인</span>
+                        <span className="text-slate-700 font-bold">자녀 {c.children}인</span>
+                        <span className="text-slate-700 font-bold">원천 {Math.round(c.withholdingRate * 100)}%</span>
+                        <span className="text-slate-400">→ 통상시급</span>
+                        <span className="tabular-nums font-black text-indigo-700">{fmtWon(c.hourly)}원</span>
+                        <span className="text-slate-400">· 실수령</span>
+                        <span className="tabular-nums font-black text-emerald-700">{fmtWon(c.net)}원</span>
+                        <span className={`tabular-nums text-[10px] ml-auto ${c.deltaAbs < 50 ? "text-emerald-600" : c.deltaAbs < 500 ? "text-amber-600" : "text-rose-500"}`}>
+                          오차 ±{fmtWon(c.deltaAbs)}원
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           );
         })()}
