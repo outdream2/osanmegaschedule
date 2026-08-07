@@ -4610,53 +4610,56 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
 
         {!isCardCollapsed("period") && (<>
 
-        {/* 계약 기간 */}
-        <div className={cardInner}>
-          <div className="flex items-center justify-between mb-0.5">
-            <div className={cardGroupLabel}><CalendarBlank size={10} weight="bold" /> 계약 기간</div>
-            <label className="inline-flex items-center gap-1.5 cursor-pointer">
-              <input type="checkbox" checked={form.indefinite} onChange={(e) => upd("indefinite", e.target.checked)}
-                className="w-3.5 h-3.5 rounded accent-indigo-600" />
-              <span className="text-[11px] font-semibold text-slate-600">무기한</span>
-            </label>
-          </div>
-          <div className={`grid gap-2 ${form.indefinite ? "grid-cols-2" : "grid-cols-3"}`}>
-            <div>
-              <label className={fldLabel}>근무 시작일</label>
-              <input type="date" value={form.startDate} onChange={(e) => upd("startDate", e.target.value)}
-                className={fldInput}
-              />
+        {/* 계약 기간 · 담당업무 · PC 한 줄 · 모바일 세로 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {/* 계약 기간 */}
+          <div className={cardInner}>
+            <div className="flex items-center justify-between mb-0.5">
+              <div className={cardGroupLabel}><CalendarBlank size={10} weight="bold" /> 계약 기간</div>
+              <label className="inline-flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" checked={form.indefinite} onChange={(e) => upd("indefinite", e.target.checked)}
+                  className="w-3.5 h-3.5 rounded accent-indigo-600" />
+                <span className="text-[11px] font-semibold text-slate-600">무기한</span>
+              </label>
             </div>
-            <div>
-              <label className={fldLabel}>계약 체결일</label>
-              <input type="date" value={form.contractSignDate} onChange={(e) => upd("contractSignDate", e.target.value)}
-                className={fldInput}
-              />
-            </div>
-            {!form.indefinite && (
+            <div className={`grid gap-2 ${form.indefinite ? "grid-cols-2" : "grid-cols-3"}`}>
               <div>
-                <label className={fldLabel}>계약 종료일</label>
-                <input type="date" value={form.endDate} onChange={(e) => upd("endDate", e.target.value)}
+                <label className={fldLabel}>근무 시작일</label>
+                <input type="date" value={form.startDate} onChange={(e) => upd("startDate", e.target.value)}
                   className={fldInput}
                 />
               </div>
-            )}
+              <div>
+                <label className={fldLabel}>계약 체결일</label>
+                <input type="date" value={form.contractSignDate} onChange={(e) => upd("contractSignDate", e.target.value)}
+                  className={fldInput}
+                />
+              </div>
+              {!form.indefinite && (
+                <div>
+                  <label className={fldLabel}>계약 종료일</label>
+                  <input type="date" value={form.endDate} onChange={(e) => upd("endDate", e.target.value)}
+                    className={fldInput}
+                  />
+                </div>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* 담당 업무 · 4대보험 한 그룹 */}
-        <div className={cardInner}>
-          <div className={cardGroupLabel}>담당업무 · 보험</div>
-          <input type="text" value={form.jobDuty} onChange={(e) => upd("jobDuty", e.target.value)}
-            placeholder="예: 약국 카운터 · OTC 판매 · 재고 관리"
-            className={fldInput}
-          />
-          <label className="inline-flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={form.socialInsurance} onChange={(e) => upd("socialInsurance", e.target.checked)}
-              className="w-4 h-4 rounded accent-indigo-600" />
-            <span className="text-[12px] font-semibold text-slate-700">4대보험 가입</span>
-            <span className="text-[10.5px] text-slate-400 font-semibold ml-1">고용·산재·국민연금·건강보험</span>
-          </label>
+          {/* 담당 업무 · 4대보험 한 그룹 */}
+          <div className={cardInner}>
+            <div className={cardGroupLabel}>담당업무 · 보험</div>
+            <input type="text" value={form.jobDuty} onChange={(e) => upd("jobDuty", e.target.value)}
+              placeholder="예: 약국 카운터 · OTC 판매 · 재고 관리"
+              className={fldInput}
+            />
+            <label className="inline-flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={form.socialInsurance} onChange={(e) => upd("socialInsurance", e.target.checked)}
+                className="w-4 h-4 rounded accent-indigo-600" />
+              <span className="text-[12px] font-semibold text-slate-700">4대보험 가입</span>
+              <span className="text-[10.5px] text-slate-400 font-semibold ml-1">고용·산재·국민연금·건강보험</span>
+            </label>
+          </div>
         </div>
 
         {/* 특약 */}
@@ -4674,88 +4677,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       </div>
       {/* /카드 4 (계약기간 · 맨 아래) */}
 
-      {/* ═══════════════════════════════════════════════════
-          접기 · 임금 산정 비교 (심층)
-      ═══════════════════════════════════════════════════ */}
-      <details className="rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-2.5">
-        <summary className="text-[11.5px] font-black text-slate-600 cursor-pointer hover:text-indigo-700 flex items-center gap-1.5 select-none list-none">
-          <CaretDown size={10} weight="bold" />
-          임금 산정 비교 · 3가지 모드 계산기
-        </summary>
-        <div className="flex flex-col gap-2 mt-2">
-          <WageCalcModePanel
-            form={form}
-            weeklyWeekdayDays={weeklyWeekdayDays}
-            weeklyWeekendDays={weeklyWeekendDays}
-            onApplyToWageComponents={(nextWage) => upd("wageComponents", nextWage)}
-            onApplyHourly={(wd, we) => setForm(prev => ({ ...prev, weekdayHourly: String(wd), weekendHourly: String(we) }))}
-          />
-          {form.useWageComponents && (
-            <WageSummaryDualPanel
-              form={form}
-              weeklyWeekdayDays={weeklyWeekdayDays}
-              weeklyWeekendDays={weeklyWeekendDays}
-            />
-          )}
-          {!form.useWageComponents && (
-            <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2 text-[10.5px] text-slate-500 font-semibold text-center">
-              임금 구성표 체크 시 포괄임금 vs 실 근무시간 비교 활성화
-            </div>
-          )}
-        </div>
-      </details>
+      {/* 임금 산정 3가지 모드 계산기 · 삭제 (2026-08-07) */}
 
-      {/* ═══════════════════════════════════════════════════
-          접기 · 사업주 정보
-          T-CTR-8 (2026-08-05) · 카테고리 이해·동의 카드 및 CCTV·개인정보 카드 제거
-            · 오른쪽 프리뷰 및 상태·핸들러·서명 로직 유지
-            · privacyConsent.recipientName · 프리뷰에서 form.employeeName 자동 fallback
-            · clauseAcks · 기본 false · 오른쪽 서명 시 true (기존 로직 유지)
-      ═══════════════════════════════════════════════════ */}
-      <details className="rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-2.5">
-        <summary className="text-[11.5px] font-black text-slate-600 cursor-pointer hover:text-indigo-700 flex items-center gap-1.5 select-none list-none">
-          <CaretDown size={10} weight="bold" />
-          사업주 정보
-        </summary>
-        <div className="mt-3 flex flex-col gap-3">
-
-          {/* 사업주 */}
-          <div className={cardInner}>
-            <div className={cardGroupLabel}>사업주 정보</div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className={fldLabel}>대표자</label>
-                <input type="text" value={form.employerName} onChange={(e) => upd("employerName", e.target.value)}
-                  placeholder="강남성"
-                  className={fldInput}
-                />
-              </div>
-              <div>
-                <label className={fldLabel}>상호</label>
-                <input type="text" value={form.companyName} onChange={(e) => upd("companyName", e.target.value)}
-                  placeholder="오산 메가타운 약국"
-                  className={fldInput}
-                />
-              </div>
-              <div className="col-span-2">
-                <label className={fldLabel}>사업장 주소</label>
-                <input type="text" value={form.companyAddress} onChange={(e) => upd("companyAddress", e.target.value)}
-                  placeholder="경기도 오산시 경기대로 868-4 2층"
-                  className={fldInput}
-                />
-              </div>
-              <div className="col-span-2">
-                <label className={fldLabel}>사업자등록번호 (선택)</label>
-                <input type="text" value={form.companyRegNo} onChange={(e) => upd("companyRegNo", e.target.value)}
-                  placeholder="000-00-00000"
-                  className={fldInput}
-                />
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </details>
+      {/* 사업주 정보 · 근로계약서 설정 페이지로 이동 (2026-08-07) */}
 
       </>)}
       {/* /T-R · 여기서 작성 모드 */}
