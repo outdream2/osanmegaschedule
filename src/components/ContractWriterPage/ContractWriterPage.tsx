@@ -4314,6 +4314,48 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           </div>
         </div>
 
+        {/* 계약기간·담당업무·보험 · 계약유형 ↔ 출근·퇴근 사이 (2026-08-07) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div className={cardInner}>
+            <div className="flex items-center justify-between mb-0.5">
+              <div className={cardGroupLabel}><CalendarBlank size={10} weight="bold" /> 계약 기간</div>
+              <label className="inline-flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" checked={form.indefinite} onChange={(e) => upd("indefinite", e.target.checked)}
+                  className="w-3.5 h-3.5 rounded accent-indigo-600" />
+                <span className="text-[11px] font-semibold text-slate-600">무기한</span>
+              </label>
+            </div>
+            <div className={`grid gap-2 ${form.indefinite ? "grid-cols-2" : "grid-cols-3"}`}>
+              <div>
+                <label className={fldLabel}>근무 시작일</label>
+                <input type="date" value={form.startDate} onChange={(e) => upd("startDate", e.target.value)} className={fldInput} />
+              </div>
+              <div>
+                <label className={fldLabel}>계약 체결일</label>
+                <input type="date" value={form.contractSignDate} onChange={(e) => upd("contractSignDate", e.target.value)} className={fldInput} />
+              </div>
+              {!form.indefinite && (
+                <div>
+                  <label className={fldLabel}>계약 종료일</label>
+                  <input type="date" value={form.endDate} onChange={(e) => upd("endDate", e.target.value)} className={fldInput} />
+                </div>
+              )}
+            </div>
+          </div>
+          <div className={cardInner}>
+            <div className={cardGroupLabel}>담당업무 · 보험</div>
+            <input type="text" value={form.jobDuty} onChange={(e) => upd("jobDuty", e.target.value)}
+              placeholder="예: 약국 카운터 · OTC 판매 · 재고 관리" className={fldInput}
+            />
+            <label className="inline-flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={form.socialInsurance} onChange={(e) => upd("socialInsurance", e.target.checked)}
+                className="w-4 h-4 rounded accent-indigo-600" />
+              <span className="text-[12px] font-semibold text-slate-700">4대보험 가입</span>
+              <span className="text-[10.5px] text-slate-400 font-semibold ml-1">고용·산재·국민연금·건강보험</span>
+            </label>
+          </div>
+        </div>
+
         {/* 2·3행 통합 · PC(lg+) 5필드 한 줄 · 모바일 wrap */}
         <div className="flex flex-wrap items-end gap-2 lg:flex-nowrap">
           <div className="flex-1 min-w-[80px]">
@@ -4474,47 +4516,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             </div>
           );
         })()}
-        {/* 계약 기간 · 담당업무 · 특약 · 근무조건 카드 통합 (2026-08-07) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          <div className={cardInner}>
-            <div className="flex items-center justify-between mb-0.5">
-              <div className={cardGroupLabel}><CalendarBlank size={10} weight="bold" /> 계약 기간</div>
-              <label className="inline-flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" checked={form.indefinite} onChange={(e) => upd("indefinite", e.target.checked)}
-                  className="w-3.5 h-3.5 rounded accent-indigo-600" />
-                <span className="text-[11px] font-semibold text-slate-600">무기한</span>
-              </label>
-            </div>
-            <div className={`grid gap-2 ${form.indefinite ? "grid-cols-2" : "grid-cols-3"}`}>
-              <div>
-                <label className={fldLabel}>근무 시작일</label>
-                <input type="date" value={form.startDate} onChange={(e) => upd("startDate", e.target.value)} className={fldInput} />
-              </div>
-              <div>
-                <label className={fldLabel}>계약 체결일</label>
-                <input type="date" value={form.contractSignDate} onChange={(e) => upd("contractSignDate", e.target.value)} className={fldInput} />
-              </div>
-              {!form.indefinite && (
-                <div>
-                  <label className={fldLabel}>계약 종료일</label>
-                  <input type="date" value={form.endDate} onChange={(e) => upd("endDate", e.target.value)} className={fldInput} />
-                </div>
-              )}
-            </div>
-          </div>
-          <div className={cardInner}>
-            <div className={cardGroupLabel}>담당업무 · 보험</div>
-            <input type="text" value={form.jobDuty} onChange={(e) => upd("jobDuty", e.target.value)}
-              placeholder="예: 약국 카운터 · OTC 판매 · 재고 관리" className={fldInput}
-            />
-            <label className="inline-flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={form.socialInsurance} onChange={(e) => upd("socialInsurance", e.target.checked)}
-                className="w-4 h-4 rounded accent-indigo-600" />
-              <span className="text-[12px] font-semibold text-slate-700">4대보험 가입</span>
-              <span className="text-[10.5px] text-slate-400 font-semibold ml-1">고용·산재·국민연금·건강보험</span>
-            </label>
-          </div>
-        </div>
+        {/* 계약기간·담당업무 · 위 계약유형과 출근·퇴근 사이로 이동됨 (2026-08-07) */}
         <div>
           <label className={fldLabel}>
             <Notepad size={10} weight="fill" className="inline mr-0.5" />추가 특약 (선택)
