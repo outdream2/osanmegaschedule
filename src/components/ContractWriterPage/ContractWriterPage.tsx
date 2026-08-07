@@ -4566,6 +4566,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                       <>
                         <span className="mx-1 text-indigo-300">·</span>
                         <span className="font-black text-indigo-900">세전 {fmtWon(buGross)}원</span>
+                        <span className="mx-1 text-indigo-300">·</span>
+                        <span className="font-black text-emerald-700">월 희망 예상 수령액 {fmtWon(wf?.netAmount ?? 0)}원</span>
                       </>
                     ) : (
                       <>
@@ -4573,6 +4575,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                         <span className="font-semibold">주 예상 {fmtWon(weeklyPay)}원</span>
                         <span className="mx-1 text-indigo-300">·</span>
                         <span className="font-black text-indigo-900">월 순액 {fmtWon(monthlyNet)}원</span>
+                        <span className="mx-1 text-indigo-300">·</span>
+                        <span className="font-black text-emerald-700">월 희망 예상 수령액 {fmtWon(wf?.netAmount ?? 0)}원</span>
                       </>
                     )}
                   </>
