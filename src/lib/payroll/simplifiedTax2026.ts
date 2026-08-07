@@ -71,11 +71,22 @@ function dependentsFactor(dependents: number): number {
  * @param dependents 부양가족 수 (본인 포함 · default 1)
  * @param basicSpecialDeduction 기본 특별공제 (표준세액공제 등 · default 0 · 필요 시 확장)
  */
+/**
+ * 원천징수 비율 · 근로자 선택 (근소세법 §137 · 국세청)
+ *   · 80%  · 매달 소득세 20% 적게 · 연말정산 추가 납부 가능성
+ *   · 100% · 간이세액표 정석 (기본)
+ *   · 120% · 매달 소득세 20% 많이 · 연말정산 환급 가능성
+ */
+export type WithholdingRate = 0.8 | 1.0 | 1.2;
+export const WITHHOLDING_RATES: readonly WithholdingRate[] = [0.8, 1.0, 1.2] as const;
+export const DEFAULT_WITHHOLDING_RATE: WithholdingRate = 1.0;
+
 export function calcMonthlyIncomeTax(
   monthlyGross: number,
   nonTaxable: number = 0,
   dependents: number = 1,
   basicSpecialDeduction: number = 0,
+  withholdingRate: WithholdingRate = DEFAULT_WITHHOLDING_RATE,
 ): { incomeTax: number; localTax: number; total: number } {
   // 1단계 · 과세대상 월급여
   const M = Math.max(0, monthlyGross - Math.max(0, nonTaxable));
@@ -102,8 +113,8 @@ export function calcMonthlyIncomeTax(
   else                        T = 384_060_000   + (K - 1_000_000_000) * 0.45;
   // 5단계 · 근로소득 세액공제
   const C = T <= 1_300_000 ? T * 0.55 : 715_000 + (T - 1_300_000) * 0.30;
-  // 6단계 · 월 근로소득세 (음수 방어)
-  const incomeTax = Math.max(0, Math.round((T - C) / 12));
+  // 6단계 · 월 근로소득세 (음수 방어 · 원천징수 비율 적용)
+  const incomeTax = Math.max(0, Math.round(((T - C) / 12) * withholdingRate));
   // 7단계 · 지방소득세 (소득세 × 10%)
   const localTax = Math.round(incomeTax * 0.10);
   return { incomeTax, localTax, total: incomeTax + localTax };
