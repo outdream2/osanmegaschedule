@@ -41,6 +41,7 @@ import {
   fetchContractWriterSettings,
 } from "../ContractSettingsPage/ContractSettingsPage";
 import SplitPanel from "../common/SplitPanel";
+import { EmployeeInfoForm } from "../common/EmployeeInfoForm";
 import { matchHangul } from "../common/hangulSearch";
 import sungstampUrl from "../../images/sungstamp.png";
 import { useSettings, defaultWageForPosition, type WageRate } from "../../hooks/useSettings";
@@ -2783,7 +2784,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const [prefillConsumed, setPrefillConsumed] = useState(false);
 
   // 2026-08-05 · 시급 자동 로드 상태 · 사용자 직접 입력 vs 자동 로드 구분
-  const wageAutoLoadedRef = useRef(false);
+  // T-CTR-WageLoad-Deep · 초기값 true · draft 포함 mount 직후부터 자동 로드 허용
+  //   (사용자가 수동으로 시급 입력하면 false 로 리셋 · 이후 직군 변경해도 덮어쓰지 않음)
+  const wageAutoLoadedRef = useRef(true);
   const lastAutoWageRef = useRef<{ wd: string; we: string } | null>(null);
   const wageAutoInitRef = useRef(false);
   useEffect(() => {
@@ -2920,52 +2923,36 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   }, [form.employeeCategory, form.employeeCategoryCustom, form.employeeId, resolveWageForCategory]);
 
   // 2026-08-05 · form.employeeCategory 변경 시 자동 재로드
-  //   조건: (a) 최초 진입 default (12000/13500) · (b) 빈 값 · (c) 이전에 자동 로드한 값과 정확히 일치
-  //   → 사용자가 직접 입력한 값이면 덮어쓰지 않음
+  //   조건: wageAutoLoadedRef === true (자동 로드 허용 상태)
+  //   → 사용자가 직접 수동으로 시급을 입력하면 wageAutoLoadedRef = false 가 되어 덮어쓰지 않음
+  //   T-CTR-WageLoad-Deep · wageAutoInitRef 첫 skip 제거 · mount 직후에도 실행
+  //     (초기 settings 가 빈 상태면 defaultWageForPosition fallback · 이후 settings 로드 완료 시 재실행)
   useEffect(() => {
-    // 첫 렌더 skip (mount 시엔 default 값 유지)
-    if (!wageAutoInitRef.current) {
-      wageAutoInitRef.current = true;
-      return;
-    }
+    // 첫 렌더 flag 세팅 (skip 하지 않고 진행)
+    wageAutoInitRef.current = true;
+    // 자동 로드 허용 상태가 아니면 (사용자 수동 입력 후) → 유지
+    if (!wageAutoLoadedRef.current) return;
     const wd = form.weekdayHourly;
     const we = form.weekendHourly;
-    // T-I (2026-08-05) · 초기 default 감지: 약사 기본 (35000/40000) · 사원 기본 (10030/12000) · 구 default (12000/13500) · 빈 값
-    const isInitialDefault =
-      (wd === "35000" && we === "40000") ||
-      (wd === "10030" && we === "12000") ||
-      (wd === "12000" && we === "13500") ||
-      (wd === "" && we === "");
-    const last = lastAutoWageRef.current;
-    const isPreviousAuto = last && wd === last.wd && we === last.we;
-    // wageAutoLoadedRef: 자동 로드된 상태 (onSelectEmployee / prefill / 이전 category effect) → 재로드 허용
-    const isAutoLoaded = wageAutoLoadedRef.current;
-    if (!isInitialDefault && !isPreviousAuto && !isAutoLoaded) return; // 사용자가 직접 입력한 값 → 유지
     const { weekday, weekend } = resolveWageForCategory(form.employeeCategory, form.employeeCategoryCustom, form.employeeId);
     const nextWd = String(weekday);
     const nextWe = String(weekend);
     if (nextWd === wd && nextWe === we) return; // 이미 동일
     setForm(prev => ({ ...prev, weekdayHourly: nextWd, weekendHourly: nextWe }));
-    wageAutoLoadedRef.current = true;
     lastAutoWageRef.current = { wd: nextWd, we: nextWe };
   }, [form.employeeCategory, form.employeeCategoryCustom, form.employeeId, resolveWageForCategory]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // T-CTR-WageLink · settings.wageRates 변경 시 자동 재적용
   //   ContractSettingsPage 에서 시급 변경 → settings-updated 이벤트 → useSettings 인스턴스 업데이트
   //   → settings.wageRates 변경 → resolveWageForCategory 재생성 → 아래 effect 실행
-  //   조건: wageAutoLoadedRef (자동 로드된 시급) 인 경우만 덮어씀
-  //   → 사용자가 직접 편집한 시급은 유지
+  //   조건: wageAutoLoadedRef === true (자동 로드 허용 상태)
+  //   T-CTR-WageLoad-Deep · wageAutoInitRef 체크 제거 (category effect 에서 이미 flag 세팅)
   useEffect(() => {
-    // wageAutoInitRef 가 false 면 mount 직후 · category effect 가 처리
-    if (!wageAutoInitRef.current) return;
-    // 자동 로드 상태가 아니면 사용자 입력으로 간주 → 유지
+    // 자동 로드 허용 상태가 아니면 (사용자 수동 입력 후) → 유지
     if (!wageAutoLoadedRef.current) return;
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const wd = form.weekdayHourly;
     const we = form.weekendHourly;
-    const last = lastAutoWageRef.current;
-    // 자동 로드된 값과 현재 폼 값이 다르면 사용자가 수동 변경 → 유지
-    if (last && (wd !== last.wd || we !== last.we)) return;
     const { weekday, weekend } = resolveWageForCategory(form.employeeCategory, form.employeeCategoryCustom, form.employeeId);
     const nextWd = String(weekday);
     const nextWe = String(weekend);
@@ -4057,103 +4044,30 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             <User size={10} weight="bold" />
             기본 정보
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            {/* 성명 · 검색 (주민번호와 나란히 · 2026-08-05) */}
-            <div className="relative">
-              <label className={fldLabel}>성명</label>
-              <input
-                type="text"
-                value={form.employeeName}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  upd("employeeName", val);
-                  setEmpSearchOpen(true);
-                  if (form.employeeId != null) upd("employeeId", null);
-                }}
-                onFocus={() => setEmpSearchOpen(true)}
-                onBlur={() => setTimeout(() => setEmpSearchOpen(false), TIMING.DEBOUNCE_INPUT)}
-                placeholder={empLoading ? "직원 불러오는 중..." : "성명 입력 또는 검색"}
-                autoComplete="off"
-                className={fldInput}
-              />
-              {empSearchOpen && (() => {
-                const q = form.employeeName.trim();
-                const matches = q
-                  ? employees.filter(e => matchHangul(e.name ?? "", q)).slice(0, 8)
-                  : employees.slice(0, 8);
-                if (matches.length === 0) return (
-                  <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-xl shadow-lg p-2.5 text-[12px] text-slate-400 text-center">
-                    일치하는 직원 없음 · 직접 입력
-                  </div>
-                );
-                return (
-                  <ul className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-xl shadow-lg max-h-52 overflow-y-auto divide-y divide-slate-100">
-                    {!q && (
-                      <li className="px-3 py-1.5 text-[11px] text-slate-400 font-semibold bg-slate-50 border-b border-slate-100">
-                        직원 선택 또는 성명 입력
-                      </li>
-                    )}
-                    {matches.map(e => (
-                      <li key={e.id}>
-                        <button
-                          type="button"
-                          onMouseDown={(ev) => ev.preventDefault()}
-                          onClick={() => { onSelectEmployee(String(e.id)); setEmpSearchOpen(false); }}
-                          className="w-full text-left px-3 py-2 hover:bg-indigo-50 transition-colors flex items-center gap-2"
-                        >
-                          <span className="text-[13px] font-bold text-slate-800">{e.name}</span>
-                          {e.position && <span className="text-[11px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">{e.position}</span>}
-                          {e.phone && <span className="text-[11px] text-slate-400 ml-auto tabular-nums">{e.phone}</span>}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                );
-              })()}
-            </div>
-
-            {/* 주민번호 */}
-            <div>
-              <label className={fldLabel}>주민번호</label>
-              <input type="text" value={form.employeeBirth} onChange={(e) => upd("employeeBirth", e.target.value)}
-                placeholder="970302-2002227"
-                className={fldInput}
-              />
-            </div>
-
-            {/* T-CTR-EmployeeLink (2026-08-06) · 성별 · 직급 · 근무지 자동 연동 */}
-            <div>
-              <label className={fldLabel}>성별</label>
-              <div className="flex gap-1">
-                {(["남", "여"] as const).map(g => (
-                  <button key={g} type="button" onClick={() => upd("employeeGender", form.employeeGender === g ? "" : g)}
-                    className={`flex-1 py-1.5 rounded-lg border text-[12px] font-bold transition-colors cursor-pointer ${
-                      form.employeeGender === g
-                        ? (g === "남" ? "bg-blue-500 text-white border-blue-500" : "bg-rose-500 text-white border-rose-500")
-                        : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                    }`}
-                  >{g}</button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className={fldLabel}>직급</label>
-              <input type="text" value={form.employeeRank} onChange={(e) => upd("employeeRank", e.target.value)}
-                placeholder="사원 · 팀장 · 과장 ..."
-                className={fldInput}
-              />
-            </div>
-
-            <div className="col-span-2">
-              <label className={fldLabel}>근무지</label>
-              <input type="text" value={form.employeeWorkplace} onChange={(e) => upd("employeeWorkplace", e.target.value)}
-                placeholder="매장 · 창고 · 본사 ..."
-                className={fldInput}
-              />
-            </div>
-
-          </div>
+          {/* T-EmployeeInfo-Common (2026-08-07) · EmployeeInfoForm 공통 컴포넌트
+              · name(검색포함) · birthDate · gender · rank · workplace
+              · form.employeeName/employeeBirth/employeeGender/employeeRank/employeeWorkplace 연결 유지 */}
+          <EmployeeInfoForm
+            layout="compact"
+            fields={["name", "birthDate", "gender", "rank", "workplace"]}
+            values={{
+              name:      form.employeeName,
+              birthDate: form.employeeBirth,
+              gender:    form.employeeGender,
+              rank:      form.employeeRank,
+              workplace: form.employeeWorkplace,
+            }}
+            onChange={(v) => {
+              if (v.name      !== undefined) { upd("employeeName",      v.name);      setEmpSearchOpen(true); if (form.employeeId != null) upd("employeeId", null); }
+              if (v.birthDate !== undefined)   upd("employeeBirth",     v.birthDate);
+              if (v.gender    !== undefined)   upd("employeeGender",    v.gender);
+              if (v.rank      !== undefined)   upd("employeeRank",      v.rank);
+              if (v.workplace !== undefined)   upd("employeeWorkplace", v.workplace);
+            }}
+            employees={employees}
+            empLoading={empLoading}
+            onSelectEmployee={(emp) => { onSelectEmployee(String(emp.id)); setEmpSearchOpen(false); }}
+          />
           {/* T-CTR-Etc+JobFromDB · 기타 자유 텍스트 input 제거 (legacy employeeCategoryCustom state 는 하위호환 유지) */}
 
           {/* 우선업무 */}
@@ -4191,28 +4105,23 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         {/* 그룹 B · 연락처 · 금융 통합 */}
         <div className={cardInner}>
           <div className={cardGroupLabel}>연락처 · 금융</div>
+          {/* T-EmployeeInfo-Common (2026-08-07) · phone/email/address 공통 컴포넌트 사용
+              · 은행/계좌/통장사본 은 페이지 고유 필드 · 그대로 유지 */}
+          <EmployeeInfoForm
+            layout="compact"
+            fields={["phone", "email", "address"]}
+            values={{
+              phone:   form.employeePhone,
+              email:   form.employeeEmail,
+              address: form.employeeAddress,
+            }}
+            onChange={(v) => {
+              if (v.phone   !== undefined) upd("employeePhone",   v.phone);
+              if (v.email   !== undefined) upd("employeeEmail",   v.email);
+              if (v.address !== undefined) upd("employeeAddress", v.address);
+            }}
+          />
           <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className={fldLabel}>전화번호</label>
-              <input type="text" value={form.employeePhone} onChange={(e) => upd("employeePhone", e.target.value)}
-                placeholder="010-1234-5678"
-                className={fldInput}
-              />
-            </div>
-            <div>
-              <label className={fldLabel}>이메일</label>
-              <input type="text" value={form.employeeEmail} onChange={(e) => upd("employeeEmail", e.target.value)}
-                placeholder="email@example.com"
-                className={fldInput}
-              />
-            </div>
-            <div className="col-span-2">
-              <label className={fldLabel}>주소</label>
-              <input type="text" value={form.employeeAddress} onChange={(e) => upd("employeeAddress", e.target.value)}
-                placeholder="경기도 오산시 ..."
-                className={fldInput}
-              />
-            </div>
             {/* T-Q (2026-08-05) · 은행 · 계좌번호 · 통장사본 업로드 (분리) */}
             <div className="col-span-2 grid grid-cols-[90px_1fr_auto] gap-2 items-end">
               <div>
@@ -5160,7 +5069,12 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               </div>
               <div className="relative">
                 <input type="text" inputMode="numeric" value={form.weekdayHourly}
-                  onChange={(e) => upd("weekdayHourly", e.target.value.replace(/[^0-9]/g, ""))}
+                  onChange={(e) => {
+                    // T-CTR-WageLoad-Deep · 수동 입력 시 자동 로드 flag 리셋 → 이후 직군 변경 시 덮어쓰지 않음
+                    wageAutoLoadedRef.current = false;
+                    lastAutoWageRef.current = null;
+                    upd("weekdayHourly", e.target.value.replace(/[^0-9]/g, ""));
+                  }}
                   className="w-full bg-white border border-slate-200 rounded-lg pl-3 pr-7 py-2 text-[13px] text-slate-800 font-black focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition text-right"
                 />
                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-semibold pointer-events-none">원</span>
@@ -5170,7 +5084,12 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">주말 시급</label>
               <div className="relative">
                 <input type="text" inputMode="numeric" value={form.weekendHourly}
-                  onChange={(e) => upd("weekendHourly", e.target.value.replace(/[^0-9]/g, ""))}
+                  onChange={(e) => {
+                    // T-CTR-WageLoad-Deep · 수동 입력 시 자동 로드 flag 리셋
+                    wageAutoLoadedRef.current = false;
+                    lastAutoWageRef.current = null;
+                    upd("weekendHourly", e.target.value.replace(/[^0-9]/g, ""));
+                  }}
                   className="w-full bg-white border border-slate-200 rounded-lg pl-3 pr-7 py-2 text-[13px] text-slate-800 font-black focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition text-right"
                 />
                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-semibold pointer-events-none">원</span>
