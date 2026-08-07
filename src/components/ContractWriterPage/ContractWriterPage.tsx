@@ -4674,8 +4674,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           //   ③ 세전 = 통상시급 × 296.94 (= 4자동항목 합)
           //   ④ 공제 = 4대보험 + 소득세 (세전 기준 실제 계산)
           //   ⑤ 세후 = 세전 - 공제
-          // autoHourly · 반복 근사 (부양·자녀·원천·공제항목 모두 반영)
-          //   · 조건 변경 시 자동 재계산 · 세후 = 희망월수령액 유지
+          // autoHourly · 반복 근사 (부양·자녀·원천 반영 · 공제항목은 제외)
+          //   · 통상시급/기본급 결정 · 세전 = 4대보험+소득세를 커버해서 희망월수령액 유지
+          //   · 공제항목 (customDeductionAmount) 은 통상시급에 영향 없이 · 세후에서만 직접 차감
           //   · 사용자가 통상시급 직접 편집 시 wageHourlyOverride 우선
           const autoHourly = (() => {
             if (autoMonthlyNet <= 0) return Math.round(wd * 10) / 10;
@@ -4693,7 +4694,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               const em = basic * INSURANCE_RATES.EMPLOYMENT;
               const insSumH = p + hh + lt + em;
               const tx = computeIncomeTax(Math.round(basic), dependentsCount, withholdingRate, childrenCount, 0);
-              const dedH = insSumH + tx.total + customDeductionAmount;
+              const dedH = insSumH + tx.total;  // customDeductionAmount 제외
               const net = g - dedH;
               const delta = autoMonthlyNet - net;
               if (Math.abs(delta) < 50) break;
@@ -4726,7 +4727,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               const em = basic * INSURANCE_RATES.EMPLOYMENT;
               const insSumH = p + hh + lt + em;
               const tx = computeIncomeTax(Math.round(basic), dep, wRate, ch, 0);
-              const dedH = insSumH + tx.total + customDeductionAmount;
+              const dedH = insSumH + tx.total;  // customDeductionAmount 제외 (통상시급 결정에 영향 X)
               lastNet = g - dedH;
               lastDelta = target - lastNet;
               if (Math.abs(lastDelta) < 50) break;
