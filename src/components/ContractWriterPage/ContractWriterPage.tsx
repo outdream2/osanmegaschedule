@@ -2656,9 +2656,10 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   // T-Q · 실수령액 상세 카드 접기/펼치기 · default 펼침
   const [netDetailOpen, setNetDetailOpen] = useState<boolean>(true);
 
-  // 2026-08-07 · 세후→세전 계수 · 통상시급 override (둘 다 null 이면 자동)
-  //   · 두 값은 상호 파생 · 한쪽 편집 시 다른쪽은 자동 재계산
-  const [wageCoefOverride, setWageCoefOverride] = useState<number | null>(null);
+  // 2026-08-07 · 세후·계수·통상시급 override (null 이면 자동)
+  //   · 세 값은 상호 파생 · 한쪽 편집 시 다른쪽은 자동 재계산
+  const [wageNetOverride, setWageNetOverride]       = useState<number | null>(null);
+  const [wageCoefOverride, setWageCoefOverride]     = useState<number | null>(null);
   const [wageHourlyOverride, setWageHourlyOverride] = useState<number | null>(null);
 
 
@@ -4524,7 +4525,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const wdH = dailyH * weeklyWeekdayDays;
           const weH = dailyH * weeklyWeekendDays;
           const weeklyPay = Math.round(wdH * wd + weH * we);
-          const monthlyNet = Math.round(weeklyPay * 4.345);
+          const autoMonthlyNet = Math.round(weeklyPay * 4.345);
+          // 사용자가 세후를 직접 입력한 경우 override 우선
+          const monthlyNet = wageNetOverride != null && wageNetOverride > 0 ? wageNetOverride : autoMonthlyNet;
           if (monthlyNet <= 0) {
             return (
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-4 text-center text-[11px] text-slate-500 font-semibold">
@@ -4650,9 +4653,33 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     </button>
                   )}
                 </div>
-                {/* 2행 · 세후 × 계수 = 세전 · 숫자 입력 (spinner · step 0.001) */}
+                {/* 2행 · 세후 × 계수 = 세전 · 세후·계수 모두 편집 가능 */}
                 <div className="flex items-baseline flex-wrap gap-x-2 text-[10.5px]">
-                  <span className="text-slate-500">세후 {fmtWon(monthlyNet)}원 × 계수</span>
+                  <span className="text-slate-500">세후</span>
+                  <input
+                    type="number"
+                    step="10000"
+                    min="0"
+                    value={monthlyNet}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      if (!Number.isFinite(v) || v <= 0) setWageNetOverride(null);
+                      else setWageNetOverride(v);
+                    }}
+                    className="w-28 tabular-nums bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[11px] font-black text-slate-800 text-right focus:outline-none focus:border-indigo-400"
+                  />
+                  <span className="text-slate-500">원</span>
+                  {wageNetOverride != null && (
+                    <button
+                      type="button"
+                      onClick={() => setWageNetOverride(null)}
+                      className="text-[10px] text-indigo-500 hover:text-indigo-700 hover:underline cursor-pointer"
+                      title={`자동값 (${fmtWon(autoMonthlyNet)}원) 복원`}
+                    >
+                      자동
+                    </button>
+                  )}
+                  <span className="text-slate-500">× 계수</span>
                   <input
                     type="number"
                     step="0.001"
