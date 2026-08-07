@@ -2704,8 +2704,10 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const [withholdingRate, setWithholdingRate] = useState<WithholdingRate>(DEFAULT_WITHHOLDING_RATE);
   // 2026-08-07 · 자녀 세액공제 대상 자녀 수 (8~20세 · 소득세법 §59-2 · default 0)
   const [childrenCount, setChildrenCount] = useState<number>(0);
-  // 2026-08-07 · 월 기타 공제항목 (노조비·학자금 상환·기타 · 세후 실수령에서 추가 차감)
-  const [customDeductionAmount, setCustomDeductionAmount] = useState<number>(0);
+  // 2026-08-07 · 월 비과세 소득 (식대·차량·자녀양육 · 소득세 M에서 차감)
+  const [nonTaxableAmount, setNonTaxableAmount] = useState<number>(0);
+  // 2026-08-07 · 월 기타 공제항목 (노조비·학자금 상환 등 · 세후 실수령에서 직접 차감)
+  const [otherDeductionAmount, setOtherDeductionAmount] = useState<number>(0);
 
   // 2026-08-07 · '희망 맞춤' 반복 근사 실패 시 · 조건 조합 시뮬 후보 리스트
   type MatchCandidate = {
@@ -4676,7 +4678,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           //   ⑤ 세후 = 세전 - 공제
           // autoHourly · 반복 근사 (부양·자녀·원천 반영 · 공제항목은 제외)
           //   · 통상시급/기본급 결정 · 세전 = 4대보험+소득세를 커버해서 희망월수령액 유지
-          //   · 공제항목 (customDeductionAmount) 은 통상시급에 영향 없이 · 세후에서만 직접 차감
+          //   · 공제항목 (nonTaxableAmount) 은 통상시급에 영향 없이 · 세후에서만 직접 차감
           //   · 사용자가 통상시급 직접 편집 시 wageHourlyOverride 우선
           const autoHourly = (() => {
             if (autoMonthlyNet <= 0) return Math.round(wd * 10) / 10;
@@ -4693,8 +4695,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               const lt = hh * INSURANCE_RATES.LTC_RATIO;
               const em = basic * INSURANCE_RATES.EMPLOYMENT;
               const insSumH = p + hh + lt + em;
-              const tx = computeIncomeTax(Math.round(basic), dependentsCount, withholdingRate, childrenCount, 0);
-              const dedH = insSumH + tx.total;  // customDeductionAmount 제외
+              const tx = computeIncomeTax(Math.round(basic), dependentsCount, withholdingRate, childrenCount, nonTaxableAmount);
+              const dedH = insSumH + tx.total;
               const net = g - dedH;
               const delta = autoMonthlyNet - net;
               if (Math.abs(delta) < 50) break;
@@ -4726,8 +4728,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               const lt = hh * INSURANCE_RATES.LTC_RATIO;
               const em = basic * INSURANCE_RATES.EMPLOYMENT;
               const insSumH = p + hh + lt + em;
-              const tx = computeIncomeTax(Math.round(basic), dep, wRate, ch, 0);
-              const dedH = insSumH + tx.total;  // customDeductionAmount 제외 (통상시급 결정에 영향 X)
+              const tx = computeIncomeTax(Math.round(basic), dep, wRate, ch, nonTaxableAmount);
+              const dedH = insSumH + tx.total;
               lastNet = g - dedH;
               lastDelta = target - lastNet;
               if (Math.abs(lastDelta) < 50) break;
@@ -4796,10 +4798,10 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const ltc     = Math.round(health * INSURANCE_RATES.LTC_RATIO);
           const emp     = Math.round(basicAmt * INSURANCE_RATES.EMPLOYMENT);
           const insSum  = pension + health + ltc + emp;
-          const taxObj  = computeIncomeTax(basicAmt, dependentsCount, withholdingRate, childrenCount, 0);
+          const taxObj  = computeIncomeTax(basicAmt, dependentsCount, withholdingRate, childrenCount, nonTaxableAmount);
           const taxSum  = taxObj.total;
-          // 예상공제 = 4대보험 + 소득세·지방세 + 기타 공제항목
-          const deductionTotal = insSum + taxSum + customDeductionAmount;
+          // 예상공제 = 4대보험 + 소득세·지방세 + 기타 공제항목 (비과세는 소득세 M 차감으로 이미 반영)
+          const deductionTotal = insSum + taxSum + otherDeductionAmount;
           const deductionPct = basicAmt > 0 ? (deductionTotal / basicAmt * 100) : 0;
           // 월급여총액 (세전) = 4자동항목 + 선택 항목 (식대·차량 · 비과세 포함)
           const grossTotal = gross + holidayOtAmt + nightAmt + meal + vehicle;
@@ -4969,19 +4971,38 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     </select>
                   </span>
                   <span className="flex items-baseline gap-x-1.5">
-                    <span className="text-slate-500">공제항목</span>
+                    <span className="text-slate-500">비과세</span>
                     <input
                       type="text" inputMode="numeric"
-                      value={customDeductionAmount ? customDeductionAmount.toLocaleString("ko-KR") : ""}
+                      value={nonTaxableAmount ? nonTaxableAmount.toLocaleString("ko-KR") : ""}
                       onChange={(e) => {
                         const v = Number(e.target.value.replace(/[^0-9]/g, "")) || 0;
-                        setCustomDeductionAmount(Math.max(0, v));
+                        setNonTaxableAmount(Math.max(0, v));
                       }}
                       placeholder="0"
                       className="w-20 tabular-nums bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[11px] font-black text-slate-800 text-right focus:outline-none focus:border-indigo-400"
-                      title="월 기타 공제항목 (노조비·학자금 상환 등) · 세후 실수령에서 차감"
+                      title="월 비과세 소득 (식대·차량·자녀양육 등 · 소득세 M에서 차감 · 세후 증가)"
                     />
                     <span className="text-slate-500">원</span>
+                  </span>
+                </div>
+                {/* 2행 · 공제항목 (실수령에서 직접 차감) */}
+                <div className="flex items-baseline flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-400 font-semibold">
+                  <span className="flex items-baseline gap-x-1.5">
+                    <span className="text-slate-500">공제항목</span>
+                    <input
+                      type="text" inputMode="numeric"
+                      value={otherDeductionAmount ? otherDeductionAmount.toLocaleString("ko-KR") : ""}
+                      onChange={(e) => {
+                        const v = Number(e.target.value.replace(/[^0-9]/g, "")) || 0;
+                        setOtherDeductionAmount(Math.max(0, v));
+                      }}
+                      placeholder="0"
+                      className="w-24 tabular-nums bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[11px] font-black text-slate-800 text-right focus:outline-none focus:border-indigo-400"
+                      title="월 기타 공제항목 (노조비·학자금 상환 등) · 세후 실수령에서 직접 차감"
+                    />
+                    <span className="text-slate-500">원</span>
+                    <span className="text-slate-400 text-[10px]">(노조비·학자금 등 · 실수령에서 직접 차감)</span>
                   </span>
                 </div>
               </div>
