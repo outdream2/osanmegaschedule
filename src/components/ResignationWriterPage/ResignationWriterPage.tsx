@@ -723,9 +723,10 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
       setNotice({ tone: "err", text: "퇴사 사유를 선택하세요." });
       return;
     }
-    const emptySign = !employeeSignUrl;
-    if (emptySign) {
-      if (!await confirm({ message: "신청인 서명이 비어있습니다. 서명 없이 제출하시겠습니까?" })) return;
+    // 2026-08-07 · 신청인 서명 필수 (사용자 요청)
+    if (!employeeSignUrl) {
+      setNotice({ tone: "err", text: "신청인 서명이 필요합니다. 사직서 우측 미리보기에서 서명해 주세요." });
+      return;
     }
 
     // 서명 dataURL (in-DB 저장용 · 신청인 서명)
