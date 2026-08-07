@@ -4473,9 +4473,59 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             </div>
           );
         })()}
+        {/* 계약 기간 · 담당업무 · 특약 · 근무조건 카드 통합 (2026-08-07) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div className={cardInner}>
+            <div className="flex items-center justify-between mb-0.5">
+              <div className={cardGroupLabel}><CalendarBlank size={10} weight="bold" /> 계약 기간</div>
+              <label className="inline-flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" checked={form.indefinite} onChange={(e) => upd("indefinite", e.target.checked)}
+                  className="w-3.5 h-3.5 rounded accent-indigo-600" />
+                <span className="text-[11px] font-semibold text-slate-600">무기한</span>
+              </label>
+            </div>
+            <div className={`grid gap-2 ${form.indefinite ? "grid-cols-2" : "grid-cols-3"}`}>
+              <div>
+                <label className={fldLabel}>근무 시작일</label>
+                <input type="date" value={form.startDate} onChange={(e) => upd("startDate", e.target.value)} className={fldInput} />
+              </div>
+              <div>
+                <label className={fldLabel}>계약 체결일</label>
+                <input type="date" value={form.contractSignDate} onChange={(e) => upd("contractSignDate", e.target.value)} className={fldInput} />
+              </div>
+              {!form.indefinite && (
+                <div>
+                  <label className={fldLabel}>계약 종료일</label>
+                  <input type="date" value={form.endDate} onChange={(e) => upd("endDate", e.target.value)} className={fldInput} />
+                </div>
+              )}
+            </div>
+          </div>
+          <div className={cardInner}>
+            <div className={cardGroupLabel}>담당업무 · 보험</div>
+            <input type="text" value={form.jobDuty} onChange={(e) => upd("jobDuty", e.target.value)}
+              placeholder="예: 약국 카운터 · OTC 판매 · 재고 관리" className={fldInput}
+            />
+            <label className="inline-flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={form.socialInsurance} onChange={(e) => upd("socialInsurance", e.target.checked)}
+                className="w-4 h-4 rounded accent-indigo-600" />
+              <span className="text-[12px] font-semibold text-slate-700">4대보험 가입</span>
+              <span className="text-[10.5px] text-slate-400 font-semibold ml-1">고용·산재·국민연금·건강보험</span>
+            </label>
+          </div>
+        </div>
+        <div>
+          <label className={fldLabel}>
+            <Notepad size={10} weight="fill" className="inline mr-0.5" />추가 특약 (선택)
+          </label>
+          <textarea value={form.additionalContent} onChange={(e) => upd("additionalContent", e.target.value)} rows={2}
+            placeholder="예: 수습기간 3개월 · 명절 상여 별도"
+            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-[12.5px] text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition resize-y placeholder:text-slate-400 placeholder:font-normal"
+          />
+        </div>
         </>)}
       </div>
-      {/* /카드 2 (통합) */}
+      {/* /카드 2 (통합 · 계약기간·담당업무·특약 포함) */}
 
       {/* ═══════════════════════════════════════════════════
           카드 3 · 임금 계산 · T-V (2026-08-05) · 카드 순서 재배치 (근무조건 → 임금 → 계약기간)
@@ -4564,11 +4614,13 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const insSum  = pension + health + ltc + emp;
           const taxObj  = computeIncomeTax(basicAmt);
           const taxSum  = taxObj.total;
-          const deductionTotal = insSum + taxSum;
+          // 예상공제 (표시용) = 4대보험 (실제 매달 원천징수 · 세후 계산에 반영)
+          //   · 소득세는 참고용 · 연말정산 조정 · 매달 세후 계산에서는 제외 (원본 계약서 관례)
+          const deductionTotal = insSum;
           const deductionPct = basicAmt > 0 ? (deductionTotal / basicAmt * 100) : 0;
           // 월급여총액 (세전) = 4자동항목 + 선택 항목 (식대·차량 · 비과세 포함)
           const grossTotal = gross + holidayOtAmt + nightAmt + meal + vehicle;
-          // 예상 실수령 (세후) = 세전 총액 - 예상공제 (기본급 기준)
+          // 예상 실수령 (세후) = 세전 총액 - 4대보험 (소득세 별도)
           const monthlyNet = Math.max(0, grossTotal - deductionTotal);
 
           const setMeal = (v: number) => setForm(prev => ({
@@ -4818,15 +4870,17 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">실업급여 재원 · 근로자 부담분</span>
                     <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(emp)}원</span>
                   </div>
-                  <div className="pt-1.5 border-t border-rose-100/60 flex items-baseline gap-x-2 flex-wrap">
-                    <span className="text-slate-700 font-bold text-[11.5px] min-w-[74px]">소득세·지방세</span>
-                    <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">간이세액표 근사</span>
-                    <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">근로소득 · 부양 1인 기준</span>
-                    <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(taxSum)}원</span>
+                  <div className="pt-1.5 border-t border-rose-100/60 flex items-baseline gap-x-2 flex-wrap opacity-60">
+                    <span className="text-slate-500 font-bold text-[11.5px] min-w-[74px]">소득세·지방세</span>
+                    <span className="tabular-nums text-slate-400 text-[11px] min-w-[110px]">간이세액표 참고</span>
+                    <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">
+                      원천징수 근사 · <b>실수령 계산 제외</b> (연말정산 조정)
+                    </span>
+                    <span className="tabular-nums text-slate-500 text-[11px] ml-auto whitespace-nowrap">≈ {fmtWon(taxSum)}원 (참고)</span>
                   </div>
                   <div className="flex items-baseline gap-x-2 pt-1.5 border-t border-rose-200">
-                    <span className="text-[10.5px] font-black uppercase tracking-wider text-rose-700">예상공제액 합계</span>
-                    <span className="text-[10.5px] text-slate-500">4대보험 {fmtWon(insSum)} + 소득세 {fmtWon(taxSum)}</span>
+                    <span className="text-[10.5px] font-black uppercase tracking-wider text-rose-700">예상공제 (4대보험)</span>
+                    <span className="text-[10.5px] text-slate-500">국민연금 + 건강 + 장기요양 + 고용</span>
                     <span className="tabular-nums font-black text-rose-700 ml-auto text-[12px]">−{fmtWon(deductionTotal)}원</span>
                   </div>
                 </div>
@@ -4857,91 +4911,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       </div>
       {/* /카드 3 (임금 · T-V 재배치) */}
 
-      {/* ═══════════════════════════════════════════════════
-          카드 4 · 계약 기간 · 담당업무 · 4대보험 · 특약 (맨 아래)
-      ═══════════════════════════════════════════════════ */}
-      <div className={cardBase}>
-        <button
-          type="button"
-          onClick={() => toggleCard("period")}
-          className="flex items-center gap-2 pb-2 border-b border-slate-100 cursor-pointer hover:opacity-80 transition-opacity w-full text-left"
-          aria-expanded={!isCardCollapsed("period")}
-        >
-          <CaretDown size={11} weight="bold" className={`text-slate-400 transition-transform shrink-0 ${isCardCollapsed("period") ? "-rotate-90" : ""}`} />
-          <div className="w-6 h-6 rounded-md bg-amber-100 flex items-center justify-center shrink-0">
-            <CalendarBlank size={13} weight="fill" className="text-amber-600" />
-          </div>
-          <span className="text-[12px] font-black text-slate-700">계약 기간 · 담당업무</span>
-        </button>
-
-        {!isCardCollapsed("period") && (<>
-
-        {/* 계약 기간 · 담당업무 · PC 한 줄 · 모바일 세로 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          {/* 계약 기간 */}
-          <div className={cardInner}>
-            <div className="flex items-center justify-between mb-0.5">
-              <div className={cardGroupLabel}><CalendarBlank size={10} weight="bold" /> 계약 기간</div>
-              <label className="inline-flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" checked={form.indefinite} onChange={(e) => upd("indefinite", e.target.checked)}
-                  className="w-3.5 h-3.5 rounded accent-indigo-600" />
-                <span className="text-[11px] font-semibold text-slate-600">무기한</span>
-              </label>
-            </div>
-            <div className={`grid gap-2 ${form.indefinite ? "grid-cols-2" : "grid-cols-3"}`}>
-              <div>
-                <label className={fldLabel}>근무 시작일</label>
-                <input type="date" value={form.startDate} onChange={(e) => upd("startDate", e.target.value)}
-                  className={fldInput}
-                />
-              </div>
-              <div>
-                <label className={fldLabel}>계약 체결일</label>
-                <input type="date" value={form.contractSignDate} onChange={(e) => upd("contractSignDate", e.target.value)}
-                  className={fldInput}
-                />
-              </div>
-              {!form.indefinite && (
-                <div>
-                  <label className={fldLabel}>계약 종료일</label>
-                  <input type="date" value={form.endDate} onChange={(e) => upd("endDate", e.target.value)}
-                    className={fldInput}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* 담당 업무 · 4대보험 한 그룹 */}
-          <div className={cardInner}>
-            <div className={cardGroupLabel}>담당업무 · 보험</div>
-            <input type="text" value={form.jobDuty} onChange={(e) => upd("jobDuty", e.target.value)}
-              placeholder="예: 약국 카운터 · OTC 판매 · 재고 관리"
-              className={fldInput}
-            />
-            <label className="inline-flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={form.socialInsurance} onChange={(e) => upd("socialInsurance", e.target.checked)}
-                className="w-4 h-4 rounded accent-indigo-600" />
-              <span className="text-[12px] font-semibold text-slate-700">4대보험 가입</span>
-              <span className="text-[10.5px] text-slate-400 font-semibold ml-1">고용·산재·국민연금·건강보험</span>
-            </label>
-          </div>
-        </div>
-
-        {/* 특약 */}
-        <div>
-          <label className={fldLabel}>
-            <Notepad size={10} weight="fill" className="inline mr-0.5" />추가 특약 (선택)
-          </label>
-          <textarea value={form.additionalContent} onChange={(e) => upd("additionalContent", e.target.value)} rows={2}
-            placeholder="예: 수습기간 3개월 · 명절 상여 별도"
-            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-[12.5px] text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition resize-y placeholder:text-slate-400 placeholder:font-normal"
-          />
-        </div>
-
-        </>)}
-      </div>
-      {/* /카드 4 (계약기간 · 맨 아래) */}
+      {/* 카드 4 삭제 · 근무조건 카드로 통합 (2026-08-07) */}
 
       {/* 임금 산정 3가지 모드 계산기 · 삭제 (2026-08-07) */}
 
