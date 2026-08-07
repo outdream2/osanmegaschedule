@@ -4514,7 +4514,78 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           );
         })()}
 
-        {/* 임금 구성표 · 삭제 완료 · 재작성 대기 (2026-08-07) */}
+        {/* 임금구성표 · 2026-08-07 · 역산 · 희망월수령액 ÷ 296.94h = 시간당 급여액 → 4항목 자동 산출 */}
+        {(() => {
+          const dailyH = monthlyCalc ? monthlyCalc.dailyMinutes / 60 : 0;
+          const wd = Number(form.weekdayHourly) || 0;
+          const we = Number(form.weekendHourly) || wd;
+          const wdH = dailyH * weeklyWeekdayDays;
+          const weH = dailyH * weeklyWeekendDays;
+          const weeklyPay = Math.round(wdH * wd + weH * we);
+          const monthlyNet = Math.round(weeklyPay * 4.345);
+          if (monthlyNet <= 0) {
+            return (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-4 text-center text-[11px] text-slate-500 font-semibold">
+                근무시간·시급 입력 시 · 임금구성표 자동 산출
+              </div>
+            );
+          }
+          const hourly = Math.round(monthlyNet / WAGE_DIVISOR);
+          const items = [
+            { key: "basic",       label: "기본급",         hours: WAGE_HOURS.BASIC,        note: "주 40h + 주휴 8h" },
+            { key: "overtime",    label: "연장근로수당",   hours: WAGE_HOURS.OVERTIME,     note: "1.5배 가산 반영" },
+            { key: "holiday",     label: "휴일근로수당",   hours: WAGE_HOURS.HOLIDAY,      note: "1.5배 가산 반영" },
+            { key: "annualLeave", label: "연차휴가수당",   hours: WAGE_HOURS.ANNUAL_LEAVE, note: "" },
+          ] as const;
+          const totalHours = WAGE_HOURS.BASIC + WAGE_HOURS.OVERTIME + WAGE_HOURS.HOLIDAY + WAGE_HOURS.ANNUAL_LEAVE;
+          const total = items.reduce((s, it) => s + Math.round(hourly * it.hours), 0);
+          const basicAmount = Math.round(hourly * WAGE_HOURS.BASIC);
+
+          return (
+            <div className="border border-slate-200 rounded-lg bg-white px-4 py-3 flex flex-col gap-2.5 text-[12px] leading-relaxed">
+              {/* 1행 · 통상시급 역산 */}
+              <div className="flex items-baseline flex-wrap gap-x-2 pb-2 border-b border-slate-100">
+                <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-400">통상시급</span>
+                <span className="text-slate-600">
+                  {fmtWon(monthlyNet)}원 ÷ {WAGE_DIVISOR.toFixed(2)}h
+                </span>
+                <span className="text-slate-300">=</span>
+                <span className="tabular-nums font-black text-slate-900">{fmtWon(hourly)}</span>
+                <span className="text-slate-500">원</span>
+              </div>
+
+              {/* 4항목 · 텍스트 라인 */}
+              <div className="flex flex-col gap-1">
+                {items.map(it => {
+                  const amt = Math.round(hourly * it.hours);
+                  return (
+                    <div key={it.key} className="flex items-baseline gap-x-2">
+                      <span className="text-slate-700 font-bold min-w-[70px]">{it.label}</span>
+                      <span className="tabular-nums text-slate-500 text-[11px] min-w-[54px]">
+                        {it.hours.toFixed(2)}h
+                      </span>
+                      <span className="text-slate-300 text-[10.5px]">×</span>
+                      <span className="tabular-nums text-slate-500 text-[11px]">{fmtWon(hourly)}원</span>
+                      <span className="tabular-nums font-black text-slate-900 ml-auto">
+                        {fmtWon(amt)}원
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 합계 · 세액 기준 */}
+              <div className="flex items-baseline gap-x-2 pt-2 border-t border-slate-100">
+                <span className="text-[10.5px] font-black uppercase tracking-wider text-slate-400">합계</span>
+                <span className="tabular-nums text-slate-500 text-[11px]">{totalHours.toFixed(2)}h</span>
+                <span className="tabular-nums font-black text-slate-900 ml-auto">{fmtWon(total)}원</span>
+              </div>
+              <div className="text-[10.5px] text-slate-500 leading-snug">
+                <span className="text-slate-400">※ 세액 기준</span> · 기본급 <span className="tabular-nums font-black text-slate-700">{fmtWon(basicAmount)}</span>원 (통상시급 × {WAGE_HOURS.BASIC}h)
+              </div>
+            </div>
+          );
+        })()}
 
         </>)}
       </div>
