@@ -4563,10 +4563,10 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           const taxSum  = taxObj.total;
           const deductionTotal = insSum + taxSum;
           const deductionPct = basicAmt > 0 ? (deductionTotal / basicAmt * 100) : 0;
-          // 세후 = 세전 - 공제
-          const monthlyNet = Math.max(0, gross - deductionTotal);
-          // 월급여총액 (세전) = 4자동항목 + 선택 항목 (식대·차량 · 비과세 별도)
+          // 월급여총액 (세전) = 4자동항목 + 선택 항목 (식대·차량 · 비과세 포함)
           const grossTotal = gross + holidayOtAmt + nightAmt + meal + vehicle;
+          // 예상 실수령 (세후) = 세전 총액 - 예상공제 (기본급 기준)
+          const monthlyNet = Math.max(0, grossTotal - deductionTotal);
 
           const setMeal = (v: number) => setForm(prev => ({
             ...prev,
@@ -4627,7 +4627,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 </span>
               </div>
 
-              {/* 임금구성표 · 4자동항목 표 · 세전 기준 · 각 항목 = 통상시급 × 시간 (가산 반영 시간) */}
+              {/* 임금구성표 · 8항목 통합 표 · 원본 계약서 순서 · 각 항목 = 통상시급 × 시간 */}
               <table className="w-full text-[11.5px]">
                 <thead className="bg-slate-50 text-slate-500">
                   <tr>
@@ -4644,100 +4644,28 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   </tr>
                   <tr className="border-t border-slate-100">
                     <td className={tdItem}>(고정)연장근로수당 <span className="text-slate-400 font-normal text-[10.5px]">(1.5배 가산 포함)</span></td>
-                    <td className={tdMid}>월평균 {WAGE_HOURS.OVERTIME.toFixed(2)} 시간 <span className="text-slate-400">· 실 37.29h × 1.5 · 시간에 가산 반영</span></td>
+                    <td className={tdMid}>월평균 {WAGE_HOURS.OVERTIME.toFixed(2)} 시간 <span className="text-slate-400">· 실 37.29h × 1.5</span></td>
                     <td className={tdAmt}>{fmtWon(overtimeAmt)}원</td>
                   </tr>
                   <tr className="border-t border-slate-100">
                     <td className={tdItem}>(고정)휴일근로수당 <span className="text-slate-400 font-normal text-[10.5px]">(1.5배 가산 포함)</span></td>
-                    <td className={tdMid}>월평균 {WAGE_HOURS.HOLIDAY.toFixed(2)} 시간 <span className="text-slate-400">· 실 14.67h × 1.5 · 시간에 가산 반영</span></td>
+                    <td className={tdMid}>월평균 {WAGE_HOURS.HOLIDAY.toFixed(2)} 시간 <span className="text-slate-400">· 실 14.67h × 1.5</span></td>
                     <td className={tdAmt}>{fmtWon(holidayAmt)}원</td>
+                  </tr>
+                  <tr className="border-t border-slate-100">
+                    <td className={tdItem}>(고정)휴일연장근로수당 <span className="text-slate-400 font-normal text-[10.5px]">(0.5배 가산 포함)</span></td>
+                    <td className={tdMid}>월평균 {holidayOtHours} 시간 {holidayOtMins} 분</td>
+                    <td className={tdAmt}>{holidayOtAmt > 0 ? `${fmtWon(holidayOtAmt)}원` : "-"}</td>
+                  </tr>
+                  <tr className="border-t border-slate-100">
+                    <td className={tdItem}>(고정)야간근로수당 <span className="text-slate-400 font-normal text-[10.5px]">(0.5배 가산 포함)</span></td>
+                    <td className={tdMid}>월평균 {nightHours} 시간 {nightMins} 분</td>
+                    <td className={tdAmt}>{nightAmt > 0 ? `${fmtWon(nightAmt)}원` : "-"}</td>
                   </tr>
                   <tr className="border-t border-slate-100">
                     <td className={tdItem}>(고정)연차휴가수당</td>
                     <td className={tdMid}>월평균 {WAGE_HOURS.ANNUAL_LEAVE.toFixed(2)} 시간</td>
                     <td className={tdAmt}>{fmtWon(annualAmt)}원</td>
-                  </tr>
-                  {/* 합계 = 세전 총액 */}
-                  <tr className="border-t-2 border-slate-300 bg-slate-50">
-                    <td className="px-3 py-2 text-slate-800 font-black">
-                      합계 <span className="text-slate-500 font-bold text-[10.5px]">(세전 총액)</span>
-                    </td>
-                    <td className="px-3 py-2 text-[10.5px] text-slate-500 tabular-nums">{(WAGE_HOURS.BASIC + WAGE_HOURS.OVERTIME + WAGE_HOURS.HOLIDAY + WAGE_HOURS.ANNUAL_LEAVE).toFixed(2)}h</td>
-                    <td className="px-3 py-2 text-right tabular-nums font-black text-slate-900 text-[12.5px] whitespace-nowrap">
-                      {fmtWon(autoSum)}원
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-              {/* 예상공제액 · 접기 · 세전 기준 4대보험 + 소득세 */}
-              <details className="border-t border-slate-200 bg-rose-50/30 group">
-                <summary className="px-3 py-2 flex items-baseline gap-x-2 cursor-pointer hover:bg-rose-50/60 list-none select-none">
-                  <span className="text-slate-400 text-[10px] transition-transform group-open:rotate-90 inline-block">▶</span>
-                  <span className="text-[10.5px] font-black uppercase tracking-wider text-rose-700">− 예상공제액</span>
-                  <span className="text-[10.5px] text-slate-500">기본급 {fmtWon(basicAmt)}원 기준 · 실효 {deductionPct.toFixed(1)}%</span>
-                  <span className="tabular-nums font-black text-rose-700 ml-auto text-[12px]">−{fmtWon(deductionTotal)}원</span>
-                </summary>
-                <div className="px-3 pb-2.5 flex flex-col gap-1">
-                  <div className="pt-1.5 border-t border-rose-100/60 flex items-baseline gap-x-2 flex-wrap">
-                    <span className="text-slate-700 font-bold text-[11.5px] min-w-[74px]">국민연금</span>
-                    <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">{(INSURANCE_RATES.PENSION * 100).toFixed(2)}%</span>
-                    <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">노후 소득 보장 · 근로자 부담분</span>
-                    <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(pension)}원</span>
-                  </div>
-                  <div className="pt-1.5 border-t border-rose-100/60 flex items-baseline gap-x-2 flex-wrap">
-                    <span className="text-slate-700 font-bold text-[11.5px] min-w-[74px]">건강보험</span>
-                    <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">{(INSURANCE_RATES.HEALTH * 100).toFixed(3)}%</span>
-                    <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">질병·부상 진료 급여 · 근로자 부담분</span>
-                    <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(health)}원</span>
-                  </div>
-                  <div className="pt-1.5 border-t border-rose-100/60 flex items-baseline gap-x-2 flex-wrap">
-                    <span className="text-slate-700 font-bold text-[11.5px] min-w-[74px]">장기요양</span>
-                    <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">건강 × {(INSURANCE_RATES.LTC_RATIO * 100).toFixed(2)}%</span>
-                    <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">노인장기요양 · 건강보험료의 12.95%</span>
-                    <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(ltc)}원</span>
-                  </div>
-                  <div className="pt-1.5 border-t border-rose-100/60 flex items-baseline gap-x-2 flex-wrap">
-                    <span className="text-slate-700 font-bold text-[11.5px] min-w-[74px]">고용보험</span>
-                    <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">{(INSURANCE_RATES.EMPLOYMENT * 100).toFixed(2)}%</span>
-                    <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">실업급여 재원 · 근로자 부담분</span>
-                    <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(emp)}원</span>
-                  </div>
-                  <div className="pt-1.5 border-t border-rose-100/60 flex items-baseline gap-x-2 flex-wrap">
-                    <span className="text-slate-700 font-bold text-[11.5px] min-w-[74px]">소득세·지방세</span>
-                    <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">간이세액표 근사</span>
-                    <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">근로소득 · 부양 1인 기준</span>
-                    <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(taxSum)}원</span>
-                  </div>
-                  <div className="flex items-baseline gap-x-2 pt-1.5 border-t border-rose-200">
-                    <span className="text-[10.5px] font-black uppercase tracking-wider text-rose-700">예상공제액 합계</span>
-                    <span className="text-[10.5px] text-slate-500">4대보험 {fmtWon(insSum)} + 소득세 {fmtWon(taxSum)}</span>
-                    <span className="tabular-nums font-black text-rose-700 ml-auto text-[12px]">−{fmtWon(deductionTotal)}원</span>
-                  </div>
-                </div>
-              </details>
-
-              {/* 실수령 (세후) · 세전 − 공제 파생 */}
-              <div className="px-3 py-2 bg-emerald-50/60 border-t border-emerald-200 flex items-baseline gap-x-2">
-                <span className="text-[10.5px] font-black uppercase tracking-wider text-emerald-700">예상 실수령 (세후)</span>
-                <span className="text-[10.5px] text-emerald-600 font-semibold">세전 {fmtWon(gross)} − 예상공제 {fmtWon(deductionTotal)}</span>
-                <span className="tabular-nums font-black text-emerald-800 ml-auto text-[13px] whitespace-nowrap">{fmtWon(monthlyNet)}원</span>
-              </div>
-
-              {/* 선택 항목 · 휴일연장·야간·식대·차량 (있을 때만 표시 or 항상 체크박스) */}
-              <table className="w-full text-[11.5px] border-t border-slate-200">
-                <tbody>
-                  {/* (고정)휴일연장근로수당 · 0.5배 가산 */}
-                  <tr className="border-t border-slate-100">
-                    <td className={tdItem}>(고정)휴일연장근로수당 <span className="text-slate-400 font-normal text-[10.5px]">(0.5배 가산 포함)</span></td>
-                    <td className={tdMid}>월평균 {holidayOtHours} 시간 {holidayOtMins} 분 · 통상시급 × 시간 × <b>0.5</b></td>
-                    <td className={tdAmt}>{holidayOtAmt > 0 ? `${fmtWon(holidayOtAmt)}원` : "-"}</td>
-                  </tr>
-                  {/* (고정)야간근로수당 · 0.5배 가산 */}
-                  <tr className="border-t border-slate-100">
-                    <td className={tdItem}>(고정)야간근로수당 <span className="text-slate-400 font-normal text-[10.5px]">(0.5배 가산 포함)</span></td>
-                    <td className={tdMid}>월평균 {nightHours} 시간 {nightMins} 분 · 통상시급 × 시간 × <b>0.5</b></td>
-                    <td className={tdAmt}>{nightAmt > 0 ? `${fmtWon(nightAmt)}원` : "-"}</td>
                   </tr>
                   {/* 식대 (비과세) · 체크박스 · 항목 앞 */}
                   <tr className="border-t border-slate-100">
@@ -4801,21 +4729,75 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     </td>
                     <td className={tdAmt}>{vehicleChecked ? `${fmtWon(vehicle)}원` : "-"}</td>
                   </tr>
-                  {/* 월급여총액 · 세전 */}
-                  <tr className="border-t-2 border-emerald-300 bg-emerald-50/70">
-                    <td className="px-3 py-2 text-emerald-900 font-black text-[12.5px]">
-                      월급여총액 <span className="text-emerald-600 font-bold text-[10.5px]">(세전)</span>
+                  {/* 월급여총액 (세전) · 8항목 합계 */}
+                  <tr className="border-t-2 border-slate-300 bg-slate-50">
+                    <td className="px-3 py-2 text-slate-800 font-black text-[12.5px]">
+                      월급여총액 <span className="text-slate-500 font-bold text-[10.5px]">(세전)</span>
                     </td>
-                    <td className="px-3 py-2 text-[10.5px] text-emerald-700 font-semibold">
-                      세전 {fmtWon(gross)}
+                    <td className="px-3 py-2 text-[10.5px] text-slate-500 font-semibold">
+                      기본 4항목 {fmtWon(autoSum)}
                       {(holidayOtAmt + nightAmt + meal + vehicle) > 0 && ` + 선택 ${fmtWon(holidayOtAmt + nightAmt + meal + vehicle)}`}
                     </td>
-                    <td className="px-3 py-2 text-right tabular-nums font-black text-emerald-900 text-[13px] whitespace-nowrap">
+                    <td className="px-3 py-2 text-right tabular-nums font-black text-slate-900 text-[13px] whitespace-nowrap">
                       {fmtWon(grossTotal)}원
                     </td>
                   </tr>
                 </tbody>
               </table>
+
+              {/* 예상공제액 · 접기 · 세전 기준 4대보험 + 소득세 */}
+              <details className="border-t border-slate-200 bg-rose-50/30 group">
+                <summary className="px-3 py-2 flex items-baseline gap-x-2 cursor-pointer hover:bg-rose-50/60 list-none select-none">
+                  <span className="text-slate-400 text-[10px] transition-transform group-open:rotate-90 inline-block">▶</span>
+                  <span className="text-[10.5px] font-black uppercase tracking-wider text-rose-700">− 예상공제액</span>
+                  <span className="text-[10.5px] text-slate-500">기본급 {fmtWon(basicAmt)}원 기준 · 실효 {deductionPct.toFixed(1)}%</span>
+                  <span className="tabular-nums font-black text-rose-700 ml-auto text-[12px]">−{fmtWon(deductionTotal)}원</span>
+                </summary>
+                <div className="px-3 pb-2.5 flex flex-col gap-1">
+                  <div className="pt-1.5 border-t border-rose-100/60 flex items-baseline gap-x-2 flex-wrap">
+                    <span className="text-slate-700 font-bold text-[11.5px] min-w-[74px]">국민연금</span>
+                    <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">{(INSURANCE_RATES.PENSION * 100).toFixed(2)}%</span>
+                    <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">노후 소득 보장 · 근로자 부담분</span>
+                    <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(pension)}원</span>
+                  </div>
+                  <div className="pt-1.5 border-t border-rose-100/60 flex items-baseline gap-x-2 flex-wrap">
+                    <span className="text-slate-700 font-bold text-[11.5px] min-w-[74px]">건강보험</span>
+                    <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">{(INSURANCE_RATES.HEALTH * 100).toFixed(3)}%</span>
+                    <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">질병·부상 진료 급여 · 근로자 부담분</span>
+                    <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(health)}원</span>
+                  </div>
+                  <div className="pt-1.5 border-t border-rose-100/60 flex items-baseline gap-x-2 flex-wrap">
+                    <span className="text-slate-700 font-bold text-[11.5px] min-w-[74px]">장기요양</span>
+                    <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">건강 × {(INSURANCE_RATES.LTC_RATIO * 100).toFixed(2)}%</span>
+                    <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">노인장기요양 · 건강보험료의 12.95%</span>
+                    <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(ltc)}원</span>
+                  </div>
+                  <div className="pt-1.5 border-t border-rose-100/60 flex items-baseline gap-x-2 flex-wrap">
+                    <span className="text-slate-700 font-bold text-[11.5px] min-w-[74px]">고용보험</span>
+                    <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">{(INSURANCE_RATES.EMPLOYMENT * 100).toFixed(2)}%</span>
+                    <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">실업급여 재원 · 근로자 부담분</span>
+                    <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(emp)}원</span>
+                  </div>
+                  <div className="pt-1.5 border-t border-rose-100/60 flex items-baseline gap-x-2 flex-wrap">
+                    <span className="text-slate-700 font-bold text-[11.5px] min-w-[74px]">소득세·지방세</span>
+                    <span className="tabular-nums text-slate-500 text-[11px] min-w-[110px]">간이세액표 근사</span>
+                    <span className="text-[10px] text-slate-400 font-medium leading-snug flex-1 min-w-[160px]">근로소득 · 부양 1인 기준</span>
+                    <span className="tabular-nums text-slate-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(taxSum)}원</span>
+                  </div>
+                  <div className="flex items-baseline gap-x-2 pt-1.5 border-t border-rose-200">
+                    <span className="text-[10.5px] font-black uppercase tracking-wider text-rose-700">예상공제액 합계</span>
+                    <span className="text-[10.5px] text-slate-500">4대보험 {fmtWon(insSum)} + 소득세 {fmtWon(taxSum)}</span>
+                    <span className="tabular-nums font-black text-rose-700 ml-auto text-[12px]">−{fmtWon(deductionTotal)}원</span>
+                  </div>
+                </div>
+              </details>
+
+              {/* 예상 실수령 (세후) · 세전 총액 − 예상공제 파생 */}
+              <div className="px-3 py-2 bg-emerald-50/60 border-t border-emerald-200 flex items-baseline gap-x-2">
+                <span className="text-[10.5px] font-black uppercase tracking-wider text-emerald-700">예상 실수령 (세후)</span>
+                <span className="text-[10.5px] text-emerald-600 font-semibold">세전 {fmtWon(grossTotal)} − 예상공제 {fmtWon(deductionTotal)}</span>
+                <span className="tabular-nums font-black text-emerald-800 ml-auto text-[13px] whitespace-nowrap">{fmtWon(monthlyNet)}원</span>
+              </div>
             </div>
           );
         })()}
