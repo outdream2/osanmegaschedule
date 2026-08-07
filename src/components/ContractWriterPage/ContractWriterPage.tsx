@@ -2351,7 +2351,6 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
                 : (form.employeeBankAccount || "-")
             }
           />
-          <FieldRow label="이메일" value={form.employeeEmail || "-"} />
           <div className="flex items-center justify-end mt-1">
             <span className="text-[10.5px] text-slate-500 font-bold mr-2">(서명)</span>
             <InlineSignSpot
