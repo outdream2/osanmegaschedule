@@ -2574,7 +2574,8 @@ const DRAFT_TIMESTAMP_KEY = "megatown_contract_writer_draft_ts";
 
 // T-W (2026-08-05) · 좌측 카드 접기/펴기 · localStorage 저장 · 기본 모두 펼침
 const CARD_COLLAPSE_STORAGE_KEY = "contractWriter:cardCollapsed";
-type CardKey = "employee" | "workCondition" | "wage" | "period" | "wageCompare" | "employerEtc";
+// 2026-08-07 · 카드 4(period)·wageCompare·employerEtc 삭제 → 실제 사용 3개만 유지
+type CardKey = "employee" | "workCondition" | "wage";
 type CardCollapsedMap = Partial<Record<CardKey, boolean>>;
 
 function loadCardCollapsedMap(): CardCollapsedMap {
@@ -3510,14 +3511,14 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     }));
   };
 
-  // 서명 전체 초기화
+  // 서명 전체 초기화 · 2026-08-07 · SIGN_KEYS 기반 동적 생성 (하드코딩 키 누락 위험 방지)
+  //   · 레거시 키(specialWork·breakChange·wageClause3·wageClause4·etc5) 는 null 로 유지
   const clearAllSignatures = useCallback(() => {
-    setSignUrls({
-      employer: null, employee: null, privacy: null,
-      specialWork: null, breakChange: null,
-      wageClause3: null, wageClause4: null,
-      etc5: null, receipt: null,
-      wageAck: null, workTimeAck: null, etcAck: null,
+    setSignUrls(prev => {
+      const next = { ...prev };
+      // 모든 현재 키 null 초기화
+      (Object.keys(next) as Array<keyof typeof next>).forEach(k => { next[k] = null; });
+      return next;
     });
   }, []);
 
