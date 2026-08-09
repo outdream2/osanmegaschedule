@@ -18,7 +18,7 @@ import { useVendors } from "../../hooks/useVendors";
 import {
   Building2, Loader2, Wallet, CalendarDays, CreditCard, Banknote,
   FileText, Check, X, RefreshCw, Landmark, Coins, ScrollText, Layers,
-  ReceiptText, ArrowRight, Plus, Calendar,
+  ReceiptText, ArrowRight, Plus, Calendar, Package2,
   ChevronUp, ChevronDown, ChevronsUpDown,
 } from "lucide-react";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
@@ -30,7 +30,7 @@ import { useSortableTable, type Comparator } from "../../hooks/useSortableTable"
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
-import { PeriodSelector, PERIOD_DAYS_PRESET } from "../common/PeriodSelector";
+import { PeriodSelector, PERIOD_DAYS_PRESET, PERIOD_MONTHS_PRESET } from "../common/PeriodSelector";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 
@@ -95,6 +95,23 @@ interface MonthlyBreakdown {
   payment: Record<string, number>;  // "YYYY-MM" → 결제 합계
   total_purchase: number;          // 전체 (fetch 기간 내) 매입 합계
   total_payment: number;           // 전체 (fetch 기간 내) 결제 합계
+}
+
+// 2026-08-09 · 판매/실재고 월별 breakdown · 7행 표 아래쪽 3행 (판매정보)
+//   /api/supplier-monthly-breakdown 응답 · stock_history 소스
+interface SalesStockBreakdown {
+  months: string[];                       // 오래된순
+  purchases: Record<string, number>;     // 매입 (동일 데이터 · 표 아래쪽 재사용)
+  payments: Record<string, number>;      // 결제
+  sales: Record<string, number>;         // 판매액 (프록시)
+  stockValue: Record<string, number>;   // 실재고액
+  totals: {
+    purchases: number;
+    payments: number;
+    balance: number;
+    sales: number;
+    stockValue: number;
+  };
 }
 
 // ─── Period Filter · Task #103 (2026-08-04) ─────────────────────────────────
@@ -354,6 +371,10 @@ export const PaymentInfoTab: React.FC = () => {
 
   // 월별 매입/결제 breakdown · 2026-08-04 · #58 · 상단 요약 표
   const [monthlyBreakdown, setMonthlyBreakdown] = useState<MonthlyBreakdown | null>(null);
+  // 2026-08-09 · 7행 표 · 판매·실재고 월별 데이터 + 기간 선택
+  const [breakdownMonths, setBreakdownMonths] = useState<number>(3);
+  const [salesStockBreakdown, setSalesStockBreakdown] = useState<SalesStockBreakdown | null>(null);
+  const [salesStockLoading, setSalesStockLoading] = useState(false);
   // T11 · 상품별 매입 그루핑 (supplier-purchase-detail rows 를 product_code 로 aggregate)
   interface ProductPurchaseSummary {
     product_code: string;
@@ -681,6 +702,21 @@ export const PaymentInfoTab: React.FC = () => {
     }
   }, []);
 
+  // 2026-08-09 · 판매·실재고 월별 로드 · /api/supplier-monthly-breakdown
+  const loadSalesStockBreakdown = useCallback(async (supplierName: string, months: number) => {
+    setSalesStockLoading(true);
+    try {
+      const res = await fetch(`/api/supplier-monthly-breakdown?supplier=${encodeURIComponent(supplierName)}&months=${months}`);
+      if (!res.ok) { setSalesStockBreakdown(null); return; }
+      const j = await res.json();
+      setSalesStockBreakdown(j);
+    } catch {
+      setSalesStockBreakdown(null);
+    } finally {
+      setSalesStockLoading(false);
+    }
+  }, []);
+
   // 공급사 선택 시 · 잔고 + 최근결제 로드 · 폼 리셋
   useEffect(() => {
     if (!selectedVendor) {
@@ -688,11 +724,13 @@ export const PaymentInfoTab: React.FC = () => {
       setRecentPayments([]);
       setMonthlyBreakdown(null);
       setProductSummary([]);
+      setSalesStockBreakdown(null);
       return;
     }
     loadBalance(selectedVendor.company_name);
     loadRecentPayments(selectedVendor.company_name);
     loadMonthlyBreakdown(selectedVendor.company_name);
+    loadSalesStockBreakdown(selectedVendor.company_name, breakdownMonths);
     // 폼 리셋
     setPaymentDate(todayYmd());
     setAmount("");
@@ -707,7 +745,14 @@ export const PaymentInfoTab: React.FC = () => {
     setTaxInvoiceNo("");
     setNote("");
     setMsg(null);
-  }, [selectedVendor, loadBalance, loadRecentPayments, loadMonthlyBreakdown]);
+  }, [selectedVendor, loadBalance, loadRecentPayments, loadMonthlyBreakdown, loadSalesStockBreakdown, breakdownMonths]);
+
+  // 2026-08-09 · breakdownMonths 변경 시 재조회
+  useEffect(() => {
+    if (!selectedVendor) return;
+    loadSalesStockBreakdown(selectedVendor.company_name, breakdownMonths);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [breakdownMonths]);
 
   // ── 필터링·정렬된 공급사 · Task #103 (2026-08-04) ─────────────
   //   필터 · 검색어 + 카테고리
@@ -1065,101 +1110,145 @@ export const PaymentInfoTab: React.FC = () => {
                   onEdit={() => openVendorInfo(selectedVendor as any)}
                 />
 
-                {/* 월별 매입·결제·잔고 표 (2026-08-04 · #58 · 사용자 요청)
-                    · 최근 3개월 + 누적 + 잔고 컬럼 · 3행 (총매입/총결제/잔고)
-                    · 데이터: monthlyBreakdown (supplier-purchase-detail + supplier-payments)
-                    · 누적: balance.total_purchase/total_payment (전체 기간 · 서버 sum) 우선
-                    · 잔고: currentBalance (누적매입 - 누적결제)
-                    · 모바일 반응형 · 가로 스크롤 */}
+                {/* 2026-08-09 · 7행 표 (사용자 요청) · 헤더 + 6데이터 (공급사정보 3 · 판매정보 3) + 행합계
+                    · 공급사정보: 매입 / 결제 / 잔고 (purchase_details − supplier_payments)
+                    · 판매정보: 매입 / 판매액 / 실재고액 (stock_history · 프록시)
+                    · 컬럼: 월별 (breakdownMonths) + 맨 오른쪽 행합계
+                    · 상단 PeriodSelector · 3/6/12개월 */}
                 {(() => {
-                  const months = monthlyBreakdown?.months ?? recentMonthKeys(MONTHS_TO_SHOW);
-                  const purMap = monthlyBreakdown?.purchase ?? {};
-                  const payMap = monthlyBreakdown?.payment ?? {};
-                  // 누적 · balance 응답 (전체 기간) 우선 · monthlyBreakdown 은 1년치라 부정확할 수 있음
-                  const totalPurchase = balance?.total_purchase ?? monthlyBreakdown?.total_purchase ?? 0;
-                  const totalPayment  = balance?.total_payment  ?? monthlyBreakdown?.total_payment  ?? 0;
-                  const totalBalance  = currentBalance;
+                  const months = salesStockBreakdown?.months ?? recentMonthKeys(breakdownMonths);
+                  const purMap = salesStockBreakdown?.purchases ?? {};
+                  const payMap = salesStockBreakdown?.payments ?? {};
+                  const salesMap = salesStockBreakdown?.sales ?? {};
+                  const stockMap = salesStockBreakdown?.stockValue ?? {};
+                  // 월별 잔고 = 월별 매입 - 월별 결제
+                  const balMap: Record<string, number> = {};
+                  for (const k of months) balMap[k] = (purMap[k] ?? 0) - (payMap[k] ?? 0);
+                  const totals = salesStockBreakdown?.totals ?? { purchases: 0, payments: 0, balance: 0, sales: 0, stockValue: 0 };
                   const fmt = (n: number) => n === 0 ? "-" : fmtWonShort(n);
-                  const dash = <span className="text-slate-300">-</span>;
-                  const showLoading = monthlyLoading || balanceLoading;
+                  const showLoading = salesStockLoading || balanceLoading;
                   return (
                     <div className="overflow-hidden rounded-lg border border-slate-200 shadow-xs">
+                      {/* 상단 · 제목 + PeriodSelector */}
+                      <div className="flex items-center gap-2 px-3 py-2 bg-slate-50/80 border-b border-slate-200">
+                        <span className="text-[11px] font-black text-slate-700">월별 요약</span>
+                        <PeriodSelector
+                          options={PERIOD_MONTHS_PRESET}
+                          value={breakdownMonths}
+                          onChange={(v) => setBreakdownMonths(v as number)}
+                          accent="teal"
+                          size="sm"
+                          className="ml-auto"
+                          ariaLabel="월별 요약 기간 선택"
+                        />
+                        {showLoading && <Loader2 size={11} className="animate-spin text-slate-400" />}
+                      </div>
                       <div className="overflow-x-auto">
-                      <table className="w-full min-w-[420px] text-[12px] tabular-nums">
+                      <table className="w-full min-w-[520px] text-[12px] tabular-nums">
                         <thead className="bg-slate-50/80 text-[11px] font-black uppercase tracking-wider text-slate-500">
                           <tr>
-                            <th className="text-left px-3 py-1.5 w-[64px]">구분</th>
+                            <th className="text-center px-2 py-1.5 w-[56px] border-r border-slate-200">카테고리</th>
+                            <th className="text-left px-2 py-1.5 w-[64px]">항목</th>
                             {months.map(k => (
-                              <th key={k} className="text-right px-2.5 py-1.5 whitespace-nowrap">
+                              <th key={k} className="text-right px-2 py-1.5 whitespace-nowrap">
                                 <span className="inline-flex flex-col items-end leading-tight">
                                   <span className="text-slate-400 text-[9px]">{k.slice(0, 4)}</span>
                                   <span>{fmtMonthShort(k)}</span>
                                 </span>
                               </th>
                             ))}
-                            <th className="text-right px-2.5 py-1.5 whitespace-nowrap text-slate-700 border-l border-slate-200">
-                              <span className="inline-flex items-center gap-1 justify-end"><Layers size={11} />누적</span>
-                            </th>
-                            <th className="text-right px-2.5 py-1.5 whitespace-nowrap text-amber-700 bg-amber-50/40">
-                              <span className="inline-flex items-center gap-1 justify-end"><Coins size={11} />잔고</span>
+                            <th className="text-right px-2 py-1.5 whitespace-nowrap text-slate-700 border-l border-slate-200 bg-slate-50/40">
+                              <span className="inline-flex items-center gap-1 justify-end"><Layers size={11} />합계</span>
                             </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {/* Row 1 · 총 매입 */}
+                          {/* ── 공급사 카테고리 · 매입/결제/잔고 ── */}
                           <tr className="bg-white">
-                            <td className="px-3 py-1.5 font-black text-emerald-700 whitespace-nowrap">
+                            <td rowSpan={3} className="text-center px-2 py-1.5 font-black text-slate-600 bg-emerald-50/40 border-r border-slate-200 align-middle">
+                              공급사
+                            </td>
+                            <td className="px-2 py-1.5 font-black text-emerald-700 whitespace-nowrap">
                               <span className="inline-flex items-center gap-1"><ReceiptText size={11} />매입</span>
                             </td>
                             {months.map(k => (
-                              <td key={k} className={`px-2.5 py-1.5 text-right font-black ${(purMap[k] ?? 0) === 0 ? "text-slate-300" : "text-emerald-800"}`}>
+                              <td key={k} className={`px-2 py-1.5 text-right font-black ${(purMap[k] ?? 0) === 0 ? "text-slate-300" : "text-emerald-800"}`}>
                                 {fmt(purMap[k] ?? 0)}
                               </td>
                             ))}
-                            <td className="px-2.5 py-1.5 text-right font-black text-emerald-800 border-l border-slate-200">{fmt(totalPurchase)}</td>
-                            <td className="px-2.5 py-1.5 text-right text-slate-300 bg-amber-50/30">{dash}</td>
+                            <td className="px-2 py-1.5 text-right font-black text-emerald-800 border-l border-slate-200 bg-slate-50/40">{fmt(totals.purchases)}</td>
                           </tr>
-                          {/* Row 2 · 총 결제 */}
                           <tr className="bg-slate-50/40">
-                            <td className="px-3 py-1.5 font-black text-sky-700 whitespace-nowrap">
+                            <td className="px-2 py-1.5 font-black text-sky-700 whitespace-nowrap">
                               <span className="inline-flex items-center gap-1"><Wallet size={11} />결제</span>
                             </td>
                             {months.map(k => (
-                              <td key={k} className={`px-2.5 py-1.5 text-right font-black ${(payMap[k] ?? 0) === 0 ? "text-slate-300" : "text-sky-800"}`}>
+                              <td key={k} className={`px-2 py-1.5 text-right font-black ${(payMap[k] ?? 0) === 0 ? "text-slate-300" : "text-sky-800"}`}>
                                 {fmt(payMap[k] ?? 0)}
                               </td>
                             ))}
-                            <td className="px-2.5 py-1.5 text-right font-black text-sky-800 border-l border-slate-200">{fmt(totalPayment)}</td>
-                            <td className="px-2.5 py-1.5 text-right text-slate-300 bg-amber-50/30">{dash}</td>
+                            <td className="px-2 py-1.5 text-right font-black text-sky-800 border-l border-slate-200 bg-slate-50/40">{fmt(totals.payments)}</td>
                           </tr>
-                          {/* Row 3 · 잔고 */}
                           <tr className="bg-white">
-                            <td className="px-3 py-1.5 font-black text-amber-700 whitespace-nowrap">
+                            <td className="px-2 py-1.5 font-black text-amber-700 whitespace-nowrap">
                               <span className="inline-flex items-center gap-1"><Coins size={11} />잔고</span>
                             </td>
-                            {months.map(k => (
-                              <td key={k} className="px-2.5 py-1.5 text-right text-slate-300">{dash}</td>
-                            ))}
-                            <td className="px-2.5 py-1.5 text-right text-slate-300 border-l border-slate-200">{dash}</td>
-                            <td className={`px-2.5 py-1.5 text-right font-black bg-amber-50/60 ${
-                              totalBalance > 0 ? "text-amber-700" : totalBalance < 0 ? "text-rose-700" : "text-slate-500"
+                            {months.map(k => {
+                              const v = balMap[k] ?? 0;
+                              return (
+                                <td key={k} className={`px-2 py-1.5 text-right font-black ${
+                                  v === 0 ? "text-slate-300" : v > 0 ? "text-amber-700" : "text-rose-700"
+                                }`}>
+                                  {v === 0 ? "-" : (v > 0 ? "" : "-") + fmtWonShort(Math.abs(v))}
+                                </td>
+                              );
+                            })}
+                            <td className={`px-2 py-1.5 text-right font-black border-l border-slate-200 bg-amber-50/60 ${
+                              totals.balance > 0 ? "text-amber-700" : totals.balance < 0 ? "text-rose-700" : "text-slate-500"
                             }`}>
-                              {totalBalance === 0 ? "0" : fmtWonShort(Math.abs(totalBalance))}
-                              {totalBalance !== 0 && (
-                                <span className="text-[9px] font-semibold text-slate-400 ml-1">
-                                  {totalBalance > 0 ? "미결" : "초과"}
-                                </span>
-                              )}
+                              {totals.balance === 0 ? "0" : (totals.balance > 0 ? "" : "-") + fmtWonShort(Math.abs(totals.balance))}
                             </td>
+                          </tr>
+                          {/* ── 판매 카테고리 · 매입/판매액/실재고액 · 구분선 (border-t 강조) ── */}
+                          <tr className="bg-white border-t-2 border-slate-300">
+                            <td rowSpan={3} className="text-center px-2 py-1.5 font-black text-slate-600 bg-indigo-50/40 border-r border-slate-200 align-middle">
+                              판매
+                            </td>
+                            <td className="px-2 py-1.5 font-black text-emerald-700 whitespace-nowrap">
+                              <span className="inline-flex items-center gap-1"><ReceiptText size={11} />매입</span>
+                            </td>
+                            {months.map(k => (
+                              <td key={k} className={`px-2 py-1.5 text-right font-black ${(purMap[k] ?? 0) === 0 ? "text-slate-300" : "text-emerald-800"}`}>
+                                {fmt(purMap[k] ?? 0)}
+                              </td>
+                            ))}
+                            <td className="px-2 py-1.5 text-right font-black text-emerald-800 border-l border-slate-200 bg-slate-50/40">{fmt(totals.purchases)}</td>
+                          </tr>
+                          <tr className="bg-slate-50/40">
+                            <td className="px-2 py-1.5 font-black text-indigo-700 whitespace-nowrap">
+                              <span className="inline-flex items-center gap-1"><Package2 size={11} />판매액</span>
+                            </td>
+                            {months.map(k => (
+                              <td key={k} className={`px-2 py-1.5 text-right font-black ${(salesMap[k] ?? 0) === 0 ? "text-slate-300" : "text-indigo-800"}`}>
+                                {fmt(salesMap[k] ?? 0)}
+                              </td>
+                            ))}
+                            <td className="px-2 py-1.5 text-right font-black text-indigo-800 border-l border-slate-200 bg-slate-50/40">{fmt(totals.sales)}</td>
+                          </tr>
+                          <tr className="bg-white">
+                            <td className="px-2 py-1.5 font-black text-teal-700 whitespace-nowrap">
+                              <span className="inline-flex items-center gap-1"><Layers size={11} />실재고액</span>
+                            </td>
+                            {months.map(k => (
+                              <td key={k} className={`px-2 py-1.5 text-right font-black ${(stockMap[k] ?? 0) === 0 ? "text-slate-300" : "text-teal-800"}`}>
+                                {fmt(stockMap[k] ?? 0)}
+                              </td>
+                            ))}
+                            <td className="px-2 py-1.5 text-right font-black text-teal-800 border-l border-slate-200 bg-slate-50/40">{fmt(totals.stockValue)}</td>
                           </tr>
                         </tbody>
                       </table>
                       </div>
-                      {showLoading && (
-                        <div className="px-3 py-1 bg-slate-50 text-[10px] text-slate-400 flex items-center gap-1">
-                          <Loader2 size={10} className="animate-spin" />로딩중
-                        </div>
-                      )}
                     </div>
                   );
                 })()}

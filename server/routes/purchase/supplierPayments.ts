@@ -1085,4 +1085,137 @@ router.get("/api/supplier-purchase-detail", async (req, res) => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────────────
+// GET /api/supplier-monthly-breakdown?supplier=X&months=N
+//   2026-08-09 · 결제탭 우측 상단 7행 표 (사용자 요청)
+//   반환: 월별 매입·결제·판매·실재고액 + 각 합계
+//   소스 (원칙 준수):
+//     - 매입 · purchase_details (queryPurchaseDetails 헬퍼 · NULL supplier fallback)
+//     - 결제 · supplier_payments
+//     - 판매액 · stock_history (supply_amount × sale_qty/(purchase_qty+sale_qty) 프록시)
+//     - 실재고액 · stock_history.total_amount 월별 합
+// ─────────────────────────────────────────────────────────────────────
+router.get("/api/supplier-monthly-breakdown", async (req, res) => {
+  try {
+    const supplier = String(req.query.supplier ?? "").trim();
+    if (!supplier) return res.status(400).json({ error: "supplier 필수" });
+    const months = Math.max(1, Math.min(24, parseInt(String(req.query.months ?? "3"), 10) || 3));
+
+    // 월 키 배열 (오래된 → 최근)
+    const now = new Date();
+    const monthKeys: string[] = [];
+    for (let i = months - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      monthKeys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
+    const startYm = monthKeys[0];
+    const cutoffYmd = `${startYm}-01`;
+
+    const purchases: Record<string, number> = {};
+    const payments: Record<string, number> = {};
+    const sales: Record<string, number> = {};
+    const stockValue: Record<string, number> = {};
+
+    await Promise.all([
+      // 매입 · purchase_details
+      (async () => {
+        try {
+          const rows = await queryPurchaseDetails({ supplier, sinceYmd: cutoffYmd });
+          for (const r of rows) {
+            const ym = r.purchase_date.slice(0, 7);
+            purchases[ym] = (purchases[ym] ?? 0) + r.amount;
+          }
+        } catch (e: any) {
+          console.warn("[supplier-monthly-breakdown] purchases 실패:", e?.message);
+        }
+      })(),
+      // 결제 · supplier_payments
+      (async () => {
+        try {
+          const { data, error } = await supabase
+            .from("supplier_payments")
+            .select("payment_date, amount")
+            .eq("supplier_name", supplier)
+            .gte("payment_date", cutoffYmd);
+          if (!error) {
+            for (const r of data ?? []) {
+              const ym = String(r.payment_date ?? "").slice(0, 7);
+              if (!ym) continue;
+              payments[ym] = (payments[ym] ?? 0) + (Number(r.amount) || 0);
+            }
+          }
+        } catch (e: any) {
+          console.warn("[supplier-monthly-breakdown] payments 실패:", e?.message);
+        }
+      })(),
+      // 판매액·실재고액 · stock_history · 페이지네이션 (1000행씩)
+      (async () => {
+        try {
+          const PAGE = 1000;
+          let from = 0;
+          const monthlyAgg = new Map<string, { saleAmount: number; totalStockAmount: number }>();
+          while (true) {
+            const { data, error } = await supabase
+              .from("stock_history")
+              .select("snapshot_date, purchase_qty, sale_qty, supply_amount, total_amount")
+              .eq("supplier_name", supplier)
+              .gte("snapshot_date", cutoffYmd)
+              .range(from, from + PAGE - 1);
+            if (error) {
+              if (/relation .* does not exist/i.test(error.message)) break;
+              throw new Error(error.message);
+            }
+            if (!data || data.length === 0) break;
+            for (const r of data) {
+              const ym = String(r.snapshot_date ?? "").slice(0, 7);
+              if (!ym) continue;
+              const pq = Number(r.purchase_qty) || 0;
+              const sq = Number(r.sale_qty) || 0;
+              const supAmt = Number(r.supply_amount) || 0;
+              const totAmt = Number(r.total_amount) || 0;
+              // 판매액 프록시 · supply_amount × sq / (pq + sq) (기존 stockManage 패턴)
+              const saleProxy = (pq + sq) > 0 ? supAmt * (sq / (pq + sq)) : 0;
+              const cur = monthlyAgg.get(ym) ?? { saleAmount: 0, totalStockAmount: 0 };
+              cur.saleAmount += saleProxy;
+              cur.totalStockAmount += totAmt;
+              monthlyAgg.set(ym, cur);
+            }
+            if (data.length < PAGE) break;
+            from += PAGE;
+          }
+          for (const [ym, v] of monthlyAgg) {
+            sales[ym] = v.saleAmount;
+            stockValue[ym] = v.totalStockAmount;
+          }
+        } catch (e: any) {
+          console.warn("[supplier-monthly-breakdown] stock_history 실패:", e?.message);
+        }
+      })(),
+    ]);
+
+    // 행 합계 (선택 기간 내)
+    const sum = (o: Record<string, number>) => Object.values(o).reduce((s, v) => s + v, 0);
+    const totals = {
+      purchases: sum(purchases),
+      payments: sum(payments),
+      balance: sum(purchases) - sum(payments),
+      sales: sum(sales),
+      stockValue: sum(stockValue),
+    };
+
+    return res.json({
+      supplier,
+      months: monthKeys,
+      purchases,
+      payments,
+      sales,
+      stockValue,
+      totals,
+    });
+  } catch (err: any) {
+    console.error("[GET supplier-monthly-breakdown] error:", err.message);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
