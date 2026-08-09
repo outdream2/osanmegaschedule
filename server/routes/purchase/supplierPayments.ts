@@ -1115,6 +1115,7 @@ router.get("/api/supplier-monthly-breakdown", async (req, res) => {
     const payments: Record<string, number> = {};
     const sales: Record<string, number> = {};
     const stockValue: Record<string, number> = {};
+    let stockValueCurrent = 0; // 2026-08-09 · 현재 실재고액 (실재고 × 매입단가 합계 · 사용자 요청)
 
     await Promise.all([
       // 매입 · purchase_details
@@ -1148,16 +1149,16 @@ router.get("/api/supplier-monthly-breakdown", async (req, res) => {
           console.warn("[supplier-monthly-breakdown] payments 실패:", e?.message);
         }
       })(),
-      // 판매액·실재고액 · stock_history · 페이지네이션 (1000행씩)
+      // 판매액 · stock_history · 페이지네이션 (1000행씩) · 실재고액은 아래 별도 계산
       (async () => {
         try {
           const PAGE = 1000;
           let from = 0;
-          const monthlyAgg = new Map<string, { saleAmount: number; totalStockAmount: number }>();
+          const monthlyAgg = new Map<string, { saleAmount: number }>();
           while (true) {
             const { data, error } = await supabase
               .from("stock_history")
-              .select("snapshot_date, purchase_qty, sale_qty, supply_amount, total_amount")
+              .select("snapshot_date, purchase_qty, sale_qty, supply_amount")
               .eq("supplier_name", supplier)
               .gte("snapshot_date", cutoffYmd)
               .range(from, from + PAGE - 1);
@@ -1172,12 +1173,9 @@ router.get("/api/supplier-monthly-breakdown", async (req, res) => {
               const pq = Number(r.purchase_qty) || 0;
               const sq = Number(r.sale_qty) || 0;
               const supAmt = Number(r.supply_amount) || 0;
-              const totAmt = Number(r.total_amount) || 0;
-              // 판매액 프록시 · supply_amount × sq / (pq + sq) (기존 stockManage 패턴)
               const saleProxy = (pq + sq) > 0 ? supAmt * (sq / (pq + sq)) : 0;
-              const cur = monthlyAgg.get(ym) ?? { saleAmount: 0, totalStockAmount: 0 };
+              const cur = monthlyAgg.get(ym) ?? { saleAmount: 0 };
               cur.saleAmount += saleProxy;
-              cur.totalStockAmount += totAmt;
               monthlyAgg.set(ym, cur);
             }
             if (data.length < PAGE) break;
@@ -1185,10 +1183,89 @@ router.get("/api/supplier-monthly-breakdown", async (req, res) => {
           }
           for (const [ym, v] of monthlyAgg) {
             sales[ym] = v.saleAmount;
-            stockValue[ym] = v.totalStockAmount;
           }
         } catch (e: any) {
           console.warn("[supplier-monthly-breakdown] stock_history 실패:", e?.message);
+        }
+      })(),
+      // 실재고액 · 사용자 요청 (2026-08-09) · 실재고(창고1+2+매장1+2+3) × 매입단가 합계
+      //   1) products where supplier=X → product_codes
+      //   2) inventory_checks · 각 product 최근 1건 · 5개 컬럼 합
+      //   3) purchase_details · 각 product 최근 unit_price
+      //   4) 상품별 · qty × unit_price · 합계
+      //   현재 값 · 월별 스냅샷 아님 · 각 월 컬럼에 동일값 표시 (프론트에서 처리)
+      (async () => {
+        try {
+          // 1) supplier 의 product_codes 수집
+          const productCodes: string[] = [];
+          const PPAGE = 1000;
+          let pfrom = 0;
+          while (true) {
+            const { data } = await supabase
+              .from("products")
+              .select("product_code")
+              .eq("supplier", supplier)
+              .range(pfrom, pfrom + PPAGE - 1);
+            if (!data || data.length === 0) break;
+            for (const p of data) {
+              const pc = String(p.product_code ?? "").trim();
+              if (pc) productCodes.push(pc);
+            }
+            if (data.length < PPAGE) break;
+            pfrom += PPAGE;
+          }
+          if (productCodes.length === 0) return;
+
+          // 2) inventory_checks · 각 product 최근 1건 · 청킹 IN
+          const invMap = new Map<string, { qty: number }>();
+          const CHUNK = 500;
+          for (let i = 0; i < productCodes.length; i += CHUNK) {
+            const chunk = productCodes.slice(i, i + CHUNK);
+            const { data } = await supabase
+              .from("inventory_checks")
+              .select("product_code, warehouse1_stock, warehouse2_stock, warehouse_stock, store_stock, store_stock_2, store3_stock, checked_at")
+              .in("product_code", chunk)
+              .order("checked_at", { ascending: false });
+            for (const r of data ?? []) {
+              const code = String(r.product_code ?? "").trim();
+              if (!code || invMap.has(code)) continue; // 최근 것만
+              const w1 = Number(r.warehouse1_stock ?? r.warehouse_stock ?? 0) || 0;
+              const w2 = Number(r.warehouse2_stock ?? 0) || 0;
+              const s1 = Number(r.store_stock ?? 0) || 0;
+              const s2 = Number(r.store_stock_2 ?? 0) || 0;
+              const s3 = Number(r.store3_stock ?? 0) || 0;
+              invMap.set(code, { qty: w1 + w2 + s1 + s2 + s3 });
+            }
+          }
+
+          // 3) purchase_details · 각 product 최근 unit_price · 청킹 IN
+          const priceMap = new Map<string, number>();
+          for (let i = 0; i < productCodes.length; i += CHUNK) {
+            const chunk = productCodes.slice(i, i + CHUNK);
+            const { data } = await supabase
+              .from("purchase_details")
+              .select("product_code, unit_price, purchase_date")
+              .in("product_code", chunk)
+              .order("purchase_date", { ascending: false });
+            for (const r of data ?? []) {
+              const code = String(r.product_code ?? "").trim();
+              if (!code || priceMap.has(code)) continue;
+              const price = Number(r.unit_price) || 0;
+              if (price > 0) priceMap.set(code, price);
+            }
+          }
+
+          // 4) 합계 계산
+          let total = 0;
+          for (const code of productCodes) {
+            const inv = invMap.get(code);
+            const price = priceMap.get(code);
+            if (!inv || inv.qty <= 0 || !price) continue;
+            total += inv.qty * price;
+          }
+          stockValueCurrent = total;
+        } catch (e: any) {
+          console.warn("[supplier-monthly-breakdown] 실재고액 계산 실패:", e?.message);
         }
       })(),
     ]);
@@ -1200,7 +1277,8 @@ router.get("/api/supplier-monthly-breakdown", async (req, res) => {
       payments: sum(payments),
       balance: sum(purchases) - sum(payments),
       sales: sum(sales),
-      stockValue: sum(stockValue),
+      // 실재고액 · stockValueCurrent (현재 값 · 월별 스냅샷 아님 · 사용자 명시)
+      stockValue: stockValueCurrent,
     };
 
     return res.json({
@@ -1210,6 +1288,7 @@ router.get("/api/supplier-monthly-breakdown", async (req, res) => {
       payments,
       sales,
       stockValue,
+      stockValueCurrent,
       totals,
     });
   } catch (err: any) {

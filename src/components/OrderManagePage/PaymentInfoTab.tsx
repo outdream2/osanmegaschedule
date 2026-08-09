@@ -99,12 +99,14 @@ interface MonthlyBreakdown {
 
 // 2026-08-09 · 판매/실재고 월별 breakdown · 7행 표 아래쪽 3행 (판매정보)
 //   /api/supplier-monthly-breakdown 응답 · stock_history 소스
+//   실재고액: stockValueCurrent (현재값 · 실재고 × 매입단가 합계 · 월별 스냅샷 아님)
 interface SalesStockBreakdown {
   months: string[];                       // 오래된순
   purchases: Record<string, number>;     // 매입 (동일 데이터 · 표 아래쪽 재사용)
   payments: Record<string, number>;      // 결제
   sales: Record<string, number>;         // 판매액 (프록시)
-  stockValue: Record<string, number>;   // 실재고액
+  stockValue: Record<string, number>;   // (deprecated · 하위호환) 월별 실재고
+  stockValueCurrent: number;             // 현재 실재고액 · 실재고 × 매입단가 합계
   totals: {
     purchases: number;
     payments: number;
@@ -1225,15 +1227,19 @@ export const PaymentInfoTab: React.FC = () => {
                             <td className="px-2 py-1.5 text-right font-black text-indigo-800 border-l border-slate-200 bg-slate-50/40">{fmt(totals.sales)}</td>
                           </tr>
                           <tr className="bg-white">
-                            <td className="px-2 py-1.5 font-black text-teal-700 whitespace-nowrap">
+                            <td className="px-2 py-1.5 font-black text-rose-700 whitespace-nowrap">
                               <span className="inline-flex items-center gap-1"><Layers size={11} />실재고액</span>
                             </td>
+                            {/* 2026-08-09 · 사용자 지시 · 실재고액 = 실재고 × 매입단가 합계 (현재값 · 붉은색 톤)
+                                월별 스냅샷 아님 · 각 월 컬럼 dash · 합계 컬럼에 현재값 표시 */}
                             {months.map(k => (
-                              <td key={k} className={`px-2 py-1.5 text-right font-black ${(stockMap[k] ?? 0) === 0 ? "text-slate-300" : "text-teal-800"}`}>
-                                {fmt(stockMap[k] ?? 0)}
-                              </td>
+                              <td key={k} className="px-2 py-1.5 text-right text-slate-300">-</td>
                             ))}
-                            <td className="px-2 py-1.5 text-right font-black text-teal-800 border-l border-slate-200 bg-slate-50/40">{fmt(totals.stockValue)}</td>
+                            <td className={`px-2 py-1.5 text-right font-black border-l border-slate-200 bg-rose-50/60 ${
+                              totals.stockValue > 0 ? "text-rose-700" : "text-slate-400"
+                            }`}>
+                              {totals.stockValue === 0 ? "-" : fmtWonShort(totals.stockValue)}
+                            </td>
                           </tr>
                         </tbody>
                       </table>
