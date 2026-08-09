@@ -2471,8 +2471,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             </div>
             {/* 액션 버튼 */}
             <div className="flex items-center gap-1.5 ml-auto">
+              {/* 2026-08-09 · 사용자 요청 · 붉은 파스텔톤 (기존 indigo → 소프트 rose) */}
               <button onClick={handleBulkOrder} disabled={sendingBulk || selectedOrder.size === 0}
-                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[13px] font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer shrink-0 whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[13px] font-black text-rose-800 bg-rose-100 border border-rose-300 hover:bg-rose-200 hover:border-rose-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer shrink-0 whitespace-nowrap"
                 title="선택한 발주요청을 공급사별로 그룹핑 후 이메일/문자 발송">
                 {sendingBulk ? <Loader2 size={12} strokeWidth={2.5} className="animate-spin" /> : <Send size={12} strokeWidth={2.5} />}
                 <span>{sendingBulk ? "발송 중" : `일괄 발주${selectedOrder.size > 0 ? ` (${selectedOrder.size})` : ""}`}</span>
@@ -2747,10 +2748,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         </>
                       )}
                       <td className="text-center px-1 py-1.5 align-top">
+                        {/* 2026-08-09 · 사용자 요청 · 붉은 파스텔톤 (기존 rose-500 진한톤 → 소프트) */}
                         <button
                           onClick={() => handleSingleOrder(r)}
                           disabled={sendingBulk}
-                          className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[11px] font-semibold text-white bg-rose-500 hover:bg-rose-600 border border-rose-600 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[11px] font-black text-rose-800 bg-rose-100 border border-rose-300 hover:bg-rose-200 hover:border-rose-400 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                           title="이 상품만 개별 발주"
                         >
                           <Send size={10} />발주

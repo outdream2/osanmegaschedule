@@ -18,6 +18,7 @@ import {
   Search,
   Loader2,
   LayoutGrid,
+  Building2,
 } from "lucide-react";
 import {
   SquaresFour,
@@ -1378,6 +1379,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">방문예약</div>
                     <div className="text-slate-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">상담 및 방문 일정을 간편하게 예약</div>
+                  </div>
+                </button>
+                {/* 2026-08-09 · 사용자 요청 · 공급사등록 카드 · 클릭 시 경영관리 > 공급사관리 서브탭 열기 */}
+                <button
+                  onClick={() => {
+                    try { sessionStorage.setItem("bmInitialSubTab", "vendor-manage"); } catch { /* silent */ }
+                    onNavigate("business-manage", authSession!);
+                  }}
+                  className="group relative bg-white border border-slate-200/80 hover:border-sky-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(186,230,253,0.5) 0%, transparent 60%)" }} />
+                  <div className="relative">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #e0f2fe, #bae6fd)", border: "1px solid #7dd3fc" }}>
+                      <Building2 size={16} className="text-sky-600 sm:hidden" /><Building2 size={20} className="text-sky-600 hidden sm:block" />
+                    </div>
+                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">공급사등록</div>
+                    <div className="text-slate-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">공급사 정보 조회·수정·신규 등록</div>
                   </div>
                 </button>
               </div>

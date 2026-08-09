@@ -4,7 +4,7 @@
 //   서브탭: 직원관리 · 연차승인 · 점심불참 · 직원권한 (DisplayPage 서브탭 스타일 벤치마크)
 //   각 서브탭 · 기존 페이지 임베드 (embedded prop 전달 → 자체 AppNavHeader skip)
 import React, { Suspense, useCallback, useEffect, useState } from "react";
-import { UserGear, CalendarDots, ForkKnife, FileText, NotePencil, type Icon as PhIcon } from "@phosphor-icons/react";
+import { UserGear, CalendarDots, ForkKnife, FileText, NotePencil, Storefront, type Icon as PhIcon } from "@phosphor-icons/react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { LunchPage } from "../LunchPage/LunchPage";
 import { useSortableTabs } from "../../hooks/useSortableTabs";
@@ -20,6 +20,8 @@ const HrFormsPage = React.lazy(() => import("../HrFormsPage/HrFormsPage"));
 const DocumentWriterPage = React.lazy(() => import("../DocumentWriterPage/DocumentWriterPage"));
 // 2026-08-03 · #180 · 승인대기 wrapper (연차승인 · 사직서승인 2탭 · pending 배지)
 const ApprovalCenterPage = React.lazy(() => import("../ApprovalCenterPage/ApprovalCenterPage"));
+// 2026-08-09 · 사용자 요청 · 경영관리에 공급사관리 탭 추가 · 기존 VendorListEditor 임베드
+const VendorListEditor = React.lazy(() => import("../LandingPage/VendorListEditor").then(m => ({ default: m.VendorListEditor })));
 
 interface BusinessManagePageProps {
   onBack: () => void;
@@ -29,7 +31,8 @@ interface BusinessManagePageProps {
 }
 
 // 2026-08-03 · "leave" 는 하위 호환 · 실제 렌더는 "approval-center" 로 리다이렉트
-type BmSubTab = "staff-manage" | "approval-center" | "lunch" | "hr-forms" | "document-writer";
+// 2026-08-09 · "vendor-manage" 추가 · 공급사관리 (기존 VendorListEditor 임베드)
+type BmSubTab = "staff-manage" | "approval-center" | "lunch" | "hr-forms" | "document-writer" | "vendor-manage";
 
 // 색상 · 공통 TabBar 프리셋 (COLOR_MAP · TabBar.tsx 내부)
 type TabColor = "sky" | "amber" | "violet" | "teal" | "indigo" | "rose" | "emerald" | "orange" | "slate";
@@ -49,6 +52,8 @@ const TABS: TabDef[] = [
   { key: "lunch",            label: "점심불참",  icon: ForkKnife,      color: "orange"  },
   { key: "hr-forms",         label: "각종양식",  icon: FileText,       color: "amber"   },
   { key: "document-writer",  label: "서류작성",  icon: NotePencil,     color: "indigo"  },
+  // 2026-08-09 · 사용자 요청 · 공급사관리 (기존 공급사정보조회관리 · VendorListEditor)
+  { key: "vendor-manage",    label: "공급사관리", icon: Storefront,    color: "sky"     },
 ];
 
 const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
@@ -67,12 +72,22 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
   // 2026-08-03 · 페이지 진입(마운트) 시 · 서브탭 · 재정렬된 순서의 첫 탭으로 리셋
   //   · 사용자 요청 (모든 메뉴 진입 시 · 첫 서브탭 기본 표시)
   //   · localStorage 순서 반영 후 첫 원소 · 마운트 1회
+  //   · 2026-08-09 · sessionStorage("bmInitialSubTab") 있으면 · 그 서브탭으로 진입 (LandingPage 공급사등록 카드용)
   useEffect(() => {
-    const firstKey = sortable.tabs[0]?.key as BmSubTab | undefined;
-    // 하위 호환 · 이전 저장값 "leave" → "approval-center" 로 자동 리다이렉트
-    const mapped: BmSubTab | undefined =
-      (firstKey as unknown as string) === "leave" ? "approval-center" : firstKey;
-    if (mapped) setSubTab(mapped);
+    let initial: BmSubTab | undefined;
+    try {
+      const req = sessionStorage.getItem("bmInitialSubTab") as BmSubTab | null;
+      if (req) {
+        sessionStorage.removeItem("bmInitialSubTab");
+        // 유효한 키인지 확인
+        if (TABS.some(t => t.key === req)) initial = req;
+      }
+    } catch { /* silent */ }
+    if (!initial) {
+      const firstKey = sortable.tabs[0]?.key as BmSubTab | undefined;
+      initial = (firstKey as unknown as string) === "leave" ? "approval-center" : firstKey;
+    }
+    if (initial) setSubTab(initial);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -175,6 +190,13 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
         {subTab === "document-writer" && (
           <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 py-16">서류작성 로딩 중...</div>}>
             <DocumentWriterPage {...commonSubPageProps} />
+          </Suspense>
+        )}
+        {subTab === "vendor-manage" && (
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 py-16">공급사관리 로딩 중...</div>}>
+            <div className="flex-1 min-h-0 overflow-hidden p-3">
+              <VendorListEditor mode="dashboard" />
+            </div>
           </Suspense>
         )}
       </main>
