@@ -41,6 +41,7 @@ import {
   Info,
   BarChart2,
   Wallet,
+  Building2,
 } from "lucide-react";
 import { BarcodeScanner } from "../BarcodeScanner";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
@@ -56,6 +57,8 @@ import { DisplayRequestPanel } from "./DisplayRequestPanel";
 import { StockArrivalPage } from "../StockArrivalPage/StockArrivalPage";
 import { OcrPage } from "../OcrPage";
 import OrderManagePage from "../OrderManagePage/OrderManagePage";
+// 2026-08-09 · 사용자 요청 · 공급사관리 서브탭 (경영관리에서 이동)
+const VendorListEditor = React.lazy(() => import("../LandingPage/VendorListEditor").then(m => ({ default: m.VendorListEditor })));
 // 2026-08-03 (#183) · 공통 탭바 컴포넌트 · duplicate 스타일 흡수
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 // 2026-08-05 · 관리자(level>=8) long-press 드래그 재정렬 · localStorage 순서 저장
@@ -66,7 +69,7 @@ import { useResizablePanel } from "../../hooks/useResizablePanel";
 import type { AuthSession } from "../../types";
 
 // ── DisplayPage 서브탭 (level 2) 정의 · 상수 · 컴포넌트 외부 배치 (참조 안정성 · 훅 재등록 방지) ──
-type DpSubTabKey = "purchase-order" | "purchase" | "payment" | "statistics" | "stock-arrivals" | "store";
+type DpSubTabKey = "purchase-order" | "purchase" | "payment" | "statistics" | "stock-arrivals" | "store" | "vendor-manage";
 const DP_SUBTAB_DEFAULTS: CommonTabDef<DpSubTabKey>[] = [
   { key: "purchase-order", label: "발주",       icon: ClipboardList, color: "sky"    },
   { key: "purchase",       label: "매입",       icon: Package,       color: "amber"  },
@@ -75,6 +78,8 @@ const DP_SUBTAB_DEFAULTS: CommonTabDef<DpSubTabKey>[] = [
   { key: "stock-arrivals", label: "입고알림",   icon: Bell,          color: "orange" },
   // "display-request" 서브탭 제거 · RequestsPage 진열요청 탭으로 통합 (2026-08-05)
   { key: "store",          label: "매장구역도", icon: Store,         color: "violet" },
+  // 2026-08-09 · 사용자 요청 · 공급사관리 (경영관리에서 이동)
+  { key: "vendor-manage",  label: "공급사관리", icon: Building2,     color: "rose"   },
 ];
 
 interface DisplayPageProps {
@@ -295,6 +300,17 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const [dpSubTab, setDpSubTab] = useState<DpSubTabKey>(
     dpCanSeeStockManage ? "purchase-order" : "store"
   );
+  // 2026-08-09 · sessionStorage("dpInitialSubTab") 있으면 · 그 서브탭으로 진입 (LandingPage 공급사등록 카드용)
+  useEffect(() => {
+    try {
+      const req = sessionStorage.getItem("dpInitialSubTab") as DpSubTabKey | null;
+      if (req) {
+        sessionStorage.removeItem("dpInitialSubTab");
+        if (DP_SUBTAB_DEFAULTS.some(t => t.key === req)) setDpSubTab(req);
+      }
+    } catch { /* silent */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // 2026-08-05 · 관리자(level>=8) long-press 드래그 재정렬
   const dpTabSortable = useSortableTabs<CommonTabDef<DpSubTabKey>>(
     "tabOrder.displayPage",
@@ -1386,6 +1402,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           "statistics":     dpCanSeeStockManage,
           "stock-arrivals": dpCanSeeStockArrivals,
           "store":          true,
+          "vendor-manage":  dpCanSeeStockManage, // 2026-08-09 · 관리자만 (재고관리 권한과 동일)
         };
         // sortable.tabs 는 localStorage 순서가 적용된 배열 · 여기서 visible 만 덮어씌움
         const tabs: CommonTabDef<DpSubTabKey>[] = dpTabSortable.tabs.map(t => ({ ...t, visible: visibilityMap[t.key] }));
@@ -1409,6 +1426,13 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             onLogout={onLogout}
             embedded
           />
+        </main>
+      ) : dpSubTab === "vendor-manage" && dpCanSeeStockManage ? (
+        // 2026-08-09 · 사용자 요청 · 공급사관리 · VendorListEditor 임베드
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-3">
+          <React.Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 py-16">공급사관리 로딩 중...</div>}>
+            <VendorListEditor mode="dashboard" />
+          </React.Suspense>
         </main>
       ) : (dpSubTab === "purchase-order" || dpSubTab === "purchase" || dpSubTab === "payment" || dpSubTab === "statistics") && dpCanSeeStockManage ? (
         // 2026-08-03 · 4개 서브탭 각각 OrderManagePage · initialTopTab prop 만 · re-mount 없이 useEffect 로 감지
