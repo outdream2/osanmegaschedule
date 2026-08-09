@@ -52,10 +52,9 @@ html, body {
 
 /* ── 전역 폰트 스케일 ────────────────────────────────────
  * 2026-07-28 · 사용자 재요청 · 폰트 대폭 상향 (17/19 → 19/22)
- * 모바일 (< 640px) · 19px
- * 데스크탑 (>= 640px) · 22px · 가독성 강화 */
-html { font-size: 19px !important; }
-@media (min-width: 640px) { html { font-size: 22px !important; } }
+ * 2026-08-09 · +1 상향 · 19/22 → 20/23 (사용자 요청) */
+html { font-size: 20px !important; }
+@media (min-width: 640px) { html { font-size: 23px !important; } }
 
 /* 2026-07-29 · 사용자 요청 · 모든 텍스트 input 한글 입력 기본 (IME 활성)
  * ime-mode 는 Firefox/구형 브라우저에서만 작동 · Chromium 은 OS 설정 우선
@@ -68,13 +67,14 @@ textarea {
   ime-mode: active;
 }
 
-/* Tailwind 표준 text-* 클래스도 명시적 상향 (rem 기반이지만 확실히 반영) */
-.text-xs   { font-size: 0.85rem !important; }  /* 기존 · 0.75rem */
-.text-sm   { font-size: 1rem !important; }     /* 기존 · 0.875rem */
-.text-base { font-size: 1.125rem !important; } /* 기존 · 1rem */
-.text-lg   { font-size: 1.25rem !important; }  /* 기존 · 1.125rem */
-.text-xl   { font-size: 1.4rem !important; }   /* 기존 · 1.25rem */
-.text-2xl  { font-size: 1.6rem !important; }   /* 기존 · 1.5rem */
+/* Tailwind 표준 text-* 클래스도 명시적 상향 (rem 기반이지만 확실히 반영)
+ * 2026-08-09 · +1 상향 · 각 rem 값 조정 */
+.text-xs   { font-size: 0.9rem !important; }   /* 기존 · 0.85rem */
+.text-sm   { font-size: 1.05rem !important; }  /* 기존 · 1rem */
+.text-base { font-size: 1.18rem !important; }  /* 기존 · 1.125rem */
+.text-lg   { font-size: 1.3rem !important; }   /* 기존 · 1.25rem */
+.text-xl   { font-size: 1.45rem !important; }  /* 기존 · 1.4rem */
+.text-2xl  { font-size: 1.65rem !important; }  /* 기존 · 1.6rem */
 
 /* 2026-07-24 · 스크롤 문제 완전 해결 · 모든 오버플로 제약 제거
  *  이전 오래된 overflow-x:hidden · overscroll-behavior:none 이 세로 스크롤 막던 문제
@@ -85,16 +85,17 @@ html, body {
 }
 #root { min-height: 100vh; }
 
-/* Tailwind 임의값(arbitrary) 픽셀 사이즈 · 대폭 상향 (2026-07-28 사용자 재요청) */
-[class*="text-\\[8px\\]"]  { font-size: 13px !important; }
-[class*="text-\\[9px\\]"]  { font-size: 14px !important; }
-[class*="text-\\[10px\\]"] { font-size: 15px !important; }
-[class*="text-\\[11px\\]"] { font-size: 16px !important; }
-[class*="text-\\[12px\\]"] { font-size: 17px !important; }
-[class*="text-\\[13px\\]"] { font-size: 18px !important; }
-[class*="text-\\[14px\\]"] { font-size: 19px !important; }
-[class*="text-\\[15px\\]"] { font-size: 20px !important; }
-[class*="text-\\[16px\\]"] { font-size: 21px !important; }
+/* Tailwind 임의값(arbitrary) 픽셀 사이즈 · 대폭 상향 (2026-07-28 사용자 재요청)
+ * 2026-08-09 · +1 상향 · 각 픽셀 +1 */
+[class*="text-\\[8px\\]"]  { font-size: 14px !important; }
+[class*="text-\\[9px\\]"]  { font-size: 15px !important; }
+[class*="text-\\[10px\\]"] { font-size: 16px !important; }
+[class*="text-\\[11px\\]"] { font-size: 17px !important; }
+[class*="text-\\[12px\\]"] { font-size: 18px !important; }
+[class*="text-\\[13px\\]"] { font-size: 19px !important; }
+[class*="text-\\[14px\\]"] { font-size: 20px !important; }
+[class*="text-\\[15px\\]"] { font-size: 21px !important; }
+[class*="text-\\[16px\\]"] { font-size: 22px !important; }
 
 /* Custom scrolling classes to styled tables nicely */
 ::-webkit-scrollbar {
