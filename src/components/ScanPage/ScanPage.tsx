@@ -365,8 +365,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     setRows(prev => [newRow, ...prev]);
     setLastAddedKey(newRow.key);
     setSaveStatus("idle");
-    // T-SCAN-1 · 스캔 즉시 상품정보 모달 팝업 (진열요청 진입점)
-    setScanModal(newRow);
+    // 2026-08-09 · 사용자 요청 · 스캔 후 중간 팝업(창고1/2·매장1/2/3) 제거
+    // 기존: setScanModal(newRow) · 스캔 즉시 모달 auto-open
+    // 신규: 우측 리스트에 바로 행 추가만 · 사용자가 필요 시 행 클릭으로 상세 보기
 
     // 기존 실재고 자동 로드 · 신규 컬럼 우선 · 없으면 레거시 fallback
     // 이력 건수/최근 저장 시각도 함께 저장 (덮어쓰기 confirm · 이력 배지에 사용)
