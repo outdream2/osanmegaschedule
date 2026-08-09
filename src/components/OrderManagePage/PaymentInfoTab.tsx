@@ -139,9 +139,9 @@ function loadPeriodPref(): PeriodDays {
 
 // ─── Sort · 좌측 리스트 헤더 정렬 · Task #103 ─────────────────────────────
 //   default · 잔고 desc (많은 순 · Task #101 확장)
-//   name = 공급사명 · balance = 총잔고 · purchase = 총매입 · payment = 총결제
-//   sales = 총판매 · latestPurchaseDate = 최근매입일 (2026-08-09 · 사용자 요청 5컬럼)
-type VendorSortKey = "name" | "balance" | "purchase" | "payment" | "sales" | "latestPurchaseDate";
+//   name = 공급사명 · balance = 총잔고 · payment = 총결제 · sales = 총판매 · stockValue = 총재고자산
+//   2026-08-09 · 사용자 요청 재구성 · 4컬럼 (총재고자산·총판매액·총결제액·총잔고)
+type VendorSortKey = "name" | "balance" | "payment" | "sales" | "stockValue";
 type SortDir = "asc" | "desc";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -335,8 +335,9 @@ export const PaymentInfoTab: React.FC = () => {
   const [paymentByVendor, setPaymentByVendor] = useState<Map<string, number>>(new Map());
   // 2026-08-09 · 최근매입일 · /api/supplier-purchase-summary suppliers[].last_purchase_date (purchase_details)
   const [lastPurchaseDateByVendor, setLastPurchaseDateByVendor] = useState<Map<string, string>>(new Map());
-  // 2026-08-09 · 총판매액 · /api/stock-manage/supplier-purchases (stock_history · 최근 3개월)
+  // 2026-08-09 · 총판매액 + 총재고자산 · /api/stock-manage/supplier-purchases (stock_history · 최근 3개월)
   const [salesByVendor, setSalesByVendor] = useState<Map<string, number>>(new Map());
+  const [stockValueByVendor, setStockValueByVendor] = useState<Map<string, number>>(new Map());
   const [salesLoading, setSalesLoading] = useState(true);
   const [aggregatesLoading, setAggregatesLoading] = useState(false);
 
@@ -532,14 +533,18 @@ export const PaymentInfoTab: React.FC = () => {
         if (!res.ok) { if (!cancelled) setSalesLoading(false); return; }
         const j = await res.json();
         const rows: any[] = Array.isArray(j?.rows) ? j.rows : [];
-        const m = new Map<string, number>();
+        const sMap = new Map<string, number>();
+        const svMap = new Map<string, number>();
         for (const r of rows) {
           const nm = String(r.supplier ?? "").trim();
           if (!nm) continue;
-          const sales = Number(r.saleAmount ?? 0) || 0;
-          m.set(nm, (m.get(nm) ?? 0) + sales);
+          sMap.set(nm, (sMap.get(nm) ?? 0) + (Number(r.saleAmount ?? 0) || 0));
+          svMap.set(nm, (svMap.get(nm) ?? 0) + (Number(r.totalStockAmount ?? 0) || 0));
         }
-        if (!cancelled) setSalesByVendor(m);
+        if (!cancelled) {
+          setSalesByVendor(sMap);
+          setStockValueByVendor(svMap);
+        }
       } catch { /* silent · 실패 시 - 표시 */ }
       finally { if (!cancelled) setSalesLoading(false); }
     })();
@@ -767,7 +772,7 @@ export const PaymentInfoTab: React.FC = () => {
       return true;
     });
     const dirMul = sortDir === "asc" ? 1 : -1;
-    // 2026-08-09 · 5컬럼 정렬 · balance = latestBalance.balance (실시간 · purchase_details 기반)
+    // 2026-08-09 · 4컬럼 재구성 · 총재고자산·총판매액·총결제액·총잔고
     const getBal = (v: any): number => Number(v?.latestBalance?.balance ?? 0);
     return [...filtered].sort((a, b) => {
       let cmp = 0;
@@ -776,24 +781,17 @@ export const PaymentInfoTab: React.FC = () => {
           cmp = a.company_name.localeCompare(b.company_name, "ko"); break;
         case "balance":
           cmp = getBal(a) - getBal(b); break;
-        case "purchase":
-          cmp = (purchaseByVendor.get(a.company_name) ?? 0) - (purchaseByVendor.get(b.company_name) ?? 0); break;
         case "payment":
           cmp = (paymentByVendor.get(a.company_name) ?? 0) - (paymentByVendor.get(b.company_name) ?? 0); break;
         case "sales":
           cmp = (salesByVendor.get(a.company_name) ?? 0) - (salesByVendor.get(b.company_name) ?? 0); break;
-        case "latestPurchaseDate": {
-          const da = lastPurchaseDateByVendor.get(a.company_name) ?? "";
-          const db = lastPurchaseDateByVendor.get(b.company_name) ?? "";
-          cmp = da.localeCompare(db);
-          break;
-        }
+        case "stockValue":
+          cmp = (stockValueByVendor.get(a.company_name) ?? 0) - (stockValueByVendor.get(b.company_name) ?? 0); break;
       }
-      // 동값 tiebreaker · 공급사명 asc (안정 정렬 · 시각적 일관성)
       if (cmp === 0) return a.company_name.localeCompare(b.company_name, "ko");
       return cmp * dirMul;
     });
-  }, [vendors, vendorSearch, vendorCategoryFilter, sortKey, sortDir, purchaseByVendor, paymentByVendor, salesByVendor, lastPurchaseDateByVendor]);
+  }, [vendors, vendorSearch, vendorCategoryFilter, sortKey, sortDir, paymentByVendor, salesByVendor, stockValueByVendor]);
 
   // ── VAT 자동 계산 (2026-08-06 · null 기본 true · 이름 힌트 반영) ─
   const amountNum = Number(String(amount).replace(/[^0-9]/g, "")) || 0;
@@ -1016,17 +1014,13 @@ export const PaymentInfoTab: React.FC = () => {
             ) : (
               <div className="divide-y divide-slate-50">
                 {filteredVendors.map(v => {
-                  // 2026-08-09 · 5컬럼 · 총매입·총결제·총잔고·총판매·최근매입일
+                  // 2026-08-09 · 4컬럼 재구성 · 총재고자산·총판매액·총결제액·총잔고
                   const lb = (v as any).latestBalance as { balance: number; total_purchase?: number; total_payment?: number; invoice_date?: string | null } | null | undefined;
                   const bal = Number(lb?.balance ?? 0);
                   const hasBal = lb != null && bal !== 0;
-                  const purAmt = purchaseByVendor.get(v.company_name) ?? 0;
                   const payAmt = paymentByVendor.get(v.company_name) ?? 0;
                   const salesAmt = salesByVendor.get(v.company_name) ?? 0;
-                  const lastPurchaseDate = lastPurchaseDateByVendor.get(v.company_name) ?? "";
-                  const lastPurchaseDateShort = lastPurchaseDate && /^\d{4}-\d{2}-\d{2}$/.test(lastPurchaseDate)
-                    ? lastPurchaseDate.slice(5)
-                    : "";
+                  const stockAmt = stockValueByVendor.get(v.company_name) ?? 0;
                   return (
                     <button
                       key={v.id}
@@ -1055,13 +1049,18 @@ export const PaymentInfoTab: React.FC = () => {
                       }`}>
                         {v.company_name}
                       </span>
-                      {/* 2026-08-09 · 5컬럼 순서 (사용자 최종 요청) · 총매입·총결제·총잔고·총판매·최근매입일 */}
-                      <span className={`w-[54px] text-right text-[11px] font-black tabular-nums shrink-0 ${
-                        purAmt > 0 ? "text-emerald-700" : "text-slate-300"
-                      }`} title={purAmt > 0 ? `최근 ${periodDays}일 총매입 ${purAmt.toLocaleString()}원` : "매입 없음"}>
-                        {purAmt > 0 ? fmtWonShort(purAmt) : "-"}
+                      {/* 2026-08-09 · 4컬럼 재구성 (사용자 요청) · 총재고자산·총판매액·총결제액·총잔고 */}
+                      <span className={`w-[62px] text-right text-[11px] font-black tabular-nums shrink-0 ${
+                        stockAmt > 0 ? "text-teal-700" : "text-slate-300"
+                      }`} title={stockAmt > 0 ? `총재고자산 · 최근 3개월 ${stockAmt.toLocaleString()}원` : "재고 없음"}>
+                        {stockAmt > 0 ? fmtWonShort(stockAmt) : "-"}
                       </span>
-                      <span className={`w-[54px] text-right text-[11px] font-black tabular-nums shrink-0 ${
+                      <span className={`w-[58px] text-right text-[11px] font-black tabular-nums shrink-0 ${
+                        salesAmt > 0 ? "text-indigo-700" : "text-slate-300"
+                      }`} title={salesAmt > 0 ? `최근 3개월 총판매 ${salesAmt.toLocaleString()}원` : "판매 없음"}>
+                        {salesAmt > 0 ? fmtWonShort(salesAmt) : "-"}
+                      </span>
+                      <span className={`w-[58px] text-right text-[11px] font-black tabular-nums shrink-0 ${
                         payAmt > 0 ? "text-sky-700" : "text-slate-300"
                       }`} title={payAmt > 0 ? `최근 ${periodDays}일 총결제 ${payAmt.toLocaleString()}원` : "결제 없음"}>
                         {payAmt > 0 ? fmtWonShort(payAmt) : "-"}
@@ -1072,16 +1071,6 @@ export const PaymentInfoTab: React.FC = () => {
                           : "text-slate-300"
                       }`} title={hasBal ? `${bal > 0 ? "미결제" : "초과결제"} ${Math.abs(bal).toLocaleString()}원` : "잔고 없음"}>
                         {hasBal ? fmtWonShort(Math.abs(bal)) : "-"}
-                      </span>
-                      <span className={`w-[54px] text-right text-[11px] font-black tabular-nums shrink-0 ${
-                        salesAmt > 0 ? "text-indigo-700" : "text-slate-300"
-                      }`} title={salesAmt > 0 ? `최근 3개월 총판매 ${salesAmt.toLocaleString()}원` : "판매 없음"}>
-                        {salesAmt > 0 ? fmtWonShort(salesAmt) : "-"}
-                      </span>
-                      <span className={`w-[52px] text-right text-[10px] font-semibold tabular-nums shrink-0 ${
-                        lastPurchaseDateShort ? "text-teal-700" : "text-slate-300"
-                      }`} title={lastPurchaseDate ? `최근 매입일: ${lastPurchaseDate}` : "매입 이력 없음"}>
-                        {lastPurchaseDateShort || "-"}
                       </span>
                     </button>
                   );
@@ -1191,7 +1180,7 @@ export const PaymentInfoTab: React.FC = () => {
                           </tr>
                           <tr className="bg-white">
                             <td className="px-2 py-1.5 font-black text-amber-700 whitespace-nowrap">
-                              <span className="inline-flex items-center gap-1"><Coins size={11} />잔고</span>
+                              <span className="inline-flex items-center gap-1"><Coins size={11} />실잔고</span>
                             </td>
                             {months.map(k => {
                               const v = balMap[k] ?? 0;
@@ -1867,21 +1856,18 @@ const VendorListHeader: React.FC<{
         </span>
       )}
     </span>
-    {/* 2026-08-09 · 5컬럼 순서 (사용자 최종 요청) · 총매입·총결제·총잔고·총판매·최근매입일 */}
-    <span className="w-[54px] shrink-0">
-      <SortHeaderBtn label="총매입" columnKey="purchase" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-emerald-700" title="선택 기간 내 총매입 · purchase_details · 클릭하여 정렬" />
+    {/* 2026-08-09 · 4컬럼 재구성 (사용자 요청 · 총재고자산·총판매액·총결제액·총잔고) */}
+    <span className="w-[62px] shrink-0">
+      <SortHeaderBtn label="총재고자산" columnKey="stockValue" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-teal-700" title="총재고자산 · stock_history 최근 3개월 · 클릭하여 정렬" />
     </span>
-    <span className="w-[54px] shrink-0">
-      <SortHeaderBtn label="총결제" columnKey="payment" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-sky-700" title="선택 기간 내 총결제 · 클릭하여 정렬" />
+    <span className="w-[58px] shrink-0">
+      <SortHeaderBtn label="총판매액" columnKey="sales" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-indigo-700" title="최근 3개월 총판매 · stock_history · 클릭하여 정렬" />
+    </span>
+    <span className="w-[58px] shrink-0">
+      <SortHeaderBtn label="총결제액" columnKey="payment" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-sky-700" title="선택 기간 내 총결제 · supplier_payments · 클릭하여 정렬" />
     </span>
     <span className="w-[58px] shrink-0">
       <SortHeaderBtn label="총잔고" columnKey="balance" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-amber-700" title="총잔고 (전체 매입-결제) · 클릭하여 정렬" />
-    </span>
-    <span className="w-[54px] shrink-0">
-      <SortHeaderBtn label="총판매" columnKey="sales" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-indigo-700" title="최근 3개월 총판매 · stock_history · 클릭하여 정렬" />
-    </span>
-    <span className="w-[52px] shrink-0">
-      <SortHeaderBtn label="최근매입" columnKey="latestPurchaseDate" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-teal-700" title="최근 매입일 · purchase_details · 클릭하여 정렬" />
     </span>
   </div>
 );
