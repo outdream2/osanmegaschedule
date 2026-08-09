@@ -30,6 +30,7 @@ import { useSortableTable, type Comparator } from "../../hooks/useSortableTable"
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
+import { PeriodSelector, PERIOD_DAYS_PRESET } from "../common/PeriodSelector";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 
@@ -858,31 +859,18 @@ export const PaymentInfoTab: React.FC = () => {
                 </button>
               ))}
             </div>
-            {/* 기간 필터 chip · Task #103 (2026-08-04) · 매입·결제 집계 기간
-                · 선택 시 자동 재조회 (loadAggregates via useEffect on periodDays)
-                · localStorage · megatown_payment_period · 다음 방문 시 복원 */}
-            <div className="flex items-center gap-1 pt-1 border-t border-slate-100">
+            {/* 기간 필터 · 공용 PeriodSelector (2026-08-09) · 매입·결제 집계 기간
+                · localStorage megatown_payment_period 유지 */}
+            <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider shrink-0" title="매입·결제 집계 기간">기간</span>
-              <div className="flex-1 flex items-center gap-0.5">
-                {PERIOD_OPTIONS.map(opt => {
-                  const active = periodDays === opt.days;
-                  return (
-                    <button
-                      key={opt.days}
-                      type="button"
-                      onClick={() => setPeriodDays(opt.days)}
-                      className={`flex-1 h-6 px-1 text-[10px] font-black rounded-md transition cursor-pointer tabular-nums ${
-                        active
-                          ? "bg-sky-500 text-white shadow-sm"
-                          : "bg-slate-50 text-slate-500 border border-slate-200 hover:text-slate-700 hover:border-slate-300"
-                      }`}
-                      title={`최근 ${opt.days}일 매입·결제 집계`}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
-              </div>
+              <PeriodSelector
+                options={PERIOD_DAYS_PRESET}
+                value={periodDays}
+                onChange={(d) => setPeriodDays(d as PeriodDays)}
+                accent="sky"
+                className="flex-1"
+                ariaLabel="매입·결제 집계 기간"
+              />
               {aggregatesLoading && (
                 <Loader2 size={11} className="animate-spin text-sky-400 shrink-0" />
               )}

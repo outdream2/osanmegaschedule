@@ -16,6 +16,7 @@ import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 // 2026-08-04 · 매입이력 공통 리스트 컴포넌트
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
+import { PeriodSelector, PERIOD_MONTHS_PRESET } from "../common/PeriodSelector";
 import { fmtWonCompact } from "../../lib/format";
 
 interface VendorListEditorProps {
@@ -330,24 +331,15 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 {cat}
               </button>
             ))}
-            {/* 기간 조회 chip · 재고자산·판매액 집계 기간 (2026-08-09) */}
-            <div className="ml-auto flex items-center gap-0.5 bg-slate-100 rounded-md p-0.5">
-              {[1, 3, 6, 12].map(m => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setAggregateMonths(m)}
-                  className={`h-5 px-1.5 rounded text-[10px] font-black transition cursor-pointer ${
-                    aggregateMonths === m
-                      ? "bg-teal-500 text-white shadow-sm"
-                      : "text-slate-500 hover:text-slate-700 hover:bg-white"
-                  }`}
-                  title={`재고자산·판매액 · 최근 ${m}개월 집계`}
-                >
-                  {m}M
-                </button>
-              ))}
-            </div>
+            {/* 기간 조회 · 공용 PeriodSelector (2026-08-09) */}
+            <PeriodSelector<number>
+              options={PERIOD_MONTHS_PRESET}
+              value={aggregateMonths}
+              onChange={(v) => setAggregateMonths(v)}
+              accent="teal"
+              className="ml-auto"
+              ariaLabel="재고자산·판매액 집계 기간"
+            />
           </div>
         </div>
       ) : (
