@@ -187,16 +187,21 @@ router.get("/api/vendors", async (req, res) => {
     } catch { /* silent */ }
 
     // 4) 실시간 계산 · enrich
+    //   latestBalance 확장 (2026-08-09) · total_purchase · total_payment 추가
+    //   프론트에서 5컬럼 (총매입·총결제·총잔고·총판매·최근매입일) 표시 위해
     const nowIso = new Date().toISOString();
     const enriched = (data ?? []).map((v: any) => {
       const p = purchaseMap.get(v.company_name);
       const paymentSum = paymentMap.get(v.company_name) ?? 0;
-      const hasAnyData = (p?.total ?? 0) > 0 || paymentSum > 0;
-      const balance = (p?.total ?? 0) - paymentSum;
+      const purchaseSum = p?.total ?? 0;
+      const hasAnyData = purchaseSum > 0 || paymentSum > 0;
+      const balance = purchaseSum - paymentSum;
       return {
         ...v,
         latestBalance: hasAnyData ? {
           balance,
+          total_purchase: purchaseSum,
+          total_payment: paymentSum,
           invoice_date: p?.latestDate ?? null,
           created_at: nowIso,
         } : null,

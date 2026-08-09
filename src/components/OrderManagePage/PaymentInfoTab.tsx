@@ -122,10 +122,9 @@ function loadPeriodPref(): PeriodDays {
 
 // ─── Sort · 좌측 리스트 헤더 정렬 · Task #103 ─────────────────────────────
 //   default · 잔고 desc (많은 순 · Task #101 확장)
-//   name = 공급사명 · balance = 잔고 · purchase = 매입 · payment = 결제
-//   T-TEST-공급사리스트-최근결제 (2026-08-06) · 최근결제일·최근결제액 추가
-//   latestPaymentDate = 최근결제일 · latestPaymentAmount = 최근결제액
-type VendorSortKey = "name" | "balance" | "purchase" | "payment" | "latestPaymentDate" | "latestPaymentAmount";
+//   name = 공급사명 · balance = 총잔고 · purchase = 총매입 · payment = 총결제
+//   sales = 총판매 · latestPurchaseDate = 최근매입일 (2026-08-09 · 사용자 요청 5컬럼)
+type VendorSortKey = "name" | "balance" | "purchase" | "payment" | "sales" | "latestPurchaseDate";
 type SortDir = "asc" | "desc";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -317,11 +316,13 @@ export const PaymentInfoTab: React.FC = () => {
   //   벤더명 (company_name) → 금액 · 매칭 실패 시 0
   const [purchaseByVendor, setPurchaseByVendor] = useState<Map<string, number>>(new Map());
   const [paymentByVendor, setPaymentByVendor] = useState<Map<string, number>>(new Map());
+  // 2026-08-09 · 최근매입일 · /api/supplier-purchase-summary suppliers[].last_purchase_date (purchase_details)
+  const [lastPurchaseDateByVendor, setLastPurchaseDateByVendor] = useState<Map<string, string>>(new Map());
+  // 2026-08-09 · 총판매액 · /api/stock-manage/supplier-purchases (stock_history · 최근 3개월)
+  const [salesByVendor, setSalesByVendor] = useState<Map<string, number>>(new Map());
   const [aggregatesLoading, setAggregatesLoading] = useState(false);
 
-  // T-TEST-공급사리스트-최근결제 (2026-08-06) · 각 공급사 최근 결제 · 리스트 컬럼용
-  //   supplier_name → { date, amount } · /api/supplier-payments/latest-per-supplier (batch)
-  //   period 무관 · 전체 이력 중 최근 1건 · 마운트/결제 등록 시 갱신
+  // T-TEST-공급사리스트-최근결제 (2026-08-06) · 각 공급사 최근 결제 (KPI 상단·모달용)
   const [latestPaymentByVendor, setLatestPaymentByVendor] = useState<Map<string, { date: string; amount: number }>>(new Map());
 
   // 정렬 상태 · Task #103 · default 잔고 desc
@@ -450,6 +451,7 @@ export const PaymentInfoTab: React.FC = () => {
       ]);
       const purMap = new Map<string, number>();
       const payMap = new Map<string, number>();
+      const lastDateMap = new Map<string, string>();
       if (purRes.ok) {
         const j = await purRes.json();
         const list: any[] = Array.isArray(j?.suppliers) ? j.suppliers : [];
@@ -458,6 +460,12 @@ export const PaymentInfoTab: React.FC = () => {
           if (!name) continue;
           const amt = Number(s?.total_amount) || 0;
           purMap.set(name, (purMap.get(name) ?? 0) + amt);
+          // 2026-08-09 · 최근매입일 · supplier-purchase-summary suppliers[].last_purchase_date (purchase_details)
+          const lastDate = String(s?.last_purchase_date ?? "").trim();
+          if (lastDate) {
+            const prev = lastDateMap.get(name) ?? "";
+            if (!prev || lastDate > prev) lastDateMap.set(name, lastDate);
+          }
         }
       }
       if (payRes.ok) {
@@ -472,6 +480,7 @@ export const PaymentInfoTab: React.FC = () => {
       }
       setPurchaseByVendor(purMap);
       setPaymentByVendor(payMap);
+      setLastPurchaseDateByVendor(lastDateMap);
     } catch {
       setPurchaseByVendor(new Map());
       setPaymentByVendor(new Map());
@@ -489,6 +498,29 @@ export const PaymentInfoTab: React.FC = () => {
       window.removeEventListener("supplier-payment-added", reload);
     };
   }, [periodDays, loadAggregates]);
+
+  // 2026-08-09 · 총판매액 로드 · /api/stock-manage/supplier-purchases (stock_history · 최근 3개월)
+  //   supplier 이름 정규화 매칭 (LandingPage VendorListEditor 와 동일 패턴)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/stock-manage/supplier-purchases?months=3&limit=50000`);
+        if (!res.ok) return;
+        const j = await res.json();
+        const rows: any[] = Array.isArray(j?.rows) ? j.rows : [];
+        const m = new Map<string, number>();
+        for (const r of rows) {
+          const nm = String(r.supplier ?? "").trim();
+          if (!nm) continue;
+          const sales = Number(r.saleAmount ?? 0) || 0;
+          m.set(nm, (m.get(nm) ?? 0) + sales);
+        }
+        if (!cancelled) setSalesByVendor(m);
+      } catch { /* silent · 실패 시 - 표시 */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // T-TEST-공급사리스트-최근결제 (2026-08-06) · 최근 결제일·결제액 배치 로드
   //   /api/supplier-payments/latest-per-supplier · 한번에 모든 공급사 최근 결제 fetch
@@ -687,28 +719,25 @@ export const PaymentInfoTab: React.FC = () => {
       return true;
     });
     const dirMul = sortDir === "asc" ? 1 : -1;
+    // 2026-08-09 · 5컬럼 정렬 · balance = latestBalance.balance (실시간 · purchase_details 기반)
+    const getBal = (v: any): number => Number(v?.latestBalance?.balance ?? 0);
     return [...filtered].sort((a, b) => {
       let cmp = 0;
       switch (sortKey) {
         case "name":
           cmp = a.company_name.localeCompare(b.company_name, "ko"); break;
         case "balance":
-          cmp = (Number(a.balance ?? 0)) - (Number(b.balance ?? 0)); break;
+          cmp = getBal(a) - getBal(b); break;
         case "purchase":
           cmp = (purchaseByVendor.get(a.company_name) ?? 0) - (purchaseByVendor.get(b.company_name) ?? 0); break;
         case "payment":
           cmp = (paymentByVendor.get(a.company_name) ?? 0) - (paymentByVendor.get(b.company_name) ?? 0); break;
-        case "latestPaymentDate": {
-          // 날짜 문자열 (YYYY-MM-DD) · localeCompare · 없으면 "" (가장 이전 취급)
-          const da = latestPaymentByVendor.get(a.company_name)?.date ?? "";
-          const db = latestPaymentByVendor.get(b.company_name)?.date ?? "";
+        case "sales":
+          cmp = (salesByVendor.get(a.company_name) ?? 0) - (salesByVendor.get(b.company_name) ?? 0); break;
+        case "latestPurchaseDate": {
+          const da = lastPurchaseDateByVendor.get(a.company_name) ?? "";
+          const db = lastPurchaseDateByVendor.get(b.company_name) ?? "";
           cmp = da.localeCompare(db);
-          break;
-        }
-        case "latestPaymentAmount": {
-          const aa = latestPaymentByVendor.get(a.company_name)?.amount ?? 0;
-          const bb = latestPaymentByVendor.get(b.company_name)?.amount ?? 0;
-          cmp = aa - bb;
           break;
         }
       }
@@ -716,7 +745,7 @@ export const PaymentInfoTab: React.FC = () => {
       if (cmp === 0) return a.company_name.localeCompare(b.company_name, "ko");
       return cmp * dirMul;
     });
-  }, [vendors, vendorSearch, vendorCategoryFilter, sortKey, sortDir, purchaseByVendor, paymentByVendor, latestPaymentByVendor]);
+  }, [vendors, vendorSearch, vendorCategoryFilter, sortKey, sortDir, purchaseByVendor, paymentByVendor, salesByVendor, lastPurchaseDateByVendor]);
 
   // ── VAT 자동 계산 (2026-08-06 · null 기본 true · 이름 힌트 반영) ─
   const amountNum = Number(String(amount).replace(/[^0-9]/g, "")) || 0;
@@ -938,16 +967,16 @@ export const PaymentInfoTab: React.FC = () => {
             ) : (
               <div className="divide-y divide-slate-50">
                 {filteredVendors.map(v => {
-                  const bal = Number(v.balance ?? 0);
-                  const hasBal = v.balance != null && bal !== 0;
+                  // 2026-08-09 · 5컬럼 · 총매입·총결제·총잔고·총판매·최근매입일
+                  const lb = (v as any).latestBalance as { balance: number; total_purchase?: number; total_payment?: number; invoice_date?: string | null } | null | undefined;
+                  const bal = Number(lb?.balance ?? 0);
+                  const hasBal = lb != null && bal !== 0;
                   const purAmt = purchaseByVendor.get(v.company_name) ?? 0;
-                  // payAmt (기간 내 결제) · 2026-08-06 · 사용자 요청 · 표시 제거 · 정렬만 유지
-                  // T-TEST-공급사리스트-최근결제 (2026-08-06) · 최근결제일·최근결제액
-                  const latestPay = latestPaymentByVendor.get(v.company_name);
-                  const latestPayDate = latestPay?.date ?? "";
-                  const latestPayAmount = latestPay?.amount ?? 0;
-                  const latestPayDateShort = latestPayDate && /^\d{4}-\d{2}-\d{2}$/.test(latestPayDate)
-                    ? latestPayDate.slice(5) // "MM-DD"
+                  const payAmt = paymentByVendor.get(v.company_name) ?? 0;
+                  const salesAmt = salesByVendor.get(v.company_name) ?? 0;
+                  const lastPurchaseDate = lastPurchaseDateByVendor.get(v.company_name) ?? "";
+                  const lastPurchaseDateShort = lastPurchaseDate && /^\d{4}-\d{2}-\d{2}$/.test(lastPurchaseDate)
+                    ? lastPurchaseDate.slice(5)
                     : "";
                   return (
                     <button
@@ -977,32 +1006,38 @@ export const PaymentInfoTab: React.FC = () => {
                       }`}>
                         {v.company_name}
                       </span>
-                      {/* 매입 (기간 내) */}
-                      <span className={`w-[52px] text-right text-[11px] font-black tabular-nums shrink-0 ${
+                      {/* 2026-08-09 · 5컬럼 (사용자 요청) · 총매입·총결제·총잔고·총판매·최근매입일 */}
+                      {/* 총매입 (기간 내 · purchase_details) */}
+                      <span className={`w-[54px] text-right text-[11px] font-black tabular-nums shrink-0 ${
                         purAmt > 0 ? "text-emerald-700" : "text-slate-300"
-                      }`} title={purAmt > 0 ? `최근 ${periodDays}일 매입 ${purAmt.toLocaleString()}원` : "매입 없음"}>
+                      }`} title={purAmt > 0 ? `최근 ${periodDays}일 총매입 ${purAmt.toLocaleString()}원` : "매입 없음"}>
                         {purAmt > 0 ? fmtWonShort(purAmt) : "-"}
                       </span>
-                      {/* 기간 내 결제 셀 · 2026-08-06 · 사용자 요청 · 제거 */}
-                      {/* T-TEST-공급사리스트-최근결제 (2026-08-06) · 최근결제일 · MM-DD 축약 */}
-                      <span className={`w-[48px] text-right text-[10px] font-semibold tabular-nums shrink-0 ${
-                        latestPayDateShort ? "text-slate-600" : "text-slate-300"
-                      }`} title={latestPayDate ? `최근 결제일: ${latestPayDate}` : "결제 이력 없음"}>
-                        {latestPayDateShort || "-"}
+                      {/* 총결제 (기간 내 · supplier_payments) */}
+                      <span className={`w-[54px] text-right text-[11px] font-black tabular-nums shrink-0 ${
+                        payAmt > 0 ? "text-sky-700" : "text-slate-300"
+                      }`} title={payAmt > 0 ? `최근 ${periodDays}일 총결제 ${payAmt.toLocaleString()}원` : "결제 없음"}>
+                        {payAmt > 0 ? fmtWonShort(payAmt) : "-"}
                       </span>
-                      {/* T-TEST-공급사리스트-최근결제 (2026-08-06) · 최근결제액 */}
-                      <span className={`w-[56px] text-right text-[11px] font-black tabular-nums shrink-0 ${
-                        latestPayAmount > 0 ? "text-sky-700" : "text-slate-300"
-                      }`} title={latestPayAmount > 0 ? `최근 결제액 ${latestPayAmount.toLocaleString()}원` : "결제 이력 없음"}>
-                        {latestPayAmount > 0 ? fmtWonShort(latestPayAmount) : "-"}
-                      </span>
-                      {/* 잔고 (전체) */}
-                      <span className={`w-[56px] text-right text-[11px] font-black tabular-nums shrink-0 ${
+                      {/* 총잔고 (전체 · purchase_details − supplier_payments) */}
+                      <span className={`w-[58px] text-right text-[11px] font-black tabular-nums shrink-0 ${
                         hasBal
                           ? bal > 0 ? "text-amber-700" : "text-rose-700"
                           : "text-slate-300"
                       }`} title={hasBal ? `${bal > 0 ? "미결제" : "초과결제"} ${Math.abs(bal).toLocaleString()}원` : "잔고 없음"}>
                         {hasBal ? fmtWonShort(Math.abs(bal)) : "-"}
+                      </span>
+                      {/* 총판매 (최근 3개월 · stock_history) */}
+                      <span className={`w-[54px] text-right text-[11px] font-black tabular-nums shrink-0 ${
+                        salesAmt > 0 ? "text-indigo-700" : "text-slate-300"
+                      }`} title={salesAmt > 0 ? `최근 3개월 총판매 ${salesAmt.toLocaleString()}원` : "판매 없음"}>
+                        {salesAmt > 0 ? fmtWonShort(salesAmt) : "-"}
+                      </span>
+                      {/* 최근매입일 · MM-DD · purchase_details.last_purchase_date */}
+                      <span className={`w-[52px] text-right text-[10px] font-semibold tabular-nums shrink-0 ${
+                        lastPurchaseDateShort ? "text-teal-700" : "text-slate-300"
+                      }`} title={lastPurchaseDate ? `최근 매입일: ${lastPurchaseDate}` : "매입 이력 없음"}>
+                        {lastPurchaseDateShort || "-"}
                       </span>
                     </button>
                   );
@@ -1736,22 +1771,26 @@ const VendorListHeader: React.FC<{
     <span className="flex-1 min-w-0">
       <SortHeaderBtn label={`공급사 (${count})`} columnKey="name" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="left" />
     </span>
-    {/* 매입 (기간 내) */}
+    {/* 2026-08-09 · 5컬럼 (사용자 요청) · 총매입·총결제·총잔고·총판매·최근매입일 */}
+    {/* 총매입 (기간 내) · purchase_details */}
+    <span className="w-[54px] shrink-0">
+      <SortHeaderBtn label="총매입" columnKey="purchase" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-emerald-700" title="선택 기간 내 총매입 · purchase_details · 클릭하여 정렬" />
+    </span>
+    {/* 총결제 (기간 내) · supplier_payments */}
+    <span className="w-[54px] shrink-0">
+      <SortHeaderBtn label="총결제" columnKey="payment" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-sky-700" title="선택 기간 내 총결제 · 클릭하여 정렬" />
+    </span>
+    {/* 총잔고 (전체 · latestBalance · purchase_details − supplier_payments) */}
+    <span className="w-[58px] shrink-0">
+      <SortHeaderBtn label="총잔고" columnKey="balance" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-amber-700" title="총잔고 (전체 매입-결제) · 클릭하여 정렬" />
+    </span>
+    {/* 총판매 (최근 3개월 · stock_history) */}
+    <span className="w-[54px] shrink-0">
+      <SortHeaderBtn label="총판매" columnKey="sales" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-indigo-700" title="최근 3개월 총판매 · stock_history · 클릭하여 정렬" />
+    </span>
+    {/* 최근매입일 · purchase_details.last_purchase_date */}
     <span className="w-[52px] shrink-0">
-      <SortHeaderBtn label="매입" columnKey="purchase" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-emerald-700" title="선택 기간 내 매입 합계 · 클릭하여 정렬" />
-    </span>
-    {/* 기간 내 결제 컬럼 · 2026-08-06 · 사용자 요청 · 제거 (최근결제일·결제액이 대체) */}
-    {/* 최근결제일 · T-TEST-공급사리스트-최근결제 (2026-08-06) */}
-    <span className="w-[48px] shrink-0">
-      <SortHeaderBtn label="결제일" columnKey="latestPaymentDate" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-slate-600" title="최근 결제일 · 클릭하여 정렬" />
-    </span>
-    {/* 최근결제액 · T-TEST-공급사리스트-최근결제 (2026-08-06) */}
-    <span className="w-[56px] shrink-0">
-      <SortHeaderBtn label="결제액" columnKey="latestPaymentAmount" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-sky-700" title="최근 결제액 · 클릭하여 정렬" />
-    </span>
-    {/* 잔고 (전체) */}
-    <span className="w-[56px] shrink-0">
-      <SortHeaderBtn label="잔고" columnKey="balance" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-amber-700" title="총 잔고 (미결제 잔액) · 클릭하여 정렬" />
+      <SortHeaderBtn label="최근매입" columnKey="latestPurchaseDate" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-teal-700" title="최근 매입일 · purchase_details · 클릭하여 정렬" />
     </span>
   </div>
 );
