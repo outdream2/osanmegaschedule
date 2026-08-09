@@ -1,6 +1,7 @@
 // 2026-07-28 · 상품 매입 이력 조회 API (사용자 요청)
 //   목적 · 1차보정 상품명 확정 후 · 매입 DB 최근 이력 조회 → raw data 매칭 재료 제공
-//   소스 · ocr_confirmed_items (실제 매입 확정 이력) · 상품별 최근 N건 집계
+//   2026-08-09 · 소스 교체 · ocr_confirmed_items → purchase_details (ERP · 정답 소스)
+//     사용자 원칙: "매입이력은 매입이력만 · OCR fallback 없음"
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 import { fetchAllWithRange } from "../../utils/supabaseFetchAll";
@@ -30,18 +31,18 @@ router.get("/api/products/purchase-history", async (req, res) => {
   const perCodeLimit = Math.max(1, Math.min(50, Number(req.query.limit ?? 5) || 5));
 
   try {
-    // 상품 코드별 최근 이력 · saved_at desc · 각 코드당 perCodeLimit 만큼 필요
+    // 상품 코드별 최근 이력 · purchase_date desc · 각 코드당 perCodeLimit 만큼 필요
     //   Supabase 는 GROUP BY LIMIT 을 SQL 하나로 표현 어려움 · 전체 조회 후 코드별 slice
     // 2026-08-06 · Supabase 1000행 cap 우회 · fetchAllWithRange
+    // 2026-08-09 · 소스 · purchase_details (ERP · 정답 소스)
     let data: any[] = [];
     try {
       data = await fetchAllWithRange<any>(() => supabase
-        .from("ocr_confirmed_items")
-        .select("product_code, quantity, unit_price, invoice_date, saved_at")
+        .from("purchase_details")
+        .select("product_code, quantity, unit_price, purchase_date")
         .in("product_code", codes)
         .not("product_code", "is", null)
-        .order("invoice_date", { ascending: false, nullsFirst: false })
-        .order("saved_at", { ascending: false }), codes.length * perCodeLimit * 3);
+        .order("purchase_date", { ascending: false, nullsFirst: false }), codes.length * perCodeLimit * 3);
     } catch (e: any) {
       console.warn(`[purchase-history] 조회 실패: ${e?.message}`);
       return res.json({ history: {}, note: e?.message });
@@ -60,7 +61,7 @@ router.get("/api/products/purchase-history", async (req, res) => {
       list.push({
         qty,
         price,
-        date: (r as any).invoice_date ?? (r as any).saved_at ?? null,
+        date: (r as any).purchase_date ?? null,
       });
       byCode.set(code, list);
     }

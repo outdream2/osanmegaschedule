@@ -8,6 +8,7 @@
 //   vat_amount·supply_amount 필드 추가 (vendor.vat_included 반영 · row 저장값 있으면 우선)
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
+import { queryPurchaseDetails } from "../../utils/purchaseDetailsQuery";
 
 const router = Router();
 
@@ -338,27 +339,22 @@ router.delete("/api/supplier-payments/:id", async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────
 // GET /api/supplier-balance/:supplier
-//   · 현재 잔액 = SUM(ocr_confirmed_items.amount) - SUM(supplier_payments.amount)
+//   · 현재 잔액 = SUM(purchase_details.amount) - SUM(supplier_payments.amount)
 //   · supplier 는 URL 인코딩된 회사명
+//   · 2026-08-09 · 소스 · ocr_confirmed_items → purchase_details (사용자 원칙)
 // ─────────────────────────────────────────────────────────────────────
 router.get("/api/supplier-balance/:supplier", async (req, res) => {
   try {
     const supplier = decodeURIComponent(req.params.supplier ?? "").trim();
     if (!supplier) return res.status(400).json({ error: "supplier 필수" });
 
-    // 매입 합계 (ocr_confirmed_items · supplier column)
-    // supabase-js 는 SQL aggregate 를 count 외 직접 미지원 · 조회 후 서버 합산
-    // (규모 소~중 · 페이지네이션 없이 amount·id 만 select · <10ms 예상)
+    // 매입 합계 (purchase_details · queryPurchaseDetails 헬퍼 · NULL supplier fallback 포함)
     let totalPurchase = 0;
     let purchaseCount = 0;
     {
-      const { data, error } = await supabase
-        .from("ocr_confirmed_items")
-        .select("id, amount")
-        .eq("supplier", supplier);
-      if (error && !/relation .* does not exist/i.test(error.message)) throw new Error(error.message);
-      for (const r of data ?? []) {
-        totalPurchase += Number(r.amount) || 0;
+      const rows = await queryPurchaseDetails({ supplier });
+      for (const r of rows) {
+        totalPurchase += r.amount;
         purchaseCount++;
       }
     }
@@ -395,8 +391,9 @@ router.get("/api/supplier-balance/:supplier", async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────
 // GET /api/supplier-ledger?supplier=X&days=90
-//   · 매입(ocr_confirmed_items) + 결제(supplier_payments) UNION
+//   · 매입(purchase_details) + 결제(supplier_payments) UNION
 //   · 시간순 asc → running balance 계산
+//   · 2026-08-09 · 소스 · ocr_confirmed_items → purchase_details (사용자 원칙)
 // ─────────────────────────────────────────────────────────────────────
 router.get("/api/supplier-ledger", async (req, res) => {
   try {
@@ -411,40 +408,20 @@ router.get("/api/supplier-ledger", async (req, res) => {
     // 공급사 VAT 설정 (병렬 fetch 는 아래에서 · 여기선 결과만 사용)
     const vatIncludedPromise = fetchVatIncluded(supplier);
 
-    // 매입 (ocr_confirmed_items) · vat_amount·supply_amount 있으면 우선 사용
+    // 매입 (purchase_details · queryPurchaseDetails 헬퍼) · vat_amount·supply_amount 있으면 우선 사용
     const purchases: any[] = [];
     {
-      // 컬럼 없을 수 있음 · 실패 시 vat/supply 제외 재시도
-      let data: any[] | null = null;
-      const r1 = await supabase
-        .from("ocr_confirmed_items")
-        .select("id, invoice_date, saved_at, supplier, product_name, amount, vat_amount, supply_amount")
-        .eq("supplier", supplier)
-        .gte("saved_at", cutoffYmd);
-      if (!r1.error) data = r1.data ?? [];
-      else if (/vat_amount|supply_amount/i.test(r1.error.message)) {
-        const r2 = await supabase
-          .from("ocr_confirmed_items")
-          .select("id, invoice_date, saved_at, supplier, product_name, amount")
-          .eq("supplier", supplier)
-          .gte("saved_at", cutoffYmd);
-        if (!r2.error) data = (r2.data ?? []).map((x: any) => ({ ...x, vat_amount: 0, supply_amount: 0 }));
-        else if (!/relation .* does not exist/i.test(r2.error.message)) throw new Error(r2.error.message);
-      } else if (!/relation .* does not exist/i.test(r1.error.message)) throw new Error(r1.error.message);
-
-      for (const r of data ?? []) {
-        const date = (r.invoice_date && /^\d{4}-\d{2}-\d{2}$/.test(r.invoice_date))
-          ? r.invoice_date
-          : r.saved_at;
+      const rows = await queryPurchaseDetails({ supplier, sinceYmd: cutoffYmd });
+      for (const r of rows) {
         purchases.push({
           type: "purchase",
           id: r.id,
-          date,
-          amount: Number(r.amount) || 0,
-          _raw_vat: Number(r.vat_amount) || 0,
-          _raw_supply: Number(r.supply_amount) || 0,
+          date: r.purchase_date,
+          amount: r.amount,
+          _raw_vat: r.vat_amount,
+          _raw_supply: r.supply_amount,
           method: null,
-          memo: r.product_name ?? null,
+          memo: r.product_name || null,
           allocations: null,
         });
       }
@@ -624,8 +601,8 @@ router.get("/api/supplier-open-invoices", async (req, res) => {
 //   · 반환: [{ supplier, last_purchase_date, this_month_amount, sku_count,
 //              weekly_sparkline: number[12], total_amount, purchase_count,
 //              first_purchase_date, avg_cycle_days }]
-//   · 2026-08-03 · primary 소스 스왑 · purchase_details (ERP 임포트) 우선 · 실패/빈결과 시 ocr_confirmed_items 폴백
-//     기존 응답 shape 유지 · 사용자 요청: "매입이력(ERP)는 매입상세테이블에서 읽어와야지"
+//   · 2026-08-09 · 원칙 확정 · purchase_details 만 · OCR fallback 제거
+//     사용자 요청: "매입이력없으면 ocr로넘어가면 안돼 · 매입이력은 매입이력만"
 // ─────────────────────────────────────────────────────────────────────
 router.get("/api/supplier-purchase-summary", async (req, res) => {
   try {
@@ -796,28 +773,8 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
       console.warn("[supplier-purchase-summary] purchase_details 실패 · fallback:", e?.message);
     }
 
-    // ─── fallback · ocr_confirmed_items (기존 소스 · purchase_details 없거나 비었을 때만) ───
-    if (!pdOk || normRows.length === 0) {
-      const { data, error } = await supabase
-        .from("ocr_confirmed_items")
-        .select("supplier, invoice_date, saved_at, amount, product_code, product_name")
-        .gte("saved_at", cutoffYmd);
-      if (error) {
-        if (/relation .* does not exist/i.test(error.message)) return res.json({ suppliers: [] });
-        throw new Error(error.message);
-      }
-      for (const r of data ?? []) {
-        const supplier = String(r.supplier ?? "").trim();
-        if (!supplier) continue;
-        const date: string = (r.invoice_date && /^\d{4}-\d{2}-\d{2}$/.test(r.invoice_date))
-          ? r.invoice_date
-          : String(r.saved_at ?? "").slice(0, 10);
-        if (!date) continue;
-        const amount = Number(r.amount) || 0;
-        const code = String(r.product_code ?? "").trim();
-        normRows.push({ supplier, date, amount, code });
-      }
-    }
+    // ─── 2026-08-09 · OCR fallback 제거 · purchase_details 만 사용 ───
+    //   사용자 원칙: "매입이력은 매입이력만" · 빈결과여도 OCR로 넘어가지 않음
 
     // 공급사별 집계
     interface Agg {
@@ -907,7 +864,7 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
       suppliers,
       cutoff: cutoffYmd,
       days,
-      source: pdRowCount > 0 ? "purchase_details" : "ocr_confirmed_items",
+      source: "purchase_details",
       diagnostics: {
         pd_ok: pdOk,
         pd_row_count: pdRowCount,
@@ -928,8 +885,8 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
 // GET /api/supplier-purchase-detail?supplier=X&days=365
 //   · 특정 공급사 매입 raw rows (product_code, quantity, unit_price, amount)
 //   · Tab 2 상품별 집계 · Tab 3 매입 추이용 · running_balance 없음
-//   · 2026-08-03 · primary 소스 스왑 · purchase_details (ERP) 우선 · 실패/빈결과 시 ocr_confirmed_items 폴백
-//     기존 응답 shape 유지 · 사용자 요청: "매입이력(ERP)는 매입상세테이블에서 읽어와야지"
+//   · 2026-08-09 · 원칙 확정 · purchase_details 만 사용 · OCR fallback 제거
+//     사용자 요청: "매입이력없으면 ocr로넘어가면 안돼 · 매입이력은 매입이력만"
 // ─────────────────────────────────────────────────────────────────────
 router.get("/api/supplier-purchase-detail", async (req, res) => {
   try {
@@ -944,10 +901,11 @@ router.get("/api/supplier-purchase-detail", async (req, res) => {
     // vendor VAT 설정 (병렬)
     const vatIncludedPromise = fetchVatIncluded(supplier);
 
-    // ─── primary · purchase_details (ERP · 사용자 명시 정답 소스) ─────────
+    // ─── purchase_details (ERP · 사용자 명시 정답 소스 · 유일 소스) ─────────
     //   vat_amount·supply_amount 컬럼 없을 수 있음 · 실패 시 재시도
+    //   2026-08-09 · OCR fallback 제거 (사용자 지시)
     let data: any[] | null = null;
-    let sourceUsed: "purchase_details" | "ocr_confirmed_items" = "purchase_details";
+    const sourceUsed: "purchase_details" = "purchase_details";
     // 2026-08-03 fix · supplier_name NULL 인 매입행 회수 · supplier_code (or note) 로도 조회
     //   2026-08-04 · vendors 에 supplier_code 컬럼 없음 · vendors.note 에 code 저장됨 (숫자 3~5자리)
     //   product_code → products.supplier 도 fallback 으로 추가 (매입이력 ERP 데이터 반드시 로드)
@@ -1089,38 +1047,9 @@ router.get("/api/supplier-purchase-detail", async (req, res) => {
       data = null;
     }
 
-    // ─── fallback · ocr_confirmed_items (기존 소스) ───
-    if (!data || data.length === 0) {
-      sourceUsed = "ocr_confirmed_items";
-      let ocrData: any[] | null = null;
-      const r1 = await supabase
-        .from("ocr_confirmed_items")
-        .select("id, invoice_date, saved_at, product_code, product_name, quantity, unit_price, amount, vat_amount, supply_amount")
-        .eq("supplier", supplier)
-        .gte("saved_at", cutoffYmd);
-      if (!r1.error) ocrData = r1.data ?? [];
-      else if (/vat_amount|supply_amount/i.test(r1.error.message)) {
-        const r2 = await supabase
-          .from("ocr_confirmed_items")
-          .select("id, invoice_date, saved_at, product_code, product_name, quantity, unit_price, amount")
-          .eq("supplier", supplier)
-          .gte("saved_at", cutoffYmd);
-        if (!r2.error) ocrData = (r2.data ?? []).map((x: any) => ({ ...x, vat_amount: 0, supply_amount: 0 }));
-        else if (/relation .* does not exist/i.test(r2.error.message)) ocrData = [];
-        else throw new Error(r2.error.message);
-      } else if (/relation .* does not exist/i.test(r1.error.message)) {
-        ocrData = [];
-      } else {
-        throw new Error(r1.error.message);
-      }
-
-      // purchase_details 에서 결과 없었으면 ocr 결과 사용 (병합 아님 · 회귀 방지)
-      if ((data ?? []).length === 0 && ocrData && ocrData.length > 0) {
-        data = ocrData;
-      } else if (!data) {
-        data = ocrData ?? [];
-      }
-    }
+    // ─── 2026-08-09 · OCR fallback 제거 · purchase_details 만 사용 ───
+    //   사용자 원칙: "매입이력은 매입이력만" · 빈결과여도 OCR로 넘어가지 않음
+    if (!data) data = [];
 
     const vatIncluded = await vatIncludedPromise;
     const rows = (data ?? []).map((r: any) => {

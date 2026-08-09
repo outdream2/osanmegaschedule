@@ -14,6 +14,7 @@ import XLSX from "xlsx";
 import { supabase } from "../../../src/supabase/client";
 import { resolveSeasonMonths } from "../settings/settings";
 import { fetchAllWithRange } from "../../utils/supabaseFetchAll";
+import { queryPurchaseDetails } from "../../utils/purchaseDetailsQuery";
 
 const router = Router();
 
@@ -36,10 +37,12 @@ function daysAgoISO(days: number): string {
 }
 
 // 2026-07-31 · performance QW1 · suppliers·top-products 캐시 (in-memory TTL 5분)
-//   ocr_confirmed_items 50000 limit 풀스캔 · 응답당 대역폭 큼 · 캐시로 반복 요청 감소
+//   purchase_details 풀스캔 · 응답당 대역폭 큼 · 캐시로 반복 요청 감소
+// 2026-08-09 · 소스 · ocr_confirmed_items → purchase_details (사용자 원칙 · 매입이력은 매입이력만)
+//   캐시 이름은 하위호환 위해 유지 · 매입확정 후 이 캐시도 무효화 필요
 const ocrAggCache = new Map<string, { data: any; expiresAt: number }>();
 const OCR_AGG_TTL = 5 * 60 * 1000;
-/** OCR 아이템 저장/삭제 후 캐시 무효화 (ocrConfirmed.ts 에서 호출) */
+/** 매입 아이템 저장/삭제 후 캐시 무효화 (ocrConfirmed.ts · purchase import 에서 호출) */
 export function clearOcrAggCache() { ocrAggCache.clear(); }
 
 // 2026-08-05 · T-PERF-1a · low-stock 캐시 (in-memory TTL 2분)
@@ -51,28 +54,23 @@ export function clearLowStockCache() { lowStockCache = null; }
 
 // GET /api/stock-manage/suppliers?days=7|30|90
 // 공급사별 매입 총액 · 수량 · 상품수
+// 2026-08-09 · 소스 · purchase_details (ERP) · queryPurchaseDetails 헬퍼 사용
+//   OCR fallback 없음 · supplier_name NULL 은 vendors/products 로 fallback 해결
 router.get("/api/stock-manage/suppliers", async (req, res) => {
   const days = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "7"), 10) || 7));
-  const since = daysAgoISO(days);
+  const sinceYmd = daysAgoISO(days).slice(0, 10);
   const cacheKey = `suppliers::${days}`;
   const cached = ocrAggCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return res.json(cached.data);
   try {
-    // 2026-08-06 · Supabase 1000행 cap 우회 · fetchAllWithRange loop (사용자 제보 픽스)
-    const data = await fetchAllWithRange<any>(() => supabase
-      .from("ocr_confirmed_items")
-      .select("supplier, product_name, quantity, amount")
-      .gte("saved_at", since)
-      .order("saved_at", { ascending: false }), 50000);
+    const rows = await queryPurchaseDetails({ sinceYmd });
     const map = new Map<string, { supplier: string; purchaseAmount: number; purchaseQty: number; items: Set<string> }>();
-    for (const r of data ?? []) {
-      const sup = (r.supplier ?? "").trim();
-      if (!sup) continue;
-      const cur = map.get(sup) ?? { supplier: sup, purchaseAmount: 0, purchaseQty: 0, items: new Set<string>() };
-      cur.purchaseAmount += Number(r.amount ?? 0) || 0;
-      cur.purchaseQty   += Number(r.quantity ?? 0) || 0;
-      if (r.product_name) cur.items.add(String(r.product_name));
-      map.set(sup, cur);
+    for (const r of rows) {
+      const cur = map.get(r.supplier) ?? { supplier: r.supplier, purchaseAmount: 0, purchaseQty: 0, items: new Set<string>() };
+      cur.purchaseAmount += r.amount;
+      cur.purchaseQty   += r.quantity;
+      if (r.product_name) cur.items.add(r.product_name);
+      map.set(r.supplier, cur);
     }
     const result = [...map.values()]
       .map(x => ({ supplier: x.supplier, purchaseAmount: x.purchaseAmount, purchaseQty: x.purchaseQty, itemCount: x.items.size }))
@@ -86,32 +84,28 @@ router.get("/api/stock-manage/suppliers", async (req, res) => {
 
 // GET /api/stock-manage/top-products?days=7|30|90&limit=100
 // 매입 금액 상위 상품
+// 2026-08-09 · 소스 · purchase_details (ERP) · queryPurchaseDetails 헬퍼 사용
 router.get("/api/stock-manage/top-products", async (req, res) => {
   const days = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "7"), 10) || 7));
   const limit = Math.max(1, Math.min(500, parseInt(String(req.query.limit ?? "100"), 10) || 100));
-  const since = daysAgoISO(days);
+  const sinceYmd = daysAgoISO(days).slice(0, 10);
   const cacheKey = `top-products::${days}::${limit}`;
   const cached = ocrAggCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return res.json(cached.data);
   try {
-    // 2026-08-06 · Supabase 1000행 cap 우회 · fetchAllWithRange
-    const data = await fetchAllWithRange<any>(() => supabase
-      .from("ocr_confirmed_items")
-      .select("product_name, product_code, supplier, quantity, amount")
-      .gte("saved_at", since)
-      .order("saved_at", { ascending: false }), 50000);
+    const rows = await queryPurchaseDetails({ sinceYmd });
     const map = new Map<string, { product_name: string; product_code: string | null; supplier: string | null; totalAmount: number; totalQty: number }>();
-    for (const r of data ?? []) {
-      const key = String(r.product_code ?? r.product_name ?? "").trim();
+    for (const r of rows) {
+      const key = r.product_code || r.product_name;
       if (!key) continue;
       const cur = map.get(key) ?? {
-        product_name: String(r.product_name ?? key),
-        product_code: r.product_code ?? null,
-        supplier: r.supplier ?? null,
+        product_name: r.product_name || key,
+        product_code: r.product_code || null,
+        supplier: r.supplier || null,
         totalAmount: 0, totalQty: 0,
       };
-      cur.totalAmount += Number(r.amount ?? 0) || 0;
-      cur.totalQty   += Number(r.quantity ?? 0) || 0;
+      cur.totalAmount += r.amount;
+      cur.totalQty   += r.quantity;
       map.set(key, cur);
     }
     const result = [...map.values()].sort((a, b) => b.totalAmount - a.totalAmount).slice(0, limit);
