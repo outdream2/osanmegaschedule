@@ -35,6 +35,8 @@ import zoneLabelsRouter from "./server/routes/display/zoneLabels";
 import zoneAssignmentsRouter from "./server/routes/display/zoneAssignments";
 import supplierBalanceConfigRouter from "./server/routes/purchase/supplierBalanceConfig";
 import supplierPaymentsRouter from "./server/routes/purchase/supplierPayments";
+// 2026-08-09 · SolAPI 카카오 알림톡 · credentials 미설정 시 status 만 응답 · 향후 확장 (사용자 승인 후)
+import { handleSolApiStatus } from "./server/lib/notification/solapiClient";
 import ocrConfirmedRouter from "./server/routes/purchase/ocrConfirmed";
 import { ocrDeletedRowsRouter } from "./server/routes/purchase/ocrDeletedRows";
 import boardRouter from "./server/routes/board/board";
@@ -119,6 +121,9 @@ async function startServer() {
   // 공급사 결제·정산 (금전 데이터)
   app.use(supplierPaymentsRouter);
   app.use(supplierBalanceConfigRouter);
+
+  // 2026-08-09 · SolAPI 알림톡 상태 조회 · UI 배너용 (설정 필요 안내)
+  app.get("/api/notification/solapi-status", handleSolApiStatus);
 
   // HR 서류 (근로계약서·사직서 등)
   app.use(hrFormsRouter);

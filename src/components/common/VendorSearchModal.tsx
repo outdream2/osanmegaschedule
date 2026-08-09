@@ -54,12 +54,12 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[9998] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[9998] flex items-center justify-center p-3 bg-slate-900/50 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full sm:max-w-lg max-h-[92vh] bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col"
+        className="w-full max-w-lg max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col"
       >
         {/* 헤더 */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-sky-50/60 to-transparent shrink-0">

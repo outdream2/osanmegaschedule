@@ -41,8 +41,9 @@ import {
 import type { AuthSession, AuthRole } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { TIMING } from "../../constants/timing";
-// 2026-08-09 · 공급사 검색·등록 모달 (거래처용 공급사등록 카드 · 검색 후 조회수정 or 신규등록)
-import { VendorSearchModal } from "../common/VendorSearchModal";
+// 2026-08-09 · 거래처 담당자 로그인 시 · 본인 공급사 조회·수정 · 공통 VendorDetailModal 재사용
+import { VendorDetailModal, type Vendor as VendorFull } from "./VendorListEditor";
+import { useVendors } from "../../hooks/useVendors";
 // VendorListEditor 는 발주관리 공급사관리 에서만 사용 (LandingPage 데이터 업로드 에서 제거됨 · 2026-07-15)
 
 interface LandingPageProps {
@@ -378,8 +379,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [pushSubscribed, setPushSubscribed] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
   const [showCreateArrival, setShowCreateArrival] = useState(false);
-  // 2026-08-09 · 사용자 요청 · 거래처용 공급사등록 카드 · 신규 공급사 등록 모달 팝업
-  const [showNewVendorModal, setShowNewVendorModal] = useState(false);
+  // 2026-08-09 · 거래처 담당자 · 본인 공급사 조회·수정 모달 여부
+  const [showVendorSelf, setShowVendorSelf] = useState(false);
+  const { vendors: _rawVendorsSelf, refresh: refreshVendorsSelf } = useVendors();
+  const vendorSelf = useMemo<VendorFull | null>(() => {
+    if (!authSession || authSession.role !== "vendor") return null;
+    const list = _rawVendorsSelf as unknown as VendorFull[];
+    // 우선 id 매칭 · 실패 시 이름 매칭
+    const byId = list.find(v => v.id === authSession.employeeId);
+    if (byId) return byId;
+    const nm = String(authSession.employeeName ?? "").trim();
+    return nm ? (list.find(v => v.company_name === nm) ?? null) : null;
+  }, [_rawVendorsSelf, authSession]);
   const [newArrivalTitle, setNewArrivalTitle] = useState("");
   const [newArrivalBody, setNewArrivalBody] = useState("");
   const [createLoading, setCreateLoading] = useState(false);
@@ -1385,19 +1396,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     <div className="text-slate-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">상담 및 방문 일정을 간편하게 예약</div>
                   </div>
                 </button>
-                {/* 2026-08-09 · 사용자 요청 · 공급사등록 카드 · 클릭 시 신규 공급사 등록 모달 팝업 */}
-                <button
-                  onClick={() => setShowNewVendorModal(true)}
-                  className="group relative bg-white border border-slate-200/80 hover:border-sky-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(186,230,253,0.5) 0%, transparent 60%)" }} />
-                  <div className="relative">
-                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #e0f2fe, #bae6fd)", border: "1px solid #7dd3fc" }}>
-                      <Building2 size={16} className="text-sky-600 sm:hidden" /><Building2 size={20} className="text-sky-600 hidden sm:block" />
+                {/* 2026-08-09 · 사용자 요청 · 거래처 담당자만 보이는 카드 · 클릭 시 본인 공급사 조회·수정 모달
+                    (매입이력 공급사조회 상세정보의 [조회수정] 버튼과 동일한 VendorDetailModal · 공통) */}
+                {isVendor && (
+                  <button
+                    onClick={() => setShowVendorSelf(true)}
+                    disabled={!vendorSelf}
+                    title={vendorSelf ? "본인 공급사 정보 조회·수정" : "본인 공급사 정보를 불러올 수 없습니다"}
+                    className="group relative bg-white border border-slate-200/80 hover:border-sky-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                  >
+                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(186,230,253,0.5) 0%, transparent 60%)" }} />
+                    <div className="relative">
+                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #e0f2fe, #bae6fd)", border: "1px solid #7dd3fc" }}>
+                        <Building2 size={16} className="text-sky-600 sm:hidden" /><Building2 size={20} className="text-sky-600 hidden sm:block" />
+                      </div>
+                      <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">공급사 정보</div>
+                      <div className="text-slate-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">본인 공급사 정보 조회·수정</div>
                     </div>
-                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">공급사등록</div>
-                    <div className="text-slate-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">공급사 정보 조회·수정·신규 등록</div>
-                  </div>
-                </button>
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -2192,10 +2209,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
         </div>
       )}
 
-      {/* 2026-08-09 · 공급사 검색·등록 모달 · 거래처용 공급사등록 카드에서 오픈
-          검색 후 · 결과 선택 → 조회수정 · 결과 없음 → 신규등록 */}
-      {showNewVendorModal && (
-        <VendorSearchModal onClose={() => setShowNewVendorModal(false)} />
+      {/* 2026-08-09 · 거래처 담당자 · 본인 공급사 조회·수정 모달 (공통 VendorDetailModal · 매입이력과 동일) */}
+      {showVendorSelf && vendorSelf && (
+        <VendorDetailModal
+          vendor={vendorSelf}
+          onClose={() => setShowVendorSelf(false)}
+          onSaved={refreshVendorsSelf}
+        />
       )}
 
       {/* ── 거래처 로그인 모달 ── */}
