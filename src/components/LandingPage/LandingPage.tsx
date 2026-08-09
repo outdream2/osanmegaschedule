@@ -1250,6 +1250,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           {/* ── 비로그인: 인라인 재고검색 + 로그인 버튼 (보조) ── */}
           {!isLoggedIn && (
             <div className="w-full mb-7 flex flex-col gap-3">
+              {/* 브랜드 헤더 · OSAM MEGATOWN (2026-08-09 · 반응형) */}
+              <div className="w-full text-center pt-2 pb-1">
+                <div className="text-slate-900 font-black tracking-[0.15em] text-2xl sm:text-3xl md:text-4xl leading-tight">
+                  OSAM <span className="text-indigo-600">MEGATOWN</span>
+                </div>
+                <div className="text-slate-400 text-[11px] sm:text-xs mt-1 font-semibold tracking-wide">오산 메가타운 약국</div>
+              </div>
               {/* 인라인 재고검색 — 검색바 + 결과 리스트 */}
               <div className="w-full rounded-3xl overflow-hidden shadow-xl border border-blue-100"
                 style={{ background: "linear-gradient(135deg, #1e3a5f 0%, #1d4ed8 60%, #3b82f6 100%)" }}>
