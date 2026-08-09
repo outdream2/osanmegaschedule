@@ -1282,6 +1282,69 @@ npm run test        # vitest (필요 시)
 
 ## CHANGELOG · 변경 이력
 
+### 2026-08-09 (8차 · 매입이력 원칙·결제탭 재구성·공급사관리 이동 · 16 커밋)
+
+**요약**: 매입이력 소스 통일 (OCR fallback 완전 제거 · purchase_details 만) · 결제탭 UI 대규모 재구성 (5→4컬럼·7행표·실재고액) · 공급사관리 경영→매장 이동 · 거래처 로그인 UX 개편 · SolAPI 스켈레톤.
+
+#### 매입이력 소스 통일 (사용자 대원칙 · OCR 섞임 절대 금지)
+- 신규 헬퍼: `server/utils/purchaseDetailsQuery.ts` · `queryPurchaseDetails({supplier?, sinceYmd?})` · NULL supplier_name 은 vendors.note (code) · products.supplier 로 fallback
+- 8개 API · OCR fallback 제거 or 소스 교체:
+  - `/api/supplier-purchase-detail` `/api/supplier-purchase-summary` · fallback 제거
+  - `/api/products/purchase-history` · `/api/stock-manage/top-products` · `/api/stock-manage/suppliers` · `/api/stock-manage/product-history` · 소스 교체
+  - `/api/supplier-balance/:name` · `/api/supplier-ledger` · 매입 소스 OCR → PD
+- `/api/vendors?withBalances=1` · **파생 `supplier_balances` 제거** · 실시간 계산 (`purchase_details − supplier_payments`) · latestBalance 에 `total_purchase` · `total_payment` 필드 추가
+
+#### 결제탭 UI 재구성 (PaymentInfoTab)
+- 왼쪽 리스트 · **4컬럼** · 총재고자산·총판매액·총결제액·총잔고 (기존 5컬럼 · 매입·최근매입 제거)
+- `salesByVendor`, `stockValueByVendor` state · `/api/stock-manage/supplier-purchases?months=3` fetch · 사용자 요청
+- 사업자번호 미등록 필터 제거
+- 로딩 표시 (`로딩중` 배지 · vendorsLoading || aggregatesLoading || salesLoading)
+- 모바일 모달 세로 스크롤 fix (SplitPanel 모달바디 스크롤 · 우측 컨텐츠 자체 overflow 제거)
+- 우측 상단 **7행 월별 표** (신규 endpoint `/api/supplier-monthly-breakdown`)
+  - 카테고리 rowSpan (공급사 3행: 매입/결제/실잔고 · 판매 3행: 매입/판매액/실재고액)
+  - 컬럼 · 월별 (breakdownMonths) + 오른쪽 합계
+  - 상단 PeriodSelector · 3/6/12개월
+- **실재고액 로직** · 사용자 지시 · 실재고(창고1+2+매장1+2+3) × 매입단가 상품별 합계
+  - `inventory_checks` 최근 1건 (warehouse1_stock + warehouse2_stock + store_stock + store_stock_2 + store3_stock)
+  - `purchase_details` 최근 unit_price
+  - 현재값만 · 월별 컬럼 dash · 합계에 표시 · **붉은색 톤** (rose)
+
+#### 발주 요청탭 UI
+- 발주 · 일괄발주 버튼 · 붉은 파스텔톤 (bg-rose-100 text-rose-800 border-rose-300 hover:bg-rose-200)
+
+#### 공급사관리 이동 · 컴포넌트 신설
+- **경영관리 (BusinessManagePage) → 매장 (DisplayPage) 서브탭 이동**
+  - 매장 서브탭 · 6개 → **7개** · 신규 "공급사관리" (Building2 아이콘 · rose · level 9 관리자만)
+  - 발주 · 매입 · 결제 · 통계 · 입고알림 · 매장구역도 · **공급사관리** (신규)
+  - `sessionStorage("dpInitialSubTab")` 지원 · 초기 진입 시 특정 서브탭 오픈
+- `NewVendorModal` (신규) · `src/components/common/NewVendorModal.tsx` · 회사명 필수 + 6필드 · POST `/api/vendors`
+- `VendorSearchModal` (신규) · `src/components/common/VendorSearchModal.tsx` · 검색 → 조회수정 or 신규등록 라우팅 (현재 랜딩에서는 미사용 · 향후 재사용)
+- `VendorDetailModal` · 3탭 (정보·결제잔고·매입이력) → **정보 한 장**만 (탭 제거)
+- `VendorDetailModal` · 거래처 로그인 비밀번호 필드 추가 · `VendorPasswordField` 내부 컴포넌트 · POST `/api/vendors/:id/set-password` (bcrypt · vendors.password_hash 컬럼 재사용)
+
+#### 랜딩페이지 (LandingPage)
+- 거래처용 섹션 · **공급사 정보 카드** (거래처 로그인 시만 노출)
+  - 클릭 시 · 본인 공급사 조회·수정 · 공통 `VendorDetailModal` 재사용
+  - authSession.employeeId → useVendors 캐시에서 조회 (fallback: employeeName 매칭)
+- 비로그인 랜딩 상단 · OSAM MEGATOWN 브랜드 헤더 (반응형)
+
+#### 신규 공용 컴포넌트 · 유틸
+- `src/components/common/PeriodSelector.tsx` · PERIOD_MONTHS_PRESET · PERIOD_DAYS_PRESET · PERIOD_MONTHS_EXT_PRESET
+- `server/utils/purchaseDetailsQuery.ts` · queryPurchaseDetails (7 endpoint 재사용)
+
+#### SolAPI 카카오 알림톡 (사용자 옵션 1 선택 · 사업자 인증 후 활성화)
+- `npm i solapi` 설치 (v5.5.1)
+- `server/lib/notification/solapiClient.ts` · `sendAlimtalk(payload)` · `getSolApiStatus()` · `handleSolApiStatus`
+- `GET /api/notification/solapi-status` · UI 배너 · 미설정 안내
+- 환경변수 대기: `SOLAPI_API_KEY` · `SOLAPI_API_SECRET` · `SOLAPI_SENDER_PHONE` · `SOLAPI_KAKAO_PFID` · `SOLAPI_KAKAO_TEMPLATE_ORDER`
+
+#### 상수 · 직군
+- `src/constants/jobCategories.ts` · POSITIONS 에 **"거래처"** 추가
+
+#### 오원칙 정립 (실수 학습)
+- `feedback_only_instructed.md` · **지시한 것만 · 임의 확장·재해석 금지** · 대원칙 등록
+- 예시: "결제내역에 매입정보 제거" 요청을 · 7행 표 공급사 카테고리 매입 제거로 잘못 확대 → 사용자 지적 후 원복
+
 ### 2026-08-06 (7차 · UI 개선 세션 · 근로계약서·결제·급상승 · 11 커밋)
 
 **요약**: e61d20f 이후 · 근로계약서 다중 UI 개선 (7건) + 결제 탭 통계 헤더·기간 조회 + 급상승 탭 재구성 + ConfirmProvider 마운트 hotfix.
