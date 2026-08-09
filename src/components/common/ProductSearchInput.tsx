@@ -44,8 +44,10 @@ export function ProductSearchInput({
   accent = "teal",
   className = "",
 }: ProductSearchInputProps) {
-  const { query, setQuery, results, selected, setSelected } = useProductInfoSearch();
+  const { query, setQuery, results, setResults, selected, setSelected } = useProductInfoSearch();
   const [loading, setLoading] = useState(false);
+  // 2026-08-09 · 사용자 요청 · 리스트 숨김 flag · 선택 or 확인 시 true · 다시 타이핑 시 false
+  const [hideList, setHideList] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const cls = ACCENT_MAP[accent];
 
@@ -66,6 +68,8 @@ export function ProductSearchInput({
     // 리셋 · 다음 검색 준비
     setQuery("");
     setSelected(null);
+    setResults([]);
+    setHideList(false);
     inputRef.current?.focus();
   };
 
@@ -81,7 +85,11 @@ export function ProductSearchInput({
             ref={inputRef}
             type="text"
             value={query}
-            onChange={(e) => { setQuery(e.target.value); setSelected(null); }}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setSelected(null);
+              setHideList(false); // 다시 타이핑 시 리스트 보이기
+            }}
             placeholder={placeholder}
             className={`w-full h-9 pl-8 pr-3 text-[13px] border border-slate-300 rounded-lg focus:outline-none focus:ring-2 ${cls.ring} transition placeholder:text-slate-300`}
           />
@@ -101,8 +109,8 @@ export function ProductSearchInput({
         </button>
       </div>
 
-      {/* 결과 리스트 · 2026-08-09 · 선택된 상품과 입력창 값 일치 시 숨김 (사용자 요청) */}
-      {query.trim() && !(selected && selected.product_name === query) && (
+      {/* 결과 리스트 · 2026-08-09 · hideList true 면 숨김 (선택·확인 후) */}
+      {query.trim() && !hideList && (
         <div className="max-h-[180px] overflow-y-auto border border-slate-200 rounded-lg bg-white shadow-sm">
           {results.length === 0 && !loading ? (
             <div className="px-3 py-3 text-center text-[11px] text-slate-400">
@@ -120,9 +128,10 @@ export function ProductSearchInput({
                     key={`${code}-${i}`}
                     type="button"
                     onClick={() => {
-                      // 2026-08-09 · 사용자 요청 · 리스트 클릭 시 입력창에 상품명 채우기
+                      // 2026-08-09 · 사용자 요청 · 선택 → 입력창 채우고 리스트 숨김
                       setSelected(p);
                       setQuery(name);
+                      setHideList(true);
                     }}
                     className={`w-full text-left px-2.5 py-1.5 flex items-center gap-2 transition cursor-pointer ${
                       isActive ? cls.active : "hover:bg-slate-50 border-l-2 border-transparent"
