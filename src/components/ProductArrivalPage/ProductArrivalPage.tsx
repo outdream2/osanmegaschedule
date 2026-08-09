@@ -354,7 +354,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
             <PackagePlus size={16} className="text-white" />
           </div>
           <div>
-            <h1 className="text-sm sm:text-base font-black text-slate-900 leading-none">상품 입고 검수</h1>
+            <h1 className="text-[13px] sm:text-[14px] font-black text-slate-900 leading-none">상품 입고 검수</h1>
             <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 leading-none">
               거래명세표와 실제 입고물품·수량 일치 확인
             </p>

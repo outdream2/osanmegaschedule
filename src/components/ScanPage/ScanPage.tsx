@@ -564,7 +564,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             <ScanLine size={16} className="text-white" />
           </div>
           <div>
-            <h1 className="text-sm sm:text-base font-black text-slate-900 leading-none">실재고 입력</h1>
+            <h1 className="text-[13px] sm:text-[14px] font-black text-slate-900 leading-none">실재고 입력</h1>
             <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 leading-none">
               바코드 스캔 후 창고1·2 · 매장1·2·3 수량 입력 · 전체 저장
             </p>
