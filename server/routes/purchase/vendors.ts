@@ -3,6 +3,7 @@ import express from "express";
 import XLSX from "xlsx";
 import bcrypt from "bcryptjs";
 import { supabase } from "../../../src/supabase/client";
+import { queryPurchaseDetails } from "../../utils/purchaseDetailsQuery";
 
 const router = Router();
 
@@ -143,26 +144,65 @@ router.get("/api/vendors", async (req, res) => {
   }
   void hasVatIncluded;
 
-  // 2026-07-14: withBalances=1 파라미터 · vendors 에 잔액/잔고 정보 첨부
-  //   supplier_balances (최신값) + supplier_balance_configs (잔고 컬럼 지정) 조인
+  // 2026-08-09 · withBalances=1 · 실시간 계산으로 전환 (사용자 원칙: 매입이력만 · OCR 섞지마)
+  //   기존 · supplier_balances (OCR 파생 테이블) → OCR 잔고가 latestBalance 로 나옴
+  //   신규 · purchase_details (매입 · queryPurchaseDetails 헬퍼) - supplier_payments (결제) 실시간 계산
+  //   응답 shape 유지 · latestBalance: { balance, invoice_date, created_at } | null
+  //     · balance: 매입 - 결제 · invoice_date: 최근 매입일 · created_at: 실시간 계산 시각
   if (req.query.withBalances === "1") {
-    const [{ data: balances }, { data: configs }] = await Promise.all([
-      supabase.from("supplier_balances").select("supplier_name, balance, invoice_date, created_at").order("created_at", { ascending: false }),
-      supabase.from("supplier_balance_configs").select("supplier_name, balance_field, updated_at"),
-    ]);
-    // supplier_name → 최신 balance 매핑 (첫 등장이 최신)
-    const latestBalMap = new Map<string, any>();
-    for (const b of balances ?? []) {
-      if (!latestBalMap.has(b.supplier_name)) latestBalMap.set(b.supplier_name, b);
+    // 1) 전체 매입 로드 (NULL supplier_name 은 vendors.note/products.supplier 로 fallback)
+    const purchases = await queryPurchaseDetails({});
+    const purchaseMap = new Map<string, { total: number; latestDate: string | null }>();
+    for (const p of purchases) {
+      const cur = purchaseMap.get(p.supplier) ?? { total: 0, latestDate: null };
+      cur.total += p.amount;
+      if (!cur.latestDate || p.purchase_date > cur.latestDate) cur.latestDate = p.purchase_date;
+      purchaseMap.set(p.supplier, cur);
     }
-    const cfgMap = new Map<string, any>();
-    for (const c of configs ?? []) cfgMap.set(c.supplier_name, c);
 
-    const enriched = (data ?? []).map((v: any) => ({
-      ...v,
-      latestBalance: latestBalMap.get(v.company_name) ?? null,
-      balanceConfig: cfgMap.get(v.company_name) ?? null,
-    }));
+    // 2) 전체 결제 로드 · supplier_payments 없으면 조용히 skip
+    const paymentMap = new Map<string, number>();
+    try {
+      const { data: pays, error: payErr } = await supabase
+        .from("supplier_payments")
+        .select("supplier_name, amount");
+      if (!payErr) {
+        for (const r of pays ?? []) {
+          const name = String(r.supplier_name ?? "").trim();
+          if (!name) continue;
+          paymentMap.set(name, (paymentMap.get(name) ?? 0) + (Number(r.amount) || 0));
+        }
+      }
+    } catch { /* silent · supplier_payments relation 없어도 무관 */ }
+
+    // 3) balanceConfig (기존 유지 · 잔고 컬럼 지정 config)
+    const cfgMap = new Map<string, any>();
+    try {
+      const { data: configs, error: cfgErr } = await supabase
+        .from("supplier_balance_configs")
+        .select("supplier_name, balance_field, updated_at");
+      if (!cfgErr) {
+        for (const c of configs ?? []) cfgMap.set(c.supplier_name, c);
+      }
+    } catch { /* silent */ }
+
+    // 4) 실시간 계산 · enrich
+    const nowIso = new Date().toISOString();
+    const enriched = (data ?? []).map((v: any) => {
+      const p = purchaseMap.get(v.company_name);
+      const paymentSum = paymentMap.get(v.company_name) ?? 0;
+      const hasAnyData = (p?.total ?? 0) > 0 || paymentSum > 0;
+      const balance = (p?.total ?? 0) - paymentSum;
+      return {
+        ...v,
+        latestBalance: hasAnyData ? {
+          balance,
+          invoice_date: p?.latestDate ?? null,
+          created_at: nowIso,
+        } : null,
+        balanceConfig: cfgMap.get(v.company_name) ?? null,
+      };
+    });
     return res.json(enriched);
   }
   return res.json(data ?? []);
