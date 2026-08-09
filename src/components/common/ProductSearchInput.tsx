@@ -1,0 +1,147 @@
+// src/components/common/ProductSearchInput.tsx
+// 2026-08-09 · 사용자 요청 · 상품 검색 · 리스트 · 확인 → 상품정보 등록
+//
+// 사용처:
+//   - ScanPage (실재고 입력) · 상품명 검색 → 확인 시 실재고 리스트에 추가
+//   - ProductArrivalPage (상품 입고) · 동일
+//
+// 동작:
+//   1. 입력 → useProductInfoSearch (250ms debounce) 자동 검색
+//   2. 결과 리스트 · 클릭으로 선택 (activeId 강조)
+//   3. [확인] 클릭 → onSelect(product) 호출 (product_code 전달)
+//   4. 입력·결과·선택 초기화
+//
+// 특징:
+//   - onSelect(code) 만 콜백 · 이후 액션 (스캔·입고 로직) 은 호출측 담당
+//   - 결과 리스트 · 최대 20건 표시 (스크롤)
+
+import { useEffect, useRef, useState } from "react";
+import { Search, Check, Loader2, Package } from "lucide-react";
+import { useProductInfoSearch } from "../../hooks/useProductInfoSearch";
+
+interface ProductSearchInputProps {
+  /** 확인 시 콜백 · product_code 전달 (없으면 product_name) */
+  onSelect: (codeOrName: string, product: any) => void;
+  /** placeholder */
+  placeholder?: string;
+  /** 색상 accent (teal · sky · emerald 등) · 기본 teal */
+  accent?: "teal" | "sky" | "emerald" | "amber" | "indigo";
+  /** className */
+  className?: string;
+}
+
+const ACCENT_MAP = {
+  teal:    { ring: "focus:ring-teal-400 focus:border-teal-400", btn: "bg-teal-600 hover:bg-teal-700", active: "bg-teal-50 border-l-2 border-teal-500" },
+  sky:     { ring: "focus:ring-sky-400 focus:border-sky-400", btn: "bg-sky-600 hover:bg-sky-700", active: "bg-sky-50 border-l-2 border-sky-500" },
+  emerald: { ring: "focus:ring-emerald-400 focus:border-emerald-400", btn: "bg-emerald-600 hover:bg-emerald-700", active: "bg-emerald-50 border-l-2 border-emerald-500" },
+  amber:   { ring: "focus:ring-amber-400 focus:border-amber-400", btn: "bg-amber-600 hover:bg-amber-700", active: "bg-amber-50 border-l-2 border-amber-500" },
+  indigo:  { ring: "focus:ring-indigo-400 focus:border-indigo-400", btn: "bg-indigo-600 hover:bg-indigo-700", active: "bg-indigo-50 border-l-2 border-indigo-500" },
+};
+
+export function ProductSearchInput({
+  onSelect,
+  placeholder = "상품명 · 코드 검색",
+  accent = "teal",
+  className = "",
+}: ProductSearchInputProps) {
+  const { query, setQuery, results, selected, setSelected } = useProductInfoSearch();
+  const [loading, setLoading] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const cls = ACCENT_MAP[accent];
+
+  // 로딩 상태 · debounce fire 감지
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) { setLoading(false); return; }
+    setLoading(true);
+    const t = setTimeout(() => setLoading(false), 260);
+    return () => clearTimeout(t);
+  }, [query, results]);
+
+  const handleConfirm = () => {
+    if (!selected) return;
+    const code = String(selected.product_code ?? selected.product_name ?? "").trim();
+    if (!code) return;
+    onSelect(code, selected);
+    // 리셋 · 다음 검색 준비
+    setQuery("");
+    setSelected(null);
+    inputRef.current?.focus();
+  };
+
+  const canConfirm = selected != null;
+
+  return (
+    <div className={`flex flex-col gap-1.5 ${className}`}>
+      {/* 검색 입력 + 확인 버튼 */}
+      <div className="flex items-center gap-1.5">
+        <div className="relative flex-1 min-w-0">
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setSelected(null); }}
+            placeholder={placeholder}
+            className={`w-full h-9 pl-8 pr-3 text-[13px] border border-slate-300 rounded-lg focus:outline-none focus:ring-2 ${cls.ring} transition placeholder:text-slate-300`}
+          />
+          {loading && (
+            <Loader2 size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin text-slate-400" />
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={handleConfirm}
+          disabled={!canConfirm}
+          className={`h-9 px-3 rounded-lg text-white text-[12px] font-black shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer inline-flex items-center gap-1 shrink-0 ${cls.btn}`}
+          title={canConfirm ? "선택 상품 등록" : "리스트에서 상품 선택"}
+        >
+          <Check size={12} strokeWidth={3} />
+          확인
+        </button>
+      </div>
+
+      {/* 결과 리스트 */}
+      {query.trim() && (
+        <div className="max-h-[180px] overflow-y-auto border border-slate-200 rounded-lg bg-white shadow-sm">
+          {results.length === 0 && !loading ? (
+            <div className="px-3 py-3 text-center text-[11px] text-slate-400">
+              검색 결과 없음
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {results.slice(0, 20).map((p, i) => {
+                const isActive = selected?.product_code === p.product_code && selected?.product_name === p.product_name;
+                const code = String(p.product_code ?? "");
+                const name = String(p.product_name ?? "-");
+                const sup = String(p.supplier ?? "");
+                return (
+                  <button
+                    key={`${code}-${i}`}
+                    type="button"
+                    onClick={() => setSelected(p)}
+                    className={`w-full text-left px-2.5 py-1.5 flex items-center gap-2 transition cursor-pointer ${
+                      isActive ? cls.active : "hover:bg-slate-50 border-l-2 border-transparent"
+                    }`}
+                  >
+                    <Package size={11} className="text-slate-400 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-[12px] font-black truncate ${isActive ? "text-slate-900" : "text-slate-700"}`}>
+                        {name}
+                      </div>
+                      <div className="text-[10px] text-slate-400 truncate">
+                        {code || "-"} · {sup || "-"}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default ProductSearchInput;

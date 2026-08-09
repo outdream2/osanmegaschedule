@@ -22,6 +22,8 @@ import {
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
+// 2026-08-09 · 사용자 요청 · 상품 검색·확인 · 리스트 등록 (공통)
+import { ProductSearchInput } from "../common/ProductSearchInput";
 
 interface ProductArrivalPageProps {
   onBack: () => void;
@@ -447,7 +449,14 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
             </div>
 
             <div className="px-4 pb-5 flex flex-col gap-3">
-              {/* CTA 스캔 버튼 */}
+              {/* 2026-08-09 · 사용자 요청 · 상품 검색 · [확인] 클릭 시 리스트 등록 */}
+              <ProductSearchInput
+                accent="sky"
+                placeholder="상품명·코드 검색"
+                onSelect={(code) => handleScan(code)}
+              />
+
+              {/* CTA 스캔 버튼 · 검색창 아래로 이동 (사용자 요청 2026-08-09) */}
               <button
                 onClick={() => setScannerOpen(true)}
                 disabled={mapLoading}
