@@ -327,17 +327,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 {cat}
               </button>
             ))}
-            {/* 사번없음 필터 */}
-            <button
-              onClick={() => setFilterMissingBiz(v => !v)}
-              className={`ml-auto h-6 px-2 rounded-md text-[10px] font-black transition cursor-pointer whitespace-nowrap shrink-0 ${
-                filterMissingBiz
-                  ? "bg-rose-500 text-white shadow-sm"
-                  : "text-slate-400 hover:text-rose-500 hover:bg-rose-50"
-              }`}
-            >
-              사번없음 {missingCount > 0 && <span>{missingCount}</span>}
-            </button>
+            {/* 사번없음 필터 · 삭제 (2026-08-09 · 사용자 요청) */}
           </div>
         </div>
       ) : (
