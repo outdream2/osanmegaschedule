@@ -101,8 +101,8 @@ export function ProductSearchInput({
         </button>
       </div>
 
-      {/* 결과 리스트 */}
-      {query.trim() && (
+      {/* 결과 리스트 · 2026-08-09 · 선택된 상품과 입력창 값 일치 시 숨김 (사용자 요청) */}
+      {query.trim() && !(selected && selected.product_name === query) && (
         <div className="max-h-[180px] overflow-y-auto border border-slate-200 rounded-lg bg-white shadow-sm">
           {results.length === 0 && !loading ? (
             <div className="px-3 py-3 text-center text-[11px] text-slate-400">
