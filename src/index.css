@@ -86,11 +86,12 @@ html, body {
 #root { min-height: 100vh; }
 
 /* Tailwind 임의값(arbitrary) 픽셀 사이즈 · 대폭 상향 (2026-07-28 사용자 재요청)
- * 2026-08-09 · +1 상향 · 각 픽셀 +1 */
+ * 2026-08-09 · +1 상향 · 각 픽셀 +1
+ * 2026-08-09 · 옵션 3 추가 · 작은 폰트 (9~11px) 만 추가 +1 · 탭 아래 컨텐츠 가독성 개선 */
 [class*="text-\\[8px\\]"]  { font-size: 14px !important; }
-[class*="text-\\[9px\\]"]  { font-size: 15px !important; }
-[class*="text-\\[10px\\]"] { font-size: 16px !important; }
-[class*="text-\\[11px\\]"] { font-size: 17px !important; }
+[class*="text-\\[9px\\]"]  { font-size: 16px !important; }  /* was 15 · +1 */
+[class*="text-\\[10px\\]"] { font-size: 17px !important; }  /* was 16 · +1 */
+[class*="text-\\[11px\\]"] { font-size: 18px !important; }  /* was 17 · +1 */
 [class*="text-\\[12px\\]"] { font-size: 18px !important; }
 [class*="text-\\[13px\\]"] { font-size: 19px !important; }
 [class*="text-\\[14px\\]"] { font-size: 20px !important; }
