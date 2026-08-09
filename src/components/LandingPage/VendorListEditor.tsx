@@ -18,6 +18,8 @@ import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
 import { PeriodSelector, PERIOD_MONTHS_PRESET } from "../common/PeriodSelector";
 import { fmtWonCompact } from "../../lib/format";
+// 2026-08-09 · 신규 공급사 등록 모달 (사용자 요청)
+import { NewVendorModal } from "../common/NewVendorModal";
 
 interface VendorListEditorProps {
   // 기존 API 호환용 · 무시됨 (모달 방식으로 통일)
@@ -140,6 +142,8 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   const [filterMissingBiz, setFilterMissingBiz] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>("전체");
   const [modalVendorId, setModalVendorId] = useState<number | null>(null);
+  // 2026-08-09 · 신규 공급사 등록 모달 표시 여부 (사용자 요청)
+  const [showNewVendor, setShowNewVendor] = useState(false);
   // compact 모드 · 선택된 항목 강조용
   const [activeId, setActiveId] = useState<number | null>(null);
   // compact 모드 · 테이블 정렬
@@ -374,31 +378,25 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
               </button>
             ))}
           </div>
-          <button
-            onClick={() => setFilterMissingBiz(v => !v)}
-            className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border text-[12px] font-semibold transition cursor-pointer ${
-              filterMissingBiz
-                ? "bg-rose-50 border-rose-300 text-rose-700"
-                : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
-            }`}
-          >
-            <span className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0 ${filterMissingBiz ? "bg-rose-500 border-rose-500" : "border-slate-300"}`}>
-              {filterMissingBiz && <Check size={9} className="text-white" strokeWidth={3} />}
-            </span>
-            사업자번호 미등록
-            <span className={`text-[11px] font-black ${filterMissingBiz ? "text-rose-600" : "text-slate-400"}`}>
-              {missingCount}
-            </span>
-          </button>
+          {/* 2026-08-09 · 사업자번호 미등록 필터 · 사용자 요청 · 제거 */}
           <span className="text-[12px] text-slate-400 tabular-nums">
             {loading
               ? <span className="inline-flex items-center gap-1"><Loader2 size={11} className="animate-spin" />로딩...</span>
               : `${filtered.length} / ${vendors.length}건`}
           </span>
+          {/* 2026-08-09 · 신규 공급사 등록 · 사용자 요청 · dashboard/일반 모드 */}
+          <button
+            onClick={() => setShowNewVendor(true)}
+            className="ml-auto inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[12px] font-black shadow-sm transition cursor-pointer"
+            title="신규 공급사 등록"
+          >
+            <Plus size={12} strokeWidth={2.5} />
+            신규 공급사
+          </button>
           <button
             onClick={loadVendors}
             disabled={loading}
-            className="ml-auto inline-flex items-center justify-center h-8 w-8 border border-slate-200 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors cursor-pointer"
+            className="inline-flex items-center justify-center h-8 w-8 border border-slate-200 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors cursor-pointer"
             title="새로고침"
           >
             <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
@@ -815,12 +813,19 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
         </div>
       )}
 
-      {/* 상세 모달 */}
+      {/* 상세 모달 · 기존 vendor 편집·조회 */}
       {modalVendor && (
         <VendorDetailModal
           vendor={modalVendor}
           onClose={() => setModalVendorId(null)}
           onSaved={loadVendors}
+        />
+      )}
+      {/* 2026-08-09 · 신규 공급사 등록 모달 (사용자 요청) */}
+      {showNewVendor && (
+        <NewVendorModal
+          onClose={() => setShowNewVendor(false)}
+          onSaved={() => { setShowNewVendor(false); loadVendors(); }}
         />
       )}
     </div>
@@ -1133,37 +1138,15 @@ export const VendorDetailModal: React.FC<{
           </button>
         </div>
 
-        {/* ── 서브탭 (2026-07-31 · 정보/결제·잔고/매입이력) ── */}
-        <div className="flex items-center gap-1 px-5 pt-2 border-b border-slate-200 bg-white shrink-0">
-          {([
-            { key: "info",     label: "정보",       icon: <Building2 size={13} />, color: "sky" },
-            { key: "payment",  label: "결제·잔고",  icon: <Wallet size={13} />,    color: "emerald" },
-            { key: "purchase", label: "매입이력",   icon: <Package size={13} />,   color: "amber" },
-          ] as const).map(t => {
-            const active = activeTab === t.key;
-            const colorCls = active
-              ? t.color === "sky"     ? "text-sky-700 border-sky-500"
-              : t.color === "emerald" ? "text-emerald-700 border-emerald-500"
-              :                         "text-amber-700 border-amber-500"
-              : "text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-200";
-            return (
-              <button
-                key={t.key}
-                onClick={() => setActiveTab(t.key)}
-                className={`inline-flex items-center gap-1.5 px-3 py-2 text-[12px] font-bold border-b-2 -mb-px transition cursor-pointer ${colorCls}`}
-              >
-                {t.icon}
-                {t.label}
-              </button>
-            );
-          })}
-        </div>
+        {/* 2026-08-09 · 사용자 요청 · 결제·잔고 · 매입이력 탭 제거 · 정보 한 장으로만 */}
+        {/* 서브탭 UI 제거됨 · 정보 필드만 렌더 */}
 
         {/* ── 본문 ── */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5">
 
-          {/* ─── 정보 탭 ─── */}
-          {activeTab === "info" && (
+          {/* ─── 정보 (탭 제거 · 한 장) ─── */}
+          {(() => { void activeTab; return null; })()}
+          {(true) && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
 
             {/* Left · 기본 정보 편집 */}

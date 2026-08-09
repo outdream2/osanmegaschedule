@@ -41,6 +41,8 @@ import {
 import type { AuthSession, AuthRole } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { TIMING } from "../../constants/timing";
+// 2026-08-09 · 신규 공급사 등록 모달 (거래처용 공급사등록 카드에서 사용)
+import { NewVendorModal } from "../common/NewVendorModal";
 // VendorListEditor 는 발주관리 공급사관리 에서만 사용 (LandingPage 데이터 업로드 에서 제거됨 · 2026-07-15)
 
 interface LandingPageProps {
@@ -376,6 +378,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [pushSubscribed, setPushSubscribed] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
   const [showCreateArrival, setShowCreateArrival] = useState(false);
+  // 2026-08-09 · 사용자 요청 · 거래처용 공급사등록 카드 · 신규 공급사 등록 모달 팝업
+  const [showNewVendorModal, setShowNewVendorModal] = useState(false);
   const [newArrivalTitle, setNewArrivalTitle] = useState("");
   const [newArrivalBody, setNewArrivalBody] = useState("");
   const [createLoading, setCreateLoading] = useState(false);
@@ -1381,12 +1385,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     <div className="text-slate-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">상담 및 방문 일정을 간편하게 예약</div>
                   </div>
                 </button>
-                {/* 2026-08-09 · 사용자 요청 · 공급사등록 카드 · 클릭 시 매장 > 공급사관리 서브탭 열기 */}
+                {/* 2026-08-09 · 사용자 요청 · 공급사등록 카드 · 클릭 시 신규 공급사 등록 모달 팝업 */}
                 <button
-                  onClick={() => {
-                    try { sessionStorage.setItem("dpInitialSubTab", "vendor-manage"); } catch { /* silent */ }
-                    onNavigate("display", authSession!);
-                  }}
+                  onClick={() => setShowNewVendorModal(true)}
                   className="group relative bg-white border border-slate-200/80 hover:border-sky-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(186,230,253,0.5) 0%, transparent 60%)" }} />
                   <div className="relative">
@@ -2189,6 +2190,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             )}
           </div>
         </div>
+      )}
+
+      {/* 2026-08-09 · 신규 공급사 등록 모달 · 거래처용 공급사등록 카드에서 오픈 */}
+      {showNewVendorModal && (
+        <NewVendorModal onClose={() => setShowNewVendorModal(false)} />
       )}
 
       {/* ── 거래처 로그인 모달 ── */}
