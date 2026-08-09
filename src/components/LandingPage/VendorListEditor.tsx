@@ -149,6 +149,8 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   // 2026-08-04 · #101 · 공급사별 재고자산·판매액 (총 3개월 · /api/stock-manage/supplier-purchases)
   //   key = normalizeSupplierKey(supplier_name) · value = { stockValue, salesTotal }
   const [supplierAggMap, setSupplierAggMap] = useState<Map<string, { stockValue: number; salesTotal: number }>>(new Map());
+  // 2026-08-09 · 기간 조회 · 1개월/3개월/6개월/12개월 (default 3)
+  const [aggregateMonths, setAggregateMonths] = useState<number>(3);
   const toggleCompactSort = (key: CompactSortKey) => {
     if (compactSortKey === key) {
       setCompactSortDir(d => d === "asc" ? "desc" : "asc");
@@ -168,14 +170,15 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
     if (onEditRequest) { onEditRequest(id); } else { setModalVendorId(id); }
   };
 
-  // 2026-08-04 · #101 · 공급사별 재고자산·판매액 집계 로드 (compact 모드 · 최근 3개월)
+  // 2026-08-04 · #101 · 공급사별 재고자산·판매액 집계 로드 (compact 모드 · aggregateMonths)
   //   stock_history 기반 · 이름 정규화 매칭 · 실패 시 빈 map (컬럼은 "-" 로 표기)
+  //   2026-08-09 · 기간 조회 · aggregateMonths 파라미터화
   useEffect(() => {
     if (!compact) return; // compact 모드에서만 사용
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/stock-manage/supplier-purchases?months=3&limit=50000");
+        const res = await fetch(`/api/stock-manage/supplier-purchases?months=${aggregateMonths}&limit=50000`);
         if (!res.ok) return;
         const j = await res.json();
         const rows: any[] = Array.isArray(j?.rows) ? j.rows : [];
@@ -194,7 +197,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
       } catch { /* 조회 실패 시 빈 map · 컬럼 "-" 표기 */ }
     })();
     return () => { cancelled = true; };
-  }, [compact]);
+  }, [compact, aggregateMonths]);
 
   useEffect(() => {
     if (initialSelectedId != null && vendors.find(v => v.id === initialSelectedId)) {
@@ -327,7 +330,24 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 {cat}
               </button>
             ))}
-            {/* 사번없음 필터 · 삭제 (2026-08-09 · 사용자 요청) */}
+            {/* 기간 조회 chip · 재고자산·판매액 집계 기간 (2026-08-09) */}
+            <div className="ml-auto flex items-center gap-0.5 bg-slate-100 rounded-md p-0.5">
+              {[1, 3, 6, 12].map(m => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setAggregateMonths(m)}
+                  className={`h-5 px-1.5 rounded text-[10px] font-black transition cursor-pointer ${
+                    aggregateMonths === m
+                      ? "bg-teal-500 text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-700 hover:bg-white"
+                  }`}
+                  title={`재고자산·판매액 · 최근 ${m}개월 집계`}
+                >
+                  {m}M
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       ) : (
