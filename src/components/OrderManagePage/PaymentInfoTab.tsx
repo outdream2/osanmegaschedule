@@ -320,6 +320,7 @@ export const PaymentInfoTab: React.FC = () => {
   const [lastPurchaseDateByVendor, setLastPurchaseDateByVendor] = useState<Map<string, string>>(new Map());
   // 2026-08-09 · 총판매액 · /api/stock-manage/supplier-purchases (stock_history · 최근 3개월)
   const [salesByVendor, setSalesByVendor] = useState<Map<string, number>>(new Map());
+  const [salesLoading, setSalesLoading] = useState(true);
   const [aggregatesLoading, setAggregatesLoading] = useState(false);
 
   // T-TEST-공급사리스트-최근결제 (2026-08-06) · 각 공급사 최근 결제 (KPI 상단·모달용)
@@ -504,9 +505,10 @@ export const PaymentInfoTab: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      setSalesLoading(true);
       try {
         const res = await fetch(`/api/stock-manage/supplier-purchases?months=3&limit=50000`);
-        if (!res.ok) return;
+        if (!res.ok) { if (!cancelled) setSalesLoading(false); return; }
         const j = await res.json();
         const rows: any[] = Array.isArray(j?.rows) ? j.rows : [];
         const m = new Map<string, number>();
@@ -518,6 +520,7 @@ export const PaymentInfoTab: React.FC = () => {
         }
         if (!cancelled) setSalesByVendor(m);
       } catch { /* silent · 실패 시 - 표시 */ }
+      finally { if (!cancelled) setSalesLoading(false); }
     })();
     return () => { cancelled = true; };
   }, []);
@@ -956,6 +959,7 @@ export const PaymentInfoTab: React.FC = () => {
               sortDir={sortDir}
               onSort={handleSort}
               count={filteredVendors.length}
+              loading={vendorsLoading || aggregatesLoading || salesLoading}
             />
             <div className="flex-1 min-h-0 overflow-y-auto">
             {vendorsLoading ? (
@@ -1006,20 +1010,17 @@ export const PaymentInfoTab: React.FC = () => {
                       }`}>
                         {v.company_name}
                       </span>
-                      {/* 2026-08-09 · 5컬럼 (사용자 요청) · 총매입·총결제·총잔고·총판매·최근매입일 */}
-                      {/* 총매입 (기간 내 · purchase_details) */}
+                      {/* 2026-08-09 · 5컬럼 순서 (사용자 최종 요청) · 총매입·총결제·총잔고·총판매·최근매입일 */}
                       <span className={`w-[54px] text-right text-[11px] font-black tabular-nums shrink-0 ${
                         purAmt > 0 ? "text-emerald-700" : "text-slate-300"
                       }`} title={purAmt > 0 ? `최근 ${periodDays}일 총매입 ${purAmt.toLocaleString()}원` : "매입 없음"}>
                         {purAmt > 0 ? fmtWonShort(purAmt) : "-"}
                       </span>
-                      {/* 총결제 (기간 내 · supplier_payments) */}
                       <span className={`w-[54px] text-right text-[11px] font-black tabular-nums shrink-0 ${
                         payAmt > 0 ? "text-sky-700" : "text-slate-300"
                       }`} title={payAmt > 0 ? `최근 ${periodDays}일 총결제 ${payAmt.toLocaleString()}원` : "결제 없음"}>
                         {payAmt > 0 ? fmtWonShort(payAmt) : "-"}
                       </span>
-                      {/* 총잔고 (전체 · purchase_details − supplier_payments) */}
                       <span className={`w-[58px] text-right text-[11px] font-black tabular-nums shrink-0 ${
                         hasBal
                           ? bal > 0 ? "text-amber-700" : "text-rose-700"
@@ -1027,13 +1028,11 @@ export const PaymentInfoTab: React.FC = () => {
                       }`} title={hasBal ? `${bal > 0 ? "미결제" : "초과결제"} ${Math.abs(bal).toLocaleString()}원` : "잔고 없음"}>
                         {hasBal ? fmtWonShort(Math.abs(bal)) : "-"}
                       </span>
-                      {/* 총판매 (최근 3개월 · stock_history) */}
                       <span className={`w-[54px] text-right text-[11px] font-black tabular-nums shrink-0 ${
                         salesAmt > 0 ? "text-indigo-700" : "text-slate-300"
                       }`} title={salesAmt > 0 ? `최근 3개월 총판매 ${salesAmt.toLocaleString()}원` : "판매 없음"}>
                         {salesAmt > 0 ? fmtWonShort(salesAmt) : "-"}
                       </span>
-                      {/* 최근매입일 · MM-DD · purchase_details.last_purchase_date */}
                       <span className={`w-[52px] text-right text-[10px] font-semibold tabular-nums shrink-0 ${
                         lastPurchaseDateShort ? "text-teal-700" : "text-slate-300"
                       }`} title={lastPurchaseDate ? `최근 매입일: ${lastPurchaseDate}` : "매입 이력 없음"}>
@@ -1050,7 +1049,9 @@ export const PaymentInfoTab: React.FC = () => {
         }
         right={
           /* ── 우측 · 결제 입력 · 최근 결제 ─────────────────────── */
-          <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-2 overflow-y-auto lg:overflow-hidden">
+          /* 2026-08-09 · 모바일 모달 세로 스크롤 fix · 우측 컨텐츠 자체 overflow 제거 · SplitPanel 모달바디가 처리
+             기존 overflow-y-auto lg:overflow-hidden → nested scroll 로 모달 스크롤 안 됨 */
+          <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-2 lg:overflow-hidden">
           {!selectedVendor ? (
             <div className={`${CARD_BASE} flex-1 min-h-[400px]`}>
               <EmptyState icon={Wallet} title="결제 등록 · 공급사를 선택하세요" hint="좌측 공급사 리스트에서 대상 선택 후 결제 정보를 입력합니다" />
@@ -1761,34 +1762,35 @@ const VendorListHeader: React.FC<{
   sortDir: SortDir;
   onSort: (k: VendorSortKey) => void;
   count: number;
-}> = ({ sortKey, sortDir, onSort, count }) => (
+  loading?: boolean;
+}> = ({ sortKey, sortDir, onSort, count, loading = false }) => (
   <div className="px-2 py-1.5 border-b border-slate-200 bg-slate-50/70 shrink-0 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider">
     {/* 분류 · 정렬 X (badge column) */}
     <span className="w-[42px] shrink-0 text-slate-400">분류</span>
     {/* VAT · 포함/불포함 · 2026-08-06 · 사용자 요청 */}
     <span className="w-[36px] shrink-0 text-slate-400 text-center">VAT</span>
-    {/* 공급사명 · flex */}
-    <span className="flex-1 min-w-0">
+    {/* 공급사명 · flex · 로딩 시 · "로딩중" 표시 (2026-08-09) */}
+    <span className="flex-1 min-w-0 flex items-center gap-1.5">
       <SortHeaderBtn label={`공급사 (${count})`} columnKey="name" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="left" />
+      {loading && (
+        <span className="inline-flex items-center gap-1 text-[10px] font-black text-sky-600 normal-case shrink-0">
+          <Loader2 size={10} className="animate-spin" />로딩중
+        </span>
+      )}
     </span>
-    {/* 2026-08-09 · 5컬럼 (사용자 요청) · 총매입·총결제·총잔고·총판매·최근매입일 */}
-    {/* 총매입 (기간 내) · purchase_details */}
+    {/* 2026-08-09 · 5컬럼 순서 (사용자 최종 요청) · 총매입·총결제·총잔고·총판매·최근매입일 */}
     <span className="w-[54px] shrink-0">
       <SortHeaderBtn label="총매입" columnKey="purchase" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-emerald-700" title="선택 기간 내 총매입 · purchase_details · 클릭하여 정렬" />
     </span>
-    {/* 총결제 (기간 내) · supplier_payments */}
     <span className="w-[54px] shrink-0">
       <SortHeaderBtn label="총결제" columnKey="payment" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-sky-700" title="선택 기간 내 총결제 · 클릭하여 정렬" />
     </span>
-    {/* 총잔고 (전체 · latestBalance · purchase_details − supplier_payments) */}
     <span className="w-[58px] shrink-0">
       <SortHeaderBtn label="총잔고" columnKey="balance" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-amber-700" title="총잔고 (전체 매입-결제) · 클릭하여 정렬" />
     </span>
-    {/* 총판매 (최근 3개월 · stock_history) */}
     <span className="w-[54px] shrink-0">
       <SortHeaderBtn label="총판매" columnKey="sales" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-indigo-700" title="최근 3개월 총판매 · stock_history · 클릭하여 정렬" />
     </span>
-    {/* 최근매입일 · purchase_details.last_purchase_date */}
     <span className="w-[52px] shrink-0">
       <SortHeaderBtn label="최근매입" columnKey="latestPurchaseDate" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="right" className="w-full text-teal-700" title="최근 매입일 · purchase_details · 클릭하여 정렬" />
     </span>
