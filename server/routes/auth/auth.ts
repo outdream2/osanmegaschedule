@@ -40,25 +40,28 @@ router.post("/api/auth/login", async (req, res) => {
   }
 });
 
+// 거래처 로그인 · 2026-08-09 사용자 정책 · 비밀번호 = 전화번호(로그인아이디) + "00" (자동)
+//   · 관리자 비번 설정 필요 없음 · vendor.password_hash 조회·비교 X (규칙 기반)
+//   · 예: phone "010-1234-5678" · 로그인 비번 = "0101234567800"
 router.post("/api/auth/vendor-login", async (req, res) => {
   const { phone, password } = req.body ?? {};
   const cleanPhone = String(phone ?? "").replace(/[^0-9]/g, "");
-  if (!cleanPhone || !password) {
+  const cleanPassword = String(password ?? "").replace(/[^0-9]/g, "");
+  if (!cleanPhone || !cleanPassword) {
     return res.status(400).json({ error: "전화번호와 비밀번호를 입력해주세요" });
   }
   try {
     const { data: vendor, error } = await supabase
       .from("vendors")
-      .select("id, company_name, contact_name, password_hash")
+      .select("id, company_name, contact_name")
       .eq("phone", cleanPhone)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!vendor) return res.status(401).json({ error: "등록된 거래처를 찾을 수 없습니다" });
-    if (!vendor.password_hash) return res.status(401).json({ error: "비밀번호가 설정되지 않았습니다. 관리자에게 문의하세요." });
-    const ok = await bcrypt.compare(password, vendor.password_hash);
-    // password_hash 는 bcrypt 비교 후 즉시 제거 — 응답 객체에 절대 포함되지 않도록 방어
-    delete (vendor as any).password_hash;
-    if (!ok) return res.status(401).json({ error: "전화번호 또는 비밀번호가 올바르지 않습니다" });
+    const expected = cleanPhone + "00";
+    if (cleanPassword !== expected) {
+      return res.status(401).json({ error: "전화번호 또는 비밀번호가 올바르지 않습니다" });
+    }
     try {
       issueToken(res, { sub: vendor.id, name: vendor.company_name, role: "vendor", level: 0 }, false);
     } catch {

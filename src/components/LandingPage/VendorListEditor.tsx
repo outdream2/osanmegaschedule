@@ -1255,9 +1255,7 @@ export const VendorDetailModal: React.FC<{
                 />
               </Field>
 
-              {/* 2026-08-09 · 사용자 요청 · 거래처 로그인 비밀번호 설정
-                  POST /api/vendors/:id/set-password · bcrypt hash · DB password_hash 저장 */}
-              <VendorPasswordField vendorId={vendor.id} />
+              {/* 2026-08-09 · 거래처 로그인 비밀번호 · 자동 규칙 (전화번호 + "00") · 수동 저장 필드 제거 (사용자 정책) */}
             </div>
 
             {/* Right · 공급 요약 · 텍스트 스타일 (2026-08-06 · 사용자 요청 · 카드 → 글씨) */}
@@ -1900,71 +1898,8 @@ const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, 
   </label>
 );
 
-// 2026-08-09 · 사용자 요청 · 거래처 로그인 비밀번호 설정 필드
-//   POST /api/vendors/:id/set-password (bcrypt hash · DB password_hash 저장 · 이미 존재하는 endpoint)
-//   최소 4자 · 저장 후 성공/실패 메시지 · 서버 응답 · 값은 화면에 표시 안 함 (보안)
-const VendorPasswordField: React.FC<{ vendorId: number }> = ({ vendorId }) => {
-  const [pw, setPw] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
-  const handleSave = async () => {
-    if (!pw || pw.length < 4) {
-      setMsg({ type: "err", text: "비밀번호는 4자 이상" });
-      return;
-    }
-    setSaving(true); setMsg(null);
-    try {
-      const res = await fetch(`/api/vendors/${vendorId}/set-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pw }),
-      });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j?.error ?? `저장 실패 (${res.status})`);
-      }
-      setMsg({ type: "ok", text: "비밀번호 저장 완료" });
-      setPw("");
-    } catch (e: any) {
-      setMsg({ type: "err", text: e?.message ?? "저장 실패" });
-    } finally {
-      setSaving(false);
-    }
-  };
-  return (
-    <div className="block space-y-1">
-      <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider inline-flex items-center gap-1.5">
-        거래처 로그인 비밀번호
-        <span className="text-[9px] font-semibold text-slate-400 normal-case">최소 4자 · 저장 후 즉시 적용</span>
-      </span>
-      <div className="flex items-center gap-1.5">
-        <input
-          type="password"
-          value={pw}
-          onChange={(e) => setPw(e.target.value)}
-          placeholder="새 비밀번호"
-          autoComplete="new-password"
-          className={inputCls + " flex-1"}
-        />
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving || !pw || pw.length < 4}
-          className="h-9 px-3 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[12px] font-black shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer inline-flex items-center gap-1"
-        >
-          {saving ? <Loader2 size={12} className="animate-spin" /> : null}
-          {saving ? "저장 중..." : "저장"}
-        </button>
-      </div>
-      {msg && (
-        <div className={`text-[11px] font-bold inline-flex items-center gap-1 ${msg.type === "ok" ? "text-emerald-600" : "text-rose-600"}`}>
-          {msg.type === "ok" ? <Check size={11} strokeWidth={3} /> : <X size={11} strokeWidth={3} />}
-          {msg.text}
-        </div>
-      )}
-    </div>
-  );
-};
+// 2026-08-09 · 거래처 로그인 비밀번호 필드 제거 · 자동 규칙으로 대체 (전화번호 + "00")
+//   · vendors.password_hash 컬럼 사용 안 함 (auth.ts vendor-login 에서 규칙 기반 비교)
 
 const colorMap = {
   sky:     { bar: "bg-sky-500",     text: "text-sky-700",     icon: "text-sky-600"     },
