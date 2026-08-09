@@ -1655,25 +1655,35 @@ router.get("/api/stock-manage/product-info", async (req, res) => {
 
 // GET /api/stock-manage/product-history?product_name=X&days=7
 // 상품별 매입 이력 (차트 데이터)
+// 2026-08-09 · 소스 · ocr_confirmed_items → purchase_details (사용자 원칙 · 매입이력만)
 router.get("/api/stock-manage/product-history", async (req, res) => {
   const name = String(req.query.product_name ?? "").trim();
   const code = String(req.query.product_code ?? "").trim();
   const days = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "7"), 10) || 7));
   if (!name && !code) return res.status(400).json({ error: "product_name 또는 product_code 필요" });
-  const since = daysAgoISO(days);
+  const sinceYmd = daysAgoISO(days).slice(0, 10);
   try {
     // 2026-08-06 · Supabase 1000행 cap 우회 · fetchAllWithRange
-    const data = await fetchAllWithRange<any>(() => {
+    const rawData = await fetchAllWithRange<any>(() => {
       let query = supabase
-        .from("ocr_confirmed_items")
-        .select("supplier, product_name, product_code, quantity, amount, saved_at")
-        .gte("saved_at", since)
-        .order("saved_at", { ascending: true });
+        .from("purchase_details")
+        .select("supplier_name, product_name, product_code, quantity, amount, total, purchase_date")
+        .gte("purchase_date", sinceYmd)
+        .order("purchase_date", { ascending: true });
       if (code) query = query.eq("product_code", code);
       else      query = query.eq("product_name", name);
       return query;
     }, 5000);
-    res.json(data ?? []);
+    // 응답 shape 유지 · supplier/saved_at 필드로 alias
+    const data = (rawData ?? []).map((r: any) => ({
+      supplier: r.supplier_name ?? null,
+      product_name: r.product_name,
+      product_code: r.product_code,
+      quantity: r.quantity,
+      amount: r.amount ?? r.total ?? 0,
+      saved_at: r.purchase_date,
+    }));
+    res.json(data);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
