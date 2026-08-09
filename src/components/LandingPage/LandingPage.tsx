@@ -41,8 +41,8 @@ import {
 import type { AuthSession, AuthRole } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { TIMING } from "../../constants/timing";
-// 2026-08-09 · 신규 공급사 등록 모달 (거래처용 공급사등록 카드에서 사용)
-import { NewVendorModal } from "../common/NewVendorModal";
+// 2026-08-09 · 공급사 검색·등록 모달 (거래처용 공급사등록 카드 · 검색 후 조회수정 or 신규등록)
+import { VendorSearchModal } from "../common/VendorSearchModal";
 // VendorListEditor 는 발주관리 공급사관리 에서만 사용 (LandingPage 데이터 업로드 에서 제거됨 · 2026-07-15)
 
 interface LandingPageProps {
@@ -2192,9 +2192,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
         </div>
       )}
 
-      {/* 2026-08-09 · 신규 공급사 등록 모달 · 거래처용 공급사등록 카드에서 오픈 */}
+      {/* 2026-08-09 · 공급사 검색·등록 모달 · 거래처용 공급사등록 카드에서 오픈
+          검색 후 · 결과 선택 → 조회수정 · 결과 없음 → 신규등록 */}
       {showNewVendorModal && (
-        <NewVendorModal onClose={() => setShowNewVendorModal(false)} />
+        <VendorSearchModal onClose={() => setShowNewVendorModal(false)} />
       )}
 
       {/* ── 거래처 로그인 모달 ── */}
