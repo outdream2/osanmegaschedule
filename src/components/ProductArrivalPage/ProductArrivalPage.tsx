@@ -449,14 +449,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
             </div>
 
             <div className="px-4 pb-5 flex flex-col gap-3">
-              {/* 2026-08-09 · 사용자 요청 · 상품 검색 · [확인] 클릭 시 리스트 등록 */}
-              <ProductSearchInput
-                accent="sky"
-                placeholder="상품명·코드 검색"
-                onSelect={(code) => handleScan(code)}
-              />
-
-              {/* CTA 스캔 버튼 · 검색창 아래로 이동 (사용자 요청 2026-08-09) */}
+              {/* CTA 스캔 버튼 · 상단 (2026-08-09 사용자 요청 · 검색은 아래) */}
               <button
                 onClick={() => setScannerOpen(true)}
                 disabled={mapLoading}
@@ -477,6 +470,13 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                   : <><ScanLine size={18} /> 바코드 스캔</>
                 }
               </button>
+
+              {/* 2026-08-09 · 상품 검색 · 바코드 스캔 버튼 아래 (사용자 요청) */}
+              <ProductSearchInput
+                accent="sky"
+                placeholder="상품명·코드 검색"
+                onSelect={(code) => handleScan(code)}
+              />
 
               {/* 미등록 상품 경고 */}
               {notFoundCode && !lastScannedProduct && (

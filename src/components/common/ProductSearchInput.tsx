@@ -119,7 +119,11 @@ export function ProductSearchInput({
                   <button
                     key={`${code}-${i}`}
                     type="button"
-                    onClick={() => setSelected(p)}
+                    onClick={() => {
+                      // 2026-08-09 · 사용자 요청 · 리스트 클릭 시 입력창에 상품명 채우기
+                      setSelected(p);
+                      setQuery(name);
+                    }}
                     className={`w-full text-left px-2.5 py-1.5 flex items-center gap-2 transition cursor-pointer ${
                       isActive ? cls.active : "hover:bg-slate-50 border-l-2 border-transparent"
                     }`}
