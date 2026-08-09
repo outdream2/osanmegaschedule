@@ -1152,22 +1152,11 @@ export const PaymentInfoTab: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {/* ── 공급사 카테고리 · 매입/결제/잔고 ── */}
-                          <tr className="bg-white">
-                            <td rowSpan={3} className="text-center px-2 py-1.5 font-black text-slate-600 bg-emerald-50/40 border-r border-slate-200 align-middle">
+                          {/* ── 공급사(결제) 카테고리 · 결제/실잔고 (2026-08-09 · 매입 제거 · 사용자 요청) ── */}
+                          <tr className="bg-slate-50/40">
+                            <td rowSpan={2} className="text-center px-2 py-1.5 font-black text-slate-600 bg-emerald-50/40 border-r border-slate-200 align-middle">
                               공급사
                             </td>
-                            <td className="px-2 py-1.5 font-black text-emerald-700 whitespace-nowrap">
-                              <span className="inline-flex items-center gap-1"><ReceiptText size={11} />매입</span>
-                            </td>
-                            {months.map(k => (
-                              <td key={k} className={`px-2 py-1.5 text-right font-black ${(purMap[k] ?? 0) === 0 ? "text-slate-300" : "text-emerald-800"}`}>
-                                {fmt(purMap[k] ?? 0)}
-                              </td>
-                            ))}
-                            <td className="px-2 py-1.5 text-right font-black text-emerald-800 border-l border-slate-200 bg-slate-50/40">{fmt(totals.purchases)}</td>
-                          </tr>
-                          <tr className="bg-slate-50/40">
                             <td className="px-2 py-1.5 font-black text-sky-700 whitespace-nowrap">
                               <span className="inline-flex items-center gap-1"><Wallet size={11} />결제</span>
                             </td>
