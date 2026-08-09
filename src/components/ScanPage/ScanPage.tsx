@@ -984,50 +984,52 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                             </div>
                           </td>
 
-                          {/* 모바일·태블릿 통합 재고 셀 · lg 미만 · 창고 그룹 위 · 매장 그룹 아래 (2026-08-05) */}
+                          {/* 2026-08-09 · 사용자 요청 · 모바일·태블릿 · 창1·창2·매1·매2·매3 · 한 줄 5칸 · 한눈에 */}
                           <td className="lg:hidden px-1 py-2 align-middle">
-                            <div className="flex flex-col gap-1.5">
-                              {/* 창고 그룹 */}
-                              <div className="flex gap-1 items-center">
-                                <span className="text-[9px] font-bold text-orange-500 shrink-0 w-8">창고</span>
-                                <div className="flex-1 flex gap-1">
-                                  <NumberInput value={row.warehouse1Qty}
-                                    onChange={v => patchRow(row.key, { warehouse1Qty: v })}
-                                    accent="focus:border-orange-400" />
-                                  <NumberInput value={row.warehouse2Qty}
-                                    onChange={v => patchRow(row.key, { warehouse2Qty: v })}
-                                    accent="focus:border-amber-400" />
-                                </div>
+                            <div className="grid grid-cols-5 gap-1">
+                              {/* 창고1 */}
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-[9px] font-bold text-orange-500 text-center leading-none">창1</span>
+                                <NumberInput value={row.warehouse1Qty}
+                                  onChange={v => patchRow(row.key, { warehouse1Qty: v })}
+                                  accent="focus:border-orange-400" />
                               </div>
-                              {/* 매장 그룹 · 창고 아래 */}
-                              <div className="flex gap-1 items-start">
-                                <span className="text-[9px] font-bold text-emerald-500 shrink-0 w-8 pt-1.5">매장</span>
-                                <div className="flex-1 flex gap-1">
-                                  <div className="flex flex-col gap-0.5 flex-1">
-                                    <NumberInput value={row.store1Qty}
-                                      onChange={v => patchRow(row.key, { store1Qty: v })}
-                                      accent="focus:border-emerald-400" />
-                                    <ZoneInput value={row.store1Zone} placeholder="-"
-                                      accentClass="text-emerald-600 focus:border-emerald-400"
-                                      onChange={v => patchRow(row.key, { store1Zone: v })} />
-                                  </div>
-                                  <div className="flex flex-col gap-0.5 flex-1">
-                                    <NumberInput value={row.store2Qty}
-                                      onChange={v => patchRow(row.key, { store2Qty: v })}
-                                      accent="focus:border-sky-400" />
-                                    <ZoneInput value={row.store2Zone} placeholder="-"
-                                      accentClass="text-sky-600 focus:border-sky-400"
-                                      onChange={v => patchRow(row.key, { store2Zone: v })} />
-                                  </div>
-                                  <div className="flex flex-col gap-0.5 flex-1">
-                                    <NumberInput value={row.store3Qty}
-                                      onChange={v => patchRow(row.key, { store3Qty: v })}
-                                      accent="focus:border-violet-400" />
-                                    <ZoneInput value={row.store3Zone} placeholder="-"
-                                      accentClass="text-violet-600 focus:border-violet-400"
-                                      onChange={v => patchRow(row.key, { store3Zone: v })} />
-                                  </div>
-                                </div>
+                              {/* 창고2 */}
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-[9px] font-bold text-amber-500 text-center leading-none">창2</span>
+                                <NumberInput value={row.warehouse2Qty}
+                                  onChange={v => patchRow(row.key, { warehouse2Qty: v })}
+                                  accent="focus:border-amber-400" />
+                              </div>
+                              {/* 매장1 · 수량 + 구역 */}
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-[9px] font-bold text-emerald-500 text-center leading-none">매1</span>
+                                <NumberInput value={row.store1Qty}
+                                  onChange={v => patchRow(row.key, { store1Qty: v })}
+                                  accent="focus:border-emerald-400" />
+                                <ZoneInput value={row.store1Zone} placeholder="-"
+                                  accentClass="text-emerald-600 focus:border-emerald-400"
+                                  onChange={v => patchRow(row.key, { store1Zone: v })} />
+                              </div>
+                              {/* 매장2 · 수량 + 구역 */}
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-[9px] font-bold text-sky-500 text-center leading-none">매2</span>
+                                <NumberInput value={row.store2Qty}
+                                  onChange={v => patchRow(row.key, { store2Qty: v })}
+                                  accent="focus:border-sky-400" />
+                                <ZoneInput value={row.store2Zone} placeholder="-"
+                                  accentClass="text-sky-600 focus:border-sky-400"
+                                  onChange={v => patchRow(row.key, { store2Zone: v })} />
+                              </div>
+                              {/* 매장3 · 수량 + 구역 */}
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-[9px] font-bold text-violet-500 text-center leading-none">매3</span>
+                                <NumberInput value={row.store3Qty}
+                                  onChange={v => patchRow(row.key, { store3Qty: v })}
+                                  accent="focus:border-violet-400" />
+                                <ZoneInput value={row.store3Zone} placeholder="-"
+                                  accentClass="text-violet-600 focus:border-violet-400"
+                                  onChange={v => patchRow(row.key, { store3Zone: v })} />
                               </div>
                             </div>
                           </td>
