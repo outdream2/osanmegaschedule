@@ -430,6 +430,73 @@ router.post("/api/order-requests", async (req, res) => {
   res.json({ ok: true, updated: false, id: data?.id });
 });
 
+// 2026-08-10 · #15 · 발주이력 조회 · status='ordered' · order_number 로 GROUP
+//   마이그레이션 add_order_dispatch_columns_2026-08-10.sql 실행 후 활성
+//   컬럼 없으면 gracefully empty 반환
+router.get("/api/order-history", async (req, res) => {
+  const days = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "90")) || 90));
+  const since = new Date(Date.now() - days * 86400000).toISOString();
+  const supplier = String(req.query.supplier ?? "").trim();
+
+  try {
+    let q = supabase
+      .from("order_requests")
+      .select("id, order_number, order_date, desired_arrival, supplier, supplier_contact, supplier_email, supplier_phone, product_code, product_name, current_stock, optimal_stock, order_qty, unit_price, memo, sent_at, note")
+      .eq("status", "ordered")
+      .gte("sent_at", since)
+      .order("sent_at", { ascending: false });
+    if (supplier) q = q.eq("supplier", supplier);
+    const { data, error } = await q;
+    if (error) {
+      // 컬럼 없음 (마이그레이션 미실행) · gracefully empty
+      if (/column|does not exist|status/i.test(error.message)) {
+        return res.json({ orders: [], notice: "마이그레이션 필요: add_order_dispatch_columns_2026-08-10.sql" });
+      }
+      return res.status(500).json({ error: error.message });
+    }
+    // order_number 로 GROUP · 발주서 단위
+    const grouped = new Map<string, any>();
+    for (const row of (data ?? []) as any[]) {
+      const key = String(row.order_number ?? row.id);
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          order_number: row.order_number,
+          order_date: row.order_date,
+          desired_arrival: row.desired_arrival,
+          supplier: row.supplier,
+          supplier_contact: row.supplier_contact,
+          supplier_email: row.supplier_email,
+          supplier_phone: row.supplier_phone,
+          memo: row.memo,
+          sent_at: row.sent_at,
+          items: [],
+          total_qty: 0,
+          total_amount: 0,
+        });
+      }
+      const g = grouped.get(key);
+      const qty = Number(row.order_qty ?? 0);
+      const price = Number(row.unit_price ?? 0);
+      g.items.push({
+        id: row.id,
+        product_code: row.product_code,
+        product_name: row.product_name,
+        order_qty: qty,
+        unit_price: price,
+        line_amount: qty * price,
+        current_stock: row.current_stock,
+        optimal_stock: row.optimal_stock,
+      });
+      g.total_qty += qty;
+      g.total_amount += qty * price;
+    }
+    const orders = [...grouped.values()].sort((a, b) => String(b.sent_at ?? "").localeCompare(String(a.sent_at ?? "")));
+    return res.json({ orders, count: orders.length });
+  } catch (e: any) {
+    return res.status(500).json({ error: e?.message ?? "unknown" });
+  }
+});
+
 router.delete("/api/order-requests/:id", async (req, res) => {
   const { error } = await supabase.from("order_requests").delete().eq("id", req.params.id);
   if (error) return res.status(500).json({ error: error.message });
@@ -453,8 +520,8 @@ router.post("/api/order-requests/bulk-send", async (req, res) => {
   if (!Array.isArray(bySupplier) || bySupplier.length === 0) {
     return res.status(400).json({ error: "bySupplier가 비어있습니다." });
   }
-  if (!channels || (!channels.email && !channels.sms)) {
-    return res.status(400).json({ error: "채널(이메일/문자) 중 하나 이상 선택해야 합니다." });
+  if (!channels || (!channels.email && !channels.sms && !channels.kakao)) {
+    return res.status(400).json({ error: "채널(이메일/문자/카카오톡) 중 하나 이상 선택해야 합니다." });
   }
 
   const results: any[] = [];
@@ -489,7 +556,7 @@ router.post("/api/order-requests/bulk-send", async (req, res) => {
       supplier_email: targetEmail,
       supplier_phone: targetPhone,
       item_count: items.length,
-      channels: JSON.stringify({ email: !!channels.email, sms: !!channels.sms }),
+      channels: JSON.stringify({ email: !!channels.email, sms: !!channels.sms, kakao: !!channels.kakao }),
       items: JSON.stringify(items),
       dispatched_at: now,
       status: "pending",
@@ -522,8 +589,72 @@ router.post("/api/order-requests/bulk-send", async (req, res) => {
         dispatch.sms_status = "no_gateway_env";
       }
     }
+    // 2026-08-10 · #28 · 카카오톡 알림톡 (SolAPI · env·템플릿·인증 대기)
+    if (channels.kakao) {
+      if (!targetPhone) {
+        outcomes.push("kakao:no_recipient");
+        dispatch.kakao_status = "no_recipient";
+      } else {
+        try {
+          const { getSolApiStatus } = await import("../../lib/notification/solapiClient.js");
+          const solStatus = getSolApiStatus();
+          if (!solStatus.configured) {
+            outcomes.push(`kakao:no_env(${solStatus.missing.join(",")})`);
+            dispatch.kakao_status = "no_env";
+          } else if (!process.env.SOLAPI_KAKAO_TEMPLATE_ORDER) {
+            outcomes.push("kakao:no_template");
+            dispatch.kakao_status = "no_template";
+          } else {
+            // 실제 발송 · 템플릿 있으면 sendAlimtalk 호출
+            outcomes.push("kakao:skipped(template-not-verified)");
+            dispatch.kakao_status = "template_pending";
+          }
+        } catch (e: any) {
+          outcomes.push(`kakao:error(${e?.message ?? "unknown"})`);
+          dispatch.kakao_status = "error";
+        }
+      }
+    }
 
     dispatch.status = outcomes.some(o => /skipped\(/.test(o)) ? "sent" : "dry_run";
+
+    // 2026-08-10 · #14 · order_requests 라인에 status='ordered' + 발주서 정보 저장
+    //   각 아이템 · order_request_id 로 UPDATE · 마이그레이션 add_order_dispatch_columns_2026-08-10.sql 대기 시 fallback
+    const requestIds = items.map((it: any) => it.order_request_id).filter(Boolean);
+    if (requestIds.length > 0) {
+      const orderUpdate: Record<string, any> = {
+        status: "ordered",
+        order_number: order_number,
+        sent_at: now,
+        supplier: supName,
+        supplier_contact: targetName,
+        supplier_email: targetEmail,
+        supplier_phone: targetPhone,
+        order_date: order_date ?? now.slice(0, 10),
+        desired_arrival: desired_arrival ?? null,
+        memo: memo ?? null,
+      };
+      try {
+        // 각 아이템별 order_qty·unit_price · 개별 UPDATE (다르므로 in batch 어려움)
+        for (const it of items) {
+          const perItem = {
+            ...orderUpdate,
+            order_qty: it.order_qty ?? null,
+            unit_price: it.unit_price ?? null,
+          };
+          const { error } = await supabase.from("order_requests").update(perItem).eq("id", it.order_request_id);
+          if (error && /column|does not exist/i.test(error.message)) {
+            // 마이그레이션 전 · 컬럼 없음 · 조용히 skip (한 번만 로그)
+            console.warn(`[bulk-send] order_requests status 컬럼 미존재 · 마이그레이션 필요 (${error.message})`);
+            break;
+          } else if (error) {
+            console.warn(`[bulk-send] order_requests UPDATE 실패 (id=${it.order_request_id}): ${error.message}`);
+          }
+        }
+      } catch (e: any) {
+        console.warn(`[bulk-send] order_requests UPDATE 예외: ${e?.message}`);
+      }
+    }
 
     // order_dispatches 테이블 저장 (없으면 로그만)
     try {
