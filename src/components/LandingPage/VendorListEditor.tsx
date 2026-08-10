@@ -935,26 +935,37 @@ export const VendorDetailModal: React.FC<{
   const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
   const [purchLoading, setPurchLoading] = useState(false);
   const [summary, setSummary] = useState<VendorSummary | null>(null);
-  // 2026-08-10 · 사용자 요청 · 총재고 금액 · /api/stock-manage/supplier-purchases (stock_history · 최근 3개월 · totalStockAmount)
+  // 2026-08-10 · 사용자 요청 · 총재고금액 = 공급사 상품 각각 · current_stock × 최근 사입단가 합산
+  //   1) /api/products-search?supplier= · 공급사 상품 리스트 (current_stock)
+  //   2) /api/products/purchase-history?codes=... · 각 상품 latest_unit_price
+  //   3) 합산
   const [vendorTotalStock, setVendorTotalStock] = useState<number | null>(null);
   useEffect(() => {
     let alive = true;
     if (!vendor?.company_name) return;
-    fetch(`/api/stock-manage/supplier-purchases?months=3&limit=50000`)
-      .then(r => r.ok ? r.json() : [])
-      .then((data: any) => {
-        if (!alive) return;
-        const rows = Array.isArray(data) ? data : (Array.isArray(data?.rows) ? data.rows : []);
-        // 공급사명 매칭 · normalizeSupplierKey 없이 · 정제 후 lowercase
-        const target = vendor.company_name.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim().toLowerCase();
-        const matched = rows.filter((r: any) => {
-          const name = String(r.supplier ?? "").replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim().toLowerCase();
-          return name === target;
-        });
-        const total = matched.reduce((s: number, r: any) => s + (Number(r.totalStockAmount ?? 0) || 0), 0);
-        setVendorTotalStock(total);
-      })
-      .catch(() => { if (alive) setVendorTotalStock(null); });
+    (async () => {
+      try {
+        const r1 = await fetch(`/api/products-search?supplier=${encodeURIComponent(vendor.company_name)}&limit=2000`);
+        const d1 = r1.ok ? await r1.json() : { items: [] };
+        const items = Array.isArray(d1?.items) ? d1.items : [];
+        if (items.length === 0) { if (alive) setVendorTotalStock(0); return; }
+        const codes = Array.from(new Set(items.map((p: any) => String(p.code ?? p.product_code ?? "")).filter(Boolean)));
+        if (codes.length === 0) { if (alive) setVendorTotalStock(0); return; }
+        const r2 = await fetch(`/api/products/purchase-history?codes=${encodeURIComponent(codes.join(","))}&limit=1`);
+        const d2 = r2.ok ? await r2.json() : { history: {} };
+        const hist = d2?.history ?? {};
+        // 각 상품 current_stock × latest_unit_price 합산
+        const total = items.reduce((s: number, p: any) => {
+          const code = String(p.code ?? p.product_code ?? "");
+          const qty = Number(p.current_stock ?? 0) || 0;
+          const price = Number(hist[code]?.latest_unit_price ?? 0) || 0;
+          return s + qty * price;
+        }, 0);
+        if (alive) setVendorTotalStock(total);
+      } catch {
+        if (alive) setVendorTotalStock(null);
+      }
+    })();
     return () => { alive = false; };
   }, [vendor?.company_name]);
   const [activeTab, setActiveTab] = useState<DetailTab>("info");
@@ -1181,7 +1192,7 @@ export const VendorDetailModal: React.FC<{
                 <span className="w-1 h-4 rounded-full bg-emerald-500 shrink-0" />
                 <span className="text-[15px] font-black text-emerald-700">공급 요약</span>
               </div>
-              <span className="inline-flex items-baseline gap-1.5 text-[14px] leading-tight">
+              <span className="inline-flex items-baseline gap-1.5 text-[14px] leading-tight" title="공급사 상품 각각 · 현재고 × 최근 사입단가 합산">
                 <span className="text-slate-400 font-semibold">총재고금액</span>
                 <span className="tabular-nums font-black text-sky-700">{vendorTotalStock != null ? fmtWon(vendorTotalStock) : "-"}</span>
               </span>
@@ -1195,6 +1206,10 @@ export const VendorDetailModal: React.FC<{
                 <span className="text-slate-400 font-semibold">현재 총매입금액</span>
                 <span className="tabular-nums font-black text-indigo-700">{summary ? fmtWon(summary.totalAmount) : "-"}</span>
               </span>
+            </div>
+            {/* 2026-08-10 · 사용자 요청 · 총재고금액 계산 방법 · 아래 안내 */}
+            <div className="mt-1 text-[11px] text-slate-400 leading-relaxed px-4">
+              총재고금액 = 공급사 상품 각각 · <span className="font-mono">현재고 × 최근 사입단가</span> 합산
             </div>
           </div>
           {/* 모바일: details 접기 · 2줄 grid · 기본 닫힘 */}
