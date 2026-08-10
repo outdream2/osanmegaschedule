@@ -1086,44 +1086,66 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     try {
       // 공급사별로 별도 발주서 (각각 고유 order_number) — 병렬 발송
       const submissions = orderModal.suppliers.map(async (s) => {
-        const res = await fetch("/api/order-requests/bulk-send", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            order_number: s.order_number,     // ⭐ 공급사별 고유 발주번호
-            order_date: orderModal.orderDate,
-            desired_arrival: orderModal.desiredArrival,
-            memo: s.memo ?? orderModal.memo,   // 2026-08-10 · 공급사별 메모 우선 · 없으면 전역 fallback
-            channels: orderModal.channels,
-            bySupplier: [{
-              supplier: s.supplier,
-              supplier_contact: s.supplier_contact,
-              supplier_email: s.supplier_email,
-              supplier_phone: s.supplier_phone,
-              items: s.items.map(it => ({
-                order_request_id: it.order_request_id,
-                product_code: it.product_code,
-                product_name: it.product_name,
-                current_stock: it.current_stock,
-                optimal_stock: it.optimal_stock,
-                needed_qty: (it.optimal_stock ?? 0) - (it.current_stock ?? 0),
-                order_qty: it.order_qty,
-                memo: it.memo,
-              })),
-            }],
-          }),
-        });
-        return { supplier: s.supplier, order_number: s.order_number, ok: res.ok };
+        try {
+          const res = await fetch("/api/order-requests/bulk-send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              order_number: s.order_number,
+              order_date: orderModal.orderDate,
+              desired_arrival: orderModal.desiredArrival,
+              memo: s.memo ?? orderModal.memo,
+              channels: orderModal.channels,
+              bySupplier: [{
+                supplier: s.supplier,
+                supplier_contact: s.supplier_contact,
+                supplier_email: s.supplier_email,
+                supplier_phone: s.supplier_phone,
+                items: s.items.map(it => ({
+                  order_request_id: it.order_request_id,
+                  product_code: it.product_code,
+                  product_name: it.product_name,
+                  current_stock: it.current_stock,
+                  optimal_stock: it.optimal_stock,
+                  needed_qty: (it.optimal_stock ?? 0) - (it.current_stock ?? 0),
+                  order_qty: it.order_qty,
+                  memo: it.memo,
+                })),
+              }],
+            }),
+          });
+          const body = await res.json().catch(() => ({}));
+          const outcomes = Array.isArray(body?.results?.[0]?.outcomes) ? body.results[0].outcomes as string[] : [];
+          return {
+            supplier: s.supplier,
+            order_number: s.order_number,
+            ok: res.ok,
+            status: res.status,
+            error: body?.error ?? null,
+            outcomes,
+          };
+        } catch (e: any) {
+          return { supplier: s.supplier, order_number: s.order_number, ok: false, status: 0, error: `네트워크 오류: ${e?.message ?? e}`, outcomes: [] as string[] };
+        }
       });
       const results = await Promise.all(submissions);
       const succeeded = results.filter(r => r.ok).length;
       const failed = results.filter(r => !r.ok);
+      // 2026-08-10 · 사용자 요청 · 실패 사유 자세히 · 채널별 outcome + error 메시지
       const summaryLines = [
-        `✅ 성공: ${succeeded}건 / 실패: ${failed.length}건`,
-        ...results.filter(r => r.ok).map(r => `  · ${r.supplier} → #${r.order_number}`),
-        ...(failed.length > 0 ? [`\n❌ 실패 공급사:`, ...failed.map(r => `  · ${r.supplier} (#${r.order_number})`)] : []),
+        `✅ 성공: ${succeeded}건 / ❌ 실패: ${failed.length}건`,
+        "",
+        ...results.filter(r => r.ok).map(r => {
+          const details = r.outcomes.length > 0 ? ` · ${r.outcomes.join(" · ")}` : "";
+          return `✅ ${r.supplier} → #${r.order_number}${details}`;
+        }),
+        ...(failed.length > 0 ? ["", `❌ 실패 상세:`, ...failed.map(r => {
+          const reason = r.error ? ` · ${r.error}` : (r.status ? ` · HTTP ${r.status}` : "");
+          const outc = r.outcomes.length > 0 ? ` · outcomes: ${r.outcomes.join(", ")}` : "";
+          return `  · ${r.supplier} (#${r.order_number})${reason}${outc}`;
+        })] : []),
       ].join("\n");
-      alert(`발주서 ${orderModal.suppliers.length}건 발송 완료\n\n${summaryLines}`);
+      alert(`발주서 ${orderModal.suppliers.length}건 발송 결과\n\n${summaryLines}`);
       setOrderModal(null);
       setSelectedOrder(new Set());
       loadOrderReqs();
