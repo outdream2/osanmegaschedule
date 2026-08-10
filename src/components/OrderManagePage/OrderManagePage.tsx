@@ -26,6 +26,7 @@ import type { Vendor } from "../LandingPage/VendorListEditor";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 // 2026-08-03 · 공급사명 정제 유틸 · vat 부가정보 제거 (표시·분류 조회 통일)
 import { stripVendorAnnotation, isVatAnnotation, displayVendorName } from "../../utils/vendorNameNormalize";
+import { OrderHistoryTab } from "./OrderHistoryTab";
 import { StockReconciliationTab } from "../StockManagePage/StockReconciliationTab";
 import { TrendingTab } from "./TrendingTab";
 import { FlowTab } from "../StockManagePage/FlowTab";
@@ -198,7 +199,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialTopTab]);
   // Level-2 서브탭 상태
-  const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need" | "critical">("need");
+  // 2026-08-10 · #16 · 발주이력 탭 추가
+  const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need" | "critical" | "history">("need");
   const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "scan" | "productarrival" | "return" | "purchase-history">("receipt");
   const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment-input" | "vat-prepare">("vendor");
   const [statSubTab, setStatSubTab] = useState<"trending" | "category" | "flow" | "diff" | "supplier">("trending");
@@ -1220,7 +1222,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // ── 2026-08-03 · 서브탭 정의 (useSortableTabs 재정렬 대상) ──
   //   · 각 페이지별 storageKey 는 memory feedback_tab_reorder 규칙 준수 (tabOrder.<page>)
   //   · badge 는 렌더 시 별도 계산 (여기서는 순서·label·icon·color 만 유지)
-  type PurchaseOrderKey = "order" | "need" | "critical";
+  type PurchaseOrderKey = "order" | "need" | "critical" | "history";
   type PurchaseKey = "receipt" | "reconciliation" | "scan" | "productarrival" | "return" | "purchase-history";
   type PaymentKey = "vendor" | "payment-input" | "vat-prepare";
   type StatKey = "trending" | "category" | "flow" | "diff" | "supplier";
@@ -1230,6 +1232,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     { key: "order",    label: "발주요청",   icon: ShoppingCart,  color: "sky"    },
     { key: "need",     label: "발주필요",   icon: ClipboardList, color: "rose"   },
     { key: "critical", label: "품절임박",   icon: AlertTriangle, color: "amber"  }, // 2026-08-04 · 실재고 기준
+    { key: "history",  label: "발주이력",   icon: Package,       color: "indigo" }, // 2026-08-10 · #16 · status='ordered' · order_number 그룹
   ], []);
   const purchaseDefaultTabs: SubTabDef<PurchaseKey>[] = useMemo(() => [
     { key: "purchase-history", label: "매입이력",   icon: Building2,      color: "sky"     },
@@ -2160,6 +2163,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 </table>
               </div>
             </div>
+          )}
+          {/* 2026-08-10 · #16 · 발주이력 서브탭 · GET /api/order-history · order_number 그룹 · 마이그레이션 대기 시 empty */}
+          {purchaseOrderSubTab === "history" && (
+            <OrderHistoryTab />
           )}
         </div>
       )}
