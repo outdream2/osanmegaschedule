@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X, ChevronLeft, ChevronRight, Save, Clock, MessageSquare,
-  Calendar, CheckCircle, MapPin, User, Lock, Edit2, FileText, Upload,
+  Calendar, CheckCircle, MapPin, User, Lock,
 } from "lucide-react";
 import { Employee, Schedule } from "../../types";
 import { SCHEDULE_TYPES, getTypeHex, isLightHex } from "../../constants";
 import type { ScheduleTypeEntry } from "../../constants";
 import { ZoneAssignTab, type LogisticsZoneProps } from "./ZoneAssignTab";
 import { EmployeeInfoForm, type EmployeeInfoValues } from "../common/EmployeeInfoForm";
-import { uploadResume, uploadContract, uploadBankbook } from "../../lib/employeeApi";
+import { EmployeeProfileCard } from "../common/EmployeeProfileCard";
 
 export type { LogisticsZoneProps };
 
@@ -69,49 +69,9 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // 로컬 employee state · 파일 업로드 성공 시 즉시 UI 갱신
+  // 로컬 employee state · 자식 (EmployeeProfileCard) 파일 업로드 성공 시 반영
   const [localEmployee, setLocalEmployee] = useState<Employee>(employee);
   useEffect(() => { setLocalEmployee(employee); }, [employee]);
-
-  // 파일 업로드 · 이력서·근계·통장사본
-  const resumeFileRef = useRef<HTMLInputElement | null>(null);
-  const contractFileRef = useRef<HTMLInputElement | null>(null);
-  const bankbookFileRef = useRef<HTMLInputElement | null>(null);
-  const [uploadingKind, setUploadingKind] = useState<"resume" | "contract" | "bankbook" | null>(null);
-
-  const handleResumeUpload = async (file: File) => {
-    setUploadingKind("resume");
-    try {
-      const { url } = await uploadResume(localEmployee.id, file);
-      setLocalEmployee(prev => ({ ...prev, resume_url: url }));
-    } catch (err: any) {
-      alert(`이력서 업로드 실패 · ${err?.message ?? err}`);
-    } finally {
-      setUploadingKind(null);
-    }
-  };
-  const handleContractUpload = async (file: File) => {
-    setUploadingKind("contract");
-    try {
-      const { url } = await uploadContract(localEmployee.id, file);
-      if (url) setLocalEmployee(prev => ({ ...prev, contract_file_url: url }));
-    } catch (err: any) {
-      alert(`근로계약서 업로드 실패 · ${err?.message ?? err}`);
-    } finally {
-      setUploadingKind(null);
-    }
-  };
-  const handleBankbookUpload = async (file: File) => {
-    setUploadingKind("bankbook");
-    try {
-      const { dataUrl } = await uploadBankbook(localEmployee, file);
-      setLocalEmployee(prev => ({ ...prev, bankbook_image_url: dataUrl }));
-    } catch (err: any) {
-      alert(`통장사본 업로드 실패 · ${err?.message ?? err}`);
-    } finally {
-      setUploadingKind(null);
-    }
-  };
 
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
@@ -944,8 +904,6 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
             address: localEmployee.address || "",
             email: localEmployee.email || "",
           };
-          const hasResume = !!localEmployee.resume_url;
-          const hasContract = !!localEmployee.contract_file_url;
           return (
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
               {isLocked && (
@@ -955,149 +913,15 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                 </div>
               )}
 
-              {/* 상단 세션 · 이름 헤더 + 버튼 + 정보 grid */}
-              <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 space-y-3 shadow-sm">
-                {/* 이름 헤더 + 버튼 (오른쪽 정렬) */}
-                <div className="flex items-start justify-between gap-3 flex-wrap">
-                  <div className="min-w-0">
-                    <div className="text-[18px] font-black text-slate-900 leading-tight">{employee.name}</div>
-                    <div className="text-[12px] text-slate-500 font-semibold mt-0.5">
-                      {[employee.position, employee.rank, employee.employmentType].filter(Boolean).join(" · ")}
-                    </div>
-                  </div>
-                  {onEditEmployee && (
-                    <button
-                      type="button"
-                      onClick={onEditEmployee}
-                      className="px-3 py-1.5 text-[13px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg inline-flex items-center gap-1 shadow-sm transition cursor-pointer shrink-0"
-                    >
-                      <Edit2 size={14} /> 수정
-                    </button>
-                  )}
-                </div>
+              {/* 공통 · 스케쥴 톤 직원정보 카드 */}
+              <EmployeeProfileCard
+                employee={localEmployee}
+                onEmployeeChange={(u) => setLocalEmployee(u)}
+                onEdit={onEditEmployee}
+              />
 
-                {/* 정보 grid · 성별·입사일·근무지·연차 (한줄) · 전화 (전체 폭) */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 pt-2 border-t border-slate-100">
-                  <div className="flex flex-col">
-                    <span className="text-[11px] font-semibold text-slate-400">성별</span>
-                    <span className="text-[13px] font-bold text-slate-700">{employee.gender ?? "—"}</span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[11px] font-semibold text-slate-400">입사일</span>
-                    <span className="text-[13px] font-bold text-slate-700 tabular-nums">{employee.hireDate || "—"}</span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[11px] font-semibold text-slate-400">근무지</span>
-                    <span className="text-[13px] font-bold text-slate-700">{employee.workplace}</span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[11px] font-semibold text-slate-400">연차</span>
-                    <span className="text-[13px] font-bold text-slate-700">
-                      {employee.annual_leave_days != null ? `${employee.annual_leave_days}일` : "—"}
-                    </span>
-                  </div>
-                  <div className="col-span-2 sm:col-span-4 flex flex-col">
-                    <span className="text-[11px] font-semibold text-blue-400">전화 (로그인 ID)</span>
-                    <span className="text-[14px] font-black text-blue-700 tabular-nums">
-                      {employee.phone
-                        ? employee.phone.replace(/^(\d{3})(\d{3,4})(\d{4})$/, "$1-$2-$3")
-                        : <span className="text-slate-300 font-normal">미등록</span>}
-                    </span>
-                  </div>
-                </div>
-
-                {/* 비고 (있을 때만) */}
-                {/* 첨부 파일 · 이력서·근계·통장사본 · 3개 항상 노출 · 없으면 클릭 시 업로드 */}
-                {(() => {
-                  const bankbookUrl = localEmployee.bankbook_image_url;
-                  const hasBankbook = !!bankbookUrl;
-                  const emptyCls = "px-2 py-1.5 text-[12px] font-semibold bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700 rounded-lg inline-flex items-center justify-center gap-1 border border-dashed border-slate-300 cursor-pointer transition disabled:opacity-60 disabled:cursor-wait";
-                  return (
-                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
-                      {/* hidden file inputs */}
-                      <input ref={resumeFileRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleResumeUpload(f); e.target.value = ""; }} />
-                      <input ref={contractFileRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleContractUpload(f); e.target.value = ""; }} />
-                      <input ref={bankbookFileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleBankbookUpload(f); e.target.value = ""; }} />
-
-                      {/* 이력서 */}
-                      {hasResume ? (
-                        <a
-                          href={localEmployee.resume_url!}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-2 py-1.5 text-[12px] font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-lg inline-flex items-center justify-center gap-1 shadow-sm transition"
-                          title="이력서 · 새 탭에서 열기"
-                        >
-                          <FileText size={13} /> 이력서
-                        </a>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={uploadingKind === "resume"}
-                          onClick={() => resumeFileRef.current?.click()}
-                          className={emptyCls}
-                          title="이력서 업로드 (PDF · 이미지)"
-                        >
-                          <Upload size={12} /> {uploadingKind === "resume" ? "업로드 중..." : "이력서 · 없음"}
-                        </button>
-                      )}
-                      {/* 근로계약서 */}
-                      {hasContract ? (
-                        <button
-                          type="button"
-                          onClick={() => setContractModalOpen(true)}
-                          className="px-2 py-1.5 text-[12px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg inline-flex items-center justify-center gap-1 shadow-sm transition cursor-pointer"
-                          title="근로계약서 · 미리보기"
-                        >
-                          <FileText size={13} /> 근로계약서
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={uploadingKind === "contract"}
-                          onClick={() => contractFileRef.current?.click()}
-                          className={emptyCls}
-                          title="근로계약서 업로드 (PDF · 이미지)"
-                        >
-                          <Upload size={12} /> {uploadingKind === "contract" ? "업로드 중..." : "근계 · 없음"}
-                        </button>
-                      )}
-                      {/* 통장사본 */}
-                      {hasBankbook ? (
-                        <a
-                          href={bankbookUrl!}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-2 py-1.5 text-[12px] font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg inline-flex items-center justify-center gap-1 shadow-sm transition"
-                          title="통장사본 · 새 탭에서 열기"
-                        >
-                          <FileText size={13} /> 통장사본
-                        </a>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={uploadingKind === "bankbook"}
-                          onClick={() => bankbookFileRef.current?.click()}
-                          className={emptyCls}
-                          title="통장사본 업로드 (이미지 · 5MB 이하)"
-                        >
-                          <Upload size={12} /> {uploadingKind === "bankbook" ? "업로드 중..." : "통장사본 · 없음"}
-                        </button>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                {employee.description && (
-                  <div className="flex items-start gap-2 pt-2 border-t border-slate-100">
-                    <span className="text-[11px] font-semibold text-slate-400 shrink-0 mt-0.5">비고</span>
-                    <span className="text-[13px] text-slate-700 leading-snug">{employee.description}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* 공통 폼 · read-only · 상단 중복 제거 · 주소·이메일만 */}
-              {(employee.address || employee.email) && (
+              {/* 부가 정보 · 주소·이메일 (있을 때만) · 공통 폼 (read-only) */}
+              {(localEmployee.address || localEmployee.email) && (
                 <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
                   <EmployeeInfoForm
                     values={infoValues}
@@ -1106,51 +930,6 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                     editing={false}
                     fields={["address", "email"]}
                   />
-                </div>
-              )}
-
-              {/* 근로계약서 뷰어 모달 (기존 유지) */}
-              {contractModalOpen && localEmployee.contract_file_url && (
-                <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/75 p-4">
-                  <div className="relative w-full max-w-3xl bg-white rounded-2xl overflow-hidden flex flex-col shadow-2xl" style={{ height: "85vh" }}>
-                    <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 shrink-0">
-                      <span className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                        <FileText size={15} className="text-emerald-600" /> 근로계약서 — {localEmployee.name}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <a
-                          href={localEmployee.contract_file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition"
-                        >
-                          새 탭에서 열기
-                        </a>
-                        <button
-                          type="button"
-                          onClick={() => setContractModalOpen(false)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex-1 overflow-hidden bg-slate-100">
-                      {/\.(pdf)$/i.test(localEmployee.contract_file_url) ? (
-                        <iframe
-                          src={localEmployee.contract_file_url}
-                          className="w-full h-full border-0"
-                          title="근로계약서"
-                        />
-                      ) : (
-                        <img
-                          src={localEmployee.contract_file_url}
-                          alt="근로계약서"
-                          className="w-full h-full object-contain"
-                        />
-                      )}
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
