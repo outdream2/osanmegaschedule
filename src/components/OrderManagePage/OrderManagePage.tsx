@@ -1315,7 +1315,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     { key: "purchase-history", label: "매입이력",   icon: Building2,      color: "sky"     },
     { key: "return",           label: "반품필요",   icon: ArrowLeftRight, color: "rose"    },
     { key: "receipt",          label: "거래명세서", icon: PackageCheck,   color: "violet"  },
-    { key: "scan",             label: "실재고입력", icon: ScanLine,       color: "emerald" },  // 2026-08-10 · 목색 (사용자 요청)
+    { key: "scan",             label: "실재고입력", icon: ScanLine,       color: "teal"    },  // 2026-08-10 · 목색 (사용자 요청 · teal · 부드러운 blue-green)
     { key: "productarrival",   label: "상품입고",   icon: PackagePlus,    color: "blue"    },  // 2026-08-10 · 파랑 (사용자 요청)
     { key: "reconciliation",   label: "실재고",     icon: CheckCircle2,   color: "emerald" },
   ], []);
