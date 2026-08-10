@@ -1269,7 +1269,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               {/* 브랜드 헤더 · OSAM MEGATOWN (2026-08-09 · 반응형) */}
               <div className="w-full text-center pt-2 pb-1">
                 <div className="text-slate-900 font-black tracking-[0.15em] text-2xl sm:text-3xl md:text-4xl leading-tight">
-                  OSAM <span className="text-indigo-600">MEGATOWN</span>
+                  OSAN <span className="text-indigo-600">MEGATOWN</span>
                 </div>
                 <div className="text-slate-400 text-[11px] sm:text-xs mt-1 font-semibold tracking-wide">오산 메가타운 약국</div>
               </div>

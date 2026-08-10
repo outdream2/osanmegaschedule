@@ -94,7 +94,7 @@ export const HiddenManagerModal: React.FC<Props> = ({
                       <div className="text-[10px] font-mono text-slate-400 truncate">
                         #{code}
                         {p.supplier ? ` · ${p.supplier}` : ""}
-                        {p.real_map ? ` · ${p.real_map}` : ""}
+                        {(p as any).spec ? ` · ${(p as any).spec}` : ""}
                         {p.current_stock != null ? ` · 재고 ${p.current_stock}` : ""}
                       </div>
                     </div>

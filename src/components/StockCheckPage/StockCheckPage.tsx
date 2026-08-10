@@ -67,7 +67,8 @@ const STOCK_SORT_CMP: Record<StockSortKey, Comparator<StockItem>> = {
     return va - vb;
   },
   product_name: (a, b) => String(a.product_name ?? "").localeCompare(String(b.product_name ?? ""), "ko"),
-  real_map:     (a, b) => String(a.real_map     ?? "").localeCompare(String(b.real_map     ?? ""), "ko"),
+  // 2026-08-10 · 사용자 정책 · "구역" 정렬 = spec (진열위치 구역) · real_map (실제진열위치) 아님
+  real_map:     (a, b) => String(a.spec ?? "").localeCompare(String(b.spec ?? ""), "ko"),
   supplier:     (a, b) => String(a.supplier     ?? "").localeCompare(String(b.supplier     ?? ""), "ko"),
 };
 
