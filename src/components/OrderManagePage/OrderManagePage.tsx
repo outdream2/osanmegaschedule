@@ -119,13 +119,12 @@ interface OrderManagePageProps {
 //   · 페이지 로딩 시 저장된 조건으로 초기화
 type NeedCategoryFilterKey = string; // DB 동적 카테고리 지원 · "all" + 임의 카테고리
 type OrderNeedShortageBasis = "optimal" | "min" | "realStock";
-// 2026-08-03 (#189) · 정렬 기본값 · 매입주기·최근 한달 판매량 필터와 함께 저장
+// 2026-08-03 (#189) · 정렬 기본값 · 최근 한달 판매량 필터와 함께 저장
 //   · "sale_month" · 최근 한달 판매량 (top-sales?months 로 enrich)
-//   · "cycle" · 매입주기일 (first/last purchase 로 계산 · enrich)
 //   · 나머지 · 기존 NeedSortKey 와 동일
 type OrderNeedDefaultSortKey =
   | "supplier" | "contact" | "name" | "current" | "inv" | "optimal" | "short"
-  | "sale_month" | "cycle";
+  | "sale_month";
 interface OrderNeedFilterConfig {
   /** 부족 판정 기준 · optimal(추천적정재고) · min(최소재고) · realStock(실재고) */
   shortageBasis: OrderNeedShortageBasis;
@@ -135,8 +134,6 @@ interface OrderNeedFilterConfig {
   includeMissingRealStock: boolean;
   /** 최소 부족 개수 · 부족량이 이 값 이상만 표시 (>=1) */
   minShortage: number;
-  /** 2026-08-03 (#189) · 매입주기 최소 (일) · N 이상만 표시 · 0 이면 필터 미적용 */
-  minPurchaseCycle: number;
   /** 2026-08-03 (#189) · 최근 한달(30일) 판매량 최소 (개) · N 이상만 표시 · 0 이면 필터 미적용 */
   minMonthlySales: number;
   /** 2026-08-03 (#189) · 기본 정렬 · 페이지 진입 시 적용 */
@@ -150,9 +147,6 @@ const DEFAULT_ORDER_NEED_CONFIG: OrderNeedFilterConfig = {
   defaultCategory: "all",
   includeMissingRealStock: true,
   minShortage: 1,
-  // 2026-08-03 · db-connector 검증 · 기본값 0 (필터 미적용) 으로 완화
-  // 90/100 은 신규 사용자에게 4건만 노출되는 강한 필터 · #245 root cause
-  minPurchaseCycle: 0,
   minMonthlySales: 0,
   // 2026-08-03 (#189) · 기본 정렬 · 최근 한달 판매량 desc (많이 팔린 상품 우선)
   defaultSortKey: "sale_month",
@@ -168,7 +162,7 @@ const loadOrderNeedConfig = (): OrderNeedFilterConfig => {
     const validCat: NeedCategoryFilterKey[] = ["all", "위탁", "선결제", "60회전", "90회전", "기타"];
     const validSortKey: OrderNeedDefaultSortKey[] = [
       "supplier", "contact", "name", "current", "inv", "optimal", "short",
-      "sale_month", "cycle",
+      "sale_month",
     ];
     return {
       shortageBasis: validBasis.includes(parsed.shortageBasis) ? parsed.shortageBasis : DEFAULT_ORDER_NEED_CONFIG.shortageBasis,
@@ -176,7 +170,6 @@ const loadOrderNeedConfig = (): OrderNeedFilterConfig => {
       includeMissingRealStock: typeof parsed.includeMissingRealStock === "boolean" ? parsed.includeMissingRealStock : DEFAULT_ORDER_NEED_CONFIG.includeMissingRealStock,
       minShortage: (typeof parsed.minShortage === "number" && parsed.minShortage >= 1) ? Math.floor(parsed.minShortage) : DEFAULT_ORDER_NEED_CONFIG.minShortage,
       // 2026-08-03 (#189) · 새 필드 · 하위 호환 · fallback = DEFAULT
-      minPurchaseCycle: (typeof parsed.minPurchaseCycle === "number" && parsed.minPurchaseCycle >= 0) ? Math.floor(parsed.minPurchaseCycle) : DEFAULT_ORDER_NEED_CONFIG.minPurchaseCycle,
       minMonthlySales: (typeof parsed.minMonthlySales === "number" && parsed.minMonthlySales >= 0) ? Math.floor(parsed.minMonthlySales) : DEFAULT_ORDER_NEED_CONFIG.minMonthlySales,
       defaultSortKey: validSortKey.includes(parsed.defaultSortKey) ? parsed.defaultSortKey : DEFAULT_ORDER_NEED_CONFIG.defaultSortKey,
       defaultSortDir: (parsed.defaultSortDir === "asc" || parsed.defaultSortDir === "desc") ? parsed.defaultSortDir : DEFAULT_ORDER_NEED_CONFIG.defaultSortDir,
@@ -240,11 +233,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [needCollapsed, setNeedCollapsed] = useState<Set<string>>(new Set());
   const toggleNeedGroup = (g: string) => setNeedCollapsed(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
   const isNeedCollapsed = (g: string) => needCollapsed.has(g);
-  // ── 발주필요 · 각 row 별 상세 재고 표시 (창고1/2·매장1/2/3) · 실재고 셀의 상세 버튼 클릭 시 확장 ──
-  const [needStockDetailOpen, setNeedStockDetailOpen] = useState<Set<string>>(new Set());
-  const toggleNeedStockDetail = (code: string) => setNeedStockDetailOpen(prev => {
-    const n = new Set(prev); n.has(code) ? n.delete(code) : n.add(code); return n;
-  });
   // T-COMMON-InventoryEditModal · 발주요청 리스트 실재고 입력·편집 모달
   const [inventoryEditModal, setInventoryEditModal] = useState<{
     code: string;
@@ -312,8 +300,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [orderCategoryFilter, setOrderCategoryFilter] = useState<NeedCategoryFilterKey>("all");
 
   // ── 발주필요(need) 탭 정렬 ──
-  //   · 2026-08-03 (#189) · "sale_month" · "cycle" 추가 · orderNeedConfig.defaultSort* 로 초기화
-  type NeedSortKey = "supplier" | "contact" | "name" | "current" | "inv" | "optimal" | "short" | "sale_month" | "cycle";
+  //   · 2026-08-03 (#189) · "sale_month" 추가 · orderNeedConfig.defaultSort* 로 초기화
+  type NeedSortKey = "supplier" | "contact" | "name" | "current" | "inv" | "optimal" | "short" | "sale_month";
   const [needSortKey, setNeedSortKey] = useState<NeedSortKey>(() => loadOrderNeedConfig().defaultSortKey as NeedSortKey);
   const [needSortDir, setNeedSortDir] = useState<"asc" | "desc">(() => loadOrderNeedConfig().defaultSortDir);
   const handleNeedSort = (k: NeedSortKey) => {
@@ -441,20 +429,18 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   //   · 하위 호환 · legacy minSales (≥N 방향) 는 maxSalesMonth 0 으로 초기화 (마이그레이션)
   const ORDER_NEED_INLINE_KEY = "megatown_orderNeed_inline";
   interface OrderNeedInline {
-    minCycle: number;
     maxCurrent: number;
     maxSalesMonth: number;    // 최근 30일 판매량 ≤ N
     maxSalesQuarter: number;  // 최근 90일 판매량 ≤ N
     // #232 · 각 조건 · 체크박스 활성/비활성 · 기본 모두 false (적정재고 이하만 노출)
-    cycleEnabled: boolean;
     currentEnabled: boolean;
     salesMonthEnabled: boolean;
     salesQuarterEnabled: boolean;
   }
   const DEFAULT_INLINE: OrderNeedInline = {
-    minCycle: 90, maxCurrent: 50, maxSalesMonth: 50, maxSalesQuarter: 100,
+    maxCurrent: 50, maxSalesMonth: 50, maxSalesQuarter: 100,
     // #232 · 기본 모두 미체크 → 적정재고 이하 상품 모두 표시
-    cycleEnabled: false, currentEnabled: false, salesMonthEnabled: false, salesQuarterEnabled: false,
+    currentEnabled: false, salesMonthEnabled: false, salesQuarterEnabled: false,
   };
   const loadInlineFilter = (): OrderNeedInline => {
     try {
@@ -464,44 +450,37 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       if (!p || typeof p !== "object") return DEFAULT_INLINE;
       const hasLegacyMinSales = "minSales" in p && !("maxSalesMonth" in p);
       return {
-        minCycle:        typeof p.minCycle        === "number" && p.minCycle        >= 0 ? Math.floor(p.minCycle)        : DEFAULT_INLINE.minCycle,
         maxCurrent:      typeof p.maxCurrent      === "number" && p.maxCurrent      >= 0 ? Math.floor(p.maxCurrent)      : DEFAULT_INLINE.maxCurrent,
         maxSalesMonth:   hasLegacyMinSales ? 0 : (typeof p.maxSalesMonth === "number" && p.maxSalesMonth >= 0 ? Math.floor(p.maxSalesMonth) : DEFAULT_INLINE.maxSalesMonth),
         maxSalesQuarter: typeof p.maxSalesQuarter === "number" && p.maxSalesQuarter >= 0 ? Math.floor(p.maxSalesQuarter) : DEFAULT_INLINE.maxSalesQuarter,
         // #232 · enabled 플래그 · 하위호환 (없으면 false)
-        cycleEnabled:        typeof p.cycleEnabled        === "boolean" ? p.cycleEnabled        : DEFAULT_INLINE.cycleEnabled,
         currentEnabled:      typeof p.currentEnabled      === "boolean" ? p.currentEnabled      : DEFAULT_INLINE.currentEnabled,
         salesMonthEnabled:   typeof p.salesMonthEnabled   === "boolean" ? p.salesMonthEnabled   : DEFAULT_INLINE.salesMonthEnabled,
         salesQuarterEnabled: typeof p.salesQuarterEnabled === "boolean" ? p.salesQuarterEnabled : DEFAULT_INLINE.salesQuarterEnabled,
       };
     } catch { return DEFAULT_INLINE; }
   };
-  const [needInlineMinCycle,          setNeedInlineMinCycle]          = useState<number>(() => loadInlineFilter().minCycle);
   const [needInlineMaxCurrent,        setNeedInlineMaxCurrent]        = useState<number>(() => loadInlineFilter().maxCurrent);
   const [needInlineMaxSalesMonth,     setNeedInlineMaxSalesMonth]     = useState<number>(() => loadInlineFilter().maxSalesMonth);
   const [needInlineMaxSalesQuarter,   setNeedInlineMaxSalesQuarter]   = useState<number>(() => loadInlineFilter().maxSalesQuarter);
   // #232 · 각 조건 체크박스 · 기본 미체크 (적정재고 이하만 표시)
-  const [needCycleEnabled,        setNeedCycleEnabled]        = useState<boolean>(() => loadInlineFilter().cycleEnabled);
   const [needCurrentEnabled,      setNeedCurrentEnabled]      = useState<boolean>(() => loadInlineFilter().currentEnabled);
   const [needSalesMonthEnabled,   setNeedSalesMonthEnabled]   = useState<boolean>(() => loadInlineFilter().salesMonthEnabled);
   const [needSalesQuarterEnabled, setNeedSalesQuarterEnabled] = useState<boolean>(() => loadInlineFilter().salesQuarterEnabled);
   // deferred values — 입력 즉시 state · 필터는 [조회] 클릭 시 적용
-  const [deferredInlineCycle,         setDeferredInlineCycle]         = useState(needInlineMinCycle);
   const [deferredInlineCurrent,       setDeferredInlineCurrent]       = useState(needInlineMaxCurrent);
   const [deferredInlineSalesMonth,    setDeferredInlineSalesMonth]    = useState(needInlineMaxSalesMonth);
   const [deferredInlineSalesQuarter,  setDeferredInlineSalesQuarter]  = useState(needInlineMaxSalesQuarter);
   // #232 · deferred enabled (조회 클릭 시 반영)
-  const [deferredCycleEnabled,        setDeferredCycleEnabled]        = useState(needCycleEnabled);
   const [deferredCurrentEnabled,      setDeferredCurrentEnabled]      = useState(needCurrentEnabled);
   const [deferredSalesMonthEnabled,   setDeferredSalesMonthEnabled]   = useState(needSalesMonthEnabled);
   const [deferredSalesQuarterEnabled, setDeferredSalesQuarterEnabled] = useState(needSalesQuarterEnabled);
   const inlineDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // 2026-08-06 · 실시간 필터 반영 · 조회 중 표시 (사용자 요청)
   const [inlineFiltering, setInlineFiltering] = useState(false);
-  const updateInline = useCallback((field: "cycle" | "current" | "salesMonth" | "salesQuarter", raw: string) => {
+  const updateInline = useCallback((field: "current" | "salesMonth" | "salesQuarter", raw: string) => {
     const n = raw === "" ? 0 : Math.max(0, Math.floor(Number(raw)));
     if (!Number.isFinite(n)) return;
-    if (field === "cycle")        setNeedInlineMinCycle(n);
     if (field === "current")      setNeedInlineMaxCurrent(n);
     if (field === "salesMonth")   setNeedInlineMaxSalesMonth(n);
     if (field === "salesQuarter") setNeedInlineMaxSalesQuarter(n);
@@ -510,28 +489,24 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // [조회] 버튼 · 명시적 필터 적용 (기존 유지 · 사용자가 명시적 조회 원할 때)
   const applyInlineFilter = useCallback(() => {
     if (inlineDebounceRef.current) clearTimeout(inlineDebounceRef.current);
-    setDeferredInlineCycle(needInlineMinCycle);
     setDeferredInlineCurrent(needInlineMaxCurrent);
     setDeferredInlineSalesMonth(needInlineMaxSalesMonth);
     setDeferredInlineSalesQuarter(needInlineMaxSalesQuarter);
-    setDeferredCycleEnabled(needCycleEnabled);
     setDeferredCurrentEnabled(needCurrentEnabled);
     setDeferredSalesMonthEnabled(needSalesMonthEnabled);
     setDeferredSalesQuarterEnabled(needSalesQuarterEnabled);
     setInlineFiltering(false);
     try {
       localStorage.setItem(ORDER_NEED_INLINE_KEY, JSON.stringify({
-        minCycle: needInlineMinCycle,
         maxCurrent: needInlineMaxCurrent,
         maxSalesMonth: needInlineMaxSalesMonth,
         maxSalesQuarter: needInlineMaxSalesQuarter,
-        cycleEnabled: needCycleEnabled,
         currentEnabled: needCurrentEnabled,
         salesMonthEnabled: needSalesMonthEnabled,
         salesQuarterEnabled: needSalesQuarterEnabled,
       }));
     } catch { /**/ }
-  }, [needInlineMinCycle, needInlineMaxCurrent, needInlineMaxSalesMonth, needInlineMaxSalesQuarter, needCycleEnabled, needCurrentEnabled, needSalesMonthEnabled, needSalesQuarterEnabled]);
+  }, [needInlineMaxCurrent, needInlineMaxSalesMonth, needInlineMaxSalesQuarter, needCurrentEnabled, needSalesMonthEnabled, needSalesQuarterEnabled]);
 
   // 2026-08-06 · 실시간 필터 · 체크박스/입력 변경 시 400ms debounce 후 자동 적용 (사용자 요청)
   //   · 조회중 배지로 로딩 표시 · 완료 시 자동 사라짐
@@ -542,45 +517,37 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       applyInlineFilter();
     }, 400);
     return () => { if (inlineDebounceRef.current) clearTimeout(inlineDebounceRef.current); };
-  }, [needInlineMinCycle, needInlineMaxCurrent, needInlineMaxSalesMonth, needInlineMaxSalesQuarter, needCycleEnabled, needCurrentEnabled, needSalesMonthEnabled, needSalesQuarterEnabled, applyInlineFilter]);
+  }, [needInlineMaxCurrent, needInlineMaxSalesMonth, needInlineMaxSalesQuarter, needCurrentEnabled, needSalesMonthEnabled, needSalesQuarterEnabled, applyInlineFilter]);
   const resetInlineFilter = () => {
     if (inlineDebounceRef.current) clearTimeout(inlineDebounceRef.current);
-    setNeedCycleEnabled(false); setNeedCurrentEnabled(false); setNeedSalesMonthEnabled(false); setNeedSalesQuarterEnabled(false);
-    setDeferredCycleEnabled(false); setDeferredCurrentEnabled(false); setDeferredSalesMonthEnabled(false); setDeferredSalesQuarterEnabled(false);
+    setNeedCurrentEnabled(false); setNeedSalesMonthEnabled(false); setNeedSalesQuarterEnabled(false);
+    setDeferredCurrentEnabled(false); setDeferredSalesMonthEnabled(false); setDeferredSalesQuarterEnabled(false);
     try {
       localStorage.setItem(ORDER_NEED_INLINE_KEY, JSON.stringify({
-        minCycle: needInlineMinCycle,
         maxCurrent: needInlineMaxCurrent,
         maxSalesMonth: needInlineMaxSalesMonth,
         maxSalesQuarter: needInlineMaxSalesQuarter,
-        cycleEnabled: false, currentEnabled: false, salesMonthEnabled: false, salesQuarterEnabled: false,
+        currentEnabled: false, salesMonthEnabled: false, salesQuarterEnabled: false,
       }));
     } catch { /**/ }
   };
-  const inlineActive = deferredCycleEnabled || deferredCurrentEnabled || deferredSalesMonthEnabled || deferredSalesQuarterEnabled;
+  const inlineActive = deferredCurrentEnabled || deferredSalesMonthEnabled || deferredSalesQuarterEnabled;
 
-  // 2026-08-03 (#189) · 발주필요 · 매입주기·최근 한달 판매량 enrich map
-  //   · 필터 조건 (minPurchaseCycle · minMonthlySales) + 정렬 (sale_month · cycle) 에 사용
+  // 2026-08-03 (#189) · 발주필요 · 최근 한달 판매량 enrich map
+  //   · 필터 조건 (minMonthlySales) + 정렬 (sale_month) 에 사용
   //   · top-sales?months=6 재활용 (ReturnListPanel 이 이미 warm 시켜둠 · 서버 캐시 TTL 활용)
   //   · 발주필요 탭 · 필터 활성화 or 정렬 활성화 시에만 fetch (성능 · 필요없으면 skip)
   interface NeedExtra {
-    cycle: number | null;
     saleMonth: number | null;    // 최근 30일 · top-sales sale_qty_month
     saleQuarter: number | null;  // 최근 90일 · top-sales sale_qty_90d · #207 신규
   }
   const [needExtraMap, setNeedExtraMap] = useState<Map<string, NeedExtra>>(() => new Map());
   const [needExtraLoaded, setNeedExtraLoaded] = useState(false);
   const needExtraRequired = (
-    // 2026-08-04 · 매입주기 컬럼 상시 표시 → enrich 항상 로드
-    true ||
-    orderNeedConfig.minPurchaseCycle > 0 ||
     orderNeedConfig.minMonthlySales > 0 ||
     orderNeedConfig.defaultSortKey === "sale_month" ||
-    orderNeedConfig.defaultSortKey === "cycle" ||
     needSortKey === "sale_month" ||
-    needSortKey === "cycle" ||
     // 2026-08-03 (#206/#207) · 인라인 필터도 enrich 필요
-    deferredInlineCycle > 0 ||
     deferredInlineSalesMonth > 0 ||
     deferredInlineSalesQuarter > 0
   );
@@ -598,18 +565,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         for (const r of rows) {
           const code = String(r?.product_code ?? "").trim();
           if (!code) continue;
-          const cnt = Number(r?.purchase_count ?? 0);
-          const first = String(r?.first_purchase_date ?? "");
-          const last = String(r?.last_purchase_date ?? "");
-          let cycle: number | null = null;
-          if (cnt >= 2 && first && last && first !== last) {
-            const days = Math.round((new Date(last).getTime() - new Date(first).getTime()) / (86400 * 1000));
-            cycle = cnt > 1 ? Math.round(days / (cnt - 1)) : null;
-          }
           const saleMonth = r?.sale_qty_month != null ? Number(r.sale_qty_month) : null;
           const saleQuarter = r?.sale_qty_90d != null ? Number(r.sale_qty_90d) : null;  // #207 · 3달
           m.set(code, {
-            cycle,
             saleMonth:   Number.isFinite(saleMonth)   ? saleMonth   : null,
             saleQuarter: Number.isFinite(saleQuarter) ? saleQuarter : null,
           });
@@ -845,41 +803,32 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     }
     if (shortage < Math.max(1, orderNeedConfig.minShortage)) return false;
 
-    // 2026-08-03 (#189) · 매입주기 · 최근 한달 판매량 필터 (enrich 데이터 필요 · 미로딩 시 skip)
+    // 2026-08-03 (#189) · 최근 한달 판매량 필터 (enrich 데이터 필요 · 미로딩 시 skip)
     //   · 0 이면 미적용
     //   · enrich 데이터 없는 상품 · 안전상 통과 (오탐 방지 · 미로딩 상태에서 사라지지 않음)
     //   · 데이터 있고 기준 미달 시에만 제외
-    if (orderNeedConfig.minPurchaseCycle > 0 || orderNeedConfig.minMonthlySales > 0) {
+    if (orderNeedConfig.minMonthlySales > 0) {
       const extra = code ? needExtraMap.get(code) : undefined;
       if (extra) {
-        if (orderNeedConfig.minPurchaseCycle > 0) {
-          if (extra.cycle == null || extra.cycle < orderNeedConfig.minPurchaseCycle) return false;
-        }
-        if (orderNeedConfig.minMonthlySales > 0) {
-          if (extra.saleMonth == null || extra.saleMonth < orderNeedConfig.minMonthlySales) return false;
-        }
+        if (extra.saleMonth == null || extra.saleMonth < orderNeedConfig.minMonthlySales) return false;
       }
       // enrich 미로딩 상품 · 로딩 완료 후에만 엄격 적용 (needExtraLoaded=true)
       else if (needExtraLoaded) {
-        if (orderNeedConfig.minPurchaseCycle > 0) return false;
-        if (orderNeedConfig.minMonthlySales > 0) return false;
+        return false;
       }
     }
-    // 2026-08-03 (#206/#207) · 인라인 4조건 필터 (Settings 모달과 AND · debounced)
+    // 2026-08-03 (#206/#207) · 인라인 3조건 필터 (Settings 모달과 AND · debounced)
     //   · maxCurrent      > 0 이면 현재고           <= maxCurrent      (재고 N개 이하)
-    //   · minCycle        > 0 이면 매입주기         >= minCycle        (매입일 N일 이상 · enrich · 미로딩 상품 통과)
     //   · maxSalesMonth   > 0 이면 최근 30일 판매량 <= maxSalesMonth   (#207 · 저조 상품 · enrich · 미로딩 시 미달 판정)
     //   · maxSalesQuarter > 0 이면 최근 90일 판매량 <= maxSalesQuarter (#207 · 저조 상품 · enrich · 미로딩 시 미달 판정)
     // #232 · 체크박스 미체크 조건은 skip
     if (deferredCurrentEnabled && deferredInlineCurrent > 0) {
       if (isNaN(cur) || cur > deferredInlineCurrent) return false;
     }
-    if ((deferredCycleEnabled && deferredInlineCycle > 0) ||
-        (deferredSalesMonthEnabled && deferredInlineSalesMonth > 0) ||
+    if ((deferredSalesMonthEnabled && deferredInlineSalesMonth > 0) ||
         (deferredSalesQuarterEnabled && deferredInlineSalesQuarter > 0)) {
       const extra = code ? needExtraMap.get(code) : undefined;
       if (extra) {
-        if (deferredCycleEnabled && deferredInlineCycle > 0 && (extra.cycle == null || extra.cycle < deferredInlineCycle)) return false;
         if (deferredSalesMonthEnabled && deferredInlineSalesMonth > 0) {
           const s = extra.saleMonth ?? 0;
           if (s > deferredInlineSalesMonth) return false;
@@ -888,8 +837,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           const s = extra.saleQuarter ?? 0;
           if (s > deferredInlineSalesQuarter) return false;
         }
-      } else if (needExtraLoaded) {
-        if (deferredCycleEnabled && deferredInlineCycle > 0) return false;
       }
     }
     return true;
@@ -1485,25 +1432,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 {/* 빈 span (기존 label 제거 · 위 span 사용) */}
                 <span className="sr-only">발주 조건 (컴팩트)</span>
 
-                {/* 조건 1 · 매입일 N일 이상 */}
-                <label className="inline-flex items-center gap-1 shrink-0">
-                  <input type="checkbox" checked={needCycleEnabled} onChange={e => setNeedCycleEnabled(e.target.checked)}
-                    className="w-3.5 h-3.5 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
-                  <span className={`text-[11px] font-bold whitespace-nowrap ${needCycleEnabled ? "text-slate-700" : "text-slate-400"}`}>매입일</span>
-                  <input
-                    type="number" min={0} step={1}
-                    disabled={!needCycleEnabled}
-                    value={needInlineMinCycle === 0 ? "" : needInlineMinCycle}
-                    onChange={e => updateInline("cycle", e.target.value)}
-                    placeholder="90"
-                    className="w-12 h-7 px-1.5 rounded-md border border-slate-200 text-[12px] font-bold text-slate-800 text-right tabular-nums bg-white
-                               focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
-                               hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
-                  />
-                  <span className={`text-[11px] whitespace-nowrap ${needCycleEnabled ? "text-slate-500" : "text-slate-300"}`}>일↑</span>
-                </label>
-
-                {/* 조건 2 · 최근 한달 판매량 N개 이하 */}
+                {/* 조건 1 · 최근 한달 판매량 N개 이하 */}
                 <label className="inline-flex items-center gap-1 shrink-0">
                   <input type="checkbox" checked={needSalesMonthEnabled} onChange={e => setNeedSalesMonthEnabled(e.target.checked)}
                     className="w-3.5 h-3.5 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
@@ -1564,11 +1493,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               {/* 적용 중 조건 요약 badge */}
               {inlineActive && (
                 <div className="hidden sm:flex items-center gap-1.5 ml-1 flex-wrap">
-                  {deferredCycleEnabled && deferredInlineCycle > 0 && (
-                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-700 whitespace-nowrap">
-                      매입주기 ≥{deferredInlineCycle}일
-                    </span>
-                  )}
                   {deferredCurrentEnabled && deferredInlineCurrent > 0 && (
                     <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-700 whitespace-nowrap">
                       재고 ≤{deferredInlineCurrent}개
@@ -1603,7 +1527,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   {orderNeedConfig.shortageBasis === "optimal" && "추천적정재고 기준"}
                   {orderNeedConfig.minShortage > 1 && ` · 부족 ${orderNeedConfig.minShortage}개+`}
                   {!orderNeedConfig.includeMissingRealStock && " · 실재고 있는 것만"}
-                  {orderNeedConfig.minPurchaseCycle > 0 && ` · 매입주기 ≥${orderNeedConfig.minPurchaseCycle}일`}
                   {orderNeedConfig.minMonthlySales > 0 && ` · 한달판매 ≥${orderNeedConfig.minMonthlySales}개`}
                 </span>
               </button>
@@ -1692,26 +1615,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       </div>
                     </div>
 
-                    {/* 매입주기 최소 */}
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider">매입주기 최소</span>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number" min={0} step={1}
-                          value={orderNeedConfig.minPurchaseCycle}
-                          onChange={e => {
-                            const v = Number(e.target.value);
-                            const next = { ...orderNeedConfig, minPurchaseCycle: Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0 };
-                            setOrderNeedConfig(next);
-                            try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(next)); } catch { /**/ }
-                          }}
-                          className="w-20 h-8 px-2 border border-slate-200 rounded-lg text-[13px] font-bold text-slate-800 tabular-nums text-right
-                                     focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white"
-                        />
-                        <span className="text-[12px] text-slate-600">일 이상 · 0=미적용</span>
-                      </div>
-                    </div>
-
                     {/* 최근 한달 판매량 최소 */}
                     <div className="flex flex-col gap-1">
                       <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider">한달 판매량 최소</span>
@@ -1740,7 +1643,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   <div className="flex flex-wrap gap-1.5">
                     {([
                       { k: "sale_month" as OrderNeedDefaultSortKey, label: "한달 판매량" },
-                      { k: "cycle"      as OrderNeedDefaultSortKey, label: "매입주기" },
                       { k: "short"      as OrderNeedDefaultSortKey, label: "부족량" },
                       { k: "current"    as OrderNeedDefaultSortKey, label: "ERP재고" },
                       { k: "optimal"    as OrderNeedDefaultSortKey, label: "추천적정" },
@@ -1996,7 +1898,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   const bVendor = b.supplier ? findVendor(b.supplier) : undefined;
                   const aContact = aVendor?.contact_name || (a as any).supplier_contact || "";
                   const bContact = bVendor?.contact_name || (b as any).supplier_contact || "";
-                  // 2026-08-03 (#189) · sale_month · cycle · enrich map 참조 (null 은 최하위 정렬 값)
+                  // 2026-08-03 (#189) · sale_month · enrich map 참조 (null 은 최하위 정렬 값)
                   const aExtra = aCode ? needExtraMap.get(aCode) : undefined;
                   const bExtra = bCode ? needExtraMap.get(bCode) : undefined;
                   switch (needSortKey) {
@@ -2008,7 +1910,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     case "optimal":  return dir * (Number(a.optimal_stock ?? 0) - Number(b.optimal_stock ?? 0));
                     case "short":    return dir * ((Number(a.optimal_stock ?? 0) - Number(a.current_stock ?? 0)) - (Number(b.optimal_stock ?? 0) - Number(b.current_stock ?? 0)));
                     case "sale_month": return dir * ((aExtra?.saleMonth ?? -1) - (bExtra?.saleMonth ?? -1));
-                    case "cycle":      return dir * ((aExtra?.cycle ?? -1) - (bExtra?.cycle ?? -1));
                     default:         return 0;
                   }
                 }).map(p => {
@@ -2111,52 +2012,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         )}
                       </td>
                     </tr>
-                    {/* #217 · 상세 재고현황 확장 tr · [상세] 버튼 클릭 시 표시 · 창고1/2·매장1/2/3
-                        · 2026-08-04 · 개선 (창고/매장 섹션 분리 · 구역 명확 표시) */}
-                    {needStockDetailOpen.has(code) && (
-                      <tr className="bg-violet-50/30">
-                        <td colSpan={13} className="px-3 py-2.5 border-t border-violet-100">
-                          <div className="flex flex-wrap gap-x-5 gap-y-1.5 items-center text-[11px]">
-                            {/* 창고 */}
-                            <span className="flex items-center gap-1 text-orange-500 font-bold">
-                              <Package size={10} strokeWidth={2.5} />창고
-                            </span>
-                            <span className="text-orange-700">
-                              <span className="font-semibold">창고1</span>{" "}
-                              <span className="tabular-nums font-black">{inv?.w1 ?? "—"}</span>
-                            </span>
-                            <span className="text-orange-700">
-                              <span className="font-semibold">창고2</span>{" "}
-                              <span className="tabular-nums font-black">{inv?.w2 ?? "—"}</span>
-                            </span>
-                            <span className="text-slate-200 select-none">│</span>
-                            {/* 매장 */}
-                            <span className="flex items-center gap-1 text-emerald-600 font-bold">
-                              <MapPin size={10} strokeWidth={2.5} />매장
-                            </span>
-                            <span className="text-emerald-700">
-                              <span className="font-semibold">매장1</span>{" "}
-                              <span className="tabular-nums font-black">{inv?.s1 ?? "—"}</span>
-                              {inv?.s1z && <span className="text-slate-400 font-medium ml-1">({inv.s1z})</span>}
-                            </span>
-                            <span className="text-emerald-700">
-                              <span className="font-semibold">매장2</span>{" "}
-                              <span className="tabular-nums font-black">{inv?.s2 ?? "—"}</span>
-                              {inv?.s2z && <span className="text-slate-400 font-medium ml-1">({inv.s2z})</span>}
-                            </span>
-                            <span className="text-emerald-700">
-                              <span className="font-semibold">매장3</span>{" "}
-                              <span className="tabular-nums font-black">{inv?.s3 ?? "—"}</span>
-                              {inv?.s3z && <span className="text-slate-400 font-medium ml-1">({inv.s3z})</span>}
-                            </span>
-                            <span className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-600 text-white">
-                              <span className="text-[10px] font-semibold text-violet-200">합계</span>
-                              <span className="tabular-nums text-[12px] font-black">{inv?.total ?? "—"}</span>
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
                     </React.Fragment>
                   );
                 })}
