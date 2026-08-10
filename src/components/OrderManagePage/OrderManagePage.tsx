@@ -874,7 +874,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
   const [sendingBulk, setSendingBulk] = useState(false);
   // 2026-08-10 · #28 · 카카오톡 채널 추가 (SolAPI 알림톡 · env 없으면 서버가 400 반환 · gracefully fail)
-  const [bulkChannels, setBulkChannels] = useState<{ email: boolean; sms: boolean; kakao: boolean }>({ email: true, sms: false, kakao: false });
+  // 2026-08-10 · 사용자 요청 · 카카오톡 기본 선택 (email/sms=false)
+  const [bulkChannels, setBulkChannels] = useState<{ email: boolean; sms: boolean; kakao: boolean }>({ email: false, sms: false, kakao: true });
 
   // 발주 모달 (표준 발주서 포맷 · 단일/일괄 공용)
   interface OrderModalItem {
@@ -2961,21 +2962,23 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     rows={2}
                     className="w-full border border-slate-200 rounded px-2 py-1.5 text-[11px] focus:outline-none focus:border-red-400 resize-none"/>
                 </div>
+                {/* 2026-08-10 · 사용자 요청 · 발송 채널 가로 배치 · 카카오톡 기본 (state 초기값) */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] text-slate-500 font-black block">발송 채널</label>
-                  <label className={`text-[11px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.email ? "bg-emerald-50 text-emerald-700 border-emerald-300" : "bg-white text-slate-400 border-slate-200"}`}>
-                    <input type="checkbox" checked={orderModal.channels.email} onChange={e => setOrderModal(p => p && ({ ...p, channels: { ...p.channels, email: e.target.checked } }))} className="w-3 h-3"/>
-                    <Mail size={11}/> 이메일
-                  </label>
-                  <label className={`text-[11px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.sms ? "bg-sky-50 text-sky-700 border-sky-300" : "bg-white text-slate-400 border-slate-200"}`}>
-                    <input type="checkbox" checked={orderModal.channels.sms} onChange={e => setOrderModal(p => p && ({ ...p, channels: { ...p.channels, sms: e.target.checked } }))} className="w-3 h-3"/>
-                    <MessageSquare size={11}/> 문자
-                  </label>
-                  {/* 2026-08-10 · #28 · 카카오톡 알림톡 채널 (SolAPI · env 설정 후 활성) */}
-                  <label className={`text-[11px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.kakao ? "bg-yellow-50 text-yellow-700 border-yellow-300" : "bg-white text-slate-400 border-slate-200"}`} title="SolAPI 알림톡 (사업자 인증·템플릿·env 필요)">
-                    <input type="checkbox" checked={orderModal.channels.kakao} onChange={e => setOrderModal(p => p && ({ ...p, channels: { ...p.channels, kakao: e.target.checked } }))} className="w-3 h-3"/>
-                    💬 카카오톡
-                  </label>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <label className={`text-[11px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.kakao ? "bg-yellow-50 text-yellow-700 border-yellow-300" : "bg-white text-slate-400 border-slate-200"}`} title="SolAPI 알림톡 (사업자 인증·템플릿·env 필요)">
+                      <input type="checkbox" checked={orderModal.channels.kakao} onChange={e => setOrderModal(p => p && ({ ...p, channels: { ...p.channels, kakao: e.target.checked } }))} className="w-3 h-3"/>
+                      💬 카카오톡
+                    </label>
+                    <label className={`text-[11px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.email ? "bg-emerald-50 text-emerald-700 border-emerald-300" : "bg-white text-slate-400 border-slate-200"}`}>
+                      <input type="checkbox" checked={orderModal.channels.email} onChange={e => setOrderModal(p => p && ({ ...p, channels: { ...p.channels, email: e.target.checked } }))} className="w-3 h-3"/>
+                      <Mail size={11}/> 이메일
+                    </label>
+                    <label className={`text-[11px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.sms ? "bg-sky-50 text-sky-700 border-sky-300" : "bg-white text-slate-400 border-slate-200"}`}>
+                      <input type="checkbox" checked={orderModal.channels.sms} onChange={e => setOrderModal(p => p && ({ ...p, channels: { ...p.channels, sms: e.target.checked } }))} className="w-3 h-3"/>
+                      <MessageSquare size={11}/> 문자
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
