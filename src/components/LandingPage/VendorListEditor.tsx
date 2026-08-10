@@ -1207,9 +1207,9 @@ export const VendorDetailModal: React.FC<{
                 <span className="tabular-nums font-black text-indigo-700">{summary ? fmtWon(summary.totalAmount) : "-"}</span>
               </span>
             </div>
-            {/* 2026-08-10 · 사용자 요청 · 총재고금액 계산 방법 · 아래 안내 */}
+            {/* 2026-08-10 · 사용자 요청 · 총재고금액 계산 방법 · 상품별 · 남은 재고 × 사입단가 · 합산 */}
             <div className="mt-1 text-[11px] text-slate-400 leading-relaxed px-4">
-              총재고금액 = 공급사 상품 각각 · <span className="font-mono">현재고 × 최근 사입단가</span> 합산
+              총재고금액 = 상품별로 <span className="font-mono">남은 재고 수량 × 사입단가</span> · 합산
             </div>
           </div>
           {/* 모바일: details 접기 · 2줄 grid · 기본 닫힘 */}
