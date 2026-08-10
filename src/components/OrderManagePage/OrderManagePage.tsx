@@ -277,6 +277,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [selectedOrder, setSelectedOrder] = useState<Set<string>>(new Set());
   // 2026-08-10 · #39 · 발주정보 · 상품별 이전 사입가 캐시 (purchase-history · latest_unit_price)
   const [prevPriceMap, setPrevPriceMap] = useState<Map<string, number>>(new Map());
+  // 2026-08-10 · 발주리스트 · 주문수량 사용자 편집 (id → qty · 없으면 자동 displayShort)
+  const [orderQtyOverride, setOrderQtyOverride] = useState<Map<string, number>>(new Map());
   // 2026-08-10 · 사용자 요청 · 발주필요 리스트 체크박스 · 일괄 발주요청 (복원)
   const [selectedLowStock, setSelectedLowStock] = useState<Set<string>>(new Set());
   const [bulkRequesting, setBulkRequesting] = useState(false);
@@ -2689,11 +2691,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       ) : (
                         <>
                           <td
-                            className={`text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] bg-slate-50/40 align-top ${stockChanged ? "text-orange-600" : "text-slate-700"}`}
+                            className={`text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] bg-slate-50/40 align-middle whitespace-nowrap ${stockChanged ? "text-orange-600" : "text-slate-700"}`}
                             title={stockChanged ? `요청 당시 ${r.current_stock ?? "-"} → 현재 ${displayCurrentStock ?? "-"} (변동)` : "현재 ERP 재고 (실시간)"}
                           >
                             {displayCurrentStock ?? "-"}
-                            {stockChanged && <span className="block text-[10px] font-normal text-slate-400 leading-none mt-0.5">전 {r.current_stock}</span>}
+                            {stockChanged && <span className="text-[10px] font-normal text-slate-400 ml-1">({r.current_stock})</span>}
                           </td>
                           {/* 2026-08-06 · 실재고 셀 주석처리 (사용자 요청 · 손실추적 참조 유도)
                           <td
@@ -2728,16 +2730,29 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           </td>
                         </>
                       )}
-                      {/* 2026-08-10 · #39 · 발주정보 3컬럼 · 주문수량 (=부족) · 이전사입가 (prevPriceMap) · 발주금액 */}
+                      {/* 2026-08-10 · #39 · 발주정보 3컬럼 · 주문수량 (편집 가능) · 이전사입가 · 발주금액 */}
                       {(() => {
-                        const orderQty = displayShort > 0 ? displayShort : 0;
+                        const defaultQty = displayShort > 0 ? displayShort : 0;
+                        const orderQty = orderQtyOverride.has(r.id) ? orderQtyOverride.get(r.id)! : defaultQty;
                         const prevPrice = prevPriceMap.get(r.product_code) ?? null;
                         const amount = prevPrice != null ? orderQty * prevPrice : null;
                         return (
                           <>
-                            <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-[13px] text-rose-700 bg-rose-50/30 align-top">{orderQty > 0 ? orderQty : "-"}</td>
-                            <td className="text-right px-0.5 py-1.5 tabular-nums text-[12px] text-slate-500 bg-rose-50/20 align-top">{prevPrice != null ? prevPrice.toLocaleString() : "-"}</td>
-                            <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-[13px] text-emerald-700 bg-rose-50/20 align-top">{amount != null ? amount.toLocaleString() : "-"}</td>
+                            <td className="text-right px-0.5 py-1.5 bg-rose-50/30 align-middle">
+                              <input
+                                type="number"
+                                min={0}
+                                value={orderQty}
+                                onChange={e => {
+                                  const v = e.target.value === "" ? 0 : Math.max(0, Number(e.target.value) || 0);
+                                  setOrderQtyOverride(prev => { const n = new Map(prev); n.set(r.id, v); return n; });
+                                }}
+                                onClick={e => e.stopPropagation()}
+                                className="w-14 h-6 px-1 rounded border border-rose-200 bg-white text-right tabular-nums font-black text-[13px] text-rose-700 focus:outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400"
+                              />
+                            </td>
+                            <td className="text-right px-0.5 py-1.5 tabular-nums text-[12px] text-slate-500 bg-rose-50/20 align-middle whitespace-nowrap">{prevPrice != null ? prevPrice.toLocaleString() : "-"}</td>
+                            <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-[13px] text-emerald-700 bg-rose-50/20 align-middle whitespace-nowrap">{amount != null ? amount.toLocaleString() : "-"}</td>
                           </>
                         );
                       })()}
