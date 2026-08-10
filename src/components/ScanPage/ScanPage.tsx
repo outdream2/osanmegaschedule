@@ -796,14 +796,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                       >
                         상품명 <SortIcon active={sortKey === "name"} dir={sortDir} />
                       </th>
-                      {/* 구역 (real_map 원본) */}
-                      <th
-                        className="text-left px-2 py-2.5 w-[68px] font-bold text-slate-400
-                          cursor-pointer select-none hover:text-slate-600 hover:bg-slate-100/60 transition-colors whitespace-nowrap"
-                        onClick={() => handleSort("realMap")}
-                      >
-                        구역 <SortIcon active={sortKey === "realMap"} dir={sortDir} />
-                      </th>
+                      {/* 2026-08-10 · 구역 (real_map) 컬럼 제거 · 사용자 요청 */}
                       {/* 창고1 · 데스크탑만 · lg 이상 개별 표시 */}
                       <th className="hidden lg:table-cell text-center px-1.5 py-2.5 w-[80px] font-bold text-slate-400 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1">
@@ -903,17 +896,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                             </div>
                           </td>
 
-                          {/* 구역 원본 (real_map) */}
-                          <td className="px-2 py-2 align-middle">
-                            {rm ? (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-violet-700 whitespace-nowrap">
-                                <MapPin size={9} className="text-violet-400 shrink-0" />
-                                {rm}
-                              </span>
-                            ) : (
-                              <span className="text-[11px] text-slate-300">-</span>
-                            )}
-                          </td>
+                          {/* 2026-08-10 · 구역 원본 (real_map) 셀 제거 · 사용자 요청 */}
 
                           {/* 창고1 · 데스크탑만 */}
                           <td className="hidden lg:table-cell px-1 py-2 align-middle">

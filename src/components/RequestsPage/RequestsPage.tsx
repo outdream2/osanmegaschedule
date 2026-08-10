@@ -540,11 +540,10 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const eatCount = lunchRequests.filter(r => r.eating).length;
   const noEatCount = lunchRequests.filter(r => !r.eating).length;
 
-  // 직원(관리자 미만)은 진열요청만 노출 · 그 외 탭 (구역불일치·실재고차이·점심불참)은 관리자 전용
+  // 2026-08-10 · 사용자 요청 · 구역불일치 탭 제거 · 관리자 전용 탭: 실재고차이 · 점심불참
   const TABS: [Tab, string, number, string, string, string, string][] = [
     ["display",   isManager ? "진열요청" : "내가 받은 요청",   displayTabCount,   "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
     ...(isManager ? ([
-      ["mismatch",  "구역불일치", mismatchTabCount,  "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
       ["inventory", "실재고차이", inventoryTabCount, "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
       ["lunch",     "점심불참",   lunchTabCount,     "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
     ] as [Tab, string, number, string, string, string, string][]) : []),
