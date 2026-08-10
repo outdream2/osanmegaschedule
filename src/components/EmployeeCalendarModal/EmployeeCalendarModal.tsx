@@ -962,41 +962,67 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                 </div>
 
                 {/* 비고 (있을 때만) */}
-                {/* 첨부 파일 버튼 · 이력서·근계·통장사본 · 비고 위 */}
+                {/* 첨부 파일 · 이력서·근계·통장사본 · 3개 항상 노출 · 없으면 [미등록 · 업로드] */}
                 {(() => {
-                  const bankbookUrl = (employee as any).bankbook_image_url as string | null | undefined;
+                  const bankbookUrl = employee.bankbook_image_url;
                   const hasBankbook = !!bankbookUrl;
-                  if (!hasResume && !hasContract && !hasBankbook) return null;
                   return (
-                    <div className="flex items-center gap-1.5 pt-2 border-t border-slate-100">
-                      {hasResume && (
+                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
+                      {/* 이력서 */}
+                      {hasResume ? (
                         <a
                           href={employee.resume_url!}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-3 py-1.5 text-[13px] font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-lg inline-flex items-center gap-1 shadow-sm transition"
+                          className="px-2 py-1.5 text-[12px] font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-lg inline-flex items-center justify-center gap-1 shadow-sm transition"
+                          title="이력서 · 새 탭에서 열기"
                         >
-                          <FileText size={14} /> 이력서
+                          <FileText size={13} /> 이력서
                         </a>
+                      ) : (
+                        <div
+                          className="px-2 py-1.5 text-[12px] font-semibold bg-slate-100 text-slate-400 rounded-lg inline-flex items-center justify-center gap-1 border border-dashed border-slate-300"
+                          title="이력서 미등록 · 직원 관리에서 업로드"
+                        >
+                          이력서 · 미등록
+                        </div>
                       )}
-                      {hasContract && (
+                      {/* 근로계약서 */}
+                      {hasContract ? (
                         <button
                           type="button"
                           onClick={() => setContractModalOpen(true)}
-                          className="px-3 py-1.5 text-[13px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg inline-flex items-center gap-1 shadow-sm transition cursor-pointer"
+                          className="px-2 py-1.5 text-[12px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg inline-flex items-center justify-center gap-1 shadow-sm transition cursor-pointer"
+                          title="근로계약서 · 미리보기"
                         >
-                          <FileText size={14} /> 근로계약서
+                          <FileText size={13} /> 근로계약서
                         </button>
+                      ) : (
+                        <div
+                          className="px-2 py-1.5 text-[12px] font-semibold bg-slate-100 text-slate-400 rounded-lg inline-flex items-center justify-center gap-1 border border-dashed border-slate-300"
+                          title="근로계약서 미등록 · 계약서 작성 페이지에서 작성"
+                        >
+                          근계 · 미등록
+                        </div>
                       )}
-                      {hasBankbook && (
+                      {/* 통장사본 */}
+                      {hasBankbook ? (
                         <a
                           href={bankbookUrl!}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-3 py-1.5 text-[13px] font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg inline-flex items-center gap-1 shadow-sm transition"
+                          className="px-2 py-1.5 text-[12px] font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg inline-flex items-center justify-center gap-1 shadow-sm transition"
+                          title="통장사본 · 새 탭에서 열기"
                         >
-                          <FileText size={14} /> 통장사본
+                          <FileText size={13} /> 통장사본
                         </a>
+                      ) : (
+                        <div
+                          className="px-2 py-1.5 text-[12px] font-semibold bg-slate-100 text-slate-400 rounded-lg inline-flex items-center justify-center gap-1 border border-dashed border-slate-300"
+                          title="통장사본 미등록 · 직원 관리에서 업로드"
+                        >
+                          통장사본 · 미등록
+                        </div>
                       )}
                     </div>
                   );
