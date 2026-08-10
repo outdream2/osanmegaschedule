@@ -674,27 +674,26 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                     )}
                   </div>
 
-                  {/* ── 본문 · 상품명 + 정보 ── */}
-                  <div className="px-3.5 py-3 flex flex-col gap-2">
-                    {/* 상품명 · 큰 글씨 · 핵심 정보 */}
-                    <p className="text-[15px] sm:text-[16px] font-black text-slate-900
-                      break-words whitespace-normal leading-snug">
-                      {lastProduct.name}
-                    </p>
-
-                    {/* 정보 · 구역 · 공급사 · 텍스트 (배지 제거 · 2026-08-10) */}
-                    <div className="flex flex-col gap-0.5 text-[12px]">
+                  {/* ── 본문 · 상품명 옆에 구역·공급사 한 줄 (2026-08-10 사용자 요청) ── */}
+                  <div className="px-3.5 py-3 flex flex-col gap-1.5">
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                      {/* 상품명 · 큰 글씨 */}
+                      <p className="text-[15px] sm:text-[16px] font-black text-slate-900
+                        break-words whitespace-normal leading-snug">
+                        {lastProduct.name}
+                      </p>
+                      {/* 구역 · 공급사 · 텍스트 · 상품명 옆 */}
                       {(lastProduct as any).spec && (
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-slate-400 font-semibold shrink-0">구역</span>
+                        <span className="inline-flex items-baseline gap-1 text-[12px]">
+                          <span className="text-slate-400 font-semibold">구역</span>
                           <span className="text-violet-700 font-black">{(lastProduct as any).spec}</span>
-                        </div>
+                        </span>
                       )}
                       {(lastProduct as any).supplier && (
-                        <div className="flex items-baseline gap-1.5 min-w-0">
-                          <span className="text-slate-400 font-semibold shrink-0">공급사</span>
+                        <span className="inline-flex items-baseline gap-1 text-[12px] min-w-0">
+                          <span className="text-slate-400 font-semibold">공급사</span>
                           <span className="text-sky-700 font-black truncate">{(lastProduct as any).supplier}</span>
-                        </div>
+                        </span>
                       )}
                     </div>
                   </div>
