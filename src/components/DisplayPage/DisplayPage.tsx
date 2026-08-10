@@ -2876,10 +2876,21 @@ const VendorManageSplit: React.FC = () => {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState<string>("전체");
+  // 2026-08-10 · 사용자 요청 · 자동 정렬 · 헤더 클릭 · 원칙
+  type VmSortKey = "category" | "company_name" | "contact_name" | "phone";
+  const [sortKey, setSortKey] = useState<VmSortKey>("company_name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const toggleSort = (key: VmSortKey) => {
+    setSortKey(prev => {
+      if (prev === key) { setSortDir(d => (d === "asc" ? "desc" : "asc")); return prev; }
+      setSortDir("asc");
+      return key;
+    });
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return vendors.filter(v => {
+    const list = vendors.filter(v => {
       if (q && !(
         String(v.company_name ?? "").toLowerCase().includes(q)
         || String(v.contact_name ?? "").toLowerCase().includes(q)
@@ -2888,9 +2899,39 @@ const VendorManageSplit: React.FC = () => {
       if (catFilter !== "전체" && v.category !== catFilter) return false;
       return true;
     });
-  }, [vendors, search, catFilter]);
+    // 자동 정렬
+    const dirMul = sortDir === "asc" ? 1 : -1;
+    const nameOf = (v: any) => displayVendorName(String(v.company_name ?? "")) || String(v.company_name ?? "");
+    return [...list].sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case "category":     cmp = String(a.category ?? "").localeCompare(String(b.category ?? ""), "ko"); break;
+        case "company_name": cmp = nameOf(a).localeCompare(nameOf(b), "ko"); break;
+        case "contact_name": cmp = String(a.contact_name ?? "").localeCompare(String(b.contact_name ?? ""), "ko"); break;
+        case "phone":        cmp = String(a.phone ?? "").localeCompare(String(b.phone ?? ""), "ko"); break;
+      }
+      if (cmp === 0) cmp = nameOf(a).localeCompare(nameOf(b), "ko");
+      return cmp * dirMul;
+    });
+  }, [vendors, search, catFilter, sortKey, sortDir]);
 
   const selected = useMemo(() => vendors.find(v => v.id === selectedId) ?? null, [vendors, selectedId]);
+
+  // 정렬 헤더 셀 · 클릭 정렬 · asc/desc 표시
+  const SortTh: React.FC<{ label: string; sk: VmSortKey; className?: string }> = ({ label, sk, className = "" }) => (
+    <button
+      type="button"
+      onClick={() => toggleSort(sk)}
+      className={`inline-flex items-center gap-0.5 select-none cursor-pointer hover:text-indigo-600 transition ${
+        sortKey === sk ? "text-indigo-600" : "text-slate-600"
+      } ${className}`}
+    >
+      {label}
+      {sortKey === sk
+        ? (sortDir === "asc" ? <ChevronUp size={11} className="shrink-0" /> : <ChevronDown size={11} className="shrink-0" />)
+        : <span className="text-slate-300 text-[9px]">↕</span>}
+    </button>
+  );
 
   const left = (
     <div className="flex flex-col h-full min-h-0 gap-2">
@@ -2931,52 +2972,15 @@ const VendorManageSplit: React.FC = () => {
         </div>
       </div>
 
-      {/* 리스트 · sm 이상 테이블 · 모바일 카드 (한 줄씩) */}
+      {/* 리스트 · 통일 테이블 (모바일·PC 공통) · 헤더 정렬 원칙 (UI 원칙) */}
       <div className="flex-1 min-h-0 overflow-auto bg-white rounded-xl border border-slate-200 shadow-sm">
-        {/* 모바일 (< sm) · 카드 리스트 · 한 상품 한 줄씩 */}
-        <div className="sm:hidden divide-y divide-slate-100">
-          {filtered.length === 0 ? (
-            <div className="py-10 text-center text-[13px] font-semibold text-slate-400">
-              {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 없음"}
-            </div>
-          ) : filtered.map(v => {
-            const isActive = selectedId === v.id;
-            return (
-              <button
-                key={v.id}
-                type="button"
-                onClick={() => setSelectedId(v.id)}
-                className={`w-full text-left px-3 py-2.5 flex items-center gap-3 transition cursor-pointer ${
-                  isActive ? "bg-indigo-50" : "hover:bg-slate-50 active:bg-slate-100"
-                }`}
-              >
-                {v.category && (
-                  <span className={`text-[11px] font-black px-1.5 py-0.5 rounded shrink-0 ${
-                    v.category === "위탁"    ? "bg-violet-100 text-violet-700"
-                    : v.category === "선결제"  ? "bg-rose-100 text-rose-700"
-                    : v.category === "60회전" ? "bg-emerald-100 text-emerald-700"
-                    : v.category === "90회전" ? "bg-teal-100 text-teal-700"
-                    :                            "bg-slate-100 text-slate-600"
-                  }`}>{v.category}</span>
-                )}
-                <span className={`flex-1 min-w-0 text-[13px] font-bold truncate ${isActive ? "text-indigo-900" : "text-slate-800"}`}>
-                  {displayVendorName(String(v.company_name ?? "")) || String(v.company_name ?? "")}
-                </span>
-                <span className="text-[12px] text-slate-500 truncate shrink-0 max-w-[80px]">{String(v.contact_name ?? "") || "-"}</span>
-                <span className="text-[12px] text-slate-500 tabular-nums truncate shrink-0 max-w-[100px]">{String(v.phone ?? "") || "-"}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* 데스크탑 (>= sm) · 표 형식 · 4컬럼 · 아이콘 없음 · 텍스트 */}
-        <table className="hidden sm:table w-full text-left border-collapse">
+        <table className="w-full text-left border-collapse">
           <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
             <tr>
-              <th className="text-left px-3 py-2 text-[13px] font-black text-slate-600 w-24">분류</th>
-              <th className="text-left px-3 py-2 text-[13px] font-black text-slate-600">공급사</th>
-              <th className="text-left px-3 py-2 text-[13px] font-black text-slate-600 w-32">담당자</th>
-              <th className="text-left px-3 py-2 text-[13px] font-black text-slate-600 w-40">담당자 전화번호</th>
+              <th className="text-left px-3 py-2 text-[13px] font-black whitespace-nowrap w-20"><SortTh label="분류" sk="category" /></th>
+              <th className="text-left px-3 py-2 text-[13px] font-black min-w-[120px]"><SortTh label="공급사" sk="company_name" /></th>
+              <th className="text-left px-3 py-2 text-[13px] font-black whitespace-nowrap w-24 hidden sm:table-cell"><SortTh label="담당자" sk="contact_name" /></th>
+              <th className="text-left px-3 py-2 text-[13px] font-black whitespace-nowrap w-36 hidden sm:table-cell"><SortTh label="전화" sk="phone" /></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -2988,31 +2992,37 @@ const VendorManageSplit: React.FC = () => {
               </tr>
             ) : filtered.map(v => {
               const isActive = selectedId === v.id;
+              const catCls = v.category === "위탁" ? "text-violet-700"
+                : v.category === "선결제"  ? "text-rose-700"
+                : v.category === "60회전" ? "text-emerald-700"
+                : v.category === "90회전" ? "text-teal-700"
+                :                            "text-slate-500";
               return (
                 <tr
                   key={v.id}
                   onClick={() => setSelectedId(v.id)}
                   className={`cursor-pointer transition ${isActive ? "bg-indigo-50/60" : "hover:bg-slate-50/80"}`}
                 >
-                  <td className="px-3 py-2 text-[13px] font-semibold text-slate-600 whitespace-nowrap">
-                    {v.category
-                      ? <span className={
-                          v.category === "위탁"    ? "text-violet-700"
-                          : v.category === "선결제"  ? "text-rose-700"
-                          : v.category === "60회전" ? "text-emerald-700"
-                          : v.category === "90회전" ? "text-teal-700"
-                          :                            "text-slate-600"
-                        }>{v.category}</span>
-                      : <span className="text-slate-300">-</span>}
+                  {/* 분류 · 위 · 공급사 아래 (모바일 vertical) · PC 동일 컬럼 */}
+                  <td className="px-3 py-2 align-top whitespace-nowrap">
+                    <span className={`text-[12px] font-black ${catCls}`}>
+                      {v.category || <span className="text-slate-300">-</span>}
+                    </span>
                   </td>
-                  <td className={`px-3 py-2 text-[13px] font-bold whitespace-nowrap ${isActive ? "text-indigo-900" : "text-slate-800"}`}
+                  {/* 공급사 · displayVendorName · 아이콘 X · 모바일: 아래 담당자·전화 인라인 */}
+                  <td className={`px-3 py-2 text-[13px] font-bold ${isActive ? "text-indigo-900" : "text-slate-800"}`}
                       title={String(v.company_name ?? "")}>
-                    {displayVendorName(String(v.company_name ?? "")) || String(v.company_name ?? "")}
+                    <div>{displayVendorName(String(v.company_name ?? "")) || String(v.company_name ?? "")}</div>
+                    {/* 모바일 전용 · 담당자·전화 · 상품명 아래 한 줄 */}
+                    <div className="sm:hidden flex items-baseline gap-2 mt-0.5 text-[11px] text-slate-500 font-normal">
+                      {v.contact_name ? <span className="truncate max-w-[100px]">{String(v.contact_name)}</span> : <span className="text-slate-300">-</span>}
+                      {v.phone ? <span className="tabular-nums truncate max-w-[120px]">{String(v.phone)}</span> : null}
+                    </div>
                   </td>
-                  <td className="px-3 py-2 text-[13px] text-slate-600 whitespace-nowrap">
+                  <td className="px-3 py-2 text-[13px] text-slate-600 whitespace-nowrap hidden sm:table-cell">
                     {String(v.contact_name ?? "") || <span className="text-slate-300">-</span>}
                   </td>
-                  <td className="px-3 py-2 text-[13px] text-slate-600 tabular-nums whitespace-nowrap">
+                  <td className="px-3 py-2 text-[13px] text-slate-600 tabular-nums whitespace-nowrap hidden sm:table-cell">
                     {String(v.phone ?? "") || <span className="text-slate-300">-</span>}
                   </td>
                 </tr>
