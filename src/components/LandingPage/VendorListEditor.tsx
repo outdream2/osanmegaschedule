@@ -935,6 +935,23 @@ export const VendorDetailModal: React.FC<{
   const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
   const [purchLoading, setPurchLoading] = useState(false);
   const [summary, setSummary] = useState<VendorSummary | null>(null);
+  // 2026-08-10 · 사용자 요청 · 총재고 현황 · fetch API 대기 (현재 stock 합계)
+  const [vendorTotalStock, setVendorTotalStock] = useState<number | null>(null);
+  useEffect(() => {
+    let alive = true;
+    if (!vendor?.company_name) return;
+    fetch(`/api/products-search?supplier=${encodeURIComponent(vendor.company_name)}&limit=2000`)
+      .then(r => r.ok ? r.json() : { items: [] })
+      .then(data => {
+        if (!alive) return;
+        const items = Array.isArray(data?.items) ? data.items : [];
+        // 총재고 = 각 상품 current_stock * unit_price (없으면 0)
+        const total = items.reduce((s: number, p: any) => s + (Number(p.current_stock ?? 0) * Number(p.unit_price ?? 0)), 0);
+        setVendorTotalStock(total);
+      })
+      .catch(() => { if (alive) setVendorTotalStock(null); });
+    return () => { alive = false; };
+  }, [vendor?.company_name]);
   const [activeTab, setActiveTab] = useState<DetailTab>("info");
   // 결제·잔고 데이터
   const [balanceInfo, setBalanceInfo] = useState<SupplierBalanceInfo | null>(null);
@@ -1170,6 +1187,12 @@ export const VendorDetailModal: React.FC<{
               <SectionTitle icon={<TrendingUp size={13} />} title="공급 요약" color="emerald" />
             </summary>
             <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-[12px] leading-tight px-4">
+              {/* 2026-08-10 · 총재고 현황 · vendorTotalStock state · fetch API 대기 (TODO: /api/vendor-stock-total?supplier=) */}
+              <span className="inline-flex items-baseline gap-1.5">
+                <span className="text-slate-400 font-semibold">총재고 현황</span>
+                <span className="tabular-nums font-black text-sky-700">{vendorTotalStock != null ? fmtWon(vendorTotalStock) : "-"}</span>
+              </span>
+              <span className="text-slate-200">·</span>
               <span className="inline-flex items-baseline gap-1.5">
                 <span className="text-slate-400 font-semibold">현재 잔액</span>
                 <span className="tabular-nums font-black text-emerald-700">
