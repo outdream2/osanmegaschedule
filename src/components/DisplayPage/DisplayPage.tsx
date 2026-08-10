@@ -59,6 +59,10 @@ import { OcrPage } from "../OcrPage";
 import OrderManagePage from "../OrderManagePage/OrderManagePage";
 // 2026-08-09 · 사용자 요청 · 공급사관리 서브탭 (경영관리에서 이동)
 const VendorListEditor = React.lazy(() => import("../LandingPage/VendorListEditor").then(m => ({ default: m.VendorListEditor })));
+// 2026-08-10 · 사용자 요청 · 공급사관리 · split (PC 좌우) · 모바일 모달
+const VendorDetailModalLazy = React.lazy(() => import("../LandingPage/VendorListEditor").then(m => ({ default: m.VendorDetailModal })));
+import { SplitPanel } from "../common/SplitPanel";
+import { useVendors as useVendorsHook } from "../../hooks/useVendors";
 // 2026-08-03 (#183) · 공통 탭바 컴포넌트 · duplicate 스타일 흡수
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 // 2026-08-05 · 관리자(level>=8) long-press 드래그 재정렬 · localStorage 순서 저장
@@ -1430,10 +1434,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           />
         </main>
       ) : dpSubTab === "vendor-manage" && dpCanSeeStockManage ? (
-        // 2026-08-09 · 사용자 요청 · 공급사관리 · VendorListEditor 임베드
+        // 2026-08-10 · 사용자 요청 · SplitPanel · PC 좌우 · 모바일 우측 모달
         <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-3">
           <React.Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 py-16">공급사관리 로딩 중...</div>}>
-            <VendorListEditor mode="dashboard" />
+            <VendorManageSplit />
           </React.Suspense>
         </main>
       ) : (dpSubTab === "purchase-order" || dpSubTab === "purchase" || dpSubTab === "payment" || dpSubTab === "statistics") && dpCanSeeStockManage ? (
@@ -2855,6 +2859,196 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       )}
 
     </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// 2026-08-10 · 사용자 요청 · 매장 > 공급사관리 · SplitPanel · PC 좌우 · 모바일 모달
+//   Left  · 4컬럼 텍스트 리스트 (분류·공급사·담당자·전화) · 아이콘 X · displayVendorName
+//   Right · VendorDetailModal panel 모드 (사업자번호·이메일 · 상세에서만)
+//   Mobile · SplitPanel mobileRightAsModal · 우측 자동 모달
+// ─────────────────────────────────────────────────────────────────────────
+import { displayVendorName } from "../../utils/vendorNameNormalize";
+import { Search as SearchIcon } from "lucide-react";
+
+const VendorManageSplit: React.FC = () => {
+  const { vendors, loading, refresh } = useVendorsHook();
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [search, setSearch] = useState("");
+  const [catFilter, setCatFilter] = useState<string>("전체");
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return vendors.filter(v => {
+      if (q && !(
+        String(v.company_name ?? "").toLowerCase().includes(q)
+        || String(v.contact_name ?? "").toLowerCase().includes(q)
+        || String(v.phone ?? "").toLowerCase().includes(q)
+      )) return false;
+      if (catFilter !== "전체" && v.category !== catFilter) return false;
+      return true;
+    });
+  }, [vendors, search, catFilter]);
+
+  const selected = useMemo(() => vendors.find(v => v.id === selectedId) ?? null, [vendors, selectedId]);
+
+  const left = (
+    <div className="flex flex-col h-full min-h-0 gap-2">
+      {/* 툴바 · 검색 + 분류 chip (기타 제외) */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2 flex flex-col gap-2 shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 min-w-0">
+            <SearchIcon size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="회사명 · 담당자 · 전화"
+              className="w-full h-9 pl-8 pr-2 text-[14px] border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-400 focus:border-indigo-400 transition"
+            />
+          </div>
+          <span className="text-[13px] text-slate-400 tabular-nums whitespace-nowrap shrink-0">
+            {loading ? <Loader2 size={12} className="animate-spin" /> : `${filtered.length}건`}
+          </span>
+        </div>
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-0.5">
+          {(["전체", "위탁", "선결제", "60회전", "90회전"] as const).map(cat => (
+            <button
+              key={cat}
+              onClick={() => setCatFilter(cat)}
+              className={`h-8 px-3 rounded-md text-[12px] font-black transition cursor-pointer whitespace-nowrap shrink-0 ${
+                catFilter === cat
+                  ? cat === "전체"    ? "bg-slate-700 text-white shadow-sm"
+                  : cat === "위탁"    ? "bg-violet-500 text-white shadow-sm"
+                  : cat === "선결제"  ? "bg-rose-500 text-white shadow-sm"
+                  : cat === "60회전" ? "bg-emerald-500 text-white shadow-sm"
+                  :                    "bg-teal-500 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-md"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 리스트 · sm 이상 테이블 · 모바일 카드 (한 줄씩) */}
+      <div className="flex-1 min-h-0 overflow-auto bg-white rounded-xl border border-slate-200 shadow-sm">
+        {/* 모바일 (< sm) · 카드 리스트 · 한 상품 한 줄씩 */}
+        <div className="sm:hidden divide-y divide-slate-100">
+          {filtered.length === 0 ? (
+            <div className="py-10 text-center text-[13px] font-semibold text-slate-400">
+              {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 없음"}
+            </div>
+          ) : filtered.map(v => {
+            const isActive = selectedId === v.id;
+            return (
+              <button
+                key={v.id}
+                type="button"
+                onClick={() => setSelectedId(v.id)}
+                className={`w-full text-left px-3 py-2.5 flex items-center gap-3 transition cursor-pointer ${
+                  isActive ? "bg-indigo-50" : "hover:bg-slate-50 active:bg-slate-100"
+                }`}
+              >
+                {v.category && (
+                  <span className={`text-[11px] font-black px-1.5 py-0.5 rounded shrink-0 ${
+                    v.category === "위탁"    ? "bg-violet-100 text-violet-700"
+                    : v.category === "선결제"  ? "bg-rose-100 text-rose-700"
+                    : v.category === "60회전" ? "bg-emerald-100 text-emerald-700"
+                    : v.category === "90회전" ? "bg-teal-100 text-teal-700"
+                    :                            "bg-slate-100 text-slate-600"
+                  }`}>{v.category}</span>
+                )}
+                <span className={`flex-1 min-w-0 text-[13px] font-bold truncate ${isActive ? "text-indigo-900" : "text-slate-800"}`}>
+                  {displayVendorName(String(v.company_name ?? "")) || String(v.company_name ?? "")}
+                </span>
+                <span className="text-[12px] text-slate-500 truncate shrink-0 max-w-[80px]">{String(v.contact_name ?? "") || "-"}</span>
+                <span className="text-[12px] text-slate-500 tabular-nums truncate shrink-0 max-w-[100px]">{String(v.phone ?? "") || "-"}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 데스크탑 (>= sm) · 표 형식 · 4컬럼 · 아이콘 없음 · 텍스트 */}
+        <table className="hidden sm:table w-full text-left border-collapse">
+          <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th className="text-left px-3 py-2 text-[13px] font-black text-slate-600 w-24">분류</th>
+              <th className="text-left px-3 py-2 text-[13px] font-black text-slate-600">공급사</th>
+              <th className="text-left px-3 py-2 text-[13px] font-black text-slate-600 w-32">담당자</th>
+              <th className="text-left px-3 py-2 text-[13px] font-black text-slate-600 w-40">담당자 전화번호</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="py-12 text-center text-[13px] font-semibold text-slate-400">
+                  {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 없음"}
+                </td>
+              </tr>
+            ) : filtered.map(v => {
+              const isActive = selectedId === v.id;
+              return (
+                <tr
+                  key={v.id}
+                  onClick={() => setSelectedId(v.id)}
+                  className={`cursor-pointer transition ${isActive ? "bg-indigo-50/60" : "hover:bg-slate-50/80"}`}
+                >
+                  <td className="px-3 py-2 text-[13px] font-semibold text-slate-600 whitespace-nowrap">
+                    {v.category
+                      ? <span className={
+                          v.category === "위탁"    ? "text-violet-700"
+                          : v.category === "선결제"  ? "text-rose-700"
+                          : v.category === "60회전" ? "text-emerald-700"
+                          : v.category === "90회전" ? "text-teal-700"
+                          :                            "text-slate-600"
+                        }>{v.category}</span>
+                      : <span className="text-slate-300">-</span>}
+                  </td>
+                  <td className={`px-3 py-2 text-[13px] font-bold whitespace-nowrap ${isActive ? "text-indigo-900" : "text-slate-800"}`}
+                      title={String(v.company_name ?? "")}>
+                    {displayVendorName(String(v.company_name ?? "")) || String(v.company_name ?? "")}
+                  </td>
+                  <td className="px-3 py-2 text-[13px] text-slate-600 whitespace-nowrap">
+                    {String(v.contact_name ?? "") || <span className="text-slate-300">-</span>}
+                  </td>
+                  <td className="px-3 py-2 text-[13px] text-slate-600 tabular-nums whitespace-nowrap">
+                    {String(v.phone ?? "") || <span className="text-slate-300">-</span>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const right = selected ? (
+    <React.Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 py-16">공급사 상세 로딩 중...</div>}>
+      <VendorDetailModalLazy vendor={selected as any} onClose={() => setSelectedId(null)} onSaved={refresh} panel />
+    </React.Suspense>
+  ) : (
+    <div className="flex-1 flex items-center justify-center text-slate-400 py-16 text-[13px]">
+      좌측에서 공급사를 선택하세요
+    </div>
+  );
+
+  return (
+    <SplitPanel
+      storageKey="vendor-manage.leftWidth"
+      defaultWidth={420}
+      minWidth={280}
+      maxWidth={720}
+      dividerColor="indigo"
+      left={left}
+      right={right}
+      wrapLeft={false}
+      mobileRightAsModal
+      mobileModalTitle={selected ? String((selected as any).company_name ?? "공급사 상세") : "공급사 상세"}
+      mobileOpen={selectedId != null}
+      onMobileClose={() => setSelectedId(null)}
+    />
   );
 };
 
