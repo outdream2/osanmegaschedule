@@ -1118,12 +1118,15 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           });
           const body = await res.json().catch(() => ({}));
           const outcomes = Array.isArray(body?.results?.[0]?.outcomes) ? body.results[0].outcomes as string[] : [];
+          // 2026-08-10 · 실제 발송 성공 여부 판정: outcomes 중 하나라도 'skipped(' 로 시작 = 실 발송
+          //   no_recipient · no_smtp_env · no_gateway_env · no_env · template_pending · error 등은 실패로 간주
+          const realSent = outcomes.some(o => /skipped\(/.test(o));
           return {
             supplier: s.supplier,
             order_number: s.order_number,
-            ok: res.ok,
+            ok: res.ok && realSent,   // HTTP 200 + 실 발송 시에만 성공
             status: res.status,
-            error: body?.error ?? null,
+            error: body?.error ?? (res.ok && !realSent ? "발송된 채널 없음 (모든 채널 미구성/수신처 없음)" : null),
             outcomes,
           };
         } catch (e: any) {
