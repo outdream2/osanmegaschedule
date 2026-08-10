@@ -21,9 +21,11 @@
 - UI 3층 · 현재 N / +0 입력창 / =합계
 - 저장 payload · prev+add 합계 전송
 
-### G · #45 스캔 Phase B (✅ B2 완료 · 커밋 `3702416`)
-- B2 · StockRow 컴포넌트 4개 분리 · React.memo · ScanPage 483줄 감소
-- 나머지 (B1 검토시트·A2 progressive·A4 자동+1) · 사용자 지시 시 진행
+### G · #45 스캔 Phase B (✅ 전체 완료)
+- B2 · StockRow 컴포넌트 분리 (`3702416`) · 483줄 감소
+- A2 · Progressive Disclosure 모바일 (`40e6c1a`) · 매장1만 기본 · 4칸 접기
+- A4 · 중복 스캔 자동 +1 opt-in (`3f47479`) · localStorage 토글
+- B1 · 검토 시트 (`01ba6d1`) · [전체 등록] → 요약 → [확정]
 
 ### G · #45 스캔 Phase B · StockRow 컴포넌트 분리
 - Phase A (커밋 `2b68064`) 완료
@@ -46,6 +48,7 @@
 - ✅ Step 4: EmployeeProfileCard · 근로 조건 인라인 표시 (`c90365b`)
 
 ### C · 취소 (사용자 취소)
+### E Phase 2 · 취소 (사용자 취소 · 이미 유사 구조 · 회귀 8개 지점)
 
 ### E · SplitPanel Phase 1 (`4589803`) · 4곳 폰트 통일
 
