@@ -277,6 +277,33 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [selectedOrder, setSelectedOrder] = useState<Set<string>>(new Set());
   // 2026-08-10 · #39 · 발주정보 · 상품별 이전 사입가 캐시 (purchase-history · latest_unit_price)
   const [prevPriceMap, setPrevPriceMap] = useState<Map<string, number>>(new Map());
+  // 2026-08-10 · 발주 발송 담당자 (우리 직원 중 · 물류팀장 기본)
+  interface EmpItem { id: number; name: string; position?: string | null; rank?: string | null; phone?: string | null; }
+  const [ourEmployees, setOurEmployees] = useState<EmpItem[]>([]);
+  const [dispatchStaffId, setDispatchStaffId] = useState<number | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/employees")
+      .then(r => r.ok ? r.json() : [])
+      .then((data: any) => {
+        if (!alive) return;
+        const list: EmpItem[] = (Array.isArray(data) ? data : []).map((e: any) => ({
+          id: Number(e.id ?? 0),
+          name: String(e.name ?? ""),
+          position: e.position ?? null,
+          rank: e.rank ?? null,
+          phone: e.phone ?? null,
+        })).filter(e => e.id && e.name);
+        setOurEmployees(list);
+        // 물류팀장 기본 선택: position="물류" && rank contains "팀장" 우선
+        const logisticsLeader = list.find(e => String(e.position ?? "").includes("물류") && String(e.rank ?? "").includes("팀장"));
+        const logistics = list.find(e => String(e.position ?? "").includes("물류"));
+        const first = logisticsLeader ?? logistics ?? list[0];
+        if (first) setDispatchStaffId(first.id);
+      })
+      .catch(() => { /* silent */ });
+    return () => { alive = false; };
+  }, []);
   // 2026-08-10 · 발주리스트 · 주문수량 사용자 편집 (id → qty · 없으면 자동 displayShort)
   const [orderQtyOverride, setOrderQtyOverride] = useState<Map<string, number>>(new Map());
   // 2026-08-10 · 사용자 요청 · 발주필요 리스트 체크박스 · 일괄 발주요청 (복원)
@@ -3044,23 +3071,65 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               </div>
             </div>
 
-            {/* 액션 버튼 */}
-            <div className="px-6 py-4 border-t border-slate-200 bg-white flex items-center justify-between gap-2 flex-wrap">
-              <div className="text-[11px] text-slate-500">
-                총 <span className="font-black text-slate-800">{orderModal.suppliers.length}개 공급사</span> · <span className="font-black text-slate-800">{orderModal.suppliers.reduce((n, s) => n + s.items.length, 0)}개 상품</span>
+            {/* 2026-08-10 · 통합 발주 요약 + 담당자 지정 · 액션 버튼 */}
+            <div className="px-6 py-4 border-t border-slate-200 bg-white flex flex-col gap-3">
+              {/* 통합 요약 · 총 공급사·상품·금액 */}
+              {(() => {
+                const totalSuppliers = orderModal.suppliers.length;
+                const totalItems = orderModal.suppliers.reduce((n, s) => n + s.items.length, 0);
+                const totalQty = orderModal.suppliers.reduce((n, s) => n + s.items.reduce((m, it) => m + (it.order_qty || 0), 0), 0);
+                const totalAmt = orderModal.suppliers.reduce((n, s) => n + s.items.reduce((m, it) => m + (it.order_qty || 0) * (it.unit_price ?? 0), 0), 0);
+                return (
+                  <div className="flex items-baseline gap-x-4 gap-y-1 flex-wrap text-[13px]">
+                    <span className="inline-flex items-baseline gap-1">
+                      <span className="text-slate-400">총 공급사</span>
+                      <span className="font-black text-slate-800 tabular-nums">{totalSuppliers}</span>
+                    </span>
+                    <span className="inline-flex items-baseline gap-1">
+                      <span className="text-slate-400">상품</span>
+                      <span className="font-black text-slate-800 tabular-nums">{totalItems}</span>
+                    </span>
+                    <span className="inline-flex items-baseline gap-1">
+                      <span className="text-slate-400">수량</span>
+                      <span className="font-black text-rose-700 tabular-nums">{totalQty}</span>
+                    </span>
+                    <span className="inline-flex items-baseline gap-1">
+                      <span className="text-slate-400">금액</span>
+                      <span className="font-black text-emerald-700 tabular-nums">{totalAmt > 0 ? totalAmt.toLocaleString() + "원" : "-"}</span>
+                    </span>
+                  </div>
+                );
+              })()}
+              {/* 발송 담당자 · 우리 직원 중 · 물류팀장 기본 */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <label className="text-[12px] font-black text-slate-500 uppercase tracking-wider shrink-0">발송 담당자</label>
+                <select
+                  value={dispatchStaffId ?? ""}
+                  onChange={e => setDispatchStaffId(e.target.value ? Number(e.target.value) : null)}
+                  className="h-8 px-2 rounded-md border border-slate-300 bg-white text-[13px] font-semibold text-slate-800 focus:outline-none focus:border-rose-400"
+                >
+                  <option value="">(선택)</option>
+                  {ourEmployees.map(e => (
+                    <option key={e.id} value={e.id}>
+                      {e.name}{e.rank ? ` ${e.rank}` : ""}{e.position ? ` · ${e.position}` : ""}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-[11px] text-slate-400">기본: 물류팀장 · PDF+카톡 발송 시 참조</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-end gap-2 flex-wrap">
+                {/* 2026-08-10 · 컴팩트 버튼 · 여백 최소 */}
                 <button
                   onClick={() => setOrderModal(null)}
                   disabled={sendingBulk}
-                  className="text-[12px] font-bold text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg px-4 py-2 cursor-pointer disabled:opacity-40"
+                  className="h-8 px-3 rounded-md text-[13px] font-semibold text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 cursor-pointer disabled:opacity-40"
                 >취소</button>
                 <button
                   onClick={submitOrderModal}
                   disabled={sendingBulk}
-                  className="inline-flex items-center gap-1.5 h-9 px-5 rounded-md text-[13px] font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer"
+                  className="inline-flex items-center gap-1 h-8 px-3 rounded-md text-[13px] font-black text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                 >
-                  {sendingBulk ? <Loader2 size={13} strokeWidth={2.5} className="animate-spin" /> : <Send size={13} strokeWidth={2.5} />}
+                  {sendingBulk && <Loader2 size={12} strokeWidth={2.5} className="animate-spin" />}
                   {sendingBulk ? "발송 중..." : "발주 발송"}
                 </button>
               </div>
