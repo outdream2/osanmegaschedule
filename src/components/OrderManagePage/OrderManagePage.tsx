@@ -1853,16 +1853,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               </span>
             )}
             <div className="ml-auto flex items-center gap-1.5">
-              {/* 2026-08-10 · 사용자 요청 · 여백 반 축소 (px-3→px-1.5 · h-8→h-7 · gap-1.5→gap-0.5) */}
-              <button
-                onClick={bulkRequestOrder}
-                disabled={bulkRequesting || selectedLowStock.size === 0}
-                className="inline-flex items-center gap-0.5 h-7 px-1.5 rounded text-[13px] font-black text-rose-800 bg-rose-100 border border-rose-300 hover:bg-rose-200 hover:border-rose-400 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer shrink-0 whitespace-nowrap"
-                title="선택한 상품 일괄 발주요청 리스트로 전송"
-              >
-                {bulkRequesting && <Loader2 size={11} strokeWidth={2.5} className="animate-spin" />}
-                <span>{bulkRequesting ? "요청 중" : `일괄 발주요청${selectedLowStock.size > 0 ? ` (${selectedLowStock.size})` : ""}`}</span>
-              </button>
+              {/* 2026-08-10 · 사용자 요청 · 전체선택 앞으로 · 배지(체크박스 아이콘) 제거 · 폰트 +1 (11→12) */}
               <button
                 onClick={() => {
                   if (selectedLowStock.size === lowStockFiltered.length) {
@@ -1871,12 +1862,18 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     setSelectedLowStock(new Set(lowStockFiltered.map(p => getCode(p))));
                   }
                 }}
-                className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[11px] font-medium text-slate-500 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer shrink-0"
+                className="inline-flex items-center h-7 px-1.5 rounded text-[12px] font-medium text-slate-500 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer shrink-0"
               >
-                {selectedLowStock.size === lowStockFiltered.length && lowStockFiltered.length > 0
-                  ? <CheckSquare size={12} className="text-rose-500" />
-                  : <Square size={12} />}
                 전체선택
+              </button>
+              <button
+                onClick={bulkRequestOrder}
+                disabled={bulkRequesting || selectedLowStock.size === 0}
+                className="inline-flex items-center gap-0.5 h-7 px-1.5 rounded text-[13px] font-black text-rose-800 bg-rose-100 border border-rose-300 hover:bg-rose-200 hover:border-rose-400 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer shrink-0 whitespace-nowrap"
+                title="선택한 상품 일괄 발주요청 리스트로 전송"
+              >
+                {bulkRequesting && <Loader2 size={11} strokeWidth={2.5} className="animate-spin" />}
+                <span>{bulkRequesting ? "요청 중" : `일괄 발주요청${selectedLowStock.size > 0 ? ` (${selectedLowStock.size})` : ""}`}</span>
               </button>
             </div>
           </div>
