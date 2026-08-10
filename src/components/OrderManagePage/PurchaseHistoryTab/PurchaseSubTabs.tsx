@@ -1198,41 +1198,7 @@ export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
         </div>
       </div>
 
-      {/* 3탭 공통 기간 필터 (2026-08-05 · 탭 바 아래 항상 표시) */}
-      {hasPeriodFilter && (
-        <div className="px-3 py-2 border-b border-slate-100 bg-slate-50/30 flex flex-wrap items-center gap-2 shrink-0">
-          <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">조회기간</span>
-          <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
-            <button
-              type="button"
-              onClick={() => handlePeriodChange!(0, null)}
-              className={`px-2 h-6 text-[10px] font-semibold rounded transition cursor-pointer ${
-                !periodSeason && periodMonths === 0
-                  ? "bg-emerald-500 text-white shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
-            >10일</button>
-            {([1, 2, 3, 4, 5, 6] as const).map(m => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => handlePeriodChange!(m, null)}
-                className={`px-2 h-6 text-[10px] font-semibold rounded transition cursor-pointer ${
-                  !periodSeason && periodMonths === m
-                    ? "bg-emerald-500 text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
-              >{m}개월</button>
-            ))}
-          </div>
-          <SeasonButtons
-            value={periodSeason ?? null}
-            onChange={(v) => handlePeriodChange!(periodMonths ?? 1, v)}
-            size="sm"
-            hideLabel
-          />
-        </div>
-      )}
+      {/* 2026-08-10 · 사용자 요청 · 3탭 공통 기간 필터 제거 · 상단 툴바로 통합됨 (다른 UI와 통일) */}
 
       {/* 탭 컨텐츠 */}
       <div className="flex flex-col min-h-0 flex-1">

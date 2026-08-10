@@ -2365,29 +2365,27 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {/* ── 발주요청 서브탭 (purchase-order > order) ── */}
       {topTab === "purchase-order" && purchaseOrderSubTab === "order" && (
         <div className="flex flex-col gap-2">
-          {/* ── 상단 필터바 · 2026-08-10 · 사용자 요청 · 이메일/문자·새로고침 제거 · 2행 구조 (PC 한줄 · 모바일 wrap) ── */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-col gap-2">
-            {/* 2026-08-10 · 사용자 요청 · Row 1·Row 2 전체 폰트 +2 */}
-            {/* Row 1: 제목 + 카운트 + 검색 */}
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-2 shrink-0">
-                <ShoppingCart size={16} className="text-rose-500 shrink-0" />
-                <span className="text-[15px] font-semibold text-slate-800">발주 요청 목록</span>
-                <span className="text-[13px] font-semibold text-rose-600 bg-rose-50 rounded-full px-2 py-0.5 border border-rose-200 tabular-nums">{orderReqs.length}건</span>
-                {selectedOrder.size > 0 && (
-                  <span className="text-[13px] font-semibold bg-rose-500 text-white rounded-full px-2 py-0.5 tabular-nums">선택 {selectedOrder.size}</span>
-                )}
-              </div>
-              <input
-                type="text"
-                value={orderSearch}
-                onChange={e => setOrderSearch(e.target.value)}
-                placeholder="상품·코드·공급사"
-                className="text-[13px] border border-slate-200 rounded-md pl-3 pr-3 h-8 flex-1 min-w-[140px] max-w-xs focus:outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 transition"
-              />
+          {/* 2026-08-10 · 사용자 요청 · PC 한 줄 · 모바일 wrap 2줄 (flex-wrap · lg+ 는 flex-nowrap 유도 · gap 자연 wrap) */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+            {/* 제목 + 카운트 */}
+            <div className="flex items-center gap-2 shrink-0">
+              <ShoppingCart size={16} className="text-rose-500 shrink-0" />
+              <span className="text-[15px] font-semibold text-slate-800">발주 요청 목록</span>
+              <span className="text-[13px] font-semibold text-rose-600 bg-rose-50 rounded-full px-2 py-0.5 border border-rose-200 tabular-nums">{orderReqs.length}건</span>
+              {selectedOrder.size > 0 && (
+                <span className="text-[13px] font-semibold bg-rose-500 text-white rounded-full px-2 py-0.5 tabular-nums">선택 {selectedOrder.size}</span>
+              )}
             </div>
-            {/* Row 2: 분류 chip · 일괄발주·전체선택·삭제 (PC 한줄 · 모바일 wrap 2줄) */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* 검색 */}
+            <input
+              type="text"
+              value={orderSearch}
+              onChange={e => setOrderSearch(e.target.value)}
+              placeholder="상품·코드·공급사"
+              className="text-[13px] border border-slate-200 rounded-md pl-3 pr-3 h-8 flex-1 min-w-[140px] max-w-[220px] focus:outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 transition"
+            />
+            {/* 분류 chip + 액션 · 하나의 wrap */}
+            <div className="flex items-center gap-2 flex-wrap">
               <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
                 {(["all", ...dbVendorCategories] as string[]).map(cat => {
                   const active = orderCategoryFilter === cat;

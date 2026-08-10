@@ -756,8 +756,8 @@ export const PurchaseHistoryTab: React.FC = () => {
   return (
     <>
     <div className="flex flex-col gap-2 h-full min-h-0">
-      {/* 상단 필터바 */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+      {/* 2026-08-10 · 상단 필터바 · CARD_BASE 공통 토큰 (SupplierTab · PaymentInfoTab 등과 통일) */}
+      <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2 shrink-0`}>
         <div className="flex items-center gap-2">
           {viewMode === "by-vendor"
             ? <Building2 size={14} className="text-emerald-500 shrink-0" />
