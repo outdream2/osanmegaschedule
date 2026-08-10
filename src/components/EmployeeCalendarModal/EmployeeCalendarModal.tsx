@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   X, ChevronLeft, ChevronRight, Save, Clock, MessageSquare,
-  Calendar, CheckCircle, MapPin, User, Lock, Edit2, FileText,
+  Calendar, CheckCircle, MapPin, User, Lock, Edit2, FileText, Upload,
 } from "lucide-react";
 import { Employee, Schedule } from "../../types";
 import { SCHEDULE_TYPES, getTypeHex, isLightHex } from "../../constants";
 import type { ScheduleTypeEntry } from "../../constants";
 import { ZoneAssignTab, type LogisticsZoneProps } from "./ZoneAssignTab";
 import { EmployeeInfoForm, type EmployeeInfoValues } from "../common/EmployeeInfoForm";
+import { uploadResume, uploadContract, uploadBankbook } from "../../lib/employeeApi";
 
 export type { LogisticsZoneProps };
 
@@ -67,6 +68,50 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  // 로컬 employee state · 파일 업로드 성공 시 즉시 UI 갱신
+  const [localEmployee, setLocalEmployee] = useState<Employee>(employee);
+  useEffect(() => { setLocalEmployee(employee); }, [employee]);
+
+  // 파일 업로드 · 이력서·근계·통장사본
+  const resumeFileRef = useRef<HTMLInputElement | null>(null);
+  const contractFileRef = useRef<HTMLInputElement | null>(null);
+  const bankbookFileRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingKind, setUploadingKind] = useState<"resume" | "contract" | "bankbook" | null>(null);
+
+  const handleResumeUpload = async (file: File) => {
+    setUploadingKind("resume");
+    try {
+      const { url } = await uploadResume(localEmployee.id, file);
+      setLocalEmployee(prev => ({ ...prev, resume_url: url }));
+    } catch (err: any) {
+      alert(`이력서 업로드 실패 · ${err?.message ?? err}`);
+    } finally {
+      setUploadingKind(null);
+    }
+  };
+  const handleContractUpload = async (file: File) => {
+    setUploadingKind("contract");
+    try {
+      const { url } = await uploadContract(localEmployee.id, file);
+      if (url) setLocalEmployee(prev => ({ ...prev, contract_file_url: url }));
+    } catch (err: any) {
+      alert(`근로계약서 업로드 실패 · ${err?.message ?? err}`);
+    } finally {
+      setUploadingKind(null);
+    }
+  };
+  const handleBankbookUpload = async (file: File) => {
+    setUploadingKind("bankbook");
+    try {
+      const { dataUrl } = await uploadBankbook(localEmployee, file);
+      setLocalEmployee(prev => ({ ...prev, bankbook_image_url: dataUrl }));
+    } catch (err: any) {
+      alert(`통장사본 업로드 실패 · ${err?.message ?? err}`);
+    } finally {
+      setUploadingKind(null);
+    }
+  };
 
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
@@ -888,19 +933,19 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
         {activeTab === "info" && (() => {
           // 공통 폼 · Employee → EmployeeInfoValues 매핑 (read-only view)
           const infoValues: EmployeeInfoValues = {
-            name: employee.name || "",
-            phone: employee.phone || "",
-            gender: (employee.gender as "남" | "여" | undefined) ?? "",
-            position: employee.position || "",
-            workplace: employee.workplace || "",
-            hireDate: employee.hireDate || "",
-            rank: employee.rank || "",
+            name: localEmployee.name || "",
+            phone: localEmployee.phone || "",
+            gender: (localEmployee.gender as "남" | "여" | undefined) ?? "",
+            position: localEmployee.position || "",
+            workplace: localEmployee.workplace || "",
+            hireDate: localEmployee.hireDate || "",
+            rank: localEmployee.rank || "",
             birthDate: "",
-            address: employee.address || "",
-            email: employee.email || "",
+            address: localEmployee.address || "",
+            email: localEmployee.email || "",
           };
-          const hasResume = !!employee.resume_url;
-          const hasContract = !!employee.contract_file_url;
+          const hasResume = !!localEmployee.resume_url;
+          const hasContract = !!localEmployee.contract_file_url;
           return (
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
               {isLocked && (
@@ -962,16 +1007,22 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                 </div>
 
                 {/* 비고 (있을 때만) */}
-                {/* 첨부 파일 · 이력서·근계·통장사본 · 3개 항상 노출 · 없으면 [미등록 · 업로드] */}
+                {/* 첨부 파일 · 이력서·근계·통장사본 · 3개 항상 노출 · 없으면 클릭 시 업로드 */}
                 {(() => {
-                  const bankbookUrl = employee.bankbook_image_url;
+                  const bankbookUrl = localEmployee.bankbook_image_url;
                   const hasBankbook = !!bankbookUrl;
+                  const emptyCls = "px-2 py-1.5 text-[12px] font-semibold bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700 rounded-lg inline-flex items-center justify-center gap-1 border border-dashed border-slate-300 cursor-pointer transition disabled:opacity-60 disabled:cursor-wait";
                   return (
                     <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
+                      {/* hidden file inputs */}
+                      <input ref={resumeFileRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleResumeUpload(f); e.target.value = ""; }} />
+                      <input ref={contractFileRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleContractUpload(f); e.target.value = ""; }} />
+                      <input ref={bankbookFileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleBankbookUpload(f); e.target.value = ""; }} />
+
                       {/* 이력서 */}
                       {hasResume ? (
                         <a
-                          href={employee.resume_url!}
+                          href={localEmployee.resume_url!}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="px-2 py-1.5 text-[12px] font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-lg inline-flex items-center justify-center gap-1 shadow-sm transition"
@@ -980,12 +1031,15 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                           <FileText size={13} /> 이력서
                         </a>
                       ) : (
-                        <div
-                          className="px-2 py-1.5 text-[12px] font-semibold bg-slate-100 text-slate-400 rounded-lg inline-flex items-center justify-center gap-1 border border-dashed border-slate-300"
-                          title="이력서 미등록 · 직원 관리에서 업로드"
+                        <button
+                          type="button"
+                          disabled={uploadingKind === "resume"}
+                          onClick={() => resumeFileRef.current?.click()}
+                          className={emptyCls}
+                          title="이력서 업로드 (PDF · 이미지)"
                         >
-                          이력서 · 미등록
-                        </div>
+                          <Upload size={12} /> {uploadingKind === "resume" ? "업로드 중..." : "이력서 · 없음"}
+                        </button>
                       )}
                       {/* 근로계약서 */}
                       {hasContract ? (
@@ -998,12 +1052,15 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                           <FileText size={13} /> 근로계약서
                         </button>
                       ) : (
-                        <div
-                          className="px-2 py-1.5 text-[12px] font-semibold bg-slate-100 text-slate-400 rounded-lg inline-flex items-center justify-center gap-1 border border-dashed border-slate-300"
-                          title="근로계약서 미등록 · 계약서 작성 페이지에서 작성"
+                        <button
+                          type="button"
+                          disabled={uploadingKind === "contract"}
+                          onClick={() => contractFileRef.current?.click()}
+                          className={emptyCls}
+                          title="근로계약서 업로드 (PDF · 이미지)"
                         >
-                          근계 · 미등록
-                        </div>
+                          <Upload size={12} /> {uploadingKind === "contract" ? "업로드 중..." : "근계 · 없음"}
+                        </button>
                       )}
                       {/* 통장사본 */}
                       {hasBankbook ? (
@@ -1017,12 +1074,15 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                           <FileText size={13} /> 통장사본
                         </a>
                       ) : (
-                        <div
-                          className="px-2 py-1.5 text-[12px] font-semibold bg-slate-100 text-slate-400 rounded-lg inline-flex items-center justify-center gap-1 border border-dashed border-slate-300"
-                          title="통장사본 미등록 · 직원 관리에서 업로드"
+                        <button
+                          type="button"
+                          disabled={uploadingKind === "bankbook"}
+                          onClick={() => bankbookFileRef.current?.click()}
+                          className={emptyCls}
+                          title="통장사본 업로드 (이미지 · 5MB 이하)"
                         >
-                          통장사본 · 미등록
-                        </div>
+                          <Upload size={12} /> {uploadingKind === "bankbook" ? "업로드 중..." : "통장사본 · 없음"}
+                        </button>
                       )}
                     </div>
                   );
@@ -1050,16 +1110,16 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
               )}
 
               {/* 근로계약서 뷰어 모달 (기존 유지) */}
-              {contractModalOpen && employee.contract_file_url && (
+              {contractModalOpen && localEmployee.contract_file_url && (
                 <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/75 p-4">
                   <div className="relative w-full max-w-3xl bg-white rounded-2xl overflow-hidden flex flex-col shadow-2xl" style={{ height: "85vh" }}>
                     <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 shrink-0">
                       <span className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                        <FileText size={15} className="text-emerald-600" /> 근로계약서 — {employee.name}
+                        <FileText size={15} className="text-emerald-600" /> 근로계약서 — {localEmployee.name}
                       </span>
                       <div className="flex items-center gap-2">
                         <a
-                          href={employee.contract_file_url}
+                          href={localEmployee.contract_file_url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition"
@@ -1076,15 +1136,15 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                       </div>
                     </div>
                     <div className="flex-1 overflow-hidden bg-slate-100">
-                      {/\.(pdf)$/i.test(employee.contract_file_url) ? (
+                      {/\.(pdf)$/i.test(localEmployee.contract_file_url) ? (
                         <iframe
-                          src={employee.contract_file_url}
+                          src={localEmployee.contract_file_url}
                           className="w-full h-full border-0"
                           title="근로계약서"
                         />
                       ) : (
                         <img
-                          src={employee.contract_file_url}
+                          src={localEmployee.contract_file_url}
                           alt="근로계약서"
                           className="w-full h-full object-contain"
                         />
