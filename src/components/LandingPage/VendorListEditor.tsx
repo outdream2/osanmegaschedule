@@ -1215,22 +1215,31 @@ export const VendorDetailModal: React.FC<{
             </div>
           </details>
 
-          {/* 2026-08-10 · 사용자 요청 · 결제정보 세션 · 부가세포함 체크박스 (거래명세서 금액) */}
+          {/* 2026-08-10 · 사용자 요청 · 결제정보 · VAT 포함/별도 · 2체크박스 (하나만 활성) */}
           <div className="mb-4 pb-1.5 border-b border-slate-100">
             <div className="flex items-center gap-x-4 gap-y-1 flex-wrap">
               <div className="flex items-center gap-2 shrink-0">
                 <span className="w-1 h-4 rounded-full bg-amber-500 shrink-0" />
                 <span className="text-[15px] font-black text-amber-700">결제 정보</span>
               </div>
+              <span className="text-[12px] text-slate-400 shrink-0">거래명세서 금액</span>
               <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={draft.vat_included === "included"}
-                  onChange={e => setDraft({ ...draft, vat_included: e.target.checked ? "included" : "excluded" })}
+                  onChange={() => setDraft({ ...draft, vat_included: "included" })}
+                  className="w-4 h-4 accent-emerald-500 cursor-pointer"
+                />
+                <span className={`text-[14px] font-semibold ${draft.vat_included === "included" ? "text-emerald-700" : "text-slate-500"}`}>부가세 포함</span>
+              </label>
+              <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={draft.vat_included === "excluded"}
+                  onChange={() => setDraft({ ...draft, vat_included: "excluded" })}
                   className="w-4 h-4 accent-amber-500 cursor-pointer"
                 />
-                <span className="text-[14px] font-semibold text-slate-700">부가세 포함</span>
-                <span className="text-[12px] text-slate-400">(거래명세서 금액)</span>
+                <span className={`text-[14px] font-semibold ${draft.vat_included === "excluded" ? "text-amber-700" : "text-slate-500"}`}>부가세 별도</span>
               </label>
             </div>
           </div>
