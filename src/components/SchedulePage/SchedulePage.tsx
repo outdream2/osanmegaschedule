@@ -1,6 +1,13 @@
 // src/components/SchedulePage.tsx
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
+import {
+  updateEmployee,
+  updateEmployeeFull,
+  createEmployee,
+  deleteEmployee as apiDeleteEmployee,
+  uploadContract as apiUploadContract,
+} from "../../lib/employeeApi";
 import { ZONE_DEFS, ZONES_STORAGE_KEY } from "../../constants/displayZones";
 import { Employee, MonthlySummary, Schedule, AuthSession } from "../../types";
 import { ScheduleCell } from "./ScheduleCell";
@@ -1061,12 +1068,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     try {
       const uploadContract = async (empId: number) => {
         if (!empContractFile) return;
-        const fd = new FormData();
-        fd.append("contract", empContractFile);
         try {
-          await axios.post(`/api/employees/${empId}/contract`, fd, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
+          await apiUploadContract(empId, empContractFile);
         } catch {
           showNotification("근로계약서 업로드 중 오류가 발생했습니다.", "error");
         }
@@ -1074,7 +1077,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
       if (empModalMode === "edit" && selectedEmpForEdit) {
         if (!await confirm({ message: `${empName} 직원의 정보를 수정하시겠습니까?` })) return;
-        await axios.put(`/api/employees/${selectedEmpForEdit.id}`, {
+        await updateEmployeeFull(selectedEmpForEdit.id, {
           name: empName,
           position: finalPosition,
           rank: empRank.trim() || null,
@@ -1092,7 +1095,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         applyZones(selectedEmpForEdit.id, empName);
         showNotification(`${empName} 직원의 정보가 수정되었습니다.`);
       } else {
-        const res = await axios.post("/api/employees", {
+        const created = await createEmployee({
           name: empName,
           position: finalPosition,
           rank: empRank.trim() || null,
@@ -1106,9 +1109,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           annual_leave_days: empAnnualLeave > 0 ? empAnnualLeave : null,
           level: empLevel,
         });
-        if (res.data?.id) {
-          await uploadContract(res.data.id);
-          applyZones(res.data.id, empName);
+        if (created?.id) {
+          await uploadContract(created.id);
+          applyZones(created.id, empName);
         }
         showNotification(`새 직원 ${empName}님이 등록되었습니다.`);
       }
@@ -1148,7 +1151,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     }
 
     try {
-      await axios.delete(`/api/employees/${id}`);
+      await apiDeleteEmployee(id);
       showNotification(`${name} 직원이 삭제되었습니다.`);
       setEmployees(prev => prev.filter(e => e.id !== id));
     } catch (err) {
@@ -1165,18 +1168,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     if (emp.description === tempDescription) return;
 
     try {
-      await axios.put(`/api/employees/${id}`, {
-        name: emp.name,
-        position: emp.position,
-        rank: emp.rank ?? null,
-        employmentType: emp.employmentType,
-        hireDate: emp.hireDate,
-        description: tempDescription,
-        workplace: emp.workplace,
-        gender: emp.gender ?? null,
-        annual_leave_days: emp.annual_leave_days ?? null,
-        level: emp.level ?? 1,
-      });
+      await updateEmployee(emp, { description: tempDescription });
 
       setEmployees((prev) =>
         prev.map((e) => {
