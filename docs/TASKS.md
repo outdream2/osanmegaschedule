@@ -198,6 +198,32 @@
 - `b852cec` 발주요청 · 일괄발주·전체선택 리스트 제목 옆 이동 · 상품별 발주버튼 제거 · [선택삭제] 추가
 - `d7e11a4` 그룹 [발주] 폰트 +2 · 리스트 PC 높이 75vh
 - `a1d30fb` 공급사 컬럼 header 제거 · 발주 액션 그룹 header 제거 · 상품정보 colSpan 1
+- `7f9fea3` #39 · 발주정보 카테고리 그룹 · 주문수량·이전사입가·발주금액 · category badge
+- `7e4d83e` 그룹 [발주] 버튼 컴팩트 · scan useResizablePanel import
+- `3a22ab6` 상품명 셀 padding 일치
+- `b51c393` 주문수량 · 편집 가능 input · ERP재고 stockChanged 인라인 · align-middle
+- `9836d4f` #40 · VendorDetailModal 헤더 UI 리디자인 · pill 배지 · 폰트 +2
+- `e7e4af8` #41 · 공급요약 · 담당자/팀장/긴급 세로 배치
+- `494d46f` 총재고 현황 · products-search API
+- `3918e7a` 왼쪽 공급사 리스트 · 폰트 +1 · wrap
+- `bb2b636` 상단 pill 배지 → 텍스트 인라인
+- `071909c` 공급요약 3항목 · 안내 문구
+- `ed927f8` 등록일 배지 제거
+- `3645900` 헤더 한줄 컴팩트 · 공급사명 +1
+- `b94bc27` Field 라벨 +1 medium · 공급요약 옆 나란히 · 아이콘 제거
+- `947a1e4` Field 라벨 15px semibold
+- `3197488` 결제정보 세션 · 부가세 포함 체크
+- `a8657fd` VAT 2 체크박스 · 색상 톤 차이
+- `ca374fc` VAT 포함 기본값
+- `d08eef3` `77d93bc` `31ca056` · 총재고금액 계산 fix + 설명
+- `4163dae` 결제·잔고 안내 문구 제거
+- `d790b09` SplitPanel 기본 5:5
+- `bb6e250` 추천적정·부족 align-middle
+- `c7040c4` 분류 필터 컴팩트 (h-7 · px-1.5)
+- `ff5277c` 발주 실패 사유 상세 표시
+- `a7fbef6` 발주서 헤더 · 담당자·전화·이메일 나란히
+- `2703993` 통합 요약 + 발송 담당자 dropdown · 물류팀장 기본
+- `050dd22` 전역 버튼 위아래 여백 축소 (py-2·py-3)
 
 ---
 
