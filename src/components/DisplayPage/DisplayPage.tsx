@@ -300,6 +300,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const [dpSubTab, setDpSubTab] = useState<DpSubTabKey>(
     dpCanSeeStockManage ? "purchase-order" : "store"
   );
+  // 2026-08-10 · 매장구역도 · 기본 접기 (사용자 요청)
+  const [mapCollapsed, setMapCollapsed] = useState(true);
   // 2026-08-09 · sessionStorage("dpInitialSubTab") 있으면 · 그 서브탭으로 진입 (LandingPage 공급사등록 카드용)
   useEffect(() => {
     try {
@@ -1857,9 +1859,19 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                 </div>
               )}
 
-              {/* ── MAP TAB (데스크탑 매장 배치도) · 모바일 숨김 ─────────────── */}
-              {/* Simulated 2D Floor Plan Grid matches map.png */}
-              <div className="hidden sm:block xl:overflow-x-visible overflow-x-auto">
+              {/* ── MAP TAB (데스크탑 매장 배치도) · 모바일 숨김 · 2026-08-10 · 기본 접기 (사용자 요청) ─────────────── */}
+              <div className="hidden sm:flex items-center gap-2 mb-2">
+                <button
+                  type="button"
+                  onClick={() => setMapCollapsed(v => !v)}
+                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[12px] font-black shadow-sm transition cursor-pointer"
+                  title="매장 구역도 열기/접기"
+                >
+                  🗺️ {mapCollapsed ? "매장 구역도 펼치기" : "매장 구역도 접기"}
+                </button>
+              </div>
+              {/* Simulated 2D Floor Plan Grid matches map.png · 접혀있으면 렌더 X */}
+              <div className={`hidden ${mapCollapsed ? "" : "sm:block"} xl:overflow-x-visible overflow-x-auto`}>
                 <div className="p-2 bg-slate-200 rounded-2xl flex flex-col justify-between border-4 border-emerald-500 shadow-inner gap-2 min-h-[500px] xl:w-full min-w-[820px] w-max relative">
 
                   {/* ── 물류출근직원 pill (매장 배치도 내부 상단) ── */}
