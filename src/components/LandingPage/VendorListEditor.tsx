@@ -1999,9 +1999,9 @@ const PaymentRegisterModal: React.FC<{
 // ─── 공용 UI 헬퍼 ────────────────────────────────────────────────
 
 /** shadcn form input · h-9 · focus ring teal */
-// 2026-08-10 · 사용자 요청 · 입력창 폰트 +1 (15→16)
+// 2026-08-10 · 사용자 요청 · 입력창 여백 반 축소 (px-3→px-1.5 · h-10→h-8)
 const inputCls =
-  "w-full h-10 px-3 text-[16px] border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400 bg-white transition placeholder:text-slate-300";
+  "w-full h-8 px-1.5 text-[16px] border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400 bg-white transition placeholder:text-slate-300";
 
 // 2026-08-10 · 사용자 요청 · Field 라벨 -1 (15→14) · 유지
 const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
