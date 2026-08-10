@@ -167,6 +167,20 @@ export const ScanPage: React.FC<ScanPageProps> = ({
 
   // ── 전체 저장
   const [saveStatus, setSaveStatus]             = useState<"idle" | "saving" | "done" | "error">("idle");
+
+  // 2026-08-10 · G · A4 · 스캔 자동 +1 (opt-in · localStorage · 기본 off)
+  // 이미 리스트에 있는 상품 스캔 시 · 매장1 addQty +1 자동
+  const AUTO_INC_KEY = "scanPage_autoIncrement";
+  const [autoIncOn, setAutoIncOn] = useState<boolean>(() => {
+    try { return localStorage.getItem(AUTO_INC_KEY) === "1"; } catch { return false; }
+  });
+  const toggleAutoInc = () => {
+    setAutoIncOn(v => {
+      const next = !v;
+      try { localStorage.setItem(AUTO_INC_KEY, next ? "1" : "0"); } catch { /* noop */ }
+      return next;
+    });
+  };
   const [saveError, setSaveError]               = useState<string | null>(null);
   const [savedCount, setSavedCount]             = useState<number>(0);
 
@@ -323,8 +337,16 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     // 중복 코드면 기존 행 하이라이트
     const existingIdx = rows.findIndex(r => r.code === result);
     if (existingIdx >= 0) {
-      setLastAddedKey(rows[existingIdx].key);
-      showToast("이미 등록된 상품 (기존 행 활성화)");
+      const existing = rows[existingIdx];
+      setLastAddedKey(existing.key);
+      // 2026-08-10 · G · A4 · 자동 +1 옵션 활성 시 · 매장1 addQty +1
+      if (autoIncOn) {
+        const cur = existing.store1AddQty === "" ? 0 : Number(existing.store1AddQty) || 0;
+        setRows(prev => prev.map(r => r.key === existing.key ? { ...r, store1AddQty: cur + 1 } : r));
+        showToast(`이미 등록 · 매1 +1 (${cur + 1})`);
+      } else {
+        showToast("이미 등록된 상품 (기존 행 활성화)");
+      }
       return;
     }
 
@@ -386,7 +408,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         ));
       })
       .catch(() => {});
-  }, [rows, showToast]);
+  }, [rows, showToast, autoIncOn]);
 
   // ── 행 필드 업데이트
   const patchRow = useCallback((key: string, patch: Partial<StockRow>) => {
@@ -649,6 +671,17 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 placeholder="상품명·코드 검색"
                 onSelect={(code) => handleScan(code)}
               />
+
+              {/* 2026-08-10 · G · A4 · 자동 +1 opt-in 토글 */}
+              <label className="flex items-center gap-2 text-[11px] text-slate-600 font-semibold cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={autoIncOn}
+                  onChange={toggleAutoInc}
+                  className="w-3.5 h-3.5 accent-teal-500"
+                />
+                <span>중복 스캔 시 매1 자동 +1</span>
+              </label>
 
               {notFoundCode && !lastProduct && (
                 <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl
