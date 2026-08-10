@@ -1254,17 +1254,19 @@ export const VendorDetailModal: React.FC<{
               <span className="w-1 h-4 rounded-full bg-emerald-500 shrink-0" />
               <span className="text-[15px] font-black text-emerald-700">공급 요약</span>
             </summary>
-            <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 text-[14px] leading-tight px-2">
-              <span className="inline-flex flex-col">
-                <span className="text-slate-400 font-semibold text-[11px]">총재고</span>
+            <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[13px] leading-tight px-2">
+              <span className="inline-flex items-baseline gap-1">
+                <span className="text-slate-400 font-semibold">총재고</span>
                 <span className="tabular-nums font-black text-sky-700">{vendorTotalStock != null ? fmtWon(vendorTotalStock) : "-"}</span>
               </span>
-              <span className="inline-flex flex-col">
-                <span className="text-slate-400 font-semibold text-[11px]">총 상품</span>
+              <span className="text-slate-200">·</span>
+              <span className="inline-flex items-baseline gap-1">
+                <span className="text-slate-400 font-semibold">총 상품</span>
                 <span className="tabular-nums font-black text-violet-700">{summary ? `${summary.uniqueProducts.toLocaleString()}종` : "-"}</span>
               </span>
-              <span className="inline-flex flex-col col-span-2">
-                <span className="text-slate-400 font-semibold text-[11px]">총매입</span>
+              <span className="text-slate-200">·</span>
+              <span className="inline-flex items-baseline gap-1">
+                <span className="text-slate-400 font-semibold">총매입</span>
                 <span className="tabular-nums font-black text-indigo-700">{summary ? fmtWon(summary.totalAmount) : "-"}</span>
               </span>
             </div>
