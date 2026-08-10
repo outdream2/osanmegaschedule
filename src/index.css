@@ -88,17 +88,18 @@ html, body {
 /* Tailwind 임의값(arbitrary) 픽셀 사이즈 · 대폭 상향 (2026-07-28 사용자 재요청)
  * 2026-08-09 · +1 상향 · 각 픽셀 +1
  * 2026-08-09 · 옵션 3 추가 · 작은 폰트 (9~11px) 만 추가 +1 · 탭 아래 컨텐츠 가독성 개선
- * 2026-08-10 · 사용자 요청 · 제목 제외한 내용 (8~13px) +1 상향 · 제목 (14~16px) 유지 */
-[class*="text-\\[8px\\]"]  { font-size: 15px !important; }  /* was 14 · +1 (content) */
-[class*="text-\\[9px\\]"]  { font-size: 17px !important; }  /* was 16 · +1 (content) */
-[class*="text-\\[10px\\]"] { font-size: 18px !important; }  /* was 17 · +1 (content) */
-[class*="text-\\[11px\\]"] { font-size: 19px !important; }  /* was 18 · +1 (content) */
-[class*="text-\\[12px\\]"] { font-size: 19px !important; }  /* was 18 · +1 (content) */
-[class*="text-\\[13px\\]"] { font-size: 20px !important; }  /* was 19 · +1 (content) */
-[class*="text-\\[14px\\]"] { font-size: 20px !important; }  /* 제목 · 유지 */
-[class*="text-\\[15px\\]"] { font-size: 21px !important; }  /* 제목 · 유지 */
-[class*="text-\\[16px\\]"] { font-size: 22px !important; }  /* 제목 · 유지 */
-[class*="text-\\[17px\\]"] { font-size: 23px !important; }  /* 제목 · 신규 */
+ * 2026-08-10 · 사용자 요청 · 제목 제외한 내용 (8~13px) +1 상향 · 제목 (14~16px) 유지
+ * 2026-08-10 · 사용자 요청 · content 전체 +2 추가 상향 (실재고 입력 등 안보여) */
+[class*="text-\\[8px\\]"]  { font-size: 17px !important; }  /* was 15 · +2 */
+[class*="text-\\[9px\\]"]  { font-size: 19px !important; }  /* was 17 · +2 */
+[class*="text-\\[10px\\]"] { font-size: 20px !important; }  /* was 18 · +2 */
+[class*="text-\\[11px\\]"] { font-size: 21px !important; }  /* was 19 · +2 */
+[class*="text-\\[12px\\]"] { font-size: 21px !important; }  /* was 19 · +2 */
+[class*="text-\\[13px\\]"] { font-size: 22px !important; }  /* was 20 · +2 */
+[class*="text-\\[14px\\]"] { font-size: 22px !important; }  /* was 20 · +2 (input 강조) */
+[class*="text-\\[15px\\]"] { font-size: 23px !important; }  /* was 21 · +2 */
+[class*="text-\\[16px\\]"] { font-size: 24px !important; }  /* was 22 · +2 (제목) */
+[class*="text-\\[17px\\]"] { font-size: 25px !important; }  /* was 23 · +2 (제목) */
 
 /* Custom scrolling classes to styled tables nicely */
 ::-webkit-scrollbar {
