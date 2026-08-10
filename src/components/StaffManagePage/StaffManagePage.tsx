@@ -1693,7 +1693,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                 </div>
               </div>
 
-              {/* ── 3열 KPI 바 — 근속 · 연차잔여 · 인사평가 (항상 노출) ── */}
+              {/* 2026-08-10 · #27 · 근속·연차·평가 · 카드형 → 깔끔한 텍스트 인라인 (사용자 요청 · Notion People 스타일 · 폰트 +2) */}
               {(() => {
                 const tenure = calcTenure(displayEmp.hire_date);
                 const totalDaysRaw = editing ? draft?.annual_leave_days : displayEmp.annual_leave_days;
@@ -1703,59 +1703,53 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                 const fmtD = (n: number) => Number.isInteger(n) ? String(n) : n.toFixed(1);
                 const rating = displayEmp.performance_rating ? String(displayEmp.performance_rating).toUpperCase() : null;
                 return (
-                  <div className="grid grid-cols-3 divide-x divide-slate-200 border-b border-slate-200 shrink-0 bg-white">
+                  <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5 px-4 py-2.5 border-b border-slate-200 bg-white shrink-0 text-[13px]">
                     {/* 근속 */}
-                    <div className="flex flex-col items-center justify-center py-2 px-2 gap-0.5">
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-0.5">
-                        <Clock size={9} className="text-indigo-400" /> 근속
-                      </span>
-                      <span className="text-[15px] font-black text-slate-800 leading-tight tabular-nums">
-                        {tenure === "-" ? <span className="text-[12px] text-slate-300">미등록</span> : tenure}
+                    <span className="inline-flex items-baseline gap-1.5">
+                      <span className="inline-flex items-center gap-1 text-[12px] text-slate-400 font-semibold"><Clock size={11} className="text-indigo-400" />근속</span>
+                      <span className="font-black text-slate-800 tabular-nums">
+                        {tenure === "-" ? <span className="text-slate-300 italic font-normal">미등록</span> : tenure}
                       </span>
                       {displayEmp.hire_date && (
-                        <span className="text-[10px] text-slate-400">{displayEmp.hire_date}</span>
+                        <span className="text-[11px] text-slate-400 tabular-nums">({displayEmp.hire_date})</span>
                       )}
-                    </div>
-                    {/* 연차 잔여 · 총일수 인라인 편집 (2026-08-04 · 사용자 요청 상단 통합) */}
-                    <div className="flex flex-col items-center justify-center py-2 px-2 gap-0.5">
-                      <span className="text-[10px] font-semibold text-emerald-500 uppercase tracking-wide flex items-center gap-0.5">
-                        <CalendarDays size={9} /> 연차 잔여
-                      </span>
-                      <span className="text-[15px] font-black text-emerald-700 leading-tight tabular-nums">
+                    </span>
+                    <span className="text-slate-200">·</span>
+                    {/* 연차 잔여 */}
+                    <span className="inline-flex items-baseline gap-1.5">
+                      <span className="inline-flex items-center gap-1 text-[12px] text-emerald-500 font-semibold"><CalendarDays size={11} />연차 잔여</span>
+                      <span className="font-black text-emerald-700 tabular-nums">
                         {fmtD(remainDays)}<span className="text-[11px] font-semibold ml-0.5">일</span>
                       </span>
                       {editing ? (
-                        <div className="flex items-center gap-1 text-[10px]">
-                          <span className="text-slate-400">총</span>
+                        <span className="inline-flex items-baseline gap-1 text-[11px] text-slate-400">
+                          <span>/ 총</span>
                           <input
                             type="number" min={0} max={30} step={1}
                             value={draft?.annual_leave_days ?? ""}
                             onChange={(e) => setField("annual_leave_days", e.target.value === "" ? null : Number(e.target.value))}
-                            placeholder="12"
-                            className="w-10 h-5 px-1 rounded border border-indigo-300 bg-indigo-50/40 text-[11px] font-bold text-slate-700 text-right tabular-nums focus:outline-none focus:border-indigo-500"
+                            placeholder="15"
+                            className="w-12 h-6 px-1 rounded border border-indigo-300 bg-indigo-50/40 text-[12px] font-bold text-slate-700 text-right tabular-nums focus:outline-none focus:border-indigo-500"
                           />
-                          <span className="text-slate-400">일 · 사용 {fmtD(usedDays)}일</span>
-                        </div>
-                      ) : (
-                        <span className="text-[10px] text-slate-400">총 {fmtD(totalDays)}일 · 사용 {fmtD(usedDays)}일</span>
-                      )}
-                    </div>
-                    {/* 인사평가 */}
-                    <div className="flex flex-col items-center justify-center py-2 px-2 gap-0.5">
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-0.5">
-                        <Star size={9} className="text-amber-400" /> 평가
-                      </span>
-                      {rating ? (
-                        <span className={`text-[15px] font-black leading-tight px-2 py-0.5 rounded-md border ${performanceRatingColor(rating)}`}>
-                          {rating}
+                          <span>· 사용 {fmtD(usedDays)}</span>
                         </span>
                       ) : (
-                        <span className="text-[12px] text-slate-300 italic leading-tight">미평가</span>
+                        <span className="text-[11px] text-slate-400 tabular-nums">/ 총 {fmtD(totalDays)}일 · 사용 {fmtD(usedDays)}</span>
+                      )}
+                    </span>
+                    <span className="text-slate-200">·</span>
+                    {/* 인사평가 */}
+                    <span className="inline-flex items-baseline gap-1.5">
+                      <span className="inline-flex items-center gap-1 text-[12px] text-amber-500 font-semibold"><Star size={11} />평가</span>
+                      {rating ? (
+                        <span className={`font-black px-1.5 py-0.5 rounded-md border ${performanceRatingColor(rating)}`}>{rating}</span>
+                      ) : (
+                        <span className="text-slate-300 italic">미평가</span>
                       )}
                       {isSeveranceEligible(displayEmp) && (
-                        <span className="text-[9px] font-bold text-rose-500 bg-rose-50 border border-rose-200 px-1.5 py-px rounded-md leading-tight">퇴직금대상</span>
+                        <span className="text-[11px] font-bold text-rose-500 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded-md ml-1">퇴직금대상</span>
                       )}
-                    </div>
+                    </span>
                   </div>
                 );
               })()}
