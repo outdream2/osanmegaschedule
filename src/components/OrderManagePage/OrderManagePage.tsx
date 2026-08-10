@@ -285,6 +285,28 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Set<string>>(new Set());
+  // 2026-08-10 · 사용자 요청 · 발주필요 리스트 체크박스 · 일괄 발주요청 (복원)
+  const [selectedLowStock, setSelectedLowStock] = useState<Set<string>>(new Set());
+  const [bulkRequesting, setBulkRequesting] = useState(false);
+  const toggleLowStockOne = (code: string) => {
+    setSelectedLowStock(prev => { const n = new Set(prev); n.has(code) ? n.delete(code) : n.add(code); return n; });
+  };
+  const clearLowStockSelection = () => setSelectedLowStock(new Set());
+  const bulkRequestOrder = async () => {
+    if (selectedLowStock.size === 0) return;
+    const codes = Array.from(selectedLowStock);
+    setBulkRequesting(true);
+    try {
+      // 각 상품 · 개별 요청 (기존 handleRequestOrder 재사용)
+      const products = lowStock.filter(p => codes.includes(getCode(p)));
+      for (const p of products) {
+        await handleRequestOrder(p);
+      }
+      clearLowStockSelection();
+    } finally {
+      setBulkRequesting(false);
+    }
+  };
   const [orderSearch, setOrderSearch] = useState("");
   // 2026-08-06 · 사용자 요청 · 발주요청 리스트 · 공급사 분류 필터
   const [orderCategoryFilter, setOrderCategoryFilter] = useState<NeedCategoryFilterKey>("all");
@@ -1808,10 +1830,42 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           <div className="text-center text-[11px] text-slate-300 py-6">발주 필요 상품 없음</div>
         ) : (
           <>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <span className="inline-block w-1 h-3.5 rounded-full bg-rose-500 shrink-0"></span>
             <span className="text-[11px] font-black text-rose-600">발주필요 리스트</span>
             <span className="text-[11px] text-slate-400 font-normal">{lowStockFiltered.length}건</span>
+            {/* 2026-08-10 · 사용자 요청 · 일괄 발주요청 (체크박스 선택 · 복원) */}
+            {selectedLowStock.size > 0 && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-black text-white bg-rose-500 rounded-full px-2 py-0.5 tabular-nums">
+                선택 {selectedLowStock.size}
+              </span>
+            )}
+            <div className="ml-auto flex items-center gap-1.5">
+              <button
+                onClick={bulkRequestOrder}
+                disabled={bulkRequesting || selectedLowStock.size === 0}
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[13px] font-black text-rose-800 bg-rose-100 border border-rose-300 hover:bg-rose-200 hover:border-rose-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer shrink-0 whitespace-nowrap"
+                title="선택한 상품 일괄 발주요청 리스트로 전송"
+              >
+                {bulkRequesting ? <Loader2 size={12} strokeWidth={2.5} className="animate-spin" /> : <Send size={12} strokeWidth={2.5} />}
+                <span>{bulkRequesting ? "요청 중" : `일괄 발주요청${selectedLowStock.size > 0 ? ` (${selectedLowStock.size})` : ""}`}</span>
+              </button>
+              <button
+                onClick={() => {
+                  if (selectedLowStock.size === lowStockFiltered.length) {
+                    clearLowStockSelection();
+                  } else {
+                    setSelectedLowStock(new Set(lowStockFiltered.map(p => getCode(p))));
+                  }
+                }}
+                className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[11px] font-medium text-slate-500 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer shrink-0"
+              >
+                {selectedLowStock.size === lowStockFiltered.length && lowStockFiltered.length > 0
+                  ? <CheckSquare size={12} className="text-rose-500" />
+                  : <Square size={12} />}
+                전체선택
+              </button>
+            </div>
           </div>
           <div className={`max-h-[50vh] overflow-auto relative ${productsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             <table className="w-full text-xs sm:min-w-[540px]">
@@ -1937,27 +1991,40 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   const contactName = vendor?.contact_name || (p as any).supplier_contact || "-";
                   const alreadyRequested = requestedCodes.has(code);
                   const busy = requestingOrder.has(code);
+                  const isChecked = selectedLowStock.has(code);
                   return (
                     <React.Fragment key={code}>
-                    <tr className="hover:bg-orange-50/30 transition">
-                      {/* 상품정보 그룹 */}
+                    <tr className={`transition ${isChecked ? "bg-rose-50/40" : "hover:bg-orange-50/30"}`}>
+                      {/* 상품정보 그룹 · 2026-08-10 · 사용자 요청 · 체크박스 복원 (일괄 발주요청) */}
                       {isNeedCollapsed("info") ? (
                         <td className="bg-sky-50/10 w-4"></td>
                       ) : (
                         <>
                           <td className="px-0.5 py-1.5 text-[12px] font-semibold align-top">
-                            {p.supplier ? (() => {
-                              const cleanName = stripVendorAnnotation(p.supplier);
-                              return (
-                                <div className="flex flex-col leading-tight">
-                                  <VendorCategoryBadge category={getVendorCategory(cleanName || p.supplier)} />
-                                  <button type="button"
-                                    onClick={(e) => { e.stopPropagation(); openSupplierInfo(cleanName || p.supplier); }}
-                                    className="text-sky-700 hover:text-sky-900 hover:underline cursor-pointer text-left whitespace-nowrap"
-                                    title="공급사 정보 조회·수정">{cleanName || p.supplier}</button>
-                                </div>
-                              );
-                            })() : "-"}
+                            <div className="flex items-start gap-1.5">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => toggleLowStockOne(code)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="mt-1 w-3.5 h-3.5 shrink-0 cursor-pointer accent-rose-500"
+                                title="선택 (일괄 발주요청)"
+                              />
+                              <div className="min-w-0 flex-1">
+                                {p.supplier ? (() => {
+                                  const cleanName = stripVendorAnnotation(p.supplier);
+                                  return (
+                                    <div className="flex flex-col leading-tight">
+                                      <VendorCategoryBadge category={getVendorCategory(cleanName || p.supplier)} />
+                                      <button type="button"
+                                        onClick={(e) => { e.stopPropagation(); openSupplierInfo(cleanName || p.supplier); }}
+                                        className="text-sky-700 hover:text-sky-900 hover:underline cursor-pointer text-left whitespace-nowrap"
+                                        title="공급사 정보 조회·수정">{cleanName || p.supplier}</button>
+                                    </div>
+                                  );
+                                })() : "-"}
+                              </div>
+                            </div>
                           </td>
                           <td className="px-0.5 py-1.5 align-top">
                             <button
