@@ -82,7 +82,12 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
       {/* 이름 헤더 + [수정] 버튼 */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="min-w-0">
-          <div className="text-[18px] font-black text-slate-900 leading-tight">{localEmployee.name}</div>
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span className="text-[18px] font-black text-slate-900 leading-tight">{localEmployee.name}</span>
+            {localEmployee.employee_number && (
+              <span className="text-[11px] font-bold text-slate-400 tabular-nums">사번 {localEmployee.employee_number}</span>
+            )}
+          </div>
           <div className="text-[12px] text-slate-500 font-semibold mt-0.5">
             {[localEmployee.position, localEmployee.rank, localEmployee.employmentType].filter(Boolean).join(" · ")}
           </div>
