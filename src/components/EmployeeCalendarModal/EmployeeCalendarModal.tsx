@@ -361,7 +361,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
               <>
                 <button
                   onClick={() => setActiveTab("calendar")}
-                  className={`flex-1 py-2.5 text-[13px] font-bold transition flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-2.5 text-[15px] font-bold transition flex items-center justify-center gap-1.5 ${
                     activeTab === "calendar"
                       ? "text-indigo-600 border-b-2 border-indigo-500 bg-white"
                       : "text-slate-500 hover:text-slate-700"
@@ -371,7 +371,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                 </button>
                 <button
                   onClick={() => setActiveTab("bulk")}
-                  className={`flex-1 py-2.5 text-[13px] font-bold transition flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-2.5 text-[15px] font-bold transition flex items-center justify-center gap-1.5 ${
                     activeTab === "bulk"
                       ? "text-blue-600 border-b-2 border-blue-500 bg-white"
                       : "text-slate-500 hover:text-slate-700"
@@ -400,7 +400,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
             )}
             <button
               onClick={() => setActiveTab("info")}
-              className={`flex-1 py-2.5 text-[13px] font-bold transition flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2.5 text-[15px] font-bold transition flex items-center justify-center gap-1.5 ${
                 activeTab === "info"
                   ? "text-fuchsia-600 border-b-2 border-fuchsia-500 bg-white"
                   : "text-slate-500 hover:text-fuchsia-600 hover:bg-fuchsia-50"
@@ -910,98 +910,116 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                 </div>
               )}
 
-              {/* 상단 세션 · 버튼 + 요약 */}
-              <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-2.5 shadow-sm">
-                {/* 버튼 행 · 상단 */}
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {hasResume && (
-                    <a
-                      href={employee.resume_url!}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 text-[11px] font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-lg inline-flex items-center gap-1 shadow-sm transition"
-                    >
-                      <FileText size={12} /> 이력서 보기
-                    </a>
-                  )}
-                  {hasContract && (
-                    <button
-                      type="button"
-                      onClick={() => setContractModalOpen(true)}
-                      className="px-3 py-1.5 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg inline-flex items-center gap-1 shadow-sm transition cursor-pointer"
-                    >
-                      <FileText size={12} /> 근로계약서
-                    </button>
-                  )}
+              {/* 상단 세션 · 이름 헤더 + 버튼 + 정보 grid */}
+              <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 space-y-3 shadow-sm">
+                {/* 이름 헤더 + 버튼 (오른쪽 정렬) */}
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="min-w-0">
+                    <div className="text-[18px] font-black text-slate-900 leading-tight">{employee.name}</div>
+                    <div className="text-[12px] text-slate-500 font-semibold mt-0.5">
+                      {[employee.position, employee.rank, employee.employmentType].filter(Boolean).join(" · ")}
+                    </div>
+                  </div>
                   {onEditEmployee && (
                     <button
                       type="button"
                       onClick={onEditEmployee}
-                      className="ml-auto px-3 py-1.5 text-[11px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg inline-flex items-center gap-1 shadow-sm transition cursor-pointer"
+                      className="px-3 py-1.5 text-[13px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg inline-flex items-center gap-1 shadow-sm transition cursor-pointer shrink-0"
                     >
-                      <Edit2 size={12} /> 수정하기
+                      <Edit2 size={14} /> 수정
                     </button>
                   )}
                 </div>
 
-                {/* 핵심 요약 · 이름·구분·직급·핸드폰 */}
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1 pt-1 border-t border-slate-100">
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-[10px] font-bold text-slate-400 shrink-0 w-10">이름</span>
-                    <span className="text-[13px] font-black text-slate-900">{employee.name}</span>
+                {/* 정보 grid · 성별·입사일·근무지·연차 (한줄) · 전화 (전체 폭) */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 pt-2 border-t border-slate-100">
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-semibold text-slate-400">성별</span>
+                    <span className="text-[13px] font-bold text-slate-700">{employee.gender ?? "—"}</span>
                   </div>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-[10px] font-bold text-slate-400 shrink-0 w-10">구분</span>
-                    <span className="text-[11px] font-bold text-slate-700">{employee.position}</span>
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-semibold text-slate-400">입사일</span>
+                    <span className="text-[13px] font-bold text-slate-700 tabular-nums">{employee.hireDate || "—"}</span>
                   </div>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-[10px] font-bold text-slate-400 shrink-0 w-10">직급</span>
-                    <span className="text-[11px] font-bold text-slate-700">{employee.rank || "—"}</span>
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-semibold text-slate-400">근무지</span>
+                    <span className="text-[13px] font-bold text-slate-700">{employee.workplace}</span>
                   </div>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-[10px] font-bold text-slate-400 shrink-0 w-10">고용</span>
-                    <span className="text-[11px] font-bold text-slate-700">{employee.employmentType}</span>
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-semibold text-slate-400">연차</span>
+                    <span className="text-[13px] font-bold text-slate-700">
+                      {employee.annual_leave_days != null ? `${employee.annual_leave_days}일` : "—"}
+                    </span>
                   </div>
-                  <div className="col-span-2 flex items-baseline gap-1.5">
-                    <span className="text-[10px] font-bold text-blue-400 shrink-0 w-10">전화</span>
-                    <span className="text-[11px] font-bold text-blue-700 tabular-nums">
+                  <div className="col-span-2 sm:col-span-4 flex flex-col">
+                    <span className="text-[11px] font-semibold text-blue-400">전화 (로그인 ID)</span>
+                    <span className="text-[14px] font-black text-blue-700 tabular-nums">
                       {employee.phone
                         ? employee.phone.replace(/^(\d{3})(\d{3,4})(\d{4})$/, "$1-$2-$3")
                         : <span className="text-slate-300 font-normal">미등록</span>}
                     </span>
                   </div>
                 </div>
+
+                {/* 비고 (있을 때만) */}
+                {/* 첨부 파일 버튼 · 이력서·근계·통장사본 · 비고 위 */}
+                {(() => {
+                  const bankbookUrl = (employee as any).bankbook_image_url as string | null | undefined;
+                  const hasBankbook = !!bankbookUrl;
+                  if (!hasResume && !hasContract && !hasBankbook) return null;
+                  return (
+                    <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-slate-100">
+                      {hasResume && (
+                        <a
+                          href={employee.resume_url!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 text-[13px] font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-lg inline-flex items-center gap-1 shadow-sm transition"
+                        >
+                          <FileText size={14} /> 이력서
+                        </a>
+                      )}
+                      {hasContract && (
+                        <button
+                          type="button"
+                          onClick={() => setContractModalOpen(true)}
+                          className="px-3 py-1.5 text-[13px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg inline-flex items-center gap-1 shadow-sm transition cursor-pointer"
+                        >
+                          <FileText size={14} /> 근로계약서
+                        </button>
+                      )}
+                      {hasBankbook && (
+                        <a
+                          href={bankbookUrl!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 text-[13px] font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg inline-flex items-center gap-1 shadow-sm transition"
+                        >
+                          <FileText size={14} /> 통장사본
+                        </a>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {employee.description && (
+                  <div className="flex items-start gap-2 pt-2 border-t border-slate-100">
+                    <span className="text-[11px] font-semibold text-slate-400 shrink-0 mt-0.5">비고</span>
+                    <span className="text-[13px] text-slate-700 leading-snug">{employee.description}</span>
+                  </div>
+                )}
               </div>
 
-              {/* 공통 폼 · read-only view */}
-              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
-                <EmployeeInfoForm
-                  values={infoValues}
-                  onChange={() => { /* read-only */ }}
-                  layout="grid"
-                  editing={false}
-                  fields={["name", "phone", "gender", "position", "workplace", "hireDate", "rank", "address", "email"]}
-                />
-              </div>
-
-              {/* 부가 정보 · 근무지·입사일·연차 (공통 폼 밖) */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex items-baseline gap-1.5 bg-slate-50 rounded-lg px-2.5 py-1.5">
-                  <span className="text-[10px] font-bold text-slate-400 shrink-0">근무지</span>
-                  <span className="text-[11px] font-bold text-slate-700">{employee.workplace}</span>
-                </div>
-                <div className="flex items-baseline gap-1.5 bg-slate-50 rounded-lg px-2.5 py-1.5">
-                  <span className="text-[10px] font-bold text-slate-400 shrink-0">연차</span>
-                  <span className="text-[11px] font-bold text-slate-700">
-                    {employee.annual_leave_days != null ? `${employee.annual_leave_days}일` : "—"}
-                  </span>
-                </div>
-              </div>
-
-              {employee.description && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 flex items-baseline gap-1.5">
-                  <span className="text-[10px] font-bold text-amber-600 shrink-0">비고</span>
-                  <span className="text-[11px] text-amber-900">{employee.description}</span>
+              {/* 공통 폼 · read-only · 상단 중복 제거 · 주소·이메일만 */}
+              {(employee.address || employee.email) && (
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                  <EmployeeInfoForm
+                    values={infoValues}
+                    onChange={() => { /* read-only */ }}
+                    layout="grid"
+                    editing={false}
+                    fields={["address", "email"]}
+                  />
                 </div>
               )}
 
