@@ -1733,8 +1733,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
             </div>
           </div>
 
-          {/* 2행: 합계/인건비 버튼 + 관리자 버튼 */}
-          <div className="flex items-center gap-x-3 gap-y-1.5 flex-wrap justify-between min-w-0">
+          {/* 2행: 합계/인건비 버튼 + 관리자 버튼 · 반응형에서도 한줄 유지 */}
+          <div className="flex items-center gap-x-2 flex-nowrap justify-between min-w-0">
             {/* 합계보기 / 인건비보기 토글 버튼 */}
             <div className="flex items-center gap-1.5 shrink-0">
               <button
@@ -1742,7 +1742,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 title="월별 합계(근무일수/시간) 열 표시 토글"
                 className={`px-2 py-1 text-xs rounded font-bold border transition cursor-pointer ${showSummary === "summary" ? "bg-indigo-500 text-white border-indigo-500" : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"}`}
               >
-                합계보기
+                합계
               </button>
               {isAdmin && (
                 <button
@@ -1750,7 +1750,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                   title="월별 합계 + 인건비 표시 토글"
                   className={`px-2 py-1 text-xs rounded font-bold border transition cursor-pointer ${showSummary === "labor" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"}`}
                 >
-                  인건비보기
+                  인건비
                 </button>
               )}
             </div>
@@ -1921,7 +1921,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                       <tr className="bg-slate-100 text-slate-600 select-none">
                         <th
                           ref={nameThRef}
-                          className="text-center text-[11px] sm:text-[12px] font-semibold border-r border-slate-200 border-b border-b-slate-200 sticky left-0 bg-slate-100 z-50 py-2 sm:py-2.5 tracking-wide whitespace-nowrap px-1 sm:px-3 min-w-[110px] sm:min-w-[140px] lg:min-w-[160px] w-[110px] sm:w-[140px] lg:w-[160px]"
+                          className="text-center text-[12px] sm:text-[13px] font-semibold border-r border-slate-200 border-b border-b-slate-200 sticky left-0 bg-slate-100 z-50 py-2 sm:py-2.5 tracking-wide whitespace-nowrap px-0.5 sm:px-1.5 min-w-[55px] sm:min-w-[70px] lg:min-w-[80px] w-auto"
                         >
                           <span className="hidden sm:inline">직원 성명</span>
                           <span className="sm:hidden">성명</span>
@@ -1944,7 +1944,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                               <th
                                 ref={isToday ? todayColRef : undefined}
                                 onClick={() => setTimelineDate(fullDate)}
-                                className={`p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-r border-b border-slate-200 w-[44px] cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 transition-colors ${headerClass} ${isToday ? "ring-2 ring-inset ring-rose-500 z-40 relative" : ""}`}
+                                className={`p-0.5 sm:p-1 text-center text-[12px] sm:text-[13px] font-bold border-r border-b border-slate-200 w-[44px] cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 transition-colors ${headerClass} ${isToday ? "ring-2 ring-inset ring-rose-500 z-40 relative" : ""}`}
                                 title={`${fullDate} 타임라인 보기`}
                               >
                                 {dayNum}
@@ -1962,7 +1962,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                       {/* Header Row 2: Day of Week Characters */}
                       <tr className="bg-slate-50 text-slate-400 select-none">
                         {/* Left spacing header matching Name column */}
-                        <th className="border-r border-b border-slate-200 sticky left-0 bg-slate-50 z-50 h-5 sm:h-6 min-w-[110px] sm:min-w-[140px] lg:min-w-[160px]"></th>
+                        <th className="border-r border-b border-slate-200 sticky left-0 bg-slate-50 z-50 h-5 sm:h-6 min-w-[55px] sm:min-w-[70px] lg:min-w-[80px]"></th>
 
                         {displayDates.map((dateStr, dateIdx) => {
                           const { dayWord, isToday } = getDayDetails(dateStr);
@@ -1977,7 +1977,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                           return (
                             <React.Fragment key={`day-name-${dateStr}`}>
                               <th
-                                className={`p-0.5 text-center text-[8px] sm:text-[9px] border-r border-b border-slate-200 w-[44px] bg-slate-50 ${wordClass} ${isToday ? "ring-2 ring-inset ring-rose-500 z-40 relative" : ""}`}
+                                className={`p-0.5 text-center text-[11px] sm:text-[12px] border-r border-b border-slate-200 w-[44px] bg-slate-50 ${wordClass} ${isToday ? "ring-2 ring-inset ring-rose-500 z-40 relative" : ""}`}
                               >
                                 {dayWord}
                               </th>

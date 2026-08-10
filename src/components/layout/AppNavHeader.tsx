@@ -65,15 +65,16 @@ interface TabDef {
   color?: "slate" | "blue" | "red" | "sky" | "indigo" | "orange" | "emerald" | "violet" | "amber" | "cyan";
 }
 
-// 무지개 순서: 홈 → 매장(빨) → 경영(보라) → 스케줄(amber) → 이슈(초) → 요청(청록)
+// 2026-08-10 · 사용자 요청 · 순서: 홈 → 스케줄 → 매장 → 경영 → 약사 → 이슈 → 요청
+// (기존: 홈 → 매장 → 경영 → 약사 → 스케줄 → 이슈 → 요청 · 무지개 순서 폐기)
 // 2026-08-03: 경영관리 → business-manage 통합 페이지로 단순 라우팅 (팝오버 제거)
 // 2026-08-03: scan · productarrival · ocr 탭 제거 (매장관리 매입 서브탭 및 랜딩 카드에서 접근 · union 유지)
 const TABS: TabDef[] = [
   { key: "landing",       label: "홈",       mobileLabel: "홈",     icon: House,       managerOnly: false, color: "slate"   },
+  { key: "schedule",      label: "스케줄",   mobileLabel: "스케줄", icon: Calendar,    managerOnly: false, color: "amber"   },
   { key: "display",       label: "매장",     mobileLabel: "매장",   icon: SquaresFour, managerOnly: true,  color: "red"     },
   { key: "business",      label: "경영",     mobileLabel: "경영",   icon: Briefcase,   managerOnly: true,  color: "violet"  },
   { key: "pharmacist",    label: "약사",     mobileLabel: "약사",   icon: FirstAid,    managerOnly: false, pharmacistOnly: true, color: "sky" },
-  { key: "schedule",      label: "스케줄",   mobileLabel: "스케줄", icon: Calendar,    managerOnly: false, color: "amber"   },
   { key: "board",         label: "이슈",     mobileLabel: "이슈",   icon: ChatCircle,  managerOnly: false, color: "emerald" },
   { key: "requests",      label: "요청",     mobileLabel: "요청",   icon: Chat,        managerOnly: false, color: "cyan"    },
 ];
