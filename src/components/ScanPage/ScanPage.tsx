@@ -607,49 +607,27 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         <aside className="lg:w-[300px] xl:w-[320px] lg:shrink-0 flex flex-col gap-4
           lg:sticky lg:top-4 lg:self-start">
 
-          {/* ── 스캔 카드 ── */}
-          <div className="bg-white rounded-2xl border border-slate-200/80
-            shadow-[0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden">
-
-            <div className="relative px-5 pt-4 pb-3 bg-gradient-to-b from-teal-50/70 to-transparent">
-              <div className="absolute top-3 right-3 w-12 h-12 rounded-full bg-teal-100/50 border border-teal-200/40" />
-              <div className="relative flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600
-                  flex items-center justify-center shadow-md shrink-0 relative">
-                  <ScanLine size={17} className="text-white" />
-                  <span className="absolute top-1 left-1 w-1.5 h-1.5 border-t-2 border-l-2 border-white/60 rounded-tl-sm" />
-                  <span className="absolute top-1 right-1 w-1.5 h-1.5 border-t-2 border-r-2 border-white/60 rounded-tr-sm" />
-                  <span className="absolute bottom-1 left-1 w-1.5 h-1.5 border-b-2 border-l-2 border-white/60 rounded-bl-sm" />
-                  <span className="absolute bottom-1 right-1 w-1.5 h-1.5 border-b-2 border-r-2 border-white/60 rounded-br-sm" />
-                </div>
-                <div>
-                  <p className="text-sm font-black text-slate-800 leading-tight">바코드 스캔</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5 leading-none">
-                    스캔 시 우측 리스트에 자동 등록
-                  </p>
-                </div>
+          {/* 2026-08-10 · 사용자 요청 · 스캔 카드 · 그라데이션 제거 · 장식 원 제거 · 깔끔한 UI */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            {/* 헤더 · 아이콘 + 제목 · 그라데이션·장식 없이 */}
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100">
+              <ScanLine size={18} className="text-teal-600 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[14px] font-black text-slate-800 leading-tight">바코드 스캔</p>
+                <p className="text-[11px] text-slate-400 leading-tight">스캔 시 우측 리스트에 자동 등록</p>
               </div>
             </div>
 
-            <div className="px-4 pb-5 flex flex-col gap-3">
-              {/* 바코드 스캔 버튼 · 상단 (2026-08-09 사용자 요청 · 검색은 아래) */}
+            <div className="px-4 py-4 flex flex-col gap-3">
+              {/* 바코드 스캔 버튼 · solid · 그라데이션 제거 */}
               <button
                 onClick={() => setScannerOpen(true)}
                 disabled={mapLoading}
-                className="relative w-full min-h-[52px] flex items-center justify-center gap-2.5
-                  py-3.5 rounded-xl font-black text-[14px] sm:text-[15px] text-white
-                  bg-gradient-to-r from-teal-500 to-teal-600
-                  hover:from-teal-600 hover:to-teal-700
-                  active:from-teal-700 active:to-teal-800
-                  disabled:opacity-50 disabled:cursor-not-allowed
-                  shadow-[0_4px_14px_rgba(20,184,166,0.4)]
-                  hover:shadow-[0_4px_20px_rgba(20,184,166,0.5)]
-                  transition-all duration-200 cursor-pointer overflow-hidden"
+                className="w-full h-11 flex items-center justify-center gap-2 rounded-md font-black text-[14px] text-white bg-teal-600 hover:bg-teal-700 active:bg-teal-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
               >
-                <span className="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
                 {mapLoading
-                  ? <><Loader2 size={18} className="animate-spin" /> 상품 정보 로딩...</>
-                  : <><ScanLine size={18} /> 바코드 스캔</>
+                  ? <><Loader2 size={16} className="animate-spin" /> 상품 정보 로딩...</>
+                  : <><ScanLine size={16} /> 바코드 스캔</>
                 }
               </button>
 
