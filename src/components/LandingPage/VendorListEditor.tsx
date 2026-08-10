@@ -1207,9 +1207,9 @@ export const VendorDetailModal: React.FC<{
                 <span className="tabular-nums font-black text-indigo-700">{summary ? fmtWon(summary.totalAmount) : "-"}</span>
               </span>
             </div>
-            {/* 2026-08-10 · 사용자 요청 · 총재고금액 계산 방법 · 상품별 · 남은 재고 × 사입단가 · 합산 */}
+            {/* 2026-08-10 · 사용자 요청 · 총재고금액 계산 방법 · 상품별 · ERP 남은 재고 × 사입단가 · 합산 */}
             <div className="mt-1 text-[11px] text-slate-400 leading-relaxed px-4">
-              총재고금액 = 상품별로 <span className="font-mono">남은 재고 수량 × 사입단가</span> · 합산
+              총재고금액 = 상품별로 <span className="font-mono">ERP 남은 재고 수량 × 사입단가</span> · 합산
             </div>
           </div>
           {/* 모바일: details 접기 · 2줄 grid · 기본 닫힘 */}
@@ -1968,8 +1968,9 @@ const PaymentRegisterModal: React.FC<{
 // ─── 공용 UI 헬퍼 ────────────────────────────────────────────────
 
 /** shadcn form input · h-9 · focus ring teal */
+// 2026-08-10 · 사용자 요청 · 입력창 폰트 +1 (13→14)
 const inputCls =
-  "w-full h-9 px-3 text-[13px] border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400 bg-white transition placeholder:text-slate-300";
+  "w-full h-10 px-3 text-[14px] border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400 bg-white transition placeholder:text-slate-300";
 
 // 2026-08-10 · 사용자 요청 · Field 라벨 크기 +1 (14→15) · 살짝 굵게 (medium → semibold)
 const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
