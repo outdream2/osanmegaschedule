@@ -2978,8 +2978,8 @@ const VendorManageSplit: React.FC = () => {
         <table className="w-full text-left border-collapse">
           <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
             <tr>
-              <th className="text-left px-2 sm:px-3 py-2 text-[12px] sm:text-[13px] font-black whitespace-nowrap w-16 sm:w-20"><SortTh label="분류" sk="category" /></th>
-              <th className="text-left px-2 sm:px-3 py-2 text-[12px] sm:text-[13px] font-black min-w-[100px]"><SortTh label="공급사" sk="company_name" /></th>
+              {/* 2026-08-10 · #20 · 분류 컬럼 제거 · 공급사 셀에 [분류][줄바꿈][공급사명] 통합 (사용자 요청) */}
+              <th className="text-left px-2 sm:px-3 py-2 text-[12px] sm:text-[13px] font-black min-w-[120px]"><SortTh label="공급사" sk="company_name" /></th>
               <th className="text-left px-2 sm:px-3 py-2 text-[12px] sm:text-[13px] font-black whitespace-nowrap w-20 sm:w-24"><SortTh label="담당자" sk="contact_name" /></th>
               <th className="text-left px-2 sm:px-3 py-2 text-[12px] sm:text-[13px] font-black whitespace-nowrap w-28 sm:w-36"><SortTh label="전화" sk="phone" /></th>
             </tr>
@@ -2987,7 +2987,7 @@ const VendorManageSplit: React.FC = () => {
           <tbody className="divide-y divide-slate-100">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={4} className="py-12 text-center text-[13px] font-semibold text-slate-400">
+                <td colSpan={3} className="py-12 text-center text-[13px] font-semibold text-slate-400">
                   {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 없음"}
                 </td>
               </tr>
@@ -3004,16 +3004,15 @@ const VendorManageSplit: React.FC = () => {
                   onClick={() => setSelectedId(v.id)}
                   className={`cursor-pointer transition ${isActive ? "bg-indigo-50/60" : "hover:bg-slate-50/80"}`}
                 >
-                  <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
-                    <span className={`text-[11px] sm:text-[12px] font-black ${catCls}`}>
-                      {v.category || <span className="text-slate-300">-</span>}
-                    </span>
-                  </td>
-                  <td className={`px-2 sm:px-3 py-2 text-[12px] sm:text-[13px] font-bold whitespace-nowrap ${isActive ? "text-indigo-900" : "text-slate-800"}`}
-                      title={String(v.company_name ?? "")}>
-                    <span className="block truncate max-w-[140px] sm:max-w-none">
-                      {displayVendorName(String(v.company_name ?? "")) || String(v.company_name ?? "")}
-                    </span>
+                  <td className="px-2 sm:px-3 py-2 align-top" title={String(v.company_name ?? "")}>
+                    <div className="flex flex-col leading-tight">
+                      <span className={`text-[11px] sm:text-[12px] font-black ${catCls}`}>
+                        {v.category || <span className="text-slate-300">-</span>}
+                      </span>
+                      <span className={`text-[12px] sm:text-[13px] font-bold truncate max-w-[160px] sm:max-w-[220px] ${isActive ? "text-indigo-900" : "text-slate-800"}`}>
+                        {displayVendorName(String(v.company_name ?? "")) || String(v.company_name ?? "")}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-2 sm:px-3 py-2 text-[12px] sm:text-[13px] text-slate-600 whitespace-nowrap">
                     <span className="block truncate max-w-[80px] sm:max-w-none">
