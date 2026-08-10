@@ -231,19 +231,24 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
       <span className={GRD.view(!!value)}>{value || "(없음)"}</span>
     ) : null;
 
-  // 단순 text/date 인풋 헬퍼
-  const SimpleInput: React.FC<{
+  // 2026-08-10 · BUG FIX · SimpleInput 이 컴포넌트 (`React.FC`) 로 정의되면
+  //   부모 EmployeeInfoForm 이 리렌더될 때마다 SimpleInput 함수 identity 가 바뀜
+  //   → React 가 다른 컴포넌트로 인식 · 매 keystroke 마다 input 언마운트/재마운트
+  //   → 전화번호 등 · 글자 하나 치면 포커스가 빠짐
+  //   해결 · 컴포넌트 대신 일반 함수 (JSX 반환) · <SimpleInput/> 대신 {simpleInput({...})}
+  const simpleInput = (opts: {
     fieldKey: keyof EmployeeInfoValues;
     label: string;
     icon?: React.ReactNode;
     type?: string;
     placeholder?: string;
     colSpan?: boolean;
-  }> = ({ fieldKey, label, icon, type = "text", placeholder, colSpan }) => {
+  }): React.ReactElement => {
+    const { fieldKey, label, icon, type = "text", placeholder, colSpan } = opts;
     const val = values[fieldKey] ?? "";
     const active = isCompact || editing;
     return (
-      <div className={colSpan ? "col-span-2" : ""}>
+      <div key={fieldKey} className={colSpan ? "col-span-2" : ""}>
         {isCompact ? (
           <label className={labelCls}>{label}</label>
         ) : (
@@ -332,60 +337,50 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
       )}
 
       {/* 생년월일 / 주민번호 */}
-      {show("birthDate") && (
-        <SimpleInput
-          fieldKey="birthDate"
-          label={isCompact ? "주민번호" : "생년월일"}
-          icon={<Calendar size={9} />}
-          type={isCompact ? "text" : "date"}
-          placeholder={isCompact ? "970302-2002227" : undefined}
-        />
-      )}
+      {show("birthDate") && simpleInput({
+        fieldKey: "birthDate",
+        label: isCompact ? "주민번호" : "생년월일",
+        icon: <Calendar size={9} />,
+        type: isCompact ? "text" : "date",
+        placeholder: isCompact ? "970302-2002227" : undefined,
+      })}
 
       {/* 성별 */}
       {show("gender") && <GenderField />}
 
       {/* 직급 */}
-      {show("rank") && (
-        <SimpleInput
-          fieldKey="rank"
-          label="직급"
-          icon={<User size={9} />}
-          placeholder="사원 · 팀장 · 과장 ..."
-        />
-      )}
+      {show("rank") && simpleInput({
+        fieldKey: "rank",
+        label: "직급",
+        icon: <User size={9} />,
+        placeholder: "사원 · 팀장 · 과장 ...",
+      })}
 
       {/* 근무지 */}
-      {show("workplace") && (
-        <SimpleInput
-          fieldKey="workplace"
-          label="근무지"
-          icon={<MapPin size={9} />}
-          placeholder="매장 · 창고 · 본사 ..."
-          colSpan={isCompact}
-        />
-      )}
+      {show("workplace") && simpleInput({
+        fieldKey: "workplace",
+        label: "근무지",
+        icon: <MapPin size={9} />,
+        placeholder: "매장 · 창고 · 본사 ...",
+        colSpan: isCompact,
+      })}
 
       {/* 전화번호 */}
-      {show("phone") && (
-        <SimpleInput
-          fieldKey="phone"
-          label="전화번호"
-          icon={<Phone size={9} />}
-          placeholder="010-1234-5678"
-        />
-      )}
+      {show("phone") && simpleInput({
+        fieldKey: "phone",
+        label: "전화번호",
+        icon: <Phone size={9} />,
+        placeholder: "010-1234-5678",
+      })}
 
       {/* 이메일 */}
-      {show("email") && (
-        <SimpleInput
-          fieldKey="email"
-          label="이메일"
-          icon={<Mail size={9} />}
-          type="email"
-          placeholder="email@example.com"
-        />
-      )}
+      {show("email") && simpleInput({
+        fieldKey: "email",
+        label: "이메일",
+        icon: <Mail size={9} />,
+        type: "email",
+        placeholder: "email@example.com",
+      })}
 
       {/* 주소 */}
       {show("address") && (
@@ -417,35 +412,31 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
             </div>
           </div>
         ) : (
-          <SimpleInput
-            fieldKey="address"
-            label="주소"
-            icon={<MapPin size={9} />}
-            placeholder="경기도 오산시 ..."
-            colSpan
-          />
+          simpleInput({
+            fieldKey: "address",
+            label: "주소",
+            icon: <MapPin size={9} />,
+            placeholder: "경기도 오산시 ...",
+            colSpan: true,
+          })
         )
       )}
 
       {/* 직군/직책 */}
-      {show("position") && (
-        <SimpleInput
-          fieldKey="position"
-          label="직책"
-          icon={<User size={9} />}
-          placeholder="약사 · 매장 · 창고 ..."
-        />
-      )}
+      {show("position") && simpleInput({
+        fieldKey: "position",
+        label: "직책",
+        icon: <User size={9} />,
+        placeholder: "약사 · 매장 · 창고 ...",
+      })}
 
       {/* 입사일 */}
-      {show("hireDate") && (
-        <SimpleInput
-          fieldKey="hireDate"
-          label="입사일"
-          icon={<Calendar size={9} />}
-          type="date"
-        />
-      )}
+      {show("hireDate") && simpleInput({
+        fieldKey: "hireDate",
+        label: "입사일",
+        icon: <Calendar size={9} />,
+        type: "date",
+      })}
     </div>
   );
 };
