@@ -1433,7 +1433,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         // 2026-08-09 · 사용자 요청 · 공급사관리 · VendorListEditor 임베드
         <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-3">
           <React.Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 py-16">공급사관리 로딩 중...</div>}>
-            <VendorListEditor mode="dashboard" compact />
+            <VendorListEditor mode="dashboard" />
           </React.Suspense>
         </main>
       ) : (dpSubTab === "purchase-order" || dpSubTab === "purchase" || dpSubTab === "payment" || dpSubTab === "statistics") && dpCanSeeStockManage ? (

@@ -286,34 +286,42 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   return (
     <div className="flex flex-col gap-2 min-h-0 flex-1">
 
-      {/* ── compact 툴바 · 2026-08-10 · 사용자 요청 · 텍스트 +2 크기 상향 ── */}
+      {/* ── compact 툴바 ── */}
       {compact ? (
-        <div className="flex flex-col gap-2 bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2.5">
+        <div className="flex flex-col gap-1.5 bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2">
           {/* 검색 + 새로고침 */}
           <div className="flex items-center gap-2">
             <div className="relative flex-1 min-w-0">
-              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="회사명 · 담당자 · 전화"
-                className="h-9 pl-8 pr-2 text-[14px] border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-400 focus:border-indigo-400 w-full transition"
+                className="h-7 pl-7 pr-2 text-[12px] border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-400 focus:border-indigo-400 w-full transition"
               />
             </div>
-            {/* 건수 · 2026-08-10 · 새로고침 버튼 제거 (사용자 요청 · 공급사 관리 목적) */}
-            <span className="text-[13px] text-slate-400 tabular-nums whitespace-nowrap shrink-0">
+            {/* 건수 */}
+            <span className="text-[11px] text-slate-400 tabular-nums whitespace-nowrap shrink-0">
               {loading
-                ? <span className="inline-flex items-center gap-1"><Loader2 size={12} className="animate-spin" /></span>
+                ? <span className="inline-flex items-center gap-1"><Loader2 size={10} className="animate-spin" /></span>
                 : `${filtered.length}건`}
             </span>
+            <button
+              onClick={loadVendors}
+              disabled={loading}
+              className="inline-flex items-center justify-center h-7 w-7 shrink-0 border border-slate-200 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors cursor-pointer"
+              title="새로고침"
+            >
+              <RefreshCw size={11} className={loading ? "animate-spin" : ""} />
+            </button>
           </div>
-          {/* 분류 필터 · 가로 스크롤 · 텍스트 +2 */}
-          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-0.5">
+          {/* 분류 필터 · 가로 스크롤 */}
+          <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-none pb-0.5">
             {(["전체", "위탁", "선결제", "60회전", "90회전", "기타"] as const).map(cat => (
               <button
                 key={cat}
                 onClick={() => setCategoryFilter(cat)}
-                className={`h-8 px-3 rounded-md text-[12px] font-black transition cursor-pointer whitespace-nowrap shrink-0 ${
+                className={`h-6 px-2 rounded-md text-[10px] font-black transition cursor-pointer whitespace-nowrap shrink-0 ${
                   categoryFilter === cat
                     ? cat === "전체"    ? "bg-slate-700 text-white shadow-sm"
                     : cat === "위탁"    ? "bg-violet-500 text-white shadow-sm"
@@ -321,13 +329,21 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                     : cat === "60회전" ? "bg-emerald-500 text-white shadow-sm"
                     : cat === "90회전" ? "bg-teal-500 text-white shadow-sm"
                     :                    "bg-slate-500 text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-md"
+                    : "text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md"
                 }`}
               >
                 {cat}
               </button>
             ))}
-            {/* 2026-08-10 · 기간 조회 제거 (사용자 요청 · 공급사 관리 목적 · 집계 컬럼 불필요) */}
+            {/* 기간 조회 · 공용 PeriodSelector (2026-08-09) */}
+            <PeriodSelector<number>
+              options={PERIOD_MONTHS_PRESET}
+              value={aggregateMonths}
+              onChange={(v) => setAggregateMonths(v)}
+              accent="teal"
+              className="ml-auto"
+              ariaLabel="재고자산·판매액 집계 기간"
+            />
           </div>
         </div>
       ) : (
@@ -400,79 +416,186 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                   onClick={() => toggleCompactSort("company_name")}
                   className={[
                     "sticky top-0 z-10 border-b border-slate-200",
-                    "text-[13px] font-black tracking-wide whitespace-nowrap",
+                    "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
-                    "py-2 text-left px-3",
-                    compactSortKey === "company_name" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-600 bg-slate-50",
+                    "py-1.5 text-left pl-2 pr-1 w-[140px]",
+                    compactSortKey === "company_name" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-500 bg-slate-50",
                   ].join(" ")}
-                >공급사</th>
-                {/* 2026-08-10 · 사용자 요청 · 컬럼 재구성 · 공급사·분류·담당자·전화 · 아이콘 X · 텍스트 +2 */}
+                >
+                  <span className="inline-flex items-center gap-0.5">
+                    공급사
+                    {compactSortKey === "company_name"
+                      ? (compactSortDir === "asc"
+                          ? <ChevronUp size={9} className="text-indigo-500 ml-0.5 shrink-0" />
+                          : <ChevronDown size={9} className="text-indigo-500 ml-0.5 shrink-0" />)
+                      : <ChevronUp size={9} className="text-slate-300 ml-0.5 shrink-0" />}
+                  </span>
+                </th>
+                {/* 2026-08-04 · #101 · 결제/공급사관리 리스트 재정비
+                     · 제거: 사업자번호·담당자·전화·VAT (상세 우측 상단으로 이동)
+                     · 유지: 공급사·총잔고·최근매입
+                     · 추가: 총재고자산·총판매액 (최근 3개월)  */}
+                {/* 총잔고 · 우측 정렬 */}
                 <th
-                  onClick={() => toggleCompactSort("category")}
+                  onClick={() => toggleCompactSort("balance")}
                   className={[
                     "sticky top-0 z-10 border-b border-slate-200",
-                    "text-[13px] font-black tracking-wide whitespace-nowrap",
+                    "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
-                    "py-2 text-left px-3 w-24",
-                    compactSortKey === "category" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-600 bg-slate-50",
+                    "py-1.5 text-right pr-2 pl-1 w-20",
+                    compactSortKey === "balance" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-500 bg-slate-50",
                   ].join(" ")}
-                >분류</th>
+                  title="공급사별 최근 청구 잔고"
+                >
+                  <span className="inline-flex items-center flex-row-reverse gap-0.5">
+                    총잔고
+                    {compactSortKey === "balance"
+                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 mr-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 mr-0.5 shrink-0" />)
+                      : <ChevronDown size={9} className="text-slate-300 mr-0.5 shrink-0" />}
+                  </span>
+                </th>
+                {/* 총재고자산 · 우측 정렬 · 최근 3개월 · totalStockAmount */}
                 <th
-                  onClick={() => toggleCompactSort("contact_name")}
+                  onClick={() => toggleCompactSort("stock_value")}
                   className={[
                     "sticky top-0 z-10 border-b border-slate-200",
-                    "text-[13px] font-black tracking-wide whitespace-nowrap",
+                    "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
-                    "py-2 text-left px-3 w-28",
-                    compactSortKey === "contact_name" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-600 bg-slate-50",
+                    "py-1.5 text-right pr-2 pl-1 w-20",
+                    compactSortKey === "stock_value" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-500 bg-slate-50",
                   ].join(" ")}
-                >담당자</th>
+                  title="공급사 상품 재고 총액 · 최근 3개월 stock_history 합계"
+                >
+                  <span className="inline-flex items-center flex-row-reverse gap-0.5">
+                    총재고자산
+                    {compactSortKey === "stock_value"
+                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 mr-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 mr-0.5 shrink-0" />)
+                      : <ChevronDown size={9} className="text-slate-300 mr-0.5 shrink-0" />}
+                  </span>
+                </th>
+                {/* 총판매액 · 우측 정렬 · 최근 3개월 · saleAmount proxy */}
                 <th
-                  onClick={() => toggleCompactSort("phone")}
+                  onClick={() => toggleCompactSort("sales_total")}
                   className={[
                     "sticky top-0 z-10 border-b border-slate-200",
-                    "text-[13px] font-black tracking-wide whitespace-nowrap",
+                    "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
-                    "py-2 text-left px-3 w-36",
-                    compactSortKey === "phone" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-600 bg-slate-50",
+                    "py-1.5 text-right pr-2 pl-1 w-20",
+                    compactSortKey === "sales_total" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-500 bg-slate-50",
                   ].join(" ")}
-                >담당자 전화번호</th>
+                  title="공급사 상품 판매 총액 · 최근 3개월"
+                >
+                  <span className="inline-flex items-center flex-row-reverse gap-0.5">
+                    총판매액
+                    {compactSortKey === "sales_total"
+                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 mr-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 mr-0.5 shrink-0" />)
+                      : <ChevronDown size={9} className="text-slate-300 mr-0.5 shrink-0" />}
+                  </span>
+                </th>
+                {/* 최근매입 */}
+                <th
+                  onClick={() => toggleCompactSort("invoice_date")}
+                  className={[
+                    "sticky top-0 z-10 border-b border-slate-200",
+                    "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
+                    "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
+                    "py-1.5 text-left px-2 w-16",
+                    compactSortKey === "invoice_date" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-500 bg-slate-50",
+                  ].join(" ")}
+                >
+                  <span className="inline-flex items-center gap-0.5">
+                    최근매입
+                    {compactSortKey === "invoice_date"
+                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 ml-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 ml-0.5 shrink-0" />)
+                      : <ChevronUp size={9} className="text-slate-300 ml-0.5 shrink-0" />}
+                  </span>
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-50">
               {compactSorted.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="text-center py-12 text-[13px] font-semibold text-slate-400">
-                    {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 없음"}
+                  <td colSpan={5} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-2 text-slate-400">
+                      <Building2 size={28} className="opacity-25" />
+                      <span className="text-[13px] font-semibold">
+                        {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 없음"}
+                      </span>
+                    </div>
                   </td>
                 </tr>
               ) : compactSorted.map((v) => {
-                const isActive = activeId === v.id;
+                const isActive  = activeId === v.id;
+                const catBorder = v.category ? (CATEGORY_LEFT_BORDER[v.category] ?? "border-l-slate-200") : "border-l-slate-200";
+                const catBg     = v.category ? (CATEGORY_LEFT_BG[v.category] ?? "") : "";
+                const hasBal    = v.latestBalance?.balance != null;
+                const invDate   = v.latestBalance?.invoice_date;
+                // 2026-08-04 · #101 · 재고자산·판매액 (최근 3개월 · supplierAggMap)
+                const agg = supplierAggMap.get(normalizeSupplierKey(v.company_name));
+                const stockValue = agg?.stockValue ?? null;
+                const salesTotal = agg?.salesTotal ?? null;
+                const fmtDate   = (d: string | null | undefined): string => {
+                  if (!d) return "-";
+                  const m = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                  return m ? `${m[1].slice(2)}.${m[2]}.${m[3]}` : d.slice(0, 10);
+                };
                 return (
                   <tr
                     key={v.id}
                     onClick={() => handleVendorClick(v.id)}
                     title="클릭하여 상세 · 편집"
-                    className={`cursor-pointer transition-colors duration-100 ${
-                      isActive ? "bg-indigo-50/60" : "hover:bg-slate-50/80 active:bg-slate-100"
-                    }`}
+                    className={[
+                      "cursor-pointer transition-all duration-150 border-l-[3px]",
+                      isActive
+                        ? "border-l-indigo-500 bg-indigo-50/60"
+                        : `${catBorder} ${catBg} hover:bg-slate-50/80 active:bg-slate-100`,
+                    ].join(" ")}
                   >
-                    {/* 공급사 · 텍스트 */}
-                    <td className={`px-3 py-2 text-[13px] font-bold whitespace-nowrap ${isActive ? "text-indigo-900" : "text-slate-800"}`}
-                        title={v.company_name}>
-                      {displayVendorName(v.company_name) || v.company_name}
+                    {/* 공급사: 분류(위·색상) + 이름(아래·bold) */}
+                    <td className="pl-2 pr-1 py-1.5 min-w-[120px] max-w-[160px]">
+                      <div className="leading-tight">
+                        <VendorCategoryBadge category={v.category} className="text-[10px] mb-0.5" />
+                        <div className={`text-[13px] font-bold break-keep leading-snug ${isActive ? "text-indigo-900" : "text-slate-800"}`}
+                          title={v.company_name}>
+                          {displayVendorName(v.company_name) || v.company_name}
+                        </div>
+                      </div>
                     </td>
-                    {/* 분류 · 텍스트 */}
-                    <td className="px-3 py-2 text-[13px] font-semibold text-slate-600 whitespace-nowrap">
-                      {v.category || <span className="text-slate-300">-</span>}
+                    {/* 총잔고 · 우측 정렬 */}
+                    <td className="pr-2 pl-1 py-1.5 text-right whitespace-nowrap">
+                      {hasBal
+                        ? (
+                          <span className={`text-[12px] font-bold tabular-nums ${v.latestBalance!.balance > 0 ? "text-emerald-600" : "text-slate-400"}`}>
+                            {fmtWon(v.latestBalance!.balance)}
+                          </span>
+                        )
+                        : <span className="text-[10px] text-slate-300">-</span>}
                     </td>
-                    {/* 담당자 · 텍스트 */}
-                    <td className="px-3 py-2 text-[13px] text-slate-600 whitespace-nowrap">
-                      {v.contact_name || <span className="text-slate-300">-</span>}
+                    {/* 총재고자산 · 우측 정렬 · 최근 3개월 */}
+                    <td className="pr-2 pl-1 py-1.5 text-right whitespace-nowrap">
+                      {stockValue != null && stockValue > 0
+                        ? (
+                          <span className="text-[12px] font-bold tabular-nums text-sky-700"
+                            title={`${stockValue.toLocaleString()}원 · 최근 3개월 재고금액 합`}>
+                            {fmtWon(stockValue)}
+                          </span>
+                        )
+                        : <span className="text-[10px] text-slate-300">-</span>}
                     </td>
-                    {/* 담당자 전화번호 · 텍스트 */}
-                    <td className="px-3 py-2 text-[13px] text-slate-600 tabular-nums whitespace-nowrap">
-                      {v.phone || <span className="text-slate-300">-</span>}
+                    {/* 총판매액 · 우측 정렬 · 최근 3개월 */}
+                    <td className="pr-2 pl-1 py-1.5 text-right whitespace-nowrap">
+                      {salesTotal != null && salesTotal > 0
+                        ? (
+                          <span className="text-[12px] font-bold tabular-nums text-violet-700"
+                            title={`${Math.round(salesTotal).toLocaleString()}원 · 최근 3개월 판매액`}>
+                            {fmtWon(salesTotal)}
+                          </span>
+                        )
+                        : <span className="text-[10px] text-slate-300">-</span>}
+                    </td>
+                    {/* 최근매입 */}
+                    <td className="px-2 py-1.5 text-[11px] text-slate-500 tabular-nums whitespace-nowrap">
+                      {fmtDate(invDate)}
                     </td>
                   </tr>
                 );
