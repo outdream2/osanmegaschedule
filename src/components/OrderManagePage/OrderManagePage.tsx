@@ -2385,7 +2385,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               placeholder="상품·코드·공급사"
               className="text-[15px] border border-slate-200 rounded-md pl-3 pr-3 h-9 flex-1 min-w-[140px] max-w-[240px] focus:outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 transition"
             />
-            {/* 분류 chip + 액션 · 하나의 wrap */}
+            {/* 2026-08-10 · 사용자 요청 · 일괄발주·전체선택 · 왼쪽 리스트 제목 옆으로 이동 · 툴바에는 분류 + 삭제만 */}
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
                 {(["all", ...dbVendorCategories] as string[]).map(cat => {
@@ -2407,24 +2407,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   );
                 })}
               </div>
-              {/* 액션 버튼 · sm 이상 우측 밀림 */}
+              {/* 삭제 버튼만 · 일괄발주·전체선택은 리스트 제목 옆으로 이동 */}
               <div className="flex items-center gap-1.5 sm:ml-auto">
-                <button onClick={handleBulkOrder} disabled={sendingBulk || selectedOrder.size === 0}
-                  className="inline-flex items-center gap-1.5 h-10 px-3 rounded-md text-[17px] font-black text-rose-800 bg-rose-100 border border-rose-300 hover:bg-rose-200 hover:border-rose-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer shrink-0 whitespace-nowrap"
-                  title="선택한 발주요청을 공급사별로 그룹핑">
-                  {sendingBulk ? <Loader2 size={15} strokeWidth={2.5} className="animate-spin" /> : <Send size={15} strokeWidth={2.5} />}
-                  <span>{sendingBulk ? "발송 중" : `일괄 발주${selectedOrder.size > 0 ? ` (${selectedOrder.size})` : ""}`}</span>
-                </button>
-                <button onClick={toggleAll}
-                  className="inline-flex items-center gap-1 h-9 px-2.5 rounded-md text-[15px] font-medium text-slate-500 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer shrink-0">
-                  {allChecked ? <CheckSquare size={15} className="text-rose-500" /> : <Square size={15} />}
-                  전체선택
-                </button>
-                <button onClick={async () => { if (selectedOrder.size > 0 && await confirm({ message: `${selectedOrder.size}건 삭제할까요?`, danger: true })) deleteOrder([...selectedOrder]); }}
-                  disabled={selectedOrder.size === 0}
-                  className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[11px] font-medium text-slate-500 border border-slate-200 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shrink-0">
-                  <Trash2 size={12} />
-                </button>
+                {/* 2026-08-10 · 사용자 요청 · 삭제 아이콘 제거 · 선택삭제 버튼은 리스트 제목 옆 [전체선택] 옆으로 이동 */}
               </div>
             </div>
           </div>
@@ -2455,11 +2440,31 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           <div className="text-center text-[11px] text-slate-300 py-6">발주 요청 내역 없음</div>
         ) : (
           <>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-block w-1 h-3.5 rounded-full bg-rose-400 shrink-0"></span>
-            {/* 2026-08-10 · 사용자 요청 · 발주요청 리스트 헤더 폰트 +2 */}
-            <span className="text-[13px] font-semibold text-slate-500">발주요청 리스트</span>
-            <span className="text-[13px] text-slate-400 font-normal">{orderReqsFiltered.length}건</span>
+          {/* 2026-08-10 · 사용자 요청 · 발주리스트 · 폰트 +2 · 일괄발주·전체선택 옆 배치 */}
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className="inline-block w-1 h-4 rounded-full bg-rose-400 shrink-0"></span>
+            <span className="text-[15px] font-black text-slate-700">발주리스트</span>
+            <span className="text-[15px] text-slate-400 font-normal">{orderReqsFiltered.length}건</span>
+            <div className="flex items-center gap-1.5 ml-auto shrink-0">
+              <button onClick={handleBulkOrder} disabled={sendingBulk || selectedOrder.size === 0}
+                className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[13px] font-black text-rose-800 bg-rose-100 border border-rose-300 hover:bg-rose-200 hover:border-rose-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer shrink-0 whitespace-nowrap"
+                title="선택한 발주요청을 공급사별로 그룹핑">
+                {sendingBulk ? <Loader2 size={12} strokeWidth={2.5} className="animate-spin" /> : <Send size={12} strokeWidth={2.5} />}
+                <span>{sendingBulk ? "발송 중" : `일괄 발주${selectedOrder.size > 0 ? ` (${selectedOrder.size})` : ""}`}</span>
+              </button>
+              <button onClick={toggleAll}
+                className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[12px] font-medium text-slate-500 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer shrink-0">
+                {allChecked ? <CheckSquare size={12} className="text-rose-500" /> : <Square size={12} />}
+                전체선택
+              </button>
+              {/* 2026-08-10 · 사용자 요청 · [선택삭제] 버튼 · 텍스트만 (아이콘 제거) */}
+              <button onClick={async () => { if (selectedOrder.size > 0 && await confirm({ message: `${selectedOrder.size}건 삭제할까요?`, danger: true })) deleteOrder([...selectedOrder]); }}
+                disabled={selectedOrder.size === 0}
+                className="inline-flex items-center h-7 px-2 rounded-md text-[12px] font-medium text-slate-500 border border-slate-200 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shrink-0"
+                title="선택 항목 삭제">
+                선택삭제{selectedOrder.size > 0 ? ` (${selectedOrder.size})` : ""}
+              </button>
+            </div>
           </div>
           {/* 2026-08-06 · 사용자 요청 · 손실 확인 유도 코멘트 */}
           <div className="mb-2 text-[11px] text-amber-700 bg-amber-50/60 border border-amber-200/60 rounded-md px-2 py-1 leading-snug">
@@ -2522,7 +2527,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       <th onClick={() => handleOrderSort("short")} title="부족량 정렬" className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">부족{orderArrow("short")}</th>
                     </>
                   )}
-                  <th className="text-center px-0.5 py-1.5 w-14 cursor-default bg-emerald-50/30 text-emerald-600">발주</th>
+                  {/* 2026-08-10 · 사용자 요청 · 상품별 발주 컬럼 제거 · 공급사 그룹 [발주] 버튼으로 통합 */}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -2725,17 +2730,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           </td>
                         </>
                       )}
-                      <td className="text-center px-1 py-1.5 align-top">
-                        {/* 2026-08-09 · 사용자 요청 · 붉은 파스텔톤 (기존 rose-500 진한톤 → 소프트) */}
-                        <button
-                          onClick={() => handleSingleOrder(r)}
-                          disabled={sendingBulk}
-                          className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[11px] font-black text-rose-800 bg-rose-100 border border-rose-300 hover:bg-rose-200 hover:border-rose-400 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                          title="이 상품만 개별 발주"
-                        >
-                          <Send size={10} />발주
-                        </button>
-                      </td>
+                      {/* 2026-08-10 · 사용자 요청 · 상품별 개별 발주 버튼 제거 · 공급사 그룹 헤더 [발주] 버튼 하나로 통합 */}
                     </tr>
                     </React.Fragment>
                   );
