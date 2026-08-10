@@ -32,22 +32,26 @@
 - 인덱스 3개: order_number · status+sent_at · supplier+sent_at
 - 하위 호환: 기존 row `status='requested'` 로 세팅
 
-### 🔴 대기 큐 (TaskCreate #9~#17)
+### 🔴 대기 큐 (TaskCreate #9~#19)
 
 **발주요청 UI (OrderManagePage)**:
-- #9 · 공급사별 그룹 헤더 렌더
-- #10 · 공급사명 (주)/주식회사 제거 (displayVendorName)
-- #11 · 이메일/문자 체크박스 제거
-- #12 · 툴바 한줄 (PC) · 2줄 (모바일) · 일괄발주·전체선택·삭제·분류
-- #13 · 새로고침 버튼 제거
-- #17 · 공급사 그룹 헤더 [발주] 버튼 · 해당 공급사만 openOrderModal
+- **#9** · 공급사별 그룹 헤더 렌더
+- **#10** · 공급사명 (주)/주식회사 제거 (displayVendorName)
+- **#11** · 이메일/문자 체크박스 제거
+- **#12** · 툴바 한줄 (PC) · 2줄 (모바일) · 일괄발주·전체선택·삭제·분류
+- **#13** · 새로고침 버튼 제거
+- **#17** · 공급사 그룹 헤더 [발주] 버튼 · 해당 공급사만 openOrderModal
 
 **서버 (마이그레이션 실행 후)**:
-- #14 · 일괄발주 handler · UPDATE status='ordered' + 공급사별 order_number 부여
-- #15 · GET /api/order-history · status='ordered' · order_number GROUP · 최신순
+- **#14** · 일괄발주 handler · UPDATE status='ordered' + 공급사별 order_number 부여
+- **#15** · GET /api/order-history · status='ordered' · order_number GROUP · 최신순
 
 **클라이언트**:
-- #16 · 발주이력 탭 UI 신설 (Level 2 서브탭)
+- **#16** · 발주이력 탭 UI 신설 (Level 2 서브탭)
+
+**공급사별 현황 · 매입이력**:
+- **#18** · 공급사별 현황 · 공급사 컬럼 · 분류 [줄바꿈] 공급사명 2줄 표시 (SupplierTab.tsx)
+- **#19** · 매입이력 페이지 · 상단 컨트롤 통합 UI · 매입이력·ERP·공급사별/상품별·기간·계절·Top N (PurchaseHistoryTab.tsx · split 안 건드리지 않음)
 
 ### 🤖 진행 중 (백그라운드 에이전트)
 
