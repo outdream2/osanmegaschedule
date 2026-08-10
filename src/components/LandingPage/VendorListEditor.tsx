@@ -1182,40 +1182,25 @@ export const VendorDetailModal: React.FC<{
               <ChevronRight size={14} className="chevron text-emerald-500 shrink-0 transition-transform" />
               <SectionTitle icon={<TrendingUp size={13} />} title="공급 요약" color="emerald" />
             </summary>
-            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-[12px] leading-tight px-4">
-              {/* 2026-08-10 · 총재고 현황 · vendorTotalStock state · fetch API 대기 (TODO: /api/vendor-stock-total?supplier=) */}
+            {/* 2026-08-10 · 사용자 요청 · 3항목만 · 총재고금액·총 상품갯수·현재 총매입금액 · 폰트 +2 · 안내 문구 */}
+            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-[14px] leading-tight px-4">
               <span className="inline-flex items-baseline gap-1.5">
-                <span className="text-slate-400 font-semibold">총재고 현황</span>
+                <span className="text-slate-400 font-semibold">총재고금액</span>
                 <span className="tabular-nums font-black text-sky-700">{vendorTotalStock != null ? fmtWon(vendorTotalStock) : "-"}</span>
               </span>
               <span className="text-slate-200">·</span>
               <span className="inline-flex items-baseline gap-1.5">
-                <span className="text-slate-400 font-semibold">현재 잔액</span>
-                <span className="tabular-nums font-black text-emerald-700">
-                  {balanceInfo ? fmtWon(balanceInfo.balance) : (vendor.latestBalance?.balance != null ? fmtWon(vendor.latestBalance.balance) : "-")}
-                </span>
-                {balanceInfo && (
-                  <span className="text-[10.5px] text-slate-400 tabular-nums">(매입 {balanceInfo.purchase_count} · 결제 {balanceInfo.payment_count})</span>
-                )}
-              </span>
-              <span className="text-slate-200">·</span>
-              <span className="inline-flex items-baseline gap-1.5">
-                <span className="text-slate-400 font-semibold">총 매입액</span>
-                <span className="tabular-nums font-black text-indigo-700">{summary ? fmtWon(summary.totalAmount) : "-"}</span>
-                {summary && <span className="text-[10.5px] text-slate-400 tabular-nums">({summary.count.toLocaleString()}건)</span>}
-              </span>
-              <span className="text-slate-200">·</span>
-              <span className="inline-flex items-baseline gap-1.5">
-                <span className="text-slate-400 font-semibold">매입 상품</span>
+                <span className="text-slate-400 font-semibold">총 상품갯수</span>
                 <span className="tabular-nums font-black text-violet-700">{summary ? `${summary.uniqueProducts.toLocaleString()}종` : "-"}</span>
-                {summary?.totalQty && <span className="text-[10.5px] text-slate-400 tabular-nums">(총 {summary.totalQty.toLocaleString()}개)</span>}
               </span>
               <span className="text-slate-200">·</span>
               <span className="inline-flex items-baseline gap-1.5">
-                <span className="text-slate-400 font-semibold">최근 매입일</span>
-                <span className="tabular-nums font-black text-rose-700">{summary?.latestDate ?? "-"}</span>
-                {summary?.earliestDate && <span className="text-[10.5px] text-slate-400 tabular-nums">(첫 {summary.earliestDate})</span>}
+                <span className="text-slate-400 font-semibold">현재 총매입금액</span>
+                <span className="tabular-nums font-black text-indigo-700">{summary ? fmtWon(summary.totalAmount) : "-"}</span>
               </span>
+            </div>
+            <div className="mt-1.5 text-[12px] text-slate-400 leading-relaxed px-4">
+              💡 자세한 내용은 <span className="font-bold text-amber-700">매입 &gt; 매입이력 &gt; 공급사 관리</span> 에서 확인
             </div>
           </details>
 
