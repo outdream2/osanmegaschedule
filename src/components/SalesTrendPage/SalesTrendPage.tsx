@@ -1673,7 +1673,7 @@ const ZoneCategoryContent: React.FC = () => {
       .finally(() => setLoading(false));
   }, [season, months]);
   const grouped = useMemo(() => {
-    // 2026-07-30 · 사용자 지적 · real_map "8A/냉" 같은 "/" 분리 상품 · 첫 부분(primary)만 카운트
+    // 2026-08-10 · 사용자 정책 · 진열위치 구역 = spec (real_map = 실제진열위치 · 별도)
     //   - 앞 부분 파싱 · "1A-01" → "1A" · "8A/냉" → "8A"
     //   - "-" / "_" / "/" · 모두 구분자로 처리 · 첫 4자만
     const parsePrimaryZone = (raw: string): string => {
@@ -1688,7 +1688,7 @@ const ZoneCategoryContent: React.FC = () => {
     for (const r of sales) {
       const code = String(r.product_code ?? "");
       const p = products[code] ?? {};
-      const zone = String(p.real_map ?? "").trim();
+      const zone = String((p as any).spec ?? "").trim();
       const key = parsePrimaryZone(zone);
       const cur = map.get(key) ?? { zone: key, saleQty: 0, totalAmount: 0, items: [] };
       const saleQty = Number(r.sale_qty ?? 0) || 0;
