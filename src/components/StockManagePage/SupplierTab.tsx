@@ -626,18 +626,21 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                       {isExpanded ? <ChevronDown size={13} className="text-sky-400 mx-auto" /> : <ChevronRight size={13} className="text-slate-300 mx-auto" />}
                     </td>
                     <td className="text-center align-middle py-1.5 text-[11px] font-semibold text-slate-400 tabular-nums">{i + 1}</td>
-                    <td className="text-left px-3 py-1.5 align-middle">
-                      <div className="flex items-center gap-1.5 flex-wrap">
+                    {/* 2026-08-10 · #18 · 공급사 셀에 [분류][줄바꿈][공급사명] · 2줄 (사용자 요청) */}
+                    <td className="text-left px-3 py-1.5 align-top">
+                      <div className="flex flex-col leading-tight gap-0.5">
                         {(() => {
                           const nm = sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim() ?? "";
                           const cat = vendorCategoryMap[nm] ?? vendorCategoryMap[sup.supplier ?? ""] ?? null;
                           return <VendorCategoryBadge category={cat} />;
                         })()}
-                        <span className={`text-[13px] font-semibold break-words whitespace-normal leading-tight ${isSelected ? "text-sky-800" : "text-slate-700"}`}>
-                          {sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}
-                        </span>
-                        {sup.supplier_code && <span className="text-[10px] tabular-nums text-slate-400 shrink-0 font-mono bg-slate-100 rounded px-1" title="공급사코드">#{sup.supplier_code}</span>}
-                        {sup.code_conflict && <span className="text-[11px] font-semibold text-amber-500 shrink-0" title="같은 이름에 여러 공급사코드가 존재">⚠</span>}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`text-[13px] font-semibold break-words whitespace-normal leading-tight ${isSelected ? "text-sky-800" : "text-slate-700"}`}>
+                            {sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}
+                          </span>
+                          {sup.supplier_code && <span className="text-[10px] tabular-nums text-slate-400 shrink-0 font-mono bg-slate-100 rounded px-1" title="공급사코드">#{sup.supplier_code}</span>}
+                          {sup.code_conflict && <span className="text-[11px] font-semibold text-amber-500 shrink-0" title="같은 이름에 여러 공급사코드가 존재">⚠</span>}
+                        </div>
                       </div>
                     </td>
                     {isSupplierGroupCollapsed("stock") ? <td className="bg-sky-50/20 w-4"></td> : (
