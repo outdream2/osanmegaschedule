@@ -2892,42 +2892,35 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       </details>
                     )}
                     {/* 상품 테이블 · 2026-08-10 · 이전사입가 컬럼 추가 */}
-                    <table className="w-full text-[11px]">
+                    {/* 2026-08-10 · #35·#36·#37 · 현재고·적정 컬럼 제거 · 단가 컬럼 제거 (이전사입가 사용) · 소계 앞 "총" + 글씨 +2 */}
+                    <table className="w-full text-[13px]">
                       <thead>
-                        <tr className="bg-slate-100 text-slate-500 font-black uppercase tracking-wide text-[9px] border-b border-slate-200">
+                        <tr className="bg-slate-100 text-slate-500 font-black uppercase tracking-wide text-[11px] border-b border-slate-200">
                           <th className="text-center p-2 w-8">#</th>
-                          <th className="text-left p-2 w-24">상품코드</th>
+                          <th className="text-left p-2 w-28">상품코드</th>
                           <th className="text-left p-2">상품명</th>
-                          <th className="text-right p-2 w-14">현재고</th>
-                          <th className="text-right p-2 w-14">적정</th>
                           <th className="text-right p-2 w-20">발주수량</th>
-                          <th className="text-right p-2 w-20">이전사입가</th>
-                          <th className="text-right p-2 w-20">단가</th>
-                          <th className="text-right p-2 w-24">금액</th>
-                          <th className="text-left p-2 w-24">비고</th>
+                          <th className="text-right p-2 w-24">단가 (이전사입가)</th>
+                          <th className="text-right p-2 w-28">금액</th>
+                          <th className="text-left p-2 w-28">비고</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {s.items.map((it, iIdx) => (
                           <tr key={it.order_request_id} className="hover:bg-slate-50/70">
                             <td className="p-2 text-center text-slate-400 font-black">{iIdx + 1}</td>
-                            <td className="p-2 font-mono text-[10px] text-slate-400">{it.product_code}</td>
+                            <td className="p-2 font-mono text-[12px] text-slate-400">{it.product_code}</td>
                             <td className="p-2 font-bold text-slate-800 truncate max-w-[220px]">{it.product_name}</td>
-                            <td className="p-2 text-right font-mono text-slate-600">{it.current_stock ?? "-"}</td>
-                            <td className="p-2 text-right font-mono text-slate-600">{it.optimal_stock ?? "-"}</td>
                             <td className="p-2 text-right">
                               <input type="number" min={1} value={it.order_qty}
                                 onChange={e => updateModalItem(sIdx, iIdx, { order_qty: Math.max(0, Number(e.target.value) || 0) })}
                                 className="w-16 border border-slate-200 rounded px-1.5 py-0.5 text-right font-mono font-black text-red-600 focus:outline-none focus:border-red-400"/>
                             </td>
-                            <td className="p-2 text-right font-mono text-slate-400 tabular-nums">
-                              {it.prev_unit_price != null ? it.prev_unit_price.toLocaleString() : "-"}
-                            </td>
                             <td className="p-2 text-right">
                               <input type="number" min={0} value={it.unit_price ?? ""}
                                 onChange={e => updateModalItem(sIdx, iIdx, { unit_price: e.target.value === "" ? null : Number(e.target.value) })}
                                 placeholder={it.prev_unit_price != null ? String(it.prev_unit_price) : "0"}
-                                className="w-20 border border-slate-200 rounded px-1.5 py-0.5 text-right font-mono focus:outline-none focus:border-red-400"/>
+                                className="w-24 border border-slate-200 rounded px-1.5 py-0.5 text-right font-mono focus:outline-none focus:border-red-400"/>
                             </td>
                             <td className="p-2 text-right font-mono font-black text-emerald-700">
                               {it.unit_price ? (it.order_qty * it.unit_price).toLocaleString() + "원" : "-"}
@@ -2936,17 +2929,17 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                               <input type="text" value={it.memo ?? ""}
                                 onChange={e => updateModalItem(sIdx, iIdx, { memo: e.target.value })}
                                 placeholder="(선택)"
-                                className="w-full border border-slate-200 rounded px-1.5 py-0.5 text-[10px] focus:outline-none focus:border-red-400"/>
+                                className="w-full border border-slate-200 rounded px-1.5 py-0.5 text-[12px] focus:outline-none focus:border-red-400"/>
                             </td>
                           </tr>
                         ))}
                       </tbody>
                       <tfoot>
-                        <tr className="bg-slate-50 border-t-2 border-slate-300 font-black text-[10px]">
-                          <td colSpan={5} className="p-2 text-right text-slate-500 uppercase">소계</td>
-                          <td className="p-2 text-right text-red-600 font-mono">{totalQty}개</td>
-                          <td colSpan={1}></td>
-                          <td className="p-2 text-right text-emerald-700 font-mono">{totalAmount > 0 ? totalAmount.toLocaleString() + "원" : "-"}</td>
+                        <tr className="bg-slate-50 border-t-2 border-slate-300 font-black text-[13px]">
+                          <td colSpan={3} className="p-2 text-right text-slate-500 uppercase">총 소계</td>
+                          <td className="p-2 text-right text-red-600 font-mono">총 {totalQty}개</td>
+                          <td></td>
+                          <td className="p-2 text-right text-emerald-700 font-mono">총 {totalAmount > 0 ? totalAmount.toLocaleString() + "원" : "-"}</td>
                           <td></td>
                         </tr>
                       </tfoot>
