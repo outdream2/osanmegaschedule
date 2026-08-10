@@ -2724,8 +2724,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                             </div>
                           </td>
                           */}
-                          <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-slate-50/40 align-top">{displayOptimal ?? "-"}</td>
-                          <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-top">
+                          {/* 2026-08-10 · align-top → align-middle · 다른 셀과 정렬 통일 */}
+                          <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-slate-50/40 align-middle whitespace-nowrap">{displayOptimal ?? "-"}</td>
+                          <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-middle whitespace-nowrap">
                             <span className="tabular-nums font-black text-[12px] text-rose-600">{displayShort > 0 ? `-${displayShort}` : "0"}</span>
                           </td>
                         </>
