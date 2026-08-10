@@ -179,6 +179,9 @@
 - `d0e855a` · #33 · 스캔 실재고 · 아이콘 제거·글씨 확대·매장 ERP 위치 (spec) 표시
 - `2d19660` · #31 · 발주필요 툴바 · 분류·발주조건 통합 · PC 한줄 · 모바일 wrap
 - `9ba509b` · #28 · 발주 모달 · 카카오톡 채널 옵션 UI (SolAPI env 대기)
+- `9452b50` · #14·#15 · 서버 · bulk-send status='ordered' UPDATE + GET /api/order-history (컬럼 없으면 fallback)
+- `05699db` · #16 · 발주이력 탭 UI (OrderHistoryTab · Level 2 · 마이그레이션 안내)
+- `e8896a5` · #35·#36·#37 · 발주서 표 · 현재고/적정 제거 · 이전사입가 통합 · 총 접두 · 폰트 +2
 
 ---
 
