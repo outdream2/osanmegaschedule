@@ -1853,13 +1853,14 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               </span>
             )}
             <div className="ml-auto flex items-center gap-1.5">
+              {/* 2026-08-10 · 사용자 요청 · 여백 반 축소 (px-3→px-1.5 · h-8→h-7 · gap-1.5→gap-0.5) */}
               <button
                 onClick={bulkRequestOrder}
                 disabled={bulkRequesting || selectedLowStock.size === 0}
-                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[13px] font-black text-rose-800 bg-rose-100 border border-rose-300 hover:bg-rose-200 hover:border-rose-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer shrink-0 whitespace-nowrap"
+                className="inline-flex items-center gap-0.5 h-7 px-1.5 rounded text-[13px] font-black text-rose-800 bg-rose-100 border border-rose-300 hover:bg-rose-200 hover:border-rose-400 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer shrink-0 whitespace-nowrap"
                 title="선택한 상품 일괄 발주요청 리스트로 전송"
               >
-                {bulkRequesting ? <Loader2 size={12} strokeWidth={2.5} className="animate-spin" /> : <Send size={12} strokeWidth={2.5} />}
+                {bulkRequesting && <Loader2 size={11} strokeWidth={2.5} className="animate-spin" />}
                 <span>{bulkRequesting ? "요청 중" : `일괄 발주요청${selectedLowStock.size > 0 ? ` (${selectedLowStock.size})` : ""}`}</span>
               </button>
               <button
@@ -2069,14 +2070,14 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         <button
                           onClick={() => handleRequestOrder(p)}
                           disabled={busy}
-                          className={`h-7 px-2.5 rounded text-[12px] font-black transition cursor-pointer disabled:opacity-40 ${
+                          className={`h-6 px-1.5 rounded text-[12px] font-black transition cursor-pointer disabled:opacity-40 ${
                             alreadyRequested
                               ? "text-emerald-700 bg-emerald-50 border border-emerald-300 hover:bg-emerald-100"
                               : "text-white bg-indigo-600 hover:bg-indigo-700"
                           }`}
                           title={alreadyRequested ? "발주요청 리스트에 추가됨 · 다시 요청" : "발주요청 리스트에 추가"}
                         >
-                          {busy ? "..." : alreadyRequested ? "✓ 요청됨" : "요청"}
+                          {busy ? "..." : alreadyRequested ? "✓" : "요청"}
                         </button>
                       </td>
                     </tr>
