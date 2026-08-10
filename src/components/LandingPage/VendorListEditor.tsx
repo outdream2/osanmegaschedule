@@ -3,7 +3,7 @@
 //   리스트: shadcn data-table 스타일 · 그룹 컬러 헤더 · h-8 툴바
 //   모달:   헤더 gradient · 폼 h-9 · 매입이력 shadcn 스타일 · 하단 저장/닫기 통일
 
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useVendors } from "../../hooks/useVendors";
 import {
@@ -932,6 +932,9 @@ export const VendorDetailModal: React.FC<{
   const [draft, setDraft] = useState<EditDraft>(emptyDraft(vendor));
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  // 2026-08-10 · 사용자 요청 · 자동 저장 · draft 변경 800ms 후 자동 PATCH · '저장됨' toast (2s)
+  const isFirstRenderRef = useRef(true);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
   const [purchLoading, setPurchLoading] = useState(false);
   const [summary, setSummary] = useState<VendorSummary | null>(null);
@@ -1075,6 +1078,23 @@ export const VendorDetailModal: React.FC<{
     draft.note            !== (vendor.note            ?? "") ||
     draft.vat_included    !== vatDraftVal(vendor)
   ), [vendor, draft]);
+
+  // 2026-08-10 · 자동 저장 · draft 변경 감지 · 800ms debounce · handleSave 호출 · 저장 후 2s 후 msg 사라짐
+  useEffect(() => {
+    if (isFirstRenderRef.current) { isFirstRenderRef.current = false; return; }
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      handleSave();
+    }, 800);
+    return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft]);
+  // saveMsg 2초 후 자동 사라짐
+  useEffect(() => {
+    if (!saveMsg) return;
+    const t = setTimeout(() => setSaveMsg(null), 2000);
+    return () => clearTimeout(t);
+  }, [saveMsg]);
 
   const handleSave = async () => {
     const bnDigits = normalizeBizNum(draft.business_number);
