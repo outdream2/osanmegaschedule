@@ -1383,13 +1383,7 @@ export const VendorDetailModal: React.FC<{
               {/* 2026-08-09 · 거래처 로그인 비밀번호 · 자동 규칙 (전화번호 + "00") · 수동 저장 필드 제거 (사용자 정책) */}
             </div>
 
-            {/* 2026-08-10 · 공급요약 상단으로 이동됨 · 아래는 안내만 유지 */}
-            <div className="text-[11px] text-slate-500 leading-relaxed border-t border-slate-100 pt-2">
-              <div className="text-[11px] text-slate-500 leading-relaxed">
-                <span className="text-slate-400">💡 </span>
-                결제·잔고 관리는 <span className="font-bold text-emerald-700">결제·잔고</span> 탭 · 매입 이력은 <span className="font-bold text-amber-700">매입이력</span> 탭
-              </div>
-            </div>
+            {/* 2026-08-10 · 사용자 요청 · 결제·잔고·매입이력 탭 안내 문구 제거 */}
           </div>
           </>
           )}
