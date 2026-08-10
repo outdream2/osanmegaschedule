@@ -1843,9 +1843,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           <>
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <span className="inline-block w-1 h-3.5 rounded-full bg-rose-500 shrink-0"></span>
-            {/* 2026-08-10 · 사용자 요청 · 발주필요 리스트 헤더 폰트 +2 (11→13) */}
-            <span className="text-[13px] font-black text-rose-600">발주필요 리스트</span>
-            <span className="text-[13px] text-slate-400 font-normal">{lowStockFiltered.length}건</span>
+            {/* 2026-08-10 · 사용자 요청 · 발주필요 리스트 + 건수 · 폰트 +2 (13→15) */}
+            <span className="text-[15px] font-black text-rose-600">발주필요 리스트</span>
+            <span className="text-[15px] text-slate-400 font-normal">{lowStockFiltered.length}건</span>
             {/* 2026-08-10 · 사용자 요청 · 일괄 발주요청 (체크박스 선택 · 복원) */}
             {selectedLowStock.size > 0 && (
               <span className="inline-flex items-center gap-1 text-[11px] font-black text-white bg-rose-500 rounded-full px-2 py-0.5 tabular-nums">
