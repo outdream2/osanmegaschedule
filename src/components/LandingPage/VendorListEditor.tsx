@@ -935,18 +935,23 @@ export const VendorDetailModal: React.FC<{
   const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
   const [purchLoading, setPurchLoading] = useState(false);
   const [summary, setSummary] = useState<VendorSummary | null>(null);
-  // 2026-08-10 · 사용자 요청 · 총재고 현황 · fetch API 대기 (현재 stock 합계)
+  // 2026-08-10 · 사용자 요청 · 총재고 금액 · /api/stock-manage/supplier-purchases (stock_history · 최근 3개월 · totalStockAmount)
   const [vendorTotalStock, setVendorTotalStock] = useState<number | null>(null);
   useEffect(() => {
     let alive = true;
     if (!vendor?.company_name) return;
-    fetch(`/api/products-search?supplier=${encodeURIComponent(vendor.company_name)}&limit=2000`)
-      .then(r => r.ok ? r.json() : { items: [] })
-      .then(data => {
+    fetch(`/api/stock-manage/supplier-purchases?months=3&limit=50000`)
+      .then(r => r.ok ? r.json() : [])
+      .then((data: any) => {
         if (!alive) return;
-        const items = Array.isArray(data?.items) ? data.items : [];
-        // 총재고 = 각 상품 current_stock * unit_price (없으면 0)
-        const total = items.reduce((s: number, p: any) => s + (Number(p.current_stock ?? 0) * Number(p.unit_price ?? 0)), 0);
+        const rows = Array.isArray(data) ? data : (Array.isArray(data?.rows) ? data.rows : []);
+        // 공급사명 매칭 · normalizeSupplierKey 없이 · 정제 후 lowercase
+        const target = vendor.company_name.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim().toLowerCase();
+        const matched = rows.filter((r: any) => {
+          const name = String(r.supplier ?? "").replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim().toLowerCase();
+          return name === target;
+        });
+        const total = matched.reduce((s: number, r: any) => s + (Number(r.totalStockAmount ?? 0) || 0), 0);
         setVendorTotalStock(total);
       })
       .catch(() => { if (alive) setVendorTotalStock(null); });
