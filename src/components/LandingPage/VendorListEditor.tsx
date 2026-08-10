@@ -1225,7 +1225,7 @@ export const VendorDetailModal: React.FC<{
             <div className="flex items-center gap-x-5 gap-y-1 flex-wrap">
               <div className="flex items-center gap-2 shrink-0">
                 <span className="w-1 h-4 rounded-full bg-emerald-500 shrink-0" />
-                <span className="text-[15px] font-black text-emerald-700">공급 요약</span>
+                <span className="text-[16px] font-black text-emerald-700">공급 요약</span>
               </div>
               <span className="inline-flex items-baseline gap-1.5 text-[14px] leading-tight" title="공급사 상품 각각 · 현재고 × 최근 사입단가 합산">
                 <span className="text-slate-400 font-semibold">총재고</span>
@@ -1252,7 +1252,7 @@ export const VendorDetailModal: React.FC<{
             <summary className="flex items-center gap-2 cursor-pointer select-none list-none pb-1.5 border-b border-slate-100">
               <ChevronRight size={14} className="chevron text-emerald-500 shrink-0 transition-transform" />
               <span className="w-1 h-4 rounded-full bg-emerald-500 shrink-0" />
-              <span className="text-[15px] font-black text-emerald-700">공급 요약</span>
+              <span className="text-[16px] font-black text-emerald-700">공급 요약</span>
             </summary>
             <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[13px] leading-tight px-2">
               <span className="inline-flex items-baseline gap-1">
@@ -1277,7 +1277,7 @@ export const VendorDetailModal: React.FC<{
             <div className="flex items-center gap-x-4 gap-y-1 flex-wrap">
               <div className="flex items-center gap-2 shrink-0">
                 <span className="w-1 h-4 rounded-full bg-amber-500 shrink-0" />
-                <span className="text-[15px] font-black text-amber-700">결제 정보</span>
+                <span className="text-[16px] font-black text-amber-700">결제 정보</span>
               </div>
               <span className="text-[12px] text-slate-400 shrink-0">거래명세서 금액</span>
               <label className="inline-flex items-center gap-2 cursor-pointer select-none">
