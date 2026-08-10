@@ -2651,15 +2651,15 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                             <VendorCategoryBadge category={getVendorCategory(currentSup)} />
                             <span className="text-[15px] font-black text-sky-900">{displayVendorName(currentSup) || currentSup}</span>
                             <span className="text-[13px] font-semibold text-sky-500 tabular-nums">{groupRows.length}건</span>
-                            {/* 2026-08-10 · 사용자 요청 · 텍스트-버튼 비율 밸런스 · 폰트 +2 · 여백 tight */}
+                            {/* 2026-08-10 · 사용자 요청 · 버튼 컴팩트 · 여백 최소 */}
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); openOrderModal(groupRows); }}
                               disabled={sendingBulk}
-                              className="ml-auto inline-flex items-center gap-1 h-8 px-2.5 rounded-md text-[14px] font-black text-rose-800 bg-rose-100 border border-rose-300 hover:bg-rose-200 hover:border-rose-400 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                              className="ml-auto inline-flex items-center gap-0.5 h-6 px-1.5 rounded text-[12px] font-black text-rose-800 bg-rose-100 border border-rose-300 hover:bg-rose-200 hover:border-rose-400 disabled:opacity-40 disabled:cursor-not-allowed transition"
                               title={`${currentSup} · ${groupRows.length}건 발주`}
                             >
-                              <Send size={13}/>발주 ({groupRows.length})
+                              <Send size={11}/>발주({groupRows.length})
                             </button>
                           </div>
                         </td>

@@ -17,6 +17,7 @@
 
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
+import { useResizablePanel } from "../../hooks/useResizablePanel";
 import {
   ScanLine, Loader2, AlertCircle, Package,
   CheckCircle2, Trash2, RotateCcw, Warehouse, Store,
