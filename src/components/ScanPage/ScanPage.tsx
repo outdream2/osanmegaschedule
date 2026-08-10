@@ -168,6 +168,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   // ── 전체 저장
   const [saveStatus, setSaveStatus]             = useState<"idle" | "saving" | "done" | "error">("idle");
 
+  // 2026-08-10 · G · B1 · Cin7 3단 상태머신 · 검토 시트 (오입력 방지)
+  const [reviewOpen, setReviewOpen] = useState(false);
+
   // 2026-08-10 · G · A4 · 스캔 자동 +1 (opt-in · localStorage · 기본 off)
   // 이미 리스트에 있는 상품 스캔 시 · 매장1 addQty +1 자동
   const AUTO_INC_KEY = "scanPage_autoIncrement";
@@ -915,8 +918,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 </p>
 
                 <button
-                  onClick={handleBulkSave}
-                  disabled={saveStatus === "saving" || saveStatus === "done"}
+                  onClick={() => setReviewOpen(true)}
+                  disabled={saveStatus === "saving" || saveStatus === "done" || rows.length === 0}
                   className={[
                     "relative w-full min-h-[56px] py-3.5 rounded-xl",
                     "font-black text-[14px] sm:text-[15px] text-white",
@@ -1178,6 +1181,73 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             </div>
             <div className="px-5 py-2.5 border-t border-slate-100 bg-slate-50/60 text-[10px] text-slate-400 font-semibold text-center">
               같은 날 저장은 덮어쓰고, 다른 날 저장은 이력으로 추가됩니다.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2026-08-10 · G · B1 · 검토 시트 (오입력 방지 · [전체 등록] → 요약 확인 → [확정]) */}
+      {reviewOpen && (
+        <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
+          onClick={() => setReviewOpen(false)}
+        >
+          <div className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="px-5 py-3.5 border-b border-slate-200 bg-teal-50 flex items-center justify-between">
+              <div>
+                <div className="text-sm font-black text-slate-900">등록 전 검토</div>
+                <div className="text-[11px] font-semibold text-slate-500 mt-0.5">
+                  {rows.length}건 · 총 {rows.reduce((acc, r) => acc + calcRowTotal(r), 0)}개
+                </div>
+              </div>
+              <button
+                onClick={() => setReviewOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:bg-white/70 hover:text-slate-700 cursor-pointer"
+                title="닫기"
+              >×</button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+              {rows.map(r => {
+                const total = calcRowTotal(r);
+                const added =
+                  (Number(r.warehouse1AddQty) || 0) +
+                  (Number(r.warehouse2AddQty) || 0) +
+                  (Number(r.store1AddQty) || 0) +
+                  (Number(r.store2AddQty) || 0) +
+                  (Number(r.store3AddQty) || 0);
+                return (
+                  <div key={r.key} className="px-4 py-2.5 flex items-baseline justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[12px] font-bold text-slate-800 truncate">{r.product.product_name}</div>
+                      <div className="text-[10px] text-slate-400 font-mono tabular-nums truncate">{r.code}</div>
+                    </div>
+                    <div className="flex items-baseline gap-2 shrink-0">
+                      {added > 0 ? (
+                        <span className="text-[11px] font-black text-emerald-700 tabular-nums">+{added}</span>
+                      ) : (
+                        <span className="text-[11px] text-slate-300">변화 없음</span>
+                      )}
+                      <span className="text-[12px] font-black text-slate-800 tabular-nums">= {total}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex items-center gap-2">
+              <button
+                onClick={() => setReviewOpen(false)}
+                className="flex-1 h-10 rounded-lg bg-white border border-slate-300 text-slate-600 text-[12px] font-bold hover:bg-slate-100 transition cursor-pointer"
+              >취소</button>
+              <button
+                onClick={() => { setReviewOpen(false); handleBulkSave(); }}
+                disabled={saveStatus === "saving" || rows.length === 0}
+                className="flex-[2] h-10 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-[13px] font-black shadow-sm disabled:opacity-60 disabled:cursor-not-allowed transition cursor-pointer"
+              >
+                확정 · {rows.length}건 저장
+              </button>
             </div>
           </div>
         </div>
