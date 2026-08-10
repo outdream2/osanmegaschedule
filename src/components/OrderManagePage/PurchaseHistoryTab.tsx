@@ -847,8 +847,39 @@ export const PurchaseHistoryTab: React.FC = () => {
           </button>
         </div>
 
-        {/* 기간 필터 · 매입이력 탭 내부로 이동 (개선 3 · 2026-08-05)
-            by-vendor 공급사별 뷰에서 상단 공통 필터 제거 · PurchaseSubTabs 내부 ledger 탭 헤더에 배치 */}
+        {/* 2026-08-10 · #19 · 기간 chip + 계절 chip · 상단 툴바로 이동 (사용자 요청 · split 안에서 이동) */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">기간</span>
+          <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
+            <button
+              type="button"
+              onClick={() => { setPeriodMonths(0); setPeriodSeason(null); }}
+              className={`px-2 h-6 text-[10px] font-semibold rounded transition cursor-pointer ${
+                !periodSeason && periodMonths === 0
+                  ? "bg-sky-500 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >10일</button>
+            {([1, 2, 3, 4, 5, 6] as const).map(m => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => { setPeriodMonths(m as 0|1|2|3|4|5|6); setPeriodSeason(null); }}
+                className={`px-2 h-6 text-[10px] font-semibold rounded transition cursor-pointer ${
+                  !periodSeason && periodMonths === m
+                    ? "bg-sky-500 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >{m}개월</button>
+            ))}
+          </div>
+          <SeasonButtons
+            value={periodSeason ?? null}
+            onChange={(v) => { setPeriodSeason(v); }}
+            size="sm"
+            hideLabel
+          />
+        </div>
 
         {/* 새로고침 */}
         {viewMode === "by-vendor" && selectedVendor && (
@@ -1039,39 +1070,7 @@ export const PurchaseHistoryTab: React.FC = () => {
                   placeholder="상품명 · 코드 검색"
                   className="w-full h-7 px-2.5 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-sky-400 focus:border-sky-400 transition"
                 />
-                {/* 2026-08-05 · 기간 필터 (by-product 공통 periodMonths/periodSeason 공유) */}
-                <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-100">
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">기간</span>
-                  <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
-                    <button
-                      type="button"
-                      onClick={() => { setPeriodMonths(0); setPeriodSeason(null); }}
-                      className={`px-2 h-6 text-[10px] font-semibold rounded transition cursor-pointer ${
-                        !periodSeason && periodMonths === 0
-                          ? "bg-sky-500 text-white shadow-sm"
-                          : "text-slate-500 hover:text-slate-700"
-                      }`}
-                    >10일</button>
-                    {([1, 2, 3, 6] as const).map(m => (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => { setPeriodMonths(m); setPeriodSeason(null); }}
-                        className={`px-2 h-6 text-[10px] font-semibold rounded transition cursor-pointer ${
-                          !periodSeason && periodMonths === m
-                            ? "bg-sky-500 text-white shadow-sm"
-                            : "text-slate-500 hover:text-slate-700"
-                        }`}
-                      >{m}개월</button>
-                    ))}
-                  </div>
-                  <SeasonButtons
-                    value={periodSeason ?? null}
-                    onChange={(v) => { setPeriodSeason(v); }}
-                    size="sm"
-                    hideLabel
-                  />
-                </div>
+                {/* 2026-08-10 · #19 · 기간·계절 chip · 상단 툴바로 이동 · 여기서 제거 (사용자 요청) */}
                 <div className="flex items-center gap-1 pt-1 border-t border-slate-100 flex-wrap">
                   <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">정렬</span>
                   {/* 2026-08-04 · 판매량·판매금액 정렬 추가 (사용자 요청 · 판매는 rose · 매입/기타는 sky) */}
