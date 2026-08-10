@@ -1505,14 +1505,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 </div>
               </div>
 
-              {/* 발주 조건 그룹 · 통합 · PC 같은 행 · 모바일 wrap */}
-              <span className="text-[13px] font-black tracking-tight text-slate-700 shrink-0 whitespace-nowrap">발주 조건</span>
-              {/* 2026-08-10 · 사용자 요청 · '체크·입력 시 자동 조회' 안내 문구 제거 */}
-              {/* 조건 3종 · 한 그룹 · nowrap · 스크롤 X · 아주 컴팩트 (모바일 320px 도 fit) */}
-              <div className="flex items-center gap-1.5 flex-nowrap shrink-0">
-                {/* 빈 span (기존 label 제거 · 위 span 사용) */}
-                <span className="sr-only">발주 조건 (컴팩트)</span>
-
+              {/* 2026-08-10 · 사용자 요청 · 발주조건 · 입력 항목 나란히 (label + 2 checkboxes · 같은 flex-nowrap wrapper) */}
+              <div className="flex items-center gap-2 flex-nowrap shrink-0">
+                <span className="text-[13px] font-black tracking-tight text-slate-700 whitespace-nowrap">발주 조건</span>
                 {/* 조건 1 · 최근 한달 판매량 N개 이하 */}
                 <label className="inline-flex items-center gap-1 shrink-0">
                   <input type="checkbox" checked={needSalesMonthEnabled} onChange={e => setNeedSalesMonthEnabled(e.target.checked)}
