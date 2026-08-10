@@ -968,7 +968,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                   const hasBankbook = !!bankbookUrl;
                   if (!hasResume && !hasContract && !hasBankbook) return null;
                   return (
-                    <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-slate-100">
+                    <div className="flex items-center gap-1.5 pt-2 border-t border-slate-100">
                       {hasResume && (
                         <a
                           href={employee.resume_url!}
