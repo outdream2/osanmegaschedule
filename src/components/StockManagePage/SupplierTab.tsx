@@ -690,20 +690,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   if (embedded) {
     return (
       <div className="w-full h-full min-h-0 flex flex-col gap-2">
-        {/* 컴팩트 상단 필터바 (기간 · Top N · 새로고침) */}
+        {/* 2026-08-10 · 사용자 요청 · 매입이력 embedded 컨텍스트 · 기간 제거 (상단 툴바에서 별도 제공) · Top N + 새로고침만 */}
         <div className={`${CARD_BASE} px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 shrink-0`}>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">기간</span>
-            <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
-              <button onClick={() => { setSupplierSeason(null); setSupplierMonths(0); }}
-                className={`px-1.5 h-5 text-[10px] font-semibold rounded transition cursor-pointer ${!supplierSeason && supplierMonths === 0 ? "bg-sky-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>10일</button>
-              {[1, 2, 3, 4, 5, 6].map(m => (
-                <button key={m} onClick={() => { setSupplierSeason(null); setSupplierMonths(m as any); }}
-                  className={`px-1.5 h-5 text-[10px] font-semibold rounded transition cursor-pointer ${!supplierSeason && supplierMonths === m ? "bg-sky-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>{m}개월</button>
-              ))}
-            </div>
-          </div>
-          <SeasonButtons value={supplierSeason} onChange={(v) => { setSupplierSeason(v); if (v) setSupplierMonths(0); }} size="sm" hideLabel />
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">Top N</span>
             <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
