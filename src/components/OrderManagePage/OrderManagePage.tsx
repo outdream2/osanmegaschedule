@@ -871,7 +871,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   };
 
   const [sendingBulk, setSendingBulk] = useState(false);
-  const [bulkChannels, setBulkChannels] = useState<{ email: boolean; sms: boolean }>({ email: true, sms: false });
+  // 2026-08-10 · #28 · 카카오톡 채널 추가 (SolAPI 알림톡 · env 없으면 서버가 400 반환 · gracefully fail)
+  const [bulkChannels, setBulkChannels] = useState<{ email: boolean; sms: boolean; kakao: boolean }>({ email: true, sms: false, kakao: false });
 
   // 발주 모달 (표준 발주서 포맷 · 단일/일괄 공용)
   interface OrderModalItem {
@@ -911,7 +912,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     orderDate: string;
     desiredArrival: string;
     memo: string;
-    channels: { email: boolean; sms: boolean };
+    channels: { email: boolean; sms: boolean; kakao: boolean };
     suppliers: OrderModalSupplier[];
   }>(null);
 
@@ -1046,7 +1047,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // 발주 확정 발송
   const submitOrderModal = async () => {
     if (!orderModal) return;
-    if (!orderModal.channels.email && !orderModal.channels.sms) { alert("이메일 또는 문자 중 하나 이상 선택해주세요."); return; }
+    if (!orderModal.channels.email && !orderModal.channels.sms && !orderModal.channels.kakao) { alert("이메일·문자·카카오톡 중 하나 이상 선택해주세요."); return; }
     const totalItems = orderModal.suppliers.reduce((n, s) => n + s.items.length, 0);
     const proceed = await confirm({
       message: `${orderModal.suppliers.length}개 공급사 · ${totalItems}개 상품에 발주서 ${orderModal.suppliers.length}건을 각각 발송합니다.\n\n계속하시겠습니까?`,
@@ -2967,6 +2968,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   <label className={`text-[11px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.sms ? "bg-sky-50 text-sky-700 border-sky-300" : "bg-white text-slate-400 border-slate-200"}`}>
                     <input type="checkbox" checked={orderModal.channels.sms} onChange={e => setOrderModal(p => p && ({ ...p, channels: { ...p.channels, sms: e.target.checked } }))} className="w-3 h-3"/>
                     <MessageSquare size={11}/> 문자
+                  </label>
+                  {/* 2026-08-10 · #28 · 카카오톡 알림톡 채널 (SolAPI · env 설정 후 활성) */}
+                  <label className={`text-[11px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.kakao ? "bg-yellow-50 text-yellow-700 border-yellow-300" : "bg-white text-slate-400 border-slate-200"}`} title="SolAPI 알림톡 (사업자 인증·템플릿·env 필요)">
+                    <input type="checkbox" checked={orderModal.channels.kakao} onChange={e => setOrderModal(p => p && ({ ...p, channels: { ...p.channels, kakao: e.target.checked } }))} className="w-3 h-3"/>
+                    💬 카카오톡
                   </label>
                 </div>
               </div>
