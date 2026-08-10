@@ -2470,7 +2470,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           <div className="mb-2 text-[11px] text-amber-700 bg-amber-50/60 border border-amber-200/60 rounded-md px-2 py-1 leading-snug">
             손실 확정이 되었는지 확인하세요 <span className="text-amber-500">(ERP재고 vs 실재고 차이 · 손실추적 탭 참조)</span>
           </div>
-          <div className={`max-h-[50vh] overflow-auto relative ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+          {/* 2026-08-10 · 사용자 요청 · PC 높이 넓힘 (모바일 50vh · lg 이상 75vh · 오른쪽 상세와 밸런스) */}
+          <div className={`max-h-[50vh] lg:max-h-[75vh] overflow-auto relative ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             <table className="w-full text-xs sm:min-w-[540px]">
               <thead className="sticky top-0 bg-white z-10">
                 {/* 그룹 카테고리 헤더 · 클릭으로 접기/펼치기 */}
@@ -2615,18 +2616,19 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     <React.Fragment key={r.id}>
                     {isNewGroup && (
                       <tr className="bg-sky-50/70 border-t-2 border-sky-200 sticky top-[38px] z-[5]">
-                        <td colSpan={99} className="px-3 py-1.5">
+                        <td colSpan={99} className="px-3 py-2">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[13px] font-black text-sky-900">{displayVendorName(currentSup) || currentSup}</span>
-                            <span className="text-[11px] font-semibold text-sky-500 tabular-nums">{groupRows.length}건</span>
+                            <span className="text-[15px] font-black text-sky-900">{displayVendorName(currentSup) || currentSup}</span>
+                            <span className="text-[13px] font-semibold text-sky-500 tabular-nums">{groupRows.length}건</span>
+                            {/* 2026-08-10 · 사용자 요청 · 텍스트-버튼 비율 밸런스 · 폰트 +2 · 여백 tight */}
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); openOrderModal(groupRows); }}
                               disabled={sendingBulk}
-                              className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[12px] font-black text-rose-800 bg-rose-100 border border-rose-300 hover:bg-rose-200 hover:border-rose-400 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                              className="ml-auto inline-flex items-center gap-1 h-8 px-2.5 rounded-md text-[14px] font-black text-rose-800 bg-rose-100 border border-rose-300 hover:bg-rose-200 hover:border-rose-400 disabled:opacity-40 disabled:cursor-not-allowed transition"
                               title={`${currentSup} · ${groupRows.length}건 발주`}
                             >
-                              <Send size={11}/> 발주 ({groupRows.length})
+                              <Send size={13}/>발주 ({groupRows.length})
                             </button>
                           </div>
                         </td>
