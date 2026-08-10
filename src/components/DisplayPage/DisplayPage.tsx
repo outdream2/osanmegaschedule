@@ -2979,9 +2979,10 @@ const VendorManageSplit: React.FC = () => {
           <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
             <tr>
               {/* 2026-08-10 · #20 · 분류 컬럼 제거 · 공급사 셀에 [분류][줄바꿈][공급사명] 통합 (사용자 요청) */}
-              <th className="text-left px-2 sm:px-3 py-2 text-[12px] sm:text-[13px] font-black min-w-[120px]"><SortTh label="공급사" sk="company_name" /></th>
-              <th className="text-left px-2 sm:px-3 py-2 text-[12px] sm:text-[13px] font-black whitespace-nowrap w-20 sm:w-24"><SortTh label="담당자" sk="contact_name" /></th>
-              <th className="text-left px-2 sm:px-3 py-2 text-[12px] sm:text-[13px] font-black whitespace-nowrap w-28 sm:w-36"><SortTh label="전화" sk="phone" /></th>
+              {/* 2026-08-10 · 사용자 요청 · 폰트 +1 · 공급사 이름 wrap · 왼쪽 한눈에 · whitespace-normal */}
+              <th className="text-left px-2 sm:px-3 py-2 text-[13px] sm:text-[14px] font-black min-w-[120px]"><SortTh label="공급사" sk="company_name" /></th>
+              <th className="text-left px-2 sm:px-3 py-2 text-[13px] sm:text-[14px] font-black w-20 sm:w-24"><SortTh label="담당자" sk="contact_name" /></th>
+              <th className="text-left px-2 sm:px-3 py-2 text-[13px] sm:text-[14px] font-black w-28 sm:w-36"><SortTh label="전화" sk="phone" /></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -3006,21 +3007,22 @@ const VendorManageSplit: React.FC = () => {
                 >
                   <td className="px-2 sm:px-3 py-2 align-top" title={String(v.company_name ?? "")}>
                     <div className="flex flex-col leading-tight">
-                      <span className={`text-[11px] sm:text-[12px] font-black ${catCls}`}>
+                      <span className={`text-[12px] sm:text-[13px] font-black ${catCls}`}>
                         {v.category || <span className="text-slate-300">-</span>}
                       </span>
-                      <span className={`text-[12px] sm:text-[13px] font-bold truncate max-w-[160px] sm:max-w-[220px] ${isActive ? "text-indigo-900" : "text-slate-800"}`}>
+                      {/* 공급사명 · 길면 wrap · 폰트 +1 */}
+                      <span className={`text-[13px] sm:text-[14px] font-bold break-words whitespace-normal ${isActive ? "text-indigo-900" : "text-slate-800"}`}>
                         {displayVendorName(String(v.company_name ?? "")) || String(v.company_name ?? "")}
                       </span>
                     </div>
                   </td>
-                  <td className="px-2 sm:px-3 py-2 text-[12px] sm:text-[13px] text-slate-600 whitespace-nowrap">
-                    <span className="block truncate max-w-[80px] sm:max-w-none">
+                  <td className="px-2 sm:px-3 py-2 text-[13px] sm:text-[14px] text-slate-600 whitespace-nowrap align-top">
+                    <span className="block break-words">
                       {String(v.contact_name ?? "") || <span className="text-slate-300">-</span>}
                     </span>
                   </td>
-                  <td className="px-2 sm:px-3 py-2 text-[12px] sm:text-[13px] text-slate-600 tabular-nums whitespace-nowrap">
-                    <span className="block truncate max-w-[100px] sm:max-w-none">
+                  <td className="px-2 sm:px-3 py-2 text-[13px] sm:text-[14px] text-slate-600 tabular-nums whitespace-nowrap align-top">
+                    <span className="block break-words">
                       {String(v.phone ?? "") || <span className="text-slate-300">-</span>}
                     </span>
                   </td>
