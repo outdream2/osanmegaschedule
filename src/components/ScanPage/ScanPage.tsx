@@ -15,7 +15,7 @@
 //   ALTER TABLE inventory_checks ADD COLUMN IF NOT EXISTS store2_zone TEXT;
 //   ALTER TABLE inventory_checks ADD COLUMN IF NOT EXISTS store3_zone TEXT;
 
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
 import { useResizablePanel } from "../../hooks/useResizablePanel";
 import {
@@ -262,6 +262,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   const [saveError, setSaveError]               = useState<string | null>(null);
   const [savedCount, setSavedCount]             = useState<number>(0);
 
+  // ── A5 · localStorage draft 복구 배너 표시 여부
+  const [draftBanner, setDraftBanner]           = useState<boolean>(false);
+
   // ── 정렬 (T30-followup · useSortableTable)
   const { sorted: sortedRows, sortKey, sortDir, toggleSort: _toggleSort, setSort: _setSort } =
     useSortableTable<any, ScanSortKey>(rows, "addedAt", SCAN_SORT_CMP, "desc");
@@ -278,9 +281,60 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     }
   }, []);
 
+  // ── A5 · 마운트 시 localStorage draft 감지 (저장된 내용 있으면 복구 배너)
+  const DRAFT_KEY = "scan_page_draft_rows";
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setDraftBanner(true);
+        }
+      }
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── A5 · rows 변경 시 debounce 800ms 후 localStorage 저장
+  const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    draftTimerRef.current = setTimeout(() => {
+      try {
+        if (rows.length > 0) {
+          localStorage.setItem(DRAFT_KEY, JSON.stringify(rows));
+        } else {
+          localStorage.removeItem(DRAFT_KEY);
+        }
+      } catch { /* storage quota 등 무시 */ }
+    }, 800);
+    return () => { if (draftTimerRef.current) clearTimeout(draftTimerRef.current); };
+  }, [rows]);
+
   const showToast = useCallback((msg: string, ms = 2200) => {
     setToast(msg);
     setTimeout(() => setToast(null), ms);
+  }, []);
+
+  // ── A5 · draft 복구 · 배너 [복구] 버튼 핸들러
+  const restoreDraft = useCallback(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const parsed: StockRow[] = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        setRows(parsed);
+        setDraftBanner(false);
+        showToast(`임시저장 ${parsed.length}건 복구 완료`, 2500);
+      }
+    } catch { /* ignore */ }
+  }, [showToast]);
+
+  // ── A5 · draft 무시 · 배너 닫기
+  const dismissDraft = useCallback(() => {
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* noop */ }
+    setDraftBanner(false);
   }, []);
 
   // ── T20/Phase 2 · 상품별 진열요청 · POST /api/display-requests
@@ -441,6 +495,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     setNotFoundCode(null);
     setSaveStatus("idle");
     setSaveError(null);
+    // A5 · 초기화 시 draft 삭제
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* noop */ }
+    setDraftBanner(false);
   };
 
   // ── 실재고 이력 모달 열기
@@ -503,6 +560,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       const j = await res.json() as { saved?: number; failed?: number; downgraded?: boolean };
       setSavedCount(j.saved ?? rows.length);
       setSaveStatus("done");
+      // A5 · 서버 저장 성공 시 draft 삭제
+      try { localStorage.removeItem(DRAFT_KEY); } catch { /* noop */ }
+      setDraftBanner(false);
       showToast(
         j.downgraded
           ? `${j.saved ?? rows.length}건 저장 완료 (DB 컬럼 확장 대기 · 레거시 모드)`
@@ -523,6 +583,32 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     const s2 = r.store2Qty     !== "" ? Number(r.store2Qty)     : 0;
     const s3 = r.store3Qty     !== "" ? Number(r.store3Qty)     : 0;
     return w1 + w2 + s1 + s2 + s3;
+  };
+
+  // A1 · A3 · diff 계산 헬퍼 (현재값 - 이전값 · 둘 다 있을 때만)
+  const calcDiff = (cur: number | "", prev: number | null | undefined): number | null => {
+    if (prev == null) return null;
+    if (cur === "") return null;
+    return Number(cur) - prev;
+  };
+
+  // A3 · 5칸 총 diff (이전값이 하나라도 있을 때만 · 없으면 null)
+  const calcTotalDiff = (r: StockRow): number | null => {
+    const hasPrev =
+      r.prevWarehouse1Qty != null || r.prevWarehouse2Qty != null ||
+      r.prevStore1Qty != null     || r.prevStore2Qty != null     || r.prevStore3Qty != null;
+    if (!hasPrev) return null;
+    const d = (cur: number | "", prev: number | null | undefined) => {
+      if (prev == null || cur === "") return 0;
+      return Number(cur) - prev;
+    };
+    return (
+      d(r.warehouse1Qty, r.prevWarehouse1Qty) +
+      d(r.warehouse2Qty, r.prevWarehouse2Qty) +
+      d(r.store1Qty,     r.prevStore1Qty)     +
+      d(r.store2Qty,     r.prevStore2Qty)     +
+      d(r.store3Qty,     r.prevStore3Qty)
+    );
   };
 
   // 요약 카운트
@@ -596,6 +682,38 @@ export const ScanPage: React.FC<ScanPageProps> = ({
           )}
         </div>
       </div>
+
+      {/* ── A5 · Draft 복구 배너 ── */}
+      {draftBanner && rows.length === 0 && (
+        <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-6 pt-3">
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl
+            bg-amber-50 border border-amber-200/80 shadow-sm">
+            <div className="w-6 h-6 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+              <RotateCcw size={13} className="text-amber-600" />
+            </div>
+            <p className="flex-1 text-[12px] font-semibold text-amber-800 leading-snug">
+              이전 세션의 임시저장 데이터가 있습니다. 복구하시겠습니까?
+            </p>
+            <button
+              onClick={restoreDraft}
+              className="px-3 py-1.5 rounded-lg text-[12px] font-black text-white
+                bg-amber-500 hover:bg-amber-600 active:bg-amber-700
+                transition-colors cursor-pointer shrink-0"
+            >
+              복구
+            </button>
+            <button
+              onClick={dismissDraft}
+              className="w-7 h-7 flex items-center justify-center rounded-lg
+                text-amber-500 hover:text-amber-700 hover:bg-amber-100
+                transition-colors cursor-pointer shrink-0"
+              title="무시"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Main layout ── */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-5
@@ -828,6 +946,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                         row.warehouse1Qty !== "" || row.warehouse2Qty !== "" ||
                         row.store1Qty !== "" || row.store2Qty !== "" || row.store3Qty !== "";
 
+                      // A3 · 5칸 총 diff 뱃지
+                      const totalDiff = calcTotalDiff(row);
+
                       const rowBg = isRecent
                         ? "bg-teal-50/60"
                         : idx % 2 === 0
@@ -846,10 +967,25 @@ export const ScanPage: React.FC<ScanPageProps> = ({
 
                           {/* 상품명 · 규격 · 코드 */}
                           <td className="px-2 py-2 align-middle min-w-[140px]">
-                            <p className="text-[12px] sm:text-[13px] font-black text-slate-800
-                              break-words whitespace-normal leading-snug">
-                              {row.product.name}
-                            </p>
+                            <div className="flex items-start gap-1.5 flex-wrap">
+                              <p className="text-[12px] sm:text-[13px] font-black text-slate-800
+                                break-words whitespace-normal leading-snug">
+                                {row.product.name}
+                              </p>
+                              {/* A3 · 총 diff 뱃지 · 이전값 있을 때만 */}
+                              {totalDiff != null && (
+                                <span className={`inline-flex items-center shrink-0 text-[10px] font-black tabular-nums
+                                  px-1.5 py-0.5 rounded-md leading-none
+                                  ${totalDiff > 0
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    : totalDiff < 0
+                                      ? "bg-rose-50 text-rose-700 border border-rose-200"
+                                      : "bg-slate-100 text-slate-500 border border-slate-200"}`}
+                                >
+                                  {totalDiff > 0 ? `+${totalDiff}` : totalDiff}
+                                </span>
+                              )}
+                            </div>
                             <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                               {(row.product as any).spec && (
                                 <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold
@@ -870,71 +1006,151 @@ export const ScanPage: React.FC<ScanPageProps> = ({
 
                           {/* 창고1 · 데스크탑만 */}
                           <td className="hidden lg:table-cell px-1 py-2 align-middle">
-                            <NumberInput
-                              value={row.warehouse1Qty}
-                              onChange={v => patchRow(row.key, { warehouse1Qty: v })}
-                              accent="focus:border-orange-400"
-                            />
+                            {(() => {
+                              const diff1 = calcDiff(row.warehouse1Qty, row.prevWarehouse1Qty);
+                              return (
+                                <div className="flex flex-col gap-0.5">
+                                  <NumberInput
+                                    value={row.warehouse1Qty}
+                                    onChange={v => patchRow(row.key, { warehouse1Qty: v })}
+                                    accent="focus:border-orange-400"
+                                  />
+                                  {/* A1 · 이전값 + diff 마이크로텍스트 */}
+                                  {row.prevWarehouse1Qty != null && (
+                                    <div className="flex items-center justify-center gap-1 text-[10px] tabular-nums leading-none">
+                                      <span className="text-slate-400">이전 {row.prevWarehouse1Qty}</span>
+                                      {diff1 != null && (
+                                        <span className={diff1 > 0 ? "text-emerald-600 font-bold" : diff1 < 0 ? "text-rose-500 font-bold" : "text-slate-400"}>
+                                          {diff1 > 0 ? `+${diff1}` : diff1}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </td>
 
                           {/* 창고2 · 데스크탑만 */}
                           <td className="hidden lg:table-cell px-1 py-2 align-middle">
-                            <NumberInput
-                              value={row.warehouse2Qty}
-                              onChange={v => patchRow(row.key, { warehouse2Qty: v })}
-                              accent="focus:border-amber-400"
-                            />
+                            {(() => {
+                              const diff2 = calcDiff(row.warehouse2Qty, row.prevWarehouse2Qty);
+                              return (
+                                <div className="flex flex-col gap-0.5">
+                                  <NumberInput
+                                    value={row.warehouse2Qty}
+                                    onChange={v => patchRow(row.key, { warehouse2Qty: v })}
+                                    accent="focus:border-amber-400"
+                                  />
+                                  {row.prevWarehouse2Qty != null && (
+                                    <div className="flex items-center justify-center gap-1 text-[10px] tabular-nums leading-none">
+                                      <span className="text-slate-400">이전 {row.prevWarehouse2Qty}</span>
+                                      {diff2 != null && (
+                                        <span className={diff2 > 0 ? "text-emerald-600 font-bold" : diff2 < 0 ? "text-rose-500 font-bold" : "text-slate-400"}>
+                                          {diff2 > 0 ? `+${diff2}` : diff2}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </td>
 
                           {/* 매장1 · 데스크탑만 */}
                           <td className="hidden lg:table-cell px-1 py-2 align-middle">
-                            <div className="flex flex-col gap-0.5">
-                              <NumberInput
-                                value={row.store1Qty}
-                                onChange={v => patchRow(row.key, { store1Qty: v })}
-                                accent="focus:border-emerald-400"
-                              />
-                              <ZoneInput
-                                value={row.store1Zone}
-                                placeholder="-"
-                                accentClass="text-emerald-600 focus:border-emerald-400"
-                                onChange={v => patchRow(row.key, { store1Zone: v })}
-                              />
-                            </div>
+                            {(() => {
+                              const diffS1 = calcDiff(row.store1Qty, row.prevStore1Qty);
+                              return (
+                                <div className="flex flex-col gap-0.5">
+                                  <NumberInput
+                                    value={row.store1Qty}
+                                    onChange={v => patchRow(row.key, { store1Qty: v })}
+                                    accent="focus:border-emerald-400"
+                                  />
+                                  {row.prevStore1Qty != null && (
+                                    <div className="flex items-center justify-center gap-1 text-[10px] tabular-nums leading-none">
+                                      <span className="text-slate-400">이전 {row.prevStore1Qty}</span>
+                                      {diffS1 != null && (
+                                        <span className={diffS1 > 0 ? "text-emerald-600 font-bold" : diffS1 < 0 ? "text-rose-500 font-bold" : "text-slate-400"}>
+                                          {diffS1 > 0 ? `+${diffS1}` : diffS1}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                  <ZoneInput
+                                    value={row.store1Zone}
+                                    placeholder="-"
+                                    accentClass="text-emerald-600 focus:border-emerald-400"
+                                    onChange={v => patchRow(row.key, { store1Zone: v })}
+                                  />
+                                </div>
+                              );
+                            })()}
                           </td>
 
                           {/* 매장2 · 데스크탑만 */}
                           <td className="hidden lg:table-cell px-1 py-2 align-middle">
-                            <div className="flex flex-col gap-0.5">
-                              <NumberInput
-                                value={row.store2Qty}
-                                onChange={v => patchRow(row.key, { store2Qty: v })}
-                                accent="focus:border-sky-400"
-                              />
-                              <ZoneInput
-                                value={row.store2Zone}
-                                placeholder="-"
-                                accentClass="text-sky-600 focus:border-sky-400"
-                                onChange={v => patchRow(row.key, { store2Zone: v })}
-                              />
-                            </div>
+                            {(() => {
+                              const diffS2 = calcDiff(row.store2Qty, row.prevStore2Qty);
+                              return (
+                                <div className="flex flex-col gap-0.5">
+                                  <NumberInput
+                                    value={row.store2Qty}
+                                    onChange={v => patchRow(row.key, { store2Qty: v })}
+                                    accent="focus:border-sky-400"
+                                  />
+                                  {row.prevStore2Qty != null && (
+                                    <div className="flex items-center justify-center gap-1 text-[10px] tabular-nums leading-none">
+                                      <span className="text-slate-400">이전 {row.prevStore2Qty}</span>
+                                      {diffS2 != null && (
+                                        <span className={diffS2 > 0 ? "text-emerald-600 font-bold" : diffS2 < 0 ? "text-rose-500 font-bold" : "text-slate-400"}>
+                                          {diffS2 > 0 ? `+${diffS2}` : diffS2}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                  <ZoneInput
+                                    value={row.store2Zone}
+                                    placeholder="-"
+                                    accentClass="text-sky-600 focus:border-sky-400"
+                                    onChange={v => patchRow(row.key, { store2Zone: v })}
+                                  />
+                                </div>
+                              );
+                            })()}
                           </td>
 
                           {/* 매장3 · 데스크탑만 */}
                           <td className="hidden lg:table-cell px-1 py-2 align-middle">
-                            <div className="flex flex-col gap-0.5">
-                              <NumberInput
-                                value={row.store3Qty}
-                                onChange={v => patchRow(row.key, { store3Qty: v })}
-                                accent="focus:border-violet-400"
-                              />
-                              <ZoneInput
-                                value={row.store3Zone}
-                                placeholder="-"
-                                accentClass="text-violet-600 focus:border-violet-400"
-                                onChange={v => patchRow(row.key, { store3Zone: v })}
-                              />
-                            </div>
+                            {(() => {
+                              const diffS3 = calcDiff(row.store3Qty, row.prevStore3Qty);
+                              return (
+                                <div className="flex flex-col gap-0.5">
+                                  <NumberInput
+                                    value={row.store3Qty}
+                                    onChange={v => patchRow(row.key, { store3Qty: v })}
+                                    accent="focus:border-violet-400"
+                                  />
+                                  {row.prevStore3Qty != null && (
+                                    <div className="flex items-center justify-center gap-1 text-[10px] tabular-nums leading-none">
+                                      <span className="text-slate-400">이전 {row.prevStore3Qty}</span>
+                                      {diffS3 != null && (
+                                        <span className={diffS3 > 0 ? "text-emerald-600 font-bold" : diffS3 < 0 ? "text-rose-500 font-bold" : "text-slate-400"}>
+                                          {diffS3 > 0 ? `+${diffS3}` : diffS3}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                  <ZoneInput
+                                    value={row.store3Zone}
+                                    placeholder="-"
+                                    accentClass="text-violet-600 focus:border-violet-400"
+                                    onChange={v => patchRow(row.key, { store3Zone: v })}
+                                  />
+                                </div>
+                              );
+                            })()}
                           </td>
 
                           {/* 2026-08-10 · #33 · 아이콘 제거 · 글씨 확대 · 매장 셀 spec (ERP 위치) 표시 */}
@@ -945,56 +1161,76 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                               const [spec1, spec2, spec3] = [specParts[0] ?? "", specParts[1] ?? "", specParts[2] ?? ""];
                               return (
                             <div className="flex flex-col gap-2.5">
-                              {/* 창고 그룹 · 2칸 · 아이콘 제거 */}
+                              {/* 창고 그룹 · 2칸 · A1 diff 표시 */}
                               <div className="grid grid-cols-2 gap-2">
                                 {[
                                   { key: "warehouse1Qty" as const, prev: row.prevWarehouse1Qty, label: "창1", accent: "focus:border-orange-400", color: "text-orange-600" },
                                   { key: "warehouse2Qty" as const, prev: row.prevWarehouse2Qty, label: "창2", accent: "focus:border-amber-400", color: "text-amber-600" },
-                                ].map(({ key, prev, label, accent, color }) => (
-                                  <div key={key} className="flex flex-col gap-0.5">
-                                    <div className="flex items-baseline justify-between px-1">
-                                      <span className={`text-[13px] font-black ${color}`}>{label}</span>
-                                      {prev != null && (
-                                        <span className="text-[11px] text-slate-400 tabular-nums">이전 {prev}</span>
-                                      )}
+                                ].map(({ key, prev, label, accent, color }) => {
+                                  const d = calcDiff(row[key], prev);
+                                  return (
+                                    <div key={key} className="flex flex-col gap-0.5">
+                                      <div className="flex items-baseline justify-between px-1">
+                                        <span className={`text-[13px] font-black ${color}`}>{label}</span>
+                                        {prev != null && (
+                                          <span className="flex items-baseline gap-1 text-[11px] tabular-nums">
+                                            <span className="text-slate-400">이전 {prev}</span>
+                                            {d != null && (
+                                              <span className={d > 0 ? "text-emerald-600 font-bold" : d < 0 ? "text-rose-500 font-bold" : "text-slate-400"}>
+                                                {d > 0 ? `+${d}` : d}
+                                              </span>
+                                            )}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <NumberInput value={row[key]}
+                                        onChange={v => patchRow(row.key, { [key]: v } as any)}
+                                        accent={accent} />
                                     </div>
-                                    <NumberInput value={row[key]}
-                                      onChange={v => patchRow(row.key, { [key]: v } as any)}
-                                      accent={accent} />
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
-                              {/* 매장 그룹 · 3칸 · 아이콘 제거 · ERP 위치 (spec) 표시 */}
+                              {/* 매장 그룹 · 3칸 · A1 diff 표시 · ERP 위치 (spec) 표시 */}
                               <div className="grid grid-cols-3 gap-2">
                                 {[
                                   { key: "store1Qty" as const, zoneKey: "store1Zone" as const, prev: row.prevStore1Qty, zone: row.store1Zone, spec: spec1, label: "매1", accent: "focus:border-emerald-400", zoneAccent: "text-emerald-600 focus:border-emerald-400", color: "text-emerald-600" },
                                   { key: "store2Qty" as const, zoneKey: "store2Zone" as const, prev: row.prevStore2Qty, zone: row.store2Zone, spec: spec2, label: "매2", accent: "focus:border-sky-400", zoneAccent: "text-sky-600 focus:border-sky-400", color: "text-sky-600" },
                                   { key: "store3Qty" as const, zoneKey: "store3Zone" as const, prev: row.prevStore3Qty, zone: row.store3Zone, spec: spec3, label: "매3", accent: "focus:border-violet-400", zoneAccent: "text-violet-600 focus:border-violet-400", color: "text-violet-600" },
-                                ].map(({ key, zoneKey, prev, zone, spec, label, accent, zoneAccent, color }) => (
-                                  <div key={key} className="flex flex-col gap-0.5">
-                                    <div className="flex items-baseline justify-between px-1">
-                                      <span className={`text-[13px] font-black ${color}`}>{label}</span>
-                                      {prev != null && (
-                                        <span className="text-[11px] text-slate-400 tabular-nums">이전 {prev}</span>
+                                ].map(({ key, zoneKey, prev, zone, spec, label, accent, zoneAccent, color }) => {
+                                  const d = calcDiff(row[key], prev);
+                                  return (
+                                    <div key={key} className="flex flex-col gap-0.5">
+                                      <div className="flex items-baseline justify-between px-1">
+                                        <span className={`text-[13px] font-black ${color}`}>{label}</span>
+                                        {prev != null && (
+                                          <span className="flex items-baseline gap-0.5 text-[11px] tabular-nums">
+                                            <span className="text-slate-400">이전 {prev}</span>
+                                            {d != null && (
+                                              <span className={d > 0 ? "text-emerald-600 font-bold" : d < 0 ? "text-rose-500 font-bold" : "text-slate-400"}>
+                                                {d > 0 ? `+${d}` : d}
+                                              </span>
+                                            )}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <NumberInput value={row[key]}
+                                        onChange={v => patchRow(row.key, { [key]: v } as any)}
+                                        accent={accent} />
+                                      {/* ERP 지정 위치 (spec) 표시 · 편집 불가 · 있을 때만 */}
+                                      {spec && (
+                                        <div className="text-[11px] text-slate-500 text-center px-1 tabular-nums" title={`ERP 지정 위치 · ${spec}`}>
+                                          {spec}
+                                        </div>
+                                      )}
+                                      {/* 구역 (real_map · 편집) · 값 있을 때만 */}
+                                      {zone && (
+                                        <ZoneInput value={zone} placeholder="구역"
+                                          accentClass={zoneAccent}
+                                          onChange={v => patchRow(row.key, { [zoneKey]: v } as any)} />
                                       )}
                                     </div>
-                                    <NumberInput value={row[key]}
-                                      onChange={v => patchRow(row.key, { [key]: v } as any)}
-                                      accent={accent} />
-                                    {/* ERP 지정 위치 (spec) 표시 · 편집 불가 · 있을 때만 */}
-                                    {spec && (
-                                      <div className="text-[11px] text-slate-500 text-center px-1 tabular-nums" title={`ERP 지정 위치 · ${spec}`}>
-                                        {spec}
-                                      </div>
-                                    )}
-                                    {/* 구역 (real_map · 편집) · 값 있을 때만 */}
-                                    {zone && (
-                                      <ZoneInput value={zone} placeholder="구역"
-                                        accentClass={zoneAccent}
-                                        onChange={v => patchRow(row.key, { [zoneKey]: v } as any)} />
-                                    )}
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             </div>
                               );
