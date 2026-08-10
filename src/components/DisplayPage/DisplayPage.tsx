@@ -2871,12 +2871,15 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { Search as SearchIcon } from "lucide-react";
 import { CARD_BASE } from "../../styles/tokens";
+import { NewVendorModal } from "../common/NewVendorModal";
 
 const VendorManageSplit: React.FC = () => {
   const { vendors, loading, refresh } = useVendorsHook();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState<string>("전체");
+  // 2026-08-10 · 사용자 요청 · 신규 공급사 등록 모달 (복원 · 90회전 옆 [+ 신규] 버튼)
+  const [showNewVendor, setShowNewVendor] = useState(false);
   // 2026-08-10 · 사용자 요청 · 자동 정렬 · 헤더 클릭 · 원칙
   type VmSortKey = "category" | "company_name" | "contact_name" | "phone";
   const [sortKey, setSortKey] = useState<VmSortKey>("company_name");
@@ -2970,8 +2973,23 @@ const VendorManageSplit: React.FC = () => {
               {cat}
             </button>
           ))}
+          {/* 2026-08-10 · 사용자 요청 · 90회전 옆 · 신규 공급사 등록 버튼 */}
+          <button
+            onClick={() => setShowNewVendor(true)}
+            className="ml-auto h-8 px-3 rounded-md text-[12px] font-black text-white bg-indigo-600 hover:bg-indigo-700 transition cursor-pointer whitespace-nowrap shrink-0"
+            title="새 공급사 등록"
+          >
+            + 신규 등록
+          </button>
         </div>
       </div>
+      {/* 2026-08-10 · 신규 공급사 등록 모달 */}
+      {showNewVendor && (
+        <NewVendorModal
+          onClose={() => setShowNewVendor(false)}
+          onSaved={() => { setShowNewVendor(false); refresh(); }}
+        />
+      )}
 
       {/* 리스트 · 통일 CARD_BASE · 헤더 정렬 · 모바일도 4컬럼 (컴팩트) · 2026-08-10 */}
       <div className={`${CARD_BASE} flex-1 min-h-0 overflow-auto`}>
