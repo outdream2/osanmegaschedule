@@ -762,7 +762,7 @@ export const PurchaseHistoryTab: React.FC = () => {
           {viewMode === "by-vendor"
             ? <Building2 size={14} className="text-emerald-500 shrink-0" />
             : <Package size={14} className="text-sky-500 shrink-0" />}
-          <span className="text-[13px] font-semibold text-slate-800">매입이력</span>
+          <span className="text-[13px] font-black text-slate-800">매입이력</span>
           {viewMode === "by-vendor" && selectedVendor && (
             <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 rounded-full px-2 py-0.5 border border-emerald-200 tabular-nums">
               {ledgerRows.length}건
@@ -1101,7 +1101,7 @@ export const PurchaseHistoryTab: React.FC = () => {
               {/* 상품 리스트 · 카드 2줄 · 상단 컬럼 헤더 */}
               {/* 2026-08-05 · max-h-[65vh] 좁아서 스크롤·데이터 안 보임 문제 · 90vh 로 확대 */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 max-h-[calc(100vh-200px)] flex flex-col overflow-hidden">
-                <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center text-[11px] font-black text-slate-500 uppercase tracking-wider">
                   <span>상품</span>
                   <span className="text-right whitespace-nowrap text-amber-600">매입</span>
                   <span className="text-right whitespace-nowrap text-rose-600">판매</span>

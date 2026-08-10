@@ -926,7 +926,7 @@ export const PaymentInfoTab: React.FC = () => {
                 <button
                   key={cat}
                   onClick={() => setVendorCategoryFilter(cat)}
-                  className={`h-6 px-2 text-[10px] font-semibold rounded-lg transition cursor-pointer ${
+                  className={`h-6 px-2 text-[11px] font-semibold rounded-lg transition cursor-pointer ${
                     vendorCategoryFilter === cat
                       ? CATEGORY_COLORS[cat as keyof typeof CATEGORY_COLORS] ?? "bg-slate-500 text-white shadow-sm"
                       : "bg-slate-50 text-slate-500 border border-slate-200 hover:text-slate-700"
