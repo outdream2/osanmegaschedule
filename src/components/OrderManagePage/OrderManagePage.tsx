@@ -1507,12 +1507,12 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
               {/* 2026-08-10 · 사용자 요청 · 발주조건 · 입력 항목 나란히 (label + 2 checkboxes · 같은 flex-nowrap wrapper) */}
               <div className="flex items-center gap-2 flex-nowrap shrink-0">
-                <span className="text-[13px] font-semibold tracking-tight text-slate-700 whitespace-nowrap">발주 조건</span>
+                <span className="text-[14px] font-semibold tracking-tight text-slate-700 whitespace-nowrap">발주 조건</span>
                 {/* 조건 1 · 최근 한달 판매량 N개 이하 */}
                 <label className="inline-flex items-center gap-1 shrink-0">
                   <input type="checkbox" checked={needSalesMonthEnabled} onChange={e => setNeedSalesMonthEnabled(e.target.checked)}
                     className="w-3.5 h-3.5 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
-                  <span className={`text-[11px] font-medium whitespace-nowrap ${needSalesMonthEnabled ? "text-slate-700" : "text-slate-400"}`}>1M판매</span>
+                  <span className={`text-[12px] font-medium whitespace-nowrap ${needSalesMonthEnabled ? "text-slate-700" : "text-slate-400"}`}>1M판매</span>
                   <input
                     type="number" min={0} step={1}
                     disabled={!needSalesMonthEnabled}
@@ -1530,7 +1530,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 <label className="inline-flex items-center gap-1 shrink-0">
                   <input type="checkbox" checked={needSalesQuarterEnabled} onChange={e => setNeedSalesQuarterEnabled(e.target.checked)}
                     className="w-3.5 h-3.5 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
-                  <span className={`text-[11px] font-medium whitespace-nowrap ${needSalesQuarterEnabled ? "text-slate-700" : "text-slate-400"}`}>3M판매</span>
+                  <span className={`text-[12px] font-medium whitespace-nowrap ${needSalesQuarterEnabled ? "text-slate-700" : "text-slate-400"}`}>3M판매</span>
                   <input
                     type="number" min={0} step={1}
                     disabled={!needSalesQuarterEnabled}
@@ -1545,15 +1545,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 </label>
               </div>
 
-              {/* 새로고침 · sm 이상 우측 밀림 */}
-              <button
-                onClick={loadProducts}
-                disabled={productsLoading}
-                className="sm:ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-300 text-slate-400 hover:text-rose-500 transition disabled:opacity-40 cursor-pointer"
-                title="새로고침"
-              >
-                <RefreshCw size={13} className={productsLoading ? "animate-spin" : ""} />
-              </button>
+              {/* 2026-08-10 · 사용자 요청 · 새로고침 버튼 제거 */}
 
               {/* 2026-08-06 · 실시간 배지 제거 · 조회중일 때만 표시 (사용자 요청) */}
               {inlineFiltering && (
@@ -2460,7 +2452,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     <button key={cat}
                       type="button"
                       onClick={() => setOrderCategoryFilter(cat)}
-                      className={`h-7 px-1.5 text-[14px] font-medium rounded transition cursor-pointer ${active ? activeCls : "text-slate-500 hover:text-slate-700"}`}
+                      className={`h-7 px-1.5 text-[15px] font-medium rounded transition cursor-pointer ${active ? activeCls : "text-slate-500 hover:text-slate-700"}`}
                     >{label}</button>
                   );
                 })}
