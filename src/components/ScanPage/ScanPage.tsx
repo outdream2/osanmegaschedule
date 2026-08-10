@@ -77,6 +77,12 @@ interface StockRow {
   store3Zone:    string | null;   // 매장3 구역 (편집 가능)
   lastCheckedAt?: string | null;  // 최근 저장 시각 (같은날 여부 판정용)
   historyCount?: number;          // 이력 건수 (badge 표시)
+  // 2026-08-10 · 사용자 요청 · 기존 저장 재고 (참조용 · read-only 표시)
+  prevWarehouse1Qty?: number | null;
+  prevWarehouse2Qty?: number | null;
+  prevStore1Qty?:     number | null;
+  prevStore2Qty?:     number | null;
+  prevStore3Qty?:     number | null;
 }
 
 // 실재고 이력 · /api/inventory-checks 응답 요소 (부분)
@@ -391,6 +397,12 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               store1Qty:     s1 != null ? Number(s1) : "",
               store2Qty:     s2 != null ? Number(s2) : "",
               store3Qty:     s3 != null ? Number(s3) : "",
+              // 2026-08-10 · 사용자 요청 · 이전 저장 재고 저장 (read-only 참조 UI 용)
+              prevWarehouse1Qty: w1 != null ? Number(w1) : null,
+              prevWarehouse2Qty: w2 != null ? Number(w2) : null,
+              prevStore1Qty:     s1 != null ? Number(s1) : null,
+              prevStore2Qty:     s2 != null ? Number(s2) : null,
+              prevStore3Qty:     s3 != null ? Number(s3) : null,
               // 저장된 구역 우선 · 없으면 real_map 기반 유지
               store1Zone: (last.store1_zone ?? r.store1Zone) || null,
               store2Zone: (last.store2_zone ?? r.store2Zone) || null,
@@ -979,19 +991,22 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                             </div>
                           </td>
 
-                          {/* 2026-08-09 · 사용자 요청 · 모바일·태블릿 · 창고 첫 줄 · 매장 다음 줄 · 매장에 구역 표시 */}
+                          {/* 2026-08-10 · 사용자 요청 · 이전 저장 재고 표시 (참조) + 신규 입력 (편집)
+                              모바일·태블릿 · 창고 첫 줄 · 매장 다음 줄 · 매장에 구역 표시 */}
                           <td className="lg:hidden px-1 py-2 align-middle">
                             <div className="flex flex-col gap-1.5">
                               {/* Row 1 · 창고1·2 */}
                               <div className="grid grid-cols-2 gap-1">
                                 <div className="flex flex-col gap-0.5">
                                   <span className="text-[9px] font-bold text-orange-500 text-center leading-none">창1</span>
+                                  <span className="text-[9px] text-slate-400 tabular-nums text-center leading-none">이전 {row.prevWarehouse1Qty ?? "-"}</span>
                                   <NumberInput value={row.warehouse1Qty}
                                     onChange={v => patchRow(row.key, { warehouse1Qty: v })}
                                     accent="focus:border-orange-400" />
                                 </div>
                                 <div className="flex flex-col gap-0.5">
                                   <span className="text-[9px] font-bold text-amber-500 text-center leading-none">창2</span>
+                                  <span className="text-[9px] text-slate-400 tabular-nums text-center leading-none">이전 {row.prevWarehouse2Qty ?? "-"}</span>
                                   <NumberInput value={row.warehouse2Qty}
                                     onChange={v => patchRow(row.key, { warehouse2Qty: v })}
                                     accent="focus:border-amber-400" />
@@ -1001,6 +1016,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                               <div className="grid grid-cols-3 gap-1">
                                 <div className="flex flex-col gap-0.5">
                                   <span className="text-[9px] font-bold text-emerald-500 text-center leading-none">매1</span>
+                                  <span className="text-[9px] text-slate-400 tabular-nums text-center leading-none">이전 {row.prevStore1Qty ?? "-"}</span>
                                   <NumberInput value={row.store1Qty}
                                     onChange={v => patchRow(row.key, { store1Qty: v })}
                                     accent="focus:border-emerald-400" />
@@ -1010,6 +1026,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                                 </div>
                                 <div className="flex flex-col gap-0.5">
                                   <span className="text-[9px] font-bold text-sky-500 text-center leading-none">매2</span>
+                                  <span className="text-[9px] text-slate-400 tabular-nums text-center leading-none">이전 {row.prevStore2Qty ?? "-"}</span>
                                   <NumberInput value={row.store2Qty}
                                     onChange={v => patchRow(row.key, { store2Qty: v })}
                                     accent="focus:border-sky-400" />
@@ -1019,6 +1036,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                                 </div>
                                 <div className="flex flex-col gap-0.5">
                                   <span className="text-[9px] font-bold text-violet-500 text-center leading-none">매3</span>
+                                  <span className="text-[9px] text-slate-400 tabular-nums text-center leading-none">이전 {row.prevStore3Qty ?? "-"}</span>
                                   <NumberInput value={row.store3Qty}
                                     onChange={v => patchRow(row.key, { store3Qty: v })}
                                     accent="focus:border-violet-400" />
