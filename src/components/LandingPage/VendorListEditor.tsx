@@ -1092,55 +1092,54 @@ export const VendorDetailModal: React.FC<{
         className={innerCls}
         onClick={panel ? undefined : (e => e.stopPropagation())}
       >
-        {/* ── 헤더 ── */}
-        {/* 2026-08-04 · #101 · 좌측 리스트에서 뺀 사업자번호·담당자·전화 · 우측 상단 시인성 표시
-             · flex row · 아이콘 + 라벨(10px) + 값(13px bold) · 클릭 tel: · 없음 = 회색 미등록 */}
-        <div className="flex items-start justify-between px-5 py-3.5 border-b border-slate-200 bg-gradient-to-r from-teal-50 via-emerald-50 to-white shrink-0 gap-3">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="w-9 h-9 rounded-lg bg-teal-100 flex items-center justify-center shrink-0">
-              <Building2 size={18} className="text-teal-700" />
+        {/* ── 헤더 · 2026-08-10 · UI 세련 리디자인 · 전체 폰트 +2 · 밝은 그라디언트 · 라벨-값 분리 · pill 스타일 */}
+        <div className="flex items-start justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-br from-sky-50 via-indigo-50/60 to-emerald-50/40 shrink-0 gap-3">
+          <div className="flex items-center gap-4 min-w-0 flex-1">
+            {/* 아이콘 · 더 큰 원형 · 그라디언트 */}
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shrink-0 shadow-md ring-2 ring-white">
+              <Building2 size={22} className="text-white" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="text-[15px] font-black text-slate-800 truncate leading-tight">{vendor.company_name}</div>
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <div className="text-[17px] font-black text-slate-900 truncate leading-tight">{vendor.company_name}</div>
                 <VendorCategoryBadge category={vendor.category} />
                 {vendor.created_at && (
-                  <span className="text-[10px] text-slate-400 font-mono">등록 {String(vendor.created_at).slice(0, 10)}</span>
+                  <span className="text-[11px] text-slate-500 font-mono bg-white/70 border border-slate-200 rounded-md px-1.5 py-0.5">등록 {String(vendor.created_at).slice(0, 10)}</span>
                 )}
               </div>
-              {/* 사업자번호·담당자·전화 · flex row · gap-4 · flex-wrap */}
-              <div className="mt-1.5 flex items-center gap-x-4 gap-y-1 flex-wrap">
+              {/* 3개 정보 · pill 스타일 · 폰트 +2 */}
+              <div className="mt-2.5 flex items-center gap-2 flex-wrap">
                 {/* 사업자번호 */}
-                <div className="inline-flex items-center gap-1.5">
-                  <Building2 size={12} className="text-slate-500 shrink-0" />
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">사업자</span>
+                <div className="inline-flex items-center gap-1.5 bg-white/80 border border-slate-200 rounded-full pl-2 pr-3 py-1 shadow-sm">
+                  <Building2 size={13} className="text-sky-500 shrink-0" />
+                  <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">사업자</span>
                   {vendor.business_number
-                    ? <span className="text-[13px] font-bold text-slate-800 tabular-nums font-mono">{formatBizNum(vendor.business_number)}</span>
-                    : <span className="text-[12px] font-semibold text-slate-400">미등록</span>}
+                    ? <span className="text-[14px] font-black text-slate-800 tabular-nums font-mono">{formatBizNum(vendor.business_number)}</span>
+                    : <span className="text-[13px] text-slate-300 italic">미등록</span>}
                 </div>
                 {/* 담당자 */}
-                <div className="inline-flex items-center gap-1.5">
-                  <User2 size={12} className="text-slate-500 shrink-0" />
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">담당</span>
+                <div className="inline-flex items-center gap-1.5 bg-white/80 border border-slate-200 rounded-full pl-2 pr-3 py-1 shadow-sm">
+                  <User2 size={13} className="text-indigo-500 shrink-0" />
+                  <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">담당</span>
                   {vendor.contact_name
-                    ? <span className="text-[13px] font-bold text-slate-800">{vendor.contact_name}</span>
-                    : <span className="text-[12px] font-semibold text-slate-400">미등록</span>}
+                    ? <span className="text-[14px] font-black text-slate-800">{vendor.contact_name}</span>
+                    : <span className="text-[13px] text-slate-300 italic">미등록</span>}
                 </div>
-                {/* 전화번호 · 클릭 tel: */}
-                <div className="inline-flex items-center gap-1.5">
-                  <Phone size={12} className="text-slate-500 shrink-0" />
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">전화</span>
+                {/* 전화 */}
+                <div className="inline-flex items-center gap-1.5 bg-white/80 border border-slate-200 rounded-full pl-2 pr-3 py-1 shadow-sm">
+                  <Phone size={13} className="text-emerald-500 shrink-0" />
+                  <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">전화</span>
                   {vendor.phone
                     ? (
                       <a
                         href={`tel:${String(vendor.phone).replace(/[^0-9+]/g, "")}`}
                         onClick={e => e.stopPropagation()}
-                        className="text-[13px] font-bold text-slate-800 hover:text-teal-700 hover:underline tabular-nums"
+                        className="text-[14px] font-black text-slate-800 hover:text-emerald-700 hover:underline tabular-nums"
                       >
                         {vendor.phone}
                       </a>
                     )
-                    : <span className="text-[12px] font-semibold text-slate-400">미등록</span>}
+                    : <span className="text-[13px] text-slate-300 italic">미등록</span>}
                 </div>
               </div>
             </div>
