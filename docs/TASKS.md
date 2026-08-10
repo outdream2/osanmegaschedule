@@ -70,12 +70,80 @@
 **발주 발송 채널**:
 - **#28** · 카카오톡 알림톡 채널 추가 · 발주 모달 (일괄·개별) · SolAPI 클라이언트 스켈레톤 있음 (`448f1ea`) · 사업자 인증·템플릿·env 대기 (기존 태스크 A · SolAPI 활성화와 세트)
 
+---
+
+## 📜 완료 상세 로그 (2026-08-10 세션 · 최신 하단 · 삭제 금지)
+
+### `92a7103` #10 · 발주요청 리스트 · 공급사명 (주)/주식회사 제거
+- **파일**: `src/components/OrderManagePage/OrderManagePage.tsx`
+- **변경**: L28 · `displayVendorName` import 추가 · L2582 · mainName 계산에 유틸 감쌈
+- **이유**: `stripVendorAnnotation` 은 VAT annotation 만 제거 · (주)/주식회사 접두어는 안 지움
+- **테스트**: TS 통과 · 리스트에서 (주)메가팜 → 메가팜 표시 확인 (사용자 검증)
+- **회귀**: 없음 · 다른 로직 (openSupplierInfo · category badge) 미변경
+
+### `7adeb45` · 발주 모달 · 공급사별 그룹핑 실패 (Critical bug fix)
+- **파일**: `src/components/OrderManagePage/OrderManagePage.tsx`
+- **원인**: `openOrderModal` L927 · `r.supplier` 하나만 참조 · `order_requests.supplier` 대부분 null · 모든 라인이 `(공급사 미지정)` 1 그룹으로 폴백
+- **해결**: `allProductsMap` 에서 `products.supplier` fallback · `findVendorByName` 캐시로 담당자/이메일/전화 보강 · 리스트 디스플레이 (L2707) 와 동일 규칙
+- **회귀**: 없음 · OCR 잔고 조회 등 downstream 로직 그대로
+
+### `6a38600` #25 · EmployeeInfoForm · 직책 → 직군 드롭박스
+- **파일**: `src/components/common/EmployeeInfoForm.tsx`
+- **변경**: `POSITIONS` (`["약사","캐셔","진열","물류","거래처","기타"]`) import · position 필드 · SimpleInput text → select 드롭박스 · 라벨 "직책" → "직군" · 아이콘 User → Briefcase · 렌더 위치 아래 → 이름 바로 아래
+- **테스트**: TS 통과 · ContractWriter (compact) + StaffManage (grid) 양 레이아웃 대응
+- **회귀**: position 필드 자체 유지 · API 변경 없음
+
+### `9089d41` #26 · 근무타입 헤더 배지 제거
+- **파일**: `src/components/StaffManagePage/StaffManagePage.tsx` L1622-1636
+- **변경**: 헤더 옆 근무타입 select/배지 삭제 · §2 근무조건 카드에 이미 존재 (L1848~) · 중복 렌더 제거
+- **테스트**: TS 통과
+- **회귀**: 계약유형 배지·레벨 표시 유지 · setField("schedule_type") 로직은 §2 카드에서 계속 동작
+
+### `70a69b8` #27 · 근속·연차·평가 · 카드 → 인라인 텍스트
+- **파일**: `src/components/StaffManagePage/StaffManagePage.tsx` L1696-1761
+- **변경**: `grid grid-cols-3 divide-x` KPI 3카드 → `flex flex-wrap items-baseline gap-x-4` 인라인 · Notion People 스타일 · 폰트 12~13px (기존 10~15px)
+- **테스트**: TS 통과 · editing 모드에서 연차 입력 input 유지 · 퇴직금대상 뱃지 유지
+- **회귀**: 계산 로직 (tenure, remainDays, rating) 미변경
+
+### `5fa8cff` #20 · DisplayPage 왼쪽 공급사 리스트 · 분류 줄바꿈 공급사명
+- **파일**: `src/components/DisplayPage/DisplayPage.tsx` L2981+
+- **변경**: 4컬럼 (분류·공급사·담당자·전화) → 3컬럼 · 첫 컬럼에 [분류][줄바꿈][공급사명] 통합
+- **테스트**: TS 통과 · 정렬 (SortTh) 유지 · displayVendorName 그대로
+
+### `bc4cfbe` #18 · SupplierTab · 공급사 셀 2줄 표시
+- **파일**: `src/components/StockManagePage/SupplierTab.tsx` L629+
+- **변경**: 공급사 셀 · VendorCategoryBadge + name 인라인 → `flex-col leading-tight` 2줄 (분류 위 · 이름 아래)
+- **회귀**: supplier_code · code_conflict 표시 유지
+
+### `c37e117` #9·#17 · 발주요청 · 공급사별 그룹 헤더 + [발주] 버튼
+- **파일**: `src/components/OrderManagePage/OrderManagePage.tsx` L2515+
+- **변경**: `.sort().map()` 을 IIFE 로 감쌈 · 공급사 primary sort + 사용자 정렬 secondary · `bySup` Map · `React.Fragment` 로 그룹 헤더 tr + 상품 tr 조합 · sticky top-38 헤더 (공급사명 + 건수 + [발주] 버튼)
+- **테스트**: TS 통과 · 정렬·필터·개별발주·일괄발주·삭제 모두 동작
+- **회귀**: 개별 상품 row 렌더 로직 완전 유지 (약 140 lines 그대로)
+
+### `044ac67` #30 · 사업자번호 하이픈 자동 포맷
+- **파일**: `src/components/LandingPage/VendorListEditor.tsx` L1182-1195
+- **변경**: input value 를 `formatBizNum()` 통과 · maxLength 10 → 12 (하이픈 2개) · placeholder `000-00-00000` · 저장은 `normalizeBizNum` 숫자만
+- **테스트**: TS 통과
+
+### `5f2269c` #22 · 거래처 로그인 · 공통 nav [홈]만 · 입고알림 숨김
+- **파일**: `src/components/layout/AppNavHeader.tsx` L121 · `src/components/LandingPage/LandingPage.tsx` L1413
+- **변경**: `visibleTabs` 필터 · `role === 'vendor'` 시 홈만 노출 · LandingPage 입고알림 `!isVendor` 조건 감쌈
+- **테스트**: TS 통과
+- **회귀**: 스태프·관리자 로그인 · 기존 nav 그대로
+
+### `61a60c4` #23 · 거래처 랜딩 · 공급사 재고확인 카드 + 모달
+- **신규 파일**: `src/components/LandingPage/VendorStockModal.tsx` (183 lines)
+- **변경**: 랜딩 · isVendor 시 3번째 카드 [공급사 재고확인] · 클릭 시 모달 · `/api/products-search?supplier=` 로 상품·현재고 조회 · 검색·합계·리스트
+- **MVP 노트**: ERP현재고만 · 실재고 창고1/2·매장1/2/3 세부는 추후 확장
+- **테스트**: TS 통과 · 스태프 로그인 시 카드 미노출 (isVendor 가드)
+
 ### 🤖 진행 중 (백그라운드 에이전트)
 
 - 에이전트 1 · safe-refactoring-expert · OrderManagePage · 매입주기·상세버튼 dead code 완전 정리 (5f64289 이후)
 - 에이전트 2 · general-purpose · DisplayPage · 공급사관리 오른쪽 상단 등록폼 + 상세 [삭제] 버튼
 
-### ✅ 완료 (2026-08-10 커밋)
+### ✅ 완료 (2026-08-10 커밋 · 최신 하단)
 
 - `8537d14` · 스캔 실재고 옵션 C 하이브리드 (모바일 카드 · PC 테이블)
 - `2854cb5` · 공급사관리 CARD_BASE · 모바일도 4컬럼
@@ -87,6 +155,19 @@
 - `e367a4b` · 공급사 상세 · 기본정보·공급요약 수평 배치 · VAT 별도 기본 · 미설정 제거
 - `7b6e40a` · 거래처 로그인 · 큰 로그아웃 버튼 제거 (rightSlot 중복)
 - `cb11518` · EmployeeInfoForm 전화번호 입력 매 keystroke 언마운트 버그 FIX (SimpleInput → simpleInput 함수)
+- `92a7103` · #10 · 발주요청 리스트 · (주)/주식회사 접두어 제거 (displayVendorName 유틸)
+- `8f83fec` · #24 · StaffManage UI 리서치 완료 (`RESEARCH_STAFFMANAGE_UI_2026-08-10.md`)
+- `7adeb45` · 발주 모달 · 공급사별 그룹핑 실패 버그 FIX (products.supplier fallback + vendor 캐시)
+- `d9c236d` · #28 카카오톡 채널 태스크 등록
+- `6a38600` · #25 · EmployeeInfoForm · 이름 아래 직군 드롭박스 (POSITIONS · Briefcase)
+- `9089d41` · #26 · StaffManage · 근무타입 헤더 배지 제거 · §2 근무조건 카드로 통일
+- `70a69b8` · #27 · 근속·연차·평가 · 카드 → 인라인 텍스트 (Notion People 스타일)
+- `5fa8cff` · #20 · DisplayPage 왼쪽 리스트 · 공급사 셀 [분류][줄바꿈][공급사명] 통합
+- `bc4cfbe` · #18 · SupplierTab · 공급사 셀 [분류][줄바꿈][공급사명]
+- `c37e117` · #9·#17 · 발주요청 리스트 · 공급사별 그룹 헤더 + [발주] 버튼
+- `044ac67` · #30 · 사업자번호 하이픈 자동 포맷 (000-00-00000)
+- `5f2269c` · #22 · 거래처 로그인 · 공통 nav [홈]만 · 입고알림 숨김
+- `61a60c4` · #23 · 거래처 랜딩 · 공급사 재고확인 카드 + 모달 (VendorStockModal 신규)
 
 ---
 
