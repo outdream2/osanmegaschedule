@@ -960,61 +960,68 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                             </div>
                           </td>
 
-                          {/* 2026-08-10 · 옵션 C · 모바일 카드형 · 창고/매장 그룹 · 이전값 인라인 · 구역 값 있을 때만 */}
+                          {/* 2026-08-10 · #33 · 아이콘 제거 · 글씨 확대 · 매장 셀 spec (ERP 위치) 표시 */}
                           <td className="lg:hidden px-2 py-2.5 align-middle">
-                            <div className="flex flex-col gap-2">
-                              {/* 창고 그룹 · 라벨 + 2칸 */}
-                              <div className="flex items-center gap-2">
-                                <span className="text-[11px] font-black text-orange-600 shrink-0 w-8">🏢</span>
-                                <div className="flex-1 grid grid-cols-2 gap-1.5">
-                                  {[
-                                    { key: "warehouse1Qty" as const, prev: row.prevWarehouse1Qty, label: "창1", accent: "focus:border-orange-400", color: "text-orange-600" },
-                                    { key: "warehouse2Qty" as const, prev: row.prevWarehouse2Qty, label: "창2", accent: "focus:border-amber-400", color: "text-amber-600" },
-                                  ].map(({ key, prev, label, accent, color }) => (
-                                    <div key={key} className="flex flex-col gap-0.5">
-                                      <div className="flex items-baseline justify-between px-1">
-                                        <span className={`text-[10px] font-black ${color}`}>{label}</span>
-                                        {prev != null && (
-                                          <span className="text-[10px] text-slate-400 tabular-nums">이전 {prev}</span>
-                                        )}
-                                      </div>
-                                      <NumberInput value={row[key]}
-                                        onChange={v => patchRow(row.key, { [key]: v } as any)}
-                                        accent={accent} />
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                              {/* 매장 그룹 · 라벨 + 3칸 · 구역 값 있을 때만 표시 */}
-                              <div className="flex items-center gap-2">
-                                <span className="text-[11px] font-black text-emerald-600 shrink-0 w-8">🏪</span>
-                                <div className="flex-1 grid grid-cols-3 gap-1.5">
-                                  {[
-                                    { key: "store1Qty" as const, zoneKey: "store1Zone" as const, prev: row.prevStore1Qty, zone: row.store1Zone, label: "매1", accent: "focus:border-emerald-400", zoneAccent: "text-emerald-600 focus:border-emerald-400", color: "text-emerald-600" },
-                                    { key: "store2Qty" as const, zoneKey: "store2Zone" as const, prev: row.prevStore2Qty, zone: row.store2Zone, label: "매2", accent: "focus:border-sky-400", zoneAccent: "text-sky-600 focus:border-sky-400", color: "text-sky-600" },
-                                    { key: "store3Qty" as const, zoneKey: "store3Zone" as const, prev: row.prevStore3Qty, zone: row.store3Zone, label: "매3", accent: "focus:border-violet-400", zoneAccent: "text-violet-600 focus:border-violet-400", color: "text-violet-600" },
-                                  ].map(({ key, zoneKey, prev, zone, label, accent, zoneAccent, color }) => (
-                                    <div key={key} className="flex flex-col gap-0.5">
-                                      <div className="flex items-baseline justify-between px-1">
-                                        <span className={`text-[10px] font-black ${color}`}>{label}</span>
-                                        {prev != null && (
-                                          <span className="text-[10px] text-slate-400 tabular-nums">이전 {prev}</span>
-                                        )}
-                                      </div>
-                                      <NumberInput value={row[key]}
-                                        onChange={v => patchRow(row.key, { [key]: v } as any)}
-                                        accent={accent} />
-                                      {/* 구역 · 값 있을 때만 표시 · placeholder 노이즈 제거 */}
-                                      {zone && (
-                                        <ZoneInput value={zone} placeholder="구역"
-                                          accentClass={zoneAccent}
-                                          onChange={v => patchRow(row.key, { [zoneKey]: v } as any)} />
+                            {(() => {
+                              // product.spec 파싱 (ERP 지정 매장 위치 · "/" 로 3매장 분할)
+                              const specParts = String((row.product as any).spec ?? "").split("/").map(s => s.trim());
+                              const [spec1, spec2, spec3] = [specParts[0] ?? "", specParts[1] ?? "", specParts[2] ?? ""];
+                              return (
+                            <div className="flex flex-col gap-2.5">
+                              {/* 창고 그룹 · 2칸 · 아이콘 제거 */}
+                              <div className="grid grid-cols-2 gap-2">
+                                {[
+                                  { key: "warehouse1Qty" as const, prev: row.prevWarehouse1Qty, label: "창1", accent: "focus:border-orange-400", color: "text-orange-600" },
+                                  { key: "warehouse2Qty" as const, prev: row.prevWarehouse2Qty, label: "창2", accent: "focus:border-amber-400", color: "text-amber-600" },
+                                ].map(({ key, prev, label, accent, color }) => (
+                                  <div key={key} className="flex flex-col gap-0.5">
+                                    <div className="flex items-baseline justify-between px-1">
+                                      <span className={`text-[13px] font-black ${color}`}>{label}</span>
+                                      {prev != null && (
+                                        <span className="text-[11px] text-slate-400 tabular-nums">이전 {prev}</span>
                                       )}
                                     </div>
-                                  ))}
-                                </div>
+                                    <NumberInput value={row[key]}
+                                      onChange={v => patchRow(row.key, { [key]: v } as any)}
+                                      accent={accent} />
+                                  </div>
+                                ))}
+                              </div>
+                              {/* 매장 그룹 · 3칸 · 아이콘 제거 · ERP 위치 (spec) 표시 */}
+                              <div className="grid grid-cols-3 gap-2">
+                                {[
+                                  { key: "store1Qty" as const, zoneKey: "store1Zone" as const, prev: row.prevStore1Qty, zone: row.store1Zone, spec: spec1, label: "매1", accent: "focus:border-emerald-400", zoneAccent: "text-emerald-600 focus:border-emerald-400", color: "text-emerald-600" },
+                                  { key: "store2Qty" as const, zoneKey: "store2Zone" as const, prev: row.prevStore2Qty, zone: row.store2Zone, spec: spec2, label: "매2", accent: "focus:border-sky-400", zoneAccent: "text-sky-600 focus:border-sky-400", color: "text-sky-600" },
+                                  { key: "store3Qty" as const, zoneKey: "store3Zone" as const, prev: row.prevStore3Qty, zone: row.store3Zone, spec: spec3, label: "매3", accent: "focus:border-violet-400", zoneAccent: "text-violet-600 focus:border-violet-400", color: "text-violet-600" },
+                                ].map(({ key, zoneKey, prev, zone, spec, label, accent, zoneAccent, color }) => (
+                                  <div key={key} className="flex flex-col gap-0.5">
+                                    <div className="flex items-baseline justify-between px-1">
+                                      <span className={`text-[13px] font-black ${color}`}>{label}</span>
+                                      {prev != null && (
+                                        <span className="text-[11px] text-slate-400 tabular-nums">이전 {prev}</span>
+                                      )}
+                                    </div>
+                                    <NumberInput value={row[key]}
+                                      onChange={v => patchRow(row.key, { [key]: v } as any)}
+                                      accent={accent} />
+                                    {/* ERP 지정 위치 (spec) 표시 · 편집 불가 · 있을 때만 */}
+                                    {spec && (
+                                      <div className="text-[11px] text-slate-500 text-center px-1 tabular-nums" title={`ERP 지정 위치 · ${spec}`}>
+                                        {spec}
+                                      </div>
+                                    )}
+                                    {/* 구역 (real_map · 편집) · 값 있을 때만 */}
+                                    {zone && (
+                                      <ZoneInput value={zone} placeholder="구역"
+                                        accentClass={zoneAccent}
+                                        onChange={v => patchRow(row.key, { [zoneKey]: v } as any)} />
+                                    )}
+                                  </div>
+                                ))}
                               </div>
                             </div>
+                              );
+                            })()}
                           </td>
 
                           {/* 합계 */}
