@@ -1220,7 +1220,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 return (
                   <div key={r.key} className="px-4 py-2.5 flex items-baseline justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <div className="text-[12px] font-bold text-slate-800 truncate">{r.product.product_name}</div>
+                      <div className="text-[12px] font-bold text-slate-800 truncate">{r.product.name}</div>
                       <div className="text-[10px] text-slate-400 font-mono tabular-nums truncate">{r.code}</div>
                     </div>
                     <div className="flex items-baseline gap-2 shrink-0">

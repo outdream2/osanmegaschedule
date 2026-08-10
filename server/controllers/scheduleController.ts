@@ -141,6 +141,8 @@ export class ScheduleController {
         name, position, employmentType, hireDate, retireDate, description, workplace,
         rank, gender, phone, annual_leave_days, level, address,
         break_time_minutes, break_apply_paid,
+        // 2026-08-10 신규 필드 · employeeApi.ts EmployeeUpdatePayload 와 동기
+        bankbook_image_url, employee_number,
         // 신규 HR 필드
         contract_type, contract_start, contract_end, probation_end_date,
         birth_date, emergency_contact_name, emergency_contact_phone, emergency_contact_rel,
@@ -233,6 +235,9 @@ export class ScheduleController {
         educations: educations !== undefined ? educations : undefined,
         certifications: certifications !== undefined ? certifications : undefined,
         performance_rating: normalizeStr(performance_rating),
+        // 2026-08-10 · 통장사본 (base64 dataURL) · 사번
+        bankbook_image_url: bankbook_image_url !== undefined ? (bankbook_image_url || null) : undefined,
+        employee_number: employee_number !== undefined ? (employee_number ? String(employee_number).trim() : null) : undefined,
       });
       res.json(result);
     } catch (error: any) {

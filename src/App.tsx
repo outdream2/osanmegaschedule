@@ -125,7 +125,14 @@ export default function App() {
 
   // Simple navigation wrapper used by the shared AppNavHeader on inner pages.
   // The user is already authenticated here, so no AuthSession is required.
-  const navigateInner = (next: AppNavPage) => navigate(next as Page);
+  // 2026-08-10 · business-manage 로 일반 탭 이동 시 초기 직원 선택 상태 초기화 (스케쥴 [수정] 라우팅 잔재 방지)
+  const navigateInner = (next: AppNavPage) => {
+    if (next === "business-manage") {
+      setBmInitialEmployeeId(null);
+      setBmInitialFromPage(null);
+    }
+    navigate(next as Page);
+  };
 
   // 2026-08-10 · A · 옵션 파라미터 지원 (스케쥴 [수정] → StaffManage 오른쪽 상세 자동 선택)
   const navigateInnerWithOptions = (next: AppNavPage, options?: { employeeId?: number | null; fromPage?: AppNavPage | null }) => {

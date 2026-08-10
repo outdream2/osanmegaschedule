@@ -220,6 +220,9 @@ export class ScheduleService {
     educations?: any;
     certifications?: any;
     performance_rating?: string | null;
+    // 2026-08-10 · 통장사본 · 사번
+    bankbook_image_url?: string | null;
+    employee_number?: string | null;
   }) {
     // 핵심 필드 + 존재하는 선택 필드로 페이로드 구성
     const payload: Record<string, any> = {
@@ -248,6 +251,8 @@ export class ScheduleService {
       "pharmacist_license_no", "health_check_expiry",
       "careers", "educations", "certifications",
       "performance_rating",
+      // 2026-08-10 · 통장사본 · 사번
+      "bankbook_image_url", "employee_number",
     ] as const;
     for (const k of optionalKeys) {
       if ((data as any)[k] !== undefined) payload[k] = (data as any)[k];
