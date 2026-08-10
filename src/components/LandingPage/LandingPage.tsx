@@ -42,6 +42,7 @@ import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { TIMING } from "../../constants/timing";
 // 2026-08-09 · 거래처 담당자 로그인 시 · 본인 공급사 조회·수정 · 공통 VendorDetailModal 재사용
 import { VendorDetailModal, type Vendor as VendorFull } from "./VendorListEditor";
+import { VendorStockModal } from "./VendorStockModal";
 import { useVendors } from "../../hooks/useVendors";
 // VendorListEditor 는 발주관리 공급사관리 에서만 사용 (LandingPage 데이터 업로드 에서 제거됨 · 2026-07-15)
 
@@ -380,6 +381,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [showCreateArrival, setShowCreateArrival] = useState(false);
   // 2026-08-09 · 거래처 담당자 · 본인 공급사 조회·수정 모달 여부
   const [showVendorSelf, setShowVendorSelf] = useState(false);
+  // 2026-08-10 · #23 · 공급사 재고확인 모달
+  const [showVendorStock, setShowVendorStock] = useState(false);
   const { vendors: _rawVendorsSelf, refresh: refreshVendorsSelf } = useVendors();
   const vendorSelf = useMemo<VendorFull | null>(() => {
     if (!authSession || authSession.role !== "vendor") return null;
@@ -1406,6 +1409,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     </div>
                   </button>
                 )}
+                {/* 2026-08-10 · #23 · 공급사 재고확인 카드 · 로그인 공급사의 상품·재고 리스트 모달 */}
+                {isVendor && (
+                  <button
+                    onClick={() => setShowVendorStock(true)}
+                    disabled={!vendorSelf}
+                    title={vendorSelf ? "본인 공급사의 상품·재고 현황 조회" : "본인 공급사 정보를 불러올 수 없습니다"}
+                    className="group relative bg-white border border-slate-200/80 hover:border-indigo-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                  >
+                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(199,210,254,0.5) 0%, transparent 60%)" }} />
+                    <div className="relative">
+                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #e0e7ff, #c7d2fe)", border: "1px solid #a5b4fc" }}>
+                        <Package size={16} className="text-indigo-600 sm:hidden" weight="fill" /><Package size={20} className="text-indigo-600 hidden sm:block" weight="fill" />
+                      </div>
+                      <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">공급사 재고확인</div>
+                      <div className="text-slate-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">상품별 재고 현황 조회</div>
+                    </div>
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -2208,6 +2229,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           vendor={vendorSelf}
           onClose={() => setShowVendorSelf(false)}
           onSaved={refreshVendorsSelf}
+        />
+      )}
+
+      {/* 2026-08-10 · #23 · 거래처 · 공급사 재고확인 모달 */}
+      {showVendorStock && vendorSelf && (
+        <VendorStockModal
+          open={showVendorStock}
+          onClose={() => setShowVendorStock(false)}
+          vendorName={vendorSelf.company_name ?? ""}
         />
       )}
 
