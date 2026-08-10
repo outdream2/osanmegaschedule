@@ -68,10 +68,11 @@ interface EditDraft {
 }
 
 const vatDraftVal = (v: Vendor | null | undefined): "included" | "excluded" | "unset" => {
-  if (!v) return "unset";
+  // 2026-08-10 · 사용자 요청 · VAT 별도 기본 · 미설정 제거
+  if (!v) return "excluded";
   if (v.vat_included === true) return "included";
   if (v.vat_included === false) return "excluded";
-  return "unset";
+  return "excluded";
 };
 
 const emptyDraft = (v: Vendor): EditDraft => ({
@@ -1147,7 +1148,8 @@ export const VendorDetailModal: React.FC<{
           {/* ─── 정보 (탭 제거 · 한 장) ─── */}
           {(() => { void activeTab; return null; })()}
           {(true) && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+          // 2026-08-10 · 사용자 요청 · 기본정보·공급요약 수평 배치 (sm 이상)
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
 
             {/* Left · 기본 정보 편집 */}
             <div className="space-y-3">
@@ -1218,10 +1220,10 @@ export const VendorDetailModal: React.FC<{
               {/* 2026-08-03 · #193 · 거래명세서 VAT 포함 여부 (부가세 신고용) */}
               <Field label="거래명세서 VAT 처리 (부가세 신고용)">
                 <div className="inline-flex bg-slate-100 border border-slate-200 rounded-lg p-0.5 gap-0.5 w-full">
+                  {/* 2026-08-10 · 사용자 요청 · 미설정 제거 · 2개 옵션만 */}
                   {([
-                    { key: "included" as const, label: "VAT 포함",   sub: "총액에 부가세 포함 (÷11)",     tone: "emerald" },
                     { key: "excluded" as const, label: "VAT 별도",   sub: "공급가액만 · 부가세 10% 별도", tone: "amber"   },
-                    { key: "unset"    as const, label: "미설정",     sub: "상호명·비고로 자동 유추",       tone: "slate"   },
+                    { key: "included" as const, label: "VAT 포함",   sub: "총액에 부가세 포함 (÷11)",     tone: "emerald" },
                   ]).map(opt => {
                     const active = draft.vat_included === opt.key;
                     const activeCls =
