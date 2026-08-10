@@ -937,6 +937,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     store_stock?: number | null;
     order_qty: number;  // 발주 수량 (편집 가능)
     unit_price?: number | null;
+    prev_unit_price?: number | null;  // 이전 사입단가 (purchase_details latest · 참고)
     memo?: string;
   }
   interface OrderModalSupplier {
@@ -1004,6 +1005,36 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     const orderNumber = `PO-${ymdNow.replace(/-/g, "")}-BULK-${String(Math.floor(Math.random() * 900) + 100)}`;
     const arrival = new Date(today.getTime() + 3 * 86400000).toISOString().slice(0, 10);
     const suppliersList = [...bySupplier.values()].map(s => ({ ...s, ocr_loading: true, ocr_statements: [] as any[] }));
+
+    // 2026-08-10 · 이전 사입단가 조회 · 전체 상품코드 · latest_unit_price 채우기
+    (async () => {
+      try {
+        const codes = Array.from(new Set(suppliersList.flatMap(s => s.items.map(it => it.product_code)).filter(Boolean)));
+        if (codes.length === 0) return;
+        const r = await fetch(`/api/products/purchase-history?codes=${encodeURIComponent(codes.join(","))}&limit=1`);
+        if (!r.ok) return;
+        const j = await r.json();
+        const hist = j?.history ?? {};
+        setOrderModal(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            suppliers: prev.suppliers.map(s => ({
+              ...s,
+              items: s.items.map(it => {
+                const prev_unit_price = hist[it.product_code]?.latest_unit_price ?? null;
+                return {
+                  ...it,
+                  prev_unit_price,
+                  unit_price: it.unit_price ?? prev_unit_price ?? null,
+                };
+              }),
+            })),
+          };
+        });
+      } catch { /* ignore */ }
+    })();
+
     // OCR 거래명세서 조회 (공급사별 · 비동기 병렬)
     Promise.all(suppliersList.map(async (s) => {
       if (s.supplier === "(공급사 미지정)") return { supplier: s.supplier, items: [] as any[] };
@@ -1903,8 +1934,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     <th className="bg-amber-50/20 w-4"></th>
                   ) : (
                     <>
-                      {/* 매입주기 · 2026-08-04 · 사용자 요청 · ERP재고 앞으로 이동 */}
-                      <th onClick={() => handleNeedSort("cycle")} title="매입주기 (평균 며칠마다 매입) 정렬" className="text-right px-0.5 py-1.5 w-14 bg-teal-50/40 text-teal-600 cursor-pointer hover:bg-teal-100 select-none"><div className="leading-tight">매입<br/>주기{needArrow("cycle")}<br/><span className="text-[10px] text-slate-400 font-normal">(일)</span></div></th>
+                      {/* 2026-08-10 · 사용자 요청 · 매입주기 컬럼 제거 */}
                       <th onClick={() => handleNeedSort("current")} title="ERP재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none"><div className="leading-tight">ERP<br/>재고{needArrow("current")}<br/><span className="text-[10px] text-slate-400 font-normal">(현재고)</span></div></th>
                       {/* 실재고 (합계) · 각 row 별 [상세] 버튼으로 창고1/2·매장1/2/3 확장 · #217 */}
                       <th onClick={() => handleNeedSort("inv")} title="실재고 합계 정렬 · 각 행의 [상세]로 창고1/2·매장1/2/3 확인" className="text-right px-0.5 py-1.5 w-20 bg-violet-50/40 text-violet-500 cursor-pointer hover:bg-violet-100 select-none">
@@ -1953,8 +1983,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-rose-700 bg-rose-100/60">-{sumShort.toLocaleString()}</td>
                         </>
                       )}
-                      {/* 매입주기 sum 은 무의미 (평균 아님) · 빈칸 */}
-                      <td className="bg-teal-50/40" />
+                      {/* 2026-08-10 · 매입주기 컬럼 제거 (사용자 요청) */}
                       <td className="bg-slate-100" />
                     </tr>
                   );
@@ -2042,26 +2071,12 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         <>
                           {/* ERP재고 (현재고) */}
                           <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-slate-50/40 align-top">{cur}</td>
-                          {/* 실재고 합계 · [상세] 버튼 · 클릭 시 아래 별도 tr 로 창고1/2·매장1/2/3 확장 */}
+                          {/* 2026-08-10 · 사용자 요청 · [상세] 버튼 제거 · 실재고 합계만 표시 · tooltip 유지 */}
                           <td
                             className={`text-right px-0.5 py-1.5 tabular-nums font-black text-[12px] bg-violet-50/40 align-top ${inv ? "text-violet-700" : "text-slate-300"}`}
                             title={inv ? `창고1 ${inv.w1 ?? "-"} · 창고2 ${inv.w2 ?? "-"} · 매장1 ${inv.s1 ?? "-"} · 매장2 ${inv.s2 ?? "-"} · 매장3 ${inv.s3 ?? "-"} = ${inv.total}` : "실재고 미입력"}
                           >
-                            <div className="flex items-center justify-end gap-1">
-                              <span>{inv ? inv.total : "—"}</span>
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); toggleNeedStockDetail(code); }}
-                                className={`w-4 h-4 inline-flex items-center justify-center rounded border transition cursor-pointer ${
-                                  needStockDetailOpen.has(code)
-                                    ? "bg-violet-500 border-violet-500 text-white"
-                                    : "bg-white border-violet-300 text-violet-500 hover:bg-violet-100"
-                                }`}
-                                title={needStockDetailOpen.has(code) ? "상세 접기" : "상세 재고현황 (창고1/2·매장1/2/3)"}
-                              >
-                                <Info size={9} strokeWidth={3} />
-                              </button>
-                            </div>
+                            {inv ? inv.total : "—"}
                           </td>
                           {/* 추천적정 (indigo 톤) */}
                           <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-indigo-700 bg-indigo-50/40 align-top">{opt}</td>
@@ -2071,18 +2086,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           </td>
                         </>
                       )}
-                      {/* 매입주기 (2026-08-04 · teal 톤) · enrich 로 · 없으면 '-' */}
-                      {(() => {
-                        const cyc = needExtraMap.get(code)?.cycle ?? null;
-                        return (
-                          <td
-                            className={`text-right px-0.5 py-1.5 tabular-nums font-black text-[12px] bg-teal-50/40 align-top ${cyc != null ? "text-teal-700" : "text-slate-300"}`}
-                            title={cyc != null ? `평균 매입주기 · ${cyc}일 (매입일 2회↑ 기준)` : "매입 2회 미만 · 계산 불가"}
-                          >
-                            {cyc != null ? `${cyc}` : "—"}
-                          </td>
-                        );
-                      })()}
+                      {/* 2026-08-10 · 매입주기 컬럼 제거 (사용자 요청) */}
                       <td className="text-center px-1 py-1.5 align-top whitespace-nowrap">
                         {alreadyRequested ? (
                           <button
@@ -2953,38 +2957,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       </div>
                     </div>
 
-                    {/* 잔고 요약 카드 (계산 잔고 vs OCR 최근 잔고) */}
-                    <div className="px-4 py-3 bg-slate-50/60 border-b border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {(() => {
-                        // 계산 잔고: 이 발주서에서 발생할 금액 합계
-                        const calcAmount = s.items.reduce((n, it) => n + (it.order_qty * (it.unit_price ?? 0)), 0);
-                        return (
-                          <div className="bg-white rounded-lg border border-emerald-200 p-2.5">
-                            <div className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mb-1">💡 이번 발주 예상 금액 (계산)</div>
-                            <div className="text-lg font-black text-emerald-700 font-mono">{calcAmount > 0 ? calcAmount.toLocaleString() + "원" : "-"}</div>
-                            <div className="text-[9px] text-slate-400 mt-0.5">단가 입력 시 자동 계산</div>
-                          </div>
-                        );
-                      })()}
-                      {(() => {
-                        const latest = s.ocr_statements?.[0];
-                        return (
-                          <div className="bg-white rounded-lg border border-amber-200 p-2.5">
-                            <div className="text-[9px] font-black text-amber-500 uppercase tracking-widest mb-1">📄 최근 거래명세서 잔고 (OCR)</div>
-                            {s.ocr_loading ? (
-                              <div className="text-[11px] text-slate-400 flex items-center gap-1.5 py-1"><Loader2 size={11} className="animate-spin"/>불러오는 중...</div>
-                            ) : latest && latest.balance != null ? (
-                              <>
-                                <div className="text-lg font-black text-amber-700 font-mono">{latest.balance.toLocaleString()}원</div>
-                                <div className="text-[9px] text-slate-500 mt-0.5">기준일 {String(latest.saved_at).slice(0, 10)}</div>
-                              </>
-                            ) : (
-                              <div className="text-[11px] text-slate-400 py-1">OCR 잔고 이력 없음</div>
-                            )}
-                          </div>
-                        );
-                      })()}
-                    </div>
+                    {/* 2026-08-10 · 사용자 요청 · 예상금액·OCR 잔고 카드 제거 · 표 하단 합계로 대체 */}
 
                     {/* OCR 거래명세서 리스트 */}
                     {s.ocr_statements && s.ocr_statements.length > 0 && (
@@ -3013,7 +2986,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         </div>
                       </details>
                     )}
-                    {/* 상품 테이블 */}
+                    {/* 상품 테이블 · 2026-08-10 · 이전사입가 컬럼 추가 */}
                     <table className="w-full text-[11px]">
                       <thead>
                         <tr className="bg-slate-100 text-slate-500 font-black uppercase tracking-wide text-[9px] border-b border-slate-200">
@@ -3023,6 +2996,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           <th className="text-right p-2 w-14">현재고</th>
                           <th className="text-right p-2 w-14">적정</th>
                           <th className="text-right p-2 w-20">발주수량</th>
+                          <th className="text-right p-2 w-20">이전사입가</th>
                           <th className="text-right p-2 w-20">단가</th>
                           <th className="text-right p-2 w-24">금액</th>
                           <th className="text-left p-2 w-24">비고</th>
@@ -3041,10 +3015,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                                 onChange={e => updateModalItem(sIdx, iIdx, { order_qty: Math.max(0, Number(e.target.value) || 0) })}
                                 className="w-16 border border-slate-200 rounded px-1.5 py-0.5 text-right font-mono font-black text-red-600 focus:outline-none focus:border-red-400"/>
                             </td>
+                            <td className="p-2 text-right font-mono text-slate-400 tabular-nums">
+                              {it.prev_unit_price != null ? it.prev_unit_price.toLocaleString() : "-"}
+                            </td>
                             <td className="p-2 text-right">
                               <input type="number" min={0} value={it.unit_price ?? ""}
                                 onChange={e => updateModalItem(sIdx, iIdx, { unit_price: e.target.value === "" ? null : Number(e.target.value) })}
-                                placeholder="0"
+                                placeholder={it.prev_unit_price != null ? String(it.prev_unit_price) : "0"}
                                 className="w-20 border border-slate-200 rounded px-1.5 py-0.5 text-right font-mono focus:outline-none focus:border-red-400"/>
                             </td>
                             <td className="p-2 text-right font-mono font-black text-emerald-700">
