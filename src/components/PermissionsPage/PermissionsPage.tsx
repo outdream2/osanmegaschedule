@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import axios from "axios";
 import { Shield, Check, Loader2, AlertCircle, Settings as SettingsIcon, Users } from "lucide-react";
+import { updateEmployee } from "../../lib/employeeApi";
 import type { AuthSession, PagePermissions } from "../../types";
 import { DEFAULT_PERMISSIONS } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
@@ -118,23 +119,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     setEmpSavedIds(s => { const n = new Set(s); n.delete(empId); return n; });
 
     try {
-      // PUT /api/employees/:id 는 기존 값이 default 로 덮일 수 있는 필드가 있어
-      // 대상 직원의 현재 값을 전부 실어 부분 업데이트 안전성 확보 (SchedulePage 관례 준수)
-      await axios.put(`/api/employees/${empId}`, {
-        name: target.name,
-        position: target.position,
-        rank: target.rank ?? null,
-        employmentType: target.employmentType,
-        hireDate: target.hireDate,
-        retireDate: target.retireDate ?? null,
-        description: target.description ?? "",
-        workplace: target.workplace ?? "매장",
-        gender: target.gender ?? null,
-        phone: target.phone ?? null,
-        annual_leave_days: target.annual_leave_days ?? null,
-        level: newLevel,
-        address: target.address ?? null,
-      });
+      await updateEmployee(target, { level: newLevel });
       setEmpSavedIds(s => new Set(s).add(empId));
       // 2초 뒤 checkmark fade
       window.setTimeout(() => {
