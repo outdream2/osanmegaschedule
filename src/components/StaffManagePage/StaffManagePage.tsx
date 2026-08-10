@@ -9,6 +9,15 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { useLeaveManager } from "../../hooks/useLeaveManager";
 import {
+  updateEmployee,
+  createEmployee as apiCreateEmployee,
+  deleteEmployee as apiDeleteEmployee,
+  uploadResume as apiUploadResume,
+  uploadBankbook as apiUploadBankbook,
+  uploadResignationFile as apiUploadResignation,
+  deleteResume as apiDeleteResume,
+} from "../../lib/employeeApi";
+import {
   Award,
   Briefcase,
   Building,
@@ -948,16 +957,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
     if (!draft.name?.trim()) { alert("이름을 입력해주세요."); return; }
     setSaving(true);
     try {
-      const res = await fetch(`/api/employees/${selectedEmp.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...selectedEmp, ...draft }),
-      });
-      if (!res.ok) {
-        const b = await res.json().catch(() => ({}));
-        alert(`저장 실패: ${(b as { error?: string }).error ?? res.statusText}`);
-        return;
-      }
+      await updateEmployee(selectedEmp as any, draft as any);
       setEditing(false);
       setDraft(null);
       setEmployees((prev) => prev.map((e) => e.id === selectedEmp.id ? { ...e, ...draft } : e));
@@ -972,12 +972,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
   const deleteEmployee = async (emp: Employee) => {
     if (!await confirm({ message: `직원 [${emp.name}] 삭제할까요?\n\n관련 스케줄·배정 데이터도 영향을 받을 수 있습니다.`, danger: true })) return;
     try {
-      const res = await fetch(`/api/employees/${emp.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        const b = await res.json().catch(() => ({}));
-        alert(`삭제 실패: ${(b as { error?: string }).error ?? res.statusText}`);
-        return;
-      }
+      await apiDeleteEmployee(emp.id);
       if (selectedId === emp.id) setSelectedId(null);
       loadEmployees();
     } catch (err: unknown) {
@@ -990,17 +985,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
     if (!data.name?.trim()) { alert("이름을 입력해주세요."); return; }
     setCreateSaving(true);
     try {
-      const res = await fetch("/api/employees", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        const b = await res.json().catch(() => ({}));
-        alert(`저장 실패: ${(b as { error?: string }).error ?? res.statusText}`);
-        return;
-      }
-      const created: Employee = await res.json();
+      const created = await apiCreateEmployee(data as any);
       setCreateOpen(false);
       await loadEmployees();
       setSelectedId(created?.id ?? null);
@@ -1023,12 +1008,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
   //   · 회귀 방지 · 실패 시 alert 만 · 로컬 employees state 즉시 갱신
   const uploadResumeForRow = useCallback(async (emp: Employee, file: File) => {
     try {
-      const fd = new FormData();
-      fd.append("resume", file);
-      const res = await fetch(`/api/employees/${emp.id}/resume`, { method: "POST", body: fd });
-      const j = await res.json().catch(() => ({} as any));
-      if (!res.ok) throw new Error(j?.error ?? "업로드 실패");
-      const url = String(j?.url ?? "");
+      const { url } = await apiUploadResume(emp.id, file);
       setEmployees((prev) => prev.map((e) => e.id === emp.id ? { ...e, resume_url: url } : e));
       alert(`이력서 업로드 완료 · ${emp.name}`);
     } catch (err: any) {
@@ -1037,31 +1017,10 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
   }, []);
 
   const uploadBankbookForRow = useCallback(async (emp: Employee, file: File) => {
-    // 5MB 제한 (ContractWriterPage 와 동일)
-    if (file.size > 5 * 1024 * 1024) {
-      alert(`파일 크기 초과 (${(file.size / 1024 / 1024).toFixed(1)}MB > 5MB)`);
-      return;
-    }
     try {
-      // base64 로 인코딩 (bankbook_image_url 컬럼 · TEXT · dataURL 그대로)
-      const dataUrl: string = await new Promise((resolve, reject) => {
-        const r = new FileReader();
-        r.onload = () => resolve(String(r.result ?? ""));
-        r.onerror = () => reject(new Error("파일 읽기 실패"));
-        r.readAsDataURL(file);
-      });
-      // PUT · 기존 employee 페이로드 + bankbook_image_url (서버 미지원 시 silently drop)
-      const res = await fetch(`/api/employees/${emp.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...emp, bankbook_image_url: dataUrl }),
-      });
-      if (!res.ok) {
-        const b = await res.json().catch(() => ({}));
-        throw new Error((b as any)?.error ?? `저장 실패 (${res.status})`);
-      }
+      const { dataUrl } = await apiUploadBankbook(emp as any, file);
       setEmployees((prev) => prev.map((e) => e.id === emp.id ? { ...e, bankbook_image_url: dataUrl } : e));
-      alert(`통장사본 업로드 완료 · ${emp.name}\n(서버에 bankbook_image_url 컬럼이 없으면 반영되지 않을 수 있습니다)`);
+      alert(`통장사본 업로드 완료 · ${emp.name}`);
     } catch (err: any) {
       alert(`통장사본 업로드 실패 · ${err?.message ?? err}`);
     }
@@ -1070,13 +1029,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
   // T-Staff-ResignationColumn · 사직서 파일 업로드 (퇴사자 전용 · POST /api/employees/:id/resignation-file)
   const uploadResignationFileForRow = useCallback(async (emp: Employee, file: File) => {
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch(`/api/employees/${emp.id}/resignation-file`, { method: "POST", body: fd });
-      const j = await res.json().catch(() => ({} as any));
-      if (!res.ok) throw new Error(j?.error ?? "업로드 실패");
-      const url = String(j?.url ?? "");
-      setEmployees((prev) => prev.map((e) => e.id === emp.id ? { ...e, resignation_file_url: url } : e));
+      const { url } = await apiUploadResignation(emp.id, file);
+      setEmployees((prev) => prev.map((e) => e.id === emp.id ? { ...e, resignation_file_url: url ?? "" } : e));
       alert(`사직서 업로드 완료 · ${emp.name}`);
     } catch (err: any) {
       alert(`사직서 업로드 실패 · ${err?.message ?? err}`);
@@ -2041,13 +1995,9 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                                       const file = e.target.files?.[0];
                                       if (!file || !selectedEmp) return;
                                       try {
-                                        const fd = new FormData();
-                                        fd.append("resume", file);
-                                        const res = await fetch(`/api/employees/${selectedEmp.id}/resume`, { method: "POST", body: fd });
-                                        const j = await res.json();
-                                        if (!res.ok) throw new Error(j.error ?? "업로드 실패");
-                                        setField("resume_url", j.url);
-                                        alert(`업로드 완료: ${j.name}`);
+                                        const { url } = await apiUploadResume(selectedEmp.id, file);
+                                        setField("resume_url", url);
+                                        alert(`업로드 완료: ${file.name}`);
                                       } catch (err: any) { alert(`업로드 실패: ${err.message}`); }
                                     }}
                                   />
@@ -2058,8 +2008,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                                     if (!selectedEmp) return;
                                     if (!await confirm({ message: "이력서를 삭제하시겠습니까?", danger: true })) return;
                                     try {
-                                      const res = await fetch(`/api/employees/${selectedEmp.id}/resume`, { method: "DELETE" });
-                                      if (!res.ok) throw new Error("삭제 실패");
+                                      await apiDeleteResume(selectedEmp.id);
                                       setField("resume_url", "");
                                     } catch (err: any) { alert(`삭제 실패: ${err.message}`); }
                                   }}
@@ -2081,13 +2030,9 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                                 const file = e.target.files?.[0];
                                 if (!file || !selectedEmp) return;
                                 try {
-                                  const fd = new FormData();
-                                  fd.append("resume", file);
-                                  const res = await fetch(`/api/employees/${selectedEmp.id}/resume`, { method: "POST", body: fd });
-                                  const j = await res.json();
-                                  if (!res.ok) throw new Error(j.error ?? "업로드 실패");
-                                  setField("resume_url", j.url);
-                                  alert(`업로드 완료: ${j.name}`);
+                                  const { url } = await apiUploadResume(selectedEmp.id, file);
+                                  setField("resume_url", url);
+                                  alert(`업로드 완료: ${file.name}`);
                                 } catch (err: any) { alert(`업로드 실패: ${err.message}`); }
                               }}
                             />
