@@ -682,21 +682,19 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                       {lastProduct.name}
                     </p>
 
-                    {/* 정보 배지 · 구역 · 공급사 */}
-                    <div className="flex flex-wrap items-center gap-1.5">
+                    {/* 정보 · 구역 · 공급사 · 텍스트 (배지 제거 · 2026-08-10) */}
+                    <div className="flex flex-col gap-0.5 text-[12px]">
                       {(lastProduct as any).spec && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-black text-violet-700
-                          bg-violet-50 border border-violet-200 rounded-lg px-2 py-1">
-                          <MapPin size={10} className="text-violet-500 shrink-0" />
-                          {(lastProduct as any).spec}
-                        </span>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-slate-400 font-semibold shrink-0">구역</span>
+                          <span className="text-violet-700 font-black">{(lastProduct as any).spec}</span>
+                        </div>
                       )}
                       {(lastProduct as any).supplier && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-700
-                          bg-sky-50 border border-sky-200 rounded-lg px-2 py-1 min-w-0">
-                          <Building2 size={10} className="text-sky-500 shrink-0" />
-                          <span className="truncate max-w-[180px]">{(lastProduct as any).supplier}</span>
-                        </span>
+                        <div className="flex items-baseline gap-1.5 min-w-0">
+                          <span className="text-slate-400 font-semibold shrink-0">공급사</span>
+                          <span className="text-sky-700 font-black truncate">{(lastProduct as any).supplier}</span>
+                        </div>
                       )}
                     </div>
                   </div>
