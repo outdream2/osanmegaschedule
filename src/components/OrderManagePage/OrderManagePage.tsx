@@ -2053,29 +2053,20 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           </td>
                         </>
                       )}
-                      {/* 2026-08-10 · 매입주기 컬럼 제거 (사용자 요청) */}
-                      <td className="text-center px-1 py-1.5 align-top whitespace-nowrap">
-                        {alreadyRequested ? (
-                          <button
-                            onClick={() => handleRequestOrder(p)}
-                            className="group inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-[12px] font-black text-emerald-700 bg-emerald-50 ring-1 ring-inset ring-emerald-300 hover:bg-emerald-100 hover:ring-emerald-400 transition-all cursor-pointer whitespace-nowrap"
-                            title="발주요청 리스트에 추가됨"
-                          >
-                            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500 text-white shadow-sm shrink-0">
-                              <CheckCircle2 size={11} strokeWidth={3} />
-                            </span>
-                            <span>요청됨</span>
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleRequestOrder(p)}
-                            disabled={busy}
-                            className="inline-flex items-center justify-center h-8 px-3 rounded-md text-[13px] font-black text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer whitespace-nowrap"
-                            title="발주요청 리스트에 추가"
-                          >
-                            {busy ? <Loader2 size={12} strokeWidth={2.5} className="animate-spin" /> : <span>요청</span>}
-                          </button>
-                        )}
+                      {/* 2026-08-10 · 사용자 요청 · 발주 액션 버튼 단순화 · 컴팩트 · 아이콘 최소 */}
+                      <td className="text-center px-1 py-1.5 align-middle whitespace-nowrap">
+                        <button
+                          onClick={() => handleRequestOrder(p)}
+                          disabled={busy}
+                          className={`h-7 px-2.5 rounded text-[12px] font-black transition cursor-pointer disabled:opacity-40 ${
+                            alreadyRequested
+                              ? "text-emerald-700 bg-emerald-50 border border-emerald-300 hover:bg-emerald-100"
+                              : "text-white bg-indigo-600 hover:bg-indigo-700"
+                          }`}
+                          title={alreadyRequested ? "발주요청 리스트에 추가됨 · 다시 요청" : "발주요청 리스트에 추가"}
+                        >
+                          {busy ? "..." : alreadyRequested ? "✓ 요청됨" : "요청"}
+                        </button>
                       </td>
                     </tr>
                     </React.Fragment>
