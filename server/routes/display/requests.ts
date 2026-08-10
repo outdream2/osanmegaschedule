@@ -65,7 +65,32 @@ router.get("/api/display-requests", async (req, res) => {
   }
   const { data, error } = await query;
   if (error) return res.status(500).json({ error: error.message });
-  res.json(data ?? []);
+
+  // 2026-08-10 · 사용자 요청 · 각 요청에 product_name 추가 (products JOIN · 프론트 상품명 컬럼용)
+  const rows = data ?? [];
+  const productCodes = Array.from(new Set(
+    rows.map((r: any) => String(r.product_code ?? "").trim()).filter(Boolean)
+  ));
+  if (productCodes.length > 0) {
+    try {
+      const { data: prods } = await supabase
+        .from("products")
+        .select("product_code, product_name, spec")
+        .in("product_code", productCodes);
+      const nameMap = new Map<string, { name: string; spec: string | null }>();
+      for (const p of prods ?? []) {
+        const c = String(p.product_code ?? "").trim();
+        if (c) nameMap.set(c, { name: String(p.product_name ?? ""), spec: (p as any).spec ?? null });
+      }
+      for (const r of rows as any[]) {
+        const c = String(r.product_code ?? "").trim();
+        const info = c ? nameMap.get(c) : null;
+        r.product_name = info?.name ?? null;
+        r.product_spec = info?.spec ?? null;
+      }
+    } catch { /* silent · products 조회 실패해도 요청 응답은 반환 */ }
+  }
+  res.json(rows);
 });
 
 // 2026-08-05 · 상품별 진열요청 지원 (ScanPage 진입점)

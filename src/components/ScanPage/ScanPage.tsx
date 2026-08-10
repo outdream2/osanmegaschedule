@@ -566,7 +566,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             <ScanLine size={16} className="text-white" />
           </div>
           <div>
-            <h1 className="text-[13px] sm:text-[14px] font-black text-slate-900 leading-none">실재고 입력</h1>
+            <h1 className="text-[15px] sm:text-[17px] font-black text-slate-900 leading-none">실재고 입력</h1>
             <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 leading-none">
               바코드 스캔 후 창고1·2 · 매장1·2·3 수량 입력 · 전체 저장
             </p>
@@ -657,55 +657,69 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               )}
 
               {lastProduct && (
-                <div className="flex flex-col gap-2.5 px-3.5 py-3.5 rounded-xl
+                <div className="flex flex-col gap-2 px-3.5 py-3 rounded-xl
                   bg-gradient-to-b from-teal-50 to-teal-50/30
                   border border-teal-200/80
                   shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
 
+                  {/* 헤더 · 최근 스캔 라벨 */}
                   <div className="flex items-center gap-2">
                     <div className="w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center shrink-0">
                       <CheckCircle2 size={11} className="text-white" />
                     </div>
                     <span className="text-[10px] font-black text-teal-700 uppercase tracking-wider">최근 스캔</span>
-                    {lastCode && (
-                      <span className="ml-auto text-[10px] font-mono tabular-nums text-teal-500
-                        bg-teal-100 px-1.5 py-0.5 rounded-md border border-teal-200/60">
-                        #{lastCode}
-                      </span>
-                    )}
                   </div>
 
-                  <p className="text-[14px] sm:text-[15px] font-black text-slate-800
-                    break-words whitespace-normal leading-snug -mt-0.5">
-                    {lastProduct.name}
-                  </p>
+                  {/* 2026-08-10 · 사용자 요청 · 재구성 · 상품코드 · 상품명 · 구역·공급사 · 진열요청 버튼 */}
+                  {/* 스캔상품코드 · 텍스트 */}
+                  {lastCode && (
+                    <div className="flex items-baseline gap-1.5 text-[11px]">
+                      <span className="text-slate-400 font-semibold shrink-0">스캔상품코드</span>
+                      <span className="text-slate-700 font-black tabular-nums truncate">{lastCode}</span>
+                    </div>
+                  )}
 
-                  <div className="flex flex-wrap items-center gap-1.5">
+                  {/* 스캔상품명 · 텍스트 · 상품명 다음줄 */}
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[10px] font-semibold text-slate-400">스캔상품명</span>
+                    <p className="text-[14px] sm:text-[15px] font-black text-slate-800
+                      break-words whitespace-normal leading-snug">
+                      {lastProduct.name}
+                    </p>
+                  </div>
+
+                  {/* 구역 · 공급사 · 텍스트 (한 줄) */}
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[11px]">
                     {(lastProduct as any).spec && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600
-                        bg-white/80 border border-slate-200/60 rounded-lg px-2 py-1">
-                        <Box size={10} className="text-slate-400" />
-                        {(lastProduct as any).spec}
+                      <span className="inline-flex items-baseline gap-1">
+                        <span className="text-slate-400 font-semibold">구역</span>
+                        <span className="text-violet-700 font-black">{(lastProduct as any).spec}</span>
                       </span>
                     )}
                     {(lastProduct as any).supplier && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-700
-                        bg-sky-50 border border-sky-200/70 rounded-lg px-2 py-1">
-                        <Building2 size={10} className="text-sky-500" />
-                        {(lastProduct as any).supplier}
+                      <span className="inline-flex items-baseline gap-1 min-w-0">
+                        <span className="text-slate-400 font-semibold shrink-0">공급사</span>
+                        <span className="text-sky-700 font-black truncate">{(lastProduct as any).supplier}</span>
                       </span>
                     )}
-                    {(() => {
-                      const rm = (lastProduct as any).realMap ?? (lastProduct as any).real_map ?? null;
-                      if (!rm) return null;
-                      return (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-violet-700">
-                          <MapPin size={10} className="text-violet-400" />
-                          {rm}
-                        </span>
-                      );
-                    })()}
                   </div>
+
+                  {/* 진열요청 버튼 · 이 상품에 대한 진열요청 (구역 담당자 + 관리자에게 전송 · 요청 목록에 표시) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const target = rows.find(r => r.code === lastCode);
+                      if (target) requestDisplay(target);
+                    }}
+                    disabled={!lastCode || requestingKey === (rows.find(r => r.code === lastCode)?.key ?? "")}
+                    className="mt-1 inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg
+                      bg-violet-600 hover:bg-violet-700 text-white text-[12px] font-black shadow-sm
+                      disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                    title="이 상품 진열요청 · 구역 담당자·관리자 알림 · 요청 목록에 표시"
+                  >
+                    <Megaphone size={12} strokeWidth={2.5} />
+                    진열요청
+                  </button>
                 </div>
               )}
             </div>

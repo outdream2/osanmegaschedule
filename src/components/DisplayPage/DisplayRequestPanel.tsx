@@ -23,6 +23,10 @@ interface DisplayRequest {
   assignedStaffName: string;
   status: "pending" | "done";
   note: string;
+  // 2026-08-10 · 사용자 요청 · 상품명 컬럼 · 서버 응답에서 products JOIN 으로 채움
+  productName?: string | null;
+  productSpec?: string | null;
+  productCode?: string | null;
 }
 
 interface DisplayRequestPanelProps {
