@@ -1910,7 +1910,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       </th>
                       {/* 적정재고 · 2026-08-04 · 사용자 요청 · 추천적정재고 → 적정재고 리네임 */}
                       <th onClick={() => handleNeedSort("optimal")} title="적정재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-indigo-50/40 text-indigo-600 cursor-pointer hover:bg-indigo-100 select-none"><div className="leading-tight">적정재고{needArrow("optimal")}</div></th>
-                      {/* 부족 컬럼 · 2026-08-04 · 사용자 요청으로 제거 */}
+                      {/* 2026-08-10 · 사용자 요청 · 부족 헤더 복원 */}
+                      <th onClick={() => handleNeedSort("short")} title="부족량 정렬" className="text-right px-0.5 py-1.5 w-14 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">부족{needArrow("short")}</th>
                     </>
                   )}
                   <th className="text-center px-0.5 py-1.5 w-20 cursor-default bg-emerald-50/30 text-emerald-600">발주</th>
@@ -1996,7 +1997,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         <td className="bg-sky-50/10 w-4"></td>
                       ) : (
                         <>
-                          <td className="px-0.5 py-1.5 text-[12px] font-semibold align-top">
+                          <td className="px-0.5 py-1.5 text-[12px] font-semibold align-middle">
                             <div className="flex items-start gap-1.5">
                               <input
                                 type="checkbox"
@@ -2022,7 +2023,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                               </div>
                             </div>
                           </td>
-                          <td className="px-0.5 py-1.5 align-top">
+                          <td className="px-0.5 py-1.5 align-middle">
                             <button
                               onClick={() => setNeedPanelProduct({ code, name })}
                               className="text-left text-[13px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
@@ -2031,24 +2032,20 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           </td>
                         </>
                       )}
-                      {/* 재고현황 그룹 · 4컬럼 (ERP재고 · 실재고합계 · 추천적정 · 부족) · #217 · 창고1/2·매장1/2/3 은 [상세] 버튼 확장 */}
+                      {/* 재고현황 그룹 · 2026-08-10 · 사용자 요청 · align-top → align-middle 통일 (수직 가운데 정렬) */}
                       {isNeedCollapsed("stock") ? (
                         <td className="bg-amber-50/10 w-4"></td>
                       ) : (
                         <>
-                          {/* ERP재고 (현재고) */}
-                          <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-slate-50/40 align-top">{cur}</td>
-                          {/* 2026-08-10 · 사용자 요청 · [상세] 버튼 제거 · 실재고 합계만 표시 · tooltip 유지 */}
+                          <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-slate-50/40 align-middle">{cur}</td>
                           <td
-                            className={`text-right px-0.5 py-1.5 tabular-nums font-black text-[12px] bg-violet-50/40 align-top ${inv ? "text-violet-700" : "text-slate-300"}`}
+                            className={`text-right px-0.5 py-1.5 tabular-nums font-black text-[12px] bg-violet-50/40 align-middle ${inv ? "text-violet-700" : "text-slate-300"}`}
                             title={inv ? `창고1 ${inv.w1 ?? "-"} · 창고2 ${inv.w2 ?? "-"} · 매장1 ${inv.s1 ?? "-"} · 매장2 ${inv.s2 ?? "-"} · 매장3 ${inv.s3 ?? "-"} = ${inv.total}` : "실재고 미입력"}
                           >
                             {inv ? inv.total : "—"}
                           </td>
-                          {/* 추천적정 (indigo 톤) */}
-                          <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-indigo-700 bg-indigo-50/40 align-top">{opt}</td>
-                          {/* 부족 (rose 톤) */}
-                          <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-top">
+                          <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-indigo-700 bg-indigo-50/40 align-middle">{opt}</td>
+                          <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-middle">
                             <span className="tabular-nums font-black text-[12px] text-rose-600">-{opt - cur}</span>
                           </td>
                         </>
