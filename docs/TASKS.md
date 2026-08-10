@@ -4,20 +4,16 @@
 
 ## 🔴 대기 큐
 
-### A · 스케쥴 [수정] → StaffManagePage 라우팅 (스펙 확정 · 진행 예정)
-- 지금 SchedulePage.EmployeeFormModal 로 감
-- 원함: 경영 > 직원관리 오른쪽 상세로 이동 + 해당 직원 자동 선택
-- **Q1 확정 (A)**: 스케쥴의 EmployeeFormModal 완전 제거 · 편집은 StaffManagePage 에서만
-- **Q2 확정 (A)**: StaffManagePage 에서 [스케쥴로 돌아가기] 버튼 · 자동 이전 탭 복귀
-- 작업: BusinessManagePage `initialEmployeeId` prop · StaffManagePage `initialSelectedId` prop · onNavigate 시그니처 확장 · SchedulePage 콜백 · EmployeeFormModal 제거
+### A · 스케쥴 [수정] → StaffManagePage 라우팅 (✅ 완료 · 커밋 `6aeefed`)
+- App.tsx · navigateInnerWithOptions · bmInitialEmployeeId/FromPage state
+- BusinessManagePage · initialEmployeeId prop · staff-manage 강제
+- StaffManagePage · initialSelectedId · [← 스케쥴] 버튼
+- SchedulePage · onEditEmployeeAtStaffManage prop
 
-### D · CRUD 로직 마이그레이션 (`lib/employeeApi`) · 순서 확정
-- ✅ MyPage (커밋 `9bfc858`)
-- ✅ PermissionsPage (커밋 `66761d7`)
-- **Q1 확정 (B · SchedulePage 먼저 · A 무관 순수 리팩토링)**
-- **Q2 함수별 하나씩** · updateEmployee → createEmployee → deleteEmployee → uploadContract 각각 커밋
-- ⏳ SchedulePage · axios.put(수정)·axios.post(신규)·axios.delete(삭제)·axios.post(contract 업로드)
-- ⏳ StaffManagePage · fetch(편집/삭제/신규)·이력서·통장사본·사직서 (파일 첨부 · 큼)
+### D · CRUD 로직 마이그레이션 (`lib/employeeApi`) (✅ 완료)
+- ✅ MyPage (`9bfc858`) · PermissionsPage (`66761d7`)
+- ✅ SchedulePage (`61c852b`) · CRUD 5개 함수 교체
+- ✅ StaffManagePage (`f6f60dc`) · CRUD + 이력서/통장사본/사직서 업로드
 
 ### F · #34 스캔 실재고 합계 배치 (사용자 답변 대기)
 - Phase A 로 유사 기능 있음 (셀 아래 마이크로텍스트 · 헤더 총 diff 뱃지)
