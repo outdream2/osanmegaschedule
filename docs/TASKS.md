@@ -28,8 +28,9 @@
 - ⏳ StaffManagePage · fetch(편집/삭제/신규)·이력서·통장사본·사직서 (파일 첨부 · 큼)
 
 ### E · SplitPanel 공통 CSS
-- Phase 1 (에이전트 실행 중) · 4곳 (Display · ContractWriter · PaymentInfo · PurchaseHistory) 잔여 폰트/여백 통일
-- Phase 2 (위험) · SplitPanel 미도입 페이지 (StaffManagePage 등) 이관
+- ✅ Phase 1 완료 (커밋 `4589803`) · PurchaseHistoryTab·PaymentInfoTab 3개 편집
+- DisplayPage·ContractWriterPage · 기존 통일 상태 유지 (변경 불필요)
+- Phase 2 (위험) · SplitPanel 미도입 페이지 (StaffManagePage 등) 이관 · 별도 세션
 
 ### F · #34 스캔 실재고 합계 배치
 - 스펙 재확인 · "위 기존 합계숫자 · 아래 입력창"
@@ -41,7 +42,7 @@
 - Phase B (대규모 refactor) · 별도 세션
 
 ### H · #32 SplitPanel 폭 조절 · 실재고입력·상품입고
-- 에이전트 실행 중 · ScanPage · ProductArrivalPage · useResizablePanel 도입
+- ✅ 완료 (커밋 `3b8818d`) · ScanPage · ProductArrivalPage · SplitPanel 도입 · 폭 드래그 조절
 
 ### I · #42 · 발주 PDF 생성 + 카카오톡 자동 발송
 - SolAPI env · 템플릿 · 사업자 인증 대기
