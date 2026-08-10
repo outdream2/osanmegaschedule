@@ -19,11 +19,13 @@
 - ⏳ Step 3: ContractWriterPage 저장 시 payload include (working_hours·annual_leave_days·probation_end_date·base_wage_type·base_wage_amount·employee_number)
 - ⏳ Step 4: EmployeeProfileCard · 사번으로 fetch · grid 아래 인라인 표시
 
-### D · CRUD 로직 마이그레이션 (`lib/employeeApi`)
+### D · CRUD 로직 마이그레이션 (`lib/employeeApi`) · 순서 확정
 - ✅ MyPage 완료 (커밋 `9bfc858`)
 - ✅ PermissionsPage 완료 (커밋 `66761d7`)
-- ⏳ SchedulePage / EmployeeFormModal · 크므로 신중 (A 진행 시 EmployeeFormModal 제거와 함께)
-- ⏳ StaffManagePage · 파일 첨부 로직 포함 · 큼
+- **Q1 확정 (B · SchedulePage 먼저 · A 무관 순수 리팩토링)**
+- **Q2 함수별 하나씩** · updateEmployee → createEmployee → deleteEmployee → uploadContract 각각 커밋
+- ⏳ SchedulePage · axios.put(수정)·axios.post(신규)·axios.delete(삭제)·axios.post(contract 업로드)
+- ⏳ StaffManagePage · fetch(편집/삭제/신규)·이력서·통장사본·사직서 (파일 첨부 · 큼)
 
 ### E · SplitPanel 공통 CSS
 - Phase 1 (에이전트 실행 중) · 4곳 (Display · ContractWriter · PaymentInfo · PurchaseHistory) 잔여 폰트/여백 통일
@@ -47,9 +49,11 @@
 ### J · #43 · 프로젝트 전체 버튼 여백 축소
 - index.css 부분 반영 (py-2·py-3·px-4·px-5) · 잔여 확인 필요
 
-### Phase 2 · ContractWriterPage 사번 (이번 세션 Phase 1 완료)
+### Phase 2 · ContractWriterPage 사번 (스펙 확정 · 진행 대기)
 - Phase 1: 마이그레이션 (`add_employee_number_2026-08-10.sql`) · Employee 타입 · EmployeeProfileCard 사번 표시
-- Phase 2 (별도): ContractWriterPage 사번 필드 · 계약서 저장 시 함께 저장 · **옵션 (A/B/C) 미확정**
+- **Q1 확정 (C · 인적사항 폼 통합)**: `EmployeeInfoForm` 에 사번 필드 추가 · ContractWriter·StaffManage 모두 자동 반영
+- **Q2 확정 (번호만 저장)**: EMP- 접두 없이 · 숫자만 (예: "1", "100", "2026001") · 자유 형식 · 관리자 수동 입력
+- 작업: EmployeeInfoForm 에 employee_number 필드 · ContractWriterPage 저장 payload include · employees·employee_contracts 둘 다 갱신
 
 ---
 
