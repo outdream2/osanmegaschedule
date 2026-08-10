@@ -416,7 +416,7 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
                 ? <><span className="inline-block w-3 h-3 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black">✓</span>전송 완료</>
                 : sending
                   ? <><Loader2 size={13} className="animate-spin"/>전송 중...</>
-                  : <><Send size={13}/>반품 요청 전송</>}
+                  : "반품 요청 전송"}
             </button>
           </div>
         </div>
@@ -704,10 +704,10 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
     <div className="flex flex-col gap-2">
       {/* ── 상단 필터바 ── */}
       <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
+        {/* 2026-08-10 · 사용자 요청 · 반품필요 헤더 폰트 +3 (13→16) · '입력하면 자동 조회' 제거 */}
         <div className="flex items-center gap-1.5">
-          <PackageCheck size={14} className="text-rose-500 shrink-0" />
-          <span className="text-[13px] font-semibold text-slate-800">반품필요</span>
-          <span className="text-[10.5px] text-slate-400 whitespace-nowrap">입력하면 자동 조회</span>
+          <PackageCheck size={17} className="text-rose-500 shrink-0" />
+          <span className="text-[16px] font-black text-slate-800">반품필요</span>
           {(() => {
             const q = returnSupplierSearch.trim().toLowerCase();
             const filteredCount = returnList.filter(x => {
