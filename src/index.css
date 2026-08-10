@@ -192,15 +192,18 @@ body:has(.fixed.inset-0[class*="bg-neutral-9"]) {
          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-300
          active:opacity-70;
 }
-/* ── 탭 계층 · Level 2 (page sub-tab) — 메인메뉴(Level 1)보다 조금 작게 (2026-08-03 · 사용자 요청) ── */
+/* ── 탭 계층 · Level 2 (page sub-tab) — 2026-08-10 · 사용자 요청 · 폰트+아이콘 +1 (14→15 · 15→16) ── */
 .tab-l2 {
   @apply relative flex items-center gap-1.5 sm:gap-2
          px-3 sm:px-5 py-3 sm:py-3.5
-         text-[14px] sm:text-[15px] font-bold leading-none whitespace-nowrap
+         text-[15px] sm:text-[16px] font-bold leading-none whitespace-nowrap
          transition-colors duration-150 cursor-pointer outline-none
          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-300
          active:opacity-70;
 }
+/* Level 2 아이콘 · 폰트와 함께 확대 · svg 아이콘 원 크기 (2026-08-10) */
+.tab-l2 svg { width: 18px; height: 18px; }
+@media (min-width: 640px) { .tab-l2 svg { width: 19px; height: 19px; } }
 /* ── 탭 계층 · Level 3 (deep nested) — 컴팩트 하위 서브탭 · Level 2 보다 작음 ── */
 .tab-l3 {
   @apply relative flex items-center gap-1
