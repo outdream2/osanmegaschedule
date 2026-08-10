@@ -40,6 +40,10 @@ export interface Vendor {
   note: string | null;
   business_number: string | null;
   vat_included?: boolean | null;   // 부가세 포함/미포함 (VAT 통합 · #193)
+  // 2026-08-10 · #21 · 팀장·긴급연락처 (마이그레이션 add_vendor_extra_contacts_2026-08-10.sql)
+  team_leader_name?: string | null;
+  team_leader_phone?: string | null;
+  emergency_contact?: string | null;
   created_at?: string | null;
   latestBalance?: { balance: number; invoice_date: string | null; created_at: string } | null;
   balanceConfig?: { balance_field: string; updated_at: string } | null;
@@ -65,6 +69,10 @@ interface EditDraft {
   note: string;
   // 2026-08-03 · #193 · VAT 포함 여부 · "included"|"excluded"|"unset"
   vat_included: "included" | "excluded" | "unset";
+  // 2026-08-10 · #21 · 팀장·긴급연락처
+  team_leader_name: string;
+  team_leader_phone: string;
+  emergency_contact: string;
 }
 
 const vatDraftVal = (v: Vendor | null | undefined): "included" | "excluded" | "unset" => {
@@ -84,6 +92,9 @@ const emptyDraft = (v: Vendor): EditDraft => ({
   category: v.category ?? "",
   note: v.note ?? "",
   vat_included: vatDraftVal(v),
+  team_leader_name:  v.team_leader_name  ?? "",
+  team_leader_phone: v.team_leader_phone ?? "",
+  emergency_contact: v.emergency_contact ?? "",
 });
 
 const normalizeBizNum = (s: string): string => s.replace(/[^0-9]/g, "").slice(0, 10);
@@ -1045,6 +1056,10 @@ export const VendorDetailModal: React.FC<{
           note:            draft.note.trim() || null,
           // 2026-08-03 · #193 · VAT 포함 여부 (unset → null)
           vat_included:    draft.vat_included === "included" ? true : draft.vat_included === "excluded" ? false : null,
+          // 2026-08-10 · #21 · 팀장·긴급연락처 (마이그레이션 실행 전엔 서버 저장 실패해도 프론트 정상)
+          team_leader_name:  draft.team_leader_name.trim()  || null,
+          team_leader_phone: draft.team_leader_phone.trim() || null,
+          emergency_contact: draft.emergency_contact.trim() || null,
         }),
       });
       if (!res.ok) {
@@ -1189,6 +1204,28 @@ export const VendorDetailModal: React.FC<{
                     className={`${inputCls} font-mono tracking-wider`}
                     maxLength={12}
                   />
+                </Field>
+              </div>
+
+              {/* 2026-08-10 · #21 · 팀장·긴급연락처 (신규 · 마이그레이션 add_vendor_extra_contacts_2026-08-10.sql 실행 필요) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Field label="팀장 이름">
+                  <input type="text" value={draft.team_leader_name}
+                    onChange={e => setDraft({ ...draft, team_leader_name: e.target.value })}
+                    placeholder="담당자와 별개"
+                    className={inputCls} />
+                </Field>
+                <Field label="팀장 전화">
+                  <input type="text" value={draft.team_leader_phone}
+                    onChange={e => setDraft({ ...draft, team_leader_phone: e.target.value })}
+                    placeholder="010-0000-0000"
+                    className={inputCls} />
+                </Field>
+                <Field label="긴급 연락처">
+                  <input type="text" value={draft.emergency_contact}
+                    onChange={e => setDraft({ ...draft, emergency_contact: e.target.value })}
+                    placeholder="야간·주말·비상"
+                    className={inputCls} />
                 </Field>
               </div>
 

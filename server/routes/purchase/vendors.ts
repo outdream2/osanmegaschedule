@@ -249,7 +249,7 @@ router.post("/api/vendors", async (req, res) => {
 router.patch("/api/vendors/:id", async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) return res.status(400).json({ error: "invalid id" });
-  const { company_name, contact_name, phone, email, category, note, business_number, vat_included } = req.body ?? {};
+  const { company_name, contact_name, phone, email, category, note, business_number, vat_included, team_leader_name, team_leader_phone, emergency_contact } = req.body ?? {};
   const updates: Record<string, any> = {};
   if (company_name !== undefined) updates.company_name = company_name.trim();
   if (contact_name !== undefined) updates.contact_name = contact_name;
@@ -265,13 +265,28 @@ router.patch("/api/vendors/:id", async (req, res) => {
   if (vat_included !== undefined) {
     updates.vat_included = vat_included === true ? true : vat_included === false ? false : null;
   }
+  // 2026-08-10 · #21 · 팀장·긴급연락처 (마이그레이션 add_vendor_extra_contacts_2026-08-10.sql)
+  if (team_leader_name  !== undefined) updates.team_leader_name  = team_leader_name;
+  if (team_leader_phone !== undefined) updates.team_leader_phone = team_leader_phone;
+  if (emergency_contact !== undefined) updates.emergency_contact = emergency_contact;
   // 2026-07-22: email 컬럼 없는 DB 호환 · 실패 시 email 제외 후 재시도 (GET 과 동일 패턴)
   // 2026-08-03 · vat_included 도 동일한 방식으로 폴백
-  const SELECT_FULL     = "id, company_name, contact_name, phone, email, category, note, business_number, vat_included";
+  // 2026-08-10 · team_leader_name/phone/emergency_contact 도 동일 폴백 (마이그레이션 전 안전)
+  const SELECT_FULL     = "id, company_name, contact_name, phone, email, category, note, business_number, vat_included, team_leader_name, team_leader_phone, emergency_contact";
+  const SELECT_NO_TEAM  = "id, company_name, contact_name, phone, email, category, note, business_number, vat_included";
   const SELECT_NO_VAT   = "id, company_name, contact_name, phone, email, category, note, business_number";
   const SELECT_NO_EMAIL = "id, company_name, contact_name, phone, category, note, business_number";
   const r1 = await supabase.from("vendors").update(updates).eq("id", id).select(SELECT_FULL).single();
   if (!r1.error) return res.json(r1.data);
+  // team_leader/emergency 컬럼 없음 fallback (마이그레이션 미실행)
+  if (/team_leader|emergency_contact/i.test(r1.error.message)) {
+    const noTeam = { ...updates };
+    delete noTeam.team_leader_name;
+    delete noTeam.team_leader_phone;
+    delete noTeam.emergency_contact;
+    const rT = await supabase.from("vendors").update(noTeam).eq("id", id).select(SELECT_NO_TEAM).single();
+    if (!rT.error) return res.json({ ...rT.data, team_leader_name: null, team_leader_phone: null, emergency_contact: null });
+  }
   // vat_included 컬럼 없음 fallback
   if (/vat_included/i.test(r1.error.message)) {
     const noVat = { ...updates };
