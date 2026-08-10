@@ -935,9 +935,9 @@ export const VendorDetailModal: React.FC<{
   const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
   const [purchLoading, setPurchLoading] = useState(false);
   const [summary, setSummary] = useState<VendorSummary | null>(null);
-  // 2026-08-10 · 사용자 요청 · 총재고금액 = 공급사 상품 각각 · current_stock × 최근 사입단가 합산
-  //   1) /api/products-search?supplier= · 공급사 상품 리스트 (current_stock)
-  //   2) /api/products/purchase-history?codes=... · 각 상품 latest_unit_price
+  // 2026-08-10 · 총재고금액 = 상품별 · ERP current_stock × 최근 사입단가 합산
+  //   1) /api/products-map · 전체 상품 map · 이 공급사 것만 filter
+  //   2) /api/products/purchase-history?codes=... · latest_unit_price 조회
   //   3) 합산
   const [vendorTotalStock, setVendorTotalStock] = useState<number | null>(null);
   useEffect(() => {
@@ -945,21 +945,34 @@ export const VendorDetailModal: React.FC<{
     if (!vendor?.company_name) return;
     (async () => {
       try {
-        const r1 = await fetch(`/api/products-search?supplier=${encodeURIComponent(vendor.company_name)}&limit=2000`);
-        const d1 = r1.ok ? await r1.json() : { items: [] };
-        const items = Array.isArray(d1?.items) ? d1.items : [];
+        const r1 = await fetch(`/api/products-map`);
+        const map = r1.ok ? await r1.json() : {};
+        // 공급사 매칭 · (주) · vat 미포함 정제 후 비교
+        const target = vendor.company_name.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim();
+        const items: Array<{ code: string; qty: number }> = [];
+        for (const [code, p] of Object.entries<any>(map)) {
+          const supp = String(p?.supplier ?? "").replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim();
+          if (!supp) continue;
+          if (supp === target || supp.includes(target) || target.includes(supp)) {
+            items.push({ code: String(code), qty: Number(p?.current_stock ?? 0) || 0 });
+          }
+        }
         if (items.length === 0) { if (alive) setVendorTotalStock(0); return; }
-        const codes = Array.from(new Set(items.map((p: any) => String(p.code ?? p.product_code ?? "")).filter(Boolean)));
-        if (codes.length === 0) { if (alive) setVendorTotalStock(0); return; }
-        const r2 = await fetch(`/api/products/purchase-history?codes=${encodeURIComponent(codes.join(","))}&limit=1`);
-        const d2 = r2.ok ? await r2.json() : { history: {} };
-        const hist = d2?.history ?? {};
-        // 각 상품 current_stock × latest_unit_price 합산
-        const total = items.reduce((s: number, p: any) => {
-          const code = String(p.code ?? p.product_code ?? "");
-          const qty = Number(p.current_stock ?? 0) || 0;
-          const price = Number(hist[code]?.latest_unit_price ?? 0) || 0;
-          return s + qty * price;
+        const codes = items.map(i => i.code);
+        // batch fetch · 200개씩 (URL 길이 제한)
+        const CHUNK = 200;
+        const hist: Record<string, any> = {};
+        for (let i = 0; i < codes.length; i += CHUNK) {
+          const chunk = codes.slice(i, i + CHUNK);
+          const r2 = await fetch(`/api/products/purchase-history?codes=${encodeURIComponent(chunk.join(","))}&limit=1`);
+          if (r2.ok) {
+            const d2 = await r2.json();
+            Object.assign(hist, d2?.history ?? {});
+          }
+        }
+        const total = items.reduce((s, it) => {
+          const price = Number(hist[it.code]?.latest_unit_price ?? 0) || 0;
+          return s + it.qty * price;
         }, 0);
         if (alive) setVendorTotalStock(total);
       } catch {
@@ -1968,14 +1981,14 @@ const PaymentRegisterModal: React.FC<{
 // ─── 공용 UI 헬퍼 ────────────────────────────────────────────────
 
 /** shadcn form input · h-9 · focus ring teal */
-// 2026-08-10 · 사용자 요청 · 입력창 폰트 +1 (13→14)
+// 2026-08-10 · 사용자 요청 · 입력창 폰트 +1 (15→16)
 const inputCls =
-  "w-full h-10 px-3 text-[14px] border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400 bg-white transition placeholder:text-slate-300";
+  "w-full h-10 px-3 text-[16px] border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400 bg-white transition placeholder:text-slate-300";
 
-// 2026-08-10 · 사용자 요청 · Field 라벨 크기 +1 (14→15) · 살짝 굵게 (medium → semibold)
+// 2026-08-10 · 사용자 요청 · Field 라벨 -1 (15→14) · 유지
 const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <label className="block space-y-1">
-    <span className="text-[15px] font-semibold text-slate-600 tracking-tight">{label}</span>
+    <span className="text-[14px] font-semibold text-slate-600 tracking-tight">{label}</span>
     {children}
   </label>
 );
