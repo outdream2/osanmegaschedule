@@ -152,9 +152,9 @@ export const StockRowMobile: React.FC<StockRowMobileProps> = React.memo(({ row, 
             {spec}
           </div>
         )}
-        {zone && zoneKey && zoneAccent && (
+        {zoneKey && zoneAccent && (
           <ZoneInput
-            value={zone}
+            value={zone ?? null}
             placeholder="구역"
             accentClass={zoneAccent}
             onChange={v => onPatch(row.key, { [zoneKey]: v } as Partial<StockRow>)}
@@ -268,15 +268,13 @@ export const StockRowMobile: React.FC<StockRowMobileProps> = React.memo(({ row, 
                   {spec}
                 </div>
               )}
-              {/* 구역 (real_map · 편집) · 값 있을 때만 */}
-              {zone && (
-                <ZoneInput
-                  value={zone}
-                  placeholder="구역"
-                  accentClass={zoneAccent}
-                  onChange={v => onPatch(row.key, { [zoneKey]: v } as Partial<StockRow>)}
-                />
-              )}
+              {/* 구역 (real_map · 편집) · 항상 노출 · 신규 스캔 상품도 입력 가능 */}
+              <ZoneInput
+                value={zone}
+                placeholder="구역"
+                accentClass={zoneAccent}
+                onChange={v => onPatch(row.key, { [zoneKey]: v } as Partial<StockRow>)}
+              />
             </div>
           );
         })}
