@@ -128,10 +128,22 @@ export function ProductSearchInput({
                     key={`${code}-${i}`}
                     type="button"
                     onClick={() => {
-                      // 2026-08-09 · 사용자 요청 · 선택 → 입력창 채우고 리스트 숨김
+                      // 2026-08-10 · 사용자 요청 · 리스트 선택 시 · 확인 버튼 없이 자동 onSelect 호출
                       setSelected(p);
                       setQuery(name);
                       setHideList(true);
+                      const codeStr = String(p.product_code ?? p.product_name ?? "").trim();
+                      if (codeStr) {
+                        onSelect(codeStr, p);
+                        // 리셋 · handleConfirm 동일 동작
+                        setTimeout(() => {
+                          setQuery("");
+                          setSelected(null);
+                          setResults([]);
+                          setHideList(false);
+                          inputRef.current?.focus();
+                        }, 100);
+                      }
                     }}
                     className={`w-full text-left px-2.5 py-1.5 flex items-center gap-2 transition cursor-pointer ${
                       isActive ? cls.active : "hover:bg-slate-50 border-l-2 border-transparent"
