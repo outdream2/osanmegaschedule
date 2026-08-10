@@ -1136,7 +1136,15 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       const results = await Promise.all(submissions);
       const succeeded = results.filter(r => r.ok).length;
       const failed = results.filter(r => !r.ok);
-      // 2026-08-10 · 사용자 요청 · 실패 사유 자세히 · 채널별 outcome + error 메시지
+      // 2026-08-10 · 사용자 요청 · 실패 사유 자세히 · no_recipient 시 공급사 수정 이동 confirm
+      // 채널별 no_recipient 감지 · 어느 필드가 없는지 명확화
+      const missingByReason = (r: typeof failed[number]) => {
+        const missing: string[] = [];
+        if (r.outcomes.some(o => /email:no_recipient/.test(o))) missing.push("이메일");
+        if (r.outcomes.some(o => /sms:no_recipient/.test(o))) missing.push("전화번호");
+        if (r.outcomes.some(o => /kakao:no_recipient/.test(o))) missing.push("카카오 수신처 (전화번호)");
+        return missing;
+      };
       const summaryLines = [
         `✅ 성공: ${succeeded}건 / ❌ 실패: ${failed.length}건`,
         "",
@@ -1145,12 +1153,27 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           return `✅ ${r.supplier} → #${r.order_number}${details}`;
         }),
         ...(failed.length > 0 ? ["", `❌ 실패 상세:`, ...failed.map(r => {
+          const missing = missingByReason(r);
+          if (missing.length > 0) return `  · ${r.supplier}: ${missing.join(" · ")}이(가) 없습니다`;
           const reason = r.error ? ` · ${r.error}` : (r.status ? ` · HTTP ${r.status}` : "");
-          const outc = r.outcomes.length > 0 ? ` · outcomes: ${r.outcomes.join(", ")}` : "";
+          const outc = r.outcomes.length > 0 ? ` · ${r.outcomes.join(", ")}` : "";
           return `  · ${r.supplier} (#${r.order_number})${reason}${outc}`;
         })] : []),
       ].join("\n");
       alert(`발주서 ${orderModal.suppliers.length}건 발송 결과\n\n${summaryLines}`);
+      // 실패 · no_recipient 있는 공급사가 있으면 · 순차 confirm → 공급사 정보 수정 modal 이동
+      const needsEdit = failed.filter(r => missingByReason(r).length > 0);
+      for (const r of needsEdit) {
+        const missing = missingByReason(r);
+        const proceed = await confirm({
+          title: `${r.supplier}`,
+          message: `${missing.join(" · ")}이(가) 없습니다.\n공급사 정보 수정 페이지로 이동하시겠습니까?`,
+        });
+        if (proceed) {
+          openSupplierInfo(r.supplier);
+          break; // 첫 번째만 열고 종료 (사용자가 수정 후 다시 발주)
+        }
+      }
       setOrderModal(null);
       setSelectedOrder(new Set());
       loadOrderReqs();
