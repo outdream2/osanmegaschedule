@@ -23,9 +23,38 @@ interface Props {
   onEdit?: () => void;
 }
 
+interface LatestContract {
+  id: number;
+  contract_type?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  working_hours?: string | null;
+  annual_leave_days?: number | null;
+  probation_end_date?: string | null;
+  base_wage_type?: string | null;
+  base_wage_amount?: number | null;
+}
+
 export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChange, onEdit }) => {
   const [localEmployee, setLocalEmployee] = useState<Employee>(employee);
   useEffect(() => { setLocalEmployee(employee); }, [employee]);
+
+  // 2026-08-10 · B Step 4 · 사번(우선) or employeeId 로 최신 계약서 근로정보 fetch
+  const [latestContract, setLatestContract] = useState<LatestContract | null>(null);
+  useEffect(() => {
+    let alive = true;
+    const number = localEmployee.employee_number;
+    const id = localEmployee.id;
+    if (!number && !id) return;
+    const qs = number
+      ? `employee_number=${encodeURIComponent(number)}`
+      : `employeeId=${id}`;
+    fetch(`/api/employees/latest-contract?${qs}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (alive) setLatestContract(data ?? null); })
+      .catch(() => { if (alive) setLatestContract(null); });
+    return () => { alive = false; };
+  }, [localEmployee.id, localEmployee.employee_number]);
 
   const applyLocal = (updater: (prev: Employee) => Employee) => {
     setLocalEmployee(prev => {
@@ -102,6 +131,28 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
           </button>
         )}
       </div>
+
+      {/* 근로 조건 · 최신 계약서 (grid 아래 인라인 · Q2 A) */}
+      {latestContract && (
+        <div className="flex items-baseline gap-3 pt-2 border-t border-slate-100 flex-wrap text-[12px]">
+          <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wide">근로 조건</span>
+          {latestContract.working_hours && (
+            <span className="text-slate-700"><span className="text-slate-400 font-semibold">근무</span> <span className="font-bold tabular-nums">{latestContract.working_hours}</span></span>
+          )}
+          {latestContract.annual_leave_days != null && (
+            <span className="text-slate-700"><span className="text-slate-400 font-semibold">연차</span> <span className="font-bold tabular-nums">{latestContract.annual_leave_days}일</span></span>
+          )}
+          {latestContract.probation_end_date && (
+            <span className="text-slate-700"><span className="text-slate-400 font-semibold">수습</span> <span className="font-bold tabular-nums">~{latestContract.probation_end_date}</span></span>
+          )}
+          {latestContract.base_wage_type && latestContract.base_wage_amount != null && (
+            <span className="text-slate-700"><span className="text-slate-400 font-semibold">{latestContract.base_wage_type}</span> <span className="font-bold tabular-nums">{latestContract.base_wage_amount.toLocaleString()}원</span></span>
+          )}
+          {(latestContract.start_date || latestContract.end_date) && (
+            <span className="text-slate-700"><span className="text-slate-400 font-semibold">계약</span> <span className="font-bold tabular-nums">{latestContract.start_date ?? "?"} ~ {latestContract.end_date ?? "무기한"}</span></span>
+          )}
+        </div>
+      )}
 
       {/* 정보 grid · 성별·입사일·근무지·연차 (한줄) · 전화 (전체 폭) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 pt-2 border-t border-slate-100">
