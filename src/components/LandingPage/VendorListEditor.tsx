@@ -1215,6 +1215,26 @@ export const VendorDetailModal: React.FC<{
             </div>
           </details>
 
+          {/* 2026-08-10 · 사용자 요청 · 결제정보 세션 · 부가세포함 체크박스 (거래명세서 금액) */}
+          <div className="mb-4 pb-1.5 border-b border-slate-100">
+            <div className="flex items-center gap-x-4 gap-y-1 flex-wrap">
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="w-1 h-4 rounded-full bg-amber-500 shrink-0" />
+                <span className="text-[15px] font-black text-amber-700">결제 정보</span>
+              </div>
+              <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={draft.vat_included === "included"}
+                  onChange={e => setDraft({ ...draft, vat_included: e.target.checked ? "included" : "excluded" })}
+                  className="w-4 h-4 accent-amber-500 cursor-pointer"
+                />
+                <span className="text-[14px] font-semibold text-slate-700">부가세 포함</span>
+                <span className="text-[12px] text-slate-400">(거래명세서 금액)</span>
+              </label>
+            </div>
+          </div>
+
           {/* 2026-08-10 · 기본정보 단일 컬럼 · 공급요약 위로 이동됨 */}
           <div className="space-y-4">
 
@@ -1307,36 +1327,7 @@ export const VendorDetailModal: React.FC<{
                 />
               </Field>
 
-              {/* 2026-08-03 · #193 · 거래명세서 VAT 포함 여부 (부가세 신고용) */}
-              <Field label="거래명세서 VAT 처리 (부가세 신고용)">
-                <div className="inline-flex bg-slate-100 border border-slate-200 rounded-lg p-0.5 gap-0.5 w-full">
-                  {/* 2026-08-10 · 사용자 요청 · 미설정 제거 · 2개 옵션만 */}
-                  {([
-                    { key: "excluded" as const, label: "VAT 별도",   sub: "공급가액만 · 부가세 10% 별도", tone: "amber"   },
-                    { key: "included" as const, label: "VAT 포함",   sub: "총액에 부가세 포함 (÷11)",     tone: "emerald" },
-                  ]).map(opt => {
-                    const active = draft.vat_included === opt.key;
-                    const activeCls =
-                      opt.tone === "emerald" ? "bg-emerald-500 text-white shadow-sm ring-1 ring-emerald-400" :
-                      opt.tone === "amber"   ? "bg-amber-500 text-white shadow-sm ring-1 ring-amber-400"     :
-                                               "bg-slate-500 text-white shadow-sm ring-1 ring-slate-400";
-                    return (
-                      <button
-                        key={opt.key}
-                        type="button"
-                        onClick={() => setDraft({ ...draft, vat_included: opt.key })}
-                        className={`flex-1 h-9 px-2 rounded-md text-[11px] font-bold transition cursor-pointer whitespace-nowrap flex flex-col items-center justify-center gap-0 leading-tight ${
-                          active ? activeCls : "text-slate-500 hover:text-slate-700 hover:bg-white/60"
-                        }`}
-                        title={opt.sub}
-                      >
-                        <span className="text-[12px] font-black">{opt.label}</span>
-                        <span className={`text-[9px] font-medium ${active ? "text-white/80" : "text-slate-400"}`}>{opt.sub}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </Field>
+              {/* 2026-08-10 · 사용자 요청 · VAT 처리 · 결제정보 세션으로 이동됨 */}
 
               {/* 비고 (single row) */}
               <Field label="비고">
