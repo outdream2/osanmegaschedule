@@ -919,19 +919,27 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const openOrderModal = (rows: OrderRequest[]) => {
     if (rows.length === 0) return;
     // 공급사별 그룹핑 (각 공급사마다 고유 발주번호)
+    // 2026-08-10 · BUG FIX · r.supplier 대부분 null → products.supplier fallback (디스플레이와 동일 규칙)
+    // vendors 캐시로 담당자/이메일/전화 보강 · 그룹핑 실패 방지
     const today = new Date();
     const ymdNow = today.toISOString().slice(0, 10);
     const genOrderNumber = () => `PO-${ymdNow.replace(/-/g, "")}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
     const bySupplier = new Map<string, OrderModalSupplier>();
     for (const r of rows) {
-      const sup = r.supplier || "(공급사 미지정)";
+      // 코드 변형 시도 (leading zeros · 8자리 패딩) · allProductsMap 조회
+      const codeVars = [r.product_code, r.product_code.replace(/^0+/, ""), r.product_code.padStart(8, "0")];
+      const prod = codeVars.map(c => allProductsMap[c]).find(Boolean) as any;
+      // 우선순위: products.supplier → r.supplier → "(공급사 미지정)"
+      const resolvedSupplier: string = (prod?.supplier || r.supplier || "").trim() || "(공급사 미지정)";
+      const vendor = findVendorByName(resolvedSupplier);
+      const sup = resolvedSupplier;
       if (!bySupplier.has(sup)) {
         bySupplier.set(sup, {
           supplier: sup,
           order_number: genOrderNumber(),
-          supplier_contact: r.supplier_contact ?? null,
-          supplier_email: r.supplier_email ?? null,
-          supplier_phone: r.supplier_phone ?? null,
+          supplier_contact: vendor?.contact_name || r.supplier_contact || prod?.supplier_contact || null,
+          supplier_email:   vendor?.email        || r.supplier_email   || null,
+          supplier_phone:   vendor?.phone        || r.supplier_phone   || null,
           balance: r.balance ?? null,
           ocr_balance: r.ocr_balance ?? null,
           items: [],
