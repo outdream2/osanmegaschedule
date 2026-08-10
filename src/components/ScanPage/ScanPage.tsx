@@ -804,14 +804,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 <table className="w-full border-collapse text-[12px] sm:text-[13px]">
                   <thead className="sticky top-0 z-10">
                     <tr className="bg-slate-50/95 backdrop-blur-sm border-b border-slate-200/60">
-                      {/* 시각 */}
-                      <th
-                        className="text-left px-2 py-2.5 w-[56px] sm:w-[64px] font-bold text-slate-400
-                          cursor-pointer select-none hover:text-slate-600 hover:bg-slate-100/60 transition-colors whitespace-nowrap"
-                        onClick={() => handleSort("addedAt")}
-                      >
-                        시각 <SortIcon active={sortKey === "addedAt"} dir={sortDir} />
-                      </th>
+                      {/* 2026-08-10 · 사용자 요청 · 시각 컬럼 제거 */}
                       {/* 상품명 */}
                       <th
                         className="text-left px-2 py-2.5 font-bold text-slate-400 min-w-[140px]
@@ -870,8 +863,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                   <tbody>
                     {sortedRows.map((row, idx) => {
                       const isRecent = row.key === lastAddedKey;
-                      const d = new Date(row.addedAt);
-                      const addedAt = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+                      // 2026-08-10 · 사용자 요청 · 시각 컬럼 제거 (addedAt 필드는 정렬용 유지)
                       const rm = (row.product as any).realMap ?? (row.product as any).real_map ?? null;
                       const rowTotal = total(row);
                       const hasAnyValue =
@@ -892,11 +884,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                           className={`border-l-[3px] border-b border-slate-100/70 transition-colors duration-100
                             ${accentColor} ${rowBg}`}
                         >
-                          {/* 시각 */}
-                          <td className="px-2 py-2 align-middle tabular-nums font-mono text-[11px]
-                            text-slate-400 whitespace-nowrap">
-                            {addedAt}
-                          </td>
+                          {/* 2026-08-10 · 시각 셀 제거 */}
 
                           {/* 상품명 · 규격 · 코드 */}
                           <td className="px-2 py-2 align-middle min-w-[140px]">
