@@ -61,6 +61,12 @@
 - **#22** · 거래처 로그인 · 상단 공통 nav 는 [홈]만 · 스케줄·이슈·요청·기타 nav 모두 숨김 · 랜딩 카드 3개 (방문예약 · 공급사 정보 · 공급사 재고확인)
 - **#23** · 공급사 재고확인 카드 (신규) · 공급사 정보 카드 옆 배치 · 클릭 시 모달 · 로그인 공급사 상품 리스트 + 상품별 재고 (ERP현재고·창고1/2·매장1/2/3·총재고)
 
+**직원 관리 (StaffManage · EmployeeInfoForm)**:
+- **#24** · UI 개선 리서치 · mobile-ui-designer + research-strategist · 최신 HR SaaS (Rippling/BambooHR/Gusto/Notion People) 참고 · 세션·타이포·정보밀도 개선안
+- **#25** · 이름 아래 직책 → 직군 (드롭박스) · constants/jobCategories 옵션
+- **#26** · 근무타입 필드 · 이 페이지 세션에서 삭제 · 다음 세션 (근무 조건) 으로 이동
+- **#27** · 근속·연차·평가 · 카드 → 깔끔한 텍스트 스타일 (라벨·값 인라인) · 폰트 +2
+
 ### 🤖 진행 중 (백그라운드 에이전트)
 
 - 에이전트 1 · safe-refactoring-expert · OrderManagePage · 매입주기·상세버튼 dead code 완전 정리 (5f64289 이후)
@@ -76,6 +82,8 @@
 - `20b6d94` · REVERT `303068c` (공급사관리 등록폼 인라인 · 지시 밖 확대 · 사용자 원복 지시)
 - `4d7bafb` · 발주요청 툴바 재구성 · 이메일/문자·새로고침 제거 · 2행 (#11·#12·#13)
 - `e367a4b` · 공급사 상세 · 기본정보·공급요약 수평 배치 · VAT 별도 기본 · 미설정 제거
+- `7b6e40a` · 거래처 로그인 · 큰 로그아웃 버튼 제거 (rightSlot 중복)
+- `cb11518` · EmployeeInfoForm 전화번호 입력 매 keystroke 언마운트 버그 FIX (SimpleInput → simpleInput 함수)
 
 ---
 
