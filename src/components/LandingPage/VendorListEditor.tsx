@@ -1165,31 +1165,53 @@ export const VendorDetailModal: React.FC<{
           {(() => { void activeTab; return null; })()}
           {(true) && (
           <>
-          {/* 2026-08-10 · 사용자 요청 · 공급요약 · 기본정보 위 · 한 줄 · 모바일 접기 (details) */}
-          <details open className="mb-4 group [&[open]>summary_.chevron]:rotate-90">
-            <summary className="flex items-center gap-2 cursor-pointer select-none list-none">
-              <ChevronRight size={14} className="chevron text-emerald-500 shrink-0 transition-transform" />
-              <SectionTitle icon={<TrendingUp size={13} />} title="공급 요약" color="emerald" />
-            </summary>
-            {/* 2026-08-10 · 사용자 요청 · 3항목만 · 총재고금액·총 상품갯수·현재 총매입금액 · 폰트 +2 · 안내 문구 */}
-            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-[14px] leading-tight px-4">
-              <span className="inline-flex items-baseline gap-1.5">
+          {/* 2026-08-10 · 사용자 요청 · 안내 문구 위 · 공급요약 · PC 항상 노출 (한줄) · 모바일 details 접기 (2줄) */}
+          <div className="mb-1 text-[12px] text-slate-400 leading-relaxed px-1">
+            💡 자세한 내용은 <span className="font-bold text-amber-700">매입 &gt; 매입이력 &gt; 공급사 관리</span> 에서 확인
+          </div>
+          {/* PC: 제목 옆 나란히 · 한줄 */}
+          <div className="hidden sm:block mb-4 pb-1.5 border-b border-slate-100">
+            <div className="flex items-center gap-x-5 gap-y-1 flex-wrap">
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="w-1 h-4 rounded-full bg-emerald-500 shrink-0" />
+                <span className="text-[15px] font-black text-emerald-700">공급 요약</span>
+              </div>
+              <span className="inline-flex items-baseline gap-1.5 text-[14px] leading-tight">
                 <span className="text-slate-400 font-semibold">총재고금액</span>
                 <span className="tabular-nums font-black text-sky-700">{vendorTotalStock != null ? fmtWon(vendorTotalStock) : "-"}</span>
               </span>
               <span className="text-slate-200">·</span>
-              <span className="inline-flex items-baseline gap-1.5">
+              <span className="inline-flex items-baseline gap-1.5 text-[14px] leading-tight">
                 <span className="text-slate-400 font-semibold">총 상품갯수</span>
                 <span className="tabular-nums font-black text-violet-700">{summary ? `${summary.uniqueProducts.toLocaleString()}종` : "-"}</span>
               </span>
               <span className="text-slate-200">·</span>
-              <span className="inline-flex items-baseline gap-1.5">
+              <span className="inline-flex items-baseline gap-1.5 text-[14px] leading-tight">
                 <span className="text-slate-400 font-semibold">현재 총매입금액</span>
                 <span className="tabular-nums font-black text-indigo-700">{summary ? fmtWon(summary.totalAmount) : "-"}</span>
               </span>
             </div>
-            <div className="mt-1.5 text-[12px] text-slate-400 leading-relaxed px-4">
-              💡 자세한 내용은 <span className="font-bold text-amber-700">매입 &gt; 매입이력 &gt; 공급사 관리</span> 에서 확인
+          </div>
+          {/* 모바일: details 접기 · 2줄 grid · 기본 닫힘 */}
+          <details className="sm:hidden mb-4 group [&[open]>summary_.chevron]:rotate-90">
+            <summary className="flex items-center gap-2 cursor-pointer select-none list-none pb-1.5 border-b border-slate-100">
+              <ChevronRight size={14} className="chevron text-emerald-500 shrink-0 transition-transform" />
+              <span className="w-1 h-4 rounded-full bg-emerald-500 shrink-0" />
+              <span className="text-[15px] font-black text-emerald-700">공급 요약</span>
+            </summary>
+            <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 text-[14px] leading-tight px-2">
+              <span className="inline-flex flex-col">
+                <span className="text-slate-400 font-semibold text-[11px]">총재고금액</span>
+                <span className="tabular-nums font-black text-sky-700">{vendorTotalStock != null ? fmtWon(vendorTotalStock) : "-"}</span>
+              </span>
+              <span className="inline-flex flex-col">
+                <span className="text-slate-400 font-semibold text-[11px]">총 상품갯수</span>
+                <span className="tabular-nums font-black text-violet-700">{summary ? `${summary.uniqueProducts.toLocaleString()}종` : "-"}</span>
+              </span>
+              <span className="inline-flex flex-col col-span-2">
+                <span className="text-slate-400 font-semibold text-[11px]">현재 총매입금액</span>
+                <span className="tabular-nums font-black text-indigo-700">{summary ? fmtWon(summary.totalAmount) : "-"}</span>
+              </span>
             </div>
           </details>
 
@@ -1929,9 +1951,10 @@ const PaymentRegisterModal: React.FC<{
 const inputCls =
   "w-full h-9 px-3 text-[13px] border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400 bg-white transition placeholder:text-slate-300";
 
+// 2026-08-10 · 사용자 요청 · Field 라벨 크기 +1 (13→14) · 굵지 않게 (font-black → font-medium)
 const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <label className="block space-y-1">
-    <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider">{label}</span>
+    <span className="text-[14px] font-medium text-slate-500 tracking-tight">{label}</span>
     {children}
   </label>
 );
@@ -1951,19 +1974,19 @@ const colorMap = {
 
 type ColorKey = keyof typeof colorMap;
 
+// 2026-08-10 · 사용자 요청 · 아이콘 제거 · 제목 폰트 +2 (13→15)
 const SectionTitle: React.FC<{
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   title: string;
   color: ColorKey;
   hint?: string;
-}> = ({ icon, title, color, hint }) => {
+}> = ({ title, color, hint }) => {
   const c = colorMap[color];
   return (
     <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
-      <span className={`w-1 h-3.5 rounded-full ${c.bar} shrink-0`} />
-      <span className={`${c.icon} shrink-0`}>{icon}</span>
-      <span className={`text-[13px] font-black ${c.text}`}>{title}</span>
-      {hint && <span className="ml-auto text-[11px] text-slate-400 font-mono tabular-nums">{hint}</span>}
+      <span className={`w-1 h-4 rounded-full ${c.bar} shrink-0`} />
+      <span className={`text-[15px] font-black ${c.text}`}>{title}</span>
+      {hint && <span className="ml-auto text-[12px] text-slate-400 font-mono tabular-nums">{hint}</span>}
     </div>
   );
 };
