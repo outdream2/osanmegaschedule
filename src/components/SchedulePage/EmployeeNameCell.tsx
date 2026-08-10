@@ -68,9 +68,9 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
         border-r border-slate-100 bg-white sticky left-0 z-50
         group-hover:bg-slate-50
         shadow-[1px_0_0_0_#e2e8f0]
-        min-w-[110px] w-[110px]
-        sm:min-w-[140px] sm:w-[140px]
-        lg:min-w-[160px] lg:w-[160px]
+        min-w-[55px] w-auto
+        sm:min-w-[70px]
+        lg:min-w-[80px]
         p-0 transition-colors duration-150
         ${isDragging ? "opacity-40" : ""}
       `}
@@ -94,7 +94,7 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
         )}
 
         {/* 메인 콘텐츠 영역 */}
-        <div className="flex-1 flex flex-col justify-center py-1.5 px-1.5 sm:px-2 min-w-0 gap-0.5">
+        <div className="flex-1 flex flex-col justify-center py-1.5 px-0.5 sm:px-1 min-w-0 gap-0.5">
 
           {/* 줄 1: 이름 · 성별 표시 제거 (사용자 요청) */}
           <div className="flex items-center gap-1 min-w-0">
