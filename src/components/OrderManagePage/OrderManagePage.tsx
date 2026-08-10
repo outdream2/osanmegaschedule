@@ -2475,9 +2475,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             <table className="w-full text-xs sm:min-w-[540px]">
               <thead className="sticky top-0 bg-white z-10">
                 {/* 그룹 카테고리 헤더 · 클릭으로 접기/펼치기 */}
+                {/* 2026-08-10 · 사용자 요청 · 상품정보 colSpan 2→1 (공급사 제거) · 발주 액션 컬럼 제거 */}
                 <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider">
                   <th className="bg-slate-50 w-6"></th>
-                  <th colSpan={isOrderGroupCollapsed("info") ? 1 : 2}
+                  <th colSpan={1}
                     className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-sky-100 transition"
                     onClick={() => toggleOrderGroup("info")}
                     title={isOrderGroupCollapsed("info") ? "상품 정보 펼치기" : "상품 정보 접기"}>
@@ -2485,7 +2486,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       {isOrderGroupCollapsed("info") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}상품 정보
                     </span>
                   </th>
-                  {/* 2026-08-06 · 실재고 컬럼 주석처리 · 재고현황 그룹 4→3 컬럼 (사용자 요청) */}
                   <th colSpan={isOrderGroupCollapsed("stock") ? 1 : 3}
                     className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-amber-100 transition"
                     onClick={() => toggleOrderGroup("stock")}
@@ -2494,7 +2494,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       {isOrderGroupCollapsed("stock") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}재고 현황
                     </span>
                   </th>
-                  <th className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-l border-slate-100">발주 액션</th>
                 </tr>
                 <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
                   {/* 2026-08-06 · 사용자 요청 · 헤더 첫 컬럼 · 전체선택 체크박스 + 텍스트 */}
@@ -2512,8 +2511,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     <th className="bg-sky-50/20 w-4"></th>
                   ) : (
                     <>
-                      <th onClick={() => handleOrderSort("supplier")} title="공급사 정렬" className="text-left px-0.5 py-1.5 w-24 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">공급사{orderArrow("supplier")}</th>
-                      <th onClick={() => handleOrderSort("name")} title="상품명 정렬" className="text-left px-0.5 py-1.5 max-w-[180px] w-[180px] cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">상품명{orderArrow("name")}</th>
+                      {/* 2026-08-10 · 사용자 요청 · 공급사 컬럼 제거 · 그룹 헤더 (위) 로 통합 · 아래는 상품 정보만 */}
+                      <th onClick={() => handleOrderSort("name")} title="상품명 정렬" className="text-left px-0.5 py-1.5 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">상품명{orderArrow("name")}</th>
                     </>
                   )}
                   {isOrderGroupCollapsed("stock") ? (
