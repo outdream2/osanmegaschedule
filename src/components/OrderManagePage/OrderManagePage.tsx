@@ -2671,11 +2671,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           ? <CheckSquare size={13} className="text-rose-500 inline cursor-pointer" />
                           : <Square size={13} className="text-slate-300 hover:text-rose-500 inline cursor-pointer" />}
                       </td>
-                      {/* 상품정보 그룹 · 2026-08-10 · 공급사 셀 제거 · 그룹 헤더로 통합 · 상품명만 */}
+                      {/* 상품정보 그룹 · 2026-08-10 · 공급사 셀 제거 · 그룹 헤더로 통합 · 상품명만 · 헤더 padding 일치 */}
                       {isOrderGroupCollapsed("info") ? (
                         <td className="bg-sky-50/10 w-4"></td>
                       ) : (
-                        <td className="px-1 py-1.5 align-top">
+                        <td className="px-0.5 py-1.5 align-top">
                           <button
                             onClick={() => setOrderPanelProduct({ code: r.product_code, name: r.product_name })}
                             className="text-left text-[13px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words leading-snug cursor-pointer transition line-clamp-2"
