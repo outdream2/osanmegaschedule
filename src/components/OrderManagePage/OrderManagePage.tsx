@@ -275,6 +275,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Set<string>>(new Set());
+  // 2026-08-10 · #39 · 발주정보 · 상품별 이전 사입가 캐시 (purchase-history · latest_unit_price)
+  const [prevPriceMap, setPrevPriceMap] = useState<Map<string, number>>(new Map());
   // 2026-08-10 · 사용자 요청 · 발주필요 리스트 체크박스 · 일괄 발주요청 (복원)
   const [selectedLowStock, setSelectedLowStock] = useState<Set<string>>(new Set());
   const [bulkRequesting, setBulkRequesting] = useState(false);
@@ -613,7 +615,27 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     setOrderLoading(true); setOrderError(null);
     try {
       const res = await fetch("/api/order-requests");
-      if (res.ok) setOrderReqs(await res.json());
+      if (res.ok) {
+        const list: OrderRequest[] = await res.json();
+        setOrderReqs(list);
+        // 2026-08-10 · #39 · 이전 사입가 batch fetch (purchase-history · latest_unit_price)
+        const codes = Array.from(new Set(list.map(r => r.product_code).filter(Boolean)));
+        if (codes.length > 0) {
+          try {
+            const r = await fetch(`/api/products/purchase-history?codes=${encodeURIComponent(codes.join(","))}&limit=1`);
+            if (r.ok) {
+              const j = await r.json();
+              const hist = j?.history ?? {};
+              const map = new Map<string, number>();
+              for (const code of codes) {
+                const p = hist[code]?.latest_unit_price;
+                if (p != null && Number.isFinite(Number(p))) map.set(code, Number(p));
+              }
+              setPrevPriceMap(map);
+            }
+          } catch { /* silent */ }
+        }
+      }
       else { const b = await res.json().catch(() => ({})); setOrderError(b.error ?? `서버 오류 (${res.status})`); setOrderReqs([]); }
     } catch { setOrderError("네트워크 오류"); setOrderReqs([]); }
     finally { setOrderLoading(false); }
@@ -2494,6 +2516,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       {isOrderGroupCollapsed("stock") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}재고 현황
                     </span>
                   </th>
+                  {/* 2026-08-10 · #39 · 발주정보 그룹 · 주문수량·이전사입가·발주금액 */}
+                  <th colSpan={3}
+                    className="text-center py-1.5 bg-rose-50 text-rose-700 border-l border-slate-100">
+                    <span className="inline-flex items-center gap-1">발주 정보</span>
+                  </th>
                 </tr>
                 <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
                   {/* 2026-08-06 · 사용자 요청 · 헤더 첫 컬럼 · 전체선택 체크박스 + 텍스트 */}
@@ -2527,7 +2554,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       <th onClick={() => handleOrderSort("short")} title="부족량 정렬" className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">부족{orderArrow("short")}</th>
                     </>
                   )}
-                  {/* 2026-08-10 · 사용자 요청 · 상품별 발주 컬럼 제거 · 공급사 그룹 [발주] 버튼으로 통합 */}
+                  {/* 2026-08-10 · #39 · 발주정보 3컬럼 · 주문수량·이전사입가·발주금액 */}
+                  <th className="text-right px-0.5 py-1.5 w-14 bg-rose-50/40 text-rose-600">주문<br/>수량</th>
+                  <th className="text-right px-0.5 py-1.5 w-16 bg-rose-50/40 text-slate-500"><div className="leading-tight">이전<br/>사입가</div></th>
+                  <th className="text-right px-0.5 py-1.5 w-20 bg-rose-50/40 text-emerald-700">발주금액</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -2617,6 +2647,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       <tr className="bg-sky-50/70 border-t-2 border-sky-200 sticky top-[38px] z-[5]">
                         <td colSpan={99} className="px-3 py-2">
                           <div className="flex items-center gap-2 flex-wrap">
+                            {/* 2026-08-10 · #39 · 공급사 이름 옆 분류 badge */}
+                            <VendorCategoryBadge category={getVendorCategory(currentSup)} />
                             <span className="text-[15px] font-black text-sky-900">{displayVendorName(currentSup) || currentSup}</span>
                             <span className="text-[13px] font-semibold text-sky-500 tabular-nums">{groupRows.length}건</span>
                             {/* 2026-08-10 · 사용자 요청 · 텍스트-버튼 비율 밸런스 · 폰트 +2 · 여백 tight */}
@@ -2639,52 +2671,17 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           ? <CheckSquare size={13} className="text-rose-500 inline cursor-pointer" />
                           : <Square size={13} className="text-slate-300 hover:text-rose-500 inline cursor-pointer" />}
                       </td>
-                      {/* 상품정보 그룹 */}
+                      {/* 상품정보 그룹 · 2026-08-10 · 공급사 셀 제거 · 그룹 헤더로 통합 · 상품명만 */}
                       {isOrderGroupCollapsed("info") ? (
                         <td className="bg-sky-50/10 w-4"></td>
                       ) : (
-                        <>
-                          <td className="px-0.5 py-1.5 align-top">
-                            {(() => {
-                              const raw = String(supplierDisplay ?? "");
-                              // 우선 vat 부가정보만 정제 (통일된 유틸) · 그 후 잔여 괄호 suffix 추출
-                              const vatStripped = stripVendorAnnotation(raw);
-                              const m = vatStripped.match(/^(.+?)\s*(\(.+?\))\s*$/);
-                              // 2026-08-10 · (주)/주식회사 접두어 제거 · displayVendorName 유틸 (사용자 요청 #10)
-                              const mainName = displayVendorName(m ? m[1].trim() : vatStripped);
-                              const suffix = m ? m[2].trim() : "";
-                              const extraFromProduct = (productData as any)?.supplier_note || (productData as any)?.tax_note || "";
-                              // vat 관련이면 secondLine 노출 skip · 나머지 부가정보만 노출
-                              const rawSecondLine = suffix || extraFromProduct || "";
-                              const secondLine = isVatAnnotation(rawSecondLine) ? "" : rawSecondLine;
-                              return (
-                                <>
-                                  {mainName ? (
-                                    <div className="flex flex-col leading-tight">
-                                      <VendorCategoryBadge category={getVendorCategory(mainName || raw)} />
-                                      <button type="button"
-                                        onClick={(e) => { e.stopPropagation(); openSupplierInfo(mainName); }}
-                                        className="text-[12px] text-sky-700 hover:text-sky-900 hover:underline font-semibold whitespace-nowrap leading-tight text-left cursor-pointer"
-                                        title="공급사 정보 조회·수정">{mainName}</button>
-                                    </div>
-                                  ) : (
-                                    <div className="text-[12px] text-slate-400 font-semibold">-</div>
-                                  )}
-                                  {secondLine && (
-                                    <div className="text-[10px] text-slate-400 font-normal break-words whitespace-normal leading-tight mt-0.5">{secondLine}</div>
-                                  )}
-                                </>
-                              );
-                            })()}
-                          </td>
-                          <td className="px-1 py-1.5 align-top max-w-[180px] w-[180px]">
-                            <button
-                              onClick={() => setOrderPanelProduct({ code: r.product_code, name: r.product_name })}
-                              className="text-left text-[13px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words leading-snug cursor-pointer transition line-clamp-2"
-                              title={r.product_name || "상품 상세정보 조회"}
-                            >{r.product_name || "(상품명 없음)"}</button>
-                          </td>
-                        </>
+                        <td className="px-1 py-1.5 align-top">
+                          <button
+                            onClick={() => setOrderPanelProduct({ code: r.product_code, name: r.product_name })}
+                            className="text-left text-[13px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words leading-snug cursor-pointer transition line-clamp-2"
+                            title={r.product_name || "상품 상세정보 조회"}
+                          >{r.product_name || "(상품명 없음)"}</button>
+                        </td>
                       )}
                       {/* 재고현황 그룹 */}
                       {isOrderGroupCollapsed("stock") ? (
@@ -2731,7 +2728,19 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           </td>
                         </>
                       )}
-                      {/* 2026-08-10 · 사용자 요청 · 상품별 개별 발주 버튼 제거 · 공급사 그룹 헤더 [발주] 버튼 하나로 통합 */}
+                      {/* 2026-08-10 · #39 · 발주정보 3컬럼 · 주문수량 (=부족) · 이전사입가 (prevPriceMap) · 발주금액 */}
+                      {(() => {
+                        const orderQty = displayShort > 0 ? displayShort : 0;
+                        const prevPrice = prevPriceMap.get(r.product_code) ?? null;
+                        const amount = prevPrice != null ? orderQty * prevPrice : null;
+                        return (
+                          <>
+                            <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-[13px] text-rose-700 bg-rose-50/30 align-top">{orderQty > 0 ? orderQty : "-"}</td>
+                            <td className="text-right px-0.5 py-1.5 tabular-nums text-[12px] text-slate-500 bg-rose-50/20 align-top">{prevPrice != null ? prevPrice.toLocaleString() : "-"}</td>
+                            <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-[13px] text-emerald-700 bg-rose-50/20 align-top">{amount != null ? amount.toLocaleString() : "-"}</td>
+                          </>
+                        );
+                      })()}
                     </tr>
                     </React.Fragment>
                   );
