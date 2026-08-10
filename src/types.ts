@@ -47,6 +47,7 @@ export interface Employee {
   contract_file_url?: string | null;
   resignation_file_url?: string | null; // T-Staff-ResignationColumn · 사직서 파일 URL (Supabase Storage · resignations 버킷)
   resume_url?: string | null; // T21 · 이력서 파일 URL (Supabase Storage · resumes 버킷)
+  bankbook_image_url?: string | null; // 통장사본 · base64 dataURL 또는 Supabase Storage URL · 인건비 이체 검증용
   break_time_minutes?: number | null; // 일일 휴게시간 (분) · 기본 60
   break_apply_paid?: boolean | null;  // 인건비 계산 시 휴게 차감 여부 · 기본 true
   /** #186 · 우선 담당 물류 · "매장" | "창고" · null 은 미지정 */

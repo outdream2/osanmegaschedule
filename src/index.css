@@ -116,6 +116,18 @@ button[class^="py-3"]:not([class^="py-3.5"]):not([class^="py-30"]) {
   padding-bottom: 0.5rem !important;
 }
 
+/* 2026-08-10 · 사용자 요청 · 버튼 글씨-테두리 좌우 간격 축소 · px-3·px-4·px-5 컴팩트화 */
+button[class*=" px-4"]:not([class*=" px-40"]):not([class*=" px-4."]),
+button[class^="px-4"]:not([class^="px-40"]):not([class^="px-4."]) {
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+}
+button[class*=" px-5"]:not([class*=" px-50"]):not([class*=" px-5."]),
+button[class^="px-5"]:not([class^="px-50"]):not([class^="px-5."]) {
+  padding-left: 0.875rem !important;
+  padding-right: 0.875rem !important;
+}
+
 /* Custom scrolling classes to styled tables nicely */
 ::-webkit-scrollbar {
   width: 8px;
