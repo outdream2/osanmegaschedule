@@ -25,7 +25,7 @@ import { VendorListEditor, VendorDetailModal } from "../LandingPage/VendorListEd
 import type { Vendor } from "../LandingPage/VendorListEditor";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 // 2026-08-03 · 공급사명 정제 유틸 · vat 부가정보 제거 (표시·분류 조회 통일)
-import { stripVendorAnnotation, isVatAnnotation } from "../../utils/vendorNameNormalize";
+import { stripVendorAnnotation, isVatAnnotation, displayVendorName } from "../../utils/vendorNameNormalize";
 import { StockReconciliationTab } from "../StockManagePage/StockReconciliationTab";
 import { TrendingTab } from "./TrendingTab";
 import { FlowTab } from "../StockManagePage/FlowTab";
@@ -2579,7 +2579,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                               // 우선 vat 부가정보만 정제 (통일된 유틸) · 그 후 잔여 괄호 suffix 추출
                               const vatStripped = stripVendorAnnotation(raw);
                               const m = vatStripped.match(/^(.+?)\s*(\(.+?\))\s*$/);
-                              const mainName = m ? m[1].trim() : vatStripped;
+                              // 2026-08-10 · (주)/주식회사 접두어 제거 · displayVendorName 유틸 (사용자 요청 #10)
+                              const mainName = displayVendorName(m ? m[1].trim() : vatStripped);
                               const suffix = m ? m[2].trim() : "";
                               const extraFromProduct = (productData as any)?.supplier_note || (productData as any)?.tax_note || "";
                               // vat 관련이면 secondLine 노출 skip · 나머지 부가정보만 노출
