@@ -17,7 +17,7 @@
 
 import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
-import { useResizablePanel } from "../../hooks/useResizablePanel";
+import { SplitPanel } from "../common/SplitPanel";
 import {
   ScanLine, Loader2, AlertCircle, Package,
   CheckCircle2, Trash2, RotateCcw, Warehouse, Store,
@@ -716,14 +716,23 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       )}
 
       {/* ── Main layout ── */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-5
-        flex flex-col lg:flex-row gap-4 lg:gap-5">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-5 flex flex-col">
+        <SplitPanel
+          storageKey="scanPage.leftWidth"
+          defaultWidth={300}
+          minWidth={220}
+          maxWidth={500}
+          dividerColor="teal"
+          wrapLeft={false}
+          wrapRight={false}
+          leftClassName="flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start max-h-none"
+          mobileRightAsModal={false}
+          left={(
+            <>
 
         {/* ══════════════════════════════════════════════════════
             LEFT PANEL · 스캐너 + 마지막 스캔 상품
         ══════════════════════════════════════════════════════ */}
-        <aside className="lg:w-[300px] xl:w-[320px] lg:shrink-0 flex flex-col gap-4
-          lg:sticky lg:top-4 lg:self-start">
 
           {/* 2026-08-10 · 사용자 요청 · 스캔 카드 · 그라데이션 제거 · 장식 원 제거 · 깔끔한 UI */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -836,12 +845,14 @@ export const ScanPage: React.FC<ScanPageProps> = ({
           </div>
 
           {/* 2026-08-10 · 사용자 요청 · 전체 합계 카드 제거 · 상품별 집계는 아래 리스트 위쪽으로 이동 */}
-        </aside>
+            </>
+          )}
+          right={(
+            <div className="flex flex-col gap-4">
 
         {/* ══════════════════════════════════════════════════════
             RIGHT PANEL · 스캔 리스트 테이블
         ══════════════════════════════════════════════════════ */}
-        <section className="flex-1 min-w-0 flex flex-col gap-4">
 
           {/* 2026-08-10 · 사용자 요청 · 상품별 실재고 집계 카드 제거 */}
 
@@ -1391,7 +1402,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               </div>
             </div>
           )}
-        </section>
+            </div>
+          )}
+        />
       </main>
 
       {/* ── T-SCAN-1 (2026-08-05) · 스캔 즉시 상품 실재고 정보 모달 · [진열요청] 진입점 ── */}

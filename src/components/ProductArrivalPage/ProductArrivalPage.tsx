@@ -7,6 +7,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useConfirm } from "../../hooks/useConfirm";
+import { SplitPanel } from "../common/SplitPanel";
 import {
   ScanLine, Loader2, AlertCircle, PackagePlus, CheckCircle2, XCircle, Clock,
   Trash2, Minus, Plus, RotateCcw, ClipboardCheck, ClipboardX,
@@ -407,14 +408,23 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
       {/* ── Main layout (arrivalTab === "input") ── */}
       {arrivalTab === "input" && (
-      <main className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-5
-        flex flex-col lg:flex-row gap-4 lg:gap-5">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-5 flex flex-col">
+        <SplitPanel
+          storageKey="productArrivalPage.leftWidth"
+          defaultWidth={340}
+          minWidth={240}
+          maxWidth={520}
+          dividerColor="sky"
+          wrapLeft={false}
+          wrapRight={false}
+          leftClassName="flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start max-h-none"
+          mobileRightAsModal={false}
+          left={<>
 
         {/* ══════════════════════════════════════════════════════
             LEFT PANEL · 스캐너 + 마지막 스캔 + 요약
         ══════════════════════════════════════════════════════ */}
-        <aside className="lg:w-[340px] xl:w-[360px] lg:shrink-0 flex flex-col gap-4
-          lg:sticky lg:top-4 lg:self-start">
+
 
           {/* ── 스캔 카드 ── */}
           <div className="bg-white rounded-2xl border border-slate-200/80
@@ -582,12 +592,13 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
               </span>
             </div>
           </div>
-        </aside>
+        </>}
+          right={<div className="flex flex-col gap-4">
 
         {/* ══════════════════════════════════════════════════════
             RIGHT PANEL · 등록 리스트 + 최종 확인
         ══════════════════════════════════════════════════════ */}
-        <section className="flex-1 min-w-0 flex flex-col gap-4">
+
 
           {/* ── 등록 리스트 카드 ── */}
           <div className="bg-white rounded-2xl border border-slate-200/80
@@ -1067,7 +1078,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
               )}
             </div>
           </div>
-        </section>
+        </div>}
+        />
       </main>
       )}
 
