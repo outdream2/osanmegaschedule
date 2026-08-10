@@ -1,5 +1,68 @@
 # TASKS
 
+## 🆕 2026-08-10 세션 · 발주 라이프사이클 (진행 중)
+
+### 📋 사용자 확정 스펙 · 발주요청 → 발주완료
+
+**흐름**:
+1. **발주요청 리스트** · 공급사별 그룹핑
+   - 각 그룹 헤더에 [발주] 버튼 (해당 공급사만 · openOrderModal(그룹라인))
+   - 상단에 [일괄발주] (선택 전체 · 기존)
+2. **[일괄발주]** · 모달 · 각 공급사별 카드 분리 표시 (이미 구현 · openOrderModal · bySupplier)
+   - 카드마다 고유 `order_number` (`PO-YYYYMMDD-XXXX`)
+   - 각각 별도 발주서
+3. **확정 시 DB 저장** · 선택된 order_requests 라인들 · UPDATE
+   - 같은 공급사 라인들 → 같은 `order_number` 공유
+   - 다른 공급사 → 다른 `order_number`
+   - `status='ordered'`, `sent_at=NOW()`, `order_qty`, `unit_price`, 수신처 스냅샷 (`supplier_contact`/`email`/`phone`), `order_date`, `desired_arrival`, `memo` 채움
+4. **발주이력 탭 (신설)** · `status='ordered'` 만 · `order_number` 로 GROUP BY → 발주서 단위 리스트
+   - 클릭 시 발주서 상세 (아이템·수신처·발주일)
+
+**핵심 규칙**:
+- **발주번호 = 공급사 단위** (일괄이든 개별이든 · 하나의 공급사 = 하나의 order_number)
+- 발주요청 리스트에 남는 것 = `status='requested'` 만
+- 발주완료된 라인은 발주이력 탭으로 이동 (요청 리스트에서 사라짐 · WHERE status='requested' 필터)
+
+### 💾 DB · A안 (order_requests 확장 · 사용자 승인)
+
+- 마이그레이션: `migrations/add_order_dispatch_columns_2026-08-10.sql`
+- 커밋: `5e4f350`
+- **⏸️ 사용자 액션 대기**: Supabase SQL Editor 에서 실행 필요
+- 추가 컬럼: `status`, `order_number`, `order_qty`, `unit_price`, `supplier`, `supplier_contact/email/phone`, `order_date`, `desired_arrival`, `memo`, `sent_at`
+- 인덱스 3개: order_number · status+sent_at · supplier+sent_at
+- 하위 호환: 기존 row `status='requested'` 로 세팅
+
+### 🔴 대기 큐 (TaskCreate #9~#17)
+
+**발주요청 UI (OrderManagePage)**:
+- #9 · 공급사별 그룹 헤더 렌더
+- #10 · 공급사명 (주)/주식회사 제거 (displayVendorName)
+- #11 · 이메일/문자 체크박스 제거
+- #12 · 툴바 한줄 (PC) · 2줄 (모바일) · 일괄발주·전체선택·삭제·분류
+- #13 · 새로고침 버튼 제거
+- #17 · 공급사 그룹 헤더 [발주] 버튼 · 해당 공급사만 openOrderModal
+
+**서버 (마이그레이션 실행 후)**:
+- #14 · 일괄발주 handler · UPDATE status='ordered' + 공급사별 order_number 부여
+- #15 · GET /api/order-history · status='ordered' · order_number GROUP · 최신순
+
+**클라이언트**:
+- #16 · 발주이력 탭 UI 신설 (Level 2 서브탭)
+
+### 🤖 진행 중 (백그라운드 에이전트)
+
+- 에이전트 1 · safe-refactoring-expert · OrderManagePage · 매입주기·상세버튼 dead code 완전 정리 (5f64289 이후)
+- 에이전트 2 · general-purpose · DisplayPage · 공급사관리 오른쪽 상단 등록폼 + 상세 [삭제] 버튼
+
+### ✅ 완료 (2026-08-10 커밋)
+
+- `8537d14` · 스캔 실재고 옵션 C 하이브리드 (모바일 카드 · PC 테이블)
+- `2854cb5` · 공급사관리 CARD_BASE · 모바일도 4컬럼
+- `5f64289` · 발주모달 잔고카드 제거·이전사입가·매입주기 UI 제거·[상세] 버튼 제거·전역 폰트 +2
+- `5e4f350` · order_requests 컬럼 확장 마이그레이션
+
+---
+
 ## 🆕 2026-08-09 세션 (진행 중)
 
 ### ✅ 완료 (16 커밋 · 로컬)
