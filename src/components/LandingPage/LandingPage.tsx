@@ -7,7 +7,6 @@ import {
   Clock,
   Lock,
   X,
-  LogOut,
   AlertCircle,
   Upload,
   Eye,
@@ -938,20 +937,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
       {/* ── Header ── */}
       <div className="sticky top-0 z-30">
+        {/* 2026-08-10 · 사용자 요청 · 거래처 로그인 시 rightSlot 큰 로그아웃 제거 (AppNavHeader 기본 로그아웃 사용 · 중복 방지) */}
         <AppNavHeader
           activePage="landing"
           authSession={authSession}
           onLogout={onLogout}
           onNavigate={isVendor ? undefined : handleNavNavigate}
-          rightSlot={isVendor ? (
-            <button
-              onClick={onLogout}
-              className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs font-semibold bg-white hover:bg-rose-50 text-rose-600 border border-gray-200 hover:border-rose-300 rounded-lg transition cursor-pointer"
-            >
-              <LogOut size={13} />
-              <span className="hidden sm:inline">로그아웃</span>
-            </button>
-          ) : undefined}
         />
       </div>
 
