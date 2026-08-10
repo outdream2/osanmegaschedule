@@ -475,7 +475,7 @@ export const LowStockPanel: React.FC = () => {
                                       type="button"
                                       onClick={(e) => { e.stopPropagation(); requestOrderFromLow(p); }}
                                       disabled={busy}
-                                      className="relative inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-black text-white bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-600 hover:via-orange-600 hover:to-rose-600 shadow-sm shadow-amber-500/30 hover:shadow-md hover:shadow-orange-500/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 transition-all duration-200 cursor-pointer whitespace-nowrap ring-1 ring-inset ring-white/20"
+                                      className="relative inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-black text-white bg-amber-500 hover:bg-amber-600 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 transition-all duration-200 cursor-pointer whitespace-nowrap"
                                       title="발주요청 리스트에 추가"
                                     >
                                       <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-white/25 backdrop-blur shrink-0">

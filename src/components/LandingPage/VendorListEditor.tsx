@@ -1159,7 +1159,7 @@ export const VendorDetailModal: React.FC<{
         onClick={panel ? undefined : (e => e.stopPropagation())}
       >
         {/* ── 헤더 · 2026-08-10 · 아이콘 제거 · 텍스트 위주 · 폰트 +2 */}
-        <div className="flex items-start justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-br from-sky-50 via-indigo-50/60 to-emerald-50/40 shrink-0 gap-3">
+        <div className="flex items-start justify-between px-6 py-4 border-b border-slate-200 bg-sky-50 shrink-0 gap-3">
           {/* 2026-08-10 · 사용자 요청 · 분류 위 · 공급사명 아래 · 옆에 사업자·담당·전화 (PC 한줄 · 모바일 2줄) */}
           <div className="min-w-0 flex-1">
             {/* 분류 · 위쪽 별도 라인 */}
@@ -1780,7 +1780,7 @@ const PaymentRegisterModal: React.FC<{
         className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl h-[92vh] md:h-auto md:max-h-[88vh] flex flex-col overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 bg-gradient-to-r from-emerald-50 via-teal-50 to-white shrink-0">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 bg-emerald-50 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
               <Wallet size={18} className="text-emerald-700" />
@@ -2044,10 +2044,10 @@ const SectionTitle: React.FC<{
 };
 
 const statColorMap: Record<string, string> = {
-  emerald: "from-emerald-50 to-emerald-100/50 border-emerald-200 text-emerald-800",
-  indigo:  "from-indigo-50 to-indigo-100/50 border-indigo-200 text-indigo-800",
-  violet:  "from-violet-50 to-violet-100/50 border-violet-200 text-violet-800",
-  rose:    "from-rose-50 to-rose-100/50 border-rose-200 text-rose-800",
+  emerald: "bg-emerald-50 border-emerald-200 text-emerald-800",
+  indigo:  "bg-indigo-50 border-indigo-200 text-indigo-800",
+  violet:  "bg-violet-50 border-violet-200 text-violet-800",
+  rose:    "bg-rose-50 border-rose-200 text-rose-800",
 };
 
 const StatCard: React.FC<{
@@ -2057,7 +2057,7 @@ const StatCard: React.FC<{
   value: string;
   sub?: string;
 }> = ({ icon, color, label, value, sub }) => (
-  <div className={`bg-gradient-to-br ${statColorMap[color]} border rounded-xl px-3 py-2.5 shadow-sm`}>
+  <div className={`${statColorMap[color]} border rounded-xl px-3 py-2.5 shadow-sm`}>
     <div className="flex items-center gap-1 text-[10px] font-black opacity-70 uppercase tracking-wider mb-1">
       {icon}<span>{label}</span>
     </div>

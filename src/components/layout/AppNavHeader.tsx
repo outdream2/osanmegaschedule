@@ -587,7 +587,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                           onClick={onClickTab}
                           className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-[13px] font-bold min-h-[44px] transition ${
                             isActive
-                              ? `bg-gradient-to-r ${c.activeBg} ${c.activeText}`
+                              ? `${c.activeBg} ${c.activeText}`
                               : `${c.inactiveText} hover:bg-slate-50 cursor-pointer`
                           }`}
                         >

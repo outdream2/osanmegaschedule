@@ -603,7 +603,7 @@ const ProductTrendTab: React.FC<{
               <button
                 type="button"
                 onClick={() => openScanProductModal({ ...selected, ...(rows[0] ?? {}) })}
-                className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white flex items-center justify-center cursor-pointer shrink-0 shadow-sm"
+                className="w-8 h-8 rounded-lg bg-sky-500 hover:bg-sky-600 text-white flex items-center justify-center cursor-pointer shrink-0 shadow-sm"
                 title="상세 정보"
               >
                 <Info size={15} strokeWidth={2.4} />
@@ -631,7 +631,7 @@ const ProductTrendTab: React.FC<{
         ) : (
           <div className="px-3 py-3 lg:p-0 flex flex-col gap-3">
             {/* 데스크탑용 상품 요약 (모바일에선 헤더에 통합) */}
-            <div className="hidden lg:block bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-3">
+            <div className="hidden lg:block bg-orange-50 border border-orange-200 rounded-xl p-3">
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -641,7 +641,7 @@ const ProductTrendTab: React.FC<{
                     <button
                       type="button"
                       onClick={() => openScanProductModal({ ...selected, ...(rows[0] ?? {}) })}
-                      className="inline-flex items-center gap-1 text-[10px] font-black text-white bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 rounded-lg px-2 py-1 cursor-pointer transition shadow-sm shrink-0"
+                      className="inline-flex items-center gap-1 text-[10px] font-black text-white bg-sky-500 hover:bg-sky-600 rounded-lg px-2 py-1 cursor-pointer transition shadow-sm shrink-0"
                       title="상세 정보 · 실재고 입력 · 발주 요청"
                     >
                       <Info size={11} /> 정보확인
@@ -679,7 +679,7 @@ const ProductTrendTab: React.FC<{
                             key={m}
                             onClick={() => onChartMonthsChange?.(m as any)}
                             className={`min-w-[24px] px-1.5 py-0.5 text-[10px] font-black rounded-md transition ${active
-                              ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-sm"
+                              ? "bg-orange-500 text-white shadow-sm"
                               : "text-slate-500 hover:text-slate-800 hover:bg-white"
                               }`}
                           >{m}</button>
@@ -695,14 +695,14 @@ const ProductTrendTab: React.FC<{
                       <button
                         onClick={() => onGranularityChange?.("10day")}
                         className={`px-2 py-0.5 text-[10px] font-black rounded-md transition ${granularity === "10day"
-                          ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-sm"
+                          ? "bg-orange-500 text-white shadow-sm"
                           : "text-slate-500 hover:text-slate-800 hover:bg-white"
                           }`}
                       >10일</button>
                       <button
                         onClick={() => onGranularityChange?.("month")}
                         className={`px-2 py-0.5 text-[10px] font-black rounded-md transition ${granularity === "month"
-                          ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-sm"
+                          ? "bg-orange-500 text-white shadow-sm"
                           : "text-slate-500 hover:text-slate-800 hover:bg-white"
                           }`}
                       >월</button>
@@ -1449,7 +1449,7 @@ export const StockFlowPanel: React.FC<{
               }}
               disabled={!query.trim() && displayRows.length === 0}
               title="선택 상품의 상세 정보 (판매리스트 상품명 클릭과 동일)"
-              className="shrink-0 inline-flex items-center gap-1 text-[11px] font-black text-white bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg px-2 py-1.5 cursor-pointer transition shadow-sm active:scale-95"
+              className="shrink-0 inline-flex items-center gap-1 text-[11px] font-black text-white bg-teal-500 hover:bg-teal-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg px-2 py-1.5 cursor-pointer transition shadow-sm active:scale-95"
             >
               <Info size={12} /> 정보확인
             </button>

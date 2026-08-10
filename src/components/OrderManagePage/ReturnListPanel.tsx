@@ -195,9 +195,9 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
         onClick={e => e.stopPropagation()}
       >
         {/* ── 헤더 · rose·pink 그라디언트 ── */}
-        <div className="px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-rose-50 via-pink-50 to-orange-50 flex items-center justify-between gap-3">
+        <div className="px-5 py-4 border-b border-slate-200 bg-rose-50 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center shadow-md shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-rose-500 flex items-center justify-center shadow-md shrink-0">
               <Truck size={18} className="text-white" />
             </div>
             <div className="min-w-0">
@@ -265,7 +265,7 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
           )}
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             {/* 공급사 정보 헤더 (sky·rose gradient) */}
-            <div className="px-4 py-3 bg-gradient-to-r from-sky-50 to-rose-50 border-b border-slate-200 flex items-center justify-between flex-wrap gap-2">
+            <div className="px-4 py-3 bg-rose-50/60 border-b border-slate-200 flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="text-[10px] font-black text-rose-600 bg-white border border-rose-200 rounded-full px-2 py-0.5 shrink-0">반품 요청서</span>
                 <span className="text-sm font-black text-slate-900 truncate">{supplierName || "(공급사 미지정)"}</span>
@@ -409,7 +409,7 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
               className={`text-[12px] font-black rounded-lg px-5 py-2 cursor-pointer shadow-md flex items-center gap-2 disabled:opacity-60 border ${
                 sent
                   ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                  : "text-white bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 border-rose-700"
+                  : "text-white bg-rose-500 hover:bg-rose-600 border-rose-700"
               }`}
             >
               {sent
@@ -793,7 +793,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
           disabled={returnSelected.size === 0}
           className={`ml-auto inline-flex items-center gap-1.5 h-7 px-3 rounded-md text-[11px] font-black transition cursor-pointer border ${
             returnSelected.size > 0
-              ? "text-white bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 border-rose-700 shadow-sm active:scale-95"
+              ? "text-white bg-rose-500 hover:bg-rose-600 border-rose-700 shadow-sm active:scale-95"
               : "text-slate-400 bg-slate-50 border-slate-200 cursor-not-allowed"
           }`}
           title={returnSelected.size > 0 ? `선택된 ${returnSelected.size}개 상품 일괄 반품 신청` : "체크박스로 상품을 선택하세요"}

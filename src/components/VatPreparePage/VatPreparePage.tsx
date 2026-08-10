@@ -607,7 +607,7 @@ const VatPreparePage: React.FC = () => {
 
       {/* 예상 매입세액 공제 (매입 탭 하단 · 안내용) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl border border-emerald-200 shadow-sm p-4">
+        <div className="bg-emerald-50 rounded-xl border border-emerald-200 shadow-sm p-4">
           <div className="flex items-center gap-2 mb-2">
             <PackageCheck size={14} className="text-emerald-600" />
             <div className="text-[13px] font-black text-emerald-800">예상 매입세액 공제</div>
@@ -624,7 +624,7 @@ const VatPreparePage: React.FC = () => {
           </div>
         </div>
 
-        <div className={`bg-gradient-to-br ${netPayable >= 0 ? "from-rose-50" : "from-emerald-50"} to-white rounded-xl border ${netPayable >= 0 ? "border-rose-200" : "border-emerald-200"} shadow-sm p-4`}>
+        <div className={`${netPayable >= 0 ? "bg-rose-50" : "bg-emerald-50"} rounded-xl border ${netPayable >= 0 ? "border-rose-200" : "border-emerald-200"} shadow-sm p-4`}>
           <div className="flex items-center gap-2 mb-2">
             <Calculator size={14} className={netPayable >= 0 ? "text-rose-600" : "text-emerald-600"} />
             <div className={`text-[13px] font-black ${netPayable >= 0 ? "text-rose-800" : "text-emerald-800"}`}>

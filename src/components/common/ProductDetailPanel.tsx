@@ -151,7 +151,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
                     key={m}
                     onClick={() => { setSeason(null); setMonths(m); }}
                     className={`min-w-[28px] min-h-[32px] px-2 py-0.5 text-[11px] font-black rounded-md transition cursor-pointer ${active
-                      ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-sm"
+                      ? "bg-orange-500 text-white shadow-sm"
                       : "text-slate-600 hover:text-slate-900 hover:bg-white"
                     }`}
                   >{m}</button>

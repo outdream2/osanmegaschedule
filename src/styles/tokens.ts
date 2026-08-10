@@ -124,7 +124,7 @@ export const INPUT_BASE =
 
 /** 기본 버튼 · 프라이머리 그라디언트 (indigo → emerald) */
 export const BUTTON_PRIMARY =
-  "px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-emerald-500" +
+  "px-4 py-2 rounded-lg bg-indigo-500" +
   " text-white text-[12px] font-black shadow-sm hover:brightness-110 transition cursor-pointer";
 
 /** 보조 버튼 · 테두리형 (outline) */

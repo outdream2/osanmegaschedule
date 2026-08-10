@@ -5021,7 +5021,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                             } catch { /* skip check */ }
                                             await handleSaveConfirmed(pn);
                                           }}
-                                          className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-white tracking-tight bg-gradient-to-b from-rose-500 to-rose-700 hover:from-rose-400 hover:to-rose-600 border border-rose-800 rounded-md px-3.5 py-1.5 cursor-pointer whitespace-nowrap transition-all duration-150 ease-out shadow-[0_1px_2px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.15)] hover:shadow-[0_3px_8px_rgba(190,18,60,0.35),inset_0_1px_0_rgba(255,255,255,0.2)] hover:-translate-y-[1px] active:translate-y-0 active:shadow-inner active:from-rose-700 active:to-rose-800"
+                                          className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-white tracking-tight bg-rose-600 hover:bg-rose-500 border border-rose-800 rounded-md px-3.5 py-1.5 cursor-pointer whitespace-nowrap transition-all duration-150 ease-out shadow-sm hover:shadow-md hover:-translate-y-[1px] active:translate-y-0 active:shadow-inner active:bg-rose-700"
                                           title={`${pn}번 명세서 · 확정표 DB 저장`}
                                         >💾 거래명세서 DB저장</button>
                                         <span className="text-[14px] font-black text-emerald-900">총 소계 <span className="text-emerald-700">{fmt(confPageTotals.get(pn) ?? 0)}</span>원</span>

@@ -178,7 +178,7 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
                   />
                 ))}
               </tbody>
-              <tfoot className="sticky bottom-0 bg-gradient-to-t from-slate-100 to-slate-50 shadow-inner">
+              <tfoot className="sticky bottom-0 bg-slate-100 shadow-inner">
                 <tr className="text-slate-800 font-black">
                   <td className="px-3 py-3 text-[11px]">합계</td>
                   <td className="px-2 py-3 text-right tabular-nums text-[12px] border-l border-slate-200">

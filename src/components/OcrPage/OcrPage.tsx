@@ -1667,7 +1667,7 @@ return (
                 disabled={extracting}
                 className={`flex-1 px-2 py-1.5 text-[11px] font-black rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${
                   ocrEngine === "onnx"
-                    ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-sm"
+                    ? "bg-emerald-500 text-white shadow-sm"
                     : "text-slate-500 hover:text-slate-800 hover:bg-white"
                 }`}
                 title="PP-OCRv5 한국어 AI 모델 (ONNX · ppu-paddle-ocr) · 완전 무료 · Render 배포 · 셀프호스팅">
@@ -1677,7 +1677,7 @@ return (
                 disabled={extracting}
                 className={`flex-1 px-2 py-1.5 text-[11px] font-black rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${
                   ocrEngine === "gemini"
-                    ? "bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-sm"
+                    ? "bg-amber-500 text-white shadow-sm"
                     : "text-slate-500 hover:text-slate-800 hover:bg-white"
                 }`}
                 title="Gemini 비전 API · 정확도 최상 · 다중 키 로테이션">

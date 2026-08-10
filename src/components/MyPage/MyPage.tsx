@@ -117,7 +117,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
         {/* 프로필 헤더 */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white font-black text-xl sm:text-2xl shadow-md shrink-0">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-indigo-500 flex items-center justify-center text-white font-black text-xl sm:text-2xl shadow-md shrink-0">
               {(me?.name ?? authSession?.employeeName ?? "?").slice(0, 1)}
             </div>
             <div className="flex-1 min-w-0">

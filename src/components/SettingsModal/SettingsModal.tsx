@@ -383,7 +383,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
             <button
               type="button"
               onClick={() => { onNavigateZoneLabels(); onClose(); }}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-sky-200 bg-gradient-to-br from-sky-50 to-cyan-50 hover:border-sky-400 hover:shadow-sm active:scale-[0.99] transition-all cursor-pointer text-left group"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-sky-200 bg-sky-50 hover:border-sky-400 hover:shadow-sm active:scale-[0.99] transition-all cursor-pointer text-left group"
             >
               <div className="w-9 h-9 rounded-lg bg-white border border-sky-200 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition">
                 <MapPin size={16} className="text-sky-600" />
@@ -403,7 +403,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
             <button
               type="button"
               onClick={() => { onNavigatePermissions(); onClose(); }}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-violet-50 hover:border-indigo-400 hover:shadow-sm active:scale-[0.99] transition-all cursor-pointer text-left group"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-indigo-200 bg-indigo-50 hover:border-indigo-400 hover:shadow-sm active:scale-[0.99] transition-all cursor-pointer text-left group"
             >
               <div className="w-9 h-9 rounded-lg bg-white border border-indigo-200 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition">
                 <ShieldCheck size={16} className="text-indigo-600" />

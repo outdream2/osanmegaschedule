@@ -1113,9 +1113,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 {(authSession?.level ?? 0) >= 3 && (
                   <button data-menu-card onClick={() => onNavigate("pharmacist" as any, authSession!)}
                     className="order-1 group relative bg-white border border-slate-200/80 hover:border-sky-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-br from-sky-100/70 to-transparent" />
+                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-sky-100/70" />
                     <div className="relative">
-                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105 bg-gradient-to-br from-sky-100 to-cyan-100 border border-sky-300">
+                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105 bg-sky-100 border border-sky-300">
                         <FirstAid size={16} className="text-sky-600 sm:hidden" weight="fill" /><FirstAid size={20} className="text-sky-600 hidden sm:block" weight="fill" />
                       </div>
                       <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight leading-tight">약사 전용</div>
@@ -1204,7 +1204,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     {/* 우상단 대기 배지 (pending > 0) */}
                     {myPendingCount > 0 && (
                       <div className="absolute top-2 right-2 z-10">
-                        <span className="min-w-[24px] h-[24px] px-1.5 rounded-full flex items-center justify-center text-[11px] font-black text-white bg-gradient-to-br from-rose-500 to-rose-600 shadow-lg ring-2 ring-white animate-pulse">
+                        <span className="min-w-[24px] h-[24px] px-1.5 rounded-full flex items-center justify-center text-[11px] font-black text-white bg-rose-500 shadow-lg ring-2 ring-white animate-pulse">
                           {myPendingCount > 99 ? "99+" : myPendingCount}
                         </span>
                       </div>

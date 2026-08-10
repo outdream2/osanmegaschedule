@@ -41,9 +41,9 @@ export const HiddenManagerModal: React.FC<Props> = ({
         className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[98vh] sm:max-h-[85vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-amber-50 to-orange-50">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-amber-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-md">
+            <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center shadow-md">
               <EyeOff size={18} className="text-white" />
             </div>
             <div>

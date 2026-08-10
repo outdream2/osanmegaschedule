@@ -82,9 +82,9 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
         onClick={(e) => e.stopPropagation()}
       >
         {/* 헤더 */}
-        <div className="px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-sky-50 via-blue-50 to-indigo-50 flex items-center justify-between gap-3">
+        <div className="px-5 py-4 border-b border-slate-200 bg-sky-50 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center shadow-md shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-sky-500 flex items-center justify-center shadow-md shrink-0">
               <Package size={18} className="text-white" />
             </div>
             <div className="min-w-0">

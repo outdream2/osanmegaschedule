@@ -351,7 +351,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       {/* ── Page header strip ── */}
       <div className="bg-white border-b border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-sky-500 to-sky-600
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-sky-500
             flex items-center justify-center shadow-sm shrink-0">
             <PackagePlus size={16} className="text-white" />
           </div>
@@ -421,7 +421,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
             shadow-[0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden">
 
             {/* 상단 그라디언트 헤더 */}
-            <div className="relative px-5 pt-4 pb-3 bg-gradient-to-b from-sky-50/60 to-transparent">
+            <div className="relative px-5 pt-4 pb-3 bg-sky-50/50">
               {/* 장식 링 */}
               <div className="absolute top-3 right-3 w-12 h-12 rounded-full
                 bg-sky-100/60 border border-sky-200/50" />
@@ -430,7 +430,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
               <div className="relative flex items-center gap-3 min-w-0">
                 {/* 카메라 프레임 아이콘 */}
-                <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 to-sky-600
+                <div className="relative w-9 h-9 rounded-xl bg-sky-500
                   flex items-center justify-center shadow-md shrink-0">
                   <ScanLine size={17} className="text-white" />
                   {/* 코너 마커 */}
@@ -455,12 +455,12 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 disabled={mapLoading}
                 className="relative w-full min-h-[52px] flex items-center justify-center gap-2.5
                   py-3.5 rounded-xl font-black text-[14px] sm:text-[15px] text-white
-                  bg-gradient-to-r from-sky-500 to-sky-600
-                  hover:from-sky-600 hover:to-sky-700
-                  active:from-sky-700 active:to-sky-800
+                  bg-sky-500
+                  hover:bg-sky-600
+                  active:bg-sky-700
                   disabled:opacity-50 disabled:cursor-not-allowed
-                  shadow-[0_4px_14px_rgba(14,165,233,0.4)]
-                  hover:shadow-[0_4px_20px_rgba(14,165,233,0.5)]
+                  shadow-md
+                  hover:shadow-lg
                   transition-all duration-200 cursor-pointer overflow-hidden"
               >
                 {/* 광택 레이어 */}
@@ -496,9 +496,9 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
               {/* 마지막 스캔 상품 정보 카드 */}
               {lastScannedProduct && (
                 <div className="flex flex-col gap-3 px-3.5 py-3.5 rounded-xl
-                  bg-gradient-to-b from-emerald-50 to-emerald-50/40
+                  bg-emerald-50
                   border border-emerald-200/80
-                  shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                  shadow-sm">
 
                   {/* 헤더 */}
                   <div className="flex items-center gap-2">
@@ -597,7 +597,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
             <div className="flex items-center justify-between
               px-4 sm:px-5 py-3 sm:py-3.5
               border-b border-slate-200/80
-              bg-gradient-to-r from-slate-50/80 to-white
+              bg-slate-50/80
               rounded-t-2xl sticky top-0 z-10
               shadow-[0_1px_0_rgba(0,0,0,0.04)]">
               <div className="flex items-center gap-2.5">
@@ -873,7 +873,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
             {/* 카드 헤더 */}
             <div className={`px-5 py-4 border-b border-slate-100/80 flex items-center justify-between gap-2 ${
-              allDecided ? "bg-gradient-to-r from-sky-50/60 to-transparent" : "bg-slate-50/40"
+              allDecided ? "bg-sky-50/60" : "bg-slate-50/40"
             }`}>
               <div className="flex items-center gap-2.5">
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
@@ -909,7 +909,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                     "border-2 transition-all duration-200 cursor-pointer",
                     "disabled:cursor-not-allowed active:scale-[0.98] overflow-hidden",
                     finalDecision === "all_match"
-                      ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-emerald-500 shadow-[0_4px_14px_rgba(16,185,129,0.4)]"
+                      ? "bg-emerald-500 text-white border-emerald-500 shadow-md"
                       : allDecided
                         ? "bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50 hover:border-emerald-400 shadow-sm hover:shadow-md"
                         : "bg-slate-50 text-slate-300 border-slate-200 shadow-none",
@@ -932,7 +932,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                     "border-2 transition-all duration-200 cursor-pointer",
                     "disabled:cursor-not-allowed active:scale-[0.98] overflow-hidden",
                     finalDecision === "has_mismatch"
-                      ? "bg-gradient-to-r from-rose-500 to-rose-600 text-white border-rose-500 shadow-[0_4px_14px_rgba(239,68,68,0.4)]"
+                      ? "bg-rose-500 text-white border-rose-500 shadow-md"
                       : allDecided
                         ? "bg-white text-rose-700 border-rose-300 hover:bg-rose-50 hover:border-rose-400 shadow-sm hover:shadow-md"
                         : "bg-slate-50 text-slate-300 border-slate-200 shadow-none",
@@ -1033,12 +1033,12 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                       "transition-all duration-200 cursor-pointer disabled:cursor-not-allowed",
                       "active:scale-[0.99] overflow-hidden",
                       saveStatus === "done"
-                        ? "bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-[0_4px_14px_rgba(16,185,129,0.35)]"
+                        ? "bg-emerald-500 shadow-md"
                         : saveStatus === "error"
-                          ? "bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 shadow-[0_4px_14px_rgba(239,68,68,0.35)]"
+                          ? "bg-rose-500 hover:bg-rose-600 shadow-md"
                           : saveStatus === "saving"
                             ? "bg-slate-400"
-                            : "bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 shadow-[0_4px_20px_rgba(14,165,233,0.45)] hover:shadow-[0_4px_24px_rgba(14,165,233,0.55)]",
+                            : "bg-sky-500 hover:bg-sky-600 shadow-md hover:shadow-lg",
                     ].join(" ")}
                   >
                     {/* 광택 */}
@@ -1175,7 +1175,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
         <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setSelectedArrivalId(null)}>
           <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
             {/* 헤더 */}
-            <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-200 bg-gradient-to-r from-indigo-50 to-white shrink-0">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-200 bg-indigo-50 shrink-0">
               <Package size={18} className="text-indigo-600" />
               <h3 className="text-[16px] font-black text-slate-800">입고내역 상세</h3>
               <span className="text-[12px] font-semibold text-slate-500 tabular-nums">ID {selectedArrivalId}</span>

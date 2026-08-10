@@ -194,7 +194,7 @@ const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
               })}
             </tbody>
             {/* 하단 합계 · 부가세 강조 · 큰 폰트 */}
-            <tfoot className="sticky bottom-0 bg-gradient-to-t from-slate-100 to-slate-50 shadow-inner">
+            <tfoot className="sticky bottom-0 bg-slate-100 shadow-inner">
               <tr className="text-slate-800 font-black">
                 <td className="px-3 py-3">
                   <div className="text-[11px]">합계</div>

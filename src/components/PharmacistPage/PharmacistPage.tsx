@@ -383,7 +383,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
   }, [authSession]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-sky-50/40 via-white to-emerald-50/30">
+    <div className="min-h-screen flex flex-col bg-slate-50/50">
       <div className="sticky top-0 z-30">
         <AppNavHeader
           activePage={"pharmacist" as AppNavPage}
@@ -397,7 +397,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
       <main className="flex-1 max-w-[1360px] mx-auto w-full px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-3">
         {/* 정보 헤더 (탭 카드) */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm px-4 py-3 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-sky-500 to-cyan-500 shadow-sm shrink-0">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-sky-500 shadow-sm shrink-0">
             <FirstAid size={20} className="text-white" weight="fill" />
           </div>
           <div className="min-w-0">
@@ -449,7 +449,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
               /* ─── 교육탭 · 트리 구조 ─────────────────────── */
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
                 {/* ── 트리 위 · 카테고리 추가 컨트롤 (통합 진입점) ── */}
-                <div className="border-b border-slate-100 bg-gradient-to-br from-sky-50/70 to-white">
+                <div className="border-b border-slate-100 bg-sky-50/60">
                   <div className="px-3 py-2 flex items-center gap-1.5">
                     <Plus size={13} className="text-sky-600" />
                     <span className="text-[11px] font-black text-sky-700 uppercase tracking-wider">하위메뉴 설정</span>
@@ -690,7 +690,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                 {/* 하위메뉴 리스트 · 선택된 카테고리 · 관리자 CRUD 버튼 포함 */}
                 {selectedCatObj && (
                   <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
-                    <div className="px-3 py-2 border-b border-slate-100 bg-gradient-to-r from-sky-50/60 to-transparent flex items-center gap-1.5">
+                    <div className="px-3 py-2 border-b border-slate-100 bg-sky-50/60 flex items-center gap-1.5">
                       <FileTextIcon size={13} className="text-sky-600" />
                       <span className="text-[11px] font-black text-sky-700 uppercase tracking-wider break-words whitespace-normal">{selectedCatObj.title}</span>
                       <span className="ml-auto text-[10px] font-bold text-slate-400 tabular-nums shrink-0">{menuItems.length}건</span>
@@ -874,7 +874,7 @@ const SubMenuListPanel: React.FC<SubMenuListPanelProps> = ({
 }) => {
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
-      <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-sky-50/60 to-transparent flex items-center gap-2">
+      <div className="px-4 py-3 border-b border-slate-100 bg-sky-50/60 flex items-center gap-2">
         <div className="min-w-0 flex-1">
           <div className="text-[10px] font-black text-sky-600 uppercase tracking-wider">{tabLabel}</div>
           <div className="text-[15px] font-black text-slate-800 leading-tight truncate">{category.title}</div>

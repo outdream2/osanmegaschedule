@@ -64,14 +64,14 @@ export interface StoreZoneMapProps {
  */
 function rankBadgeClass(rank: number): string {
   if (rank <= 2)
-    return "bg-gradient-to-r from-rose-500 to-red-600 text-white border-red-700 shadow-md";
+    return "bg-rose-600 text-white border-red-700 shadow-md";
   if (rank <= 4)
-    return "bg-gradient-to-r from-sky-500 to-blue-600 text-white border-blue-700 shadow-md";
+    return "bg-sky-500 text-white border-blue-700 shadow-md";
   if (rank <= 6)
-    return "bg-gradient-to-r from-emerald-500 to-green-600 text-white border-green-700 shadow-md";
+    return "bg-emerald-500 text-white border-green-700 shadow-md";
   if (rank <= 8)
-    return "bg-gradient-to-r from-violet-500 to-purple-600 text-white border-purple-700 shadow-md";
-  return "bg-gradient-to-r from-slate-400 to-slate-500 text-white border-slate-600 shadow-sm";
+    return "bg-violet-500 text-white border-purple-700 shadow-md";
+  return "bg-slate-400 text-white border-slate-600 shadow-sm";
 }
 
 const StoreZoneMap: React.FC<StoreZoneMapProps> = ({

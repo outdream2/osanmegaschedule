@@ -336,18 +336,18 @@ function calcTenure(hireDate: string | null | undefined): string {
 }
 
 // ─── 헬퍼: 아바타 그라디언트 ────────────────────────────────────────────────
-const AVATAR_GRADIENTS = [
-  "from-indigo-400 to-violet-500",
-  "from-sky-400 to-indigo-500",
-  "from-emerald-400 to-teal-500",
-  "from-orange-400 to-amber-500",
-  "from-rose-400 to-pink-500",
-  "from-violet-400 to-purple-500",
+const AVATAR_COLORS = [
+  "bg-indigo-500",
+  "bg-sky-500",
+  "bg-emerald-500",
+  "bg-orange-500",
+  "bg-rose-500",
+  "bg-violet-500",
 ] as const;
 
 function avatarGradient(name: string) {
   const code = [...name].reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  return AVATAR_GRADIENTS[code % AVATAR_GRADIENTS.length];
+  return AVATAR_COLORS[code % AVATAR_COLORS.length];
 }
 
 function initials(name: string) {
@@ -392,7 +392,7 @@ const Avatar: React.FC<{
   }
   return (
     <div
-      className={`${dim} rounded-full bg-gradient-to-br ${avatarGradient(name)} flex items-center justify-center text-white font-black shadow shrink-0 select-none`}
+      className={`${dim} rounded-full ${avatarGradient(name)} flex items-center justify-center text-white font-black shadow shrink-0 select-none`}
     >
       {initials(name)}
     </div>
@@ -529,9 +529,9 @@ const CreateModal: React.FC<{
         onClick={(e) => e.stopPropagation()}
       >
         {/* 모달 헤더 */}
-        <div className="px-4 py-3 border-b border-slate-200 bg-gradient-to-r from-indigo-50 to-violet-50 flex items-center justify-between">
+        <div className="px-4 py-3 border-b border-slate-200 bg-indigo-50 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm">
+            <div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center shadow-sm">
               <UserPlus size={13} className="text-white" />
             </div>
             <span className="text-sm font-semibold text-slate-800">직원 신규 등록</span>
@@ -611,7 +611,7 @@ const CreateModal: React.FC<{
 // ─── 서브컴포넌트: 직원 없음 (우측 빈 상태) ─────────────────────────────────
 const EmptyDetail: React.FC = () => (
   <div className="flex-1 flex flex-col items-center justify-center gap-4 text-slate-300 select-none py-16">
-    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50 border border-indigo-100 flex items-center justify-center shadow-sm">
+    <div className="w-20 h-20 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm">
       <Users size={34} className="text-indigo-300" />
     </div>
     <div className="text-center">
@@ -1327,7 +1327,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
       <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
         {/* 페이지 아이콘 + 타이틀 */}
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm shrink-0">
+          <div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center shadow-sm shrink-0">
             <Users size={13} className="text-white" />
           </div>
           <span className="text-[13px] font-bold text-slate-800">직원관리</span>
@@ -1536,7 +1536,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
           ) : (
             <>
               {/* ── 프로필 헤더 — 슬림 배너 (py-2.5) ── */}
-              <div className="bg-gradient-to-r from-indigo-50/90 to-violet-50/70 border-b border-indigo-100/80 px-4 py-2.5 shrink-0">
+              <div className="bg-indigo-50/90 border-b border-indigo-100/80 px-4 py-2.5 shrink-0">
                 <div className="flex items-center gap-3">
                   {/* 사진 · 편집 모드 또는 photo_url 있을 때만 */}
                   {(displayEmp.photo_url || editing) && (
@@ -2640,7 +2640,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
             className="bg-white w-full max-w-[95vw] rounded-2xl shadow-2xl max-h-[92vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-gradient-to-r from-indigo-50/80 to-violet-50/60 shrink-0">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-indigo-50/80 shrink-0">
               <div className="flex items-center gap-2.5">
                 <Avatar name={selectedEmp.name} photoUrl={selectedEmp.photo_url} size="xs" />
                 <div>

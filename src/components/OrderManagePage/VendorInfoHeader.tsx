@@ -151,7 +151,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
   const hasMonthly = monthlyAgg.length > 0;
 
   return (
-    <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-3">
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-3">
 
       {/* 헤더 · 공급사명 + 배지 + 활성 pill */}
       <div className="flex items-start gap-3">

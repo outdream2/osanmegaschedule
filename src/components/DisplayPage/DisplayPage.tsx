@@ -2431,7 +2431,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               const colorIdx = staffColorMap.get(activeStaffInfo.employee.id) ?? 0;
               const isLogistics = activeStaffInfo.employee.position.includes("물류");
               return (
-                <div className={`px-5 py-5 bg-gradient-to-br ${isLogistics ? "from-indigo-600 to-indigo-700" : "from-slate-700 to-slate-800"}`}>
+                <div className={`px-5 py-5 ${isLogistics ? "bg-indigo-600" : "bg-slate-700"}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-2xl font-black text-white shrink-0">
@@ -2669,7 +2669,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-2 sm:p-4" onClick={() => setZoneProductsModal(null)}>
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
               {/* Header */}
-              <div className="px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-emerald-50 to-sky-50 flex items-center justify-between">
+              <div className="px-5 py-4 border-b border-slate-200 bg-emerald-50 flex items-center justify-between">
                 <div>
                   <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide">구역별 상품 리스트</div>
                   <div className="text-lg font-black text-slate-800 mt-0.5">{zoneProductsModal.zoneLabel}</div>
@@ -2819,9 +2819,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       {productInfoModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-1 sm:p-4" onClick={() => setProductInfoModal(null)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[98vh] sm:max-h-[92vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-sky-50 to-indigo-50">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-sky-50">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shrink-0 shadow-md">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0 shadow-md">
                   <Package size={18} className="text-white" />
                 </div>
                 <div className="min-w-0">

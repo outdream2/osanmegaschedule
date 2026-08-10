@@ -579,7 +579,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       {/* ── Page header strip ── */}
       <div className="bg-white border-b border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-teal-600
             flex items-center justify-center shadow-sm shrink-0">
             <ScanLine size={16} className="text-white" />
           </div>
@@ -658,7 +658,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                   shadow-[0_2px_8px_rgba(20,184,166,0.08)]">
 
                   {/* ── 헤더 · 라벨 + 상품코드 ── */}
-                  <div className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-teal-50 to-transparent border-b border-teal-100">
+                  <div className="flex items-center gap-2 px-3.5 py-2 bg-teal-50/80 border-b border-teal-100">
                     <div className="w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center shrink-0">
                       <CheckCircle2 size={11} className="text-white" />
                     </div>
@@ -703,9 +703,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                     }}
                     disabled={!lastCode || requestingKey === (rows.find(r => r.code === lastCode)?.key ?? "")}
                     className="w-full inline-flex items-center justify-center gap-2 min-h-[44px] py-2.5
-                      bg-gradient-to-r from-violet-500 to-violet-600
-                      hover:from-violet-600 hover:to-violet-700
-                      active:from-violet-700 active:to-violet-800
+                      bg-violet-500 hover:bg-violet-600 active:bg-violet-700
                       text-white text-[13px] sm:text-[14px] font-black shadow-inner
                       disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer
                       border-t border-violet-400"
@@ -734,7 +732,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
 
             <div className="flex items-center justify-between
               px-4 sm:px-5 py-3 sm:py-3.5 border-b border-slate-200/80
-              bg-gradient-to-r from-slate-50/80 to-white rounded-t-2xl sticky top-0 z-10 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+              bg-slate-50/80 rounded-t-2xl sticky top-0 z-10 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-teal-100 flex items-center justify-center">
                   <Package size={14} className="text-teal-600" />
@@ -1079,7 +1077,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 : "border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
             }`}>
               <div className={`px-5 py-3.5 border-b border-slate-100/80 flex items-center justify-between gap-2 ${
-                saveStatus === "done" ? "bg-gradient-to-r from-emerald-50/60 to-transparent" : "bg-slate-50/40"
+                saveStatus === "done" ? "bg-emerald-50/60" : "bg-slate-50/40"
               }`}>
                 <div className="flex items-center gap-2.5">
                   <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
@@ -1109,12 +1107,12 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                     "transition-all duration-200 cursor-pointer disabled:cursor-not-allowed",
                     "active:scale-[0.99] overflow-hidden",
                     saveStatus === "done"
-                      ? "bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-[0_4px_14px_rgba(16,185,129,0.35)]"
+                      ? "bg-emerald-500 shadow-md"
                       : saveStatus === "error"
-                        ? "bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 shadow-[0_4px_14px_rgba(239,68,68,0.35)]"
+                        ? "bg-rose-500 hover:bg-rose-600 shadow-md"
                         : saveStatus === "saving"
                           ? "bg-slate-400"
-                          : "bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-[0_4px_20px_rgba(20,184,166,0.45)] hover:shadow-[0_4px_24px_rgba(20,184,166,0.55)]",
+                          : "bg-teal-600 hover:bg-teal-700 shadow-md hover:shadow-lg",
                   ].join(" ")}
                 >
                   <span className="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
@@ -1177,7 +1175,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             className="w-full sm:max-w-lg max-h-[90vh] bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col"
           >
             {/* 헤더 */}
-            <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-violet-50/60 to-transparent flex items-center justify-between gap-2">
+            <div className="px-4 py-3 border-b border-slate-100 bg-violet-50/60 flex items-center justify-between gap-2">
               <div className="min-w-0 flex items-center gap-2 flex-1">
                 <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
                   <Package size={16} className="text-violet-600" />
@@ -1255,7 +1253,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                           onClick={async () => { await requestDisplay(liveRow, zone); }}
                           disabled={requestingKey === liveRow.key}
                           title={zone ? `${label} (${zone}) 진열요청` : `${label} 진열요청 · 구역 미지정`}
-                          className="w-full h-5 rounded text-[8.5px] font-black text-white bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:brightness-110 shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-0.5"
+                          className="w-full h-5 rounded text-[8.5px] font-black text-white bg-violet-500 hover:bg-violet-600 shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-0.5"
                         >
                           {requestingKey === liveRow.key ? (
                             <Loader2 size={8} className="animate-spin" />

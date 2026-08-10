@@ -2855,9 +2855,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             {/* 헤더 */}
-            <div className="px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-red-50 via-rose-50 to-orange-50 flex items-center justify-between gap-3">
+            <div className="px-5 py-4 border-b border-slate-200 bg-rose-50 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-md shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-rose-600 flex items-center justify-center shadow-md shrink-0">
                   <ShoppingCart size={18} className="text-white" />
                 </div>
                 <div className="min-w-0">
@@ -2900,7 +2900,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 return (
                   <div key={`${s.supplier}-${sIdx}`} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                     {/* 2026-08-10 · 사용자 요청 · 공급사 옆 담당자·전화·이메일 나란히 · 한 그룹 */}
-                    <div className="px-4 py-3 bg-gradient-to-r from-sky-50 to-indigo-50 border-b border-slate-200 flex items-baseline gap-x-3 gap-y-1 flex-wrap">
+                    <div className="px-4 py-3 bg-sky-50 border-b border-slate-200 flex items-baseline gap-x-3 gap-y-1 flex-wrap">
                       <span className="text-[10px] font-black text-sky-600 bg-white border border-sky-200 rounded-full px-2 py-0.5 shrink-0">발주서</span>
                       <span className="text-[15px] font-black text-slate-900">{s.supplier}</span>
                       <span className="text-[10px] font-mono text-indigo-600 bg-white border border-indigo-200 rounded px-1.5 py-0.5 shrink-0">#{s.order_number}</span>
@@ -3101,9 +3101,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-sky-50 to-indigo-50">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-sky-50">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shrink-0 shadow-md">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0 shadow-md">
                   <Package size={18} className="text-white" />
                 </div>
                 <div className="min-w-0">
@@ -3162,7 +3162,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             }}
           >
             <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-100">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white font-black text-sm">
+              <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-black text-sm">
                 {contactPopover.name.slice(0, 1)}
               </div>
               <div className="min-w-0">

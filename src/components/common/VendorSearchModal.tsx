@@ -62,7 +62,7 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
         className="w-full max-w-lg max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col"
       >
         {/* 헤더 */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-sky-50/60 to-transparent shrink-0">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 bg-sky-50/60 shrink-0">
           <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center">
             <Building2 size={15} className="text-sky-600" />
           </div>

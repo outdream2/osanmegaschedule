@@ -1115,9 +1115,9 @@ const SignatureModal: React.FC<SignatureModalProps> = ({ open, title, onClose, o
         className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-4 py-3 border-b border-slate-200 bg-gradient-to-r from-emerald-50 to-indigo-50 flex items-center justify-between">
+        <div className="px-4 py-3 border-b border-slate-200 bg-emerald-50 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-indigo-500 flex items-center justify-center shadow-sm">
+            <div className="w-7 h-7 rounded-lg bg-emerald-500 flex items-center justify-center shadow-sm">
               <Signature size={13} weight="fill" className="text-white" />
             </div>
             <span className="text-sm font-black text-slate-800">서명 · {title}</span>
@@ -2541,9 +2541,9 @@ const ExtendContractModal: React.FC<{
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-        <div className="px-4 py-3 border-b border-slate-200 bg-gradient-to-r from-indigo-50 to-emerald-50 flex items-center justify-between">
+        <div className="px-4 py-3 border-b border-slate-200 bg-indigo-50 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center shadow-sm">
+            <div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center shadow-sm">
               <ClockCounterClockwise size={13} weight="fill" className="text-white" />
             </div>
             <span className="text-sm font-black text-slate-800">근로계약 연장</span>
@@ -3923,7 +3923,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 onClick={() => setWriteMode(m.key)}
                 className={`flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2 text-left transition-colors cursor-pointer ${
                   active
-                    ? "bg-gradient-to-br from-indigo-50 to-emerald-50 border-indigo-400 shadow-sm"
+                    ? "bg-indigo-50 border-indigo-400 shadow-sm"
                     : "bg-white border-slate-200 hover:bg-slate-50"
                 }`}
               >
@@ -4075,7 +4075,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             disabled={!uploadFile || uploadBusy || !form.employeeName.trim()}
             className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white text-[13px] font-black shadow-sm transition-all cursor-pointer disabled:cursor-not-allowed ${
               uploadFile && !uploadBusy && form.employeeName.trim()
-                ? "bg-gradient-to-r from-indigo-500 to-emerald-500 hover:brightness-110"
+                ? "bg-indigo-500 hover:brightness-110"
                 : "bg-slate-300 text-slate-500"
             }`}
             title="Google Drive contract 폴더에 저장 · employee_contracts 이력 insert"
@@ -5248,7 +5248,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           <button type="button" onClick={handleApproveAndSave} disabled={generating || !canApprove}
             className={`inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-white text-[14px] font-black shadow-md transition-all cursor-pointer disabled:cursor-not-allowed
               ${canApprove && !generating
-                ? "bg-gradient-to-r from-rose-500 via-fuchsia-500 to-emerald-500 hover:brightness-110 hover:shadow-lg"
+                ? "bg-rose-500 hover:brightness-110 hover:shadow-lg"
                 : "bg-slate-300 text-slate-500"}`}
             title={canApprove ? "계약 승인 · DB 저장 + PDF 다운" : `${signatureStatus.total} 지점 서명을 모두 채워야 활성화됩니다`}
           >

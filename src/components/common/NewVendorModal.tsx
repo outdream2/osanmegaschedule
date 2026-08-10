@@ -74,7 +74,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
         className="w-full sm:max-w-md max-h-[90vh] bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col"
       >
         {/* 헤더 */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-sky-50/60 to-transparent">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 bg-sky-50/60">
           <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center">
             <Building2 size={15} className="text-sky-600" />
           </div>

@@ -1095,7 +1095,7 @@ export const PaymentInfoTab: React.FC = () => {
           ) : (
             <>
               {/* ── 공급사 요약 카드 (T-COMMON-VendorInfo · VendorInfoHeader 위임) ── */}
-              <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-2.5">
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-2.5">
                 <VendorInfoHeader
                   vendor={selectedVendor}
                   onEdit={() => openVendorInfo(selectedVendor as any)}
@@ -1256,7 +1256,7 @@ export const PaymentInfoTab: React.FC = () => {
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
 
                 {/* 폼 헤더 */}
-                <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-emerald-50/60 to-white shrink-0">
+                <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-100 bg-emerald-50/60 shrink-0">
                   <div className="w-7 h-7 rounded-xl bg-emerald-100 flex items-center justify-center ring-1 ring-emerald-200 shrink-0">
                     <Plus size={14} className="text-emerald-700" strokeWidth={2.5} />
                   </div>
