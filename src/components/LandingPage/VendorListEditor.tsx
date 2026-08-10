@@ -1018,30 +1018,6 @@ export const VendorDetailModal: React.FC<{
     draft.vat_included    !== vatDraftVal(vendor)
   ), [vendor, draft]);
 
-  // 2026-08-10 · 사용자 요청 · 공급사 자체 삭제 (VendorManageSplit 상세 카드)
-  //   confirm 후 DELETE /api/vendors/:id · 성공 시 onSaved (리스트 리프레시) → onClose (선택 해제)
-  const [deleting, setDeleting] = useState(false);
-  const handleDeleteVendor = async () => {
-    if (!await confirm({
-      message: `"${vendor.company_name}" 공급사를 삭제하시겠습니까?`,
-      danger: true,
-    })) return;
-    setDeleting(true); setSaveMsg(null);
-    try {
-      const res = await fetch(`/api/vendors/${vendor.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j?.error ?? `서버 ${res.status}`);
-      }
-      try { window.dispatchEvent(new CustomEvent("vendors-changed")); } catch { /* ignore */ }
-      onSaved();
-      onClose();
-    } catch (e: any) {
-      setSaveMsg({ type: "err", text: `삭제 실패: ${e?.message ?? e}` });
-      setDeleting(false);
-    }
-  };
-
   const handleSave = async () => {
     const bnDigits = normalizeBizNum(draft.business_number);
     if (bnDigits && bnDigits.length !== 10) {
@@ -1490,16 +1466,6 @@ export const VendorDetailModal: React.FC<{
             </span>
           )}
           <div className="flex-1" />
-          {/* 2026-08-10 · 사용자 요청 · 공급사 삭제 버튼 */}
-          <button
-            onClick={handleDeleteVendor}
-            disabled={deleting || saving}
-            className="inline-flex items-center gap-1.5 h-8 px-3 text-[12px] font-semibold bg-white border border-rose-300 hover:bg-rose-50 disabled:opacity-40 disabled:cursor-not-allowed text-rose-600 rounded-lg transition cursor-pointer"
-            title="공급사 삭제"
-          >
-            {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
-            삭제
-          </button>
           <button
             onClick={onClose}
             className="h-8 px-4 text-[12px] font-semibold bg-white border border-slate-300 hover:bg-slate-50 rounded-lg text-slate-700 transition cursor-pointer"

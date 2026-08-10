@@ -2871,8 +2871,6 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { Search as SearchIcon } from "lucide-react";
 import { CARD_BASE } from "../../styles/tokens";
-// 2026-08-10 · 사용자 요청 · 오른쪽 상단 신규 등록 카드
-import { NewVendorCard } from "../common/NewVendorCard";
 
 const VendorManageSplit: React.FC = () => {
   const { vendors, loading, refresh } = useVendorsHook();
@@ -3036,25 +3034,13 @@ const VendorManageSplit: React.FC = () => {
     </div>
   );
 
-  // 2026-08-10 · 사용자 요청
-  //  · 오른쪽 상단 · NewVendorCard (인라인 신규 등록 · 등록 완료 시 리스트 refresh)
-  //  · 그 아래 · 선택된 공급사 상세 (VendorDetailModal panel) 또는 안내
-  const right = (
-    <div className="flex flex-col h-full min-h-0 gap-2">
-      <div className="shrink-0">
-        <NewVendorCard onSaved={() => refresh()} />
-      </div>
-      <div className="flex-1 min-h-0 flex flex-col">
-        {selected ? (
-          <React.Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 py-16">공급사 상세 로딩 중...</div>}>
-            <VendorDetailModalLazy vendor={selected as any} onClose={() => setSelectedId(null)} onSaved={refresh} panel />
-          </React.Suspense>
-        ) : (
-          <div className="flex-1 flex items-center justify-center text-slate-400 py-16 text-[13px]">
-            좌측에서 공급사를 선택하세요
-          </div>
-        )}
-      </div>
+  const right = selected ? (
+    <React.Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 py-16">공급사 상세 로딩 중...</div>}>
+      <VendorDetailModalLazy vendor={selected as any} onClose={() => setSelectedId(null)} onSaved={refresh} panel />
+    </React.Suspense>
+  ) : (
+    <div className="flex-1 flex items-center justify-center text-slate-400 py-16 text-[13px]">
+      좌측에서 공급사를 선택하세요
     </div>
   );
 
