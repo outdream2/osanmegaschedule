@@ -220,6 +220,11 @@ router.post("/api/vendors", async (req, res) => {
   const cleanPhone = phone ? String(phone).replace(/[^0-9]/g, "") : null;
   const cleanBizNum = business_number ? String(business_number).replace(/[^0-9]/g, "") : null;
   const validBizNum = cleanBizNum && cleanBizNum.length === 10 ? cleanBizNum : null;
+  // 2026-08-10 · 사용자 요청 · 사업자번호 중복 검증
+  if (validBizNum) {
+    const { data: dup } = await supabase.from("vendors").select("id, company_name").eq("business_number", validBizNum).maybeSingle();
+    if (dup) return res.status(409).json({ error: `사업자번호 중복 · 이미 등록된 공급사: ${dup.company_name} (#${dup.id})` });
+  }
   const baseRow = {
     company_name: company_name.trim(),
     contact_name: contact_name ?? null,
@@ -260,6 +265,14 @@ router.patch("/api/vendors/:id", async (req, res) => {
   if (business_number !== undefined) {
     const digits = business_number ? String(business_number).replace(/[^0-9]/g, "") : "";
     updates.business_number = digits.length === 10 ? digits : null;
+    // 2026-08-10 · 사용자 요청 · 사업자번호 중복 검증 (자기 자신 제외)
+    if (updates.business_number) {
+      const { data: dup } = await supabase.from("vendors").select("id, company_name")
+        .eq("business_number", updates.business_number)
+        .neq("id", id)
+        .maybeSingle();
+      if (dup) return res.status(409).json({ error: `사업자번호 중복 · 이미 등록된 공급사: ${dup.company_name} (#${dup.id})` });
+    }
   }
   // 2026-08-03 · #193 · vat_included 저장 (true/false/null 허용)
   if (vat_included !== undefined) {
