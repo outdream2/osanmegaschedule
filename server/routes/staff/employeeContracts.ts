@@ -161,6 +161,48 @@ async function syncEmployeeContractFields(
   }
 }
 
+// ─── GET · 사번(또는 employeeId)으로 최신 계약서 1건 ───────────────────────
+// 2026-08-10 · 직원정보 카드 · 근로 조건 표시용
+// 우선순위: employee_number (사번) → employeeId
+// is_active=true 우선 · 없으면 created_at DESC · 첫 건
+router.get("/api/employees/latest-contract", async (req, res) => {
+  try {
+    const employeeNumber = String(req.query.employee_number ?? "").trim();
+    const employeeId = Number(req.query.employeeId);
+
+    if (!employeeNumber && !Number.isFinite(employeeId)) {
+      return res.status(400).json({ error: "employee_number or employeeId required" });
+    }
+
+    let q = supabase.from("employee_contracts").select("*");
+    if (employeeNumber) q = q.eq("employee_number", employeeNumber);
+    else q = q.eq("employee_id", employeeId);
+    q = q.order("created_at", { ascending: false }).limit(1);
+
+    const { data, error } = await q;
+    if (error) {
+      if (isMissingTableError(error.message)) return res.json(null);
+      if (isMissingColumnError(error)) {
+        // employee_number 컬럼 없음 · employeeId 로 fallback
+        if (Number.isFinite(employeeId)) {
+          const retry = await supabase
+            .from("employee_contracts")
+            .select("*")
+            .eq("employee_id", employeeId)
+            .order("created_at", { ascending: false })
+            .limit(1);
+          return res.json(retry.data?.[0] ?? null);
+        }
+        return res.json(null);
+      }
+      throw new Error(error.message);
+    }
+    return res.json(data?.[0] ?? null);
+  } catch (err: any) {
+    return res.status(500).json({ error: err?.message ?? "load failed" });
+  }
+});
+
 // ─── GET · 직원별 이력 ─────────────────────────────────────────────────────
 router.get("/api/employee-contracts", async (req, res) => {
   try {
