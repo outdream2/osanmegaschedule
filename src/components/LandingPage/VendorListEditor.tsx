@@ -1951,10 +1951,10 @@ const PaymentRegisterModal: React.FC<{
 const inputCls =
   "w-full h-9 px-3 text-[13px] border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400 bg-white transition placeholder:text-slate-300";
 
-// 2026-08-10 · 사용자 요청 · Field 라벨 크기 +1 (13→14) · 굵지 않게 (font-black → font-medium)
+// 2026-08-10 · 사용자 요청 · Field 라벨 크기 +1 (14→15) · 살짝 굵게 (medium → semibold)
 const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <label className="block space-y-1">
-    <span className="text-[14px] font-medium text-slate-500 tracking-tight">{label}</span>
+    <span className="text-[15px] font-semibold text-slate-600 tracking-tight">{label}</span>
     {children}
   </label>
 );
