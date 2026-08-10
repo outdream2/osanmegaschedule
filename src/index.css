@@ -102,6 +102,20 @@ html, body {
 [class*="text-\\[16px\\]"] { font-size: 26px !important; }  /* was 24 · +2 (제목) */
 [class*="text-\\[17px\\]"] { font-size: 27px !important; }  /* was 25 · +2 (제목) */
 
+/* 2026-08-10 · 사용자 요청 · 전역 버튼 위아래 여백 축소 (다른 SaaS · Linear·Notion 참고 · 컴팩트)
+ * button 요소만 · py-1.5 (0.375rem) 이하는 유지 · py-2 (0.5rem) 이상만 축소
+ * height 지정 (h-*) 은 우선순위 유지 · padding 만 override */
+button[class*=" py-2"]:not([class*=" py-2.5"]):not([class*=" py-20"]),
+button[class^="py-2"]:not([class^="py-2.5"]):not([class^="py-20"]) {
+  padding-top: 0.375rem !important;
+  padding-bottom: 0.375rem !important;
+}
+button[class*=" py-3"]:not([class*=" py-3.5"]):not([class*=" py-30"]),
+button[class^="py-3"]:not([class^="py-3.5"]):not([class^="py-30"]) {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
 /* Custom scrolling classes to styled tables nicely */
 ::-webkit-scrollbar {
   width: 8px;
