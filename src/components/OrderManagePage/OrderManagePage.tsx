@@ -2512,35 +2512,58 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {[...orderReqsFiltered].sort((a, b) => {
-                  const dir = orderSortDir === "asc" ? 1 : -1;
-                  const aCodeVars = [a.product_code, a.product_code.replace(/^0+/, ""), a.product_code.padStart(8, "0")];
-                  const bCodeVars = [b.product_code, b.product_code.replace(/^0+/, ""), b.product_code.padStart(8, "0")];
-                  const aProd = aCodeVars.map(c => allProductsMap[c]).find(Boolean);
-                  const bProd = bCodeVars.map(c => allProductsMap[c]).find(Boolean);
-                  const aSupplier = (aProd as any)?.supplier || a.supplier || "";
-                  const bSupplier = (bProd as any)?.supplier || b.supplier || "";
-                  const aVendor = findVendor((aProd as any)?.supplier) || findVendor(a.supplier) || undefined;
-                  const bVendor = findVendor((bProd as any)?.supplier) || findVendor(b.supplier) || undefined;
-                  const aContact = aVendor?.contact_name || a.supplier_contact || (aProd as any)?.supplier_contact || "";
-                  const bContact = bVendor?.contact_name || b.supplier_contact || (bProd as any)?.supplier_contact || "";
-                  const aInv = aCodeVars.map(c => invStockMap.get(c)).find(Boolean);
-                  const bInv = bCodeVars.map(c => invStockMap.get(c)).find(Boolean);
-                  const aCur = Number((aProd as any)?.current_stock ?? a.current_stock ?? 0);
-                  const bCur = Number((bProd as any)?.current_stock ?? b.current_stock ?? 0);
-                  const aOpt = Number((aProd as any)?.optimal_stock ?? a.optimal_stock ?? 0);
-                  const bOpt = Number((bProd as any)?.optimal_stock ?? b.optimal_stock ?? 0);
-                  switch (orderSortKey) {
-                    case "supplier": return dir * aSupplier.localeCompare(bSupplier, "ko");
-                    case "contact":  return dir * aContact.localeCompare(bContact, "ko");
-                    case "name":     return dir * a.product_name.localeCompare(b.product_name, "ko");
-                    case "current":  return dir * (aCur - bCur);
-                    case "inv":      return dir * ((aInv?.total ?? -1) - (bInv?.total ?? -1));
-                    case "optimal":  return dir * (aOpt - bOpt);
-                    case "short":    return dir * ((aOpt - aCur) - (bOpt - bCur));
-                    default:         return 0;
+                {/* 2026-08-10 · #9·#17 · 공급사별 그룹 렌더 · 그룹 헤더에 [발주] 버튼 (해당 공급사 라인만 openOrderModal) */}
+                {(() => {
+                  const resolveSup = (r: OrderRequest): string => {
+                    const cv = [r.product_code, r.product_code.replace(/^0+/, ""), r.product_code.padStart(8, "0")];
+                    const p = cv.map(c => allProductsMap[c]).find(Boolean) as any;
+                    return ((p?.supplier || r.supplier || "").trim()) || "(공급사 미지정)";
+                  };
+                  // 1) 공급사 우선 + 사용자 정렬 (secondary)
+                  const sorted = [...orderReqsFiltered].sort((a, b) => {
+                    const supA = resolveSup(a);
+                    const supB = resolveSup(b);
+                    const supCmp = supA.localeCompare(supB, "ko");
+                    if (supCmp !== 0) return supCmp;
+                    const dir = orderSortDir === "asc" ? 1 : -1;
+                    const aCodeVars = [a.product_code, a.product_code.replace(/^0+/, ""), a.product_code.padStart(8, "0")];
+                    const bCodeVars = [b.product_code, b.product_code.replace(/^0+/, ""), b.product_code.padStart(8, "0")];
+                    const aProd = aCodeVars.map(c => allProductsMap[c]).find(Boolean);
+                    const bProd = bCodeVars.map(c => allProductsMap[c]).find(Boolean);
+                    const aVendor = findVendor((aProd as any)?.supplier) || findVendor(a.supplier) || undefined;
+                    const bVendor = findVendor((bProd as any)?.supplier) || findVendor(b.supplier) || undefined;
+                    const aContact = aVendor?.contact_name || a.supplier_contact || (aProd as any)?.supplier_contact || "";
+                    const bContact = bVendor?.contact_name || b.supplier_contact || (bProd as any)?.supplier_contact || "";
+                    const aInv = aCodeVars.map(c => invStockMap.get(c)).find(Boolean);
+                    const bInv = bCodeVars.map(c => invStockMap.get(c)).find(Boolean);
+                    const aCur = Number((aProd as any)?.current_stock ?? a.current_stock ?? 0);
+                    const bCur = Number((bProd as any)?.current_stock ?? b.current_stock ?? 0);
+                    const aOpt = Number((aProd as any)?.optimal_stock ?? a.optimal_stock ?? 0);
+                    const bOpt = Number((bProd as any)?.optimal_stock ?? b.optimal_stock ?? 0);
+                    switch (orderSortKey) {
+                      case "supplier": return 0;  // 이미 위에서 처리
+                      case "contact":  return dir * aContact.localeCompare(bContact, "ko");
+                      case "name":     return dir * a.product_name.localeCompare(b.product_name, "ko");
+                      case "current":  return dir * (aCur - bCur);
+                      case "inv":      return dir * ((aInv?.total ?? -1) - (bInv?.total ?? -1));
+                      case "optimal":  return dir * (aOpt - bOpt);
+                      case "short":    return dir * ((aOpt - aCur) - (bOpt - bCur));
+                      default:         return 0;
+                    }
+                  });
+                  // 2) 공급사별 그룹 집계 (헤더에 카운트·그룹 발주 버튼용)
+                  const bySup = new Map<string, OrderRequest[]>();
+                  for (const rr of sorted) {
+                    const s = resolveSup(rr);
+                    if (!bySup.has(s)) bySup.set(s, []);
+                    bySup.get(s)!.push(rr);
                   }
-                }).map(r => {
+                  let prevSup = "";
+                  return sorted.map(r => {
+                    const currentSup = resolveSup(r);
+                    const isNewGroup = currentSup !== prevSup;
+                    prevSup = currentSup;
+                    const groupRows = bySup.get(currentSup) ?? [];
                   // short 계산은 아래 displayShort 로 대체됨 (실시간 재고 반영)
                   const codeVariants = [
                     r.product_code,
@@ -2570,7 +2593,27 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   const displayOptimal = liveOptimal ?? r.optimal_stock;
                   const displayShort = (Number(displayOptimal ?? 0)) - (Number(displayCurrentStock ?? 0));
                   return (
-                    <tr key={r.id} className={`transition ${selectedOrder.has(r.id) ? "bg-rose-50/50" : "hover:bg-orange-50/30"}`}>
+                    <React.Fragment key={r.id}>
+                    {isNewGroup && (
+                      <tr className="bg-sky-50/70 border-t-2 border-sky-200 sticky top-[38px] z-[5]">
+                        <td colSpan={99} className="px-3 py-1.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[13px] font-black text-sky-900">{displayVendorName(currentSup) || currentSup}</span>
+                            <span className="text-[11px] font-semibold text-sky-500 tabular-nums">{groupRows.length}건</span>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); openOrderModal(groupRows); }}
+                              disabled={sendingBulk}
+                              className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[12px] font-black text-rose-800 bg-rose-100 border border-rose-300 hover:bg-rose-200 hover:border-rose-400 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                              title={`${currentSup} · ${groupRows.length}건 발주`}
+                            >
+                              <Send size={11}/> 발주 ({groupRows.length})
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    <tr className={`transition ${selectedOrder.has(r.id) ? "bg-rose-50/50" : "hover:bg-orange-50/30"}`}>
                       <td className="text-center px-0.5 py-1.5 align-top" onClick={(e) => { e.stopPropagation(); toggleOne(r.id); }}>
                         {selectedOrder.has(r.id)
                           ? <CheckSquare size={13} className="text-rose-500 inline cursor-pointer" />
@@ -2680,8 +2723,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         </button>
                       </td>
                     </tr>
+                    </React.Fragment>
                   );
-                })}
+                  });
+                })()}
                 {orderReqsFiltered.length === 0 && (
                   <tr><td colSpan={12} className="text-center text-[11px] text-slate-300 py-6">검색 결과 없음</td></tr>
                 )}
