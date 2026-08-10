@@ -3025,30 +3025,17 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         </tr>
                       </tfoot>
                     </table>
-                    {/* 2026-08-10 · 사용자 요청 · 특이사항·요청 메모 · 각 공급사별 · 표 아래에 배치 */}
-                    <div className="px-4 pb-3 pt-2 bg-white border-t border-slate-100">
-                      <label className="text-[11px] text-slate-500 font-black block mb-1">특이사항 · 요청 메모 (이 공급사)</label>
-                      <textarea
-                        value={s.memo ?? ""}
-                        onChange={e => setOrderModal(prev => prev && ({
-                          ...prev,
-                          suppliers: prev.suppliers.map((ss, i) => i === sIdx ? { ...ss, memo: e.target.value } : ss),
-                        }))}
-                        placeholder="배송 시간·결제 조건·특별 요청 등..."
-                        rows={2}
-                        className="w-full border border-slate-200 rounded px-2 py-1.5 text-[11px] focus:outline-none focus:border-red-400 resize-none"
-                      />
-                    </div>
+                    {/* 2026-08-10 · 사용자 요청 · 특이사항 memo 제거 · 비고 컬럼 대체 */}
                   </div>
                 );
               })}
             </div>
 
-            {/* 발송 채널 (전역) · 특이사항은 각 공급사별로 이동됨 */}
+            {/* 발송 채널 (전역) · 특이사항 memo 제거 (비고 컬럼 사용) */}
             <div className="px-6 py-3 border-t border-slate-100 bg-slate-50/50">
               <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-center">
                 <div className="text-[11px] text-slate-400">
-                  특이사항·요청 메모는 각 공급사별로 표 아래에서 입력합니다.
+                  각 상품 비고 컬럼에 개별 메모 입력 가능
                 </div>
                 {/* 2026-08-10 · 사용자 요청 · 발송 채널 가로 배치 · 카카오톡 기본 (state 초기값) */}
                 <div className="flex flex-col gap-1.5">
