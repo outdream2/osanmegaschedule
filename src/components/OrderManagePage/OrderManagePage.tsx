@@ -2900,7 +2900,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           <th className="text-left p-2 w-28">상품코드</th>
                           <th className="text-left p-2">상품명</th>
                           <th className="text-right p-2 w-20">발주수량</th>
-                          <th className="text-right p-2 w-24">단가 (이전사입가)</th>
+                          <th className="text-right p-2 w-24"><div className="leading-tight">이전<br/>사입가</div></th>
                           <th className="text-right p-2 w-28">금액</th>
                           <th className="text-left p-2 w-28">비고</th>
                         </tr>
