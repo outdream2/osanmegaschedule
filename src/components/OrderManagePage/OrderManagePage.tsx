@@ -1392,47 +1392,39 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               )}
             </div>
 
-            {/* ── Row 2: 공급사 카테고리 필터 + 새로고침 ── */}
-            <div className="px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-slate-100 bg-slate-50/40">
-              <span className="text-[12px] font-black uppercase tracking-wider text-slate-500 shrink-0">분류</span>
-              <div className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-0.5 gap-0.5 flex-wrap">
-                {(["all", ...dbVendorCategories] as string[]).map(cat => {
-                  const label = cat === "all" ? "전체" : cat;
-                  const activeCls =
-                    cat === "all"    ? "bg-slate-100  text-slate-800  border-slate-300"
-                    : cat === "위탁"   ? "bg-violet-50  text-violet-700 border-violet-300"
-                    : cat === "선결제" ? "bg-rose-50    text-rose-700   border-rose-300"
-                    : cat === "60회전" ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                    : cat === "90회전" ? "bg-teal-50    text-teal-700   border-teal-300"
-                    : "bg-slate-50   text-slate-700  border-slate-300";
-                  const active = needCategoryFilter === cat;
-                  return (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setNeedCategoryFilter(cat)}
-                      className={[
-                        "px-3 h-8 rounded-md text-[13px] font-black leading-none border transition-colors cursor-pointer whitespace-nowrap",
-                        active ? activeCls : "bg-white text-slate-500 border-transparent hover:text-slate-800 hover:bg-slate-50",
-                      ].join(" ")}
-                      title={`${label} 카테고리만 표시`}
-                    >{label}</button>
-                  );
-                })}
+            {/* 2026-08-10 · #31 · Row 2 + Row 3 통합 · 분류 · 발주조건 · PC 한줄 · 모바일 2줄 wrap */}
+            <div className="px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-100 bg-slate-50/40">
+              {/* 분류 그룹 */}
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[12px] font-black uppercase tracking-wider text-slate-500 shrink-0">분류</span>
+                <div className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-0.5 gap-0.5 flex-wrap">
+                  {(["all", ...dbVendorCategories] as string[]).map(cat => {
+                    const label = cat === "all" ? "전체" : cat;
+                    const activeCls =
+                      cat === "all"    ? "bg-slate-100  text-slate-800  border-slate-300"
+                      : cat === "위탁"   ? "bg-violet-50  text-violet-700 border-violet-300"
+                      : cat === "선결제" ? "bg-rose-50    text-rose-700   border-rose-300"
+                      : cat === "60회전" ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                      : cat === "90회전" ? "bg-teal-50    text-teal-700   border-teal-300"
+                      : "bg-slate-50   text-slate-700  border-slate-300";
+                    const active = needCategoryFilter === cat;
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setNeedCategoryFilter(cat)}
+                        className={[
+                          "px-3 h-8 rounded-md text-[13px] font-black leading-none border transition-colors cursor-pointer whitespace-nowrap",
+                          active ? activeCls : "bg-white text-slate-500 border-transparent hover:text-slate-800 hover:bg-slate-50",
+                        ].join(" ")}
+                        title={`${label} 카테고리만 표시`}
+                      >{label}</button>
+                    );
+                  })}
+                </div>
               </div>
-              <button
-                onClick={loadProducts}
-                disabled={productsLoading}
-                className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-300 text-slate-400 hover:text-rose-500 transition disabled:opacity-40 cursor-pointer"
-                title="새로고침"
-              >
-                <RefreshCw size={13} className={productsLoading ? "animate-spin" : ""} />
-              </button>
-            </div>
 
-            {/* ── Row 3: 발주 4조건 체크박스 + 조회/초기화 버튼 ── */}
-            {/* 2026-08-06 (2차) · 3조건 무조건 한 줄 · 스크롤 X · 발주조건 라벨/버튼은 필요시 줄바꿈 */}
-            <div className="px-3 py-2 border-b border-slate-100 flex flex-wrap items-center gap-x-3 gap-y-2">
+              {/* 발주 조건 그룹 · 통합 · PC 같은 행 · 모바일 wrap */}
               <span className="text-[13px] font-black tracking-tight text-slate-700 shrink-0 whitespace-nowrap">발주 조건</span>
               <span className="text-[10.5px] text-slate-400 shrink-0 whitespace-nowrap">체크·입력 시 자동 조회</span>
               {/* 조건 3종 · 한 그룹 · nowrap · 스크롤 X · 아주 컴팩트 (모바일 320px 도 fit) */}
@@ -1477,9 +1469,19 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 </label>
               </div>
 
+              {/* 새로고침 · sm 이상 우측 밀림 */}
+              <button
+                onClick={loadProducts}
+                disabled={productsLoading}
+                className="sm:ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-300 text-slate-400 hover:text-rose-500 transition disabled:opacity-40 cursor-pointer"
+                title="새로고침"
+              >
+                <RefreshCw size={13} className={productsLoading ? "animate-spin" : ""} />
+              </button>
+
               {/* 2026-08-06 · 실시간 배지 제거 · 조회중일 때만 표시 (사용자 요청) */}
               {inlineFiltering && (
-                <span className="ml-auto inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[12px] font-black whitespace-nowrap shrink-0">
+                <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[12px] font-black whitespace-nowrap shrink-0">
                   <Loader2 size={12} className="animate-spin" />조회중...
                 </span>
               )}
