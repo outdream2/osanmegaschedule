@@ -148,13 +148,17 @@ const NumberInput: React.FC<NumberInputProps> = ({
   const cur = value === "" ? 0 : Number(value) || 0;
   const dec = () => { if (disabled) return; const n = Math.max(0, cur - 1); onChange(n === 0 && value === "" ? "" : n); };
   const inc = () => { if (disabled) return; onChange(cur + 1); };
+  // 2026-08-10 · 사용자 요청 · 재디자인 · 입력 부분 잘 보이게 · 터치 타겟 확대
+  //   · 높이 h-9 → h-11 (44px · Apple HIG) · +/- 폭 w-6 → w-9 (36px)
+  //   · 입력값 text-[13px] → text-[15px] font-black · 시인성 강화
+  //   · border 강화 · focus-within · ring
   return (
-    <div className={`inline-flex items-stretch w-full h-9 bg-white border border-slate-200 rounded-lg overflow-hidden transition ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
+    <div className={`inline-flex items-stretch w-full h-11 bg-white border-2 border-slate-200 rounded-xl overflow-hidden transition-all focus-within:border-teal-400 focus-within:shadow-[0_0_0_3px_rgba(20,184,166,0.12)] ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
       <button
         type="button"
         onClick={dec}
         disabled={disabled || cur <= 0}
-        className="w-6 shrink-0 text-slate-500 hover:bg-slate-100 hover:text-rose-600 active:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 text-[16px] font-black leading-none flex items-center justify-center cursor-pointer border-r border-slate-200"
+        className="w-9 shrink-0 text-slate-400 hover:bg-slate-100 hover:text-rose-600 active:bg-slate-200 disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-slate-400 text-[18px] font-black leading-none flex items-center justify-center cursor-pointer border-r border-slate-200"
         title="감소"
         tabIndex={-1}
       >−</button>
@@ -165,13 +169,13 @@ const NumberInput: React.FC<NumberInputProps> = ({
         disabled={disabled}
         onChange={e => onChange(e.target.value === "" ? "" : Number(e.target.value))}
         placeholder={placeholder}
-        className={`flex-1 min-w-0 h-full text-center px-1 bg-transparent border-0 text-[13px] font-black tabular-nums focus:outline-none disabled:text-slate-300 ${accent}`}
+        className={`flex-1 min-w-0 h-full text-center px-0.5 bg-transparent border-0 text-[15px] font-black tabular-nums text-slate-900 focus:outline-none disabled:text-slate-300 placeholder:text-slate-300 ${accent}`}
       />
       <button
         type="button"
         onClick={inc}
         disabled={disabled}
-        className="w-6 shrink-0 text-slate-500 hover:bg-slate-100 hover:text-emerald-600 active:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 text-[16px] font-black leading-none flex items-center justify-center cursor-pointer border-l border-slate-200"
+        className="w-9 shrink-0 text-slate-400 hover:bg-slate-100 hover:text-emerald-600 active:bg-slate-200 disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-slate-400 text-[18px] font-black leading-none flex items-center justify-center cursor-pointer border-l border-slate-200"
         title="증가"
         tabIndex={-1}
       >+</button>
@@ -188,15 +192,16 @@ interface ZoneInputProps {
   accentClass: string;                     // e.g. "text-emerald-600 focus:border-emerald-400"
   onChange: (v: string | null) => void;
 }
+// 2026-08-10 · 재디자인 · 박스형 · 클릭 영역 명확
 const ZoneInput: React.FC<ZoneInputProps> = ({ value, placeholder = "-", accentClass, onChange }) => (
   <input
     type="text"
     value={value ?? ""}
     onChange={e => onChange(e.target.value.trim() === "" ? null : e.target.value)}
     placeholder={placeholder}
-    className={`w-full h-5 text-center px-1 bg-transparent border-0 border-b border-dashed border-slate-200
-      text-[10px] font-bold tabular-nums outline-none transition placeholder:text-slate-300
-      ${accentClass}`}
+    className={`w-full h-7 text-center px-1.5 rounded-md bg-slate-50 border border-dashed border-slate-200
+      text-[11px] font-bold tabular-nums outline-none transition placeholder:text-slate-300
+      focus:bg-white focus:border-solid ${accentClass}`}
     title="구역 편집"
   />
 );
