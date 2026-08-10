@@ -2896,18 +2896,24 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 const totalAmount = s.items.reduce((n, it) => n + (it.order_qty * (it.unit_price ?? 0)), 0);
                 return (
                   <div key={`${s.supplier}-${sIdx}`} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                    {/* 공급사 정보 헤더 (각 공급사별 고유 발주번호) */}
-                    <div className="px-4 py-3 bg-gradient-to-r from-sky-50 to-indigo-50 border-b border-slate-200 flex items-center justify-between flex-wrap gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-[10px] font-black text-sky-600 bg-white border border-sky-200 rounded-full px-2 py-0.5 shrink-0">발주서</span>
-                        <span className="text-sm font-black text-slate-900 truncate">{s.supplier}</span>
-                        <span className="text-[10px] font-mono text-indigo-600 bg-white border border-indigo-200 rounded px-1.5 py-0.5 shrink-0">#{s.order_number}</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-[10px] font-semibold text-slate-500 flex-wrap">
-                        {s.supplier_contact && <span>👤 {s.supplier_contact}</span>}
-                        {s.supplier_email && <span className="flex items-center gap-1"><Mail size={10}/>{s.supplier_email}</span>}
-                        {s.supplier_phone && <span className="flex items-center gap-1"><MessageSquare size={10}/>{s.supplier_phone}</span>}
-                      </div>
+                    {/* 2026-08-10 · 사용자 요청 · 공급사 옆 담당자·전화·이메일 나란히 · 한 그룹 */}
+                    <div className="px-4 py-3 bg-gradient-to-r from-sky-50 to-indigo-50 border-b border-slate-200 flex items-baseline gap-x-3 gap-y-1 flex-wrap">
+                      <span className="text-[10px] font-black text-sky-600 bg-white border border-sky-200 rounded-full px-2 py-0.5 shrink-0">발주서</span>
+                      <span className="text-[15px] font-black text-slate-900">{s.supplier}</span>
+                      <span className="text-[10px] font-mono text-indigo-600 bg-white border border-indigo-200 rounded px-1.5 py-0.5 shrink-0">#{s.order_number}</span>
+                      {s.supplier_contact && (
+                        <span className="text-[13px] font-semibold text-slate-700">👤 {s.supplier_contact}</span>
+                      )}
+                      {s.supplier_phone && (
+                        <a href={`tel:${String(s.supplier_phone).replace(/[^0-9+]/g, "")}`} className="text-[13px] font-semibold text-slate-700 tabular-nums hover:text-emerald-700 hover:underline inline-flex items-center gap-1">
+                          <MessageSquare size={12}/>{s.supplier_phone}
+                        </a>
+                      )}
+                      {s.supplier_email && (
+                        <a href={`mailto:${s.supplier_email}`} className="text-[13px] font-semibold text-slate-700 hover:text-emerald-700 hover:underline inline-flex items-center gap-1">
+                          <Mail size={12}/>{s.supplier_email}
+                        </a>
+                      )}
                     </div>
 
                     {/* 2026-08-10 · 사용자 요청 · 예상금액·OCR 잔고 카드 제거 · 표 하단 합계로 대체 */}
