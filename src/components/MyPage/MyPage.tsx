@@ -5,6 +5,7 @@ import { User, Phone, Briefcase, Calendar, Award, Save, Loader2, Lock, MapPin, E
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession, Employee } from "../../types";
 import { SeasonRangesEditor } from "./SeasonRangesEditor";
+import { updateEmployee } from "../../lib/employeeApi";
 
 interface MyPageProps {
   authSession: AuthSession | null;
@@ -48,29 +49,14 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
     if (!me) return;
     setSavingAddress(true);
     try {
-      // PUT /api/employees/:id 는 전체 필드를 요구하므로 현재 값을 기반으로 address 만 갱신
-      const payload = {
-        name: me.name,
-        position: me.position,
-        employmentType: me.employmentType,
-        hireDate: me.hireDate,
-        retireDate: me.retireDate ?? null,
-        description: me.description,
-        workplace: me.workplace,
-        rank: me.rank ?? null,
-        gender: me.gender ?? null,
-        phone: me.phone ?? null,
-        annual_leave_days: me.annual_leave_days ?? null,
+      await updateEmployee(me, {
         level: authSession?.level ?? null,
         address: addressDraft.trim() || null,
-      };
-      const res = await axios.put(`/api/employees/${me.id}`, payload);
-      if (res.status === 200) {
-        await loadMe();
-        showToast("주소가 저장되었습니다");
-      }
+      });
+      await loadMe();
+      showToast("주소가 저장되었습니다");
     } catch (e: any) {
-      showToast(`저장 실패: ${e?.response?.data?.error ?? e.message}`, 3000);
+      showToast(`저장 실패: ${e?.message ?? e}`, 3000);
     } finally {
       setSavingAddress(false);
     }
