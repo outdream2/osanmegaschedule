@@ -118,13 +118,16 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     return (authSession.level ?? 0) >= 3;
   }, [authSession]);
 
+  // 2026-08-10 · #22 · 거래처 로그인 (role='vendor') · [홈] 만 노출 · 스케줄·이슈·요청·기타 숨김
+  const isVendor = authSession?.role === "vendor";
   const visibleTabs = useMemo(() => TABS.filter((t) => {
     if (t.key === "landing") return true;
     if (!authSession) return false;
+    if (isVendor) return false;  // 거래처 로그인 시 홈 외 모든 탭 숨김
     if (t.managerOnly) return isPrivileged;
     if (t.pharmacistOnly) return isPharmacist;
     return true;
-  }), [authSession, isPrivileged, isPharmacist]);
+  }), [authSession, isPrivileged, isPharmacist, isVendor]);
 
   // 경영관리 하위 페이지 활성 여부 (연차승인·점심불참·권한관리)
   const isBizPage = BUSINESS_PAGES.has(activePage);

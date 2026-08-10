@@ -1410,7 +1410,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             </div>
           )}
 
-          {/* ── 입고 알림 ── */}
+          {/* ── 입고 알림 · 2026-08-10 · #22 · 거래처 로그인 시 숨김 ── */}
+          {!isVendor && (
           <div className="w-full mb-6 mt-2">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0ea5e9, #38bdf8)" }}>
@@ -1457,6 +1458,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               </div>
             )}
           </div>
+          )}
 
         </div>
       </div>
