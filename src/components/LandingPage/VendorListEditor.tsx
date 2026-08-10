@@ -76,11 +76,11 @@ interface EditDraft {
 }
 
 const vatDraftVal = (v: Vendor | null | undefined): "included" | "excluded" | "unset" => {
-  // 2026-08-10 · 사용자 요청 · VAT 별도 기본 · 미설정 제거
-  if (!v) return "excluded";
+  // 2026-08-10 · 사용자 요청 · VAT 포함 기본 · 미설정 제거
+  if (!v) return "included";
   if (v.vat_included === true) return "included";
   if (v.vat_included === false) return "excluded";
-  return "excluded";
+  return "included";
 };
 
 const emptyDraft = (v: Vendor): EditDraft => ({
