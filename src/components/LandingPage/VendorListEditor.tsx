@@ -1120,9 +1120,7 @@ export const VendorDetailModal: React.FC<{
               <div className="flex items-center gap-2.5 flex-wrap">
                 <div className="text-[17px] font-black text-slate-900 truncate leading-tight">{vendor.company_name}</div>
                 <VendorCategoryBadge category={vendor.category} />
-                {vendor.created_at && (
-                  <span className="text-[11px] text-slate-500 font-mono bg-white/70 border border-slate-200 rounded-md px-1.5 py-0.5">등록 {String(vendor.created_at).slice(0, 10)}</span>
-                )}
+                {/* 2026-08-10 · 사용자 요청 · 등록일 표시 제거 */}
               </div>
               {/* 2026-08-10 · 사용자 요청 · 배지 제거 · 깔끔한 텍스트 · 폰트 +2 */}
               <div className="mt-2.5 flex items-baseline gap-x-5 gap-y-1 flex-wrap text-[15px]">
