@@ -168,8 +168,14 @@ const RequestTableRow: React.FC<{
           : "hover:bg-slate-50/80"
       }`}
     >
+      {/* 2026-08-10 · 사용자 요청 · 상품명 · 맨 앞 컬럼 */}
       <td className="px-3 py-2.5">
-        <span className={`text-[12px] font-bold ${urgent ? "text-rose-800" : "text-slate-900"}`}>
+        <span className={`text-[12px] font-black ${urgent ? "text-rose-800" : "text-slate-900"} block truncate max-w-[220px]`} title={req.productName ?? undefined}>
+          {req.productName ?? <span className="text-slate-300">-</span>}
+        </span>
+      </td>
+      <td className="px-3 py-2.5">
+        <span className={`text-[12px] font-bold ${urgent ? "text-rose-800" : "text-slate-700"}`}>
           {req.zoneLabel}
         </span>
       </td>
@@ -314,7 +320,9 @@ export const DisplayRequestPanel: React.FC<DisplayRequestPanelProps> = ({
             <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
+                  {/* 2026-08-10 · 사용자 요청 · 상품명 · 맨 앞 컬럼 */}
                   <tr className="bg-slate-50/80 border-b border-slate-100">
+                    <th className="px-3 py-2 text-[11px] font-bold text-slate-500">상품명</th>
                     <th className="px-3 py-2 text-[11px] font-bold text-slate-500 w-24">구역</th>
                     <th className="px-3 py-2 text-[11px] font-bold text-slate-500 w-20">담당</th>
                     <th className="px-3 py-2 text-[11px] font-bold text-slate-500 w-16">시각</th>
