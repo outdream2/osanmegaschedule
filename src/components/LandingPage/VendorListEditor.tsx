@@ -1162,8 +1162,46 @@ export const VendorDetailModal: React.FC<{
           {/* ─── 정보 (탭 제거 · 한 장) ─── */}
           {(() => { void activeTab; return null; })()}
           {(true) && (
-          // 2026-08-10 · 사용자 요청 · 기본정보·공급요약 수평 배치 (sm 이상)
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+          <>
+          {/* 2026-08-10 · 사용자 요청 · 공급요약 · 기본정보 위 · 한 줄 · 모바일 접기 (details) */}
+          <details open className="mb-4 group [&[open]>summary_.chevron]:rotate-90">
+            <summary className="flex items-center gap-2 cursor-pointer select-none list-none">
+              <ChevronRight size={14} className="chevron text-emerald-500 shrink-0 transition-transform" />
+              <SectionTitle icon={<TrendingUp size={13} />} title="공급 요약" color="emerald" />
+            </summary>
+            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-[12px] leading-tight px-4">
+              <span className="inline-flex items-baseline gap-1.5">
+                <span className="text-slate-400 font-semibold">현재 잔액</span>
+                <span className="tabular-nums font-black text-emerald-700">
+                  {balanceInfo ? fmtWon(balanceInfo.balance) : (vendor.latestBalance?.balance != null ? fmtWon(vendor.latestBalance.balance) : "-")}
+                </span>
+                {balanceInfo && (
+                  <span className="text-[10.5px] text-slate-400 tabular-nums">(매입 {balanceInfo.purchase_count} · 결제 {balanceInfo.payment_count})</span>
+                )}
+              </span>
+              <span className="text-slate-200">·</span>
+              <span className="inline-flex items-baseline gap-1.5">
+                <span className="text-slate-400 font-semibold">총 매입액</span>
+                <span className="tabular-nums font-black text-indigo-700">{summary ? fmtWon(summary.totalAmount) : "-"}</span>
+                {summary && <span className="text-[10.5px] text-slate-400 tabular-nums">({summary.count.toLocaleString()}건)</span>}
+              </span>
+              <span className="text-slate-200">·</span>
+              <span className="inline-flex items-baseline gap-1.5">
+                <span className="text-slate-400 font-semibold">매입 상품</span>
+                <span className="tabular-nums font-black text-violet-700">{summary ? `${summary.uniqueProducts.toLocaleString()}종` : "-"}</span>
+                {summary?.totalQty && <span className="text-[10.5px] text-slate-400 tabular-nums">(총 {summary.totalQty.toLocaleString()}개)</span>}
+              </span>
+              <span className="text-slate-200">·</span>
+              <span className="inline-flex items-baseline gap-1.5">
+                <span className="text-slate-400 font-semibold">최근 매입일</span>
+                <span className="tabular-nums font-black text-rose-700">{summary?.latestDate ?? "-"}</span>
+                {summary?.earliestDate && <span className="text-[10.5px] text-slate-400 tabular-nums">(첫 {summary.earliestDate})</span>}
+              </span>
+            </div>
+          </details>
+
+          {/* 2026-08-10 · 기본정보 단일 컬럼 · 공급요약 위로 이동됨 */}
+          <div className="space-y-4">
 
             {/* Left · 기본 정보 편집 */}
             <div className="space-y-3">
@@ -1206,37 +1244,42 @@ export const VendorDetailModal: React.FC<{
                 </Field>
               </div>
 
-              {/* 2026-08-10 · #21 · 팀장·긴급연락처 (신규 · 마이그레이션 add_vendor_extra_contacts_2026-08-10.sql 실행 필요) */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* 2026-08-10 · 사용자 요청 · 담당자 → 팀장 → 긴급연락처 세로 배치 (담당자·전화 → 팀장·전화 → 긴급) */}
+              {/* 담당자 · 전화 (2열) */}
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="담당자 이름">
+                  <input type="text" value={draft.contact_name} onChange={e => setDraft({ ...draft, contact_name: e.target.value })} className={inputCls} />
+                </Field>
+                <Field label="담당자 연락처">
+                  <input type="text" value={draft.phone} onChange={e => setDraft({ ...draft, phone: e.target.value })}
+                    placeholder="010-0000-0000"
+                    className={inputCls} />
+                </Field>
+              </div>
+
+              {/* 팀장 이름 · 팀장 전화 (2열) */}
+              <div className="grid grid-cols-2 gap-3">
                 <Field label="팀장 이름">
                   <input type="text" value={draft.team_leader_name}
                     onChange={e => setDraft({ ...draft, team_leader_name: e.target.value })}
                     placeholder="담당자와 별개"
                     className={inputCls} />
                 </Field>
-                <Field label="팀장 전화">
+                <Field label="팀장 연락처">
                   <input type="text" value={draft.team_leader_phone}
                     onChange={e => setDraft({ ...draft, team_leader_phone: e.target.value })}
                     placeholder="010-0000-0000"
                     className={inputCls} />
                 </Field>
-                <Field label="긴급 연락처">
-                  <input type="text" value={draft.emergency_contact}
-                    onChange={e => setDraft({ ...draft, emergency_contact: e.target.value })}
-                    placeholder="야간·주말·비상"
-                    className={inputCls} />
-                </Field>
               </div>
 
-              {/* 담당자 · 전화 (2열) */}
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="담당자">
-                  <input type="text" value={draft.contact_name} onChange={e => setDraft({ ...draft, contact_name: e.target.value })} className={inputCls} />
-                </Field>
-                <Field label="전화">
-                  <input type="text" value={draft.phone} onChange={e => setDraft({ ...draft, phone: e.target.value })} className={inputCls} />
-                </Field>
-              </div>
+              {/* 긴급 연락처 (single row) */}
+              <Field label="긴급 연락처">
+                <input type="text" value={draft.emergency_contact}
+                  onChange={e => setDraft({ ...draft, emergency_contact: e.target.value })}
+                  placeholder="야간·주말·비상 연락처"
+                  className={inputCls} />
+              </Field>
 
               {/* 이메일 (single row) */}
               <Field label="이메일">
@@ -1292,47 +1335,15 @@ export const VendorDetailModal: React.FC<{
               {/* 2026-08-09 · 거래처 로그인 비밀번호 · 자동 규칙 (전화번호 + "00") · 수동 저장 필드 제거 (사용자 정책) */}
             </div>
 
-            {/* Right · 공급 요약 · 텍스트 스타일 (2026-08-06 · 사용자 요청 · 카드 → 글씨) */}
-            <div className="space-y-3">
-              <SectionTitle icon={<TrendingUp size={13} />} title="공급 요약" color="emerald" />
-
-              {/* 4항목 · 텍스트 · 라벨 + 값 + sub */}
-              <div className="flex flex-wrap gap-x-5 gap-y-2 text-[12px] leading-tight">
-                <span className="inline-flex items-baseline gap-1.5">
-                  <span className="text-slate-400 font-semibold">현재 잔액</span>
-                  <span className="tabular-nums font-black text-emerald-700">
-                    {balanceInfo ? fmtWon(balanceInfo.balance) : (vendor.latestBalance?.balance != null ? fmtWon(vendor.latestBalance.balance) : "-")}
-                  </span>
-                  {balanceInfo && (
-                    <span className="text-[10.5px] text-slate-400 tabular-nums">(매입 {balanceInfo.purchase_count} · 결제 {balanceInfo.payment_count})</span>
-                  )}
-                </span>
-                <span className="text-slate-200">·</span>
-                <span className="inline-flex items-baseline gap-1.5">
-                  <span className="text-slate-400 font-semibold">총 매입액</span>
-                  <span className="tabular-nums font-black text-indigo-700">{summary ? fmtWon(summary.totalAmount) : "-"}</span>
-                  {summary && <span className="text-[10.5px] text-slate-400 tabular-nums">({summary.count.toLocaleString()}건)</span>}
-                </span>
-                <span className="text-slate-200">·</span>
-                <span className="inline-flex items-baseline gap-1.5">
-                  <span className="text-slate-400 font-semibold">매입 상품</span>
-                  <span className="tabular-nums font-black text-violet-700">{summary ? `${summary.uniqueProducts.toLocaleString()}종` : "-"}</span>
-                  {summary?.totalQty && <span className="text-[10.5px] text-slate-400 tabular-nums">(총 {summary.totalQty.toLocaleString()}개)</span>}
-                </span>
-                <span className="text-slate-200">·</span>
-                <span className="inline-flex items-baseline gap-1.5">
-                  <span className="text-slate-400 font-semibold">최근 매입일</span>
-                  <span className="tabular-nums font-black text-rose-700">{summary?.latestDate ?? "-"}</span>
-                  {summary?.earliestDate && <span className="text-[10.5px] text-slate-400 tabular-nums">(첫 {summary.earliestDate})</span>}
-                </span>
-              </div>
-
-              <div className="text-[11px] text-slate-500 leading-relaxed border-t border-slate-100 pt-2">
+            {/* 2026-08-10 · 공급요약 상단으로 이동됨 · 아래는 안내만 유지 */}
+            <div className="text-[11px] text-slate-500 leading-relaxed border-t border-slate-100 pt-2">
+              <div className="text-[11px] text-slate-500 leading-relaxed">
                 <span className="text-slate-400">💡 </span>
                 결제·잔고 관리는 <span className="font-bold text-emerald-700">결제·잔고</span> 탭 · 매입 이력은 <span className="font-bold text-amber-700">매입이력</span> 탭
               </div>
             </div>
           </div>
+          </>
           )}
 
           {/* ─── 결제·잔고 탭 ─── */}
