@@ -7,6 +7,7 @@ import { Employee, Schedule } from "../../types";
 import { SCHEDULE_TYPES, getTypeHex, isLightHex } from "../../constants";
 import type { ScheduleTypeEntry } from "../../constants";
 import { ZoneAssignTab, type LogisticsZoneProps } from "./ZoneAssignTab";
+import { EmployeeInfoForm, type EmployeeInfoValues } from "../common/EmployeeInfoForm";
 
 export type { LogisticsZoneProps };
 
@@ -104,6 +105,17 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
   const [editMemo, setEditMemo] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
+  // 2026-08-10 · 사용자 요청 · 달력 셀 편집 · 즉시 서버 저장 X · 로컬 pending 에 저장 후 [저장] 클릭 시 batch 반영
+  const [pendingChanges, setPendingChanges] = useState<
+    Record<string, { type: string; workingHours: string; actualHours: string; memo: string }>
+  >({});
+  const [isBatchSaving, setIsBatchSaving] = useState(false);
+
+  // 월 이동 시 pending 초기화
+  useEffect(() => {
+    setPendingChanges({});
+  }, [year, month]);
+
   // ── Bulk tab state ──────────────────────────────────────────────
   const [bulkSelectedDates, setBulkSelectedDates] = useState<string[]>([]);
   const [bulkType, setBulkType] = useState("오픈");
@@ -147,6 +159,13 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
       schedMap[day] = { type: sc.type, workingHours: sc.workingHours, actualHours: sc.actualHours, memo: sc.memo || "" };
     }
   }
+  // pending 변경사항 · 서버 저장 전 · UI 에만 반영 (마감 전 편집)
+  for (const [date, ch] of Object.entries(pendingChanges)) {
+    if (date.startsWith(`${year}-${monthStr}-`)) {
+      const day = parseInt(date.slice(8));
+      schedMap[day] = ch;
+    }
+  }
 
   const cells: (number | null)[] = [
     ...Array(firstDow).fill(null),
@@ -178,7 +197,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
     setEditingDay(day);
   };
 
-  const handleDayQuickCycle = async (day: number) => {
+  const handleDayQuickCycle = (day: number) => {
     if (!isAdmin || !onUpdate) return;
     const sc = schedMap[day];
     const cur = sc?.type || "";
@@ -186,27 +205,27 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
     const nextType = CYCLE[(idx + 1) % CYCLE.length];
     const nextWh = typeHoursMap?.[nextType] ?? "";
     const dayStr = String(day).padStart(2, "0");
+    const date = `${year}-${monthStr}-${dayStr}`;
     setEditType(nextType);
     setEditWorkingHours(nextWh);
     setEditActualHours(sc?.actualHours || "");
     setEditMemo(sc?.memo || "");
     setEditingDay(day);
-    try {
-      await onUpdate({
-        employeeId: employee.id,
-        date: `${year}-${monthStr}-${dayStr}`,
+    // 즉시 서버 저장 X · pending 에만 반영 · [저장] 버튼 눌러야 batch 전송
+    setPendingChanges(prev => ({
+      ...prev,
+      [date]: {
         type: nextType,
         workingHours: nextWh,
         actualHours: sc?.actualHours || "",
         memo: sc?.memo || "",
-      });
-    } catch (err) {
-      console.error("Failed to cycle schedule:", err);
-    }
+      },
+    }));
   };
 
-  const saveWith = async (overrides: { type?: string; workingHours?: string; actualHours?: string; memo?: string } = {}) => {
-    if (!onUpdate || editingDay === null) return;
+  // 편집 패널 [저장] · pending 에만 반영 (서버는 상단 batch [저장] 버튼)
+  const saveWith = (overrides: { type?: string; workingHours?: string; actualHours?: string; memo?: string } = {}) => {
+    if (editingDay === null) return;
     const dayStr = String(editingDay).padStart(2, "0");
     const date = `${year}-${monthStr}-${dayStr}`;
     const payload = {
@@ -215,26 +234,52 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
       actualHours: overrides.actualHours ?? editActualHours,
       memo: overrides.memo ?? editMemo,
     };
-    setIsSaving(true);
-    try {
-      await onUpdate({ employeeId: employee.id, date, ...payload });
-      setEditType(payload.type);
-      setEditWorkingHours(payload.workingHours);
-      setEditActualHours(payload.actualHours);
-      setEditMemo(payload.memo);
-    } catch (err) {
-      console.error("Failed to update schedule:", err);
-    } finally {
-      setIsSaving(false);
-    }
+    setEditType(payload.type);
+    setEditWorkingHours(payload.workingHours);
+    setEditActualHours(payload.actualHours);
+    setEditMemo(payload.memo);
+    setPendingChanges(prev => ({ ...prev, [date]: payload }));
   };
 
-  const quickApplyType = async (presetType: string) => {
+  const quickApplyType = (presetType: string) => {
     let wh = typeHoursMap?.[presetType] ?? editWorkingHours;
     if (["휴무", "월차", "지정휴무"].includes(presetType)) wh = "";
     setEditType(presetType);
     setEditWorkingHours(wh);
-    await saveWith({ type: presetType, workingHours: wh });
+    saveWith({ type: presetType, workingHours: wh });
+  };
+
+  // batch 저장 · pendingChanges 를 서버에 순차 반영
+  const handleBatchSave = async () => {
+    if (!onUpdate) return;
+    const entries = Object.entries(pendingChanges);
+    if (entries.length === 0) return;
+    setIsBatchSaving(true);
+    try {
+      for (const [date, ch] of entries) {
+        await onUpdate({
+          employeeId: employee.id,
+          date,
+          type: ch.type,
+          workingHours: ch.workingHours,
+          actualHours: ch.actualHours,
+          memo: ch.memo,
+        });
+      }
+      setPendingChanges({});
+      setEditingDay(null);
+    } catch (err) {
+      console.error("Batch save failed:", err);
+    } finally {
+      setIsBatchSaving(false);
+    }
+  };
+
+  const handleDiscardPending = () => {
+    if (Object.keys(pendingChanges).length === 0) return;
+    if (!window.confirm("변경사항을 취소하시겠습니까?")) return;
+    setPendingChanges({});
+    setEditingDay(null);
   };
 
   // ── Bulk tab handlers ───────────────────────────────────────────
@@ -316,23 +361,23 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
               <>
                 <button
                   onClick={() => setActiveTab("calendar")}
-                  className={`flex-1 py-2.5 text-[11px] font-bold transition flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-2.5 text-[13px] font-bold transition flex items-center justify-center gap-1.5 ${
                     activeTab === "calendar"
                       ? "text-indigo-600 border-b-2 border-indigo-500 bg-white"
                       : "text-slate-500 hover:text-slate-700"
                   }`}
                 >
-                  <Calendar size={12} /> 달력
+                  <Calendar size={14} /> 달력
                 </button>
                 <button
                   onClick={() => setActiveTab("bulk")}
-                  className={`flex-1 py-2.5 text-[11px] font-bold transition flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-2.5 text-[13px] font-bold transition flex items-center justify-center gap-1.5 ${
                     activeTab === "bulk"
                       ? "text-blue-600 border-b-2 border-blue-500 bg-white"
                       : "text-slate-500 hover:text-slate-700"
                   }`}
                 >
-                  <CheckCircle size={12} /> 일괄 등록
+                  <CheckCircle size={14} /> 일괄 등록
                 </button>
               </>
             )}
@@ -355,27 +400,29 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
             )}
             <button
               onClick={() => setActiveTab("info")}
-              className={`flex-1 py-2.5 text-[11px] font-bold transition flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2.5 text-[13px] font-bold transition flex items-center justify-center gap-1.5 ${
                 activeTab === "info"
                   ? "text-fuchsia-600 border-b-2 border-fuchsia-500 bg-white"
                   : "text-slate-500 hover:text-fuchsia-600 hover:bg-fuchsia-50"
               }`}
             >
-              <User size={12} /> 직원정보
+              <User size={14} /> 직원정보
             </button>
           </div>
         )}
 
-        {/* Month nav */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50 flex-shrink-0">
-          <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer">
-            <ChevronLeft size={16} className="text-slate-600" />
-          </button>
-          <span className="text-sm font-bold text-slate-800">{year}년 {month}월</span>
-          <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer">
-            <ChevronRight size={16} className="text-slate-600" />
-          </button>
-        </div>
+        {/* Month nav · 달력·일괄등록 탭 에서만 노출 · info 탭에서는 숨김 */}
+        {activeTab !== "info" && (
+          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50 flex-shrink-0">
+            <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer">
+              <ChevronLeft size={16} className="text-slate-600" />
+            </button>
+            <span className="text-sm font-bold text-slate-800">{year}년 {month}월</span>
+            <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer">
+              <ChevronRight size={16} className="text-slate-600" />
+            </button>
+          </div>
+        )}
 
         {/* ── CALENDAR TAB ── */}
         {activeTab === "calendar" && (
@@ -383,7 +430,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
             <div className="flex-1 overflow-y-auto px-3 py-2">
               <div className="grid grid-cols-7 mb-1">
                 {DAY_LABELS.map((d, i) => (
-                  <div key={d} className={`text-center text-[10px] font-bold py-1 ${i === 0 ? "text-rose-500" : i === 6 ? "text-sky-500" : "text-slate-400"}`}>
+                  <div key={d} className={`text-center text-[13px] font-bold py-1 ${i === 0 ? "text-rose-500" : i === 6 ? "text-sky-500" : "text-slate-400"}`}>
                     {d}
                   </div>
                 ))}
@@ -421,12 +468,12 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                             isRetireDay ? `퇴사일 (${employee.retireDate})` :
                             outOfEmployment ? (beforeHire ? "입사일 이전 — 근무 불가" : "퇴사일 이후 — 근무 불가") : undefined
                           }
-                          className={`relative rounded-lg p-1 flex flex-col items-center min-h-[52px] border transition-all ${
+                          className={`relative rounded-lg p-1 flex flex-col items-center min-h-[68px] border transition-all ${
                             outOfEmployment ? "bg-slate-100 border-slate-200 cursor-not-allowed opacity-70" :
                             (dayBgHex ? "border-transparent" : "bg-white border-slate-100")
                           } ${isHireDay ? "ring-2 ring-emerald-500" : ""} ${isRetireDay ? "ring-2 ring-rose-500" : ""} ${isToday ? "ring-2 ring-indigo-400 ring-offset-1" : ""} ${
                             isEditing ? "ring-2 ring-blue-500 scale-105 z-10 shadow-md" : ""
-                          } ${canClick ? "cursor-pointer hover:shadow-sm hover:scale-[1.02]" : ""}`}
+                          } ${pendingChanges[dayStr] ? "ring-2 ring-amber-400" : ""} ${canClick ? "cursor-pointer hover:shadow-sm hover:scale-[1.02]" : ""}`}
                           style={dayBgHex ? { backgroundColor: dayBgHex } : undefined}
                         >
                           {/* 입사일/퇴사일 배지 (셀 우상단) */}
@@ -440,31 +487,31 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                               퇴사
                             </span>
                           )}
-                          <span className={`text-[10px] font-bold leading-none mb-0.5 ${
+                          <span className={`text-[13px] font-bold leading-none mb-0.5 ${
                             dow === 0 ? "text-rose-500" : dow === 6 ? "text-sky-500" : "text-slate-600"
                           }`}>
                             {day}
                           </span>
                           {outOfEmployment ? (
-                            <span className="text-[8px] text-slate-400 font-medium">─</span>
+                            <span className="text-[11px] text-slate-400 font-medium">─</span>
                           ) : sc?.type ? (
                             <>
-                              <span className={`text-[9px] font-extrabold leading-tight ${dayIsLight ? "text-slate-900" : "text-white"}`}>
+                              <span className={`text-[12px] font-extrabold leading-tight ${dayIsLight ? "text-slate-900" : "text-white"}`}>
                                 {sc.type}
                               </span>
                               {sc.workingHours && (
-                                <span className="text-[8px] text-slate-500 leading-tight mt-0.5 font-mono">
+                                <span className="text-[11px] text-slate-500 leading-tight mt-0.5 font-mono">
                                   {sc.workingHours}
                                 </span>
                               )}
                               {sc.actualHours && (
-                                <span className="text-[8px] text-indigo-600 leading-tight font-semibold">
+                                <span className="text-[11px] text-indigo-600 leading-tight font-semibold">
                                   {sc.actualHours}
                                 </span>
                               )}
                             </>
                           ) : (
-                            <span className="text-[8px] text-slate-200">-</span>
+                            <span className="text-[11px] text-slate-200">-</span>
                           )}
                         </div>
                       );
@@ -519,7 +566,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                 </div>
 
                 <p className="text-[9px] text-blue-500 font-semibold -mt-1">
-                  ▲ 버튼 클릭 즉시 저장됩니다. 시간/메모는 아래에서 수정 후 저장 버튼을 누르세요.
+                  ▲ 변경사항은 임시 반영됩니다. 하단 <b>[변경사항 저장]</b> 버튼을 눌러야 실제 반영됩니다.
                 </p>
 
                 <div className="flex gap-2">
@@ -566,22 +613,22 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                     onClick={() => setEditingDay(null)}
                     className="px-3 py-1.5 text-[11px] font-semibold bg-white border border-slate-200 rounded text-slate-600 hover:bg-slate-50 transition cursor-pointer"
                   >
-                    취소
+                    닫기
                   </button>
                   <button
                     type="button"
-                    onClick={() => saveWith()}
+                    onClick={() => { saveWith(); setEditingDay(null); }}
                     disabled={isSaving}
                     className="px-3 py-1.5 text-[11px] font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded inline-flex items-center gap-1 transition cursor-pointer disabled:opacity-60"
                   >
                     <Save size={11} />
-                    {isSaving ? "저장 중..." : "저장"}
+                    임시 반영
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Stats footer */}
+            {/* Stats footer + Batch save */}
             <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100 flex-shrink-0 flex items-center gap-3 flex-wrap">
               <span className="text-[10px] font-bold text-slate-500">이달 근무 {workDays}일</span>
               {Object.entries(stats).map(([type, count]) => {
@@ -597,6 +644,28 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                   </div>
                 );
               })}
+              {/* 변경사항 저장 · pending 있을 때만 */}
+              {isAdmin && onUpdate && Object.keys(pendingChanges).length > 0 && (
+                <div className="ml-auto flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleDiscardPending}
+                    disabled={isBatchSaving}
+                    className="px-2 py-1 text-[10px] font-bold bg-white border border-slate-300 text-slate-600 rounded hover:bg-slate-100 transition cursor-pointer disabled:opacity-50"
+                  >
+                    변경 취소
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBatchSave}
+                    disabled={isBatchSaving}
+                    className="px-3 py-1 text-[11px] font-black bg-amber-500 hover:bg-amber-600 text-white rounded inline-flex items-center gap-1 shadow-sm transition cursor-pointer disabled:opacity-60"
+                  >
+                    <Save size={11} strokeWidth={3} />
+                    {isBatchSaving ? "저장 중..." : `변경사항 저장 (${Object.keys(pendingChanges).length}건)`}
+                  </button>
+                </div>
+              )}
             </div>
           </>
         )}
@@ -690,10 +759,10 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                         }}
                         className="sr-only"
                       />
-                      <span className={`text-[8px] ${isChecked ? "text-blue-600" : dayIndex === 6 ? "text-blue-500" : dayIndex === 0 ? "text-rose-500" : "text-slate-400"}`}>
+                      <span className={`text-[11px] ${isChecked ? "text-blue-600" : dayIndex === 6 ? "text-blue-500" : dayIndex === 0 ? "text-rose-500" : "text-slate-400"}`}>
                         {dayWord}
                       </span>
-                      <span className="text-[11px] font-bold">{dayNum}</span>
+                      <span className="text-[14px] font-bold">{dayNum}</span>
                     </label>
                   );
                 })}
@@ -816,126 +885,173 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
         )}
 
         {/* ── INFO TAB ── */}
-        {activeTab === "info" && (
-          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
-            {isLocked && (
-              <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
-                <Lock size={12} className="text-amber-500 shrink-0" />
-                <span className="text-xs font-semibold text-amber-700">이달 스케줄이 확정된 상태입니다</span>
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="bg-slate-50 rounded-xl p-2.5 space-y-0.5">
-                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">이름</div>
-                <div className="text-xs font-bold text-slate-800">{employee.name}</div>
-              </div>
-              <div className="bg-slate-50 rounded-xl p-2.5 space-y-0.5">
-                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">성별</div>
-                <div className="text-xs font-bold text-slate-800">{employee.gender ?? "—"}</div>
-              </div>
-              <div className="col-span-2 bg-blue-50 rounded-xl p-2.5 space-y-0.5 border border-blue-100">
-                <div className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">핸드폰번호 (로그인 ID)</div>
-                <div className="text-xs font-bold text-blue-800">
-                  {employee.phone
-                    ? employee.phone.replace(/^(\d{3})(\d{3,4})(\d{4})$/, "$1-$2-$3")
-                    : <span className="text-slate-400 font-normal">{isAdmin ? "미등록 — 로그인 불가" : "미등록"}</span>}
+        {activeTab === "info" && (() => {
+          // 공통 폼 · Employee → EmployeeInfoValues 매핑 (read-only view)
+          const infoValues: EmployeeInfoValues = {
+            name: employee.name || "",
+            phone: employee.phone || "",
+            gender: (employee.gender as "남" | "여" | undefined) ?? "",
+            position: employee.position || "",
+            workplace: employee.workplace || "",
+            hireDate: employee.hireDate || "",
+            rank: employee.rank || "",
+            birthDate: "",
+            address: employee.address || "",
+            email: employee.email || "",
+          };
+          const hasResume = !!employee.resume_url;
+          const hasContract = !!employee.contract_file_url;
+          return (
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+              {isLocked && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                  <Lock size={12} className="text-amber-500 shrink-0" />
+                  <span className="text-xs font-semibold text-amber-700">이달 스케줄이 확정된 상태입니다</span>
+                </div>
+              )}
+
+              {/* 상단 세션 · 버튼 + 요약 */}
+              <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-2.5 shadow-sm">
+                {/* 버튼 행 · 상단 */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {hasResume && (
+                    <a
+                      href={employee.resume_url!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 text-[11px] font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-lg inline-flex items-center gap-1 shadow-sm transition"
+                    >
+                      <FileText size={12} /> 이력서 보기
+                    </a>
+                  )}
+                  {hasContract && (
+                    <button
+                      type="button"
+                      onClick={() => setContractModalOpen(true)}
+                      className="px-3 py-1.5 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg inline-flex items-center gap-1 shadow-sm transition cursor-pointer"
+                    >
+                      <FileText size={12} /> 근로계약서
+                    </button>
+                  )}
+                  {onEditEmployee && (
+                    <button
+                      type="button"
+                      onClick={onEditEmployee}
+                      className="ml-auto px-3 py-1.5 text-[11px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg inline-flex items-center gap-1 shadow-sm transition cursor-pointer"
+                    >
+                      <Edit2 size={12} /> 수정하기
+                    </button>
+                  )}
+                </div>
+
+                {/* 핵심 요약 · 이름·구분·직급·핸드폰 */}
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1 pt-1 border-t border-slate-100">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 shrink-0 w-10">이름</span>
+                    <span className="text-[13px] font-black text-slate-900">{employee.name}</span>
+                  </div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 shrink-0 w-10">구분</span>
+                    <span className="text-[11px] font-bold text-slate-700">{employee.position}</span>
+                  </div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 shrink-0 w-10">직급</span>
+                    <span className="text-[11px] font-bold text-slate-700">{employee.rank || "—"}</span>
+                  </div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 shrink-0 w-10">고용</span>
+                    <span className="text-[11px] font-bold text-slate-700">{employee.employmentType}</span>
+                  </div>
+                  <div className="col-span-2 flex items-baseline gap-1.5">
+                    <span className="text-[10px] font-bold text-blue-400 shrink-0 w-10">전화</span>
+                    <span className="text-[11px] font-bold text-blue-700 tabular-nums">
+                      {employee.phone
+                        ? employee.phone.replace(/^(\d{3})(\d{3,4})(\d{4})$/, "$1-$2-$3")
+                        : <span className="text-slate-300 font-normal">미등록</span>}
+                    </span>
+                  </div>
                 </div>
               </div>
-              <div className="bg-slate-50 rounded-xl p-2.5 space-y-0.5">
-                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">구분</div>
-                <div className="text-xs font-bold text-slate-800">{employee.position}</div>
+
+              {/* 공통 폼 · read-only view */}
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                <EmployeeInfoForm
+                  values={infoValues}
+                  onChange={() => { /* read-only */ }}
+                  layout="grid"
+                  editing={false}
+                  fields={["name", "phone", "gender", "position", "workplace", "hireDate", "rank", "address", "email"]}
+                />
               </div>
-              <div className="bg-slate-50 rounded-xl p-2.5 space-y-0.5">
-                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">직급</div>
-                <div className="text-xs font-bold text-slate-800">{employee.rank ?? "—"}</div>
+
+              {/* 부가 정보 · 근무지·입사일·연차 (공통 폼 밖) */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-baseline gap-1.5 bg-slate-50 rounded-lg px-2.5 py-1.5">
+                  <span className="text-[10px] font-bold text-slate-400 shrink-0">근무지</span>
+                  <span className="text-[11px] font-bold text-slate-700">{employee.workplace}</span>
+                </div>
+                <div className="flex items-baseline gap-1.5 bg-slate-50 rounded-lg px-2.5 py-1.5">
+                  <span className="text-[10px] font-bold text-slate-400 shrink-0">연차</span>
+                  <span className="text-[11px] font-bold text-slate-700">
+                    {employee.annual_leave_days != null ? `${employee.annual_leave_days}일` : "—"}
+                  </span>
+                </div>
               </div>
-              <div className="bg-slate-50 rounded-xl p-2.5 space-y-0.5">
-                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">고용형태</div>
-                <div className="text-xs font-bold text-slate-800">{employee.employmentType}</div>
-              </div>
-              <div className="bg-slate-50 rounded-xl p-2.5 space-y-0.5">
-                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">근무지</div>
-                <div className="text-xs font-bold text-slate-800">{employee.workplace}</div>
-              </div>
-              <div className="bg-slate-50 rounded-xl p-2.5 space-y-0.5">
-                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">입사일</div>
-                <div className="text-xs font-bold text-slate-800">{employee.hireDate || "—"}</div>
-              </div>
-              <div className="bg-slate-50 rounded-xl p-2.5 space-y-0.5">
-                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">연차</div>
-                <div className="text-xs font-bold text-slate-800">{employee.annual_leave_days != null ? `${employee.annual_leave_days}일` : "—"}</div>
-              </div>
-            </div>
-            {employee.description && (
-              <div className="bg-slate-50 rounded-xl p-2.5 space-y-0.5">
-                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">비고</div>
-                <div className="text-xs text-slate-700">{employee.description}</div>
-              </div>
-            )}
-            {employee.contract_file_url && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setContractModalOpen(true)}
-                  className="w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white transition cursor-pointer"
-                >
-                  <FileText size={13} /> 근로계약서 보기
-                </button>
-                {contractModalOpen && (
-                  <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/75 p-4">
-                    <div className="relative w-full max-w-3xl bg-white rounded-2xl overflow-hidden flex flex-col shadow-2xl" style={{ height: "85vh" }}>
-                      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 shrink-0">
-                        <span className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                          <FileText size={15} className="text-emerald-600" /> 근로계약서 — {employee.name}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={employee.contract_file_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition"
-                          >
-                            새 탭에서 열기
-                          </a>
-                          <button
-                            type="button"
-                            onClick={() => setContractModalOpen(false)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex-1 overflow-hidden bg-slate-100">
-                        {/\.(pdf)$/i.test(employee.contract_file_url) ? (
-                          <iframe
-                            src={employee.contract_file_url}
-                            className="w-full h-full border-0"
-                            title="근로계약서"
-                          />
-                        ) : (
-                          <img
-                            src={employee.contract_file_url}
-                            alt="근로계약서"
-                            className="w-full h-full object-contain"
-                          />
-                        )}
+
+              {employee.description && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 flex items-baseline gap-1.5">
+                  <span className="text-[10px] font-bold text-amber-600 shrink-0">비고</span>
+                  <span className="text-[11px] text-amber-900">{employee.description}</span>
+                </div>
+              )}
+
+              {/* 근로계약서 뷰어 모달 (기존 유지) */}
+              {contractModalOpen && employee.contract_file_url && (
+                <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/75 p-4">
+                  <div className="relative w-full max-w-3xl bg-white rounded-2xl overflow-hidden flex flex-col shadow-2xl" style={{ height: "85vh" }}>
+                    <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 shrink-0">
+                      <span className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <FileText size={15} className="text-emerald-600" /> 근로계약서 — {employee.name}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={employee.contract_file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition"
+                        >
+                          새 탭에서 열기
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => setContractModalOpen(false)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                        >
+                          <X size={16} />
+                        </button>
                       </div>
                     </div>
+                    <div className="flex-1 overflow-hidden bg-slate-100">
+                      {/\.(pdf)$/i.test(employee.contract_file_url) ? (
+                        <iframe
+                          src={employee.contract_file_url}
+                          className="w-full h-full border-0"
+                          title="근로계약서"
+                        />
+                      ) : (
+                        <img
+                          src={employee.contract_file_url}
+                          alt="근로계약서"
+                          className="w-full h-full object-contain"
+                        />
+                      )}
+                    </div>
                   </div>
-                )}
-              </>
-            )}
-            {onEditEmployee && (
-              <button
-                onClick={onEditEmployee}
-                className="w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white transition cursor-pointer"
-              >
-                <Edit2 size={13} /> 수정하기
-              </button>
-            )}
-          </div>
-        )}
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
