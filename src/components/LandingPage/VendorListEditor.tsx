@@ -938,7 +938,7 @@ export const VendorDetailModal: React.FC<{
   const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
   const [purchLoading, setPurchLoading] = useState(false);
   const [summary, setSummary] = useState<VendorSummary | null>(null);
-  // 2026-08-10 · 총재고금액 = 상품별 · ERP current_stock × 최근 사입단가 합산
+  // 2026-08-10 · 총재고 = 상품별 · ERP current_stock × 최근 사입단가 합산
   //   1) /api/products-map · 전체 상품 map · 이 공급사 것만 filter
   //   2) /api/products/purchase-history?codes=... · latest_unit_price 조회
   //   3) 합산
@@ -1228,23 +1228,23 @@ export const VendorDetailModal: React.FC<{
                 <span className="text-[15px] font-black text-emerald-700">공급 요약</span>
               </div>
               <span className="inline-flex items-baseline gap-1.5 text-[14px] leading-tight" title="공급사 상품 각각 · 현재고 × 최근 사입단가 합산">
-                <span className="text-slate-400 font-semibold">총재고금액</span>
+                <span className="text-slate-400 font-semibold">총재고</span>
                 <span className="tabular-nums font-black text-sky-700">{vendorTotalStock != null ? fmtWon(vendorTotalStock) : "-"}</span>
               </span>
               <span className="text-slate-200">·</span>
               <span className="inline-flex items-baseline gap-1.5 text-[14px] leading-tight">
-                <span className="text-slate-400 font-semibold">총 상품갯수</span>
+                <span className="text-slate-400 font-semibold">총 상품</span>
                 <span className="tabular-nums font-black text-violet-700">{summary ? `${summary.uniqueProducts.toLocaleString()}종` : "-"}</span>
               </span>
               <span className="text-slate-200">·</span>
               <span className="inline-flex items-baseline gap-1.5 text-[14px] leading-tight">
-                <span className="text-slate-400 font-semibold">현재 총매입금액</span>
+                <span className="text-slate-400 font-semibold">총매입</span>
                 <span className="tabular-nums font-black text-indigo-700">{summary ? fmtWon(summary.totalAmount) : "-"}</span>
               </span>
             </div>
-            {/* 2026-08-10 · 사용자 요청 · 총재고금액 계산 방법 · 상품별 · ERP 남은 재고 × 사입단가 · 합산 */}
+            {/* 2026-08-10 · 사용자 요청 · 총재고 계산 방법 · 상품별 · ERP 남은 재고 × 사입단가 · 합산 */}
             <div className="mt-1 text-[11px] text-slate-400 leading-relaxed px-4">
-              총재고금액 = 상품별로 <span className="font-mono">ERP 남은 재고 수량 × 사입단가</span> · 합산
+              총재고 = 상품별로 <span className="font-mono">ERP 남은 재고 수량 × 사입단가</span> · 합산
             </div>
           </div>
           {/* 모바일: details 접기 · 2줄 grid · 기본 닫힘 */}
@@ -1256,15 +1256,15 @@ export const VendorDetailModal: React.FC<{
             </summary>
             <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 text-[14px] leading-tight px-2">
               <span className="inline-flex flex-col">
-                <span className="text-slate-400 font-semibold text-[11px]">총재고금액</span>
+                <span className="text-slate-400 font-semibold text-[11px]">총재고</span>
                 <span className="tabular-nums font-black text-sky-700">{vendorTotalStock != null ? fmtWon(vendorTotalStock) : "-"}</span>
               </span>
               <span className="inline-flex flex-col">
-                <span className="text-slate-400 font-semibold text-[11px]">총 상품갯수</span>
+                <span className="text-slate-400 font-semibold text-[11px]">총 상품</span>
                 <span className="tabular-nums font-black text-violet-700">{summary ? `${summary.uniqueProducts.toLocaleString()}종` : "-"}</span>
               </span>
               <span className="inline-flex flex-col col-span-2">
-                <span className="text-slate-400 font-semibold text-[11px]">현재 총매입금액</span>
+                <span className="text-slate-400 font-semibold text-[11px]">총매입</span>
                 <span className="tabular-nums font-black text-indigo-700">{summary ? fmtWon(summary.totalAmount) : "-"}</span>
               </span>
             </div>
