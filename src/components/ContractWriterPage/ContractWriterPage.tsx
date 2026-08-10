@@ -136,6 +136,7 @@ interface ContractForm {
   employeeGender: string;    // 성별 (남|여|"")
   employeeRank: string;      // 직급 (대표|부장|팀장|과장|사원|...)
   employeeWorkplace: string; // 근무지 (매장|창고|...)
+  employeeNumber: string;    // 2026-08-10 · 사번 · 숫자만 · EMP- 접두 X · employees·employee_contracts 동기
 
   // 계약 유형
   contractType: string;
@@ -834,6 +835,7 @@ const emptyForm = (): ContractForm => ({
   employeeGender: "",
   employeeRank: "",
   employeeWorkplace: "",
+  employeeNumber: "",
   contractType: "정규직",
   contractMonths: "2",
   workDays: { "월": true, "화": true, "수": true, "목": true, "금": true, "토": false, "일": false },
@@ -3555,6 +3557,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       employeeName: emp.name || prev.employeeName,
       employeePhone: emp.phone || prev.employeePhone,
       employeeAddress: emp.address || prev.employeeAddress,
+      employeeNumber: (emp as any).employee_number != null ? String((emp as any).employee_number) : prev.employeeNumber,
       annualLeaveDays: emp.annual_leave_days != null ? String(emp.annual_leave_days) : prev.annualLeaveDays,
       // T-CTR-10 · 시급 자동 반영 (수동 편집 여부와 무관하게 · 신규 직원 선택 시 새로 세팅)
       //  → 사용자가 편집 여부를 판단하기 어렵고 · 직원 스위칭 = 명시적 재세팅 의도로 해석
@@ -3780,12 +3783,16 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       const body = {
         employee_id: form.employeeId,
         employee_name: form.employeeName,
+        employee_number: form.employeeNumber?.trim() || null,
         contract_type: contractTypeShort || null,
         start_date: form.startDate || null,
         end_date: form.indefinite ? null : (form.endDate || null),
         pdf_data_url: pdfDataUrl,
         approved_by: authSession?.employeeName ?? null,
         approved_by_id: authSession?.employeeId ?? null,
+        // 2026-08-10 · B Step 3 · 근로정보 (계약서 조회로 카드 표시)
+        working_hours: (form.startTime && form.endTime) ? `${form.startTime}-${form.endTime}` : null,
+        annual_leave_days: form.annualLeaveDays ? Number(form.annualLeaveDays) || null : null,
       };
       const resp = await fetch("/api/employee-contracts", {
         method: "POST",
@@ -4126,20 +4133,22 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               · form.employeeName/employeeBirth/employeeGender/employeeRank/employeeWorkplace 연결 유지 */}
           <EmployeeInfoForm
             layout="compact"
-            fields={["name", "birthDate", "gender", "rank", "workplace"]}
+            fields={["name", "employeeNumber", "birthDate", "gender", "rank", "workplace"]}
             values={{
-              name:      form.employeeName,
-              birthDate: form.employeeBirth,
-              gender:    form.employeeGender,
-              rank:      form.employeeRank,
-              workplace: form.employeeWorkplace,
+              name:           form.employeeName,
+              employeeNumber: form.employeeNumber,
+              birthDate:      form.employeeBirth,
+              gender:         form.employeeGender,
+              rank:           form.employeeRank,
+              workplace:      form.employeeWorkplace,
             }}
             onChange={(v) => {
-              if (v.name      !== undefined) { upd("employeeName",      v.name);      setEmpSearchOpen(true); if (form.employeeId != null) upd("employeeId", null); }
-              if (v.birthDate !== undefined)   upd("employeeBirth",     v.birthDate);
-              if (v.gender    !== undefined)   upd("employeeGender",    v.gender);
-              if (v.rank      !== undefined)   upd("employeeRank",      v.rank);
-              if (v.workplace !== undefined)   upd("employeeWorkplace", v.workplace);
+              if (v.name           !== undefined) { upd("employeeName",   v.name);      setEmpSearchOpen(true); if (form.employeeId != null) upd("employeeId", null); }
+              if (v.employeeNumber !== undefined) upd("employeeNumber",   v.employeeNumber);
+              if (v.birthDate      !== undefined) upd("employeeBirth",    v.birthDate);
+              if (v.gender         !== undefined) upd("employeeGender",   v.gender);
+              if (v.rank           !== undefined) upd("employeeRank",     v.rank);
+              if (v.workplace      !== undefined) upd("employeeWorkplace", v.workplace);
             }}
             employees={employees}
             empLoading={empLoading}

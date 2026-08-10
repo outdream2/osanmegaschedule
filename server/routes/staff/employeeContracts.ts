@@ -243,6 +243,10 @@ router.post("/api/employee-contracts", async (req, res) => {
     const probationEndDate   = b.probation_end_date !== undefined
       ? (b.probation_end_date ? String(b.probation_end_date) : null)
       : undefined;
+    // 2026-08-10 · B Step 3 · 근로정보 · 사번
+    const employeeNumber     = b.employee_number ? String(b.employee_number).trim() : null;
+    const workingHours       = b.working_hours ? String(b.working_hours) : null;
+    const annualLeaveDays    = Number.isFinite(Number(b.annual_leave_days)) ? Number(b.annual_leave_days) : null;
 
     if (!employeeName) return res.status(400).json({ error: "employee_name required" });
     if (!dataUrl)      return res.status(400).json({ error: "pdf_data_url required (data:application/pdf;base64,...)" });
@@ -322,6 +326,11 @@ router.post("/api/employee-contracts", async (req, res) => {
       storage,
       approved_by: approvedBy,
       approved_by_id: approvedById,
+      // 2026-08-10 · B Step 3 · 사번 · 근로정보 (컬럼 없으면 서버 42703 · fallback 처리 필요)
+      employee_number: employeeNumber,
+      working_hours: workingHours,
+      annual_leave_days: annualLeaveDays,
+      probation_end_date: probationEndDate !== undefined ? probationEndDate : null,
     };
 
     const { row, err: insErr } = await insertContractWithIsActiveFallback(insertRow);
@@ -350,6 +359,14 @@ router.post("/api/employee-contracts", async (req, res) => {
         contract_end: contractEnd,
         probation_end_date: probationEndDate,
       });
+      // 2026-08-10 · 사번 별도 동기 (best-effort · 컬럼 미존재 시 무시)
+      if (employeeNumber) {
+        try {
+          await supabase.from("employees").update({ employee_number: employeeNumber }).eq("id", employeeId);
+        } catch (e: any) {
+          console.warn("[employee-contracts] employees.employee_number 갱신 실패 (무시):", e?.message ?? e);
+        }
+      }
     }
 
     return res.status(201).json(row);
