@@ -726,39 +726,51 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             </div>
           </div>
 
-          {/* ── 요약 카운트 카드 ── */}
-          {(() => {
-            const Pill: React.FC<{ label: string; value: number; valueClass: string; accent?: string }> = ({ label, value, valueClass, accent }) => (
-              <div className={`flex flex-col items-center gap-1 px-1.5 py-2 rounded-xl transition ${accent ?? ""}`}>
-                <span className={`text-[14px] sm:text-[15px] font-black tabular-nums leading-none ${valueClass}`}>{value}</span>
-                <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 leading-none">{label}</span>
-              </div>
-            );
-            return (
-              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)] px-2 py-2">
-                <div className="grid grid-cols-6 gap-0.5">
-                  <Pill label="건수" value={rows.length} valueClass="text-slate-800" />
-                  <Pill label="창고1" value={warehouse1Total} valueClass="text-orange-600" accent="hover:bg-orange-50/60 rounded-xl transition" />
-                  <Pill label="창고2" value={warehouse2Total} valueClass="text-amber-600" accent="hover:bg-amber-50/60 rounded-xl transition" />
-                  <Pill label="매장1" value={store1Total} valueClass="text-emerald-600" accent="hover:bg-emerald-50/60 rounded-xl transition" />
-                  <Pill label="매장2" value={store2Total} valueClass="text-sky-600" accent="hover:bg-sky-50/60 rounded-xl transition" />
-                  <Pill label="매장3" value={store3Total} valueClass="text-violet-600" accent="hover:bg-violet-50/60 rounded-xl transition" />
-                </div>
-                <div className="mx-2 mt-1 pt-2.5 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-slate-400">총 실재고 수량</span>
-                  <span className="text-[13px] font-black text-slate-800 tabular-nums">
-                    {grandTotal}<span className="text-[10px] font-semibold text-slate-400 ml-0.5">개</span>
-                  </span>
-                </div>
-              </div>
-            );
-          })()}
+          {/* 2026-08-10 · 사용자 요청 · 전체 합계 카드 제거 · 상품별 집계는 아래 리스트 위쪽으로 이동 */}
         </aside>
 
         {/* ══════════════════════════════════════════════════════
             RIGHT PANEL · 스캔 리스트 테이블
         ══════════════════════════════════════════════════════ */}
         <section className="flex-1 min-w-0 flex flex-col gap-4">
+
+          {/* 2026-08-10 · 사용자 요청 · 상품별 실재고 집계 카드 · 스캔 리스트 위쪽 · 각 상품별 요약 */}
+          {rows.length > 0 && (
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden">
+              <div className="px-4 py-2.5 border-b border-slate-100 bg-gradient-to-r from-slate-50/60 to-white flex items-center gap-2">
+                <div className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center">
+                  <Package size={12} className="text-slate-500" />
+                </div>
+                <span className="text-[12px] font-black text-slate-700">상품별 실재고 집계</span>
+                <span className="ml-auto text-[10px] font-semibold text-slate-400 tabular-nums">{rows.length}종</span>
+              </div>
+              <div className="divide-y divide-slate-100 max-h-[240px] overflow-y-auto">
+                {rows.map(r => {
+                  const w1 = r.warehouse1Qty === "" ? 0 : Number(r.warehouse1Qty);
+                  const w2 = r.warehouse2Qty === "" ? 0 : Number(r.warehouse2Qty);
+                  const s1 = r.store1Qty === "" ? 0 : Number(r.store1Qty);
+                  const s2 = r.store2Qty === "" ? 0 : Number(r.store2Qty);
+                  const s3 = r.store3Qty === "" ? 0 : Number(r.store3Qty);
+                  const total = w1 + w2 + s1 + s2 + s3;
+                  return (
+                    <div key={r.key} className="px-3 py-2 flex items-center gap-2 hover:bg-slate-50/60 transition">
+                      <span className="flex-1 min-w-0 text-[12px] font-black text-slate-800 truncate">{r.product.name}</span>
+                      <div className="flex items-center gap-1.5 text-[10px] tabular-nums shrink-0">
+                        <span className="text-orange-600 font-bold" title="창고1">창1 {w1}</span>
+                        <span className="text-amber-600 font-bold" title="창고2">창2 {w2}</span>
+                        <span className="text-slate-200">·</span>
+                        <span className="text-emerald-600 font-bold" title="매장1">매1 {s1}</span>
+                        <span className="text-sky-600 font-bold" title="매장2">매2 {s2}</span>
+                        <span className="text-violet-600 font-bold" title="매장3">매3 {s3}</span>
+                        <span className="text-slate-200">·</span>
+                        <span className={`font-black tabular-nums text-[11px] ${total > 0 ? "text-teal-700" : "text-slate-400"}`}>합계 {total}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="bg-white rounded-2xl border border-slate-200/80
             shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex flex-col min-h-[320px] overflow-hidden">
