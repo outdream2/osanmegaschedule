@@ -15,9 +15,10 @@
 //   · onSelectEmployee : 성명 검색 드롭다운에서 직원 선택 시 부모 콜백 (계약서 전용)
 
 import React from "react";
-import { Phone, Mail, MapPin, Calendar, User } from "lucide-react";
+import { Phone, Mail, MapPin, Calendar, User, Briefcase } from "lucide-react";
 import { matchHangul } from "./hangulSearch";
 import { TIMING } from "../../constants/timing";
+import { POSITIONS } from "../../constants/jobCategories";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 
@@ -336,6 +337,30 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
         </div>
       )}
 
+      {/* 2026-08-10 · 이름 아래 · 직군 드롭박스 (사용자 요청 #25 · 기존 position 필드 재활용 · 라벨 "직책" → "직군") */}
+      {show("position") && (
+        <div>
+          {isCompact ? (
+            <label className={labelCls}>직군</label>
+          ) : (
+            <span className={labelCls}><Briefcase size={9} />직군</span>
+          )}
+          {(isCompact || editing) ? (
+            <select
+              value={values.position ?? ""}
+              onChange={(e) => upd("position", e.target.value)}
+              disabled={disabled}
+              className={selectCls}
+            >
+              <option value="">선택 안 함</option>
+              {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          ) : (
+            <ViewValue value={values.position} />
+          )}
+        </div>
+      )}
+
       {/* 생년월일 / 주민번호 */}
       {show("birthDate") && simpleInput({
         fieldKey: "birthDate",
@@ -422,13 +447,7 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
         )
       )}
 
-      {/* 직군/직책 */}
-      {show("position") && simpleInput({
-        fieldKey: "position",
-        label: "직책",
-        icon: <User size={9} />,
-        placeholder: "약사 · 매장 · 창고 ...",
-      })}
+      {/* 2026-08-10 · #25 · position 필드 · 이름 아래 직군 드롭박스로 위로 이동됨 · 여기 중복 렌더 제거 */}
 
       {/* 입사일 */}
       {show("hireDate") && simpleInput({
