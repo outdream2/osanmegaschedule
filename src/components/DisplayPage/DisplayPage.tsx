@@ -2870,6 +2870,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 // ─────────────────────────────────────────────────────────────────────────
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { Search as SearchIcon } from "lucide-react";
+import { CARD_BASE } from "../../styles/tokens";
 
 const VendorManageSplit: React.FC = () => {
   const { vendors, loading, refresh } = useVendorsHook();
@@ -2935,8 +2936,8 @@ const VendorManageSplit: React.FC = () => {
 
   const left = (
     <div className="flex flex-col h-full min-h-0 gap-2">
-      {/* 툴바 · 검색 + 분류 chip (기타 제외) */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2 flex flex-col gap-2 shrink-0">
+      {/* 툴바 · 공통 CARD_BASE · 2026-08-10 사용자 요청 */}
+      <div className={`${CARD_BASE} px-3 py-2 flex flex-col gap-2 shrink-0`}>
         <div className="flex items-center gap-2">
           <div className="relative flex-1 min-w-0">
             <SearchIcon size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
@@ -2972,15 +2973,15 @@ const VendorManageSplit: React.FC = () => {
         </div>
       </div>
 
-      {/* 리스트 · 통일 테이블 (모바일·PC 공통) · 헤더 정렬 원칙 (UI 원칙) */}
-      <div className="flex-1 min-h-0 overflow-auto bg-white rounded-xl border border-slate-200 shadow-sm">
+      {/* 리스트 · 통일 CARD_BASE · 헤더 정렬 · 모바일도 4컬럼 (컴팩트) · 2026-08-10 */}
+      <div className={`${CARD_BASE} flex-1 min-h-0 overflow-auto`}>
         <table className="w-full text-left border-collapse">
           <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
             <tr>
-              <th className="text-left px-3 py-2 text-[13px] font-black whitespace-nowrap w-20"><SortTh label="분류" sk="category" /></th>
-              <th className="text-left px-3 py-2 text-[13px] font-black min-w-[120px]"><SortTh label="공급사" sk="company_name" /></th>
-              <th className="text-left px-3 py-2 text-[13px] font-black whitespace-nowrap w-24 hidden sm:table-cell"><SortTh label="담당자" sk="contact_name" /></th>
-              <th className="text-left px-3 py-2 text-[13px] font-black whitespace-nowrap w-36 hidden sm:table-cell"><SortTh label="전화" sk="phone" /></th>
+              <th className="text-left px-2 sm:px-3 py-2 text-[12px] sm:text-[13px] font-black whitespace-nowrap w-16 sm:w-20"><SortTh label="분류" sk="category" /></th>
+              <th className="text-left px-2 sm:px-3 py-2 text-[12px] sm:text-[13px] font-black min-w-[100px]"><SortTh label="공급사" sk="company_name" /></th>
+              <th className="text-left px-2 sm:px-3 py-2 text-[12px] sm:text-[13px] font-black whitespace-nowrap w-20 sm:w-24"><SortTh label="담당자" sk="contact_name" /></th>
+              <th className="text-left px-2 sm:px-3 py-2 text-[12px] sm:text-[13px] font-black whitespace-nowrap w-28 sm:w-36"><SortTh label="전화" sk="phone" /></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -3003,27 +3004,26 @@ const VendorManageSplit: React.FC = () => {
                   onClick={() => setSelectedId(v.id)}
                   className={`cursor-pointer transition ${isActive ? "bg-indigo-50/60" : "hover:bg-slate-50/80"}`}
                 >
-                  {/* 분류 · 위 · 공급사 아래 (모바일 vertical) · PC 동일 컬럼 */}
-                  <td className="px-3 py-2 align-top whitespace-nowrap">
-                    <span className={`text-[12px] font-black ${catCls}`}>
+                  <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
+                    <span className={`text-[11px] sm:text-[12px] font-black ${catCls}`}>
                       {v.category || <span className="text-slate-300">-</span>}
                     </span>
                   </td>
-                  {/* 공급사 · displayVendorName · 아이콘 X · 모바일: 아래 담당자·전화 인라인 */}
-                  <td className={`px-3 py-2 text-[13px] font-bold ${isActive ? "text-indigo-900" : "text-slate-800"}`}
+                  <td className={`px-2 sm:px-3 py-2 text-[12px] sm:text-[13px] font-bold whitespace-nowrap ${isActive ? "text-indigo-900" : "text-slate-800"}`}
                       title={String(v.company_name ?? "")}>
-                    <div>{displayVendorName(String(v.company_name ?? "")) || String(v.company_name ?? "")}</div>
-                    {/* 모바일 전용 · 담당자·전화 · 상품명 아래 한 줄 */}
-                    <div className="sm:hidden flex items-baseline gap-2 mt-0.5 text-[11px] text-slate-500 font-normal">
-                      {v.contact_name ? <span className="truncate max-w-[100px]">{String(v.contact_name)}</span> : <span className="text-slate-300">-</span>}
-                      {v.phone ? <span className="tabular-nums truncate max-w-[120px]">{String(v.phone)}</span> : null}
-                    </div>
+                    <span className="block truncate max-w-[140px] sm:max-w-none">
+                      {displayVendorName(String(v.company_name ?? "")) || String(v.company_name ?? "")}
+                    </span>
                   </td>
-                  <td className="px-3 py-2 text-[13px] text-slate-600 whitespace-nowrap hidden sm:table-cell">
-                    {String(v.contact_name ?? "") || <span className="text-slate-300">-</span>}
+                  <td className="px-2 sm:px-3 py-2 text-[12px] sm:text-[13px] text-slate-600 whitespace-nowrap">
+                    <span className="block truncate max-w-[80px] sm:max-w-none">
+                      {String(v.contact_name ?? "") || <span className="text-slate-300">-</span>}
+                    </span>
                   </td>
-                  <td className="px-3 py-2 text-[13px] text-slate-600 tabular-nums whitespace-nowrap hidden sm:table-cell">
-                    {String(v.phone ?? "") || <span className="text-slate-300">-</span>}
+                  <td className="px-2 sm:px-3 py-2 text-[12px] sm:text-[13px] text-slate-600 tabular-nums whitespace-nowrap">
+                    <span className="block truncate max-w-[100px] sm:max-w-none">
+                      {String(v.phone ?? "") || <span className="text-slate-300">-</span>}
+                    </span>
                   </td>
                 </tr>
               );
