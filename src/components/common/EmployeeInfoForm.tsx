@@ -32,7 +32,8 @@ export type EmployeeInfoField =
   | "rank"
   | "position"
   | "workplace"
-  | "hireDate";
+  | "hireDate"
+  | "employeeNumber";
 
 /** 공통 인적사항 값 타입 · 모든 필드 optional (사용처마다 subset 사용) */
 export interface EmployeeInfoValues {
@@ -51,6 +52,8 @@ export interface EmployeeInfoValues {
   workplace?: string;
   /** 입사일 YYYY-MM-DD */
   hireDate?: string;
+  /** 사번 · 숫자만 · EMP- 등 접두 X (예: "1", "100", "2026001") */
+  employeeNumber?: string;
 }
 
 /** 성명 검색 드롭다운을 위한 최소 직원 정보 */
@@ -92,6 +95,7 @@ export interface EmployeeInfoFormProps {
 const ALL_FIELDS: EmployeeInfoField[] = [
   "name", "phone", "address", "birthDate", "gender",
   "email", "rank", "position", "workplace", "hireDate",
+  "employeeNumber",
 ];
 
 const GENDERS = ["남", "여"] as const;
@@ -455,6 +459,14 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
         label: "입사일",
         icon: <Calendar size={9} />,
         type: "date",
+      })}
+
+      {/* 사번 · 숫자만 · EMP- 접두 X · 관리자 수동 입력 · unique */}
+      {show("employeeNumber") && simpleInput({
+        fieldKey: "employeeNumber",
+        label: "사번",
+        icon: <User size={9} />,
+        placeholder: "예: 1, 100, 2026001",
       })}
     </div>
   );
