@@ -43,6 +43,9 @@ export default function App() {
   // 전역 모달 스크롤 잠금은 CSS :has() 셀렉터로 처리 (index.css) · JS 훅 불필요
   const [page, setPage] = useState<Page>("landing");
   const [pendingEditEmpId, setPendingEditEmpId] = useState<number | null>(null);
+  // 2026-08-10 · A · 스케쥴 [수정] 라우팅 · business-manage 진입 시 · staff-manage 서브탭 + 이 직원 선택
+  const [bmInitialEmployeeId, setBmInitialEmployeeId] = useState<number | null>(null);
+  const [bmInitialFromPage, setBmInitialFromPage] = useState<Page | null>(null);
   const {
     session: authSession,
     setSession: setAuthSession,
@@ -124,6 +127,18 @@ export default function App() {
   // The user is already authenticated here, so no AuthSession is required.
   const navigateInner = (next: AppNavPage) => navigate(next as Page);
 
+  // 2026-08-10 · A · 옵션 파라미터 지원 (스케쥴 [수정] → StaffManage 오른쪽 상세 자동 선택)
+  const navigateInnerWithOptions = (next: AppNavPage, options?: { employeeId?: number | null; fromPage?: AppNavPage | null }) => {
+    if (next === "business-manage" && options?.employeeId != null) {
+      setBmInitialEmployeeId(options.employeeId);
+      setBmInitialFromPage((options.fromPage as Page | undefined) ?? page);
+    } else {
+      setBmInitialEmployeeId(null);
+      setBmInitialFromPage(null);
+    }
+    navigate(next as Page);
+  };
+
   let pageContent: React.ReactElement;
 
   if (page === "schedule") {
@@ -135,6 +150,7 @@ export default function App() {
         initialEditEmployeeId={pendingEditEmpId}
         onEditEmployeeHandled={() => setPendingEditEmpId(null)}
         authSession={authSession}
+        onEditEmployeeAtStaffManage={(empId) => navigateInnerWithOptions("business-manage", { employeeId: empId, fromPage: "schedule" })}
       />
     );
   } else if (page === "reservation") {
@@ -247,7 +263,14 @@ export default function App() {
     // 2026-08-03 · 경영관리 통합 페이지 (직원관리 · 연차승인 · 점심불참 · 직원권한 서브탭)
     pageContent = (
       <React.Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-400 text-sm">불러오는 중...</div>}>
-        <BusinessManagePage authSession={authSession} onBack={goBack} onNavigate={navigateInner} onLogout={handleLogout} />
+        <BusinessManagePage
+          authSession={authSession}
+          onBack={goBack}
+          onNavigate={navigateInner}
+          onLogout={handleLogout}
+          initialEmployeeId={bmInitialEmployeeId}
+          initialFromPage={bmInitialFromPage as AppNavPage | null}
+        />
       </React.Suspense>
     );
   } else if (page === "pharmacist") {

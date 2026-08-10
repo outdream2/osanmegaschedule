@@ -46,9 +46,11 @@ interface SchedulePageProps {
   initialEditEmployeeId?: number | null;
   onEditEmployeeHandled?: () => void;
   authSession?: AuthSession | null;
+  /** 2026-08-10 · A · 성명 클릭 → 직원정보 탭 [수정] 시 · 경영/직원관리 라우팅 (기본은 여기 편집 모달) */
+  onEditEmployeeAtStaffManage?: (empId: number) => void;
 }
 
-export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, onNavigate, initialEditEmployeeId, onEditEmployeeHandled, authSession }) => {
+export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, onNavigate, initialEditEmployeeId, onEditEmployeeHandled, authSession, onEditEmployeeAtStaffManage }) => {
   const confirm = useConfirm();
   // ── Auth-derived flags (level-based, with role fallback for old sessions) ───
   const userLevel = authSession?.level ??
@@ -2342,7 +2344,17 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           scheduleTypeEntries={settingsScheduleTypes}
           typeHoursMap={calendarEmployee ? getTypeHoursMap(calendarEmployee.position, calendarEmployee.employmentType) : undefined}
           logisticsZoneProps={calendarLogisticsZoneProps}
-          onEditEmployee={isAdmin ? () => { const emp = calendarEmployee; setCalendarEmployee(null); if (emp) setTimeout(() => openEditEmployeeModal(emp), 0); } : undefined}
+          onEditEmployee={isAdmin ? () => {
+            const emp = calendarEmployee;
+            setCalendarEmployee(null);
+            if (!emp) return;
+            // 2026-08-10 · A · Q1=A · 편집은 StaffManagePage 로 라우팅 · fallback 없음
+            if (onEditEmployeeAtStaffManage) {
+              setTimeout(() => onEditEmployeeAtStaffManage(emp.id), 0);
+            } else {
+              setTimeout(() => openEditEmployeeModal(emp), 0);
+            }
+          } : undefined}
         />
       )}
 

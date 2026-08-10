@@ -26,6 +26,10 @@ interface BusinessManagePageProps {
   authSession: AuthSession | null;
   onNavigate?: (page: AppNavPage) => void;
   onLogout?: () => void;
+  /** 2026-08-10 · A · 스케쥴 [수정] 라우팅 · 진입 시 staff-manage 서브탭 + 이 직원 자동 선택 */
+  initialEmployeeId?: number | null;
+  /** 2026-08-10 · A · 진입 시 이전 페이지 (뒤로가기용 · staff-manage 상단 [← 스케쥴] 버튼) */
+  initialFromPage?: AppNavPage | null;
 }
 
 // 2026-08-03 · "leave" 는 하위 호환 · 실제 렌더는 "approval-center" 로 리다이렉트
@@ -56,8 +60,15 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
   authSession,
   onNavigate,
   onLogout,
+  initialEmployeeId,
+  initialFromPage,
 }) => {
   const [subTab, setSubTab] = useState<BmSubTab>("staff-manage");
+
+  // 2026-08-10 · A · 스케쥴 [수정] 라우팅 · initialEmployeeId 진입 시 · staff-manage 강제 이동
+  useEffect(() => {
+    if (initialEmployeeId != null) setSubTab("staff-manage");
+  }, [initialEmployeeId]);
 
   // 2026-08-03 · 관리자(level>=8) 전용 · long-press 드래그 재정렬
   //   · storageKey "tabOrder.business" · memory feedback_tab_reorder 규칙 준수
@@ -153,7 +164,11 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
       <main className="flex-1 flex flex-col min-h-0">
         {subTab === "staff-manage" && (
           <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 py-16">직원관리 로딩 중...</div>}>
-            <StaffManagePage onWriteContract={() => setSubTab("document-writer")} />
+            <StaffManagePage
+              onWriteContract={() => setSubTab("document-writer")}
+              initialSelectedId={initialEmployeeId ?? null}
+              onBackToSchedule={initialFromPage === "schedule" && onNavigate ? () => onNavigate("schedule") : undefined}
+            />
           </Suspense>
         )}
         {subTab === "approval-center" && (

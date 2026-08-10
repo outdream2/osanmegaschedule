@@ -625,9 +625,13 @@ const EmptyDetail: React.FC = () => (
 interface StaffManagePageProps {
   /** 계약서 작성 요청 · Employee 정보를 담고 · 부모(BusinessManagePage)가 · 서류작성 서브탭으로 이동시킴 */
   onWriteContract?: (emp: Employee) => void;
+  /** 2026-08-10 · A · 스케쥴 [수정] 라우팅 시 · 오른쪽 상세에 자동 표시할 직원 id */
+  initialSelectedId?: number | null;
+  /** 2026-08-10 · A · 뒤로가기 (Q2 A · [스케쥴로 돌아가기]) · 미제공 시 버튼 안 보임 */
+  onBackToSchedule?: () => void;
 }
 
-const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) => {
+const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, initialSelectedId, onBackToSchedule }) => {
   const confirm = useConfirm();
   // ── 상태 ──
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -646,7 +650,12 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
     detectDesktop: true,
   });
 
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(initialSelectedId ?? null);
+
+  // initialSelectedId 변경 시 · 자동 선택 (라우팅으로 다른 직원 지시 시)
+  useEffect(() => {
+    if (initialSelectedId != null) setSelectedId(initialSelectedId);
+  }, [initialSelectedId]);
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft]     = useState<EditDraft | null>(null);
@@ -1405,6 +1414,16 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
 
         {/* 우측 액션 버튼 */}
         <div className="ml-auto flex items-center gap-1.5">
+          {/* 2026-08-10 · A · 스케쥴에서 진입 시 · 되돌아가기 */}
+          {onBackToSchedule && (
+            <button
+              onClick={onBackToSchedule}
+              className="h-8 px-3 flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors"
+              title="스케쥴 페이지로 돌아가기"
+            >
+              ← 스케쥴
+            </button>
+          )}
           <button
             onClick={loadEmployees}
             disabled={loading}
