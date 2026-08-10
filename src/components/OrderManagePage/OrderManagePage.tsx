@@ -2454,8 +2454,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           <>
           <div className="flex items-center gap-2 mb-1">
             <span className="inline-block w-1 h-3.5 rounded-full bg-rose-400 shrink-0"></span>
-            <span className="text-[11px] font-semibold text-slate-500">발주요청 리스트</span>
-            <span className="text-[11px] text-slate-400 font-normal">{orderReqsFiltered.length}건</span>
+            {/* 2026-08-10 · 사용자 요청 · 발주요청 리스트 헤더 폰트 +2 */}
+            <span className="text-[13px] font-semibold text-slate-500">발주요청 리스트</span>
+            <span className="text-[13px] text-slate-400 font-normal">{orderReqsFiltered.length}건</span>
           </div>
           {/* 2026-08-06 · 사용자 요청 · 손실 확인 유도 코멘트 */}
           <div className="mb-2 text-[11px] text-amber-700 bg-amber-50/60 border border-amber-200/60 rounded-md px-2 py-1 leading-snug">
