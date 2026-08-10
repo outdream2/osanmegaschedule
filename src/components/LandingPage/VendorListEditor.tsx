@@ -1180,19 +1180,15 @@ export const VendorDetailModal: React.FC<{
                   </select>
                 </Field>
                 <Field label="사업자번호 (10자리)">
+                  {/* 2026-08-10 · #30 · 입력 시 자동 하이픈 포맷 (123-45-67890) · 저장은 숫자만 (normalizeBizNum) */}
                   <input
                     type="text"
-                    value={draft.business_number}
+                    value={formatBizNum(draft.business_number) || draft.business_number}
                     onChange={e => setDraft({ ...draft, business_number: normalizeBizNum(e.target.value) })}
-                    placeholder="0000000000"
-                    className={`${inputCls} font-mono tracking-widest`}
-                    maxLength={10}
+                    placeholder="000-00-00000"
+                    className={`${inputCls} font-mono tracking-wider`}
+                    maxLength={12}
                   />
-                  {draft.business_number && draft.business_number.length === 10 && (
-                    <p className="text-[11px] text-slate-400 mt-1">
-                      표시: <span className="font-mono font-semibold text-slate-600">{formatBizNum(draft.business_number)}</span>
-                    </p>
-                  )}
                 </Field>
               </div>
 
