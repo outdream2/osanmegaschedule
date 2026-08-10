@@ -1921,7 +1921,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                       <tr className="bg-slate-100 text-slate-600 select-none">
                         <th
                           ref={nameThRef}
-                          className="text-center text-[12px] sm:text-[13px] font-semibold border-r border-slate-200 border-b border-b-slate-200 sticky left-0 bg-slate-100 z-50 py-2 sm:py-2.5 tracking-wide whitespace-nowrap px-0.5 sm:px-1.5 min-w-[55px] sm:min-w-[70px] lg:min-w-[80px] w-auto"
+                          className="text-center text-[12px] sm:text-[13px] font-semibold border-r border-slate-200 border-b border-b-slate-200 sticky left-0 bg-slate-100 z-50 py-2 sm:py-2.5 tracking-wide whitespace-nowrap px-0.5 sm:px-1.5 min-w-[90px] sm:min-w-[110px] lg:min-w-[120px] w-[90px] sm:w-[110px] lg:w-[120px]"
                         >
                           <span className="hidden sm:inline">직원 성명</span>
                           <span className="sm:hidden">성명</span>
@@ -1962,7 +1962,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                       {/* Header Row 2: Day of Week Characters */}
                       <tr className="bg-slate-50 text-slate-400 select-none">
                         {/* Left spacing header matching Name column */}
-                        <th className="border-r border-b border-slate-200 sticky left-0 bg-slate-50 z-50 h-5 sm:h-6 min-w-[55px] sm:min-w-[70px] lg:min-w-[80px]"></th>
+                        <th className="border-r border-b border-slate-200 sticky left-0 bg-slate-50 z-50 h-5 sm:h-6 min-w-[90px] sm:min-w-[110px] lg:min-w-[120px]"></th>
 
                         {displayDates.map((dateStr, dateIdx) => {
                           const { dayWord, isToday } = getDayDetails(dateStr);

@@ -68,9 +68,9 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
         border-r border-slate-100 bg-white sticky left-0 z-50
         group-hover:bg-slate-50
         shadow-[1px_0_0_0_#e2e8f0]
-        min-w-[55px] w-auto
-        sm:min-w-[70px]
-        lg:min-w-[80px]
+        min-w-[90px] w-[90px]
+        sm:min-w-[110px] sm:w-[110px]
+        lg:min-w-[120px] lg:w-[120px]
         p-0 transition-colors duration-150
         ${isDragging ? "opacity-40" : ""}
       `}
