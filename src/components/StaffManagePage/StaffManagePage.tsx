@@ -1619,22 +1619,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                           </span>
                         );
                       })()}
-                      {/* 근무타입 */}
-                      {editing ? (
-                        <select
-                          value={draft?.schedule_type ?? ""}
-                          onChange={(e) => setField("schedule_type", e.target.value)}
-                          className="text-[11px] border border-slate-300 rounded-md px-2 h-6 bg-white focus:outline-none focus:border-indigo-400"
-                        >
-                          <option value="">근무타입 없음</option>
-                          {SCHEDULE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                      ) : displayEmp.schedule_type ? (
-                        <span className={`text-[10px] font-semibold px-1.5 py-px rounded border ${scheduleTypeColor(displayEmp.schedule_type)}`}>
-                          {displayEmp.schedule_type}
-                        </span>
-                      ) : null}
-                      {/* 계약유형 (근무타입 옆) */}
+                      {/* 2026-08-10 · #26 · 근무타입 · 헤더 배지에서 제거 · §2 근무 조건 카드에 이미 존재 (라인 1830+) */}
+                      {/* 계약유형 (기존 근무타입 옆) */}
                       {editing ? (
                         <select
                           value={draft?.contract_type ?? ""}
