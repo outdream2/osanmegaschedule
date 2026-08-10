@@ -3,7 +3,8 @@
 //
 // 증분 방식 · 각 위치 그룹 3층: 기존(회색) / 추가입력 / 합계(강조)
 
-import React from "react";
+import React, { useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import type { StockRow } from "./stockRowTypes";
 import { calcSlotTotal } from "./stockRowTypes";
 
@@ -70,6 +71,16 @@ export const StockRowMobile: React.FC<StockRowMobileProps> = React.memo(({ row, 
   const specParts = String((row.product as any).spec ?? "").split("/").map((s: string) => s.trim());
   const [spec1, spec2, spec3] = [specParts[0] ?? "", specParts[1] ?? "", specParts[2] ?? ""];
 
+  // 2026-08-10 · A2 Progressive Disclosure · 매장1 만 기본 노출 · 나머지 4칸 접힘
+  // 값 (prev or add) 있는 위치는 자동 확장
+  const hasWh1 = row.prevWarehouse1Qty != null || (row.warehouse1AddQty !== "" && Number(row.warehouse1AddQty) !== 0);
+  const hasWh2 = row.prevWarehouse2Qty != null || (row.warehouse2AddQty !== "" && Number(row.warehouse2AddQty) !== 0);
+  const hasStore2 = row.prevStore2Qty != null || (row.store2AddQty !== "" && Number(row.store2AddQty) !== 0);
+  const hasStore3 = row.prevStore3Qty != null || (row.store3AddQty !== "" && Number(row.store3AddQty) !== 0);
+  const autoExpanded = hasWh1 || hasWh2 || hasStore2 || hasStore3;
+  const [manuallyExpanded, setManuallyExpanded] = useState(false);
+  const expanded = autoExpanded || manuallyExpanded;
+
   const warehouseCols: Array<{
     addKey: keyof Pick<StockRow, "warehouse1AddQty" | "warehouse2AddQty">;
     prev: number | null | undefined;
@@ -97,10 +108,91 @@ export const StockRowMobile: React.FC<StockRowMobileProps> = React.memo(({ row, 
     { addKey: "store3AddQty", zoneKey: "store3Zone", prev: row.prevStore3Qty, zone: row.store3Zone, spec: spec3, label: "매3", accent: "focus:border-violet-400",  zoneAccent: "text-violet-600 focus:border-violet-400", color: "text-violet-600"  },
   ];
 
+  // 매장1 (주 매장 · 항상 노출)
+  const store1Col = storeCols[0];
+  const otherStoreCols = storeCols.slice(1);
+
+  const renderCell = (
+    addKey: any,
+    prev: number | null | undefined,
+    label: string,
+    accent: string,
+    color: string,
+    zoneKey?: any,
+    zone?: string | null,
+    spec?: string,
+    zoneAccent?: string,
+  ) => {
+    const addVal = row[addKey] as number | "";
+    const total = calcSlotTotal(prev, addVal);
+    const hasAdd = addVal !== "" && Number(addVal) !== 0;
+    return (
+      <div key={addKey} className="flex flex-col gap-0.5">
+        <span className={`text-[13px] font-black px-1 ${color}`}>{label}</span>
+        <div className="flex items-center justify-center h-6 rounded-md bg-slate-50 border border-slate-100">
+          <span className="text-[11px] text-slate-400 font-semibold tabular-nums">
+            {prev != null ? `현재 ${prev}` : <span className="text-slate-300">-</span>}
+          </span>
+        </div>
+        <NumberInput
+          value={addVal}
+          onChange={v => onPatch(row.key, { [addKey]: v } as Partial<StockRow>)}
+          placeholder="+0"
+          accent={accent}
+        />
+        <div className={`flex items-center justify-center h-6 rounded-md border ${
+          hasAdd ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100"
+        }`}>
+          <span className={`text-[12px] font-black tabular-nums ${
+            hasAdd ? "text-emerald-700" : total > 0 ? "text-slate-600" : "text-slate-300"
+          }`}>= {total}</span>
+        </div>
+        {spec && (
+          <div className="text-[11px] text-slate-500 text-center px-1 tabular-nums" title={`ERP 지정 위치 · ${spec}`}>
+            {spec}
+          </div>
+        )}
+        {zone && zoneKey && zoneAccent && (
+          <ZoneInput
+            value={zone}
+            placeholder="구역"
+            accentClass={zoneAccent}
+            onChange={v => onPatch(row.key, { [zoneKey]: v } as Partial<StockRow>)}
+          />
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col gap-2.5">
-      {/* 창고 그룹 · 2칸 */}
-      <div className="grid grid-cols-2 gap-2">
+      {/* A2 · 매장1 (주 매장) · 항상 노출 */}
+      <div className="grid grid-cols-1">
+        {renderCell(store1Col.addKey, store1Col.prev, store1Col.label, store1Col.accent, store1Col.color, store1Col.zoneKey, store1Col.zone, store1Col.spec, store1Col.zoneAccent)}
+      </div>
+
+      {/* A2 · 나머지 4칸 접기/펼치기 · 값 있으면 자동 확장 · 없으면 토글 */}
+      {!expanded && (
+        <button
+          type="button"
+          onClick={() => setManuallyExpanded(true)}
+          className="w-full py-1.5 rounded-md bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[11px] font-bold text-slate-500 hover:text-slate-700 inline-flex items-center justify-center gap-1 transition cursor-pointer"
+        >
+          <ChevronDown size={12} /> 나머지 4칸 (창1·창2·매2·매3)
+        </button>
+      )}
+      {expanded && !autoExpanded && (
+        <button
+          type="button"
+          onClick={() => setManuallyExpanded(false)}
+          className="w-full py-1.5 rounded-md bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[11px] font-bold text-slate-500 hover:text-slate-700 inline-flex items-center justify-center gap-1 transition cursor-pointer"
+        >
+          <ChevronUp size={12} /> 접기
+        </button>
+      )}
+
+      {/* 창고 그룹 · 2칸 · 접힘 가능 */}
+      {expanded && <div className="grid grid-cols-2 gap-2">
         {warehouseCols.map(({ addKey, prev, label, accent, color }) => {
           const addVal = row[addKey] as number | "";
           const total = calcSlotTotal(prev, addVal);
@@ -135,11 +227,11 @@ export const StockRowMobile: React.FC<StockRowMobileProps> = React.memo(({ row, 
             </div>
           );
         })}
-      </div>
+      </div>}
 
-      {/* 매장 그룹 · 3칸 */}
-      <div className="grid grid-cols-3 gap-2">
-        {storeCols.map(({ addKey, zoneKey, prev, zone, spec, label, accent, zoneAccent, color }) => {
+      {/* 매장 그룹 · 2·3 (매장1 제외) · 접힘 가능 */}
+      {expanded && <div className="grid grid-cols-2 gap-2">
+        {otherStoreCols.map(({ addKey, zoneKey, prev, zone, spec, label, accent, zoneAccent, color }) => {
           const addVal = row[addKey] as number | "";
           const total = calcSlotTotal(prev, addVal);
           const hasAdd = addVal !== "" && Number(addVal) !== 0;
@@ -188,7 +280,7 @@ export const StockRowMobile: React.FC<StockRowMobileProps> = React.memo(({ row, 
             </div>
           );
         })}
-      </div>
+      </div>}
     </div>
   );
 });
