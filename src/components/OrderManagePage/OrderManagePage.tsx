@@ -2411,7 +2411,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             />
             {/* 2026-08-10 · 사용자 요청 · 일괄발주·전체선택 · 왼쪽 리스트 제목 옆으로 이동 · 툴바에는 분류 + 삭제만 */}
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
+              {/* 2026-08-10 · 사용자 요청 · 필터 컴팩트 · 여백 최소 (h-7 px-1.5 · text-14) */}
+              <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded p-px gap-px">
                 {(["all", ...dbVendorCategories] as string[]).map(cat => {
                   const active = orderCategoryFilter === cat;
                   const label = cat === "all" ? "전체" : cat;
@@ -2426,7 +2427,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     <button key={cat}
                       type="button"
                       onClick={() => setOrderCategoryFilter(cat)}
-                      className={`h-9 px-3 text-[15px] font-semibold rounded transition cursor-pointer ${active ? activeCls : "text-slate-500 hover:text-slate-700"}`}
+                      className={`h-7 px-1.5 text-[14px] font-semibold rounded transition cursor-pointer ${active ? activeCls : "text-slate-500 hover:text-slate-700"}`}
                     >{label}</button>
                   );
                 })}
