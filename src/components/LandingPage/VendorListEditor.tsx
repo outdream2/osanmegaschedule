@@ -1124,40 +1124,36 @@ export const VendorDetailModal: React.FC<{
                   <span className="text-[11px] text-slate-500 font-mono bg-white/70 border border-slate-200 rounded-md px-1.5 py-0.5">등록 {String(vendor.created_at).slice(0, 10)}</span>
                 )}
               </div>
-              {/* 3개 정보 · pill 스타일 · 폰트 +2 */}
-              <div className="mt-2.5 flex items-center gap-2 flex-wrap">
-                {/* 사업자번호 */}
-                <div className="inline-flex items-center gap-1.5 bg-white/80 border border-slate-200 rounded-full pl-2 pr-3 py-1 shadow-sm">
-                  <Building2 size={13} className="text-sky-500 shrink-0" />
-                  <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">사업자</span>
+              {/* 2026-08-10 · 사용자 요청 · 배지 제거 · 깔끔한 텍스트 · 폰트 +2 */}
+              <div className="mt-2.5 flex items-baseline gap-x-5 gap-y-1 flex-wrap text-[15px]">
+                <span className="inline-flex items-baseline gap-1.5">
+                  <span className="text-slate-400 font-semibold">사업자</span>
                   {vendor.business_number
-                    ? <span className="text-[14px] font-black text-slate-800 tabular-nums font-mono">{formatBizNum(vendor.business_number)}</span>
-                    : <span className="text-[13px] text-slate-300 italic">미등록</span>}
-                </div>
-                {/* 담당자 */}
-                <div className="inline-flex items-center gap-1.5 bg-white/80 border border-slate-200 rounded-full pl-2 pr-3 py-1 shadow-sm">
-                  <User2 size={13} className="text-indigo-500 shrink-0" />
-                  <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">담당</span>
+                    ? <span className="font-black text-slate-800 tabular-nums font-mono">{formatBizNum(vendor.business_number)}</span>
+                    : <span className="text-slate-300 italic">미등록</span>}
+                </span>
+                <span className="text-slate-200">·</span>
+                <span className="inline-flex items-baseline gap-1.5">
+                  <span className="text-slate-400 font-semibold">담당</span>
                   {vendor.contact_name
-                    ? <span className="text-[14px] font-black text-slate-800">{vendor.contact_name}</span>
-                    : <span className="text-[13px] text-slate-300 italic">미등록</span>}
-                </div>
-                {/* 전화 */}
-                <div className="inline-flex items-center gap-1.5 bg-white/80 border border-slate-200 rounded-full pl-2 pr-3 py-1 shadow-sm">
-                  <Phone size={13} className="text-emerald-500 shrink-0" />
-                  <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">전화</span>
+                    ? <span className="font-black text-slate-800">{vendor.contact_name}</span>
+                    : <span className="text-slate-300 italic">미등록</span>}
+                </span>
+                <span className="text-slate-200">·</span>
+                <span className="inline-flex items-baseline gap-1.5">
+                  <span className="text-slate-400 font-semibold">전화</span>
                   {vendor.phone
                     ? (
                       <a
                         href={`tel:${String(vendor.phone).replace(/[^0-9+]/g, "")}`}
                         onClick={e => e.stopPropagation()}
-                        className="text-[14px] font-black text-slate-800 hover:text-emerald-700 hover:underline tabular-nums"
+                        className="font-black text-slate-800 hover:text-emerald-700 hover:underline tabular-nums"
                       >
                         {vendor.phone}
                       </a>
                     )
-                    : <span className="text-[13px] text-slate-300 italic">미등록</span>}
-                </div>
+                    : <span className="text-slate-300 italic">미등록</span>}
+                </span>
               </div>
             </div>
           </div>
