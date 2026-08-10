@@ -38,7 +38,7 @@ import { ProductSearchInput } from "../common/ProductSearchInput";
 // ── 분리된 Row 컴포넌트 ──────────────────────────────────────
 import { StockRowDesktop } from "./StockRowDesktop";
 import type { StockRow } from "./stockRowTypes";
-import { calcRowTotal } from "./stockRowTypes";
+import { calcRowTotal, calcSlotTotal } from "./stockRowTypes";
 
 // ─────────────────────────────────────────────────────────────
 // Props
@@ -232,9 +232,18 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       if (!raw) return;
       const parsed: StockRow[] = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        setRows(parsed);
+        // 구 버전 draft 호환 · add*Qty 필드 없으면 빈값으로 초기화
+        const migrated = parsed.map(r => ({
+          ...r,
+          warehouse1AddQty: r.warehouse1AddQty ?? "",
+          warehouse2AddQty: r.warehouse2AddQty ?? "",
+          store1AddQty:     r.store1AddQty     ?? "",
+          store2AddQty:     r.store2AddQty     ?? "",
+          store3AddQty:     r.store3AddQty     ?? "",
+        }));
+        setRows(migrated);
         setDraftBanner(false);
-        showToast(`임시저장 ${parsed.length}건 복구 완료`, 2500);
+        showToast(`임시저장 ${migrated.length}건 복구 완료`, 2500);
       }
     } catch { /* ignore */ }
   }, [showToast]);
@@ -248,11 +257,11 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   // ── T20/Phase 2 · 상품별 진열요청 · POST /api/display-requests
   // 2026-08-05 · 구역별 요청 지원 · zoneOverride 있으면 그 구역 · 없으면 배정구역
   const requestDisplay = useCallback(async (row: StockRow, zoneOverride?: string | null) => {
-    const store1 = row.store1Qty === "" ? 0 : Number(row.store1Qty);
-    const store2 = row.store2Qty === "" ? 0 : Number(row.store2Qty);
-    const store3 = row.store3Qty === "" ? 0 : Number(row.store3Qty);
-    const w1 = row.warehouse1Qty === "" ? 0 : Number(row.warehouse1Qty);
-    const w2 = row.warehouse2Qty === "" ? 0 : Number(row.warehouse2Qty);
+    const store1 = calcSlotTotal(row.prevStore1Qty, row.store1AddQty);
+    const store2 = calcSlotTotal(row.prevStore2Qty, row.store2AddQty);
+    const store3 = calcSlotTotal(row.prevStore3Qty, row.store3AddQty);
+    const w1 = calcSlotTotal(row.prevWarehouse1Qty, row.warehouse1AddQty);
+    const w2 = calcSlotTotal(row.prevWarehouse2Qty, row.warehouse2AddQty);
     const storeSum = store1 + store2 + store3;
     const warehouseSum = w1 + w2;
     const rm = (row.product as any).realMap ?? (row.product as any).real_map ?? "";
@@ -328,11 +337,11 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       code: result,
       product: found,
       addedAt: Date.now(),
-      warehouse1Qty: "",
-      warehouse2Qty: "",
-      store1Qty:     "",
-      store2Qty:     "",
-      store3Qty:     "",
+      warehouse1AddQty: "",
+      warehouse2AddQty: "",
+      store1AddQty:     "",
+      store2AddQty:     "",
+      store3AddQty:     "",
       store1Zone:    z1,
       store2Zone:    z2,
       store3Zone:    z3,
@@ -360,12 +369,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         setRows(prev => prev.map(r => r.key === newRow.key
           ? {
               ...r,
-              warehouse1Qty: w1 != null ? Number(w1) : "",
-              warehouse2Qty: w2 != null ? Number(w2) : "",
-              store1Qty:     s1 != null ? Number(s1) : "",
-              store2Qty:     s2 != null ? Number(s2) : "",
-              store3Qty:     s3 != null ? Number(s3) : "",
-              // 2026-08-10 · 사용자 요청 · 이전 저장 재고 저장 (read-only 참조 UI 용)
+              // 증분 방식 · prev*Qty 에만 이전값 저장 · add*Qty 는 빈 값 유지 (사용자가 신규 입고 수량 입력)
               prevWarehouse1Qty: w1 != null ? Number(w1) : null,
               prevWarehouse2Qty: w2 != null ? Number(w2) : null,
               prevStore1Qty:     s1 != null ? Number(s1) : null,
@@ -443,22 +447,36 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           checked_by: authSession?.employeeName ?? "익명",
-          items: rows.map(r => ({
-            product_code:     r.code,
-            product_name:     r.product.name,
-            // 신규 5-분리 컬럼
-            warehouse1_stock: r.warehouse1Qty !== "" ? Number(r.warehouse1Qty) : null,
-            warehouse2_stock: r.warehouse2Qty !== "" ? Number(r.warehouse2Qty) : null,
-            store_stock:      r.store1Qty     !== "" ? Number(r.store1Qty)     : null,   // 매장1
-            store_stock_2:    r.store2Qty     !== "" ? Number(r.store2Qty)     : null,   // 매장2
-            store3_stock:     r.store3Qty     !== "" ? Number(r.store3Qty)     : null,   // 매장3
-            // 매장 구역 (편집된 값 · 없으면 auto 값 저장)
-            store1_zone:      r.store1Zone,
-            store2_zone:      r.store2Zone,
-            store3_zone:      r.store3Zone,
-            // 레거시 mirror (구 클라이언트 하위 호환용 · 서버가 warehouse1 우선 처리)
-            warehouse_stock:  r.warehouse1Qty !== "" ? Number(r.warehouse1Qty) : null,
-          })),
+          items: rows.map(r => {
+            // 증분 방식 · 저장값 = prev + add 합산
+            const w1 = calcSlotTotal(r.prevWarehouse1Qty, r.warehouse1AddQty);
+            const w2 = calcSlotTotal(r.prevWarehouse2Qty, r.warehouse2AddQty);
+            const s1 = calcSlotTotal(r.prevStore1Qty,     r.store1AddQty);
+            const s2 = calcSlotTotal(r.prevStore2Qty,     r.store2AddQty);
+            const s3 = calcSlotTotal(r.prevStore3Qty,     r.store3AddQty);
+            // prev·add 모두 빈 경우 null 전송 (미입력 구분)
+            const hasW1 = r.prevWarehouse1Qty != null || r.warehouse1AddQty !== "";
+            const hasW2 = r.prevWarehouse2Qty != null || r.warehouse2AddQty !== "";
+            const hasS1 = r.prevStore1Qty != null || r.store1AddQty !== "";
+            const hasS2 = r.prevStore2Qty != null || r.store2AddQty !== "";
+            const hasS3 = r.prevStore3Qty != null || r.store3AddQty !== "";
+            return {
+              product_code:     r.code,
+              product_name:     r.product.name,
+              // 신규 5-분리 컬럼 · prev + add 합산값
+              warehouse1_stock: hasW1 ? w1 : null,
+              warehouse2_stock: hasW2 ? w2 : null,
+              store_stock:      hasS1 ? s1 : null,   // 매장1
+              store_stock_2:    hasS2 ? s2 : null,   // 매장2
+              store3_stock:     hasS3 ? s3 : null,   // 매장3
+              // 매장 구역 (편집된 값 · 없으면 auto 값 저장)
+              store1_zone:      r.store1Zone,
+              store2_zone:      r.store2Zone,
+              store3_zone:      r.store3Zone,
+              // 레거시 mirror (구 클라이언트 하위 호환용 · 서버가 warehouse1 우선 처리)
+              warehouse_stock:  hasW1 ? w1 : null,
+            };
+          }),
         }),
       });
       if (!res.ok) {
@@ -989,11 +1007,11 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               {/* 창고1 · 창고2 · 매장1 · 매장2 · 매장3 · 항상 5열 (모바일도 5칸 강제) · 한 화면 보장 */}
               <div className="grid grid-cols-5 gap-1">
                 {([
-                  { key: "warehouse1Qty" as const, label: "창1", Icon: Warehouse, tone: "sky",   zone: null,               requestable: false },
-                  { key: "warehouse2Qty" as const, label: "창2", Icon: Warehouse, tone: "sky",   zone: null,               requestable: false },
-                  { key: "store1Qty"     as const, label: "매1", Icon: Store,     tone: "amber", zone: liveRow.store1Zone, requestable: true  },
-                  { key: "store2Qty"     as const, label: "매2", Icon: Store,     tone: "amber", zone: liveRow.store2Zone, requestable: true  },
-                  { key: "store3Qty"     as const, label: "매3", Icon: Store,     tone: "amber", zone: liveRow.store3Zone, requestable: true  },
+                  { key: "warehouse1AddQty" as const, label: "창1", Icon: Warehouse, tone: "sky",   zone: null,               requestable: false },
+                  { key: "warehouse2AddQty" as const, label: "창2", Icon: Warehouse, tone: "sky",   zone: null,               requestable: false },
+                  { key: "store1AddQty"     as const, label: "매1", Icon: Store,     tone: "amber", zone: liveRow.store1Zone, requestable: true  },
+                  { key: "store2AddQty"     as const, label: "매2", Icon: Store,     tone: "amber", zone: liveRow.store2Zone, requestable: true  },
+                  { key: "store3AddQty"     as const, label: "매3", Icon: Store,     tone: "amber", zone: liveRow.store3Zone, requestable: true  },
                 ]).map(({ key, label, Icon, tone, zone, requestable }) => {
                   const val = liveRow[key];
                   const toneCls = tone === "sky"

@@ -4,6 +4,7 @@
 import React from "react";
 import { Loader2, History, Megaphone, Trash2 } from "lucide-react";
 import type { StockRow } from "./stockRowTypes";
+import { calcSlotTotal } from "./stockRowTypes";
 
 interface StockActionsCellProps {
   row: StockRow;
@@ -16,10 +17,11 @@ interface StockActionsCellProps {
 export const StockActionsCell: React.FC<StockActionsCellProps> = React.memo(({
   row, requestingKey, onHistory, onRequestDisplay, onRemove,
 }) => {
+  // 매장 합계 (prev + add) 가 모두 0 이면 진열요청 강조
   const storeEmpty =
-    (row.store1Qty === "" || Number(row.store1Qty) === 0) &&
-    (row.store2Qty === "" || Number(row.store2Qty) === 0) &&
-    (row.store3Qty === "" || Number(row.store3Qty) === 0);
+    calcSlotTotal(row.prevStore1Qty, row.store1AddQty) === 0 &&
+    calcSlotTotal(row.prevStore2Qty, row.store2AddQty) === 0 &&
+    calcSlotTotal(row.prevStore3Qty, row.store3AddQty) === 0;
 
   return (
     <div className="flex items-center justify-center gap-0.5">

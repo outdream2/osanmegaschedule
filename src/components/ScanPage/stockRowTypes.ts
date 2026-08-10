@@ -8,55 +8,45 @@ export interface StockRow {
   code: string;
   product: ProductInfo;
   addedAt: number;
-  warehouse1Qty: number | "";
-  warehouse2Qty: number | "";
-  store1Qty:     number | "";
-  store2Qty:     number | "";
-  store3Qty:     number | "";
-  store1Zone:    string | null;
-  store2Zone:    string | null;
-  store3Zone:    string | null;
-  lastCheckedAt?: string | null;
-  historyCount?: number;
+  // ── 이전 저장값 (읽기 전용 · 스캔 시 서버에서 로드)
   prevWarehouse1Qty?: number | null;
   prevWarehouse2Qty?: number | null;
   prevStore1Qty?:     number | null;
   prevStore2Qty?:     number | null;
   prevStore3Qty?:     number | null;
+  // ── 추가 입력값 (사용자가 이번 세션에 입고한 수량 입력)
+  warehouse1AddQty: number | "";
+  warehouse2AddQty: number | "";
+  store1AddQty:     number | "";
+  store2AddQty:     number | "";
+  store3AddQty:     number | "";
+  store1Zone:    string | null;
+  store2Zone:    string | null;
+  store3Zone:    string | null;
+  lastCheckedAt?: string | null;
+  historyCount?: number;
 }
 
-/** 현재값과 이전값 diff 계산 · 둘 다 있을 때만 */
-export function calcDiff(cur: number | "", prev: number | null | undefined): number | null {
-  if (prev == null) return null;
-  if (cur === "") return null;
-  return Number(cur) - prev;
+/** prev + add 합산 · prev 없으면 add 만 · add 없으면 prev 만 */
+export function calcSlotTotal(prev: number | null | undefined, add: number | ""): number {
+  const p = prev != null ? prev : 0;
+  const a = add !== "" ? Number(add) : 0;
+  return p + a;
 }
 
-/** 5칸 총 diff */
-export function calcTotalDiff(r: StockRow): number | null {
-  const hasPrev =
-    r.prevWarehouse1Qty != null || r.prevWarehouse2Qty != null ||
-    r.prevStore1Qty != null     || r.prevStore2Qty != null     || r.prevStore3Qty != null;
-  if (!hasPrev) return null;
-  const d = (cur: number | "", prev: number | null | undefined) => {
-    if (prev == null || cur === "") return 0;
-    return Number(cur) - prev;
-  };
+/** 합계 셀용 · 5칸 전체 (prev + add) 합산 */
+export function calcRowTotal(r: StockRow): number {
   return (
-    d(r.warehouse1Qty, r.prevWarehouse1Qty) +
-    d(r.warehouse2Qty, r.prevWarehouse2Qty) +
-    d(r.store1Qty,     r.prevStore1Qty)     +
-    d(r.store2Qty,     r.prevStore2Qty)     +
-    d(r.store3Qty,     r.prevStore3Qty)
+    calcSlotTotal(r.prevWarehouse1Qty, r.warehouse1AddQty) +
+    calcSlotTotal(r.prevWarehouse2Qty, r.warehouse2AddQty) +
+    calcSlotTotal(r.prevStore1Qty,     r.store1AddQty)     +
+    calcSlotTotal(r.prevStore2Qty,     r.store2AddQty)     +
+    calcSlotTotal(r.prevStore3Qty,     r.store3AddQty)
   );
 }
 
-/** 행 합계 */
-export function calcRowTotal(r: StockRow): number {
-  const w1 = r.warehouse1Qty !== "" ? Number(r.warehouse1Qty) : 0;
-  const w2 = r.warehouse2Qty !== "" ? Number(r.warehouse2Qty) : 0;
-  const s1 = r.store1Qty     !== "" ? Number(r.store1Qty)     : 0;
-  const s2 = r.store2Qty     !== "" ? Number(r.store2Qty)     : 0;
-  const s3 = r.store3Qty     !== "" ? Number(r.store3Qty)     : 0;
-  return w1 + w2 + s1 + s2 + s3;
+/** Phase A3 헤더 뱃지용 · 이번 세션 추가 수량 합계 */
+export function calcTotalAdded(r: StockRow): number {
+  const a = (v: number | "") => v !== "" ? Number(v) : 0;
+  return a(r.warehouse1AddQty) + a(r.warehouse2AddQty) + a(r.store1AddQty) + a(r.store2AddQty) + a(r.store3AddQty);
 }

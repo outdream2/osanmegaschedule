@@ -1,9 +1,11 @@
 // StockRowMobile · 모바일 전용 재고 입력 셀 내부 렌더 (lg:hidden td 안)
-// 창고 2칸 grid + 매장 3칸 grid · A1 diff · ERP 위치(spec) · 구역 편집
+// 창고 2칸 grid + 매장 3칸 grid · 3층 구조 (기존값/추가입력/합계)
+//
+// 증분 방식 · 각 위치 그룹 3층: 기존(회색) / 추가입력 / 합계(강조)
 
 import React from "react";
 import type { StockRow } from "./stockRowTypes";
-import { calcDiff } from "./stockRowTypes";
+import { calcSlotTotal } from "./stockRowTypes";
 
 // ── 수량 입력 (+/-) ─────────────────────────────────────────
 interface NumberInputProps {
@@ -57,18 +59,6 @@ const ZoneInput: React.FC<ZoneInputProps> = ({ value, placeholder = "-", accentC
   />
 );
 
-// ── diff 텍스트 ──────────────────────────────────────────────
-const DiffLabel: React.FC<{ prev: number; diff: number | null }> = ({ prev, diff }) => (
-  <span className="flex items-baseline gap-0.5 text-[11px] tabular-nums">
-    <span className="text-slate-400">이전 {prev}</span>
-    {diff != null && (
-      <span className={diff > 0 ? "text-emerald-600 font-bold" : diff < 0 ? "text-rose-500 font-bold" : "text-slate-400"}>
-        {diff > 0 ? `+${diff}` : diff}
-      </span>
-    )}
-  </span>
-);
-
 // ── 메인 컴포넌트 ────────────────────────────────────────────
 interface StockRowMobileProps {
   row: StockRow;
@@ -81,18 +71,18 @@ export const StockRowMobile: React.FC<StockRowMobileProps> = React.memo(({ row, 
   const [spec1, spec2, spec3] = [specParts[0] ?? "", specParts[1] ?? "", specParts[2] ?? ""];
 
   const warehouseCols: Array<{
-    key: keyof Pick<StockRow, "warehouse1Qty" | "warehouse2Qty">;
+    addKey: keyof Pick<StockRow, "warehouse1AddQty" | "warehouse2AddQty">;
     prev: number | null | undefined;
     label: string;
     accent: string;
     color: string;
   }> = [
-    { key: "warehouse1Qty", prev: row.prevWarehouse1Qty, label: "창1", accent: "focus:border-orange-400", color: "text-orange-600" },
-    { key: "warehouse2Qty", prev: row.prevWarehouse2Qty, label: "창2", accent: "focus:border-amber-400",  color: "text-amber-600"  },
+    { addKey: "warehouse1AddQty", prev: row.prevWarehouse1Qty, label: "창1", accent: "focus:border-orange-400", color: "text-orange-600" },
+    { addKey: "warehouse2AddQty", prev: row.prevWarehouse2Qty, label: "창2", accent: "focus:border-amber-400",  color: "text-amber-600"  },
   ];
 
   const storeCols: Array<{
-    key: keyof Pick<StockRow, "store1Qty" | "store2Qty" | "store3Qty">;
+    addKey: keyof Pick<StockRow, "store1AddQty" | "store2AddQty" | "store3AddQty">;
     zoneKey: keyof Pick<StockRow, "store1Zone" | "store2Zone" | "store3Zone">;
     prev: number | null | undefined;
     zone: string | null;
@@ -102,28 +92,46 @@ export const StockRowMobile: React.FC<StockRowMobileProps> = React.memo(({ row, 
     zoneAccent: string;
     color: string;
   }> = [
-    { key: "store1Qty", zoneKey: "store1Zone", prev: row.prevStore1Qty, zone: row.store1Zone, spec: spec1, label: "매1", accent: "focus:border-emerald-400", zoneAccent: "text-emerald-600 focus:border-emerald-400", color: "text-emerald-600" },
-    { key: "store2Qty", zoneKey: "store2Zone", prev: row.prevStore2Qty, zone: row.store2Zone, spec: spec2, label: "매2", accent: "focus:border-sky-400",     zoneAccent: "text-sky-600 focus:border-sky-400",     color: "text-sky-600"     },
-    { key: "store3Qty", zoneKey: "store3Zone", prev: row.prevStore3Qty, zone: row.store3Zone, spec: spec3, label: "매3", accent: "focus:border-violet-400",  zoneAccent: "text-violet-600 focus:border-violet-400", color: "text-violet-600"  },
+    { addKey: "store1AddQty", zoneKey: "store1Zone", prev: row.prevStore1Qty, zone: row.store1Zone, spec: spec1, label: "매1", accent: "focus:border-emerald-400", zoneAccent: "text-emerald-600 focus:border-emerald-400", color: "text-emerald-600" },
+    { addKey: "store2AddQty", zoneKey: "store2Zone", prev: row.prevStore2Qty, zone: row.store2Zone, spec: spec2, label: "매2", accent: "focus:border-sky-400",     zoneAccent: "text-sky-600 focus:border-sky-400",     color: "text-sky-600"     },
+    { addKey: "store3AddQty", zoneKey: "store3Zone", prev: row.prevStore3Qty, zone: row.store3Zone, spec: spec3, label: "매3", accent: "focus:border-violet-400",  zoneAccent: "text-violet-600 focus:border-violet-400", color: "text-violet-600"  },
   ];
 
   return (
     <div className="flex flex-col gap-2.5">
       {/* 창고 그룹 · 2칸 */}
       <div className="grid grid-cols-2 gap-2">
-        {warehouseCols.map(({ key, prev, label, accent, color }) => {
-          const d = calcDiff(row[key], prev);
+        {warehouseCols.map(({ addKey, prev, label, accent, color }) => {
+          const addVal = row[addKey] as number | "";
+          const total = calcSlotTotal(prev, addVal);
+          const hasAdd = addVal !== "" && Number(addVal) !== 0;
           return (
-            <div key={key} className="flex flex-col gap-0.5">
-              <div className="flex items-baseline justify-between px-1">
-                <span className={`text-[13px] font-black ${color}`}>{label}</span>
-                {prev != null && <DiffLabel prev={prev} diff={d} />}
+            <div key={addKey} className="flex flex-col gap-0.5">
+              {/* 라벨 */}
+              <span className={`text-[13px] font-black px-1 ${color}`}>{label}</span>
+              {/* 층1: 기존값 */}
+              <div className="flex items-center justify-center h-6 rounded-md bg-slate-50 border border-slate-100">
+                <span className="text-[11px] text-slate-400 font-semibold tabular-nums">
+                  {prev != null ? `현재 ${prev}` : <span className="text-slate-300">-</span>}
+                </span>
               </div>
+              {/* 층2: 추가 입력창 */}
               <NumberInput
-                value={row[key]}
-                onChange={v => onPatch(row.key, { [key]: v } as Partial<StockRow>)}
+                value={addVal}
+                onChange={v => onPatch(row.key, { [addKey]: v } as Partial<StockRow>)}
+                placeholder="+0"
                 accent={accent}
               />
+              {/* 층3: 합계 */}
+              <div className={`flex items-center justify-center h-6 rounded-md border ${
+                hasAdd ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100"
+              }`}>
+                <span className={`text-[12px] font-black tabular-nums ${
+                  hasAdd ? "text-emerald-700" : total > 0 ? "text-slate-600" : "text-slate-300"
+                }`}>
+                  = {total}
+                </span>
+              </div>
             </div>
           );
         })}
@@ -131,19 +139,37 @@ export const StockRowMobile: React.FC<StockRowMobileProps> = React.memo(({ row, 
 
       {/* 매장 그룹 · 3칸 */}
       <div className="grid grid-cols-3 gap-2">
-        {storeCols.map(({ key, zoneKey, prev, zone, spec, label, accent, zoneAccent, color }) => {
-          const d = calcDiff(row[key], prev);
+        {storeCols.map(({ addKey, zoneKey, prev, zone, spec, label, accent, zoneAccent, color }) => {
+          const addVal = row[addKey] as number | "";
+          const total = calcSlotTotal(prev, addVal);
+          const hasAdd = addVal !== "" && Number(addVal) !== 0;
           return (
-            <div key={key} className="flex flex-col gap-0.5">
-              <div className="flex items-baseline justify-between px-1">
-                <span className={`text-[13px] font-black ${color}`}>{label}</span>
-                {prev != null && <DiffLabel prev={prev} diff={d} />}
+            <div key={addKey} className="flex flex-col gap-0.5">
+              {/* 라벨 */}
+              <span className={`text-[13px] font-black px-1 ${color}`}>{label}</span>
+              {/* 층1: 기존값 */}
+              <div className="flex items-center justify-center h-6 rounded-md bg-slate-50 border border-slate-100">
+                <span className="text-[11px] text-slate-400 font-semibold tabular-nums">
+                  {prev != null ? `현재 ${prev}` : <span className="text-slate-300">-</span>}
+                </span>
               </div>
+              {/* 층2: 추가 입력창 */}
               <NumberInput
-                value={row[key]}
-                onChange={v => onPatch(row.key, { [key]: v } as Partial<StockRow>)}
+                value={addVal}
+                onChange={v => onPatch(row.key, { [addKey]: v } as Partial<StockRow>)}
+                placeholder="+0"
                 accent={accent}
               />
+              {/* 층3: 합계 */}
+              <div className={`flex items-center justify-center h-6 rounded-md border ${
+                hasAdd ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100"
+              }`}>
+                <span className={`text-[12px] font-black tabular-nums ${
+                  hasAdd ? "text-emerald-700" : total > 0 ? "text-slate-600" : "text-slate-300"
+                }`}>
+                  = {total}
+                </span>
+              </div>
               {/* ERP 지정 위치 (spec) · 있을 때만 */}
               {spec && (
                 <div className="text-[11px] text-slate-500 text-center px-1 tabular-nums" title={`ERP 지정 위치 · ${spec}`}>
