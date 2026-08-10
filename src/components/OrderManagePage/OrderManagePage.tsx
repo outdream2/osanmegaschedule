@@ -2520,8 +2520,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             손실 확정이 되었는지 확인하세요 <span className="text-amber-500">(ERP재고 vs 실재고 차이 · 손실추적 탭 참조)</span>
           </div>
           {/* 2026-08-10 · 사용자 요청 · PC 높이 넓힘 (모바일 50vh · lg 이상 75vh · 오른쪽 상세와 밸런스) */}
+          {/* 2026-08-10 · 사용자 요청 · 발주리스트 셀 폰트 +1 (order-req-list · [&_td]:text-[13px] · [&_th]:text-[12px]) */}
           <div className={`max-h-[50vh] lg:max-h-[75vh] overflow-auto relative ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-            <table className="w-full text-xs sm:min-w-[540px]">
+            <table className="w-full text-[13px] sm:min-w-[540px] [&_tbody_td]:text-[13px] [&_thead_th]:text-[12px]">
               <thead className="sticky top-0 bg-white z-10">
                 {/* 그룹 카테고리 헤더 · 클릭으로 접기/펼치기 */}
                 {/* 2026-08-10 · 사용자 요청 · 상품정보 colSpan 2→1 (공급사 제거) · 발주 액션 컬럼 제거 */}
