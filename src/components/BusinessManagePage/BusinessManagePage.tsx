@@ -6,6 +6,8 @@
 import React, { Suspense, useCallback, useEffect, useState } from "react";
 import { UserGear, CalendarDots, ForkKnife, FileText, NotePencil, type Icon as PhIcon } from "@phosphor-icons/react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
+import { SIDEBAR_ENABLED } from "../../hooks/useSidebar";
+import { useIsMobile } from "../../hooks/use-mobile";
 import { LunchPage } from "../LunchPage/LunchPage";
 import { useSortableTabs } from "../../hooks/useSortableTabs";
 import type { AuthSession } from "../../types";
@@ -64,6 +66,7 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
   initialFromPage,
 }) => {
   const [subTab, setSubTab] = useState<BmSubTab>("staff-manage");
+  const isBmMobile = useIsMobile();
 
   // 2026-08-10 · A · 스케쥴 [수정] 라우팅 · initialEmployeeId 진입 시 · staff-manage 강제 이동
   useEffect(() => {
@@ -161,6 +164,8 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
       {/* ── 서브탭 바 · 공통 TabBar (level 2) · long-press 드래그 지원 ── */}
       {/* 2026-08-03 · 관리자(level>=8) · 500ms long-press 후 드래그로 순서 변경 가능 */}
       {/* 2026-08-03 (#183) · 공통 TabBar 사용 · duplicate 스타일 흡수 · approval-center 배지 동적 매핑 */}
+      {/* 2026-08-11 · 사이드바 V2 · PC 는 사이드바가 서브탭 담당 · TabBar 숨김 (모바일 유지) */}
+      {!(SIDEBAR_ENABLED && !isBmMobile) && (
       <TabBar<BmSubTab>
         level={2}
         tabs={sortable.tabs.map((t): CommonTabDef<BmSubTab> => ({
@@ -178,6 +183,7 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
           isDragging: sortable.isDragging,
         }}
       />
+      )}
 
       {/* ── 서브탭 컨텐츠 ── */}
       <main className="flex-1 flex flex-col min-h-0">

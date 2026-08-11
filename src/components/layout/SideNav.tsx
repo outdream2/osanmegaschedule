@@ -182,15 +182,15 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                     // 활성 스타일
                     active
                       ? [
-                          tone.activeBg,
-                          tone.activeText,
-                          "font-bold",
-                        ].join(" ")
+                        tone.activeBg,
+                        tone.activeText,
+                        "font-bold",
+                      ].join(" ")
                       : [
-                          "font-medium text-slate-600",
-                          tone.hoverBg,
-                          "hover:text-slate-800",
-                        ].join(" "),
+                        "font-medium text-slate-600",
+                        tone.hoverBg,
+                        "hover:text-slate-800",
+                      ].join(" "),
                     "transition-colors duration-150",
                   ].join(" ")}
                 >
@@ -287,10 +287,7 @@ export const SideNav: React.FC<SideNavProps> = ({
           {/* icon-only 모드에서 숨김 */}
           <div className="flex flex-col gap-px leading-none group-data-[collapsible=icon]:hidden">
             <span className="text-[17px] font-black text-slate-800 tracking-tight">
-              메가타운
-            </span>
-            <span className="text-[13.5px] font-semibold text-slate-400 tracking-widest uppercase">
-              약국
+              오산메가타운약국
             </span>
           </div>
         </button>
