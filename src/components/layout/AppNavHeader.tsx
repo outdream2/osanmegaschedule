@@ -323,7 +323,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const activeBgTint = ACTIVE_BG_TINT[colorKey] ?? "bg-slate-50/80";
 
     // 공통 베이스: 세로 border-b-2 underline 방식 · 상하 padding 은 Row 2 높이와 맞춤
-    const baseCommon = "relative flex items-center gap-1.5 px-2.5 sm:px-2 md:px-2.5 lg:px-3 py-1.5 rounded-lg text-[13px] sm:text-[13px] md:text-[14px] lg:text-[15px] font-semibold whitespace-nowrap transition-all duration-150";
+    const baseCommon = "relative flex items-center gap-1.5 px-2.5 sm:px-2 md:px-2.5 lg:px-3 py-1.5 rounded-lg text-[15px] sm:text-[15px] md:text-[16px] lg:text-[17px] font-semibold whitespace-nowrap transition-all duration-150";
 
     const activeClass = `${baseCommon} ${activeBgTint} ${c.activeText} border-2 ${accentBar} border-x-transparent border-t-transparent font-bold`;
     const inactiveClass = `${baseCommon} ${hoverBg} ${c.inactiveText} ${c.inactiveHoverText} border-2 border-transparent hover:border-x-transparent hover:border-t-transparent hover:border-b-transparent active:scale-95 cursor-pointer disabled:opacity-40`;
@@ -335,7 +335,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       if (isActive) {
         return (
           <span key="business" className={activeClass}>
-            <Icon size={16} weight="fill" className="shrink-0 opacity-90" />
+            <Icon size={18} weight="fill" className="shrink-0 opacity-90" />
             <span>{tab.label}</span>
           </span>
         );
@@ -348,7 +348,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           disabled={!onNavigate}
           className={inactiveClass}
         >
-          <Icon size={16} weight="duotone" className="shrink-0 opacity-70" />
+          <Icon size={18} weight="duotone" className="shrink-0 opacity-70" />
           <span>{tab.label}</span>
         </button>
       );
@@ -359,7 +359,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     if (isActive) {
       return (
         <span key={tab.key} className={activeClass}>
-          <Icon size={16} weight="fill" className="shrink-0 opacity-90" />
+          <Icon size={18} weight="fill" className="shrink-0 opacity-90" />
           <span>{tab.label}</span>
         </span>
       );
@@ -371,7 +371,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         disabled={!onNavigate && !onBack}
         className={inactiveClass}
       >
-        <Icon size={16} weight="duotone" className="shrink-0 opacity-70" />
+        <Icon size={18} weight="duotone" className="shrink-0 opacity-70" />
         <span>{tab.label}</span>
       </button>
     );
@@ -543,7 +543,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
               <button
                 type="button"
                 onClick={() => setDesktopOverflowOpen(v => !v)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-150 active:scale-95 cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[15px] font-semibold transition-all duration-150 active:scale-95 cursor-pointer ${
                   desktopOverflowOpen
                     ? "bg-slate-800 text-white shadow-md"
                     : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
@@ -552,8 +552,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                 aria-label="더보기 메뉴"
                 aria-expanded={desktopOverflowOpen}
               >
-                <Menu size={14} strokeWidth={2} />
-                <span className="text-[12px]">{desktopOverflowTabs.length}</span>
+                <Menu size={16} strokeWidth={2} />
+                <span className="text-[14px]">{desktopOverflowTabs.length}</span>
               </button>
               {desktopOverflowOpen && (
                 <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl shadow-[0_8px_32px_-4px_rgba(0,0,0,0.12),0_2px_8px_-2px_rgba(0,0,0,0.06)] border border-slate-100 py-1.5 min-w-[160px] z-50 max-h-[70vh] overflow-y-auto">
@@ -572,14 +572,14 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                         key={tab.key}
                         type="button"
                         onClick={onClickTab}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2 text-[13px] font-semibold transition-all duration-100 rounded-lg mx-1 ${
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 text-[15px] font-semibold transition-all duration-100 rounded-lg mx-1 ${
                           isActive
                             ? `${c.activeBg} ${c.activeText} font-bold`
                             : `${c.inactiveText} hover:bg-slate-50 hover:${c.inactiveHoverText.replace("hover:", "")} cursor-pointer`
                         }`}
                         style={{ width: "calc(100% - 8px)" }}
                       >
-                        <Icon size={15} weight={isActive ? "fill" : "duotone"} className="shrink-0" />
+                        <Icon size={17} weight={isActive ? "fill" : "duotone"} className="shrink-0" />
                         {tab.label}
                       </button>
                     );
