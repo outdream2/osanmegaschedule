@@ -2216,11 +2216,11 @@ export const DayTimelineModal: React.FC<Props> = ({
                 <ChevronRight size={16} />
               </button>
             )}
-            <span className="bg-slate-700 text-slate-300 text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 hidden sm:inline">
+            <span className="bg-slate-700 text-slate-300 text-[13px] px-2 py-0.5 rounded-full font-semibold shrink-0 hidden sm:inline">
               근무 {workers.length}명 (사원 {staffWorkers.length} / 약사 {pharmacistWorkers.length}
               {otherWorkers.length > 0 ? ` / 기타 ${otherWorkers.length}` : ""})
             </span>
-            <span className="bg-slate-700 text-slate-300 text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 sm:hidden">
+            <span className="bg-slate-700 text-slate-300 text-[13px] px-2 py-0.5 rounded-full font-semibold shrink-0 sm:hidden">
               {workers.length}명
             </span>
           </div>
@@ -2245,7 +2245,7 @@ export const DayTimelineModal: React.FC<Props> = ({
           {/* 확정 버튼 */}
           <div className="ml-auto flex items-center gap-2 pb-1 shrink-0 pl-2">
             {isConfirmed ? (
-              <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200">
+              <span className="flex items-center gap-1 text-[13px] font-semibold text-emerald-600 px-1.5 py-0.5 rounded-lg bg-emerald-50 border border-emerald-200">
                 <CheckCircle size={13} />
                 확정됨
               </span>
@@ -2253,7 +2253,7 @@ export const DayTimelineModal: React.FC<Props> = ({
               <button
                 onClick={handleConfirm}
                 disabled={confirming}
-                className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white cursor-pointer disabled:opacity-50 transition">
+                className="flex items-center gap-1 text-[13px] font-semibold px-1.5 py-0.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white cursor-pointer disabled:opacity-50 transition">
                 <CheckCircle size={13} />
                 {confirming ? "저장중…" : "확정"}
               </button>
