@@ -269,13 +269,64 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   const desktopShownTabs = desktopOrderedTabs.slice(0, desktopVisibleCount);
   const desktopOverflowTabs = desktopOrderedTabs.slice(desktopVisibleCount);
 
+  // 2026-08-11 · PC 데스크탑 탭 · Linear/Vercel SaaS 스타일 리디자인
+  //   - 활성: 하단 accent underline + 탭 색상 텍스트 + 살짝 tinted 배경
+  //   - 비활성: 텍스트만 · hover 시 subtle 배경 + 색상 전환
+  //   - 모바일 코드(renderMobileTab) 미변경
   const renderDesktopTab = (tab: TabDef) => {
     const Icon = tab.icon;
     const c = TAB_COLOR_MAP[tab.color ?? "slate"];
-    // 2026-07-24 · sm 컴팩트 · md 중간 · lg 정상 (사용자 "모바일/PC 버전 바뀜" 대응)
-    //   sm (640-767): 매우 컴팩트 · md (768-1023): 중간 · lg (1024+): 원래대로
-    // 2026-08-10 · 사용자 요청 · 공통 헤더 메뉴 텍스트 +2 (13→15, 14→16, 16→18)
-    const base = "flex items-center gap-1 md:gap-1.5 px-1 md:px-1.5 lg:px-2 py-1 md:py-1 rounded-lg text-[15px] md:text-[16px] lg:text-[18px] font-bold border transition-all whitespace-nowrap";
+
+    // 색상별 underline accent 색상 (active 탭 하단 bar)
+    const ACCENT_BORDER: Record<string, string> = {
+      slate:   "border-b-slate-500",
+      blue:    "border-b-blue-500",
+      red:     "border-b-red-500",
+      sky:     "border-b-sky-500",
+      indigo:  "border-b-indigo-500",
+      orange:  "border-b-orange-500",
+      emerald: "border-b-emerald-500",
+      violet:  "border-b-violet-500",
+      amber:   "border-b-amber-500",
+      cyan:    "border-b-cyan-500",
+    };
+    // 색상별 hover 배경 (subtle tinted)
+    const HOVER_BG: Record<string, string> = {
+      slate:   "hover:bg-slate-50",
+      blue:    "hover:bg-blue-50",
+      red:     "hover:bg-red-50",
+      sky:     "hover:bg-sky-50",
+      indigo:  "hover:bg-indigo-50",
+      orange:  "hover:bg-orange-50",
+      emerald: "hover:bg-emerald-50",
+      violet:  "hover:bg-violet-50",
+      amber:   "hover:bg-amber-50",
+      cyan:    "hover:bg-cyan-50",
+    };
+    // 색상별 active 배경 (매우 연한 tint)
+    const ACTIVE_BG_TINT: Record<string, string> = {
+      slate:   "bg-slate-50/80",
+      blue:    "bg-blue-50/80",
+      red:     "bg-red-50/80",
+      sky:     "bg-sky-50/80",
+      indigo:  "bg-indigo-50/80",
+      orange:  "bg-orange-50/80",
+      emerald: "bg-emerald-50/80",
+      violet:  "bg-violet-50/80",
+      amber:   "bg-amber-50/80",
+      cyan:    "bg-cyan-50/80",
+    };
+
+    const colorKey = tab.color ?? "slate";
+    const accentBar = ACCENT_BORDER[colorKey] ?? "border-b-slate-500";
+    const hoverBg = HOVER_BG[colorKey] ?? "hover:bg-slate-50";
+    const activeBgTint = ACTIVE_BG_TINT[colorKey] ?? "bg-slate-50/80";
+
+    // 공통 베이스: 세로 border-b-2 underline 방식 · 상하 padding 은 Row 2 높이와 맞춤
+    const baseCommon = "relative flex items-center gap-1.5 px-2.5 sm:px-2 md:px-2.5 lg:px-3 py-1.5 rounded-lg text-[13px] sm:text-[13px] md:text-[14px] lg:text-[15px] font-semibold whitespace-nowrap transition-all duration-150";
+
+    const activeClass = `${baseCommon} ${activeBgTint} ${c.activeText} border-2 ${accentBar} border-x-transparent border-t-transparent font-bold`;
+    const inactiveClass = `${baseCommon} ${hoverBg} ${c.inactiveText} ${c.inactiveHoverText} border-2 border-transparent hover:border-x-transparent hover:border-t-transparent hover:border-b-transparent active:scale-95 cursor-pointer disabled:opacity-40`;
 
     // 경영관리 탭 · business-manage 통합 페이지로 단순 라우팅 (2026-08-03)
     if (tab.key === "business") {
@@ -283,8 +334,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       const bizOnClick = () => onNavigate?.("business-manage");
       if (isActive) {
         return (
-          <span key="business" className={`${base} ${c.activeBg} ${c.activeText} shadow-sm font-bold`}>
-            <Icon size={24} weight="fill" /> {tab.label}
+          <span key="business" className={activeClass}>
+            <Icon size={16} weight="fill" className="shrink-0 opacity-90" />
+            <span>{tab.label}</span>
           </span>
         );
       }
@@ -294,9 +346,10 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           type="button"
           onClick={bizOnClick}
           disabled={!onNavigate}
-          className={`${base} bg-white/70 ${c.inactiveText} ${c.inactiveHoverText} border-slate-200/80 hover:bg-white hover:border-slate-300 hover:shadow-sm active:scale-95 cursor-pointer disabled:opacity-40`}
+          className={inactiveClass}
         >
-          <Icon size={24} weight="fill" /> {tab.label}
+          <Icon size={16} weight="duotone" className="shrink-0 opacity-70" />
+          <span>{tab.label}</span>
         </button>
       );
     }
@@ -305,8 +358,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const onClick = tab.key === "landing" ? (onBack ?? (() => onNavigate?.("landing"))) : () => onNavigate?.(tab.key as AppNavPage);
     if (isActive) {
       return (
-        <span key={tab.key} className={`${base} ${c.activeBg} ${c.activeText} shadow-sm font-bold`}>
-          <Icon size={24} weight="fill" /> {tab.label}
+        <span key={tab.key} className={activeClass}>
+          <Icon size={16} weight="fill" className="shrink-0 opacity-90" />
+          <span>{tab.label}</span>
         </span>
       );
     }
@@ -315,9 +369,10 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         key={tab.key}
         onClick={onClick}
         disabled={!onNavigate && !onBack}
-        className={`${base} bg-white/70 ${c.inactiveText} ${c.inactiveHoverText} border-slate-200/80 hover:bg-white hover:border-slate-300 hover:shadow-sm active:scale-95 cursor-pointer disabled:opacity-40`}
+        className={inactiveClass}
       >
-        <Icon size={24} weight="fill" /> {tab.label}
+        <Icon size={16} weight="duotone" className="shrink-0 opacity-70" />
+        <span>{tab.label}</span>
       </button>
     );
   };
@@ -466,41 +521,42 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         </div>
       </div>
 
-      {/* ── Row 2 (하단): Desktop/태블릿 nav tabs · 2단 구조 · sm+ (2026-08-04 사용자 요청 · PC 도 반응형처럼 메뉴 아래로) ── */}
-      <div className="hidden sm:block px-4 sm:px-6 pt-1 pb-2 border-t border-slate-100/50">
-        <div ref={desktopContainerRef} className="flex flex-wrap items-center gap-1 gap-y-1.5 min-w-0 relative">
+      {/* ── Row 2 (하단): Desktop/태블릿 nav tabs · 2026-08-11 리디자인 · sm+ ── */}
+      <div className="hidden sm:block px-4 sm:px-5 md:px-6 pt-0.5 pb-1.5 border-t border-slate-100/60">
+        <div ref={desktopContainerRef} className="flex items-center gap-0.5 min-w-0 relative">
           {/* 측정용 hidden 영역 · 실제 탭 폭 계산 */}
           <div
             ref={desktopMeasureRef}
             aria-hidden="true"
-            className="absolute flex items-center gap-1 opacity-0 pointer-events-none"
+            className="absolute flex items-center gap-0.5 opacity-0 pointer-events-none"
             style={{ left: "-9999px", top: 0 }}
           >
             {visibleTabs.map(t => (
               <div key={`dmeasure-${t.key}`} data-desktop-tab>{renderDesktopTab(t)}</div>
             ))}
           </div>
-          {/* 실제 노출 탭 (flex-wrap 두줄 자동) */}
+          {/* 실제 노출 탭 */}
           {desktopShownTabs.map(renderDesktopTab)}
           {/* 오버플로 · 삼선 ☰ 드롭다운 · fallback (매우 좁은 화면) */}
           {desktopOverflowTabs.length > 0 && (
-            <div ref={desktopOverflowBtnRef} className="relative shrink-0">
+            <div ref={desktopOverflowBtnRef} className="relative shrink-0 ml-0.5">
               <button
                 type="button"
                 onClick={() => setDesktopOverflowOpen(v => !v)}
-                className={`flex items-center gap-1 px-2.5 py-2 rounded-lg text-[13px] font-bold border transition-all active:scale-95 cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-150 active:scale-95 cursor-pointer ${
                   desktopOverflowOpen
-                    ? "bg-slate-800 text-white border-transparent shadow-md"
-                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm"
+                    ? "bg-slate-800 text-white shadow-md"
+                    : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                 }`}
                 title={`더보기 (${desktopOverflowTabs.length}개)`}
                 aria-label="더보기 메뉴"
                 aria-expanded={desktopOverflowOpen}
               >
-                <Menu size={16} strokeWidth={2.2} />
+                <Menu size={14} strokeWidth={2} />
+                <span className="text-[12px]">{desktopOverflowTabs.length}</span>
               </button>
               {desktopOverflowOpen && (
-                <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-xl border border-slate-200 py-1 min-w-[180px] z-50 max-h-[70vh] overflow-y-auto">
+                <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl shadow-[0_8px_32px_-4px_rgba(0,0,0,0.12),0_2px_8px_-2px_rgba(0,0,0,0.06)] border border-slate-100 py-1.5 min-w-[160px] z-50 max-h-[70vh] overflow-y-auto">
                   {desktopOverflowTabs.map(tab => {
                     const Icon = tab.icon;
                     const c = TAB_COLOR_MAP[tab.color ?? "slate"];
@@ -516,13 +572,14 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                         key={tab.key}
                         type="button"
                         onClick={onClickTab}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2 text-[13px] font-bold transition ${
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 text-[13px] font-semibold transition-all duration-100 rounded-lg mx-1 ${
                           isActive
-                            ? `${c.activeBg} ${c.activeText}`
-                            : `${c.inactiveText} hover:bg-slate-50 cursor-pointer`
+                            ? `${c.activeBg} ${c.activeText} font-bold`
+                            : `${c.inactiveText} hover:bg-slate-50 hover:${c.inactiveHoverText.replace("hover:", "")} cursor-pointer`
                         }`}
+                        style={{ width: "calc(100% - 8px)" }}
                       >
-                        <Icon size={17} weight="fill" />
+                        <Icon size={15} weight={isActive ? "fill" : "duotone"} className="shrink-0" />
                         {tab.label}
                       </button>
                     );
