@@ -79,10 +79,14 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
   // 상위 그룹 헤더 톤 (공통헤더 AppNavHeader Tab 톤 매핑)
   const groupTone = COLOR_TONES[group.color];
 
-  // 서브탭 클릭 시 · localStorage 에 저장 후 · 페이지 이동 (각 페이지 마운트 시 읽어 초기 탭 설정)
+  // 서브탭 클릭 시 · localStorage 저장 + custom event dispatch → 각 페이지가 리스닝하여 setSubTab
   const handleNavItem = (item: SideNavItem) => {
     if (item.subTab) {
-      try { localStorage.setItem(subTabStorageKey(item.key), item.subTab); } catch { /* quota */ }
+      try {
+        localStorage.setItem(subTabStorageKey(item.key), item.subTab);
+        // 같은 페이지 내 서브탭 변경 시 · React 리렌더링 안 됨 → 커스텀 이벤트로 페이지에 알림
+        window.dispatchEvent(new CustomEvent("sidebar:subtab", { detail: { page: item.key, subTab: item.subTab } }));
+      } catch { /* quota */ }
     }
     onNavigate(item.key);
   };

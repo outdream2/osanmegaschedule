@@ -78,13 +78,32 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
   // 2026-08-03 · 페이지 진입(마운트) 시 · 서브탭 · 재정렬된 순서의 첫 탭으로 리셋
   //   · 사용자 요청 (모든 메뉴 진입 시 · 첫 서브탭 기본 표시)
   //   · localStorage 순서 반영 후 첫 원소 · 마운트 1회
+  //   · 2026-08-11 · 사이드바 V2 · localStorage("sidebar.subtab.business-manage") 있으면 우선
   useEffect(() => {
+    try {
+      const sb = localStorage.getItem("sidebar.subtab.business-manage") as BmSubTab | null;
+      if (sb) {
+        localStorage.removeItem("sidebar.subtab.business-manage");
+        setSubTab(sb);
+        return;
+      }
+    } catch { /* silent */ }
     const firstKey = sortable.tabs[0]?.key as BmSubTab | undefined;
     // 하위 호환 · 이전 저장값 "leave" → "approval-center" 로 자동 리다이렉트
     const mapped: BmSubTab | undefined =
       (firstKey as unknown as string) === "leave" ? "approval-center" : firstKey;
     if (mapped) setSubTab(mapped);
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // 2026-08-11 · 사이드바 V2 · 같은 페이지에서 서브탭 클릭 시 CustomEvent 리스닝
+  useEffect(() => {
+    const onSubTab = (e: Event) => {
+      const detail = (e as CustomEvent<{ page: string; subTab: string }>).detail;
+      if (detail?.page !== "business-manage") return;
+      setSubTab(detail.subTab as BmSubTab);
+    };
+    window.addEventListener("sidebar:subtab", onSubTab);
+    return () => window.removeEventListener("sidebar:subtab", onSubTab);
   }, []);
 
   // ── 승인대기 pending 카운트 (연차 + 사직서 합계) · 서브탭 라벨 옆 배지 ──

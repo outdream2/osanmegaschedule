@@ -106,7 +106,24 @@ function ListToolbar({
 
 export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
   const confirm = useConfirm();
-  const [tab, setTab] = useState<Tab>("display");
+  const [tab, setTab] = useState<Tab>(() => {
+    // 2026-08-11 · 사이드바 V2 · localStorage("sidebar.subtab.requests") 있으면 초기값 사용
+    try {
+      const sb = localStorage.getItem("sidebar.subtab.requests") as Tab | null;
+      if (sb) { localStorage.removeItem("sidebar.subtab.requests"); return sb; }
+    } catch { /* silent */ }
+    return "display";
+  });
+  // 사이드바에서 같은 페이지 서브탭 클릭 시 CustomEvent 리스닝
+  useEffect(() => {
+    const onSubTab = (e: Event) => {
+      const detail = (e as CustomEvent<{ page: string; subTab: string }>).detail;
+      if (detail?.page !== "requests") return;
+      setTab(detail.subTab as Tab);
+    };
+    window.addEventListener("sidebar:subtab", onSubTab);
+    return () => window.removeEventListener("sidebar:subtab", onSubTab);
+  }, []);
   const isManager = (authSession?.level ?? 0) >= 2;
   const { getWidth: rw, resizerProps: rr } = useColumnResize("requestsDisplay", {
     check:   { default: 32,  min: 28, max: 48  },

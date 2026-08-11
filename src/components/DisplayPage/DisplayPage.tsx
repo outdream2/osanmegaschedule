@@ -307,15 +307,32 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   // 2026-08-10 · 매장구역도 · 기본 접기 (사용자 요청)
   const [mapCollapsed, setMapCollapsed] = useState(true);
   // 2026-08-09 · sessionStorage("dpInitialSubTab") 있으면 · 그 서브탭으로 진입 (LandingPage 공급사등록 카드용)
+  //           · 2026-08-11 · localStorage("sidebar.subtab.display") 도 확인 (사이드바 V2 서브탭 이동)
   useEffect(() => {
     try {
       const req = sessionStorage.getItem("dpInitialSubTab") as DpSubTabKey | null;
       if (req) {
         sessionStorage.removeItem("dpInitialSubTab");
-        if (DP_SUBTAB_DEFAULTS.some(t => t.key === req)) setDpSubTab(req);
+        if (DP_SUBTAB_DEFAULTS.some(t => t.key === req)) { setDpSubTab(req); return; }
+      }
+      const sbReq = localStorage.getItem("sidebar.subtab.display") as DpSubTabKey | null;
+      if (sbReq) {
+        localStorage.removeItem("sidebar.subtab.display");
+        if (DP_SUBTAB_DEFAULTS.some(t => t.key === sbReq)) setDpSubTab(sbReq);
       }
     } catch { /* silent */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // 2026-08-11 · 사이드바 V2 · 같은 페이지에서 다른 서브탭 클릭 시 · CustomEvent 리스닝
+  useEffect(() => {
+    const onSubTab = (e: Event) => {
+      const detail = (e as CustomEvent<{ page: string; subTab: string }>).detail;
+      if (detail?.page !== "display") return;
+      const sub = detail.subTab as DpSubTabKey;
+      if (DP_SUBTAB_DEFAULTS.some(t => t.key === sub)) setDpSubTab(sub);
+    };
+    window.addEventListener("sidebar:subtab", onSubTab);
+    return () => window.removeEventListener("sidebar:subtab", onSubTab);
   }, []);
   // 2026-08-05 · 관리자(level>=8) long-press 드래그 재정렬
   const dpTabSortable = useSortableTabs<CommonTabDef<DpSubTabKey>>(
