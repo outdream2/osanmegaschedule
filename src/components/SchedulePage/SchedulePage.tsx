@@ -1693,9 +1693,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 if (!todaySummary) return null;
                 return (
                   <span className="ml-2 flex items-baseline gap-2 pl-2 border-l border-slate-200 text-[15px] font-semibold">
-                    <span className="text-emerald-700">약 {todaySummary.pharmacistCount}</span>
-                    <span className="text-slate-600">사 {todaySummary.staffCount}</span>
-                    <span className="text-slate-500">기 {todaySummary.otherCount}</span>
+                    <span className="text-emerald-700">약사 {todaySummary.pharmacistCount}</span>
+                    <span className="text-slate-600">사원 {todaySummary.staffCount}</span>
+                    <span className="text-slate-500">기타 {todaySummary.otherCount}</span>
                     <span className="text-indigo-600 font-bold">총 {todaySummary.totalCount}명</span>
                   </span>
                 );
