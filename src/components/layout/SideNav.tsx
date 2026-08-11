@@ -131,13 +131,13 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
         ].join(" ")}
       >
         <SidebarMenu className="gap-0 px-1 py-0.5">
-          {group.items.map((item) => {
+          {group.items.map((item, itemIdx) => {
             const Icon = item.icon;
             const active = isItemActive(item, activePage);
             const tone = COLOR_TONES[item.color];
 
             return (
-              <SidebarMenuItem key={item.key} className="relative">
+              <SidebarMenuItem key={`${item.key}-${item.subTab ?? "_"}-${itemIdx}`} className="relative">
 
                 {/* 활성 좌측 accent bar · 3px 세로 선 · icon-only 모드 숨김 */}
                 {active && (

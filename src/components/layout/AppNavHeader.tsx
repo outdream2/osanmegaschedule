@@ -21,7 +21,6 @@ import { NotificationToggle } from "../NotificationToggle";
 import logoImg from "../../images/logo.png";
 // 2026-08-11 · 사이드바 V2 · flag ON 시 슬림 헤더로 대체
 import { SIDEBAR_ENABLED } from "../../hooks/useSidebar";
-import { SidebarTrigger } from "../ui/sidebar";
 import { useIsMobile } from "../../hooks/use-mobile";
 
 export type AppNavPage =
@@ -465,7 +464,6 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   if (SIDEBAR_ENABLED && !isMobileNav) {
     return (
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-100 h-12 flex items-center px-3 gap-2 shrink-0">
-        <SidebarTrigger className="md:hidden" />
         <div className="flex-1" />
         {rightSlot}
         {authSession && <NotificationToggle authSession={authSession} />}
