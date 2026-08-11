@@ -82,11 +82,9 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
   // 서브탭 클릭 시 · localStorage 저장 + custom event dispatch → 각 페이지가 리스닝하여 setSubTab
   const handleNavItem = (item: SideNavItem) => {
     if (item.subTab) {
-      try {
-        localStorage.setItem(subTabStorageKey(item.key), item.subTab);
-        // 같은 페이지 내 서브탭 변경 시 · React 리렌더링 안 됨 → 커스텀 이벤트로 페이지에 알림
-        window.dispatchEvent(new CustomEvent("sidebar:subtab", { detail: { page: item.key, subTab: item.subTab } }));
-      } catch { /* quota */ }
+      try { localStorage.setItem(subTabStorageKey(item.key), item.subTab); } catch { /* quota */ }
+      // 같은 페이지 내 서브탭 변경 시 · React setPage skip · 커스텀 이벤트로 페이지에 알림 (localStorage 실패해도 dispatch 실행)
+      window.dispatchEvent(new CustomEvent("sidebar:subtab", { detail: { page: item.key, subTab: item.subTab } }));
     }
     onNavigate(item.key);
   };

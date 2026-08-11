@@ -89,9 +89,6 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       { key: "business-manage", label: "점심불참",  icon: Coffee,      color: "violet", subTab: "lunch",            managerOnly: true },
       { key: "business-manage", label: "HR 양식",   icon: FileText,    color: "violet", subTab: "hr-forms",         managerOnly: true },
       { key: "business-manage", label: "문서작성",  icon: PencilLine,  color: "violet", subTab: "document-writer",  managerOnly: true },
-      // 별도 페이지 (경영 관련)
-      { key: "permissions", label: "직원권한",  icon: Lock,   color: "violet", minLevel: 9 },
-      { key: "zone-labels", label: "구역 라벨", icon: MapPin, color: "violet", managerOnly: true },
     ],
   },
   {
@@ -116,6 +113,16 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       { key: "requests", label: "진열요청",   icon: Chat,         color: "cyan", subTab: "display" },
       { key: "requests", label: "실재고차이", icon: ShoppingCart, color: "cyan", subTab: "inventory", managerOnly: true },
       { key: "requests", label: "점심불참",   icon: Coffee,       color: "cyan", subTab: "lunch",     managerOnly: true },
+    ],
+  },
+  {
+    id: "settings",
+    label: "설정",
+    color: "slate",
+    managerOnly: true,
+    items: [
+      { key: "permissions", label: "직원권한",  icon: Lock,   color: "slate", minLevel: 9 },
+      { key: "zone-labels", label: "구역 라벨", icon: MapPin, color: "slate", managerOnly: true },
     ],
   },
   {
