@@ -1,4 +1,4 @@
-// src/components/SchedulePage.tsx
+﻿// src/components/SchedulePage.tsx
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import {
@@ -2171,7 +2171,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
       {/* Footer — 저작권 표시 (가운데 정렬) */}
       <footer className="h-9 bg-white border-t border-gray-200 shrink-0 px-4 sm:px-6 flex items-center justify-center text-xs font-bold text-slate-600 tracking-wide">
-        <span>© (주)이룸</span>
+        <span>© (주)이룸즈(IRUMS)</span>
       </footer>
 
       {/* Roster Add Modal Popup Backdrop */}

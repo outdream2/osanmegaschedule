@@ -52,7 +52,7 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMo
 
   return (
     <tr className={isTotal ? "border-t-2 border-slate-200" : "border-t border-slate-100/70"}>
-      <td className={`px-2 py-1.5 sticky left-0 z-20 text-center text-[11px] font-semibold tracking-wide shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)] ${labelCls}`}>
+      <td className={`px-2 py-1.5 sticky left-0 z-20 text-center text-[15px] font-semibold tracking-wide shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)] ${labelCls}`}>
         {label}
       </td>
 
@@ -64,7 +64,7 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMo
 
         const cell = (
           <td
-            className={`p-1 text-center text-[11px] border-r border-slate-100 w-[30px] sm:w-[44px] transition-colors ${
+            className={`p-1 text-center text-[13px] border-r border-slate-100 w-[30px] sm:w-[44px] transition-colors ${
               val > 0 ? valActiveCls : valEmptyCls
             } ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-20 relative" : ""}`}
           >
@@ -82,7 +82,7 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMo
         return (
           <React.Fragment key={sum.date}>
             {cell}
-            <td className={`p-1 text-center text-[10px] font-semibold ${monthTotalCls}`}>
+            <td className={`p-1 text-center text-[12px] font-semibold ${monthTotalCls}`}>
               {monthTotal > 0 ? `${monthTotal}인` : <span className="opacity-30">-</span>}
             </td>
           </React.Fragment>

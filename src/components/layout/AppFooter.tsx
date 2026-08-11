@@ -1,4 +1,4 @@
-// src/components/AppFooter.tsx
+﻿// src/components/AppFooter.tsx
 // 전체 페이지 공통 하단 푸터
 import React from "react";
 import { MapPin, Clock } from "lucide-react";
@@ -9,6 +9,6 @@ export const AppFooter: React.FC = () => (
     <span className="w-1 h-1 rounded-full bg-slate-300" />
     <span className="flex items-center gap-1.5"><Clock size={11} />09:00 - 22:00</span>
     <span className="w-1 h-1 rounded-full bg-slate-300" />
-    <span className="text-slate-400">copyright (주)이룸</span>
+    <span className="text-slate-400">copyright (주)이룸즈(IRUMS)</span>
   </div>
 );

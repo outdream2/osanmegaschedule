@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import axios from "axios";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useSettings } from "../../hooks/useSettings";
+import kakaoQrImg from "../../images/kakao_QR.png";
 import {
   ChevronRight,
   Clock,
@@ -1383,15 +1384,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 </button>
               </div>
 
-              {/* 2026-08-11 · 카카오톡 채널 친구추가 (비로그인 랜딩) */}
-              <a
-                href="https://pf.kakao.com/_ExfuiX/friend"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 bg-[#FEE500] hover:bg-[#FADA0A] active:scale-[0.99] transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer border border-[#F0D700]/60"
-              >
-                <span className="text-slate-900 font-black text-sm">카카오톡 채널 친구추가</span>
-              </a>
+              {/* 2026-08-11 · 카카오톡 채널 친구추가 (비로그인 랜딩) · QR + 버튼 */}
+              <div className="w-full flex items-center gap-3 rounded-2xl px-4 py-3 bg-[#FEE500] shadow-sm border border-[#F0D700]/60">
+                <img
+                  src={kakaoQrImg}
+                  alt="카카오톡 채널 QR"
+                  className="w-16 h-16 rounded-lg bg-white p-1 shrink-0 object-contain"
+                />
+                <a
+                  href="https://pf.kakao.com/_ExfuiX/friend"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 inline-flex items-center justify-center rounded-xl px-4 py-3 bg-white hover:bg-slate-50 active:scale-[0.99] transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer border border-[#F0D700]/40"
+                >
+                  <span className="text-slate-900 font-black text-sm">카카오톡 채널 친구추가</span>
+                </a>
+              </div>
             </div>
           )}
 

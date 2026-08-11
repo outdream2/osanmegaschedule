@@ -1,4 +1,4 @@
-// src/components/DisplayPage/DisplayPage.tsx
+﻿// src/components/DisplayPage/DisplayPage.tsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ZONE_DEFS, ZONES_STORAGE_KEY } from "../../constants/displayZones";
 import {
@@ -2216,7 +2216,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
       {/* Footer */}
       <footer className="bg-white text-center p-4 mt-8 text-xs text-gray-400 border-t border-gray-200">
-        &copy; 2026 오산메가타운 매장 관리 시스템. All Rights Reserved. (주)이룸
+        &copy; 2026 오산메가타운 매장 관리 시스템. All Rights Reserved. (주)이룸즈(IRUMS)
       </footer>
 
       {/* ─── Zone Assignment Popover ────────────────────────────────────────── */}
