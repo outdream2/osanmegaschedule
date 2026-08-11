@@ -1,7 +1,7 @@
 ﻿// src/components/ScheduleFilterBar.tsx
 import React from "react";
 import { useConfirm } from "../../hooks/useConfirm";
-import { X, Search, Building2, Warehouse, Layers, UserPlus } from "lucide-react";
+// 2026-08-11 · 사용자 요청 · 필터바 아이콘 전면 제거 · lucide import 도 삭제
 import { Employee } from "../../types";
 
 export type WorkplaceTab = "전체" | "매장" | "창고";
@@ -50,25 +50,24 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
   return (
     <div className="bg-white border-b border-slate-200 px-3 sm:px-6 py-2 sm:py-2.5 flex flex-col gap-2 sm:gap-3 shrink-0 shadow-sm">
         {/* Filter Tabs: two independent groups */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          <span className="text-[15px] font-bold text-slate-400 uppercase tracking-widest shrink-0 w-8 sm:w-10">필터</span>
+        <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
+          <span className="text-[17px] font-bold text-slate-400 uppercase tracking-widest shrink-0 pr-0.5">필터</span>
           {/* Group 1: Workplace */}
           <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
             {([
-              { key: "전체", label: "전체", icon: <Layers size={12} />, color: "text-indigo-600", count: employees.length },
-              { key: "매장", label: "매장", icon: <Building2 size={12} />, color: "text-emerald-600", count: employees.filter(e => (e.workplace || "매장") === "매장").length },
-              { key: "창고", label: "창고", icon: <Warehouse size={12} />, color: "text-indigo-600", count: employees.filter(e => e.workplace === "창고").length },
-            ] as const).map(({ key, label, icon, color, count }) => (
+              { key: "전체", label: "전체", color: "text-indigo-600", count: employees.length },
+              { key: "매장", label: "매장", color: "text-emerald-600", count: employees.filter(e => (e.workplace || "매장") === "매장").length },
+              { key: "창고", label: "창고", color: "text-indigo-600", count: employees.filter(e => e.workplace === "창고").length },
+            ] as const).map(({ key, label, color, count }) => (
               <button
                 key={key}
                 onClick={() => setWorkplaceTab(key)}
-                className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-[11px] font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[28px] sm:min-h-[32px] ${workplaceTab === key
+                className={`px-1.5 sm:px-2 py-0.5 sm:py-0.5 text-[12px] sm:text-[13px] font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[24px] sm:min-h-[26px] ${workplaceTab === key
                   ? `bg-white ${color} shadow-sm font-bold`
                   : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                   }`}
               >
-                {icon}
-                <span>{label} <span className="text-slate-400 font-normal hidden sm:inline">({count})</span><span className="text-slate-400 font-normal sm:hidden"> {count}</span></span>
+                <span>{label} <span className="text-slate-400 font-normal">({count})</span></span>
               </button>
             ))}
           </div>
@@ -80,22 +79,21 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
               // · 창고 = position 물류(창고 포함)
               // · 진열 = position 진열
               // · 매장 = 창고 + 진열 통합 (약사 외 매장 근무자 · 캐셔 포함)
-              { key: "전체", label: "전체", icon: <Layers size={12} />, color: "text-indigo-600", count: employees.length, sub: false },
-              { key: "약사", label: "약사", icon: null, color: "text-violet-600", count: employees.filter(e => e.position === "약사").length, sub: false },
-              { key: "창고", label: "창고", icon: null, color: "text-sky-600", count: employees.filter(e => e.position !== "약사" && (e.position.includes("물류") || e.position === "창고")).length, sub: false },
-              { key: "진열", label: "진열", icon: null, color: "text-teal-600", count: employees.filter(e => e.position !== "약사" && e.position === "진열").length, sub: false },
-              { key: "매장", label: "매장", icon: null, color: "text-emerald-600", count: employees.filter(e => e.position !== "약사" && (e.position.includes("물류") || e.position === "창고" || e.position === "진열" || e.position === "캐셔")).length, sub: false },
-            ] as const).map(({ key, label, icon, color, count, sub }) => (
+              { key: "전체", label: "전체", color: "text-indigo-600", count: employees.length },
+              { key: "약사", label: "약사", color: "text-violet-600", count: employees.filter(e => e.position === "약사").length },
+              { key: "창고", label: "창고", color: "text-sky-600", count: employees.filter(e => e.position !== "약사" && (e.position.includes("물류") || e.position === "창고")).length },
+              { key: "진열", label: "진열", color: "text-teal-600", count: employees.filter(e => e.position !== "약사" && e.position === "진열").length },
+              { key: "매장", label: "매장", color: "text-emerald-600", count: employees.filter(e => e.position !== "약사" && (e.position.includes("물류") || e.position === "창고" || e.position === "진열" || e.position === "캐셔")).length },
+            ] as const).map(({ key, label, color, count }) => (
               <button
                 key={key}
                 onClick={() => setPositionTab(key)}
-                className={`px-2 sm:px-3 py-1 sm:py-1.5 ${sub ? "text-[10px] sm:text-[11px]" : "text-[10px] sm:text-[11px]"} font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[28px] sm:min-h-[32px] ${positionTab === key
+                className={`px-1.5 sm:px-2 py-0.5 sm:py-0.5 text-[12px] sm:text-[13px] font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[24px] sm:min-h-[26px] ${positionTab === key
                   ? `bg-white ${color} shadow-sm font-bold`
                   : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                   }`}
               >
-                {icon}
-                <span>{label} <span className="text-slate-400 font-normal hidden sm:inline">({count})</span><span className="text-slate-400 font-normal sm:hidden"> {count}</span></span>
+                <span>{label} <span className="text-slate-400 font-normal">({count})</span></span>
               </button>
             ))}
           </div>
@@ -103,19 +101,18 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
 
         {/* 2026-08-11 · 정렬 + 검색 + 직원등록 · PC 한줄 · 반응형 2줄 (flex-wrap) */}
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap text-xs">
-          <span className="text-[15px] font-bold text-slate-400 uppercase tracking-widest shrink-0 w-8 sm:w-10">정렬</span>
+          <span className="text-[17px] font-bold text-slate-400 uppercase tracking-widest shrink-0 pr-0.5">정렬</span>
           {/* 오늘 출근 우선 토글 */}
           <button
             type="button"
             onClick={() => setTodayFirst(v => !v)}
-            className={`inline-flex items-center gap-1 px-2.5 py-1 sm:py-1.5 text-[10px] sm:text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${
+            className={`inline-flex items-center gap-1 px-2 py-0.5 sm:py-1 text-[12px] sm:text-[13px] font-bold rounded-lg border transition-all cursor-pointer ${
               todayFirst
                 ? "bg-rose-500 text-white border-rose-500 shadow-sm"
                 : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
             }`}
             title="오늘 출근 직원을 목록 상단에 표시"
           >
-            <span>🟢</span>
             <span className="hidden sm:inline">오늘 출근 우선</span>
             <span className="sm:hidden">오늘순</span>
           </button>
@@ -130,7 +127,7 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
                     if (sortBy === key) setSortOrder(prev => prev === "asc" ? "desc" : "asc");
                     else { setSortBy(key); setSortOrder("asc"); }
                   }}
-                  className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-[11px] font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[28px] sm:min-h-[32px] ${
+                  className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-[12px] sm:text-[13px] font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[26px] sm:min-h-[30px] ${
                     sortBy === key ? "bg-white text-indigo-600 shadow-sm font-bold" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                   }`}
                 >
@@ -146,7 +143,7 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
                   setSortBy("none");
                   setSortOrder("asc");
                 }}
-                className="px-2 py-1 sm:py-1.5 text-[11px] font-medium text-slate-400 hover:text-rose-500 rounded-md transition cursor-pointer min-h-[28px] sm:min-h-[32px]"
+                className="px-2 py-1 sm:py-1.5 text-[13px] font-medium text-slate-400 hover:text-rose-500 rounded-md transition cursor-pointer min-h-[28px] sm:min-h-[32px]"
                 title="기본 순서 정렬 상태로 복원"
               >
                 초기화
@@ -170,22 +167,19 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
 
           {/* 검색 · 직원등록 · 같은 줄에 이어붙임 (PC) · 좁으면 wrap (반응형 2줄) */}
           <div className="relative flex-1 min-w-[180px] sm:max-w-xs">
-            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
-              <Search size={13} />
-            </div>
             <input
               type="text"
               placeholder="성명으로 조회 (예: 정윤수)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full text-xs font-medium pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white rounded-lg focus:outline-none placeholder-slate-400 text-slate-800 transition-all min-h-[32px]"
+              className="w-full text-[13px] font-medium px-2.5 py-1 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white rounded-lg focus:outline-none placeholder-slate-400 text-slate-800 transition-all min-h-[30px]"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute inset-y-0 right-2.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                className="absolute inset-y-0 right-2 flex items-center text-slate-400 hover:text-slate-600 transition-colors text-xs"
               >
-                <X size={13} />
+                ×
               </button>
             )}
           </div>
@@ -194,10 +188,9 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
               type="button"
               onClick={onCreateEmployee}
               title="새 직원 등록"
-              className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 border border-indigo-600 rounded-lg shadow-sm transition cursor-pointer active:scale-95"
+              className="shrink-0 inline-flex items-center justify-center px-3 py-1.5 text-[12px] font-black text-white bg-indigo-600 hover:bg-indigo-700 border border-indigo-600 rounded-lg shadow-sm transition cursor-pointer active:scale-95"
             >
-              <UserPlus size={13} />
-              <span>직원 등록</span>
+              직원 등록
             </button>
           )}
         </div>

@@ -1691,18 +1691,15 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 오늘
               </button>
             </div>
-            {/* Legend indicators + 오늘 근무 서머리 */}
-            <div className="flex items-center gap-2 text-[10px] font-semibold flex-wrap min-w-0">
+            {/* Legend indicators + 오늘 근무 서머리 · 2026-08-11 · 배지 제거 · 깔끔한 텍스트 · 폰트 +2 */}
+            <div className="flex items-baseline gap-3 text-[15px] font-semibold flex-wrap min-w-0">
               {[
-                { color: "bg-yellow-100 border-yellow-300", label: "오픈" },
-                { color: "bg-emerald-100 border-emerald-300", label: "마감" },
-                { color: "bg-rose-100 border-rose-300", label: "휴무" },
-                { color: "bg-amber-300 border-amber-400", label: "월차" },
-              ].map(({ color, label }) => (
-                <div key={label} className="flex items-center gap-1.5">
-                  <span className={`w-2.5 h-2.5 rounded border ${color} inline-block`}></span>
-                  <span className="text-slate-500">{label}</span>
-                </div>
+                { c: "text-yellow-600", label: "오픈" },
+                { c: "text-emerald-600", label: "마감" },
+                { c: "text-rose-600",    label: "휴무" },
+                { c: "text-amber-600",   label: "월차" },
+              ].map(({ c, label }) => (
+                <span key={label} className={`${c}`}>{label}</span>
               ))}
               {(() => {
                 const today = new Date();
@@ -1710,18 +1707,13 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 const todaySummary = isThisMonth ? currentSummaryList.find(s => s.day === today.getDate()) : null;
                 if (!todaySummary) return null;
                 return (
-                  <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-0.5">
-                    <Clock size={9} className="text-slate-400" />
-                    <span className="text-[10px] font-bold text-slate-500">오늘</span>
-                    <span className="text-slate-300 text-[9px]">|</span>
-                    <span className="text-[10px] font-semibold text-emerald-700">약 {todaySummary.pharmacistCount}</span>
-                    <span className="text-slate-300 text-[9px]">·</span>
-                    <span className="text-[10px] font-semibold text-slate-600">사 {todaySummary.staffCount}</span>
-                    <span className="text-slate-300 text-[9px]">·</span>
-                    <span className="text-[10px] font-semibold text-slate-500">기 {todaySummary.otherCount}</span>
-                    <span className="text-slate-200 text-[9px]">|</span>
-                    <span className="text-[10px] font-bold text-indigo-600">총 {todaySummary.totalCount}명</span>
-                  </div>
+                  <span className="flex items-baseline gap-2 pl-2 border-l border-slate-200">
+                    <span className="text-slate-400 font-bold">오늘</span>
+                    <span className="text-emerald-700">약 {todaySummary.pharmacistCount}</span>
+                    <span className="text-slate-600">사 {todaySummary.staffCount}</span>
+                    <span className="text-slate-500">기 {todaySummary.otherCount}</span>
+                    <span className="text-indigo-600 font-bold">총 {todaySummary.totalCount}명</span>
+                  </span>
                 );
               })()}
             </div>
@@ -1734,7 +1726,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
               <button
                 onClick={() => setShowSummary(v => v === "summary" ? "hidden" : "summary")}
                 title="월별 합계(근무일수/시간) 열 표시 토글"
-                className={`px-2.5 py-1 text-[11px] rounded-md font-bold border transition cursor-pointer ${showSummary === "summary" ? "bg-indigo-500 text-white border-indigo-500" : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"}`}
+                className={`px-2.5 py-1.5 text-[13px] sm:text-[15px] rounded-md font-bold border transition cursor-pointer ${showSummary === "summary" ? "bg-indigo-500 text-white border-indigo-500" : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"}`}
               >
                 합계
               </button>
@@ -1742,7 +1734,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 <button
                   onClick={() => setShowSummary(v => v === "labor" ? "hidden" : "labor")}
                   title="월별 합계 + 인건비 표시 토글"
-                  className={`px-2.5 py-1 text-[11px] rounded-md font-bold border transition cursor-pointer ${showSummary === "labor" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"}`}
+                  className={`px-2.5 py-1.5 text-[13px] sm:text-[15px] rounded-md font-bold border transition cursor-pointer ${showSummary === "labor" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"}`}
                 >
                   인건비
                 </button>
@@ -1756,7 +1748,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                   <button
                     onClick={() => setEditMode(m => !m)}
                     title={editMode ? "편집 모드 종료" : "편집 모드 활성화 — 셀 클릭으로 스케줄 변경 가능"}
-                    className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-md border transition-all cursor-pointer ${
+                    className={`flex items-center gap-1 px-2.5 py-1.5 text-[13px] sm:text-[15px] font-bold rounded-md border transition-all cursor-pointer ${
                       editMode
                         ? "border-emerald-400 bg-emerald-500 text-white shadow-sm"
                         : "border-slate-300 bg-white text-slate-600 hover:border-slate-400"
@@ -1773,7 +1765,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                   onClick={handleToggleMonthLock}
                   disabled={isLockLoading}
                   title={isMonthLocked ? `${currentMonth}월 확정 해제` : `${currentMonth}월 스케줄 확정 (이후 수정 불가)`}
-                  className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-md border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                  className={`flex items-center gap-1 px-2.5 py-1.5 text-[13px] sm:text-[15px] font-bold rounded-md border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                     isMonthLocked
                       ? "border-amber-400 bg-amber-500 text-white shadow-sm"
                       : "border-slate-300 bg-white text-slate-600 hover:border-slate-400"
@@ -1791,7 +1783,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                     onClick={handleCopyFromPreviousMonth}
                     disabled={isCopying}
                     title={`${currentMonth === 1 ? 12 : currentMonth - 1}월 스케줄을 ${currentMonth}월로 복사`}
-                    className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-md border border-violet-300 bg-white text-violet-600 hover:border-violet-400 hover:bg-violet-50 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-[13px] sm:text-[15px] font-bold rounded-md border border-violet-300 bg-white text-violet-600 hover:border-violet-400 hover:bg-violet-50 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {isCopying
                       ? <><div className="w-3 h-3 rounded-full border-2 border-violet-400 border-t-transparent animate-spin" /><span>복사 중</span></>
@@ -2409,31 +2401,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         </div>
       )}
 
-      {/* 편집 모드 FAB (Floating Action Button) — 스크롤 위치 관계 없이 항상 우하단 노출 */}
-      {isAdmin && !isMonthLocked && (
-        <button
-          type="button"
-          onClick={() => setEditMode(m => !m)}
-          title={editMode ? "편집 모드 종료" : "편집 모드 시작"}
-          className={`fixed bottom-4 right-4 z-40 flex items-center gap-1.5 px-4 py-3 text-sm font-black rounded-full shadow-2xl transition-all cursor-pointer active:scale-95 ${
-            editMode
-              ? "bg-emerald-500 hover:bg-emerald-600 text-white ring-4 ring-emerald-300/40"
-              : "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 ring-2 ring-slate-200/60"
-          }`}
-        >
-          {editMode ? (
-            <>
-              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-              <span>편집중 · 종료</span>
-            </>
-          ) : (
-            <>
-              <Edit size={14} />
-              <span>편집</span>
-            </>
-          )}
-        </button>
-      )}
+      {/* 편집 모드 FAB · 2026-08-11 사용자 요청 · 제거 (상단 툴바 [편집] 버튼으로 대체) */}
     </div>
   );
 };
