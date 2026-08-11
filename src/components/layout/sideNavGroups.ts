@@ -85,7 +85,7 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     items: [
       // BusinessManagePage 서브탭
       { key: "business-manage", label: "직원관리",  icon: UsersThree,  color: "violet", subTab: "staff-manage",     managerOnly: true },
-      { key: "business-manage", label: "승인센터",  icon: CheckSquare, color: "violet", subTab: "approval-center",  managerOnly: true },
+      { key: "business-manage", label: "승인대기",  icon: CheckSquare, color: "violet", subTab: "approval-center",  managerOnly: true },
       { key: "business-manage", label: "점심불참",  icon: Coffee,      color: "violet", subTab: "lunch",            managerOnly: true },
       { key: "business-manage", label: "HR 양식",   icon: FileText,    color: "violet", subTab: "hr-forms",         managerOnly: true },
       { key: "business-manage", label: "문서작성",  icon: PencilLine,  color: "violet", subTab: "document-writer",  managerOnly: true },

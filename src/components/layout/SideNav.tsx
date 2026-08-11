@@ -22,7 +22,9 @@ import {
   filterGroupsForSession,
   isItemActive,
   COLOR_TONES,
+  subTabStorageKey,
   type SideNavGroup,
+  type SideNavItem,
 } from "./sideNavGroups";
 import { useSidebarWidth } from "../../hooks/useSidebar";
 import logoImg from "../../images/logo.png";
@@ -76,6 +78,14 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
 
   // 상위 그룹 헤더 톤 (공통헤더 AppNavHeader Tab 톤 매핑)
   const groupTone = COLOR_TONES[group.color];
+
+  // 서브탭 클릭 시 · localStorage 에 저장 후 · 페이지 이동 (각 페이지 마운트 시 읽어 초기 탭 설정)
+  const handleNavItem = (item: SideNavItem) => {
+    if (item.subTab) {
+      try { localStorage.setItem(subTabStorageKey(item.key), item.subTab); } catch { /* quota */ }
+    }
+    onNavigate(item.key);
+  };
 
   return (
     <Collapsible.Root open={open} onOpenChange={handleOpenChange}>
@@ -155,7 +165,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                 )}
 
                 <SidebarMenuButton
-                  onClick={() => onNavigate(item.key)}
+                  onClick={() => handleNavItem(item)}
                   isActive={active}
                   tooltip={item.label}
                   aria-current={active ? "page" : undefined}
