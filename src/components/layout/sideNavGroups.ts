@@ -51,9 +51,9 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     label: "스케줄",
     color: "amber",
     items: [
-      { key: "schedule", label: "스케줄",    icon: Calendar,     color: "amber" },
-      { key: "leave",    label: "연차/휴가", icon: CalendarDots, color: "amber" },
-      { key: "lunch",    label: "점심불참",  icon: Coffee,       color: "amber" },
+      { key: "schedule", label: "스케줄", icon: Calendar, color: "amber" },
+      { key: "leave", label: "연차/휴가", icon: CalendarDots, color: "amber" },
+      { key: "lunch", label: "점심불참", icon: Coffee, color: "amber" },
     ],
   },
   {
@@ -63,19 +63,19 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     managerOnly: true,
     items: [
       // DisplayPage 서브탭 · dpCanSeeStockManage (level ≥ 9) 조건과 동일하게 minLevel 지정
-      { key: "display", label: "발주",     icon: Truck,        color: "red", subTab: "purchase-order", minLevel: 9 },
-      { key: "display", label: "매입",     icon: Package,      color: "red", subTab: "purchase",       minLevel: 9 },
-      { key: "display", label: "결제",     icon: CurrencyKrw,  color: "red", subTab: "payment",        minLevel: 9 },
-      { key: "display", label: "통계",     icon: ChartBar,     color: "red", subTab: "statistics",     minLevel: 9 },
+      { key: "display", label: "발주", icon: Truck, color: "red", subTab: "purchase-order", minLevel: 9 },
+      { key: "display", label: "매입", icon: Package, color: "red", subTab: "purchase", minLevel: 9 },
+      { key: "display", label: "결제", icon: CurrencyKrw, color: "red", subTab: "payment", minLevel: 9 },
+      { key: "display", label: "통계", icon: ChartBar, color: "red", subTab: "statistics", minLevel: 9 },
       // 입고알림 · dpCanSeeStockArrivals (level ≥ 3)
-      { key: "display", label: "입고알림", icon: Bell,         color: "red", subTab: "stock-arrivals", minLevel: 3 },
-      { key: "display", label: "매장구역", icon: Storefront,   color: "red", subTab: "store",          managerOnly: true },
-      { key: "display", label: "공급사",   icon: Buildings,    color: "red", subTab: "vendor-manage",  minLevel: 9 },
+      { key: "display", label: "입고알림", icon: Bell, color: "red", subTab: "stock-arrivals", minLevel: 3 },
+      { key: "display", label: "매장구역", icon: Storefront, color: "red", subTab: "store", managerOnly: true },
+      { key: "display", label: "공급사", icon: Buildings, color: "red", subTab: "vendor-manage", minLevel: 9 },
       // 별도 페이지 (매장 관련)
-      { key: "scan",           label: "상품스캔",       icon: ScanSmiley,          color: "red", managerOnly: true },
-      { key: "productarrival", label: "상품도착",       icon: Package,             color: "red", managerOnly: true },
-      { key: "stockcheck",     label: "재고관리",       icon: ShoppingCart,        color: "red", managerOnly: true },
-      { key: "ocr",            label: "거래명세서 OCR", icon: FileMagnifyingGlass, color: "red", managerOnly: true },
+      { key: "scan", label: "상품스캔", icon: ScanSmiley, color: "red", managerOnly: true },
+      { key: "productarrival", label: "상품도착", icon: Package, color: "red", managerOnly: true },
+      { key: "stockcheck", label: "재고관리", icon: ShoppingCart, color: "red", managerOnly: true },
+      { key: "ocr", label: "거래명세서 OCR", icon: FileMagnifyingGlass, color: "red", managerOnly: true },
     ],
   },
   {
@@ -85,11 +85,11 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     managerOnly: true,
     items: [
       // BusinessManagePage 서브탭
-      { key: "business-manage", label: "직원관리",  icon: UsersThree,  color: "violet", subTab: "staff-manage",     managerOnly: true },
-      { key: "business-manage", label: "승인대기",  icon: CheckSquare, color: "violet", subTab: "approval-center",  managerOnly: true },
-      { key: "business-manage", label: "점심불참",  icon: Coffee,      color: "violet", subTab: "lunch",            managerOnly: true },
-      { key: "business-manage", label: "HR 양식",   icon: FileText,    color: "violet", subTab: "hr-forms",         managerOnly: true },
-      { key: "business-manage", label: "문서작성",  icon: PencilLine,  color: "violet", subTab: "document-writer",  managerOnly: true },
+      { key: "business-manage", label: "직원관리", icon: UsersThree, color: "violet", subTab: "staff-manage", managerOnly: true },
+      { key: "business-manage", label: "승인대기", icon: CheckSquare, color: "violet", subTab: "approval-center", managerOnly: true },
+      { key: "business-manage", label: "점심불참", icon: Coffee, color: "violet", subTab: "lunch", managerOnly: true },
+      { key: "business-manage", label: "각종양식", icon: FileText, color: "violet", subTab: "hr-forms", managerOnly: true },
+      { key: "business-manage", label: "서류작성", icon: PencilLine, color: "violet", subTab: "document-writer", managerOnly: true },
     ],
   },
   {
@@ -119,7 +119,7 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     color: "slate",
     managerOnly: true,
     items: [
-      { key: "permissions", label: "직원권한",  icon: Lock,   color: "slate", minLevel: 9 },
+      { key: "permissions", label: "직원권한", icon: Lock, color: "slate", minLevel: 9 },
       { key: "zone-labels", label: "구역 라벨", icon: MapPin, color: "slate", managerOnly: true },
     ],
   },
@@ -144,7 +144,7 @@ export function canAccessItem(item: SideNavItem, session: AuthSession | null): b
     session.level ??
     (session.role === "superadmin" || session.role === "admin" ? 9
       : session.role === "manager" ? 2
-      : session.role === "employee" ? 1 : 0);
+        : session.role === "employee" ? 1 : 0);
   const isPharmacist = level >= 3;
   const isVendor = session.role === "vendor";
   const isPrivileged = level >= 2;
@@ -174,12 +174,12 @@ export function isItemActive(item: SideNavItem, currentPage: AppNavPage): boolea
 
 /** 컬러 → tailwind 클래스 (활성 톤 · 비활성 hover 톤 · phosphor 톤에 맞춤) */
 export const COLOR_TONES: Record<SideNavColor, { activeBar: string; activeBg: string; activeText: string; iconActive: string; hoverBg: string }> = {
-  slate:   { activeBar: "bg-slate-500",   activeBg: "bg-slate-100",   activeText: "text-slate-800",   iconActive: "text-slate-600",   hoverBg: "hover:bg-slate-50"   },
-  amber:   { activeBar: "bg-amber-500",   activeBg: "bg-amber-100",   activeText: "text-amber-800",   iconActive: "text-amber-600",   hoverBg: "hover:bg-amber-50"   },
-  red:     { activeBar: "bg-red-500",     activeBg: "bg-red-100",     activeText: "text-red-700",     iconActive: "text-red-600",     hoverBg: "hover:bg-red-50"     },
-  sky:     { activeBar: "bg-sky-500",     activeBg: "bg-sky-100",     activeText: "text-sky-700",     iconActive: "text-sky-600",     hoverBg: "hover:bg-sky-50"     },
-  indigo:  { activeBar: "bg-indigo-500",  activeBg: "bg-indigo-100",  activeText: "text-indigo-700",  iconActive: "text-indigo-600",  hoverBg: "hover:bg-indigo-50"  },
+  slate: { activeBar: "bg-slate-500", activeBg: "bg-slate-100", activeText: "text-slate-800", iconActive: "text-slate-600", hoverBg: "hover:bg-slate-50" },
+  amber: { activeBar: "bg-amber-500", activeBg: "bg-amber-100", activeText: "text-amber-800", iconActive: "text-amber-600", hoverBg: "hover:bg-amber-50" },
+  red: { activeBar: "bg-red-500", activeBg: "bg-red-100", activeText: "text-red-700", iconActive: "text-red-600", hoverBg: "hover:bg-red-50" },
+  sky: { activeBar: "bg-sky-500", activeBg: "bg-sky-100", activeText: "text-sky-700", iconActive: "text-sky-600", hoverBg: "hover:bg-sky-50" },
+  indigo: { activeBar: "bg-indigo-500", activeBg: "bg-indigo-100", activeText: "text-indigo-700", iconActive: "text-indigo-600", hoverBg: "hover:bg-indigo-50" },
   emerald: { activeBar: "bg-emerald-500", activeBg: "bg-emerald-100", activeText: "text-emerald-700", iconActive: "text-emerald-600", hoverBg: "hover:bg-emerald-50" },
-  violet:  { activeBar: "bg-violet-500",  activeBg: "bg-violet-100",  activeText: "text-violet-700",  iconActive: "text-violet-600",  hoverBg: "hover:bg-violet-50"  },
-  cyan:    { activeBar: "bg-cyan-500",    activeBg: "bg-cyan-100",    activeText: "text-cyan-700",    iconActive: "text-cyan-600",    hoverBg: "hover:bg-cyan-50"    },
+  violet: { activeBar: "bg-violet-500", activeBg: "bg-violet-100", activeText: "text-violet-700", iconActive: "text-violet-600", hoverBg: "hover:bg-violet-50" },
+  cyan: { activeBar: "bg-cyan-500", activeBg: "bg-cyan-100", activeText: "text-cyan-700", iconActive: "text-cyan-600", hoverBg: "hover:bg-cyan-50" },
 };

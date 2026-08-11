@@ -31,7 +31,7 @@ import React from "react";
 import type { TabHandlerProps } from "../../hooks/useSortableTabs";
 
 // ── 색상 프리셋 (Tailwind JIT purge 안전 · 정적 클래스 맵) ──
-type TabColor = "sky" | "amber" | "violet" | "teal" | "indigo" | "rose" | "emerald" | "orange" | "slate";
+type TabColor = "sky" | "amber" | "violet" | "teal" | "indigo" | "rose" | "emerald" | "orange" | "slate" | "blue" | "cyan" | "red" | "green" | "yellow" | "pink" | "purple";
 
 const COLOR_MAP: Record<TabColor, { text: string; bar: string; iconActive: string; hoverText: string; badge: string }> = {
   sky:     { text: "text-sky-700",     bar: "bg-sky-500",     iconActive: "text-sky-600",     hoverText: "hover:text-sky-700",     badge: "bg-sky-100 text-sky-700"     },
@@ -43,6 +43,13 @@ const COLOR_MAP: Record<TabColor, { text: string; bar: string; iconActive: strin
   emerald: { text: "text-emerald-700", bar: "bg-emerald-500", iconActive: "text-emerald-600", hoverText: "hover:text-emerald-700", badge: "bg-emerald-100 text-emerald-700" },
   orange:  { text: "text-orange-700",  bar: "bg-orange-500",  iconActive: "text-orange-600",  hoverText: "hover:text-orange-700",  badge: "bg-orange-100 text-orange-700"  },
   slate:   { text: "text-slate-700",   bar: "bg-slate-500",   iconActive: "text-slate-600",   hoverText: "hover:text-slate-700",   badge: "bg-slate-100 text-slate-700"   },
+  blue:    { text: "text-blue-700",    bar: "bg-blue-500",    iconActive: "text-blue-600",    hoverText: "hover:text-blue-700",    badge: "bg-blue-100 text-blue-700"    },
+  cyan:    { text: "text-cyan-700",    bar: "bg-cyan-500",    iconActive: "text-cyan-600",    hoverText: "hover:text-cyan-700",    badge: "bg-cyan-100 text-cyan-700"    },
+  red:     { text: "text-red-700",     bar: "bg-red-500",     iconActive: "text-red-600",     hoverText: "hover:text-red-700",     badge: "bg-red-100 text-red-700"     },
+  green:   { text: "text-green-700",   bar: "bg-green-500",   iconActive: "text-green-600",   hoverText: "hover:text-green-700",   badge: "bg-green-100 text-green-700"   },
+  yellow:  { text: "text-yellow-700",  bar: "bg-yellow-500",  iconActive: "text-yellow-600",  hoverText: "hover:text-yellow-700",  badge: "bg-yellow-100 text-yellow-700"  },
+  pink:    { text: "text-pink-700",    bar: "bg-pink-500",    iconActive: "text-pink-600",    hoverText: "hover:text-pink-700",    badge: "bg-pink-100 text-pink-700"    },
+  purple:  { text: "text-purple-700",  bar: "bg-purple-500",  iconActive: "text-purple-600",  hoverText: "hover:text-purple-700",  badge: "bg-purple-100 text-purple-700"  },
 };
 
 // Phosphor / Lucide 두 라이브러리 모두 지원 · 원본 타입에 얽매이지 않음
@@ -129,7 +136,7 @@ export function TabBar<K extends string = string>({
           {visibleTabs.map(t => {
             const active = activeKey === t.key;
             const Icon = t.icon;
-            const c = COLOR_MAP[t.color ?? "slate"];
+            const c = COLOR_MAP[t.color ?? "slate"] ?? COLOR_MAP.slate;
             const dnd = sortable?.getTabProps(t.key);
 
             const dragCls = dnd
