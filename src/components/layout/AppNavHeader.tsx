@@ -109,34 +109,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   onLogout,
   rightSlot,
 }) => {
-  // 2026-08-11 · 사이드바 V2 flag ON 시 · 데스크탑만 슬림 헤더 · 모바일은 기존 헤더 그대로 (사용자 지시)
+  // 2026-08-11 · 사이드바 V2 · 데스크탑만 슬림 헤더 · 훅 rules 준수 위해 조건 return 은 모든 훅 이후로 이동
   const isMobileNav = useIsMobile();
-  if (SIDEBAR_ENABLED && !isMobileNav) {
-    return (
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-100 h-12 flex items-center px-3 gap-2 shrink-0">
-        <SidebarTrigger className="md:hidden" />
-        <div className="flex-1" />
-        {rightSlot}
-        {authSession && <NotificationToggle authSession={authSession} />}
-        {authSession && <NotificationBell authSession={authSession} onNavigate={onNavigate as unknown as (page: string) => void} />}
-        {authSession ? (
-          <button
-            type="button"
-            onClick={onLogout}
-            className="inline-flex items-center gap-1 px-2 py-1 text-[12px] font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
-            title="로그아웃"
-          >
-            <LogOut size={14} strokeWidth={2.2} />
-          </button>
-        ) : (
-          <div className="inline-flex items-center gap-1 px-2 py-1 text-[12px] font-semibold text-slate-400" title="비로그인">
-            <Lock size={14} strokeWidth={2.2} />
-          </div>
-        )}
-      </header>
-    );
-  }
-
   const userLevel = authSession?.level ??
     (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9
     : authSession?.role === "manager" ? 2
@@ -486,6 +460,33 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       </button>
     );
   };
+
+  // 2026-08-11 · 사이드바 V2 · 데스크탑만 슬림 헤더 (모든 훅 실행 후 · rules 준수)
+  if (SIDEBAR_ENABLED && !isMobileNav) {
+    return (
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-100 h-12 flex items-center px-3 gap-2 shrink-0">
+        <SidebarTrigger className="md:hidden" />
+        <div className="flex-1" />
+        {rightSlot}
+        {authSession && <NotificationToggle authSession={authSession} />}
+        {authSession && <NotificationBell authSession={authSession} onNavigate={onNavigate as unknown as (page: string) => void} />}
+        {authSession ? (
+          <button
+            type="button"
+            onClick={onLogout}
+            className="inline-flex items-center gap-1 px-2 py-1 text-[12px] font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+            title="로그아웃"
+          >
+            <LogOut size={14} strokeWidth={2.2} />
+          </button>
+        ) : (
+          <div className="inline-flex items-center gap-1 px-2 py-1 text-[12px] font-semibold text-slate-400" title="비로그인">
+            <Lock size={14} strokeWidth={2.2} />
+          </div>
+        )}
+      </header>
+    );
+  }
 
   return (
     <header className="border-b border-[#e2e8f0] shrink-0 shadow-sm" style={{ background: "linear-gradient(160deg, #f8faff 0%, #f3f4ff 50%, #f0fdf4 100%)" }}>
