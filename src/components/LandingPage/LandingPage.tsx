@@ -1382,6 +1382,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   <span className="relative text-emerald-700 font-bold text-sm">거래처 로그인</span>
                 </button>
               </div>
+
+              {/* 2026-08-11 · 카카오톡 채널 친구추가 (비로그인 랜딩) */}
+              <a
+                href="https://pf.kakao.com/_ExfuiX/friend"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 bg-[#FEE500] hover:bg-[#FADA0A] active:scale-[0.99] transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer border border-[#F0D700]/60"
+              >
+                <span className="text-slate-900 font-black text-sm">카카오톡 채널 친구추가</span>
+              </a>
             </div>
           )}
 
