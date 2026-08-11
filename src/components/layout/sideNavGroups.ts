@@ -62,14 +62,15 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     color: "red",
     managerOnly: true,
     items: [
-      // DisplayPage 서브탭 (initialTopTab prop 지원 · line 1452)
-      { key: "display", label: "발주",     icon: Truck,        color: "red", subTab: "purchase-order", managerOnly: true },
-      { key: "display", label: "매입",     icon: Package,      color: "red", subTab: "purchase",       managerOnly: true },
-      { key: "display", label: "결제",     icon: CurrencyKrw,  color: "red", subTab: "payment",        managerOnly: true },
-      { key: "display", label: "통계",     icon: ChartBar,     color: "red", subTab: "statistics",     managerOnly: true },
-      { key: "display", label: "입고알림", icon: Bell,         color: "red", subTab: "stock-arrivals", managerOnly: true },
+      // DisplayPage 서브탭 · dpCanSeeStockManage (level ≥ 9) 조건과 동일하게 minLevel 지정
+      { key: "display", label: "발주",     icon: Truck,        color: "red", subTab: "purchase-order", minLevel: 9 },
+      { key: "display", label: "매입",     icon: Package,      color: "red", subTab: "purchase",       minLevel: 9 },
+      { key: "display", label: "결제",     icon: CurrencyKrw,  color: "red", subTab: "payment",        minLevel: 9 },
+      { key: "display", label: "통계",     icon: ChartBar,     color: "red", subTab: "statistics",     minLevel: 9 },
+      // 입고알림 · dpCanSeeStockArrivals (level ≥ 3)
+      { key: "display", label: "입고알림", icon: Bell,         color: "red", subTab: "stock-arrivals", minLevel: 3 },
       { key: "display", label: "매장구역", icon: Storefront,   color: "red", subTab: "store",          managerOnly: true },
-      { key: "display", label: "공급사",   icon: Buildings,    color: "red", subTab: "vendor-manage",  managerOnly: true },
+      { key: "display", label: "공급사",   icon: Buildings,    color: "red", subTab: "vendor-manage",  minLevel: 9 },
       // 별도 페이지 (매장 관련)
       { key: "scan",           label: "상품스캔",       icon: ScanSmiley,          color: "red", managerOnly: true },
       { key: "productarrival", label: "상품도착",       icon: Package,             color: "red", managerOnly: true },
@@ -106,13 +107,10 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
   },
   {
     id: "requests",
-    label: "요청",
+    label: "요청목록",
     color: "cyan",
     items: [
-      // RequestsPage 서브탭
-      { key: "requests", label: "진열요청",   icon: Chat,         color: "cyan", subTab: "display" },
-      { key: "requests", label: "실재고차이", icon: ShoppingCart, color: "cyan", subTab: "inventory", managerOnly: true },
-      { key: "requests", label: "점심불참",   icon: Coffee,       color: "cyan", subTab: "lunch",     managerOnly: true },
+      { key: "requests", label: "요청목록", icon: Chat, color: "cyan" },
     ],
   },
   {
