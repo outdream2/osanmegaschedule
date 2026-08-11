@@ -49,6 +49,8 @@ import { ZoneCell } from "./ZoneCell";
 import { ZoneAssignPopover } from "./ZoneAssignPopover";
 import { ZoneGroupPanel, type ZoneGroup } from "./ZoneGroupPanel";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
+import { SIDEBAR_ENABLED } from "../../hooks/useSidebar";
+import { useIsMobile } from "../../hooks/use-mobile";
 import { DisplayRequestPanel } from "./DisplayRequestPanel";
 // DisplayRequestListPage · 2026-08-05 T-SCAN-1 · RequestsPage 로 통합 · 파일 삭제됨
 // 2026-08-03 · StockManagePage 폐지 · 모든 탭이 OrderManagePage 서브탭으로 통합됨
@@ -301,6 +303,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       authSession?.role === "manager" ? 2 : authSession?.role === "employee" ? 1 : 0);
   const dpCanSeeStockManage = dpUserLevel >= 9;
   const dpCanSeeStockArrivals = dpUserLevel >= 3;
+  // 2026-08-11 · 사이드바 V2 · PC 는 사이드바가 서브탭 · TabBar 숨김 (모바일 유지)
+  const isDpMobile = useIsMobile();
   const [dpSubTab, setDpSubTab] = useState<DpSubTabKey>(
     dpCanSeeStockManage ? "purchase-order" : "store"
   );
@@ -1417,7 +1421,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       {/* 서브탭 · 2026-07-28 재설계 · Vercel Ink underline 계열 + 색상 아이덴티티 강조 */}
       {/* 2026-08-03 (#183) · 공통 TabBar (level 2) 로 리팩터 · duplicate 스타일 흡수 */}
       {/* 2026-08-05 · 관리자 long-press 드래그 재정렬 (useSortableTabs · localStorage 순서 저장) */}
-      {(dpCanSeeStockManage || dpCanSeeStockArrivals) && (() => {
+      {(dpCanSeeStockManage || dpCanSeeStockArrivals) && !(SIDEBAR_ENABLED && !isDpMobile) && (() => {
         const visibilityMap: Record<DpSubTabKey, boolean> = {
           "purchase-order": dpCanSeeStockManage,
           "purchase":       dpCanSeeStockManage,
