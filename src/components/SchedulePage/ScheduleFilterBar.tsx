@@ -6,7 +6,7 @@ import { Employee } from "../../types";
 
 export type WorkplaceTab = "전체" | "매장" | "창고";
 export type PositionTab = "전체" | "약사" | "창고" | "진열" | "매장";
-export type SortBy = "none" | "position" | "name";
+export type SortBy = "none" | "today" | "workplace" | "name" | "position";
 export type SortOrder = "asc" | "desc";
 
 interface ScheduleFilterBarProps {
@@ -53,25 +53,7 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
         <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
           <span className="text-[17px] font-bold text-slate-400 uppercase tracking-widest shrink-0 pr-0.5">필터</span>
           {/* Group 1: Workplace */}
-          <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
-            {([
-              { key: "전체", label: "전체", color: "text-indigo-600", count: employees.length },
-              { key: "매장", label: "매장", color: "text-emerald-600", count: employees.filter(e => (e.workplace || "매장") === "매장").length },
-              { key: "창고", label: "창고", color: "text-indigo-600", count: employees.filter(e => e.workplace === "창고").length },
-            ] as const).map(({ key, label, color, count }) => (
-              <button
-                key={key}
-                onClick={() => setWorkplaceTab(key)}
-                className={`px-1.5 sm:px-2 py-0.5 sm:py-0.5 text-[12px] sm:text-[13px] font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[24px] sm:min-h-[26px] ${workplaceTab === key
-                  ? `bg-white ${color} shadow-sm font-bold`
-                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                  }`}
-              >
-                <span>{label} <span className="text-slate-400 font-normal">({count})</span></span>
-              </button>
-            ))}
-          </div>
-          <span className="text-gray-300 text-sm shrink-0">─</span>
+          {/* 2026-08-11 · 근무지 필터 그룹 제거 · 직군 그룹 하나로 통합 */}
           {/* Group 2: Position */}
           <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
             {([
@@ -102,53 +84,31 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
         {/* 2026-08-11 · 정렬 + 검색 + 직원등록 · PC 한줄 · 반응형 2줄 (flex-wrap) */}
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap text-xs">
           <span className="text-[17px] font-bold text-slate-400 uppercase tracking-widest shrink-0 pr-0.5">정렬</span>
-          {/* 오늘 출근 우선 토글 */}
-          <button
-            type="button"
-            onClick={() => setTodayFirst(v => !v)}
-            className={`inline-flex items-center gap-1 px-2 py-0.5 sm:py-1 text-[12px] sm:text-[13px] font-bold rounded-lg border transition-all cursor-pointer ${
-              todayFirst
-                ? "bg-rose-500 text-white border-rose-500 shadow-sm"
-                : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
-            }`}
-            title="오늘 출근 직원을 목록 상단에 표시"
-          >
-            <span className="hidden sm:inline">오늘 출근 우선</span>
-            <span className="sm:hidden">오늘순</span>
-          </button>
+          {/* 2026-08-11 · 정렬 4가지 · 출근·구분·이름·직군 · 출근이 기본 · 붉은 톤 */}
           <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
-            {(["position", "name"] as const).map((key) => {
-              const labels: Record<string, string> = { position: "구분", name: "이름" };
+            {(["today", "position", "name"] as const).map((key) => {
+              const labels: Record<string, string> = { today: "출근", position: "직군", name: "이름" };
+              const isActive = sortBy === key;
+              const activeCls = key === "today"
+                ? "bg-rose-500 text-white shadow-sm font-bold"
+                : "bg-white text-indigo-600 shadow-sm font-bold";
               return (
                 <button
                   key={key}
                   type="button"
                   onClick={() => {
-                    if (sortBy === key) setSortOrder(prev => prev === "asc" ? "desc" : "asc");
+                    if (isActive && key !== "today") setSortOrder(prev => prev === "asc" ? "desc" : "asc");
                     else { setSortBy(key); setSortOrder("asc"); }
                   }}
                   className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-[12px] sm:text-[13px] font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[26px] sm:min-h-[30px] ${
-                    sortBy === key ? "bg-white text-indigo-600 shadow-sm font-bold" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                    isActive ? activeCls : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                   }`}
                 >
                   <span>{labels[key]}</span>
-                  {sortBy === key && <span className="text-[10px] font-mono">{sortOrder === "asc" ? "↑" : "↓"}</span>}
+                  {isActive && key !== "today" && <span className="text-[10px] font-mono">{sortOrder === "asc" ? "↑" : "↓"}</span>}
                 </button>
               );
             })}
-            {sortBy !== "none" && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSortBy("none");
-                  setSortOrder("asc");
-                }}
-                className="px-2 py-1 sm:py-1.5 text-[13px] font-medium text-slate-400 hover:text-rose-500 rounded-md transition cursor-pointer min-h-[28px] sm:min-h-[32px]"
-                title="기본 순서 정렬 상태로 복원"
-              >
-                초기화
-              </button>
-            )}
             {sortBy === "none" && typeof window !== "undefined" && localStorage.getItem("megatown_employee_order") && (
               <button
                 type="button"
@@ -167,7 +127,7 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
 
           {/* 검색 · 직원등록 · 같은 줄 강제 (nowrap · 반응형에서도) */}
           <div className="flex items-center gap-2 flex-1 min-w-0 flex-nowrap">
-            <div className="relative flex-1 min-w-0 sm:max-w-xs">
+            <div className="relative flex-1 min-w-[120px] max-w-[180px] sm:max-w-[220px]">
               <input
                 type="text"
                 placeholder="성명으로 조회 (예: 정윤수)"

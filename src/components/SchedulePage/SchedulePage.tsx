@@ -526,7 +526,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   const [workplaceTab, setWorkplaceTab] = useState<"전체" | "매장" | "창고">("전체");
   const [positionTab, setPositionTab] = useState<"전체" | "약사" | "창고" | "진열" | "매장">("전체");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"none" | "position" | "name">("position");
+  const [sortBy, setSortBy] = useState<"none" | "today" | "workplace" | "position" | "name">("today");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [todayFirst, setTodayFirst] = useState(true);
 
@@ -1276,14 +1276,21 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         return a.name.localeCompare(b.name, "ko");
       }
 
+      if (sortBy === "workplace") {
+        const wA = a.workplace || "";
+        const wB = b.workplace || "";
+        if (wA !== wB) return sortOrder === "asc" ? wA.localeCompare(wB, "ko") : wB.localeCompare(wA, "ko");
+        return a.name.localeCompare(b.name, "ko");
+      }
+
       if (sortBy === "name") {
         return sortOrder === "asc"
           ? a.name.localeCompare(b.name, "ko")
           : b.name.localeCompare(a.name, "ko");
       }
 
-      // sortBy === "none": todayFirst — 오픈→마감→기타근무→휴무류→없음 순
-      if (todayFirst) {
+      // sortBy === "today" (기본) or "none" + todayFirst · 오픈→마감→기타근무→휴무류→없음 순
+      if (sortBy === "today" || (sortBy === "none" && todayFirst)) {
         // 휴무로 취급할 타입 (반차 포함)
         const TODAY_OFF_TYPES = new Set(["휴무", "월차", "지정휴무", "결근", "오전반차", "오후반차"]);
         // 출근 타입별 우선순위 (0=오픈, 1=마감, 2=기타근무)
@@ -1691,16 +1698,19 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 오늘
               </button>
             </div>
-            {/* Legend indicators + 오늘 근무 서머리 · 2026-08-11 · 배지 제거 · 깔끔한 텍스트 · 폰트 +2 */}
+            {/* Legend indicators + 오늘 근무 서머리 · 2026-08-11 · 배지 제거 · 오픈/마감에 시간 표시 */}
             <div className="flex items-baseline gap-3 text-[15px] font-semibold flex-wrap min-w-0">
-              {[
-                { c: "text-yellow-600", label: "오픈" },
-                { c: "text-emerald-600", label: "마감" },
-                { c: "text-rose-600",    label: "휴무" },
-                { c: "text-amber-600",   label: "월차" },
-              ].map(({ c, label }) => (
-                <span key={label} className={`${c}`}>{label}</span>
-              ))}
+              {(() => {
+                const map = getTypeHoursMap("", "");
+                return (
+                  <>
+                    <span className="text-yellow-600">오픈 <span className="text-yellow-700/70 tabular-nums font-normal">{map["오픈"] || ""}</span></span>
+                    <span className="text-emerald-600">마감 <span className="text-emerald-700/70 tabular-nums font-normal">{map["마감"] || ""}</span></span>
+                    <span className="text-rose-600">휴무</span>
+                    <span className="text-amber-600">월차</span>
+                  </>
+                );
+              })()}
               {(() => {
                 const today = new Date();
                 const isThisMonth = today.getFullYear() === currentYear && today.getMonth() + 1 === currentMonth;
@@ -1708,7 +1718,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 if (!todaySummary) return null;
                 return (
                   <span className="flex items-baseline gap-2 pl-2 border-l border-slate-200">
-                    <span className="text-slate-400 font-bold">오늘</span>
                     <span className="text-emerald-700">약 {todaySummary.pharmacistCount}</span>
                     <span className="text-slate-600">사 {todaySummary.staffCount}</span>
                     <span className="text-slate-500">기 {todaySummary.otherCount}</span>

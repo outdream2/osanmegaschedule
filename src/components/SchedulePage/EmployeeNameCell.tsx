@@ -96,9 +96,18 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
         {/* 메인 콘텐츠 영역 */}
         <div className="flex-1 flex flex-col justify-center py-1.5 px-0.5 sm:px-1 min-w-0 gap-0.5">
 
-          {/* 줄 1: 이름 · 성별 표시 제거 (사용자 요청) */}
-          <div className="flex items-center gap-1 min-w-0">
-            {/* 이름 — 약사: emerald · 나머지: slate */}
+          {/* 2026-08-11 · 직군 (position) · 위 · 이름 · 아래 · 연차 잔여 제거 */}
+          <div className="flex flex-col gap-0.5 min-w-0">
+            {/* 줄 1: 직군 */}
+            <span
+              className={`
+                text-[11px] sm:text-[12px] font-medium leading-none truncate
+                ${isPharmacist ? "text-emerald-600" : "text-slate-400"}
+              `}
+            >
+              {emp.position}
+            </span>
+            {/* 줄 2: 이름 */}
             <span
               onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); onNameClick(emp); }}
@@ -107,7 +116,7 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
                 font-bold leading-tight
                 cursor-pointer select-none transition-colors duration-150
                 truncate
-                text-[13px] sm:text-[14px]
+                text-[14px] sm:text-[15px]
                 ${isPharmacist
                   ? "text-emerald-700 hover:text-emerald-900"
                   : "text-slate-700 hover:text-indigo-600"
@@ -116,55 +125,6 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
             >
               {emp.name}
             </span>
-          </div>
-
-          {/* 줄 2: 직종 텍스트 + 부가 정보 */}
-          <div className="flex items-center gap-1.5 min-w-0">
-            {/* 직종 — 배지 제거 · 약사만 emerald · 나머지 slate */}
-            <span
-              className={`
-                text-[10px] font-medium leading-none shrink-0
-                ${isPharmacist ? "text-emerald-600" : "text-slate-400"}
-              `}
-            >
-              {emp.position}
-            </span>
-
-            {/* 고용형태 — 정직원 이외 · 관리자만 · sm 이상 */}
-            {showEmploymentType && (
-              <span className="hidden sm:inline text-[9px] font-normal text-slate-400 shrink-0 leading-none">
-                {emp.employmentType}
-              </span>
-            )}
-
-            {/* 월차 잔여 — sm 이상 · 잔여일 강조 */}
-            {leaveRemaining !== null && (
-              <span
-                className={`
-                  hidden sm:inline text-[9px] font-semibold shrink-0 leading-none
-                  ${leaveRemaining === 0 ? "text-rose-400" : "text-slate-400"}
-                `}
-                title={`연차 잔여: ${leaveRemaining}일`}
-              >
-                {leaveRemaining === 0 ? "잔여 0" : `잔여 ${leaveRemaining}`}
-              </span>
-            )}
-
-            {/* #186 · 우선업무 배지 · sm 이상 · 매장=emerald / 창고=orange */}
-            {(emp.primary_focus === "매장" || emp.primary_focus === "창고") && (
-              <span
-                className={`
-                  hidden sm:inline-flex items-center px-1 py-[1px] rounded-sm shrink-0 leading-none
-                  text-[9px] font-black
-                  ${emp.primary_focus === "매장"
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-orange-100 text-orange-700"}
-                `}
-                title={`우선업무: ${emp.primary_focus} · ${emp.primary_focus_percent ?? 70}%`}
-              >
-                {emp.primary_focus} {emp.primary_focus_percent ?? 70}%
-              </span>
-            )}
           </div>
 
           {/* 줄 3: 비고 — lg 이상 표시 */}
