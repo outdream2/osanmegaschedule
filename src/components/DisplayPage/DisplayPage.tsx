@@ -49,8 +49,6 @@ import { ZoneCell } from "./ZoneCell";
 import { ZoneAssignPopover } from "./ZoneAssignPopover";
 import { ZoneGroupPanel, type ZoneGroup } from "./ZoneGroupPanel";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
-import { SIDEBAR_ENABLED } from "../../hooks/useSidebar";
-import { useIsMobile } from "../../hooks/use-mobile";
 import { DisplayRequestPanel } from "./DisplayRequestPanel";
 // DisplayRequestListPage · 2026-08-05 T-SCAN-1 · RequestsPage 로 통합 · 파일 삭제됨
 // 2026-08-03 · StockManagePage 폐지 · 모든 탭이 OrderManagePage 서브탭으로 통합됨
@@ -303,28 +301,18 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       authSession?.role === "manager" ? 2 : authSession?.role === "employee" ? 1 : 0);
   const dpCanSeeStockManage = dpUserLevel >= 9;
   const dpCanSeeStockArrivals = dpUserLevel >= 3;
-  // 2026-08-11 · 사이드바 V2 · PC 데스크탑에서는 사이드바가 서브탭 담당
-  const isDpMobile = useIsMobile();
-  const hideDpTabBar = SIDEBAR_ENABLED && !isDpMobile;
   const [dpSubTab, setDpSubTab] = useState<DpSubTabKey>(
     dpCanSeeStockManage ? "purchase-order" : "store"
   );
   // 2026-08-10 · 매장구역도 · 기본 접기 (사용자 요청)
   const [mapCollapsed, setMapCollapsed] = useState(true);
   // 2026-08-09 · sessionStorage("dpInitialSubTab") 있으면 · 그 서브탭으로 진입 (LandingPage 공급사등록 카드용)
-  //           · 2026-08-11 · localStorage("sidebar.subtab.display") 도 확인 (사이드바 V2 서브탭 이동)
   useEffect(() => {
     try {
       const req = sessionStorage.getItem("dpInitialSubTab") as DpSubTabKey | null;
       if (req) {
         sessionStorage.removeItem("dpInitialSubTab");
-        if (DP_SUBTAB_DEFAULTS.some(t => t.key === req)) { setDpSubTab(req); return; }
-      }
-      // 사이드바 V2 · 서브탭 클릭 시 localStorage 저장 · 마운트 시 읽어 초기 탭 설정
-      const sbReq = localStorage.getItem("sidebar.subtab.display") as DpSubTabKey | null;
-      if (sbReq) {
-        localStorage.removeItem("sidebar.subtab.display");
-        if (DP_SUBTAB_DEFAULTS.some(t => t.key === sbReq)) setDpSubTab(sbReq);
+        if (DP_SUBTAB_DEFAULTS.some(t => t.key === req)) setDpSubTab(req);
       }
     } catch { /* silent */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1412,8 +1400,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       {/* 서브탭 · 2026-07-28 재설계 · Vercel Ink underline 계열 + 색상 아이덴티티 강조 */}
       {/* 2026-08-03 (#183) · 공통 TabBar (level 2) 로 리팩터 · duplicate 스타일 흡수 */}
       {/* 2026-08-05 · 관리자 long-press 드래그 재정렬 (useSortableTabs · localStorage 순서 저장) */}
-      {/* 2026-08-11 · 사이드바 V2 · PC 데스크탑에서는 사이드바가 서브탭 담당 · TabBar 숨김 (모바일 · 반응형 유지) */}
-      {(dpCanSeeStockManage || dpCanSeeStockArrivals) && !hideDpTabBar && (() => {
+      {(dpCanSeeStockManage || dpCanSeeStockArrivals) && (() => {
         const visibilityMap: Record<DpSubTabKey, boolean> = {
           "purchase-order": dpCanSeeStockManage,
           "purchase":       dpCanSeeStockManage,
