@@ -2233,7 +2233,7 @@ export const DayTimelineModal: React.FC<Props> = ({
         <div className="flex items-center gap-1 px-3 sm:px-5 pt-2 pb-0 bg-white border-b border-slate-200 flex-shrink-0 min-w-0 overflow-x-auto scrollbar-none">
           {tabs.map(({ key, count }) => (
             <button key={key} onClick={() => setActiveTab(key)}
-              className={`shrink-0 px-3 sm:px-4 py-1.5 text-[15px] font-bold rounded-t-lg border border-b-0 transition-colors cursor-pointer ${
+              className={`shrink-0 px-3 sm:px-4 py-1.5 text-[16px] font-bold rounded-t-lg border border-b-0 transition-colors cursor-pointer ${
                 activeTab === key
                   ? "bg-white border-slate-200 text-slate-800 -mb-px z-10"
                   : "bg-slate-50 border-transparent text-slate-400 hover:text-slate-600"
