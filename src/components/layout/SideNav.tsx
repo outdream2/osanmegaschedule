@@ -4,6 +4,8 @@
 import React, { useState, useCallback } from "react";
 import { Collapsible } from "radix-ui";
 import { ChevronRight, LogOut } from "lucide-react";
+import { NotificationBell } from "../NotificationBell";
+import { NotificationToggle } from "../NotificationToggle";
 import {
   Sidebar,
   SidebarContent,
@@ -200,6 +202,43 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
   );
 };
 
+// ─── SingleItemGroup · 하위 메뉴 없는 단일 그룹 · 그룹 헤더 = 페이지 링크 (chevron X) ──
+interface SingleItemGroupProps {
+  group: SideNavGroup;
+  activePage: AppNavPage;
+  onNavigate: (page: AppNavPage) => void;
+}
+const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, onNavigate }) => {
+  const item = group.items[0];
+  const active = isItemActive(item, activePage);
+  const tone = COLOR_TONES[group.color];
+  const Icon = item.icon;
+  return (
+    <button
+      type="button"
+      onClick={() => onNavigate(item.key)}
+      aria-current={active ? "page" : undefined}
+      aria-label={group.label}
+      className={[
+        "flex w-full items-center gap-2",
+        "px-3 py-2 mt-2 mb-0.5",
+        "rounded-lg",
+        "text-[17px] leading-none",
+        "transition-all duration-150",
+        "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-300",
+        active
+          ? [tone.activeBg, tone.activeText, "font-bold"].join(" ")
+          : ["text-slate-600", tone.hoverBg, "hover:text-slate-800", "font-semibold"].join(" "),
+        "group-data-[collapsible=icon]:justify-center",
+      ].join(" ")}
+    >
+      <span className={["w-1.5 h-1.5 rounded-full shrink-0 group-data-[collapsible=icon]:hidden", tone.activeBar].join(" ")} aria-hidden="true" />
+      <Icon size={17} weight={active ? "fill" : "duotone"} className={["shrink-0", active ? tone.iconActive : "text-slate-500"].join(" ")} />
+      <span className="group-data-[collapsible=icon]:hidden">{group.label}</span>
+    </button>
+  );
+};
+
 // ─── SideNav (메인) ──────────────────────────────────────────────────────────
 export const SideNav: React.FC<SideNavProps> = ({
   authSession,
@@ -245,22 +284,38 @@ export const SideNav: React.FC<SideNavProps> = ({
         </button>
       </SidebarHeader>
 
-      {/* ── 그룹 트리 ── */}
+      {/* ── 그룹 트리 · 단일 항목 그룹은 chevron 없이 · 헤더 = 페이지 링크 ── */}
       <SidebarContent className="px-1 pt-0">
         {groups.map((group) => (
-          <CollapsibleGroup
-            key={group.id}
-            group={group}
-            activePage={activePage}
-            onNavigate={onNavigate}
-          />
+          group.items.length === 1 ? (
+            <SingleItemGroup
+              key={group.id}
+              group={group}
+              activePage={activePage}
+              onNavigate={onNavigate}
+            />
+          ) : (
+            <CollapsibleGroup
+              key={group.id}
+              group={group}
+              activePage={activePage}
+              onNavigate={onNavigate}
+            />
+          )
         ))}
       </SidebarContent>
 
       {/* ── 하단: 구분선 + 로그아웃 ── */}
       <SidebarSeparator />
 
-      <SidebarFooter className="px-2 py-2">
+      <SidebarFooter className="px-2 py-2 gap-1">
+        {/* 알림 스위치 + 알림 벨 · 로그인 시만 · icon-only 모드에서도 노출 (아이콘만) */}
+        {authSession && (
+          <div className="flex items-center gap-2 px-2 py-1 group-data-[collapsible=icon]:justify-center">
+            <NotificationToggle authSession={authSession} />
+            <NotificationBell authSession={authSession} onNavigate={onNavigate as unknown as (page: string) => void} />
+          </div>
+        )}
         {authSession && onLogout && (
           <SidebarMenu>
             <SidebarMenuItem>

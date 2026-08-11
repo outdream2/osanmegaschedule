@@ -51,10 +51,9 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     label: "스케줄",
     color: "amber",
     items: [
-      { key: "schedule",    label: "스케줄",    icon: Calendar,     color: "amber" },
-      { key: "leave",       label: "연차/휴가", icon: CalendarDots, color: "amber" },
-      { key: "lunch",       label: "점심불참",  icon: Coffee,       color: "amber" },
-      { key: "reservation", label: "예약",      icon: Bookmarks,    color: "amber" },
+      { key: "schedule", label: "스케줄",    icon: Calendar,     color: "amber" },
+      { key: "leave",    label: "연차/휴가", icon: CalendarDots, color: "amber" },
+      { key: "lunch",    label: "점심불참",  icon: Coffee,       color: "amber" },
     ],
   },
   {

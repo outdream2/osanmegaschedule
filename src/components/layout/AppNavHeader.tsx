@@ -463,25 +463,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   // 2026-08-11 · 사이드바 V2 · 데스크탑만 슬림 헤더 (모든 훅 실행 후 · rules 준수)
   if (SIDEBAR_ENABLED && !isMobileNav) {
     return (
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-100 h-12 flex items-center px-3 gap-2 shrink-0">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-100 h-10 flex items-center px-3 gap-2 shrink-0">
         <div className="flex-1" />
         {rightSlot}
-        {authSession && <NotificationToggle authSession={authSession} />}
-        {authSession && <NotificationBell authSession={authSession} onNavigate={onNavigate as unknown as (page: string) => void} />}
-        {authSession ? (
-          <button
-            type="button"
-            onClick={onLogout}
-            className="inline-flex items-center gap-1 px-2 py-1 text-[12px] font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
-            title="로그아웃"
-          >
-            <LogOut size={14} strokeWidth={2.2} />
-          </button>
-        ) : (
-          <div className="inline-flex items-center gap-1 px-2 py-1 text-[12px] font-semibold text-slate-400" title="비로그인">
-            <Lock size={14} strokeWidth={2.2} />
-          </div>
-        )}
       </header>
     );
   }
