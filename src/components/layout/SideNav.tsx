@@ -72,36 +72,41 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
     isItemActive(item, activePage),
   );
 
+  // 상위 그룹 헤더 톤 (공통헤더 AppNavHeader Tab 톤 매핑)
+  const groupTone = COLOR_TONES[group.color];
+
   return (
     <Collapsible.Root open={open} onOpenChange={handleOpenChange}>
 
-      {/* ── 그룹 헤더 · Collapsible trigger ── */}
+      {/* ── 그룹 헤더 · Collapsible trigger · 공통헤더 TAB 톤 ── */}
       <Collapsible.Trigger asChild>
         <button
           type="button"
           aria-label={`${group.label} 그룹 ${open ? "접기" : "펼치기"}`}
           className={[
-            // 레이아웃
             "flex w-full items-center justify-between",
-            "px-3 py-1.5 mt-3 mb-0.5",
-            "rounded-md",
-            // 텍스트 · Notion/Linear 스타일 section label
-            "text-[14.5px] font-bold uppercase tracking-widest leading-none",
-            // 색상 · 활성 그룹은 slate-600 · 비활성은 slate-400
-            hasActiveItem ? "text-slate-600" : "text-slate-400",
-            // 인터랙션
-            "hover:bg-slate-100/70 transition-colors duration-150",
+            "px-3 py-2 mt-2 mb-0.5",
+            "rounded-lg",
+            "text-[17px] leading-none",
+            "transition-all duration-150",
             "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-300",
-            // icon-only 접힘 모드에서 그룹 헤더 숨김
+            // 활성/비활성 톤 (공통헤더 TAB 스타일 · 파스텔 tint + border-b accent 대신 · 좌측 세로 헤더용 배경 tint)
+            hasActiveItem
+              ? [groupTone.activeBg, groupTone.activeText, "font-bold"].join(" ")
+              : ["text-slate-600", groupTone.hoverBg, "hover:text-slate-800", "font-semibold"].join(" "),
             "group-data-[collapsible=icon]:hidden",
           ].join(" ")}
         >
-          <span>{group.label}</span>
+          <span className="flex items-center gap-2">
+            {/* 좌측 그룹 컬러 accent dot (공통헤더 TAB 색상 감성) */}
+            <span className={["w-1.5 h-1.5 rounded-full shrink-0", groupTone.activeBar].join(" ")} aria-hidden="true" />
+            <span>{group.label}</span>
+          </span>
           <ChevronRight
-            size={11}
-            strokeWidth={2.8}
+            size={13}
+            strokeWidth={2.6}
             className={[
-              "shrink-0 text-slate-400 transition-transform duration-200 ease-out",
+              "shrink-0 opacity-60 transition-transform duration-200 ease-out",
               open ? "rotate-90" : "rotate-0",
             ].join(" ")}
           />

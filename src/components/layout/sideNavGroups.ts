@@ -1,15 +1,15 @@
 // src/components/layout/sideNavGroups.ts
 // 2026-08-11 · 사이드바 V2
 //   · 최상위 7개 = 상단 헤더 그대로 (홈·스케줄·매장·경영·약사·이슈·요청 · AppNavHeader TABS 매핑)
-//   · 7개에 없는 페이지들 = "기타" 그룹 (랜딩 카드·서브탭에서만 접근 가능하던 페이지)
-//   · 계정 (마이페이지) = 하단 sticky · SideNav.tsx SidebarFooter 에서 별도 렌더
+//   · 각 아래 트리 구조 = 그 페이지의 서브탭 + 관련 페이지
+//   · subTab 클릭 시 · localStorage 저장 후 페이지 이동 → 각 페이지 마운트 시 localStorage 읽어 초기 탭 설정
 import {
   House, Calendar, CalendarDots, Bookmarks, Coffee,
   SquaresFour, ScanSmiley, Package, Bell,
-  ShoppingCart, FileMagnifyingGlass,
+  ShoppingCart, FileMagnifyingGlass, Truck, CurrencyKrw, ChartBar, Storefront, Buildings,
   ChatCircle, FirstAid, FileText,
   Briefcase, Chat, Lock, MapPin,
-  UserCircle, DotsThree,
+  UserCircle, UsersThree, CheckSquare, PencilLine,
   type Icon,
 } from "@phosphor-icons/react";
 import type { AppNavPage } from "./AppNavHeader";
@@ -17,11 +17,13 @@ import type { AuthSession } from "../../types";
 
 export type SideNavColor = "slate" | "amber" | "red" | "sky" | "indigo" | "emerald" | "violet" | "cyan";
 
+/** subTab · 페이지 이동 후 · 특정 서브탭을 활성화하고 싶을 때 지정 (localStorage 통해 페이지에 전달) */
 export interface SideNavItem {
   key: AppNavPage;
   label: string;
   icon: Icon;
   color: SideNavColor;
+  subTab?: string;              // 예: "purchase-order" · "staff-manage" · "inventory"
   managerOnly?: boolean;
   pharmacistOnly?: boolean;
   minLevel?: number;
@@ -36,7 +38,7 @@ export interface SideNavGroup {
   items: SideNavItem[];
 }
 
-// 상단 헤더 TABS 순서 · 각 최상위 = 페이지 자체 하나만 · 서브탭은 페이지 내부에서 자체 표시 (Phase 2 이관 예정)
+// 상단 헤더 TABS 순서 · 각 최상위 아래 · 서브탭들
 export const SIDE_NAV_GROUPS: SideNavGroup[] = [
   {
     id: "landing",
@@ -48,21 +50,50 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     id: "schedule",
     label: "스케줄",
     color: "amber",
-    items: [{ key: "schedule", label: "스케줄", icon: Calendar, color: "amber" }],
+    items: [
+      { key: "schedule",    label: "스케줄",    icon: Calendar,     color: "amber" },
+      { key: "leave",       label: "연차/휴가", icon: CalendarDots, color: "amber" },
+      { key: "lunch",       label: "점심불참",  icon: Coffee,       color: "amber" },
+      { key: "reservation", label: "예약",      icon: Bookmarks,    color: "amber" },
+    ],
   },
   {
     id: "display",
     label: "매장",
     color: "red",
     managerOnly: true,
-    items: [{ key: "display", label: "매장", icon: SquaresFour, color: "red", managerOnly: true }],
+    items: [
+      // DisplayPage 서브탭 (initialTopTab prop 지원 · line 1452)
+      { key: "display", label: "발주",     icon: Truck,        color: "red", subTab: "purchase-order", managerOnly: true },
+      { key: "display", label: "매입",     icon: Package,      color: "red", subTab: "purchase",       managerOnly: true },
+      { key: "display", label: "결제",     icon: CurrencyKrw,  color: "red", subTab: "payment",        managerOnly: true },
+      { key: "display", label: "통계",     icon: ChartBar,     color: "red", subTab: "statistics",     managerOnly: true },
+      { key: "display", label: "입고알림", icon: Bell,         color: "red", subTab: "stock-arrivals", managerOnly: true },
+      { key: "display", label: "매장구역", icon: Storefront,   color: "red", subTab: "store",          managerOnly: true },
+      { key: "display", label: "공급사",   icon: Buildings,    color: "red", subTab: "vendor-manage",  managerOnly: true },
+      // 별도 페이지 (매장 관련)
+      { key: "scan",           label: "상품스캔",       icon: ScanSmiley,          color: "red", managerOnly: true },
+      { key: "productarrival", label: "상품도착",       icon: Package,             color: "red", managerOnly: true },
+      { key: "stockcheck",     label: "재고관리",       icon: ShoppingCart,        color: "red", managerOnly: true },
+      { key: "ocr",            label: "거래명세서 OCR", icon: FileMagnifyingGlass, color: "red", managerOnly: true },
+    ],
   },
   {
     id: "business",
     label: "경영",
     color: "violet",
     managerOnly: true,
-    items: [{ key: "business-manage", label: "경영", icon: Briefcase, color: "violet", managerOnly: true }],
+    items: [
+      // BusinessManagePage 서브탭
+      { key: "business-manage", label: "직원관리",  icon: UsersThree,  color: "violet", subTab: "staff-manage",     managerOnly: true },
+      { key: "business-manage", label: "승인센터",  icon: CheckSquare, color: "violet", subTab: "approval-center",  managerOnly: true },
+      { key: "business-manage", label: "점심불참",  icon: Coffee,      color: "violet", subTab: "lunch",            managerOnly: true },
+      { key: "business-manage", label: "HR 양식",   icon: FileText,    color: "violet", subTab: "hr-forms",         managerOnly: true },
+      { key: "business-manage", label: "문서작성",  icon: PencilLine,  color: "violet", subTab: "document-writer",  managerOnly: true },
+      // 별도 페이지 (경영 관련)
+      { key: "permissions", label: "직원권한",  icon: Lock,   color: "violet", minLevel: 9 },
+      { key: "zone-labels", label: "구역 라벨", icon: MapPin, color: "violet", managerOnly: true },
+    ],
   },
   {
     id: "pharmacist",
@@ -81,42 +112,25 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     id: "requests",
     label: "요청",
     color: "cyan",
-    items: [{ key: "requests", label: "요청", icon: Chat, color: "cyan" }],
-  },
-  // 상단 헤더 7개에 없는 페이지들 · 별도 접근 경로 유지
-  {
-    id: "misc",
-    label: "기타",
-    color: "slate",
     items: [
-      // 근무 관련 (스케줄 서브)
-      { key: "leave",          label: "연차/휴가",       icon: CalendarDots,        color: "sky" },
-      { key: "lunch",          label: "점심불참",        icon: Coffee,              color: "amber" },
-      { key: "reservation",    label: "예약",            icon: Bookmarks,           color: "cyan" },
-      // 매장 서브
-      { key: "scan",           label: "상품스캔",        icon: ScanSmiley,          color: "red",    managerOnly: true },
-      { key: "productarrival", label: "상품도착",        icon: Package,             color: "red",    managerOnly: true },
-      { key: "stockarrivals",  label: "입고알림",        icon: Bell,                color: "red",    managerOnly: true },
-      { key: "stockcheck",     label: "재고관리",        icon: ShoppingCart,        color: "red",    managerOnly: true },
-      { key: "ocr",            label: "거래명세서 OCR",  icon: FileMagnifyingGlass, color: "red",    managerOnly: true },
-      // 경영 서브
-      { key: "permissions",    label: "직원권한",        icon: Lock,                color: "violet", minLevel: 9 },
-      { key: "zone-labels",    label: "구역 라벨",       icon: MapPin,              color: "violet", managerOnly: true },
-      { key: "hr-forms",       label: "HR 양식",         icon: FileText,            color: "violet", managerOnly: true },
+      // RequestsPage 서브탭
+      { key: "requests", label: "진열요청",   icon: Chat,         color: "cyan", subTab: "display" },
+      { key: "requests", label: "실재고차이", icon: ShoppingCart, color: "cyan", subTab: "inventory", managerOnly: true },
+      { key: "requests", label: "점심불참",   icon: Coffee,       color: "cyan", subTab: "lunch",     managerOnly: true },
     ],
   },
   {
     id: "account",
     label: "계정",
     color: "slate",
-    items: [
-      { key: "mypage", label: "마이페이지", icon: UserCircle, color: "slate" },
-    ],
+    items: [{ key: "mypage", label: "마이페이지", icon: UserCircle, color: "slate" }],
   },
 ];
 
-// TS unused import 방지 · 기타 그룹에 사용 안 하는 DotsThree 는 향후 그룹 헤더 아이콘용 예비
-export const _DotsThree = DotsThree;
+/** 서브탭 클릭 시 · 각 페이지 컴포넌트가 마운트 시 읽을 localStorage key */
+export function subTabStorageKey(pageKey: AppNavPage): string {
+  return `sidebar.subtab.${pageKey}`;
+}
 
 /** authSession 기반 접근 판정 · AppNavHeader.tsx 의 필터 로직 재사용 (약사 판정 · level ≥ 3) */
 export function canAccessItem(item: SideNavItem, session: AuthSession | null): boolean {
@@ -148,6 +162,7 @@ export function filterGroupsForSession(session: AuthSession | null): SideNavGrou
 /** 아이템 활성 판정 · 현재 페이지가 이 아이템이거나 · business-manage 서브페이지면 business-manage 활성 */
 const BUSINESS_SUB_PAGES: Set<AppNavPage> = new Set(["business-manage", "leave", "lunch", "permissions", "hr-forms"]);
 export function isItemActive(item: SideNavItem, currentPage: AppNavPage): boolean {
+  if (item.subTab) return false; // 서브탭 항목은 · 페이지가 같아도 · 정확한 서브탭 판정 어려워 · 활성 스킵 (Phase 3에서 완성)
   if (item.key === currentPage) return true;
   if (item.key === "business-manage" && BUSINESS_SUB_PAGES.has(currentPage)) return true;
   return false;
