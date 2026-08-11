@@ -22,6 +22,7 @@ import logoImg from "../../images/logo.png";
 // 2026-08-11 · 사이드바 V2 · flag ON 시 슬림 헤더로 대체
 import { SIDEBAR_ENABLED } from "../../hooks/useSidebar";
 import { SidebarTrigger } from "../ui/sidebar";
+import { useIsMobile } from "../../hooks/use-mobile";
 
 export type AppNavPage =
   | "landing"
@@ -108,8 +109,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   onLogout,
   rightSlot,
 }) => {
-  // 2026-08-11 · 사이드바 V2 flag ON 시 · 슬림 헤더로 대체 (햄버거 + 알림/유저/로그아웃)
-  if (SIDEBAR_ENABLED) {
+  // 2026-08-11 · 사이드바 V2 flag ON 시 · 데스크탑만 슬림 헤더 · 모바일은 기존 헤더 그대로 (사용자 지시)
+  const isMobileNav = useIsMobile();
+  if (SIDEBAR_ENABLED && !isMobileNav) {
     return (
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-100 h-12 flex items-center px-3 gap-2 shrink-0">
         <SidebarTrigger className="md:hidden" />

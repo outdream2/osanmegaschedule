@@ -6,9 +6,9 @@ const COLLAPSED_KEY = "sidebar.collapsed";
 const WIDTH_KEY = "sidebar.width";
 const AUTO_COLLAPSE_BELOW = 1280;
 
-export const SIDEBAR_MIN_WIDTH = 200;
-export const SIDEBAR_MAX_WIDTH = 400;
-export const SIDEBAR_DEFAULT_WIDTH = 256;
+export const SIDEBAR_MIN_WIDTH = 180;
+export const SIDEBAR_MAX_WIDTH = 380;
+export const SIDEBAR_DEFAULT_WIDTH = 220;
 
 function readCollapsed(): boolean {
   if (typeof window === "undefined") return false;

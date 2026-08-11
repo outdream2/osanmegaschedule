@@ -32,6 +32,7 @@ import { SIDEBAR_ENABLED, useSidebarWidth } from "./hooks/useSidebar";
 import { SidebarProvider, SidebarInset } from "./components/ui/sidebar";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { SideNav } from "./components/layout/SideNav";
+import { useIsMobile } from "./hooks/use-mobile";
 
 // 관리자 전용 · 구역 라벨 편집 UI · lazy 로드 (초기 번들 축소)
 const ZoneLabelsEditor = React.lazy(() => import("./components/ZoneLabelsEditor/ZoneLabelsEditor"));
@@ -316,8 +317,9 @@ export default function App() {
   }
 
   // 2026-08-11 · 사이드바 V2 · flag ON 시만 SidebarProvider 로 감쌈 · OFF (기본) 는 기존 그대로
+  // 2026-08-11 · 사이드바 V2 · 데스크탑만 사이드바 · 모바일은 기존 상단 헤더 + BottomNav (사용자 지시)
   if (SIDEBAR_ENABLED) {
-    return <SidebarLayout pageContent={pageContent} authSession={authSession} activePage={page as AppNavPage} navigate={navigate} handleLogout={handleLogout} timeoutWarningOverlay={timeoutWarningOverlay} />;
+    return <SidebarLayoutWrapper pageContent={pageContent} authSession={authSession} activePage={page as AppNavPage} navigate={navigate} handleLogout={handleLogout} timeoutWarningOverlay={timeoutWarningOverlay} />;
   }
 
   return (
@@ -329,7 +331,7 @@ export default function App() {
   );
 }
 
-// 2026-08-11 · 사이드바 V2 · 별도 컴포넌트로 · useSidebarWidth 훅 사용 (React hook rules 준수)
+// 2026-08-11 · 사이드바 V2 · 데스크탑만 사이드바 · 모바일은 기존 헤더 fallback
 interface SidebarLayoutProps {
   pageContent: React.ReactElement;
   authSession: AuthSession | null;
@@ -338,6 +340,20 @@ interface SidebarLayoutProps {
   handleLogout: () => void;
   timeoutWarningOverlay: React.ReactElement | null;
 }
+// 모바일 감지 · 모바일이면 기존 렌더 · 데스크탑이면 사이드바 · React hook rules 준수 위해 wrapper 컴포넌트 분리
+const SidebarLayoutWrapper: React.FC<SidebarLayoutProps> = (props) => {
+  const isMobile = useIsMobile();
+  if (isMobile) {
+    return (
+      <>
+        {props.pageContent}
+        <AppFooter />
+        {props.timeoutWarningOverlay}
+      </>
+    );
+  }
+  return <SidebarLayout {...props} />;
+};
 const SidebarLayout: React.FC<SidebarLayoutProps> = ({ pageContent, authSession, activePage, navigate, handleLogout, timeoutWarningOverlay }) => {
   const { width } = useSidebarWidth();
   return (
