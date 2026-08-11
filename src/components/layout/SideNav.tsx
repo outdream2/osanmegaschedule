@@ -18,6 +18,7 @@ import { LogOut } from "lucide-react";
 import type { AppNavPage } from "./AppNavHeader";
 import type { AuthSession } from "../../types";
 import { filterGroupsForSession, isItemActive, COLOR_TONES } from "./sideNavGroups";
+import { useSidebarWidth } from "../../hooks/useSidebar";
 import logoImg from "../../images/logo.png";
 
 interface SideNavProps {
@@ -29,6 +30,7 @@ interface SideNavProps {
 
 export const SideNav: React.FC<SideNavProps> = ({ authSession, activePage, onNavigate, onLogout }) => {
   const groups = filterGroupsForSession(authSession);
+  const { startResize } = useSidebarWidth();
 
   return (
     <Sidebar collapsible="icon" data-sb-v2="">
@@ -97,6 +99,14 @@ export const SideNav: React.FC<SideNavProps> = ({ authSession, activePage, onNav
           </SidebarMenu>
         )}
       </SidebarFooter>
+
+      {/* 2026-08-11 · PC 드래그 리사이즈 handle · 오른쪽 가장자리 · md 이상만 노출 */}
+      <div
+        onMouseDown={startResize}
+        className="hidden md:block absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-slate-300/60 active:bg-slate-400 transition z-30 group-data-[collapsible=icon]:hidden"
+        title="드래그하여 사이드바 폭 조절"
+        aria-label="사이드바 폭 조절"
+      />
     </Sidebar>
   );
 };

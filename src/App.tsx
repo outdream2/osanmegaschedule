@@ -28,8 +28,9 @@ import type { AppNavPage } from "./components/layout/AppNavHeader";
 import { prefetchProducts } from "./lib/productsCache";
 import { loadZoneLabelsFromServer } from "./constants/zoneLabels";
 // 2026-08-11 · 사이드바 V2 · feature flag (VITE_SIDEBAR_V2=true) · OFF 면 기존 헤더 그대로
-import { SIDEBAR_ENABLED } from "./hooks/useSidebar";
+import { SIDEBAR_ENABLED, useSidebarWidth } from "./hooks/useSidebar";
 import { SidebarProvider, SidebarInset } from "./components/ui/sidebar";
+import { TooltipProvider } from "./components/ui/tooltip";
 import { SideNav } from "./components/layout/SideNav";
 
 // 관리자 전용 · 구역 라벨 편집 UI · lazy 로드 (초기 번들 축소)
@@ -316,21 +317,7 @@ export default function App() {
 
   // 2026-08-11 · 사이드바 V2 · flag ON 시만 SidebarProvider 로 감쌈 · OFF (기본) 는 기존 그대로
   if (SIDEBAR_ENABLED) {
-    return (
-      <SidebarProvider>
-        <SideNav
-          authSession={authSession}
-          activePage={page as AppNavPage}
-          onNavigate={(p) => navigate(p as Page)}
-          onLogout={handleLogout}
-        />
-        <SidebarInset>
-          {pageContent}
-          <AppFooter />
-        </SidebarInset>
-        {timeoutWarningOverlay}
-      </SidebarProvider>
-    );
+    return <SidebarLayout pageContent={pageContent} authSession={authSession} activePage={page as AppNavPage} navigate={navigate} handleLogout={handleLogout} timeoutWarningOverlay={timeoutWarningOverlay} />;
   }
 
   return (
@@ -341,3 +328,33 @@ export default function App() {
     </>
   );
 }
+
+// 2026-08-11 · 사이드바 V2 · 별도 컴포넌트로 · useSidebarWidth 훅 사용 (React hook rules 준수)
+interface SidebarLayoutProps {
+  pageContent: React.ReactElement;
+  authSession: AuthSession | null;
+  activePage: AppNavPage;
+  navigate: (page: Page) => void;
+  handleLogout: () => void;
+  timeoutWarningOverlay: React.ReactElement | null;
+}
+const SidebarLayout: React.FC<SidebarLayoutProps> = ({ pageContent, authSession, activePage, navigate, handleLogout, timeoutWarningOverlay }) => {
+  const { width } = useSidebarWidth();
+  return (
+    <TooltipProvider delayDuration={200}>
+      <SidebarProvider style={{ "--sidebar-width": `${width}px` } as React.CSSProperties}>
+        <SideNav
+          authSession={authSession}
+          activePage={activePage}
+          onNavigate={(p) => navigate(p as Page)}
+          onLogout={handleLogout}
+        />
+        <SidebarInset>
+          {pageContent}
+          <AppFooter />
+        </SidebarInset>
+        {timeoutWarningOverlay}
+      </SidebarProvider>
+    </TooltipProvider>
+  );
+};
