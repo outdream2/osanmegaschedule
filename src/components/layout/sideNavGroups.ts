@@ -52,8 +52,16 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     color: "amber",
     items: [
       { key: "schedule", label: "스케줄", icon: Calendar, color: "amber" },
-      { key: "leave", label: "연차/휴가", icon: CalendarDots, color: "amber" },
-      { key: "lunch", label: "점심불참", icon: Coffee, color: "amber" },
+    ],
+  },
+  {
+    id: "approvals",
+    label: "승인요청",
+    color: "indigo",
+    managerOnly: true,
+    items: [
+      { key: "leave", label: "연차/휴가", icon: CalendarDots, color: "indigo", managerOnly: true },
+      { key: "lunch", label: "점심불참", icon: Coffee,       color: "indigo", managerOnly: true },
     ],
   },
   {
@@ -86,8 +94,6 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     items: [
       // BusinessManagePage 서브탭
       { key: "business-manage", label: "직원관리", icon: UsersThree, color: "violet", subTab: "staff-manage", managerOnly: true },
-      { key: "business-manage", label: "승인대기", icon: CheckSquare, color: "violet", subTab: "approval-center", managerOnly: true },
-      { key: "business-manage", label: "점심불참", icon: Coffee, color: "violet", subTab: "lunch", managerOnly: true },
       { key: "business-manage", label: "각종양식", icon: FileText, color: "violet", subTab: "hr-forms", managerOnly: true },
       { key: "business-manage", label: "서류작성", icon: PencilLine, color: "violet", subTab: "document-writer", managerOnly: true },
     ],
