@@ -5,7 +5,7 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { Employee } from "../../types";
 
 export type WorkplaceTab = "전체" | "매장" | "창고";
-export type PositionTab = "전체" | "약사" | "창고" | "진열" | "매장";
+export type PositionTab = "전체" | "약사" | "사원" | "창고" | "매장";
 export type SortBy = "none" | "today" | "workplace" | "name" | "position";
 export type SortOrder = "asc" | "desc";
 
@@ -63,9 +63,9 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
               // · 매장 = 창고 + 진열 통합 (약사 외 매장 근무자 · 캐셔 포함)
               { key: "전체", label: "전체", color: "text-indigo-600", count: employees.length },
               { key: "약사", label: "약사", color: "text-violet-600", count: employees.filter(e => e.position === "약사").length },
+              { key: "사원", label: "사원", color: "text-amber-600", count: employees.filter(e => e.position === "캐셔" || e.position === "사원").length },
               { key: "창고", label: "창고", color: "text-sky-600", count: employees.filter(e => e.position !== "약사" && (e.position.includes("물류") || e.position === "창고")).length },
-              { key: "진열", label: "진열", color: "text-teal-600", count: employees.filter(e => e.position !== "약사" && e.position === "진열").length },
-              { key: "매장", label: "매장", color: "text-emerald-600", count: employees.filter(e => e.position !== "약사" && (e.position.includes("물류") || e.position === "창고" || e.position === "진열" || e.position === "캐셔")).length },
+              { key: "매장", label: "매장", color: "text-emerald-600", count: employees.filter(e => e.position !== "약사" && e.workplace === "매장").length },
             ] as const).map(({ key, label, color, count }) => (
               <button
                 key={key}

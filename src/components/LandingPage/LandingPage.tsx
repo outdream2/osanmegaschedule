@@ -1384,21 +1384,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 </button>
               </div>
 
-              {/* 2026-08-11 · 카카오톡 채널 친구추가 (비로그인 랜딩) · QR + 버튼 */}
-              <div className="w-full flex items-center gap-3 rounded-2xl px-4 py-3 bg-[#FEE500] shadow-sm border border-[#F0D700]/60">
-                <img
-                  src={kakaoQrImg}
-                  alt="카카오톡 채널 QR"
-                  className="w-16 h-16 rounded-lg bg-white p-1 shrink-0 object-contain"
-                />
-                <a
-                  href="https://pf.kakao.com/_ExfuiX/friend"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center rounded-xl px-4 py-3 bg-white hover:bg-slate-50 active:scale-[0.99] transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer border border-[#F0D700]/40"
-                >
-                  <span className="text-slate-900 font-black text-sm">카카오톡 채널 친구추가</span>
-                </a>
+              {/* 2026-08-11 · 카카오톡 채널 친구추가 · 하단 · 세련된 카드 */}
+              <div className="w-full mt-3 rounded-2xl overflow-hidden shadow-md border border-[#F0D700]/70 bg-[#FEE500]">
+                <div className="px-4 pt-3 pb-2 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-md bg-slate-900 text-[#FEE500] font-black text-[10px] flex items-center justify-center">talk</span>
+                  <span className="text-slate-900 font-black text-[13px]">카카오톡 채널</span>
+                  <span className="ml-auto text-slate-800/70 font-semibold text-[11px]">새 소식 알림받기</span>
+                </div>
+                <div className="bg-white px-4 py-3 flex items-center gap-3">
+                  <img
+                    src={kakaoQrImg}
+                    alt="카카오톡 채널 QR"
+                    className="w-20 h-20 rounded-lg bg-white p-1 shrink-0 object-contain border border-slate-200"
+                  />
+                  <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+                    <div className="text-slate-900 font-black text-[13px] leading-tight">오산 메가타운 약국</div>
+                    <div className="text-slate-500 text-[11px] leading-tight">QR 스캔 또는 아래 버튼 클릭</div>
+                    <a
+                      href="https://pf.kakao.com/_ExfuiX/friend"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 inline-flex items-center justify-center rounded-lg px-3 py-2 bg-[#FEE500] hover:bg-[#FADA0A] active:scale-[0.99] transition-all shadow-sm border border-[#F0D700]/60 cursor-pointer"
+                    >
+                      <span className="text-slate-900 font-black text-[13px]">친구추가</span>
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
           )}

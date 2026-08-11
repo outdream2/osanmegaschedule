@@ -524,7 +524,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
   // Tabs & Search states
   const [workplaceTab, setWorkplaceTab] = useState<"전체" | "매장" | "창고">("전체");
-  const [positionTab, setPositionTab] = useState<"전체" | "약사" | "창고" | "진열" | "매장">("전체");
+  const [positionTab, setPositionTab] = useState<"전체" | "약사" | "사원" | "창고" | "매장">("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"none" | "today" | "workplace" | "position" | "name">("today");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -1245,15 +1245,15 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         if ((emp.workplace || "매장") !== workplaceTab) return false;
       }
       if (positionTab !== "전체") {
-        // 2026-08-04 · 사용자 요청 · 필터 통합: 전체 · 약사 · 창고 · 진열 · 매장(창고+진열)
+        // 2026-08-11 · 필터 재정의: 전체·약사·사원·창고·매장 (진열 제거)
         const isPharm     = emp.position === "약사";
+        const isStaff     = emp.position === "캐셔" || emp.position === "사원";
         const isWarehouse = !isPharm && (emp.position.includes("물류") || emp.position === "창고");
-        const isDisplay   = !isPharm && emp.position === "진열";
-        const isStore     = !isPharm && (isWarehouse || isDisplay || emp.position === "캐셔");
+        const isStore     = !isPharm && (emp.workplace === "매장");
 
         if (positionTab === "약사")      { if (!isPharm)     return false; }
+        else if (positionTab === "사원") { if (!isStaff)     return false; }
         else if (positionTab === "창고") { if (!isWarehouse) return false; }
-        else if (positionTab === "진열") { if (!isDisplay)   return false; }
         else if (positionTab === "매장") { if (!isStore)     return false; }
       }
       if (searchQuery.trim() !== "") {
