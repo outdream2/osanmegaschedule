@@ -243,26 +243,20 @@ function renderSingleChip(
         touchAction: "none",
         ...(assigned
           ? { backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder }
-          : isPharmacist
-          ? { backgroundColor: "#eef2ff", color: "#3730a3", borderColor: "#a5b4fc" }
           : undefined),
       }}
       className={`relative flex items-center gap-1 whitespace-nowrap ${compact ? "px-1.5 py-0.5 text-[13px]" : "px-2 py-0.5 text-[14px]"} rounded-full font-bold border cursor-grab active:cursor-grabbing select-none transition ${
-        // 약사는 항상 emerald ring 테두리 (배정 여부 관계없이 시각적으로 두드러지게)
-        isPharmacist ? "ring-2 ring-emerald-500 ring-offset-1 ring-offset-white" : ""
-      } ${
         assigned
           ? "opacity-80"
-          : isPharmacist
-          ? ""
-          : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+          : "bg-white border-slate-200 hover:border-slate-400"
       } ${draggingId === emp.id ? "opacity-20" : ""}`}
     >
       <span
         className="w-1.5 h-1.5 rounded-full shrink-0"
-        style={{ backgroundColor: assigned ? c.dot : isPharmacist ? "#6366f1" : "#cbd5e1" }}
+        style={{ backgroundColor: assigned ? c.dot : isPharmacist ? "#e11d48" : "#cbd5e1" }}
       />
-      <span>{emp.name}</span>
+      {/* 2026-08-11 · 약사 · 이름 rose(진한 빨강) 강조 · 오픈(노랑)/마감(초록)/오픈마감 배경에서 눈에 띔 */}
+      <span className={isPharmacist ? "text-rose-600 font-black" : (!assigned ? "text-slate-600" : "")}>{emp.name}</span>
       {/* 캐셔 겸직 배지 — 오른쪽 위 코너에 오버레이 (인라인 공간 안 잡음) */}
       {emp.position.includes("캐셔") && emp.position.includes("물류") && (
         <span

@@ -1401,7 +1401,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     <div className="text-slate-900 font-black text-[13px] leading-tight">오산 메가타운 약국</div>
                     <div className="text-slate-500 text-[11px] leading-tight">QR 스캔 또는 아래 버튼 클릭</div>
                     <a
-                      href="https://pf.kakao.com/_ExfuiX/friend"
+                      href="https://pf.kakao.com/_XWuiX/friend"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="mt-1 inline-flex items-center justify-center rounded-lg px-3 py-2 bg-[#FEE500] hover:bg-[#FADA0A] active:scale-[0.99] transition-all shadow-sm border border-[#F0D700]/60 cursor-pointer"
