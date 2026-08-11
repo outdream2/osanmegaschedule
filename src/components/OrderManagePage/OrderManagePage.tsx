@@ -1326,7 +1326,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   ], []);
   const statDefaultTabs: SubTabDef<StatKey>[] = useMemo(() => [
     { key: "trending", label: "급상승",         icon: TrendingUp,    color: "indigo" },
-    { key: "category", label: "카테고리별현황", icon: PieChart,      color: "amber"  },
+    { key: "category", label: "구역현황",       icon: PieChart,      color: "amber"  },
     { key: "flow",     label: "상품현황",       icon: Boxes,         color: "sky"    },
     { key: "supplier", label: "공급사별현황",   icon: Building2,     color: "emerald"}, // 2026-08-04 통계로 다시 이동 (사용자 재요청)
     { key: "diff",     label: "손실추적",       icon: AlertTriangle, color: "rose"   },

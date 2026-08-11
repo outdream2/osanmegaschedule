@@ -421,7 +421,7 @@ const ZoneCategoryContent: React.FC = () => {
       <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
         <div className="flex items-center gap-2">
           <PieChart size={14} className="text-amber-500 shrink-0" />
-          <span className="text-[13px] font-semibold text-slate-800">카테고리별현황</span>
+          <span className="text-[13px] font-semibold text-slate-800">구역현황</span>
           <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 rounded-full px-2 py-0.5 border border-amber-200 tabular-nums">{grouped.length}개 구역</span>
           <span className="text-[11px] text-slate-400 hidden sm:inline">real_map 기반 · 구역 클릭 → 상품 상세</span>
         </div>
