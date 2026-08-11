@@ -1307,7 +1307,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         const aOrd = getOrder(aType);
         const bOrd = getOrder(bType);
         if (aOrd !== bOrd) return aOrd - bOrd;
-        // 같은 카테고리(오픈/마감/휴무 등) 내에서는 이름 오름차순
+        // 2026-08-11 · 같은 근무타입 안에서 · 직군별 2차 정렬 (약사 우선 → 물류/캐셔/진열 → 기타)
+        const gA = getPositionGroup(a.position);
+        const gB = getPositionGroup(b.position);
+        if (gA !== gB) return gA - gB;
         return a.name.localeCompare(b.name, "ko");
       }
 
@@ -1498,7 +1501,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           await fetchScheduleData(undefined, true);
           showNotification("정렬 순서가 기본값으로 초기화되었습니다.");
         }}
-        onCreateEmployee={isAdmin ? () => openCreateEmployeeModal() : undefined}
+        onCreateEmployee={undefined}
       />
 
       {/* 1.6 Personal Schedule Search Results Quick Insights */}
@@ -1682,28 +1685,14 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
               >
                 <ChevronRight size={18} />
               </button>
-              {/* 2026-08-11 · 오늘 버튼 · 편집 앞으로 이동됨 (아래 관리자 액션 영역 참조) */}
-            </div>
-            {/* Legend indicators + 오늘 근무 서머리 · 2026-08-11 · 배지 제거 · 오픈/마감에 시간 표시 */}
-            <div className="flex items-baseline gap-3 text-[15px] font-semibold flex-wrap min-w-0">
-              {(() => {
-                const map = getTypeHoursMap("", "");
-                return (
-                  <>
-                    <span className="text-yellow-600">오픈 <span className="text-yellow-700/70 tabular-nums font-normal">{map["오픈"] || ""}</span></span>
-                    <span className="text-emerald-600">마감 <span className="text-emerald-700/70 tabular-nums font-normal">{map["마감"] || ""}</span></span>
-                    <span className="text-rose-600">휴무</span>
-                    <span className="text-amber-600">월차</span>
-                  </>
-                );
-              })()}
+              {/* 2026-08-11 · 오늘 요약 · 년월/화살표 옆으로 이동 */}
               {(() => {
                 const today = new Date();
                 const isThisMonth = today.getFullYear() === currentYear && today.getMonth() + 1 === currentMonth;
                 const todaySummary = isThisMonth ? currentSummaryList.find(s => s.day === today.getDate()) : null;
                 if (!todaySummary) return null;
                 return (
-                  <span className="flex items-baseline gap-2 pl-2 border-l border-slate-200">
+                  <span className="ml-2 flex items-baseline gap-2 pl-2 border-l border-slate-200 text-[15px] font-semibold">
                     <span className="text-emerald-700">약 {todaySummary.pharmacistCount}</span>
                     <span className="text-slate-600">사 {todaySummary.staffCount}</span>
                     <span className="text-slate-500">기 {todaySummary.otherCount}</span>
@@ -1712,10 +1701,40 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 );
               })()}
             </div>
+            {/* Legend indicators + 오늘 근무 서머리 · 2026-08-11 · 배지 제거 · 오픈/마감에 시간 표시 */}
+            <div className="flex items-baseline gap-3 text-[15px] font-semibold flex-wrap min-w-0">
+              {(() => {
+                // 근무타입별 시간 · settings.scheduleTypes 에서 · getTypeHoursMap("","") 은 default hours 반환
+                const map = getTypeHoursMap("", "");
+                return (
+                  <>
+                    <span className="text-yellow-600">오픈 <span className="text-yellow-700/70 tabular-nums font-normal">{map["오픈"] || ""}</span></span>
+                    <span className="text-emerald-600">마감 <span className="text-emerald-700/70 tabular-nums font-normal">{map["마감"] || ""}</span></span>
+                    {map["오픈마감"] && (
+                      <span className="text-sky-600">오픈마감 <span className="text-sky-700/70 tabular-nums font-normal">{map["오픈마감"]}</span></span>
+                    )}
+                    <span className="text-rose-600">휴무</span>
+                    <span className="text-amber-600">월차</span>
+                  </>
+                );
+              })()}
+              {/* 2026-08-11 · 요약 · 년월 옆으로 이동됨 */}
+            </div>
           </div>
 
-          {/* 2행: 오늘 · 편집·확정·전월복사 → 합계·인건비 (2026-08-11) */}
+          {/* 2행: [직원등록·오늘·편집·확정·전월복사] + 다음줄 [합계·인건비] */}
           <div className="flex items-center gap-x-2 flex-nowrap justify-start min-w-0">
+            {/* 직원등록 (오늘 앞 · indigo 톤) · 2026-08-11 · 필터바에서 이동 */}
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => openCreateEmployeeModal()}
+                title="새 직원 등록"
+                className="shrink-0 inline-flex items-center justify-center px-3 py-1.5 text-[13px] sm:text-[15px] font-black text-white bg-indigo-600 hover:bg-indigo-700 border border-indigo-600 rounded-md shadow-sm transition cursor-pointer active:scale-95"
+              >
+                직원 등록
+              </button>
+            )}
             {/* 오늘로 이동 (편집 앞 · rose 톤) */}
             <button
               type="button"
@@ -1784,14 +1803,14 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
               </div>
             )}
 
-            {/* 합계보기 / 인건비보기 토글 버튼 · 편집·확정·전월복사 뒤 (2026-08-11 순서 변경) */}
+            {/* 합계·인건비 · 전월복사 뒤 (2026-08-11 사용자 요청 · 같은 줄로 복원) */}
             <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={() => setShowSummary(v => v === "summary" ? "hidden" : "summary")}
                 title="월별 합계(근무일수/시간) 열 표시 토글"
                 className={`px-2.5 py-1.5 text-[13px] sm:text-[15px] rounded-md font-bold border transition cursor-pointer ${showSummary === "summary" ? "bg-indigo-500 text-white border-indigo-500" : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"}`}
               >
-                합계
+                합계(hr)
               </button>
               {isAdmin && (
                 <button
