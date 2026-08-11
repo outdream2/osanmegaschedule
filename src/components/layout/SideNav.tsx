@@ -60,6 +60,8 @@ export const SideNav: React.FC<SideNavProps> = ({ authSession, activePage, onNav
                         onClick={() => onNavigate(item.key)}
                         isActive={active}
                         tooltip={item.label}
+                        aria-current={active ? "page" : undefined}
+                        aria-label={item.label}
                         className={active
                           ? `${tone.activeBg} ${tone.activeText} font-bold hover:${tone.activeBg}`
                           : `${tone.hoverBg} font-medium`
