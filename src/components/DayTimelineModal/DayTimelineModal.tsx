@@ -253,21 +253,11 @@ function renderSingleChip(
     >
       <span
         className="w-1.5 h-1.5 rounded-full shrink-0"
-        style={{ backgroundColor: assigned ? c.dot : isPharmacist ? "#e11d48" : "#cbd5e1" }}
+        style={{ backgroundColor: assigned ? c.dot : isPharmacist ? "#9333ea" : "#cbd5e1" }}
       />
-      {/* 2026-08-11 · 약사 · 이름 rose(진한 빨강) 강조 · 오픈(노랑)/마감(초록)/오픈마감 배경에서 눈에 띔 */}
-      <span className={isPharmacist ? "text-rose-600 font-black" : (!assigned ? "text-slate-600" : "")}>{emp.name}</span>
-      {/* 캐셔 겸직 배지 — 오른쪽 위 코너에 오버레이 (인라인 공간 안 잡음) */}
-      {emp.position.includes("캐셔") && emp.position.includes("물류") && (
-        <span
-          className="absolute -top-1.5 -right-1 w-3.5 h-3.5 rounded-full bg-blue-500 border border-white text-white text-[11px] font-black leading-none flex items-center justify-center shadow-sm pointer-events-none"
-          title="캐셔 겸직"
-          aria-label="캐셔 겸직"
-        >
-          C
-        </span>
-      )}
-      {/* 점심 배정 배지 — 왼쪽 위 코너에 오버레이 (캐셔 배지와 위치 분리) */}
+      {/* 2026-08-11 · 약사 · 이름 파란색 하이라이트 (blue-600 font-black) */}
+      <span className={isPharmacist ? "text-purple-600 font-black" : (!assigned ? "text-slate-600" : "")}>{emp.name}</span>
+      {/* 점심 배정 배지 — 왼쪽 위 코너에 오버레이 */}
       {hasLunchAssigned && (
         <span
           className="absolute -top-1.5 -left-1 w-3.5 h-3.5 rounded-full bg-yellow-400 border border-white text-yellow-900 text-[11px] font-black leading-none flex items-center justify-center shadow-sm pointer-events-none"
@@ -725,7 +715,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
     const assigned = slotMap[slotKey] ?? [];
     const minLabel = slotKey.slice(3); // "00" or "30"
     // 탭 필터 통과 인원만 실제 표시 (기존과 동일 규칙)
-    const visibleChips = assigned
+    let visibleChips = assigned
       .map((empId, origIdx) => {
         const w = allWorkers.find(ww => ww.emp.id === empId);
         if (!w) return null;
@@ -735,6 +725,14 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
         return { empId, w, c, origIdx };
       })
       .filter((x): x is NonNullable<typeof x> => x !== null);
+    // 2026-08-11 · 점심 배정 · 약사가 맨 위에 오게 (안정 정렬)
+    if (dropKind === "lunch") {
+      visibleChips = [...visibleChips].sort((a, b) => {
+        const ap = a.w.emp.position === "약사" ? 0 : 1;
+        const bp = b.w.emp.position === "약사" ? 0 : 1;
+        return ap - bp;
+      });
+    }
 
     // 외부 chip 드롭 → 이 슬롯의 맨 앞에 삽입 (넣는 대로 맨 위 채움 · 무제한)
     const handleContainerDrop = (e: React.DragEvent) => {
@@ -808,16 +806,10 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                   onDragEnd={() => setBreakChipDrag(null)}
                   onClick={e => { e.stopPropagation(); setCellPicker({ type: dropKind, slot: slotKey }); }}
                   title={w.emp.position.includes("캐셔") && w.emp.position.includes("물류") ? "캐셔 겸직 · 드래그로 순서 변경" : "드래그로 순서 변경 · 탭하여 편집"}
-                  style={{ backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder, opacity: isDragging ? 0.4 : 1 }}
-                  className="relative w-full text-center rounded text-[13px] font-bold border transition leading-none py-px cursor-grab active:cursor-grabbing hover:opacity-60 inline-flex items-center justify-center gap-0.5 whitespace-nowrap overflow-hidden"
+                  style={{ backgroundColor: c.chipBg, color: w.emp.position === "약사" ? "#9333ea" : c.chipText, borderColor: c.chipBorder, opacity: isDragging ? 0.4 : 1 }}
+                  className={`relative w-full text-center rounded text-[13px] border transition leading-none py-px cursor-grab active:cursor-grabbing hover:opacity-60 inline-flex items-center justify-center gap-0.5 whitespace-nowrap overflow-hidden ${w.emp.position === "약사" ? "font-black" : "font-bold"}`}
                 >
                   <span className="truncate">{w.emp.name}</span>
-                  {w.emp.position.includes("캐셔") && w.emp.position.includes("물류") && (
-                    <span
-                      className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-blue-500 border border-white text-white text-[7px] font-black leading-none flex items-center justify-center shadow-sm pointer-events-none"
-                      title="캐셔 겸직"
-                    >C</span>
-                  )}
                 </div>
               );
             })
@@ -918,9 +910,9 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
             <div className="w-14 shrink-0" />
             <div className="flex-1 relative">
               {/* 피크타임 배경 밴드: 14:00~17:00 = 슬롯 인덱스 4~6 (10슬롯 기준 40%~70%) */}
-              <div className="absolute top-0 bottom-0 bg-orange-100/70 rounded pointer-events-none flex items-end justify-center"
+              <div className="absolute top-0 bottom-0 bg-orange-100/70 rounded pointer-events-none flex items-start justify-center"
                 style={{ left: "40%", width: "30%" }}>
-                <span className="text-[11px] font-black text-orange-500 tracking-tight leading-none pb-0.5">피크타임</span>
+                <span className="text-[11px] font-black text-orange-500 tracking-tight leading-none pt-0.5">피크타임</span>
               </div>
               <div className="flex relative">
                 {ZONE_SLOTS.map((slot, i) => {
@@ -1007,17 +999,11 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                               document.addEventListener("touchmove", onMove, { passive: false });
                               document.addEventListener("touchend", onEnd);
                             }}
-                            title={w.emp.position.includes("캐셔") && w.emp.position.includes("물류") ? "캐셔 겸직 · 드래그로 이동 · 클릭으로 제거" : "드래그: 다른 구역으로 이동 | 클릭: 제거"}
-                            style={{ backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder, touchAction: "none" }}
-                            className="relative px-1 py-px rounded text-[14px] font-bold border transition select-none cursor-grab hover:opacity-70 inline-flex items-center gap-0.5 whitespace-nowrap"
+                            title="드래그: 다른 구역으로 이동 | 클릭: 제거"
+                            style={{ backgroundColor: c.chipBg, color: w.emp.position === "약사" ? "#9333ea" : c.chipText, borderColor: c.chipBorder, touchAction: "none" }}
+                            className={`relative px-1 py-px rounded text-[14px] border transition select-none cursor-grab hover:opacity-70 inline-flex items-center gap-0.5 whitespace-nowrap ${w.emp.position === "약사" ? "font-black" : "font-bold"}`}
                           >
                             {w.emp.name}
-                            {w.emp.position.includes("캐셔") && w.emp.position.includes("물류") && (
-                              <span
-                                className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-blue-500 border border-white text-white text-[7px] font-black leading-none flex items-center justify-center shadow-sm pointer-events-none"
-                                title="캐셔 겸직"
-                              >C</span>
-                            )}
                           </div>
                         );
                       })}
@@ -1372,11 +1358,8 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                               {/* Name + type */}
                               <div className="flex flex-col items-start gap-0.5 min-w-0">
                                 <div className="flex items-center gap-1">
-                                  {isPharm && <Pill size={11} className="text-indigo-500 shrink-0" />}
-                                  <span className={`font-bold text-[17px] ${isPharm ? "text-indigo-800" : "text-slate-800"}`}>{emp.name}</span>
-                                  {emp.position.includes("캐셔") && emp.position.includes("물류") && (
-                                    <span className="text-[12px] font-black px-1 py-px rounded bg-blue-500 text-white leading-none" title="캐셔 겸직">C</span>
-                                  )}
+                                  {isPharm && <Pill size={11} className="text-purple-600 shrink-0" />}
+                                  <span className={`text-[17px] ${isPharm ? "text-purple-600 font-black" : "text-slate-800 font-bold"}`}>{emp.name}</span>
                                 </div>
                                 <span className="text-[15px] px-1.5 py-px rounded-full font-semibold"
                                   style={{ backgroundColor: c.chipBg, color: c.chipText }}>{schedule.type}</span>
@@ -1888,6 +1871,13 @@ export const DayTimelineModal: React.FC<Props> = ({
       return oStart < lEnd && oEnd > lStart;
     });
     if (lunchDup) { alert("이미 배정되었습니다.\n같은 시간대에 이미 점심이 배정되어 있습니다."); return; }
+    // 2026-08-11 · 같은 30분 슬롯에 약사 2명 이상 배치 금지 (매장에 최소 1명 약사 유지)
+    const targetEmp = employees.find(e => e.id === empId);
+    if (targetEmp?.position === "약사") {
+      const existingIds = (lunchSlots[slot] ?? []).filter(id => id !== empId);
+      const hasOtherPharm = existingIds.some(id => employees.find(e => e.id === id)?.position === "약사");
+      if (hasOtherPharm) { alert("한 시간대에 약사는 1명만 점심 배정할 수 있습니다.\n(매장에 최소 1명 약사가 남아있어야 합니다)"); return; }
+    }
     // 출발지가 zone이고 그 slot이 이 lunch 시간대와 겹치면 zone 충돌 검사 스킵
     const zoneConflict = ZONE_ROWS.some(zone =>
       Object.entries(zoneSlots[zone] ?? {}).some(([zSlot, ids]) => {
@@ -1925,7 +1915,7 @@ export const DayTimelineModal: React.FC<Props> = ({
       scheduleAutoSave(zoneSlots, next, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
       return next;
     });
-  }, [date, zoneSlots, restSlots, lunchSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount, scheduleAutoSave]);
+  }, [date, zoneSlots, restSlots, lunchSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount, scheduleAutoSave, employees]);
 
   const removeFromLunchSlot = useCallback((slot: string, empId: number) => {
     setLunchSlots(prev => {
@@ -2363,7 +2353,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                             ? <Pill size={10} className="text-indigo-500 shrink-0" />
                             : <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: colors.dot }} />
                           }
-                          <span className={`text-[14px] font-bold whitespace-nowrap ${isPharmacist ? "text-indigo-800 ring-1 ring-emerald-400 rounded px-1 bg-emerald-50/50" : "text-slate-800"}`}>{emp.name}</span>
+                          <span className={`text-[14px] whitespace-nowrap ${isPharmacist ? "text-purple-600 font-black" : "text-slate-800 font-bold"}`}>{emp.name}</span>
                           {/* 입사일/퇴사일 배지 — 오늘 보고 있는 날짜가 그날인 경우 표시 */}
                           {!!emp.hireDate && date === emp.hireDate && (
                             <span className="text-[11px] font-black px-1 py-px rounded bg-emerald-500 text-white leading-none shrink-0" title={`입사일 (${emp.hireDate})`}>입사</span>
@@ -2373,10 +2363,6 @@ export const DayTimelineModal: React.FC<Props> = ({
                           )}
                           {/* 오픈/마감 등 근무유형을 이름 옆에 배지로 인라인 표시 (기존 별도 줄 제거) */}
                           <span className="text-[12px] font-bold leading-none shrink-0" style={{ color: colors.text }}>{schedule.type}</span>
-                          {/* 캐셔 겸직 배지 — 이름 옆에 작게 표시 */}
-                          {isCashierLogistics && (
-                            <span className="text-[11px] font-black px-1 py-px rounded bg-blue-500 text-white leading-none shrink-0" title="캐셔 겸직">C</span>
-                          )}
                           {/* 배정 구역 배지: 물류 또는 캐셔+물류 직원의 담당구역 (파란색) */}
                           {showZoneBadge && (() => {
                             const zoneNumsRaw = (emp as any).zone_nums ?? (emp as any).zoneNums;

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import axios from "axios";
-import { Shield, Check, Loader2, AlertCircle, Settings as SettingsIcon, Users } from "lucide-react";
+import { Shield, Check, Loader2, AlertCircle, Settings as SettingsIcon, Users, IdCard, Construction, Plus, Trash2, GripVertical } from "lucide-react";
 import { updateEmployee } from "../../lib/employeeApi";
 import type { AuthSession, PagePermissions } from "../../types";
 import { DEFAULT_PERMISSIONS } from "../../types";
@@ -40,7 +40,13 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
   const [saving, setSaving] = useState<string | null>(null); // key being saved
   const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [tab, setTab] = useState<"permissions" | "app-settings">("permissions");
+  const [tab, setTab] = useState<"permissions" | "app-settings" | "positions" | "construction">("permissions");
+  // 2026-08-11 · 직군 편집 로컬 draft (SettingsModal 이관)
+  const [newPositionInput, setNewPositionInput] = useState("");
+  const [posDragIdx, setPosDragIdx] = useState<number | null>(null);
+  const [posDragOverIdx, setPosDragOverIdx] = useState<number | null>(null);
+  const [editingPosIdx, setEditingPosIdx] = useState<number | null>(null);
+  const [editingPosValue, setEditingPosValue] = useState<string>("");
   // 직원별 레벨 조정 상태
   const [empSavingId, setEmpSavingId] = useState<number | null>(null);
   const [empSavedIds, setEmpSavedIds] = useState<Set<number>>(new Set());
@@ -54,8 +60,37 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     scheduleTypes: settingsScheduleTypes,
     wageRates: settingsWageRates,
     employeeWageOverrides: settingsEmployeeWageOverrides,
+    underConstruction: settingsUnderConstruction,
     update: updateSettings,
   } = useSettings();
+
+  // ─── 직군 편집 핸들러 (SettingsModal 이관) ──────────────────────────────
+  const addNewPosition = () => {
+    const trimmed = newPositionInput.trim();
+    if (!trimmed || PRESET_POSITIONS.includes(trimmed)) return;
+    updateSettings({ positions: [...PRESET_POSITIONS, trimmed] });
+    setNewPositionInput("");
+  };
+  const removePositionAt = (idx: number) => {
+    updateSettings({ positions: PRESET_POSITIONS.filter((_, i) => i !== idx) });
+  };
+  const reorderPosition = (fromIdx: number, toIdx: number) => {
+    if (fromIdx === toIdx) return;
+    const next = [...PRESET_POSITIONS];
+    const [moved] = next.splice(fromIdx, 1);
+    next.splice(toIdx, 0, moved);
+    updateSettings({ positions: next });
+  };
+  const commitEditPosition = () => {
+    if (editingPosIdx === null) return;
+    const trimmed = editingPosValue.trim();
+    const original = PRESET_POSITIONS[editingPosIdx];
+    if (!trimmed || trimmed === original) { setEditingPosIdx(null); return; }
+    if (PRESET_POSITIONS.includes(trimmed)) { setEditingPosIdx(null); return; }
+    const next = PRESET_POSITIONS.map((p, i) => i === editingPosIdx ? trimmed : p);
+    updateSettings({ positions: next });
+    setEditingPosIdx(null);
+  };
   const [employees, setEmployees] = useState<Employee[]>([]);
   useEffect(() => {
     const now = new Date();
@@ -196,12 +231,20 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         {/* 탭 */}
         <div className="mb-4 flex flex-wrap bg-slate-100 border border-slate-200 rounded-xl p-0.5 gap-0.5 w-fit">
           <button type="button" onClick={() => setTab("permissions")}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-black transition cursor-pointer ${tab === "permissions" ? "bg-white text-violet-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
-            <Shield size={12} /> 권한 조정
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[15px] font-black transition cursor-pointer ${tab === "permissions" ? "bg-white text-violet-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
+            <Shield size={15} />권한 조정
           </button>
           <button type="button" onClick={() => setTab("app-settings")}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-black transition cursor-pointer ${tab === "app-settings" ? "bg-white text-violet-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
-            <SettingsIcon size={12} /> 스케쥴 설정
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[15px] font-black transition cursor-pointer ${tab === "app-settings" ? "bg-white text-violet-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
+            <SettingsIcon size={15} />스케쥴 설정
+          </button>
+          <button type="button" onClick={() => setTab("positions")}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[15px] font-black transition cursor-pointer ${tab === "positions" ? "bg-white text-violet-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
+            <IdCard size={15} />직군 설정
+          </button>
+          <button type="button" onClick={() => setTab("construction")}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[15px] font-black transition cursor-pointer ${tab === "construction" ? "bg-white text-amber-600 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
+            <Construction size={15} />공사중
           </button>
         </div>
 
@@ -359,6 +402,118 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
               sessionEmployeeId={authSession?.employeeId ?? null}
               onNavigateZoneLabels={onNavigate ? () => onNavigate("zone-labels" as AppNavPage) : undefined}
             />
+          </div>
+        )}
+
+        {/* 2026-08-11 · 직군 설정 탭 (SettingsModal positions 탭 이관 · 3열 그리드) */}
+        {tab === "positions" && (
+          <div className="w-full min-w-0 space-y-4">
+            <div className="flex items-center gap-2">
+              <IdCard size={14} className="text-slate-500" />
+              <h2 className="text-[13px] font-black text-slate-700">직군 설정</h2>
+            </div>
+            <p className="text-[12px] text-slate-500 font-semibold">
+              직원 등록/수정 화면의 직군 드롭박스에 표시될 목록입니다. 드래그하여 순서를 변경할 수 있습니다.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+              {PRESET_POSITIONS.map((pos, idx) => (
+                <div
+                  key={pos}
+                  draggable
+                  onDragStart={() => setPosDragIdx(idx)}
+                  onDragOver={(e) => { e.preventDefault(); setPosDragOverIdx(idx); }}
+                  onDrop={() => {
+                    if (posDragIdx !== null) reorderPosition(posDragIdx, idx);
+                    setPosDragIdx(null); setPosDragOverIdx(null);
+                  }}
+                  onDragEnd={() => { setPosDragIdx(null); setPosDragOverIdx(null); }}
+                  className={`flex items-center gap-2 bg-white border rounded-lg px-3 py-2 transition ${
+                    posDragOverIdx === idx && posDragIdx !== idx
+                      ? "border-violet-400 bg-violet-50"
+                      : "border-slate-200 hover:border-slate-300"
+                  } ${posDragIdx === idx ? "opacity-40" : ""}`}
+                >
+                  <div className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing shrink-0">
+                    <GripVertical size={14} />
+                  </div>
+                  {editingPosIdx === idx ? (
+                    <input
+                      autoFocus
+                      value={editingPosValue}
+                      onChange={(e) => setEditingPosValue(e.target.value)}
+                      onBlur={commitEditPosition}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") { e.preventDefault(); commitEditPosition(); }
+                        else if (e.key === "Escape") { setEditingPosIdx(null); }
+                      }}
+                      className="flex-1 text-[13px] font-semibold text-slate-800 bg-white border border-violet-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-violet-300 min-w-0"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => { setEditingPosIdx(idx); setEditingPosValue(pos); }}
+                      className="flex-1 text-[13px] font-semibold text-slate-800 truncate text-left hover:text-violet-700 cursor-text"
+                      title="클릭하여 이름 수정"
+                    >
+                      {pos}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removePositionAt(idx)}
+                    className="text-slate-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded"
+                    title="삭제"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 pt-1">
+              <input
+                type="text"
+                value={newPositionInput}
+                onChange={(e) => setNewPositionInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNewPosition(); } }}
+                placeholder="새 직군 입력 (Enter)"
+                className="flex-1 text-[13px] rounded-lg border border-slate-200 focus:border-violet-500 p-2 bg-white focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={addNewPosition}
+                className="px-3 py-2 text-[12px] font-bold bg-violet-600 hover:bg-violet-700 text-white rounded-lg flex items-center gap-1 transition cursor-pointer"
+              >
+                <Plus size={13} />
+                추가
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 2026-08-11 · 공사중 탭 (SettingsModal 상단 카드 이관) */}
+        {tab === "construction" && (
+          <div className="w-full min-w-0 space-y-4 max-w-xl">
+            <div className="flex items-center gap-2">
+              <Construction size={14} className="text-amber-600" />
+              <h2 className="text-[13px] font-black text-slate-700">공사중 (Under Construction)</h2>
+            </div>
+            <label className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 hover:border-amber-400 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settingsUnderConstruction === true}
+                onChange={(e) => updateSettings({ underConstruction: e.target.checked })}
+                className="w-4 h-4 accent-amber-500"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-black text-slate-800 leading-tight">공사중 모드 활성화</div>
+                <div className="text-[11px] font-semibold text-slate-500 leading-tight mt-0.5">
+                  비로그인 랜딩페이지 · 재고 검색 숨김 · "곧 오픈 예정입니다" 표시
+                </div>
+              </div>
+              <span className={`text-[10px] font-black px-2 py-0.5 rounded ${settingsUnderConstruction ? "bg-amber-500 text-white" : "bg-slate-200 text-slate-500"}`}>
+                {settingsUnderConstruction ? "ON" : "OFF"}
+              </span>
+            </label>
           </div>
         )}
       </div>

@@ -19,6 +19,7 @@ import { Phone, Mail, MapPin, Calendar, User, Briefcase } from "lucide-react";
 import { matchHangul } from "./hangulSearch";
 import { TIMING } from "../../constants/timing";
 import { POSITIONS } from "../../constants/jobCategories";
+import { useSettings } from "../../hooks/useSettings";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 
@@ -223,6 +224,12 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
   const upd = (key: keyof EmployeeInfoValues, val: string) =>
     onChange({ ...values, [key]: val });
 
+  // 2026-08-11 · 직군 옵션: 설정(useSettings.positions) 우선 · 없으면 하드코딩 fallback
+  const { positions: settingsPositions } = useSettings();
+  const positionOptions = (settingsPositions && settingsPositions.length > 0)
+    ? settingsPositions
+    : (Array.from(POSITIONS) as string[]);
+
   const isCompact = layout === "compact";
 
   // compact 레이아웃 스타일 토큰
@@ -357,7 +364,7 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
               className={selectCls}
             >
               <option value="">선택 안 함</option>
-              {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
+              {positionOptions.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           ) : (
             <ViewValue value={values.position} />

@@ -1,4 +1,4 @@
-// src/components/SettingsModal.tsx
+﻿// src/components/SettingsModal.tsx
 import React, { useState, useEffect, useRef } from "react";
 import { X, Plus, Trash2, GripVertical, Check, MapPin, ShieldCheck, ChevronRight } from "lucide-react";
 import { AppSettings, WageRate, ScheduleTypeEntry, defaultWageForPosition } from "../../hooks/useSettings";
@@ -21,13 +21,11 @@ interface SettingsModalProps {
   onNavigatePermissions?: () => void;
 }
 
-type TabId = "positions" | "workplaces" | "scheduleTypes" | "wages" | "account";
+type TabId = "workplaces" | "scheduleTypes" | "account";
 
 const TABS: { id: TabId; label: string }[] = [
-  { id: "positions", label: "직급 종류" },
   { id: "workplaces", label: "근무지 종류" },
   { id: "scheduleTypes", label: "근무 유형" },
-  { id: "wages", label: "시급 설정" },
   { id: "account", label: "비밀번호 변경" },
 ];
 
@@ -119,7 +117,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => {
 };
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate, onApplyShiftHours, onClose, employees, editMode, onEnableEditMode, sessionEmployeeId, embedded = false, onNavigateZoneLabels, onNavigatePermissions }) => {
-  const [activeTab, setActiveTab] = useState<TabId>("positions");
+  const [activeTab, setActiveTab] = useState<TabId>("workplaces");
 
   // ─── 비밀번호 변경 상태 ─────────────────────────────────────
   const [pwCurrent, setPwCurrent] = useState("");
@@ -417,86 +415,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
           </div>
         )}
 
-        {/* 2026-08-11 · 공사중 모드 · 비로그인 랜딩 · 재고 검색 숨김 + "곧 오픈 예정" 표시 */}
-        <div className="px-6 pt-3 shrink-0">
-          <label className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 hover:border-amber-400 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.underConstruction === true}
-              onChange={(e) => onUpdate({ underConstruction: e.target.checked })}
-              className="w-4 h-4 accent-amber-500"
-            />
-            <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-black text-slate-800 leading-tight">공사중 (Under Construction)</div>
-              <div className="text-[11px] font-semibold text-slate-500 leading-tight mt-0.5">
-                비로그인 랜딩페이지 · 재고 검색 숨김 · "곧 오픈 예정입니다" 표시
-              </div>
-            </div>
-            <span className={`text-[10px] font-black px-2 py-0.5 rounded ${settings.underConstruction ? "bg-amber-500 text-white" : "bg-slate-200 text-slate-500"}`}>
-              {settings.underConstruction ? "ON" : "OFF"}
-            </span>
-          </label>
-        </div>
-
         {/* Tab Content */}
         <div className="flex-1 overflow-y-auto overflow-x-auto min-w-0 px-6 py-5 space-y-4">
-
-          {/* ─── Positions Tab ─────────────────────────────────────────── */}
-          {activeTab === "positions" && (
-            <div className="space-y-4">
-              <p className="text-xs text-slate-500 font-semibold">
-                직원 등록/수정 화면에서 표시될 직급 목록을 관리합니다. 드래그하여 순서를 변경할 수 있습니다.
-              </p>
-              <div className="space-y-1.5">
-                {positions.map((pos, idx) => (
-                  <div
-                    key={pos}
-                    draggable
-                    onDragStart={() => handlePositionDragStart(idx)}
-                    onDragOver={(e) => handlePositionDragOver(e, idx)}
-                    onDrop={() => handlePositionDrop(idx)}
-                    onDragEnd={handlePositionDragEnd}
-                    className={`flex items-center gap-2 bg-white border rounded-lg px-3 py-2 transition ${
-                      dragOverIndex === idx && dragIndex !== idx
-                        ? "border-blue-400 bg-blue-50"
-                        : "border-slate-200 hover:border-slate-300"
-                    } ${dragIndex === idx ? "opacity-40" : ""}`}
-                  >
-                    <div className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing shrink-0">
-                      <GripVertical size={14} />
-                    </div>
-                    <span className="flex-1 text-xs font-semibold text-slate-800">{pos}</span>
-                    <button
-                      type="button"
-                      onClick={() => removePosition(idx)}
-                      className="text-slate-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded"
-                      title="삭제"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-2 pt-1">
-                <input
-                  type="text"
-                  value={newPosition}
-                  onChange={(e) => setNewPosition(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPosition(); } }}
-                  placeholder="새 직급 입력 (Enter)"
-                  className="flex-1 text-xs rounded-lg border border-slate-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={addPosition}
-                  className="px-3 py-2 text-xs font-bold bg-[#2563eb] hover:bg-blue-700 text-white rounded-lg flex items-center gap-1 transition cursor-pointer"
-                >
-                  <Plus size={13} />
-                  추가
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* ─── Workplaces Tab ────────────────────────────────────────── */}
           {activeTab === "workplaces" && (
@@ -669,188 +589,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
             </div>
           )}
 
-          {/* ─── Wages Tab ─────────────────────────────────────────────── */}
-          {activeTab === "wages" && (
-            <div className="space-y-6">
-              <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-                직급별 기본 시급과 개인별 시급(직급별 설정을 덮어쓰기)을 설정합니다. 인건비 합계는 스케줄 표의 합계 셀에 자동 표시됩니다.
-              </p>
-
-              {/* ── Section 1: 직급별 시급 ───────────────────────────── */}
-              <div className="space-y-3">
-                <h3 className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
-                  <span className="w-1 h-3 bg-[#2563eb] rounded-full inline-block"></span>
-                  직급별 시급
-                </h3>
-
-                {positions.length === 0 ? (
-                  <p className="text-[11px] text-slate-400 italic">먼저 "직급 종류" 탭에서 직급을 추가해 주세요.</p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {/* Header row — hidden on mobile, shown on sm+ */}
-                    <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2 px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wide">
-                      <span>직급</span>
-                      <span>주중 시급 (원)</span>
-                      <span>주말 시급 (원)</span>
-                    </div>
-                    {positions.map((pos) => {
-                      // 2026-08-05 · 미설정 직급은 default 값 (약사=35000/40000 · 그외=10030/12000) 을 초기값으로 표시
-                      //  · 사용자 편집 가능 · 편집 시 wageRates 에 저장됨
-                      const stored = wageRates[pos];
-                      const fallback = defaultWageForPosition(pos);
-                      const rate = stored ?? fallback;
-                      const isDefault = !stored;
-                      return (
-                        <div
-                          key={pos}
-                          className="flex flex-col gap-1.5 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] sm:gap-2 sm:items-center bg-white border border-slate-200 rounded-lg px-3 py-2"
-                        >
-                          <span className="text-xs font-semibold text-slate-800 truncate flex items-center gap-1.5">
-                            {pos}
-                            {isDefault && (
-                              <span
-                                className="text-[9px] font-bold text-slate-400 border border-slate-200 rounded px-1 py-[1px]"
-                                title="기본값 · 편집 시 저장됩니다"
-                              >
-                                기본
-                              </span>
-                            )}
-                          </span>
-                          <div className="flex items-center gap-1.5 sm:contents">
-                            <span className="text-[10px] text-slate-400 font-semibold sm:hidden w-16 shrink-0">주중</span>
-                            <input
-                              type="number"
-                              min={0}
-                              value={rate.weekday || ""}
-                              onChange={(e) => updatePositionWage(pos, "weekday", parseWageInput(e.target.value))}
-                              placeholder={String(fallback.weekday)}
-                              className={`flex-1 sm:w-full text-xs rounded-lg border p-2 bg-white focus:outline-none focus:border-[#2563eb] ${isDefault ? "border-slate-200 text-slate-500" : "border-slate-200"}`}
-                            />
-                          </div>
-                          <div className="flex items-center gap-1.5 sm:contents">
-                            <span className="text-[10px] text-slate-400 font-semibold sm:hidden w-16 shrink-0">주말</span>
-                            <input
-                              type="number"
-                              min={0}
-                              value={rate.weekend || ""}
-                              onChange={(e) => updatePositionWage(pos, "weekend", parseWageInput(e.target.value))}
-                              placeholder={String(fallback.weekend)}
-                              className={`flex-1 sm:w-full text-xs rounded-lg border p-2 bg-white focus:outline-none focus:border-[#2563eb] ${isDefault ? "border-slate-200 text-slate-500" : "border-slate-200"}`}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* ── Section 2: 개인별 시급 ───────────────────────────── */}
-              <div className="space-y-3">
-                <h3 className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
-                  <span className="w-1 h-3 bg-emerald-500 rounded-full inline-block"></span>
-                  개인별 시급
-                  <span className="text-[10px] font-semibold text-slate-400">(직급별 설정 덮어쓰기)</span>
-                </h3>
-
-                {/* Existing overrides list */}
-                {employeesWithOverride.length > 0 ? (
-                  <div className="space-y-1.5">
-                    <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_32px] gap-2 px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wide">
-                      <span>직원</span>
-                      <span>주중 시급 (원)</span>
-                      <span>주말 시급 (원)</span>
-                      <span></span>
-                    </div>
-                    {employeesWithOverride.map((emp) => {
-                      const rate = employeeWageOverrides[emp.id] ?? { weekday: 0, weekend: 0 };
-                      return (
-                        <div
-                          key={emp.id}
-                          className="flex flex-col gap-1.5 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_32px] sm:gap-2 sm:items-center bg-white border border-slate-200 rounded-lg px-3 py-2"
-                        >
-                          <div className="flex items-center justify-between min-w-0">
-                            <span className="text-xs font-semibold text-slate-800 truncate min-w-0">
-                              {emp.name}
-                              <span className="text-[10px] font-medium text-slate-400 ml-1">({emp.position})</span>
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => removeEmployeeOverride(emp.id)}
-                              className="sm:hidden text-slate-300 hover:text-rose-500 transition cursor-pointer p-1 rounded shrink-0 ml-2"
-                              title="개인 시급 제거"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                          <div className="flex items-center gap-1.5 sm:contents">
-                            <span className="text-[10px] text-slate-400 font-semibold sm:hidden w-16 shrink-0">주중</span>
-                            <input
-                              type="number"
-                              min={0}
-                              value={rate.weekday || ""}
-                              onChange={(e) => updateEmployeeOverride(emp.id, "weekday", parseWageInput(e.target.value))}
-                              placeholder="예: 10340"
-                              className="flex-1 sm:w-full text-xs rounded-lg border border-slate-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
-                            />
-                          </div>
-                          <div className="flex items-center gap-1.5 sm:contents">
-                            <span className="text-[10px] text-slate-400 font-semibold sm:hidden w-16 shrink-0">주말</span>
-                            <input
-                              type="number"
-                              min={0}
-                              value={rate.weekend || ""}
-                              onChange={(e) => updateEmployeeOverride(emp.id, "weekend", parseWageInput(e.target.value))}
-                              placeholder="예: 10340"
-                              className="flex-1 sm:w-full text-xs rounded-lg border border-slate-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeEmployeeOverride(emp.id)}
-                            className="hidden sm:block text-slate-300 hover:text-rose-500 transition cursor-pointer p-1 rounded justify-self-center"
-                            title="개인 시급 제거"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-[11px] text-slate-400 italic">아직 개인별 시급이 설정된 직원이 없습니다.</p>
-                )}
-
-                {/* Add new override */}
-                <div className="flex gap-2 pt-1">
-                  <select
-                    value={selectedEmpId === "" ? "" : String(selectedEmpId)}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setSelectedEmpId(v === "" ? "" : Number(v));
-                    }}
-                    className="flex-1 text-xs rounded-lg border border-slate-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
-                  >
-                    <option value="">직원 선택...</option>
-                    {employeesWithoutOverride.map((emp) => (
-                      <option key={emp.id} value={emp.id}>
-                        {emp.name} ({emp.position})
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={addEmployeeOverride}
-                    disabled={selectedEmpId === ""}
-                    className="px-3 py-2 text-xs font-bold bg-[#2563eb] hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-lg flex items-center gap-1 transition cursor-pointer"
-                  >
-                    <Plus size={13} />
-                    추가
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* ─── Account Tab (비밀번호 변경) ─────────────────────── */}
           {activeTab === "account" && (
