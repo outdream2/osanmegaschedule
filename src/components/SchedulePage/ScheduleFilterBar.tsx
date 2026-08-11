@@ -165,34 +165,36 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
             )}
           </div>
 
-          {/* 검색 · 직원등록 · 같은 줄에 이어붙임 (PC) · 좁으면 wrap (반응형 2줄) */}
-          <div className="relative flex-1 min-w-[180px] sm:max-w-xs">
-            <input
-              type="text"
-              placeholder="성명으로 조회 (예: 정윤수)"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full text-[13px] font-medium px-2.5 py-1 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white rounded-lg focus:outline-none placeholder-slate-400 text-slate-800 transition-all min-h-[30px]"
-            />
-            {searchQuery && (
+          {/* 검색 · 직원등록 · 같은 줄 강제 (nowrap · 반응형에서도) */}
+          <div className="flex items-center gap-2 flex-1 min-w-0 flex-nowrap">
+            <div className="relative flex-1 min-w-0 sm:max-w-xs">
+              <input
+                type="text"
+                placeholder="성명으로 조회 (예: 정윤수)"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full text-[14px] font-medium px-2.5 py-1 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white rounded-lg focus:outline-none placeholder-slate-400 text-slate-800 transition-all min-h-[30px]"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute inset-y-0 right-2 flex items-center text-slate-400 hover:text-slate-600 transition-colors text-xs"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            {onCreateEmployee && (
               <button
-                onClick={() => setSearchQuery("")}
-                className="absolute inset-y-0 right-2 flex items-center text-slate-400 hover:text-slate-600 transition-colors text-xs"
+                type="button"
+                onClick={onCreateEmployee}
+                title="새 직원 등록"
+                className="shrink-0 inline-flex items-center justify-center px-3 py-1.5 text-[13px] font-black text-white bg-indigo-600 hover:bg-indigo-700 border border-indigo-600 rounded-lg shadow-sm transition cursor-pointer active:scale-95"
               >
-                ×
+                직원 등록
               </button>
             )}
           </div>
-          {onCreateEmployee && (
-            <button
-              type="button"
-              onClick={onCreateEmployee}
-              title="새 직원 등록"
-              className="shrink-0 inline-flex items-center justify-center px-3 py-1.5 text-[12px] font-black text-white bg-indigo-600 hover:bg-indigo-700 border border-indigo-600 rounded-lg shadow-sm transition cursor-pointer active:scale-95"
-            >
-              직원 등록
-            </button>
-          )}
         </div>
       </div>
   );

@@ -275,7 +275,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     // 2026-07-24 · sm 컴팩트 · md 중간 · lg 정상 (사용자 "모바일/PC 버전 바뀜" 대응)
     //   sm (640-767): 매우 컴팩트 · md (768-1023): 중간 · lg (1024+): 원래대로
     // 2026-08-10 · 사용자 요청 · 공통 헤더 메뉴 텍스트 +2 (13→15, 14→16, 16→18)
-    const base = "flex items-center gap-1 md:gap-1.5 px-2 md:px-3 lg:px-4 py-1.5 md:py-2 rounded-lg text-[15px] md:text-[16px] lg:text-[18px] font-bold border transition-all whitespace-nowrap";
+    const base = "flex items-center gap-1 md:gap-1.5 px-1 md:px-1.5 lg:px-2 py-1 md:py-1 rounded-lg text-[15px] md:text-[16px] lg:text-[18px] font-bold border transition-all whitespace-nowrap";
 
     // 경영관리 탭 · business-manage 통합 페이지로 단순 라우팅 (2026-08-03)
     if (tab.key === "business") {

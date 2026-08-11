@@ -1,4 +1,4 @@
-// src/components/ScheduleCell.tsx
+﻿// src/components/ScheduleCell.tsx
 import React, { useState, useRef, useEffect } from "react";
 import { Schedule } from "../../types";
 import { SCHEDULE_TYPES, getTypeHex, isLightHex } from "../../constants";
@@ -228,7 +228,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
           className="fixed z-[200] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] sm:w-96 max-h-[90dvh] overflow-y-auto bg-white rounded-xl shadow-2xl p-4 border border-[#e2e8f0] text-slate-800 text-left animate-in fade-in duration-100"
         >
           <div className="flex items-center justify-between border-b border-[#e2e8f0] pb-2 mb-3">
-            <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+            <h4 className="text-[15px] font-bold text-slate-900 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded bg-[#2563eb] inline-block"></span>
               스케줄 설정 ({dateStr.split("-").slice(1).join("/")})
             </h4>
@@ -244,36 +244,36 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
           <form onSubmit={handleSave} className="space-y-3">
             {/* Quick One-click Attendance (⚡ 원클릭 근태 빠른 지정) - MOVED TO TOP */}
             <div className="p-2 border border-blue-200 bg-blue-50/50 rounded-xl space-y-1">
-              <label className="block text-[10px] font-black text-blue-850 uppercase tracking-wider flex items-center justify-between">
+              <label className="block text-[13px] font-black text-blue-850 uppercase tracking-wider flex items-center justify-between">
                 <span>⚡ 원클릭 근태 빠른 권역 지정</span>
-                <span className="text-[8px] bg-blue-100/80 rounded px-1.5 py-0.2 text-blue-700 font-bold">빠른 연동</span>
+                <span className="text-[11px] bg-blue-100/80 rounded px-1.5 py-0.2 text-blue-700 font-bold">빠른 연동</span>
               </label>
               <div className="flex flex-wrap gap-1.5 pt-0.5">
                 <button
                   type="button"
                   onClick={() => setActualHours("")}
-                  className="px-2 py-1 text-[10px] font-extrabold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded transition cursor-pointer"
+                  className="px-2 py-1 text-[13px] font-extrabold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded transition cursor-pointer"
                 >
                   초기화
                 </button>
                 <button
                   type="button"
                   onClick={() => { setActualHours("지각"); setWorkingHours(typeHoursMap?.["오픈"] ?? ""); }}
-                  className="px-2 py-1 text-[10px] font-extrabold bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-250 rounded transition cursor-pointer"
+                  className="px-2 py-1 text-[13px] font-extrabold bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-250 rounded transition cursor-pointer"
                 >
                   ⚠️ 지각
                 </button>
                 <button
                   type="button"
                   onClick={() => { setActualHours("조퇴"); }}
-                  className="px-2 py-1 text-[10px] font-extrabold bg-purple-100 hover:bg-purple-200 text-purple-900 border border-purple-250 rounded transition cursor-pointer"
+                  className="px-2 py-1 text-[13px] font-extrabold bg-purple-100 hover:bg-purple-200 text-purple-900 border border-purple-250 rounded transition cursor-pointer"
                 >
                   🏃 조퇴
                 </button>
                 <button
                   type="button"
                   onClick={() => { setActualHours("결근"); setType("결근"); setWorkingHours(""); }}
-                  className="px-2 py-1 text-[10px] font-extrabold bg-rose-100 hover:bg-rose-200 text-rose-900 border border-rose-250 rounded transition cursor-pointer"
+                  className="px-2 py-1 text-[13px] font-extrabold bg-rose-100 hover:bg-rose-200 text-rose-900 border border-rose-250 rounded transition cursor-pointer"
                 >
                   🚨 결근
                 </button>
@@ -297,7 +297,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
                     key={t.value}
                     type="button"
                     onClick={() => applyPreset(t.value)}
-                    className={`px-2 py-1 text-[10px] sm:text-xs rounded border transition cursor-pointer ${
+                    className={`px-2 py-1 text-[13px] sm:text-[15px] rounded border transition cursor-pointer ${
                       isSelected
                         ? `${btnLight ? "text-slate-900" : "text-white"} !border-[#2563eb] ring-1 ring-blue-500/20`
                         : dimmed
@@ -313,7 +313,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
               return (
                 <div className="space-y-1.5">
                   <div>
-                    <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">근무</label>
+                    <label className="block text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-1">근무</label>
                     <div className="flex flex-wrap gap-1.5">
                       {workTypes.map(t => renderBtn(t, currentGroup === "off"))}
                       {otherTypes.map(t => renderBtn(t, false))}
@@ -321,7 +321,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
                   </div>
                   {offTypes.length > 0 && (
                     <div>
-                      <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">휴무/연차</label>
+                      <label className="block text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-1">휴무/연차</label>
                       <div className="flex flex-wrap gap-1.5">
                         {offTypes.map(t => renderBtn(t, currentGroup === "work"))}
                       </div>
@@ -333,7 +333,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
 
             {/* Shift Type (manual or selected from presets) */}
             <div>
-              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+              <label className="block text-[13px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                 스케줄 유형
               </label>
               <select
@@ -346,7 +346,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
                     setWorkingHours(typeHoursMap?.[newType] ?? "");
                   }
                 }}
-                className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white cursor-pointer focus:outline-none"
+                className="w-full text-[15px] rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white cursor-pointer focus:outline-none"
               >
                 <option value="">-- 없음 --</option>
                 {activeScheduleTypes.map((t) => (
@@ -359,7 +359,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
 
             {/* Scheduled Working Hours */}
             <div>
-              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+              <label className="block text-[13px] font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
                 <Clock size={10} /> 근무 시간 (workingHours)
               </label>
               <input
@@ -367,13 +367,13 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
                 value={workingHours}
                 onChange={(e) => setWorkingHours(e.target.value)}
                 placeholder="예: 09:30-18:30"
-                className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white focus:outline-none"
+                className="w-full text-[15px] rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white focus:outline-none"
               />
             </div>
 
             {/* Actual hours details or Notes */}
             <div>
-              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+              <label className="block text-[13px] font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
                 <MessageSquare size={10} /> 실근무/기타 (actualHours)
               </label>
               <input
@@ -381,13 +381,13 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
                 value={actualHours}
                 onChange={(e) => setActualHours(e.target.value)}
                 placeholder="예: 2시간 연장, 지각, 10-20 등"
-                className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white focus:outline-none"
+                className="w-full text-[15px] rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white focus:outline-none"
               />
             </div>
 
             {/* Memo field */}
             <div>
-              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+              <label className="block text-[13px] font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
                 <MessageSquare size={10} className="text-blue-500" /> 마우스 오버 팝업 메모 (memo)
               </label>
               <input
@@ -395,7 +395,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
                 value={memo}
                 onChange={(e) => setMemo(e.target.value)}
                 placeholder="마우스를 올렸을 때 나타날 정보"
-                className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white focus:outline-none"
+                className="w-full text-[15px] rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white focus:outline-none"
               />
             </div>
 
@@ -404,14 +404,14 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="px-3 py-1.5 text-xs font-semibold bg-slate-50 hover:bg-slate-100 rounded border border-[#e2e8f0] text-slate-600 transition cursor-pointer"
+                className="px-3 py-1.5 text-[15px] font-semibold bg-slate-50 hover:bg-slate-100 rounded border border-[#e2e8f0] text-slate-600 transition cursor-pointer"
                 disabled={isSaving}
               >
                 취소
               </button>
               <button
                 type="submit"
-                className="px-3 py-1.5 text-xs font-semibold bg-[#2563eb] hover:bg-blue-700 text-white rounded border border-[#2563eb] inline-flex items-center gap-1 transition cursor-pointer"
+                className="px-3 py-1.5 text-[15px] font-semibold bg-[#2563eb] hover:bg-blue-700 text-white rounded border border-[#2563eb] inline-flex items-center gap-1 transition cursor-pointer"
                 disabled={isSaving}
               >
                 <Save size={12} />

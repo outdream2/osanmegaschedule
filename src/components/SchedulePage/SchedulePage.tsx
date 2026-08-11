@@ -1685,7 +1685,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                   setCurrentMonth(newMonth);
                   setEditMode(false);
                 }}
-                className="ml-1 px-2.5 h-8 sm:h-7 flex items-center text-[11px] sm:text-[10px] font-black text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition cursor-pointer"
+                className="ml-1 px-2.5 h-8 sm:h-7 flex items-center text-[13px] sm:text-[12px] font-black text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition cursor-pointer"
                 title="오늘 날짜로 이동"
               >
                 오늘
@@ -1719,28 +1719,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
             </div>
           </div>
 
-          {/* 2행: 합계/인건비 버튼 + 관리자 버튼 · 반응형에서도 한줄 유지 */}
-          <div className="flex items-center gap-x-2 flex-nowrap justify-between min-w-0">
-            {/* 합계보기 / 인건비보기 토글 버튼 · 통일된 컴팩트 스타일 */}
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                onClick={() => setShowSummary(v => v === "summary" ? "hidden" : "summary")}
-                title="월별 합계(근무일수/시간) 열 표시 토글"
-                className={`px-2.5 py-1.5 text-[13px] sm:text-[15px] rounded-md font-bold border transition cursor-pointer ${showSummary === "summary" ? "bg-indigo-500 text-white border-indigo-500" : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"}`}
-              >
-                합계
-              </button>
-              {isAdmin && (
-                <button
-                  onClick={() => setShowSummary(v => v === "labor" ? "hidden" : "labor")}
-                  title="월별 합계 + 인건비 표시 토글"
-                  className={`px-2.5 py-1.5 text-[13px] sm:text-[15px] rounded-md font-bold border transition cursor-pointer ${showSummary === "labor" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"}`}
-                >
-                  인건비
-                </button>
-              )}
-            </div>
-
+          {/* 2행: 편집·확정·전월복사 → 합계·인건비 (2026-08-11 순서 변경) */}
+          <div className="flex items-center gap-x-2 flex-nowrap justify-start min-w-0">
             {/* 관리자 액션 버튼: 편집 / 확정 / 전월복사 · 통일된 컴팩트 스타일 */}
             {isAdmin && (
               <div className="flex items-center gap-1 shrink-0">
@@ -1793,6 +1773,26 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 )}
               </div>
             )}
+
+            {/* 합계보기 / 인건비보기 토글 버튼 · 편집·확정·전월복사 뒤 (2026-08-11 순서 변경) */}
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={() => setShowSummary(v => v === "summary" ? "hidden" : "summary")}
+                title="월별 합계(근무일수/시간) 열 표시 토글"
+                className={`px-2.5 py-1.5 text-[13px] sm:text-[15px] rounded-md font-bold border transition cursor-pointer ${showSummary === "summary" ? "bg-indigo-500 text-white border-indigo-500" : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"}`}
+              >
+                합계
+              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => setShowSummary(v => v === "labor" ? "hidden" : "labor")}
+                  title="월별 합계 + 인건비 표시 토글"
+                  className={`px-2.5 py-1.5 text-[13px] sm:text-[15px] rounded-md font-bold border transition cursor-pointer ${showSummary === "labor" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"}`}
+                >
+                  인건비
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
