@@ -27,6 +27,10 @@ import type { AuthSession } from "./types";
 import type { AppNavPage } from "./components/layout/AppNavHeader";
 import { prefetchProducts } from "./lib/productsCache";
 import { loadZoneLabelsFromServer } from "./constants/zoneLabels";
+// 2026-08-11 · 사이드바 V2 · feature flag (VITE_SIDEBAR_V2=true) · OFF 면 기존 헤더 그대로
+import { SIDEBAR_ENABLED } from "./hooks/useSidebar";
+import { SidebarProvider, SidebarInset } from "./components/ui/sidebar";
+import { SideNav } from "./components/layout/SideNav";
 
 // 관리자 전용 · 구역 라벨 편집 UI · lazy 로드 (초기 번들 축소)
 const ZoneLabelsEditor = React.lazy(() => import("./components/ZoneLabelsEditor/ZoneLabelsEditor"));
@@ -307,6 +311,25 @@ export default function App() {
         onLogout={handleLogout}
         onAuthOnly={setAuthSession}
       />
+    );
+  }
+
+  // 2026-08-11 · 사이드바 V2 · flag ON 시만 SidebarProvider 로 감쌈 · OFF (기본) 는 기존 그대로
+  if (SIDEBAR_ENABLED) {
+    return (
+      <SidebarProvider>
+        <SideNav
+          authSession={authSession}
+          activePage={page as AppNavPage}
+          onNavigate={(p) => navigate(p as Page)}
+          onLogout={handleLogout}
+        />
+        <SidebarInset>
+          {pageContent}
+          <AppFooter />
+        </SidebarInset>
+        {timeoutWarningOverlay}
+      </SidebarProvider>
     );
   }
 
