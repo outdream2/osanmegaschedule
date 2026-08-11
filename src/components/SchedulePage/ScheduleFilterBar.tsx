@@ -133,7 +133,7 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
                 placeholder="성명으로 조회 (예: 정윤수)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full text-[14px] font-medium px-2.5 py-1 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white rounded-lg focus:outline-none placeholder-slate-400 text-slate-800 transition-all min-h-[30px]"
+                className="w-full text-[14px] font-medium px-2.5 py-1.5 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white rounded-lg focus:outline-none placeholder-slate-400 text-slate-800 transition-all h-[34px]"
               />
               {searchQuery && (
                 <button

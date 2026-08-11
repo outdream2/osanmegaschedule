@@ -1682,21 +1682,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
               >
                 <ChevronRight size={18} />
               </button>
-              <button
-                onClick={() => {
-                  const today = new Date();
-                  const newYear = today.getFullYear();
-                  const newMonth = today.getMonth() + 1;
-                  pendingScrollDateRef.current = todayStr;
-                  setCurrentYear(newYear);
-                  setCurrentMonth(newMonth);
-                  setEditMode(false);
-                }}
-                className="ml-1 px-2.5 h-8 sm:h-7 flex items-center text-[13px] sm:text-[12px] font-black text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition cursor-pointer"
-                title="오늘 날짜로 이동"
-              >
-                오늘
-              </button>
+              {/* 2026-08-11 · 오늘 버튼 · 편집 앞으로 이동됨 (아래 관리자 액션 영역 참조) */}
             </div>
             {/* Legend indicators + 오늘 근무 서머리 · 2026-08-11 · 배지 제거 · 오픈/마감에 시간 표시 */}
             <div className="flex items-baseline gap-3 text-[15px] font-semibold flex-wrap min-w-0">
@@ -1728,8 +1714,23 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
             </div>
           </div>
 
-          {/* 2행: 편집·확정·전월복사 → 합계·인건비 (2026-08-11 순서 변경) */}
+          {/* 2행: 오늘 · 편집·확정·전월복사 → 합계·인건비 (2026-08-11) */}
           <div className="flex items-center gap-x-2 flex-nowrap justify-start min-w-0">
+            {/* 오늘로 이동 (편집 앞 · rose 톤) */}
+            <button
+              type="button"
+              onClick={() => {
+                const today = new Date();
+                pendingScrollDateRef.current = todayStr;
+                setCurrentYear(today.getFullYear());
+                setCurrentMonth(today.getMonth() + 1);
+                setEditMode(false);
+              }}
+              title="오늘 날짜로 이동"
+              className="flex items-center px-2.5 py-1.5 text-[13px] sm:text-[15px] font-bold rounded-md border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-800 transition cursor-pointer shrink-0"
+            >
+              오늘
+            </button>
             {/* 관리자 액션 버튼: 편집 / 확정 / 전월복사 · 통일된 컴팩트 스타일 */}
             {isAdmin && (
               <div className="flex items-center gap-1 shrink-0">
