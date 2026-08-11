@@ -23,6 +23,8 @@ export interface AppSettings {
   scheduleTypes: ScheduleTypeEntry[];
   wageRates: Record<string, WageRate>;
   employeeWageOverrides: Record<number, WageRate>;
+  /** 2026-08-11 · 공사중 (비로그인 랜딩페이지 · 재고 검색 숨김 · "곧 오픈 예정" 표시) */
+  underConstruction?: boolean;
 }
 
 const STORAGE_KEY = "app_settings";
@@ -46,6 +48,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   scheduleTypes: DEFAULT_SCHEDULE_TYPES,
   wageRates: {},
   employeeWageOverrides: {},
+  underConstruction: false,
 };
 
 function isWageRate(v: unknown): v is WageRate {
@@ -125,6 +128,7 @@ function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
     scheduleTypes: migrateScheduleTypes((parsed as Partial<AppSettings> & LegacyScheduleFields).scheduleTypes, parsed as Partial<AppSettings> & LegacyScheduleFields),
     wageRates: sanitizeWageRates(parsed.wageRates),
     employeeWageOverrides: sanitizeEmployeeOverrides(parsed.employeeWageOverrides),
+    underConstruction: parsed.underConstruction === true,
   };
 }
 
@@ -236,6 +240,8 @@ export function useSettings() {
     scheduleTypes: settings.scheduleTypes,
     wageRates: settings.wageRates,
     employeeWageOverrides: settings.employeeWageOverrides,
+    underConstruction: settings.underConstruction === true,
+    settings,
     update,
     saveNow,
   };

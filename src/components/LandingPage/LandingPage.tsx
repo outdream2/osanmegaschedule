@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import axios from "axios";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useSettings } from "../../hooks/useSettings";
 import {
   ChevronRight,
   Clock,
@@ -411,6 +412,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [stockQuery, setStockQuery] = useState("");
   const [stockResults, setStockResults] = useState<StockItem[] | null>(null);
   const [stockSearching, setStockSearching] = useState(false);
+  // 2026-08-11 · 공사중 모드 (설정) · 비로그인 랜딩 · 재고 검색 대신 "곧 오픈 예정" 표시
+  const { settings } = useSettings();
+  const underConstruction = settings.underConstruction === true;
   const stockAbortRef = useRef<AbortController | null>(null);
   const stockDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -1267,7 +1271,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 </div>
                 <div className="text-slate-400 text-[11px] sm:text-xs mt-1 font-semibold tracking-wide">오산 메가타운 약국</div>
               </div>
-              {/* 인라인 재고검색 — 검색바 + 결과 리스트 */}
+              {/* 2026-08-11 · 공사중 모드 · 재고 검색 대신 "곧 오픈 예정" 메시지 */}
+              {underConstruction ? (
+                <div className="w-full rounded-3xl overflow-hidden shadow-xl border border-amber-200 bg-white">
+                  <div className="px-6 py-10 flex flex-col items-center gap-3 text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center">
+                      <Clock size={30} className="text-amber-600" />
+                    </div>
+                    <div className="text-slate-900 font-black text-lg sm:text-xl">곧 오픈 예정입니다</div>
+                    <div className="text-slate-500 text-sm font-semibold">서비스 준비 중 · 잠시만 기다려주세요</div>
+                  </div>
+                </div>
+              ) : (
+              /* 인라인 재고검색 — 검색바 + 결과 리스트 */
               <div className="w-full rounded-3xl overflow-hidden shadow-xl border border-blue-100"
                 style={{ background: "linear-gradient(135deg, #1e3a5f 0%, #1d4ed8 60%, #3b82f6 100%)" }}>
                 <div className="px-5 py-4 flex items-center gap-3 border-b border-blue-400/30">
@@ -1343,6 +1359,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   )}
                 </div>
               </div>
+              )}
 
               {/* 직원·거래처 로그인 — 보조 */}
               <div className="flex gap-2">

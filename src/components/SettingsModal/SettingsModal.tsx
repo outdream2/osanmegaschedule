@@ -417,6 +417,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
           </div>
         )}
 
+        {/* 2026-08-11 · 공사중 모드 · 비로그인 랜딩 · 재고 검색 숨김 + "곧 오픈 예정" 표시 */}
+        <div className="px-6 pt-3 shrink-0">
+          <label className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 hover:border-amber-400 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.underConstruction === true}
+              onChange={(e) => onUpdate({ underConstruction: e.target.checked })}
+              className="w-4 h-4 accent-amber-500"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-black text-slate-800 leading-tight">공사중 (Under Construction)</div>
+              <div className="text-[11px] font-semibold text-slate-500 leading-tight mt-0.5">
+                비로그인 랜딩페이지 · 재고 검색 숨김 · "곧 오픈 예정입니다" 표시
+              </div>
+            </div>
+            <span className={`text-[10px] font-black px-2 py-0.5 rounded ${settings.underConstruction ? "bg-amber-500 text-white" : "bg-slate-200 text-slate-500"}`}>
+              {settings.underConstruction ? "ON" : "OFF"}
+            </span>
+          </label>
+        </div>
+
         {/* Tab Content */}
         <div className="flex-1 overflow-y-auto overflow-x-auto min-w-0 px-6 py-5 space-y-4">
 
