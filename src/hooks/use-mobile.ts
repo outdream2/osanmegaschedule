@@ -1,6 +1,6 @@
 import * as React from "react"
 
-const MOBILE_BREAKPOINT = 1024 // 2026-08-11 · 사용자 지시 · 태블릿(≤1023px)도 사이드바 대신 기존 헤더
+const MOBILE_BREAKPOINT = 768 // 2026-08-12 · 사용자 지시 · iPad Mini 세로(768px) 포함 태블릿에서 사이드바 노출
 
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)

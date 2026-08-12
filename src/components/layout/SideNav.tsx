@@ -1,6 +1,6 @@
 // src/components/layout/SideNav.tsx
 // 2026-08-11 · 사이드바 V2 · shadcn Sidebar + Radix Collapsible · 6그룹 접이식 트리
-// 2026-08-12 · 톤 통일 · AppNavHeader 파스텔 팔레트 + 헤더 그라디언트 배경과 조화
+// 2026-08-12 · 톤 통일 · Linear/Vercel/Notion 2026 · 순백 + 헤어라인 border · 그라디언트 제거
 // 디자인 참고: Notion · Linear · Vercel 2026 · 깔끔하고 세련된 톤
 import React, { useState, useCallback } from "react";
 import { Collapsible } from "radix-ui";
@@ -286,8 +286,7 @@ export const SideNav: React.FC<SideNavProps> = ({
     <Sidebar collapsible="icon" data-sb-v2="">
 
       {/* ── 로고 영역 ── */}
-      {/* 헤더 배경과 조화: 사이드바 배경색(파스텔 블루 슬레이트)보다 살짝 진한 흰 경계 */}
-      <SidebarHeader className="px-2 py-2 pb-1.5 border-b border-slate-200/70">
+      <SidebarHeader className="px-2 py-2 pb-1.5 border-b border-slate-200">
         <button
           type="button"
           onClick={() => onNavigate("landing")}
@@ -296,9 +295,9 @@ export const SideNav: React.FC<SideNavProps> = ({
           className={[
             "w-full flex items-center gap-2.5",
             "px-2 py-1.5 rounded-lg",
-            // 파스텔 블루 계열 hover · --sidebar 배경보다 살짝 진한 파스텔
-            "hover:bg-blue-50/80 transition-colors duration-150",
-            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-200",
+            // Linear/Notion 스타일 · 순백 사이드바 위 subtle slate hover
+            "hover:bg-slate-100/80 transition-colors duration-150",
+            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-300",
             "cursor-pointer",
           ].join(" ")}
         >
@@ -339,8 +338,7 @@ export const SideNav: React.FC<SideNavProps> = ({
       </SidebarContent>
 
       {/* ── 하단: 구분선 + 알림 + 로그아웃 ── */}
-      {/* border 색을 --sidebar-border(파스텔 블루 슬레이트)와 통일 */}
-      <SidebarSeparator className="bg-slate-200/80" />
+      <SidebarSeparator className="bg-slate-200" />
 
       <SidebarFooter className="px-2 py-1.5 gap-0.5">
         {/* 알림 스위치 + 알림 벨 · 로그인 시만 · icon-only 모드에서도 노출 (아이콘만) */}
@@ -374,10 +372,10 @@ export const SideNav: React.FC<SideNavProps> = ({
       </SidebarFooter>
 
       {/* 2026-08-11 · PC 드래그 리사이즈 handle · 오른쪽 가장자리 · md 이상만 노출 */}
-      {/* 2026-08-12 · 파스텔 블루 톤으로 조화 */}
+      {/* 2026-08-12 · Linear/Vercel 스타일 · 중성 slate 톤 */}
       <div
         onMouseDown={startResize}
-        className="hidden md:block absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-blue-200/70 active:bg-blue-300 transition z-30 group-data-[collapsible=icon]:hidden"
+        className="hidden md:block absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-slate-300/60 active:bg-slate-400/60 transition z-30 group-data-[collapsible=icon]:hidden"
         title="드래그하여 사이드바 폭 조절"
         aria-label="사이드바 폭 조절"
         aria-hidden="true"

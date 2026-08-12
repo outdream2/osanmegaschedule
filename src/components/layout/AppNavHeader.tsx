@@ -471,7 +471,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   }
 
   return (
-    <header className="border-b border-[#e2e8f0] shrink-0 shadow-sm" style={{ background: "linear-gradient(160deg, #f8faff 0%, #f3f4ff 50%, #f0fdf4 100%)" }}>
+    <header className="bg-white border-b border-slate-200 shrink-0">
       {/* ── Row 1 (상단): 로고 + 서비스명 · 로그인정보 · 알림 · 로그아웃 (PC/모바일 동일 · 2026-08-04 사용자 요청) ── */}
       <div className="px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
         {/* Left: logo (클릭 시 랜딩 이동) */}
