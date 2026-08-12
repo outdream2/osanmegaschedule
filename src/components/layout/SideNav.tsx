@@ -5,6 +5,7 @@
 import React, { useState, useCallback } from "react";
 import { Collapsible } from "radix-ui";
 import { ChevronRight, LogOut } from "lucide-react";
+import { useIsMobile } from "../../hooks/use-mobile";
 import { NotificationBell } from "../NotificationBell";
 import { NotificationToggle } from "../NotificationToggle";
 import {
@@ -107,7 +108,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
             "flex w-full items-center justify-between",
             "px-2.5 py-1.5 mt-1.5 mb-0",
             "rounded-lg",
-            "text-[17px] leading-none",
+            "text-[19px] leading-none", // 2026-08-12 · 사용자 지시 · 사이드바 폰트 +2
             // 200ms ease-out · 모든 인터랙션 통일
             "transition-all duration-200 ease-out",
             "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-300",
@@ -143,13 +144,12 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
             <span className="tracking-wide">{group.label}</span>
           </span>
 
-          {/* Chevron · pill 배경 + size 14 + opacity-70 (시인성 개선) */}
+          {/* Chevron · 2026-08-12 · 사용자 지시 · 크기 확대 (14→20) + pill 강조 */}
           <span
             className={[
               "flex items-center justify-center",
-              "w-5 h-5 rounded-md",
+              "w-7 h-7 rounded-md",
               "transition-colors duration-200 ease-out",
-              // 그룹 비활성: 배경 없음 · hover 시 subtle pill
               hasActiveItem
                 ? "bg-transparent"
                 : "hover:bg-slate-100",
@@ -157,12 +157,11 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
             aria-hidden="true"
           >
             <ChevronRight
-              size={14}
+              size={20}
               strokeWidth={2.5}
               className={[
-                "shrink-0 opacity-70 transition-transform duration-200 ease-out",
-                // 비활성 그룹 · chevron 색 · text-slate-500
-                hasActiveItem ? groupTone.activeText : "text-slate-500",
+                "shrink-0 opacity-90 transition-transform duration-200 ease-out",
+                hasActiveItem ? groupTone.activeText : "text-slate-600",
                 open ? "rotate-90" : "rotate-0",
               ].join(" ")}
             />
@@ -201,8 +200,8 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                     "group-data-[collapsible=icon]:pl-2 pl-4",
                     // 높이 · 항목 간격
                     "h-7 rounded-lg",
-                    // 하위 항목 텍스트 크기
-                    "text-[16px]",
+                    // 하위 항목 텍스트 크기 · 2026-08-12 · 사용자 지시 +2
+                    "text-[18px]",
                     // 활성 스타일 · pill + glow
                     active
                       ? [
@@ -317,7 +316,9 @@ export const SideNav: React.FC<SideNavProps> = ({
   onNavigate,
   onLogout,
 }) => {
-  const groups = filterGroupsForSession(authSession);
+  const isMobile = useIsMobile();
+  // 2026-08-12 · hideOnMobile 그룹은 반응형(모바일)에서 숨김 (거래처 그룹 등 · PC 관리자 전용)
+  const groups = filterGroupsForSession(authSession).filter(g => !(isMobile && g.hideOnMobile));
   const { startResize } = useSidebarWidth();
   const { brand } = useBrandIdentity();
 
