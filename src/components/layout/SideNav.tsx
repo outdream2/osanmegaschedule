@@ -181,7 +181,8 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
       >
         <SidebarMenu className="gap-0 px-1 pt-0.5 pb-1">
           {group.items.map((item, itemIdx) => {
-            const Icon = item.icon;
+            // 2026-08-12 · 사용자 지시 · 하위 메뉴 아이콘 = 그룹 아이콘 (공통헤더 탭 아이콘) 통일
+            const Icon = group.icon || item.icon;
             const active = isItemActive(item, activePage);
             const tone = COLOR_TONES[item.color];
 
@@ -221,16 +222,16 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                     "transition-all duration-200 ease-out",
                   ].join(" ")}
                 >
-                  {/* 2026-08-12 · 사용자 지시 · 하위 메뉴 왼쪽 · 아이콘 대신 작은 원 (bullet)
-                      · 그룹 헤더는 아이콘 유지 · 시각적 계층 구분 · Icon 참조 제거 */}
-                  <span
-                    aria-hidden="true"
+                  {/* 2026-08-12 · 사용자 지시 · 하위 메뉴 아이콘 = 그룹 아이콘 (공통헤더 탭과 통일) */}
+                  <Icon
+                    size={14}
+                    weight={active ? "fill" : "duotone"}
                     className={[
-                      "shrink-0 rounded-full",
+                      "shrink-0",
                       active
-                        ? `w-2 h-2 ${tone.activeBar} scale-110 shadow-sm`
-                        : "w-1.5 h-1.5 bg-slate-400/60",
-                      "transition-all duration-200 ease-out",
+                        ? [tone.iconActive, "scale-105"].join(" ")
+                        : "text-slate-500",
+                      "transition-transform duration-200 ease-out",
                     ].join(" ")}
                   />
                   <span>{item.label}</span>
