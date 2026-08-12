@@ -110,7 +110,7 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       { key: "scan", label: "상품스캔", icon: ScanSmiley, color: "red", managerOnly: true },
       { key: "productarrival", label: "상품도착", icon: Package, color: "red", managerOnly: true },
       { key: "stockcheck", label: "재고관리", icon: ShoppingCart, color: "red", managerOnly: true },
-      { key: "ocr", label: "거래명세서 OCR", icon: FileMagnifyingGlass, color: "red", managerOnly: true },
+      // 2026-08-12 · 거래명세서 OCR · 매장>매입 서브탭에 이미 있음 · 사이드바 중복 제거
     ],
   },
   {
