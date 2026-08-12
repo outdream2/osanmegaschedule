@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import axios from "axios";
-import { Shield, Check, Loader2, AlertCircle, Settings as SettingsIcon, Users, IdCard, Construction, Plus, Trash2, GripVertical } from "lucide-react";
+import { Shield, Check, Loader2, AlertCircle, Settings as SettingsIcon, Users, IdCard, Construction, Plus, Trash2, GripVertical, Save } from "lucide-react";
 import { updateEmployee } from "../../lib/employeeApi";
 import type { AuthSession, PagePermissions } from "../../types";
 import { DEFAULT_PERMISSIONS } from "../../types";
@@ -76,7 +76,16 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     employeeWageOverrides: settingsEmployeeWageOverrides,
     underConstruction: settingsUnderConstruction,
     update: updateSettings,
+    saveNow: saveSettingsNow,
   } = useSettings();
+
+  // 2026-08-12 · 사용자 지시 · 설정 페이지 저장 버튼 + 토스트 (자동 저장은 이미 debounce 800ms · 이건 즉시 flush + 안내)
+  const [saveToast, setSaveToast] = React.useState<string | null>(null);
+  const handleSaveAll = React.useCallback(async () => {
+    const ok = await saveSettingsNow();
+    setSaveToast(ok ? "저장되었습니다" : "저장 실패");
+    setTimeout(() => setSaveToast(null), 2500);
+  }, [saveSettingsNow]);
 
   // ─── 직군 편집 핸들러 (SettingsModal 이관) ──────────────────────────────
   const addNewPosition = () => {
@@ -248,8 +257,9 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
 
   function renderPermissionsBody() {
     return <>
-        {/* 탭 */}
-        <div className="mb-4 flex flex-wrap bg-slate-100 border border-slate-200 rounded-xl p-0.5 gap-0.5 w-fit">
+        {/* 탭 · 2026-08-12 · 우측에 [저장] 버튼 · saveNow + 토스트 (사용자 지시) */}
+        <div className="mb-4 flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex flex-wrap bg-slate-100 border border-slate-200 rounded-xl p-0.5 gap-0.5 w-fit">
           <button type="button" onClick={() => setTab("permissions")}
             className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[15px] font-black transition cursor-pointer ${tab === "permissions" ? "bg-white text-violet-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
             <Shield size={15} />권한 조정
@@ -266,6 +276,26 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
             className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[15px] font-black transition cursor-pointer ${tab === "construction" ? "bg-white text-amber-600 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
             <Construction size={15} />공사중
           </button>
+          </div>
+          {/* 저장 버튼 · 스케줄/직군/공사중 탭 · saveNow 즉시 flush + 토스트 (권한은 이미 개별 저장) */}
+          {tab !== "permissions" && (
+            <div className="flex items-center gap-2">
+              {saveToast && (
+                <span className={`text-[11px] font-bold px-2 py-1 rounded-full border ${
+                  saveToast.includes("실패")
+                    ? "text-rose-600 bg-rose-50 border-rose-200"
+                    : "text-emerald-600 bg-emerald-50 border-emerald-200"
+                }`}>{saveToast}</span>
+              )}
+              <button
+                type="button"
+                onClick={handleSaveAll}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition cursor-pointer"
+              >
+                <Save size={14} /> 저장
+              </button>
+            </div>
+          )}
         </div>
 
         {tab === "permissions" && (<>
