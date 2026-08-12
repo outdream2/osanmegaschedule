@@ -1,6 +1,8 @@
 import { Router } from "express";
 import webpush from "web-push";
 import { supabase } from "../../../src/supabase/client";
+// 2026-08-13 · #107 · 인앱 알림 hook (전체 직원 broadcast)
+import { notificationsService } from "../../services/notificationsService";
 
 const router = Router();
 
@@ -57,6 +59,12 @@ setInterval(async () => {
     if (error || !data?.length) return;
     for (const row of data) {
       await broadcastPush(row.id, row.title, row.body);
+      // 2026-08-13 · #107 · 예약 발송 · 인앱 알림 (전체 직원)
+      notificationsService.notifyAllEmployees({
+        title: `입고 알림: ${row.title}`,
+        body: row.body ?? null,
+        type: "info",
+      }).catch(() => null);
       await supabase.from("stock_arrivals").update({ broadcast_sent: true }).eq("id", row.id);
       console.log(`[stock-arrivals] 예약 발송 완료: id=${row.id} "${row.title}"`);
     }
@@ -120,6 +128,12 @@ router.post("/api/stock-arrivals", async (req, res) => {
       broadcastPush(arrival.id, title, body ?? null).catch(err =>
         console.error("[stock-arrivals] 브로드캐스트 오류:", err)
       );
+      // 2026-08-13 · #107 · 인앱 알림 (전체 직원 · 벨에도 표시)
+      notificationsService.notifyAllEmployees({
+        title: `입고 알림: ${title}`,
+        body: body ?? null,
+        type: "info",
+      }).catch(() => null);
     }
 
     return res.status(201).json(arrival);
@@ -142,6 +156,12 @@ router.post("/api/stock-arrivals/:id/broadcast", async (req, res) => {
       .from("stock_arrivals").select("id, title, body").eq("id", id).single();
     if (!row) return res.status(404).json({ error: "Not found" });
     await broadcastPush(row.id, row.title, row.body);
+    // 2026-08-13 · #107 · 인앱 알림 (전체 직원)
+    notificationsService.notifyAllEmployees({
+      title: `입고 알림: ${row.title}`,
+      body: row.body ?? null,
+      type: "info",
+    }).catch(() => null);
     const { data: updated } = await supabase
       .from("stock_arrivals")
       .update({ broadcast_sent: true, scheduled_at: null })
