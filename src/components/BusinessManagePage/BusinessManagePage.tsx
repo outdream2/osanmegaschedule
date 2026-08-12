@@ -213,8 +213,8 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
           </Suspense>
         )}
         {subTab === "document-writer" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 py-16">서류작성 로딩 중...</div>}>
-            <DocumentWriterPage {...commonSubPageProps} />
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 py-16">근로계약서 로딩 중...</div>}>
+            <DocumentWriterPage {...commonSubPageProps} allowedTabs={["contract", "settings"]} />
           </Suspense>
         )}
       </main>

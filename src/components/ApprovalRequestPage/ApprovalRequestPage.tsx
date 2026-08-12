@@ -30,9 +30,9 @@ type ArSubTab = "leave" | "lunch" | "document-writer";
 const STORAGE_KEY = "sidebar.subtab.approval-request";
 
 const TABS: TabDef<ArSubTab>[] = [
-  { key: "leave",           label: "연차신청", icon: CalendarDots, color: "sky"    },
-  { key: "lunch",           label: "점심불참", icon: Coffee,       color: "amber"  },
-  { key: "document-writer", label: "서류작성", icon: PencilLine,   color: "violet" },
+  { key: "leave",           label: "연차신청",   icon: CalendarDots, color: "sky"    },
+  { key: "lunch",           label: "점심불참",   icon: Coffee,       color: "amber"  },
+  { key: "document-writer", label: "사직서 작성", icon: PencilLine,   color: "violet" },
 ];
 
 function readInitialSubTab(): ArSubTab {
@@ -112,8 +112,8 @@ const ApprovalRequestPage: React.FC<ApprovalRequestPageProps> = ({
           <LunchPage {...commonSubPageProps} />
         )}
         {subTab === "document-writer" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 py-16">서류작성 로딩 중...</div>}>
-            <DocumentWriterPage {...commonSubPageProps} />
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 py-16">사직서 로딩 중...</div>}>
+            <DocumentWriterPage {...commonSubPageProps} allowedTabs={["resignation"]} />
           </Suspense>
         )}
       </main>

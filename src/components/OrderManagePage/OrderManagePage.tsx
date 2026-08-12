@@ -2,7 +2,7 @@
 // 발주관리 페이지 — 매장관리 · 재고관리 · 입고알림관리 옆의 서브탭으로 노출
 // 기존 요청목록의 '발주요청' 탭 컨텐츠를 독립 페이지로 분리
 // 거래명세서 서브탭에서는 거래명세서 OCR(OcrPage) 노출
-import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import React, { Suspense, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useVendors } from "../../hooks/useVendors";
 // 2026-08-03 (#201) · 발주필요 검색 · 공통 SearchBar · SearchFilterChips · 한글 초성
@@ -14,10 +14,18 @@ import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square,
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
-import { OcrPage } from "../OcrPage";
-// 2026-08-03 · 매입 서브탭 임베드용 · ScanPage · ProductArrivalPage
-import { ScanPage } from "../ScanPage/ScanPage";
-import { ProductArrivalPage } from "../ProductArrivalPage/ProductArrivalPage";
+// 2026-08-12 · C-5 · 매입 서브탭 임베드 페이지 · React.lazy code-split
+//   · OcrPage · ScanPage · ProductArrivalPage · 각각 무겁고 서브탭 진입 시에만 필요
+//   · 초기 발주 리스트 로드시엔 chunk 다운로드 스킵 → 초기 번들 축소
+const OcrPage = React.lazy(() => import("../OcrPage").then(m => ({ default: m.OcrPage })));
+const ScanPage = React.lazy(() => import("../ScanPage/ScanPage").then(m => ({ default: m.ScanPage })));
+const ProductArrivalPage = React.lazy(() => import("../ProductArrivalPage/ProductArrivalPage").then(m => ({ default: m.ProductArrivalPage })));
+
+const SubTabFallback = () => (
+  <div className="flex-1 flex items-center justify-center text-slate-400 text-xs py-16">
+    <Loader2 className="animate-spin mr-2" size={14} />로딩 중...
+  </div>
+);
 import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../layout/AppNavHeader";
 // VendorListEditor · VendorDetailModal · Vendor — split 패널 구성 (static import · panel 모드 지원)
@@ -2238,13 +2246,15 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           {/* ── 거래명세서(OCR) 서브탭 ── */}
           {purchaseSubTab === "receipt" && (
         <div className="flex-1 flex flex-col min-h-0 -mt-1">
-          <OcrPage
-            embedded
-            authSession={ocrTabAuthSession ?? null}
-            onBack={ocrTabOnBack ?? (() => {})}
-            onNavigate={ocrTabOnNavigate}
-            onLogout={ocrTabOnLogout}
-          />
+          <Suspense fallback={<SubTabFallback />}>
+            <OcrPage
+              embedded
+              authSession={ocrTabAuthSession ?? null}
+              onBack={ocrTabOnBack ?? (() => {})}
+              onNavigate={ocrTabOnNavigate}
+              onLogout={ocrTabOnLogout}
+            />
+          </Suspense>
         </div>
           )}
           {/* ── 실재고(reconciliation · ERP vs 실재고 차이만 표시) 서브탭 ── */}
@@ -2255,28 +2265,32 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           )}
           {/* 입고내역 서브탭 · 2026-08-03 · 상품입고 페이지 내부 탭으로 이동 (ProductArrivalPage · arrivalTab: "history") */}
 
-          {/* ── 실재고입력 서브탭 (2026-08-03 · ScanPage 임베드) ── */}
+          {/* ── 실재고입력 서브탭 (2026-08-03 · ScanPage 임베드 · lazy) ── */}
           {purchaseSubTab === "scan" && (
             <div className="flex-1 flex flex-col min-h-0 -mt-1">
-              <ScanPage
-                embedded
-                onBack={ocrTabOnBack ?? (() => {})}
-                authSession={ocrTabAuthSession ?? null}
-                onNavigate={ocrTabOnNavigate}
-                onLogout={ocrTabOnLogout}
-              />
+              <Suspense fallback={<SubTabFallback />}>
+                <ScanPage
+                  embedded
+                  onBack={ocrTabOnBack ?? (() => {})}
+                  authSession={ocrTabAuthSession ?? null}
+                  onNavigate={ocrTabOnNavigate}
+                  onLogout={ocrTabOnLogout}
+                />
+              </Suspense>
             </div>
           )}
-          {/* ── 상품입고 서브탭 (2026-08-03 · ProductArrivalPage 임베드) ── */}
+          {/* ── 상품입고 서브탭 (2026-08-03 · ProductArrivalPage 임베드 · lazy) ── */}
           {purchaseSubTab === "productarrival" && (
             <div className="flex-1 flex flex-col min-h-0 -mt-1">
-              <ProductArrivalPage
-                embedded
-                onBack={ocrTabOnBack ?? (() => {})}
-                authSession={ocrTabAuthSession ?? null}
-                onNavigate={ocrTabOnNavigate}
-                onLogout={ocrTabOnLogout}
-              />
+              <Suspense fallback={<SubTabFallback />}>
+                <ProductArrivalPage
+                  embedded
+                  onBack={ocrTabOnBack ?? (() => {})}
+                  authSession={ocrTabAuthSession ?? null}
+                  onNavigate={ocrTabOnNavigate}
+                  onLogout={ocrTabOnLogout}
+                />
+              </Suspense>
             </div>
           )}
           {/* ── 반품필요 서브탭 ── */}

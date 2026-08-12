@@ -15,15 +15,21 @@ const ContractWriterPage = React.lazy(() => import("../ContractWriterPage/Contra
 const ResignationWriterPage = React.lazy(() => import("../ResignationWriterPage/ResignationWriterPage"));
 const ContractSettingsPage = React.lazy(() => import("../ContractSettingsPage/ContractSettingsPage"));
 
+type DocTab = "contract" | "resignation" | "settings";
+
 interface DocumentWriterPageProps {
   onBack: () => void;
   authSession: AuthSession | null;
   onNavigate?: (page: AppNavPage) => void;
   onLogout?: () => void;
   embedded?: boolean;
+  /** 2026-08-12 · 노출할 탭 화이트리스트
+   *  · undefined = 전체 (하위호환)
+   *  · ["resignation"]           = 승인요청 > 사직서 작성 (직원용)
+   *  · ["contract", "settings"]  = 경영 > 근로계약서 작성 + 설정 (관리자용)
+   */
+  allowedTabs?: DocTab[];
 }
-
-type DocTab = "contract" | "resignation" | "settings";
 
 const TABS: TabDef<DocTab>[] = [
   { key: "contract",    label: "근로계약서 작성", icon: NotePencil, color: "emerald" },
@@ -32,20 +38,34 @@ const TABS: TabDef<DocTab>[] = [
 ];
 
 const DocumentWriterPage: React.FC<DocumentWriterPageProps> = (props) => {
+  // allowedTabs 있으면 그 순서·집합으로 · 없으면 전체
+  const visibleTabs: TabDef<DocTab>[] = props.allowedTabs
+    ? TABS.filter(t => props.allowedTabs!.includes(t.key))
+    : TABS;
+  const isAllowed = (k: DocTab): boolean => visibleTabs.some(t => t.key === k);
+  const defaultTab: DocTab = visibleTabs[0]?.key ?? "contract";
+
   const [tab, setTab] = useState<DocTab>(() => {
     // 2026-08-12 · 사이드바 V2 · localStorage("sidebar.subtab.document-writer") 있으면 초기 탭
     // StrictMode 이중 마운트 대비 · 읽기만 · 삭제는 useEffect 로
+    // allowedTabs 지정 시 · 허용된 탭만 선택
     try {
       const raw = localStorage.getItem("sidebar.subtab.document-writer") as DocTab | null;
-      if (raw === "contract" || raw === "resignation" || raw === "settings") return raw;
+      if ((raw === "contract" || raw === "resignation" || raw === "settings") && isAllowed(raw)) return raw;
     } catch { /* silent */ }
-    return "contract";
+    return defaultTab;
   });
   useEffect(() => {
     try { localStorage.removeItem("sidebar.subtab.document-writer"); } catch { /* silent */ }
   }, []);
+  // allowedTabs 가 바뀌어 현재 탭이 제외되면 · 첫 번째 허용 탭으로 이동
+  useEffect(() => {
+    if (!isAllowed(tab)) setTab(defaultTab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.allowedTabs]);
+
   const isAdmin = (props.authSession?.level ?? 0) >= 8;
-  const sortable = useSortableTabs<TabDef<DocTab>>("tabOrder.documentWriter", TABS, isAdmin);
+  const sortable = useSortableTabs<TabDef<DocTab>>("tabOrder.documentWriter", visibleTabs, isAdmin);
   // 사이드바 V2 · 같은 페이지 내 서브탭 재클릭 대응 (nested)
   useEffect(() => {
     const onSubTab = (e: Event) => {
@@ -53,7 +73,7 @@ const DocumentWriterPage: React.FC<DocumentWriterPageProps> = (props) => {
       if (detail?.page !== "business-manage") return;
       if (detail.subTab !== "document-writer") return;
       const nested = detail.nested as DocTab | null;
-      if (nested === "contract" || nested === "resignation" || nested === "settings") setTab(nested);
+      if ((nested === "contract" || nested === "resignation" || nested === "settings") && isAllowed(nested)) setTab(nested);
     };
     window.addEventListener("sidebar:subtab", onSubTab);
     return () => window.removeEventListener("sidebar:subtab", onSubTab);
