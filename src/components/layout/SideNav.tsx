@@ -132,17 +132,22 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
             "group-data-[collapsible=icon]:hidden",
           ].join(" ")}
         >
-          <span className="flex items-center gap-1.5">
-            {/* 좌측 그룹 컬러 accent dot · w-2.5 h-2.5 (약간 up) · 활성 시 shadow-sm */}
-            <span
-              className={[
-                "w-2.5 h-2.5 rounded-full shrink-0",
-                hasActiveItem
-                  ? groupTone.activeBar + " shadow-sm"
-                  : groupTone.activeBar + " opacity-40",
-              ].join(" ")}
-              aria-hidden="true"
-            />
+          <span className="flex items-center gap-2">
+            {/* 2026-08-12 · 사용자 지시 · 그룹 헤더 왼쪽 · 공통헤더 탭과 동일 아이콘 */}
+            {group.icon && (() => {
+              const GroupIcon = group.icon;
+              return (
+                <GroupIcon
+                  size={18}
+                  weight={hasActiveItem ? "fill" : "duotone"}
+                  className={[
+                    "shrink-0",
+                    hasActiveItem ? groupTone.iconActive : "text-slate-500",
+                    "transition-colors duration-200 ease-out",
+                  ].join(" ")}
+                />
+              );
+            })()}
             <span className="tracking-wide">{group.label}</span>
           </span>
 
