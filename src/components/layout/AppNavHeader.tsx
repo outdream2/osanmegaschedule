@@ -11,9 +11,10 @@ import {
   SquaresFour,
   Calendar,
   ChatCircle,
-  Chat,
   Briefcase,
   FirstAid,
+  CheckSquare,
+  Gear,
 } from "@phosphor-icons/react";
 import type { AuthSession } from "../../types";
 import { NotificationBell } from "../NotificationBell";
@@ -72,14 +73,16 @@ interface TabDef {
 // (기존: 홈 → 매장 → 경영 → 약사 → 스케줄 → 이슈 → 요청 · 무지개 순서 폐기)
 // 2026-08-03: 경영관리 → business-manage 통합 페이지로 단순 라우팅 (팝오버 제거)
 // 2026-08-03: scan · productarrival · ocr 탭 제거 (매장관리 매입 서브탭 및 랜딩 카드에서 접근 · union 유지)
+// 2026-08-12 · 사이드바 그룹 구조와 동기화 · 홈·스케줄·승인요청·매장·경영·약사·이슈·설정
 const TABS: TabDef[] = [
   { key: "landing",       label: "홈",       mobileLabel: "홈",     icon: House,       managerOnly: false, color: "slate"   },
   { key: "schedule",      label: "스케줄",   mobileLabel: "스케줄", icon: Calendar,    managerOnly: false, color: "amber"   },
+  { key: "leave",         label: "승인요청", mobileLabel: "승인",   icon: CheckSquare, managerOnly: true,  color: "indigo"  },
   { key: "display",       label: "매장",     mobileLabel: "매장",   icon: SquaresFour, managerOnly: true,  color: "red"     },
   { key: "business",      label: "경영",     mobileLabel: "경영",   icon: Briefcase,   managerOnly: true,  color: "violet"  },
   { key: "pharmacist",    label: "약사",     mobileLabel: "약사",   icon: FirstAid,    managerOnly: false, pharmacistOnly: true, color: "sky" },
   { key: "board",         label: "이슈",     mobileLabel: "이슈",   icon: ChatCircle,  managerOnly: false, color: "emerald" },
-  // 2026-08-12 · 요청 탭 제거 · 경영 그룹(사이드바) · 랜딩 카드로 접근
+  { key: "permissions",   label: "설정",     mobileLabel: "설정",   icon: Gear,        managerOnly: true,  color: "slate"   },
 ];
 
 // 2026-08-06 · 랜딩 파스텔 톤 통일 · 활성 탭: 파스텔 배경 + 진한 텍스트 + border (흰 배경+진한gradient 제거)
