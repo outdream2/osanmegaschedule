@@ -12,6 +12,8 @@ import { NotificationToggle } from "../NotificationToggle";
 import logoImg from "../../images/logo.png";
 // 2026-08-11 · 사이드바 V2 · flag ON 시 슬림 헤더로 대체
 import { SIDEBAR_ENABLED } from "../../hooks/useSidebar";
+// 2026-08-12 · PC 사이드바 접기 · 헤더에 토글 버튼 노출
+import { SidebarTrigger } from "../ui/sidebar";
 import { useIsMobile } from "../../hooks/use-mobile";
 // 2026-08-12 · 프레임워크 · logo alt 만 brand.shortName 반영 (하드코딩 fallback 유지)
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
@@ -465,12 +467,16 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     );
   };
 
-  // 2026-08-11 · 사이드바 V2 · 데스크탑에서는 헤더 완전 제거 (알림/로그아웃 사이드바로 이관 · rightSlot 만 있으면 미니 헤더)
+  // 2026-08-11 · 사이드바 V2 · 데스크탑에서는 헤더 최소화
+  // 2026-08-12 · 사이드바 접기 토글 (SidebarTrigger) 항상 노출 · rightSlot 있으면 우측에
   if (SIDEBAR_ENABLED && !isMobileNav) {
-    if (!rightSlot) return null;
     return (
-      <div className="flex justify-end px-3 py-1 shrink-0">
-        {rightSlot}
+      <div className="flex items-center justify-between px-3 py-1 shrink-0 bg-white/60 backdrop-blur-sm border-b border-slate-200/50">
+        <SidebarTrigger
+          className="h-7 w-7 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer"
+          aria-label="사이드바 접기/펼치기"
+        />
+        <div className="flex items-center gap-2">{rightSlot}</div>
       </div>
     );
   }
