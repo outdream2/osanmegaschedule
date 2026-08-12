@@ -9,9 +9,10 @@ import {
   Gear, FloppyDisk, Warning, Info, ArrowsClockwise, Database, Robot,
   ChatCircleDots, ImageSquare, Bell, Buildings, UploadSimple,
 } from "@phosphor-icons/react";
-import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
+import type { AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { TabBar, type TabDef } from "../common/TabBar";
+import { SettingsPageShell } from "../common/SettingsPageShell";
 import { CARD_BASE } from "../../styles/tokens";
 
 interface Props {
@@ -132,15 +133,17 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
   const dirty = Object.keys(draft).length > 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <AppNavHeader activePage={"branding" as AppNavPage} authSession={authSession} onBack={onBack} onNavigate={onNavigate} onLogout={onLogout} />
-
-      <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-5 flex flex-col gap-3">
-        <div className="flex items-center gap-2">
-          <Gear size={22} className="text-slate-500" />
-          <h2 className="text-xl font-bold text-slate-800">시스템 설정 (env)</h2>
-        </div>
-
+    <SettingsPageShell
+      activePage={"system-settings" as AppNavPage}
+      authSession={authSession}
+      onBack={onBack}
+      onNavigate={onNavigate}
+      onLogout={onLogout}
+      icon={Gear}
+      iconColor="text-slate-600"
+      title="시스템 설정"
+      description="DB · 인증 · AI/OCR · 알림톡·SMS · 이미지 CDN · Web Push · OCR 수신처 등 서버 env 편집. 저장 후 서버 재시작 시 반영. 관리자(lv 9) 전용."
+    >
         {/* 안내 배너 · 2026-08-12 · 폰트 +2 */}
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-2 text-sm text-amber-800">
           <Warning size={16} weight="fill" className="mt-0.5 shrink-0" />
@@ -237,8 +240,7 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
             {saving ? "저장 중..." : dirty ? `저장 (${Object.keys(draft).length}개)` : "변경 없음"}
           </button>
         </div>
-      </main>
-    </div>
+    </SettingsPageShell>
   );
 };
 

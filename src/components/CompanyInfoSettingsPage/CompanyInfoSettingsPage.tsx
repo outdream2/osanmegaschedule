@@ -4,12 +4,13 @@
 //   · 저장은 useKvSetting 의 debounce 500ms 자동 (필드 변경 즉시 서버 반영)
 //   · 계약서·사직서·PDF 등 다른 화면에서 즉시 참조
 import React from "react";
-import { Buildings, User, IdentificationBadge, MapPin, Phone, Palette, TextT, ImageSquare } from "@phosphor-icons/react";
-import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
+import { Buildings, User, IdentificationBadge, MapPin, Phone, Palette, TextT } from "@phosphor-icons/react";
+import type { AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { useCompanyInfo } from "../../hooks/useCompanyInfo";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { ImageUploadField } from "../common/ImageUploadField";
+import { SettingsPageShell } from "../common/SettingsPageShell";
 import { CARD_BASE } from "../../styles/tokens";
 
 interface Props {
@@ -37,27 +38,26 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
     saveState === "error"  ? "text-rose-600 bg-rose-50 border-rose-200" : "";
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
-      <AppNavHeader
-        activePage={"company-info" as AppNavPage}
-        authSession={authSession}
-        onBack={onBack}
-        onNavigate={onNavigate}
-        onLogout={onLogout}
-        rightSlot={badgeText ? (
-          <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${badgeCls}`}>{badgeText}</span>
-        ) : undefined}
-      />
-      <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-5">
+    <SettingsPageShell
+      activePage={"company-info" as AppNavPage}
+      authSession={authSession}
+      onBack={onBack}
+      onNavigate={onNavigate}
+      onLogout={onLogout}
+      icon={Buildings}
+      iconColor="text-indigo-500"
+      title="회사정보"
+      description="근로계약서·사직서·PDF·각종 서식에 표시되는 사업장 정보 (약국명·대표·사업자·주소·전화) 및 앱 브랜드 (로고·파비콘). 관리자(lv 9) 전용."
+      rightSlot={badgeText ? (
+        <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${badgeCls}`}>{badgeText}</span>
+      ) : undefined}
+    >
         <div className={`${CARD_BASE} p-5 flex flex-col gap-4`}>
           <div>
             <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
               <Buildings size={18} className="text-indigo-500" />
-              회사정보 (사업장 · 법인)
+              사업장 · 법인 정보
             </h2>
-            <p className="text-[11px] text-slate-500 mt-1">
-              근로계약서 · 사직서 · PDF · 각종 서식에 표시되는 사업장 정보입니다. 관리자(lv 9) 전용.
-            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -150,8 +150,7 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
             </div>
           </div>
         </div>
-      </main>
-    </div>
+    </SettingsPageShell>
   );
 };
 
