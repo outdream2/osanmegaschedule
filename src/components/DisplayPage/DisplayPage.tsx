@@ -1270,11 +1270,31 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     );
   }, [activeGroupId]);
 
-  // 2026-08-05 · 사용자 요청 · 구역 단위 진열요청 제거 (상품별 요청으로 전환 · ScanPage 진입점)
-  //   - 담당자 배정 기능은 유지 (zone_assignments · 배정 모달 · dow_map 등 무관)
-  //   - handleQuickRequest 함수는 유지 (다른 곳에서 참조 가능 · 미사용 시 나중에 정리)
-  //   - renderRequestButton · 호출부 5곳 유지 · 여기서 null 반환하여 UI 만 사라짐
-  const renderRequestButton = (_num: number, _id?: string): React.ReactNode => null;
+  // 2026-08-12 · 사용자 요청 · 구역 단위 진열요청 버튼 복구 (구역 아래 한 개씩)
+  //   - 담당자 미배정 구역은 버튼 비활성(dimmed) · 클릭 불가
+  //   - 알림 텍스트에 구역 정보 포함 (handleQuickRequest 내 toast/push에 zone.label 포함됨)
+  const renderRequestButton = (num: number, id?: string): React.ReactNode => {
+    const zoneId = id ?? String(num);
+    const zone = getZoneById(zoneId) ?? zones.find(z => z.num === num && !z.id.match(/[AB]$/));
+    if (!zone) return null;
+    const hasStaff = !!zone.assignedStaffId;
+    return (
+      <button
+        type="button"
+        onClick={() => hasStaff && handleQuickRequest(zone)}
+        disabled={!hasStaff}
+        title={hasStaff ? `${zone.num}번 ${zone.label} 진열 보충 요청` : "담당자 미배정 — 진열요청 불가"}
+        className={`w-full h-6 rounded text-[9px] font-black flex items-center justify-center gap-0.5 transition-all border ${
+          hasStaff
+            ? "bg-rose-500 hover:bg-rose-600 active:scale-95 text-white border-rose-600 cursor-pointer shadow-sm"
+            : "bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed"
+        }`}
+      >
+        <Bell size={8} />
+        {hasStaff ? "진열요청" : "미배정"}
+      </button>
+    );
+  };
   // Helper to render Zone Cell on Blueprint (id-based · A/B 서브존 지원)
   const renderZoneCellById = (id: string, classes = "", wrapperClass = "", hideRequest = false) => {
     const zRaw = getZoneById(id);
@@ -1893,8 +1913,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                 </button>
               </div>
               {/* Simulated 2D Floor Plan Grid matches map.png · 접혀있으면 렌더 X */}
-              <div className={`hidden ${mapCollapsed ? "" : "sm:block"} xl:overflow-x-visible overflow-x-auto`}>
-                <div className="p-2 bg-slate-200 rounded-2xl flex flex-col justify-between border-4 border-emerald-500 shadow-inner gap-2 min-h-[500px] xl:w-full min-w-[820px] w-max relative">
+              <div className={`hidden ${mapCollapsed ? "" : "sm:block"} overflow-x-auto`}>
+                <div className="p-2 bg-slate-200 rounded-2xl flex flex-col justify-between border-4 border-emerald-500 shadow-inner gap-2 min-h-[500px] w-full min-w-[820px] relative">
 
                   {/* ── 물류출근직원 pill (매장 배치도 내부 상단) ── */}
                   {todayStaff.length > 0 && (() => {
