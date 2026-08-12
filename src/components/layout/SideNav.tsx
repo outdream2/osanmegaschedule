@@ -4,7 +4,9 @@
 // 디자인 참고: Notion · Anthropic · Attio · 2026 SaaS Warm Trend
 import React, { useState, useCallback } from "react";
 import { Collapsible } from "radix-ui";
-import { ChevronRight, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
+// 2026-08-12 · 접힘 아이콘 · 화살표 대신 · 아코디언 스타일 Plus/Minus (phosphor)
+import { Plus, Minus } from "@phosphor-icons/react";
 import { useIsMobile } from "../../hooks/use-mobile";
 import { NotificationBell } from "../NotificationBell";
 import { NotificationToggle } from "../NotificationToggle";
@@ -144,27 +146,37 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
             <span className="tracking-wide">{group.label}</span>
           </span>
 
-          {/* Chevron · 2026-08-12 · 사용자 지시 · 크기 확대 (14→20) + pill 강조 */}
+          {/* 2026-08-12 · 아코디언 아이콘 · Plus (닫힘) · Minus (열림) · 시각적 명확 */}
           <span
             className={[
               "flex items-center justify-center",
-              "w-7 h-7 rounded-md",
+              "w-7 h-7 rounded-full border",
               "transition-colors duration-200 ease-out",
               hasActiveItem
-                ? "bg-transparent"
-                : "hover:bg-slate-100",
+                ? "bg-white/70 border-slate-300"
+                : "bg-slate-50 border-slate-200 hover:bg-white",
             ].join(" ")}
             aria-hidden="true"
           >
-            <ChevronRight
-              size={20}
-              strokeWidth={2.5}
-              className={[
-                "shrink-0 opacity-90 transition-transform duration-200 ease-out",
-                hasActiveItem ? groupTone.activeText : "text-slate-600",
-                open ? "rotate-90" : "rotate-0",
-              ].join(" ")}
-            />
+            {open ? (
+              <Minus
+                size={16}
+                weight="bold"
+                className={[
+                  "shrink-0 transition-all duration-200 ease-out",
+                  hasActiveItem ? groupTone.activeText : "text-slate-700",
+                ].join(" ")}
+              />
+            ) : (
+              <Plus
+                size={16}
+                weight="bold"
+                className={[
+                  "shrink-0 transition-all duration-200 ease-out",
+                  hasActiveItem ? groupTone.activeText : "text-slate-600",
+                ].join(" ")}
+              />
+            )}
           </span>
         </button>
       </Collapsible.Trigger>

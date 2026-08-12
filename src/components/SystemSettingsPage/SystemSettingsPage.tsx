@@ -137,13 +137,13 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
 
       <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-5 flex flex-col gap-3">
         <div className="flex items-center gap-2">
-          <Gear size={20} className="text-slate-500" />
-          <h2 className="text-lg font-bold text-slate-800">시스템 설정 (env)</h2>
+          <Gear size={22} className="text-slate-500" />
+          <h2 className="text-xl font-bold text-slate-800">시스템 설정 (env)</h2>
         </div>
 
-        {/* 안내 배너 */}
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-2 text-[12px] text-amber-800">
-          <Warning size={14} weight="fill" className="mt-0.5 shrink-0" />
+        {/* 안내 배너 · 2026-08-12 · 폰트 +2 */}
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-2 text-sm text-amber-800">
+          <Warning size={16} weight="fill" className="mt-0.5 shrink-0" />
           <div>
             <div className="font-bold mb-0.5">저장 후 서버 재시작이 필요합니다.</div>
             <div>여기서 편집한 값은 <code className="px-1 py-0.5 bg-amber-100 rounded">server/tenant.config.json</code> 파일에 저장되고 · 다음 서버 부팅 시 <code className="px-1 py-0.5 bg-amber-100 rounded">process.env</code> 를 덮어씁니다. Render 는 자동 재시작 · 로컬은 수동 재시작.</div>
@@ -151,10 +151,10 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
         </div>
 
         {error && (
-          <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[12px] text-rose-700">{error}</div>
+          <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div>
         )}
         {savedNotice && (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[12px] text-emerald-700">{savedNotice}</div>
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{savedNotice}</div>
         )}
 
         <TabBar<Cat> level={2} tabs={CAT_TABS} activeKey={cat} onSelect={setCat} />
@@ -173,11 +173,11 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
               return (
                 <div key={k} className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between gap-2">
-                    <label className="text-[12px] font-bold text-slate-700 flex items-center gap-1.5">
+                    <label className="text-sm font-bold text-slate-700 flex items-center gap-1.5 flex-wrap">
                       <span>{meta.label}</span>
-                      <span className="text-[10px] font-mono text-slate-400">{k}</span>
-                      {cur?.source === "file" && <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded">파일 저장됨</span>}
-                      {cur?.source === "env"  && <span className="text-[10px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">env 기본값</span>}
+                      <span className="text-xs font-mono text-slate-400">{k}</span>
+                      {cur?.source === "file" && <span className="text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded">파일 저장됨</span>}
+                      {cur?.source === "env"  && <span className="text-xs font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">env 기본값</span>}
                     </label>
                   </div>
                   {meta.multiline ? (
@@ -186,7 +186,7 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
                       onChange={e => patchDraft(k, e.target.value)}
                       placeholder={placeholder}
                       rows={2}
-                      className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-indigo-500 resize-none"
+                      className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
                     />
                   ) : (
                     <input
@@ -194,14 +194,14 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
                       value={isEditing ? draftVal : ""}
                       onChange={e => patchDraft(k, e.target.value)}
                       placeholder={placeholder}
-                      className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-indigo-500"
+                      className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                     />
                   )}
-                  {meta.desc && <p className="text-[10px] text-slate-400">{meta.desc}</p>}
+                  {meta.desc && <p className="text-xs text-slate-400">{meta.desc}</p>}
                 </div>
               );
             })}
-            {!loaded && <p className="text-[11px] text-slate-400 text-center">불러오는 중...</p>}
+            {!loaded && <p className="text-sm text-slate-400 text-center">불러오는 중...</p>}
           </section>
         )}
 
@@ -209,31 +209,31 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
         {cat === "upload" && (
           <section className={CARD_BASE + " p-5 flex flex-col gap-3"}>
             <div className="flex items-center gap-2">
-              <UploadSimple size={18} className="text-orange-500" />
-              <h3 className="text-base font-bold text-slate-800">데이터 업로드</h3>
+              <UploadSimple size={20} className="text-orange-500" />
+              <h3 className="text-lg font-bold text-slate-800">데이터 업로드</h3>
             </div>
-            <p className="text-[12px] text-slate-500 flex items-start gap-1.5">
-              <Info size={12} className="mt-0.5 shrink-0" />
+            <p className="text-sm text-slate-500 flex items-start gap-1.5">
+              <Info size={14} className="mt-0.5 shrink-0" />
               상품목록 · 재고리스트 xlsx 업로드. 이 탭은 이후 커밋에서 · 랜딩 데이터업로드 모달을 이 자리로 이관 예정입니다.
               현재는 랜딩페이지 [데이터 업로드] 카드를 사용하세요.
             </p>
           </section>
         )}
 
-        {/* ── 저장 액션바 ── */}
+        {/* ── 저장 액션바 · 폰트 +2 ── */}
         <div className="flex items-center justify-between gap-2 sticky bottom-0 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl px-3 py-2 shadow-sm">
           <button
             onClick={load}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
           >
-            <ArrowsClockwise size={12} /> 다시 불러오기
+            <ArrowsClockwise size={14} /> 다시 불러오기
           </button>
           <button
             onClick={save}
             disabled={!dirty || saving}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 cursor-pointer"
           >
-            <FloppyDisk size={12} weight="fill" />
+            <FloppyDisk size={14} weight="fill" />
             {saving ? "저장 중..." : dirty ? `저장 (${Object.keys(draft).length}개)` : "변경 없음"}
           </button>
         </div>
