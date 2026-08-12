@@ -155,8 +155,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     topTab: { hideInTopTabs: true }, // 헤더는 유지 · 사이드바 전용
     items: [
       { key: "reservation", label: "방문예약",       icon: CalendarDots, color: "emerald" },
-      // subTab · 랜딩으로 라우팅 + signal 로 모달 open · SideNav 에서 특수 처리
-      { key: "landing",     label: "공급사 정보",     icon: Buildings,    color: "emerald", subTab: "vendor-self"  },
+      // 2026-08-12 · 공급사 정보 · 공통 모듈 (매장>공급사 · VendorListEditor + VendorDetailModal) 연결
+      { key: "display",     label: "공급사 정보",     icon: Buildings,    color: "emerald", subTab: "vendor-manage", managerOnly: true },
       { key: "landing",     label: "공급사 재고확인", icon: Package,      color: "emerald", subTab: "vendor-stock" },
     ],
   },
