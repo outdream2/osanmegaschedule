@@ -1670,21 +1670,23 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 직원 등록
               </button>
             )}
-            {/* 오늘로 이동 (편집 앞 · rose 톤) */}
-            <button
-              type="button"
-              onClick={() => {
-                const today = new Date();
-                pendingScrollDateRef.current = todayStr;
-                setCurrentYear(today.getFullYear());
-                setCurrentMonth(today.getMonth() + 1);
-                setEditMode(false);
-              }}
-              title="오늘 날짜로 이동"
-              className="flex items-center px-2.5 py-1.5 text-[13px] sm:text-[15px] font-bold rounded-md border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-800 transition cursor-pointer shrink-0"
-            >
-              오늘
-            </button>
+            {/* 오늘로 이동 · 2026-08-13 · 사용자 지시 · 관리자만 노출 */}
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => {
+                  const today = new Date();
+                  pendingScrollDateRef.current = todayStr;
+                  setCurrentYear(today.getFullYear());
+                  setCurrentMonth(today.getMonth() + 1);
+                  setEditMode(false);
+                }}
+                title="오늘 날짜로 이동"
+                className="flex items-center px-2.5 py-1.5 text-[13px] sm:text-[15px] font-bold rounded-md border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-800 transition cursor-pointer shrink-0"
+              >
+                오늘
+              </button>
+            )}
             {/* 관리자 액션 버튼: 편집 / 확정 / 전월복사 · 통일된 컴팩트 스타일 */}
             {isAdmin && (
               <div className="flex items-center gap-1 shrink-0">
@@ -1738,25 +1740,18 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
               </div>
             )}
 
-            {/* 합계·인건비 · 전월복사 뒤 (2026-08-11 사용자 요청 · 같은 줄로 복원) */}
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                onClick={() => setShowSummary(v => v === "summary" ? "hidden" : "summary")}
-                title="월별 합계(근무일수/시간) 열 표시 토글"
-                className={`px-2.5 py-1.5 text-[13px] sm:text-[15px] rounded-md font-bold border transition cursor-pointer ${showSummary === "summary" ? "bg-indigo-500 text-white border-indigo-500" : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"}`}
-              >
-                합계(hr)
-              </button>
-              {isAdmin && (
+            {/* 인건비(hr) · 관리자만 · 2026-08-13 · 합계(hr) 제거 · 인건비 → 인건비(hr) 로 통합 */}
+            {isAdmin && (
+              <div className="flex items-center gap-1 shrink-0">
                 <button
                   onClick={() => setShowSummary(v => v === "labor" ? "hidden" : "labor")}
-                  title="월별 합계 + 인건비 표시 토글"
+                  title="월별 합계(근무일수/시간) + 인건비 표시 토글"
                   className={`px-2.5 py-1.5 text-[13px] sm:text-[15px] rounded-md font-bold border transition cursor-pointer ${showSummary === "labor" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"}`}
                 >
-                  인건비
+                  인건비(hr)
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
