@@ -19,6 +19,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
+  SidebarTrigger,
 } from "../ui/sidebar";
 import type { AppNavPage } from "./AppNavHeader";
 import type { AuthSession } from "../../types";
@@ -327,34 +328,41 @@ export const SideNav: React.FC<SideNavProps> = ({
     // warm hairline border · border-r border-slate-200/60
     <Sidebar collapsible="icon" data-sb-v2="" className="border-r border-slate-200/60">
 
-      {/* ── 로고 영역 ── */}
+      {/* ── 로고 영역 · 2026-08-12 · 접기 토글 · 약국이름 옆 · 사이드바 내부 ── */}
       <SidebarHeader className="px-2 py-2 pb-1.5 border-b border-slate-200/60">
-        <button
-          type="button"
-          onClick={() => onNavigate("landing")}
-          title="홈"
-          aria-label="홈으로 이동"
-          className={[
-            "w-full flex items-center gap-2.5",
-            "px-2 py-1.5 rounded-lg",
-            // warm hover
-            "hover:bg-white/70 transition-all duration-200 ease-out",
-            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-300",
-            "cursor-pointer",
-          ].join(" ")}
-        >
-          <img
-            src={brand.logoUrl || logoImg}
-            alt={`${brand.shortName} 로고`}
-            className="w-6 h-6 object-contain shrink-0"
+        <div className="flex items-center gap-1 w-full">
+          <button
+            type="button"
+            onClick={() => onNavigate("landing")}
+            title="홈"
+            aria-label="홈으로 이동"
+            className={[
+              "flex-1 min-w-0 flex items-center gap-2.5",
+              "px-2 py-1.5 rounded-lg",
+              // warm hover
+              "hover:bg-white/70 transition-all duration-200 ease-out",
+              "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-300",
+              "cursor-pointer",
+            ].join(" ")}
+          >
+            <img
+              src={brand.logoUrl || logoImg}
+              alt={`${brand.shortName} 로고`}
+              className="w-6 h-6 object-contain shrink-0"
+            />
+            {/* icon-only 모드에서 숨김 */}
+            <div className="flex flex-col gap-px leading-none group-data-[collapsible=icon]:hidden min-w-0">
+              <span className="text-[14px] font-bold text-slate-800 tracking-tight leading-tight truncate">
+                {brand.shortName}
+              </span>
+            </div>
+          </button>
+          {/* 접기/펼치기 토글 · 사이드바 내부 · 약국이름 우측 · icon 모드에서도 보임 */}
+          <SidebarTrigger
+            className="h-7 w-7 rounded-md text-slate-400 hover:text-slate-800 hover:bg-white/70 transition shrink-0 group-data-[collapsible=icon]:hidden"
+            aria-label="사이드바 접기"
           />
-          {/* icon-only 모드에서 숨김 */}
-          <div className="flex flex-col gap-px leading-none group-data-[collapsible=icon]:hidden">
-            <span className="text-[14px] font-black text-slate-800 tracking-tight leading-tight">
-              {brand.shortName}
-            </span>
-          </div>
-        </button>
+        </div>
       </SidebarHeader>
 
       {/* ── 그룹 트리 ── */}
