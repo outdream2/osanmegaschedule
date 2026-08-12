@@ -18,19 +18,31 @@ interface PermissionsPageProps {
   embedded?: boolean;
 }
 
+// 2026-08-12 · sideNavGroups 확장 · 신규 페이지 반영 (승인요청·경영·설정 등)
 const PAGE_LABELS: { key: keyof PagePermissions; label: string; desc: string }[] = [
-  { key: "schedule",    label: "스케줄 관리",    desc: "직원 월간 근무 스케줄" },
-  { key: "display",     label: "매장진열 관리",   desc: "진열대 점검 및 보충 요청" },
+  { key: "schedule",    label: "스케줄",          desc: "직원 월간 근무 스케줄" },
+  { key: "display",     label: "매장(진열·발주·매입·통계)", desc: "발주·매입·결제·통계·매장구역·공급사 통합" },
   { key: "scan",        label: "상품 스캔",       desc: "바코드 스캔으로 요청" },
-  { key: "requests",    label: "요청목록 조회",   desc: "진열·발주 요청 확인" },
+  { key: "productarrival", label: "상품 도착",    desc: "상품 입고 처리" },
+  { key: "requests",    label: "요청목록",        desc: "진열·발주·연차승인 등 승인 처리" },
   { key: "leave",       label: "연차 신청/승인",  desc: "휴가·연차 신청 및 승인" },
+  { key: "approval-request", label: "승인요청",   desc: "연차·점심불참·사직서 신청" },
   { key: "ocr",         label: "거래명세서 OCR",  desc: "PDF 거래명세서 자동 추출" },
   { key: "upload",      label: "상품 목록 관리",  desc: "xlsx 파일 업로드" },
   { key: "reservation", label: "방문예약",        desc: "상담 및 방문 일정 예약" },
   { key: "lunch",       label: "점심 불참",       desc: "오늘의 점심 불참 신청" },
   { key: "stockcheck",  label: "재고 점검",       desc: "매장 내 의약품 재고 점검" },
-  // 약사 전용 · 열람은 약사(≥3) · 쓰기(자료 업로드)는 관리자(≥8)
+  { key: "stockarrivals", label: "입고알림",      desc: "입고 알림 수신·조회" },
   { key: "pharmacist",  label: "약사 전용",       desc: "교육자료 · 복약지도 · 문서 · 관리자 업로드" },
+  { key: "board",       label: "이슈 게시판",     desc: "공지·이슈 등 게시판" },
+  { key: "business-manage", label: "경영관리",    desc: "직원관리·근로계약서·각종양식" },
+  { key: "hr-forms",    label: "각종 양식",       desc: "HR 서식" },
+  { key: "mypage",      label: "마이페이지",      desc: "본인 정보·비밀번호·계정" },
+  { key: "zone-labels", label: "구역 라벨",       desc: "매장 진열구역 라벨" },
+  { key: "permissions", label: "직원권한 설정",   desc: "페이지·직원별 레벨 관리" },
+  { key: "branding",    label: "앱 브랜딩 설정",  desc: "연락처·도장·모바일 가시성" },
+  { key: "company-info", label: "회사정보 설정",  desc: "약국명·대표·사업자·주소·로고" },
+  { key: "season-settings", label: "계절 정의",   desc: "봄·여름·가을·겨울 월 매핑" },
 ];
 
 const LEVELS = [0,1,2,3,4,5,6,7,8,9];
@@ -263,7 +275,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         {/* 섹션 1 · 페이지별 최소 권한 (컴팩트 · 1행 · desc 는 tooltip) */}
         <div className="mb-2 flex items-center gap-1.5">
           <Shield size={13} className="text-slate-500" />
-          <h2 className="text-[13px] font-black text-slate-700">페이지별 최소 권한</h2>
+          <h2 className="text-[17px] font-black text-slate-700">페이지별 최소 권한</h2>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           {/* Table header */}
@@ -283,8 +295,8 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                   i < PAGE_LABELS.length - 1 ? "border-b border-slate-100" : ""
                 }`}
               >
-                {/* Page name (1행 · desc 는 title tooltip) */}
-                <div className="text-sm font-semibold text-slate-800 truncate">{label}</div>
+                {/* Page name (1행 · desc 는 title tooltip) · 2026-08-12 · 폰트 -1 */}
+                <div className="text-xs font-semibold text-slate-800 truncate">{label}</div>
 
                 {/* Read level */}
                 <div className="flex justify-center">
@@ -534,7 +546,7 @@ const LevelSelect: React.FC<LevelSelectProps> = ({ value, onChange, saving, save
       value={value}
       onChange={e => onChange(Number(e.target.value))}
       disabled={saving}
-      className="appearance-none bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 cursor-pointer disabled:opacity-60 pr-6"
+      className="appearance-none bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 cursor-pointer disabled:opacity-60 pr-6"
     >
       {LEVELS.map(l => (
         <option key={l} value={l}>Lv.{l}{l === 1 ? " (직원)" : l === 9 ? " (최고관리자)" : ""}</option>

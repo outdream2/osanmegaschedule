@@ -404,42 +404,44 @@ const StampsSection: React.FC = () => {
           </div>
         )}
 
-        {/* 추가 폼 */}
+        {/* 추가 폼 · 2026-08-12 · 도장 이미지 파일 업로드 지원 */}
         <div className="mt-2 border-t border-dashed border-slate-200 pt-3">
           <div className="text-[12px] font-bold text-slate-600 mb-2">새 도장 추가</div>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              value={draftName}
-              onChange={(e) => setDraftName(e.target.value)}
-              placeholder="이름 (예: 강남성)"
-              className={INPUT_BASE + " sm:max-w-[180px]"}
-            />
-            <input
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                value={draftName}
+                onChange={(e) => setDraftName(e.target.value)}
+                placeholder="이름 (예: 강남성)"
+                className={INPUT_BASE + " sm:max-w-[180px]"}
+              />
+              <select
+                value={draftFallback}
+                onChange={(e) =>
+                  setDraftFallback(e.target.value as "" | "sungstamp" | "kyustamp")
+                }
+                className={INPUT_BASE + " sm:max-w-[160px]"}
+              >
+                <option value="">Fallback 없음</option>
+                <option value="sungstamp">sungstamp</option>
+                <option value="kyustamp">kyustamp</option>
+              </select>
+              <button
+                type="button"
+                onClick={handleAdd}
+                disabled={!draftName.trim()}
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 text-white text-[12px] font-black shadow-sm transition-colors cursor-pointer whitespace-nowrap sm:ml-auto"
+              >
+                <Plus size={13} weight="bold" /> 추가
+              </button>
+            </div>
+            <ImageUploadField
+              label="도장 이미지"
               value={draftImageUrl}
-              onChange={(e) => setDraftImageUrl(e.target.value)}
-              placeholder="이미지 URL (선택)"
-              className={INPUT_BASE + " flex-1"}
-              type="url"
+              onChange={setDraftImageUrl}
+              prefix={`stamp_${(draftName || "new").replace(/[^a-zA-Z0-9가-힣]/g, "_")}`}
+              hint="파일 업로드 또는 URL 입력 · 비워두면 Fallback 사용"
             />
-            <select
-              value={draftFallback}
-              onChange={(e) =>
-                setDraftFallback(e.target.value as "" | "sungstamp" | "kyustamp")
-              }
-              className={INPUT_BASE + " sm:max-w-[160px]"}
-            >
-              <option value="">Fallback 없음</option>
-              <option value="sungstamp">sungstamp</option>
-              <option value="kyustamp">kyustamp</option>
-            </select>
-            <button
-              type="button"
-              onClick={handleAdd}
-              disabled={!draftName.trim()}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 text-white text-[12px] font-black shadow-sm transition-colors cursor-pointer whitespace-nowrap"
-            >
-              <Plus size={13} weight="bold" /> 추가
-            </button>
           </div>
         </div>
       </div>

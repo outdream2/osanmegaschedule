@@ -63,33 +63,58 @@ export interface PagePermission {
   write: number; // minimum level to edit/submit
 }
 
+// 2026-08-12 · 신규 페이지 반영 (승인요청·경영·설정 등) · 사이드바 그룹과 정합
 export interface PagePermissions {
   schedule: PagePermission;
   display: PagePermission;
   scan: PagePermission;
+  productarrival: PagePermission;
   requests: PagePermission;
   leave: PagePermission;
+  "approval-request": PagePermission;
   ocr: PagePermission;
   upload: PagePermission;
   reservation: PagePermission;
   lunch: PagePermission;
   stockcheck: PagePermission;
+  stockarrivals: PagePermission;
   pharmacist: PagePermission;
+  board: PagePermission;
+  "business-manage": PagePermission;
+  "hr-forms": PagePermission;
+  mypage: PagePermission;
+  "zone-labels": PagePermission;
+  permissions: PagePermission;
+  branding: PagePermission;
+  "company-info": PagePermission;
+  "season-settings": PagePermission;
 }
 
 export const DEFAULT_PERMISSIONS: PagePermissions = {
   schedule:  { read: 1, write: 1 },
   display:   { read: 2, write: 2 },
   scan:      { read: 1, write: 1 },
+  productarrival: { read: 2, write: 2 },
   requests:  { read: 2, write: 2 },
   leave:     { read: 1, write: 1 },
+  "approval-request": { read: 1, write: 1 },
   ocr:       { read: 2, write: 2 },
   upload:    { read: 2, write: 2 },
   reservation: { read: 1, write: 1 },
   lunch:     { read: 1, write: 1 },
   stockcheck: { read: 1, write: 1 },
+  stockarrivals: { read: 2, write: 2 },
   // 약사 전용 · 열람 level ≥ 3 (약사) · 업로드 level ≥ 8 (관리자)
   pharmacist: { read: 3, write: 8 },
+  board:     { read: 1, write: 1 },
+  "business-manage": { read: 2, write: 2 },
+  "hr-forms":       { read: 2, write: 2 },
+  mypage:    { read: 1, write: 1 },
+  "zone-labels":    { read: 2, write: 2 },
+  permissions:      { read: 9, write: 9 },
+  branding:         { read: 9, write: 9 },
+  "company-info":   { read: 9, write: 9 },
+  "season-settings": { read: 9, write: 9 },
 };
 
 export interface MonthlySummary {
