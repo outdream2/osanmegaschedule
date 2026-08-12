@@ -44,8 +44,10 @@ const PharmacistPage = React.lazy(() => import("./components/PharmacistPage/Phar
 const HrFormsPage = React.lazy(() => import("./components/HrFormsPage/HrFormsPage"));
 // 2026-08-12 · 승인요청 통합 페이지 (연차승인·점심불참·서류작성 서브탭) · lazy 로드
 const ApprovalRequestPage = React.lazy(() => import("./components/ApprovalRequestPage/ApprovalRequestPage"));
+// 2026-08-12 · Phase 5 · 브랜딩·연락처·도장·모바일 가시성 통합 설정 페이지 · lazy 로드
+const BrandingSettingsPage = React.lazy(() => import("./components/BrandingSettingsPage/BrandingSettingsPage"));
 
-type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist" | "approval-request";
+type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist" | "approval-request" | "branding";
 
 export default function App() {
   // 전역 모달 스크롤 잠금은 CSS :has() 셀렉터로 처리 (index.css) · JS 훅 불필요
@@ -107,7 +109,7 @@ export default function App() {
     }
   };
 
-  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "approval-request", auth?: AuthSession) => {
+  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "approval-request" | "branding", auth?: AuthSession) => {
     if (auth) setAuthSession(auth);
     navigate(next);
   };
@@ -312,6 +314,18 @@ export default function App() {
     pageContent = (
       <React.Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-400 text-sm">불러오는 중...</div>}>
         <ApprovalRequestPage
+          authSession={authSession}
+          onBack={goBack}
+          onNavigate={navigateInner}
+          onLogout={handleLogout}
+        />
+      </React.Suspense>
+    );
+  } else if (page === "branding") {
+    // 2026-08-12 · Phase 5 · 브랜딩·연락처·도장·모바일 가시성 통합 설정 페이지
+    pageContent = (
+      <React.Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-400 text-sm">불러오는 중...</div>}>
+        <BrandingSettingsPage
           authSession={authSession}
           onBack={goBack}
           onNavigate={navigateInner}

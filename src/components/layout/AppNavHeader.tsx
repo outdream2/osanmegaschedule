@@ -46,7 +46,8 @@ export type AppNavPage =
   | "business-manage"      // 2026-08-03 · 경영관리 통합 페이지
   | "hr-forms"             // 2026-08-03 · 각종 양식 (경영관리 서브탭 · 별도 라우팅 union 유지)
   | "pharmacist"           // 2026-08-03 · 약사 전용 페이지
-  | "approval-request";    // 2026-08-12 · 승인요청 통합 페이지 (연차·점심불참·서류작성 서브탭)
+  | "approval-request"     // 2026-08-12 · 승인요청 통합 페이지 (연차·점심불참·서류작성 서브탭)
+  | "branding";            // 2026-08-12 · Phase 5 · 브랜딩/연락처/도장/모바일 가시성 통합 설정 페이지
 
 // 헤더 내부 탭 렌더용 확장 키 (경영관리 · business-manage 로 라우팅)
 type TabKey = AppNavPage | "business";

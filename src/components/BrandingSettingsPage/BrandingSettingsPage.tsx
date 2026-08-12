@@ -534,8 +534,8 @@ export const BrandingSettingsPage: React.FC<BrandingSettingsPageProps> = ({
     <div className={embedded ? "flex-1 flex flex-col" : "min-h-screen bg-slate-50 flex flex-col"}>
       {!embedded && (
         <AppNavHeader
-          // Phase 3 · 신규 페이지 라우팅 미등록 · 임시로 "permissions" 활성 표시
-          activePage={"permissions" as AppNavPage}
+          // 2026-08-12 · Phase 5 · 라우팅 등록 완료 · activePage 를 "branding" 으로
+          activePage={"branding" as AppNavPage}
           authSession={authSession}
           onBack={onBack}
           onNavigate={onNavigate}

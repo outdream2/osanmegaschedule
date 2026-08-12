@@ -10,6 +10,7 @@ import {
   ChatCircle, FirstAid, FileText,
   Briefcase, Chat, Lock, MapPin,
   UserCircle, UsersThree, CheckSquare, PencilLine,
+  Palette,
   type Icon,
 } from "@phosphor-icons/react";
 import type { AppNavPage } from "./AppNavHeader";
@@ -122,6 +123,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     items: [
       { key: "permissions", label: "직원권한", icon: Lock, color: "slate", minLevel: 9 },
       { key: "zone-labels", label: "구역 라벨", icon: MapPin, color: "slate", managerOnly: true },
+      // 2026-08-12 · Phase 5 · 브랜딩·연락처·도장·모바일 가시성 통합 설정 페이지
+      { key: "branding", label: "앱 브랜딩", icon: Palette, color: "slate", minLevel: 9 },
     ],
   },
   {
