@@ -382,17 +382,11 @@ export const SideNav: React.FC<SideNavProps> = ({
       <SidebarSeparator className="bg-slate-200/60" />
 
       <SidebarFooter className="px-2 py-1.5 gap-0.5">
-        {/* 2026-08-12 · 로그인 정보 (누가 로그인했는지) · 이름 + 역할·레벨 · 이니셜 아바타 제거 */}
-        {authSession && (authSession.employeeName || authSession.role) && (
-          <div className="flex flex-col gap-0.5 px-2.5 py-1.5 rounded-lg bg-indigo-50/50 border border-indigo-100 group-data-[collapsible=icon]:hidden">
-            <span className="text-[13px] font-bold text-indigo-900 truncate leading-tight">
-              {authSession.employeeName ?? "로그인"}
-            </span>
-            <span className="text-[10px] text-indigo-500 leading-tight">
-              {authSession.role === "vendor" ? "거래처" :
-               authSession.role === "superadmin" ? "최고관리자" :
-               authSession.role === "admin" ? "대표" :
-               authSession.role === "manager" ? "관리자" : "직원"}
+        {/* 2026-08-12 · 로그인 정보 · [이름] 만 · 배지/카드 배경 제거 */}
+        {authSession && authSession.employeeName && (
+          <div className="px-2 py-1 group-data-[collapsible=icon]:hidden">
+            <span className="text-[13px] font-bold text-slate-800 truncate leading-tight">
+              [{authSession.employeeName}]
             </span>
           </div>
         )}
