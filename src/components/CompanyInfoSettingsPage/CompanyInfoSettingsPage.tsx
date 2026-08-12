@@ -11,6 +11,8 @@ import { useCompanyInfo } from "../../hooks/useCompanyInfo";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { ImageUploadField } from "../common/ImageUploadField";
 import { SettingsPageShell } from "../common/SettingsPageShell";
+// 2026-08-12 · 회사정보 + 앱브랜딩 통합 · 연락처·도장·모바일 가시성 섹션 임베드
+import { BrandingSectionTabs } from "../BrandingSettingsPage/BrandingSettingsPage";
 import {
   SET_SECTION_TITLE, SET_SECTION_DESC,
   SET_LABEL, SET_INPUT, SET_BADGE,
@@ -154,6 +156,11 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
               />
             </div>
           </div>
+        </div>
+
+        {/* ── 2026-08-12 · 앱 브랜딩 통합 · 연락처·도장·모바일 가시성 3섹션 탭 ── */}
+        <div className="mt-4">
+          <BrandingSectionTabs />
         </div>
     </SettingsPageShell>
   );

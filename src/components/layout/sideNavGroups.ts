@@ -170,10 +170,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     items: [
       { key: "permissions", label: "직원권한", icon: Lock, color: "slate", minLevel: 9 },
       { key: "zone-labels", label: "구역 라벨", icon: MapPin, color: "slate", managerOnly: true },
-      // 2026-08-12 · Phase 5 · 브랜딩·연락처·도장·모바일 가시성 통합 설정 페이지
-      { key: "branding", label: "앱 브랜딩", icon: Palette, color: "slate", minLevel: 9 },
-      // 2026-08-12 · 회사정보 설정 (약국명·대표·사업자·주소·전화)
-      { key: "company-info", label: "회사정보", icon: Buildings, color: "slate", minLevel: 9 },
+      // 2026-08-12 · 회사정보 + 앱브랜딩 통합 페이지 (약국명·대표·사업자·주소·전화·브랜드·연락처·도장·모바일)
+      { key: "company-info", label: "회사·브랜드", icon: Buildings, color: "slate", minLevel: 9 },
       // 2026-08-12 · 계절 정의 (MyPage 에서 이동)
       { key: "season-settings", label: "계절 정의", icon: Calendar, color: "slate", minLevel: 9 },
       // 2026-08-12 · 시스템 설정 (env 편집)

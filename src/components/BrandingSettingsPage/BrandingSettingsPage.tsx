@@ -566,7 +566,7 @@ const BR_TABS: TabDef<BrTab>[] = [
   { key: "stamps",  label: "도장 매핑",      icon: Stamp,        color: "rose"    },
   { key: "mobile",  label: "모바일 가시성",  icon: DeviceMobile, color: "indigo"  },
 ];
-const BrandingSectionTabs: React.FC = () => {
+export const BrandingSectionTabs: React.FC = () => {
   const [tab, setTab] = useState<BrTab>("contact");
   return (
     <>
