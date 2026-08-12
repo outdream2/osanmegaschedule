@@ -352,24 +352,24 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                     <div key={r.id} className={`py-1.5 hover:bg-slate-50/60 transition-all duration-150 rounded-lg ${r.status === "pending" ? "border-l-2 border-amber-300 pl-2" : r.status === "approved" ? "border-l-2 border-emerald-300 pl-2" : "border-l-2 border-rose-300 pl-2"}`}>
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div>
-                          <p className="text-xs font-bold text-gray-900">{r.leave_type}</p>
-                          <p className="text-[11px] text-gray-500 mt-0.5">{fmtDate(r.start_date)} ~ {fmtDate(r.end_date)}</p>
+                          {/* 2026-08-12 · 사용자 지시 · 폰트 +2 (leave_type · 시작일~종료일 · 상태 · 사유 · 관리자 메모 · 신청일 · 검토일) */}
+                          <p className="text-sm font-bold text-gray-900">{r.leave_type}</p>
+                          <p className="text-[13px] text-gray-500 mt-0.5">{fmtDate(r.start_date)} ~ {fmtDate(r.end_date)}</p>
                         </div>
-                        {/* 2026-08-12 · 배지 제거 · 깔끔한 텍스트 · 폰트 +4 (text-[9px] → text-[13px]) */}
-                        <span className={`shrink-0 text-[13px] font-bold ${
+                        <span className={`shrink-0 text-[15px] font-bold ${
                           r.status === "pending" ? "text-amber-600" :
                           r.status === "approved" ? "text-emerald-600" : "text-rose-600"
                         }`}>
                           {STATUS_LABEL[r.status]}
                         </span>
                       </div>
-                      {r.reason && <p className="text-[15px] text-slate-600 mb-2 px-0.5">{r.reason}</p>}
+                      {r.reason && <p className="text-[17px] text-slate-600 mb-2 px-0.5">{r.reason}</p>}
                       {r.reviewer_note && (
-                        <p className="text-[15px] text-indigo-700 mb-2 px-0.5">
+                        <p className="text-[17px] text-indigo-700 mb-2 px-0.5">
                           <span className="font-bold">관리자 메모:</span> {r.reviewer_note}
                         </p>
                       )}
-                      <div className="flex items-center justify-between text-[9px] text-gray-400">
+                      <div className="flex items-center justify-between text-[11px] text-gray-400">
                         <span>신청일: {fmtDateTime(r.created_at)}</span>
                         {r.reviewed_at && <span>검토일: {fmtDateTime(r.reviewed_at)}</span>}
                       </div>
