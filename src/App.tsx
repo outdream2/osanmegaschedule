@@ -430,11 +430,28 @@ const SidebarLayoutWrapper: React.FC<SidebarLayoutProps> = (props) => {
   }
   return <SidebarLayout {...props} />;
 };
+const SIDEBAR_OPEN_KEY = "sidebar.open";
+const readSidebarOpen = (): boolean => {
+  if (typeof window === "undefined") return true;
+  const raw = localStorage.getItem(SIDEBAR_OPEN_KEY);
+  return raw === "false" ? false : true; // 기본 true
+};
+
 const SidebarLayout: React.FC<SidebarLayoutProps> = ({ pageContent, authSession, activePage, navigate, handleLogout, timeoutWarningOverlay }) => {
   const { width } = useSidebarWidth();
+  // 2026-08-12 · PC 사이드바 접기 · localStorage 로 상태 유지 · 헤더 SidebarTrigger 로 토글
+  const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(readSidebarOpen);
+  const handleOpenChange = React.useCallback((next: boolean) => {
+    setSidebarOpen(next);
+    try { localStorage.setItem(SIDEBAR_OPEN_KEY, String(next)); } catch { /* silent */ }
+  }, []);
   return (
     <TooltipProvider delayDuration={200}>
-      <SidebarProvider style={{ "--sidebar-width": `${width}px` } as React.CSSProperties}>
+      <SidebarProvider
+        open={sidebarOpen}
+        onOpenChange={handleOpenChange}
+        style={{ "--sidebar-width": `${width}px` } as React.CSSProperties}
+      >
         <SideNav
           authSession={authSession}
           activePage={activePage}

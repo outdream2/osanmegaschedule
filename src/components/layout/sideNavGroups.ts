@@ -104,7 +104,7 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       { key: "display", label: "통계", icon: ChartBar, color: "red", subTab: "statistics", minLevel: 9 },
       // 입고알림 · dpCanSeeStockArrivals (level ≥ 3)
       { key: "display", label: "입고알림", icon: Bell, color: "red", subTab: "stock-arrivals", minLevel: 3 },
-      { key: "display", label: "매장구역", icon: Storefront, color: "red", subTab: "store", managerOnly: true },
+      { key: "display", label: "매장진열", icon: Storefront, color: "red", subTab: "store", managerOnly: true },
       { key: "display", label: "공급사", icon: Buildings, color: "red", subTab: "vendor-manage", minLevel: 9 },
       // 별도 페이지 (매장 관련) · 2026-08-12 · 상품스캔·상품도착 · 매장>매입 서브탭에 이미 있음 · 사이드바 중복 제거
       { key: "stockcheck", label: "재고관리", icon: ShoppingCart, color: "red", managerOnly: true },
