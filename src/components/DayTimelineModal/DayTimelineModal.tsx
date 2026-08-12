@@ -72,13 +72,14 @@ function buildTypeTones(entries?: ScheduleTypeEntry[]): Record<string, TypeTone>
 // ─── 카테고리 판별 헬퍼 (사원/기타 구분 일관화) ────────────────────────────────
 // 기타 = 알바 고용형태이거나 직종이 "기타"/"알바"인 경우
 // 사원 = 약사도 아니고 기타도 아닌 경우 (캐셔·진열·물류 등 정규 직종)
-export function isOtherEmp(emp: Employee): boolean {
+// 2026-08-13 · #98 · export 제거 · 파일 내부 사용만 (외부 참조 0건)
+function isOtherEmp(emp: Employee): boolean {
   return emp.position === "기타" || emp.position === "알바" || emp.employmentType === "알바";
 }
-export function isPharmEmp(emp: Employee): boolean {
+function isPharmEmp(emp: Employee): boolean {
   return emp.position === "약사";
 }
-export function isStaffEmp(emp: Employee): boolean {
+function isStaffEmp(emp: Employee): boolean {
   return !isPharmEmp(emp) && !isOtherEmp(emp);
 }
 
@@ -1400,7 +1401,7 @@ interface Props {
   onClose: () => void;
   onDateChange?: (newDate: string) => void;
   onEditEmployee?: (emp: Employee) => void;
-  onScheduleUpdate?: () => void;
+  // 2026-08-13 · #98 · onScheduleUpdate · Modal 안 호출 없음 · 완전 dead · 제거
   onUpdateSchedule?: (data: {
     employeeId: number; date: string; type: string;
     workingHours: string; actualHours: string; memo?: string;

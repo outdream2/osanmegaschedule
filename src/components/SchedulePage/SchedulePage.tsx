@@ -2258,7 +2258,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           onClose={() => setTimelineDate(null)}
           onDateChange={setTimelineDate}
           onEditEmployee={isAdmin ? openEditEmployeeModal : undefined}
-          onScheduleUpdate={() => fetchScheduleData(undefined, true)}
           onUpdateSchedule={isAdmin ? handleCellUpdate : undefined}
           scheduleTypeEntries={settingsScheduleTypes}
         />
