@@ -94,8 +94,42 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     updateSettings({ positions: [...PRESET_POSITIONS, trimmed] });
     setNewPositionInput("");
   };
-  const removePositionAt = (idx: number) => {
-    updateSettings({ positions: PRESET_POSITIONS.filter((_, i) => i !== idx) });
+  // 2026-08-12 · #101 · 직군 삭제 안전장치
+  //   · 사용중인 직원 존재 시 · prompt 로 재매핑 대상 직군 입력 · 자동 이동 후 삭제
+  //   · 대체 직군 없으면 · 삭제 차단
+  const removePositionAt = async (idx: number) => {
+    const removing = PRESET_POSITIONS[idx];
+    const others = PRESET_POSITIONS.filter((_, i) => i !== idx);
+    const using = employees.filter(e => (e.position ?? "") === removing);
+
+    if (using.length === 0) {
+      updateSettings({ positions: others });
+      return;
+    }
+    if (others.length === 0) {
+      alert(`❌ 직군 "${removing}" 삭제 불가\n사용중인 직원 ${using.length}명 · 다른 직군을 먼저 추가하세요.`);
+      return;
+    }
+    const newPos = window.prompt(
+      `⚠ "${removing}" 사용중 · 직원 ${using.length}명\n\n재매핑할 직군을 아래 중에서 입력하세요:\n${others.map(p => `  · ${p}`).join("\n")}\n\n입력한 직군으로 자동 이동 후 "${removing}" 을 삭제합니다.`,
+      others[0],
+    );
+    const target = (newPos ?? "").trim();
+    if (!target || !others.includes(target)) {
+      if (newPos !== null) alert(`❌ 취소 · "${newPos}" 는 유효한 직군이 아닙니다.`);
+      return;
+    }
+    try {
+      for (const emp of using) {
+        await updateEmployee(emp, { position: target });
+      }
+      setEmployees(prev => prev.map(e => (e.position === removing) ? { ...e, position: target } : e));
+      updateSettings({ positions: others });
+      setSaveToast(`직원 ${using.length}명 · "${removing}" → "${target}" 재매핑 후 삭제 완료`);
+      setTimeout(() => setSaveToast(null), 4000);
+    } catch (err) {
+      alert(`재매핑 실패 · 삭제 취소: ${(err as any)?.message ?? err}`);
+    }
   };
   const reorderPosition = (fromIdx: number, toIdx: number) => {
     if (fromIdx === toIdx) return;
@@ -104,13 +138,33 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     next.splice(toIdx, 0, moved);
     updateSettings({ positions: next });
   };
-  const commitEditPosition = () => {
+  // 2026-08-12 · #101 · 직군 이름 변경 시 · 사용중인 직원 · 자동 rename (transaction)
+  const commitEditPosition = async () => {
     if (editingPosIdx === null) return;
     const trimmed = editingPosValue.trim();
     const original = PRESET_POSITIONS[editingPosIdx];
     if (!trimmed || trimmed === original) { setEditingPosIdx(null); return; }
     if (PRESET_POSITIONS.includes(trimmed)) { setEditingPosIdx(null); return; }
+
+    const using = employees.filter(e => (e.position ?? "") === original);
     const next = PRESET_POSITIONS.map((p, i) => i === editingPosIdx ? trimmed : p);
+
+    if (using.length > 0) {
+      const ok = window.confirm(
+        `직군 "${original}" → "${trimmed}"\n사용중인 직원 ${using.length}명 · 자동으로 함께 변경됩니다.\n진행할까요?`,
+      );
+      if (!ok) { setEditingPosIdx(null); return; }
+      try {
+        for (const emp of using) {
+          await updateEmployee(emp, { position: trimmed });
+        }
+        setEmployees(prev => prev.map(e => (e.position === original) ? { ...e, position: trimmed } : e));
+      } catch (err) {
+        alert(`직원 재매핑 실패 · 변경 취소: ${(err as any)?.message ?? err}`);
+        setEditingPosIdx(null);
+        return;
+      }
+    }
     updateSettings({ positions: next });
     setEditingPosIdx(null);
   };
