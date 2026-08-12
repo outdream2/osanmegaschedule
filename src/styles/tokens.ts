@@ -122,20 +122,44 @@ export const INPUT_BASE =
   " focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition" +
   " placeholder:text-slate-400";
 
-/** 기본 버튼 · 프라이머리 그라디언트 (indigo → emerald) */
+// 2026-08-13 · #109 · 2025 SaaS 트렌드 (Linear · Vercel · Supabase · Attio · Cal.com)
+//   · 파스텔 톤 (bg-*-50 + text-*-600) 은 badge/chip 용도로만 유지 · 버튼은 filled/outline
+//   · Primary/Danger/Success · filled 600 (짙게) · Secondary · white + border-300 outline
+//   · focus-visible outline · disabled 40% opacity · active:bg-*-800 press feedback
+/** Primary CTA · 저장·제출·주요 확인 · filled indigo-600 (Linear/Vercel 스타일) */
 export const BUTTON_PRIMARY =
-  "px-4 py-2 rounded-lg bg-indigo-500" +
-  " text-white text-[12px] font-black shadow-sm hover:brightness-110 transition cursor-pointer";
+  "px-4 py-2 rounded-lg bg-indigo-600 text-white text-[12px] font-bold shadow-sm" +
+  " hover:bg-indigo-700 active:bg-indigo-800" +
+  " focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600" +
+  " disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer";
 
-/** 보조 버튼 · 테두리형 (outline) */
+/** Secondary · 취소·상세보기·덜 중요한 액션 · white + border outline (Vercel 스타일) */
 export const BUTTON_SECONDARY =
-  "px-4 py-2 rounded-lg border border-slate-200 bg-white" +
-  " text-slate-700 text-[12px] font-bold shadow-sm hover:bg-slate-50 transition cursor-pointer";
+  "px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 text-[12px] font-semibold shadow-sm" +
+  " hover:bg-slate-50 hover:border-slate-400" +
+  " focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400" +
+  " disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer";
 
-/** 위험 버튼 · 삭제·취소 등 */
+/** Destructive · 삭제·해제 · filled rose-600 (Supabase/Height 스타일) */
 export const BUTTON_DANGER =
-  "px-4 py-2 rounded-lg bg-rose-500 text-white text-[12px] font-black shadow-sm" +
-  " hover:bg-rose-600 transition cursor-pointer";
+  "px-4 py-2 rounded-lg bg-rose-600 text-white text-[12px] font-bold shadow-sm" +
+  " hover:bg-rose-700 active:bg-rose-800" +
+  " focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600" +
+  " disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer";
+
+/** Success · 승인·완료 처리 · filled emerald-600 (Supabase 스타일) */
+export const BUTTON_SUCCESS =
+  "px-4 py-2 rounded-lg bg-emerald-600 text-white text-[12px] font-bold shadow-sm" +
+  " hover:bg-emerald-700 active:bg-emerald-800" +
+  " focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600" +
+  " disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer";
+
+/** Ghost/icon · 닫기·메뉴·아이콘 전용 · border 없음 · hover 시만 배경 */
+export const BUTTON_GHOST =
+  "p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700" +
+  " active:bg-slate-200 transition-colors cursor-pointer" +
+  " focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400" +
+  " disabled:opacity-40 disabled:cursor-not-allowed";
 
 /** 모달 backdrop (index.css .modal-backdrop 와 동일 스타일 · 모바일 하단 시트 포함) */
 export const MODAL_BACKDROP =
