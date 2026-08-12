@@ -35,7 +35,6 @@ interface DisplayRequestPanelProps {
   reqFilter: "all" | "pending" | "done";
   setReqFilter: (f: "all" | "pending" | "done") => void;
   setRequests: React.Dispatch<React.SetStateAction<DisplayRequest[]>>;
-  reqPanelWidth: number;
   formatRel: (iso: string) => string;
 }
 
@@ -222,7 +221,6 @@ export const DisplayRequestPanel: React.FC<DisplayRequestPanelProps> = ({
   reqFilter,
   setReqFilter,
   setRequests,
-  reqPanelWidth,
   formatRel,
 }) => {
   const pendingCount = useMemo(() => requests.filter((r) => r.status === "pending").length, [requests]);
@@ -245,8 +243,7 @@ export const DisplayRequestPanel: React.FC<DisplayRequestPanelProps> = ({
 
   return (
     <div
-      className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col shrink-0 overflow-hidden"
-      style={{ width: `min(100%, ${reqPanelWidth}px)` }}
+      className="w-full bg-white rounded-2xl border border-slate-200 shadow-md shadow-slate-200/60 flex flex-col overflow-hidden"
     >
       {/* ── 헤더 ── */}
       <div className="px-3 pt-3 pb-2.5 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">

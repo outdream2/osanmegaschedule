@@ -2960,10 +2960,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     <table className="w-full text-[13px]">
                       <thead>
                         <tr className="bg-slate-100 text-slate-500 font-black uppercase tracking-wide text-[11px] border-b border-slate-200">
-                          {/* 2026-08-10 · 사용자 요청 · 상품명 폭 축소 · 비고 폭 확대 · '비고(메모)' */}
+                          {/* 2026-08-12 · 상품코드 아래 상품명 · 두 컬럼 통합 · 폭 확보 */}
                           <th className="text-center p-2 w-8">#</th>
-                          <th className="text-left p-2 w-24">상품코드</th>
-                          <th className="text-left p-2 w-40">상품명</th>
+                          <th className="text-left p-2 w-56">상품</th>
                           <th className="text-right p-2 w-20">발주수량</th>
                           <th className="text-right p-2 w-24"><div className="leading-tight">이전<br/>사입가</div></th>
                           <th className="text-right p-2 w-28">금액</th>
@@ -2974,8 +2973,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         {s.items.map((it, iIdx) => (
                           <tr key={it.order_request_id} className="hover:bg-slate-50/70">
                             <td className="p-2 text-center text-slate-400 font-black">{iIdx + 1}</td>
-                            <td className="p-2 font-mono text-[12px] text-slate-400">{it.product_code}</td>
-                            <td className="p-2 font-bold text-slate-800 break-words whitespace-normal leading-tight">{it.product_name}</td>
+                            <td className="p-2 leading-tight">
+                              <div className="font-mono text-[12px] text-slate-400">{it.product_code}</div>
+                              <div className="font-bold text-slate-800 break-words whitespace-normal">{it.product_name}</div>
+                            </td>
                             <td className="p-2 text-right">
                               <input type="number" min={1} value={it.order_qty}
                                 onChange={e => updateModalItem(sIdx, iIdx, { order_qty: Math.max(0, Number(e.target.value) || 0) })}

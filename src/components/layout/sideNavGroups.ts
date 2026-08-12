@@ -62,7 +62,7 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     items: [
       { key: "leave",           label: "연차/휴가",   icon: CalendarDots, color: "indigo", managerOnly: true },
       { key: "lunch",           label: "점심불참",    icon: Coffee,       color: "indigo", managerOnly: true },
-      { key: "business-manage", label: "사직서 작성", icon: PencilLine,   color: "indigo", subTab: "document-writer:resignation", managerOnly: true },
+      { key: "business-manage", label: "서류작성",  icon: PencilLine,   color: "indigo", subTab: "document-writer:resignation", managerOnly: true },
     ],
   },
   {

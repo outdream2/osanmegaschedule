@@ -79,7 +79,7 @@ const TABS: TabDef[] = [
   { key: "business",      label: "경영",     mobileLabel: "경영",   icon: Briefcase,   managerOnly: true,  color: "violet"  },
   { key: "pharmacist",    label: "약사",     mobileLabel: "약사",   icon: FirstAid,    managerOnly: false, pharmacistOnly: true, color: "sky" },
   { key: "board",         label: "이슈",     mobileLabel: "이슈",   icon: ChatCircle,  managerOnly: false, color: "emerald" },
-  { key: "requests",      label: "요청",     mobileLabel: "요청",   icon: Chat,        managerOnly: false, color: "cyan"    },
+  // 2026-08-12 · 요청 탭 제거 · 경영 그룹(사이드바) · 랜딩 카드로 접근
 ];
 
 // 2026-08-06 · 랜딩 파스텔 톤 통일 · 활성 탭: 파스텔 배경 + 진한 텍스트 + border (흰 배경+진한gradient 제거)

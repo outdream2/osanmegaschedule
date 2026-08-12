@@ -108,7 +108,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
             "px-2.5 py-1.5 mt-1.5 mb-0",
             "rounded-lg",
             // 그룹 헤더는 15px (하위 항목 14px 보다 한 단계 위) · 계층감
-            "text-[15px] leading-none",
+            "text-[17px] leading-none",
             "transition-all duration-150",
             "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-300",
             // 활성/비활성 톤 · 파스텔 tint + 좌측 세로 accent
@@ -191,7 +191,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                     // 높이 · 항목 간격 · 하위 항목은 헤더보다 컴팩트
                     "h-7 rounded-md",
                     // 하위 항목 텍스트 크기 · 그룹 헤더(15px)보다 한 단계 작게 → 계층감
-                    "text-[14px]",
+                    "text-[16px]",
                     // 활성 스타일
                     active
                       ? [
@@ -249,7 +249,7 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, on
         // CollapsibleGroup 헤더와 동일한 여백·크기로 통일
         "px-2.5 py-1.5 mt-1.5 mb-0",
         "rounded-lg",
-        "text-[15px] leading-none",
+        "text-[17px] leading-none",
         "transition-all duration-150",
         "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-300",
         active
@@ -358,7 +358,7 @@ export const SideNav: React.FC<SideNavProps> = ({
                 className={[
                   // 헤더 로그아웃 버튼 스타일 참고 (rose 계열 · 앱 전체 통일)
                   "h-7 rounded-md pl-2",
-                  "text-[14px] font-semibold",
+                  "text-[16px] font-semibold",
                   "text-rose-500 hover:bg-rose-50 hover:text-rose-600",
                   "transition-colors duration-150",
                 ].join(" ")}

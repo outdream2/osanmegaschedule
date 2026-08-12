@@ -70,7 +70,6 @@ import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 // 2026-08-05 · 관리자(level>=8) long-press 드래그 재정렬 · localStorage 순서 저장
 import { useSortableTabs } from "../../hooks/useSortableTabs";
 import { useConfirm } from "../../hooks/useConfirm";
-import { useResizablePanel } from "../../hooks/useResizablePanel";
 // 2026-08-03 · StaffManagePage · 매장관리 서브탭에서 제거 · 경영관리 통합 페이지(BusinessManagePage)로 이동
 import type { AuthSession } from "../../types";
 
@@ -944,13 +943,6 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     return () => clearTimeout(t);
   }, [zoneGroups, zoneGroupsLoaded]);
 
-  // 좌우 폭 조절 (실시간 보충요청 폭 · useResizablePanel 훅 · god-phase1)
-  const { width: reqPanelWidth, startResize: startReqPanelResize } = useResizablePanel({
-    storageKey: "megatown_req_panel_w",
-    defaultWidth: 380,
-    minWidth: 240,
-    maxWidth: 720,
-  });
 
   // ── Persist: save to localStorage immediately; debounce DB save ──────────────
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -2102,130 +2094,115 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
                   </div>
 
-                  {/* SECTION 2 + 실시간 보충요청 (2열 배치 · 보충요청 왼쪽 · 윙 오른쪽 축소) */}
-                  <div className="w-full flex flex-col lg:flex-row gap-2 mt-2 items-stretch">
+                  {/* SECTION 2: 동측 윙 — 전체 폭 */}
+                  <div className="w-full mt-2 bg-white border border-slate-200 rounded-2xl p-3 flex flex-col gap-3 shadow-md shadow-slate-200/60 relative">
 
-                    {/* 실시간 진열 보충 요청 현황 — 드래그로 폭 조절 가능 */}
-                    <DisplayRequestPanel
-                      filteredReqs={filteredReqs}
-                      requests={requests}
-                      reqFilter={reqFilter}
-                      setReqFilter={setReqFilter}
-                      setRequests={setRequests}
-                      reqPanelWidth={reqPanelWidth}
-                      formatRel={formatRel}
-                    />
-
-                    {/* 리사이즈 핸들 — 좌우 폭 조절 · 데스크탑만 */}
-                    <div
-                      onMouseDown={startReqPanelResize}
-                      className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-emerald-400 rounded-full cursor-col-resize transition-all shrink-0 relative group"
-                      title="드래그하여 폭 조절"
-                    >
-                      <span className="text-[10px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
-                    </div>
-
-                    {/* SECTION 2: 우측 윙 — 남는 공간 모두 사용 · 미니멀 세련 톤 */}
-                    <div className="flex-1 min-w-0 lg:min-w-[400px] bg-white border border-slate-200 rounded-2xl p-3 flex flex-col gap-3 shadow-md shadow-slate-200/60 relative">
-
-                      <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-lg bg-slate-900 flex items-center justify-center shadow-sm">
-                            <span className="text-[10px]">🚪</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-[10px] font-black text-slate-900 leading-none">동측 윙</span>
-                            <span className="text-[8px] font-semibold text-slate-400 leading-none mt-0.5 uppercase tracking-wider">Counter · Event · Front Display</span>
-                          </div>
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-slate-900 flex items-center justify-center shadow-sm">
+                          <span className="text-[10px]">🚪</span>
                         </div>
-                        {/* 미니 위치 다이어그램 · 세련된 카드 */}
-                        <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
-                          <svg width="30" height="24" viewBox="0 0 42 34" className="shrink-0" aria-label="수직윙 위치">
-                            <rect x="1" y="1" width="30" height="20" rx="1.5" fill="none" stroke="#cbd5e1" strokeWidth="1.2" />
-                            <rect x="31" y="1" width="10" height="32" rx="1.5" fill="#0f172a" />
-                            <circle cx="36" cy="17" r="2" fill="#fbbf24" />
-                          </svg>
-                          <span className="text-[8px] font-bold text-slate-600 leading-none">현재 위치</span>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-black text-slate-900 leading-none">동측 윙</span>
+                          <span className="text-[8px] font-semibold text-slate-400 leading-none mt-0.5 uppercase tracking-wider">Counter · Event · Front Display</span>
                         </div>
                       </div>
-
-                      {/* 1단: 베스트존 (이벤트 3구역) — 35·36·37 */}
-                      <div className="w-full bg-slate-50/60 rounded-xl p-2.5 flex flex-col gap-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[9px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1">
-                            <span className="w-1 h-3 bg-amber-500 rounded-full inline-block" />
-                            베스트존
-                          </span>
-                          <span className="text-[8px] font-semibold text-slate-400">이벤트 3구역 · 35·36·37</span>
-                        </div>
-                        <div className="flex gap-1.5 items-stretch">
-                          {[35, 36, 37].map(num => (
-                            <div key={`event-slot-${num}`} className="flex-1 flex flex-col gap-0.5">
-                              <span className="text-[8px] font-bold text-slate-500 leading-none">이벤트 · {num}</span>
-                              {renderZoneCell(num, "w-full h-[70px] text-[9px] p-1 justify-center")}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* 2단: 메인 카운터 (40 A/B/C) */}
-                      <div className="w-full bg-slate-50/60 rounded-xl p-2.5 flex flex-col gap-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[9px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1">
-                            <span className="w-1 h-3 bg-slate-900 rounded-full inline-block" />
-                            메인 카운터
-                          </span>
-                          <span className="text-[8px] font-semibold text-slate-400">3구역 · 40A · 40B · 40C</span>
-                        </div>
-                        <div className="flex gap-1.5 items-stretch">
-                          {(["A", "B", "C"] as const).map((side) => (
-                            <div key={`counter-${side}`} className="flex-1 flex flex-col gap-0.5">
-                              <span className="text-[8px] font-bold text-slate-500 leading-none">카운터 {side === "A" ? "1" : side === "B" ? "2" : "3"}</span>
-                              {renderZoneCellById(`40${side}`, "w-full h-[70px] justify-between items-center text-[9px] p-1 bg-slate-800 text-white", "", true)}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* 3단: 정면 약진열 (38) + 시설 (41, 39) */}
-                      <div className="w-full flex gap-2">
-                        <div className="flex-[3] bg-slate-50/60 rounded-xl p-2.5 flex flex-col gap-1.5">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1">
-                              <span className="w-1 h-3 bg-emerald-500 rounded-full inline-block" />
-                              정면 약진열
-                            </span>
-                            <span className="text-[8px] font-semibold text-slate-400">38</span>
-                          </div>
-                          {renderZoneCell(38, "w-full h-[70px] justify-center bg-emerald-600 text-white text-[9px] p-1 font-bold")}
-                        </div>
-                        <div className="flex-[2] bg-slate-50/60 rounded-xl p-2.5 flex flex-col gap-1.5">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1">
-                              <span className="w-1 h-3 bg-slate-400 rounded-full inline-block" />
-                              시설
-                            </span>
-                          </div>
-                          <div className="flex gap-1.5 flex-1">
-                            <div className="flex-1 flex flex-col gap-0.5">
-                              <span className="text-[8px] font-bold text-slate-500 leading-none">☕ 휴게실</span>
-                              {renderZoneCell(41, "w-full h-[70px] text-[9px] bg-slate-200 text-slate-700 justify-center border-none")}
-                            </div>
-                            <div className="flex-1 flex flex-col gap-0.5">
-                              <span className="text-[8px] font-bold text-slate-500 leading-none">🗄️ 사물함</span>
-                              {renderZoneCell(39, "w-full h-[70px] text-[9px] bg-slate-200 text-slate-700 justify-center border-none")}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between items-center text-[8px] text-slate-400 pt-1 leading-none">
-                        <span>🛗 1층 연결 EV · 🛒 카트존</span>
-                        <span>🚰 수도 시설</span>
+                      {/* 미니 위치 다이어그램 · 세련된 카드 */}
+                      <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
+                        <svg width="30" height="24" viewBox="0 0 42 34" className="shrink-0" aria-label="수직윙 위치">
+                          <rect x="1" y="1" width="30" height="20" rx="1.5" fill="none" stroke="#cbd5e1" strokeWidth="1.2" />
+                          <rect x="31" y="1" width="10" height="32" rx="1.5" fill="#0f172a" />
+                          <circle cx="36" cy="17" r="2" fill="#fbbf24" />
+                        </svg>
+                        <span className="text-[8px] font-bold text-slate-600 leading-none">현재 위치</span>
                       </div>
                     </div>
 
-                  </div>{/* end 2-column row */}
+                    {/* 1단: 베스트존 (이벤트 3구역) — 35·36·37 */}
+                    <div className="w-full bg-slate-50/60 rounded-xl p-2.5 flex flex-col gap-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1">
+                          <span className="w-1 h-3 bg-amber-500 rounded-full inline-block" />
+                          베스트존
+                        </span>
+                        <span className="text-[8px] font-semibold text-slate-400">이벤트 3구역 · 35·36·37</span>
+                      </div>
+                      <div className="flex gap-1.5 items-stretch">
+                        {[35, 36, 37].map(num => (
+                          <div key={`event-slot-${num}`} className="flex-1 flex flex-col gap-0.5">
+                            <span className="text-[8px] font-bold text-slate-500 leading-none">이벤트 · {num}</span>
+                            {renderZoneCell(num, "w-full h-[70px] text-[9px] p-1 justify-center")}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 2단: 메인 카운터 (40 A/B/C) */}
+                    <div className="w-full bg-slate-50/60 rounded-xl p-2.5 flex flex-col gap-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1">
+                          <span className="w-1 h-3 bg-slate-900 rounded-full inline-block" />
+                          메인 카운터
+                        </span>
+                        <span className="text-[8px] font-semibold text-slate-400">3구역 · 40A · 40B · 40C</span>
+                      </div>
+                      <div className="flex gap-1.5 items-stretch">
+                        {(["A", "B", "C"] as const).map((side) => (
+                          <div key={`counter-${side}`} className="flex-1 flex flex-col gap-0.5">
+                            <span className="text-[8px] font-bold text-slate-500 leading-none">카운터 {side === "A" ? "1" : side === "B" ? "2" : "3"}</span>
+                            {renderZoneCellById(`40${side}`, "w-full h-[70px] justify-between items-center text-[9px] p-1 bg-slate-800 text-white", "", true)}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 3단: 정면 약진열 (38) + 시설 (41, 39) */}
+                    <div className="w-full flex gap-2">
+                      <div className="flex-[3] bg-slate-50/60 rounded-xl p-2.5 flex flex-col gap-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1">
+                            <span className="w-1 h-3 bg-emerald-500 rounded-full inline-block" />
+                            정면 약진열
+                          </span>
+                          <span className="text-[8px] font-semibold text-slate-400">38</span>
+                        </div>
+                        {renderZoneCell(38, "w-full h-[70px] justify-center bg-emerald-600 text-white text-[9px] p-1 font-bold")}
+                      </div>
+                      <div className="flex-[2] bg-slate-50/60 rounded-xl p-2.5 flex flex-col gap-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1">
+                            <span className="w-1 h-3 bg-slate-400 rounded-full inline-block" />
+                            시설
+                          </span>
+                        </div>
+                        <div className="flex gap-1.5 flex-1">
+                          <div className="flex-1 flex flex-col gap-0.5">
+                            <span className="text-[8px] font-bold text-slate-500 leading-none">☕ 휴게실</span>
+                            {renderZoneCell(41, "w-full h-[70px] text-[9px] bg-slate-200 text-slate-700 justify-center border-none")}
+                          </div>
+                          <div className="flex-1 flex flex-col gap-0.5">
+                            <span className="text-[8px] font-bold text-slate-500 leading-none">🗄️ 사물함</span>
+                            {renderZoneCell(39, "w-full h-[70px] text-[9px] bg-slate-200 text-slate-700 justify-center border-none")}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center text-[8px] text-slate-400 pt-1 leading-none">
+                      <span>🛗 1층 연결 EV · 🛒 카트존</span>
+                      <span>🚰 수도 시설</span>
+                    </div>
+                  </div>{/* end SECTION 2 동측 윙 */}
+
+                  {/* 실시간 진열 보충 요청 현황 — 매장구역도 전체 아래 · 전체 폭 */}
+                  <DisplayRequestPanel
+                    filteredReqs={filteredReqs}
+                    requests={requests}
+                    reqFilter={reqFilter}
+                    setReqFilter={setReqFilter}
+                    setRequests={setRequests}
+                    formatRel={formatRel}
+                  />
 
                 </div>
               </div>{/* end overflow-x-auto */}
