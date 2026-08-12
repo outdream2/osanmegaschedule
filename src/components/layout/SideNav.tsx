@@ -5,8 +5,8 @@
 import React, { useState, useCallback } from "react";
 import { Collapsible } from "radix-ui";
 import { LogOut } from "lucide-react";
-// 2026-08-12 · 접힘 아이콘 · 화살표 대신 · 아코디언 스타일 Plus/Minus (phosphor)
-import { Plus, Minus } from "@phosphor-icons/react";
+// 2026-08-12 · 접힘 아이콘 · CaretDown (Radix/shadcn 표준 · 부드러운 화살표)
+import { CaretDown } from "@phosphor-icons/react";
 import { useIsMobile } from "../../hooks/use-mobile";
 import { NotificationBell } from "../NotificationBell";
 import { NotificationToggle } from "../NotificationToggle";
@@ -146,37 +146,25 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
             <span className="tracking-wide">{group.label}</span>
           </span>
 
-          {/* 2026-08-12 · 아코디언 아이콘 · Plus (닫힘) · Minus (열림) · 시각적 명확 */}
+          {/* 2026-08-12 · CaretDown · 닫힘 = -90도 (좌) · 열림 = 0도 (아래) · 부드러운 화살표 */}
           <span
             className={[
               "flex items-center justify-center",
-              "w-7 h-7 rounded-full border",
+              "w-7 h-7 rounded-md",
               "transition-colors duration-200 ease-out",
-              hasActiveItem
-                ? "bg-white/70 border-slate-300"
-                : "bg-slate-50 border-slate-200 hover:bg-white",
+              hasActiveItem ? "bg-transparent" : "hover:bg-slate-100",
             ].join(" ")}
             aria-hidden="true"
           >
-            {open ? (
-              <Minus
-                size={16}
-                weight="bold"
-                className={[
-                  "shrink-0 transition-all duration-200 ease-out",
-                  hasActiveItem ? groupTone.activeText : "text-slate-700",
-                ].join(" ")}
-              />
-            ) : (
-              <Plus
-                size={16}
-                weight="bold"
-                className={[
-                  "shrink-0 transition-all duration-200 ease-out",
-                  hasActiveItem ? groupTone.activeText : "text-slate-600",
-                ].join(" ")}
-              />
-            )}
+            <CaretDown
+              size={18}
+              weight="bold"
+              className={[
+                "shrink-0 transition-transform duration-200 ease-out",
+                hasActiveItem ? groupTone.activeText : "text-slate-600",
+                open ? "rotate-0" : "-rotate-90",
+              ].join(" ")}
+            />
           </span>
         </button>
       </Collapsible.Trigger>

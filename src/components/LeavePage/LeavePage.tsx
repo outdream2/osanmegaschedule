@@ -216,29 +216,31 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
         {/* ── 직원 뷰 (신청) ── 2026-08-12 · 글씨 -1 단계 · 무게 살짝 완화 */}
         {showApply && (
           <div className="flex flex-col gap-4">
-            {/* 잔여 연차 배너 · 2026-08-12 · /api/leave-balance */}
-            {balance && (
-              <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CalendarDays size={16} className="text-green-600" />
-                  <span className="text-xs font-semibold text-slate-700">남은 연차</span>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-lg font-bold text-green-700 tabular-nums">{balance.remaining}</span>
-                  <span className="text-[10px] text-slate-400">일 / 총 {balance.total}일 (사용 {balance.used}일)</span>
-                </div>
+            {/* 잔여 배너 + 신청 버튼 · 2026-08-12 · 사용자 지시 · 나란히 배치 */}
+            {(balance || !showForm) && (
+              <div className="flex items-stretch gap-2">
+                {balance && (
+                  <div className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CalendarDays size={16} className="text-green-600" />
+                      <span className="text-xs font-semibold text-slate-700">남은 연차</span>
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-lg font-bold text-green-700 tabular-nums">{balance.remaining}</span>
+                      <span className="text-[10px] text-slate-400">일 / 총 {balance.total}일 (사용 {balance.used}일)</span>
+                    </div>
+                  </div>
+                )}
+                {!showForm && (
+                  <button
+                    onClick={() => setShowForm(true)}
+                    className="shrink-0 flex items-center justify-center gap-1.5 px-4 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold text-xs shadow-sm transition-all duration-150 cursor-pointer"
+                  >
+                    <Plus size={14} />
+                    연차 신청
+                  </button>
+                )}
               </div>
-            )}
-
-            {/* 신청 버튼 */}
-            {!showForm && (
-              <button
-                onClick={() => setShowForm(true)}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold text-xs shadow-sm transition-all duration-150 cursor-pointer"
-              >
-                <Plus size={16} />
-                연차 신청하기
-              </button>
             )}
 
             {/* 신청 폼 */}
@@ -353,14 +355,18 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                           <p className="text-xs font-bold text-gray-900">{r.leave_type}</p>
                           <p className="text-[11px] text-gray-500 mt-0.5">{fmtDate(r.start_date)} ~ {fmtDate(r.end_date)}</p>
                         </div>
-                        <span className={`shrink-0 text-[9px] font-semibold px-2 py-1 rounded-full border ${STATUS_COLOR[r.status]}`}>
+                        {/* 2026-08-12 · 배지 제거 · 깔끔한 텍스트 · 폰트 +4 (text-[9px] → text-[13px]) */}
+                        <span className={`shrink-0 text-[13px] font-bold ${
+                          r.status === "pending" ? "text-amber-600" :
+                          r.status === "approved" ? "text-emerald-600" : "text-rose-600"
+                        }`}>
                           {STATUS_LABEL[r.status]}
                         </span>
                       </div>
-                      {r.reason && <p className="text-[11px] text-slate-500 mb-2 bg-slate-50 px-2.5 py-1.5 rounded-md">{r.reason}</p>}
+                      {r.reason && <p className="text-[15px] text-slate-600 mb-2 px-0.5">{r.reason}</p>}
                       {r.reviewer_note && (
-                        <p className="text-[11px] text-indigo-700 bg-indigo-50 px-2.5 py-1.5 rounded-lg mb-2">
-                          <span className="font-semibold">관리자 메모:</span> {r.reviewer_note}
+                        <p className="text-[15px] text-indigo-700 mb-2 px-0.5">
+                          <span className="font-bold">관리자 메모:</span> {r.reviewer_note}
                         </p>
                       )}
                       <div className="flex items-center justify-between text-[9px] text-gray-400">
