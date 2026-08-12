@@ -349,12 +349,14 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
               ) : (
                 <div className={`flex flex-col divide-y divide-slate-50 ${myLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                   {myRequests.map(r => (
-                    <div key={r.id} className={`py-1.5 hover:bg-slate-50/60 transition-all duration-150 rounded-lg ${r.status === "pending" ? "border-l-2 border-amber-300 pl-2" : r.status === "approved" ? "border-l-2 border-emerald-300 pl-2" : "border-l-2 border-rose-300 pl-2"}`}>
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div>
-                          {/* 2026-08-12 · 사용자 지시 · 폰트 +2 (leave_type · 시작일~종료일 · 상태 · 사유 · 관리자 메모 · 신청일 · 검토일) */}
-                          <p className="text-sm font-bold text-gray-900">{r.leave_type}</p>
-                          <p className="text-[13px] text-gray-500 mt-0.5">{fmtDate(r.start_date)} ~ {fmtDate(r.end_date)}</p>
+                    <div key={r.id} className={`py-2 px-2 hover:bg-slate-50/60 transition-all duration-150 rounded-lg ${r.status === "pending" ? "border-l-2 border-amber-300" : r.status === "approved" ? "border-l-2 border-emerald-300" : "border-l-2 border-rose-300"}`}>
+                      {/* 2026-08-12 · 사용자 지시 · 배치 재구성 · 희망연차일 + 종류 + 상태 (한 줄) · 신청일 · 검토일 · 아래 상세 */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[15px] font-bold text-gray-900">
+                            {fmtDate(r.start_date)}{r.start_date !== r.end_date && ` ~ ${fmtDate(r.end_date)}`}
+                            <span className="ml-2 text-[13px] text-gray-500 font-semibold">· {r.leave_type}</span>
+                          </p>
                         </div>
                         <span className={`shrink-0 text-[15px] font-bold ${
                           r.status === "pending" ? "text-amber-600" :
@@ -363,16 +365,21 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                           {STATUS_LABEL[r.status]}
                         </span>
                       </div>
-                      {r.reason && <p className="text-[17px] text-slate-600 mb-2 px-0.5">{r.reason}</p>}
-                      {r.reviewer_note && (
-                        <p className="text-[17px] text-indigo-700 mb-2 px-0.5">
-                          <span className="font-bold">관리자 메모:</span> {r.reviewer_note}
-                        </p>
-                      )}
-                      <div className="flex items-center justify-between text-[11px] text-gray-400">
+                      <div className="flex items-center gap-3 text-[11px] text-gray-400 mt-1 mb-2">
                         <span>신청일: {fmtDateTime(r.created_at)}</span>
                         {r.reviewed_at && <span>검토일: {fmtDateTime(r.reviewed_at)}</span>}
                       </div>
+                      {/* 아래 · 상세 내용 (사유 · 관리자 메모) */}
+                      {(r.reason || r.reviewer_note) && (
+                        <div className="border-t border-slate-100 pt-2 flex flex-col gap-1.5">
+                          {r.reason && <p className="text-[15px] text-slate-600 px-0.5">사유: {r.reason}</p>}
+                          {r.reviewer_note && (
+                            <p className="text-[15px] text-indigo-700 px-0.5">
+                              <span className="font-bold">관리자 메모:</span> {r.reviewer_note}
+                            </p>
+                          )}
+                        </div>
+                      )}
                       {r.status === "pending" && (
                         <button
                           onClick={() => handleCancel(r.id)}
