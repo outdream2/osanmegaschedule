@@ -110,7 +110,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
             "text-[17px] leading-none",
             // 200ms ease-out · 모든 인터랙션 통일
             "transition-all duration-200 ease-out",
-            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-stone-300",
+            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-300",
             // 활성/비활성 · warm pill
             hasActiveItem
               ? [
@@ -269,7 +269,7 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, on
         "rounded-lg",
         "text-[17px] leading-none",
         "transition-all duration-200 ease-out",
-        "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-stone-300",
+        "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-300",
         active
           ? [
               tone.activeBg,
@@ -322,11 +322,11 @@ export const SideNav: React.FC<SideNavProps> = ({
   const { brand } = useBrandIdentity();
 
   return (
-    // warm hairline border · border-r border-stone-200/70
-    <Sidebar collapsible="icon" data-sb-v2="" className="border-r border-stone-200/70">
+    // warm hairline border · border-r border-slate-200/60
+    <Sidebar collapsible="icon" data-sb-v2="" className="border-r border-slate-200/60">
 
       {/* ── 로고 영역 ── */}
-      <SidebarHeader className="px-2 py-2 pb-1.5 border-b border-stone-200/70">
+      <SidebarHeader className="px-2 py-2 pb-1.5 border-b border-slate-200/60">
         <button
           type="button"
           onClick={() => onNavigate("landing")}
@@ -337,7 +337,7 @@ export const SideNav: React.FC<SideNavProps> = ({
             "px-2 py-1.5 rounded-lg",
             // warm hover
             "hover:bg-white/70 transition-all duration-200 ease-out",
-            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-stone-300",
+            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-300",
             "cursor-pointer",
           ].join(" ")}
         >
@@ -377,7 +377,7 @@ export const SideNav: React.FC<SideNavProps> = ({
       </SidebarContent>
 
       {/* ── 하단: 구분선 + 알림 + 로그아웃 ── */}
-      <SidebarSeparator className="bg-stone-200/70" />
+      <SidebarSeparator className="bg-slate-200/60" />
 
       <SidebarFooter className="px-2 py-1.5 gap-0.5">
         {authSession && (
@@ -411,7 +411,7 @@ export const SideNav: React.FC<SideNavProps> = ({
       {/* PC 드래그 리사이즈 handle · warm 톤 */}
       <div
         onMouseDown={startResize}
-        className="hidden md:block absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-stone-300/50 active:bg-stone-400/60 transition z-30 group-data-[collapsible=icon]:hidden"
+        className="hidden md:block absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-slate-300/50 active:bg-slate-400/60 transition z-30 group-data-[collapsible=icon]:hidden"
         title="드래그하여 사이드바 폭 조절"
         aria-label="사이드바 폭 조절"
         aria-hidden="true"

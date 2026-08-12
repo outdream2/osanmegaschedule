@@ -24,7 +24,7 @@ import type { AuthSession, StampMapping } from "../../types";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { useContactInfo } from "../../hooks/useContactInfo";
 import { useStampsMap } from "../../hooks/useStampsMap";
-import { useMobileVisibility } from "../../hooks/useMobileVisibility";
+import { useMobilePageLevel } from "../../hooks/useMobilePageLevel";
 import { SIDE_NAV_GROUPS } from "../layout/sideNavGroups";
 
 // ─── 공통 카드 스타일 (ContractSettingsPage 톤과 통일) ───────────────────────
@@ -453,18 +453,42 @@ const StampsSection: React.FC = () => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════
-//   섹션 4 · 페이지별 모바일 사용여부
+//   섹션 4 · 페이지별 모바일 최소 레벨 (2026-08-12 · Phase 6)
+//     · 페이지별 · 모바일에서 접근 가능한 최소 레벨 지정
+//     · 값 0 · 모두 허용 (default)
+//     · SIDE_NAV_GROUPS 순회 · 각 group.items · pageKey (item.key) 별 dropdown
+//     · 같은 pageKey 중복 시 (예: display 아래 서브탭 여러개) · 한 번만 표시
 // ═══════════════════════════════════════════════════════════════════════
-const MobileVisibilitySection: React.FC = () => {
-  const { isMobileAllowed, setMobileAllowed, loaded, saveState } = useMobileVisibility();
+type MinLevelOption = { value: number; label: string };
+const MIN_LEVEL_OPTIONS: MinLevelOption[] = [
+  { value: 0, label: "0 - 모두 허용 (default)" },
+  { value: 1, label: "1 - 직원 이상" },
+  { value: 2, label: "2 - 매니저 이상" },
+  { value: 3, label: "3 - 약사 이상" },
+  { value: 8, label: "8 - 대표 이상" },
+  { value: 9, label: "9 - 최고관리자만" },
+];
 
-  // SIDE_NAV_GROUPS 순회 · 각 group.id 별 토글 (최상위 페이지 기준)
-  const rows = useMemo(() => {
-    return SIDE_NAV_GROUPS.map((g) => ({
-      id: g.id,
-      label: g.label,
-      color: g.color,
-    }));
+const MobileVisibilitySection: React.FC = () => {
+  const { getMinLevel, setMinLevel, loaded, saveState } = useMobilePageLevel();
+
+  // SIDE_NAV_GROUPS 순회 · 그룹별로 페이지 목록 구성 · 같은 pageKey 는 그룹 내에서 중복 제거
+  //   · landing 은 · 접근 차단 금지 (MobileOnlyGate 에서도 스킵) · 편집 UI 에서도 제외
+  const groups = useMemo(() => {
+    return SIDE_NAV_GROUPS
+      .map((g) => {
+        const seen = new Set<string>();
+        const items = g.items
+          .filter((it) => it.key !== "landing")
+          .filter((it) => {
+            if (seen.has(it.key)) return false;
+            seen.add(it.key);
+            return true;
+          })
+          .map((it) => ({ pageKey: it.key as string, label: it.label }));
+        return { id: g.id, label: g.label, items };
+      })
+      .filter((g) => g.items.length > 0);
   }, []);
 
   return (
@@ -474,44 +498,54 @@ const MobileVisibilitySection: React.FC = () => {
           <DeviceMobile size={15} weight="fill" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-black text-slate-800 leading-tight">페이지별 모바일 사용여부</div>
+          <div className="text-[13px] font-black text-slate-800 leading-tight">페이지별 모바일 최소 레벨</div>
           <div className="text-[11px] text-slate-500 mt-0.5">
-            모바일에서 접근 허용 여부 · 기본값은 허용 · 미체크 시 PC 전용 안내 표시 (Phase 6)
+            모바일에서 접근 가능한 최소 레벨 · 기본값 0 (모두 허용) · 값 이상만 접근 · 미만 사용자는 PC 전용 안내 표시
           </div>
         </div>
         <StatusBadge state={saveState as SaveState} />
       </div>
-      <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {rows.map((r) => {
-          const allowed = isMobileAllowed(r.id);
-          return (
-            <label
-              key={r.id}
-              className={[
-                "flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors",
-                allowed
-                  ? "border-emerald-200 bg-emerald-50/60 hover:bg-emerald-50"
-                  : "border-slate-200 bg-slate-50 hover:bg-slate-100",
-              ].join(" ")}
-            >
-              <input
-                type="checkbox"
-                checked={allowed}
-                onChange={(e) => setMobileAllowed(r.id, e.target.checked)}
-                className="accent-emerald-600 w-4 h-4"
-              />
-              <span className="text-[13px] font-bold text-slate-800 flex-1">{r.label}</span>
-              <span
-                className={[
-                  "text-[10px] font-black px-1.5 py-0.5 rounded",
-                  allowed ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-500",
-                ].join(" ")}
-              >
-                {allowed ? "허용" : "차단"}
-              </span>
-            </label>
-          );
-        })}
+      <div className="p-4 flex flex-col gap-4">
+        {groups.map((g) => (
+          <div key={g.id} className="flex flex-col gap-2">
+            <div className="text-[11px] font-black text-slate-500 uppercase tracking-wide">
+              {g.label}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {g.items.map((it) => {
+                const min = getMinLevel(it.pageKey);
+                const isRestricted = min > 0;
+                return (
+                  <div
+                    key={`${g.id}-${it.pageKey}`}
+                    className={[
+                      "flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors",
+                      isRestricted
+                        ? "border-violet-200 bg-violet-50/60"
+                        : "border-emerald-200 bg-emerald-50/40",
+                    ].join(" ")}
+                  >
+                    <span className="text-[13px] font-bold text-slate-800 flex-1 min-w-0 truncate">
+                      {it.label}
+                    </span>
+                    <select
+                      value={min}
+                      onChange={(e) => setMinLevel(it.pageKey, Number(e.target.value))}
+                      className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[12px] font-bold text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 cursor-pointer"
+                      aria-label={`${it.label} 모바일 최소 레벨`}
+                    >
+                      {MIN_LEVEL_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
       {!loaded && (
         <div className="px-4 pb-3 text-[11px] text-slate-400">서버에서 설정을 불러오는 중…</div>

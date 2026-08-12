@@ -33,6 +33,8 @@ import { SidebarProvider, SidebarInset } from "./components/ui/sidebar";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { SideNav } from "./components/layout/SideNav";
 import { useIsMobile } from "./hooks/use-mobile";
+// 2026-08-12 · Phase 6 · 페이지별 모바일 최소 레벨 게이트 (PC 전용 안내)
+import { MobileOnlyGate } from "./components/common/MobileOnlyGate";
 
 // 관리자 전용 · 구역 라벨 편집 UI · lazy 로드 (초기 번들 축소)
 const ZoneLabelsEditor = React.lazy(() => import("./components/ZoneLabelsEditor/ZoneLabelsEditor"));
@@ -352,7 +354,9 @@ export default function App() {
 
   return (
     <>
-      {pageContent}
+      <MobileOnlyGate pageKey={page} authSession={authSession}>
+        {pageContent}
+      </MobileOnlyGate>
       <AppFooter />
       {timeoutWarningOverlay}
     </>
@@ -374,7 +378,9 @@ const SidebarLayoutWrapper: React.FC<SidebarLayoutProps> = (props) => {
   if (isMobile) {
     return (
       <>
-        {props.pageContent}
+        <MobileOnlyGate pageKey={props.activePage} authSession={props.authSession}>
+          {props.pageContent}
+        </MobileOnlyGate>
         <AppFooter />
         {props.timeoutWarningOverlay}
       </>
@@ -394,7 +400,9 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ pageContent, authSession,
           onLogout={handleLogout}
         />
         <SidebarInset>
-          {pageContent}
+          <MobileOnlyGate pageKey={activePage} authSession={authSession}>
+            {pageContent}
+          </MobileOnlyGate>
           <AppFooter />
         </SidebarInset>
         {timeoutWarningOverlay}

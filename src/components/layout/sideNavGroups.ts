@@ -140,15 +140,22 @@ export function subTabStorageKey(pageKey: AppNavPage): string {
   return `sidebar.subtab.${pageKey}`;
 }
 
+/** authSession → 숫자 레벨 파생 (0-9) · session.level 우선, 없으면 role 로 fallback */
+export function deriveUserLevel(session: AuthSession | null): number {
+  if (!session) return 0;
+  return (
+    session.level ??
+    (session.role === "superadmin" || session.role === "admin" ? 9
+      : session.role === "manager" ? 2
+        : session.role === "employee" ? 1 : 0)
+  );
+}
+
 /** authSession 기반 접근 판정 · AppNavHeader.tsx 의 필터 로직 재사용 (약사 판정 · level ≥ 3) */
 export function canAccessItem(item: SideNavItem, session: AuthSession | null): boolean {
   if (item.key === "landing") return true;
   if (!session) return false;
-  const level =
-    session.level ??
-    (session.role === "superadmin" || session.role === "admin" ? 9
-      : session.role === "manager" ? 2
-        : session.role === "employee" ? 1 : 0);
+  const level = deriveUserLevel(session);
   const isPharmacist = level >= 3;
   const isVendor = session.role === "vendor";
   const isPrivileged = level >= 2;

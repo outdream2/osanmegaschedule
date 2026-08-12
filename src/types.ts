@@ -177,8 +177,17 @@ export const DEFAULT_STAMPS_MAP: StampMapping[] = [
 /** 페이지별 모바일 사용여부 · settings "mobile_visibility" key
  *  · 값 없거나 undefined 는 default (허용)
  *  · false 면 · 모바일에서 접근 시 "PC 전용 화면입니다" 안내
+ *  · @deprecated 2026-08-12 · Phase 6 · MobileMinLevelMap 으로 대체 · 하위호환 유지
  */
 export type MobileVisibilityMap = Partial<Record<string, boolean>>; // pageKey → allowed
 export const DEFAULT_MOBILE_VISIBILITY: MobileVisibilityMap = {
   // 기본 · 모든 페이지 모바일 허용 (false 로 명시된 것만 차단)
 };
+
+/** 페이지별 모바일 최소 레벨 · settings "mobile_min_level" key
+ *  · 값 없거나 undefined 는 · 0 (모두 허용)
+ *  · 예: { display: 9 } → 매장 페이지 · 모바일에서는 lv 9 이상만 접근
+ *  · userLevel >= minLevel 이면 접근 가능 · 아니면 "PC 전용 화면입니다" 안내
+ */
+export type MobileMinLevelMap = Partial<Record<string, number>>;
+export const DEFAULT_MOBILE_MIN_LEVEL: MobileMinLevelMap = {};
