@@ -2916,121 +2916,93 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               </div>
             </div>
 
-            {/* 공급사별 상품 리스트 */}
-            <div className="flex-1 overflow-y-auto max-h-[45vh] px-6 py-4 space-y-4 bg-slate-50/30">
-              {orderModal.suppliers.map((s, sIdx) => {
-                const totalQty = s.items.reduce((n, it) => n + it.order_qty, 0);
-                const totalAmount = s.items.reduce((n, it) => n + (it.order_qty * (it.unit_price ?? 0)), 0);
-                return (
-                  <div key={`${s.supplier}-${sIdx}`} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                    {/* 2026-08-10 · 사용자 요청 · 공급사 옆 담당자·전화·이메일 나란히 · 한 그룹 */}
-                    <div className="px-4 py-3 bg-sky-50 border-b border-slate-200 flex items-baseline gap-x-3 gap-y-1 flex-wrap">
-                      <span className="text-[10px] font-black text-sky-600 bg-white border border-sky-200 rounded-full px-2 py-0.5 shrink-0">발주서</span>
-                      <span className="text-[15px] font-black text-slate-900">{s.supplier}</span>
-                      <span className="text-[10px] font-mono text-indigo-600 bg-white border border-indigo-200 rounded px-1.5 py-0.5 shrink-0">#{s.order_number}</span>
-                      {s.supplier_contact && (
-                        <span className="text-[13px] font-semibold text-slate-700">👤 {s.supplier_contact}</span>
-                      )}
-                      {s.supplier_phone && (
-                        <a href={`tel:${String(s.supplier_phone).replace(/[^0-9+]/g, "")}`} className="text-[13px] font-semibold text-slate-700 tabular-nums hover:text-emerald-700 hover:underline inline-flex items-center gap-1">
-                          <MessageSquare size={12}/>{s.supplier_phone}
-                        </a>
-                      )}
-                      {s.supplier_email && (
-                        <a href={`mailto:${s.supplier_email}`} className="text-[13px] font-semibold text-slate-700 hover:text-emerald-700 hover:underline inline-flex items-center gap-1">
-                          <Mail size={12}/>{s.supplier_email}
-                        </a>
-                      )}
-                    </div>
-
-                    {/* 2026-08-10 · 사용자 요청 · 예상금액·OCR 잔고 카드 제거 · 표 하단 합계로 대체 */}
-
-                    {/* OCR 거래명세서 리스트 */}
-                    {s.ocr_statements && s.ocr_statements.length > 0 && (
-                      <details className="border-b border-slate-200 group">
-                        <summary className="px-4 py-2 bg-slate-50/40 cursor-pointer text-[11px] font-black text-slate-600 uppercase tracking-wide hover:bg-slate-100/60 transition list-none flex items-center justify-between">
-                          <span className="flex items-center gap-1.5">📋 최근 거래명세서 ({s.ocr_statements.length}건)</span>
-                          <span className="text-slate-400 text-[10px] group-open:rotate-180 transition">▼</span>
-                        </summary>
-                        <div className="max-h-40 overflow-y-auto divide-y divide-slate-100 bg-white">
-                          {s.ocr_statements.map((st) => (
-                            <div key={st.id} className="px-4 py-1.5 flex items-center justify-between gap-3 text-[11px] hover:bg-slate-50/70 transition">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <span className="text-slate-400 font-mono text-[10px] w-20 shrink-0">{String(st.saved_at).slice(0, 10)}</span>
-                                <span className="text-slate-700 truncate">{st.supplier}</span>
-                              </div>
-                              <div className="flex items-center gap-3 shrink-0 text-[10px]">
-                                {st.total_amount != null && (
-                                  <span className="text-slate-600">거래액 <span className="font-mono font-bold">{st.total_amount.toLocaleString()}원</span></span>
+            {/* 2026-08-12 · 사용자 지시 · 일괄 발주 · 여러 카드 → 하나의 리스트 · 공급사 그룹 헤더 + 소계 rows */}
+            <div className="flex-1 overflow-y-auto max-h-[45vh] px-6 py-4 bg-slate-50/30">
+              <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                <table className="w-full text-[17px]">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-500 font-black uppercase tracking-wide text-[15px] border-b border-slate-200 sticky top-0 z-10">
+                      <th className="text-center p-2 w-8">#</th>
+                      <th className="text-left p-2 w-56">상품</th>
+                      <th className="text-right p-2 w-20">발주수량</th>
+                      <th className="text-right p-2 w-24"><div className="leading-tight">이전<br/>사입가</div></th>
+                      <th className="text-right p-2 w-28">금액</th>
+                      <th className="text-left p-2">비고 (메모)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orderModal.suppliers.map((s, sIdx) => {
+                      const totalQty = s.items.reduce((n, it) => n + it.order_qty, 0);
+                      const totalAmount = s.items.reduce((n, it) => n + (it.order_qty * (it.unit_price ?? 0)), 0);
+                      return (
+                        <React.Fragment key={`${s.supplier}-${sIdx}`}>
+                          {/* 공급사 그룹 헤더 row · sticky */}
+                          <tr className="bg-sky-50 border-y border-sky-200">
+                            <td colSpan={6} className="px-3 py-2">
+                              <div className="flex items-baseline gap-x-3 gap-y-1 flex-wrap">
+                                <span className="text-[11px] font-black text-sky-600 bg-white border border-sky-200 rounded-full px-2 py-0.5 shrink-0">공급사</span>
+                                <span className="text-[16px] font-black text-slate-900">{s.supplier}</span>
+                                <span className="text-[11px] font-mono text-indigo-600 bg-white border border-indigo-200 rounded px-1.5 py-0.5 shrink-0">#{s.order_number}</span>
+                                {s.supplier_contact && (
+                                  <span className="text-[13px] font-semibold text-slate-700">👤 {s.supplier_contact}</span>
                                 )}
-                                {st.balance != null && (
-                                  <span className="text-amber-700">잔고 <span className="font-mono font-black">{st.balance.toLocaleString()}원</span></span>
+                                {s.supplier_phone && (
+                                  <a href={`tel:${String(s.supplier_phone).replace(/[^0-9+]/g, "")}`} className="text-[13px] font-semibold text-slate-700 tabular-nums hover:text-emerald-700 hover:underline inline-flex items-center gap-1">
+                                    <MessageSquare size={12}/>{s.supplier_phone}
+                                  </a>
                                 )}
+                                {s.supplier_email && (
+                                  <a href={`mailto:${s.supplier_email}`} className="text-[13px] font-semibold text-slate-700 hover:text-emerald-700 hover:underline inline-flex items-center gap-1">
+                                    <Mail size={12}/>{s.supplier_email}
+                                  </a>
+                                )}
+                                <span className="ml-auto text-[11px] font-bold text-slate-500 tabular-nums">{s.items.length}개 상품</span>
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      </details>
-                    )}
-                    {/* 상품 테이블 · 2026-08-10 · 이전사입가 컬럼 추가 */}
-                    {/* 2026-08-10 · #35·#36·#37 · 현재고·적정 컬럼 제거 · 단가 컬럼 제거 (이전사입가 사용) · 소계 앞 "총" + 글씨 +2 */}
-                    <table className="w-full text-[17px]">
-                      <thead>
-                        <tr className="bg-slate-100 text-slate-500 font-black uppercase tracking-wide text-[15px] border-b border-slate-200">
-                          {/* 2026-08-12 · 상품코드 아래 상품명 · 두 컬럼 통합 · 폭 확보 */}
-                          <th className="text-center p-2 w-8">#</th>
-                          <th className="text-left p-2 w-56">상품</th>
-                          <th className="text-right p-2 w-20">발주수량</th>
-                          <th className="text-right p-2 w-24"><div className="leading-tight">이전<br/>사입가</div></th>
-                          <th className="text-right p-2 w-28">금액</th>
-                          <th className="text-left p-2">비고 (메모)</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {s.items.map((it, iIdx) => (
-                          <tr key={it.order_request_id} className="hover:bg-slate-50/70">
-                            <td className="p-2 text-center text-slate-400 font-black">{iIdx + 1}</td>
-                            <td className="p-2 leading-tight">
-                              <div className="font-mono text-[12px] text-slate-400">{it.product_code}</div>
-                              <div className="font-bold text-slate-800 break-words whitespace-normal">{it.product_name}</div>
-                            </td>
-                            <td className="p-2 text-right">
-                              <input type="number" min={1} value={it.order_qty}
-                                onChange={e => updateModalItem(sIdx, iIdx, { order_qty: Math.max(0, Number(e.target.value) || 0) })}
-                                className="w-16 border border-slate-200 rounded px-1.5 py-0.5 text-right font-mono font-black text-red-600 focus:outline-none focus:border-red-400"/>
-                            </td>
-                            <td className="p-2 text-right">
-                              <input type="number" min={0} value={it.unit_price ?? ""}
-                                onChange={e => updateModalItem(sIdx, iIdx, { unit_price: e.target.value === "" ? null : Number(e.target.value) })}
-                                placeholder={it.prev_unit_price != null ? String(it.prev_unit_price) : "0"}
-                                className="w-24 border border-slate-200 rounded px-1.5 py-0.5 text-right font-mono focus:outline-none focus:border-red-400"/>
-                            </td>
-                            <td className="p-2 text-right font-mono font-black text-emerald-700">
-                              {it.unit_price ? (it.order_qty * it.unit_price).toLocaleString() + "원" : "-"}
-                            </td>
-                            <td className="p-2">
-                              <input type="text" value={it.memo ?? ""}
-                                onChange={e => updateModalItem(sIdx, iIdx, { memo: e.target.value })}
-                                placeholder="(선택)"
-                                className="w-full border border-slate-200 rounded px-1.5 py-0.5 text-[12px] focus:outline-none focus:border-red-400"/>
                             </td>
                           </tr>
-                        ))}
-                      </tbody>
-                      <tfoot>
-                        <tr className="bg-slate-50 border-t-2 border-slate-300 font-black text-[17px]">
-                          <td colSpan={3} className="p-2 text-right text-slate-500 uppercase">총 소계</td>
-                          <td className="p-2 text-right text-red-600 font-mono">총 {totalQty}개</td>
-                          <td></td>
-                          <td className="p-2 text-right text-emerald-700 font-mono">총 {totalAmount > 0 ? totalAmount.toLocaleString() + "원" : "-"}</td>
-                          <td></td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                    {/* 2026-08-10 · 사용자 요청 · 특이사항 memo 제거 · 비고 컬럼 대체 */}
-                  </div>
-                );
-              })}
+                          {/* 상품 rows */}
+                          {s.items.map((it, iIdx) => (
+                            <tr key={it.order_request_id} className="hover:bg-slate-50/70 border-b border-slate-100">
+                              <td className="p-2 text-center text-slate-400 font-black">{iIdx + 1}</td>
+                              <td className="p-2 leading-tight">
+                                <div className="font-mono text-[12px] text-slate-400">{it.product_code}</div>
+                                <div className="font-bold text-slate-800 break-words whitespace-normal">{it.product_name}</div>
+                              </td>
+                              <td className="p-2 text-right">
+                                <input type="number" min={1} value={it.order_qty}
+                                  onChange={e => updateModalItem(sIdx, iIdx, { order_qty: Math.max(0, Number(e.target.value) || 0) })}
+                                  className="w-16 border border-slate-200 rounded px-1.5 py-0.5 text-right font-mono font-black text-red-600 focus:outline-none focus:border-red-400"/>
+                              </td>
+                              <td className="p-2 text-right">
+                                <input type="number" min={0} value={it.unit_price ?? ""}
+                                  onChange={e => updateModalItem(sIdx, iIdx, { unit_price: e.target.value === "" ? null : Number(e.target.value) })}
+                                  placeholder={it.prev_unit_price != null ? String(it.prev_unit_price) : "0"}
+                                  className="w-24 border border-slate-200 rounded px-1.5 py-0.5 text-right font-mono focus:outline-none focus:border-red-400"/>
+                              </td>
+                              <td className="p-2 text-right font-mono font-black text-emerald-700">
+                                {it.unit_price ? (it.order_qty * it.unit_price).toLocaleString() + "원" : "-"}
+                              </td>
+                              <td className="p-2">
+                                <input type="text" value={it.memo ?? ""}
+                                  onChange={e => updateModalItem(sIdx, iIdx, { memo: e.target.value })}
+                                  placeholder="(선택)"
+                                  className="w-full border border-slate-200 rounded px-1.5 py-0.5 text-[12px] focus:outline-none focus:border-red-400"/>
+                              </td>
+                            </tr>
+                          ))}
+                          {/* 공급사 소계 row */}
+                          <tr className="bg-slate-50 border-b-2 border-slate-300 font-black text-[15px]">
+                            <td colSpan={3} className="p-2 text-right text-slate-500 uppercase">{s.supplier} 소계</td>
+                            <td className="p-2 text-right text-red-600 font-mono">{totalQty}개</td>
+                            <td></td>
+                            <td className="p-2 text-right text-emerald-700 font-mono">{totalAmount > 0 ? totalAmount.toLocaleString() + "원" : "-"}</td>
+                          </tr>
+                        </React.Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {/* 발송 채널 (전역) · 특이사항 memo 제거 (비고 컬럼 사용) */}
