@@ -52,8 +52,10 @@ const BrandingSettingsPage = React.lazy(() => import("./components/BrandingSetti
 const CompanyInfoSettingsPage = React.lazy(() => import("./components/CompanyInfoSettingsPage/CompanyInfoSettingsPage"));
 // 2026-08-12 · 계절 정의 설정 (MyPage 에서 이동)
 const SeasonSettingsPage = React.lazy(() => import("./components/SeasonSettingsPage/SeasonSettingsPage"));
+// 2026-08-12 · 시스템 설정 (env 편집 · 서버 재시작 반영)
+const SystemSettingsPage = React.lazy(() => import("./components/SystemSettingsPage/SystemSettingsPage"));
 
-type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist" | "approval-request" | "branding" | "company-info" | "season-settings";
+type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist" | "approval-request" | "branding" | "company-info" | "season-settings" | "system-settings";
 
 export default function App() {
   // 전역 모달 스크롤 잠금은 CSS :has() 셀렉터로 처리 (index.css) · JS 훅 불필요
@@ -356,6 +358,18 @@ export default function App() {
     pageContent = (
       <React.Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-400 text-sm">불러오는 중...</div>}>
         <SeasonSettingsPage
+          authSession={authSession}
+          onBack={goBack}
+          onNavigate={navigateInner}
+          onLogout={handleLogout}
+        />
+      </React.Suspense>
+    );
+  } else if (page === "system-settings") {
+    // 2026-08-12 · 시스템 설정 페이지 (env 편집 · 관리자 lv≥9)
+    pageContent = (
+      <React.Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-400 text-sm">불러오는 중...</div>}>
+        <SystemSettingsPage
           authSession={authSession}
           onBack={goBack}
           onNavigate={navigateInner}

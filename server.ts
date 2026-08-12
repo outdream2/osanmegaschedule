@@ -1,5 +1,9 @@
 // server.ts
 import "dotenv/config";
+// 2026-08-12 · 테넌트별 env 오버라이드 (server/tenant.config.json)
+//   dotenv 다음 · supabase client import 전에 로드 · process.env 를 파일 값으로 덮어씀
+import { loadTenantConfig } from "./server/lib/tenantConfig";
+loadTenantConfig();
 import express from "express";
 import http from "http";
 import path from "path";
@@ -13,6 +17,7 @@ import { getProductMap } from "./server/productCache";
 import schedulesRouter   from "./server/routes/schedule/schedules";
 import staffRouter       from "./server/routes/staff/staff";
 import settingsRouter    from "./server/routes/settings/settings";
+import systemConfigRouter from "./server/routes/settings/systemConfig";
 import productsRouter    from "./server/routes/stock/products";
 import requestsRouter    from "./server/routes/display/requests";
 import mismatchesRouter  from "./server/routes/display/mismatches";
@@ -117,6 +122,7 @@ async function startServer() {
 
   // 설정 (앱 전역 설정 변경)
   app.use(settingsRouter);
+  app.use(systemConfigRouter);
 
   // 공급사 결제·정산 (금전 데이터)
   app.use(supplierPaymentsRouter);

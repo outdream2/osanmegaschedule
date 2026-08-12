@@ -35,3 +35,6 @@ uploads/board/
 # 🔐 Google Service Account · Drive 통합 (git 커밋 절대 금지)
 src/keys/
 keys/
+
+# 🔐 2026-08-12 · 테넌트 시스템 설정 파일 (env 오버라이드 · KEY 포함)
+server/tenant.config.json

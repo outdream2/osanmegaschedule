@@ -175,6 +175,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       { key: "company-info", label: "회사정보", icon: Buildings, color: "slate", minLevel: 9 },
       // 2026-08-12 · 계절 정의 (MyPage 에서 이동)
       { key: "season-settings", label: "계절 정의", icon: Calendar, color: "slate", minLevel: 9 },
+      // 2026-08-12 · 시스템 설정 (env 편집)
+      { key: "system-settings", label: "시스템 설정", icon: Gear, color: "slate", minLevel: 9 },
     ],
   },
   {
