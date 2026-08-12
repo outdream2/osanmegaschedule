@@ -8,8 +8,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useConfirm } from "../../hooks/useConfirm";
 import {
-  ArrowLeft,
-  MapPin,
   Save,
   RotateCcw,
   AlertCircle,
@@ -18,7 +16,11 @@ import {
   ChevronRight,
   Loader2,
 } from "lucide-react";
+import { MapPin } from "@phosphor-icons/react";
 import type { AuthSession } from "../../types";
+// 2026-08-12 · UI 통일 · 공통 SettingsPageShell + 하단 sticky 액션바
+import { SettingsPageShell } from "../common/SettingsPageShell";
+import type { AppNavPage } from "../layout/AppNavHeader";
 import {
   DEFAULT_MAPPINGS,
   getZoneMappings,
@@ -283,7 +285,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
             onClick={onBack}
             className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-[12px] font-bold hover:bg-slate-200 transition"
           >
-            <ArrowLeft size={13} /> 돌아가기
+            돌아가기
           </button>
         </div>
       </div>
@@ -293,70 +295,39 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
   const totalCount = mappings.length;
   const dirtyCount = dirtyZoneIds.size;
 
+  // 2026-08-12 · 배지 슬롯 (rightSlot) · 총/변경/중복
+  const rightBadges = (
+    <div className="flex items-center gap-1.5 flex-wrap">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sky-50 border border-sky-200 text-sky-700 text-[11px] font-bold">
+        총 {totalCount}건
+      </span>
+      {dirtyCount > 0 && (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-bold">
+          변경 {dirtyCount}건
+        </span>
+      )}
+      {duplicateNumbers.size > 0 && (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-[11px] font-bold">
+          <AlertCircle size={11} /> 중복 {duplicateNumbers.size}건
+        </span>
+      )}
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* 상단 헤더 */}
-      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm">
-        <div className="max-w-4xl mx-auto w-full px-4 py-3 flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={onBack}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[12px] font-bold transition cursor-pointer"
-          >
-            <ArrowLeft size={13} /> 뒤로
-          </button>
-
-          <div className="flex items-center gap-2 ml-1">
-            <div className="w-7 h-7 rounded-lg bg-sky-600 flex items-center justify-center">
-              <MapPin size={14} className="text-white" />
-            </div>
-            <h1 className="text-[15px] font-black text-slate-900 tracking-tight">구역 라벨 관리</h1>
-          </div>
-
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sky-50 border border-sky-200 text-sky-700 text-[11px] font-bold">
-            총 {totalCount}건
-          </span>
-          {dirtyCount > 0 && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-bold">
-              변경 {dirtyCount}건
-            </span>
-          )}
-          {duplicateNumbers.size > 0 && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-[11px] font-bold">
-              <AlertCircle size={11} /> 중복 {duplicateNumbers.size}건
-            </span>
-          )}
-
-          <div className="flex-1" />
-
-          <button
-            type="button"
-            onClick={resetAll}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 text-[12px] font-bold transition cursor-pointer"
-          >
-            <RotateCcw size={12} /> 초기화
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={!canSave}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-black transition ${
-              canSave
-                ? "bg-sky-600 hover:bg-sky-700 text-white shadow-sm cursor-pointer"
-                : "bg-slate-200 text-slate-400 cursor-not-allowed"
-            }`}
-          >
-            {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
-            {saving ? "저장 중..." : "저장"}
-          </button>
-        </div>
-        <div className="max-w-4xl mx-auto w-full px-4 pb-2.5 text-[11px] text-slate-500">
-          번호 편집 후 저장 · 모든 페이지 즉시 반영 · 원본 zoneId 는 변경 불가 (DB/로직 안전)
-        </div>
-      </div>
-
+    <SettingsPageShell
+      activePage={"zone-labels" as AppNavPage}
+      authSession={authSession}
+      onBack={onBack}
+      icon={MapPin}
+      iconColor="text-sky-500"
+      title="구역 라벨"
+      description="매장 진열 구역 번호와 라벨을 관리합니다. 번호 편집 후 저장 · 모든 페이지 즉시 반영. 원본 zoneId 는 변경 불가 (DB/로직 안전)."
+      maxWidth="max-w-4xl"
+      rightSlot={rightBadges}
+    >
       {/* 본문 */}
-      <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-4">
+      <div className="flex-1">
         {loading ? (
           <div className="flex items-center justify-center py-16 text-slate-400 text-sm gap-2">
             <Loader2 size={16} className="animate-spin" /> 불러오는 중...
@@ -496,13 +467,37 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
         )}
       </div>
 
+      {/* 하단 sticky 액션바 · 저장 · 초기화 (SystemSettingsPage 스타일 통일) */}
+      <div className="sticky bottom-0 mt-3 flex items-center justify-end gap-2 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl px-3 py-2 shadow-sm">
+        <button
+          type="button"
+          onClick={resetAll}
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 text-sm font-bold transition cursor-pointer"
+        >
+          <RotateCcw size={13} /> 초기화
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!canSave}
+          className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-bold transition ${
+            canSave
+              ? "bg-sky-600 hover:bg-sky-700 text-white shadow-sm cursor-pointer"
+              : "bg-slate-200 text-slate-400 cursor-not-allowed"
+          }`}
+        >
+          {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+          {saving ? "저장 중..." : "저장"}
+        </button>
+      </div>
+
       {/* Toast */}
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-600 text-white text-[12px] font-bold shadow-lg">
           <Check size={13} /> {toast}
         </div>
       )}
-    </div>
+    </SettingsPageShell>
   );
 };
 
