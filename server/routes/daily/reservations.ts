@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
+// 2026-08-13 · #107 · 거래처 예약 · 관리자 알림
+import { notificationsService } from "../../services/notificationsService";
 
 const router = Router();
 
@@ -31,6 +33,13 @@ router.post("/api/reservations", async (req, res) => {
     ...(vendorId ? { vendor_id: vendorId } : {}),
   });
   if (error) return res.status(500).json({ error: error.message });
+  // 2026-08-13 · #107 · 관리자 broadcast · 거래처 예약 (대상=대표/이사/부장 태그 유지)
+  notificationsService.notifyAllAdmins({
+    title: `📅 거래처 예약 [${targetToBook}]`,
+    body: `${date} ${time} · ${company} · ${contactName} (${phone}) · ${purpose}`,
+    type: "info",
+    push: { url: "/", tag: `resv-${date}-${time}` },
+  }).catch(() => null);
   return res.status(201).json({ ok: true });
 });
 

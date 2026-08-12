@@ -31,6 +31,8 @@ import { Router } from "express";
 import fs from "fs";
 import path from "path";
 import { supabase } from "../../../src/supabase/client";
+// 2026-08-13 · #107 · 인사서류 업로드 · 관리자 알림
+import { notificationsService } from "../../services/notificationsService";
 
 const router = Router();
 
@@ -214,6 +216,13 @@ router.post("/api/hr-forms", async (req, res) => {
       throw new Error(error.message);
     }
 
+    // 2026-08-13 · #107 · 관리자 broadcast · 인사서류 업로드
+    notificationsService.notifyAllAdmins({
+      title: "📎 인사서류 업로드",
+      body: `${title} (${category}) 업로드됨${uploadedBy ? ` (담당: ${uploadedBy})` : ""}.`,
+      type: "info",
+      push: { url: "/", tag: `hr-form-${data.id}` },
+    }).catch(() => null);
     return res.status(201).json(data);
   } catch (err: any) {
     return res.status(500).json({ error: err?.message ?? "upload failed" });
