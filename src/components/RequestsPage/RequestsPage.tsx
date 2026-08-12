@@ -12,6 +12,8 @@ import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useConfirm } from "../../hooks/useConfirm";
 import { CARD_BASE } from "../../styles/tokens";
+// 2026-08-12 · 연차승인 탭 · LeavePage mode="approval" 로 임베드 (관리자용 승인 UI)
+import { LeavePage } from "../LeavePage/LeavePage";
 
 interface RequestsPageProps {
   onBack: () => void;
@@ -53,7 +55,7 @@ interface InventoryCheck {
   checked_by: string; note: string; status: string;
   checked_at: string;
 }
-type Tab = "display" | "order" | "mismatch" | "lunch" | "inventory";
+type Tab = "display" | "order" | "mismatch" | "lunch" | "inventory" | "leave";
 
 const fmtDate = fmtDateMD;
 
@@ -108,12 +110,17 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const confirm = useConfirm();
   const [tab, setTab] = useState<Tab>(() => {
     // 2026-08-11 · 사이드바 V2 · localStorage("sidebar.subtab.requests") 있으면 초기값 사용
+    // 2026-08-12 · StrictMode 이중 마운트 대비 · 읽기만 · 삭제는 useEffect 로
     try {
       const sb = localStorage.getItem("sidebar.subtab.requests") as Tab | null;
-      if (sb) { localStorage.removeItem("sidebar.subtab.requests"); return sb; }
+      if (sb) return sb;
     } catch { /* silent */ }
     return "display";
   });
+  // mount 완료 후 · localStorage 정리
+  useEffect(() => {
+    try { localStorage.removeItem("sidebar.subtab.requests"); } catch { /* silent */ }
+  }, []);
   // 사이드바에서 같은 페이지 서브탭 클릭 시 CustomEvent 리스닝
   useEffect(() => {
     const onSubTab = (e: Event) => {
@@ -171,6 +178,9 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
 
   // 빠른 탭 갯수 (pending-counts 엔드포인트)
   const [tabCounts, setTabCounts] = useState<{display:number; order:number; mismatch:number; lunch:number; inventory:number} | null>(null);
+
+  // 2026-08-12 · 연차승인 탭 · pending 건수 별도 폴링 (leave-requests/pending-count)
+  const [leavePendingCount, setLeavePendingCount] = useState<number>(0);
 
   // 발주요청 중복 확인 모달
   const [dupOrderModal, setDupOrderModal] = useState<{existing: OrderRequest; product: ProductInfo; editStock: number | ""} | null>(null);
@@ -402,7 +412,15 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     } catch {}
   }, []);
 
-  useEffect(() => { loadTabCounts(); loadDisplayReqs(); loadOrderReqs(); loadMismatches(); loadLunch(); loadInventoryChecks(); }, []);
+  // 연차 pending 건수 · 별도 API
+  const loadLeavePendingCount = useCallback(async () => {
+    try {
+      const res = await fetch("/api/leave-requests/pending-count");
+      if (res.ok) { const d = await res.json(); setLeavePendingCount(Number(d?.count ?? 0)); }
+    } catch {}
+  }, []);
+
+  useEffect(() => { loadTabCounts(); loadDisplayReqs(); loadOrderReqs(); loadMismatches(); loadLunch(); loadInventoryChecks(); loadLeavePendingCount(); }, []);
   useEffect(() => {
     if (tab === "order") { loadOrderReqs(); loadProducts(); }
   }, [tab]);
@@ -436,6 +454,8 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         if (tab === "mismatch"  && counts.mismatch  !== prev.mismatch)  loadMismatches();
         if (tab === "inventory" && counts.inventory !== prev.inventory) loadInventoryChecks();
         if (tab === "lunch"     && counts.lunch     !== prev.lunch)     loadLunch();
+        // 2026-08-12 · 연차 pending 카운트 · 별도 API · 매 폴링 갱신
+        loadLeavePendingCount();
       } catch {}
     }, 30_000);
     return () => clearInterval(interval);
@@ -563,6 +583,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     ...(isManager ? ([
       ["inventory", "실재고차이", inventoryTabCount, "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
       ["lunch",     "점심불참",   lunchTabCount,     "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
+      ["leave",     "연차승인",   leavePendingCount, "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
     ] as [Tab, string, number, string, string, string, string][]) : []),
   ];
 
@@ -1210,6 +1231,20 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── 연차승인 (2026-08-12 · 관리자용 승인 목록 · LeavePage embedded mode="approval") ── */}
+        {tab === "leave" && isManager && (
+          <div className="flex flex-col gap-2">
+            <LeavePage
+              embedded
+              mode="approval"
+              authSession={authSession ?? null}
+              onBack={onBack}
+              onNavigate={onNavigate}
+              onLogout={onLogout}
+            />
           </div>
         )}
 

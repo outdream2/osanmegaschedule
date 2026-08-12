@@ -36,6 +36,43 @@ router.get("/api/leave-requests", async (req, res) => {
   } catch (err: any) { return res.status(500).json({ error: err.message }); }
 });
 
+// 2026-08-12 · 남은 연차 잔여 계산 · GET /api/leave-balance?employeeId=X
+//   · total   · employees.annual_leave_days (없으면 15 default)
+//   · used    · leave_requests status=approved · 차감 규칙:
+//               연차·월차 = (end-start+1) 일 · 반차/오전반차/오후반차 = 0.5일 · 병가/특별휴가 = 0일
+//   · remaining = total - used
+router.get("/api/leave-balance", async (req, res) => {
+  const { employeeId } = req.query;
+  if (!employeeId) return res.status(400).json({ error: "employeeId required" });
+  try {
+    const empIdNum = Number(employeeId);
+    const { data: emp, error: empErr } = await supabase
+      .from("employees").select("annual_leave_days").eq("id", empIdNum).maybeSingle();
+    if (empErr) throw new Error(empErr.message);
+    const total = Number(emp?.annual_leave_days ?? 15);
+
+    const { data: rows, error: reqErr } = await supabase
+      .from("leave_requests")
+      .select("leave_type, start_date, end_date")
+      .eq("employee_id", empIdNum).eq("status", "approved");
+    if (reqErr) throw new Error(reqErr.message);
+
+    let used = 0;
+    for (const r of (rows ?? [])) {
+      const t = String(r.leave_type ?? "");
+      if (t === "병가" || t === "특별휴가") continue;
+      if (t === "반차" || t === "오전반차" || t === "오후반차") { used += 0.5; continue; }
+      // 연차·월차·기타 → 일수 계산 (end - start + 1)
+      const s = new Date(String(r.start_date) + "T00:00:00");
+      const e = new Date(String(r.end_date) + "T00:00:00");
+      const days = Math.max(1, Math.round((e.getTime() - s.getTime()) / 86400000) + 1);
+      used += days;
+    }
+
+    return res.json({ total, used, remaining: Math.max(0, total - used) });
+  } catch (err: any) { return res.status(500).json({ error: err.message }); }
+});
+
 router.get("/api/leave-requests/pending-count", async (_req, res) => {
   try {
     const { count, error } = await supabase

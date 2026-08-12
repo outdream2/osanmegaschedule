@@ -30,21 +30,17 @@ type ArSubTab = "leave" | "lunch" | "document-writer";
 const STORAGE_KEY = "sidebar.subtab.approval-request";
 
 const TABS: TabDef<ArSubTab>[] = [
-  { key: "leave",           label: "연차승인", icon: CalendarDots, color: "sky"    },
+  { key: "leave",           label: "연차신청", icon: CalendarDots, color: "sky"    },
   { key: "lunch",           label: "점심불참", icon: Coffee,       color: "amber"  },
   { key: "document-writer", label: "서류작성", icon: PencilLine,   color: "violet" },
 ];
 
 function readInitialSubTab(): ArSubTab {
+  // 2026-08-12 · StrictMode 이중 마운트 대비 · 읽기만 · 삭제는 mount 완료 후 useEffect 에서
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === "leave" || raw === "lunch" || raw === "document-writer") {
-      localStorage.removeItem(STORAGE_KEY);
-      return raw;
-    }
-  } catch {
-    // silent (SSR · quota 등)
-  }
+    if (raw === "leave" || raw === "lunch" || raw === "document-writer") return raw;
+  } catch { /* SSR · quota */ }
   return "leave";
 }
 
@@ -56,6 +52,11 @@ const ApprovalRequestPage: React.FC<ApprovalRequestPageProps> = ({
 }) => {
   const [subTab, setSubTab] = useState<ArSubTab>(() => readInitialSubTab());
   const isMobile = useIsMobile();
+
+  // 초기 마운트 완료 후 · localStorage 값 정리 (StrictMode 재마운트 후에도 유지되도록 mount 이후 삭제)
+  useEffect(() => {
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* silent */ }
+  }, []);
 
   // 사이드바 V2 · 같은 페이지 내 서브탭 재클릭 대응 (CustomEvent)
   useEffect(() => {
@@ -105,7 +106,7 @@ const ApprovalRequestPage: React.FC<ApprovalRequestPageProps> = ({
       {/* ── 서브탭 컨텐츠 ── */}
       <main className="flex-1 flex flex-col min-h-0">
         {subTab === "leave" && (
-          <LeavePage {...commonSubPageProps} />
+          <LeavePage {...commonSubPageProps} mode="apply" />
         )}
         {subTab === "lunch" && (
           <LunchPage {...commonSubPageProps} />

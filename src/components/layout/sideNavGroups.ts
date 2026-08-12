@@ -82,7 +82,7 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     // 2026-08-12 · 직원(lv1) 도 본인 승인 신청 · managerOnly 해제
     items: [
       // 2026-08-12 · 승인요청 통합 페이지 (approval-request) · 서브탭 3종 라우팅
-      { key: "approval-request", label: "연차승인", icon: CalendarDots, color: "indigo", subTab: "leave"           },
+      { key: "approval-request", label: "연차신청", icon: CalendarDots, color: "indigo", subTab: "leave"           },
       { key: "approval-request", label: "점심불참", icon: Coffee,       color: "indigo", subTab: "lunch"           },
       { key: "approval-request", label: "서류작성", icon: PencilLine,   color: "indigo", subTab: "document-writer" },
     ],
@@ -234,7 +234,7 @@ export function filterGroupsForSession(session: AuthSession | null): SideNavGrou
 }
 
 /** 아이템 활성 판정 · 현재 페이지가 이 아이템이거나 · business-manage 서브페이지면 business-manage 활성 */
-const BUSINESS_SUB_PAGES: Set<AppNavPage> = new Set(["business-manage", "leave", "lunch", "permissions", "hr-forms"]);
+const BUSINESS_SUB_PAGES: Set<AppNavPage> = new Set(["business-manage", "permissions", "hr-forms"]);
 export function isItemActive(item: SideNavItem, currentPage: AppNavPage): boolean {
   if (item.subTab) return false; // 서브탭 항목은 · 페이지가 같아도 · 정확한 서브탭 판정 어려워 · 활성 스킵 (Phase 3에서 완성)
   if (item.key === currentPage) return true;

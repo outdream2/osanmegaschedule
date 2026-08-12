@@ -21,6 +21,13 @@ interface LeaveRequest {
   reviewed_at: string | null;
 }
 
+/** 2026-08-12 · 연차 페이지 모드 분리
+ *  · "apply"    · 직원 신청 UI 만 (승인요청 그룹용)
+ *  · "approval" · 관리자 승인 UI 만 (요청목록 탭용) · 실제 관리자(level≥2) 만 노출
+ *  · "both"     · 기존 통합 (하위호환) · isManager 로 자동 분기
+ */
+export type LeaveMode = "apply" | "approval" | "both";
+
 interface LeavePageProps {
   onBack: () => void;
   authSession: AuthSession | null;
@@ -28,6 +35,7 @@ interface LeavePageProps {
   onLogout?: () => void;
   /** true 시 자체 AppNavHeader skip (BusinessManagePage 임베드용 · 2026-08-03) */
   embedded?: boolean;
+  mode?: LeaveMode;
 }
 
 type ManagerTab = "pending" | "all";
@@ -53,12 +61,18 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNavigate, onLogout, embedded = false }) => {
+export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNavigate, onLogout, embedded = false, mode = "both" }) => {
   const isManager = (authSession?.level ?? 0) >= 2;
   const employeeId = authSession?.employeeId;
   const employeeName = authSession?.employeeName ?? "";
 
+  // 모드별 뷰 활성화 · 관리자 UI 는 실제 관리자에게만 노출 (mode="approval" 이라도 방어)
+  const showApply = mode === "apply" || (mode === "both" && !isManager);
+  const showApproval = (mode === "approval" || (mode === "both" && isManager)) && isManager;
+
   // ── Employee state ──────────────────────────────────────────────────────────
+  // 2026-08-12 · 잔여 연차 (신청 뷰 상단 배너)
+  const [balance, setBalance] = useState<{ total: number; used: number; remaining: number } | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [formType, setFormType] = useState(LEAVE_TYPES[0]);
   const [formStart, setFormStart] = useState(today());
@@ -89,6 +103,15 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
     finally { setMyLoading(false); }
   }, [employeeId]);
 
+  // 2026-08-12 · 잔여 연차 로드
+  const loadBalance = useCallback(async () => {
+    if (!employeeId) return;
+    try {
+      const res = await fetch(`/api/leave-balance?employeeId=${employeeId}`);
+      if (res.ok) setBalance(await res.json());
+    } catch { /* silent */ }
+  }, [employeeId]);
+
   const loadAllRequests = useCallback(async () => {
     setAllLoading(true);
     try {
@@ -99,9 +122,9 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
   }, []);
 
   useEffect(() => {
-    if (isManager) { loadAllRequests(); }
-    else { loadMyRequests(); }
-  }, [isManager]);
+    if (showApproval) loadAllRequests();
+    if (showApply) { loadMyRequests(); loadBalance(); }
+  }, [showApproval, showApply, loadAllRequests, loadMyRequests, loadBalance]);
 
   // ── Submit (employee) ───────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
@@ -178,7 +201,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
           onNavigate={onNavigate}
           onLogout={onLogout}
           rightSlot={
-            isManager && pending.length > 0 ? (
+            showApproval && pending.length > 0 ? (
               <span className="flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full">
                 <Clock size={11} />
                 대기 {pending.length}건
@@ -190,14 +213,28 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-5">
 
-        {/* ── 직원 뷰 ── */}
-        {!isManager && (
+        {/* ── 직원 뷰 (신청) ── 2026-08-12 · 글씨 -1 단계 · 무게 살짝 완화 */}
+        {showApply && (
           <div className="flex flex-col gap-4">
+            {/* 잔여 연차 배너 · 2026-08-12 · /api/leave-balance */}
+            {balance && (
+              <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CalendarDays size={16} className="text-green-600" />
+                  <span className="text-xs font-semibold text-slate-700">남은 연차</span>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg font-bold text-green-700 tabular-nums">{balance.remaining}</span>
+                  <span className="text-[10px] text-slate-400">일 / 총 {balance.total}일 (사용 {balance.used}일)</span>
+                </div>
+              </div>
+            )}
+
             {/* 신청 버튼 */}
             {!showForm && (
               <button
                 onClick={() => setShowForm(true)}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-sm shadow-sm transition-all duration-150 cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold text-xs shadow-sm transition-all duration-150 cursor-pointer"
               >
                 <Plus size={16} />
                 연차 신청하기
@@ -208,18 +245,18 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
             {showForm && (
               <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-sm font-black text-slate-800">신규 휴가 신청</p>
+                  <p className="text-xs font-bold text-slate-800">신규 휴가 신청</p>
                   <button onClick={() => { setShowForm(false); setSubmitError(null); }} className="text-slate-400 hover:text-slate-700 cursor-pointer"><X size={17} /></button>
                 </div>
                 <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                   {/* 휴가 종류 */}
                   <div>
-                    <label className="text-xs font-semibold text-slate-600 block mb-1.5">휴가 종류</label>
+                    <label className="text-[11px] font-semibold text-slate-600 block mb-1.5">휴가 종류</label>
                     <div className="relative">
                       <select
                         value={formType}
                         onChange={e => setFormType(e.target.value)}
-                        className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-slate-800 text-sm font-semibold focus:outline-none focus:border-green-500 transition appearance-none cursor-pointer"
+                        className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-slate-800 text-xs font-semibold focus:outline-none focus:border-green-500 transition appearance-none cursor-pointer"
                       >
                         {LEAVE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
@@ -230,7 +267,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                   <div className="flex flex-col gap-1.5">
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-xs font-semibold text-slate-600 block mb-1.5">시작일</label>
+                        <label className="text-[11px] font-semibold text-slate-600 block mb-1.5">시작일</label>
                         <input
                           type="date"
                           value={formStart}
@@ -239,45 +276,45 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                             setFormStart(s);
                             if (formEnd < s) setFormEnd(s);
                           }}
-                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-sm font-semibold focus:outline-none focus:border-green-500 transition"
+                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-xs font-semibold focus:outline-none focus:border-green-500 transition"
                           required
                         />
                       </div>
                       <div>
-                        <label className="text-xs font-semibold text-slate-600 block mb-1.5">종료일</label>
+                        <label className="text-[11px] font-semibold text-slate-600 block mb-1.5">종료일</label>
                         <input
                           type="date"
                           value={formEnd}
                           min={formStart}
                           onChange={e => setFormEnd(e.target.value)}
-                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-sm font-semibold focus:outline-none focus:border-green-500 transition"
+                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-xs font-semibold focus:outline-none focus:border-green-500 transition"
                           required
                         />
                       </div>
                     </div>
                     {/* 일수 자동 계산 */}
                     {formStart && formEnd && (
-                      <p className="text-xs text-green-600 font-semibold text-right">
+                      <p className="text-[11px] text-green-600 font-semibold text-right">
                         총 {Math.round((new Date(formEnd).getTime() - new Date(formStart).getTime()) / 86400000) + 1}일
                       </p>
                     )}
                   </div>
                   {/* 사유 */}
                   <div>
-                    <label className="text-xs font-semibold text-slate-600 block mb-1.5">사유 <span className="font-normal text-slate-400">(선택)</span></label>
+                    <label className="text-[11px] font-semibold text-slate-600 block mb-1.5">사유 <span className="font-normal text-slate-400">(선택)</span></label>
                     <textarea
                       value={formReason}
                       onChange={e => setFormReason(e.target.value)}
                       placeholder="사유를 입력하세요"
                       rows={2}
-                      className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-slate-800 text-sm focus:outline-none focus:border-green-500 transition resize-none"
+                      className="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-slate-800 text-xs focus:outline-none focus:border-green-500 transition resize-none"
                     />
                   </div>
-                  {submitError && <p className="text-xs text-rose-500 font-semibold">{submitError}</p>}
+                  {submitError && <p className="text-[11px] text-rose-500 font-semibold">{submitError}</p>}
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-bold rounded-lg transition-all duration-150 cursor-pointer text-sm flex items-center justify-center gap-2"
+                    className="w-full py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-semibold rounded-lg transition-all duration-150 cursor-pointer text-xs flex items-center justify-center gap-2"
                   >
                     {submitting ? <><div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" /><span>신청 중...</span></> : "신청 제출"}
                   </button>
@@ -290,8 +327,8 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-1.5">
                   <CalendarDays size={14} className="text-green-600" />
-                  <span className="text-sm font-black text-slate-700">내 신청 내역</span>
-                  <span className="text-[10px] font-mono text-slate-400">({myRequests.length}건)</span>
+                  <span className="text-xs font-bold text-slate-700">내 신청 내역</span>
+                  <span className="text-[9px] font-mono text-slate-400">({myRequests.length}건)</span>
                 </div>
                 <button onClick={loadMyRequests} disabled={myLoading} className="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all duration-150 cursor-pointer">
                   <RefreshCw size={11} className={myLoading ? "animate-spin" : ""} />
@@ -299,34 +336,34 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
               </div>
 
               {myLoading && myRequests.length > 0 && (
-                <div className="flex items-center justify-center gap-1.5 text-[10px] text-amber-600 font-bold py-1.5 mb-1 bg-amber-50 border border-amber-200 rounded-md sticky top-0 z-10">
+                <div className="flex items-center justify-center gap-1.5 text-[9px] text-amber-600 font-bold py-1.5 mb-1 bg-amber-50 border border-amber-200 rounded-md sticky top-0 z-10">
                   <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
                 </div>
               )}
               {myLoading && myRequests.length === 0 ? (
-                <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+                <div className="flex items-center justify-center py-8 text-slate-400 text-[11px] font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
               ) : !myLoading && myRequests.length === 0 ? (
-                <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
+                <div className="text-center text-[10px] text-slate-300 py-6">데이터 없음</div>
               ) : (
                 <div className={`flex flex-col divide-y divide-slate-50 ${myLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                   {myRequests.map(r => (
                     <div key={r.id} className={`py-1.5 hover:bg-slate-50/60 transition-all duration-150 rounded-lg ${r.status === "pending" ? "border-l-2 border-amber-300 pl-2" : r.status === "approved" ? "border-l-2 border-emerald-300 pl-2" : "border-l-2 border-rose-300 pl-2"}`}>
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div>
-                          <p className="text-sm font-black text-gray-900">{r.leave_type}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">{fmtDate(r.start_date)} ~ {fmtDate(r.end_date)}</p>
+                          <p className="text-xs font-bold text-gray-900">{r.leave_type}</p>
+                          <p className="text-[11px] text-gray-500 mt-0.5">{fmtDate(r.start_date)} ~ {fmtDate(r.end_date)}</p>
                         </div>
-                        <span className={`shrink-0 text-[10px] font-bold px-2 py-1 rounded-full border ${STATUS_COLOR[r.status]}`}>
+                        <span className={`shrink-0 text-[9px] font-semibold px-2 py-1 rounded-full border ${STATUS_COLOR[r.status]}`}>
                           {STATUS_LABEL[r.status]}
                         </span>
                       </div>
-                      {r.reason && <p className="text-xs text-slate-500 mb-2 bg-slate-50 px-2.5 py-1.5 rounded-md">{r.reason}</p>}
+                      {r.reason && <p className="text-[11px] text-slate-500 mb-2 bg-slate-50 px-2.5 py-1.5 rounded-md">{r.reason}</p>}
                       {r.reviewer_note && (
-                        <p className="text-xs text-indigo-700 bg-indigo-50 px-2.5 py-1.5 rounded-lg mb-2">
-                          <span className="font-bold">관리자 메모:</span> {r.reviewer_note}
+                        <p className="text-[11px] text-indigo-700 bg-indigo-50 px-2.5 py-1.5 rounded-lg mb-2">
+                          <span className="font-semibold">관리자 메모:</span> {r.reviewer_note}
                         </p>
                       )}
-                      <div className="flex items-center justify-between text-[10px] text-gray-400">
+                      <div className="flex items-center justify-between text-[9px] text-gray-400">
                         <span>신청일: {fmtDateTime(r.created_at)}</span>
                         {r.reviewed_at && <span>검토일: {fmtDateTime(r.reviewed_at)}</span>}
                       </div>
@@ -334,7 +371,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                         <button
                           onClick={() => handleCancel(r.id)}
                           disabled={cancellingId === r.id}
-                          className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[11px] font-semibold bg-slate-50 border border-slate-200 text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all duration-150 cursor-pointer disabled:opacity-50"
+                          className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[10px] font-semibold bg-slate-50 border border-slate-200 text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all duration-150 cursor-pointer disabled:opacity-50"
                         >
                           <Trash2 size={11} />
                           {cancellingId === r.id ? "취소 중..." : "신청 취소"}
@@ -348,8 +385,8 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
           </div>
         )}
 
-        {/* ── 관리자 뷰 ── */}
-        {isManager && (
+        {/* ── 관리자 뷰 (승인) ── */}
+        {showApproval && (
           <div className="flex flex-col gap-4">
             {/* 탭 */}
             <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 border border-slate-200 rounded-xl">
