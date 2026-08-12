@@ -78,7 +78,7 @@ interface TabDef {
 const TABS: TabDef[] = [
   { key: "landing",       label: "홈",       mobileLabel: "홈",     icon: House,       managerOnly: false, color: "slate"   },
   { key: "schedule",      label: "스케줄",   mobileLabel: "스케줄", icon: Calendar,    managerOnly: false, color: "amber"   },
-  { key: "approval-request", label: "승인요청", mobileLabel: "승인",   icon: CheckSquare, managerOnly: true,  color: "indigo"  },
+  { key: "approval-request", label: "승인요청", mobileLabel: "승인",   icon: CheckSquare, managerOnly: false, color: "indigo"  },
   { key: "display",       label: "매장",     mobileLabel: "매장",   icon: SquaresFour, managerOnly: true,  color: "red"     },
   { key: "business",      label: "경영",     mobileLabel: "경영",   icon: Briefcase,   managerOnly: true,  color: "violet"  },
   { key: "pharmacist",    label: "약사",     mobileLabel: "약사",   icon: FirstAid,    managerOnly: false, pharmacistOnly: true, color: "sky" },

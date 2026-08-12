@@ -58,12 +58,12 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     id: "approvals",
     label: "승인요청",
     color: "indigo",
-    managerOnly: true,
+    // 2026-08-12 · 직원(lv1) 도 본인 승인 신청 · managerOnly 해제
     items: [
       // 2026-08-12 · 승인요청 통합 페이지 (approval-request) · 서브탭 3종 라우팅
-      { key: "approval-request", label: "연차승인", icon: CalendarDots, color: "indigo", subTab: "leave",           managerOnly: true },
-      { key: "approval-request", label: "점심불참", icon: Coffee,       color: "indigo", subTab: "lunch",           managerOnly: true },
-      { key: "approval-request", label: "서류작성", icon: PencilLine,   color: "indigo", subTab: "document-writer", managerOnly: true },
+      { key: "approval-request", label: "연차승인", icon: CalendarDots, color: "indigo", subTab: "leave"           },
+      { key: "approval-request", label: "점심불참", icon: Coffee,       color: "indigo", subTab: "lunch"           },
+      { key: "approval-request", label: "서류작성", icon: PencilLine,   color: "indigo", subTab: "document-writer" },
     ],
   },
   {
