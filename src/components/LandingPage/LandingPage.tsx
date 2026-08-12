@@ -1465,9 +1465,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     2026-08-12 · 사용자 요청 · lv 9 관리자도 노출 (테스트/미리보기용) */}
                 {(isVendor || isSuperAdminLevel9) && (
                   <button
-                    onClick={() => setShowVendorSelf(true)}
-                    disabled={!vendorSelf}
-                    title={vendorSelf ? "본인 공급사 정보 조회·수정" : "본인 공급사 정보를 불러올 수 없습니다"}
+                    onClick={() => {
+                      // 2026-08-12 · #96 · vendor 는 자기 모달 · 관리자는 매장>공급사 페이지로 이동
+                      if (isVendor && vendorSelf) { setShowVendorSelf(true); return; }
+                      if (isSuperAdminLevel9) {
+                        try { localStorage.setItem("sidebar.subtab.display", "vendor-manage"); } catch { /* silent */ }
+                        onNavigate("display", authSession!);
+                      }
+                    }}
+                    disabled={isVendor && !vendorSelf}
+                    title={isVendor ? (vendorSelf ? "본인 공급사 정보 조회·수정" : "본인 공급사 정보를 불러올 수 없습니다") : "매장>공급사 관리 이동"}
                     className="group relative bg-white border border-slate-200/80 hover:border-sky-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                   >
                     <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(186,230,253,0.5) 0%, transparent 60%)" }} />
@@ -1484,9 +1491,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     2026-08-12 · 사용자 요청 · lv 9 관리자도 노출 (테스트/미리보기용) */}
                 {(isVendor || isSuperAdminLevel9) && (
                   <button
-                    onClick={() => setShowVendorStock(true)}
-                    disabled={!vendorSelf}
-                    title={vendorSelf ? "본인 공급사의 상품·재고 현황 조회" : "본인 공급사 정보를 불러올 수 없습니다"}
+                    onClick={() => {
+                      // 2026-08-12 · #96 · vendor 는 자기 재고 모달 · 관리자는 매장>공급사 페이지로 이동
+                      if (isVendor && vendorSelf) { setShowVendorStock(true); return; }
+                      if (isSuperAdminLevel9) {
+                        try { localStorage.setItem("sidebar.subtab.display", "vendor-manage"); } catch { /* silent */ }
+                        onNavigate("display", authSession!);
+                      }
+                    }}
+                    disabled={isVendor && !vendorSelf}
+                    title={isVendor ? (vendorSelf ? "본인 공급사의 상품·재고 현황 조회" : "본인 공급사 정보를 불러올 수 없습니다") : "매장>공급사 관리 이동"}
                     className="group relative bg-white border border-slate-200/80 hover:border-indigo-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                   >
                     <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(199,210,254,0.5) 0%, transparent 60%)" }} />
