@@ -930,7 +930,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(160deg, #f8faff 0%, #f1f5ff 40%, #f0fdf4 100%)" }}>
+    <div className="min-h-screen flex flex-col bg-slate-50">
 
       {/* 세션 만료 안내 배너 (30분 무활동 자동 로그아웃 · 8초 후 자동 닫힘) */}
       {sessionExpiredNotice && (
