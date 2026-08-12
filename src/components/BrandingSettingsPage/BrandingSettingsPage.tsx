@@ -217,12 +217,7 @@ const ContactSection: React.FC = () => {
           onChange={(v) => setContact({ businessHours: v })}
           placeholder="예: 09:00 - 22:00"
         />
-        <TextField
-          label="저작권 문구 (푸터)"
-          value={contact.copyrightText}
-          onChange={(v) => setContact({ copyrightText: v })}
-          placeholder="예: (주)이룸즈(IRUMS)"
-        />
+        {/* 2026-08-12 · 사용자 지시 · 저작권 문구는 편집 불가 · UI 제거 (default 유지) */}
         <TextField
           label="카카오톡 채널 URL"
           value={contact.kakaoChannelUrl}

@@ -155,6 +155,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       { key: "zone-labels", label: "구역 라벨", icon: MapPin, color: "slate", managerOnly: true },
       // 2026-08-12 · Phase 5 · 브랜딩·연락처·도장·모바일 가시성 통합 설정 페이지
       { key: "branding", label: "앱 브랜딩", icon: Palette, color: "slate", minLevel: 9 },
+      // 2026-08-12 · 회사정보 설정 (약국명·대표·사업자·주소·전화)
+      { key: "company-info", label: "회사정보", icon: Buildings, color: "slate", minLevel: 9 },
     ],
   },
   {
