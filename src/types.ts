@@ -61,6 +61,10 @@ export interface Employee {
 export interface PagePermission {
   read: number;  // minimum level to view
   write: number; // minimum level to edit/submit
+  /** 2026-08-12 · #100 · 이 직군에 속하면 · 레벨 무관하게 읽기 허용 (OR 조건). 미지정 = 레벨만 판정 */
+  readPositions?: string[];
+  /** 2026-08-12 · #100 · 이 직군에 속하면 · 레벨 무관하게 쓰기 허용 (OR 조건). 미지정 = 레벨만 판정 */
+  writePositions?: string[];
 }
 
 // 2026-08-12 · 신규 페이지 반영 (승인요청·경영·설정 등) · 사이드바 그룹과 정합

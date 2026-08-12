@@ -2689,15 +2689,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   return (
                     <React.Fragment key={r.id}>
                     {isNewGroup && (
-                      <tr className="bg-sky-50/70 border-t-2 border-sky-200 sticky top-[38px] z-[5]">
-                        <td colSpan={99} className="px-3 py-2">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {/* 2026-08-10 · #39 · 공급사 이름 옆 분류 badge */}
+                      // 2026-08-12 · 컴팩트 리스트형 · 여백/배경/굵기 완화 · 사용자 요청
+                      <tr className="bg-sky-50/40 border-t border-sky-200 sticky top-[38px] z-[5]">
+                        <td colSpan={99} className="px-3 py-0.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <VendorCategoryBadge category={getVendorCategory(currentSup)} />
-                            <span className="text-[15px] font-black text-sky-900">{displayVendorName(currentSup) || currentSup}</span>
-                            <span className="text-[13px] font-semibold text-sky-500 tabular-nums">{groupRows.length}건</span>
-                            {/* 2026-08-10 · 사용자 요청 · 버튼 컴팩트 · 여백 최소 */}
-                            {/* 2026-08-12 · 체크박스 선택된 항목만 발주 · 선택 없으면 그룹 전체 */}
+                            <span className="text-[13px] font-semibold text-sky-900">{displayVendorName(currentSup) || currentSup}</span>
+                            <span className="text-[11px] font-medium text-sky-500 tabular-nums">{groupRows.length}건</span>
                             {(() => {
                               const selectedInGroup = groupRows.filter(r => selectedOrder.has(r.id));
                               const targetRows = selectedInGroup.length > 0 ? selectedInGroup : groupRows;
@@ -2706,10 +2704,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                                   type="button"
                                   onClick={(e) => { e.stopPropagation(); openOrderModal(targetRows); }}
                                   disabled={sendingBulk}
-                                  className="ml-auto inline-flex items-center gap-0.5 h-6 px-1.5 rounded text-[12px] font-black text-rose-800 bg-rose-100 border border-rose-300 hover:bg-rose-200 hover:border-rose-400 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                  className="ml-auto inline-flex items-center gap-0.5 h-5 px-1.5 rounded text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 hover:border-rose-300 disabled:opacity-40 disabled:cursor-not-allowed transition"
                                   title={`${currentSup} · ${targetRows.length}건 발주${selectedInGroup.length > 0 ? " (체크 선택)" : ""}`}
                                 >
-                                  <Send size={11}/>발주({targetRows.length})
+                                  <Send size={10}/>발주({targetRows.length})
                                 </button>
                               );
                             })()}
@@ -2730,7 +2728,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         <td className="px-0.5 py-1.5 align-top">
                           <button
                             onClick={() => setOrderPanelProduct({ code: r.product_code, name: r.product_name })}
-                            className="text-left text-[13px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words leading-snug cursor-pointer transition line-clamp-2"
+                            className="text-left text-[15px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words leading-snug cursor-pointer transition line-clamp-2"
                             title={r.product_name || "상품 상세정보 조회"}
                           >{r.product_name || "(상품명 없음)"}</button>
                         </td>
@@ -2741,11 +2739,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       ) : (
                         <>
                           <td
-                            className={`text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] bg-slate-50/40 align-middle whitespace-nowrap ${stockChanged ? "text-orange-600" : "text-slate-700"}`}
+                            className={`text-right px-0.5 py-1.5 tabular-nums font-bold text-[14px] bg-slate-50/40 align-middle whitespace-nowrap ${stockChanged ? "text-orange-600" : "text-slate-700"}`}
                             title={stockChanged ? `요청 당시 ${r.current_stock ?? "-"} → 현재 ${displayCurrentStock ?? "-"} (변동)` : "현재 ERP 재고 (실시간)"}
                           >
                             {displayCurrentStock ?? "-"}
-                            {stockChanged && <span className="text-[10px] font-normal text-slate-400 ml-1">({r.current_stock})</span>}
+                            {stockChanged && <span className="text-[12px] font-normal text-slate-400 ml-1">({r.current_stock})</span>}
                           </td>
                           {/* 2026-08-06 · 실재고 셀 주석처리 (사용자 요청 · 손실추적 참조 유도)
                           <td
@@ -2775,9 +2773,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           </td>
                           */}
                           {/* 2026-08-10 · align-top → align-middle · 다른 셀과 정렬 통일 */}
-                          <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-slate-50/40 align-middle whitespace-nowrap">{displayOptimal ?? "-"}</td>
+                          <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[14px] text-slate-700 bg-slate-50/40 align-middle whitespace-nowrap">{displayOptimal ?? "-"}</td>
                           <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-middle whitespace-nowrap">
-                            <span className="tabular-nums font-black text-[12px] text-rose-600">{displayShort > 0 ? `-${displayShort}` : "0"}</span>
+                            <span className="tabular-nums font-black text-[14px] text-rose-600">{displayShort > 0 ? `-${displayShort}` : "0"}</span>
                           </td>
                         </>
                       )}
@@ -2799,11 +2797,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                                   setOrderQtyOverride(prev => { const n = new Map(prev); n.set(r.id, v); return n; });
                                 }}
                                 onClick={e => e.stopPropagation()}
-                                className="w-14 h-6 px-1 rounded border border-rose-200 bg-white text-right tabular-nums font-black text-[13px] text-rose-700 focus:outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400"
+                                className="w-16 h-7 px-1 rounded border border-rose-200 bg-white text-right tabular-nums font-black text-[15px] text-rose-700 focus:outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400"
                               />
                             </td>
-                            <td className="text-right px-0.5 py-1.5 tabular-nums text-[12px] text-slate-500 bg-rose-50/20 align-middle whitespace-nowrap">{prevPrice != null ? prevPrice.toLocaleString() : "-"}</td>
-                            <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-[13px] text-emerald-700 bg-rose-50/20 align-middle whitespace-nowrap">{amount != null ? amount.toLocaleString() : "-"}</td>
+                            <td className="text-right px-0.5 py-1.5 tabular-nums text-[14px] text-slate-500 bg-rose-50/20 align-middle whitespace-nowrap">{prevPrice != null ? prevPrice.toLocaleString() : "-"}</td>
+                            <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-[15px] text-emerald-700 bg-rose-50/20 align-middle whitespace-nowrap">{amount != null ? amount.toLocaleString() : "-"}</td>
                           </>
                         );
                       })()}
