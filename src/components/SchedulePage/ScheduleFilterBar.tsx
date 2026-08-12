@@ -125,8 +125,8 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
             )}
           </div>
 
-          {/* 검색 · 직원등록 · 같은 줄 강제 (nowrap · 반응형에서도) */}
-          <div className="flex items-center gap-2 flex-1 min-w-0 flex-nowrap">
+          {/* 검색 · 직원등록 · 2026-08-13 · 반응형 · 좁은 폭에서 wrap 허용 (nowrap 이 overflow 원인) */}
+          <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap justify-end">
             <div className="relative flex-1 min-w-[120px] max-w-[180px] sm:max-w-[220px]">
               <input
                 type="text"

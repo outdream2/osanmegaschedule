@@ -169,8 +169,8 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
             <span className="text-[8px] font-bold leading-none">편집</span>
           </button>
         )}
-        {/* Row 1: Type (오픈, 마감, 휴무 등) — 편집 버튼 아래로 밀림 · 2026-08-11 폰트 +2 */}
-        <div className={`text-[13px] font-bold leading-tight truncate text-center w-full ${isAdmin ? "mt-0.5" : ""}`}>
+        {/* Row 1: Type (오픈, 마감, 휴무 등) — 편집 버튼 아래로 밀림 · 2026-08-13 반응형 (모바일 11 · PC 13) */}
+        <div className={`text-[11px] sm:text-[13px] font-bold leading-tight truncate text-center w-full ${isAdmin ? "mt-0.5" : ""}`}>
           {displayType || "-"}
         </div>
 
@@ -183,7 +183,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
 
         {/* Row 3: Actual Notes (실근무/특이사항) · 폰트 +2 */}
         {displayActualHours && (
-          <div className={`text-[11px] font-black leading-none truncate tracking-tighter mt-0.5 px-1 py-0.5 rounded text-center shrink-0 ${
+          <div className={`text-[9px] sm:text-[11px] font-black leading-none truncate tracking-tighter mt-0.5 px-1 py-0.5 rounded text-center shrink-0 ${
             displayActualHours.includes("지각")
               ? "text-amber-700 bg-amber-50 border border-amber-200"
               : displayActualHours.includes("조퇴")

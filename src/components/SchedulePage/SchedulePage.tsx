@@ -1864,7 +1864,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 </div>
               ) : (() => {
                 return (
-                  <table className="text-left border-collapse table-fixed w-full min-w-[900px]">
+                  <table className="text-left border-collapse table-fixed w-full min-w-max">
                     {/* Table Headers */}
                     <thead className="sticky top-0 z-30 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
                       {/* Header Row 1: Day of Month Numbers */}
