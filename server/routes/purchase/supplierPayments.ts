@@ -9,6 +9,8 @@
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 import { queryPurchaseDetails } from "../../utils/purchaseDetailsQuery";
+// 2026-08-13 · #107 · 결제 요청 · 관리자 알림 (인앱 + push)
+import { notificationsService } from "../../services/notificationsService";
 
 const router = Router();
 
@@ -270,6 +272,14 @@ router.post("/api/supplier-payments", async (req, res) => {
       }
       allocatedRows = allocRows ?? [];
     }
+
+    // 2026-08-13 · #107 · 관리자 broadcast · 결제 등록 알림 (인앱 + push)
+    notificationsService.notifyAllAdmins({
+      title: "💰 결제 등록",
+      body: `${supplier_name} · ${amt.toLocaleString()}원 (${methodClean}) 결제 등록됨.`,
+      type: "success",
+      push: { url: "/", tag: `payment-new-${payRow.id}` },
+    }).catch(() => null);
 
     return res.status(201).json({ ...payRow, allocations: allocatedRows });
   } catch (err: any) {

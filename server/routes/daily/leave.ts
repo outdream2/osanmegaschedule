@@ -99,22 +99,13 @@ router.post("/api/leave-requests", async (req, res) => {
     }]).select().single();
     if (error) throw new Error(error.message);
 
-    // 2026-08-13 · #107 · 컬럼 통일 · is_manager → level >= 9 (auth.ts 진실의 원천)
-    const { data: managers } = await supabase.from("employees").select("id, push_subscription").gte("level", 9);
-    if (managers) {
-      await Promise.allSettled(managers
-        .filter(m => m.push_subscription)
-        .map(m => webpush.sendNotification(
-          m.push_subscription as webpush.PushSubscription,
-          JSON.stringify({
-            title: "연차 신청 도착",
-            body: `${employee_name}님이 ${leave_type}을(를) 신청했습니다.`,
-            url: "/",
-            tag: `leave-new-${data?.id}`,
-          })
-        ).catch(() => null))
-      );
-    }
+    // 2026-08-13 · #107 · 관리자 broadcast · 인앱 + web push (통합 helper)
+    notificationsService.notifyAllAdmins({
+      title: "연차 신청 도착",
+      body: `${employee_name}님이 ${leave_type} (${start_date} ~ ${end_date}) 신청.`,
+      type: "info",
+      push: { url: "/", tag: `leave-new-${data?.id}` },
+    }).catch(() => null);
     return res.status(201).json(data);
   } catch (err: any) { return res.status(500).json({ error: err.message }); }
 });
