@@ -1,18 +1,22 @@
 // src/components/CompanyInfoSettingsPage/CompanyInfoSettingsPage.tsx
-// 2026-08-12 · 회사정보 설정 페이지 (관리자 lv≥9 전용)
-//   · useCompanyInfo 재활용 · settings.company_info key 서버 저장
-//   · 저장은 useKvSetting 의 debounce 500ms 자동 (필드 변경 즉시 서버 반영)
-//   · 계약서·사직서·PDF 등 다른 화면에서 즉시 참조
-import React from "react";
-import { Buildings, User, IdentificationBadge, MapPin, Phone, Palette, TextT } from "@phosphor-icons/react";
+// 2026-08-12 · 회사·브랜드 통합 설정 페이지 (관리자 lv≥9 전용)
+//   · 5탭 UI · 회사정보 · 브랜드 · 연락처·카카오 · 도장 매핑 · 모바일 가시성
+//   · useCompanyInfo / useBrandIdentity · settings.* KV 서버 저장 (debounce 500ms)
+//   · 계약서·사직서·PDF·랜딩·푸터 등 다른 화면에서 즉시 참조
+import React, { useState } from "react";
+import {
+  Buildings, User, IdentificationBadge, MapPin, Phone,
+  Palette, TextT,
+  AddressBook, Stamp, DeviceMobile,
+} from "@phosphor-icons/react";
 import type { AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { useCompanyInfo } from "../../hooks/useCompanyInfo";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { ImageUploadField } from "../common/ImageUploadField";
 import { SettingsPageShell } from "../common/SettingsPageShell";
-// 2026-08-12 · 회사정보 + 앱브랜딩 통합 · 연락처·도장·모바일 가시성 섹션 임베드
-import { BrandingSectionTabs } from "../BrandingSettingsPage/BrandingSettingsPage";
+// 2026-08-12 · 연락처·도장·모바일 가시성 개별 섹션 (개별 export · 5탭 배치용)
+import { ContactSection, StampsSection, MobileVisibilitySection } from "../BrandingSettingsPage/BrandingSettingsPage";
 import {
   SET_SECTION_TITLE, SET_SECTION_DESC,
   SET_LABEL, SET_INPUT, SET_BADGE,
@@ -26,14 +30,33 @@ interface Props {
   onLogout?: () => void;
 }
 
-// 2026-08-12 · 공통 상수 사용으로 통일 (하위 참조 유지)
 const LABEL_CLS = SET_LABEL;
 const INPUT_CLS = SET_INPUT;
 
+type TabKey = "company" | "brand" | "contact" | "stamps" | "mobile";
+const TABS: Array<{ key: TabKey; label: string; Icon: React.ComponentType<any>; color: string }> = [
+  { key: "company", label: "회사정보",      Icon: Buildings,    color: "text-indigo-500"  },
+  { key: "brand",   label: "브랜드",        Icon: Palette,      color: "text-violet-500"  },
+  { key: "contact", label: "연락처·카카오", Icon: AddressBook,  color: "text-sky-500"     },
+  { key: "stamps",  label: "도장 매핑",     Icon: Stamp,        color: "text-rose-500"    },
+  { key: "mobile",  label: "모바일 가시성", Icon: DeviceMobile, color: "text-emerald-500" },
+];
+
 const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, onLogout }) => {
   const { info, setInfo, loaded, saveState } = useCompanyInfo();
-  // 2026-08-12 · 브랜드 정보 (앱 이름·로고·파비콘) 통합 · 이 페이지 한 곳에서 편집
   const { brand, setBrand } = useBrandIdentity();
+
+  // 2026-08-12 · 5탭 상태 · localStorage 저장 (재방문 시 마지막 탭 복원)
+  const [tab, setTab] = useState<TabKey>(() => {
+    try {
+      const v = localStorage.getItem("companyInfo.tab") as TabKey | null;
+      return (v && TABS.some(t => t.key === v)) ? v : "company";
+    } catch { return "company"; }
+  });
+  const changeTab = (k: TabKey) => {
+    setTab(k);
+    try { localStorage.setItem("companyInfo.tab", k); } catch { /* silent */ }
+  };
 
   const badgeText =
     saveState === "saving" ? "저장 중..." :
@@ -53,18 +76,45 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
       onLogout={onLogout}
       icon={Buildings}
       iconColor="text-indigo-500"
-      title="회사정보"
-      description="근로계약서·사직서·PDF·각종 서식에 표시되는 사업장 정보 (약국명·대표·사업자·주소·전화) 및 앱 브랜드 (로고·파비콘). 관리자(lv 9) 전용."
+      title="회사·브랜드"
+      description="근로계약서·사직서·PDF·랜딩·푸터 등에 표시되는 사업장 정보 · 앱 브랜딩 · 연락처 · 도장 · 모바일 가시성을 한 곳에서 관리합니다. 관리자(lv 9) 전용."
       rightSlot={badgeText ? (
         <span className={`${SET_BADGE} ${badgeCls}`}>{badgeText}</span>
       ) : undefined}
     >
+      {/* 2026-08-12 · 상단 5탭 TabBar · 각 섹션 개별 표시 */}
+      <div className="mb-3 flex flex-wrap gap-0.5 border-b border-slate-200">
+        {TABS.map(({ key, label, Icon, color }) => {
+          const active = tab === key;
+          return (
+            <button
+              key={key}
+              onClick={() => changeTab(key)}
+              className={`px-3.5 py-2 -mb-px flex items-center gap-1.5 text-[14px] font-bold border-b-2 transition-colors ${
+                active
+                  ? "border-indigo-500 text-slate-800"
+                  : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+              }`}
+              type="button"
+            >
+              <Icon size={16} weight={active ? "fill" : "regular"} className={active ? color : "text-slate-400"} />
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── 탭 1 · 회사정보 (사업장 · 법인) ── */}
+      {tab === "company" && (
         <div className={`${CARD_BASE} p-5 flex flex-col gap-4`}>
           <div>
             <h2 className={SET_SECTION_TITLE}>
               <Buildings size={18} className="text-indigo-500" />
               사업장 · 법인 정보
             </h2>
+            <p className={SET_SECTION_DESC}>
+              근로계약서·사직서·PDF·각종 서식에 표시되는 사업장 정보 (약국명·대표·사업자·주소·전화).
+            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -104,9 +154,11 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
             <p className="text-[11px] text-slate-400 text-center">서버에서 최신 값을 불러오는 중...</p>
           )}
         </div>
+      )}
 
-        {/* ── 브랜드 정보 · 2026-08-12 · 앱브랜딩에서 이동 통합 ── */}
-        <div className={`${CARD_BASE} p-5 flex flex-col gap-4 mt-4`}>
+      {/* ── 탭 2 · 브랜드 (앱 이름 · 로고) ── */}
+      {tab === "brand" && (
+        <div className={`${CARD_BASE} p-5 flex flex-col gap-4`}>
           <div>
             <h2 className={SET_SECTION_TITLE}>
               <Palette size={18} className="text-violet-500" />
@@ -157,11 +209,16 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
             </div>
           </div>
         </div>
+      )}
 
-        {/* ── 2026-08-12 · 앱 브랜딩 통합 · 연락처·도장·모바일 가시성 3섹션 탭 ── */}
-        <div className="mt-4">
-          <BrandingSectionTabs />
-        </div>
+      {/* ── 탭 3 · 연락처·카카오 ── */}
+      {tab === "contact" && <ContactSection />}
+
+      {/* ── 탭 4 · 도장 매핑 ── */}
+      {tab === "stamps"  && <StampsSection  />}
+
+      {/* ── 탭 5 · 모바일 가시성 ── */}
+      {tab === "mobile"  && <MobileVisibilitySection />}
     </SettingsPageShell>
   );
 };
