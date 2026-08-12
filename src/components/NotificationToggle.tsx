@@ -79,11 +79,12 @@ export const NotificationToggle: React.FC<Props> = ({ authSession }) => {
     : "알림 OFF · 탭하여 켜기";
 
   return (
-    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0" title={title}>
+    <div className="flex items-center gap-1 shrink-0" title={title}>
+      {/* 2026-08-12 · 사용자 지시 · "알림 " prefix 제거 · ON/OFF/차단 만 · 여백 반으로 (gap-1.5→gap-1) */}
       <span className={`text-[11px] font-black tracking-tight hidden sm:inline ${
         isDenied ? "text-slate-400" : isOn ? "text-emerald-600" : "text-slate-500"
       }`}>
-        알림 {isDenied ? "차단" : isOn ? "ON" : "OFF"}
+        {isDenied ? "차단" : isOn ? "ON" : "OFF"}
       </span>
       {/* iOS 스타일 토글 스위치 — 더 크게 · 뚜렷한 색상 */}
       <button

@@ -393,7 +393,6 @@ export const SideNav: React.FC<SideNavProps> = ({
                authSession.role === "superadmin" ? "최고관리자" :
                authSession.role === "admin" ? "대표" :
                authSession.role === "manager" ? "관리자" : "직원"}
-              {authSession.level != null ? ` · Lv.${authSession.level}` : ""}
             </span>
           </div>
         )}
