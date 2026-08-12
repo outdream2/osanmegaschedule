@@ -427,6 +427,13 @@ router.post("/api/order-requests", async (req, res) => {
     ...payload,
   }]).select("id").single();
   if (error) return res.status(500).json({ error: error.message });
+  // 2026-08-13 · #107 · 신규 발주요청 · 관리자 알림
+  notificationsService.notifyAllAdmins({
+    title: "📦 발주 요청",
+    body: `${b.product_name ?? code} · 발주 요청 추가됨.`,
+    type: "info",
+    push: { url: "/", tag: `order-req-${data?.id ?? code}` },
+  }).catch(() => null);
   res.json({ ok: true, updated: false, id: data?.id });
 });
 
@@ -794,6 +801,13 @@ router.post("/api/inventory-checks", async (req, res) => {
   if (result?.error) return res.status(500).json({ error: result.error });
   clearLowStockCache(); // 2026-08-05 · T-PERF-1a
   scheduleSnapshotBackground(); // 2026-08-06 · T-LOSS-HISTORY · 오늘 손실 스냅샷 자동
+  // 2026-08-13 · #107 · 실재고 점검 · 관리자 알림
+  notificationsService.notifyAllAdmins({
+    title: "📋 실재고 입력",
+    body: `${payload.product_name || code} · 실재고 저장됨 (담당: ${payload.checked_by || "-"}).`,
+    type: "info",
+    push: { url: "/", tag: `inv-check-${code}-${Date.now()}` },
+  }).catch(() => null);
   return res.json({ ok: true, updated: !!existing });
 });
 
@@ -884,6 +898,15 @@ router.post("/api/inventory-checks/bulk", async (req, res) => {
     }
     clearLowStockCache(); // 2026-08-05 · T-PERF-1a
     scheduleSnapshotBackground(); // 2026-08-06 · T-LOSS-HISTORY · 오늘 손실 스냅샷 자동
+    // 2026-08-13 · #107 · 실재고 일괄 저장 · 관리자 알림
+    if (saved > 0) {
+      notificationsService.notifyAllAdmins({
+        title: "📋 실재고 일괄 저장",
+        body: `${saved}건 저장 완료 (담당: ${checked_by}${failed > 0 ? ` · 실패 ${failed}건` : ""}).`,
+        type: "info",
+        push: { url: "/", tag: `inv-bulk-${Date.now()}` },
+      }).catch(() => null);
+    }
     res.json({ ok: true, saved, failed, total: items.length, downgraded });
   } catch (err: any) {
     console.error("[inventory-checks/bulk POST]", err?.message);
