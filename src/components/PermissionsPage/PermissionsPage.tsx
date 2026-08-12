@@ -5,6 +5,8 @@ import { updateEmployee } from "../../lib/employeeApi";
 import type { AuthSession, PagePermissions } from "../../types";
 import { DEFAULT_PERMISSIONS } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
+import { SettingsPageShell } from "../common/SettingsPageShell";
+import { Lock } from "@phosphor-icons/react";
 import { SettingsModal } from "../SettingsModal";
 import { useSettings } from "../../hooks/useSettings";
 import type { Employee } from "../../types";
@@ -216,30 +218,36 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     );
   }
 
-  return (
-    <div className={embedded ? "flex-1 flex flex-col" : "min-h-screen bg-slate-50 flex flex-col"}>
-      {!embedded && (
-        <AppNavHeader
-          activePage="permissions"
-          authSession={authSession}
-          onBack={onBack}
-          onNavigate={onNavigate}
-          onLogout={onLogout}
-        />
-      )}
-
-      <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
-        {/* Header */}
-        <div className="mb-4">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center">
-              <Shield size={14} className="text-white" />
-            </div>
-            <h1 className="text-xl font-black text-slate-900 tracking-tight">설정</h1>
-          </div>
-          <p className="text-slate-400 text-sm pl-9">권한 · 근무 유형 · 시급 등 앱 전체 설정을 관리합니다.</p>
+  // 2026-08-12 · embedded 모드는 셸 없이 (BusinessManagePage 임베드 대비)
+  if (embedded) {
+    return (
+      <div className="flex-1 flex flex-col">
+        <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-4">
+          {renderPermissionsBody()}
         </div>
+      </div>
+    );
+  }
 
+  return (
+    <SettingsPageShell
+      activePage={"permissions" as AppNavPage}
+      authSession={authSession}
+      onBack={onBack}
+      onNavigate={onNavigate}
+      onLogout={onLogout}
+      icon={Lock}
+      iconColor="text-violet-600"
+      title="직원 권한"
+      description="페이지별 최소 권한 · 직원별 레벨 · 근무 유형·직군·공사중 등 앱 전체 설정을 관리합니다. 관리자(lv 9) 전용."
+      maxWidth="max-w-4xl"
+    >
+      {renderPermissionsBody()}
+    </SettingsPageShell>
+  );
+
+  function renderPermissionsBody() {
+    return <>
         {/* 탭 */}
         <div className="mb-4 flex flex-wrap bg-slate-100 border border-slate-200 rounded-xl p-0.5 gap-0.5 w-fit">
           <button type="button" onClick={() => setTab("permissions")}
@@ -528,9 +536,8 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
             </label>
           </div>
         )}
-      </div>
-    </div>
-  );
+    </>;
+  }
 };
 
 interface LevelSelectProps {

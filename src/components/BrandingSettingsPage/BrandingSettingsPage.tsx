@@ -20,6 +20,7 @@ import {
 } from "@phosphor-icons/react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { AppFooter } from "../layout/AppFooter";
+import { SettingsPageShell } from "../common/SettingsPageShell";
 import type { AuthSession, StampMapping } from "../../types";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { useContactInfo } from "../../hooks/useContactInfo";
@@ -588,41 +589,36 @@ export const BrandingSettingsPage: React.FC<BrandingSettingsPageProps> = ({
   onNavigate,
   embedded = false,
 }) => {
+  // embedded 모드는 셸 없이 원본 (BusinessManagePage 등 임베드 대비 · 미사용 상태지만 방어)
+  if (embedded) {
+    return (
+      <div className="flex-1 flex flex-col">
+        <main className="flex-1 max-w-[1100px] mx-auto w-full px-3 sm:px-5 py-4 flex flex-col gap-3">
+          <BrandingSectionTabs />
+        </main>
+      </div>
+    );
+  }
+  // 2026-08-12 · 공통 SettingsPageShell 사용 · [설정] 하위 페이지 UI 통일
   return (
-    <div className={embedded ? "flex-1 flex flex-col" : "min-h-screen bg-slate-50 flex flex-col"}>
-      {!embedded && (
-        <AppNavHeader
-          // 2026-08-12 · Phase 5 · 라우팅 등록 완료 · activePage 를 "branding" 으로
-          activePage={"branding" as AppNavPage}
-          authSession={authSession}
-          onBack={onBack}
-          onNavigate={onNavigate}
-          onLogout={onLogout}
-        />
-      )}
-
-      <main className="flex-1 max-w-[1100px] mx-auto w-full px-3 sm:px-5 py-4 flex flex-col gap-3">
-        {/* 상단 배너 */}
-        <div className="sticky top-0 z-20 -mx-3 sm:-mx-5 px-3 sm:px-5 py-2 bg-white/95 backdrop-blur-sm border-b border-slate-200 shadow-sm flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
-              <Gear size={15} weight="fill" />
-            </div>
-            <span className="text-[13px] font-black text-slate-800 leading-none">
-              브랜딩·연락처 설정
-            </span>
-          </div>
-          <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-slate-500 font-semibold">
-            <FloppyDisk size={11} weight="fill" /> 각 항목은 변경 즉시 서버에 저장됩니다
-          </span>
-        </div>
-
-        {/* 2026-08-12 · 브랜드 정보는 회사정보 페이지로 이동 · 3섹션 탭 UI */}
-        <BrandingSectionTabs />
-      </main>
-
-      {!embedded && <AppFooter />}
-    </div>
+    <SettingsPageShell
+      activePage={"branding" as AppNavPage}
+      authSession={authSession}
+      onBack={onBack}
+      onNavigate={onNavigate}
+      onLogout={onLogout}
+      icon={Gear}
+      iconColor="text-indigo-500"
+      title="앱 브랜딩"
+      description="연락처·카카오·도장 매핑·페이지별 모바일 최소 레벨. (브랜드 정보 · 로고/파비콘은 [회사정보] 페이지로 이동됨.) 관리자(lv 9) 전용."
+      rightSlot={
+        <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-slate-500 font-semibold">
+          <FloppyDisk size={11} weight="fill" /> 변경 즉시 저장
+        </span>
+      }
+    >
+      <BrandingSectionTabs />
+    </SettingsPageShell>
   );
 };
 
