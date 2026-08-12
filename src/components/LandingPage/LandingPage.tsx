@@ -1173,8 +1173,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </div>
                 </button>
 
-                {/* 연차 신청 — rose · 뒤로 배치 */}
-                <button data-menu-card onClick={() => onNavigate("leave", authSession!)}
+                {/* 연차 신청 — rose · 뒤로 배치 · 2026-08-12 · 사이드바 [승인요청]>[연차신청] 페이지로 연결 (subTab=leave) */}
+                <button data-menu-card onClick={() => {
+                  try { localStorage.setItem("sidebar.subtab.approval-request", "leave"); } catch { /* silent */ }
+                  onNavigate("approval-request", authSession!);
+                }}
                   className="order-5 group relative bg-white border border-slate-200/80 hover:border-rose-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(255,228,230,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
@@ -1458,9 +1461,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     <div className="text-slate-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">상담 및 방문 일정을 간편하게 예약</div>
                   </div>
                 </button>
-                {/* 2026-08-09 · 사용자 요청 · 거래처 담당자만 보이는 카드 · 클릭 시 본인 공급사 조회·수정 모달
-                    (매입이력 공급사조회 상세정보의 [조회수정] 버튼과 동일한 VendorDetailModal · 공통) */}
-                {isVendor && (
+                {/* 2026-08-09 · 거래처 담당자용 · 본인 공급사 조회·수정 · VendorDetailModal
+                    2026-08-12 · 사용자 요청 · lv 9 관리자도 노출 (테스트/미리보기용) */}
+                {(isVendor || isSuperAdminLevel9) && (
                   <button
                     onClick={() => setShowVendorSelf(true)}
                     disabled={!vendorSelf}
@@ -1477,8 +1480,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     </div>
                   </button>
                 )}
-                {/* 2026-08-10 · #23 · 공급사 재고확인 카드 · 로그인 공급사의 상품·재고 리스트 모달 */}
-                {isVendor && (
+                {/* 2026-08-10 · #23 · 공급사 재고확인 · 상품·재고 리스트 모달
+                    2026-08-12 · 사용자 요청 · lv 9 관리자도 노출 (테스트/미리보기용) */}
+                {(isVendor || isSuperAdminLevel9) && (
                   <button
                     onClick={() => setShowVendorStock(true)}
                     disabled={!vendorSelf}

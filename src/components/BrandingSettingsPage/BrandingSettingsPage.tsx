@@ -21,6 +21,9 @@ import {
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { AppFooter } from "../layout/AppFooter";
 import { SettingsPageShell } from "../common/SettingsPageShell";
+import {
+  SET_LABEL, SET_INPUT_STRONG, SET_HINT, SET_SECTION_TITLE, SET_SECTION_DESC,
+} from "../common/settingsTypography";
 import type { AuthSession, StampMapping } from "../../types";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { useContactInfo } from "../../hooks/useContactInfo";
@@ -35,11 +38,9 @@ const CARD_BASE =
   "bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden";
 const SECTION_HEADER =
   "flex items-center gap-2 px-4 py-3 border-b border-slate-200 bg-slate-50/60";
-const INPUT_BASE =
-  "bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[13px] " +
-  "text-slate-800 font-semibold focus:outline-none focus:border-indigo-400 " +
-  "focus:ring-2 focus:ring-indigo-100 transition disabled:opacity-50 w-full";
-const LABEL_BASE = "text-[12px] font-semibold text-slate-600";
+// 2026-08-12 · 공통 CSS 로 통일 (settingsTypography.ts)
+const INPUT_BASE = SET_INPUT_STRONG;
+const LABEL_BASE = SET_LABEL;
 
 interface BrandingSettingsPageProps {
   authSession: AuthSession | null;
@@ -104,7 +105,7 @@ function TextField({
         placeholder={placeholder}
         className={INPUT_BASE}
       />
-      {hint && <span className="text-[11px] text-slate-400 leading-snug">{hint}</span>}
+      {hint && <span className={SET_HINT}>{hint}</span>}
     </div>
   );
 }
