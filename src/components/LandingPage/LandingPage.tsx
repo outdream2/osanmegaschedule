@@ -1273,22 +1273,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           {/* ── 비로그인: 인라인 재고검색 + 로그인 버튼 (보조) ── */}
           {!isLoggedIn && (
             <div className="w-full mb-7 flex flex-col gap-3">
-              {/* 브랜드 헤더 · OSAM MEGATOWN (2026-08-09 · 반응형) */}
-              {/* 2026-08-12 · 프레임워크 · brand.brandNameEn 안에서 brand.brandAccentWord 만 accent 색으로 · 값 없으면 하드코딩 fallback */}
-              <div className="w-full text-center pt-2 pb-1">
-                <div className="text-slate-900 font-black tracking-[0.15em] text-2xl sm:text-3xl md:text-4xl leading-tight">
+              {/* 브랜드 헤더 · 2026-08-13 · PC 공통헤더 (AppNavHeader) 와 · 글씨·색깔 완전 통일
+                    · OSAN = red-500 · MEGATOWN = gray-900 · font-black · tracking-tight · 2줄 배치 */}
+              <div className="w-full flex flex-col items-center pt-2 pb-1">
+                <div className="flex flex-col gap-0.5 font-black tracking-tight leading-none select-none items-center">
                   {(() => {
                     const en = lpBrand.brandNameEn || "OSAN MEGATOWN";
                     const accent = lpBrand.brandAccentWord || "MEGATOWN";
                     const idx = accent ? en.indexOf(accent) : -1;
-                    if (idx < 0) return en;
-                    const before = en.slice(0, idx);
-                    const after = en.slice(idx + accent.length);
+                    const before = idx >= 0 ? en.slice(0, idx).trim() : en;
+                    const after  = idx >= 0 ? en.slice(idx + accent.length).trim() : "";
                     return (
                       <>
-                        {before}
-                        <span className="text-indigo-600">{accent}</span>
-                        {after}
+                        {before && <span className="text-red-500 text-lg leading-none">{before}</span>}
+                        {idx >= 0 && <span className="text-gray-900 text-sm leading-none">{accent}</span>}
+                        {after && <span className="text-red-500 text-lg leading-none">{after}</span>}
                       </>
                     );
                   })()}
