@@ -42,8 +42,10 @@ const BusinessManagePage = React.lazy(() => import("./components/BusinessManageP
 const PharmacistPage = React.lazy(() => import("./components/PharmacistPage/PharmacistPage"));
 // 2026-08-03 · 각종 양식 (인사 문서 관리) · 경영관리 서브탭 및 별도 라우팅 진입 지원 · lazy 로드
 const HrFormsPage = React.lazy(() => import("./components/HrFormsPage/HrFormsPage"));
+// 2026-08-12 · 승인요청 통합 페이지 (연차승인·점심불참·서류작성 서브탭) · lazy 로드
+const ApprovalRequestPage = React.lazy(() => import("./components/ApprovalRequestPage/ApprovalRequestPage"));
 
-type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist";
+type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist" | "approval-request";
 
 export default function App() {
   // 전역 모달 스크롤 잠금은 CSS :has() 셀렉터로 처리 (index.css) · JS 훅 불필요
@@ -105,7 +107,7 @@ export default function App() {
     }
   };
 
-  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms", auth?: AuthSession) => {
+  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "approval-request", auth?: AuthSession) => {
     if (auth) setAuthSession(auth);
     navigate(next);
   };
@@ -303,6 +305,18 @@ export default function App() {
     pageContent = (
       <React.Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-400 text-sm">불러오는 중...</div>}>
         <HrFormsPage authSession={authSession} onBack={goBack} onNavigate={navigateInner} onLogout={handleLogout} />
+      </React.Suspense>
+    );
+  } else if (page === "approval-request") {
+    // 2026-08-12 · 승인요청 통합 페이지 (연차승인·점심불참·서류작성 서브탭)
+    pageContent = (
+      <React.Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-400 text-sm">불러오는 중...</div>}>
+        <ApprovalRequestPage
+          authSession={authSession}
+          onBack={goBack}
+          onNavigate={navigateInner}
+          onLogout={handleLogout}
+        />
       </React.Suspense>
     );
   } else {

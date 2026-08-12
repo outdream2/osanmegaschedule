@@ -43,7 +43,8 @@ export type AppNavPage =
   | "zone-labels"          // 2026-08-03 · 구역 라벨 관리 (설정 링크에서 접근 · 헤더 탭 노출 없음 · 라우팅 union 유지)
   | "business-manage"      // 2026-08-03 · 경영관리 통합 페이지
   | "hr-forms"             // 2026-08-03 · 각종 양식 (경영관리 서브탭 · 별도 라우팅 union 유지)
-  | "pharmacist";          // 2026-08-03 · 약사 전용 페이지
+  | "pharmacist"           // 2026-08-03 · 약사 전용 페이지
+  | "approval-request";    // 2026-08-12 · 승인요청 통합 페이지 (연차·점심불참·서류작성 서브탭)
 
 // 헤더 내부 탭 렌더용 확장 키 (경영관리 · business-manage 로 라우팅)
 type TabKey = AppNavPage | "business";
@@ -77,7 +78,7 @@ interface TabDef {
 const TABS: TabDef[] = [
   { key: "landing",       label: "홈",       mobileLabel: "홈",     icon: House,       managerOnly: false, color: "slate"   },
   { key: "schedule",      label: "스케줄",   mobileLabel: "스케줄", icon: Calendar,    managerOnly: false, color: "amber"   },
-  { key: "leave",         label: "승인요청", mobileLabel: "승인",   icon: CheckSquare, managerOnly: true,  color: "indigo"  },
+  { key: "approval-request", label: "승인요청", mobileLabel: "승인",   icon: CheckSquare, managerOnly: true,  color: "indigo"  },
   { key: "display",       label: "매장",     mobileLabel: "매장",   icon: SquaresFour, managerOnly: true,  color: "red"     },
   { key: "business",      label: "경영",     mobileLabel: "경영",   icon: Briefcase,   managerOnly: true,  color: "violet"  },
   { key: "pharmacist",    label: "약사",     mobileLabel: "약사",   icon: FirstAid,    managerOnly: false, pharmacistOnly: true, color: "sky" },
@@ -100,8 +101,9 @@ const TAB_COLOR_MAP: Record<string, { activeBg: string; activeText: string; inac
 };
 
 // 경영관리 탭이 활성인 페이지들 (통합 페이지 + 서브 페이지들 · 헤더 활성 표시용)
-// business-manage 는 통합 페이지 · leave/lunch/permissions 는 랜딩페이지에서 직접 이동 시 활성 표시
-const BUSINESS_PAGES = new Set<AppNavPage>(["business-manage", "leave", "lunch", "permissions", "hr-forms"]);
+// business-manage 는 통합 페이지 · permissions/hr-forms 는 랜딩페이지에서 직접 이동 시 활성 표시
+// 2026-08-12 · leave / lunch 는 승인요청 통합 페이지 (approval-request) 로 이관 · BUSINESS_PAGES 에서 제외
+const BUSINESS_PAGES = new Set<AppNavPage>(["business-manage", "permissions", "hr-forms"]);
 
 export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   activePage,

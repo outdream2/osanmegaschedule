@@ -60,9 +60,10 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     color: "indigo",
     managerOnly: true,
     items: [
-      { key: "leave",           label: "연차/휴가",   icon: CalendarDots, color: "indigo", managerOnly: true },
-      { key: "lunch",           label: "점심불참",    icon: Coffee,       color: "indigo", managerOnly: true },
-      { key: "business-manage", label: "서류작성",  icon: PencilLine,   color: "indigo", subTab: "document-writer:resignation", managerOnly: true },
+      // 2026-08-12 · 승인요청 통합 페이지 (approval-request) · 서브탭 3종 라우팅
+      { key: "approval-request", label: "연차승인", icon: CalendarDots, color: "indigo", subTab: "leave",           managerOnly: true },
+      { key: "approval-request", label: "점심불참", icon: Coffee,       color: "indigo", subTab: "lunch",           managerOnly: true },
+      { key: "approval-request", label: "서류작성", icon: PencilLine,   color: "indigo", subTab: "document-writer", managerOnly: true },
     ],
   },
   {
