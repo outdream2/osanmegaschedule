@@ -99,7 +99,8 @@ router.post("/api/leave-requests", async (req, res) => {
     }]).select().single();
     if (error) throw new Error(error.message);
 
-    const { data: managers } = await supabase.from("employees").select("id, push_subscription").eq("is_manager", true);
+    // 2026-08-13 · #107 · 컬럼 통일 · is_manager → level >= 9 (auth.ts 진실의 원천)
+    const { data: managers } = await supabase.from("employees").select("id, push_subscription").gte("level", 9);
     if (managers) {
       await Promise.allSettled(managers
         .filter(m => m.push_subscription)
@@ -178,7 +179,8 @@ router.put("/api/leave-requests/:id", async (req, res) => {
     }
 
     if (status === "approved") {
-      const { data: managers } = await supabase.from("employees").select("id").gte("level", 2);
+      // 2026-08-13 · #107 · 관리자 판별 통일 · level >= 9
+      const { data: managers } = await supabase.from("employees").select("id").gte("level", 9);
       if (managers && managers.length > 0) {
         await Promise.all(
           managers

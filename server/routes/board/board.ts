@@ -256,7 +256,8 @@ router.post("/api/board/posts", async (req, res) => {
   // 관리자 전원 알림 + 멘션 대상 알림
   (async () => {
     try {
-      const { data: mgrs } = await supabase.from("employees").select("id").gte("level", 2);
+      // 2026-08-13 · #107 · 관리자 판별 통일 · lv >= 9
+      const { data: mgrs } = await supabase.from("employees").select("id").gte("level", 9);
       const managerIds = (mgrs ?? []).map((m: any) => m.id).filter((id: number) => id !== authorId);
       const notifyIds = Array.from(new Set([...managerIds, ...mentions]));
       const title = `📝 [${insertRow.post_type === "issue" ? "이슈" : insertRow.post_type === "memo" ? "메모" : "질문"}] ${insertRow.title}`;

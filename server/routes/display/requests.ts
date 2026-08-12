@@ -214,7 +214,7 @@ router.post("/api/display-requests", async (req, res) => {
         const { data: admins } = await supabase
           .from("employees")
           .select("id, name, push_subscription")
-          .gte("auth_level", 8);
+          .gte("level", 9);
         if (admins && admins.length > 0) {
           const targetAdmins = admins.filter(a => !notifiedIds.has((a as any).id));
           if (targetAdmins.length > 0) {
@@ -340,7 +340,7 @@ router.patch("/api/display-requests/:id/complete", async (req, res) => {
   (async () => {
     try {
       const { data: admins } = await supabase
-        .from("employees").select("id, push_subscription").gte("auth_level", 8);
+        .from("employees").select("id, push_subscription").gte("level", 9);
       if (!admins?.length) return;
       const title = "✅ 진열 완료";
       const body = (cur as any).zone_label
@@ -370,7 +370,7 @@ router.patch("/api/display-requests/:id", async (req, res) => {
 
   if (status === "done") {
     const { data: admins } = await supabase
-      .from("employees").select("id, push_subscription").gte("auth_level", 8);
+      .from("employees").select("id, push_subscription").gte("level", 9);
     if (admins?.length) {
       const title = "✅ 진열 완료";
       const body = zone_label

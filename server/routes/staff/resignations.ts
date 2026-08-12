@@ -87,12 +87,12 @@ async function uploadSignatureToStorage(
 
 const router = Router();
 
-// ─── 공통 · 관리자 목록 (level ≥ 8) ────────────────────────────────────────
+// ─── 공통 · 관리자 목록 (level ≥ 9) · 2026-08-13 · #107 · 통일 ─────────────
 async function fetchAdmins() {
   const { data } = await supabase
     .from("employees")
     .select("id, push_subscription")
-    .gte("level", 8);
+    .gte("level", 9);
   return data ?? [];
 }
 
