@@ -147,7 +147,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
   },
   // 2026-08-12 · 거래처 그룹 · PC 관리자 편의 · 모바일 숨김
   //   · 랜딩페이지의 [거래처용] 섹션과 동일 · 사이드바에서 바로 접근
-  //   · 모달 기반 (공급사조회·재고확인) 은 랜딩에서 로그인 계정별 노출 유지
+  //   · 공급사 정보 · 재고확인 은 모달 기반 → landing 라우팅 + localStorage signal 로 자동 open
+  //     (LandingPage 가 mount 시 "landing.action" 읽어서 해당 모달 열고 삭제)
   {
     id: "vendor",
     label: "거래처",
@@ -156,7 +157,10 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     hideOnMobile: true,
     topTab: { hideInTopTabs: true }, // 헤더는 유지 · 사이드바 전용
     items: [
-      { key: "reservation", label: "방문예약", icon: CalendarDots, color: "emerald" },
+      { key: "reservation", label: "방문예약",       icon: CalendarDots, color: "emerald" },
+      // subTab · 랜딩으로 라우팅 + signal 로 모달 open · SideNav 에서 특수 처리
+      { key: "landing",     label: "공급사 정보",     icon: Buildings,    color: "emerald", subTab: "vendor-self"  },
+      { key: "landing",     label: "공급사 재고확인", icon: Package,      color: "emerald", subTab: "vendor-stock" },
     ],
   },
   {
