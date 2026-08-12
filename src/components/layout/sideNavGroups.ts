@@ -10,7 +10,7 @@ import {
   ChatCircle, FirstAid, FileText,
   Briefcase, Chat, Lock, MapPin,
   UserCircle, UsersThree, CheckSquare, PencilLine,
-  Palette,
+  Palette, Gear,
   type Icon,
 } from "@phosphor-icons/react";
 import type { AppNavPage } from "./AppNavHeader";
@@ -34,23 +34,41 @@ export interface SideNavGroup {
   id: string;
   label: string;
   color: SideNavColor;
+  /** 공통헤더 TABS 파생용 · 헤더 상단 탭 아이콘 · 지정 시 group.items[0].icon 대신 사용 (회귀 방지 · 기존 헤더 아이콘 유지) */
+  icon?: Icon;
   managerOnly?: boolean;
   pharmacistOnly?: boolean;
   items: SideNavItem[];
+  /** 공통헤더 TABS 파생 · 없으면 그룹 자동 노출 · hideInTopTabs=true 면 헤더에 노출 안 함 */
+  topTab?: {
+    /** AppNavPage or "business" 확장 키 · 없으면 group.items[0].key 사용 */
+    key?: string;
+    /** 짧은 모바일 라벨 · 기본 group.label */
+    mobileLabel?: string;
+    /** true 면 헤더에서 숨김 (예: 계정 그룹) */
+    hideInTopTabs?: boolean;
+  };
 }
 
 // 상단 헤더 TABS 순서 · 각 최상위 아래 · 서브탭들
+// 2026-08-12 · 공통헤더 TABS = 이 배열에서 자동 파생 (DERIVED_TOP_TABS · AppNavHeader.tsx)
+//   · group.icon (헤더용 아이콘) · group.topTab (헤더 노출 키/라벨/숨김) 필드로 명시
+//   · 순서·라벨·색상·아이콘 모두 기존 하드코딩 TABS 와 동일 (회귀 없음)
 export const SIDE_NAV_GROUPS: SideNavGroup[] = [
   {
     id: "landing",
     label: "홈",
     color: "slate",
+    icon: House,
+    topTab: { key: "landing" },
     items: [{ key: "landing", label: "홈", icon: House, color: "slate" }],
   },
   {
     id: "schedule",
     label: "스케줄",
     color: "amber",
+    icon: Calendar,
+    topTab: { key: "schedule" },
     items: [
       { key: "schedule", label: "스케줄", icon: Calendar, color: "amber" },
     ],
@@ -59,6 +77,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     id: "approvals",
     label: "승인요청",
     color: "indigo",
+    icon: CheckSquare, // 헤더용 · 기존 TABS 아이콘 유지 (items[0]=CalendarDots 와 다름 · 회귀 방지)
+    topTab: { key: "approval-request", mobileLabel: "승인" },
     // 2026-08-12 · 직원(lv1) 도 본인 승인 신청 · managerOnly 해제
     items: [
       // 2026-08-12 · 승인요청 통합 페이지 (approval-request) · 서브탭 3종 라우팅
@@ -71,6 +91,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     id: "display",
     label: "매장",
     color: "red",
+    icon: SquaresFour, // 헤더용 · 기존 TABS 아이콘 유지 (items[0]=Truck 발주 와 다름 · 회귀 방지)
+    topTab: { key: "display" },
     managerOnly: true,
     items: [
       // DisplayPage 서브탭 · dpCanSeeStockManage (level ≥ 9) 조건과 동일하게 minLevel 지정
@@ -93,6 +115,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     id: "business",
     label: "경영",
     color: "violet",
+    icon: Briefcase, // 헤더용 · 기존 TABS 아이콘 유지 (items[0]=UsersThree 직원관리 와 다름 · 회귀 방지)
+    topTab: { key: "business" }, // 특수 키 · AppNavHeader 내부에서 business-manage 로 라우팅
     managerOnly: true,
     items: [
       // BusinessManagePage 서브탭
@@ -106,6 +130,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     id: "pharmacist",
     label: "약사",
     color: "sky",
+    icon: FirstAid,
+    topTab: { key: "pharmacist" },
     pharmacistOnly: true,
     items: [{ key: "pharmacist", label: "약사", icon: FirstAid, color: "sky", pharmacistOnly: true }],
   },
@@ -113,12 +139,16 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     id: "board",
     label: "이슈",
     color: "emerald",
+    icon: ChatCircle,
+    topTab: { key: "board" },
     items: [{ key: "board", label: "이슈", icon: ChatCircle, color: "emerald" }],
   },
   {
     id: "settings",
     label: "설정",
     color: "slate",
+    icon: Gear, // 헤더용 · 기존 TABS 아이콘 유지 (items[0]=Lock 직원권한 과 다름 · 회귀 방지)
+    topTab: { key: "permissions" },
     managerOnly: true,
     items: [
       { key: "permissions", label: "직원권한", icon: Lock, color: "slate", minLevel: 9 },
@@ -131,9 +161,38 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     id: "account",
     label: "계정",
     color: "slate",
+    icon: UserCircle,
+    topTab: { hideInTopTabs: true }, // 헤더 노출 안 함 · 사이드바 전용
     items: [{ key: "mypage", label: "마이페이지", icon: UserCircle, color: "slate" }],
   },
 ];
+
+/** 공통헤더 TABS 파생용 · SIDE_NAV_GROUPS 로부터 자동 파생 (AppNavHeader.tsx 에서 소비)
+ *  · 회귀 방지 · 순서·라벨·아이콘·색상 모두 group 정의 그대로
+ *  · icon 우선순위 · group.icon > group.items[0].icon
+ *  · key 는 topTab.key ?? items[0].key (business 특수 키 포함 · 헤더 내부에서 처리)
+ */
+export interface DerivedTopTab {
+  key: string;                 // AppNavPage or "business"
+  label: string;               // group.label
+  mobileLabel: string;         // topTab.mobileLabel ?? group.label
+  color: SideNavColor;         // group.color (TabDef.color 로 cast 안전 · SideNavColor ⊂ TabDef.color)
+  managerOnly: boolean;
+  pharmacistOnly?: boolean;
+  icon: Icon;                  // group.icon ?? group.items[0].icon
+}
+
+export const DERIVED_TOP_TABS: DerivedTopTab[] = SIDE_NAV_GROUPS
+  .filter(g => !g.topTab?.hideInTopTabs)
+  .map(g => ({
+    key: g.topTab?.key ?? g.items[0]?.key ?? g.id,
+    label: g.label,
+    mobileLabel: g.topTab?.mobileLabel ?? g.label,
+    color: g.color,
+    managerOnly: g.managerOnly ?? false,
+    pharmacistOnly: g.pharmacistOnly,
+    icon: g.icon ?? g.items[0]?.icon ?? House,
+  }));
 
 /** 서브탭 클릭 시 · 각 페이지 컴포넌트가 마운트 시 읽을 localStorage key */
 export function subTabStorageKey(pageKey: AppNavPage): string {

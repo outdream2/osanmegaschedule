@@ -6,16 +6,6 @@
 //   - 경영관리 탭 클릭 → business-manage 페이지로 단순 라우팅 (팝오버 제거)
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
 import { Lock, LogOut, Menu } from "lucide-react";
-import {
-  House,
-  SquaresFour,
-  Calendar,
-  ChatCircle,
-  Briefcase,
-  FirstAid,
-  CheckSquare,
-  Gear,
-} from "@phosphor-icons/react";
 import type { AuthSession } from "../../types";
 import { NotificationBell } from "../NotificationBell";
 import { NotificationToggle } from "../NotificationToggle";
@@ -25,6 +15,8 @@ import { SIDEBAR_ENABLED } from "../../hooks/useSidebar";
 import { useIsMobile } from "../../hooks/use-mobile";
 // 2026-08-12 · 프레임워크 · logo alt 만 brand.shortName 반영 (하드코딩 fallback 유지)
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
+// 2026-08-12 · #62 · 공통헤더 TABS 를 SIDE_NAV_GROUPS 로부터 파생 (단일 소스 · B 방식)
+import { DERIVED_TOP_TABS, type DerivedTopTab, type SideNavColor } from "./sideNavGroups";
 
 export type AppNavPage =
   | "landing"
@@ -73,21 +65,21 @@ interface TabDef {
   color?: "slate" | "blue" | "red" | "sky" | "indigo" | "orange" | "emerald" | "violet" | "amber" | "cyan";
 }
 
-// 2026-08-10 · 사용자 요청 · 순서: 홈 → 스케줄 → 매장 → 경영 → 약사 → 이슈 → 요청
-// (기존: 홈 → 매장 → 경영 → 약사 → 스케줄 → 이슈 → 요청 · 무지개 순서 폐기)
-// 2026-08-03: 경영관리 → business-manage 통합 페이지로 단순 라우팅 (팝오버 제거)
-// 2026-08-03: scan · productarrival · ocr 탭 제거 (매장관리 매입 서브탭 및 랜딩 카드에서 접근 · union 유지)
-// 2026-08-12 · 사이드바 그룹 구조와 동기화 · 홈·스케줄·승인요청·매장·경영·약사·이슈·설정
-const TABS: TabDef[] = [
-  { key: "landing",       label: "홈",       mobileLabel: "홈",     icon: House,       managerOnly: false, color: "slate"   },
-  { key: "schedule",      label: "스케줄",   mobileLabel: "스케줄", icon: Calendar,    managerOnly: false, color: "amber"   },
-  { key: "approval-request", label: "승인요청", mobileLabel: "승인",   icon: CheckSquare, managerOnly: false, color: "indigo"  },
-  { key: "display",       label: "매장",     mobileLabel: "매장",   icon: SquaresFour, managerOnly: true,  color: "red"     },
-  { key: "business",      label: "경영",     mobileLabel: "경영",   icon: Briefcase,   managerOnly: true,  color: "violet"  },
-  { key: "pharmacist",    label: "약사",     mobileLabel: "약사",   icon: FirstAid,    managerOnly: false, pharmacistOnly: true, color: "sky" },
-  { key: "board",         label: "이슈",     mobileLabel: "이슈",   icon: ChatCircle,  managerOnly: false, color: "emerald" },
-  { key: "permissions",   label: "설정",     mobileLabel: "설정",   icon: Gear,        managerOnly: true,  color: "slate"   },
-];
+// 2026-08-12 · #62 · TABS = SIDE_NAV_GROUPS 로부터 자동 파생 (단일 소스 · sideNavGroups.ts)
+// (이전: 하드코딩 배열 · 사이드바 그룹 정의와 이중 관리 → 파생으로 통일)
+//   · 순서 · 라벨 · 색상 · 아이콘 모두 group 정의 그대로 (회귀 없음)
+//   · business 특수 키 · 헤더 내부에서 business-manage 로 라우팅 유지
+//   · 계정 그룹은 topTab.hideInTopTabs=true 로 헤더 제외
+const TABS: TabDef[] = DERIVED_TOP_TABS.map((t: DerivedTopTab): TabDef => ({
+  key: t.key as TabKey,
+  label: t.label,
+  mobileLabel: t.mobileLabel,
+  icon: t.icon,
+  managerOnly: t.managerOnly,
+  pharmacistOnly: t.pharmacistOnly,
+  // SideNavColor ⊂ TabDef.color · cast 안전 (slate/amber/red/sky/indigo/emerald/violet/cyan 모두 커버)
+  color: t.color as SideNavColor & TabDef["color"],
+}));
 
 // 2026-08-06 · 랜딩 파스텔 톤 통일 · 활성 탭: 파스텔 배경 + 진한 텍스트 + border (흰 배경+진한gradient 제거)
 const TAB_COLOR_MAP: Record<string, { activeBg: string; activeText: string; inactiveText: string; inactiveHoverText: string; }> = {
