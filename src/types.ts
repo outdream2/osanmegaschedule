@@ -123,3 +123,62 @@ export const DEFAULT_COMPANY_INFO: CompanyInfo = {
 
 // T-Contract-PaymentDay · 근로계약서 임금지급일 · settings "payment_day_text" key
 export const DEFAULT_PAYMENT_DAY_TEXT = "당월 01일부터 당월 말일 까지 근로한 부분에 대하여 당월 말일에 '을' 본인 명의의 통장으로 지급한다.";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2026-08-12 · 프레임워크 준비 · 브랜딩·연락처·도장·모바일가시성 (settings key wrapping)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 브랜드 아이덴티티 · settings "brand_identity" key */
+export interface BrandIdentity {
+  shortName: string;         // 사이드바/푸터 · "오산 메가타운 약국"
+  brandNameEn: string;       // 랜딩 히어로 · "OSAN MEGATOWN"
+  brandAccentWord: string;   // 랜딩 컬러 강조 · "MEGATOWN"
+  appTitle: string;          // document.title · "오산메가타운 관리시스템"
+  logoUrl?: string;          // 없으면 bundled fallback
+  faviconUrl?: string;       // 없으면 bundled fallback
+}
+export const DEFAULT_BRAND_IDENTITY: BrandIdentity = {
+  shortName: "오산 메가타운 약국",
+  brandNameEn: "OSAN MEGATOWN",
+  brandAccentWord: "MEGATOWN",
+  appTitle: "오산메가타운 관리시스템",
+};
+
+/** 연락처·저작권 · settings "contact_info" key */
+export interface ContactInfo {
+  phone: string;
+  email: string;
+  website: string;
+  businessHours: string;      // "09:00 - 22:00"
+  copyrightText: string;      // 푸터 · "(주)이룸즈(IRUMS)"
+  kakaoChannelUrl: string;    // "https://pf.kakao.com/_XWuiX/friend"
+  kakaoQrImageUrl?: string;   // 없으면 bundled fallback
+}
+export const DEFAULT_CONTACT_INFO: ContactInfo = {
+  phone: "",
+  email: "",
+  website: "",
+  businessHours: "09:00 - 22:00",
+  copyrightText: "(주)이룸즈(IRUMS)",
+  kakaoChannelUrl: "https://pf.kakao.com/_XWuiX/friend",
+};
+
+/** 도장 매핑 · settings "stamps_map" key · 이름 → 도장 이미지 */
+export interface StampMapping {
+  name: string;        // "강남성" 등 사업주/대표자 이름
+  imageUrl: string;    // Supabase Storage or 상대 경로
+  bundledFallback?: "sungstamp" | "kyustamp";  // 기존 bundled 이미지 (하위호환)
+}
+export const DEFAULT_STAMPS_MAP: StampMapping[] = [
+  { name: "강남성", imageUrl: "", bundledFallback: "sungstamp" },
+  { name: "강남규", imageUrl: "", bundledFallback: "kyustamp" },
+];
+
+/** 페이지별 모바일 사용여부 · settings "mobile_visibility" key
+ *  · 값 없거나 undefined 는 default (허용)
+ *  · false 면 · 모바일에서 접근 시 "PC 전용 화면입니다" 안내
+ */
+export type MobileVisibilityMap = Partial<Record<string, boolean>>; // pageKey → allowed
+export const DEFAULT_MOBILE_VISIBILITY: MobileVisibilityMap = {
+  // 기본 · 모든 페이지 모바일 허용 (false 로 명시된 것만 차단)
+};
