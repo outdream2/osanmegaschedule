@@ -10,6 +10,9 @@ import { Lock } from "@phosphor-icons/react";
 import { SettingsModal } from "../SettingsModal";
 import { useSettings } from "../../hooks/useSettings";
 import type { Employee } from "../../types";
+// 2026-08-12 · #99 · 사이드바 그룹 트리 구조 · 페이지 → 그룹 매핑 재사용
+import { SIDE_NAV_GROUPS } from "../layout/sideNavGroups";
+import { CaretDown, CaretRight } from "@phosphor-icons/react";
 
 interface PermissionsPageProps {
   authSession: AuthSession | null;
@@ -49,6 +52,18 @@ const PAGE_LABELS: { key: keyof PagePermissions; label: string; desc: string }[]
 
 const LEVELS = [0,1,2,3,4,5,6,7,8,9];
 
+// 2026-08-12 · #99 · 그룹 아이콘 색상 · Tailwind JIT 스캔 대상 (dynamic class 회피)
+const GROUP_COLOR_CLS: Record<string, string> = {
+  slate:   "text-slate-500",
+  amber:   "text-amber-500",
+  red:     "text-red-500",
+  sky:     "text-sky-500",
+  indigo:  "text-indigo-500",
+  emerald: "text-emerald-500",
+  violet:  "text-violet-500",
+  cyan:    "text-cyan-500",
+};
+
 export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, onBack, onLogout, onNavigate, embedded = false }) => {
   const [perms, setPerms] = useState<PagePermissions>(DEFAULT_PERMISSIONS);
   const [saving, setSaving] = useState<string | null>(null); // key being saved
@@ -65,6 +80,22 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
   const [empSavingId, setEmpSavingId] = useState<number | null>(null);
   const [empSavedIds, setEmpSavedIds] = useState<Set<number>>(new Set());
   const [empSearch, setEmpSearch] = useState<string>("");
+  // 2026-08-12 · #99 · 트리 구조 · 그룹 접힘 상태 (localStorage 유지)
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem("permissions.tree.collapsed");
+      if (!raw) return new Set();
+      return new Set(JSON.parse(raw) as string[]);
+    } catch { return new Set(); }
+  });
+  const toggleGroup = (id: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      try { localStorage.setItem("permissions.tree.collapsed", JSON.stringify([...next])); } catch { /* silent */ }
+      return next;
+    });
+  };
 
   // 환경설정(구 톱니바퀴 모달) 통합 — useSettings + employees 로드
   const {
@@ -261,6 +292,37 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     return list;
   }, [employees]);
 
+  // 2026-08-12 · #99 · 페이지 → 사이드바 그룹 매핑 · 그룹별 페이지 리스트 계산
+  const groupedPages = useMemo(() => {
+    const pageToGroup = new Map<string, { groupId: string; groupLabel: string; groupIcon: any; color: string }>();
+    SIDE_NAV_GROUPS.forEach(g => g.items.forEach(it => {
+      if (!pageToGroup.has(it.key)) {
+        pageToGroup.set(it.key, {
+          groupId: g.id,
+          groupLabel: g.label,
+          groupIcon: g.icon ?? g.items[0]?.icon,
+          color: g.color,
+        });
+      }
+    }));
+    // system-settings · sideNavGroups 에는 있으나 PAGE_LABELS 없을 수 있음 · 매핑만 사용
+    const groups: Array<{ id: string; label: string; icon: any; color: string; pages: typeof PAGE_LABELS }> = [];
+    const seen = new Set<string>();
+    // sideNavGroups 순서 유지
+    for (const g of SIDE_NAV_GROUPS) {
+      const pages = PAGE_LABELS.filter(p => pageToGroup.get(p.key)?.groupId === g.id);
+      if (pages.length === 0) continue;
+      groups.push({ id: g.id, label: g.label, icon: g.icon ?? g.items[0]?.icon, color: g.color, pages });
+      pages.forEach(p => seen.add(p.key));
+    }
+    // 미분류 페이지 (기타 그룹)
+    const uncategorized = PAGE_LABELS.filter(p => !seen.has(p.key));
+    if (uncategorized.length > 0) {
+      groups.push({ id: "_misc", label: "기타", icon: Shield, color: "slate", pages: uncategorized });
+    }
+    return groups;
+  }, []);
+
   const filteredEmployees = useMemo(() => {
     const q = empSearch.trim().toLowerCase();
     if (!q) return activeEmployees;
@@ -369,46 +431,77 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           <Shield size={13} className="text-slate-500" />
           <h2 className="text-[17px] font-black text-slate-700">페이지별 최소 권한</h2>
         </div>
+        {/* 2026-08-12 · #99 · 트리 구조 · 사이드바 그룹별 접기/펼치기 · 그룹 내 페이지 리스트 */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          {/* Table header · 2026-08-12 · 헤더 글씨 +4 (11→15) · 컬럼 폭 확장 (100→140/150 · LevelSelect 겹침 fix) */}
+          {/* Table header */}
           <div className="grid grid-cols-[minmax(0,1fr)_140px_140px] sm:grid-cols-[minmax(0,1fr)_150px_150px] px-5 py-2.5 bg-slate-50 border-b border-slate-100 text-[15px] font-bold text-slate-500 tracking-tight">
             <span>페이지</span>
             <span className="text-right pr-3">읽기 최소</span>
             <span className="text-right pr-3">쓰기 최소</span>
           </div>
 
-          {PAGE_LABELS.map(({ key, label, desc }, i) => {
-            const perm = perms[key];
+          {groupedPages.map((g, gi) => {
+            const collapsed = collapsedGroups.has(g.id);
+            const GroupIcon = g.icon;
+            const isLastGroup = gi === groupedPages.length - 1;
             return (
-              <div
-                key={key}
-                title={desc}
-                className={`grid grid-cols-[minmax(0,1fr)_140px_140px] sm:grid-cols-[minmax(0,1fr)_150px_150px] px-5 py-2 items-center ${
-                  i < PAGE_LABELS.length - 1 ? "border-b border-slate-100" : ""
-                }`}
-              >
-                {/* Page name (1행 · desc 는 title tooltip) · 2026-08-12 · 폰트 -1 */}
-                <div className="text-xs font-semibold text-slate-800 truncate">{label}</div>
+              <div key={g.id} className={isLastGroup ? "" : "border-b border-slate-100"}>
+                {/* 그룹 헤더 · 접기/펼치기 · 사이드바 톤 */}
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(g.id)}
+                  className="w-full grid grid-cols-[minmax(0,1fr)_140px_140px] sm:grid-cols-[minmax(0,1fr)_150px_150px] px-4 py-2.5 items-center bg-slate-50/60 hover:bg-slate-100/70 transition-colors text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    {collapsed
+                      ? <CaretRight size={14} className="text-slate-500" weight="bold" />
+                      : <CaretDown  size={14} className="text-slate-500" weight="bold" />}
+                    {GroupIcon && <GroupIcon size={16} className={GROUP_COLOR_CLS[g.color] ?? "text-slate-500"} />}
+                    <span className="text-[14px] font-black text-slate-700">{g.label}</span>
+                    <span className="text-[11px] font-semibold text-slate-400">({g.pages.length})</span>
+                  </div>
+                  <div />
+                  <div />
+                </button>
 
-                {/* Read level · 2026-08-12 · 오른쪽 정렬 · 겹침 방지 */}
-                <div className="flex justify-end pr-1">
-                  <LevelSelect
-                    value={perm.read}
-                    onChange={v => handleChange(key, "read", v)}
-                    saving={saving === `${key}.read`}
-                    saved={savedKeys.has(`${key}.read`)}
-                  />
-                </div>
+                {!collapsed && g.pages.map(({ key, label, desc }, i) => {
+                  const perm = perms[key];
+                  return (
+                    <div
+                      key={key}
+                      title={desc}
+                      className={`grid grid-cols-[minmax(0,1fr)_140px_140px] sm:grid-cols-[minmax(0,1fr)_150px_150px] px-5 py-2 items-center ${
+                        i < g.pages.length - 1 ? "border-t border-slate-100/70" : "border-t border-slate-100/70"
+                      }`}
+                    >
+                      {/* 페이지명 · 들여쓰기 · 트리 시각화 */}
+                      <div className="text-[13px] font-semibold text-slate-700 truncate pl-6">
+                        <span className="text-slate-300 mr-1.5">└</span>
+                        {label}
+                      </div>
 
-                {/* Write level · 2026-08-12 · 오른쪽 정렬 · 겹침 방지 */}
-                <div className="flex justify-end pr-1">
-                  <LevelSelect
-                    value={perm.write}
-                    onChange={v => handleChange(key, "write", v)}
-                    saving={saving === `${key}.write`}
-                    saved={savedKeys.has(`${key}.write`)}
-                  />
-                </div>
+                      {/* Read level */}
+                      <div className="flex justify-end pr-1">
+                        <LevelSelect
+                          value={perm.read}
+                          onChange={v => handleChange(key, "read", v)}
+                          saving={saving === `${key}.read`}
+                          saved={savedKeys.has(`${key}.read`)}
+                        />
+                      </div>
+
+                      {/* Write level */}
+                      <div className="flex justify-end pr-1">
+                        <LevelSelect
+                          value={perm.write}
+                          onChange={v => handleChange(key, "write", v)}
+                          saving={saving === `${key}.write`}
+                          saved={savedKeys.has(`${key}.write`)}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             );
           })}
