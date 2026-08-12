@@ -434,7 +434,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         {/* 2026-08-12 · #99 · 트리 구조 · 사이드바 그룹별 접기/펼치기 · 그룹 내 페이지 리스트 */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           {/* Table header */}
-          <div className="grid grid-cols-[minmax(0,1fr)_140px_140px] sm:grid-cols-[minmax(0,1fr)_150px_150px] px-5 py-2.5 bg-slate-50 border-b border-slate-100 text-[15px] font-bold text-slate-500 tracking-tight">
+          <div className="grid grid-cols-[minmax(0,1fr)_170px_170px] sm:grid-cols-[minmax(0,1fr)_180px_180px] px-5 py-2.5 bg-slate-50 border-b border-slate-100 text-[15px] font-bold text-slate-500 tracking-tight">
             <span>페이지</span>
             <span className="text-right pr-3">읽기 최소</span>
             <span className="text-right pr-3">쓰기 최소</span>
@@ -450,15 +450,15 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                 <button
                   type="button"
                   onClick={() => toggleGroup(g.id)}
-                  className="w-full grid grid-cols-[minmax(0,1fr)_140px_140px] sm:grid-cols-[minmax(0,1fr)_150px_150px] px-4 py-2.5 items-center bg-slate-50/60 hover:bg-slate-100/70 transition-colors text-left"
+                  className="w-full grid grid-cols-[minmax(0,1fr)_170px_170px] sm:grid-cols-[minmax(0,1fr)_180px_180px] px-4 py-2.5 items-center bg-slate-50/60 hover:bg-slate-100/70 transition-colors text-left"
                 >
                   <div className="flex items-center gap-2">
                     {collapsed
                       ? <CaretRight size={14} className="text-slate-500" weight="bold" />
                       : <CaretDown  size={14} className="text-slate-500" weight="bold" />}
                     {GroupIcon && <GroupIcon size={16} className={GROUP_COLOR_CLS[g.color] ?? "text-slate-500"} />}
-                    <span className="text-[14px] font-black text-slate-700">{g.label}</span>
-                    <span className="text-[11px] font-semibold text-slate-400">({g.pages.length})</span>
+                    <span className="text-[16px] font-black text-slate-700">{g.label}</span>
+                    <span className="text-[13px] font-semibold text-slate-400">({g.pages.length})</span>
                   </div>
                   <div />
                   <div />
@@ -470,18 +470,18 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                     <div
                       key={key}
                       title={desc}
-                      className={`grid grid-cols-[minmax(0,1fr)_140px_140px] sm:grid-cols-[minmax(0,1fr)_150px_150px] px-5 py-2 items-center ${
+                      className={`grid grid-cols-[minmax(0,1fr)_170px_170px] sm:grid-cols-[minmax(0,1fr)_180px_180px] px-5 py-2 items-center ${
                         i < g.pages.length - 1 ? "border-t border-slate-100/70" : "border-t border-slate-100/70"
                       }`}
                     >
-                      {/* 페이지명 · 들여쓰기 · 트리 시각화 */}
-                      <div className="text-[13px] font-semibold text-slate-700 truncate pl-6">
+                      {/* 페이지명 · 들여쓰기 · 트리 시각화 · 2026-08-13 · +2 */}
+                      <div className="text-[15px] font-semibold text-slate-700 truncate pl-6">
                         <span className="text-slate-300 mr-1.5">└</span>
                         {label}
                       </div>
 
-                      {/* Read level */}
-                      <div className="flex justify-end pr-1">
+                      {/* Read level · 2026-08-13 · pr-3 여백 확대 · 컬럼 폭 170/180 */}
+                      <div className="flex justify-end pr-3">
                         <LevelSelect
                           value={perm.read}
                           onChange={v => handleChange(key, "read", v)}
@@ -490,8 +490,8 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                         />
                       </div>
 
-                      {/* Write level */}
-                      <div className="flex justify-end pr-1">
+                      {/* Write level · 2026-08-13 · pr-3 여백 확대 */}
+                      <div className="flex justify-end pr-3">
                         <LevelSelect
                           value={perm.write}
                           onChange={v => handleChange(key, "write", v)}
