@@ -4,10 +4,12 @@
 //   · 저장은 useKvSetting 의 debounce 500ms 자동 (필드 변경 즉시 서버 반영)
 //   · 계약서·사직서·PDF 등 다른 화면에서 즉시 참조
 import React from "react";
-import { Buildings, User, IdentificationBadge, MapPin, Phone } from "@phosphor-icons/react";
+import { Buildings, User, IdentificationBadge, MapPin, Phone, Palette, TextT, ImageSquare } from "@phosphor-icons/react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { useCompanyInfo } from "../../hooks/useCompanyInfo";
+import { useBrandIdentity } from "../../hooks/useBrandIdentity";
+import { ImageUploadField } from "../common/ImageUploadField";
 import { CARD_BASE } from "../../styles/tokens";
 
 interface Props {
@@ -22,6 +24,8 @@ const INPUT_CLS = "w-full bg-white border border-slate-200 rounded-lg px-3 py-2 
 
 const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, onLogout }) => {
   const { info, setInfo, loaded, saveState } = useCompanyInfo();
+  // 2026-08-12 · 브랜드 정보 (앱 이름·로고·파비콘) 통합 · 이 페이지 한 곳에서 편집
+  const { brand, setBrand } = useBrandIdentity();
 
   const badgeText =
     saveState === "saving" ? "저장 중..." :
@@ -92,6 +96,59 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
           {!loaded && (
             <p className="text-[11px] text-slate-400 text-center">서버에서 최신 값을 불러오는 중...</p>
           )}
+        </div>
+
+        {/* ── 브랜드 정보 · 2026-08-12 · 앱브랜딩에서 이동 통합 ── */}
+        <div className={`${CARD_BASE} p-5 flex flex-col gap-4 mt-4`}>
+          <div>
+            <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+              <Palette size={18} className="text-violet-500" />
+              브랜드 정보 (앱 이름 · 로고)
+            </h2>
+            <p className="text-[11px] text-slate-500 mt-1">
+              사이드바·랜딩·브라우저 탭에 표시되는 앱 브랜딩. 로고·파비콘은 파일 업로드 지원.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className={LABEL_CLS}><TextT size={12} />앱 이름 (사이드바)</label>
+              <input className={INPUT_CLS} value={brand.shortName} onChange={e => setBrand({ shortName: e.target.value })}
+                     placeholder="예: 오산 메가타운 약국" />
+            </div>
+            <div>
+              <label className={LABEL_CLS}><TextT size={12} />앱 타이틀 (브라우저 탭)</label>
+              <input className={INPUT_CLS} value={brand.appTitle} onChange={e => setBrand({ appTitle: e.target.value })}
+                     placeholder="예: 오산메가타운 관리시스템" />
+            </div>
+            <div>
+              <label className={LABEL_CLS}><TextT size={12} />영문 브랜드명 (랜딩)</label>
+              <input className={INPUT_CLS} value={brand.brandNameEn} onChange={e => setBrand({ brandNameEn: e.target.value })}
+                     placeholder="예: OSAN MEGATOWN" />
+            </div>
+            <div>
+              <label className={LABEL_CLS}><TextT size={12} />영문 강조 단어 (랜딩 컬러)</label>
+              <input className={INPUT_CLS} value={brand.brandAccentWord} onChange={e => setBrand({ brandAccentWord: e.target.value })}
+                     placeholder="예: MEGATOWN" />
+            </div>
+            <div className="sm:col-span-2">
+              <ImageUploadField
+                label="로고 이미지"
+                value={brand.logoUrl ?? ""}
+                onChange={v => setBrand({ logoUrl: v || undefined })}
+                prefix="logo"
+                hint="비워두면 기본 로고 사용. 파일 업로드 또는 URL 입력"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <ImageUploadField
+                label="파비콘 이미지"
+                value={brand.faviconUrl ?? ""}
+                onChange={v => setBrand({ faviconUrl: v || undefined })}
+                prefix="favicon"
+                hint="브라우저 탭 아이콘. 32x32 또는 64x64 png 권장"
+              />
+            </div>
+          </div>
         </div>
       </main>
     </div>

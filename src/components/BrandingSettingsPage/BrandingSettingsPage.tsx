@@ -26,6 +26,8 @@ import { useContactInfo } from "../../hooks/useContactInfo";
 import { useStampsMap } from "../../hooks/useStampsMap";
 import { useMobilePageLevel } from "../../hooks/useMobilePageLevel";
 import { SIDE_NAV_GROUPS } from "../layout/sideNavGroups";
+import { TabBar, type TabDef } from "../common/TabBar";
+import { ImageUploadField } from "../common/ImageUploadField";
 
 // ─── 공통 카드 스타일 (ContractSettingsPage 톤과 통일) ───────────────────────
 const CARD_BASE =
@@ -226,12 +228,13 @@ const ContactSection: React.FC = () => {
           type="url"
         />
         <div className="sm:col-span-2">
-          <TextField
-            label="카카오톡 QR 이미지 URL"
+          {/* 2026-08-12 · 파일 업로드 지원 · ImageUploadField 로 교체 */}
+          <ImageUploadField
+            label="카카오톡 QR 이미지"
             value={contact.kakaoQrImageUrl ?? ""}
             onChange={(v) => setContact({ kakaoQrImageUrl: v || undefined })}
-            placeholder="비워두면 기본 QR 이미지 사용"
-            type="url"
+            prefix="kakao_qr"
+            hint="비워두면 기본 QR 사용 · 파일 업로드 또는 URL"
           />
         </div>
       </div>
@@ -550,6 +553,30 @@ const MobileVisibilitySection: React.FC = () => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════
+//   2026-08-12 · 3섹션 탭 UI · 연락처·도장·모바일 가시성
+//   · 브랜드 정보(BrandSection)는 회사정보 페이지로 이동됨
+// ═══════════════════════════════════════════════════════════════════════
+type BrTab = "contact" | "stamps" | "mobile";
+const BR_TABS: TabDef<BrTab>[] = [
+  { key: "contact", label: "연락처·카카오", icon: Phone,        color: "emerald" },
+  { key: "stamps",  label: "도장 매핑",      icon: Stamp,        color: "rose"    },
+  { key: "mobile",  label: "모바일 가시성",  icon: DeviceMobile, color: "indigo"  },
+];
+const BrandingSectionTabs: React.FC = () => {
+  const [tab, setTab] = useState<BrTab>("contact");
+  return (
+    <>
+      <TabBar<BrTab> level={2} tabs={BR_TABS} activeKey={tab} onSelect={setTab} />
+      <div className="mt-3">
+        {tab === "contact" && <ContactSection />}
+        {tab === "stamps"  && <StampsSection  />}
+        {tab === "mobile"  && <MobileVisibilitySection />}
+      </div>
+    </>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════
 //   메인 · BrandingSettingsPage
 // ═══════════════════════════════════════════════════════════════════════
 export const BrandingSettingsPage: React.FC<BrandingSettingsPageProps> = ({
@@ -588,10 +615,8 @@ export const BrandingSettingsPage: React.FC<BrandingSettingsPageProps> = ({
           </span>
         </div>
 
-        <BrandSection />
-        <ContactSection />
-        <StampsSection />
-        <MobileVisibilitySection />
+        {/* 2026-08-12 · 브랜드 정보는 회사정보 페이지로 이동 · 3섹션 탭 UI */}
+        <BrandingSectionTabs />
       </main>
 
       {!embedded && <AppFooter />}
