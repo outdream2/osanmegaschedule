@@ -149,12 +149,12 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
       title="시스템 설정"
       description="DB · 인증 · AI/OCR · 알림톡·SMS · 이미지 CDN · Web Push · OCR 수신처 등 서버 env 편집. 저장 후 서버 재시작 시 반영. 관리자(lv 9) 전용."
     >
-        {/* 안내 배너 · 공통 CSS · SET_NOTICE_AMBER */}
-        <div className={SET_NOTICE_AMBER}>
-          <Warning size={16} weight="fill" className="mt-0.5 shrink-0" />
+        {/* 안내 배너 · 2026-08-12 · 폰트 -1 · 중요부분 붉은 강조 */}
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-2 text-xs text-amber-800">
+          <Warning size={14} weight="fill" className="mt-0.5 shrink-0 text-rose-600" />
           <div>
-            <div className="font-bold mb-0.5">저장 후 서버 재시작이 필요합니다.</div>
-            <div>여기서 편집한 값은 <code className="px-1 py-0.5 bg-amber-100 rounded">server/tenant.config.json</code> 파일에 저장되고 · 다음 서버 부팅 시 <code className="px-1 py-0.5 bg-amber-100 rounded">process.env</code> 를 덮어씁니다. Render 는 자동 재시작 · 로컬은 수동 재시작.</div>
+            <div className="font-bold mb-0.5 text-rose-700">저장 후 서버 재시작이 필요합니다.</div>
+            <div>편집한 값은 <code className="px-1 py-0.5 bg-amber-100 rounded font-bold text-rose-700">server/tenant.config.json</code> 파일에 저장되고 · 다음 서버 부팅 시 <code className="px-1 py-0.5 bg-amber-100 rounded font-bold text-rose-700">process.env</code> 를 덮어씁니다. Render 는 자동 재시작 · 로컬은 <span className="font-bold text-rose-700">수동 재시작 필요</span>.</div>
           </div>
         </div>
 
