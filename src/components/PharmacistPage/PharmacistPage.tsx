@@ -15,6 +15,7 @@ import { Settings2, Plus, Eye, FileText as FileTextIcon, Loader2, ChevronRight, 
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
+import { SplitPanel } from "../common/SplitPanel";
 import { ZONE_DEFS } from "../../constants/displayZones";
 import { getZoneLabel } from "../../constants/zoneLabels";
 import type { AuthSession } from "../../types";
@@ -75,8 +76,6 @@ const CATEGORIES: Record<Exclude<PharmTabKey, "education">, CategoryItem[]> = {
   ],
 };
 
-const RESIZE_STORAGE_KEY = "megatown_pharm_leftw";
-
 /**
  * 교육자료 카테고리 · 매장 구역(ZONE_DEFS) 기반 동적 생성
  *  · 통계 > 카테고리별 현황 · zone key 규칙과 동일 (예: "1A","1B","22","40A","40B","40C","35","36")
@@ -134,25 +133,6 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
       else { next.add(key); }
       return next;
     });
-  };
-
-  // ── 좌우 split 폭 (lg 이상) · localStorage 저장 ─────────────────
-  const [leftWidth, setLeftWidth] = useState<number>(() => {
-    try { const v = Number(localStorage.getItem(RESIZE_STORAGE_KEY)); return Number.isFinite(v) && v > 0 ? v : 320; } catch { return 320; }
-  });
-  useEffect(() => { try { localStorage.setItem(RESIZE_STORAGE_KEY, String(leftWidth)); } catch { /* ignore */ } }, [leftWidth]);
-  const leftWidthRef = useRef(leftWidth);
-  useEffect(() => { leftWidthRef.current = leftWidth; }, [leftWidth]);
-  const resizeRef = useRef<{ startX: number; startW: number } | null>(null);
-  const onResizeStart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    resizeRef.current = { startX: e.clientX, startW: leftWidthRef.current };
-    const move = (ev: MouseEvent) => {
-      const r = resizeRef.current; if (!r) return;
-      setLeftWidth(Math.min(560, Math.max(240, r.startW + (ev.clientX - r.startX))));
-    };
-    const up = () => { resizeRef.current = null; window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
-    window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
   };
 
   // 교육자료 카테고리 · zone-labels-changed 이벤트 시 재빌드 (사용자 라벨 변경 반영)
@@ -439,12 +419,21 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
         />
 
         {/* T20 · 좌 리스트 + 리사이저 + 우 PDF 인라인 뷰어 (2026-08-05 교육탭 트리구조) */}
-        <div className="flex flex-col lg:flex-row gap-2 lg:min-h-[520px]">
-          {/* 좌측 패널 · 교육탭=트리구조 / 나머지=stacked 2단 */}
-          <div
-            className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-2"
-            style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? leftWidth : undefined }}
-          >
+        <SplitPanel
+          storageKey="pharmacistPage.listWidth"
+          defaultWidth={320}
+          minWidth={240}
+          maxWidth={520}
+          dividerColor="sky"
+          mobileRightAsModal={true}
+          mobileModalTitle={selectedCatObj?.title}
+          mobileOpen={!!selectedCatObj || !!selectedItem}
+          onMobileClose={() => { setSelectedCat(null); setSelectedItem(null); }}
+          wrapLeft={false}
+          wrapRight={false}
+          style={{ minHeight: "520px" }}
+          left={
+            <div className="flex flex-col gap-2 w-full">
             {tab === "education" ? (
               /* ─── 교육탭 · 트리 구조 ─────────────────────── */
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
@@ -757,65 +746,57 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                 )}
               </>
             )}
-          </div>
-
-          {/* 리사이저 (lg 이상) */}
-          <div
-            onMouseDown={onResizeStart}
-            className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-sky-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
-            title="드래그하여 폭 조절"
-          >
-            <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
-          </div>
-
-          {/* 우측 · 선택된 하위메뉴의 PDF 인라인 뷰어 */}
-          <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0">
-            {!selectedItem ? (
-              <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
-                <FirstAid size={40} className="mb-3 opacity-30" />
-                <div className="text-sm font-bold">
-                  {selectedCatObj ? "좌측에서 하위메뉴를 선택하세요" : `좌측에서 ${activeTabDef.label} 카테고리를 선택하세요`}
-                </div>
-                <div className="text-[11px] mt-1">
-                  {selectedCatObj ? "선택된 자료의 PDF 가 이 영역에 표시됩니다" : "카테고리 선택 시 하위메뉴가 좌측 아래에 표시됩니다"}
-                </div>
-              </div>
-            ) : !selectedItem.file_url ? (
-              <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
-                <FileTextIcon size={36} className="mb-3 opacity-30" />
-                <div className="text-sm font-bold text-slate-600">{selectedItem.title}</div>
-                <div className="text-[11px] mt-2 text-slate-400">첨부 파일이 없습니다</div>
-              </div>
-            ) : (
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 flex flex-col overflow-hidden min-h-[400px]">
-                <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/60 flex items-center gap-2">
-                  <FileTextIcon size={14} className="text-sky-600" />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[13px] font-black text-slate-800 truncate">{selectedItem.title}</div>
-                    {selectedItem.file_name && (
-                      <div className="text-[10.5px] text-slate-400 truncate font-semibold">
-                        {selectedItem.file_name}{selectedItem.file_size ? ` · ${fmtBytes(selectedItem.file_size)}` : ""}
-                      </div>
-                    )}
+            </div>
+          }
+          right={
+            <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 h-full">
+              {!selectedItem ? (
+                <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
+                  <FirstAid size={40} className="mb-3 opacity-30" />
+                  <div className="text-sm font-bold">
+                    {selectedCatObj ? "좌측에서 하위메뉴를 선택하세요" : `좌측에서 ${activeTabDef.label} 카테고리를 선택하세요`}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => openViewerModal(selectedItem)}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-sky-600 hover:bg-sky-700 text-white text-[10.5px] font-bold cursor-pointer shrink-0"
-                    title="풀스크린 · 워터마크 스크린샷 방지 모드"
-                  >
-                    <Eye size={11} />풀스크린
-                  </button>
+                  <div className="text-[11px] mt-1">
+                    {selectedCatObj ? "선택된 자료의 PDF 가 이 영역에 표시됩니다" : "카테고리 선택 시 하위메뉴가 좌측 아래에 표시됩니다"}
+                  </div>
                 </div>
-                <iframe
-                  src={selectedItem.file_url}
-                  title={selectedItem.title}
-                  className="flex-1 w-full border-0 min-h-[400px] bg-slate-50"
-                />
-              </div>
-            )}
-          </div>
-        </div>
+              ) : !selectedItem.file_url ? (
+                <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
+                  <FileTextIcon size={36} className="mb-3 opacity-30" />
+                  <div className="text-sm font-bold text-slate-600">{selectedItem.title}</div>
+                  <div className="text-[11px] mt-2 text-slate-400">첨부 파일이 없습니다</div>
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 flex flex-col overflow-hidden min-h-[400px]">
+                  <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/60 flex items-center gap-2">
+                    <FileTextIcon size={14} className="text-sky-600" />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[13px] font-black text-slate-800 break-words whitespace-normal leading-tight">{selectedItem.title}</div>
+                      {selectedItem.file_name && (
+                        <div className="text-[10.5px] text-slate-400 font-semibold break-words whitespace-normal">
+                          {selectedItem.file_name}{selectedItem.file_size ? ` · ${fmtBytes(selectedItem.file_size)}` : ""}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => openViewerModal(selectedItem)}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-sky-600 hover:bg-sky-700 text-white text-[10.5px] font-bold cursor-pointer shrink-0"
+                      title="풀스크린 · 워터마크 스크린샷 방지 모드"
+                    >
+                      <Eye size={11} />풀스크린
+                    </button>
+                  </div>
+                  <iframe
+                    src={selectedItem.file_url}
+                    title={selectedItem.title}
+                    className="flex-1 w-full border-0 min-h-[400px] bg-slate-50"
+                  />
+                </div>
+              )}
+            </div>
+          }
+        />
       </main>
 
       {/* ── 설정 모달 (관리자) ─────────────────────────── */}
