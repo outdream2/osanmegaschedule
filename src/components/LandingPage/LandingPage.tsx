@@ -1121,7 +1121,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
                 {/* 약사 전용 — sky · level ≥ 3 만 노출 · 2026-08-03 */}
                 {(authSession?.level ?? 0) >= 3 && (
-                  <button data-menu-card onClick={() => onNavigate("pharmacist" as any, authSession!)}
+                  <button data-menu-card onClick={() => onNavigate("pharmacist", authSession!)}
                     className="order-1 group relative bg-white border border-slate-200/80 hover:border-sky-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                     <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-sky-100/70" />
                     <div className="relative">

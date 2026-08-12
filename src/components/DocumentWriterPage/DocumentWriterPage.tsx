@@ -34,15 +34,16 @@ const TABS: TabDef<DocTab>[] = [
 const DocumentWriterPage: React.FC<DocumentWriterPageProps> = (props) => {
   const [tab, setTab] = useState<DocTab>(() => {
     // 2026-08-12 · 사이드바 V2 · localStorage("sidebar.subtab.document-writer") 있으면 초기 탭
+    // StrictMode 이중 마운트 대비 · 읽기만 · 삭제는 useEffect 로
     try {
       const raw = localStorage.getItem("sidebar.subtab.document-writer") as DocTab | null;
-      if (raw === "contract" || raw === "resignation" || raw === "settings") {
-        localStorage.removeItem("sidebar.subtab.document-writer");
-        return raw;
-      }
+      if (raw === "contract" || raw === "resignation" || raw === "settings") return raw;
     } catch { /* silent */ }
     return "contract";
   });
+  useEffect(() => {
+    try { localStorage.removeItem("sidebar.subtab.document-writer"); } catch { /* silent */ }
+  }, []);
   const isAdmin = (props.authSession?.level ?? 0) >= 8;
   const sortable = useSortableTabs<TabDef<DocTab>>("tabOrder.documentWriter", TABS, isAdmin);
   // 사이드바 V2 · 같은 페이지 내 서브탭 재클릭 대응 (nested)

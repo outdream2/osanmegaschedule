@@ -1,5 +1,8 @@
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
+// 2026-08-12 · POST /api/settings 인증 · JWT 쿠키 · level ≥ 9 (관리자)
+//   GET 은 공개 유지 · 앱 설정 (brand·contact·permissions) 은 로그인 전에도 필요
+import { authorize } from "../../middleware/requireAuth";
 
 const router = Router();
 
@@ -103,7 +106,7 @@ router.get("/api/settings", async (req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-router.post("/api/settings", async (req, res) => {
+router.post("/api/settings", authorize(9), async (req, res) => {
   const { key, value } = req.body ?? {};
   if (!key) return res.status(400).json({ error: "key required" });
   try {

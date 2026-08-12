@@ -123,6 +123,10 @@ export function useKvSetting<T>(opts: UseKvSettingOptions<T>): UseKvSettingResul
   const valueRef = useRef(value);
   valueRef.current = value;
 
+  // 2026-08-12 · race 방어 · 초기 서버 응답 도착 전에 사용자가 setValue 로 편집하면
+  //   후속 서버 응답으로 사용자 편집이 덮이지 않도록 · 편집 발생 후엔 서버 응답 무시.
+  const hasUserEditedRef = useRef(false);
+
   // stable ref for options that shouldn't retrigger effects
   const sanitizeRef = useRef(sanitize);
   sanitizeRef.current = sanitize;
@@ -178,6 +182,8 @@ export function useKvSetting<T>(opts: UseKvSettingOptions<T>): UseKvSettingResul
     (async () => {
       const { ok, value: serverVal } = await fetchServer();
       if (cancelled) return;
+      // 사용자가 이미 편집을 시작했다면 · 초기 서버값으로 덮지 않음 (race 방어)
+      if (hasUserEditedRef.current) { setLoaded(true); return; }
 
       // 서버 값이 있고 유효 → 그것을 사용
       if (ok && serverVal !== null && serverVal !== undefined) {
@@ -261,6 +267,7 @@ export function useKvSetting<T>(opts: UseKvSettingOptions<T>): UseKvSettingResul
 
   // ── setValue · 로컬 즉시 · debounce 서버 저장
   const setValue = useCallback((next: T | ((prev: T) => T)) => {
+    hasUserEditedRef.current = true; // race 방어 · 초기 서버 응답이 이 편집을 덮지 못하게
     setValueState(prev => {
       const resolved = typeof next === "function"
         ? (next as (p: T) => T)(prev)

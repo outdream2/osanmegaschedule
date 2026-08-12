@@ -4,6 +4,7 @@
 import { useCallback } from "react";
 import { useKvSetting } from "./useKvSetting";
 import { type StampMapping, DEFAULT_STAMPS_MAP } from "../types";
+import { safeUrl } from "../lib/urlSafe";
 
 function sanitize(raw: unknown): StampMapping[] | null {
   if (!Array.isArray(raw)) return null;
@@ -14,7 +15,7 @@ function sanitize(raw: unknown): StampMapping[] | null {
       if (typeof r.name !== "string" || !r.name.trim()) return null;
       return {
         name: r.name.trim(),
-        imageUrl: typeof r.imageUrl === "string" ? r.imageUrl : "",
+        imageUrl: safeUrl(r.imageUrl, ""),
         bundledFallback: r.bundledFallback === "sungstamp" || r.bundledFallback === "kyustamp"
           ? r.bundledFallback : undefined,
       };

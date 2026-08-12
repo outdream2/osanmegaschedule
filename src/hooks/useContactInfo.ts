@@ -3,6 +3,7 @@
 import { useCallback } from "react";
 import { useKvSetting } from "./useKvSetting";
 import { type ContactInfo, DEFAULT_CONTACT_INFO } from "../types";
+import { safeUrl, safeLinkUrl } from "../lib/urlSafe";
 
 function sanitize(raw: unknown): ContactInfo | null {
   if (!raw || typeof raw !== "object") return null;
@@ -11,11 +12,11 @@ function sanitize(raw: unknown): ContactInfo | null {
   return {
     phone:            s(r.phone,           DEFAULT_CONTACT_INFO.phone),
     email:            s(r.email,           DEFAULT_CONTACT_INFO.email),
-    website:          s(r.website,         DEFAULT_CONTACT_INFO.website),
+    website:          safeLinkUrl(r.website, DEFAULT_CONTACT_INFO.website),
     businessHours:    s(r.businessHours,   DEFAULT_CONTACT_INFO.businessHours),
     copyrightText:    s(r.copyrightText,   DEFAULT_CONTACT_INFO.copyrightText),
-    kakaoChannelUrl:  s(r.kakaoChannelUrl, DEFAULT_CONTACT_INFO.kakaoChannelUrl),
-    kakaoQrImageUrl:  typeof r.kakaoQrImageUrl === "string" ? r.kakaoQrImageUrl : undefined,
+    kakaoChannelUrl:  safeLinkUrl(r.kakaoChannelUrl, DEFAULT_CONTACT_INFO.kakaoChannelUrl),
+    kakaoQrImageUrl:  safeUrl(r.kakaoQrImageUrl, "") || undefined,
   };
 }
 

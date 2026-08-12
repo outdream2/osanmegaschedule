@@ -3,18 +3,23 @@
 import { useCallback } from "react";
 import { useKvSetting } from "./useKvSetting";
 import { type BrandIdentity, DEFAULT_BRAND_IDENTITY } from "../types";
+import { safeUrl } from "../lib/urlSafe";
 
 function sanitize(raw: unknown): BrandIdentity | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
   const s = (v: unknown, fb: string) => typeof v === "string" ? v : fb;
+  const optSafeUrl = (v: unknown) => {
+    const u = safeUrl(v, "");
+    return u || undefined;
+  };
   return {
     shortName:       s(r.shortName,       DEFAULT_BRAND_IDENTITY.shortName),
     brandNameEn:     s(r.brandNameEn,     DEFAULT_BRAND_IDENTITY.brandNameEn),
     brandAccentWord: s(r.brandAccentWord, DEFAULT_BRAND_IDENTITY.brandAccentWord),
     appTitle:        s(r.appTitle,        DEFAULT_BRAND_IDENTITY.appTitle),
-    logoUrl:         typeof r.logoUrl    === "string" ? r.logoUrl    : undefined,
-    faviconUrl:      typeof r.faviconUrl === "string" ? r.faviconUrl : undefined,
+    logoUrl:         optSafeUrl(r.logoUrl),
+    faviconUrl:      optSafeUrl(r.faviconUrl),
   };
 }
 

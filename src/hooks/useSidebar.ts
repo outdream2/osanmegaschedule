@@ -1,6 +1,6 @@
 // src/hooks/useSidebar.ts
 // 2026-08-11 · 사이드바 V2 · collapsed 상태 · width 드래그 리사이즈 · localStorage 영속화
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 const COLLAPSED_KEY = "sidebar.collapsed";
 const WIDTH_KEY = "sidebar.width";
@@ -28,10 +28,16 @@ function readWidth(): number {
 /** 사이드바 폭 · 드래그 리사이즈 · localStorage 영속화 (PC 전용 · 모바일은 shadcn Sheet 자동 사용) */
 export function useSidebarWidth() {
   const [width, setWidth] = useState<number>(readWidth);
+  // 2026-08-12 · 드래그 중 unmount 시 리스너/스타일 리크 방지 · cleanup 저장
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     localStorage.setItem(WIDTH_KEY, String(width));
   }, [width]);
+
+  useEffect(() => {
+    return () => { cleanupRef.current?.(); };
+  }, []);
 
   /** 마우스다운 시 · document 에 mousemove/mouseup 리스너 추가 · 폭 조정 */
   const startResize = useCallback((e: React.MouseEvent) => {
@@ -49,7 +55,11 @@ export function useSidebarWidth() {
       document.removeEventListener("mouseup", onUp);
       document.body.style.userSelect = "";
       document.body.style.cursor = "";
+      cleanupRef.current = null;
     };
+    // 이전 드래그의 cleanup 이 살아있으면 먼저 정리 (연속 mousedown 방어)
+    cleanupRef.current?.();
+    cleanupRef.current = onUp;
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
   }, [width]);
