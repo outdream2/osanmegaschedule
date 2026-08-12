@@ -985,14 +985,17 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           items: [],
         });
       }
+      // 2026-08-12 · BUG FIX · 발주 리스트에서 편집한 orderQtyOverride 우선 반영 (없으면 need 로 자동)
       const need = (r.optimal_stock ?? 0) - (r.current_stock ?? 0);
+      const override = orderQtyOverride.get(r.id);
+      const finalQty = (override != null && override > 0) ? override : Math.max(1, need);
       bySupplier.get(sup)!.items.push({
         order_request_id: r.id,
         product_code: r.product_code,
         product_name: r.product_name,
         current_stock: r.current_stock,
         optimal_stock: r.optimal_stock,
-        order_qty: Math.max(1, need),
+        order_qty: finalQty,
         memo: "",
       });
     }
@@ -2895,8 +2898,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               >×</button>
             </div>
 
-            {/* 발주 기본 정보 */}
-            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
+            {/* 발주 기본 정보 · 2026-08-12 · 폰트 +4 (text-[11px] → text-[15px]) */}
+            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 grid grid-cols-2 sm:grid-cols-4 gap-3 text-[15px]">
               <div>
                 <label className="text-slate-500 font-black block mb-1">발주일자</label>
                 <input type="date" value={orderModal.orderDate} onChange={e => setOrderModal(p => p && ({ ...p, orderDate: e.target.value }))}
@@ -2971,9 +2974,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     )}
                     {/* 상품 테이블 · 2026-08-10 · 이전사입가 컬럼 추가 */}
                     {/* 2026-08-10 · #35·#36·#37 · 현재고·적정 컬럼 제거 · 단가 컬럼 제거 (이전사입가 사용) · 소계 앞 "총" + 글씨 +2 */}
-                    <table className="w-full text-[13px]">
+                    <table className="w-full text-[17px]">
                       <thead>
-                        <tr className="bg-slate-100 text-slate-500 font-black uppercase tracking-wide text-[11px] border-b border-slate-200">
+                        <tr className="bg-slate-100 text-slate-500 font-black uppercase tracking-wide text-[15px] border-b border-slate-200">
                           {/* 2026-08-12 · 상품코드 아래 상품명 · 두 컬럼 통합 · 폭 확보 */}
                           <th className="text-center p-2 w-8">#</th>
                           <th className="text-left p-2 w-56">상품</th>
@@ -3015,7 +3018,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         ))}
                       </tbody>
                       <tfoot>
-                        <tr className="bg-slate-50 border-t-2 border-slate-300 font-black text-[13px]">
+                        <tr className="bg-slate-50 border-t-2 border-slate-300 font-black text-[17px]">
                           <td colSpan={3} className="p-2 text-right text-slate-500 uppercase">총 소계</td>
                           <td className="p-2 text-right text-red-600 font-mono">총 {totalQty}개</td>
                           <td></td>
@@ -3033,27 +3036,27 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             {/* 발송 채널 (전역) · 특이사항 memo 제거 (비고 컬럼 사용) */}
             <div className="px-6 py-3 border-t border-slate-100 bg-slate-50/50">
               <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-center">
-                <div className="text-[11px] text-slate-400">
+                <div className="text-[15px] text-slate-400">
                   각 상품 비고 컬럼에 개별 메모 입력 가능
                 </div>
-                {/* 2026-08-10 · 사용자 요청 · 발송 채널 가로 배치 · 앞에 [물류팀장에게 발송] 체크박스 */}
+                {/* 발송 채널 · 2026-08-12 · 폰트 +4 */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] text-slate-500 font-black block">발송 채널</label>
+                  <label className="text-[15px] text-slate-500 font-black block">발송 채널</label>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {/* 2026-08-10 · 물류팀장에게 PDF 카톡 발송 · 기본 체크 */}
-                    <label className={`text-[11px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${notifyLogisticsLeader ? "bg-indigo-50 text-indigo-700 border-indigo-300" : "bg-white text-slate-400 border-slate-200"}`} title="체크 시 · 관리자(물류팀장)에게 발주서 PDF 카톡 전송">
+                    <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${notifyLogisticsLeader ? "bg-indigo-50 text-indigo-700 border-indigo-300" : "bg-white text-slate-400 border-slate-200"}`} title="체크 시 · 관리자(물류팀장)에게 발주서 PDF 카톡 전송">
                       <input type="checkbox" checked={notifyLogisticsLeader} onChange={e => setNotifyLogisticsLeader(e.target.checked)} className="w-3 h-3"/>
                       📋 물류팀장 발송 (PDF)
                     </label>
-                    <label className={`text-[11px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.kakao ? "bg-yellow-50 text-yellow-700 border-yellow-300" : "bg-white text-slate-400 border-slate-200"}`} title="SolAPI 알림톡 (사업자 인증·템플릿·env 필요)">
+                    <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.kakao ? "bg-yellow-50 text-yellow-700 border-yellow-300" : "bg-white text-slate-400 border-slate-200"}`} title="SolAPI 알림톡 (사업자 인증·템플릿·env 필요)">
                       <input type="checkbox" checked={orderModal.channels.kakao} onChange={e => setOrderModal(p => p && ({ ...p, channels: { ...p.channels, kakao: e.target.checked } }))} className="w-3 h-3"/>
                       💬 카카오톡
                     </label>
-                    <label className={`text-[11px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.email ? "bg-emerald-50 text-emerald-700 border-emerald-300" : "bg-white text-slate-400 border-slate-200"}`}>
+                    <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.email ? "bg-emerald-50 text-emerald-700 border-emerald-300" : "bg-white text-slate-400 border-slate-200"}`}>
                       <input type="checkbox" checked={orderModal.channels.email} onChange={e => setOrderModal(p => p && ({ ...p, channels: { ...p.channels, email: e.target.checked } }))} className="w-3 h-3"/>
                       <Mail size={11}/> 이메일
                     </label>
-                    <label className={`text-[11px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.sms ? "bg-sky-50 text-sky-700 border-sky-300" : "bg-white text-slate-400 border-slate-200"}`}>
+                    <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.sms ? "bg-sky-50 text-sky-700 border-sky-300" : "bg-white text-slate-400 border-slate-200"}`}>
                       <input type="checkbox" checked={orderModal.channels.sms} onChange={e => setOrderModal(p => p && ({ ...p, channels: { ...p.channels, sms: e.target.checked } }))} className="w-3 h-3"/>
                       <MessageSquare size={11}/> 문자
                     </label>
@@ -3071,7 +3074,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 const totalQty = orderModal.suppliers.reduce((n, s) => n + s.items.reduce((m, it) => m + (it.order_qty || 0), 0), 0);
                 const totalAmt = orderModal.suppliers.reduce((n, s) => n + s.items.reduce((m, it) => m + (it.order_qty || 0) * (it.unit_price ?? 0), 0), 0);
                 return (
-                  <div className="flex items-baseline gap-x-4 gap-y-1 flex-wrap text-[13px]">
+                  <div className="flex items-baseline gap-x-4 gap-y-1 flex-wrap text-[17px]">
                     <span className="inline-flex items-baseline gap-1">
                       <span className="text-slate-400">총 공급사</span>
                       <span className="font-black text-slate-800 tabular-nums">{totalSuppliers}</span>
