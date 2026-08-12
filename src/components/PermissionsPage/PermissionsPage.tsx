@@ -426,10 +426,37 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           <span className="font-bold">레벨 기준:</span>&nbsp; 1 = 직원 &nbsp;·&nbsp; 2–8 = 관리자 등급 &nbsp;·&nbsp; 9 = 최고관리자
         </div>
 
-        {/* 섹션 1 · 페이지별 최소 권한 (컴팩트 · 1행 · desc 는 tooltip) */}
-        <div className="mb-2 flex items-center gap-1.5">
-          <Shield size={13} className="text-slate-500" />
-          <h2 className="text-[17px] font-black text-slate-700">페이지별 최소 권한</h2>
+        {/* 섹션 1 · 페이지별 최소 권한 · 2026-08-13 · 저장 버튼 추가 (명시 저장) */}
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <Shield size={13} className="text-slate-500" />
+            <h2 className="text-[17px] font-black text-slate-700">페이지별 최소 권한</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            {saveToast && (
+              <span className={`text-[11px] font-bold px-2 py-1 rounded-full border ${
+                saveToast.includes("실패")
+                  ? "text-rose-600 bg-rose-50 border-rose-200"
+                  : "text-emerald-600 bg-emerald-50 border-emerald-200"
+              }`}>{saveToast}</span>
+            )}
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await axios.post("/api/permissions", { permissions: perms, employeeId: authSession?.employeeId });
+                  setSaveToast("저장되었습니다");
+                } catch {
+                  setSaveToast("저장 실패");
+                }
+                setTimeout(() => setSaveToast(null), 2500);
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition cursor-pointer"
+              title="현재 페이지별 최소 권한을 서버에 저장"
+            >
+              <Save size={14} /> 저장
+            </button>
+          </div>
         </div>
         {/* 2026-08-12 · #99 · 트리 구조 · 사이드바 그룹별 접기/펼치기 · 그룹 내 페이지 리스트 */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
