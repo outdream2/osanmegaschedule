@@ -20,6 +20,7 @@ import { ScheduleFilterBar } from "./ScheduleFilterBar";
 import { BreakModal } from "../common/BreakModal";
 import { useSettings } from "../../hooks/useSettings";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useContactInfo } from "../../hooks/useContactInfo";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import EmployeeNameCell from "./EmployeeNameCell";
 import {
@@ -59,6 +60,8 @@ interface SchedulePageProps {
 
 export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, onNavigate, initialEditEmployeeId, onEditEmployeeHandled, authSession, onEditEmployeeAtStaffManage }) => {
   const confirm = useConfirm();
+  // 2026-08-12 · 프레임워크 · contact_info 반영 · 값 없으면 하드코딩 fallback 유지
+  const { contact: spContact } = useContactInfo();
   // ── Auth-derived flags (level-based, with role fallback for old sessions) ───
   const userLevel = authSession?.level ??
     (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9
@@ -2171,7 +2174,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
       {/* Footer — 저작권 표시 (가운데 정렬) */}
       <footer className="h-9 bg-white border-t border-gray-200 shrink-0 px-4 sm:px-6 flex items-center justify-center text-xs font-bold text-slate-600 tracking-wide">
-        <span>© (주)이룸즈(IRUMS)</span>
+        <span>© {spContact.copyrightText || "(주)이룸즈(IRUMS)"}</span>
       </footer>
 
       {/* Roster Add Modal Popup Backdrop */}

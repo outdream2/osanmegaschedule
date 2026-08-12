@@ -23,6 +23,8 @@ import logoImg from "../../images/logo.png";
 // 2026-08-11 · 사이드바 V2 · flag ON 시 슬림 헤더로 대체
 import { SIDEBAR_ENABLED } from "../../hooks/useSidebar";
 import { useIsMobile } from "../../hooks/use-mobile";
+// 2026-08-12 · 프레임워크 · logo alt 만 brand.shortName 반영 (하드코딩 fallback 유지)
+import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 
 export type AppNavPage =
   | "landing"
@@ -115,6 +117,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
 }) => {
   // 2026-08-11 · 사이드바 V2 · 데스크탑만 슬림 헤더 · 훅 rules 준수 위해 조건 return 은 모든 훅 이후로 이동
   const isMobileNav = useIsMobile();
+  // 2026-08-12 · 프레임워크 · logo alt 만 반영
+  const { brand: hdrBrand } = useBrandIdentity();
   const userLevel = authSession?.level ??
     (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9
     : authSession?.role === "manager" ? 2
@@ -490,7 +494,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           >
             <img
               src={logoImg}
-              alt="OSAN MEGATOWN 로고"
+              alt={`${hdrBrand.shortName || "OSAN MEGATOWN"} 로고`}
               className="w-12 h-12 sm:w-14 sm:h-14 object-contain shrink-0"
               draggable={false}
               onError={(e) => {

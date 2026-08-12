@@ -28,6 +28,7 @@ import {
   type SideNavItem,
 } from "./sideNavGroups";
 import { useSidebarWidth } from "../../hooks/useSidebar";
+import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import logoImg from "../../images/logo.png";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
@@ -281,6 +282,8 @@ export const SideNav: React.FC<SideNavProps> = ({
 }) => {
   const groups = filterGroupsForSession(authSession);
   const { startResize } = useSidebarWidth();
+  // 2026-08-12 · 프레임워크 · brand_identity 서버 설정 반영 · 값 없으면 하드코딩 fallback 유지
+  const { brand } = useBrandIdentity();
 
   return (
     <Sidebar collapsible="icon" data-sb-v2="">
@@ -302,15 +305,15 @@ export const SideNav: React.FC<SideNavProps> = ({
           ].join(" ")}
         >
           <img
-            src={logoImg}
-            alt="메가타운 로고"
+            src={brand.logoUrl || logoImg}
+            alt={`${brand.shortName} 로고`}
             className="w-6 h-6 object-contain shrink-0"
           />
           {/* icon-only 모드에서 숨김 */}
           <div className="flex flex-col gap-px leading-none group-data-[collapsible=icon]:hidden">
             {/* 앱 헤더 OSAN MEGATOWN 텍스트와 동일 감성 */}
             <span className="text-[13px] font-black text-slate-800 tracking-tight leading-tight">
-              오산메가타운약국
+              {brand.shortName}
             </span>
           </div>
         </button>

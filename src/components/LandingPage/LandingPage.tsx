@@ -3,6 +3,8 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import axios from "axios";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useSettings } from "../../hooks/useSettings";
+import { useBrandIdentity } from "../../hooks/useBrandIdentity";
+import { useContactInfo } from "../../hooks/useContactInfo";
 import kakaoQrImg from "../../images/kakao_QR.png";
 import {
   ChevronRight,
@@ -215,6 +217,9 @@ const PeriodCoverageWidget: React.FC<{ endpoint: string; label: string; color: "
 
 export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigate, onLogout, onAuthOnly }) => {
   const confirm = useConfirm();
+  // 2026-08-12 · 프레임워크 · brand·contact 반영 · 값 없으면 하드코딩 fallback 유지
+  const { brand: lpBrand } = useBrandIdentity();
+  const { contact: lpContact } = useContactInfo();
 
   // 세션 만료 배너 표시 (URL 쿼리 또는 sessionStorage 플래그로 감지 · 2026-07-14)
   const [sessionExpiredNotice, setSessionExpiredNotice] = useState(() => {
@@ -1266,11 +1271,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           {!isLoggedIn && (
             <div className="w-full mb-7 flex flex-col gap-3">
               {/* 브랜드 헤더 · OSAM MEGATOWN (2026-08-09 · 반응형) */}
+              {/* 2026-08-12 · 프레임워크 · brand.brandNameEn 안에서 brand.brandAccentWord 만 accent 색으로 · 값 없으면 하드코딩 fallback */}
               <div className="w-full text-center pt-2 pb-1">
                 <div className="text-slate-900 font-black tracking-[0.15em] text-2xl sm:text-3xl md:text-4xl leading-tight">
-                  OSAN <span className="text-indigo-600">MEGATOWN</span>
+                  {(() => {
+                    const en = lpBrand.brandNameEn || "OSAN MEGATOWN";
+                    const accent = lpBrand.brandAccentWord || "MEGATOWN";
+                    const idx = accent ? en.indexOf(accent) : -1;
+                    if (idx < 0) return en;
+                    const before = en.slice(0, idx);
+                    const after = en.slice(idx + accent.length);
+                    return (
+                      <>
+                        {before}
+                        <span className="text-indigo-600">{accent}</span>
+                        {after}
+                      </>
+                    );
+                  })()}
                 </div>
-                <div className="text-slate-400 text-[11px] sm:text-xs mt-1 font-semibold tracking-wide">오산 메가타운 약국</div>
+                <div className="text-slate-400 text-[11px] sm:text-xs mt-1 font-semibold tracking-wide">{lpBrand.shortName || "오산 메가타운 약국"}</div>
               </div>
               {/* 2026-08-11 · 공사중 모드 · 재고 검색 대신 "곧 오픈 예정" 메시지 */}
               {underConstruction ? (
@@ -1394,15 +1414,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 </div>
                 <div className="bg-white px-4 py-3 flex items-center gap-3">
                   <img
-                    src={kakaoQrImg}
+                    src={lpContact.kakaoQrImageUrl || kakaoQrImg}
                     alt="카카오톡 채널 QR"
                     className="w-20 h-20 rounded-lg bg-white p-1 shrink-0 object-contain border border-slate-200"
                   />
                   <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-                    <div className="text-slate-900 font-black text-[13px] leading-tight">오산 메가타운 약국</div>
+                    <div className="text-slate-900 font-black text-[13px] leading-tight">{lpBrand.shortName || "오산 메가타운 약국"}</div>
                     <div className="text-slate-500 text-[11px] leading-tight">QR 스캔 또는 아래 버튼 클릭</div>
                     <a
-                      href="https://pf.kakao.com/_XWuiX/friend"
+                      href={lpContact.kakaoChannelUrl || "https://pf.kakao.com/_XWuiX/friend"}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="mt-1 inline-flex items-center justify-center rounded-lg px-3 py-2 bg-[#FEE500] hover:bg-[#FADA0A] active:scale-[0.99] transition-all shadow-sm border border-[#F0D700]/60 cursor-pointer"
@@ -2438,7 +2458,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </svg>
                 </div>
                 <div>
-                  <div className="text-white font-black text-2xl leading-tight tracking-tight">오산 메가타운</div>
+                  <div className="text-white font-black text-2xl leading-tight tracking-tight">{lpBrand.shortName || "오산 메가타운"}</div>
                 </div>
               </div>
             </div>

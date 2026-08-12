@@ -70,6 +70,8 @@ import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 // 2026-08-05 · 관리자(level>=8) long-press 드래그 재정렬 · localStorage 순서 저장
 import { useSortableTabs } from "../../hooks/useSortableTabs";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useBrandIdentity } from "../../hooks/useBrandIdentity";
+import { useContactInfo } from "../../hooks/useContactInfo";
 // 2026-08-03 · StaffManagePage · 매장관리 서브탭에서 제거 · 경영관리 통합 페이지(BusinessManagePage)로 이동
 import type { AuthSession } from "../../types";
 
@@ -296,6 +298,9 @@ const MULTI_ASSIGN_ZONE_NUMS = new Set([36, 42]);
 // ─── Main component ────────────────────────────────────────────────────────────
 export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployeeEdit, authSession, onNavigate, onLogout }) => {
   const confirm = useConfirm();
+  // 2026-08-12 · 프레임워크 · brand·contact 반영 · 값 없으면 하드코딩 fallback 유지
+  const { brand: dpBrand } = useBrandIdentity();
+  const { contact: dpContact } = useContactInfo();
   // 서브탭: 재고관리(기본 · level 9 전용) · 매장관리(그 외 기본)
   const dpUserLevel = authSession?.level ??
     (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9 :
@@ -2214,7 +2219,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
       {/* Footer */}
       <footer className="bg-white text-center p-4 mt-8 text-xs text-gray-400 border-t border-gray-200">
-        &copy; 2026 오산메가타운 매장 관리 시스템. All Rights Reserved. (주)이룸즈(IRUMS)
+        &copy; 2026 {dpBrand.shortName || "오산메가타운"} 매장 관리 시스템. All Rights Reserved. {dpContact.copyrightText || "(주)이룸즈(IRUMS)"}
       </footer>
 
       {/* ─── Zone Assignment Popover ────────────────────────────────────────── */}

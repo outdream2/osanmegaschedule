@@ -46,6 +46,8 @@ import { matchHangul } from "../common/hangulSearch";
 import sungstampUrl from "../../images/sungstamp.png";
 import { useSettings, defaultWageForPosition, type WageRate } from "../../hooks/useSettings";
 import { useKvSetting } from "../../hooks/useKvSetting";
+// 2026-08-12 · 프레임워크 · stamps_map 서버 설정 · 이름→도장 매핑 (fallback 유지)
+import { useStampsMap } from "../../hooks/useStampsMap";
 import kyustampUrl from "../../images/kyustamp.png";
 // T-Y (2026-08-05) · payroll 모듈 · 사용자 정본 흐름 (희망세후 = 시급×시간 · 역산 → 임금구성표)
 import {
@@ -2768,15 +2770,33 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const { signUrls, setSignUrls, signModal, openSign, closeSign, submitSign, clearSign } = useContractSignatures();
 
   // 도장 자동 (H)
-  const employerStampUrl = useMemo(() =>
-    form.employerName?.trim() === "강남성" ? sungstampUrl : null,
-    [form.employerName]);
-
-  const employeeStampUrl = useMemo(() => {
-    const n = form.employeeName?.trim();
+  // 2026-08-12 · 프레임워크 · stamps_map 서버 매핑 우선 조회 · 없거나 미매칭이면 기존 하드코딩 fallback 유지
+  const { findStamp } = useStampsMap();
+  const resolveStampUrl = useCallback((name: string | undefined | null): string | null => {
+    const n = (name ?? "").trim();
+    if (!n) return null;
+    const mapped = findStamp(n);
+    if (mapped) {
+      // 우선순위: 서버 설정 imageUrl → bundled fallback (하위호환)
+      if (mapped.imageUrl && mapped.imageUrl.trim()) return mapped.imageUrl;
+      if (mapped.bundledFallback === "sungstamp") return sungstampUrl;
+      if (mapped.bundledFallback === "kyustamp") return kyustampUrl;
+    }
+    // 하드코딩 fallback (프레임워크 도입 전 동작 완전 보전)
+    if (n === "강남성") return sungstampUrl;
     if (n === "강남규") return kyustampUrl;
     return null;
-  }, [form.employeeName]);
+  }, [findStamp]);
+
+  const employerStampUrl = useMemo(
+    () => resolveStampUrl(form.employerName),
+    [form.employerName, resolveStampUrl],
+  );
+
+  const employeeStampUrl = useMemo(
+    () => resolveStampUrl(form.employeeName),
+    [form.employeeName, resolveStampUrl],
+  );
 
   const previewRef = useRef<HTMLDivElement | null>(null);
   const [generating, setGenerating] = useState(false);

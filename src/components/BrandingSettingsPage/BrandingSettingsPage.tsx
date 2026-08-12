@@ -1,0 +1,573 @@
+// src/components/BrandingSettingsPage/BrandingSettingsPage.tsx
+// 2026-08-12 · 프레임워크 Phase 3 · 브랜드/연락처/도장/모바일 가시성 통합 설정 페이지
+//   · 사이드바 "설정" 그룹에서 진입 (Phase 5 에서 라우팅 등록)
+//   · 이번 Phase 는 컴포넌트만 · AppNavHeader activePage 는 임시로 "permissions"
+//
+// 4개 섹션 (모두 카드 형태 · CARD_BASE 톤):
+//   1) 브랜드 정보 (useBrandIdentity)
+//   2) 연락처·저작권·카카오 (useContactInfo)
+//   3) 도장 매핑 (useStampsMap)
+//   4) 페이지별 모바일 사용여부 (useMobileVisibility · SIDE_NAV_GROUPS 순회)
+//
+// 준수 원칙:
+//   · feedback_ui_principles: slate + indigo/emerald 팔레트 · rounded-xl · shadow-sm
+//   · ContractSettingsPage · PermissionsPage 톤 참고
+//   · 각 훅 setter 만 호출 · 서버 저장은 useKvSetting 이 debounce/즉시 처리 (기존 훅 규약)
+import React, { useCallback, useMemo, useState } from "react";
+import {
+  Gear, FloppyDisk, Check, Warning, Plus, Trash, Image as ImageIcon,
+  Buildings, Phone, Stamp, DeviceMobile, Info,
+} from "@phosphor-icons/react";
+import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
+import { AppFooter } from "../layout/AppFooter";
+import type { AuthSession, StampMapping } from "../../types";
+import { useBrandIdentity } from "../../hooks/useBrandIdentity";
+import { useContactInfo } from "../../hooks/useContactInfo";
+import { useStampsMap } from "../../hooks/useStampsMap";
+import { useMobileVisibility } from "../../hooks/useMobileVisibility";
+import { SIDE_NAV_GROUPS } from "../layout/sideNavGroups";
+
+// ─── 공통 카드 스타일 (ContractSettingsPage 톤과 통일) ───────────────────────
+const CARD_BASE =
+  "bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden";
+const SECTION_HEADER =
+  "flex items-center gap-2 px-4 py-3 border-b border-slate-200 bg-slate-50/60";
+const INPUT_BASE =
+  "bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[13px] " +
+  "text-slate-800 font-semibold focus:outline-none focus:border-indigo-400 " +
+  "focus:ring-2 focus:ring-indigo-100 transition disabled:opacity-50 w-full";
+const LABEL_BASE = "text-[12px] font-semibold text-slate-600";
+
+interface BrandingSettingsPageProps {
+  authSession: AuthSession | null;
+  onBack: () => void;
+  onLogout: () => void;
+  onNavigate?: (page: AppNavPage) => void;
+  /** true 시 자체 AppNavHeader/Footer skip (BusinessManagePage 임베드용 대비) */
+  embedded?: boolean;
+}
+
+// ─── 저장 상태 통합 배지 ────────────────────────────────────────────────────
+type SaveState = "idle" | "saving" | "saved" | "error";
+
+function StatusBadge({ state, label }: { state: SaveState; label?: string }) {
+  if (state === "saving") {
+    return (
+      <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-bold">
+        저장 중…
+      </span>
+    );
+  }
+  if (state === "saved") {
+    return (
+      <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 font-bold">
+        <Check size={11} weight="bold" /> {label ?? "저장됨"}
+      </span>
+    );
+  }
+  if (state === "error") {
+    return (
+      <span className="inline-flex items-center gap-1 text-[11px] text-rose-500 font-bold">
+        <Warning size={11} weight="fill" /> 저장 실패
+      </span>
+    );
+  }
+  return null;
+}
+
+// ─── 텍스트 입력 필드 (라벨 + input) ────────────────────────────────────────
+function TextField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  hint,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  hint?: string;
+  type?: "text" | "url" | "email" | "tel";
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label className={LABEL_BASE}>{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={INPUT_BASE}
+      />
+      {hint && <span className="text-[11px] text-slate-400 leading-snug">{hint}</span>}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//   섹션 1 · 브랜드 정보
+// ═══════════════════════════════════════════════════════════════════════
+const BrandSection: React.FC = () => {
+  const { brand, setBrand, loaded, saveState } = useBrandIdentity();
+  return (
+    <section className={CARD_BASE}>
+      <div className={SECTION_HEADER}>
+        <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+          <Buildings size={15} weight="fill" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-black text-slate-800 leading-tight">브랜드 정보</div>
+          <div className="text-[11px] text-slate-500 mt-0.5">사이드바·헤더·랜딩·푸터에서 사용되는 브랜드 이름/로고</div>
+        </div>
+        <StatusBadge state={saveState as SaveState} />
+      </div>
+      <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <TextField
+          label="짧은 이름 (푸터·사이드바)"
+          value={brand.shortName}
+          onChange={(v) => setBrand({ shortName: v })}
+          placeholder="예: 오산 메가타운 약국"
+        />
+        <TextField
+          label="영문 브랜드명 (랜딩)"
+          value={brand.brandNameEn}
+          onChange={(v) => setBrand({ brandNameEn: v })}
+          placeholder="예: OSAN MEGATOWN"
+        />
+        <TextField
+          label="영문 강조 단어 (랜딩 · 컬러)"
+          value={brand.brandAccentWord}
+          onChange={(v) => setBrand({ brandAccentWord: v })}
+          placeholder="예: MEGATOWN"
+          hint="영문 브랜드명 안에서 컬러 강조로 표시할 부분"
+        />
+        <TextField
+          label="앱 타이틀 (브라우저 탭)"
+          value={brand.appTitle}
+          onChange={(v) => setBrand({ appTitle: v })}
+          placeholder="예: 메가타운 스태프 스케줄러"
+        />
+        <TextField
+          label="로고 이미지 URL"
+          value={brand.logoUrl ?? ""}
+          onChange={(v) => setBrand({ logoUrl: v || undefined })}
+          placeholder="비워두면 기본 로고 사용"
+          type="url"
+          hint="Phase 4 에서 이미지 업로드 UI 예정"
+        />
+        <TextField
+          label="파비콘 이미지 URL"
+          value={brand.faviconUrl ?? ""}
+          onChange={(v) => setBrand({ faviconUrl: v || undefined })}
+          placeholder="비워두면 기본 파비콘 사용"
+          type="url"
+        />
+      </div>
+      {!loaded && (
+        <div className="px-4 pb-3 text-[11px] text-slate-400">서버에서 설정을 불러오는 중…</div>
+      )}
+    </section>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+//   섹션 2 · 연락처·저작권·카카오
+// ═══════════════════════════════════════════════════════════════════════
+const ContactSection: React.FC = () => {
+  const { contact, setContact, loaded, saveState } = useContactInfo();
+  return (
+    <section className={CARD_BASE}>
+      <div className={SECTION_HEADER}>
+        <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+          <Phone size={15} weight="fill" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-black text-slate-800 leading-tight">연락처·저작권·카카오</div>
+          <div className="text-[11px] text-slate-500 mt-0.5">푸터·랜딩·카카오 QR 등에서 사용되는 값</div>
+        </div>
+        <StatusBadge state={saveState as SaveState} />
+      </div>
+      <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <TextField
+          label="대표 전화"
+          value={contact.phone}
+          onChange={(v) => setContact({ phone: v })}
+          placeholder="예: 031-000-0000"
+          type="tel"
+        />
+        <TextField
+          label="이메일"
+          value={contact.email}
+          onChange={(v) => setContact({ email: v })}
+          placeholder="예: info@example.com"
+          type="email"
+        />
+        <TextField
+          label="홈페이지"
+          value={contact.website}
+          onChange={(v) => setContact({ website: v })}
+          placeholder="예: https://example.com"
+          type="url"
+        />
+        <TextField
+          label="영업시간 (푸터)"
+          value={contact.businessHours}
+          onChange={(v) => setContact({ businessHours: v })}
+          placeholder="예: 09:00 - 22:00"
+        />
+        <TextField
+          label="저작권 문구 (푸터)"
+          value={contact.copyrightText}
+          onChange={(v) => setContact({ copyrightText: v })}
+          placeholder="예: (주)이룸즈(IRUMS)"
+        />
+        <TextField
+          label="카카오톡 채널 URL"
+          value={contact.kakaoChannelUrl}
+          onChange={(v) => setContact({ kakaoChannelUrl: v })}
+          placeholder="예: https://pf.kakao.com/_xxxx/friend"
+          type="url"
+        />
+        <div className="sm:col-span-2">
+          <TextField
+            label="카카오톡 QR 이미지 URL"
+            value={contact.kakaoQrImageUrl ?? ""}
+            onChange={(v) => setContact({ kakaoQrImageUrl: v || undefined })}
+            placeholder="비워두면 기본 QR 이미지 사용"
+            type="url"
+          />
+        </div>
+      </div>
+      {!loaded && (
+        <div className="px-4 pb-3 text-[11px] text-slate-400">서버에서 설정을 불러오는 중…</div>
+      )}
+    </section>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+//   섹션 3 · 도장 매핑
+// ═══════════════════════════════════════════════════════════════════════
+const StampsSection: React.FC = () => {
+  const { stamps, setAll, loaded, saveState } = useStampsMap();
+  const [draftName, setDraftName] = useState("");
+  const [draftImageUrl, setDraftImageUrl] = useState("");
+  const [draftFallback, setDraftFallback] =
+    useState<"" | "sungstamp" | "kyustamp">("");
+
+  const handleAdd = useCallback(() => {
+    const name = draftName.trim();
+    if (!name) return;
+    const next: StampMapping = {
+      name,
+      imageUrl: draftImageUrl.trim(),
+      bundledFallback: draftFallback === "" ? undefined : draftFallback,
+    };
+    setAll((prev) => {
+      const filtered = prev.filter((x) => x.name !== name);
+      return [...filtered, next];
+    });
+    setDraftName("");
+    setDraftImageUrl("");
+    setDraftFallback("");
+  }, [draftName, draftImageUrl, draftFallback, setAll]);
+
+  const handleUpdate = useCallback(
+    (idx: number, patch: Partial<StampMapping>) => {
+      setAll((prev) =>
+        prev.map((s, i) => (i === idx ? { ...s, ...patch } : s)),
+      );
+    },
+    [setAll],
+  );
+
+  const handleRemove = useCallback(
+    (idx: number) => {
+      setAll((prev) => prev.filter((_, i) => i !== idx));
+    },
+    [setAll],
+  );
+
+  return (
+    <section className={CARD_BASE}>
+      <div className={SECTION_HEADER}>
+        <div className="w-7 h-7 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+          <Stamp size={15} weight="fill" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-black text-slate-800 leading-tight">도장 매핑</div>
+          <div className="text-[11px] text-slate-500 mt-0.5">
+            근로계약서 · 사업주/근로자 이름에 자동 매칭되는 도장 이미지
+          </div>
+        </div>
+        <StatusBadge state={saveState as SaveState} />
+      </div>
+
+      {/* 목록 테이블 */}
+      <div className="p-4 flex flex-col gap-3">
+        {stamps.length === 0 && (
+          <div className="text-[12px] text-slate-400 flex items-center gap-1.5">
+            <Info size={12} /> 등록된 도장이 없습니다. 아래에서 추가하세요.
+          </div>
+        )}
+        {stamps.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-[12px]">
+              <thead>
+                <tr className="text-left text-slate-500 border-b border-slate-200">
+                  <th className="py-2 pr-2 font-semibold">이름</th>
+                  <th className="py-2 pr-2 font-semibold">이미지 URL</th>
+                  <th className="py-2 pr-2 font-semibold w-[140px]">Bundled Fallback</th>
+                  <th className="py-2 pr-2 font-semibold w-[80px]">미리보기</th>
+                  <th className="py-2 pr-2 font-semibold w-[52px] text-right">삭제</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stamps.map((s, idx) => {
+                  const previewSrc =
+                    s.imageUrl && s.imageUrl.trim()
+                      ? s.imageUrl
+                      : s.bundledFallback === "sungstamp"
+                      ? "/src/images/sungstamp.png"
+                      : s.bundledFallback === "kyustamp"
+                      ? "/src/images/kyustamp.png"
+                      : "";
+                  return (
+                    <tr key={`${s.name}-${idx}`} className="border-b border-slate-100">
+                      <td className="py-2 pr-2 align-top">
+                        <input
+                          value={s.name}
+                          onChange={(e) => handleUpdate(idx, { name: e.target.value })}
+                          className={INPUT_BASE}
+                          placeholder="예: 강남성"
+                        />
+                      </td>
+                      <td className="py-2 pr-2 align-top">
+                        <input
+                          value={s.imageUrl}
+                          onChange={(e) => handleUpdate(idx, { imageUrl: e.target.value })}
+                          className={INPUT_BASE}
+                          placeholder="Storage URL 또는 비워두고 fallback 선택"
+                          type="url"
+                        />
+                      </td>
+                      <td className="py-2 pr-2 align-top">
+                        <select
+                          value={s.bundledFallback ?? ""}
+                          onChange={(e) =>
+                            handleUpdate(idx, {
+                              bundledFallback:
+                                e.target.value === ""
+                                  ? undefined
+                                  : (e.target.value as "sungstamp" | "kyustamp"),
+                            })
+                          }
+                          className={INPUT_BASE}
+                        >
+                          <option value="">(직접입력만)</option>
+                          <option value="sungstamp">sungstamp</option>
+                          <option value="kyustamp">kyustamp</option>
+                        </select>
+                      </td>
+                      <td className="py-2 pr-2 align-top">
+                        <div className="w-14 h-14 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden">
+                          {previewSrc ? (
+                            <img
+                              src={previewSrc}
+                              alt={`${s.name} 도장`}
+                              className="max-w-full max-h-full object-contain"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <ImageIcon size={16} className="text-slate-300" />
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-2 pr-2 align-top text-right">
+                        <button
+                          type="button"
+                          onClick={() => handleRemove(idx)}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-rose-200 bg-white text-rose-600 hover:bg-rose-50 text-[11px] font-bold transition-colors cursor-pointer"
+                          title="삭제"
+                          aria-label={`${s.name} 도장 삭제`}
+                        >
+                          <Trash size={12} weight="bold" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* 추가 폼 */}
+        <div className="mt-2 border-t border-dashed border-slate-200 pt-3">
+          <div className="text-[12px] font-bold text-slate-600 mb-2">새 도장 추가</div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              value={draftName}
+              onChange={(e) => setDraftName(e.target.value)}
+              placeholder="이름 (예: 강남성)"
+              className={INPUT_BASE + " sm:max-w-[180px]"}
+            />
+            <input
+              value={draftImageUrl}
+              onChange={(e) => setDraftImageUrl(e.target.value)}
+              placeholder="이미지 URL (선택)"
+              className={INPUT_BASE + " flex-1"}
+              type="url"
+            />
+            <select
+              value={draftFallback}
+              onChange={(e) =>
+                setDraftFallback(e.target.value as "" | "sungstamp" | "kyustamp")
+              }
+              className={INPUT_BASE + " sm:max-w-[160px]"}
+            >
+              <option value="">Fallback 없음</option>
+              <option value="sungstamp">sungstamp</option>
+              <option value="kyustamp">kyustamp</option>
+            </select>
+            <button
+              type="button"
+              onClick={handleAdd}
+              disabled={!draftName.trim()}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 text-white text-[12px] font-black shadow-sm transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <Plus size={13} weight="bold" /> 추가
+            </button>
+          </div>
+        </div>
+      </div>
+      {!loaded && (
+        <div className="px-4 pb-3 text-[11px] text-slate-400">서버에서 설정을 불러오는 중…</div>
+      )}
+    </section>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+//   섹션 4 · 페이지별 모바일 사용여부
+// ═══════════════════════════════════════════════════════════════════════
+const MobileVisibilitySection: React.FC = () => {
+  const { isMobileAllowed, setMobileAllowed, loaded, saveState } = useMobileVisibility();
+
+  // SIDE_NAV_GROUPS 순회 · 각 group.id 별 토글 (최상위 페이지 기준)
+  const rows = useMemo(() => {
+    return SIDE_NAV_GROUPS.map((g) => ({
+      id: g.id,
+      label: g.label,
+      color: g.color,
+    }));
+  }, []);
+
+  return (
+    <section className={CARD_BASE}>
+      <div className={SECTION_HEADER}>
+        <div className="w-7 h-7 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center shrink-0">
+          <DeviceMobile size={15} weight="fill" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-black text-slate-800 leading-tight">페이지별 모바일 사용여부</div>
+          <div className="text-[11px] text-slate-500 mt-0.5">
+            모바일에서 접근 허용 여부 · 기본값은 허용 · 미체크 시 PC 전용 안내 표시 (Phase 6)
+          </div>
+        </div>
+        <StatusBadge state={saveState as SaveState} />
+      </div>
+      <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {rows.map((r) => {
+          const allowed = isMobileAllowed(r.id);
+          return (
+            <label
+              key={r.id}
+              className={[
+                "flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors",
+                allowed
+                  ? "border-emerald-200 bg-emerald-50/60 hover:bg-emerald-50"
+                  : "border-slate-200 bg-slate-50 hover:bg-slate-100",
+              ].join(" ")}
+            >
+              <input
+                type="checkbox"
+                checked={allowed}
+                onChange={(e) => setMobileAllowed(r.id, e.target.checked)}
+                className="accent-emerald-600 w-4 h-4"
+              />
+              <span className="text-[13px] font-bold text-slate-800 flex-1">{r.label}</span>
+              <span
+                className={[
+                  "text-[10px] font-black px-1.5 py-0.5 rounded",
+                  allowed ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-500",
+                ].join(" ")}
+              >
+                {allowed ? "허용" : "차단"}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+      {!loaded && (
+        <div className="px-4 pb-3 text-[11px] text-slate-400">서버에서 설정을 불러오는 중…</div>
+      )}
+    </section>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+//   메인 · BrandingSettingsPage
+// ═══════════════════════════════════════════════════════════════════════
+export const BrandingSettingsPage: React.FC<BrandingSettingsPageProps> = ({
+  authSession,
+  onBack,
+  onLogout,
+  onNavigate,
+  embedded = false,
+}) => {
+  return (
+    <div className={embedded ? "flex-1 flex flex-col" : "min-h-screen bg-slate-50 flex flex-col"}>
+      {!embedded && (
+        <AppNavHeader
+          // Phase 3 · 신규 페이지 라우팅 미등록 · 임시로 "permissions" 활성 표시
+          activePage={"permissions" as AppNavPage}
+          authSession={authSession}
+          onBack={onBack}
+          onNavigate={onNavigate}
+          onLogout={onLogout}
+        />
+      )}
+
+      <main className="flex-1 max-w-[1100px] mx-auto w-full px-3 sm:px-5 py-4 flex flex-col gap-3">
+        {/* 상단 배너 */}
+        <div className="sticky top-0 z-20 -mx-3 sm:-mx-5 px-3 sm:px-5 py-2 bg-white/95 backdrop-blur-sm border-b border-slate-200 shadow-sm flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+              <Gear size={15} weight="fill" />
+            </div>
+            <span className="text-[13px] font-black text-slate-800 leading-none">
+              브랜딩·연락처 설정
+            </span>
+          </div>
+          <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-slate-500 font-semibold">
+            <FloppyDisk size={11} weight="fill" /> 각 항목은 변경 즉시 서버에 저장됩니다
+          </span>
+        </div>
+
+        <BrandSection />
+        <ContactSection />
+        <StampsSection />
+        <MobileVisibilitySection />
+      </main>
+
+      {!embedded && <AppFooter />}
+    </div>
+  );
+};
+
+export default BrandingSettingsPage;
