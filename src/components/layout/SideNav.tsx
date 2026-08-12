@@ -142,12 +142,15 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                   weight={hasActiveItem ? "fill" : "duotone"}
                   className={[
                     "shrink-0",
-                    hasActiveItem ? groupTone.iconActive : "text-slate-500",
-                    "transition-colors duration-200 ease-out",
+                    // 2026-08-12 · 공통헤더 톤 완전 동일 · fill+opacity-90 (활성) · duotone+opacity-70 (비활성)
+                    groupTone.iconActive,
+                    hasActiveItem ? "opacity-90" : "opacity-70",
+                    "transition-all duration-200 ease-out",
                   ].join(" ")}
                 />
               );
             })()}
+            {/* 글씨 · 공통헤더 톤 · 활성=그룹컬러 · 비활성=slate-700 (이미 부모 button className 에 적용됨) */}
             <span className="tracking-wide">{group.label}</span>
           </span>
 
