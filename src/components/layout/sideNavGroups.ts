@@ -60,8 +60,9 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     color: "indigo",
     managerOnly: true,
     items: [
-      { key: "leave", label: "연차/휴가", icon: CalendarDots, color: "indigo", managerOnly: true },
-      { key: "lunch", label: "점심불참", icon: Coffee,       color: "indigo", managerOnly: true },
+      { key: "leave",           label: "연차/휴가",   icon: CalendarDots, color: "indigo", managerOnly: true },
+      { key: "lunch",           label: "점심불참",    icon: Coffee,       color: "indigo", managerOnly: true },
+      { key: "business-manage", label: "사직서 작성", icon: PencilLine,   color: "indigo", subTab: "document-writer:resignation", managerOnly: true },
     ],
   },
   {
@@ -93,9 +94,10 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     managerOnly: true,
     items: [
       // BusinessManagePage 서브탭
-      { key: "business-manage", label: "직원관리", icon: UsersThree, color: "violet", subTab: "staff-manage", managerOnly: true },
-      { key: "business-manage", label: "각종양식", icon: FileText, color: "violet", subTab: "hr-forms", managerOnly: true },
-      { key: "business-manage", label: "서류작성", icon: PencilLine, color: "violet", subTab: "document-writer", managerOnly: true },
+      { key: "business-manage", label: "직원관리",       icon: UsersThree, color: "violet", subTab: "staff-manage",              managerOnly: true },
+      { key: "business-manage", label: "근로계약서 작성", icon: PencilLine, color: "violet", subTab: "document-writer:contract", managerOnly: true },
+      { key: "business-manage", label: "각종양식",       icon: FileText,   color: "violet", subTab: "hr-forms",                  managerOnly: true },
+      { key: "requests",        label: "요청목록",       icon: Chat,       color: "violet", managerOnly: true },
     ],
   },
   {
@@ -110,14 +112,6 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     label: "이슈",
     color: "emerald",
     items: [{ key: "board", label: "이슈", icon: ChatCircle, color: "emerald" }],
-  },
-  {
-    id: "requests",
-    label: "요청목록",
-    color: "cyan",
-    items: [
-      { key: "requests", label: "요청목록", icon: Chat, color: "cyan" },
-    ],
   },
   {
     id: "settings",
