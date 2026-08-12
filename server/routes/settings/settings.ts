@@ -80,12 +80,9 @@ router.get("/api/settings/season-ranges", async (_req, res) => {
   } catch (err: any) { res.status(500).json({ error: err?.message ?? "조회 실패" }); }
 });
 
-router.post("/api/settings/season-ranges", async (req, res) => {
+router.post("/api/settings/season-ranges", authorize(9), async (req, res) => {
   try {
-    const { employeeId, ranges } = req.body ?? {};
-    if (!employeeId) return res.status(403).json({ error: "인증 정보가 없습니다" });
-    const { data: emp } = await supabase.from("employees").select("level").eq("id", Number(employeeId)).maybeSingle();
-    if (!emp || (emp.level ?? 1) < 9) return res.status(403).json({ error: "권한이 없습니다 (level 9 필요)" });
+    const { ranges } = req.body ?? {};
     const normalized = normalizeSeasonRanges(ranges);
     const { error } = await supabase.from("app_settings")
       .upsert({ key: "season_ranges", value: normalized, updated_at: new Date().toISOString() }, { onConflict: "key" });
@@ -126,13 +123,10 @@ router.get("/api/permissions", async (_req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-router.post("/api/permissions", async (req, res) => {
-  const { permissions, employeeId } = req.body ?? {};
-  if (!employeeId) return res.status(403).json({ error: "인증 정보가 없습니다" });
+router.post("/api/permissions", authorize(9), async (req, res) => {
+  const { permissions } = req.body ?? {};
+  if (!permissions) return res.status(400).json({ error: "permissions required" });
   try {
-    const { data: emp } = await supabase.from("employees").select("level").eq("id", Number(employeeId)).maybeSingle();
-    if (!emp || (emp.level ?? 1) < 9) return res.status(403).json({ error: "권한이 없습니다 (level 9 필요)" });
-    if (!permissions) return res.status(400).json({ error: "permissions required" });
     const { error } = await supabase.from("app_settings")
       .upsert({ key: "page_permissions", value: permissions, updated_at: new Date().toISOString() }, { onConflict: "key" });
     if (error) throw new Error(error.message);
@@ -150,7 +144,7 @@ router.get("/api/zone-groups", async (_req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-router.put("/api/zone-groups", async (req, res) => {
+router.put("/api/zone-groups", authorize(9), async (req, res) => {
   const body = req.body;
   if (!Array.isArray(body)) return res.status(400).json({ error: "array required" });
   try {
