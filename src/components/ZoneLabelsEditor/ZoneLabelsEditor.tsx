@@ -18,8 +18,9 @@ import {
 } from "lucide-react";
 import { MapPin } from "@phosphor-icons/react";
 import type { AuthSession } from "../../types";
-// 2026-08-12 · UI 통일 · 공통 SettingsPageShell + 하단 sticky 액션바
+// 2026-08-12 · UI 통일 · 공통 SettingsPageShell + 하단 sticky 액션바 + 타이포
 import { SettingsPageShell } from "../common/SettingsPageShell";
+import { SET_ACTION_BAR, SET_BTN_PRIMARY, SET_BTN_SECONDARY, SET_INFO_BADGE } from "../common/settingsTypography";
 import type { AppNavPage } from "../layout/AppNavHeader";
 import {
   DEFAULT_MAPPINGS,
@@ -295,19 +296,19 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
   const totalCount = mappings.length;
   const dirtyCount = dirtyZoneIds.size;
 
-  // 2026-08-12 · 배지 슬롯 (rightSlot) · 총/변경/중복
+  // 2026-08-12 · 배지 슬롯 (rightSlot) · 공통 SET_INFO_BADGE
   const rightBadges = (
     <div className="flex items-center gap-1.5 flex-wrap">
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sky-50 border border-sky-200 text-sky-700 text-[11px] font-bold">
+      <span className={`${SET_INFO_BADGE} bg-sky-50 border-sky-200 text-sky-700`}>
         총 {totalCount}건
       </span>
       {dirtyCount > 0 && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-bold">
+        <span className={`${SET_INFO_BADGE} bg-amber-50 border-amber-200 text-amber-700`}>
           변경 {dirtyCount}건
         </span>
       )}
       {duplicateNumbers.size > 0 && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-[11px] font-bold">
+        <span className={`${SET_INFO_BADGE} bg-rose-50 border-rose-200 text-rose-700`}>
           <AlertCircle size={11} /> 중복 {duplicateNumbers.size}건
         </span>
       )}
@@ -467,24 +468,16 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
         )}
       </div>
 
-      {/* 하단 sticky 액션바 · 저장 · 초기화 (SystemSettingsPage 스타일 통일) */}
-      <div className="sticky bottom-0 mt-3 flex items-center justify-end gap-2 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl px-3 py-2 shadow-sm">
-        <button
-          type="button"
-          onClick={resetAll}
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 text-sm font-bold transition cursor-pointer"
-        >
+      {/* 하단 sticky 액션바 · 공통 SET_ACTION_BAR + SET_BTN_* */}
+      <div className={SET_ACTION_BAR}>
+        <button type="button" onClick={resetAll} className={SET_BTN_SECONDARY}>
           <RotateCcw size={13} /> 초기화
         </button>
         <button
           type="button"
           onClick={handleSave}
           disabled={!canSave}
-          className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-bold transition ${
-            canSave
-              ? "bg-sky-600 hover:bg-sky-700 text-white shadow-sm cursor-pointer"
-              : "bg-slate-200 text-slate-400 cursor-not-allowed"
-          }`}
+          className={SET_BTN_PRIMARY}
         >
           {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
           {saving ? "저장 중..." : "저장"}

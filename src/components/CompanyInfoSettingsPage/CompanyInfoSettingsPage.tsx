@@ -11,6 +11,10 @@ import { useCompanyInfo } from "../../hooks/useCompanyInfo";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { ImageUploadField } from "../common/ImageUploadField";
 import { SettingsPageShell } from "../common/SettingsPageShell";
+import {
+  SET_SECTION_TITLE, SET_SECTION_DESC,
+  SET_LABEL, SET_INPUT, SET_BADGE,
+} from "../common/settingsTypography";
 import { CARD_BASE } from "../../styles/tokens";
 
 interface Props {
@@ -20,8 +24,9 @@ interface Props {
   onLogout?: () => void;
 }
 
-const LABEL_CLS = "flex items-center gap-1.5 text-xs font-semibold text-slate-600 mb-1.5";
-const INPUT_CLS = "w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-500 transition";
+// 2026-08-12 · 공통 상수 사용으로 통일 (하위 참조 유지)
+const LABEL_CLS = SET_LABEL;
+const INPUT_CLS = SET_INPUT;
 
 const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, onLogout }) => {
   const { info, setInfo, loaded, saveState } = useCompanyInfo();
@@ -49,12 +54,12 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
       title="회사정보"
       description="근로계약서·사직서·PDF·각종 서식에 표시되는 사업장 정보 (약국명·대표·사업자·주소·전화) 및 앱 브랜드 (로고·파비콘). 관리자(lv 9) 전용."
       rightSlot={badgeText ? (
-        <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${badgeCls}`}>{badgeText}</span>
+        <span className={`${SET_BADGE} ${badgeCls}`}>{badgeText}</span>
       ) : undefined}
     >
         <div className={`${CARD_BASE} p-5 flex flex-col gap-4`}>
           <div>
-            <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+            <h2 className={SET_SECTION_TITLE}>
               <Buildings size={18} className="text-indigo-500" />
               사업장 · 법인 정보
             </h2>
@@ -101,11 +106,11 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
         {/* ── 브랜드 정보 · 2026-08-12 · 앱브랜딩에서 이동 통합 ── */}
         <div className={`${CARD_BASE} p-5 flex flex-col gap-4 mt-4`}>
           <div>
-            <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+            <h2 className={SET_SECTION_TITLE}>
               <Palette size={18} className="text-violet-500" />
               브랜드 정보 (앱 이름 · 로고)
             </h2>
-            <p className="text-[11px] text-slate-500 mt-1">
+            <p className={SET_SECTION_DESC}>
               사이드바·랜딩·브라우저 탭에 표시되는 앱 브랜딩. 로고·파비콘은 파일 업로드 지원.
             </p>
           </div>

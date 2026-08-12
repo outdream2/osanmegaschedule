@@ -13,6 +13,11 @@ import type { AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { TabBar, type TabDef } from "../common/TabBar";
 import { SettingsPageShell } from "../common/SettingsPageShell";
+import {
+  SET_SECTION_TITLE, SET_INPUT, SET_TEXTAREA, SET_LABEL,
+  SET_ACTION_BAR, SET_BTN_PRIMARY, SET_BTN_SECONDARY,
+  SET_NOTICE_AMBER, SET_NOTICE_ROSE, SET_NOTICE_EMERALD,
+} from "../common/settingsTypography";
 import { CARD_BASE } from "../../styles/tokens";
 
 interface Props {
@@ -144,8 +149,8 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
       title="시스템 설정"
       description="DB · 인증 · AI/OCR · 알림톡·SMS · 이미지 CDN · Web Push · OCR 수신처 등 서버 env 편집. 저장 후 서버 재시작 시 반영. 관리자(lv 9) 전용."
     >
-        {/* 안내 배너 · 2026-08-12 · 폰트 +2 */}
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-2 text-sm text-amber-800">
+        {/* 안내 배너 · 공통 CSS · SET_NOTICE_AMBER */}
+        <div className={SET_NOTICE_AMBER}>
           <Warning size={16} weight="fill" className="mt-0.5 shrink-0" />
           <div>
             <div className="font-bold mb-0.5">저장 후 서버 재시작이 필요합니다.</div>
@@ -153,12 +158,8 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
           </div>
         </div>
 
-        {error && (
-          <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div>
-        )}
-        {savedNotice && (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{savedNotice}</div>
-        )}
+        {error && <div className={SET_NOTICE_ROSE}>{error}</div>}
+        {savedNotice && <div className={SET_NOTICE_EMERALD}>{savedNotice}</div>}
 
         <TabBar<Cat> level={2} tabs={CAT_TABS} activeKey={cat} onSelect={setCat} />
 
@@ -175,21 +176,19 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
                 : "설정되지 않음 · 값 입력";
               return (
                 <div key={k} className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <label className="text-sm font-bold text-slate-700 flex items-center gap-1.5 flex-wrap">
-                      <span>{meta.label}</span>
-                      <span className="text-xs font-mono text-slate-400">{k}</span>
-                      {cur?.source === "file" && <span className="text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded">파일 저장됨</span>}
-                      {cur?.source === "env"  && <span className="text-xs font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">env 기본값</span>}
-                    </label>
-                  </div>
+                  <label className={SET_LABEL}>
+                    <span>{meta.label}</span>
+                    <span className="text-[10px] font-mono text-slate-400">{k}</span>
+                    {cur?.source === "file" && <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded">파일 저장됨</span>}
+                    {cur?.source === "env"  && <span className="text-[10px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">env 기본값</span>}
+                  </label>
                   {meta.multiline ? (
                     <textarea
                       value={isEditing ? draftVal : ""}
                       onChange={e => patchDraft(k, e.target.value)}
                       placeholder={placeholder}
                       rows={2}
-                      className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
+                      className={SET_TEXTAREA}
                     />
                   ) : (
                     <input
@@ -197,10 +196,10 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
                       value={isEditing ? draftVal : ""}
                       onChange={e => patchDraft(k, e.target.value)}
                       placeholder={placeholder}
-                      className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                      className={SET_INPUT}
                     />
                   )}
-                  {meta.desc && <p className="text-xs text-slate-400">{meta.desc}</p>}
+                  {meta.desc && <p className="text-xs text-slate-400 mt-0.5">{meta.desc}</p>}
                 </div>
               );
             })}
@@ -208,13 +207,13 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
           </section>
         )}
 
-        {/* ── 데이터 업로드 탭 · 랜딩페이지 데이터 업로드 이동 (2026-08-12) ── */}
+        {/* ── 데이터 업로드 탭 · 공통 SECTION_TITLE ── */}
         {cat === "upload" && (
           <section className={CARD_BASE + " p-5 flex flex-col gap-3"}>
-            <div className="flex items-center gap-2">
-              <UploadSimple size={20} className="text-orange-500" />
-              <h3 className="text-lg font-bold text-slate-800">데이터 업로드</h3>
-            </div>
+            <h2 className={SET_SECTION_TITLE}>
+              <UploadSimple size={18} className="text-orange-500" />
+              데이터 업로드
+            </h2>
             <p className="text-sm text-slate-500 flex items-start gap-1.5">
               <Info size={14} className="mt-0.5 shrink-0" />
               상품목록 · 재고리스트 xlsx 업로드. 이 탭은 이후 커밋에서 · 랜딩 데이터업로드 모달을 이 자리로 이관 예정입니다.
@@ -223,19 +222,12 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
           </section>
         )}
 
-        {/* ── 저장 액션바 · 폰트 +2 ── */}
-        <div className="flex items-center justify-between gap-2 sticky bottom-0 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl px-3 py-2 shadow-sm">
-          <button
-            onClick={load}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
-          >
+        {/* ── 저장 액션바 · 공통 SET_ACTION_BAR ── */}
+        <div className={`${SET_ACTION_BAR} justify-between`}>
+          <button onClick={load} className={SET_BTN_SECONDARY}>
             <ArrowsClockwise size={14} /> 다시 불러오기
           </button>
-          <button
-            onClick={save}
-            disabled={!dirty || saving}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 cursor-pointer"
-          >
+          <button onClick={save} disabled={!dirty || saving} className={SET_BTN_PRIMARY}>
             <FloppyDisk size={14} weight="fill" />
             {saving ? "저장 중..." : dirty ? `저장 (${Object.keys(draft).length}개)` : "변경 없음"}
           </button>
