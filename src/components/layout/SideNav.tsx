@@ -271,11 +271,11 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, on
       aria-current={active ? "page" : undefined}
       aria-label={group.label}
       className={[
-        "flex w-full items-center gap-1.5",
-        // CollapsibleGroup 헤더와 동일한 여백·크기로 통일
+        "flex w-full items-center gap-2",
+        // 2026-08-12 · CollapsibleGroup 헤더와 동일 · 사용자 지시 · 글씨 크기 완전 통일
         "px-2.5 py-1.5 mt-1.5 mb-0",
         "rounded-lg",
-        "text-[17px] leading-none",
+        "text-[19px] leading-none",
         "transition-all duration-200 ease-out",
         "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-300",
         active
@@ -294,23 +294,15 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, on
         "group-data-[collapsible=icon]:justify-center",
       ].join(" ")}
     >
-      {/* accent dot · w-2.5 h-2.5 · 활성 시 shadow-sm */}
-      <span
-        className={[
-          "w-2.5 h-2.5 rounded-full shrink-0 group-data-[collapsible=icon]:hidden",
-          active
-            ? tone.activeBar + " shadow-sm"
-            : tone.activeBar + " opacity-40",
-        ].join(" ")}
-        aria-hidden="true"
-      />
+      {/* 2026-08-12 · CollapsibleGroup 헤더와 완전 동일 · dot 제거 · 아이콘 size 18 · 그룹 톤 컬러 */}
       <Icon
-        size={15}
+        size={18}
         weight={active ? "fill" : "duotone"}
         className={[
           "shrink-0",
-          active ? [tone.iconActive, "scale-105"].join(" ") : "text-slate-500",
-          "transition-transform duration-200 ease-out",
+          tone.iconActive,
+          active ? "opacity-90" : "opacity-70",
+          "transition-all duration-200 ease-out",
         ].join(" ")}
       />
       <span className="group-data-[collapsible=icon]:hidden tracking-wide">{group.label}</span>
