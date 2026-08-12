@@ -4,7 +4,6 @@ import axios from "axios";
 import { User, Phone, Briefcase, Calendar, Award, Save, Loader2, Lock, MapPin, Eye, EyeOff, Check } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession, Employee } from "../../types";
-import { SeasonRangesEditor } from "./SeasonRangesEditor";
 import { updateEmployee } from "../../lib/employeeApi";
 
 interface MyPageProps {
@@ -222,10 +221,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
           </div>
         </div>
 
-        {/* 계절 정의 (관리자 전용 · level >= 9) */}
-        {(authSession?.level ?? 0) >= 9 && authSession?.employeeId && (
-          <SeasonRangesEditor employeeId={authSession.employeeId} onToast={showToast} />
-        )}
+        {/* 계절 정의 · 2026-08-12 · [설정] > 계절 정의 로 이동 · MyPage 에서 제거 */}
 
         {/* 안내 */}
         <div className="px-3 py-2 bg-white/60 border border-slate-200 rounded-xl text-[11px] text-slate-500 flex items-start gap-2">

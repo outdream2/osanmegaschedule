@@ -50,8 +50,10 @@ const ApprovalRequestPage = React.lazy(() => import("./components/ApprovalReques
 const BrandingSettingsPage = React.lazy(() => import("./components/BrandingSettingsPage/BrandingSettingsPage"));
 // 2026-08-12 · 회사정보 설정 페이지 (관리자 lv≥9)
 const CompanyInfoSettingsPage = React.lazy(() => import("./components/CompanyInfoSettingsPage/CompanyInfoSettingsPage"));
+// 2026-08-12 · 계절 정의 설정 (MyPage 에서 이동)
+const SeasonSettingsPage = React.lazy(() => import("./components/SeasonSettingsPage/SeasonSettingsPage"));
 
-type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist" | "approval-request" | "branding" | "company-info";
+type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist" | "approval-request" | "branding" | "company-info" | "season-settings";
 
 export default function App() {
   // 전역 모달 스크롤 잠금은 CSS :has() 셀렉터로 처리 (index.css) · JS 훅 불필요
@@ -342,6 +344,18 @@ export default function App() {
     pageContent = (
       <React.Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-400 text-sm">불러오는 중...</div>}>
         <CompanyInfoSettingsPage
+          authSession={authSession}
+          onBack={goBack}
+          onNavigate={navigateInner}
+          onLogout={handleLogout}
+        />
+      </React.Suspense>
+    );
+  } else if (page === "season-settings") {
+    // 2026-08-12 · 계절 정의 설정 페이지 (관리자 lv≥9)
+    pageContent = (
+      <React.Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-400 text-sm">불러오는 중...</div>}>
+        <SeasonSettingsPage
           authSession={authSession}
           onBack={goBack}
           onNavigate={navigateInner}

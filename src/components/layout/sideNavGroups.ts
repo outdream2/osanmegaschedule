@@ -38,6 +38,8 @@ export interface SideNavGroup {
   icon?: Icon;
   managerOnly?: boolean;
   pharmacistOnly?: boolean;
+  /** 2026-08-12 · 모바일(반응형) 사이드바에서 그룹 숨김 (거래처 그룹 등 · PC 관리자 편의 전용) */
+  hideOnMobile?: boolean;
   items: SideNavItem[];
   /** 공통헤더 TABS 파생 · 없으면 그룹 자동 노출 · hideInTopTabs=true 면 헤더에 노출 안 함 */
   topTab?: {
@@ -143,6 +145,20 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     topTab: { key: "board" },
     items: [{ key: "board", label: "이슈", icon: ChatCircle, color: "emerald" }],
   },
+  // 2026-08-12 · 거래처 그룹 · PC 관리자 편의 · 모바일 숨김
+  //   · 랜딩페이지의 [거래처용] 섹션과 동일 · 사이드바에서 바로 접근
+  //   · 모달 기반 (공급사조회·재고확인) 은 랜딩에서 로그인 계정별 노출 유지
+  {
+    id: "vendor",
+    label: "거래처",
+    color: "emerald",
+    icon: Buildings,
+    hideOnMobile: true,
+    topTab: { hideInTopTabs: true }, // 헤더는 유지 · 사이드바 전용
+    items: [
+      { key: "reservation", label: "방문예약", icon: CalendarDots, color: "emerald" },
+    ],
+  },
   {
     id: "settings",
     label: "설정",
@@ -157,6 +173,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       { key: "branding", label: "앱 브랜딩", icon: Palette, color: "slate", minLevel: 9 },
       // 2026-08-12 · 회사정보 설정 (약국명·대표·사업자·주소·전화)
       { key: "company-info", label: "회사정보", icon: Buildings, color: "slate", minLevel: 9 },
+      // 2026-08-12 · 계절 정의 (MyPage 에서 이동)
+      { key: "season-settings", label: "계절 정의", icon: Calendar, color: "slate", minLevel: 9 },
     ],
   },
   {
