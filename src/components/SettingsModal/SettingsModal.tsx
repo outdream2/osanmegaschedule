@@ -375,25 +375,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
           ))}
         </div>
 
-        {/* 2026-08-03 · 구역 라벨 관리 링크 (권한 조정 페이지 · 환경설정 탭에서 노출) */}
-        {onNavigateZoneLabels && (
-          <div className="px-6 pt-4 shrink-0">
-            <button
-              type="button"
-              onClick={() => { onNavigateZoneLabels(); onClose(); }}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-sky-200 bg-sky-50 hover:border-sky-400 hover:shadow-sm active:scale-[0.99] transition-all cursor-pointer text-left group"
-            >
-              <div className="w-9 h-9 rounded-lg bg-white border border-sky-200 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition">
-                <MapPin size={16} className="text-sky-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-black text-slate-800 leading-tight">구역 라벨 관리</div>
-                <div className="text-[11px] font-semibold text-slate-500 leading-tight mt-0.5">매장 구역 번호·부제 편집 · 모든 페이지 반영</div>
-              </div>
-              <ChevronRight size={16} className="text-sky-500 shrink-0 group-hover:translate-x-0.5 transition-transform" />
-            </button>
-          </div>
-        )}
+        {/* 2026-08-12 · 사용자 지시 · 스케쥴 설정 · 근무지 종류 · 구역 라벨 관리 링크 일단 제거 */}
 
         {/* 2026-08-03 · 직원권한 관리 링크 (경영관리에서 이동) */}
         {onNavigatePermissions && (
