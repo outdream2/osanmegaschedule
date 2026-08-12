@@ -22,8 +22,7 @@ import path from "path";
 import multer from "multer";
 import { supabase } from "../../../src/supabase/client";
 import { uploadToDrive } from "../../services/googleDriveService";
-// 2026-08-13 · #107 · 계약서 업로드 · 담당자 (본인) + 관리자 알림
-import { notificationsService } from "../../services/notificationsService";
+// 2026-08-13 · #107 · 계약서 업로드 알림 · 사용자 지시로 제거 (알림 hook 미사용)
 
 const router = Router();
 
@@ -371,22 +370,7 @@ router.post("/api/employee-contracts", async (req, res) => {
       }
     }
 
-    // 2026-08-13 · #107 · 담당자 (본인) + 관리자 알림 (인앱 + push)
-    if (employeeId) {
-      notificationsService.notifyEmployee({
-        employeeId,
-        title: "📄 근로계약서 등록",
-        body: `${employeeName}님의 근로계약서 (${contractType ?? "일반"})가 등록되었습니다.`,
-        type: "success",
-        push: { url: "/", tag: `contract-${row?.id}` },
-      }).catch(() => null);
-    }
-    notificationsService.notifyAllAdmins({
-      title: "📄 근로계약서 등록",
-      body: `${employeeName} · ${contractType ?? "일반"} 계약서 저장됨 (승인: ${approvedBy ?? "-"}).`,
-      type: "info",
-      push: { url: "/", tag: `contract-admin-${row?.id}` },
-    }).catch(() => null);
+    // 2026-08-13 · 사용자 지시 · 계약서 업로드 알림 hook 제거 (조용히 저장만)
 
     return res.status(201).json(row);
   } catch (err: any) {
