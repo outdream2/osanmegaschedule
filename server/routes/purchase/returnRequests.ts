@@ -9,6 +9,8 @@
 
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
+// 2026-08-13 · #107 · 반품요청 · 관리자 알림 (인앱 + push)
+import { notificationsService } from "../../services/notificationsService";
 
 const router = Router();
 
@@ -37,6 +39,13 @@ router.post("/api/return-requests", async (req, res) => {
       .select("id, created_at, product_code, product_name, supplier, qty, current_stock, purchase_price, reason, requested_by, requested_by_id, status")
       .single();
     if (error) throw new Error(error.message);
+    // 2026-08-13 · #107 · 관리자 broadcast · 반품 요청
+    notificationsService.notifyAllAdmins({
+      title: "↩ 반품 요청",
+      body: `${row.supplier ?? "공급사 미지정"} · ${row.product_name ?? row.product_code} · ${row.qty}개 반품 요청 (요청자: ${row.requested_by ?? "-"}).`,
+      type: "warning",
+      push: { url: "/", tag: `return-req-${data?.id}` },
+    }).catch(() => null);
     res.json({ ok: true, row: data });
   } catch (err: any) {
     console.error("[return-requests POST]", err?.message);
@@ -178,6 +187,13 @@ router.post("/api/return-requests/bulk-send", async (req, res) => {
       count: items.length,
       total_qty: items.reduce((s, x) => s + (Number(x.qty ?? 0) || 0), 0),
     }));
+    // 2026-08-13 · #107 · 반품 일괄 발송 · 관리자 알림
+    notificationsService.notifyAllAdmins({
+      title: "↩ 반품 발송",
+      body: `${groups.length}개 공급사 · ${rows.length}건 반품 요청 발송됨.`,
+      type: "success",
+      push: { url: "/", tag: `return-bulk-${Date.now()}` },
+    }).catch(() => null);
     res.json({ ok: true, sent_count: rows.length, groups });
   } catch (err: any) {
     res.status(500).json({ error: err?.message ?? "일괄 발송 실패" });

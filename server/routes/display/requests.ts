@@ -690,6 +690,14 @@ router.post("/api/order-requests/bulk-send", async (req, res) => {
     ? `${results.length}개 공급사 · ${totalItems}건 저장 완료 (실제 발송은 SMTP/SMS 설정 필요)`
     : `${results.length}개 공급사 · ${totalItems}건 저장 완료 (미구성 상태 · 이메일/문자 발송 안 됨)`;
 
+  // 2026-08-13 · #107 · 일괄 발주 발송 · 관리자 알림
+  notificationsService.notifyAllAdmins({
+    title: "🚚 발주 발송",
+    body: `${results.length}개 공급사 · ${totalItems}건 발주 발송됨. (${channels.email ? "이메일 " : ""}${channels.sms ? "문자 " : ""}${channels.kakao ? "카톡" : ""})`,
+    type: "success",
+    push: { url: "/", tag: `bulk-send-${order_number ?? Date.now()}` },
+  }).catch(() => null);
+
   res.json({
     ok: true,
     order_number,
