@@ -24,8 +24,7 @@ import { useContactInfo } from "../../hooks/useContactInfo";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import EmployeeNameCell from "./EmployeeNameCell";
 import {
-  Calendar,
-  Home,
+  // 2026-08-12 · dead-code 감사 · 미사용 아이콘 6개 삭제 (Calendar·Home·Clock·MessageSquare·LogOut·GripVertical)
   UserPlus,
   ChevronLeft,
   ChevronRight,
@@ -36,14 +35,10 @@ import {
   CheckCircle,
   Layers,
   Award,
-  Clock,
-  MessageSquare,
   Lock,
   LogIn,
-  LogOut,
   ShieldAlert,
   Edit,
-  GripVertical,
   Settings,
 } from "lucide-react";
 
@@ -140,11 +135,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   // Mobile date scroll ref
   const scrollTableRef = useRef<HTMLDivElement>(null);
   const todayColRef = useRef<HTMLTableCellElement>(null);
-  const scrollDays = (days: number) => {
-    if (scrollTableRef.current) {
-      scrollTableRef.current.scrollLeft += days * 30;
-    }
-  };
+  // 2026-08-12 · dead-code 감사 · scrollDays 미사용 함수 삭제
 
   // Scroll position management
   const pendingScrollDateRef = useRef<string | null>(null); // date to scroll to after re-render
@@ -1240,7 +1231,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     return { workDays, totalHours, laborCost };
   };
 
-  const KNOWN_POSITIONS = new Set(["약사", "캐셔", "물류", "진열"]);
+  // 2026-08-12 · dead-code 감사 · KNOWN_POSITIONS 미사용 (참조 0) 삭제
 
   const filteredEmployees = employees
     .filter((emp) => {
@@ -1381,67 +1372,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   };
 
   const currentSummaryList = getCalculatedSummary(filteredEmployees);
-  const totalSummaryList = getCalculatedSummary(employees);
-
-  const getAttendanceSummary = () => {
-    let totalLates = 0;
-    let totalEarlyLeaves = 0;
-    let totalAbsences = 0;
-
-    interface EmployeeAttendance {
-      employee: typeof employees[0];
-      lates: Array<{ date: string; note: string; schedType: string }>;
-      earlyLeaves: Array<{ date: string; note: string; schedType: string }>;
-      absences: Array<{ date: string; note: string; schedType: string }>;
-    }
-
-    const employeeRecords: EmployeeAttendance[] = [];
-    const visibleDateSet = new Set(dateList);
-
-    for (const emp of employees) {
-      const lates: Array<{ date: string; note: string; schedType: string }> = [];
-      const earlyLeaves: Array<{ date: string; note: string; schedType: string }> = [];
-      const absences: Array<{ date: string; note: string; schedType: string }> = [];
-
-      emp.schedules.forEach((s) => {
-        if (visibleDateSet.has(s.date)) {
-          const act = s.actualHours || "";
-          const type = s.type || "";
-
-          if (act.includes("지각")) {
-            lates.push({ date: s.date, note: act, schedType: type });
-            totalLates++;
-          }
-          if (act.includes("조퇴")) {
-            earlyLeaves.push({ date: s.date, note: act, schedType: type });
-            totalEarlyLeaves++;
-          }
-          if (act.includes("결근") || type === "결근") {
-            absences.push({ date: s.date, note: act || "결근", schedType: type });
-            totalAbsences++;
-          }
-        }
-      });
-
-      if (lates.length > 0 || earlyLeaves.length > 0 || absences.length > 0) {
-        employeeRecords.push({
-          employee: emp,
-          lates,
-          earlyLeaves,
-          absences
-        });
-      }
-    }
-
-    return {
-      totalLates,
-      totalEarlyLeaves,
-      totalAbsences,
-      employeeRecords
-    };
-  };
-
-  const attSummary = getAttendanceSummary();
+  // 2026-08-12 · dead-code 감사 · totalSummaryList (참조 0) · getAttendanceSummary() + attSummary (참조 0) 완전 삭제
+  //   · 향후 근태 요약 기능 구현 시 · 이 함수 restore or 새로 구현
 
   return (
     <div className="w-full min-h-screen bg-gray-50 text-gray-900 font-sans flex flex-col">
