@@ -28,6 +28,8 @@ import {
   PaperPlaneTilt, Cake, Money, ShieldCheck, X,
 } from "@phosphor-icons/react";
 import SignaturePad from "react-signature-canvas";
+// 2026-08-12 · 공통 SplitPanel · 좌우 폭 드래그 조절
+import SplitPanel from "../common/SplitPanel";
 import html2canvas from "html2canvas-pro"; // 2026-08-04 · Tailwind v4 oklch 지원 · drop-in 교체
 import jsPDF from "jspdf";
 
@@ -866,9 +868,16 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
           </div>
         )}
 
-        {/* 좌우 split */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* ── 좌측: 조건 입력 폼 ─────────────────────────────────── */}
+        {/* 2026-08-12 · SplitPanel 공통 컴포넌트 사용 · 좌우 폭 드래그 조절 · localStorage 저장 */}
+        <SplitPanel
+          storageKey="resignationWriter.listWidth"
+          defaultWidth={480}
+          minWidth={320}
+          maxWidth={900}
+          dividerColor="rose"
+          wrapLeft={false}
+          wrapRight={false}
+          left={
           <section className="bg-white border border-slate-200 rounded-xl shadow-sm p-3 sm:p-4 flex flex-col gap-3 order-2 lg:order-1">
             <div className="flex items-center gap-1.5 pb-1.5 border-b border-slate-100">
               <ClipboardText size={15} weight="fill" className="text-rose-600" />
@@ -1171,8 +1180,8 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
               </p>
             </div>
           </section>
-
-          {/* ── 우측: 실시간 프리뷰 ─────────────────────────────────── */}
+          }
+          right={
           <section className="order-1 lg:order-2 flex flex-col gap-3">
             <div className="flex items-center gap-1.5 pb-1">
               <SignOut size={16} weight="fill" className="text-rose-600" />
@@ -1210,7 +1219,8 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
               </button>
             </div>
           </section>
-        </div>
+          }
+        />
       </main>
 
       {/* 서명 모달 */}
