@@ -316,11 +316,11 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           <h2 className="text-[17px] font-black text-slate-700">페이지별 최소 권한</h2>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          {/* Table header */}
-          <div className="grid grid-cols-[minmax(0,1fr)_100px_100px] sm:grid-cols-[minmax(0,1fr)_110px_110px] px-5 py-2 bg-slate-50 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          {/* Table header · 2026-08-12 · 헤더 글씨 +4 (11→15) · 컬럼 폭 확장 (100→140/150 · LevelSelect 겹침 fix) */}
+          <div className="grid grid-cols-[minmax(0,1fr)_140px_140px] sm:grid-cols-[minmax(0,1fr)_150px_150px] px-5 py-2.5 bg-slate-50 border-b border-slate-100 text-[15px] font-bold text-slate-500 tracking-tight">
             <span>페이지</span>
-            <span className="text-center">읽기 최소</span>
-            <span className="text-center">쓰기 최소</span>
+            <span className="text-right pr-3">읽기 최소</span>
+            <span className="text-right pr-3">쓰기 최소</span>
           </div>
 
           {PAGE_LABELS.map(({ key, label, desc }, i) => {
@@ -329,15 +329,15 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
               <div
                 key={key}
                 title={desc}
-                className={`grid grid-cols-[minmax(0,1fr)_100px_100px] sm:grid-cols-[minmax(0,1fr)_110px_110px] px-5 py-2 items-center ${
+                className={`grid grid-cols-[minmax(0,1fr)_140px_140px] sm:grid-cols-[minmax(0,1fr)_150px_150px] px-5 py-2 items-center ${
                   i < PAGE_LABELS.length - 1 ? "border-b border-slate-100" : ""
                 }`}
               >
                 {/* Page name (1행 · desc 는 title tooltip) · 2026-08-12 · 폰트 -1 */}
                 <div className="text-xs font-semibold text-slate-800 truncate">{label}</div>
 
-                {/* Read level */}
-                <div className="flex justify-center">
+                {/* Read level · 2026-08-12 · 오른쪽 정렬 · 겹침 방지 */}
+                <div className="flex justify-end pr-1">
                   <LevelSelect
                     value={perm.read}
                     onChange={v => handleChange(key, "read", v)}
@@ -346,8 +346,8 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                   />
                 </div>
 
-                {/* Write level */}
-                <div className="flex justify-center">
+                {/* Write level · 2026-08-12 · 오른쪽 정렬 · 겹침 방지 */}
+                <div className="flex justify-end pr-1">
                   <LevelSelect
                     value={perm.write}
                     onChange={v => handleChange(key, "write", v)}
@@ -583,7 +583,7 @@ const LevelSelect: React.FC<LevelSelectProps> = ({ value, onChange, saving, save
       value={value}
       onChange={e => onChange(Number(e.target.value))}
       disabled={saving}
-      className="appearance-none bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 cursor-pointer disabled:opacity-60 pr-6"
+      className="appearance-none bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-[13px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 cursor-pointer disabled:opacity-60 pr-7 min-w-[120px]"
     >
       {LEVELS.map(l => (
         <option key={l} value={l}>Lv.{l}{l === 1 ? " (직원)" : l === 9 ? " (최고관리자)" : ""}</option>

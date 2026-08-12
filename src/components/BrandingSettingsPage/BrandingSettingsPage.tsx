@@ -179,7 +179,7 @@ const BrandSection: React.FC = () => {
 // ═══════════════════════════════════════════════════════════════════════
 //   섹션 2 · 연락처·저작권·카카오
 // ═══════════════════════════════════════════════════════════════════════
-const ContactSection: React.FC = () => {
+export const ContactSection: React.FC = () => {
   const { contact, setContact, loaded, saveState } = useContactInfo();
   return (
     <section className={CARD_BASE}>
@@ -250,7 +250,7 @@ const ContactSection: React.FC = () => {
 // ═══════════════════════════════════════════════════════════════════════
 //   섹션 3 · 도장 매핑
 // ═══════════════════════════════════════════════════════════════════════
-const StampsSection: React.FC = () => {
+export const StampsSection: React.FC = () => {
   const { stamps, setAll, loaded, saveState } = useStampsMap();
   const [draftName, setDraftName] = useState("");
   const [draftImageUrl, setDraftImageUrl] = useState("");
@@ -471,7 +471,7 @@ const MIN_LEVEL_OPTIONS: MinLevelOption[] = [
   { value: 9, label: "9 - 최고관리자만" },
 ];
 
-const MobileVisibilitySection: React.FC = () => {
+export const MobileVisibilitySection: React.FC = () => {
   const { getMinLevel, setMinLevel, loaded, saveState } = useMobilePageLevel();
 
   // SIDE_NAV_GROUPS 순회 · 그룹별로 페이지 목록 구성 · 같은 pageKey 는 그룹 내에서 중복 제거

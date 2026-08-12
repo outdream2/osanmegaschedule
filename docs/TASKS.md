@@ -4,6 +4,33 @@
 
 ## 🔴 대기 큐 (사용자 결정/재개 필요)
 
+### #99 · 페이지별 최소 권한 · 트리 구조 재구성 (사이드바 메뉴 계층)
+- **파일**: `src/components/PermissionsPage/PermissionsPage.tsx`
+- 지금: 평면 리스트 (23개 페이지 나열)
+- 목표: sideNavGroups 기반 · 그룹 헤더 (홈·스케쥴·매장·경영·설정) 접기/펼치기 · 하위 페이지 들여쓰기
+- 위험도: 중 · UI 재구성 · 로직은 그대로
+
+### #100 · 페이지별 접근 조건 · 레벨 OR 직군 (둘 중 하나 만족)
+- **파일**: `src/hooks/usePagePermissions.ts` (신규) · `src/lib/permissions/index.ts` 관련
+- 지금: PagePermission { read: number, write: number } · 레벨만
+- 목표: PagePermission { read: number, write: number, readPositions?: string[], writePositions?: string[] } · 레벨 OR 직군 만족 시 접근
+- 서버 저장 키 · 기존 그대로 (확장 필드 추가)
+- UI · 각 페이지 행 · 레벨 셀렉트 + 직군 멀티체크 (팝오버)
+- 위험도: 높음 · 여러 페이지 · 권한 판정 로직 통합 필요
+
+### #101 · 직군 설정 삭제·수정 시 · employees 연동 데이터 보호
+- **파일**: `src/components/PositionsSettingsPage/...` (or WorkTypeSettingsPage)
+- 지금: 직군 목록 · 자유 편집 · 삭제 시 · employees.position 참조값 · orphan 됨
+- 목표:
+  - 삭제 시 · 사용중인 직군 · 경고 + [재매핑] 다이얼로그 (기존 값 → 새 값)
+  - 이름 변경 시 · employees 참조 · 자동 rename (transaction)
+  - 완전 삭제 · 아무도 사용 안 할 때만 · 활성화
+- 위험도: 중 · DB 스키마 · 트랜잭션 · rollback 안전
+
+### #102 · 페이지 권한 · 표 형식 오른쪽 정렬 · 셀렉트 겹침 fix (부분 완료 2026-08-12)
+- 완료: 헤더 폰트 +4 (11→15) · 컬럼 폭 140/150 · min-w-[120px] · pr-1 오른쪽 정렬
+- 남은: #99 트리 구조 진행 시 · 정렬 재확인
+
 ### #42 · 발주 · PDF 생성 + 카카오톡 자동 발송 (⏸ 사용자 대기)
 - **재개 조건**: 사업자등록증 발급 → SolAPI 계정 세팅 (사업자 인증 · 카카오 채널 · 알림톡 템플릿 · API 키·env 5개)
 - **완료 시**: 서버 코드 연결 (제가 진행)
