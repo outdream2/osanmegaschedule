@@ -382,24 +382,19 @@ export const SideNav: React.FC<SideNavProps> = ({
       <SidebarSeparator className="bg-slate-200/60" />
 
       <SidebarFooter className="px-2 py-1.5 gap-0.5">
-        {/* 2026-08-12 · 사용자 지시 · 로그인 정보 (누가 로그인했는지) 표시 */}
+        {/* 2026-08-12 · 로그인 정보 (누가 로그인했는지) · 이름 + 역할·레벨 · 이니셜 아바타 제거 */}
         {authSession && (authSession.employeeName || authSession.role) && (
-          <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/60 border border-slate-200/60 group-data-[collapsible=icon]:hidden">
-            <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 text-[11px] font-bold">
-              {(authSession.employeeName ?? "?").charAt(0)}
-            </div>
-            <div className="flex flex-col min-w-0 flex-1 leading-tight">
-              <span className="text-[13px] font-bold text-slate-800 truncate">
-                {authSession.employeeName ?? "로그인"}
-              </span>
-              <span className="text-[10px] text-slate-500">
-                {authSession.role === "vendor" ? "거래처" :
-                 authSession.role === "superadmin" ? "최고관리자" :
-                 authSession.role === "admin" ? "대표" :
-                 authSession.role === "manager" ? "관리자" : "직원"}
-                {authSession.level != null ? ` · Lv.${authSession.level}` : ""}
-              </span>
-            </div>
+          <div className="flex flex-col gap-0.5 px-2.5 py-1.5 rounded-lg bg-white/60 border border-slate-200/60 group-data-[collapsible=icon]:hidden">
+            <span className="text-[13px] font-bold text-slate-800 truncate leading-tight">
+              {authSession.employeeName ?? "로그인"}
+            </span>
+            <span className="text-[10px] text-slate-500 leading-tight">
+              {authSession.role === "vendor" ? "거래처" :
+               authSession.role === "superadmin" ? "최고관리자" :
+               authSession.role === "admin" ? "대표" :
+               authSession.role === "manager" ? "관리자" : "직원"}
+              {authSession.level != null ? ` · Lv.${authSession.level}` : ""}
+            </span>
           </div>
         )}
         {authSession && (
