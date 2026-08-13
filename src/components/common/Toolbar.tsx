@@ -59,7 +59,7 @@ const ToolbarSearch: React.FC<ToolbarSearchProps> = ({
     <div className={`relative flex items-center ${widthClass}`}>
       <Search
         size={12}
-        className="absolute left-2.5 text-slate-400 pointer-events-none shrink-0"
+        className="absolute left-2.5 text-zinc-400 pointer-events-none shrink-0"
       />
       <input
         ref={inputRef}
@@ -69,8 +69,8 @@ const ToolbarSearch: React.FC<ToolbarSearchProps> = ({
         onKeyDown={e => e.key === "Escape" && onChange("")}
         placeholder={placeholder}
         className={[
-          "w-full bg-white border border-slate-200 rounded-lg",
-          "pl-7 pr-7 h-7 text-[11px] text-slate-800",
+          "w-full bg-white border border-zinc-200 rounded-lg",
+          "pl-7 pr-7 h-7 text-[11px] text-zinc-800",
           "focus:outline-none focus:ring-2 transition",
           ACCENT_RING[accent],
         ].join(" ")}
@@ -80,7 +80,7 @@ const ToolbarSearch: React.FC<ToolbarSearchProps> = ({
         <button
           type="button"
           onClick={() => { onChange(""); inputRef.current?.focus(); }}
-          className="absolute right-1.5 w-5 h-5 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 cursor-pointer transition"
+          className="absolute right-1.5 w-5 h-5 flex items-center justify-center rounded hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700 cursor-pointer transition"
           title="검색 초기화 (Esc)"
           aria-label="검색 초기화"
         >

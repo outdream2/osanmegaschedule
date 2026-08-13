@@ -88,7 +88,7 @@ export const ResizableTh: React.FC<ResizableThProps> = ({
           "cursor-col-resize select-none",
           // 시각 피드백: 우측 실선
           "after:content-[''] after:absolute after:right-1 after:top-1/4 after:bottom-1/4",
-          "after:w-px after:bg-slate-300 after:rounded-full",
+          "after:w-px after:bg-zinc-300 after:rounded-full",
           "hover:after:bg-sky-400 hover:after:w-[2px] after:transition-all after:duration-100",
         ].join(" ")}
         style={{ touchAction: "none" }}

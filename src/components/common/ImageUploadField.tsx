@@ -21,8 +21,8 @@ interface Props {
   hint?: string;
 }
 
-const LABEL_CLS = "text-[11px] font-semibold text-slate-600 block mb-1.5";
-const INPUT_CLS = "flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-500 transition";
+const LABEL_CLS = "text-[11px] font-semibold text-zinc-600 block mb-1.5";
+const INPUT_CLS = "flex-1 bg-white border border-zinc-200 rounded-lg px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:border-indigo-500 transition";
 const BTN_CLS = "shrink-0 flex items-center gap-1 px-2.5 h-[38px] rounded-lg text-[11px] font-semibold border cursor-pointer transition";
 
 export const ImageUploadField: React.FC<Props> = ({
@@ -95,11 +95,11 @@ export const ImageUploadField: React.FC<Props> = ({
           onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }}
         />
       </div>
-      {hint && !error && <p className="text-[10px] text-slate-400 mt-1">{hint}</p>}
+      {hint && !error && <p className="text-[10px] text-zinc-400 mt-1">{hint}</p>}
       {error && <p className="text-[10px] text-rose-500 mt-1">{error}</p>}
       {value && (
-        <div className="mt-2 border border-slate-200 rounded-md p-2 bg-slate-50 flex items-center gap-2">
-          <ImageSquare size={12} className="text-slate-400 shrink-0" />
+        <div className="mt-2 border border-zinc-200 rounded-md p-2 bg-zinc-50 flex items-center gap-2">
+          <ImageSquare size={12} className="text-zinc-400 shrink-0" />
           <img
             src={value}
             alt="preview"

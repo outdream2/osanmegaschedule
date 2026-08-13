@@ -225,24 +225,24 @@ const PERFORMANCE_RATINGS: { value: string; label: string }[] = [
 
 // ─── 헬퍼: 직책 컬러 ────────────────────────────────────────────────────────
 function positionColor(pos: string | null | undefined) {
-  if (!pos) return "bg-slate-100 text-slate-500 border-slate-200";
+  if (!pos) return "bg-zinc-100 text-zinc-500 border-zinc-200";
   if (pos.includes("약사"))              return "bg-violet-100 text-violet-700 border-violet-200";
   if (pos.includes("매장"))              return "bg-emerald-100 text-emerald-700 border-emerald-200";
   if (pos.includes("창고"))              return "bg-orange-100 text-orange-700 border-orange-200";
   if (pos.includes("물류") || pos.includes("진열") || pos.includes("캐셔"))
                                           return "bg-orange-100 text-orange-700 border-orange-200"; // 하위 호환
   if (pos.includes("매니저"))            return "bg-rose-100 text-rose-700 border-rose-200";
-  return "bg-slate-100 text-slate-600 border-slate-200";
+  return "bg-zinc-100 text-zinc-600 border-zinc-200";
 }
 
 function scheduleTypeColor(t: string | null | undefined) {
-  if (!t) return "bg-slate-100 text-slate-400 border-slate-200";
+  if (!t) return "bg-zinc-100 text-zinc-400 border-zinc-200";
   if (t === "오픈")    return "bg-amber-100 text-amber-700 border-amber-200";
   if (t === "미들")    return "bg-teal-100 text-teal-700 border-teal-200";
   if (t === "마감")    return "bg-indigo-100 text-indigo-700 border-indigo-200";
   if (t === "클로징")  return "bg-purple-100 text-purple-700 border-purple-200";
   if (t === "풀타임")  return "bg-blue-100 text-blue-700 border-blue-200";
-  return "bg-slate-100 text-slate-500 border-slate-200";
+  return "bg-zinc-100 text-zinc-500 border-zinc-200";
 }
 
 // 계약유형 · 배지 컬러 + 한글 라벨
@@ -255,24 +255,24 @@ function contractTypeMeta(t: string | null | undefined): { label: string; short:
   switch (t) {
     case "regular":    color = "bg-blue-100 text-blue-700 border-blue-200"; break;
     case "fixed_term": color = "bg-amber-100 text-amber-700 border-amber-200"; break;
-    case "part_time":  color = "bg-slate-100 text-slate-600 border-slate-200"; break;
+    case "part_time":  color = "bg-zinc-100 text-zinc-600 border-zinc-200"; break;
     case "daily":      color = "bg-rose-100 text-rose-700 border-rose-200"; break;
     case "intern":     color = "bg-lime-100 text-lime-700 border-lime-200"; break;
-    default:           color = "bg-slate-100 text-slate-500 border-slate-200";
+    default:           color = "bg-zinc-100 text-zinc-500 border-zinc-200";
   }
   return { label, short, color };
 }
 
 // 인사평가 · 배지 컬러
 function performanceRatingColor(r: string | null | undefined): string {
-  if (!r) return "bg-slate-100 text-slate-400 border-slate-200";
+  if (!r) return "bg-zinc-100 text-zinc-400 border-zinc-200";
   switch (r.toUpperCase()) {
     case "S": return "bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200";
     case "A": return "bg-emerald-100 text-emerald-700 border-emerald-200";
     case "B": return "bg-sky-100 text-sky-700 border-sky-200";
     case "C": return "bg-amber-100 text-amber-700 border-amber-200";
     case "D": return "bg-rose-100 text-rose-700 border-rose-200";
-    default:  return "bg-slate-100 text-slate-500 border-slate-200";
+    default:  return "bg-zinc-100 text-zinc-500 border-zinc-200";
   }
 }
 
@@ -421,7 +421,7 @@ const InlineField: React.FC<{
   wide?: boolean;
 }> = ({ label, value, editing, icon, type = "text", placeholder, onChange, monospace: _monospace, wide }) => (
   <div className={`flex flex-col gap-0.5 ${wide ? "col-span-2" : ""}`}>
-    <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none">
+    <span className="text-[11px] font-semibold text-zinc-400 flex items-center gap-0.5 leading-none">
       {icon}
       {label}
     </span>
@@ -435,7 +435,7 @@ const InlineField: React.FC<{
       />
     ) : (
       <span
-        className={`text-[13px] font-semibold leading-snug min-h-[20px] ${!value ? "text-slate-300 italic" : "text-slate-700"}`}
+        className={`text-[13px] font-semibold leading-snug min-h-[20px] ${!value ? "text-zinc-300 italic" : "text-zinc-700"}`}
       >
         {value || "(없음)"}
       </span>
@@ -489,13 +489,13 @@ const SectionCard: React.FC<{
     <div className={`${CARD_BASE} overflow-hidden`}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className={`w-full px-3 py-2 border-b ${open ? headerCls : "bg-white border-slate-100"} flex items-center justify-between cursor-pointer transition-colors duration-150`}
+        className={`w-full px-3 py-2 border-b ${open ? headerCls : "bg-white border-zinc-100"} flex items-center justify-between cursor-pointer transition-colors duration-150`}
       >
-        <span className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider ${open ? textCls : "text-slate-500"}`}>
-          <span className={open ? iconCls : "text-slate-400"}>{icon}</span>
+        <span className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider ${open ? textCls : "text-zinc-500"}`}>
+          <span className={open ? iconCls : "text-zinc-400"}>{icon}</span>
           {title}
         </span>
-        <span className={`transition-transform duration-200 opacity-50 ${open ? "rotate-180" : ""} ${open ? textCls : "text-slate-400"}`}>
+        <span className={`transition-transform duration-200 opacity-50 ${open ? "rotate-180" : ""} ${open ? textCls : "text-zinc-400"}`}>
           <svg width="10" height="10" viewBox="0 0 12 12">
             <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
           </svg>
@@ -508,14 +508,14 @@ const SectionCard: React.FC<{
 
 // ─── 서브컴포넌트: 빈 상태 행 ───────────────────────────────────────────────
 const EmptyRow: React.FC<{ label: string }> = ({ label }) => (
-  <p className="text-[11px] text-slate-300 italic py-1.5">{label}</p>
+  <p className="text-[11px] text-zinc-300 italic py-1.5">{label}</p>
 );
 
 // ─── 서브컴포넌트: 섹션 소제목 indicator ─────────────────────────────────────
 const SectionLabel: React.FC<{ color: string; children: React.ReactNode }> = ({ color, children }) => (
   <div className="flex items-center gap-1.5 mb-3">
     <span className={`inline-block w-1 h-3.5 rounded-full shrink-0 ${color}`} />
-    <span className="text-[11px] font-semibold text-slate-500">{children}</span>
+    <span className="text-[11px] font-semibold text-zinc-500">{children}</span>
   </div>
 );
 
@@ -530,7 +530,7 @@ const CreateModal: React.FC<{
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={() => !saving && onClose()}
     >
       <div
@@ -538,17 +538,17 @@ const CreateModal: React.FC<{
         onClick={(e) => e.stopPropagation()}
       >
         {/* 모달 헤더 */}
-        <div className="px-4 py-3 border-b border-slate-200 bg-indigo-50 flex items-center justify-between">
+        <div className="px-4 py-3 border-b border-zinc-200 bg-indigo-50 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center shadow-sm">
               <UserPlus size={13} className="text-white" />
             </div>
-            <span className="text-sm font-semibold text-slate-800">직원 신규 등록</span>
+            <span className="text-sm font-semibold text-zinc-800">직원 신규 등록</span>
           </div>
           <button
             onClick={() => !saving && onClose()}
             disabled={saving}
-            className="text-slate-400 hover:text-slate-700 w-7 h-7 rounded-md hover:bg-white/70 cursor-pointer flex items-center justify-center disabled:opacity-40"
+            className="text-zinc-400 hover:text-zinc-700 w-7 h-7 rounded-md hover:bg-white/70 cursor-pointer flex items-center justify-center disabled:opacity-40"
           >
             <X size={15} />
           </button>
@@ -563,43 +563,43 @@ const CreateModal: React.FC<{
             ] as { label: string; key: keyof Employee; type: string; placeholder: string }[]
           ).map(({ label, key, type, placeholder }) => (
             <div key={key}>
-              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">{label}</label>
+              <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">{label}</label>
               <input
                 type={type}
                 value={String(draft[key] ?? "")}
                 onChange={(e) => set(key, e.target.value)}
                 placeholder={placeholder}
-                className="w-full border border-slate-200 rounded-md px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200"
+                className="w-full border border-zinc-200 rounded-md px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200"
               />
             </div>
           ))}
           <div>
-            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">직책</label>
+            <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">직책</label>
             <select
               value={String(draft.position ?? "")}
               onChange={(e) => set("position", e.target.value)}
-              className="w-full border border-slate-200 rounded-md px-2.5 py-1.5 text-[12px] bg-white focus:outline-none focus:border-indigo-400"
+              className="w-full border border-zinc-200 rounded-md px-2.5 py-1.5 text-[12px] bg-white focus:outline-none focus:border-indigo-400"
             >
               <option value="">선택 안 함</option>
               {POSITIONS.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">메모</label>
+            <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">메모</label>
             <textarea
               value={String(draft.memo ?? "")}
               onChange={(e) => set("memo", e.target.value)}
               placeholder="(선택) 근무 특이사항 · 알러지 등"
               rows={2}
-              className="w-full border border-slate-200 rounded-md px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-indigo-400 resize-none"
+              className="w-full border border-zinc-200 rounded-md px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-indigo-400 resize-none"
             />
           </div>
         </div>
-        <div className="px-4 py-3 border-t border-slate-200 bg-slate-50/70 flex items-center justify-end gap-2">
+        <div className="px-4 py-3 border-t border-zinc-200 bg-zinc-50/70 flex items-center justify-end gap-2">
           <button
             onClick={onClose}
             disabled={saving}
-            className="text-[11px] font-semibold text-slate-600 bg-white border border-slate-300 rounded-md h-7 px-3 hover:bg-slate-50 cursor-pointer disabled:opacity-40"
+            className="text-[11px] font-semibold text-zinc-600 bg-white border border-zinc-300 rounded-md h-7 px-3 hover:bg-zinc-50 cursor-pointer disabled:opacity-40"
           >
             취소
           </button>
@@ -619,13 +619,13 @@ const CreateModal: React.FC<{
 
 // ─── 서브컴포넌트: 직원 없음 (우측 빈 상태) ─────────────────────────────────
 const EmptyDetail: React.FC = () => (
-  <div className="flex-1 flex flex-col items-center justify-center gap-4 text-slate-300 select-none py-16">
+  <div className="flex-1 flex flex-col items-center justify-center gap-4 text-zinc-300 select-none py-16">
     <div className="w-20 h-20 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm">
       <Users size={34} className="text-indigo-300" />
     </div>
     <div className="text-center">
-      <p className="text-sm font-bold text-slate-400">직원을 선택하세요</p>
-      <p className="text-[12px] text-slate-300 mt-1">좌측 목록에서 직원을 클릭하면 인사카드가 표시됩니다</p>
+      <p className="text-sm font-bold text-zinc-400">직원을 선택하세요</p>
+      <p className="text-[12px] text-zinc-300 mt-1">좌측 목록에서 직원을 클릭하면 인사카드가 표시됩니다</p>
     </div>
   </div>
 );
@@ -890,7 +890,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
   const SortIcon: React.FC<{ k: SortKey }> = ({ k }) => (
     sortKey === k
       ? (sortDir === "asc" ? <ArrowUp size={10} className="text-indigo-500 inline ml-0.5" /> : <ArrowDown size={10} className="text-indigo-500 inline ml-0.5" />)
-      : <ArrowUpDown size={10} className="text-slate-300 inline ml-0.5" />
+      : <ArrowUpDown size={10} className="text-zinc-300 inline ml-0.5" />
   );
   const { getWidth: sw, resizerProps: sr } = useColumnResize("staffList", {
     name:         { default: 100, min: 60, max: 200 },
@@ -1072,11 +1072,11 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
       <tr
         onClick={() => handleSelect(emp)}
         className={`cursor-pointer transition-colors ${
-          isSelected ? "bg-indigo-50/80" : "hover:bg-slate-50/70"
+          isSelected ? "bg-indigo-50/80" : "hover:bg-zinc-50/70"
         }`}
       >
         {/* 이름 */}
-        <td className="px-2 py-2 text-[13px] font-bold text-slate-800 truncate max-w-[120px]">
+        <td className="px-2 py-2 text-[13px] font-bold text-zinc-800 truncate max-w-[120px]">
           <div className="flex items-center gap-1">
             {emp.photo_url && <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />}
             <span className={isSelected ? "text-indigo-800" : ""}>{emp.name}</span>
@@ -1112,11 +1112,11 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                 </span>
               );
             }
-            return <span className="text-[11px] text-slate-300">-</span>;
+            return <span className="text-[11px] text-zinc-300">-</span>;
           })()}
         </td>
         {/* 근속 */}
-        <td className="px-1 py-2 text-center text-[12px] text-slate-600 tabular-nums whitespace-nowrap">
+        <td className="px-1 py-2 text-center text-[12px] text-zinc-600 tabular-nums whitespace-nowrap">
           {tenure}
         </td>
         {/* 평가 */}
@@ -1126,7 +1126,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
               {rating}
             </span>
           ) : (
-            <span className="text-[11px] text-slate-300">-</span>
+            <span className="text-[11px] text-zinc-300">-</span>
           )}
         </td>
         {/* 이력서 · 파일 있음=보기 · 없음=업로드 (Drive · POST /api/employees/:id/resume) */}
@@ -1143,7 +1143,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
           ) : (
             <label
               onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
+              className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-zinc-500 hover:text-emerald-700 hover:bg-emerald-50 border border-zinc-200 hover:border-emerald-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
               title="이력서 업로드 · Google Drive (PDF·DOC·이미지 · 10MB)"
             >
               <Paperclip size={10} />업로드
@@ -1174,7 +1174,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
           ) : (
             <label
               onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-500 hover:text-sky-700 hover:bg-sky-50 border border-slate-200 hover:border-sky-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
+              className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-zinc-500 hover:text-sky-700 hover:bg-sky-50 border border-zinc-200 hover:border-sky-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
               title="통장사본 업로드 · 이미지 (jpg/png · 5MB)"
             >
               <Paperclip size={10} />업로드
@@ -1250,7 +1250,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
             ) : (
               <label
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-slate-500 hover:text-rose-700 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
+                className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-zinc-500 hover:text-rose-700 hover:bg-rose-50 border border-zinc-200 hover:border-rose-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
                 title="사직서 업로드 · PDF 또는 이미지 · 20MB"
               >
                 <Paperclip size={10} />업로드
@@ -1267,7 +1267,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
               </label>
             )
           ) : (
-            <span className="text-[11px] text-slate-200">-</span>
+            <span className="text-[11px] text-zinc-200">-</span>
           )}
         </td>
         {/* 상태 배지 · 퇴사·퇴사예정 */}
@@ -1293,41 +1293,41 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
           <div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center shadow-sm shrink-0">
             <Users size={13} className="text-white" />
           </div>
-          <span className="text-[13px] font-bold text-slate-800">직원관리</span>
+          <span className="text-[13px] font-bold text-zinc-800">직원관리</span>
           <span className="text-[11px] font-semibold px-1.5 py-px rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200 tabular-nums">
             {employees.length}명
           </span>
         </div>
 
         {/* 구분선 */}
-        <div className="hidden sm:block w-px h-5 bg-slate-200 shrink-0" />
+        <div className="hidden sm:block w-px h-5 bg-zinc-200 shrink-0" />
 
         {/* 검색 */}
         <div className="relative min-w-[160px]">
-          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="이름 · 직책 · 연락처"
-            className="pl-8 pr-3 h-8 text-[12px] border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 bg-slate-50 placeholder:text-slate-400 w-full sm:w-48"
+            className="pl-8 pr-3 h-8 text-[12px] border border-zinc-200 rounded-lg focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 bg-zinc-50 placeholder:text-zinc-400 w-full sm:w-48"
           />
         </div>
 
         {/* 재직 상태 필터 · 재직/퇴사/전체 */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">상태</span>
-          <div className="inline-flex bg-slate-50 border border-slate-200 rounded-lg p-0.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] gap-0.5">
+          <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">상태</span>
+          <div className="inline-flex bg-zinc-50 border border-zinc-200 rounded-lg p-0.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] gap-0.5">
             {[
               { key: "active",  label: "재직",  color: "bg-emerald-600 text-white" },
               { key: "retired", label: "퇴사",  color: "bg-rose-500 text-white" },
-              { key: "all",     label: "전체",  color: "bg-slate-700 text-white" },
+              { key: "all",     label: "전체",  color: "bg-zinc-700 text-white" },
             ].map(s => (
               <button
                 key={s.key}
                 onClick={() => setFilterStatus(s.key as typeof filterStatus)}
                 className={`h-6 px-2 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
-                  filterStatus === s.key ? `${s.color} shadow-sm` : "text-slate-500 hover:text-slate-700"
+                  filterStatus === s.key ? `${s.color} shadow-sm` : "text-zinc-500 hover:text-zinc-700"
                 }`}
               >
                 {s.label}
@@ -1338,14 +1338,14 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
 
         {/* 직책 필터 */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">직책</span>
-          <div className="inline-flex bg-slate-50 border border-slate-200 rounded-lg p-0.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] flex-wrap gap-0.5">
+          <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">직책</span>
+          <div className="inline-flex bg-zinc-50 border border-zinc-200 rounded-lg p-0.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] flex-wrap gap-0.5">
             <button
               onClick={() => setFilterPosition("")}
               className={`h-6 px-2 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
                 filterPosition === ""
                   ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
+                  : "text-zinc-500 hover:text-zinc-700"
               }`}
             >
               전체
@@ -1356,8 +1356,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                 onClick={() => setFilterPosition(filterPosition === p ? "" : p)}
                 className={`h-6 px-2 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
                   filterPosition === p
-                    ? "bg-white text-slate-800 shadow-sm border border-slate-200"
-                    : "text-slate-500 hover:text-slate-700"
+                    ? "bg-white text-zinc-800 shadow-sm border border-zinc-200"
+                    : "text-zinc-500 hover:text-zinc-700"
                 }`}
               >
                 {p}
@@ -1372,7 +1372,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
           {onBackToSchedule && (
             <button
               onClick={onBackToSchedule}
-              className="h-8 px-3 flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors"
+              className="h-8 px-3 flex items-center gap-1.5 text-[11px] font-semibold text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-50 rounded-lg cursor-pointer transition-colors"
               title="스케쥴 페이지로 돌아가기"
             >
               ← 스케쥴
@@ -1382,7 +1382,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
             onClick={loadEmployees}
             disabled={loading}
             title="새로고침"
-            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 cursor-pointer disabled:opacity-40 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700 cursor-pointer disabled:opacity-40 transition-colors"
           >
             <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
           </button>
@@ -1408,7 +1408,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
           {/* 카드 헤더 · 공통 card-header */}
           <div className="card-header">
             <User size={13} className="text-indigo-400 shrink-0" />
-            <span className="text-[13px] font-semibold text-slate-800">직원 목록</span>
+            <span className="text-[13px] font-semibold text-zinc-800">직원 목록</span>
             {filtered.length !== employees.length && (
               <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded px-1.5 py-px tabular-nums ml-auto">
                 {filtered.length}/{employees.length}
@@ -1419,7 +1419,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
           {/* 직원 목록 · 표 형식 · 한 줄 · 컬럼: 이름·직책·계약유형·근속·평가·계약서·상태 */}
           <div className="flex-1 overflow-auto min-h-0">
             {loading && filtered.length === 0 ? (
-              <div className="flex items-center justify-center py-8 text-slate-400 text-[11px] font-semibold gap-1.5">
+              <div className="flex items-center justify-center py-8 text-zinc-400 text-[11px] font-semibold gap-1.5">
                 <Loader2 size={13} className="animate-spin" />로딩 중...
               </div>
             ) : error ? (
@@ -1428,11 +1428,11 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                 <button onClick={loadEmployees} className="ml-1.5 underline cursor-pointer">재시도</button>
               </div>
             ) : !loading && filtered.length === 0 ? (
-              <div className="text-center text-[11px] text-slate-300 py-8">해당 조건의 직원이 없습니다</div>
+              <div className="text-center text-[11px] text-zinc-300 py-8">해당 조건의 직원이 없습니다</div>
             ) : (
               <table className={`w-full border-collapse ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`} style={{ tableLayout: "fixed" }}>
-                <thead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur">
-                  <tr className="border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                <thead className="sticky top-0 z-10 bg-zinc-50/95 backdrop-blur">
+                  <tr className="border-b border-zinc-200 text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
                     <th className="relative px-2 py-1.5 text-left cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("name")} style={{ width: sw("name"), minWidth: sw("name") }}>
                       이름<SortIcon k="name" />
                       <span {...sr("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
@@ -1475,7 +1475,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-zinc-100">
                   {filtered.map((emp) => <ListRow key={emp.id} emp={emp} />)}
                 </tbody>
               </table>
@@ -1483,7 +1483,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
           </div>
 
           {/* 하단 신규 등록 */}
-          <div className="px-3 py-2 border-t border-slate-100 shrink-0">
+          <div className="px-3 py-2 border-t border-zinc-100 shrink-0">
             <button
               onClick={() => setCreateOpen(true)}
               className="w-full h-7 text-[11px] font-semibold text-indigo-600 border border-dashed border-indigo-200 rounded-lg hover:bg-indigo-50 cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
@@ -1499,7 +1499,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
           className="split-divider group"
           title="드래그하여 좌측 리스트 폭 조절"
         >
-          <span className="text-[10px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+          <span className="text-[10px] text-zinc-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
         </div>
 
         {/* ════ 우측: 인사카드 패널 · 공통 split-right · 모바일(<lg)에서는 숨기고 모달로 대체 ════ */}
@@ -1517,7 +1517,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                       {displayEmp.photo_url ? (
                         <Avatar name={displayEmp.name} photoUrl={displayEmp.photo_url} size="sm" />
                       ) : (
-                        <div className="w-9 h-9 rounded-full bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center text-slate-400">
+                        <div className="w-9 h-9 rounded-full bg-zinc-100 border border-dashed border-zinc-300 flex items-center justify-center text-zinc-400">
                           <Camera size={14} />
                         </div>
                       )}
@@ -1525,7 +1525,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                         <button
                           onClick={() => photoInputRef.current?.click()}
                           title="사진 변경"
-                          className="absolute inset-0 rounded-full bg-slate-900/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                          className="absolute inset-0 rounded-full bg-zinc-900/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                         >
                           <Camera size={11} className="text-white" />
                         </button>
@@ -1551,12 +1551,12 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                         <input
                           value={draft?.name ?? ""}
                           onChange={(e) => setField("name", e.target.value)}
-                          className="text-base font-bold text-slate-800 border-b-2 border-indigo-400 bg-transparent focus:outline-none leading-tight"
+                          className="text-base font-bold text-zinc-800 border-b-2 border-indigo-400 bg-transparent focus:outline-none leading-tight"
                         />
                       ) : (
-                        <h3 className="text-base font-bold text-slate-800 leading-tight">{displayEmp.name}</h3>
+                        <h3 className="text-base font-bold text-zinc-800 leading-tight">{displayEmp.name}</h3>
                       )}
-                      <span className="text-[10px] text-slate-300">#{displayEmp.id}</span>
+                      <span className="text-[10px] text-zinc-300">#{displayEmp.id}</span>
                     </div>
                     <div className="flex items-center gap-1.5 flex-wrap">
                       {/* 직책 */}
@@ -1564,7 +1564,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                         <select
                           value={draft?.position ?? ""}
                           onChange={(e) => setField("position", e.target.value)}
-                          className="text-[11px] border border-slate-300 rounded-md px-2 h-6 bg-white focus:outline-none focus:border-indigo-400"
+                          className="text-[11px] border border-zinc-300 rounded-md px-2 h-6 bg-white focus:outline-none focus:border-indigo-400"
                         >
                           <option value="">직책 없음</option>
                           {POSITIONS.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -1598,7 +1598,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                         <select
                           value={draft?.contract_type ?? ""}
                           onChange={(e) => setField("contract_type", e.target.value)}
-                          className="text-[11px] border border-slate-300 rounded-md px-2 h-6 bg-white focus:outline-none focus:border-indigo-400"
+                          className="text-[11px] border border-zinc-300 rounded-md px-2 h-6 bg-white focus:outline-none focus:border-indigo-400"
                         >
                           <option value="">계약유형 없음</option>
                           {CONTRACT_TYPES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
@@ -1619,7 +1619,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                       })()}
                       {/* 레벨 */}
                       {displayEmp.level != null && (
-                        <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-0.5">
+                        <span className="text-[10px] font-semibold text-zinc-400 flex items-center gap-0.5">
                           <Award size={9} /> Lv.{editing ? draft?.level : displayEmp.level}
                         </span>
                       )}
@@ -1633,7 +1633,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                         <button
                           onClick={cancelEdit}
                           disabled={saving}
-                          className="h-7 px-2.5 text-[11px] font-semibold text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 cursor-pointer flex items-center gap-1 disabled:opacity-40 transition-colors"
+                          className="h-7 px-2.5 text-[11px] font-semibold text-zinc-600 bg-white border border-zinc-300 rounded-lg hover:bg-zinc-50 cursor-pointer flex items-center gap-1 disabled:opacity-40 transition-colors"
                         >
                           <X size={12} /> 취소
                         </button>
@@ -1676,18 +1676,18 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                 const fmtD = (n: number) => Number.isInteger(n) ? String(n) : n.toFixed(1);
                 const rating = displayEmp.performance_rating ? String(displayEmp.performance_rating).toUpperCase() : null;
                 return (
-                  <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5 px-4 py-2.5 border-b border-slate-200 bg-white shrink-0 text-[13px]">
+                  <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5 px-4 py-2.5 border-b border-zinc-200 bg-white shrink-0 text-[13px]">
                     {/* 근속 */}
                     <span className="inline-flex items-baseline gap-1.5">
-                      <span className="inline-flex items-center gap-1 text-[12px] text-slate-400 font-semibold"><Clock size={11} className="text-indigo-400" />근속</span>
-                      <span className="font-black text-slate-800 tabular-nums">
-                        {tenure === "-" ? <span className="text-slate-300 italic font-normal">미등록</span> : tenure}
+                      <span className="inline-flex items-center gap-1 text-[12px] text-zinc-400 font-semibold"><Clock size={11} className="text-indigo-400" />근속</span>
+                      <span className="font-black text-zinc-800 tabular-nums">
+                        {tenure === "-" ? <span className="text-zinc-300 italic font-normal">미등록</span> : tenure}
                       </span>
                       {displayEmp.hire_date && (
-                        <span className="text-[11px] text-slate-400 tabular-nums">({displayEmp.hire_date})</span>
+                        <span className="text-[11px] text-zinc-400 tabular-nums">({displayEmp.hire_date})</span>
                       )}
                     </span>
-                    <span className="text-slate-200">·</span>
+                    <span className="text-zinc-200">·</span>
                     {/* 연차 잔여 */}
                     <span className="inline-flex items-baseline gap-1.5">
                       <span className="inline-flex items-center gap-1 text-[12px] text-emerald-500 font-semibold"><CalendarDays size={11} />연차 잔여</span>
@@ -1695,29 +1695,29 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                         {fmtD(remainDays)}<span className="text-[11px] font-semibold ml-0.5">일</span>
                       </span>
                       {editing ? (
-                        <span className="inline-flex items-baseline gap-1 text-[11px] text-slate-400">
+                        <span className="inline-flex items-baseline gap-1 text-[11px] text-zinc-400">
                           <span>/ 총</span>
                           <input
                             type="number" min={0} max={30} step={1}
                             value={draft?.annual_leave_days ?? ""}
                             onChange={(e) => setField("annual_leave_days", e.target.value === "" ? null : Number(e.target.value))}
                             placeholder="15"
-                            className="w-12 h-6 px-1 rounded border border-indigo-300 bg-indigo-50/40 text-[12px] font-bold text-slate-700 text-right tabular-nums focus:outline-none focus:border-indigo-500"
+                            className="w-12 h-6 px-1 rounded border border-indigo-300 bg-indigo-50/40 text-[12px] font-bold text-zinc-700 text-right tabular-nums focus:outline-none focus:border-indigo-500"
                           />
                           <span>· 사용 {fmtD(usedDays)}</span>
                         </span>
                       ) : (
-                        <span className="text-[11px] text-slate-400 tabular-nums">/ 총 {fmtD(totalDays)}일 · 사용 {fmtD(usedDays)}</span>
+                        <span className="text-[11px] text-zinc-400 tabular-nums">/ 총 {fmtD(totalDays)}일 · 사용 {fmtD(usedDays)}</span>
                       )}
                     </span>
-                    <span className="text-slate-200">·</span>
+                    <span className="text-zinc-200">·</span>
                     {/* 인사평가 */}
                     <span className="inline-flex items-baseline gap-1.5">
                       <span className="inline-flex items-center gap-1 text-[12px] text-amber-500 font-semibold"><Star size={11} />평가</span>
                       {rating ? (
                         <span className={`font-black px-1.5 py-0.5 rounded-md border ${performanceRatingColor(rating)}`}>{rating}</span>
                       ) : (
-                        <span className="text-slate-300 italic">미평가</span>
+                        <span className="text-zinc-300 italic">미평가</span>
                       )}
                       {isSeveranceEligible(displayEmp) && (
                         <span className="text-[11px] font-bold text-rose-500 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded-md ml-1">퇴직금대상</span>
@@ -1729,7 +1729,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
 
               {/* ── 인사카드 섹션들 · flex-1 min-h-0 · 세로 스크롤 (#238 · 2026-08-04 · maxHeight 제거 · flex-1 로 자연 계산) ── */}
               <div
-                className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 space-y-2 bg-slate-50/30"
+                className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 space-y-2 bg-zinc-50/30"
               >
 
                 {/* §1 인적사항 — sky 그룹 */}
@@ -1766,7 +1766,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                       onChange={(v) => setField("position", v)}
                     />
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none">
+                      <span className="text-[11px] font-semibold text-zinc-400 flex items-center gap-0.5 leading-none">
                         <Users size={9} /> 구분 / 역할
                       </span>
                       {editing ? (
@@ -1786,10 +1786,10 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                           />
                         </div>
                       ) : (
-                        <span className="text-[13px] font-semibold leading-snug min-h-[20px] text-slate-700">
+                        <span className="text-[13px] font-semibold leading-snug min-h-[20px] text-zinc-700">
                           {displayEmp.level != null ? `Lv.${displayEmp.level}` : ""}
-                          {displayEmp.role && <span className="text-slate-400 ml-1">({displayEmp.role})</span>}
-                          {displayEmp.level == null && !displayEmp.role && <span className="text-slate-300 italic">(없음)</span>}
+                          {displayEmp.role && <span className="text-zinc-400 ml-1">({displayEmp.role})</span>}
+                          {displayEmp.level == null && !displayEmp.role && <span className="text-zinc-300 italic">(없음)</span>}
                         </span>
                       )}
                     </div>
@@ -1799,7 +1799,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                       onChange={(v) => setField("hire_date", v)}
                     />
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none">
+                      <span className="text-[11px] font-semibold text-zinc-400 flex items-center gap-0.5 leading-none">
                         <ClipboardList size={9} /> 근무 타입
                       </span>
                       {editing ? (
@@ -1812,7 +1812,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                           {SCHEDULE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                         </select>
                       ) : (
-                        <span className={`text-[13px] font-semibold leading-snug min-h-[20px] ${displayEmp.schedule_type ? "text-slate-700" : "text-slate-300 italic"}`}>
+                        <span className={`text-[13px] font-semibold leading-snug min-h-[20px] ${displayEmp.schedule_type ? "text-zinc-700" : "text-zinc-300 italic"}`}>
                           {displayEmp.schedule_type || "(없음)"}
                         </span>
                       )}
@@ -1834,7 +1834,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                     {/* 계약유형 · 드롭박스 (정규/계약/알바/일용/인턴) */}
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none">
+                      <span className="text-[11px] font-semibold text-zinc-400 flex items-center gap-0.5 leading-none">
                         <Briefcase size={9} /> 계약유형
                       </span>
                       {editing ? (
@@ -1866,7 +1866,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                                 {showAutoOnly && <span className="ml-1 text-[9px] font-black opacity-70">AUTO</span>}
                               </span>
                             ) : (
-                              <span className="text-[13px] font-semibold text-slate-300 italic">(없음)</span>
+                              <span className="text-[13px] font-semibold text-zinc-300 italic">(없음)</span>
                             )}
                             {/* auto 배지가 우선 노출된 경우 · 수동 contract_type 이 있으면 옆에 서브 표시 */}
                             {showAutoOnly && manualMeta && (
@@ -1878,7 +1878,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                               </span>
                             )}
                             {latestContractLoading && (
-                              <span className="text-[10px] text-slate-300">불러오는 중...</span>
+                              <span className="text-[10px] text-zinc-300">불러오는 중...</span>
                             )}
                           </div>
                         );
@@ -1887,13 +1887,13 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
 
                     {/* 근속기간 · read-only 계산 표시 (hire_date 기반) */}
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none">
+                      <span className="text-[11px] font-semibold text-zinc-400 flex items-center gap-0.5 leading-none">
                         <Clock size={9} /> 근속기간
                       </span>
-                      <span className={`text-[13px] font-semibold leading-snug min-h-[20px] ${displayEmp.hire_date ? "text-slate-700" : "text-slate-300 italic"}`}>
+                      <span className={`text-[13px] font-semibold leading-snug min-h-[20px] ${displayEmp.hire_date ? "text-zinc-700" : "text-zinc-300 italic"}`}>
                         {displayEmp.hire_date ? calcTenure(displayEmp.hire_date) : "(입사일 미등록)"}
                         {displayEmp.hire_date && (
-                          <span className="text-[10px] font-normal text-slate-400 ml-1">
+                          <span className="text-[10px] font-normal text-zinc-400 ml-1">
                             · {displayEmp.hire_date}
                           </span>
                         )}
@@ -1918,7 +1918,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
 
                     {/* 인사평가 · 편집 가능 (드롭박스 S/A/B/C/D) */}
                     <div className="col-span-2 flex flex-col gap-0.5">
-                      <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none">
+                      <span className="text-[11px] font-semibold text-zinc-400 flex items-center gap-0.5 leading-none">
                         <Star size={9} /> 인사평가
                       </span>
                       {editing ? (
@@ -1937,18 +1937,18 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                           <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${performanceRatingColor(displayEmp.performance_rating)}`}>
                             {String(displayEmp.performance_rating).toUpperCase()}
                           </span>
-                          <span className="text-[11px] text-slate-500">
+                          <span className="text-[11px] text-zinc-500">
                             {PERFORMANCE_RATINGS.find((r) => r.value === String(displayEmp.performance_rating).toUpperCase())?.label ?? ""}
                           </span>
                         </span>
                       ) : (
-                        <span className="text-[13px] font-semibold text-slate-300 italic leading-snug min-h-[20px]">(미평가)</span>
+                        <span className="text-[13px] font-semibold text-zinc-300 italic leading-snug min-h-[20px]">(미평가)</span>
                       )}
                     </div>
 
                     {/* T32 · 인사 코멘트 (memo) · 평가 옆에 · 편집 저장 */}
                     <div className="col-span-2 flex flex-col gap-0.5">
-                      <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none">
+                      <span className="text-[11px] font-semibold text-zinc-400 flex items-center gap-0.5 leading-none">
                         <NotePencilIcon size={9} /> 인사 코멘트
                       </span>
                       {editing ? (
@@ -1960,17 +1960,17 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                           className="border border-indigo-300 rounded-md px-2 py-1 text-[12px] bg-indigo-50/40 focus:outline-none focus:border-indigo-500 resize-none"
                         />
                       ) : displayEmp.memo ? (
-                        <p className="text-[12px] text-slate-700 whitespace-pre-wrap leading-relaxed bg-slate-50/70 border border-slate-200 rounded-md px-2 py-1 min-h-[24px]">
+                        <p className="text-[12px] text-zinc-700 whitespace-pre-wrap leading-relaxed bg-zinc-50/70 border border-zinc-200 rounded-md px-2 py-1 min-h-[24px]">
                           {displayEmp.memo}
                         </p>
                       ) : (
-                        <span className="text-[13px] font-semibold text-slate-300 italic leading-snug min-h-[20px]">(코멘트 없음)</span>
+                        <span className="text-[13px] font-semibold text-zinc-300 italic leading-snug min-h-[20px]">(코멘트 없음)</span>
                       )}
                     </div>
 
                     {/* T21 · 이력서 · Google Drive 업로드 + [보기] 버튼 · 편집 모드에서 파일 선택 */}
                     <div className="col-span-2 flex flex-col gap-0.5">
-                      <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none">
+                      <span className="text-[11px] font-semibold text-zinc-400 flex items-center gap-0.5 leading-none">
                         <Paperclip size={9} /> 이력서
                       </span>
                       <div className="flex items-center gap-2 py-1">
@@ -1985,7 +1985,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                             </button>
                             {editing && (
                               <>
-                                <label className="inline-flex items-center gap-1 h-7 px-2 text-[11px] font-semibold text-slate-600 bg-white border border-slate-300 rounded-md hover:bg-slate-50 cursor-pointer">
+                                <label className="inline-flex items-center gap-1 h-7 px-2 text-[11px] font-semibold text-zinc-600 bg-white border border-zinc-300 rounded-md hover:bg-zinc-50 cursor-pointer">
                                   <Paperclip size={10} /> 교체
                                   <input
                                     type="file"
@@ -2038,14 +2038,14 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                             />
                           </label>
                         ) : (
-                          <span className="text-[11px] font-semibold text-slate-400 italic">이력서 없음</span>
+                          <span className="text-[11px] font-semibold text-zinc-400 italic">이력서 없음</span>
                         )}
                       </div>
                     </div>
 
                     {/* 계약서 파일 · [보기] 버튼 UI · 없으면 "없음" 배지 · 편집 모드에서 URL 입력 */}
                     <div className="col-span-2 flex flex-col gap-0.5">
-                      <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none">
+                      <span className="text-[11px] font-semibold text-zinc-400 flex items-center gap-0.5 leading-none">
                         <FileText size={9} /> 근로계약서
                       </span>
                       {editing ? (
@@ -2067,7 +2067,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                               >
                                 <ExternalLink size={11} /> 보기
                               </button>
-                              <span className="text-[10px] text-slate-400 truncate max-w-[280px]">
+                              <span className="text-[10px] text-zinc-400 truncate max-w-[280px]">
                                 {displayEmp.contract_file_url}
                               </span>
                             </>
@@ -2076,11 +2076,11 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                               <button
                                 type="button"
                                 onClick={() => alert("등록된 근로계약서가 없습니다.\n편집 모드에서 계약서 URL 을 입력해 주세요.")}
-                                className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded-md cursor-pointer hover:bg-slate-200/60 transition-colors"
+                                className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-semibold text-zinc-400 bg-zinc-100 border border-zinc-200 rounded-md cursor-pointer hover:bg-zinc-200/60 transition-colors"
                               >
                                 <Paperclip size={11} /> 보기
                               </button>
-                              <span className="text-[11px] font-semibold text-slate-400 italic">없음</span>
+                              <span className="text-[11px] font-semibold text-zinc-400 italic">없음</span>
                             </>
                           )}
                         </div>
@@ -2093,7 +2093,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                     · 2026-08-05 · 사용자 요청 · 활성 계약 강조 · PDF 링크 · 계약기간·유형 배지 */}
                 <SectionCard title="계약 이력" icon={<FileText size={11} />} group="work" defaultOpen>
                   {contractHistoryLoading ? (
-                    <div className="flex items-center justify-center py-4 text-slate-400 text-[11px] font-semibold gap-1.5">
+                    <div className="flex items-center justify-center py-4 text-zinc-400 text-[11px] font-semibold gap-1.5">
                       <Loader2 size={12} className="animate-spin" />불러오는 중...
                     </div>
                   ) : contractHistoryError ? (
@@ -2101,12 +2101,12 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                       {contractHistoryError}
                     </div>
                   ) : contractHistory.length === 0 ? (
-                    <div className="text-center text-[11px] text-slate-300 py-4 italic">
+                    <div className="text-center text-[11px] text-zinc-300 py-4 italic">
                       등록된 계약 이력이 없습니다
                     </div>
                   ) : (
                     <div className="max-h-64 overflow-y-auto overscroll-contain -mx-1 px-1">
-                      <ul className="divide-y divide-slate-100">
+                      <ul className="divide-y divide-zinc-100">
                         {contractHistory.map((h) => {
                           const ctMeta = contractTypeMeta(h.contract_type);
                           const period = h.start_date
@@ -2130,7 +2130,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                                   </span>
                                 )}
                                 {!isActive && h.is_active === false && (
-                                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md border bg-slate-100 text-slate-500 border-slate-200 leading-tight">
+                                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md border bg-zinc-100 text-zinc-500 border-zinc-200 leading-tight">
                                     이전
                                   </span>
                                 )}
@@ -2139,11 +2139,11 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                                     {ctMeta.label}
                                   </span>
                                 ) : h.contract_type ? (
-                                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md border bg-slate-100 text-slate-600 border-slate-200 leading-tight">
+                                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md border bg-zinc-100 text-zinc-600 border-zinc-200 leading-tight">
                                     {h.contract_type}
                                   </span>
                                 ) : null}
-                                <span className="text-[11px] font-semibold text-slate-700 tabular-nums">
+                                <span className="text-[11px] font-semibold text-zinc-700 tabular-nums">
                                   {period}
                                 </span>
                                 {h.pdf_url && (
@@ -2157,7 +2157,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                                   </button>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                              <div className="flex items-center gap-2 text-[10px] text-zinc-400">
                                 {created && <span>승인 {created}</span>}
                                 {h.approved_by && <span>· {h.approved_by}</span>}
                                 {h.storage && <span className="ml-auto italic opacity-70">{h.storage}</span>}
@@ -2182,10 +2182,10 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                     />
                     {/* 휴게시간 · 인건비 차감 적용 여부 + 30/60분 선택 */}
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[11px] font-semibold text-slate-400 leading-none">휴게시간 (차감)</span>
+                      <span className="text-[11px] font-semibold text-zinc-400 leading-none">휴게시간 (차감)</span>
                       {editing ? (
                         <div className="flex items-center gap-1.5">
-                          <label className="inline-flex items-center gap-1 text-[12px] text-slate-700 cursor-pointer select-none">
+                          <label className="inline-flex items-center gap-1 text-[12px] text-zinc-700 cursor-pointer select-none">
                             <input
                               type="checkbox"
                               checked={draft?.break_apply_paid ?? true}
@@ -2198,16 +2198,16 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                             value={String(draft?.break_time_minutes ?? 60)}
                             onChange={(e) => setField("break_time_minutes", Number(e.target.value))}
                             disabled={(draft?.break_apply_paid ?? true) === false}
-                            className="h-7 text-[12px] px-2 border border-slate-300 rounded-md bg-white disabled:bg-slate-100 disabled:text-slate-400"
+                            className="h-7 text-[12px] px-2 border border-zinc-300 rounded-md bg-white disabled:bg-zinc-100 disabled:text-zinc-400"
                           >
                             <option value="30">30분</option>
                             <option value="60">1시간</option>
                           </select>
                         </div>
                       ) : (
-                        <span className="text-[13px] font-semibold leading-snug min-h-[20px] text-slate-700">
+                        <span className="text-[13px] font-semibold leading-snug min-h-[20px] text-zinc-700">
                           {(displayEmp.break_apply_paid ?? true) === false
-                            ? <span className="text-slate-400 italic">미적용</span>
+                            ? <span className="text-zinc-400 italic">미적용</span>
                             : `${displayEmp.break_time_minutes ?? 60}분 차감`}
                         </span>
                       )}
@@ -2232,14 +2232,14 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                     />
 
                     {/* ─── 임금 (기존 §8 통합) ─── */}
-                    <div className="col-span-2 flex items-center gap-2 mt-1.5 pt-2 border-t border-slate-100 flex-wrap">
+                    <div className="col-span-2 flex items-center gap-2 mt-1.5 pt-2 border-t border-zinc-100 flex-wrap">
                       <Briefcase size={11} className="text-rose-400" />
-                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">임금</span>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500">임금</span>
                       {latestContract && (
                         <>
                           <span className="text-[10px] text-emerald-700 font-bold">
                             근로계약서 연동 · {latestContract.start_date ?? "-"} ~ {latestContract.end_date ?? "무기한"}
-                            {latestContract.contract_type && <span className="text-slate-500 ml-1">· {latestContract.contract_type}</span>}
+                            {latestContract.contract_type && <span className="text-zinc-500 ml-1">· {latestContract.contract_type}</span>}
                           </span>
                           {latestContract.pdf_url && (
                             <button
@@ -2254,11 +2254,11 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                         </>
                       )}
                       {!latestContract && !latestContractLoading && (
-                        <span className="text-[10px] text-slate-400 italic">근로계약서 없음 (계약서 작성 시 자동 연동)</span>
+                        <span className="text-[10px] text-zinc-400 italic">근로계약서 없음 (계약서 작성 시 자동 연동)</span>
                       )}
                     </div>
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[11px] font-semibold text-slate-400 leading-none">임금 유형</span>
+                      <span className="text-[11px] font-semibold text-zinc-400 leading-none">임금 유형</span>
                       {editing ? (
                         <select
                           value={draft?.wage_calc_type ?? ""}
@@ -2272,8 +2272,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                           <option value="annual">연봉</option>
                         </select>
                       ) : (
-                        <span className="text-[13px] font-semibold leading-snug min-h-[20px] text-slate-700">
-                          {({ hourly: "시급", daily: "일급", monthly: "월급", annual: "연봉" } as Record<string, string>)[displayEmp.wage_calc_type ?? ""] ?? <span className="text-slate-300 italic">(미지정)</span>}
+                        <span className="text-[13px] font-semibold leading-snug min-h-[20px] text-zinc-700">
+                          {({ hourly: "시급", daily: "일급", monthly: "월급", annual: "연봉" } as Record<string, string>)[displayEmp.wage_calc_type ?? ""] ?? <span className="text-zinc-300 italic">(미지정)</span>}
                         </span>
                       )}
                     </div>
@@ -2332,8 +2332,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                               <span className="text-[14px] font-black text-emerald-700 tabular-nums leading-tight">{fmtDays(remainDays)}<span className="text-[10px] font-semibold ml-0.5">일</span></span>
                             </div>
                             {/* 총 · 편집 가능 */}
-                            <div className="flex flex-col items-center px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 min-w-[56px]">
-                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">총 부여</span>
+                            <div className="flex flex-col items-center px-2.5 py-1 rounded-lg bg-zinc-50 border border-zinc-200 min-w-[56px]">
+                              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">총 부여</span>
                               {editing ? (
                                 <input
                                   type="number"
@@ -2341,10 +2341,10 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                                   step={1}
                                   value={String(draft?.annual_leave_days ?? "")}
                                   onChange={(e) => setField("annual_leave_days", e.target.value === "" ? null : Number(e.target.value))}
-                                  className="w-12 text-center border border-indigo-300 rounded-md px-1 py-0.5 text-[13px] font-black text-slate-800 tabular-nums bg-white focus:outline-none focus:border-indigo-500"
+                                  className="w-12 text-center border border-indigo-300 rounded-md px-1 py-0.5 text-[13px] font-black text-zinc-800 tabular-nums bg-white focus:outline-none focus:border-indigo-500"
                                 />
                               ) : (
-                                <span className="text-[14px] font-black text-slate-800 tabular-nums leading-tight">{fmtDays(totalDays)}<span className="text-[10px] font-semibold ml-0.5">일</span></span>
+                                <span className="text-[14px] font-black text-zinc-800 tabular-nums leading-tight">{fmtDays(totalDays)}<span className="text-[10px] font-semibold ml-0.5">일</span></span>
                               )}
                             </div>
                             {/* 사용 */}
@@ -2354,21 +2354,21 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                             </div>
                           </div>
                           {/* 연도 선택 */}
-                          <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-1.5 py-1 shadow-sm">
+                          <div className="flex items-center gap-1.5 bg-white border border-zinc-200 rounded-lg px-1.5 py-1 shadow-sm">
                             <button
                               type="button"
                               onClick={() => setLeaveYear(y => y - 1)}
-                              className="w-6 h-6 rounded-md hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-800 cursor-pointer"
+                              className="w-6 h-6 rounded-md hover:bg-zinc-100 flex items-center justify-center text-zinc-500 hover:text-zinc-800 cursor-pointer"
                               title="이전 해"
                             >
                               <ChevronLeft size={13} />
                             </button>
-                            <span className="text-[12px] font-bold text-slate-700 tabular-nums px-1 min-w-[46px] text-center">{leaveYear}년</span>
+                            <span className="text-[12px] font-bold text-zinc-700 tabular-nums px-1 min-w-[46px] text-center">{leaveYear}년</span>
                             <button
                               type="button"
                               onClick={() => setLeaveYear(y => y + 1)}
                               disabled={leaveYear >= currentYearNow}
-                              className="w-6 h-6 rounded-md hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-800 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                              className="w-6 h-6 rounded-md hover:bg-zinc-100 flex items-center justify-center text-zinc-500 hover:text-zinc-800 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                               title="다음 해"
                             >
                               <ChevronRight size={13} />
@@ -2376,7 +2376,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                             <button
                               type="button"
                               onClick={() => selectedEmp && loadUsedLeaves(selectedEmp.id, leaveYear)}
-                              className="ml-1 w-6 h-6 rounded-md hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-indigo-600 cursor-pointer"
+                              className="ml-1 w-6 h-6 rounded-md hover:bg-zinc-100 flex items-center justify-center text-zinc-500 hover:text-indigo-600 cursor-pointer"
                               title="새로고침"
                             >
                               <RefreshCw size={11} className={leaveLoading ? "animate-spin" : ""} />
@@ -2397,16 +2397,16 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                               {leaveError}
                             </div>
                           ) : leaveLoading ? (
-                            <div className="flex items-center gap-1.5 text-[11px] text-slate-400 py-2">
+                            <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 py-2">
                               <Loader2 size={11} className="animate-spin" /> 불러오는 중...
                             </div>
                           ) : usedLeaves.length === 0 ? (
                             <EmptyRow label={`${leaveYear}년 사용한 연차가 없습니다`} />
                           ) : (
-                            <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
+                            <div className="border border-zinc-200 rounded-lg overflow-hidden bg-white">
                               <table className="w-full text-[12px]">
-                                <thead className="bg-slate-50 border-b border-slate-200">
-                                  <tr className="text-slate-500 text-[10px] uppercase tracking-wider">
+                                <thead className="bg-zinc-50 border-b border-zinc-200">
+                                  <tr className="text-zinc-500 text-[10px] uppercase tracking-wider">
                                     <th className="text-left  font-semibold px-2.5 py-1.5 w-[110px]">날짜</th>
                                     <th className="text-center font-semibold px-1.5 py-1.5 w-[70px]">유형</th>
                                     <th className="text-left  font-semibold px-2 py-1.5">사유 · 메모</th>
@@ -2419,7 +2419,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                                       leave.type === "월차"      ? "bg-amber-100 text-amber-700 border-amber-200"
                                       : leave.type === "오전반차" ? "bg-sky-100 text-sky-700 border-sky-200"
                                       : leave.type === "오후반차" ? "bg-indigo-100 text-indigo-700 border-indigo-200"
-                                      :                             "bg-slate-100 text-slate-600 border-slate-200";
+                                      :                             "bg-zinc-100 text-zinc-600 border-zinc-200";
                                     const isDeleting = deletingLeaveDate === leave.date;
                                     // date → YYYY.MM.DD (요일)
                                     let dowLabel = "";
@@ -2428,18 +2428,18 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                                       dowLabel = ["일","월","화","수","목","금","토"][d.getDay()];
                                     } catch { /* ignore */ }
                                     return (
-                                      <tr key={leave.date} className="border-t border-slate-100 hover:bg-slate-50/60">
-                                        <td className="px-2.5 py-1.5 font-semibold text-slate-700 tabular-nums whitespace-nowrap">
+                                      <tr key={leave.date} className="border-t border-zinc-100 hover:bg-zinc-50/60">
+                                        <td className="px-2.5 py-1.5 font-semibold text-zinc-700 tabular-nums whitespace-nowrap">
                                           {leave.date.replace(/-/g, ".")}
-                                          {dowLabel && <span className="text-[10px] font-normal text-slate-400 ml-1">({dowLabel})</span>}
+                                          {dowLabel && <span className="text-[10px] font-normal text-zinc-400 ml-1">({dowLabel})</span>}
                                         </td>
                                         <td className="px-1.5 py-1.5 text-center">
                                           <span className={`inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-md border leading-tight ${typeColor}`}>
                                             {leave.type}
                                           </span>
                                         </td>
-                                        <td className="px-2 py-1.5 text-[11px] text-slate-600 truncate max-w-[220px]" title={leave.memo}>
-                                          {leave.memo || <span className="text-slate-300 italic">-</span>}
+                                        <td className="px-2 py-1.5 text-[11px] text-zinc-600 truncate max-w-[220px]" title={leave.memo}>
+                                          {leave.memo || <span className="text-zinc-300 italic">-</span>}
                                         </td>
                                         {editing && (
                                           <td className="px-1 py-1.5 text-center">
@@ -2447,7 +2447,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                                               type="button"
                                               onClick={() => selectedEmp && deleteUsedLeave(selectedEmp.id, leave.date)}
                                               disabled={isDeleting}
-                                              className="w-6 h-6 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer disabled:opacity-40 flex items-center justify-center"
+                                              className="w-6 h-6 rounded-md text-zinc-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer disabled:opacity-40 flex items-center justify-center"
                                               title="이 연차 삭제 (스케줄표에도 반영)"
                                             >
                                               {isDeleting ? <Loader2 size={11} className="animate-spin" /> : <X size={12} />}
@@ -2461,7 +2461,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                               </table>
                             </div>
                           )}
-                          <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">
+                          <p className="text-[10px] text-zinc-400 mt-0.5 leading-relaxed">
                             연차 승인 시 자동 반영 · 삭제 시 스케줄표(월차)에서도 제거됩니다 · 반차는 0.5일로 계산
                           </p>
                         </div>
@@ -2476,7 +2476,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                 <SectionCard title="4대보험" icon={<ClipboardList size={11} />} group="wage" defaultOpen={false}>
                   <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
                     <div className="flex flex-col gap-0.5 min-w-[110px] flex-1">
-                      <span className="text-[10px] font-semibold text-slate-400 leading-none">국민연금</span>
+                      <span className="text-[10px] font-semibold text-zinc-400 leading-none">국민연금</span>
                       {editing ? (
                         <input
                           type="date"
@@ -2485,13 +2485,13 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                           className="h-7 px-1.5 border border-indigo-300 rounded-md text-[12px] tabular-nums focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
                         />
                       ) : (
-                        <span className={`text-[12px] font-semibold leading-snug min-h-[20px] tabular-nums ${displayEmp.insurance_nps_date ? "text-slate-700" : "text-slate-300 italic"}`}>
+                        <span className={`text-[12px] font-semibold leading-snug min-h-[20px] tabular-nums ${displayEmp.insurance_nps_date ? "text-zinc-700" : "text-zinc-300 italic"}`}>
                           {displayEmp.insurance_nps_date || "미가입"}
                         </span>
                       )}
                     </div>
                     <div className="flex flex-col gap-0.5 min-w-[110px] flex-1">
-                      <span className="text-[10px] font-semibold text-slate-400 leading-none">건강보험</span>
+                      <span className="text-[10px] font-semibold text-zinc-400 leading-none">건강보험</span>
                       {editing ? (
                         <input
                           type="date"
@@ -2500,13 +2500,13 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                           className="h-7 px-1.5 border border-indigo-300 rounded-md text-[12px] tabular-nums focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
                         />
                       ) : (
-                        <span className={`text-[12px] font-semibold leading-snug min-h-[20px] tabular-nums ${displayEmp.insurance_nhis_date ? "text-slate-700" : "text-slate-300 italic"}`}>
+                        <span className={`text-[12px] font-semibold leading-snug min-h-[20px] tabular-nums ${displayEmp.insurance_nhis_date ? "text-zinc-700" : "text-zinc-300 italic"}`}>
                           {displayEmp.insurance_nhis_date || "미가입"}
                         </span>
                       )}
                     </div>
                     <div className="flex flex-col gap-0.5 min-w-[110px] flex-1">
-                      <span className="text-[10px] font-semibold text-slate-400 leading-none">고용보험</span>
+                      <span className="text-[10px] font-semibold text-zinc-400 leading-none">고용보험</span>
                       {editing ? (
                         <input
                           type="date"
@@ -2515,13 +2515,13 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                           className="h-7 px-1.5 border border-indigo-300 rounded-md text-[12px] tabular-nums focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
                         />
                       ) : (
-                        <span className={`text-[12px] font-semibold leading-snug min-h-[20px] tabular-nums ${displayEmp.insurance_ei_date ? "text-slate-700" : "text-slate-300 italic"}`}>
+                        <span className={`text-[12px] font-semibold leading-snug min-h-[20px] tabular-nums ${displayEmp.insurance_ei_date ? "text-zinc-700" : "text-zinc-300 italic"}`}>
                           {displayEmp.insurance_ei_date || "미가입"}
                         </span>
                       )}
                     </div>
                     <div className="flex flex-col gap-0.5 min-w-[110px] flex-1">
-                      <span className="text-[10px] font-semibold text-slate-400 leading-none">산재보험</span>
+                      <span className="text-[10px] font-semibold text-zinc-400 leading-none">산재보험</span>
                       {editing ? (
                         <input
                           type="date"
@@ -2530,13 +2530,13 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                           className="h-7 px-1.5 border border-indigo-300 rounded-md text-[12px] tabular-nums focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
                         />
                       ) : (
-                        <span className={`text-[12px] font-semibold leading-snug min-h-[20px] tabular-nums ${displayEmp.insurance_wcia_date ? "text-slate-700" : "text-slate-300 italic"}`}>
+                        <span className={`text-[12px] font-semibold leading-snug min-h-[20px] tabular-nums ${displayEmp.insurance_wcia_date ? "text-zinc-700" : "text-zinc-300 italic"}`}>
                           {displayEmp.insurance_wcia_date || "미가입"}
                         </span>
                       )}
                     </div>
                     {editing ? (
-                      <label className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 cursor-pointer shrink-0 h-7 self-end">
+                      <label className="flex items-center gap-1.5 text-[11px] font-semibold text-zinc-700 cursor-pointer shrink-0 h-7 self-end">
                         <input
                           type="checkbox"
                           checked={!!draft?.insurance_excluded}
@@ -2581,7 +2581,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                       className="w-full border border-indigo-300 rounded-md px-2.5 py-2 text-[12px] focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 bg-indigo-50/40 resize-none"
                     />
                   ) : (
-                    <p className={`text-[12px] whitespace-pre-wrap ${displayEmp.memo ? "text-slate-700" : "text-slate-300 italic"}`}>
+                    <p className={`text-[12px] whitespace-pre-wrap ${displayEmp.memo ? "text-zinc-700" : "text-zinc-300 italic"}`}>
                       {displayEmp.memo || "(없음)"}
                     </p>
                   )}
@@ -2604,22 +2604,22 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
             className="bg-white w-full max-w-[95vw] rounded-2xl shadow-2xl max-h-[92vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-indigo-50/80 shrink-0">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-100 bg-indigo-50/80 shrink-0">
               <div className="flex items-center gap-2.5">
                 <Avatar name={selectedEmp.name} photoUrl={selectedEmp.photo_url} size="xs" />
                 <div>
-                  <span className="text-sm font-bold text-slate-800">{selectedEmp.name}</span>
+                  <span className="text-sm font-bold text-zinc-800">{selectedEmp.name}</span>
                   <span className={`ml-2 text-[9px] font-semibold px-1.5 py-px rounded-md border ${positionColor(selectedEmp.position)}`}>
                     {selectedEmp.position || "직책 없음"}
                   </span>
                 </div>
               </div>
-              <button onClick={() => setMobileDetail(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/70 transition-colors">
+              <button onClick={() => setMobileDetail(false)} className="text-zinc-400 hover:text-zinc-700 cursor-pointer w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/70 transition-colors">
                 <X size={15} />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-3.5 bg-slate-50/40 space-y-2.5">
-              <div className="grid grid-cols-2 gap-2.5 bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm">
+            <div className="flex-1 overflow-y-auto p-3.5 bg-zinc-50/40 space-y-2.5">
+              <div className="grid grid-cols-2 gap-2.5 bg-white rounded-xl border border-zinc-200 p-3.5 shadow-sm">
                 {(
                   [
                     ["연락처", selectedEmp.phone],
@@ -2635,14 +2635,14 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                 ).map(([label, val]) =>
                   val ? (
                     <div key={label} className="flex flex-col gap-0.5">
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{label}</span>
-                      <span className="text-[12px] font-semibold text-slate-700">{val}</span>
+                      <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">{label}</span>
+                      <span className="text-[12px] font-semibold text-zinc-700">{val}</span>
                     </div>
                   ) : null
                 )}
                 {/* 근로계약서 · 별도 버튼 */}
-                <div className="col-span-2 flex flex-col gap-0.5 pt-1 border-t border-slate-100 mt-1">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">근로계약서</span>
+                <div className="col-span-2 flex flex-col gap-0.5 pt-1 border-t border-zinc-100 mt-1">
+                  <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">근로계약서</span>
                   {selectedEmp.contract_file_url ? (
                     <button
                       type="button"
@@ -2652,18 +2652,18 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                       <ExternalLink size={11} /> 보기
                     </button>
                   ) : (
-                    <span className="text-[11px] font-semibold text-slate-400 italic mt-1">없음</span>
+                    <span className="text-[11px] font-semibold text-zinc-400 italic mt-1">없음</span>
                   )}
                 </div>
               </div>
               {selectedEmp.memo && (
-                <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">메모</span>
-                  <p className="text-[12px] text-slate-700 whitespace-pre-wrap leading-relaxed">{selectedEmp.memo}</p>
+                <div className="bg-white rounded-xl border border-zinc-200 p-3.5 shadow-sm">
+                  <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider block mb-1.5">메모</span>
+                  <p className="text-[12px] text-zinc-700 whitespace-pre-wrap leading-relaxed">{selectedEmp.memo}</p>
                 </div>
               )}
             </div>
-            <div className="px-3.5 py-2.5 border-t border-slate-100 bg-white flex gap-1.5 shrink-0">
+            <div className="px-3.5 py-2.5 border-t border-zinc-100 bg-white flex gap-1.5 shrink-0">
               <button
                 onClick={() => { setMobileDetail(false); startEdit(selectedEmp); }}
                 className="flex-1 h-9 text-[12px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer hover:bg-indigo-100 transition-colors"

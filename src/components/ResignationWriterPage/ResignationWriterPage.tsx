@@ -262,22 +262,22 @@ const SignatureModal: React.FC<{
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/50 backdrop-blur-sm p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl border border-slate-200 flex flex-col">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl border border-zinc-200 flex flex-col">
         {/* 헤더 */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
           <div className="flex items-center gap-2">
             <Signature size={18} weight="fill" className="text-rose-600" />
-            <h3 className="text-base font-black text-slate-800">
+            <h3 className="text-base font-black text-zinc-800">
               {slot ? SIGN_LABELS[slot] : "서명"}
             </h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-100 flex items-center justify-center cursor-pointer transition-colors"
+            className="w-8 h-8 rounded-lg text-zinc-500 hover:bg-zinc-100 flex items-center justify-center cursor-pointer transition-colors"
             title="닫기"
           >
             <X size={18} weight="bold" />
@@ -304,22 +304,22 @@ const SignatureModal: React.FC<{
               onBegin={() => setEmpty(false)}
             />
             {empty && (
-              <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-300 text-sm font-bold select-none">
+              <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-zinc-300 text-sm font-bold select-none">
                 여기에 서명해 주세요
               </span>
             )}
           </div>
-          <p className="text-[11px] text-slate-400 mt-2">
+          <p className="text-[11px] text-zinc-400 mt-2">
             * 마우스·터치로 서명하세요 · 저장 시 오른쪽 사직서에 즉시 반영됩니다.
           </p>
         </div>
 
         {/* 액션 */}
-        <div className="flex items-center justify-between gap-2 px-4 py-3 border-t border-slate-100 bg-slate-50 rounded-b-xl">
+        <div className="flex items-center justify-between gap-2 px-4 py-3 border-t border-zinc-100 bg-zinc-50 rounded-b-xl">
           <button
             type="button"
             onClick={handleClear}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-sm font-bold transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 text-sm font-bold transition-colors cursor-pointer"
           >
             <Eraser size={14} />
             지우기
@@ -328,7 +328,7 @@ const SignatureModal: React.FC<{
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-sm font-bold transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 text-sm font-bold transition-colors cursor-pointer"
             >
               취소
             </button>
@@ -371,13 +371,13 @@ const ResignationPreview = React.forwardRef<HTMLDivElement, {
     <button
       type="button"
       onClick={() => onSignClick(slot)}
-      className="w-32 h-14 border-b-2 border-slate-800 flex items-end justify-center relative group cursor-pointer transition-colors hover:bg-rose-50/40 print:hover:bg-transparent"
+      className="w-32 h-14 border-b-2 border-zinc-800 flex items-end justify-center relative group cursor-pointer transition-colors hover:bg-rose-50/40 print:hover:bg-transparent"
       title={dataUrl ? "서명 수정" : "클릭하여 서명"}
     >
       {dataUrl ? (
         <img src={dataUrl} alt="서명" className="max-h-14 max-w-full object-contain" />
       ) : (
-        <span className="text-[11px] text-slate-400 font-bold group-hover:text-rose-500 transition-colors">
+        <span className="text-[11px] text-zinc-400 font-bold group-hover:text-rose-500 transition-colors">
           클릭하여 서명
         </span>
       )}
@@ -387,7 +387,7 @@ const ResignationPreview = React.forwardRef<HTMLDivElement, {
   return (
     <div
       ref={ref}
-      className="bg-white text-slate-900 border border-slate-200 rounded-xl shadow-sm p-6 sm:p-10 mx-auto"
+      className="bg-white text-zinc-900 border border-zinc-200 rounded-xl shadow-sm p-6 sm:p-10 mx-auto"
       style={{
         width: "100%",
         maxWidth: "780px",
@@ -397,47 +397,47 @@ const ResignationPreview = React.forwardRef<HTMLDivElement, {
     >
       {/* 제목 */}
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-black tracking-[0.3em] text-slate-900">
+        <h2 className="text-3xl font-black tracking-[0.3em] text-zinc-900">
           사&nbsp;직&nbsp;서
         </h2>
       </div>
 
       {/* [1] 사직서 정보 */}
       <div className="mb-6">
-        <div className="text-[13px] font-black text-slate-800 mb-2 bg-slate-100 px-3 py-1.5 rounded-md border-l-4 border-rose-500">
+        <div className="text-[13px] font-black text-zinc-800 mb-2 bg-zinc-100 px-3 py-1.5 rounded-md border-l-4 border-rose-500">
           [ 사직서 정보 ]
         </div>
         <table className="w-full text-[14px] border-collapse">
           <tbody>
-            <tr className="border-t-2 border-slate-800">
-              <th className="w-[110px] py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">성명</th>
-              <td className="py-2 px-3 text-slate-800 font-semibold border-b border-slate-200">{form.employeeName || "-"}</td>
-              <th className="w-[110px] py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">생년월일</th>
-              <td className="py-2 px-3 text-slate-800 font-semibold border-b border-slate-200">{fmtKoreanDate(form.birthDate) || "-"}</td>
+            <tr className="border-t-2 border-zinc-800">
+              <th className="w-[110px] py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-zinc-200 pl-3">성명</th>
+              <td className="py-2 px-3 text-zinc-800 font-semibold border-b border-zinc-200">{form.employeeName || "-"}</td>
+              <th className="w-[110px] py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-zinc-200 pl-3">생년월일</th>
+              <td className="py-2 px-3 text-zinc-800 font-semibold border-b border-zinc-200">{fmtKoreanDate(form.birthDate) || "-"}</td>
             </tr>
             <tr>
-              <th className="py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">부서 / 직급</th>
-              <td className="py-2 px-3 text-slate-800 font-semibold border-b border-slate-200">
+              <th className="py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-zinc-200 pl-3">부서 / 직급</th>
+              <td className="py-2 px-3 text-zinc-800 font-semibold border-b border-zinc-200">
                 {form.department || "-"}{form.position ? ` / ${form.position}` : ""}
               </td>
-              <th className="py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">입사일</th>
-              <td className="py-2 px-3 text-slate-800 font-semibold border-b border-slate-200">{fmtKoreanDate(form.hireDate) || "-"}</td>
+              <th className="py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-zinc-200 pl-3">입사일</th>
+              <td className="py-2 px-3 text-zinc-800 font-semibold border-b border-zinc-200">{fmtKoreanDate(form.hireDate) || "-"}</td>
             </tr>
             <tr>
-              <th className="py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">사직일<br/><span className="text-[11px] font-semibold text-slate-500">(마지막 근무일)</span></th>
-              <td className="py-2 px-3 text-slate-800 font-black border-b border-slate-200">{fmtKoreanDate(form.lastWorkDate) || "-"}</td>
-              <th className="py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">근속기간</th>
-              <td className="py-2 px-3 text-slate-800 font-semibold border-b border-slate-200">{tenure}</td>
+              <th className="py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-zinc-200 pl-3">사직일<br/><span className="text-[11px] font-semibold text-zinc-500">(마지막 근무일)</span></th>
+              <td className="py-2 px-3 text-zinc-800 font-black border-b border-zinc-200">{fmtKoreanDate(form.lastWorkDate) || "-"}</td>
+              <th className="py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-zinc-200 pl-3">근속기간</th>
+              <td className="py-2 px-3 text-zinc-800 font-semibold border-b border-zinc-200">{tenure}</td>
             </tr>
             <tr>
-              <th className="py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">사직서 제출일</th>
-              <td className="py-2 px-3 text-slate-800 font-semibold border-b border-slate-200">{fmtKoreanDate(form.submitDate) || "-"}</td>
-              <th className="py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b border-slate-200 pl-3">수신</th>
-              <td className="py-2 px-3 text-slate-800 font-semibold border-b border-slate-200">{form.recipient || "-"} 귀하</td>
+              <th className="py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-zinc-200 pl-3">사직서 제출일</th>
+              <td className="py-2 px-3 text-zinc-800 font-semibold border-b border-zinc-200">{fmtKoreanDate(form.submitDate) || "-"}</td>
+              <th className="py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-zinc-200 pl-3">수신</th>
+              <td className="py-2 px-3 text-zinc-800 font-semibold border-b border-zinc-200">{form.recipient || "-"} 귀하</td>
             </tr>
             <tr>
-              <th className="py-2 pr-3 text-left font-bold text-slate-700 bg-slate-50 border-b-2 border-slate-800 pl-3 align-top">사유</th>
-              <td className="py-2 px-3 text-slate-800 font-semibold border-b-2 border-slate-800 leading-7" colSpan={3}>
+              <th className="py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b-2 border-zinc-800 pl-3 align-top">사유</th>
+              <td className="py-2 px-3 text-zinc-800 font-semibold border-b-2 border-zinc-800 leading-7" colSpan={3}>
                 상기자는 <span className="font-black">{reasonText || "일신상의 사유"}</span>(으)로 사직하고자 하오니 처리하여 주시기 바랍니다.
               </td>
             </tr>
@@ -446,16 +446,16 @@ const ResignationPreview = React.forwardRef<HTMLDivElement, {
 
         {/* 사유 상세 (기타 사유가 아닌 경우에만 별도 표시) */}
         {form.reasonDetail && form.reason !== "기타" && (
-          <div className="mt-3 pl-3 text-[13px] text-slate-700 whitespace-pre-wrap leading-7">
-            <span className="font-bold text-slate-600">· 상세: </span>
+          <div className="mt-3 pl-3 text-[13px] text-zinc-700 whitespace-pre-wrap leading-7">
+            <span className="font-bold text-zinc-600">· 상세: </span>
             {form.reasonDetail}
           </div>
         )}
 
         {/* 인수인계 사항 */}
         {form.handoverNotes && (
-          <div className="mt-3 pl-3 text-[13px] text-slate-700 whitespace-pre-wrap leading-7">
-            <span className="font-bold text-slate-600">· 인수인계: </span>
+          <div className="mt-3 pl-3 text-[13px] text-zinc-700 whitespace-pre-wrap leading-7">
+            <span className="font-bold text-zinc-600">· 인수인계: </span>
             {form.handoverNotes}
           </div>
         )}
@@ -463,14 +463,14 @@ const ResignationPreview = React.forwardRef<HTMLDivElement, {
 
       {/* [2] 임금·퇴직금 등 금품 지급기일 동의 */}
       <div className="mb-6">
-        <div className="text-[13px] font-black text-slate-800 mb-2 bg-slate-100 px-3 py-1.5 rounded-md border-l-4 border-rose-500">
+        <div className="text-[13px] font-black text-zinc-800 mb-2 bg-zinc-100 px-3 py-1.5 rounded-md border-l-4 border-rose-500">
           [ 임금, 퇴직금 등 금품 지급기일 동의 ]
         </div>
-        <div className="text-[13px] text-slate-800 leading-7 px-2 py-2">
+        <div className="text-[13px] text-zinc-800 leading-7 px-2 py-2">
           상기 본인은 퇴직일 현재 이미 발생한 임금, 퇴직금, 그 밖의 일체의 금품을{" "}
           <span className="font-black">「{fmtKoreanDate(form.payoutDate) || "지급일"}」</span>에 지급받는 것에 동의합니다.
         </div>
-        <div className="flex items-center justify-end gap-3 text-[14px] text-slate-800 mt-2 pr-2">
+        <div className="flex items-center justify-end gap-3 text-[14px] text-zinc-800 mt-2 pr-2">
           <span className="font-semibold">동의자</span>
           <span className="font-black">{form.employeeName || "-"}</span>
           <span className="font-semibold">(서명)</span>
@@ -480,10 +480,10 @@ const ResignationPreview = React.forwardRef<HTMLDivElement, {
 
       {/* [3] 기타 사항 동의 */}
       <div className="mb-6">
-        <div className="text-[13px] font-black text-slate-800 mb-2 bg-slate-100 px-3 py-1.5 rounded-md border-l-4 border-rose-500">
+        <div className="text-[13px] font-black text-zinc-800 mb-2 bg-zinc-100 px-3 py-1.5 rounded-md border-l-4 border-rose-500">
           [ 기타 사항 동의 ]
         </div>
-        <ol className="list-decimal pl-6 text-[13px] text-slate-800 leading-7 space-y-2">
+        <ol className="list-decimal pl-6 text-[13px] text-zinc-800 leading-7 space-y-2">
           <li>
             상기 본인은 귀사와 근로관계 중 근로에 대한 임금(연장, 야간, 휴일), 퇴직금(발생 시),
             연차미사용수당(발생 시), 휴일 및 휴게시간 등 노동관계법령상 권리를 부여 및 지급 받았음을
@@ -495,7 +495,7 @@ const ResignationPreview = React.forwardRef<HTMLDivElement, {
             동의합니다.
           </li>
         </ol>
-        <div className="flex items-center justify-end gap-3 text-[14px] text-slate-800 mt-3 pr-2">
+        <div className="flex items-center justify-end gap-3 text-[14px] text-zinc-800 mt-3 pr-2">
           <span className="font-semibold">동의자</span>
           <span className="font-black">{form.employeeName || "-"}</span>
           <span className="font-semibold">(서명)</span>
@@ -505,12 +505,12 @@ const ResignationPreview = React.forwardRef<HTMLDivElement, {
 
       {/* 작성일 · 신청인 서명 */}
       <div className="mt-10">
-        <div className="text-center text-[15px] text-slate-800 font-semibold mb-6">
+        <div className="text-center text-[15px] text-zinc-800 font-semibold mb-6">
           {fmtKoreanDate(form.submitDate || todayIso())}
         </div>
 
         <div className="flex flex-col items-end gap-3 pr-2">
-          <div className="flex items-center gap-3 text-[14px] text-slate-800">
+          <div className="flex items-center gap-3 text-[14px] text-zinc-800">
             <span className="font-semibold">신청인</span>
             <span className="font-black">{form.employeeName || "-"}</span>
             <span className="font-semibold">(서명)</span>
@@ -519,8 +519,8 @@ const ResignationPreview = React.forwardRef<HTMLDivElement, {
         </div>
 
         {/* 수신 · 대표자 */}
-        <div className="mt-8 pt-4 border-t-2 border-slate-800 text-center">
-          <div className="text-[15px] font-black text-slate-800 tracking-wider">
+        <div className="mt-8 pt-4 border-t-2 border-zinc-800 text-center">
+          <div className="text-[15px] font-black text-zinc-800 tracking-wider">
             {form.recipient || `${form.companyName} 대표`} <span className="ml-1">귀하</span>
           </div>
         </div>
@@ -815,7 +815,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
 
   // ── 렌더 ─────────────────────────────────────────────────────────────
   return (
-    <div className={embedded ? "flex-1 flex flex-col" : "min-h-screen bg-slate-50 flex flex-col"}>
+    <div className={embedded ? "flex-1 flex flex-col" : "min-h-screen bg-zinc-50 flex flex-col"}>
       {!embedded && (
         <AppNavHeader
           activePage={"business-manage" as AppNavPage}
@@ -834,8 +834,8 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
               <SignOut size={20} weight="fill" />
             </div>
             <div>
-              <h1 className="text-lg sm:text-xl font-black text-slate-800 leading-none">사직서 작성</h1>
-              <p className="text-xs text-slate-500 mt-1">
+              <h1 className="text-lg sm:text-xl font-black text-zinc-800 leading-none">사직서 작성</h1>
+              <p className="text-xs text-zinc-500 mt-1">
                 좌측에서 조건을 입력하면 우측에 표준 사직서가 실시간 생성됩니다. 서명 spot 클릭 후 [사직서 제출]하세요.
               </p>
             </div>
@@ -845,7 +845,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
             <button
               type="button"
               onClick={handleReset}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-sm font-semibold transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 text-sm font-semibold transition-colors cursor-pointer"
               title="초기화"
             >
               <ArrowsClockwise size={14} />
@@ -878,15 +878,15 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
           wrapLeft={false}
           wrapRight={false}
           left={
-          <section className="bg-white border border-slate-200 rounded-xl shadow-sm p-3 sm:p-4 flex flex-col gap-3 order-2 lg:order-1">
-            <div className="flex items-center gap-1.5 pb-1.5 border-b border-slate-100">
+          <section className="bg-white border border-zinc-200 rounded-xl shadow-sm p-3 sm:p-4 flex flex-col gap-3 order-2 lg:order-1">
+            <div className="flex items-center gap-1.5 pb-1.5 border-b border-zinc-100">
               <ClipboardText size={15} weight="fill" className="text-rose-600" />
-              <h2 className="text-[13px] font-black text-slate-800">사직서 조건 입력</h2>
+              <h2 className="text-[13px] font-black text-zinc-800">사직서 조건 입력</h2>
             </div>
 
             {/* 근로자 정보 */}
             <div className="flex flex-col gap-1.5">
-              <FieldLabel icon={<User size={12} weight="fill" className="text-slate-400" />} required>
+              <FieldLabel icon={<User size={12} weight="fill" className="text-zinc-400" />} required>
                 근로자 정보
               </FieldLabel>
               {empError && <div className="text-[12px] text-rose-600">{empError}</div>}
@@ -906,7 +906,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                     onBlur={() => setTimeout(() => setEmpSearchOpen(false), 200)}
                     placeholder={empLoading ? "직원 불러오는 중..." : "성명 입력 → 검색"}
                     autoComplete="off"
-                    className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-zinc-400 placeholder:text-[12px]"
                   />
                   {empSearchOpen && form.employeeName.trim() && (() => {
                     const q = form.employeeName.trim().toLowerCase();
@@ -914,12 +914,12 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                       .filter(e => (e.name ?? "").toLowerCase().includes(q))
                       .slice(0, 8);
                     if (matches.length === 0) return (
-                      <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-lg shadow-lg p-2 text-[12px] text-slate-400 text-center">
+                      <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-zinc-200 rounded-lg shadow-lg p-2 text-[12px] text-zinc-400 text-center">
                         일치하는 직원 없음 · 직접 입력 가능
                       </div>
                     );
                     return (
-                      <ul className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-lg shadow-lg max-h-56 overflow-y-auto divide-y divide-slate-100">
+                      <ul className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-zinc-200 rounded-lg shadow-lg max-h-56 overflow-y-auto divide-y divide-zinc-100">
                         {matches.map(e => (
                           <li key={e.id}>
                             <button
@@ -931,12 +931,12 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                               }}
                               className="w-full text-left px-2.5 py-1.5 hover:bg-rose-50 transition-colors flex items-center gap-2"
                             >
-                              <span className="text-[13px] font-bold text-slate-800">{e.name}</span>
+                              <span className="text-[13px] font-bold text-zinc-800">{e.name}</span>
                               {e.position && (
-                                <span className="text-[11px] text-slate-500">{e.position}</span>
+                                <span className="text-[11px] text-zinc-500">{e.position}</span>
                               )}
                               {e.phone && (
-                                <span className="text-[11px] text-slate-400 ml-auto tabular-nums">{e.phone}</span>
+                                <span className="text-[11px] text-zinc-400 ml-auto tabular-nums">{e.phone}</span>
                               )}
                             </button>
                           </li>
@@ -950,7 +950,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                   value={form.employeeNo}
                   onChange={(e) => upd("employeeNo", e.target.value)}
                   placeholder="사번 (자동)"
-                  className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
+                  className="bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-zinc-400 placeholder:text-[12px]"
                 />
               </div>
               {/* 부서 + 직급 한 줄 */}
@@ -960,43 +960,43 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                   value={form.department}
                   onChange={(e) => upd("department", e.target.value)}
                   placeholder="부서 (예: 매장·창고)"
-                  className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
+                  className="bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-zinc-400 placeholder:text-[12px]"
                 />
                 <input
                   type="text"
                   value={form.position}
                   onChange={(e) => upd("position", e.target.value)}
                   placeholder="직급 (예: 약사·사원)"
-                  className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
+                  className="bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-zinc-400 placeholder:text-[12px]"
                 />
               </div>
               {/* 생년월일 + 입사일 한 줄 */}
               <div className="grid grid-cols-2 gap-1.5">
                 <div>
-                  <div className="text-[11px] text-slate-400 font-semibold mb-0.5 flex items-center gap-1">
+                  <div className="text-[11px] text-zinc-400 font-semibold mb-0.5 flex items-center gap-1">
                     <Cake size={11} weight="fill" />생년월일
                   </div>
                   <input
                     type="date"
                     value={form.birthDate}
                     onChange={(e) => upd("birthDate", e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition"
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition"
                   />
                 </div>
                 <div>
-                  <div className="text-[11px] text-slate-400 font-semibold mb-0.5">입사일</div>
+                  <div className="text-[11px] text-zinc-400 font-semibold mb-0.5">입사일</div>
                   <input
                     type="date"
                     value={form.hireDate}
                     onChange={(e) => upd("hireDate", e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition"
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition"
                   />
                 </div>
               </div>
               {/* 근속기간 (자동) */}
               <div>
-                <div className="text-[11px] text-slate-400 font-semibold mb-0.5">근속기간 (자동)</div>
-                <div className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-700 font-semibold">
+                <div className="text-[11px] text-zinc-400 font-semibold mb-0.5">근속기간 (자동)</div>
+                <div className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-700 font-semibold">
                   {_tenure}
                 </div>
               </div>
@@ -1004,7 +1004,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
 
             {/* 사직 정보 */}
             <div className="flex flex-col gap-1.5">
-              <FieldLabel icon={<CalendarBlank size={12} weight="fill" className="text-slate-400" />} required>
+              <FieldLabel icon={<CalendarBlank size={12} weight="fill" className="text-zinc-400" />} required>
                 사직일 (마지막 근무일)
               </FieldLabel>
               <input
@@ -1012,9 +1012,9 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                 value={form.lastWorkDate}
                 min={minLastWorkDate}
                 onChange={(e) => upd("lastWorkDate", e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition"
+                className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition"
               />
-              <p className="text-[11px] text-slate-400 leading-snug">
+              <p className="text-[11px] text-zinc-400 leading-snug">
                 * 통상 최소 30일 전 통보 관례 · 회사와 협의하여 조정 가능
               </p>
             </div>
@@ -1022,18 +1022,18 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
             {/* 제출일 + 수신 */}
             <div className="grid grid-cols-2 gap-1.5">
               <div>
-                <FieldLabel icon={<CalendarBlank size={12} weight="fill" className="text-slate-400" />}>
+                <FieldLabel icon={<CalendarBlank size={12} weight="fill" className="text-zinc-400" />}>
                   사직서 제출일
                 </FieldLabel>
                 <input
                   type="date"
                   value={form.submitDate}
                   onChange={(e) => upd("submitDate", e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition"
+                  className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition"
                 />
               </div>
               <div>
-                <FieldLabel icon={<Buildings size={12} weight="fill" className="text-slate-400" />}>
+                <FieldLabel icon={<Buildings size={12} weight="fill" className="text-zinc-400" />}>
                   수신
                 </FieldLabel>
                 <input
@@ -1041,7 +1041,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                   value={form.recipient}
                   onChange={(e) => upd("recipient", e.target.value)}
                   placeholder="예: 코스트팜(Costpharm) 대표"
-                  className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
+                  className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-zinc-400 placeholder:text-[12px]"
                 />
               </div>
             </div>
@@ -1060,7 +1060,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                       className={`px-1.5 py-1.5 rounded-lg border text-[12px] font-bold transition-colors cursor-pointer ${
                         active
                           ? "bg-rose-500 text-white border-rose-600"
-                          : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                          : "bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300"
                       }`}
                     >
                       {r}
@@ -1072,7 +1072,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
 
             {/* 사유 상세 (textarea) */}
             <div className="flex flex-col gap-1">
-              <FieldLabel icon={<Notepad size={12} weight="fill" className="text-slate-400" />}>
+              <FieldLabel icon={<Notepad size={12} weight="fill" className="text-zinc-400" />}>
                 {form.reason === "기타" ? "기타 사유 (자유 입력)" : "사유 상세 (선택)"}
               </FieldLabel>
               <textarea
@@ -1082,13 +1082,13 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                 placeholder={form.reason === "기타"
                   ? "기타 사유를 직접 입력하세요 (본문에 반영됨)"
                   : "사유에 대한 부연 설명이 필요하면 입력하세요"}
-                className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition resize-y placeholder:text-slate-400 placeholder:text-[12px]"
+                className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition resize-y placeholder:text-zinc-400 placeholder:text-[12px]"
               />
             </div>
 
             {/* 인수인계 사항 */}
             <div className="flex flex-col gap-1">
-              <FieldLabel icon={<Notepad size={12} weight="fill" className="text-slate-400" />}>
+              <FieldLabel icon={<Notepad size={12} weight="fill" className="text-zinc-400" />}>
                 인수인계 사항 (선택)
               </FieldLabel>
               <textarea
@@ -1096,32 +1096,32 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                 onChange={(e) => upd("handoverNotes", e.target.value)}
                 rows={3}
                 placeholder="담당 업무 · 인수인계할 파일·연락처·주요 진행상황 등"
-                className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition resize-y placeholder:text-slate-400 placeholder:text-[12px]"
+                className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition resize-y placeholder:text-zinc-400 placeholder:text-[12px]"
               />
             </div>
 
             {/* 금품 지급기일 */}
-            <div className="flex flex-col gap-1.5 border-t border-slate-100 pt-2.5">
-              <FieldLabel icon={<Money size={12} weight="fill" className="text-slate-400" />}>
+            <div className="flex flex-col gap-1.5 border-t border-zinc-100 pt-2.5">
+              <FieldLabel icon={<Money size={12} weight="fill" className="text-zinc-400" />}>
                 금품 지급기일 (임금·퇴직금 등)
               </FieldLabel>
               <input
                 type="date"
                 value={form.payoutDate}
                 onChange={(e) => upd("payoutDate", e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition"
+                className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition"
               />
-              <p className="text-[11px] text-slate-400 leading-snug">
+              <p className="text-[11px] text-zinc-400 leading-snug">
                 * 근로기준법 § 36 · 퇴직 후 14일 이내 지급 원칙 · 당사자 합의로 연장 가능
               </p>
             </div>
 
             {/* 기타 사항 동의 안내 */}
             <div className="flex flex-col gap-1.5">
-              <FieldLabel icon={<ShieldCheck size={12} weight="fill" className="text-slate-400" />}>
+              <FieldLabel icon={<ShieldCheck size={12} weight="fill" className="text-zinc-400" />}>
                 기타 사항 동의 (권리 확인 · 영업비밀 유지)
               </FieldLabel>
-              <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-[12px] text-slate-600 leading-6">
+              <div className="bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-[12px] text-zinc-600 leading-6">
                 <ol className="list-decimal pl-4 space-y-1">
                   <li>노동관계법령상 권리(임금·퇴직금·연차미사용수당·휴게시간 등) 지급 확인 및 이의 미제기</li>
                   <li>재직 중 알게된 영업비밀·고객정보·경영정보 누설 금지</li>
@@ -1131,7 +1131,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
 
             {/* 회사 정보 */}
             <div className="flex flex-col gap-1.5">
-              <FieldLabel icon={<Buildings size={12} weight="fill" className="text-slate-400" />}>
+              <FieldLabel icon={<Buildings size={12} weight="fill" className="text-zinc-400" />}>
                 회사 정보
               </FieldLabel>
               <div className="grid grid-cols-2 gap-1.5">
@@ -1140,20 +1140,20 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                   value={form.companyName}
                   onChange={(e) => upd("companyName", e.target.value)}
                   placeholder="회사명"
-                  className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
+                  className="bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-zinc-400 placeholder:text-[12px]"
                 />
                 <input
                   type="text"
                   value={form.employerName}
                   onChange={(e) => upd("employerName", e.target.value)}
                   placeholder="대표자명"
-                  className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
+                  className="bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-zinc-400 placeholder:text-[12px]"
                 />
               </div>
             </div>
 
             {/* 서명 안내 · 사직서 제출 */}
-            <div className="border-t border-slate-100 pt-2.5">
+            <div className="border-t border-zinc-100 pt-2.5">
               <div className="bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 text-[12px] text-rose-700 leading-6 mb-3 flex items-start gap-2">
                 <Signature size={14} weight="fill" className="mt-0.5 flex-shrink-0" />
                 <div>
@@ -1175,7 +1175,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                   <span>{submitting ? "제출 중..." : "사직서 제출"}</span>
                 </button>
               </div>
-              <p className="text-[11px] text-slate-400 mt-2 leading-snug">
+              <p className="text-[11px] text-zinc-400 mt-2 leading-snug">
                 * 제출 시 · 관리자에게 알림이 전송되며 · 승인 시 · 자동으로 퇴사일이 반영됩니다.
               </p>
             </div>
@@ -1185,13 +1185,13 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
           <section className="order-1 lg:order-2 flex flex-col gap-3">
             <div className="flex items-center gap-1.5 pb-1">
               <SignOut size={16} weight="fill" className="text-rose-600" />
-              <h2 className="text-sm font-black text-slate-800">사직서 미리보기</h2>
-              <span className="text-[11px] text-slate-400 font-semibold ml-1">
+              <h2 className="text-sm font-black text-zinc-800">사직서 미리보기</h2>
+              <span className="text-[11px] text-zinc-400 font-semibold ml-1">
                 (서명 spot 클릭 · 우측 화면 그대로 A4 1페이지 PDF)
               </span>
             </div>
 
-            <div className="bg-slate-100 border border-slate-200 rounded-xl p-3 sm:p-4">
+            <div className="bg-zinc-100 border border-zinc-200 rounded-xl p-3 sm:p-4">
               <ResignationPreview
                 ref={previewRef}
                 form={form}
@@ -1210,8 +1210,8 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                 disabled={generating || submitting || !employeeSignUrl}
                 className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-black shadow-sm transition-colors
                   ${employeeSignUrl && !generating && !submitting
-                    ? "border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 cursor-pointer"
-                    : "bg-slate-300 text-slate-500 cursor-not-allowed opacity-60"}`}
+                    ? "border border-zinc-300 bg-white hover:bg-zinc-50 text-zinc-700 cursor-pointer"
+                    : "bg-zinc-300 text-zinc-500 cursor-not-allowed opacity-60"}`}
                 title={employeeSignUrl ? "PDF 다운로드 (A4 1페이지)" : "서명 후 저장 가능합니다"}
               >
                 <DownloadSimple size={16} weight="bold" />

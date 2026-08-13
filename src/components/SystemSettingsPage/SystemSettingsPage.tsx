@@ -145,7 +145,7 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
       onNavigate={onNavigate}
       onLogout={onLogout}
       icon={Gear}
-      iconColor="text-slate-600"
+      iconColor="text-zinc-600"
       title="시스템 설정"
       description="DB · 인증 · AI/OCR · 알림톡·SMS · 이미지 CDN · Web Push · OCR 수신처 등 서버 env 편집. 저장 후 서버 재시작 시 반영. 관리자(lv 9) 전용."
     >
@@ -178,9 +178,9 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
                 <div key={k} className="flex flex-col gap-1.5">
                   <label className={SET_LABEL}>
                     <span>{meta.label}</span>
-                    <span className="text-[10px] font-mono text-slate-400">{k}</span>
+                    <span className="text-[10px] font-mono text-zinc-400">{k}</span>
                     {cur?.source === "file" && <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded">파일 저장됨</span>}
-                    {cur?.source === "env"  && <span className="text-[10px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">env 기본값</span>}
+                    {cur?.source === "env"  && <span className="text-[10px] font-bold text-zinc-500 bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">env 기본값</span>}
                   </label>
                   {meta.multiline ? (
                     <textarea
@@ -199,11 +199,11 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
                       className={SET_INPUT}
                     />
                   )}
-                  {meta.desc && <p className="text-xs text-slate-400 mt-0.5">{meta.desc}</p>}
+                  {meta.desc && <p className="text-xs text-zinc-400 mt-0.5">{meta.desc}</p>}
                 </div>
               );
             })}
-            {!loaded && <p className="text-sm text-slate-400 text-center">불러오는 중...</p>}
+            {!loaded && <p className="text-sm text-zinc-400 text-center">불러오는 중...</p>}
           </section>
         )}
 
@@ -214,7 +214,7 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
               <UploadSimple size={18} className="text-orange-500" />
               데이터 업로드
             </h2>
-            <p className="text-sm text-slate-500 flex items-start gap-1.5">
+            <p className="text-sm text-zinc-500 flex items-start gap-1.5">
               <Info size={14} className="mt-0.5 shrink-0" />
               상품목록 · 재고리스트 xlsx 업로드. 이 탭은 이후 커밋에서 · 랜딩 데이터업로드 모달을 이 자리로 이관 예정입니다.
               현재는 랜딩페이지 [데이터 업로드] 카드를 사용하세요.

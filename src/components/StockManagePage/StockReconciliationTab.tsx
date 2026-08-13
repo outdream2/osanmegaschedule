@@ -212,7 +212,7 @@ export const StockReconciliationTab: React.FC<{
   const { sorted: visibleRows, sortKey, sortDir, toggleSort } = useSortableTable<DiffRow, SortKey>(filteredRows, "diff", sortComparators, "desc");
 
   const SortIcon: React.FC<{ k: SortKey }> = ({ k }) => {
-    if (sortKey !== k) return <ArrowUpDown size={10} className="text-slate-300 ml-0.5 inline" />;
+    if (sortKey !== k) return <ArrowUpDown size={10} className="text-zinc-300 ml-0.5 inline" />;
     return sortDir === "asc"
       ? <ArrowUp size={10} className="text-emerald-500 ml-0.5 inline" />
       : <ArrowDown size={10} className="text-emerald-500 ml-0.5 inline" />;
@@ -233,7 +233,7 @@ export const StockReconciliationTab: React.FC<{
         <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
           <CheckCircle2 size={14} className="text-emerald-600" />
         </div>
-        <span className={`${TEXT.body} text-slate-700`}>실재고</span>
+        <span className={`${TEXT.body} text-zinc-700`}>실재고</span>
         <span className="text-[11px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 tabular-nums">
           차이 있는 상품 {diffCount}개
         </span>
@@ -245,7 +245,7 @@ export const StockReconciliationTab: React.FC<{
             <span className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 tabular-nums">
               초과 {overCount}개
             </span>
-            <span className="text-[11px] font-bold text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-2 py-0.5 tabular-nums">
+            <span className="text-[11px] font-bold text-zinc-500 bg-zinc-50 border border-zinc-200 rounded-full px-2 py-0.5 tabular-nums">
               차이합 {totalDiffAbs}
             </span>
           </>
@@ -253,14 +253,14 @@ export const StockReconciliationTab: React.FC<{
 
         <div className="ml-auto flex items-center gap-2">
           {refreshedAt && !loading && (
-            <span className="text-[10px] font-semibold text-slate-400 tabular-nums hidden sm:inline">
+            <span className="text-[10px] font-semibold text-zinc-400 tabular-nums hidden sm:inline">
               {fmtDate(refreshedAt.toISOString())}
             </span>
           )}
           <button
             onClick={load}
             disabled={loading}
-            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50 cursor-pointer disabled:opacity-50 transition"
+            className="w-8 h-8 flex items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 cursor-pointer disabled:opacity-50 transition"
             title="새로고침"
           >
             <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
@@ -271,22 +271,22 @@ export const StockReconciliationTab: React.FC<{
       {/* ── 필터바 ── */}
       <div className={`${CARD_BASE} p-2 flex flex-wrap items-center gap-2`}>
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="상품명 · 상품코드 · 공급사 검색"
-            className="w-full h-8 pl-7 pr-2 text-[12px] bg-slate-50 border border-slate-200 rounded-lg
+            className="w-full h-8 pl-7 pr-2 text-[12px] bg-zinc-50 border border-zinc-200 rounded-lg
               focus:outline-none focus:border-emerald-400 focus:bg-white transition"
           />
         </div>
         <div className="relative">
-          <Filter size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Filter size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-400" />
           <select
             value={supplierFilter}
             onChange={e => setSupplierFilter(e.target.value)}
-            className="h-8 pl-7 pr-6 text-[12px] font-semibold bg-slate-50 border border-slate-200 rounded-lg
+            className="h-8 pl-7 pr-6 text-[12px] font-semibold bg-zinc-50 border border-zinc-200 rounded-lg
               focus:outline-none focus:border-emerald-400 focus:bg-white transition cursor-pointer appearance-none"
           >
             <option value="">전체 공급사</option>
@@ -298,8 +298,8 @@ export const StockReconciliationTab: React.FC<{
         {(query || supplierFilter) && (
           <button
             onClick={() => { setQuery(""); setSupplierFilter(""); }}
-            className="h-8 px-3 text-[11px] font-bold text-slate-500 hover:text-slate-800
-              bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg cursor-pointer transition"
+            className="h-8 px-3 text-[11px] font-bold text-zinc-500 hover:text-zinc-800
+              bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-lg cursor-pointer transition"
           >
             초기화
           </button>
@@ -352,7 +352,7 @@ export const StockReconciliationTab: React.FC<{
                     <span {...resizerProps("supplier")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                   </th>
                   <th
-                    className="relative px-2 py-2 text-right font-bold text-slate-700 cursor-pointer select-none hover:bg-emerald-100/40 transition"
+                    className="relative px-2 py-2 text-right font-bold text-zinc-700 cursor-pointer select-none hover:bg-emerald-100/40 transition"
                     style={{ width: getWidth("erp"), minWidth: getWidth("erp") }}
                     onClick={() => toggleSort("erp")}
                   >
@@ -376,7 +376,7 @@ export const StockReconciliationTab: React.FC<{
                     <span {...resizerProps("diff")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                   </th>
                   <th
-                    className="relative px-2 py-2 text-center font-bold text-slate-500 cursor-pointer select-none hover:bg-emerald-100/40 transition"
+                    className="relative px-2 py-2 text-center font-bold text-zinc-500 cursor-pointer select-none hover:bg-emerald-100/40 transition"
                     style={{ width: getWidth("checked_at"), minWidth: getWidth("checked_at") }}
                     onClick={() => toggleSort("checked_at")}
                   >
@@ -385,30 +385,30 @@ export const StockReconciliationTab: React.FC<{
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-zinc-100">
                 {visibleRows.map((r, i) => {
                   const negative = r.diff < 0;
                   const badgeCls = negative
                     ? "bg-rose-50 text-rose-700 border-rose-200"
                     : "bg-amber-50 text-amber-800 border-amber-200";
                   return (
-                    <tr key={r.product_code} className="hover:bg-slate-50/60 transition">
-                      <td className="px-2 py-1.5 text-slate-400 tabular-nums">{i + 1}</td>
+                    <tr key={r.product_code} className="hover:bg-zinc-50/60 transition">
+                      <td className="px-2 py-1.5 text-zinc-400 tabular-nums">{i + 1}</td>
                       <td className="px-2 py-1.5">
-                        <p className="text-[12px] font-bold text-slate-800 leading-snug break-words">{r.product_name}</p>
-                        <p className="text-[10px] tabular-nums text-slate-400 mt-0.5">#{r.product_code}</p>
+                        <p className="text-[12px] font-bold text-zinc-800 leading-snug break-words">{r.product_name}</p>
+                        <p className="text-[10px] tabular-nums text-zinc-400 mt-0.5">#{r.product_code}</p>
                       </td>
-                      <td className="px-2 py-1.5 text-slate-600 break-words max-w-[160px]" title={r.supplier ?? ""}>
-                        {r.supplier ?? <span className="text-slate-300">-</span>}
+                      <td className="px-2 py-1.5 text-zinc-600 break-words max-w-[160px]" title={r.supplier ?? ""}>
+                        {r.supplier ?? <span className="text-zinc-300">-</span>}
                       </td>
-                      <td className="px-2 py-1.5 text-right text-slate-700 font-bold tabular-nums">{r.erp_qty}</td>
+                      <td className="px-2 py-1.5 text-right text-zinc-700 font-bold tabular-nums">{r.erp_qty}</td>
                       <td className="px-2 py-1.5 text-right text-teal-700 font-bold tabular-nums">{r.actual_qty}</td>
                       <td className="px-2 py-1.5 text-right">
                         <span className={`inline-flex items-center justify-center min-w-[48px] px-2 py-0.5 rounded-full text-[11px] font-black border tabular-nums ${badgeCls}`}>
                           {r.diff > 0 ? `+${r.diff}` : r.diff}
                         </span>
                       </td>
-                      <td className="px-2 py-1.5 text-center text-slate-500 tabular-nums text-[11px]">
+                      <td className="px-2 py-1.5 text-center text-zinc-500 tabular-nums text-[11px]">
                         {fmtDate(r.checked_at)}
                       </td>
                     </tr>

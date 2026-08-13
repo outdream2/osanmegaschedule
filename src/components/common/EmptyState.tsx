@@ -65,14 +65,14 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     >
       <Icon
         size={28}
-        className="text-slate-300 mb-1"
+        className="text-zinc-300 mb-1"
         strokeWidth={1.5}
       />
-      <p className={`${TEXT.body} text-slate-500 font-semibold`}>
+      <p className={`${TEXT.body} text-zinc-500 font-semibold`}>
         {title}
       </p>
       {hint != null && (
-        <p className={`${TEXT.caption} text-slate-400`}>
+        <p className={`${TEXT.caption} text-zinc-400`}>
           {hint}
         </p>
       )}

@@ -83,7 +83,7 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
       ) : undefined}
     >
       {/* 2026-08-12 · 상단 5탭 TabBar · 각 섹션 개별 표시 */}
-      <div className="mb-3 flex flex-wrap gap-0.5 border-b border-slate-200">
+      <div className="mb-3 flex flex-wrap gap-0.5 border-b border-zinc-200">
         {TABS.map(({ key, label, Icon, color }) => {
           const active = tab === key;
           return (
@@ -92,12 +92,12 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
               onClick={() => changeTab(key)}
               className={`px-3.5 py-2 -mb-px flex items-center gap-1.5 text-[14px] font-bold border-b-2 transition-colors ${
                 active
-                  ? "border-indigo-500 text-slate-800"
-                  : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+                  ? "border-indigo-500 text-zinc-800"
+                  : "border-transparent text-zinc-500 hover:text-zinc-700 hover:border-zinc-300"
               }`}
               type="button"
             >
-              <Icon size={16} weight={active ? "fill" : "regular"} className={active ? color : "text-slate-400"} />
+              <Icon size={16} weight={active ? "fill" : "regular"} className={active ? color : "text-zinc-400"} />
               {label}
             </button>
           );
@@ -151,7 +151,7 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
           </div>
 
           {!loaded && (
-            <p className="text-[11px] text-slate-400 text-center">서버에서 최신 값을 불러오는 중...</p>
+            <p className="text-[11px] text-zinc-400 text-center">서버에서 최신 값을 불러오는 중...</p>
           )}
         </div>
       )}

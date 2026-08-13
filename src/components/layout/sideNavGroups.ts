@@ -272,7 +272,7 @@ export const COLOR_TONES: Record<SideNavColor, {
   hoverBg: string;
   glowShadow: string;
 }> = {
-  slate:   { activeBar: "bg-slate-500",   activeBg: "bg-slate-100",   activeText: "text-slate-800",  iconActive: "text-slate-600",   hoverBg: "hover:bg-white/70",   glowShadow: "shadow-slate-200/40" },
+  slate:   { activeBar: "bg-zinc-500",   activeBg: "bg-zinc-100",   activeText: "text-zinc-800",  iconActive: "text-zinc-600",   hoverBg: "hover:bg-white/70",   glowShadow: "shadow-zinc-200/40" },
   amber:   { activeBar: "bg-amber-500",   activeBg: "bg-amber-100",   activeText: "text-amber-900",  iconActive: "text-amber-700",   hoverBg: "hover:bg-white/70",   glowShadow: "shadow-amber-200/40" },
   red:     { activeBar: "bg-red-500",     activeBg: "bg-red-100",     activeText: "text-red-800",    iconActive: "text-red-700",     hoverBg: "hover:bg-white/70",   glowShadow: "shadow-red-200/40" },
   sky:     { activeBar: "bg-sky-500",     activeBg: "bg-sky-100",     activeText: "text-sky-800",    iconActive: "text-sky-700",     hoverBg: "hover:bg-white/70",   glowShadow: "shadow-sky-200/40" },

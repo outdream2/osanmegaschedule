@@ -22,7 +22,7 @@ const ScanPage = React.lazy(() => import("../ScanPage/ScanPage").then(m => ({ de
 const ProductArrivalPage = React.lazy(() => import("../ProductArrivalPage/ProductArrivalPage").then(m => ({ default: m.ProductArrivalPage })));
 
 const SubTabFallback = () => (
-  <div className="flex-1 flex items-center justify-center text-slate-400 text-xs py-16">
+  <div className="flex-1 flex items-center justify-center text-zinc-400 text-xs py-16">
     <Loader2 className="animate-spin mr-2" size={14} />로딩 중...
   </div>
 );
@@ -1457,10 +1457,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           {purchaseOrderSubTab === "need" && (<>
         <div className="flex flex-col gap-2">
           {/* ══ 통합 조건 카드 · 검색 + 재고상태 + 카테고리 + 4조건 + 발주판정 설정 ══ */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
 
             {/* ── Row 1: 검색 + 재고상태 chip ── */}
-            <div className="px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-100">
+            <div className="px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-zinc-100">
               <SearchBar
                 value={lowStockSearch}
                 onChange={setLowStockSearch}
@@ -1476,7 +1476,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 <button
                   type="button"
                   onClick={() => { setLowStockSearch(""); }}
-                  className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-black text-slate-500 hover:text-rose-600 transition cursor-pointer"
+                  className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-zinc-200 bg-white hover:bg-zinc-50 text-[11px] font-black text-zinc-500 hover:text-rose-600 transition cursor-pointer"
                   title="검색 초기화"
                 >
                   <RotateCcw size={11} />초기화
@@ -1485,20 +1485,20 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             </div>
 
             {/* 2026-08-10 · #31 · Row 2 + Row 3 통합 · 분류 · 발주조건 · PC 한줄 · 모바일 2줄 wrap */}
-            <div className="px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-100 bg-slate-50/40">
+            <div className="px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-zinc-100 bg-zinc-50/40">
               {/* 분류 그룹 */}
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[12px] font-black uppercase tracking-wider text-slate-500 shrink-0">분류</span>
-                <div className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-0.5 gap-0.5 flex-wrap">
+                <span className="text-[12px] font-black uppercase tracking-wider text-zinc-500 shrink-0">분류</span>
+                <div className="inline-flex items-center rounded-lg border border-zinc-200 bg-white p-0.5 gap-0.5 flex-wrap">
                   {(["all", ...dbVendorCategories] as string[]).map(cat => {
                     const label = cat === "all" ? "전체" : cat;
                     const activeCls =
-                      cat === "all"    ? "bg-slate-100  text-slate-800  border-slate-300"
+                      cat === "all"    ? "bg-zinc-100  text-zinc-800  border-zinc-300"
                       : cat === "위탁"   ? "bg-violet-50  text-violet-700 border-violet-300"
                       : cat === "선결제" ? "bg-rose-50    text-rose-700   border-rose-300"
                       : cat === "60회전" ? "bg-emerald-50 text-emerald-700 border-emerald-300"
                       : cat === "90회전" ? "bg-teal-50    text-teal-700   border-teal-300"
-                      : "bg-slate-50   text-slate-700  border-slate-300";
+                      : "bg-zinc-50   text-zinc-700  border-zinc-300";
                     const active = needCategoryFilter === cat;
                     return (
                       <button
@@ -1507,7 +1507,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         onClick={() => setNeedCategoryFilter(cat)}
                         className={[
                           "px-3 h-8 rounded-md text-[13px] font-black leading-none border transition-colors cursor-pointer whitespace-nowrap",
-                          active ? activeCls : "bg-white text-slate-500 border-transparent hover:text-slate-800 hover:bg-slate-50",
+                          active ? activeCls : "bg-white text-zinc-500 border-transparent hover:text-zinc-800 hover:bg-zinc-50",
                         ].join(" ")}
                         title={`${label} 카테고리만 표시`}
                       >{label}</button>
@@ -1518,41 +1518,41 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
               {/* 2026-08-10 · 사용자 요청 · 발주조건 · 입력 항목 나란히 (label + 2 checkboxes · 같은 flex-nowrap wrapper) */}
               <div className="flex items-center gap-2 flex-nowrap shrink-0">
-                <span className="text-[14px] font-semibold tracking-tight text-slate-700 whitespace-nowrap">발주 조건</span>
+                <span className="text-[14px] font-semibold tracking-tight text-zinc-700 whitespace-nowrap">발주 조건</span>
                 {/* 조건 1 · 최근 한달 판매량 N개 이하 */}
                 <label className="inline-flex items-center gap-1 shrink-0">
                   <input type="checkbox" checked={needSalesMonthEnabled} onChange={e => setNeedSalesMonthEnabled(e.target.checked)}
-                    className="w-3.5 h-3.5 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
-                  <span className={`text-[12px] font-medium whitespace-nowrap ${needSalesMonthEnabled ? "text-slate-700" : "text-slate-400"}`}>1M판매</span>
+                    className="w-3.5 h-3.5 text-emerald-600 rounded border-zinc-300 focus:ring-emerald-400 cursor-pointer" />
+                  <span className={`text-[12px] font-medium whitespace-nowrap ${needSalesMonthEnabled ? "text-zinc-700" : "text-zinc-400"}`}>1M판매</span>
                   <input
                     type="number" min={0} step={1}
                     disabled={!needSalesMonthEnabled}
                     value={needInlineMaxSalesMonth === 0 ? "" : needInlineMaxSalesMonth}
                     onChange={e => updateInline("salesMonth", e.target.value)}
                     placeholder="50"
-                    className="w-12 h-7 px-1.5 rounded-md border border-slate-200 text-[12px] font-bold text-slate-800 text-right tabular-nums bg-white
+                    className="w-12 h-7 px-1.5 rounded-md border border-zinc-200 text-[12px] font-bold text-zinc-800 text-right tabular-nums bg-white
                                focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
-                               hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
+                               hover:border-zinc-300 transition placeholder:text-zinc-300 disabled:bg-zinc-50 disabled:opacity-50"
                   />
-                  <span className={`text-[11px] whitespace-nowrap ${needSalesMonthEnabled ? "text-slate-500" : "text-slate-300"}`}>개↓</span>
+                  <span className={`text-[11px] whitespace-nowrap ${needSalesMonthEnabled ? "text-zinc-500" : "text-zinc-300"}`}>개↓</span>
                 </label>
 
                 {/* 조건 3 · 최근 3달 판매량 N개 이하 */}
                 <label className="inline-flex items-center gap-1 shrink-0">
                   <input type="checkbox" checked={needSalesQuarterEnabled} onChange={e => setNeedSalesQuarterEnabled(e.target.checked)}
-                    className="w-3.5 h-3.5 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
-                  <span className={`text-[12px] font-medium whitespace-nowrap ${needSalesQuarterEnabled ? "text-slate-700" : "text-slate-400"}`}>3M판매</span>
+                    className="w-3.5 h-3.5 text-emerald-600 rounded border-zinc-300 focus:ring-emerald-400 cursor-pointer" />
+                  <span className={`text-[12px] font-medium whitespace-nowrap ${needSalesQuarterEnabled ? "text-zinc-700" : "text-zinc-400"}`}>3M판매</span>
                   <input
                     type="number" min={0} step={1}
                     disabled={!needSalesQuarterEnabled}
                     value={needInlineMaxSalesQuarter === 0 ? "" : needInlineMaxSalesQuarter}
                     onChange={e => updateInline("salesQuarter", e.target.value)}
                     placeholder="100"
-                    className="w-12 h-7 px-1.5 rounded-md border border-slate-200 text-[12px] font-bold text-slate-800 text-right tabular-nums bg-white
+                    className="w-12 h-7 px-1.5 rounded-md border border-zinc-200 text-[12px] font-bold text-zinc-800 text-right tabular-nums bg-white
                                focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
-                               hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
+                               hover:border-zinc-300 transition placeholder:text-zinc-300 disabled:bg-zinc-50 disabled:opacity-50"
                   />
-                  <span className={`text-[11px] whitespace-nowrap ${needSalesQuarterEnabled ? "text-slate-500" : "text-slate-300"}`}>개↓</span>
+                  <span className={`text-[11px] whitespace-nowrap ${needSalesQuarterEnabled ? "text-zinc-500" : "text-zinc-300"}`}>개↓</span>
                 </label>
               </div>
 
@@ -1570,9 +1570,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 <button
                   type="button"
                   onClick={resetInlineFilter}
-                  className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-slate-200 bg-white
+                  className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-zinc-200 bg-white
                              hover:bg-rose-50 hover:border-rose-300 hover:text-rose-600
-                             text-[11px] font-black text-slate-500 transition cursor-pointer shrink-0"
+                             text-[11px] font-black text-zinc-500 transition cursor-pointer shrink-0"
                   title="발주 조건 모두 초기화"
                 >
                   <X size={11} />초기화
@@ -1606,11 +1606,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               <button
                 type="button"
                 onClick={() => setNeedAdvancedOpen(o => !o)}
-                className="w-full px-4 py-2 flex items-center gap-2 cursor-pointer select-none bg-slate-50/60 hover:bg-slate-50 transition text-left"
+                className="w-full px-4 py-2 flex items-center gap-2 cursor-pointer select-none bg-zinc-50/60 hover:bg-zinc-50 transition text-left"
               >
-                <ChevronRight size={13} className={`text-slate-400 shrink-0 transition-transform ${needAdvancedOpen ? "rotate-90" : ""}`} />
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">발주판정 고급설정</span>
-                <span className="ml-1 text-[10px] text-slate-400 hidden sm:inline">
+                <ChevronRight size={13} className={`text-zinc-400 shrink-0 transition-transform ${needAdvancedOpen ? "rotate-90" : ""}`} />
+                <span className="text-[10px] font-black uppercase tracking-wider text-zinc-400">발주판정 고급설정</span>
+                <span className="ml-1 text-[10px] text-zinc-400 hidden sm:inline">
                   {orderNeedConfig.shortageBasis === "min" && "최소재고 기준"}
                   {orderNeedConfig.shortageBasis === "realStock" && "실재고 기준"}
                   {orderNeedConfig.shortageBasis === "optimal" && "추천적정재고 기준"}
@@ -1621,13 +1621,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               </button>
 
               {needAdvancedOpen && (
-              <div className="px-4 pb-4 pt-3 flex flex-col gap-4 border-t border-slate-100 bg-slate-50/30">
+              <div className="px-4 pb-4 pt-3 flex flex-col gap-4 border-t border-zinc-100 bg-zinc-50/30">
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                   {/* 1. 재고 부족 기준 */}
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider">재고 부족 기준</span>
+                    <span className="text-[11px] font-black text-zinc-600 uppercase tracking-wider">재고 부족 기준</span>
                     <div className="flex flex-col gap-1">
                       {([
                         { k: "optimal"   as OrderNeedShortageBasis, label: "현재고 < 추천적정재고", sub: "기본 · 권장" },
@@ -1640,7 +1640,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                             "flex items-start gap-2 px-2.5 py-1.5 rounded-lg border cursor-pointer transition",
                             orderNeedConfig.shortageBasis === opt.k
                               ? "bg-indigo-50 border-indigo-300"
-                              : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50",
+                              : "bg-white border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50",
                           ].join(" ")}
                         >
                           <input
@@ -1655,8 +1655,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                             }}
                           />
                           <div className="flex flex-col leading-tight">
-                            <span className="text-[12px] font-bold text-slate-800">{opt.label}</span>
-                            <span className="text-[11px] text-slate-500">{opt.sub}</span>
+                            <span className="text-[12px] font-bold text-zinc-800">{opt.label}</span>
+                            <span className="text-[11px] text-zinc-500">{opt.sub}</span>
                           </div>
                         </label>
                       ))}
@@ -1668,8 +1668,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
                     {/* 실재고 미입력 포함 */}
                     <div className="flex flex-col gap-1">
-                      <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider">실재고 미입력 상품</span>
-                      <label className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer bg-white">
+                      <span className="text-[11px] font-black text-zinc-600 uppercase tracking-wider">실재고 미입력 상품</span>
+                      <label className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-zinc-200 hover:bg-zinc-50 cursor-pointer bg-white">
                         <input
                           type="checkbox"
                           className="accent-indigo-600 cursor-pointer"
@@ -1680,13 +1680,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                             try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(next)); } catch { /**/ }
                           }}
                         />
-                        <span className="text-[12px] font-bold text-slate-800">실재고 미입력도 포함</span>
+                        <span className="text-[12px] font-bold text-zinc-800">실재고 미입력도 포함</span>
                       </label>
                     </div>
 
                     {/* 최소 부족 개수 */}
                     <div className="flex flex-col gap-1">
-                      <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider">최소 부족 개수</span>
+                      <span className="text-[11px] font-black text-zinc-600 uppercase tracking-wider">최소 부족 개수</span>
                       <div className="flex items-center gap-2">
                         <input
                           type="number" min={1} step={1}
@@ -1697,16 +1697,16 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                             setOrderNeedConfig(next);
                             try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(next)); } catch { /**/ }
                           }}
-                          className="w-20 h-8 px-2 border border-slate-200 rounded-lg text-[13px] font-bold text-slate-800 tabular-nums text-right
+                          className="w-20 h-8 px-2 border border-zinc-200 rounded-lg text-[13px] font-bold text-zinc-800 tabular-nums text-right
                                      focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white"
                         />
-                        <span className="text-[12px] text-slate-600">개 이상 부족</span>
+                        <span className="text-[12px] text-zinc-600">개 이상 부족</span>
                       </div>
                     </div>
 
                     {/* 최근 한달 판매량 최소 */}
                     <div className="flex flex-col gap-1">
-                      <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider">한달 판매량 최소</span>
+                      <span className="text-[11px] font-black text-zinc-600 uppercase tracking-wider">한달 판매량 최소</span>
                       <div className="flex items-center gap-2">
                         <input
                           type="number" min={0} step={1}
@@ -1717,10 +1717,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                             setOrderNeedConfig(next);
                             try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(next)); } catch { /**/ }
                           }}
-                          className="w-20 h-8 px-2 border border-slate-200 rounded-lg text-[13px] font-bold text-slate-800 tabular-nums text-right
+                          className="w-20 h-8 px-2 border border-zinc-200 rounded-lg text-[13px] font-bold text-zinc-800 tabular-nums text-right
                                      focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white"
                         />
-                        <span className="text-[12px] text-slate-600">개 이상 · 0=미적용</span>
+                        <span className="text-[12px] text-zinc-600">개 이상 · 0=미적용</span>
                       </div>
                     </div>
                   </div>
@@ -1728,7 +1728,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
                 {/* 기본 정렬 */}
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider">기본 정렬</span>
+                  <span className="text-[11px] font-black text-zinc-600 uppercase tracking-wider">기본 정렬</span>
                   <div className="flex flex-wrap gap-1.5">
                     {([
                       { k: "sale_month" as OrderNeedDefaultSortKey, label: "한달 판매량" },
@@ -1752,7 +1752,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           "px-2.5 h-7 rounded-md text-[12px] font-bold border transition cursor-pointer",
                           orderNeedConfig.defaultSortKey === opt.k
                             ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                            : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600",
+                            : "bg-white text-zinc-600 border-zinc-200 hover:border-indigo-300 hover:text-indigo-600",
                         ].join(" ")}
                       >{opt.label}</button>
                     ))}
@@ -1772,8 +1772,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         className={[
                           "px-2.5 h-7 rounded-md text-[12px] font-bold border transition cursor-pointer",
                           orderNeedConfig.defaultSortDir === opt.k
-                            ? "bg-slate-700 text-white border-slate-700 shadow-sm"
-                            : "bg-white text-slate-500 border-slate-200 hover:border-slate-400 hover:text-slate-700",
+                            ? "bg-zinc-700 text-white border-zinc-700 shadow-sm"
+                            : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-400 hover:text-zinc-700",
                         ].join(" ")}
                       >{opt.label}</button>
                     ))}
@@ -1783,7 +1783,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 {/* 카테고리 초기값 + 전체 초기화 */}
                 <div className="flex flex-wrap items-end gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider">카테고리 초기값</span>
+                    <span className="text-[11px] font-black text-zinc-600 uppercase tracking-wider">카테고리 초기값</span>
                     <div className="flex flex-wrap gap-1">
                       {(["all", ...dbVendorCategories] as string[]).map(cat => {
                         const label = cat === "all" ? "전체" : cat;
@@ -1801,7 +1801,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                               "px-2.5 h-7 rounded-md text-[12px] font-bold border transition cursor-pointer",
                               orderNeedConfig.defaultCategory === cat
                                 ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                                : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600",
+                                : "bg-white text-zinc-600 border-zinc-200 hover:border-indigo-300 hover:text-indigo-600",
                             ].join(" ")}
                           >{label}</button>
                         );
@@ -1818,8 +1818,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       setNeedSortDir(DEFAULT_ORDER_NEED_CONFIG.defaultSortDir);
                       try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(DEFAULT_ORDER_NEED_CONFIG)); } catch { /**/ }
                     }}
-                    className="inline-flex items-center gap-1.5 h-7 px-3 rounded-md border border-slate-300 bg-white
-                               text-[11px] font-bold text-slate-600 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50
+                    className="inline-flex items-center gap-1.5 h-7 px-3 rounded-md border border-zinc-300 bg-white
+                               text-[11px] font-bold text-zinc-600 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50
                                transition cursor-pointer shrink-0"
                     title="발주판정 설정 기본값으로 초기화"
                   >
@@ -1839,7 +1839,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
               style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? needPanelWidth : undefined }}
             >
-          <section className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
+          <section className="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
         {!lowStockCollapsed && (<>
         {productsLoading && lowStock.length > 0 && (
           <div className="flex items-center justify-center gap-1.5 py-1.5 mx-3 mb-1 bg-sky-50 border border-sky-200 rounded-md shrink-0">
@@ -1847,16 +1847,16 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           </div>
         )}
         {productsLoading && lowStock.length === 0 ? (
-          <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+          <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
         ) : lowStock.length === 0 ? (
-          <div className="text-center text-[11px] text-slate-300 py-6">발주 필요 상품 없음</div>
+          <div className="text-center text-[11px] text-zinc-300 py-6">발주 필요 상품 없음</div>
         ) : (
           <>
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <span className="inline-block w-1 h-3.5 rounded-full bg-rose-500 shrink-0"></span>
             {/* 2026-08-10 · 사용자 요청 · 발주필요 리스트 + 건수 · 폰트 +2 (13→15) */}
             <span className="text-[15px] font-black text-rose-600">발주필요 리스트</span>
-            <span className="text-[15px] text-slate-400 font-normal">{lowStockFiltered.length}건</span>
+            <span className="text-[15px] text-zinc-400 font-normal">{lowStockFiltered.length}건</span>
             {/* 2026-08-10 · 사용자 요청 · 일괄 발주요청 (체크박스 선택 · 복원) */}
             {selectedLowStock.size > 0 && (
               <span className="inline-flex items-center gap-1 text-[11px] font-black text-white bg-rose-500 rounded-full px-2 py-0.5 tabular-nums">
@@ -1873,7 +1873,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     setSelectedLowStock(new Set(lowStockFiltered.map(p => getCode(p))));
                   }
                 }}
-                className="inline-flex items-center h-7 px-1.5 rounded text-[12px] font-medium text-slate-500 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer shrink-0"
+                className="inline-flex items-center h-7 px-1.5 rounded text-[12px] font-medium text-zinc-500 border border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300 transition-colors cursor-pointer shrink-0"
               >
                 전체선택
               </button>
@@ -1892,9 +1892,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             {/* 2026-08-10 · 사용자 요청 · 카테고리 헤더 폰트 +2 (10→12) · 데이터 행 +1 ([&_tbody_td]:text-[13px]) */}
             <table className="w-full text-[13px] sm:min-w-[540px] [&_tbody_td]:text-[13px]">
               <thead className="sticky top-0 bg-white z-10">
-                <tr className="border-b border-slate-200 text-[12px] font-black uppercase tracking-wider">
+                <tr className="border-b border-zinc-200 text-[12px] font-black uppercase tracking-wider">
                   <th colSpan={isNeedCollapsed("info") ? 1 : 2}
-                    className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-sky-100 transition"
+                    className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-zinc-100 cursor-pointer select-none hover:bg-sky-100 transition"
                     onClick={() => toggleNeedGroup("info")}
                     title={isNeedCollapsed("info") ? "상품 정보 펼치기" : "상품 정보 접기"}>
                     <span className="inline-flex items-center gap-1">
@@ -1902,16 +1902,16 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     </span>
                   </th>
                   <th colSpan={isNeedCollapsed("stock") ? 1 : 4}
-                    className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-amber-100 transition"
+                    className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-zinc-100 cursor-pointer select-none hover:bg-amber-100 transition"
                     onClick={() => toggleNeedGroup("stock")}
                     title={isNeedCollapsed("stock") ? "재고 현황 펼치기" : "재고 현황 접기"}>
                     <span className="inline-flex items-center gap-1">
                       {isNeedCollapsed("stock") ? <ChevronRight size={14} /> : <ChevronDown size={14} />}재고 현황
                     </span>
                   </th>
-                  <th className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-l border-slate-100">발주 액션</th>
+                  <th className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-l border-zinc-100">발주 액션</th>
                 </tr>
-                <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
+                <tr className="border-b border-zinc-100 text-[11px] text-zinc-400 uppercase tracking-wider">
                   {isNeedCollapsed("info") ? (
                     <th className="bg-sky-50/20 w-4"></th>
                   ) : (
@@ -1926,10 +1926,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   ) : (
                     <>
                       {/* 2026-08-10 · 사용자 요청 · 매입주기 컬럼 제거 */}
-                      <th onClick={() => handleNeedSort("current")} title="ERP재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none"><div className="leading-tight">ERP<br/>재고{needArrow("current")}<br/><span className="text-[10px] text-slate-400 font-normal">(현재고)</span></div></th>
+                      <th onClick={() => handleNeedSort("current")} title="ERP재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-zinc-500 cursor-pointer hover:bg-amber-100 select-none"><div className="leading-tight">ERP<br/>재고{needArrow("current")}<br/><span className="text-[10px] text-zinc-400 font-normal">(현재고)</span></div></th>
                       {/* 실재고 (합계) · 각 row 별 [상세] 버튼으로 창고1/2·매장1/2/3 확장 · #217 */}
                       <th onClick={() => handleNeedSort("inv")} title="실재고 합계 정렬 · 각 행의 [상세]로 창고1/2·매장1/2/3 확인" className="text-right px-0.5 py-1.5 w-20 bg-violet-50/40 text-violet-500 cursor-pointer hover:bg-violet-100 select-none">
-                        <div className="leading-tight">실재고{needArrow("inv")}<br/><span className="text-[9px] text-slate-400 font-normal">(합계)</span></div>
+                        <div className="leading-tight">실재고{needArrow("inv")}<br/><span className="text-[9px] text-zinc-400 font-normal">(합계)</span></div>
                       </th>
                       {/* 적정재고 · 2026-08-04 · 사용자 요청 · 추천적정재고 → 적정재고 리네임 */}
                       <th onClick={() => handleNeedSort("optimal")} title="적정재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-indigo-50/40 text-indigo-600 cursor-pointer hover:bg-indigo-100 select-none"><div className="leading-tight">적정재고{needArrow("optimal")}</div></th>
@@ -1940,7 +1940,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   <th className="text-center px-0.5 py-1.5 w-20 cursor-default bg-emerald-50/30 text-emerald-600">발주</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-zinc-50">
                 {/* 합계 요약 행 · 필터된 visible rows 기준 */}
                 {(() => {
                   let sumCur = 0, sumInv = 0, sumOpt = 0, sumShort = 0;
@@ -1956,27 +1956,27 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     if (invR && Number.isFinite(invR.total)) { sumInv += Number(invR.total); invCount++; }
                   }
                   return (
-                    <tr className="bg-slate-100 border-b-2 border-slate-300 font-black text-slate-800 text-[12px]">
+                    <tr className="bg-zinc-100 border-b-2 border-zinc-300 font-black text-zinc-800 text-[12px]">
                       {isNeedCollapsed("info") ? (
-                        <td className="bg-slate-100" />
+                        <td className="bg-zinc-100" />
                       ) : (
                         <>
-                          <td className="text-left px-1 py-1.5 text-slate-500 font-bold">Σ</td>
-                          <td className="text-left px-1 py-1.5 text-slate-800 font-black">합계 <span className="text-slate-500 font-bold">({lowStockFiltered.length}건)</span></td>
+                          <td className="text-left px-1 py-1.5 text-zinc-500 font-bold">Σ</td>
+                          <td className="text-left px-1 py-1.5 text-zinc-800 font-black">합계 <span className="text-zinc-500 font-bold">({lowStockFiltered.length}건)</span></td>
                         </>
                       )}
                       {isNeedCollapsed("stock") ? (
-                        <td className="bg-slate-100" />
+                        <td className="bg-zinc-100" />
                       ) : (
                         <>
-                          <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-slate-800 bg-slate-100">{sumCur.toLocaleString()}</td>
+                          <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-zinc-800 bg-zinc-100">{sumCur.toLocaleString()}</td>
                           <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-violet-700 bg-violet-100/60" title={`실재고 입력된 상품 ${invCount}건 합계`}>{invCount > 0 ? sumInv.toLocaleString() : "-"}</td>
                           <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-indigo-700 bg-indigo-100/60">{sumOpt.toLocaleString()}</td>
                           <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-rose-700 bg-rose-100/60">-{sumShort.toLocaleString()}</td>
                         </>
                       )}
                       {/* 2026-08-10 · 매입주기 컬럼 제거 (사용자 요청) */}
-                      <td className="bg-slate-100" />
+                      <td className="bg-zinc-100" />
                     </tr>
                   );
                 })()}
@@ -2049,7 +2049,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           <td className="px-0.5 py-1.5 align-middle">
                             <button
                               onClick={() => setNeedPanelProduct({ code, name })}
-                              className="text-left text-[13px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
+                              className="text-left text-[13px] font-medium text-zinc-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
                               title="상품 상세정보 조회"
                             >{name || "(상품명 없음)"}</button>
                           </td>
@@ -2060,9 +2060,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         <td className="bg-amber-50/10 w-4"></td>
                       ) : (
                         <>
-                          <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-slate-50/40 align-middle">{cur}</td>
+                          <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-zinc-700 bg-zinc-50/40 align-middle">{cur}</td>
                           <td
-                            className={`text-right px-0.5 py-1.5 tabular-nums font-black text-[12px] bg-violet-50/40 align-middle ${inv ? "text-violet-700" : "text-slate-300"}`}
+                            className={`text-right px-0.5 py-1.5 tabular-nums font-black text-[12px] bg-violet-50/40 align-middle ${inv ? "text-violet-700" : "text-zinc-300"}`}
                             title={inv ? `창고1 ${inv.w1 ?? "-"} · 창고2 ${inv.w2 ?? "-"} · 매장1 ${inv.s1 ?? "-"} · 매장2 ${inv.s2 ?? "-"} · 매장3 ${inv.s3 ?? "-"} = ${inv.total}` : "실재고 미입력"}
                           >
                             {inv ? inv.total : "—"}
@@ -2093,7 +2093,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   );
                 })}
                 {lowStockFiltered.length === 0 && (
-                  <tr><td colSpan={13} className="text-center text-[11px] text-slate-300 py-6">검색 결과 없음</td></tr>
+                  <tr><td colSpan={13} className="text-center text-[11px] text-zinc-300 py-6">검색 결과 없음</td></tr>
                 )}
               </tbody>
             </table>
@@ -2106,9 +2106,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
         {/* 리사이즈 핸들 (데스크탑만) */}
         <div onMouseDown={onNeedResizeStart}
-          className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-amber-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
+          className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-amber-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
           title="드래그하여 폭 조절">
-          <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+          <span className="text-[9px] text-zinc-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
         </div>
 
         {/* 우측: 상품 상세 · ProductDetailRightPanel (공용) */}
@@ -2120,7 +2120,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           </div>
         ) : needPanelError ? (
           <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0">
-            <div className="bg-white rounded-xl border border-slate-200 p-4 text-sm text-red-700">
+            <div className="bg-white rounded-xl border border-zinc-200 p-4 text-sm text-red-700">
               <div className="font-bold mb-1">조회 실패</div>
               <div className="text-[11px] font-mono">{needPanelError}</div>
             </div>
@@ -2150,10 +2150,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           {/* ── 품절임박 서브탭 · 2026-08-06 · ERP재고 기준 (사용자 요청) ── */}
           {purchaseOrderSubTab === "critical" && (
             <div className="flex flex-col gap-2">
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex items-center gap-2 flex-wrap">
+              <div className="bg-white rounded-xl border border-zinc-200 shadow-sm px-4 py-3 flex items-center gap-2 flex-wrap">
                 <AlertTriangle size={16} className="text-amber-500 shrink-0" />
-                <span className="text-[13px] font-black text-slate-800">품절임박</span>
-                <span className="text-[11px] text-slate-500">ERP재고 3개 이하</span>
+                <span className="text-[13px] font-black text-zinc-800">품절임박</span>
+                <span className="text-[11px] text-zinc-500">ERP재고 3개 이하</span>
                 {(() => {
                   const critical = products.filter(p => {
                     const cur = Number(p.current_stock ?? NaN);
@@ -2167,19 +2167,19 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   );
                 })()}
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
                 <table className="w-full text-[12px] tabular-nums">
-                  <thead className="bg-slate-50/80 text-[11px] font-black text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                  <thead className="bg-zinc-50/80 text-[11px] font-black text-zinc-500 uppercase tracking-wider border-b border-zinc-200">
                     <tr>
                       <th className="text-left px-3 py-2 w-[110px]">공급사</th>
                       <th className="text-left px-3 py-2">상품명</th>
                       <th className="text-right px-3 py-2 w-[70px] bg-amber-50/40 text-amber-700">실재고</th>
-                      <th className="text-right px-3 py-2 w-[70px] text-slate-500">ERP재고</th>
+                      <th className="text-right px-3 py-2 w-[70px] text-zinc-500">ERP재고</th>
                       <th className="text-right px-3 py-2 w-[70px] text-indigo-600">적정재고</th>
                       <th className="text-center px-3 py-2 w-[80px]">발주</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-zinc-100">
                     {(() => {
                       const critical = products
                         .filter(p => {
@@ -2190,7 +2190,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         .sort((a, b) => Number(a.current_stock ?? 0) - Number(b.current_stock ?? 0));
                       if (critical.length === 0) {
                         return (
-                          <tr><td colSpan={6} className="text-center text-[12px] text-slate-400 py-8">품절임박 상품 없음 (ERP재고 3개 이하)</td></tr>
+                          <tr><td colSpan={6} className="text-center text-[12px] text-zinc-400 py-8">품절임박 상품 없음 (ERP재고 3개 이하)</td></tr>
                         );
                       }
                       return critical.map(p => {
@@ -2201,11 +2201,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         const alreadyRequested = orderReqs.some(r => r.product_code === code);
                         const curNum = Number(p.current_stock ?? 0);
                         return (
-                          <tr key={code} className={`${curNum <= 0 ? "bg-rose-50/40 hover:bg-rose-50" : "hover:bg-slate-50"}`}>
-                            <td className="px-3 py-1.5 text-[12px] text-slate-700 truncate max-w-[110px]" title={supplier}>{supplier}</td>
-                            <td className="px-3 py-1.5 text-[13px] font-semibold text-slate-800 truncate">{name}</td>
-                            <td className={`px-3 py-1.5 text-right ${inv?.total != null ? "text-amber-700" : "text-slate-300"}`}>{inv?.total ?? "-"}</td>
-                            <td className={`px-3 py-1.5 text-right font-black ${curNum <= 0 ? "text-rose-700" : "text-slate-700"}`}>{p.current_stock ?? "-"}</td>
+                          <tr key={code} className={`${curNum <= 0 ? "bg-rose-50/40 hover:bg-rose-50" : "hover:bg-zinc-50"}`}>
+                            <td className="px-3 py-1.5 text-[12px] text-zinc-700 truncate max-w-[110px]" title={supplier}>{supplier}</td>
+                            <td className="px-3 py-1.5 text-[13px] font-semibold text-zinc-800 truncate">{name}</td>
+                            <td className={`px-3 py-1.5 text-right ${inv?.total != null ? "text-amber-700" : "text-zinc-300"}`}>{inv?.total ?? "-"}</td>
+                            <td className={`px-3 py-1.5 text-right font-black ${curNum <= 0 ? "text-rose-700" : "text-zinc-700"}`}>{p.current_stock ?? "-"}</td>
                             <td className="px-3 py-1.5 text-right text-indigo-700 font-bold">{p.optimal_stock ?? "-"}</td>
                             <td className="px-3 py-1.5 text-center">
                               <button
@@ -2339,21 +2339,21 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               </div>
               {/* 리사이즈 핸들 */}
               <div onMouseDown={onVendorResizeStart}
-                className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-teal-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
+                className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-teal-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
                 title="드래그하여 폭 조절">
-                <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+                <span className="text-[9px] text-zinc-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
               </div>
               {/* 우측: 선택 공급사 상세 (VendorDetailTabs — 헤더 + 2탭) */}
-              <div className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 overflow-y-auto lg:relative ${vendorSelected ? "fixed inset-0 z-50 bg-slate-50 p-3 lg:static lg:z-auto lg:bg-transparent lg:p-0 lg:overflow-visible" : ""}`}>
+              <div className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 overflow-y-auto lg:relative ${vendorSelected ? "fixed inset-0 z-50 bg-zinc-50 p-3 lg:static lg:z-auto lg:bg-transparent lg:p-0 lg:overflow-visible" : ""}`}>
                 {vendorSelected && (
-                  <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-slate-200 shadow-md -mx-3 px-3 py-2 mb-1 flex items-center gap-2">
+                  <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-zinc-200 shadow-md -mx-3 px-3 py-2 mb-1 flex items-center gap-2">
                     <button type="button" onClick={() => setVendorSelected(null)}
-                      className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer shrink-0" title="닫기">
+                      className="w-8 h-8 rounded-lg bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-zinc-600 cursor-pointer shrink-0" title="닫기">
                       <span className="text-lg font-black">×</span>
                     </button>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-black text-slate-800 leading-tight">{vendorSelected.company_name}</div>
-                      <div className="text-[10px] text-slate-500">공급사 상세 · 결제잔고 · 매입이력</div>
+                      <div className="text-[13px] font-black text-zinc-800 leading-tight">{vendorSelected.company_name}</div>
+                      <div className="text-[10px] text-zinc-500">공급사 상세 · 결제잔고 · 매입이력</div>
                     </div>
                     <button type="button"
                       onClick={() => setVendorSelected(null)}
@@ -2432,11 +2432,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {topTab === "purchase-order" && purchaseOrderSubTab === "order" && (
         <div className="flex flex-col gap-2">
           {/* 2026-08-10 · 사용자 요청 · PC 한 줄 · 모바일 wrap 2줄 (flex-wrap · lg+ 는 flex-nowrap 유도 · gap 자연 wrap) */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div className="bg-white rounded-xl border border-zinc-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2">
             {/* 제목 + 카운트 · 2026-08-10 · 폰트 +1 (15→17 · 13→15) */}
             <div className="flex items-center gap-2 shrink-0">
               <ShoppingCart size={17} className="text-rose-500 shrink-0" />
-              <span className="text-[17px] font-semibold text-slate-800">발주 요청 목록</span>
+              <span className="text-[17px] font-semibold text-zinc-800">발주 요청 목록</span>
               <span className="text-[15px] font-semibold text-rose-600 bg-rose-50 rounded-full px-2 py-0.5 border border-rose-200 tabular-nums">{orderReqs.length}건</span>
               {selectedOrder.size > 0 && (
                 <span className="text-[15px] font-semibold bg-rose-500 text-white rounded-full px-2 py-0.5 tabular-nums">선택 {selectedOrder.size}</span>
@@ -2448,27 +2448,27 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               value={orderSearch}
               onChange={e => setOrderSearch(e.target.value)}
               placeholder="상품·코드·공급사"
-              className="text-[15px] border border-slate-200 rounded-md pl-3 pr-3 h-9 flex-1 min-w-[140px] max-w-[240px] focus:outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 transition"
+              className="text-[15px] border border-zinc-200 rounded-md pl-3 pr-3 h-9 flex-1 min-w-[140px] max-w-[240px] focus:outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 transition"
             />
             {/* 2026-08-10 · 사용자 요청 · 일괄발주·전체선택 · 왼쪽 리스트 제목 옆으로 이동 · 툴바에는 분류 + 삭제만 */}
             <div className="flex items-center gap-2 flex-wrap">
               {/* 2026-08-10 · 사용자 요청 · 필터 컴팩트 · 여백 최소 (h-7 px-1.5 · text-14) */}
-              <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded p-px gap-px">
+              <div className="flex flex-wrap bg-zinc-50 border border-zinc-200 rounded p-px gap-px">
                 {(["all", ...dbVendorCategories] as string[]).map(cat => {
                   const active = orderCategoryFilter === cat;
                   const label = cat === "all" ? "전체" : cat;
                   const activeCls =
-                    cat === "all"    ? "bg-slate-700 text-white shadow-sm"
+                    cat === "all"    ? "bg-zinc-700 text-white shadow-sm"
                     : cat === "위탁"   ? "bg-violet-500 text-white shadow-sm"
                     : cat === "선결제" ? "bg-rose-500 text-white shadow-sm"
                     : cat === "60회전" ? "bg-emerald-500 text-white shadow-sm"
                     : cat === "90회전" ? "bg-teal-500 text-white shadow-sm"
-                    : "bg-slate-500 text-white shadow-sm";
+                    : "bg-zinc-500 text-white shadow-sm";
                   return (
                     <button key={cat}
                       type="button"
                       onClick={() => setOrderCategoryFilter(cat)}
-                      className={`h-7 px-1.5 text-[15px] font-medium rounded transition cursor-pointer ${active ? activeCls : "text-slate-500 hover:text-slate-700"}`}
+                      className={`h-7 px-1.5 text-[15px] font-medium rounded transition cursor-pointer ${active ? activeCls : "text-zinc-500 hover:text-zinc-700"}`}
                     >{label}</button>
                   );
                 })}
@@ -2488,7 +2488,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? orderPanelWidth : undefined }}
             >
           {/* 발주 요청 목록 */}
-          <section className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
+          <section className="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
         {orderError && (
           <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-[11px] text-red-600 font-bold">
             ⚠ {orderError}
@@ -2501,16 +2501,16 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           </div>
         )}
         {orderLoading && orderReqs.length === 0 ? (
-          <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+          <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
         ) : orderReqs.length === 0 && !orderError ? (
-          <div className="text-center text-[11px] text-slate-300 py-6">발주 요청 내역 없음</div>
+          <div className="text-center text-[11px] text-zinc-300 py-6">발주 요청 내역 없음</div>
         ) : (
           <>
           {/* 2026-08-10 · 사용자 요청 · 발주리스트 · 폰트 +2 · 일괄발주·전체선택 옆 배치 */}
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="inline-block w-1 h-4 rounded-full bg-rose-400 shrink-0"></span>
-            <span className="text-[15px] font-black text-slate-700">발주리스트</span>
-            <span className="text-[15px] text-slate-400 font-normal">{orderReqsFiltered.length}건</span>
+            <span className="text-[15px] font-black text-zinc-700">발주리스트</span>
+            <span className="text-[15px] text-zinc-400 font-normal">{orderReqsFiltered.length}건</span>
             <div className="flex items-center gap-1.5 ml-auto shrink-0">
               <button onClick={handleBulkOrder} disabled={sendingBulk || selectedOrder.size === 0}
                 className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[13px] font-black text-rose-800 bg-rose-100 border border-rose-300 hover:bg-rose-200 hover:border-rose-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer shrink-0 whitespace-nowrap"
@@ -2519,14 +2519,14 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 <span>{sendingBulk ? "발송 중" : `일괄 발주${selectedOrder.size > 0 ? ` (${selectedOrder.size})` : ""}`}</span>
               </button>
               <button onClick={toggleAll}
-                className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[12px] font-medium text-slate-500 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer shrink-0">
+                className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[12px] font-medium text-zinc-500 border border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300 transition-colors cursor-pointer shrink-0">
                 {allChecked ? <CheckSquare size={12} className="text-rose-500" /> : <Square size={12} />}
                 전체선택
               </button>
               {/* 2026-08-10 · 사용자 요청 · [선택삭제] 버튼 · 텍스트만 (아이콘 제거) */}
               <button onClick={async () => { if (selectedOrder.size > 0 && await confirm({ message: `${selectedOrder.size}건 삭제할까요?`, danger: true })) deleteOrder([...selectedOrder]); }}
                 disabled={selectedOrder.size === 0}
-                className="inline-flex items-center h-7 px-2 rounded-md text-[12px] font-medium text-slate-500 border border-slate-200 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shrink-0"
+                className="inline-flex items-center h-7 px-2 rounded-md text-[12px] font-medium text-zinc-500 border border-zinc-200 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shrink-0"
                 title="선택 항목 삭제">
                 선택삭제{selectedOrder.size > 0 ? ` (${selectedOrder.size})` : ""}
               </button>
@@ -2543,10 +2543,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               <thead className="sticky top-0 bg-white z-10">
                 {/* 그룹 카테고리 헤더 · 클릭으로 접기/펼치기 */}
                 {/* 2026-08-10 · 사용자 요청 · 상품정보 colSpan 2→1 (공급사 제거) · 발주 액션 컬럼 제거 */}
-                <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider">
-                  <th className="bg-slate-50 w-6"></th>
+                <tr className="border-b border-zinc-200 text-[10px] font-black uppercase tracking-wider">
+                  <th className="bg-zinc-50 w-6"></th>
                   <th colSpan={1}
-                    className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-sky-100 transition"
+                    className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-zinc-100 cursor-pointer select-none hover:bg-sky-100 transition"
                     onClick={() => toggleOrderGroup("info")}
                     title={isOrderGroupCollapsed("info") ? "상품 정보 펼치기" : "상품 정보 접기"}>
                     <span className="inline-flex items-center gap-1">
@@ -2554,7 +2554,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     </span>
                   </th>
                   <th colSpan={isOrderGroupCollapsed("stock") ? 1 : 3}
-                    className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-amber-100 transition"
+                    className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-zinc-100 cursor-pointer select-none hover:bg-amber-100 transition"
                     onClick={() => toggleOrderGroup("stock")}
                     title={isOrderGroupCollapsed("stock") ? "재고 현황 펼치기" : "재고 현황 접기"}>
                     <span className="inline-flex items-center gap-1">
@@ -2563,16 +2563,16 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   </th>
                   {/* 2026-08-10 · #39 · 발주정보 그룹 · 주문수량·이전사입가·발주금액 */}
                   <th colSpan={3}
-                    className="text-center py-1.5 bg-rose-50 text-rose-700 border-l border-slate-100">
+                    className="text-center py-1.5 bg-rose-50 text-rose-700 border-l border-zinc-100">
                     <span className="inline-flex items-center gap-1">발주 정보</span>
                   </th>
                 </tr>
-                <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
+                <tr className="border-b border-zinc-100 text-[11px] text-zinc-400 uppercase tracking-wider">
                   {/* 2026-08-06 · 사용자 요청 · 헤더 첫 컬럼 · 전체선택 체크박스 + 텍스트 */}
                   <th className="text-center px-0.5 py-1.5 w-6">
                     <button
                       onClick={toggleAll}
-                      className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-slate-500 hover:text-rose-600 transition cursor-pointer"
+                      className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-zinc-500 hover:text-rose-600 transition cursor-pointer"
                       title={allChecked ? "전체 선택 해제" : "전체 선택"}
                     >
                       {allChecked ? <CheckSquare size={11} className="text-rose-500" /> : <Square size={11} />}
@@ -2591,21 +2591,21 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     <th className="bg-amber-50/20 w-4"></th>
                   ) : (
                     <>
-                      <th onClick={() => handleOrderSort("current")} title="ERP재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none"><div className="leading-tight">ERP<br/>재고{orderArrow("current")}<br/><span className="text-[10px] text-slate-400 font-normal">(현재고)</span></div></th>
+                      <th onClick={() => handleOrderSort("current")} title="ERP재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-zinc-500 cursor-pointer hover:bg-amber-100 select-none"><div className="leading-tight">ERP<br/>재고{orderArrow("current")}<br/><span className="text-[10px] text-zinc-400 font-normal">(현재고)</span></div></th>
                       {/* 2026-08-06 · 실재고 헤더 주석처리 (사용자 요청 · 손실추적 참조 유도)
                       <th onClick={() => handleOrderSort("inv")} title="실재고 정렬" className="text-right px-0.5 py-1.5 w-16 bg-violet-50/40 text-violet-500 cursor-pointer hover:bg-violet-100 select-none">실재고{orderArrow("inv")}</th>
                       */}
-                      <th onClick={() => handleOrderSort("optimal")} title="추천적정재고 정렬" className="text-right px-0.5 py-1.5 w-12 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none">추천적정{orderArrow("optimal")}</th>
+                      <th onClick={() => handleOrderSort("optimal")} title="추천적정재고 정렬" className="text-right px-0.5 py-1.5 w-12 bg-amber-50/40 text-zinc-500 cursor-pointer hover:bg-amber-100 select-none">추천적정{orderArrow("optimal")}</th>
                       <th onClick={() => handleOrderSort("short")} title="부족량 정렬" className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">부족{orderArrow("short")}</th>
                     </>
                   )}
                   {/* 2026-08-10 · #39 · 발주정보 3컬럼 · 주문수량·이전사입가·발주금액 */}
                   <th className="text-right px-0.5 py-1.5 w-14 bg-rose-50/40 text-rose-600">주문<br/>수량</th>
-                  <th className="text-right px-0.5 py-1.5 w-16 bg-rose-50/40 text-slate-500"><div className="leading-tight">이전<br/>사입가</div></th>
+                  <th className="text-right px-0.5 py-1.5 w-16 bg-rose-50/40 text-zinc-500"><div className="leading-tight">이전<br/>사입가</div></th>
                   <th className="text-right px-0.5 py-1.5 w-20 bg-rose-50/40 text-emerald-700">발주금액</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-zinc-50">
                 {/* 2026-08-10 · #9·#17 · 공급사별 그룹 렌더 · 그룹 헤더에 [발주] 버튼 (해당 공급사 라인만 openOrderModal) */}
                 {(() => {
                   const resolveSup = (r: OrderRequest): string => {
@@ -2719,7 +2719,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       <td className="text-center px-0.5 py-1.5 align-top" onClick={(e) => { e.stopPropagation(); toggleOne(r.id); }}>
                         {selectedOrder.has(r.id)
                           ? <CheckSquare size={13} className="text-rose-500 inline cursor-pointer" />
-                          : <Square size={13} className="text-slate-300 hover:text-rose-500 inline cursor-pointer" />}
+                          : <Square size={13} className="text-zinc-300 hover:text-rose-500 inline cursor-pointer" />}
                       </td>
                       {/* 상품정보 그룹 · 2026-08-10 · 공급사 셀 제거 · 그룹 헤더로 통합 · 상품명만 · 헤더 padding 일치 */}
                       {isOrderGroupCollapsed("info") ? (
@@ -2728,7 +2728,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         <td className="px-0.5 py-1.5 align-top">
                           <button
                             onClick={() => setOrderPanelProduct({ code: r.product_code, name: r.product_name })}
-                            className="text-left text-[15px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words leading-snug cursor-pointer transition line-clamp-2"
+                            className="text-left text-[15px] font-medium text-zinc-800 hover:text-indigo-600 hover:underline break-words leading-snug cursor-pointer transition line-clamp-2"
                             title={r.product_name || "상품 상세정보 조회"}
                           >{r.product_name || "(상품명 없음)"}</button>
                         </td>
@@ -2739,15 +2739,15 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       ) : (
                         <>
                           <td
-                            className={`text-right px-0.5 py-1.5 tabular-nums font-bold text-[14px] bg-slate-50/40 align-middle whitespace-nowrap ${stockChanged ? "text-orange-600" : "text-slate-700"}`}
+                            className={`text-right px-0.5 py-1.5 tabular-nums font-bold text-[14px] bg-zinc-50/40 align-middle whitespace-nowrap ${stockChanged ? "text-orange-600" : "text-zinc-700"}`}
                             title={stockChanged ? `요청 당시 ${r.current_stock ?? "-"} → 현재 ${displayCurrentStock ?? "-"} (변동)` : "현재 ERP 재고 (실시간)"}
                           >
                             {displayCurrentStock ?? "-"}
-                            {stockChanged && <span className="text-[12px] font-normal text-slate-400 ml-1">({r.current_stock})</span>}
+                            {stockChanged && <span className="text-[12px] font-normal text-zinc-400 ml-1">({r.current_stock})</span>}
                           </td>
                           {/* 2026-08-06 · 실재고 셀 주석처리 (사용자 요청 · 손실추적 참조 유도)
                           <td
-                            className={`text-right px-0.5 py-1.5 tabular-nums font-black text-[12px] bg-violet-50/40 align-top ${inv ? "text-violet-700" : "text-slate-300"}`}
+                            className={`text-right px-0.5 py-1.5 tabular-nums font-black text-[12px] bg-violet-50/40 align-top ${inv ? "text-violet-700" : "text-zinc-300"}`}
                             title={inv ? `창고1 ${inv.w1 ?? "-"} · 창고2 ${inv.w2 ?? "-"} · 매장1 ${inv.s1 ?? "-"} · 매장2 ${inv.s2 ?? "-"} · 매장3 ${inv.s3 ?? "-"} = ${inv.total}` : "실재고 미입력"}
                           >
                             <div className="flex items-center justify-end gap-1">
@@ -2773,7 +2773,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           </td>
                           */}
                           {/* 2026-08-10 · align-top → align-middle · 다른 셀과 정렬 통일 */}
-                          <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[14px] text-slate-700 bg-slate-50/40 align-middle whitespace-nowrap">{displayOptimal ?? "-"}</td>
+                          <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[14px] text-zinc-700 bg-zinc-50/40 align-middle whitespace-nowrap">{displayOptimal ?? "-"}</td>
                           <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-middle whitespace-nowrap">
                             <span className="tabular-nums font-black text-[14px] text-rose-600">{displayShort > 0 ? `-${displayShort}` : "0"}</span>
                           </td>
@@ -2800,7 +2800,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                                 className="w-16 h-7 px-1 rounded border border-rose-200 bg-white text-right tabular-nums font-black text-[15px] text-rose-700 focus:outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400"
                               />
                             </td>
-                            <td className="text-right px-0.5 py-1.5 tabular-nums text-[14px] text-slate-500 bg-rose-50/20 align-middle whitespace-nowrap">{prevPrice != null ? prevPrice.toLocaleString() : "-"}</td>
+                            <td className="text-right px-0.5 py-1.5 tabular-nums text-[14px] text-zinc-500 bg-rose-50/20 align-middle whitespace-nowrap">{prevPrice != null ? prevPrice.toLocaleString() : "-"}</td>
                             <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-[15px] text-emerald-700 bg-rose-50/20 align-middle whitespace-nowrap">{amount != null ? amount.toLocaleString() : "-"}</td>
                           </>
                         );
@@ -2811,7 +2811,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   });
                 })()}
                 {orderReqsFiltered.length === 0 && (
-                  <tr><td colSpan={12} className="text-center text-[11px] text-slate-300 py-6">검색 결과 없음</td></tr>
+                  <tr><td colSpan={12} className="text-center text-[11px] text-zinc-300 py-6">검색 결과 없음</td></tr>
                 )}
               </tbody>
             </table>
@@ -2823,9 +2823,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
         {/* 리사이즈 핸들 (데스크탑만) */}
         <div onMouseDown={onOrderResizeStart}
-          className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-sky-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
+          className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-sky-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
           title="드래그하여 폭 조절">
-          <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+          <span className="text-[9px] text-zinc-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
         </div>
 
         {/* 우측: 상품 상세 · ProductDetailRightPanel (공용) */}
@@ -2837,7 +2837,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           </div>
         ) : orderPanelError ? (
           <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0">
-            <div className="bg-white rounded-xl border border-slate-200 p-4 text-sm text-red-700">
+            <div className="bg-white rounded-xl border border-zinc-200 p-4 text-sm text-red-700">
               <div className="font-bold mb-1">조회 실패</div>
               <div className="text-[11px] font-mono">{orderPanelError}</div>
             </div>
@@ -2869,7 +2869,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {/* 발주서 (Purchase Order) 모달 — 표준 발주 포맷 */}
       {orderModal && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto"
+          className="fixed inset-0 z-50 bg-zinc-900/50 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto"
           onClick={() => !sendingBulk && setOrderModal(null)}
         >
           <div
@@ -2877,49 +2877,49 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             {/* 헤더 */}
-            <div className="px-5 py-4 border-b border-slate-200 bg-rose-50 flex items-center justify-between gap-3">
+            <div className="px-5 py-4 border-b border-zinc-200 bg-rose-50 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-xl bg-rose-600 flex items-center justify-center shadow-md shrink-0">
                   <ShoppingCart size={18} className="text-white" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-base font-black text-slate-900 flex items-center gap-1 flex-wrap">
-                    발주서 {orderModal.suppliers.length > 1 && <span className="text-[11px] font-bold text-slate-500">· 공급사별 {orderModal.suppliers.length}건 개별 발주</span>}
+                  <div className="text-base font-black text-zinc-900 flex items-center gap-1 flex-wrap">
+                    발주서 {orderModal.suppliers.length > 1 && <span className="text-[11px] font-bold text-zinc-500">· 공급사별 {orderModal.suppliers.length}건 개별 발주</span>}
                   </div>
-                  <div className="text-[11px] font-mono text-slate-500 mt-0.5 truncate">{orderModal.suppliers.length > 1 ? "일괄 발송 · 각 공급사별 고유 번호" : `#${orderModal.suppliers[0]?.order_number ?? orderModal.orderNumber}`}</div>
+                  <div className="text-[11px] font-mono text-zinc-500 mt-0.5 truncate">{orderModal.suppliers.length > 1 ? "일괄 발송 · 각 공급사별 고유 번호" : `#${orderModal.suppliers[0]?.order_number ?? orderModal.orderNumber}`}</div>
                 </div>
               </div>
               <button
                 onClick={() => !sendingBulk && setOrderModal(null)}
                 disabled={sendingBulk}
-                className="text-slate-400 hover:text-slate-700 text-3xl font-black w-9 h-9 rounded-lg hover:bg-white/70 cursor-pointer flex items-center justify-center disabled:opacity-40 shrink-0"
+                className="text-zinc-400 hover:text-zinc-700 text-3xl font-black w-9 h-9 rounded-lg hover:bg-white/70 cursor-pointer flex items-center justify-center disabled:opacity-40 shrink-0"
               >×</button>
             </div>
 
             {/* 발주 기본 정보 · 2026-08-12 · 폰트 +4 (text-[11px] → text-[15px]) */}
-            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 grid grid-cols-2 sm:grid-cols-4 gap-3 text-[15px]">
+            <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50/50 grid grid-cols-2 sm:grid-cols-4 gap-3 text-[15px]">
               <div>
-                <label className="text-slate-500 font-black block mb-1">발주일자</label>
+                <label className="text-zinc-500 font-black block mb-1">발주일자</label>
                 <input type="date" value={orderModal.orderDate} onChange={e => setOrderModal(p => p && ({ ...p, orderDate: e.target.value }))}
-                  className="w-full border border-slate-200 rounded px-2 py-1 focus:outline-none focus:border-red-400 font-mono"/>
+                  className="w-full border border-zinc-200 rounded px-2 py-1 focus:outline-none focus:border-red-400 font-mono"/>
               </div>
               <div>
-                <label className="text-slate-500 font-black block mb-1">희망 입고일</label>
+                <label className="text-zinc-500 font-black block mb-1">희망 입고일</label>
                 <input type="date" value={orderModal.desiredArrival} onChange={e => setOrderModal(p => p && ({ ...p, desiredArrival: e.target.value }))}
-                  className="w-full border border-slate-200 rounded px-2 py-1 focus:outline-none focus:border-red-400 font-mono"/>
+                  className="w-full border border-zinc-200 rounded px-2 py-1 focus:outline-none focus:border-red-400 font-mono"/>
               </div>
               <div className="col-span-2">
-                <label className="text-slate-500 font-black block mb-1">수신처</label>
-                <div className="border border-slate-200 rounded px-2 py-1 bg-white text-slate-700 font-semibold">🏪 오산 메가타운 약국</div>
+                <label className="text-zinc-500 font-black block mb-1">수신처</label>
+                <div className="border border-zinc-200 rounded px-2 py-1 bg-white text-zinc-700 font-semibold">🏪 오산 메가타운 약국</div>
               </div>
             </div>
 
             {/* 2026-08-12 · 사용자 지시 · 일괄 발주 · 여러 카드 → 하나의 리스트 · 공급사 그룹 헤더 + 소계 rows */}
-            <div className="flex-1 overflow-y-auto max-h-[45vh] px-6 py-4 bg-slate-50/30">
-              <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <div className="flex-1 overflow-y-auto max-h-[45vh] px-6 py-4 bg-zinc-50/30">
+              <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden shadow-sm">
                 <table className="w-full text-[17px]">
                   <thead>
-                    <tr className="bg-slate-100 text-slate-500 font-black uppercase tracking-wide text-[15px] border-b border-slate-200 sticky top-0 z-10">
+                    <tr className="bg-zinc-100 text-zinc-500 font-black uppercase tracking-wide text-[15px] border-b border-zinc-200 sticky top-0 z-10">
                       <th className="text-center p-2 w-8">#</th>
                       <th className="text-left p-2 w-56">상품</th>
                       <th className="text-right p-2 w-20">발주수량</th>
@@ -2939,43 +2939,43 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                             <td colSpan={6} className="px-3 py-2">
                               <div className="flex items-baseline gap-x-3 gap-y-1 flex-wrap">
                                 <span className="text-[11px] font-black text-sky-600 bg-white border border-sky-200 rounded-full px-2 py-0.5 shrink-0">공급사</span>
-                                <span className="text-[16px] font-black text-slate-900">{s.supplier}</span>
+                                <span className="text-[16px] font-black text-zinc-900">{s.supplier}</span>
                                 <span className="text-[11px] font-mono text-indigo-600 bg-white border border-indigo-200 rounded px-1.5 py-0.5 shrink-0">#{s.order_number}</span>
                                 {s.supplier_contact && (
-                                  <span className="text-[13px] font-semibold text-slate-700">👤 {s.supplier_contact}</span>
+                                  <span className="text-[13px] font-semibold text-zinc-700">👤 {s.supplier_contact}</span>
                                 )}
                                 {s.supplier_phone && (
-                                  <a href={`tel:${String(s.supplier_phone).replace(/[^0-9+]/g, "")}`} className="text-[13px] font-semibold text-slate-700 tabular-nums hover:text-emerald-700 hover:underline inline-flex items-center gap-1">
+                                  <a href={`tel:${String(s.supplier_phone).replace(/[^0-9+]/g, "")}`} className="text-[13px] font-semibold text-zinc-700 tabular-nums hover:text-emerald-700 hover:underline inline-flex items-center gap-1">
                                     <MessageSquare size={12}/>{s.supplier_phone}
                                   </a>
                                 )}
                                 {s.supplier_email && (
-                                  <a href={`mailto:${s.supplier_email}`} className="text-[13px] font-semibold text-slate-700 hover:text-emerald-700 hover:underline inline-flex items-center gap-1">
+                                  <a href={`mailto:${s.supplier_email}`} className="text-[13px] font-semibold text-zinc-700 hover:text-emerald-700 hover:underline inline-flex items-center gap-1">
                                     <Mail size={12}/>{s.supplier_email}
                                   </a>
                                 )}
-                                <span className="ml-auto text-[11px] font-bold text-slate-500 tabular-nums">{s.items.length}개 상품</span>
+                                <span className="ml-auto text-[11px] font-bold text-zinc-500 tabular-nums">{s.items.length}개 상품</span>
                               </div>
                             </td>
                           </tr>
                           {/* 상품 rows */}
                           {s.items.map((it, iIdx) => (
-                            <tr key={it.order_request_id} className="hover:bg-slate-50/70 border-b border-slate-100">
-                              <td className="p-2 text-center text-slate-400 font-black">{iIdx + 1}</td>
+                            <tr key={it.order_request_id} className="hover:bg-zinc-50/70 border-b border-zinc-100">
+                              <td className="p-2 text-center text-zinc-400 font-black">{iIdx + 1}</td>
                               <td className="p-2 leading-tight">
-                                <div className="font-mono text-[12px] text-slate-400">{it.product_code}</div>
-                                <div className="font-bold text-slate-800 break-words whitespace-normal">{it.product_name}</div>
+                                <div className="font-mono text-[12px] text-zinc-400">{it.product_code}</div>
+                                <div className="font-bold text-zinc-800 break-words whitespace-normal">{it.product_name}</div>
                               </td>
                               <td className="p-2 text-right">
                                 <input type="number" min={1} value={it.order_qty}
                                   onChange={e => updateModalItem(sIdx, iIdx, { order_qty: Math.max(0, Number(e.target.value) || 0) })}
-                                  className="w-16 border border-slate-200 rounded px-1.5 py-0.5 text-right font-mono font-black text-red-600 focus:outline-none focus:border-red-400"/>
+                                  className="w-16 border border-zinc-200 rounded px-1.5 py-0.5 text-right font-mono font-black text-red-600 focus:outline-none focus:border-red-400"/>
                               </td>
                               <td className="p-2 text-right">
                                 <input type="number" min={0} value={it.unit_price ?? ""}
                                   onChange={e => updateModalItem(sIdx, iIdx, { unit_price: e.target.value === "" ? null : Number(e.target.value) })}
                                   placeholder={it.prev_unit_price != null ? String(it.prev_unit_price) : "0"}
-                                  className="w-24 border border-slate-200 rounded px-1.5 py-0.5 text-right font-mono focus:outline-none focus:border-red-400"/>
+                                  className="w-24 border border-zinc-200 rounded px-1.5 py-0.5 text-right font-mono focus:outline-none focus:border-red-400"/>
                               </td>
                               <td className="p-2 text-right font-mono font-black text-emerald-700">
                                 {it.unit_price ? (it.order_qty * it.unit_price).toLocaleString() + "원" : "-"}
@@ -2984,13 +2984,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                                 <input type="text" value={it.memo ?? ""}
                                   onChange={e => updateModalItem(sIdx, iIdx, { memo: e.target.value })}
                                   placeholder="(선택)"
-                                  className="w-full border border-slate-200 rounded px-1.5 py-0.5 text-[12px] focus:outline-none focus:border-red-400"/>
+                                  className="w-full border border-zinc-200 rounded px-1.5 py-0.5 text-[12px] focus:outline-none focus:border-red-400"/>
                               </td>
                             </tr>
                           ))}
                           {/* 공급사 소계 row */}
-                          <tr className="bg-slate-50 border-b-2 border-slate-300 font-black text-[15px]">
-                            <td colSpan={3} className="p-2 text-right text-slate-500 uppercase">{s.supplier} 소계</td>
+                          <tr className="bg-zinc-50 border-b-2 border-zinc-300 font-black text-[15px]">
+                            <td colSpan={3} className="p-2 text-right text-zinc-500 uppercase">{s.supplier} 소계</td>
                             <td className="p-2 text-right text-red-600 font-mono">{totalQty}개</td>
                             <td></td>
                             <td className="p-2 text-right text-emerald-700 font-mono">{totalAmount > 0 ? totalAmount.toLocaleString() + "원" : "-"}</td>
@@ -3004,29 +3004,29 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             </div>
 
             {/* 발송 채널 (전역) · 특이사항 memo 제거 (비고 컬럼 사용) */}
-            <div className="px-6 py-3 border-t border-slate-100 bg-slate-50/50">
+            <div className="px-6 py-3 border-t border-zinc-100 bg-zinc-50/50">
               <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-center">
-                <div className="text-[15px] text-slate-400">
+                <div className="text-[15px] text-zinc-400">
                   각 상품 비고 컬럼에 개별 메모 입력 가능
                 </div>
                 {/* 발송 채널 · 2026-08-12 · 폰트 +4 */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[15px] text-slate-500 font-black block">발송 채널</label>
+                  <label className="text-[15px] text-zinc-500 font-black block">발송 채널</label>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {/* 2026-08-10 · 물류팀장에게 PDF 카톡 발송 · 기본 체크 */}
-                    <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${notifyLogisticsLeader ? "bg-indigo-50 text-indigo-700 border-indigo-300" : "bg-white text-slate-400 border-slate-200"}`} title="체크 시 · 관리자(물류팀장)에게 발주서 PDF 카톡 전송">
+                    <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${notifyLogisticsLeader ? "bg-indigo-50 text-indigo-700 border-indigo-300" : "bg-white text-zinc-400 border-zinc-200"}`} title="체크 시 · 관리자(물류팀장)에게 발주서 PDF 카톡 전송">
                       <input type="checkbox" checked={notifyLogisticsLeader} onChange={e => setNotifyLogisticsLeader(e.target.checked)} className="w-3 h-3"/>
                       📋 물류팀장 발송 (PDF)
                     </label>
-                    <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.kakao ? "bg-yellow-50 text-yellow-700 border-yellow-300" : "bg-white text-slate-400 border-slate-200"}`} title="SolAPI 알림톡 (사업자 인증·템플릿·env 필요)">
+                    <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.kakao ? "bg-yellow-50 text-yellow-700 border-yellow-300" : "bg-white text-zinc-400 border-zinc-200"}`} title="SolAPI 알림톡 (사업자 인증·템플릿·env 필요)">
                       <input type="checkbox" checked={orderModal.channels.kakao} onChange={e => setOrderModal(p => p && ({ ...p, channels: { ...p.channels, kakao: e.target.checked } }))} className="w-3 h-3"/>
                       💬 카카오톡
                     </label>
-                    <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.email ? "bg-emerald-50 text-emerald-700 border-emerald-300" : "bg-white text-slate-400 border-slate-200"}`}>
+                    <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.email ? "bg-emerald-50 text-emerald-700 border-emerald-300" : "bg-white text-zinc-400 border-zinc-200"}`}>
                       <input type="checkbox" checked={orderModal.channels.email} onChange={e => setOrderModal(p => p && ({ ...p, channels: { ...p.channels, email: e.target.checked } }))} className="w-3 h-3"/>
                       <Mail size={11}/> 이메일
                     </label>
-                    <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.sms ? "bg-sky-50 text-sky-700 border-sky-300" : "bg-white text-slate-400 border-slate-200"}`}>
+                    <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.sms ? "bg-sky-50 text-sky-700 border-sky-300" : "bg-white text-zinc-400 border-zinc-200"}`}>
                       <input type="checkbox" checked={orderModal.channels.sms} onChange={e => setOrderModal(p => p && ({ ...p, channels: { ...p.channels, sms: e.target.checked } }))} className="w-3 h-3"/>
                       <MessageSquare size={11}/> 문자
                     </label>
@@ -3036,7 +3036,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             </div>
 
             {/* 2026-08-10 · 통합 발주 요약 + 담당자 지정 · 액션 버튼 */}
-            <div className="px-6 py-4 border-t border-slate-200 bg-white flex flex-col gap-3">
+            <div className="px-6 py-4 border-t border-zinc-200 bg-white flex flex-col gap-3">
               {/* 통합 요약 · 총 공급사·상품·금액 */}
               {(() => {
                 const totalSuppliers = orderModal.suppliers.length;
@@ -3046,19 +3046,19 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 return (
                   <div className="flex items-baseline gap-x-4 gap-y-1 flex-wrap text-[17px]">
                     <span className="inline-flex items-baseline gap-1">
-                      <span className="text-slate-400">총 공급사</span>
-                      <span className="font-black text-slate-800 tabular-nums">{totalSuppliers}</span>
+                      <span className="text-zinc-400">총 공급사</span>
+                      <span className="font-black text-zinc-800 tabular-nums">{totalSuppliers}</span>
                     </span>
                     <span className="inline-flex items-baseline gap-1">
-                      <span className="text-slate-400">상품</span>
-                      <span className="font-black text-slate-800 tabular-nums">{totalItems}</span>
+                      <span className="text-zinc-400">상품</span>
+                      <span className="font-black text-zinc-800 tabular-nums">{totalItems}</span>
                     </span>
                     <span className="inline-flex items-baseline gap-1">
-                      <span className="text-slate-400">수량</span>
+                      <span className="text-zinc-400">수량</span>
                       <span className="font-black text-rose-700 tabular-nums">{totalQty}</span>
                     </span>
                     <span className="inline-flex items-baseline gap-1">
-                      <span className="text-slate-400">금액</span>
+                      <span className="text-zinc-400">금액</span>
                       <span className="font-black text-emerald-700 tabular-nums">{totalAmt > 0 ? totalAmt.toLocaleString() + "원" : "-"}</span>
                     </span>
                   </div>
@@ -3070,7 +3070,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 <button
                   onClick={() => setOrderModal(null)}
                   disabled={sendingBulk}
-                  className="h-8 px-3 rounded-md text-[13px] font-semibold text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 cursor-pointer disabled:opacity-40"
+                  className="h-8 px-3 rounded-md text-[13px] font-semibold text-zinc-600 bg-white border border-zinc-300 hover:bg-zinc-50 cursor-pointer disabled:opacity-40"
                 >취소</button>
                 <button
                   onClick={submitOrderModal}
@@ -3089,31 +3089,31 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {/* 상품 상세정보 모달 (상품명 클릭 시) */}
       {detailProduct && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-zinc-900/50 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => { setDetailProduct(null); reloadAllProductsMap(); loadInvMap(); loadOrderReqs(); }}
         >
           <div
             className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-sky-50">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-200 bg-sky-50">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0 shadow-md">
                   <Package size={18} className="text-white" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-base font-black text-slate-800 truncate">{detailProduct.name}</div>
-                  <div className="text-[11px] font-mono text-slate-500 mt-0.5">#{detailProduct.code}</div>
+                  <div className="text-base font-black text-zinc-800 truncate">{detailProduct.name}</div>
+                  <div className="text-[11px] font-mono text-zinc-500 mt-0.5">#{detailProduct.code}</div>
                 </div>
               </div>
               <button
                 onClick={() => setDetailProduct(null)}
-                className="text-slate-400 hover:text-slate-700 text-3xl leading-none font-black w-9 h-9 rounded-lg hover:bg-white/70 transition cursor-pointer flex items-center justify-center shrink-0"
+                className="text-zinc-400 hover:text-zinc-700 text-3xl leading-none font-black w-9 h-9 rounded-lg hover:bg-white/70 transition cursor-pointer flex items-center justify-center shrink-0"
               >×</button>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 bg-slate-50">
+            <div className="flex-1 overflow-y-auto p-4 bg-zinc-50">
               {detailLoading ? (
-                <div className="flex justify-center py-8"><Loader2 size={20} className="animate-spin text-slate-400" /></div>
+                <div className="flex justify-center py-8"><Loader2 size={20} className="animate-spin text-zinc-400" /></div>
               ) : detailError ? (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
                   <div className="font-bold mb-1">❌ 조회 실패</div>
@@ -3150,48 +3150,48 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         <>
           <div className="fixed inset-0 z-40" onClick={() => setContactPopover(null)} />
           <div
-            className="fixed z-50 bg-white border border-slate-300 rounded-xl shadow-2xl p-3 min-w-[220px]"
+            className="fixed z-50 bg-white border border-zinc-300 rounded-xl shadow-2xl p-3 min-w-[220px]"
             style={{
               top: Math.min(window.innerHeight - 150, contactPopover.anchor.bottom + 4),
               left: Math.min(window.innerWidth - 240, contactPopover.anchor.left),
             }}
           >
-            <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-100">
+            <div className="flex items-center gap-2 mb-2 pb-2 border-b border-zinc-100">
               <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-black text-sm">
                 {contactPopover.name.slice(0, 1)}
               </div>
               <div className="min-w-0">
-                <div className="text-sm font-black text-slate-800">{contactPopover.name}</div>
-                <div className="text-[10px] text-slate-400">공급사 담당자</div>
+                <div className="text-sm font-black text-zinc-800">{contactPopover.name}</div>
+                <div className="text-[10px] text-zinc-400">공급사 담당자</div>
               </div>
             </div>
             <div className="space-y-1.5">
               {contactPopover.phone ? (
-                <a href={`tel:${contactPopover.phone}`} className="flex items-center gap-2 text-[12px] text-slate-700 hover:text-indigo-700 hover:bg-slate-50 rounded-lg px-2 py-1.5 cursor-pointer transition">
+                <a href={`tel:${contactPopover.phone}`} className="flex items-center gap-2 text-[12px] text-zinc-700 hover:text-indigo-700 hover:bg-zinc-50 rounded-lg px-2 py-1.5 cursor-pointer transition">
                   <span className="w-6 h-6 rounded-lg bg-sky-100 flex items-center justify-center text-sky-600">📞</span>
                   <span className="font-mono font-bold flex-1">{contactPopover.phone}</span>
                 </a>
               ) : (
-                <div className="flex items-center gap-2 text-[11px] text-slate-300 px-2 py-1.5">
-                  <span className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center">📞</span>
+                <div className="flex items-center gap-2 text-[11px] text-zinc-300 px-2 py-1.5">
+                  <span className="w-6 h-6 rounded-lg bg-zinc-100 flex items-center justify-center">📞</span>
                   전화번호 미등록
                 </div>
               )}
               {contactPopover.email ? (
-                <a href={`mailto:${contactPopover.email}`} className="flex items-center gap-2 text-[12px] text-slate-700 hover:text-indigo-700 hover:bg-slate-50 rounded-lg px-2 py-1.5 cursor-pointer transition">
+                <a href={`mailto:${contactPopover.email}`} className="flex items-center gap-2 text-[12px] text-zinc-700 hover:text-indigo-700 hover:bg-zinc-50 rounded-lg px-2 py-1.5 cursor-pointer transition">
                   <span className="w-6 h-6 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600">✉️</span>
                   <span className="font-semibold truncate flex-1">{contactPopover.email}</span>
                 </a>
               ) : (
-                <div className="flex items-center gap-2 text-[11px] text-slate-300 px-2 py-1.5">
-                  <span className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center">✉️</span>
+                <div className="flex items-center gap-2 text-[11px] text-zinc-300 px-2 py-1.5">
+                  <span className="w-6 h-6 rounded-lg bg-zinc-100 flex items-center justify-center">✉️</span>
                   이메일 미등록
                 </div>
               )}
             </div>
             <button
               onClick={() => setContactPopover(null)}
-              className="mt-2 w-full text-[10px] font-bold text-slate-400 hover:text-slate-700 py-1 border-t border-slate-100 cursor-pointer"
+              className="mt-2 w-full text-[10px] font-bold text-zinc-400 hover:text-zinc-700 py-1 border-t border-zinc-100 cursor-pointer"
             >닫기</button>
           </div>
         </>
@@ -3199,7 +3199,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
       {/* 2026-07-30 · 사용자 요청 · 공급사 정보 모달 (발주요청/발주필요 리스트 공급사 클릭 시) */}
       {supplierInfoModal && (
-        <div className="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setSupplierInfoModal(null)}>
+        <div className="fixed inset-0 z-[100] bg-zinc-900/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setSupplierInfoModal(null)}>
           <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
             <VendorDetailModal
               vendor={supplierInfoModal}

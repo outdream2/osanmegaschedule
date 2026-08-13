@@ -84,7 +84,7 @@ const MultiLineChartInner: React.FC<LineChartProps> = ({ labels, series, height 
   const chartH = H - padT - padB;
 
   const n = labels.length;
-  if (n === 0) return <div className="text-center text-slate-400 text-xs py-8">데이터 없음</div>;
+  if (n === 0) return <div className="text-center text-zinc-400 text-xs py-8">데이터 없음</div>;
 
   const lineSeries = series.filter(s => s.kind !== "bar");
   const barSeries = series.filter(s => s.kind === "bar");
@@ -226,16 +226,16 @@ const MultiLineChartInner: React.FC<LineChartProps> = ({ labels, series, height 
               ? <span className="w-3 h-2.5 rounded-sm" style={{ background: s.color, opacity: 0.35 }} />
               : <span className="w-3 h-0.5 rounded" style={{ background: s.color }} />
             }
-            <span className="font-bold text-slate-600">{s.label}</span>
+            <span className="font-bold text-zinc-600">{s.label}</span>
             {hoverIdx != null && (
-              <span className="font-mono text-slate-800">
+              <span className="font-mono text-zinc-800">
                 {s.format === "won" ? fmtWon(s.values[hoverIdx]) : fmt(s.values[hoverIdx])}
               </span>
             )}
           </div>
         ))}
         {hoverIdx != null && (
-          <span className="ml-auto text-slate-500 font-mono font-bold">{labels[hoverIdx]}</span>
+          <span className="ml-auto text-zinc-500 font-mono font-bold">{labels[hoverIdx]}</span>
         )}
       </div>
     </div>

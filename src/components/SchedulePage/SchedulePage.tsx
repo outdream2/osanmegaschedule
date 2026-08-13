@@ -687,7 +687,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     const dayWord = weekdays[dayIndex];
     const isToday = dateStr === todayStr;
 
-    let colorClass = "text-slate-600 bg-slate-50";
+    let colorClass = "text-zinc-600 bg-zinc-50";
     if (isToday) colorClass = "text-white bg-rose-500 font-bold";
     else if (dayIndex === 6) colorClass = "text-blue-600 bg-blue-50 font-bold";
     else if (dayIndex === 0) colorClass = "text-rose-600 bg-rose-50 font-bold";
@@ -1486,10 +1486,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
                 return (
                   <div key={`search-result-${emp.id}`} className="bg-white border border-blue-100 rounded-xl p-3 shadow-sm flex flex-col justify-between hover:border-blue-300 transition">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
+                    <div className="flex items-center justify-between border-b border-zinc-100 pb-2 mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="font-extrabold text-slate-800 text-sm">{emp.name}</span>
-                        <span className="text-[10px] font-semibold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                        <span className="font-extrabold text-zinc-800 text-sm">{emp.name}</span>
+                        <span className="text-[10px] font-semibold bg-zinc-100 text-zinc-600 px-1.5 py-0.5 rounded">
                           {emp.position}
                         </span>
                         <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${(emp.workplace || "매장") === "매장"
@@ -1499,15 +1499,15 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                           {emp.workplace || "매장"}
                         </span>
                       </div>
-                      <span className="text-[10px] font-mono text-slate-400">
+                      <span className="text-[10px] font-mono text-zinc-400">
                         입사일: {emp.hireDate ? emp.hireDate.split("-").slice(1).join("/") : "-"}
                       </span>
                     </div>
 
                     <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-xs font-medium text-slate-600">
+                      <div className="flex items-center justify-between text-xs font-medium text-zinc-600">
                         <span>📅 {currentMonth}월 스케줄 개요:</span>
-                        <span className="text-slate-900 font-bold">
+                        <span className="text-zinc-900 font-bold">
                           근무 <span className="text-blue-600">{workDaysCount}일</span> / 휴무 <span className="text-rose-600">{offDaysCount}일</span>
                         </span>
                       </div>
@@ -1544,7 +1544,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 );
               })}
             {employees.filter((emp) => emp.name.toLowerCase().includes(searchQuery.toLowerCase().trim())).length === 0 && (
-              <div className="col-span-full py-4 text-center text-xs font-semibold text-slate-500">
+              <div className="col-span-full py-4 text-center text-xs font-semibold text-zinc-500">
                 입력하신 이름 '{searchQuery}'에 부합하는 사원이 없습니다. 철자를 확인해 주세요.
               </div>
             )}
@@ -1576,15 +1576,15 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       )}
 
       {/* 2. Grid Container Block · 데스크탑에서만 max-w 적용 (모바일은 전체 폭 사용) */}
-      <div className="flex-1 flex flex-col p-2 sm:p-3 md:p-4 bg-slate-100 gap-0 w-full lg:max-w-[1600px] lg:mx-auto min-w-0">
+      <div className="flex-1 flex flex-col p-2 sm:p-3 md:p-4 bg-zinc-100 gap-0 w-full lg:max-w-[1600px] lg:mx-auto min-w-0">
         {/* Month Navigation Toolbar — responsive two-row layout */}
-        <div className="bg-white border border-slate-200 border-b-0 rounded-t-xl py-1.5 sm:py-2 flex flex-col gap-1.5 px-2.5 sm:px-5 shrink-0 shadow-sm">
+        <div className="bg-white border border-zinc-200 border-b-0 rounded-t-xl py-1.5 sm:py-2 flex flex-col gap-1.5 px-2.5 sm:px-5 shrink-0 shadow-sm">
           {/* 1행: 월 네비게이션 + 오늘 + 범례 */}
           <div className="flex items-center gap-x-3 gap-y-1.5 flex-wrap min-w-0">
             <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
               <button
                 onClick={handlePrevMonth}
-                className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-indigo-50 active:bg-indigo-100 rounded-xl text-slate-400 hover:text-indigo-600 transition-all cursor-pointer"
+                className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-indigo-50 active:bg-indigo-100 rounded-xl text-zinc-400 hover:text-indigo-600 transition-all cursor-pointer"
                 title="이전 달"
               >
                 <ChevronLeft size={18} />
@@ -1609,13 +1609,13 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                     setTimeout(() => { suppressScrollRef.current = false; }, 300);
                   });
                 }}
-                className="font-black tracking-tight text-slate-900 text-base sm:text-sm px-1 min-w-[100px] sm:min-w-[90px] text-center animate-in fade-in zoom-in-95 duration-200 hover:text-indigo-600 cursor-pointer rounded-lg hover:bg-indigo-50 transition-colors"
+                className="font-black tracking-tight text-zinc-900 text-base sm:text-sm px-1 min-w-[100px] sm:min-w-[90px] text-center animate-in fade-in zoom-in-95 duration-200 hover:text-indigo-600 cursor-pointer rounded-lg hover:bg-indigo-50 transition-colors"
               >
                 {currentYear}년 {String(currentMonth).padStart(2, "0")}월
               </button>
               <button
                 onClick={handleNextMonth}
-                className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-indigo-50 active:bg-indigo-100 rounded-xl text-slate-400 hover:text-indigo-600 transition-all cursor-pointer"
+                className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-indigo-50 active:bg-indigo-100 rounded-xl text-zinc-400 hover:text-indigo-600 transition-all cursor-pointer"
                 title="다음 달"
               >
                 <ChevronRight size={18} />
@@ -1627,10 +1627,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 const todaySummary = isThisMonth ? currentSummaryList.find(s => s.day === today.getDate()) : null;
                 if (!todaySummary) return null;
                 return (
-                  <span className="ml-2 flex items-baseline gap-2 pl-2 border-l border-slate-200 text-[15px] font-semibold">
+                  <span className="ml-2 flex items-baseline gap-2 pl-2 border-l border-zinc-200 text-[15px] font-semibold">
                     <span className="text-emerald-700">약사 {todaySummary.pharmacistCount}</span>
-                    <span className="text-slate-600">사원 {todaySummary.staffCount}</span>
-                    <span className="text-slate-500">기타 {todaySummary.otherCount}</span>
+                    <span className="text-zinc-600">사원 {todaySummary.staffCount}</span>
+                    <span className="text-zinc-500">기타 {todaySummary.otherCount}</span>
                     <span className="text-indigo-600 font-bold">총 {todaySummary.totalCount}명</span>
                   </span>
                 );
@@ -1697,7 +1697,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                     className={`flex items-center gap-1 px-2.5 py-1.5 text-[13px] sm:text-[15px] font-bold rounded-md border transition-all cursor-pointer ${
                       editMode
                         ? "border-emerald-400 bg-emerald-500 text-white shadow-sm"
-                        : "border-slate-300 bg-white text-slate-600 hover:border-slate-400"
+                        : "border-zinc-300 bg-white text-zinc-600 hover:border-zinc-400"
                     }`}
                   >
                     {editMode
@@ -1714,7 +1714,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                   className={`flex items-center gap-1 px-2.5 py-1.5 text-[13px] sm:text-[15px] font-bold rounded-md border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                     isMonthLocked
                       ? "border-amber-400 bg-amber-500 text-white shadow-sm"
-                      : "border-slate-300 bg-white text-slate-600 hover:border-slate-400"
+                      : "border-zinc-300 bg-white text-zinc-600 hover:border-zinc-400"
                   }`}
                 >
                   {isLockLoading
@@ -1746,7 +1746,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 <button
                   onClick={() => setShowSummary(v => v === "labor" ? "hidden" : "labor")}
                   title="월별 합계(근무일수/시간) + 인건비 표시 토글"
-                  className={`px-2.5 py-1.5 text-[13px] sm:text-[15px] rounded-md font-bold border transition cursor-pointer ${showSummary === "labor" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"}`}
+                  className={`px-2.5 py-1.5 text-[13px] sm:text-[15px] rounded-md font-bold border transition cursor-pointer ${showSummary === "labor" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-zinc-600 border-zinc-300 hover:border-zinc-400"}`}
                 >
                   인건비(hr)
                 </button>
@@ -1755,7 +1755,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-b-xl flex flex-col flex-1 shadow-sm min-w-0 overflow-hidden">
+        <div className="bg-white border border-zinc-200 rounded-b-xl flex flex-col flex-1 shadow-sm min-w-0 overflow-hidden">
             {/* Month locked banner */}
             {isMonthLocked && (
               <div className="mx-2 mt-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2">
@@ -1771,8 +1771,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                     <Layers size={18} />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-800">이번 달 ({currentMonth}월) 스케줄 데이터가 비어 있습니다</h4>
-                    <p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed">
+                    <h4 className="text-xs font-bold text-zinc-800">이번 달 ({currentMonth}월) 스케줄 데이터가 비어 있습니다</h4>
+                    <p className="text-[10px] text-zinc-500 mt-0.5 leading-relaxed">
                       이전 달의 스케줄 패턴을 그대로 복사해 오시겠습니까?
                     </p>
                   </div>
@@ -1799,7 +1799,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
             {/* Admin quick-edit hint bar */}
             {isAdmin && !isMonthLocked && (
-              <div className={`flex items-center gap-2 px-3 py-1.5 border-b shrink-0 min-w-0 overflow-hidden sticky top-0 z-30 ${editMode ? "bg-emerald-50 border-emerald-200" : "bg-white border-slate-100"}`}>
+              <div className={`flex items-center gap-2 px-3 py-1.5 border-b shrink-0 min-w-0 overflow-hidden sticky top-0 z-30 ${editMode ? "bg-emerald-50 border-emerald-200" : "bg-white border-zinc-100"}`}>
                 {editMode ? (
                   <>
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
@@ -1808,8 +1808,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                     </span>
                   </>
                 ) : (
-                  <span className="text-[10px] text-slate-400 truncate min-w-0">
-                    셀을 수정하려면 상단 <strong className="text-slate-500 font-semibold">편집</strong> 버튼을 눌러 편집 모드를 켜세요
+                  <span className="text-[10px] text-zinc-400 truncate min-w-0">
+                    셀을 수정하려면 상단 <strong className="text-zinc-500 font-semibold">편집</strong> 버튼을 눌러 편집 모드를 켜세요
                   </span>
                 )}
               </div>
@@ -1824,7 +1824,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                   all subsequent fetches are invisible so the table stays mounted and
                   scrollLeft is never reset (prevents the month-jumping bug). */}
               {isLoading && employees.length === 0 ? (
-                <div className="w-full py-32 flex flex-col items-center justify-center bg-slate-50/50">
+                <div className="w-full py-32 flex flex-col items-center justify-center bg-zinc-50/50">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563eb]"></div>
                   <p className="text-[#64748b] text-[11px] font-bold mt-4 tracking-wider">메가타운 스케줄 데이터 분석 중...</p>
                 </div>
@@ -1836,14 +1836,14 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                   <p className="text-rose-700 font-bold text-xs">{error}</p>
                   <button
                     onClick={() => fetchScheduleData()}
-                    className="mt-4 px-3 py-1 text-xs bg-slate-50 border border-slate-200 hover:bg-slate-100 font-semibold rounded"
+                    className="mt-4 px-3 py-1 text-xs bg-zinc-50 border border-zinc-200 hover:bg-zinc-100 font-semibold rounded"
                   >
                     다시 시도
                   </button>
                 </div>
               ) : employees.length === 0 ? (
                 <div className="w-full py-24 flex flex-col items-center justify-center text-center">
-                  <div className="p-3 bg-slate-100 rounded-full text-slate-400 mb-2">
+                  <div className="p-3 bg-zinc-100 rounded-full text-zinc-400 mb-2">
                     <Users size={30} />
                   </div>
                   <p className="text-[#64748b] font-bold text-xs">등록된 직원이 없습니다.</p>
@@ -1863,10 +1863,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                     {/* Table Headers */}
                     <thead className="sticky top-0 z-30 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
                       {/* Header Row 1: Day of Month Numbers */}
-                      <tr className="bg-slate-100 text-slate-600 select-none">
+                      <tr className="bg-zinc-100 text-zinc-600 select-none">
                         <th
                           ref={nameThRef}
-                          className="text-center text-[12px] sm:text-[13px] font-semibold border-r border-slate-200 border-b border-b-slate-200 sticky left-0 bg-slate-100 z-50 py-2 sm:py-2.5 tracking-wide whitespace-nowrap px-0.5 sm:px-1.5 min-w-[90px] sm:min-w-[110px] lg:min-w-[120px] w-[90px] sm:w-[110px] lg:w-[120px]"
+                          className="text-center text-[12px] sm:text-[13px] font-semibold border-r border-zinc-200 border-b border-b-zinc-200 sticky left-0 bg-zinc-100 z-50 py-2 sm:py-2.5 tracking-wide whitespace-nowrap px-0.5 sm:px-1.5 min-w-[90px] sm:min-w-[110px] lg:min-w-[120px] w-[90px] sm:w-[110px] lg:w-[120px]"
                         >
                           <span className="hidden sm:inline">직원 성명</span>
                           <span className="sm:hidden">성명</span>
@@ -1880,7 +1880,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                             ? "text-indigo-600 bg-indigo-50/60"
                             : dayIndex === 0
                               ? "text-rose-600 bg-rose-50"
-                              : "text-slate-600 bg-slate-100";
+                              : "text-zinc-600 bg-zinc-100";
                           const nextDate = displayDates[dateIdx + 1];
                           const isMonthEnd = !nextDate || nextDate.substring(0, 7) !== dateStr.substring(0, 7);
                           const monthLabel = parseInt(dateStr.substring(5, 7));
@@ -1889,13 +1889,13 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                               <th
                                 ref={isToday ? todayColRef : undefined}
                                 onClick={() => setTimelineDate(fullDate)}
-                                className={`p-0.5 sm:p-1 text-center text-[14px] sm:text-[15px] font-bold border-r border-b border-slate-200 w-[44px] cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 transition-colors ${headerClass} ${isToday ? "ring-2 ring-inset ring-rose-500 z-40 relative" : ""}`}
+                                className={`p-0.5 sm:p-1 text-center text-[14px] sm:text-[15px] font-bold border-r border-b border-zinc-200 w-[44px] cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 transition-colors ${headerClass} ${isToday ? "ring-2 ring-inset ring-rose-500 z-40 relative" : ""}`}
                                 title={`${fullDate} 타임라인 보기`}
                               >
                                 {dayNum}
                               </th>
                               {isMonthEnd && showSummary !== "hidden" && (
-                                <th className="p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-semibold border-b border-slate-200 bg-slate-50 text-slate-500 whitespace-nowrap border-l-2 border-l-slate-200 w-[44px] sm:w-[52px]">
+                                <th className="p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-semibold border-b border-zinc-200 bg-zinc-50 text-zinc-500 whitespace-nowrap border-l-2 border-l-zinc-200 w-[44px] sm:w-[52px]">
                                   {monthLabel}월합
                                 </th>
                               )}
@@ -1905,9 +1905,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                       </tr>
 
                       {/* Header Row 2: Day of Week Characters */}
-                      <tr className="bg-slate-50 text-slate-400 select-none">
+                      <tr className="bg-zinc-50 text-zinc-400 select-none">
                         {/* Left spacing header matching Name column */}
-                        <th className="border-r border-b border-slate-200 sticky left-0 bg-slate-50 z-50 h-5 sm:h-6 min-w-[90px] sm:min-w-[110px] lg:min-w-[120px]"></th>
+                        <th className="border-r border-b border-zinc-200 sticky left-0 bg-zinc-50 z-50 h-5 sm:h-6 min-w-[90px] sm:min-w-[110px] lg:min-w-[120px]"></th>
 
                         {displayDates.map((dateStr, dateIdx) => {
                           const { dayWord, isToday } = getDayDetails(dateStr);
@@ -1916,18 +1916,18 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                             ? "text-indigo-500 font-bold"
                             : dayIndex === 0
                               ? "text-rose-500 font-bold"
-                              : "text-slate-400";
+                              : "text-zinc-400";
                           const nextDate = displayDates[dateIdx + 1];
                           const isMonthEnd = !nextDate || nextDate.substring(0, 7) !== dateStr.substring(0, 7);
                           return (
                             <React.Fragment key={`day-name-${dateStr}`}>
                               <th
-                                className={`p-0.5 text-center text-[13px] sm:text-[14px] border-r border-b border-slate-200 w-[44px] bg-slate-50 ${wordClass} ${isToday ? "ring-2 ring-inset ring-rose-500 z-40 relative" : ""}`}
+                                className={`p-0.5 text-center text-[13px] sm:text-[14px] border-r border-b border-zinc-200 w-[44px] bg-zinc-50 ${wordClass} ${isToday ? "ring-2 ring-inset ring-rose-500 z-40 relative" : ""}`}
                               >
                                 {dayWord}
                               </th>
                               {isMonthEnd && showSummary !== "hidden" && (
-                                <th className="p-0.5 text-center text-[8px] sm:text-[9px] border-b border-slate-200 bg-slate-50 text-slate-400 border-l-2 border-l-slate-200 w-[44px] sm:w-[52px]">
+                                <th className="p-0.5 text-center text-[8px] sm:text-[9px] border-b border-zinc-200 bg-zinc-50 text-zinc-400 border-l-2 border-l-zinc-200 w-[44px] sm:w-[52px]">
                                   일·시간
                                 </th>
                               )}
@@ -1938,7 +1938,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                     </thead>
 
                     {/* Table Body */}
-                    <tbody className="divide-y divide-slate-100/80">
+                    <tbody className="divide-y divide-zinc-100/80">
                       {filteredEmployees.map((emp, empIdx) => (
                         <tr
                           key={emp.id}
@@ -1951,7 +1951,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                             setDragOverRowId(null);
                           }}
                           className={`bg-white group transition-colors duration-100 ${draggedRowId === emp.id ? "opacity-30" : ""
-                            } ${dragOverRowId === emp.id ? "bg-indigo-50/40 border-t-2 border-t-indigo-400" : "hover:bg-slate-50/60"
+                            } ${dragOverRowId === emp.id ? "bg-indigo-50/40 border-t-2 border-t-indigo-400" : "hover:bg-zinc-50/60"
                             }`}
                         >
 
@@ -1988,7 +1988,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                             const cell = (
                               <td
                                 key={`${emp.id}-${dateStr}`}
-                                className={`relative p-0 border-r border-[#e2e8f0] ${isToday ? "ring-2 ring-inset ring-red-500 z-[25] relative" : ""} ${isHireDay ? "ring-2 ring-inset ring-emerald-500 z-[24] relative" : ""} ${isRetireDay ? "ring-2 ring-inset ring-rose-500 z-[24] relative" : ""} ${outOfEmployment ? "bg-slate-100/80 cursor-not-allowed" : (canOpenBreak ? "cursor-pointer hover:bg-amber-50/50" : "")}`}
+                                className={`relative p-0 border-r border-[#e2e8f0] ${isToday ? "ring-2 ring-inset ring-red-500 z-[25] relative" : ""} ${isHireDay ? "ring-2 ring-inset ring-emerald-500 z-[24] relative" : ""} ${isRetireDay ? "ring-2 ring-inset ring-rose-500 z-[24] relative" : ""} ${outOfEmployment ? "bg-zinc-100/80 cursor-not-allowed" : (canOpenBreak ? "cursor-pointer hover:bg-amber-50/50" : "")}`}
                                 onClick={canOpenBreak ? () => openBreakModalForCell(emp.id, fullDate) : undefined}
                                 title={
                                   isHireDay ? `입사일 (${emp.hireDate})` :
@@ -2005,7 +2005,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                   <span className="absolute top-0 right-0 z-30 text-[8px] font-black px-1 py-px rounded-bl bg-rose-500 text-white leading-none shadow-sm pointer-events-none">퇴사</span>
                                 )}
                                 {outOfEmployment ? (
-                                  <div className="w-full h-full min-h-[24px] flex items-center justify-center text-[10px] text-slate-400 font-medium select-none">
+                                  <div className="w-full h-full min-h-[24px] flex items-center justify-center text-[10px] text-zinc-400 font-medium select-none">
                                     <span className="opacity-40">─</span>
                                   </div>
                                 ) : (
@@ -2037,9 +2037,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                             return (
                               <React.Fragment key={`${emp.id}-${dateStr}`}>
                                 {cell}
-                                <td className="border-l-2 border-slate-200 bg-slate-50 text-center align-middle p-1">
-                                  <div className="text-[11px] sm:text-xs font-bold text-slate-700 leading-tight">{workDays}일</div>
-                                  {hoursLabel && <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium leading-tight">{hoursLabel}</div>}
+                                <td className="border-l-2 border-zinc-200 bg-zinc-50 text-center align-middle p-1">
+                                  <div className="text-[11px] sm:text-xs font-bold text-zinc-700 leading-tight">{workDays}일</div>
+                                  {hoursLabel && <div className="text-[9px] sm:text-[10px] text-zinc-400 font-medium leading-tight">{hoursLabel}</div>}
                                   {isAdmin && showSummary === "labor" && costLabel && <div className="text-[9px] sm:text-[10px] text-emerald-600 font-semibold leading-tight">{costLabel}원</div>}
                                 </td>
                               </React.Fragment>
@@ -2100,7 +2100,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       </div>
 
       {/* Footer — 저작권 표시 (가운데 정렬) */}
-      <footer className="h-9 bg-white border-t border-gray-200 shrink-0 px-4 sm:px-6 flex items-center justify-center text-xs font-bold text-slate-600 tracking-wide">
+      <footer className="h-9 bg-white border-t border-gray-200 shrink-0 px-4 sm:px-6 flex items-center justify-center text-xs font-bold text-zinc-600 tracking-wide">
         <span>© {spContact.copyrightText || "(주)이룸즈(IRUMS)"}</span>
       </footer>
 
@@ -2310,30 +2310,30 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 <Layers size={18} />
               </div>
               <div>
-                <h3 className="text-base font-black text-slate-800">전월 데이터 복사</h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <h3 className="text-base font-black text-zinc-800">전월 데이터 복사</h3>
+                <p className="text-xs text-zinc-500 mt-0.5">
                   {currentMonth === 1 ? currentYear - 1 : currentYear}년 {currentMonth === 1 ? 12 : currentMonth - 1}월 → {currentYear}년 {currentMonth}월
                 </p>
               </div>
             </div>
 
             <div className="space-y-2 mb-5">
-              <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
+              <label className="flex items-start gap-3 p-3 rounded-xl border border-zinc-200 hover:bg-zinc-50 cursor-pointer">
                 <input type="checkbox" className="mt-0.5 w-4 h-4 accent-indigo-500"
                   checked={copyModal.copySchedules}
                   onChange={e => setCopyModal(prev => ({ ...prev, copySchedules: e.target.checked }))} />
                 <div className="flex-1">
-                  <div className="text-sm font-bold text-slate-700">전체 월별 스케쥴</div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">직원별 오픈/마감/휴무 등 근무 유형 스케줄</div>
+                  <div className="text-sm font-bold text-zinc-700">전체 월별 스케쥴</div>
+                  <div className="text-[11px] text-zinc-500 mt-0.5">직원별 오픈/마감/휴무 등 근무 유형 스케줄</div>
                 </div>
               </label>
-              <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
+              <label className="flex items-start gap-3 p-3 rounded-xl border border-zinc-200 hover:bg-zinc-50 cursor-pointer">
                 <input type="checkbox" className="mt-0.5 w-4 h-4 accent-indigo-500"
                   checked={copyModal.copyDayAssignments}
                   onChange={e => setCopyModal(prev => ({ ...prev, copyDayAssignments: e.target.checked }))} />
                 <div className="flex-1">
-                  <div className="text-sm font-bold text-slate-700">일별 근무설정</div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">일자별 구역/점심/휴게 배정 (같은 일자 기준으로 복사)</div>
+                  <div className="text-sm font-bold text-zinc-700">일별 근무설정</div>
+                  <div className="text-[11px] text-zinc-500 mt-0.5">일자별 구역/점심/휴게 배정 (같은 일자 기준으로 복사)</div>
                 </div>
               </label>
             </div>
@@ -2345,7 +2345,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
             <div className="flex gap-2">
               <button
                 onClick={() => setCopyModal(prev => ({ ...prev, open: false }))}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs font-bold hover:bg-slate-50 cursor-pointer">
+                className="flex-1 px-4 py-2.5 rounded-xl border border-zinc-200 bg-white text-zinc-600 text-xs font-bold hover:bg-zinc-50 cursor-pointer">
                 취소
               </button>
               <button

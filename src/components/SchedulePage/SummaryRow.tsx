@@ -19,28 +19,28 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMo
   const labelCls = isPharmacist
     ? "bg-emerald-600 text-white border-r border-emerald-500"
     : isStaff
-    ? "bg-slate-600 text-white border-r border-slate-500"
+    ? "bg-zinc-600 text-white border-r border-zinc-500"
     : isOther
-    ? "bg-slate-400 text-white border-r border-slate-300"
+    ? "bg-zinc-400 text-white border-r border-zinc-300"
     : "bg-indigo-600 text-white border-r border-indigo-500";
 
   const valActiveCls = isPharmacist
     ? "bg-emerald-50 text-emerald-700 font-bold"
     : isStaff
-    ? "bg-slate-50 text-slate-700 font-bold"
+    ? "bg-zinc-50 text-zinc-700 font-bold"
     : isOther
-    ? "bg-slate-50/70 text-slate-600 font-bold"
+    ? "bg-zinc-50/70 text-zinc-600 font-bold"
     : "bg-indigo-50 text-indigo-700 font-bold";
 
-  const valEmptyCls = "bg-transparent text-slate-200";
+  const valEmptyCls = "bg-transparent text-zinc-200";
 
   const monthTotalCls = isPharmacist
-    ? "bg-emerald-50 text-emerald-700 border-l-2 border-slate-200"
+    ? "bg-emerald-50 text-emerald-700 border-l-2 border-zinc-200"
     : isStaff
-    ? "bg-slate-100 text-slate-600 border-l-2 border-slate-200"
+    ? "bg-zinc-100 text-zinc-600 border-l-2 border-zinc-200"
     : isOther
-    ? "bg-slate-50 text-slate-500 border-l-2 border-slate-200"
-    : "bg-indigo-50 text-indigo-700 border-l-2 border-slate-200";
+    ? "bg-zinc-50 text-zinc-500 border-l-2 border-zinc-200"
+    : "bg-indigo-50 text-indigo-700 border-l-2 border-zinc-200";
 
   const todayStr = (() => {
     const d = new Date();
@@ -51,7 +51,7 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMo
     isPharmacist ? sum.pharmacistCount : isStaff ? sum.staffCount : isOther ? sum.otherCount : sum.totalCount;
 
   return (
-    <tr className={isTotal ? "border-t-2 border-slate-200" : "border-t border-slate-100/70"}>
+    <tr className={isTotal ? "border-t-2 border-zinc-200" : "border-t border-zinc-100/70"}>
       <td className={`px-2 py-1.5 sticky left-0 z-20 text-center text-[15px] font-semibold tracking-wide shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)] ${labelCls}`}>
         {label}
       </td>
@@ -64,7 +64,7 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMo
 
         const cell = (
           <td
-            className={`p-1 text-center text-[13px] border-r border-slate-100 w-[30px] sm:w-[44px] transition-colors ${
+            className={`p-1 text-center text-[13px] border-r border-zinc-100 w-[30px] sm:w-[44px] transition-colors ${
               val > 0 ? valActiveCls : valEmptyCls
             } ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-20 relative" : ""}`}
           >

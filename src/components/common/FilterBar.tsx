@@ -31,7 +31,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   gap = "medium",
 }) => {
   return (
-    <div className={`bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center ${GAP_MAP[gap]} ${className}`}>
+    <div className={`bg-white rounded-xl border border-zinc-200 shadow-sm px-4 py-3 flex flex-wrap items-center ${GAP_MAP[gap]} ${className}`}>
       {children}
     </div>
   );

@@ -71,13 +71,13 @@ function ListToolbar({
   hideDeleteAll?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-2 mb-2 bg-white border border-slate-200 rounded-xl px-3 h-8 shadow-sm">
-      <button onClick={onToggleAll} className="shrink-0 cursor-pointer text-slate-400 hover:text-slate-600 transition">
+    <div className="flex items-center gap-2 mb-2 bg-white border border-zinc-200 rounded-xl px-3 h-8 shadow-sm">
+      <button onClick={onToggleAll} className="shrink-0 cursor-pointer text-zinc-400 hover:text-zinc-600 transition">
         {allChecked && total > 0
           ? <CheckSquare size={15} className={accentColor} />
           : <Square size={15} />}
       </button>
-      <span className="text-[12px] text-slate-500 flex-1 select-none">
+      <span className="text-[12px] text-zinc-500 flex-1 select-none">
         {selected > 0 ? <><strong className={accentColor}>{selected}개</strong> 선택됨</> : `전체 ${total}건`}
       </span>
       {selected > 0 && (
@@ -93,13 +93,13 @@ function ListToolbar({
         <button
           onClick={onDeleteAll}
           disabled={total === 0}
-          className="text-[11px] font-semibold text-slate-500 bg-slate-50 border border-slate-200 px-2.5 h-6 rounded-md hover:bg-slate-100 transition-all duration-150 cursor-pointer disabled:opacity-40"
+          className="text-[11px] font-semibold text-zinc-500 bg-zinc-50 border border-zinc-200 px-2.5 h-6 rounded-md hover:bg-zinc-100 transition-all duration-150 cursor-pointer disabled:opacity-40"
         >
           전체삭제
         </button>
       )}
-      <div className="h-4 w-px bg-slate-200 shrink-0" />
-      <button onClick={onRefresh} className="w-6 h-6 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all duration-150 cursor-pointer">
+      <div className="h-4 w-px bg-zinc-200 shrink-0" />
+      <button onClick={onRefresh} className="w-6 h-6 flex items-center justify-center rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-all duration-150 cursor-pointer">
         <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
       </button>
     </div>
@@ -579,11 +579,11 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
 
   // 2026-08-10 · 사용자 요청 · 구역불일치 탭 제거 · 관리자 전용 탭: 실재고차이 · 점심불참
   const TABS: [Tab, string, number, string, string, string, string][] = [
-    ["display",   isManager ? "진열요청" : "내가 받은 요청",   displayTabCount,   "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
+    ["display",   isManager ? "진열요청" : "내가 받은 요청",   displayTabCount,   "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
     ...(isManager ? ([
-      ["inventory", "실재고차이", inventoryTabCount, "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
-      ["lunch",     "점심불참",   lunchTabCount,     "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
-      ["leave",     "연차승인",   leavePendingCount, "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
+      ["inventory", "실재고차이", inventoryTabCount, "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
+      ["lunch",     "점심불참",   lunchTabCount,     "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
+      ["leave",     "연차승인",   leavePendingCount, "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
     ] as [Tab, string, number, string, string, string, string][]) : []),
   ];
 
@@ -606,16 +606,16 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
       />
 
       {/* 탭 바 — 콘텐츠와 동일한 max-width 정렬 · 파스텔 pill 스타일 */}
-      <div className="bg-white/90 backdrop-blur-sm border-b border-slate-200/70 sticky top-14 z-20" style={{ boxShadow: "0 1px 0 0 rgba(99,102,241,0.05)" }}>
+      <div className="bg-white/90 backdrop-blur-sm border-b border-zinc-200/70 sticky top-14 z-20" style={{ boxShadow: "0 1px 0 0 rgba(99,102,241,0.05)" }}>
         <div className="max-w-[1360px] mx-auto w-full px-2 sm:px-4 py-2">
-          <div className="flex flex-wrap bg-slate-100/70 border border-slate-200/60 rounded-xl p-1 gap-0.5">
+          <div className="flex flex-wrap bg-zinc-100/70 border border-zinc-200/60 rounded-xl p-1 gap-0.5">
             {TABS.map(([key, label, count, activeClass, _iconClass, badgeClass, inactiveClass]) => (
               <button key={key} onClick={() => setTab(key)}
                 className={`px-2.5 sm:px-4 py-1.5 flex items-center gap-1.5 sm:gap-2 rounded-lg text-[11px] sm:text-[12px] font-black transition-all duration-200 cursor-pointer flex-1 sm:flex-none justify-center ${tab === key ? `${activeClass} ring-1 shadow-sm` : inactiveClass}`}>
                 <span>{label}</span>
                 {count > 0
-                  ? <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${tab === key ? badgeClass : "bg-slate-100 text-slate-400"}`}>{count}</span>
-                  : <span className="text-[10px] text-slate-300">0</span>
+                  ? <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${tab === key ? badgeClass : "bg-zinc-100 text-zinc-400"}`}>{count}</span>
+                  : <span className="text-[10px] text-zinc-300">0</span>
                 }
               </button>
             ))}
@@ -661,49 +661,49 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               </div>
             )}
             {displayLoading && displayReqs.length === 0 ? (
-              <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+              <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
             ) : !displayLoading && displayReqs.length === 0 ? (
-              <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
+              <div className="text-center text-[11px] text-zinc-300 py-6">데이터 없음</div>
             ) : (
               <div className={`${CARD_BASE} overflow-x-auto ${displayLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 <table className="w-full min-w-[640px] border-collapse text-left" style={{ tableLayout: "fixed" }}>
                   <thead>
-                    <tr className="border-b border-slate-100 bg-slate-50/80">
+                    <tr className="border-b border-zinc-100 bg-zinc-50/80">
                       <th className="relative px-2 py-2" style={{ width: rw("check"), minWidth: rw("check") }}>
-                        <button onClick={() => toggleAll(displayReqs, selectedDisplay, setSelectedDisplay)} className="shrink-0 cursor-pointer text-slate-400 hover:text-slate-600 transition">
+                        <button onClick={() => toggleAll(displayReqs, selectedDisplay, setSelectedDisplay)} className="shrink-0 cursor-pointer text-zinc-400 hover:text-zinc-600 transition">
                           {selectedDisplay.size === displayReqs.length && displayReqs.length > 0
                             ? <CheckSquare size={14} className="text-rose-500" />
                             : <Square size={14} />}
                         </button>
                         <span {...rr("check")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                       </th>
-                      <th className="relative px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide" style={{ width: rw("name"), minWidth: rw("name") }}>
+                      <th className="relative px-3 py-2 text-[11px] font-bold text-zinc-500 tracking-wide" style={{ width: rw("name"), minWidth: rw("name") }}>
                         상품명
                         <span {...rr("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                       </th>
-                      <th className="relative px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide" style={{ width: rw("zone"), minWidth: rw("zone") }}>
+                      <th className="relative px-3 py-2 text-[11px] font-bold text-zinc-500 tracking-wide" style={{ width: rw("zone"), minWidth: rw("zone") }}>
                         진열구역
                         <span {...rr("zone")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                       </th>
-                      <th className="relative px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide" style={{ width: rw("staff"), minWidth: rw("staff") }}>
+                      <th className="relative px-3 py-2 text-[11px] font-bold text-zinc-500 tracking-wide" style={{ width: rw("staff"), minWidth: rw("staff") }}>
                         담당자
                         <span {...rr("staff")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                       </th>
-                      <th className="relative px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide text-center" style={{ width: rw("wh_prep"), minWidth: rw("wh_prep") }}>
+                      <th className="relative px-3 py-2 text-[11px] font-bold text-zinc-500 tracking-wide text-center" style={{ width: rw("wh_prep"), minWidth: rw("wh_prep") }}>
                         창고준비
                         <span {...rr("wh_prep")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                       </th>
-                      <th className="relative px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide text-center" style={{ width: rw("disp"), minWidth: rw("disp") }}>
+                      <th className="relative px-3 py-2 text-[11px] font-bold text-zinc-500 tracking-wide text-center" style={{ width: rw("disp"), minWidth: rw("disp") }}>
                         진열완료
                         <span {...rr("disp")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                       </th>
-                      <th className="relative px-3 py-2 text-[11px] font-bold text-slate-500 tracking-wide" style={{ width: rw("date"), minWidth: rw("date") }}>
+                      <th className="relative px-3 py-2 text-[11px] font-bold text-zinc-500 tracking-wide" style={{ width: rw("date"), minWidth: rw("date") }}>
                         날짜
                         <span {...rr("date")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-50">
+                  <tbody className="divide-y divide-zinc-50">
                     {displayReqs.map(r => {
                       const isDone     = r.status === "done";
                       const isPrepared = r.status === "prepared";
@@ -724,7 +724,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                       return (
                         <tr
                           key={r.id}
-                          className={`transition-all duration-150 ${rowLeftBorder} ${selectedDisplay.has(r.id) ? "bg-rose-50/50" : "hover:bg-slate-50/60"} ${isDone ? "opacity-60" : ""}`}
+                          className={`transition-all duration-150 ${rowLeftBorder} ${selectedDisplay.has(r.id) ? "bg-rose-50/50" : "hover:bg-zinc-50/60"} ${isDone ? "opacity-60" : ""}`}
                         >
                           {/* 체크박스 */}
                           <td className="w-8 px-2 py-2">
@@ -733,14 +733,14 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
 
                           {/* 상품명 */}
                           <td className="px-3 py-2 max-w-[200px]">
-                            <span className={`text-[12px] font-semibold break-words whitespace-normal leading-tight ${isDone ? "line-through text-slate-400" : "text-slate-800"}`}>
+                            <span className={`text-[12px] font-semibold break-words whitespace-normal leading-tight ${isDone ? "line-through text-zinc-400" : "text-zinc-800"}`}>
                               {productName}
                             </span>
                           </td>
 
                           {/* 진열구역 */}
                           <td className="px-3 py-2 whitespace-nowrap">
-                            <span className="text-[12px] font-bold text-slate-700 break-keep">
+                            <span className="text-[12px] font-bold text-zinc-700 break-keep">
                               {r.zone_label || r.zone_id || "—"}
                             </span>
                           </td>
@@ -749,7 +749,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                           <td className="px-3 py-2 whitespace-nowrap">
                             {r.assigned_staff_name
                               ? <span className="text-[12px] font-black text-indigo-700">{r.assigned_staff_name}</span>
-                              : <span className="text-[11px] text-slate-300">미지정</span>}
+                              : <span className="text-[11px] text-zinc-300">미지정</span>}
                           </td>
 
                           {/* 창고준비 · 토글 (대기 ↔ 완료) · 2026-08-05 */}
@@ -775,7 +775,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                                       : "창고담당만 가능"
                                   }
                                   className={`text-[10px] font-semibold px-2.5 h-6 rounded-md border transition-all duration-150 inline-flex items-center gap-0.5 disabled:opacity-40 ${
-                                    clickable ? cls + " cursor-pointer" : "text-slate-400 bg-slate-100 border-slate-200 cursor-not-allowed"
+                                    clickable ? cls + " cursor-pointer" : "text-zinc-400 bg-zinc-100 border-zinc-200 cursor-not-allowed"
                                   }`}
                                 >
                                   {completing ? <Loader2 size={9} className="animate-spin" /> : <Icon size={9} />}
@@ -812,7 +812,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                                       : "진열담당만 가능"
                                   }
                                   className={`text-[10px] font-semibold px-2.5 h-6 rounded-md border transition-all duration-150 inline-flex items-center gap-0.5 disabled:opacity-40 ${
-                                    clickable ? cls + " cursor-pointer" : "text-slate-400 bg-slate-100 border-slate-200 cursor-not-allowed"
+                                    clickable ? cls + " cursor-pointer" : "text-zinc-400 bg-zinc-100 border-zinc-200 cursor-not-allowed"
                                   }`}
                                 >
                                   {completing ? <Loader2 size={9} className="animate-spin" /> : <Icon size={9} />}
@@ -824,7 +824,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
 
                           {/* 날짜 */}
                           <td className="px-3 py-2 whitespace-nowrap">
-                            <span className="text-[10px] text-slate-400 tabular-nums">{fmtDate(r.requested_at)}</span>
+                            <span className="text-[10px] text-zinc-400 tabular-nums">{fmtDate(r.requested_at)}</span>
                           </td>
                         </tr>
                       );
@@ -862,24 +862,24 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 </div>
               )}
               {orderLoading && orderReqs.length === 0 ? (
-                <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+                <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
               ) : !orderLoading && orderReqs.length === 0 && !orderError ? (
-                <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
+                <div className="text-center text-[11px] text-zinc-300 py-6">데이터 없음</div>
               ) : (
-                <div className={`${CARD_BASE} divide-y divide-slate-50 ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+                <div className={`${CARD_BASE} divide-y divide-zinc-50 ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                   {orderReqs.map(r => {
                     const short = (r.optimal_stock ?? 0) - (r.current_stock ?? 0);
                     const inv = invStockMap.get(r.product_code);
                     return (
-                      <div key={r.id} className={`flex items-center gap-3 px-0.5 py-1.5 transition-all duration-150 ${selectedOrder.has(r.id) ? "bg-rose-50/50" : "hover:bg-slate-50/60"}`}>
+                      <div key={r.id} className={`flex items-center gap-3 px-0.5 py-1.5 transition-all duration-150 ${selectedOrder.has(r.id) ? "bg-rose-50/50" : "hover:bg-zinc-50/60"}`}>
                         <Checkbox checked={selectedOrder.has(r.id)} onChange={() => toggleOne(selectedOrder, r.id, setSelectedOrder)} />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[10px] font-semibold text-slate-400 shrink-0">{r.product_code}</span>
+                            <span className="text-[10px] font-semibold text-zinc-400 shrink-0">{r.product_code}</span>
                             <span className="text-gray-300 text-[10px]">·</span>
-                            <span className="text-[12px] font-black text-slate-800 break-keep">{r.product_name || "(상품명 없음)"}</span>
+                            <span className="text-[12px] font-black text-zinc-800 break-keep">{r.product_name || "(상품명 없음)"}</span>
                             <span className="text-gray-300 text-[10px]">·</span>
-                            <span className="text-[11px] text-slate-500">현재 <span className="font-bold text-slate-700">{r.current_stock ?? "-"}</span> / 적정 <span className="font-bold text-slate-700">{r.optimal_stock ?? "-"}</span></span>
+                            <span className="text-[11px] text-zinc-500">현재 <span className="font-bold text-zinc-700">{r.current_stock ?? "-"}</span> / 적정 <span className="font-bold text-zinc-700">{r.optimal_stock ?? "-"}</span></span>
                             {inv && (
                               <>
                                 <span className="text-gray-300 text-[10px]">·</span>
@@ -913,11 +913,11 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 </div>
               )}
               {productsLoading && lowStock.length === 0 ? (
-                <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+                <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
               ) : !productsLoading && lowStock.length === 0 ? (
-                <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
+                <div className="text-center text-[11px] text-zinc-300 py-6">데이터 없음</div>
               ) : (
-                <div className={`${CARD_BASE} divide-y divide-slate-50 ${productsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+                <div className={`${CARD_BASE} divide-y divide-zinc-50 ${productsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                   {lowStock.map(p => {
                     const cur = Number(p.current_stock), opt = Number(p.optimal_stock);
                     const code = (p as any).code ?? (p as any).product_code ?? "";
@@ -926,14 +926,14 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                     const alreadyRequested = requestedCodes.has(code);
                     const busy = requestingOrder.has(code);
                     return (
-                      <div key={code} className="flex items-center gap-3 px-0.5 py-1.5 hover:bg-slate-50/60 transition-all duration-150">
+                      <div key={code} className="flex items-center gap-3 px-0.5 py-1.5 hover:bg-zinc-50/60 transition-all duration-150">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-[10px] font-semibold text-slate-400 shrink-0">{code}</span>
+                                <span className="text-[10px] font-semibold text-zinc-400 shrink-0">{code}</span>
                                 <span className="text-gray-300 text-[10px]">·</span>
-                                <span className="text-[12px] font-black text-slate-800 break-keep">{name || "(상품명 없음)"}</span>
+                                <span className="text-[12px] font-black text-zinc-800 break-keep">{name || "(상품명 없음)"}</span>
                                 <span className="text-gray-300 text-[10px]">·</span>
-                                <span className="text-[11px] text-slate-500">현재 <span className="font-bold text-slate-700">{cur}</span> / 적정 <span className="font-bold text-slate-700">{opt}</span></span>
+                                <span className="text-[11px] text-zinc-500">현재 <span className="font-bold text-zinc-700">{cur}</span> / 적정 <span className="font-bold text-zinc-700">{opt}</span></span>
                                 {supplier && (
                                   <>
                                     <span className="text-gray-300 text-[10px]">·</span>
@@ -977,7 +977,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               </div>
             )}
             {mismatchLoading && mismatches.length === 0 ? (
-              <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+              <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
             ) : mismatchError ? (
 
               <div className="flex flex-col items-center justify-center py-10 gap-2">
@@ -986,19 +986,19 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 <button onClick={loadMismatches} className="mt-2 text-xs text-orange-600 underline cursor-pointer">다시 시도</button>
               </div>
             ) : !mismatchLoading && mismatches.length === 0 ? (
-              <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
+              <div className="text-center text-[11px] text-zinc-300 py-6">데이터 없음</div>
             ) : (
-              <div className={`${CARD_BASE} divide-y divide-slate-50 ${mismatchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+              <div className={`${CARD_BASE} divide-y divide-zinc-50 ${mismatchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {mismatches.map(m => (
-                  <div key={m.id} className={`flex items-center gap-3 px-0.5 py-1.5 transition-all duration-150 ${selectedMismatch.has(m.id) ? "bg-rose-50/50" : "hover:bg-slate-50/60"}`}>
+                  <div key={m.id} className={`flex items-center gap-3 px-0.5 py-1.5 transition-all duration-150 ${selectedMismatch.has(m.id) ? "bg-rose-50/50" : "hover:bg-zinc-50/60"}`}>
                     <Checkbox checked={selectedMismatch.has(m.id)} onChange={() => toggleOne(selectedMismatch, m.id, setSelectedMismatch)} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[12px] font-black text-slate-800 break-keep">{m.product_name}</span>
+                        <span className="text-[12px] font-black text-zinc-800 break-keep">{m.product_name}</span>
                         <span className="text-gray-300 text-[10px]">·</span>
-                        <span className="text-[10px] font-semibold text-slate-400">{m.product_code}</span>
+                        <span className="text-[10px] font-semibold text-zinc-400">{m.product_code}</span>
                         <span className="text-gray-300 text-[10px]">·</span>
-                        <span className="text-[11px] text-slate-500" title="전산배치구역">전산 <span className="font-bold text-slate-700">{m.spec_zone || "미지정"}</span></span>
+                        <span className="text-[11px] text-zinc-500" title="전산배치구역">전산 <span className="font-bold text-zinc-700">{m.spec_zone || "미지정"}</span></span>
                         <span className="text-gray-300 text-[10px]">→</span>
                         <span className="text-[11px] font-black text-red-600" title="실제배치구역">실제 {m.real_zone}</span>
                       </div>
@@ -1054,36 +1054,36 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               </div>
             )}
             {inventoryLoading && inventoryChecks.length === 0 ? (
-              <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+              <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
             ) : !inventoryLoading && inventoryChecks.length === 0 ? (
-              <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
+              <div className="text-center text-[11px] text-zinc-300 py-6">데이터 없음</div>
             ) : (
-              <div className={`${CARD_BASE} divide-y divide-slate-50 ${inventoryLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+              <div className={`${CARD_BASE} divide-y divide-zinc-50 ${inventoryLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {inventoryChecks.map(r => {
                   const totalActual = (r.warehouse_stock ?? 0) + (r.store_stock ?? 0);
                   const diff = r.system_stock != null ? totalActual - r.system_stock : null;
                   const isShort = diff != null && diff < 0;
                   const isOver  = diff != null && diff > 0;
                   return (
-                    <div key={r.id} className={`flex items-center gap-3 px-0.5 py-1.5 transition-all duration-150 ${selectedInventory.has(r.id) ? "bg-rose-50/50" : "hover:bg-slate-50/60"}`}>
+                    <div key={r.id} className={`flex items-center gap-3 px-0.5 py-1.5 transition-all duration-150 ${selectedInventory.has(r.id) ? "bg-rose-50/50" : "hover:bg-zinc-50/60"}`}>
                       <Checkbox checked={selectedInventory.has(r.id)} onChange={() => toggleOne(selectedInventory, r.id, setSelectedInventory)} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[12px] font-black text-slate-800 break-keep">{r.product_name}</span>
+                          <span className="text-[12px] font-black text-zinc-800 break-keep">{r.product_name}</span>
                           <span className="text-gray-300 text-[10px]">·</span>
-                          <span className="text-[10px] font-semibold text-slate-400">{r.product_code}</span>
+                          <span className="text-[10px] font-semibold text-zinc-400">{r.product_code}</span>
                           <span className="text-gray-300 text-[10px]">·</span>
-                          <span className="text-[11px] text-slate-500">
-                            창고 <span className="font-bold text-slate-700">{r.warehouse_stock ?? "—"}</span>
-                            <span className="text-slate-300 mx-0.5">+</span>
-                            매장 <span className="font-bold text-slate-700">{r.store_stock ?? "—"}</span>
-                            <span className="text-slate-300 mx-0.5">=</span>
+                          <span className="text-[11px] text-zinc-500">
+                            창고 <span className="font-bold text-zinc-700">{r.warehouse_stock ?? "—"}</span>
+                            <span className="text-zinc-300 mx-0.5">+</span>
+                            매장 <span className="font-bold text-zinc-700">{r.store_stock ?? "—"}</span>
+                            <span className="text-zinc-300 mx-0.5">=</span>
                             <span className="font-black text-purple-700">{totalActual}</span>
                           </span>
                           <span className="text-gray-300 text-[10px]">·</span>
-                          <span className="text-[11px] text-slate-500">현재고 <span className="font-bold text-slate-700">{r.system_stock ?? "—"}</span></span>
+                          <span className="text-[11px] text-zinc-500">현재고 <span className="font-bold text-zinc-700">{r.system_stock ?? "—"}</span></span>
                           {diff != null && (
-                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${isShort ? "bg-red-50 text-red-600 border border-red-200" : isOver ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-slate-100 text-slate-500"}`}>
+                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${isShort ? "bg-red-50 text-red-600 border border-red-200" : isOver ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-zinc-100 text-zinc-500"}`}>
                               {diff > 0 ? "+" : ""}{diff}
                             </span>
                           )}
@@ -1206,18 +1206,18 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             </div>
 
             {lunchLoading && lunchRequests.length > 0 && (
-              <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-600 font-bold py-1.5 mb-1 bg-slate-100 border border-slate-200 rounded-md sticky top-0 z-10">
+              <div className="flex items-center justify-center gap-1.5 text-[10px] text-zinc-600 font-bold py-1.5 mb-1 bg-zinc-100 border border-zinc-200 rounded-md sticky top-0 z-10">
                 <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
               </div>
             )}
             {lunchLoading && lunchRequests.length === 0 ? (
-              <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+              <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
             ) : !lunchLoading && lunchRequests.length === 0 ? (
-              <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
+              <div className="text-center text-[11px] text-zinc-300 py-6">데이터 없음</div>
             ) : (
-              <div className={`${CARD_BASE} divide-y divide-slate-50 ${lunchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+              <div className={`${CARD_BASE} divide-y divide-zinc-50 ${lunchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {lunchRequests.map(r => (
-                  <div key={r.id} className="flex items-center gap-3 px-0.5 py-1.5 hover:bg-slate-50/60 transition-all duration-150">
+                  <div key={r.id} className="flex items-center gap-3 px-0.5 py-1.5 hover:bg-zinc-50/60 transition-all duration-150">
                     <span className={`w-2 h-2 rounded-full shrink-0 ${r.eating ? "bg-emerald-500" : "bg-gray-300"}`} />
                     <span className="text-sm font-semibold text-gray-800 flex-1">{r.employee_name}</span>
                     {r.memo && <span className="text-[10px] text-gray-400 flex-1 min-w-0 break-keep">{r.memo}</span>}

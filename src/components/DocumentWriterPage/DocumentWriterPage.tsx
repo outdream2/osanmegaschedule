@@ -94,17 +94,17 @@ const DocumentWriterPage: React.FC<DocumentWriterPageProps> = (props) => {
       {/* ── 내부 탭 컨텐츠 ── */}
       <div className="flex-1 min-h-0 flex flex-col">
         {tab === "contract" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold py-16">근로계약서 로딩 중...</div>}>
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-zinc-400 text-sm font-bold py-16">근로계약서 로딩 중...</div>}>
             <ContractWriterPage {...props} />
           </Suspense>
         )}
         {tab === "resignation" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold py-16">사직서 로딩 중...</div>}>
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-zinc-400 text-sm font-bold py-16">사직서 로딩 중...</div>}>
             <ResignationWriterPage {...props} />
           </Suspense>
         )}
         {tab === "settings" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold py-16">설정 로딩 중...</div>}>
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-zinc-400 text-sm font-bold py-16">설정 로딩 중...</div>}>
             <ContractSettingsPage {...props} />
           </Suspense>
         )}

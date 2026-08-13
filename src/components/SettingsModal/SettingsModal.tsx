@@ -66,14 +66,14 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-6 h-6 rounded-md border border-slate-300 shadow-sm hover:ring-2 hover:ring-slate-300 transition cursor-pointer"
+        className="w-6 h-6 rounded-md border border-zinc-300 shadow-sm hover:ring-2 hover:ring-zinc-300 transition cursor-pointer"
         style={{ backgroundColor: value }}
         title={currentPreset ? `색상: ${currentPreset.label}` : "색상 선택"}
         aria-label="색상 선택"
       />
       {open && (
         <div
-          className="absolute z-20 bottom-full right-0 mb-1 bg-white border border-slate-200 rounded-lg shadow-xl p-2 w-[196px] animate-in fade-in zoom-in-95 duration-100"
+          className="absolute z-20 bottom-full right-0 mb-1 bg-white border border-zinc-200 rounded-lg shadow-xl p-2 w-[196px] animate-in fade-in zoom-in-95 duration-100"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="grid grid-cols-6 gap-1.5 mb-2">
@@ -85,7 +85,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => {
                   type="button"
                   onClick={() => { onChange(p.bg); setOpen(false); }}
                   className={`relative w-7 h-7 rounded-md border cursor-pointer transition hover:scale-110 ${
-                    selected ? "border-slate-800 ring-2 ring-slate-400" : "border-slate-200"
+                    selected ? "border-zinc-800 ring-2 ring-zinc-400" : "border-zinc-200"
                   }`}
                   style={{ backgroundColor: p.bg }}
                   title={p.label}
@@ -93,22 +93,22 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => {
                   aria-pressed={selected}
                 >
                   {selected && (
-                    <Check size={12} className="absolute inset-0 m-auto text-slate-800" strokeWidth={3} />
+                    <Check size={12} className="absolute inset-0 m-auto text-zinc-800" strokeWidth={3} />
                   )}
                 </button>
               );
             })}
           </div>
-          <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-100">
-            <span className="text-[10px] font-bold text-slate-500">직접</span>
+          <div className="flex items-center gap-1.5 pt-1.5 border-t border-zinc-100">
+            <span className="text-[10px] font-bold text-zinc-500">직접</span>
             <input
               type="color"
               value={value}
               onChange={(e) => onChange(e.target.value)}
-              className="w-6 h-6 rounded cursor-pointer border border-slate-200 p-0.5 bg-white"
+              className="w-6 h-6 rounded cursor-pointer border border-zinc-200 p-0.5 bg-white"
               title="직접 색상 선택"
             />
-            <span className="text-[10px] font-mono text-slate-400 uppercase">{value}</span>
+            <span className="text-[10px] font-mono text-zinc-400 uppercase">{value}</span>
           </div>
         </div>
       )}
@@ -333,23 +333,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
     ? "w-full"
     : "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto";
   const innerCls = embedded
-    ? "relative w-full bg-white rounded-2xl border border-slate-200 flex flex-col"
-    : "relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150";
+    ? "relative w-full bg-white rounded-2xl border border-zinc-200 flex flex-col"
+    : "relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-zinc-100 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150";
   return (
     <div className={outerCls}>
       <div className={innerCls}>
 
         {/* Header · 임베디드 모드에선 X 버튼 숨김 */}
         {!embedded && (
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
-          <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 shrink-0">
+          <h2 className="text-base font-extrabold text-zinc-900 flex items-center gap-2">
             <span>⚙️</span>
             <span>환경 설정</span>
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition cursor-pointer"
             title="닫기"
           >
             <X size={18} />
@@ -358,7 +358,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
         )}
 
         {/* Tabs */}
-        <div className="flex gap-0 border-b border-slate-100 shrink-0 overflow-x-auto">
+        <div className="flex gap-0 border-b border-zinc-100 shrink-0 overflow-x-auto">
           {TABS.map((tab) => (
             <button
               key={tab.id}
@@ -367,7 +367,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
               className={`px-5 py-3 text-xs font-bold whitespace-nowrap transition border-b-2 cursor-pointer ${
                 activeTab === tab.id
                   ? "border-[#2563eb] text-[#2563eb] bg-blue-50/40"
-                  : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                  : "border-transparent text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
               }`}
             >
               {tab.label}
@@ -389,8 +389,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                 <ShieldCheck size={16} className="text-indigo-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-black text-slate-800 leading-tight">직원권한 관리</div>
-                <div className="text-[11px] font-semibold text-slate-500 leading-tight mt-0.5">페이지별 · 직원별 접근 권한 (level 0~9) 설정</div>
+                <div className="text-[13px] font-black text-zinc-800 leading-tight">직원권한 관리</div>
+                <div className="text-[11px] font-semibold text-zinc-500 leading-tight mt-0.5">페이지별 · 직원별 접근 권한 (level 0~9) 설정</div>
               </div>
               <ChevronRight size={16} className="text-indigo-500 shrink-0 group-hover:translate-x-0.5 transition-transform" />
             </button>
@@ -403,20 +403,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
           {/* ─── Workplaces Tab ────────────────────────────────────────── */}
           {activeTab === "workplaces" && (
             <div className="space-y-4">
-              <p className="text-xs text-slate-500 font-semibold">
+              <p className="text-xs text-zinc-500 font-semibold">
                 직원의 근무지(부서) 목록을 관리합니다. 기본값: 매장, 창고
               </p>
               <div className="space-y-1.5">
                 {workplaces.map((wp, idx) => (
                   <div
                     key={wp}
-                    className="flex items-center gap-2 bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2 transition"
+                    className="flex items-center gap-2 bg-white border border-zinc-200 hover:border-zinc-300 rounded-lg px-3 py-2 transition"
                   >
-                    <span className="flex-1 text-xs font-semibold text-slate-800">{wp}</span>
+                    <span className="flex-1 text-xs font-semibold text-zinc-800">{wp}</span>
                     <button
                       type="button"
                       onClick={() => removeWorkplace(idx)}
-                      className="text-slate-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded"
+                      className="text-zinc-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded"
                       title="삭제"
                     >
                       <Trash2 size={13} />
@@ -431,7 +431,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                   onChange={(e) => setNewWorkplace(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addWorkplace(); } }}
                   placeholder="새 근무지 입력 (Enter)"
-                  className="flex-1 text-xs rounded-lg border border-slate-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
+                  className="flex-1 text-xs rounded-lg border border-zinc-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
                 />
                 <button
                   type="button"
@@ -448,7 +448,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
           {/* ─── Schedule Types Tab ────────────────────────────────────── */}
           {activeTab === "scheduleTypes" && (
             <div className="space-y-4">
-              <p className="text-xs text-slate-500 font-semibold">
+              <p className="text-xs text-zinc-500 font-semibold">
                 근무 유형과 직원 유형별 기본 근무시간을 관리합니다. 비워두면 상위(기본) 시간이 사용됩니다.
               </p>
 
@@ -462,7 +462,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                     className={`flex-1 min-w-[72px] py-1.5 px-2 text-[11px] font-bold rounded-lg border transition cursor-pointer whitespace-nowrap ${
                       scheduleHourTab === t.id
                         ? "bg-[#2563eb] border-[#2563eb] text-white"
-                        : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+                        : "bg-white border-zinc-200 text-zinc-500 hover:bg-zinc-50"
                     }`}
                   >
                     {t.label}
@@ -471,7 +471,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
               </div>
 
               <div className="space-y-1.5">
-                <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_28px_minmax(0,1fr)_28px] gap-2 px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_28px_minmax(0,1fr)_28px] gap-2 px-3 py-1 text-[10px] font-bold text-zinc-400 uppercase tracking-wide">
                   <span>유형명</span>
                   <span>색</span>
                   <span>{HOUR_TABS.find(t => t.id === scheduleHourTab)?.label} 시간</span>
@@ -480,11 +480,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                 {scheduleTypes.map((st, idx) => (
                   <div
                     key={idx}
-                    className="flex flex-col sm:grid sm:grid-cols-[minmax(0,1fr)_28px_minmax(0,1fr)_28px] gap-2 items-start sm:items-center bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2 transition"
+                    className="flex flex-col sm:grid sm:grid-cols-[minmax(0,1fr)_28px_minmax(0,1fr)_28px] gap-2 items-start sm:items-center bg-white border border-zinc-200 hover:border-zinc-300 rounded-lg px-3 py-2 transition"
                   >
                     <div className="flex items-center gap-2 w-full min-w-0">
                       <span
-                        className="flex-1 min-w-0 text-xs font-semibold text-slate-800 truncate px-1.5 py-0.5 rounded"
+                        className="flex-1 min-w-0 text-xs font-semibold text-zinc-800 truncate px-1.5 py-0.5 rounded"
                         style={{ backgroundColor: st.color ?? "#e2e8f0" }}
                       >
                         {st.type}
@@ -498,7 +498,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                       <button
                         type="button"
                         onClick={() => removeScheduleType(idx)}
-                        className="sm:hidden text-slate-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded shrink-0"
+                        className="sm:hidden text-zinc-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded shrink-0"
                         title="삭제"
                       >
                         <Trash2 size={13} />
@@ -515,12 +515,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                       value={st[scheduleHourTab]}
                       onChange={(e) => updateScheduleTypeEntry(idx, scheduleHourTab, e.target.value)}
                       placeholder={scheduleHourTab === "hours" ? "예: 10:00-18:00" : "비워두면 기본값"}
-                      className="w-full text-xs rounded border border-slate-200 focus:border-[#2563eb] p-1.5 font-mono bg-white focus:outline-none"
+                      className="w-full text-xs rounded border border-zinc-200 focus:border-[#2563eb] p-1.5 font-mono bg-white focus:outline-none"
                     />
                     <button
                       type="button"
                       onClick={() => removeScheduleType(idx)}
-                      className="hidden sm:block text-slate-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded"
+                      className="hidden sm:block text-zinc-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded"
                       title="삭제"
                     >
                       <Trash2 size={13} />
@@ -535,7 +535,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                   onChange={(e) => setNewScheduleType(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addScheduleType(); } }}
                   placeholder="새 근무 유형 입력 (Enter)"
-                  className="flex-1 text-xs rounded-lg border border-slate-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
+                  className="flex-1 text-xs rounded-lg border border-zinc-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
                 />
                 <button
                   type="button"
@@ -575,7 +575,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
           {/* ─── Account Tab (비밀번호 변경) ─────────────────────── */}
           {activeTab === "account" && (
             <div className="space-y-4 max-w-md">
-              <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+              <p className="text-xs text-zinc-500 font-semibold leading-relaxed">
                 로그인 중인 계정의 비밀번호를 변경합니다. 변경 후에도 세션은 유지됩니다.
               </p>
               {!sessionEmployeeId ? (
@@ -585,35 +585,35 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
               ) : (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">현재 비밀번호</label>
+                    <label className="block text-[11px] font-bold text-zinc-600 mb-1">현재 비밀번호</label>
                     <input
                       type="password"
                       value={pwCurrent}
                       onChange={(e) => setPwCurrent(e.target.value)}
                       autoComplete="current-password"
-                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                       placeholder="현재 비밀번호"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">새 비밀번호 (4자 이상)</label>
+                    <label className="block text-[11px] font-bold text-zinc-600 mb-1">새 비밀번호 (4자 이상)</label>
                     <input
                       type="password"
                       value={pwNew}
                       onChange={(e) => setPwNew(e.target.value)}
                       autoComplete="new-password"
-                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                       placeholder="새 비밀번호"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">새 비밀번호 확인</label>
+                    <label className="block text-[11px] font-bold text-zinc-600 mb-1">새 비밀번호 확인</label>
                     <input
                       type="password"
                       value={pwConfirm}
                       onChange={(e) => setPwConfirm(e.target.value)}
                       autoComplete="new-password"
-                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                       placeholder="새 비밀번호 확인"
                       onKeyDown={(e) => { if (e.key === "Enter" && !pwSubmitting) submitPasswordChange(); }}
                     />
@@ -645,7 +645,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
 
         {/* Footer · 임베디드 모드에선 숨김 (탭 UI 에서 자체 저장) */}
         {!embedded && (
-        <div className="flex justify-end px-6 py-4 border-t border-slate-100 shrink-0">
+        <div className="flex justify-end px-6 py-4 border-t border-zinc-100 shrink-0">
           <button
             type="button"
             onClick={onClose}
@@ -660,14 +660,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
       {/* Edit mode confirm dialog */}
       {showEditConfirm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 p-6 w-full max-w-xs animate-in zoom-in-95 duration-150 space-y-4">
-            <p className="text-sm font-bold text-slate-800 text-center">편집 모드를 켜겠습니까?</p>
-            <p className="text-xs text-slate-500 text-center">켜면 전체 스케줄에 수정사항이 반영되고, 이후 편집 모드가 유지됩니다.</p>
+          <div className="bg-white rounded-2xl shadow-2xl border border-zinc-100 p-6 w-full max-w-xs animate-in zoom-in-95 duration-150 space-y-4">
+            <p className="text-sm font-bold text-zinc-800 text-center">편집 모드를 켜겠습니까?</p>
+            <p className="text-xs text-zinc-500 text-center">켜면 전체 스케줄에 수정사항이 반영되고, 이후 편집 모드가 유지됩니다.</p>
             <div className="flex gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => { setShowEditConfirm(false); onClose(); }}
-                className="flex-1 px-4 py-2 text-xs font-bold bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-600 transition cursor-pointer"
+                className="flex-1 px-4 py-2 text-xs font-bold bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-lg text-zinc-600 transition cursor-pointer"
               >
                 아니오
               </button>

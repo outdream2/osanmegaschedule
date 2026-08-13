@@ -75,20 +75,20 @@ export const PurchaseHistoryModal: React.FC<PurchaseHistoryModalProps> = ({
         onClick={e => e.stopPropagation()}
       >
         {/* 헤더 */}
-        <div className="flex items-start gap-3 px-4 py-3 border-b border-slate-200 bg-emerald-50">
+        <div className="flex items-start gap-3 px-4 py-3 border-b border-zinc-200 bg-emerald-50">
           <TrendingUp size={20} className="text-emerald-600 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-sm font-black text-slate-800">매입 이력</span>
-              <span className="text-[11px] font-mono text-slate-500">{productCode}</span>
+              <span className="text-sm font-black text-zinc-800">매입 이력</span>
+              <span className="text-[11px] font-mono text-zinc-500">{productCode}</span>
             </div>
             {productName && (
-              <div className="text-xs font-semibold text-slate-700 truncate mt-0.5" title={productName}>
-                <Package size={11} className="inline mr-1 text-slate-400" />{productName}
+              <div className="text-xs font-semibold text-zinc-700 truncate mt-0.5" title={productName}>
+                <Package size={11} className="inline mr-1 text-zinc-400" />{productName}
               </div>
             )}
             {!loading && rows.length > 0 && (
-              <div className="mt-1.5 flex items-center gap-2 flex-wrap text-[11px] font-mono text-slate-500">
+              <div className="mt-1.5 flex items-center gap-2 flex-wrap text-[11px] font-mono text-zinc-500">
                 <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-black">{rows.length}건</span>
                 <span>총 <b>{fmt(totalQty)}</b>개</span>
                 <span>·</span>
@@ -107,7 +107,7 @@ export const PurchaseHistoryModal: React.FC<PurchaseHistoryModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg p-1 transition"
+            className="text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg p-1 transition"
             aria-label="닫기"
           >
             <X size={18} />

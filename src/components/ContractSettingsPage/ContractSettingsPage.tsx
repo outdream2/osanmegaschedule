@@ -402,7 +402,7 @@ const JOB_META: Array<{
   { key: "약사", label: "약사", color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-200", accent: "border-l-violet-400" },
   { key: "매장", label: "매장", color: "text-sky-700",    bg: "bg-sky-50",   border: "border-sky-200",   accent: "border-l-sky-400"    },
   { key: "창고", label: "창고", color: "text-amber-700",  bg: "bg-amber-50",  border: "border-amber-200",  accent: "border-l-amber-400"  },
-  { key: "기타", label: "기타", color: "text-slate-700",  bg: "bg-slate-50",  border: "border-slate-200",  accent: "border-l-slate-400"  },
+  { key: "기타", label: "기타", color: "text-zinc-700",  bg: "bg-zinc-50",  border: "border-zinc-200",  accent: "border-l-zinc-400"  },
 ];
 
 const CLAUSE_GROUP_META: Array<{
@@ -419,7 +419,7 @@ const CLAUSE_GROUP_META: Array<{
   { key: "holidayClauses",    label: "휴일",           desc: "주휴일·공휴일·휴무",      icon: Calendar,   color: "text-teal-700",    bg: "bg-teal-50",    border: "border-teal-200"    },
   { key: "disciplineClauses", label: "징계·해지 사유", desc: "근로계약 해지 각 호",      icon: Shield,     color: "text-rose-700",    bg: "bg-rose-50",    border: "border-rose-200"    },
   { key: "etcClauses",        label: "기타",           desc: "지급방법·비밀·인수인계",  icon: ListChecks, color: "text-indigo-700",  bg: "bg-indigo-50",  border: "border-indigo-200"  },
-  { key: "privacyClauses",    label: "개인정보",       desc: "개인정보·CCTV 수집",      icon: Lock,       color: "text-slate-700",   bg: "bg-slate-50",   border: "border-slate-200"   },
+  { key: "privacyClauses",    label: "개인정보",       desc: "개인정보·CCTV 수집",      icon: Lock,       color: "text-zinc-700",   bg: "bg-zinc-50",   border: "border-zinc-200"   },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -755,7 +755,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
   };
 
   return (
-    <div className={embedded ? "flex-1 flex flex-col" : "min-h-screen bg-slate-50 flex flex-col"}>
+    <div className={embedded ? "flex-1 flex flex-col" : "min-h-screen bg-zinc-50 flex flex-col"}>
       {!embedded && (
         <AppNavHeader
           activePage={"business-manage" as AppNavPage}
@@ -769,12 +769,12 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
       <main className="flex-1 max-w-[1100px] mx-auto w-full px-3 sm:px-5 py-4 flex flex-col gap-3">
 
         {/* ── 상단 sticky · 전체 저장 배너 ──────────────────────────────── */}
-        <div className="sticky top-0 z-20 -mx-3 sm:-mx-5 px-3 sm:px-5 py-2 bg-white/95 backdrop-blur-sm border-b border-slate-200 shadow-sm flex items-center justify-between gap-2">
+        <div className="sticky top-0 z-20 -mx-3 sm:-mx-5 px-3 sm:px-5 py-2 bg-white/95 backdrop-blur-sm border-b border-zinc-200 shadow-sm flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
               <Gear size={15} weight="fill" />
             </div>
-            <span className="text-[13px] font-black text-slate-800 leading-none hidden sm:block">근로계약서 설정</span>
+            <span className="text-[13px] font-black text-zinc-800 leading-none hidden sm:block">근로계약서 설정</span>
             {overallSaveState === "saved" && (
               <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 font-bold">
                 <Check size={11} weight="bold" /> 모든 항목 저장됨
@@ -801,10 +801,10 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <div>
-              <h1 className="text-base sm:text-lg font-black text-slate-800 leading-none">근로계약서 설정</h1>
-              <p className="text-[11px] text-slate-500 mt-0.5 font-semibold">
+              <h1 className="text-base sm:text-lg font-black text-zinc-800 leading-none">근로계약서 설정</h1>
+              <p className="text-[11px] text-zinc-500 mt-0.5 font-semibold">
                 시급·회사정보 · 즉시 저장 &nbsp;·&nbsp; 각 호 · 저장 버튼으로 확정
-                {!serverLoaded && <span className="ml-1.5 text-slate-400">· 서버 로드 중...</span>}
+                {!serverLoaded && <span className="ml-1.5 text-zinc-400">· 서버 로드 중...</span>}
               </p>
             </div>
           </div>
@@ -813,7 +813,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
             <button
               type="button"
               onClick={handleResetToDefault}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 text-[12px] font-semibold transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 text-[12px] font-semibold transition-colors cursor-pointer"
               title="기본값 초기화"
             >
               <ArrowsClockwise size={13} />
@@ -823,7 +823,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
               type="button"
               onClick={handleRevert}
               disabled={!dirty}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-[12px] font-semibold transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed text-[12px] font-semibold transition-colors cursor-pointer"
             >
               취소
             </button>
@@ -845,7 +845,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
             className={`rounded-lg border px-3 py-2 text-[12px] font-semibold flex items-center gap-2 ${
               notice.tone === "ok"  ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
               notice.tone === "err" ? "bg-rose-50 text-rose-700 border-rose-200" :
-                                      "bg-slate-50 text-slate-700 border-slate-200"
+                                      "bg-zinc-50 text-zinc-700 border-zinc-200"
             }`}
           >
             {notice.tone === "ok"  ? <Check size={13} weight="bold" /> :
@@ -859,23 +859,23 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
 
           {/* 섹션 0 · 회사 정보 · 2026-08-07 · 기본 접힘 (사용자 요청) */}
-          <section className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+          <section className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
             <button
               type="button"
               onClick={() => setCompanyInfoOpen(o => !o)}
-              className="w-full flex items-center gap-2 px-3 py-2.5 border-b border-slate-100 bg-slate-50/60 hover:bg-slate-100/60 transition cursor-pointer"
+              className="w-full flex items-center gap-2 px-3 py-2.5 border-b border-zinc-100 bg-zinc-50/60 hover:bg-zinc-100/60 transition cursor-pointer"
               aria-expanded={companyInfoOpen}
             >
-              <span className={`text-slate-400 transition-transform ${companyInfoOpen ? "" : "-rotate-90"}`}>▼</span>
+              <span className={`text-zinc-400 transition-transform ${companyInfoOpen ? "" : "-rotate-90"}`}>▼</span>
               <div className="w-7 h-7 rounded-md bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
                 <Info size={14} weight="fill" />
               </div>
               <div className="flex-1 min-w-0 text-left">
                 <h2 className="text-[13px] font-black text-emerald-700 leading-none">회사 정보</h2>
-                <p className="text-[11px] text-slate-500 font-semibold mt-0.5">근로계약서 사업주란 자동 채움 · 편집 즉시 저장</p>
+                <p className="text-[11px] text-zinc-500 font-semibold mt-0.5">근로계약서 사업주란 자동 채움 · 편집 즉시 저장</p>
               </div>
               {!companyInfoLoaded && (
-                <span className="text-[11px] text-slate-400 font-semibold shrink-0">로딩 중...</span>
+                <span className="text-[11px] text-zinc-400 font-semibold shrink-0">로딩 중...</span>
               )}
               {companyInfoLoaded && companyInfoSaveState === "saving" && (
                 <span className="text-[11px] text-indigo-500 font-semibold shrink-0">저장 중...</span>
@@ -896,68 +896,68 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
             <div className="p-3 grid grid-cols-2 gap-2.5">
               {/* 상호 */}
               <div className="flex flex-col gap-1">
-                <label className="text-[11px] font-bold text-slate-500">상호</label>
+                <label className="text-[11px] font-bold text-zinc-500">상호</label>
                 <input
                   type="text"
                   value={companyInfo.name}
                   onChange={(e) => setCompanyInfo(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="예) 오산 메가타운 약국"
                   disabled={!companyInfoLoaded}
-                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
                 />
               </div>
               {/* 대표자 이름 */}
               <div className="flex flex-col gap-1">
-                <label className="text-[11px] font-bold text-slate-500">대표자 이름</label>
+                <label className="text-[11px] font-bold text-zinc-500">대표자 이름</label>
                 <input
                   type="text"
                   value={companyInfo.representativeName}
                   onChange={(e) => setCompanyInfo(prev => ({ ...prev, representativeName: e.target.value }))}
                   placeholder="예) 강남성"
                   disabled={!companyInfoLoaded}
-                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
                 />
               </div>
               {/* 사업장 주소 */}
               <div className="flex flex-col gap-1 col-span-2">
-                <label className="text-[11px] font-bold text-slate-500">사업장 주소</label>
+                <label className="text-[11px] font-bold text-zinc-500">사업장 주소</label>
                 <input
                   type="text"
                   value={companyInfo.address}
                   onChange={(e) => setCompanyInfo(prev => ({ ...prev, address: e.target.value }))}
                   placeholder="예) 경기도 오산시 경기대로 868-4 2층"
                   disabled={!companyInfoLoaded}
-                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
                 />
               </div>
               {/* 사업자등록번호 */}
               <div className="flex flex-col gap-1">
-                <label className="text-[11px] font-bold text-slate-500">사업자등록번호 <span className="text-slate-400 font-normal">(선택)</span></label>
+                <label className="text-[11px] font-bold text-zinc-500">사업자등록번호 <span className="text-zinc-400 font-normal">(선택)</span></label>
                 <input
                   type="text"
                   value={companyInfo.regNo}
                   onChange={(e) => setCompanyInfo(prev => ({ ...prev, regNo: e.target.value }))}
                   placeholder="예) 123-45-67890"
                   disabled={!companyInfoLoaded}
-                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
                 />
               </div>
               {/* 대표자 직함 */}
               <div className="flex flex-col gap-1">
-                <label className="text-[11px] font-bold text-slate-500">대표자 직함 <span className="text-slate-400 font-normal">(선택)</span></label>
+                <label className="text-[11px] font-bold text-zinc-500">대표자 직함 <span className="text-zinc-400 font-normal">(선택)</span></label>
                 <input
                   type="text"
                   value={companyInfo.representativeTitle ?? ""}
                   onChange={(e) => setCompanyInfo(prev => ({ ...prev, representativeTitle: e.target.value }))}
                   placeholder="예) 대표약사"
                   disabled={!companyInfoLoaded}
-                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
                 />
               </div>
               {/* 임금지급일 · 계약서 "2. 임금지급일" 항목에 그대로 표시 */}
               <div className="flex flex-col gap-1 col-span-2">
-                <label className="text-[11px] font-bold text-slate-500">
-                  임금지급일 <span className="text-slate-400 font-normal">(근로계약서에 자동 반영)</span>
+                <label className="text-[11px] font-bold text-zinc-500">
+                  임금지급일 <span className="text-zinc-400 font-normal">(근로계약서에 자동 반영)</span>
                 </label>
                 <textarea
                   value={paymentDayText}
@@ -965,7 +965,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                   placeholder="예) 당월 01일부터 당월 말일 까지 근로한 부분에 대하여 당월 말일에 '을' 본인 명의의 통장으로 지급한다."
                   disabled={!paymentDayLoaded}
                   rows={2}
-                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50 resize-none"
+                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50 resize-none"
                 />
               </div>
               {/* 회사 정보 개별 저장 버튼 */}
@@ -987,14 +987,14 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
           </section>
 
           {/* 섹션 1 · 직군별 시급 */}
-          <section className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <header className="flex items-center gap-2 px-3 py-2.5 border-b border-slate-100 bg-slate-50/60">
+          <section className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
+            <header className="flex items-center gap-2 px-3 py-2.5 border-b border-zinc-100 bg-zinc-50/60">
               <div className="w-7 h-7 rounded-md bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
                 <CurrencyKrw size={14} weight="fill" />
               </div>
               <div className="flex-1 min-w-0">
                 <h2 className="text-[13px] font-black text-indigo-700 leading-none">직군별 시급</h2>
-                <p className="text-[11px] text-slate-500 font-semibold mt-0.5">편집 즉시 서버 저장 · 근로계약서 자동 반영</p>
+                <p className="text-[11px] text-zinc-500 font-semibold mt-0.5">편집 즉시 서버 저장 · 근로계약서 자동 반영</p>
               </div>
             </header>
 
@@ -1015,7 +1015,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className={`text-[13px] font-black ${job.color} leading-none`}>{job.label}</span>
                         {isDefault && (
-                          <span className="text-[9px] font-semibold text-slate-400 leading-none" title="기본값 사용 중">
+                          <span className="text-[9px] font-semibold text-zinc-400 leading-none" title="기본값 사용 중">
                             기본값
                           </span>
                         )}
@@ -1032,9 +1032,9 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                     </div>
 
                     {/* 주중 · 주말 나란히 */}
-                    <div className="flex items-stretch divide-x divide-slate-100 px-3 py-2.5">
+                    <div className="flex items-stretch divide-x divide-zinc-100 px-3 py-2.5">
                       <div className="flex-1 flex flex-col gap-1 pr-3">
-                        <label className="text-[10px] font-bold text-slate-400 tracking-wide">주중 (원)</label>
+                        <label className="text-[10px] font-bold text-zinc-400 tracking-wide">주중 (원)</label>
                         <input
                           type="number"
                           min={0}
@@ -1042,11 +1042,11 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                           value={rate.weekday || ""}
                           placeholder={String(fallback.weekday)}
                           onChange={(e) => updWage(job.key, "weekday", Math.max(0, Number(e.target.value) || 0))}
-                          className={`w-full bg-slate-50 border rounded-lg px-2 py-1.5 text-[13px] font-black text-right tabular-nums focus:outline-none focus:bg-white focus:border-indigo-400 transition ${isDefault ? "border-slate-200 text-slate-400" : "border-slate-200 text-slate-800"}`}
+                          className={`w-full bg-zinc-50 border rounded-lg px-2 py-1.5 text-[13px] font-black text-right tabular-nums focus:outline-none focus:bg-white focus:border-indigo-400 transition ${isDefault ? "border-zinc-200 text-zinc-400" : "border-zinc-200 text-zinc-800"}`}
                         />
                       </div>
                       <div className="flex-1 flex flex-col gap-1 pl-3">
-                        <label className="text-[10px] font-bold text-slate-400 tracking-wide">주말 (원)</label>
+                        <label className="text-[10px] font-bold text-zinc-400 tracking-wide">주말 (원)</label>
                         <input
                           type="number"
                           min={0}
@@ -1054,7 +1054,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                           value={rate.weekend || ""}
                           placeholder={String(fallback.weekend)}
                           onChange={(e) => updWage(job.key, "weekend", Math.max(0, Number(e.target.value) || 0))}
-                          className={`w-full bg-slate-50 border rounded-lg px-2 py-1.5 text-[13px] font-black text-right tabular-nums focus:outline-none focus:bg-white focus:border-indigo-400 transition ${isDefault ? "border-slate-200 text-slate-400" : "border-slate-200 text-slate-800"}`}
+                          className={`w-full bg-zinc-50 border rounded-lg px-2 py-1.5 text-[13px] font-black text-right tabular-nums focus:outline-none focus:bg-white focus:border-indigo-400 transition ${isDefault ? "border-zinc-200 text-zinc-400" : "border-zinc-200 text-zinc-800"}`}
                         />
                       </div>
                     </div>
@@ -1080,18 +1080,18 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
         {/* ── 각 호 CMS 섹션 헤더 ───────────────────────────────────────── */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 rounded-md bg-zinc-100 text-zinc-600 flex items-center justify-center shrink-0">
               <ListChecks size={14} weight="fill" />
             </div>
             <div>
-              <h2 className="text-[13px] font-black text-slate-800 leading-none">각 호 내용 편집</h2>
-              <p className="text-[11px] text-slate-500 font-semibold mt-0.5">근로계약서에 삽입되는 조항 · 그룹 클릭해서 펼치기</p>
+              <h2 className="text-[13px] font-black text-zinc-800 leading-none">각 호 내용 편집</h2>
+              <p className="text-[11px] text-zinc-500 font-semibold mt-0.5">근로계약서에 삽입되는 조항 · 그룹 클릭해서 펼치기</p>
             </div>
           </div>
           <button
             type="button"
             onClick={toggleAllOpen}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 text-[11px] font-bold transition-colors cursor-pointer shrink-0"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 text-[11px] font-bold transition-colors cursor-pointer shrink-0"
           >
             {allOpen ? <CaretDown size={11} weight="bold" /> : <CaretRight size={11} weight="bold" />}
             {allOpen ? "전체 접기" : "전체 펼치기"}
@@ -1111,7 +1111,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
               >
                 {/* 아코디언 헤더 */}
                 <header
-                  className="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-slate-50/60 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-zinc-50/60 transition-colors"
                   onClick={() => toggleOpen(grp.key)}
                   role="button"
                   aria-expanded={isOpen}
@@ -1121,19 +1121,19 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className={`text-[13px] font-black ${grp.color} leading-none`}>{grp.label}</h3>
-                    <p className="text-[11px] text-slate-500 font-semibold mt-0.5">{grp.desc}</p>
+                    <p className="text-[11px] text-zinc-500 font-semibold mt-0.5">{grp.desc}</p>
                   </div>
                   <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${grp.bg} ${grp.color} shrink-0`}>{list.length}</span>
                   {isOpen
-                    ? <CaretDown size={12} weight="bold" className="text-slate-400 shrink-0" />
-                    : <CaretRight size={12} weight="bold" className="text-slate-400 shrink-0" />}
+                    ? <CaretDown size={12} weight="bold" className="text-zinc-400 shrink-0" />
+                    : <CaretRight size={12} weight="bold" className="text-zinc-400 shrink-0" />}
                 </header>
 
                 {/* 펼쳐진 내용 */}
                 {isOpen && (
                   <div className={`border-t ${grp.border} p-3 flex flex-col gap-2`}>
                     {list.length === 0 && (
-                      <div className="text-[11px] text-slate-400 font-semibold text-center py-3 border border-dashed border-slate-200 rounded-lg">
+                      <div className="text-[11px] text-zinc-400 font-semibold text-center py-3 border border-dashed border-zinc-200 rounded-lg">
                         등록된 항목이 없습니다.
                       </div>
                     )}
@@ -1141,7 +1141,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                     {list.map((text, idx) => (
                       <div
                         key={idx}
-                        className="flex items-start gap-2 p-2 rounded-lg border border-slate-100 bg-slate-50/40 hover:border-slate-200 transition-colors"
+                        className="flex items-start gap-2 p-2 rounded-lg border border-zinc-100 bg-zinc-50/40 hover:border-zinc-200 transition-colors"
                       >
                         <div className={`flex items-center justify-center min-w-[22px] h-[22px] rounded-md ${grp.bg} ${grp.color} text-[10px] font-black shrink-0 mt-1`}>
                           {idx + 1}
@@ -1151,14 +1151,14 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                           onChange={(e) => updClause(grp.key, idx, e.target.value)}
                           rows={Math.max(2, Math.min(5, Math.ceil(text.length / 55) || 2))}
                           placeholder="내용을 입력하세요."
-                          className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[12px] text-slate-800 font-semibold focus:outline-none focus:border-indigo-500 focus:shadow-sm transition resize-y leading-relaxed"
+                          className="flex-1 bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-indigo-500 focus:shadow-sm transition resize-y leading-relaxed"
                         />
                         <div className="flex flex-col gap-1 shrink-0 pt-0.5">
                           <button
                             type="button"
                             onClick={() => moveClause(grp.key, idx, -1)}
                             disabled={idx === 0}
-                            className="w-6 h-6 rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer transition-colors"
+                            className="w-6 h-6 rounded-md border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer transition-colors"
                             title="위로 이동"
                           >
                             <ArrowUp size={10} weight="bold" />
@@ -1167,7 +1167,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                             type="button"
                             onClick={() => moveClause(grp.key, idx, 1)}
                             disabled={idx === list.length - 1}
-                            className="w-6 h-6 rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer transition-colors"
+                            className="w-6 h-6 rounded-md border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer transition-colors"
                             title="아래로 이동"
                           >
                             <ArrowDown size={10} weight="bold" />
@@ -1188,7 +1188,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                       <button
                         type="button"
                         onClick={() => addClause(grp.key)}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-dashed border-slate-300 bg-white text-slate-500 hover:bg-slate-50 hover:border-indigo-400 hover:text-indigo-600 text-[11px] font-bold transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-dashed border-zinc-300 bg-white text-zinc-500 hover:bg-zinc-50 hover:border-indigo-400 hover:text-indigo-600 text-[11px] font-bold transition-colors cursor-pointer"
                       >
                         <Plus size={11} weight="bold" />
                         항목 추가
@@ -1196,7 +1196,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                       <button
                         type="button"
                         onClick={() => handleResetGroup(grp.key)}
-                        className="text-[10px] font-bold text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer"
+                        className="text-[10px] font-bold text-zinc-400 hover:text-indigo-600 transition-colors cursor-pointer"
                         title="이 그룹 기본값으로 되돌리기"
                       >
                         기본값 복원

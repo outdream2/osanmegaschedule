@@ -16,7 +16,7 @@ const CATEGORY_TEXT: Record<VendorCategory, string> = {
   선결제:   "text-rose-600",
   "60회전": "text-emerald-600",
   "90회전": "text-teal-600",
-  기타:     "text-slate-500",
+  기타:     "text-zinc-500",
 };
 
 interface VendorCategoryBadgeProps {

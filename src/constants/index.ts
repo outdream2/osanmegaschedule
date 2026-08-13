@@ -81,31 +81,31 @@ export const SCHEDULE_TYPES = DEFAULT_SCHEDULE_TYPES.map((e) => ({ value: e.type
 export const SCHEDULE_COLORS: Record<string, { bg: string; text: string; border: string; label: string }> = {
   오픈: {
     bg: "bg-[#dbeafe]",  // Light blue
-    text: "text-slate-900 font-bold",
+    text: "text-zinc-900 font-bold",
     border: "border-[#e2e8f0]",
     label: "오픈",
   },
   미들: {
     bg: "bg-[#e0e7ff]",  // Light indigo
-    text: "text-slate-900 font-bold",
+    text: "text-zinc-900 font-bold",
     border: "border-[#e2e8f0]",
     label: "미들",
   },
   마감: {
     bg: "bg-[#bfdbfe]", // Light blue (deeper)
-    text: "text-slate-900 font-bold",
+    text: "text-zinc-900 font-bold",
     border: "border-[#e2e8f0]",
     label: "마감",
   },
   휴무: {
     bg: "bg-[#fecdd3]", // Soft rose/pink
-    text: "text-slate-900 font-bold",
+    text: "text-zinc-900 font-bold",
     border: "border-[#e2e8f0]",
     label: "휴무",
   },
   월차: {
     bg: "bg-[#fbbf24]", // Deep yellow
-    text: "text-slate-900 font-bold",
+    text: "text-zinc-900 font-bold",
     border: "border-[#e2e8f0]",
     label: "월차",
   },
@@ -125,9 +125,9 @@ export const SCHEDULE_COLORS: Record<string, { bg: string; text: string; border:
 
 // Default styling fallback for unassigned or custom items
 export const DEFAULT_COLOR = {
-  bg: "bg-slate-50",
-  text: "text-slate-500",
-  border: "border-slate-200",
+  bg: "bg-zinc-50",
+  text: "text-zinc-500",
+  border: "border-zinc-200",
   label: "미지정",
 };
 

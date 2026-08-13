@@ -187,15 +187,15 @@ export const DiffTab: React.FC = () => {
       <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
         <div className="flex items-center gap-2">
           <Layers size={14} className="text-violet-500 shrink-0" />
-          <span className={`${TEXT.body} text-slate-800`}>손실추적</span>
+          <span className={`${TEXT.body} text-zinc-800`}>손실추적</span>
           <span className="text-[11px] font-semibold text-violet-600 bg-violet-50 rounded-full px-2 py-0.5 border border-violet-200 tabular-nums">{diffList.length}건</span>
-          <span className={`${TEXT.caption} text-slate-400 hidden sm:inline`}>실재고(창고+매장) ↔ ERP 차이 · 도난·파손·미기록 판매·재고 오류 · 상품명 클릭 → 상세</span>
+          <span className={`${TEXT.caption} text-zinc-400 hidden sm:inline`}>실재고(창고+매장) ↔ ERP 차이 · 도난·파손·미기록 판매·재고 오류 · 상품명 클릭 → 상세</span>
         </div>
         <button
           type="button"
           onClick={fetchData}
           disabled={loading}
-          className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-violet-50 hover:border-violet-300 text-slate-400 hover:text-violet-500 transition disabled:opacity-40 cursor-pointer"
+          className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-zinc-200 bg-white hover:bg-violet-50 hover:border-violet-300 text-zinc-400 hover:text-violet-500 transition disabled:opacity-40 cursor-pointer"
           title="새로고침"
         >
           <LoaderIcon size={13} className={loading ? "animate-spin" : ""} />
@@ -211,21 +211,21 @@ export const DiffTab: React.FC = () => {
         >
           <div className={`${CARD_BASE} flex-1 min-h-0 flex flex-col overflow-hidden`}>
             {/* 상비약/일반약/전체 3-way 필터 */}
-            <div className="flex items-center gap-1 border-b-2 border-slate-200 bg-white px-2 pt-1 shrink-0">
+            <div className="flex items-center gap-1 border-b-2 border-zinc-200 bg-white px-2 pt-1 shrink-0">
               <button type="button" onClick={() => setClassFilter("stationery")}
-                className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-slate-400 hover:text-slate-600"}`}>
-                상비약 <span className="text-[11px] font-semibold text-slate-400 ml-1 tabular-nums">({essentialCount})</span>
+                className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-zinc-400 hover:text-zinc-600"}`}>
+                상비약 <span className="text-[11px] font-semibold text-zinc-400 ml-1 tabular-nums">({essentialCount})</span>
                 {classFilter === "stationery" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-violet-500" />}
               </button>
               <button type="button" onClick={() => setClassFilter("general")}
-                className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "general" ? "text-sky-700" : "text-slate-400 hover:text-slate-600"}`}>
-                일반약 <span className="text-[11px] font-semibold text-slate-400 ml-1 tabular-nums">({generalCount})</span>
+                className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "general" ? "text-sky-700" : "text-zinc-400 hover:text-zinc-600"}`}>
+                일반약 <span className="text-[11px] font-semibold text-zinc-400 ml-1 tabular-nums">({generalCount})</span>
                 {classFilter === "general" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-sky-500" />}
               </button>
               <button type="button" onClick={() => setClassFilter("all")}
-                className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "all" ? "text-slate-800" : "text-slate-400 hover:text-slate-600"}`}>
-                전체 <span className="text-[11px] font-semibold text-slate-400 ml-1 tabular-nums">({allCount})</span>
-                {classFilter === "all" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-slate-500" />}
+                className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "all" ? "text-zinc-800" : "text-zinc-400 hover:text-zinc-600"}`}>
+                전체 <span className="text-[11px] font-semibold text-zinc-400 ml-1 tabular-nums">({allCount})</span>
+                {classFilter === "all" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-zinc-500" />}
               </button>
             </div>
             <div className="flex-1 overflow-y-auto relative">
@@ -248,9 +248,9 @@ export const DiffTab: React.FC = () => {
                   <table className="w-full text-xs sm:min-w-[280px]" style={{ tableLayout: "fixed" }}>
                     <thead className="sticky top-0 z-10">
                       {/* 카테고리 그룹 헤더 (1단) · 2026-08-06 · 상품·공급사·ERP·실재고·손실·가격 */}
-                      <tr className="text-[10px] font-semibold uppercase tracking-wider border-b border-slate-200">
-                        <th colSpan={3} className="bg-slate-50 text-slate-400 text-left px-2 py-1.5">기본정보</th>
-                        <th className="bg-slate-100/60 text-slate-500 text-right px-2 py-1.5 cursor-pointer select-none hover:bg-slate-200/60 transition"
+                      <tr className="text-[10px] font-semibold uppercase tracking-wider border-b border-zinc-200">
+                        <th colSpan={3} className="bg-zinc-50 text-zinc-400 text-left px-2 py-1.5">기본정보</th>
+                        <th className="bg-zinc-100/60 text-zinc-500 text-right px-2 py-1.5 cursor-pointer select-none hover:bg-zinc-200/60 transition"
                           onClick={() => toggleDiffGroup("erp")}
                           title={isDiffGroupCollapsed("erp") ? "ERP재고 펼치기" : "ERP재고 접기"}>
                           <span className="inline-flex items-center gap-1 justify-end">
@@ -268,7 +268,7 @@ export const DiffTab: React.FC = () => {
                         <th colSpan={2} className="bg-amber-50 text-amber-700 text-right px-2 py-1.5">가격</th>
                       </tr>
                       {/* 컬럼 헤더 (2단) · 리사이즈 지원 */}
-                      <tr className="border-b border-slate-100 text-[11px] font-semibold text-slate-500 uppercase tracking-wider bg-white">
+                      <tr className="border-b border-zinc-100 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider bg-white">
                         <th className="relative text-left px-2 py-1.5" style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
                           #
                           <span {...resizerProps("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
@@ -282,9 +282,9 @@ export const DiffTab: React.FC = () => {
                           <span {...resizerProps("supplier")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                         </th>
                         {isDiffGroupCollapsed("erp") ? (
-                          <th className="bg-slate-50/20" style={{ width: 16, minWidth: 16 }}></th>
+                          <th className="bg-zinc-50/20" style={{ width: 16, minWidth: 16 }}></th>
                         ) : (
-                          <th className="relative text-right px-2 py-1.5 bg-slate-50/40 text-slate-500" style={{ width: getWidth("erp"), minWidth: getWidth("erp") }}>
+                          <th className="relative text-right px-2 py-1.5 bg-zinc-50/40 text-zinc-500" style={{ width: getWidth("erp"), minWidth: getWidth("erp") }}>
                             ERP재고
                             <span {...resizerProps("erp")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                           </th>
@@ -311,30 +311,30 @@ export const DiffTab: React.FC = () => {
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-50">
+                    <tbody className="divide-y divide-zinc-50">
                       {diffList.slice(0, 100).map((p: any, i: number) => {
                         const isSelected = diffSelectedProduct?.code === String(p.product_code ?? "");
                         // 손실 = ERP - 실재고 (양수면 손실 · 음수면 초과)
                         const loss = p.cur - p.actual;
                         return (
-                          <tr key={`diff-${p.product_name}-${i}`} className={`transition ${isSelected ? "bg-violet-50/30" : "hover:bg-slate-50/60"}`}>
-                            <td className="px-2 py-2 text-slate-400 font-medium text-[11px] align-top tabular-nums">{i + 1}</td>
+                          <tr key={`diff-${p.product_name}-${i}`} className={`transition ${isSelected ? "bg-violet-50/30" : "hover:bg-zinc-50/60"}`}>
+                            <td className="px-2 py-2 text-zinc-400 font-medium text-[11px] align-top tabular-nums">{i + 1}</td>
                             <td className="px-2 py-2 align-top">
                               <button
                                 onClick={() => loadDiffSelectedProduct(p)}
-                                className="text-left text-[12px] font-semibold text-slate-700 hover:text-violet-700 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition"
+                                className="text-left text-[12px] font-semibold text-zinc-700 hover:text-violet-700 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition"
                                 title={p.product_name}
                               >
                                 {p.product_name}
                               </button>
                             </td>
                             <td className="px-2 py-2 align-top text-[11px] text-sky-700 break-words whitespace-normal leading-snug">
-                              {p.supplier ? displayVendorName(p.supplier) : <span className="text-slate-300">-</span>}
+                              {p.supplier ? displayVendorName(p.supplier) : <span className="text-zinc-300">-</span>}
                             </td>
                             {isDiffGroupCollapsed("erp") ? (
-                              <td className="bg-slate-50/10 w-4"></td>
+                              <td className="bg-zinc-50/10 w-4"></td>
                             ) : (
-                              <td className="text-right px-2 py-2 tabular-nums text-[12px] font-normal bg-slate-50/40 text-slate-600 align-top">{fmt(p.cur)}</td>
+                              <td className="text-right px-2 py-2 tabular-nums text-[12px] font-normal bg-zinc-50/40 text-zinc-600 align-top">{fmt(p.cur)}</td>
                             )}
                             {isDiffGroupCollapsed("actual") ? (
                               <td className="bg-violet-50/10 w-4"></td>
@@ -363,9 +363,9 @@ export const DiffTab: React.FC = () => {
 
         {/* 리사이즈 핸들 (데스크탑만) */}
         <div onMouseDown={onDiffResizeStart}
-          className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-purple-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
+          className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-purple-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
           title="드래그하여 폭 조절">
-          <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+          <span className="text-[9px] text-zinc-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
         </div>
 
         {/* 우측: 상품 상세 · ProductDetailRightPanel (공용) */}
@@ -384,7 +384,7 @@ export const DiffTab: React.FC = () => {
 
       {/* 공급사 상세 모달 */}
       {supplierDetailModal && (
-        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setSupplierDetailModal(null)}>
+        <div className="fixed inset-0 z-[100] bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setSupplierDetailModal(null)}>
           <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-xl shadow-2xl" onClick={e => e.stopPropagation()}>
             <VendorDetailModal
               vendor={supplierDetailModal}

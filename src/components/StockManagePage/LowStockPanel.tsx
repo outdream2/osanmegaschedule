@@ -214,23 +214,23 @@ export const LowStockPanel: React.FC = () => {
       <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
         <div className="flex items-center gap-2">
           <AlertTriangle size={14} className="text-rose-500 shrink-0" />
-          <span className={`${TEXT.body} text-slate-800`}>추천적정재고 이하</span>
+          <span className={`${TEXT.body} text-zinc-800`}>추천적정재고 이하</span>
           <span className="text-[11px] font-semibold text-rose-600 bg-rose-100 rounded-full px-2 py-0.5 tabular-nums">{lowStock.length}개</span>
         </div>
-        <span className={`${TEXT.caption} text-slate-400`}>현재고 &lt; 추천적정재고 · 상품명 클릭 → 상세</span>
+        <span className={`${TEXT.caption} text-zinc-400`}>현재고 &lt; 추천적정재고 · 상품명 클릭 → 상세</span>
         {/* 분류 세그먼트 필터 */}
-        <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-md p-0.5 gap-0.5">
+        <div className="flex flex-wrap bg-zinc-50 border border-zinc-200 rounded-md p-0.5 gap-0.5">
           {(["전체", "위탁", "선결제", "60회전", "90회전", "기타"] as const).map(cat => (
             <button key={cat} onClick={() => setCategoryFilter(cat)}
               className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${
                 categoryFilter === cat
-                  ? cat === "전체"   ? "bg-slate-700 text-white shadow-sm"
+                  ? cat === "전체"   ? "bg-zinc-700 text-white shadow-sm"
                   : cat === "위탁"   ? "bg-violet-500 text-white shadow-sm"
                   : cat === "선결제" ? "bg-rose-500 text-white shadow-sm"
                   : cat === "60회전" ? "bg-emerald-500 text-white shadow-sm"
                   : cat === "90회전" ? "bg-teal-500 text-white shadow-sm"
-                  : "bg-slate-500 text-white shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
+                  : "bg-zinc-500 text-white shadow-sm"
+                  : "text-zinc-500 hover:text-zinc-700"
               }`}>{cat}</button>
           ))}
         </div>
@@ -238,7 +238,7 @@ export const LowStockPanel: React.FC = () => {
           type="button"
           onClick={fetchLowStock}
           disabled={loading}
-          className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-300 text-slate-400 hover:text-rose-500 transition disabled:opacity-40 cursor-pointer"
+          className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-zinc-200 bg-white hover:bg-rose-50 hover:border-rose-300 text-zinc-400 hover:text-rose-500 transition disabled:opacity-40 cursor-pointer"
           title="새로고침"
         >
           <LoaderIcon size={13} className={loading ? "animate-spin" : ""} />
@@ -273,8 +273,8 @@ export const LowStockPanel: React.FC = () => {
                     <table className="w-full text-xs sm:min-w-[480px]" style={{ tableLayout: "fixed" }}>
                       <thead className="sticky top-0 z-10">
                         {/* 그룹 컬러 헤더 */}
-                        <tr className="text-[10px] font-semibold uppercase tracking-wider border-b border-slate-200">
-                          <th colSpan={2} className="bg-slate-50 text-slate-400 text-left px-2 py-1.5">기본정보</th>
+                        <tr className="text-[10px] font-semibold uppercase tracking-wider border-b border-zinc-200">
+                          <th colSpan={2} className="bg-zinc-50 text-zinc-400 text-left px-2 py-1.5">기본정보</th>
                           <th className="bg-rose-50 text-rose-600 text-center px-2 py-1.5 cursor-pointer select-none hover:bg-rose-100 transition"
                             onClick={() => toggleLowGroup("stock")}
                             title={isLowGroupCollapsed("stock") ? "ERP재고 펼치기" : "ERP재고 접기"}>
@@ -283,7 +283,7 @@ export const LowStockPanel: React.FC = () => {
                             </span>
                           </th>
                           <th colSpan={isLowGroupCollapsed("inv") ? 1 : 3}
-                            className="bg-slate-100/60 text-slate-500 text-center px-2 py-1.5 cursor-pointer select-none hover:bg-slate-200/60 transition"
+                            className="bg-zinc-100/60 text-zinc-500 text-center px-2 py-1.5 cursor-pointer select-none hover:bg-zinc-200/60 transition"
                             onClick={() => toggleLowGroup("inv")}
                             title={isLowGroupCollapsed("inv") ? "실재고 펼치기" : "실재고 접기"}>
                             <span className="inline-flex items-center gap-1">
@@ -292,10 +292,10 @@ export const LowStockPanel: React.FC = () => {
                           </th>
                           <th className="bg-indigo-50 text-indigo-600 text-center px-2 py-1.5">추천</th>
                           <th className="bg-rose-100 text-rose-700 text-right px-2 py-1.5">필요</th>
-                          <th className="bg-slate-50 text-slate-400 text-center px-2 py-1.5">발주</th>
+                          <th className="bg-zinc-50 text-zinc-400 text-center px-2 py-1.5">발주</th>
                         </tr>
                         {/* 컬럼 서브헤더 · 리사이즈 지원 */}
-                        <tr className="border-b border-slate-100 text-[11px] font-semibold text-slate-500 uppercase tracking-wider bg-white">
+                        <tr className="border-b border-zinc-100 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider bg-white">
                           <th className="relative text-left px-2 py-1.5" style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
                             #
                             <span {...resizerProps("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
@@ -313,14 +313,14 @@ export const LowStockPanel: React.FC = () => {
                             </th>
                           )}
                           {isLowGroupCollapsed("inv") ? (
-                            <th className="bg-slate-50/20" style={{ width: 16, minWidth: 16 }}></th>
+                            <th className="bg-zinc-50/20" style={{ width: 16, minWidth: 16 }}></th>
                           ) : (
                             <>
-                              <th className="relative text-right px-2 py-1.5 bg-slate-50/60 text-slate-500" style={{ width: getWidth("wh"), minWidth: getWidth("wh") }} title="실재고 · 창고">
+                              <th className="relative text-right px-2 py-1.5 bg-zinc-50/60 text-zinc-500" style={{ width: getWidth("wh"), minWidth: getWidth("wh") }} title="실재고 · 창고">
                                 창고
                                 <span {...resizerProps("wh")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                               </th>
-                              <th className="relative text-right px-2 py-1.5 bg-slate-50/60 text-slate-500" style={{ width: getWidth("st"), minWidth: getWidth("st") }} title="실재고 · 매장">
+                              <th className="relative text-right px-2 py-1.5 bg-zinc-50/60 text-zinc-500" style={{ width: getWidth("st"), minWidth: getWidth("st") }} title="실재고 · 매장">
                                 매장
                                 <span {...resizerProps("st")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                               </th>
@@ -344,7 +344,7 @@ export const LowStockPanel: React.FC = () => {
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-50">
+                      <tbody className="divide-y divide-zinc-50">
                         {lowStock.filter(p => {
                           if (categoryFilter === "전체") return true;
                           const sup = String(p.supplier ?? "").trim();
@@ -357,12 +357,12 @@ export const LowStockPanel: React.FC = () => {
                           const st = p.store_stock;
                           const isSelected = lowSelectedProduct?.code === String(p.product_code ?? "");
                           return (
-                            <tr key={`low-${p.product_name}-${i}`} className={`transition ${isSelected ? "bg-rose-50/30" : "hover:bg-slate-50/60"}`}>
-                              <td className="px-2 py-2 text-slate-400 font-medium text-[11px] align-top tabular-nums">{i + 1}</td>
+                            <tr key={`low-${p.product_name}-${i}`} className={`transition ${isSelected ? "bg-rose-50/30" : "hover:bg-zinc-50/60"}`}>
+                              <td className="px-2 py-2 text-zinc-400 font-medium text-[11px] align-top tabular-nums">{i + 1}</td>
                               <td className="px-2 py-2 align-top">
                                 <button
                                   onClick={() => loadLowSelectedProduct(p)}
-                                  className="text-left text-[12px] font-semibold text-slate-700 hover:text-rose-700 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition"
+                                  className="text-left text-[12px] font-semibold text-zinc-700 hover:text-rose-700 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition"
                                   title={`${p.product_name} — 클릭 시 상세 정보`}
                                 >
                                   {p.product_name}
@@ -370,17 +370,17 @@ export const LowStockPanel: React.FC = () => {
                                 {p.supplier && (
                                   <div className="flex flex-col leading-tight mt-0.5">
                                     <VendorCategoryBadge category={vendorCategoryMap[String(p.supplier).trim()] ?? null} />
-                                    <span className="text-[11px] text-slate-500 whitespace-nowrap">{p.supplier}</span>
+                                    <span className="text-[11px] text-zinc-500 whitespace-nowrap">{p.supplier}</span>
                                   </div>
                                 )}
                               </td>
                               {isLowGroupCollapsed("stock") ? (
                                 <td className="bg-rose-50/10 w-4"></td>
                               ) : (
-                                <td className={`text-right px-2 py-2 tabular-nums text-[12px] font-semibold align-top bg-rose-50/30 ${cur <= 0 ? "text-rose-600" : "text-slate-700"}`} title="ERP 현재고 (products.current_stock)">{fmt(cur)}</td>
+                                <td className={`text-right px-2 py-2 tabular-nums text-[12px] font-semibold align-top bg-rose-50/30 ${cur <= 0 ? "text-rose-600" : "text-zinc-700"}`} title="ERP 현재고 (products.current_stock)">{fmt(cur)}</td>
                               )}
                               {isLowGroupCollapsed("inv") ? (
-                                <td className="bg-slate-50/20 w-4"></td>
+                                <td className="bg-zinc-50/20 w-4"></td>
                               ) : (() => {
                                 const whN = wh != null ? Number(wh) : null;
                                 const stN = st != null ? Number(st) : null;
@@ -388,20 +388,20 @@ export const LowStockPanel: React.FC = () => {
                                 const mismatch = realTotal != null && realTotal !== cur;
                                 return (
                                   <>
-                                    <td className={`text-right px-2 py-2 tabular-nums text-[12px] font-medium bg-slate-50/60 align-top ${wh != null ? "text-slate-600" : "text-slate-300"}`} title={p.inv_checked_at ? `실재고 창고 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "창고 실재고 미입력"}>
+                                    <td className={`text-right px-2 py-2 tabular-nums text-[12px] font-medium bg-zinc-50/60 align-top ${wh != null ? "text-zinc-600" : "text-zinc-300"}`} title={p.inv_checked_at ? `실재고 창고 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "창고 실재고 미입력"}>
                                       {wh != null ? fmt(Number(wh)) : "—"}
                                     </td>
-                                    <td className={`text-right px-2 py-2 tabular-nums text-[12px] font-medium bg-slate-50/60 align-top ${st != null ? "text-slate-600" : "text-slate-300"}`} title={p.inv_checked_at ? `실재고 매장 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "매장 실재고 미입력"}>
+                                    <td className={`text-right px-2 py-2 tabular-nums text-[12px] font-medium bg-zinc-50/60 align-top ${st != null ? "text-zinc-600" : "text-zinc-300"}`} title={p.inv_checked_at ? `실재고 매장 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "매장 실재고 미입력"}>
                                       {st != null ? fmt(Number(st)) : "—"}
                                     </td>
                                     <td
-                                      className={`text-right px-2 py-2 tabular-nums text-[12px] font-semibold align-top bg-rose-50/20 ${realTotal == null ? "text-slate-300" : mismatch ? "text-red-600" : "text-emerald-700"}`}
+                                      className={`text-right px-2 py-2 tabular-nums text-[12px] font-semibold align-top bg-rose-50/20 ${realTotal == null ? "text-zinc-300" : mismatch ? "text-red-600" : "text-emerald-700"}`}
                                       title={realTotal == null ? "실재고 미입력" : mismatch ? `실재고 ${realTotal} ≠ ERP ${cur} · 불일치` : "실재고 = 창고 + 매장"}
                                     >{realTotal != null ? fmt(realTotal) : "—"}</td>
                                   </>
                                 );
                               })()}
-                              <td className="text-right px-2 py-2 tabular-nums text-slate-500 align-top">
+                              <td className="text-right px-2 py-2 tabular-nums text-zinc-500 align-top">
                                 {optimalEditCode === String(p.product_code) ? (
                                   <div className="flex items-center justify-end gap-0.5">
                                     <input
@@ -432,7 +432,7 @@ export const LowStockPanel: React.FC = () => {
                                       type="button"
                                       onMouseDown={(e) => e.preventDefault()}
                                       onClick={cancelOptimalEdit}
-                                      className="p-1 rounded bg-slate-200 text-slate-600 hover:bg-slate-300 active:scale-95 transition shadow-sm"
+                                      className="p-1 rounded bg-zinc-200 text-zinc-600 hover:bg-zinc-300 active:scale-95 transition shadow-sm"
                                       title="취소"
                                     >
                                       <XIcon size={11} strokeWidth={3} />
@@ -445,7 +445,7 @@ export const LowStockPanel: React.FC = () => {
                                     className="w-full h-7 flex items-center justify-end gap-1 text-right tabular-nums text-[11px] font-semibold hover:bg-indigo-50 active:bg-indigo-100 border border-transparent hover:border-indigo-200 rounded-md px-2 cursor-pointer transition"
                                     title="탭하여 적정재고 편집"
                                   >
-                                    <span className={opt > 0 ? "text-slate-700" : "text-slate-400"}>{opt > 0 ? fmt(opt) : "입력"}</span>
+                                    <span className={opt > 0 ? "text-zinc-700" : "text-zinc-400"}>{opt > 0 ? fmt(opt) : "입력"}</span>
                                     <Pencil size={9} className="text-indigo-400 shrink-0" />
                                   </button>
                                 )}
@@ -500,9 +500,9 @@ export const LowStockPanel: React.FC = () => {
 
         {/* 리사이즈 핸들 (데스크탑만) */}
         <div onMouseDown={onLowResizeStart}
-          className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-rose-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
+          className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-rose-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
           title="드래그하여 폭 조절">
-          <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+          <span className="text-[9px] text-zinc-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
         </div>
 
         {/* 우측: 상품 상세 · ProductDetailRightPanel (공용) */}

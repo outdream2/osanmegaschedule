@@ -87,8 +87,8 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <MapPin size={14} className="text-indigo-600" />
-          <h3 className="text-sm font-black text-slate-800">구역 그룹 설정</h3>
-          <span className="text-[10px] text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded-full">
+          <h3 className="text-sm font-black text-zinc-800">구역 그룹 설정</h3>
+          <span className="text-[10px] text-zinc-500 font-semibold bg-zinc-100 px-2 py-0.5 rounded-full">
             {groups.length}개 그룹
           </span>
         </div>
@@ -96,7 +96,7 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
           type="button"
           onClick={addGroup}
           disabled={groups.length >= PALETTE.length}
-          className="flex items-center gap-1 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-[11px] font-bold rounded-lg transition cursor-pointer"
+          className="flex items-center gap-1 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-zinc-300 disabled:cursor-not-allowed text-white text-[11px] font-bold rounded-lg transition cursor-pointer"
         >
           <Plus size={12} />
           새 구역 추가
@@ -116,7 +116,7 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
       )}
 
       {groups.length === 0 ? (
-        <div className="text-center py-6 text-slate-400 text-xs">
+        <div className="text-center py-6 text-zinc-400 text-xs">
           아직 구역 그룹이 없습니다. "새 구역 추가"를 눌러 시작하세요.
         </div>
       ) : (
@@ -128,7 +128,7 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
                 key={g.id}
                 onClick={() => onActiveGroupChange(isActive ? null : g.id)}
                 className={`relative rounded-lg p-2 cursor-pointer transition border-2 ${
-                  isActive ? "shadow-md scale-[1.02]" : "border-slate-200 hover:border-slate-300 bg-slate-50"
+                  isActive ? "shadow-md scale-[1.02]" : "border-zinc-200 hover:border-zinc-300 bg-zinc-50"
                 }`}
                 style={isActive ? { borderColor: g.color, backgroundColor: `${g.color}10` } : undefined}
               >
@@ -142,15 +142,15 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
                     value={g.name}
                     onClick={(e) => e.stopPropagation()}
                     onChange={(e) => updateGroup(g.id, { name: e.target.value })}
-                    className="flex-1 min-w-0 bg-transparent text-[12px] font-black text-slate-800 focus:outline-none focus:bg-white px-1 rounded"
+                    className="flex-1 min-w-0 bg-transparent text-[12px] font-black text-zinc-800 focus:outline-none focus:bg-white px-1 rounded"
                   />
-                  <span className="text-[9px] font-bold text-slate-500 bg-white border border-slate-200 px-1.5 py-0.5 rounded-full shrink-0">
+                  <span className="text-[9px] font-bold text-zinc-500 bg-white border border-zinc-200 px-1.5 py-0.5 rounded-full shrink-0">
                     {g.areaIds.length}구역
                   </span>
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); deleteGroup(g.id); }}
-                    className="text-slate-400 hover:text-red-500 transition cursor-pointer shrink-0"
+                    className="text-zinc-400 hover:text-red-500 transition cursor-pointer shrink-0"
                     title="그룹 삭제"
                   >
                     <Trash2 size={11} />
@@ -161,7 +161,7 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
                     value={g.employeeId ?? ""}
                     onClick={(e) => e.stopPropagation()}
                     onChange={(e) => handleEmployeeChange(g.id, e.target.value)}
-                    className="flex-1 text-[10px] font-semibold bg-white border border-slate-200 rounded px-1 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400 cursor-pointer"
+                    className="flex-1 text-[10px] font-semibold bg-white border border-zinc-200 rounded px-1 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400 cursor-pointer"
                   >
                     <option value="">담당자 선택...</option>
                     {employees.map((e) => (

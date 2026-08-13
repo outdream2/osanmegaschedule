@@ -114,7 +114,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
             "text-[19px] leading-none", // 2026-08-12 · 사용자 지시 · 사이드바 폰트 +2
             // 200ms ease-out · 모든 인터랙션 통일
             "transition-all duration-200 ease-out",
-            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-300",
+            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-300",
             // 활성/비활성 · warm pill
             hasActiveItem
               ? [
@@ -125,9 +125,9 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                   groupTone.glowShadow,
                 ].join(" ")
               : [
-                  // 비활성 · text-slate-700 (시인성 강화)
-                  "text-slate-700",
-                  "hover:bg-white/70 hover:text-slate-900",
+                  // 비활성 · text-zinc-700 (시인성 강화)
+                  "text-zinc-700",
+                  "hover:bg-white/70 hover:text-zinc-900",
                   "font-semibold",
                 ].join(" "),
             "group-data-[collapsible=icon]:hidden",
@@ -151,7 +151,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                 />
               );
             })()}
-            {/* 글씨 · 공통헤더 톤 · 활성=그룹컬러 · 비활성=slate-700 (이미 부모 button className 에 적용됨) */}
+            {/* 글씨 · 공통헤더 톤 · 활성=그룹컬러 · 비활성=zinc-700 (이미 부모 button className 에 적용됨) */}
             <span className="tracking-wide">{group.label}</span>
           </span>
 
@@ -161,7 +161,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
               "flex items-center justify-center",
               "w-7 h-7 rounded-md",
               "transition-colors duration-200 ease-out",
-              hasActiveItem ? "bg-transparent" : "hover:bg-slate-100",
+              hasActiveItem ? "bg-transparent" : "hover:bg-zinc-100",
             ].join(" ")}
             aria-hidden="true"
           >
@@ -170,7 +170,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
               weight="bold"
               className={[
                 "shrink-0 transition-transform duration-200 ease-out",
-                hasActiveItem ? groupTone.activeText : "text-slate-600",
+                hasActiveItem ? groupTone.activeText : "text-zinc-600",
                 open ? "rotate-0" : "-rotate-90",
               ].join(" ")}
             />
@@ -222,9 +222,9 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                           tone.glowShadow,
                         ].join(" ")
                       : [
-                          // 비활성 · text-slate-700 (시인성 강화)
-                          "font-semibold text-slate-700",
-                          "hover:bg-white/70 hover:text-slate-900",
+                          // 비활성 · text-zinc-700 (시인성 강화)
+                          "font-semibold text-zinc-700",
+                          "hover:bg-white/70 hover:text-zinc-900",
                           // subtle slide on hover
                           "hover:translate-x-px",
                         ].join(" "),
@@ -239,7 +239,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                       "shrink-0",
                       active
                         ? [tone.iconActive, "scale-105"].join(" ")
-                        : "text-slate-500",
+                        : "text-zinc-500",
                       "transition-transform duration-200 ease-out",
                     ].join(" ")}
                   />
@@ -278,7 +278,7 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, on
         "rounded-lg",
         "text-[19px] leading-none",
         "transition-all duration-200 ease-out",
-        "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-300",
+        "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-300",
         active
           ? [
               tone.activeBg,
@@ -288,8 +288,8 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, on
               tone.glowShadow,
             ].join(" ")
           : [
-              "text-slate-700",
-              "hover:bg-white/70 hover:text-slate-900",
+              "text-zinc-700",
+              "hover:bg-white/70 hover:text-zinc-900",
               "font-semibold",
             ].join(" "),
         "group-data-[collapsible=icon]:justify-center",
@@ -325,11 +325,11 @@ export const SideNav: React.FC<SideNavProps> = ({
   const { brand } = useBrandIdentity();
 
   return (
-    // warm hairline border · border-r border-slate-200/60
-    <Sidebar collapsible="icon" data-sb-v2="" className="border-r border-slate-200/60">
+    // warm hairline border · border-r border-zinc-200/60
+    <Sidebar collapsible="icon" data-sb-v2="" className="border-r border-zinc-200/60">
 
       {/* ── 로고 영역 · 2026-08-12 · 접기 토글 · 약국이름 옆 · 사이드바 내부 ── */}
-      <SidebarHeader className="px-2 py-2 pb-1.5 border-b border-slate-200/60">
+      <SidebarHeader className="px-2 py-2 pb-1.5 border-b border-zinc-200/60">
         <div className="flex items-center gap-1 w-full">
           <button
             type="button"
@@ -341,7 +341,7 @@ export const SideNav: React.FC<SideNavProps> = ({
               "px-2 py-1.5 rounded-lg",
               // warm hover
               "hover:bg-white/70 transition-all duration-200 ease-out",
-              "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-300",
+              "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-300",
               "cursor-pointer",
             ].join(" ")}
           >
@@ -352,14 +352,14 @@ export const SideNav: React.FC<SideNavProps> = ({
             />
             {/* icon-only 모드에서 숨김 */}
             <div className="flex flex-col gap-px leading-none group-data-[collapsible=icon]:hidden min-w-0">
-              <span className="text-[14px] font-bold text-slate-800 tracking-tight leading-tight truncate">
+              <span className="text-[14px] font-bold text-zinc-800 tracking-tight leading-tight truncate">
                 {brand.shortName}
               </span>
             </div>
           </button>
           {/* 접기/펼치기 토글 · 사이드바 내부 · 약국이름 우측 · icon 모드에서도 보임 */}
           <SidebarTrigger
-            className="h-7 w-7 rounded-md text-slate-400 hover:text-slate-800 hover:bg-white/70 transition shrink-0 group-data-[collapsible=icon]:hidden"
+            className="h-7 w-7 rounded-md text-zinc-400 hover:text-zinc-800 hover:bg-white/70 transition shrink-0 group-data-[collapsible=icon]:hidden"
             aria-label="사이드바 접기"
           />
         </div>
@@ -387,13 +387,13 @@ export const SideNav: React.FC<SideNavProps> = ({
       </SidebarContent>
 
       {/* ── 하단: 구분선 + 알림 + 로그아웃 ── */}
-      <SidebarSeparator className="bg-slate-200/60" />
+      <SidebarSeparator className="bg-zinc-200/60" />
 
       <SidebarFooter className="px-2 py-1.5 gap-0.5">
         {/* 2026-08-12 · 로그인 정보 · [이름] 만 · 배지/카드 배경 제거 */}
         {authSession && authSession.employeeName && (
           <div className="px-2 py-1 group-data-[collapsible=icon]:hidden">
-            <span className="text-[13px] font-bold text-slate-800 truncate leading-tight">
+            <span className="text-[13px] font-bold text-zinc-800 truncate leading-tight">
               [{authSession.employeeName}]
             </span>
           </div>
@@ -429,7 +429,7 @@ export const SideNav: React.FC<SideNavProps> = ({
       {/* PC 드래그 리사이즈 handle · warm 톤 */}
       <div
         onMouseDown={startResize}
-        className="hidden md:block absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-slate-300/50 active:bg-slate-400/60 transition z-30 group-data-[collapsible=icon]:hidden"
+        className="hidden md:block absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-zinc-300/50 active:bg-zinc-400/60 transition z-30 group-data-[collapsible=icon]:hidden"
         title="드래그하여 사이드바 폭 조절"
         aria-label="사이드바 폭 조절"
         aria-hidden="true"

@@ -343,17 +343,17 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-slate-900 text-white px-5 py-4 flex-shrink-0">
+        <div className="bg-zinc-900 text-white px-5 py-4 flex-shrink-0">
           <div className="flex items-center justify-between mb-1">
             <div>
               <span className="text-lg font-extrabold tracking-tight">{employee.name}</span>
-              <span className="ml-2 text-slate-400 text-xs">{employee.position}</span>
+              <span className="ml-2 text-zinc-400 text-xs">{employee.position}</span>
             </div>
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors">
               <X size={16} />
             </button>
           </div>
-          <div className="text-xs text-slate-400">
+          <div className="text-xs text-zinc-400">
             {employee.workplace}
             {employee.description && <> · <span className="text-amber-700 font-medium">{employee.description}</span></>}
           </div>
@@ -361,7 +361,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
 
         {/* Tab bar — always visible since info tab is available to everyone */}
         {(
-          <div className="flex border-b border-slate-200 bg-slate-50 flex-shrink-0">
+          <div className="flex border-b border-zinc-200 bg-zinc-50 flex-shrink-0">
             {isAdmin && (
               <>
                 <button
@@ -369,7 +369,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                   className={`flex-1 py-2.5 text-[15px] font-bold transition flex items-center justify-center gap-1.5 ${
                     activeTab === "calendar"
                       ? "text-indigo-600 border-b-2 border-indigo-500 bg-white"
-                      : "text-slate-500 hover:text-slate-700"
+                      : "text-zinc-500 hover:text-zinc-700"
                   }`}
                 >
                   <Calendar size={14} /> 달력
@@ -379,7 +379,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                   className={`flex-1 py-2.5 text-[15px] font-bold transition flex items-center justify-center gap-1.5 ${
                     activeTab === "bulk"
                       ? "text-blue-600 border-b-2 border-blue-500 bg-white"
-                      : "text-slate-500 hover:text-slate-700"
+                      : "text-zinc-500 hover:text-zinc-700"
                   }`}
                 >
                   <CheckCircle size={14} /> 일괄 등록
@@ -392,7 +392,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                 className={`flex-1 py-2.5 text-[11px] font-bold transition flex items-center justify-center gap-1.5 ${
                   activeTab === "zone"
                     ? "text-violet-600 border-b-2 border-violet-500 bg-white"
-                    : "text-slate-500 hover:text-slate-700"
+                    : "text-zinc-500 hover:text-zinc-700"
                 }`}
               >
                 <MapPin size={12} /> 구역 배정
@@ -408,7 +408,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
               className={`flex-1 py-2.5 text-[15px] font-bold transition flex items-center justify-center gap-1.5 ${
                 activeTab === "info"
                   ? "text-fuchsia-600 border-b-2 border-fuchsia-500 bg-white"
-                  : "text-slate-500 hover:text-fuchsia-600 hover:bg-fuchsia-50"
+                  : "text-zinc-500 hover:text-fuchsia-600 hover:bg-fuchsia-50"
               }`}
             >
               <User size={14} /> 직원정보
@@ -418,13 +418,13 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
 
         {/* Month nav · 달력·일괄등록 탭 에서만 노출 · info 탭에서는 숨김 */}
         {activeTab !== "info" && (
-          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50 flex-shrink-0">
-            <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer">
-              <ChevronLeft size={16} className="text-slate-600" />
+          <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-100 bg-zinc-50 flex-shrink-0">
+            <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-zinc-200 transition-colors cursor-pointer">
+              <ChevronLeft size={16} className="text-zinc-600" />
             </button>
-            <span className="text-sm font-bold text-slate-800">{year}년 {month}월</span>
-            <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer">
-              <ChevronRight size={16} className="text-slate-600" />
+            <span className="text-sm font-bold text-zinc-800">{year}년 {month}월</span>
+            <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-zinc-200 transition-colors cursor-pointer">
+              <ChevronRight size={16} className="text-zinc-600" />
             </button>
           </div>
         )}
@@ -435,7 +435,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
             <div className="flex-1 overflow-y-auto px-3 py-2">
               <div className="grid grid-cols-7 mb-1">
                 {DAY_LABELS.map((d, i) => (
-                  <div key={d} className={`text-center text-[13px] font-bold py-1 ${i === 0 ? "text-rose-500" : i === 6 ? "text-sky-500" : "text-slate-400"}`}>
+                  <div key={d} className={`text-center text-[13px] font-bold py-1 ${i === 0 ? "text-rose-500" : i === 6 ? "text-sky-500" : "text-zinc-400"}`}>
                     {d}
                   </div>
                 ))}
@@ -474,8 +474,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                             outOfEmployment ? (beforeHire ? "입사일 이전 — 근무 불가" : "퇴사일 이후 — 근무 불가") : undefined
                           }
                           className={`relative rounded-lg p-1 flex flex-col items-center min-h-[68px] border transition-all ${
-                            outOfEmployment ? "bg-slate-100 border-slate-200 cursor-not-allowed opacity-70" :
-                            (dayBgHex ? "border-transparent" : "bg-white border-slate-100")
+                            outOfEmployment ? "bg-zinc-100 border-zinc-200 cursor-not-allowed opacity-70" :
+                            (dayBgHex ? "border-transparent" : "bg-white border-zinc-100")
                           } ${isHireDay ? "ring-2 ring-emerald-500" : ""} ${isRetireDay ? "ring-2 ring-rose-500" : ""} ${isToday ? "ring-2 ring-indigo-400 ring-offset-1" : ""} ${
                             isEditing ? "ring-2 ring-blue-500 scale-105 z-10 shadow-md" : ""
                           } ${pendingChanges[dayStr] ? "ring-2 ring-amber-400" : ""} ${canClick ? "cursor-pointer hover:shadow-sm hover:scale-[1.02]" : ""}`}
@@ -493,19 +493,19 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                             </span>
                           )}
                           <span className={`text-[13px] font-bold leading-none mb-0.5 ${
-                            dow === 0 ? "text-rose-500" : dow === 6 ? "text-sky-500" : "text-slate-600"
+                            dow === 0 ? "text-rose-500" : dow === 6 ? "text-sky-500" : "text-zinc-600"
                           }`}>
                             {day}
                           </span>
                           {outOfEmployment ? (
-                            <span className="text-[11px] text-slate-400 font-medium">─</span>
+                            <span className="text-[11px] text-zinc-400 font-medium">─</span>
                           ) : sc?.type ? (
                             <>
-                              <span className={`text-[12px] font-extrabold leading-tight ${dayIsLight ? "text-slate-900" : "text-white"}`}>
+                              <span className={`text-[12px] font-extrabold leading-tight ${dayIsLight ? "text-zinc-900" : "text-white"}`}>
                                 {sc.type}
                               </span>
                               {sc.workingHours && (
-                                <span className="text-[11px] text-slate-500 leading-tight mt-0.5 font-mono">
+                                <span className="text-[11px] text-zinc-500 leading-tight mt-0.5 font-mono">
                                   {sc.workingHours}
                                 </span>
                               )}
@@ -516,7 +516,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                               )}
                             </>
                           ) : (
-                            <span className="text-[11px] text-slate-200">-</span>
+                            <span className="text-[11px] text-zinc-200">-</span>
                           )}
                         </div>
                       );
@@ -533,7 +533,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                   <span className="text-[11px] font-black text-blue-700">
                     {month}월 {editingDay}일 스케줄 편집
                   </span>
-                  <button onClick={() => setEditingDay(null)} className="p-1 text-slate-400 hover:text-slate-600 rounded transition cursor-pointer">
+                  <button onClick={() => setEditingDay(null)} className="p-1 text-zinc-400 hover:text-zinc-600 rounded transition cursor-pointer">
                     <X size={13} />
                   </button>
                 </div>
@@ -551,8 +551,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                         onClick={() => quickApplyType(t.value)}
                         className={`px-2.5 py-1.5 text-[10px] font-extrabold rounded-lg border transition cursor-pointer disabled:opacity-50 ${
                           isActive
-                            ? `${btnLight ? "text-slate-900" : "text-white"} border-blue-400 ring-2 ring-blue-400/30 shadow-sm`
-                            : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
+                            ? `${btnLight ? "text-zinc-900" : "text-white"} border-blue-400 ring-2 ring-blue-400/30 shadow-sm`
+                            : "bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-100"
                         }`}
                         style={isActive ? { backgroundColor: btnHex } : undefined}
                       >
@@ -576,7 +576,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
 
                 <div className="flex gap-2">
                   <div className="flex-1">
-                    <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 flex items-center gap-0.5">
+                    <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5 flex items-center gap-0.5">
                       <Clock size={9} /> 근무 시간
                     </label>
                     <input
@@ -584,11 +584,11 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                       value={editWorkingHours}
                       onChange={e => setEditWorkingHours(e.target.value)}
                       placeholder="09:30-18:30"
-                      className="w-full text-[11px] rounded border border-slate-200 focus:border-blue-400 p-1.5 bg-white focus:outline-none"
+                      className="w-full text-[11px] rounded border border-zinc-200 focus:border-blue-400 p-1.5 bg-white focus:outline-none"
                     />
                   </div>
                   <div className="flex-1">
-                    <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 flex items-center gap-0.5">
+                    <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5 flex items-center gap-0.5">
                       <MessageSquare size={9} /> 실근무/기타
                     </label>
                     <input
@@ -596,19 +596,19 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                       value={editActualHours}
                       onChange={e => setEditActualHours(e.target.value)}
                       placeholder="지각, 조퇴..."
-                      className="w-full text-[11px] rounded border border-slate-200 focus:border-blue-400 p-1.5 bg-white focus:outline-none"
+                      className="w-full text-[11px] rounded border border-zinc-200 focus:border-blue-400 p-1.5 bg-white focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">메모</label>
+                  <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">메모</label>
                   <input
                     type="text"
                     value={editMemo}
                     onChange={e => setEditMemo(e.target.value)}
                     placeholder="메모 (마우스 오버 시 표시)"
-                    className="w-full text-[11px] rounded border border-slate-200 focus:border-blue-400 p-1.5 bg-white focus:outline-none"
+                    className="w-full text-[11px] rounded border border-zinc-200 focus:border-blue-400 p-1.5 bg-white focus:outline-none"
                   />
                 </div>
 
@@ -616,7 +616,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={() => setEditingDay(null)}
-                    className="px-3 py-1.5 text-[11px] font-semibold bg-white border border-slate-200 rounded text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+                    className="px-3 py-1.5 text-[11px] font-semibold bg-white border border-zinc-200 rounded text-zinc-600 hover:bg-zinc-50 transition cursor-pointer"
                   >
                     닫기
                   </button>
@@ -634,15 +634,15 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
             )}
 
             {/* Stats footer + Batch save */}
-            <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100 flex-shrink-0 flex items-center gap-3 flex-wrap">
-              <span className="text-[10px] font-bold text-slate-500">이달 근무 {workDays}일</span>
+            <div className="px-4 py-2.5 bg-zinc-50 border-t border-zinc-100 flex-shrink-0 flex items-center gap-3 flex-wrap">
+              <span className="text-[10px] font-bold text-zinc-500">이달 근무 {workDays}일</span>
               {Object.entries(stats).map(([type, count]) => {
                 const statHex = getTypeHex(type, scheduleTypeEntries);
                 const statLight = isLightHex(statHex);
                 return (
                   <div
                     key={type}
-                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${statLight ? "text-slate-900" : "text-white"}`}
+                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${statLight ? "text-zinc-900" : "text-white"}`}
                     style={{ backgroundColor: statHex }}
                   >
                     {type} {count}
@@ -656,7 +656,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                     type="button"
                     onClick={handleDiscardPending}
                     disabled={isBatchSaving}
-                    className="px-2 py-1 text-[10px] font-bold bg-white border border-slate-300 text-slate-600 rounded hover:bg-slate-100 transition cursor-pointer disabled:opacity-50"
+                    className="px-2 py-1 text-[10px] font-bold bg-white border border-zinc-300 text-zinc-600 rounded hover:bg-zinc-100 transition cursor-pointer disabled:opacity-50"
                   >
                     변경 취소
                   </button>
@@ -688,7 +688,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
 
         {/* ── BULK TAB ── */}
         {activeTab === "bulk" && (
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 text-slate-800 text-xs">
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 text-zinc-800 text-xs">
 
             {isLocked && (
               <div className="flex items-center gap-2 px-3 py-2.5 bg-amber-50 border border-amber-300 rounded-lg">
@@ -707,21 +707,21 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
             {/* Step 1: Date selection */}
             <div className="space-y-2">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <span className="text-xs font-bold text-zinc-700 flex items-center gap-1.5">
                   <span className="bg-blue-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[9px]">1</span>
                   날짜 선택 ({bulkSelectedDates.length}일 선택됨)
                 </span>
                 <div className="flex flex-wrap gap-1">
-                  <button type="button" onClick={selectAll} className="px-2 py-1 text-[10px] font-bold bg-slate-100 hover:bg-slate-200 rounded text-slate-700 cursor-pointer transition">전체선택</button>
-                  <button type="button" onClick={deselectAll} className="px-2 py-1 text-[10px] font-bold bg-slate-100 hover:bg-slate-200 rounded text-slate-700 cursor-pointer transition">선택해제</button>
+                  <button type="button" onClick={selectAll} className="px-2 py-1 text-[10px] font-bold bg-zinc-100 hover:bg-zinc-200 rounded text-zinc-700 cursor-pointer transition">전체선택</button>
+                  <button type="button" onClick={deselectAll} className="px-2 py-1 text-[10px] font-bold bg-zinc-100 hover:bg-zinc-200 rounded text-zinc-700 cursor-pointer transition">선택해제</button>
                   <button type="button" onClick={selectWeekdays} className="px-2 py-1 text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-100 hover:bg-emerald-100 rounded cursor-pointer transition">평일(월-금)</button>
                   <button type="button" onClick={selectWeekends} className="px-2 py-1 text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-100 hover:bg-rose-100 rounded cursor-pointer transition">주말(토-일)</button>
                 </div>
               </div>
 
               {/* Weekday toggle buttons */}
-              <div className="bg-slate-50 border border-slate-100 rounded-xl p-2 flex flex-wrap items-center gap-2">
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide shrink-0">요일 단위:</span>
+              <div className="bg-zinc-50 border border-zinc-100 rounded-xl p-2 flex flex-wrap items-center gap-2">
+                <span className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-wide shrink-0">요일 단위:</span>
                 <div className="flex flex-wrap gap-1">
                   {[
                     { label: "월", val: 1 }, { label: "화", val: 2 }, { label: "수", val: 3 },
@@ -733,7 +733,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                       key={w.val}
                       type="button"
                       onClick={() => toggleWeekday(w.val)}
-                      className={`px-2 py-1 text-[10px] font-semibold border rounded-lg cursor-pointer transition ${w.extra ?? "text-slate-700 border-slate-200 hover:bg-slate-100"}`}
+                      className={`px-2 py-1 text-[10px] font-semibold border rounded-lg cursor-pointer transition ${w.extra ?? "text-zinc-700 border-zinc-200 hover:bg-zinc-100"}`}
                     >
                       {w.label}요일
                     </button>
@@ -752,7 +752,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                       className={`flex flex-col items-center justify-center py-1.5 border rounded-lg cursor-pointer text-center select-none transition ${
                         isChecked
                           ? "bg-blue-50 border-blue-400 text-blue-700 font-extrabold"
-                          : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                          : "bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50"
                       }`}
                     >
                       <input
@@ -764,7 +764,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                         }}
                         className="sr-only"
                       />
-                      <span className={`text-[11px] ${isChecked ? "text-blue-600" : dayIndex === 6 ? "text-blue-500" : dayIndex === 0 ? "text-rose-500" : "text-slate-400"}`}>
+                      <span className={`text-[11px] ${isChecked ? "text-blue-600" : dayIndex === 6 ? "text-blue-500" : dayIndex === 0 ? "text-rose-500" : "text-zinc-400"}`}>
                         {dayWord}
                       </span>
                       <span className="text-[14px] font-bold">{dayNum}</span>
@@ -776,7 +776,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
 
             {/* Step 2: Schedule settings */}
             <div className="space-y-3">
-              <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <span className="text-xs font-bold text-zinc-700 flex items-center gap-1.5">
                 <span className="bg-blue-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[9px]">2</span>
                 근무 조건 설정
               </span>
@@ -785,7 +785,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
               <div className="p-2 border border-blue-200 bg-blue-50/50 rounded-xl space-y-1">
                 <label className="block text-[10px] font-black text-blue-800">⚡ 일괄 근태 빠른 지정</label>
                 <div className="flex flex-wrap gap-1.5">
-                  <button type="button" onClick={() => setBulkActualHours("")} className="px-2 py-1 text-[10px] font-extrabold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded cursor-pointer transition">초기화</button>
+                  <button type="button" onClick={() => setBulkActualHours("")} className="px-2 py-1 text-[10px] font-extrabold bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200 rounded cursor-pointer transition">초기화</button>
                   <button type="button" onClick={() => { setBulkActualHours("지각"); setBulkWorkingHours(typeHoursMap?.["오픈"] ?? ""); }} className="px-2 py-1 text-[10px] font-extrabold bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-200 rounded cursor-pointer transition">⚠️ 지각</button>
                   <button type="button" onClick={() => setBulkActualHours("조퇴")} className="px-2 py-1 text-[10px] font-extrabold bg-purple-100 hover:bg-purple-200 text-purple-900 border border-purple-200 rounded cursor-pointer transition">🏃 조퇴</button>
                   <button type="button" onClick={() => { setBulkActualHours("결근"); setBulkType("결근"); setBulkWorkingHours(""); }} className="px-2 py-1 text-[10px] font-extrabold bg-rose-100 hover:bg-rose-200 text-rose-900 border border-rose-200 rounded cursor-pointer transition">🚨 결근</button>
@@ -793,8 +793,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
               </div>
 
               {/* Shift presets */}
-              <div className="p-2 border border-slate-100 bg-slate-50/50 rounded-xl space-y-1.5">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">근무 패턴 템플릿:</label>
+              <div className="p-2 border border-zinc-100 bg-zinc-50/50 rounded-xl space-y-1.5">
+                <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider">근무 패턴 템플릿:</label>
                 <div className="flex flex-wrap gap-1.5">
                   {activeTypes.map((t) => {
                     const hours = typeHoursMap?.[t.value];
@@ -806,7 +806,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                         className={`px-2.5 py-1 text-[10px] rounded border transition cursor-pointer font-semibold ${
                           bulkType === t.value
                             ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                            : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                            : "bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-50"
                         }`}
                       >
                         {hours ? `${t.label} (${hours})` : t.label}
@@ -819,8 +819,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
               {/* Fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-semibold text-slate-600 uppercase mb-1 flex items-center gap-1">
-                    <Clock size={11} className="text-slate-400" /> 근무 시간
+                  <label className="block text-[10px] font-semibold text-zinc-600 uppercase mb-1 flex items-center gap-1">
+                    <Clock size={11} className="text-zinc-400" /> 근무 시간
                   </label>
                   <input
                     type="text"
@@ -831,8 +831,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-semibold text-slate-600 uppercase mb-1 flex items-center gap-1">
-                    <MessageSquare size={11} className="text-slate-400" /> 특이사항
+                  <label className="block text-[10px] font-semibold text-zinc-600 uppercase mb-1 flex items-center gap-1">
+                    <MessageSquare size={11} className="text-zinc-400" /> 특이사항
                   </label>
                   <input
                     type="text"
@@ -843,7 +843,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-[10px] font-semibold text-slate-600 uppercase mb-1 flex items-center gap-1">
+                  <label className="block text-[10px] font-semibold text-zinc-600 uppercase mb-1 flex items-center gap-1">
                     <MessageSquare size={11} className="text-blue-500" /> 메모
                   </label>
                   <input
@@ -862,7 +862,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab("calendar")}
-                className="px-4 py-2 text-xs font-bold bg-slate-50 hover:bg-slate-100 rounded border border-[#e2e8f0] text-slate-600 transition cursor-pointer"
+                className="px-4 py-2 text-xs font-bold bg-zinc-50 hover:bg-zinc-100 rounded border border-[#e2e8f0] text-zinc-600 transition cursor-pointer"
                 disabled={isBulkSaving}
               >
                 취소
@@ -922,7 +922,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
 
               {/* 부가 정보 · 주소·이메일 (있을 때만) · 공통 폼 (read-only) */}
               {(localEmployee.address || localEmployee.email) && (
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                <div className="bg-zinc-50 border border-zinc-100 rounded-xl p-3">
                   <EmployeeInfoForm
                     values={infoValues}
                     onChange={() => { /* read-only */ }}

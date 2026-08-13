@@ -57,7 +57,7 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
       {/* Bottom safe-area padding for pages · fixed 나 sticky 요소에 가리지 않도록 하단 여백 확보 */}
       <div className="sm:hidden h-20" style={{ marginBottom: "env(safe-area-inset-bottom, 0px)" }} aria-hidden="true" />
 
-      <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-slate-200 shadow-[0_-4px_20px_rgba(15,23,42,0.06)]"
+      <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-zinc-200 shadow-[0_-4px_20px_rgba(15,23,42,0.06)]"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <div className="grid grid-cols-5 gap-0.5 px-1 pt-1">
           {TABS.map(t => {
@@ -68,7 +68,7 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
                 key={t.key}
                 onClick={() => handleTap(t.key)}
                 className={`flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl transition active:scale-95 ${
-                  active ? "text-orange-600" : "text-slate-400 hover:text-slate-600"
+                  active ? "text-orange-600" : "text-zinc-400 hover:text-zinc-600"
                 }`}
               >
                 <span className={`w-9 h-6 flex items-center justify-center rounded-full transition ${active ? "bg-orange-100" : ""}`}>
@@ -82,11 +82,11 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
       </nav>
 
       {sheetOpen && (
-        <div className="sm:hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-end" onClick={() => setSheetOpen(false)}>
+        <div className="sm:hidden fixed inset-0 z-50 bg-zinc-900/50 backdrop-blur-sm flex items-end" onClick={() => setSheetOpen(false)}>
           <div className="w-full bg-white rounded-t-3xl shadow-2xl max-h-[80vh] overflow-y-auto animate-[slideUp_0.2s_ease-out]" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white/95 backdrop-blur border-b border-slate-100 px-4 py-3 flex items-center justify-between">
-              <h3 className="text-sm font-black text-slate-800">더보기</h3>
-              <button onClick={() => setSheetOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-500"><X size={18} /></button>
+            <div className="sticky top-0 bg-white/95 backdrop-blur border-b border-zinc-100 px-4 py-3 flex items-center justify-between">
+              <h3 className="text-sm font-black text-zinc-800">더보기</h3>
+              <button onClick={() => setSheetOpen(false)} className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-500"><X size={18} /></button>
             </div>
             <div className="p-3 grid grid-cols-3 gap-2">
               {isManager && (
@@ -134,7 +134,7 @@ const TILE_COLORS: Record<string, { bg: string; border: string; text: string; ic
   emerald: { bg: "hover:bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700", iconBg: "bg-emerald-100" },
   rose:    { bg: "hover:bg-rose-50",    border: "border-rose-200",    text: "text-rose-700",    iconBg: "bg-rose-100" },
   red:     { bg: "hover:bg-red-50",     border: "border-red-200",     text: "text-red-700",     iconBg: "bg-red-100" },
-  slate:   { bg: "hover:bg-slate-50",   border: "border-slate-200",   text: "text-slate-700",   iconBg: "bg-slate-100" },
+  slate:   { bg: "hover:bg-zinc-50",   border: "border-zinc-200",   text: "text-zinc-700",   iconBg: "bg-zinc-100" },
 };
 
 function SheetTile({

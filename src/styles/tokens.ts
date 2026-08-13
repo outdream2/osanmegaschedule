@@ -88,13 +88,13 @@ export const COLOR = {
     ring:   "ring-sky-400",
   },
   neutral: {
-    50:     "bg-slate-50",
-    100:    "bg-slate-100",
-    500:    "bg-slate-500",
-    600:    "bg-slate-600",
-    text:   "text-slate-700",
-    border: "border-slate-200",
-    ring:   "ring-slate-400",
+    50:     "bg-zinc-50",
+    100:    "bg-zinc-100",
+    500:    "bg-zinc-500",
+    600:    "bg-zinc-600",
+    text:   "text-zinc-700",
+    border: "border-zinc-200",
+    ring:   "ring-zinc-400",
   },
 } as const;
 
@@ -106,7 +106,7 @@ export const COLOR = {
 
 /** 기본 카드 · bg-white + 테두리 + 그림자 (index.css .card-panel 과 동일) */
 export const CARD_BASE =
-  "bg-white rounded-xl border border-slate-200 shadow-sm";
+  "bg-white rounded-xl border border-zinc-200 shadow-sm";
 
 /** 카드 hover 인터랙션 · 클릭 가능한 카드에만 추가 */
 export const CARD_HOVER =
@@ -114,13 +114,13 @@ export const CARD_HOVER =
 
 /** 툴바 컨테이너 · 검색/필터 버튼 행 (inline 형태 · FilterBar 와 다름) */
 export const TOOLBAR_BASE =
-  "flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 h-8 shadow-sm";
+  "flex items-center gap-2 bg-white border border-zinc-200 rounded-xl px-3 h-8 shadow-sm";
 
 /** 폼 input 기본 (index.css .input-field 보다 focus ring 강화) */
 export const INPUT_BASE =
-  "w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px]" +
+  "w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[13px]" +
   " focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition" +
-  " placeholder:text-slate-400";
+  " placeholder:text-zinc-400";
 
 // 2026-08-13 · #109 · 2025 SaaS 트렌드 (Linear · Vercel · Supabase · Attio · Cal.com)
 //   · 파스텔 톤 (bg-*-50 + text-*-600) 은 badge/chip 용도로만 유지 · 버튼은 filled/outline
@@ -135,9 +135,9 @@ export const BUTTON_PRIMARY =
 
 /** Secondary · 취소·상세보기·덜 중요한 액션 · white + border outline (Vercel 스타일) */
 export const BUTTON_SECONDARY =
-  "px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 text-[12px] font-semibold shadow-sm" +
-  " hover:bg-slate-50 hover:border-slate-400" +
-  " focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400" +
+  "px-4 py-2 rounded-lg border border-zinc-300 bg-white text-zinc-700 text-[12px] font-semibold shadow-sm" +
+  " hover:bg-zinc-50 hover:border-zinc-400" +
+  " focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400" +
   " disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer";
 
 /** Destructive · 삭제·해제 · filled rose-600 (Supabase/Height 스타일) */
@@ -156,20 +156,20 @@ export const BUTTON_SUCCESS =
 
 /** Ghost/icon · 닫기·메뉴·아이콘 전용 · border 없음 · hover 시만 배경 */
 export const BUTTON_GHOST =
-  "p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700" +
-  " active:bg-slate-200 transition-colors cursor-pointer" +
-  " focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400" +
+  "p-2 rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700" +
+  " active:bg-zinc-200 transition-colors cursor-pointer" +
+  " focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400" +
   " disabled:opacity-40 disabled:cursor-not-allowed";
 
 /** 모달 backdrop (index.css .modal-backdrop 와 동일 스타일 · 모바일 하단 시트 포함) */
 export const MODAL_BACKDROP =
   "fixed inset-0 z-[9997] flex items-end sm:items-center justify-center" +
-  " p-0 sm:p-4 bg-slate-900/50 backdrop-blur-sm";
+  " p-0 sm:p-4 bg-zinc-900/50 backdrop-blur-sm";
 
 /** 모달 카드 본체 · 모바일 하단 시트 + 데스크탑 센터 */
 export const MODAL_CONTENT =
   "w-full sm:max-w-lg max-h-[90vh] bg-white sm:rounded-2xl rounded-t-2xl" +
-  " shadow-2xl border border-slate-200 overflow-hidden flex flex-col";
+  " shadow-2xl border border-zinc-200 overflow-hidden flex flex-col";
 
 /** 페이지 최상위 컨테이너 · 좌우 최대 폭 + 패딩 */
 export const PAGE_WRAPPER =
@@ -181,10 +181,10 @@ export const KPI_GRID =
 
 /** 섹션 제목 (카드 안 · 필터 섹션 위) */
 export const SECTION_TITLE =
-  "text-[11px] font-bold text-slate-500 uppercase tracking-wider";
+  "text-[11px] font-bold text-zinc-500 uppercase tracking-wider";
 
 /** 구분선 */
-export const DIVIDER = "border-t border-slate-100";
+export const DIVIDER = "border-t border-zinc-100";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 상태별 색상 매핑 (StatusBadge 컴포넌트에서도 사용)
@@ -199,7 +199,7 @@ export const STATUS_COLOR: Record<StatusKey, { bg: string; text: string; border:
   warning:  { bg: "bg-amber-50",   text: "text-amber-700",   border: "border-amber-200"  },
   danger:   { bg: "bg-rose-50",    text: "text-rose-700",    border: "border-rose-200"   },
   info:     { bg: "bg-sky-50",     text: "text-sky-700",     border: "border-sky-200"    },
-  neutral:  { bg: "bg-slate-50",   text: "text-slate-600",   border: "border-slate-200"  },
+  neutral:  { bg: "bg-zinc-50",   text: "text-zinc-600",   border: "border-zinc-200"  },
 };
 
 export const STATUS_LABEL: Record<StatusKey, string> = {

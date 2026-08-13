@@ -151,7 +151,7 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-zinc-50 flex flex-col">
       {/* ── 공용 상단 헤더 ── */}
       <AppNavHeader
         activePage={"business-manage" as AppNavPage}
@@ -188,7 +188,7 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
       {/* ── 서브탭 컨텐츠 ── */}
       <main className="flex-1 flex flex-col min-h-0">
         {subTab === "staff-manage" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 py-16">직원관리 로딩 중...</div>}>
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-zinc-400 py-16">직원관리 로딩 중...</div>}>
             <StaffManagePage
               onWriteContract={() => setSubTab("document-writer")}
               initialSelectedId={initialEmployeeId ?? null}
@@ -197,7 +197,7 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
           </Suspense>
         )}
         {subTab === "approval-center" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 py-16">승인대기 로딩 중...</div>}>
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-zinc-400 py-16">승인대기 로딩 중...</div>}>
             <ApprovalCenterPage
               {...commonSubPageProps}
               onCountsChange={(c) => setApprovalPending(c.leave + c.resignation)}
@@ -208,12 +208,12 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
           <LunchPage {...commonSubPageProps} />
         )}
         {subTab === "hr-forms" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 py-16">각종 양식 로딩 중...</div>}>
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-zinc-400 py-16">각종 양식 로딩 중...</div>}>
             <HrFormsPage {...commonSubPageProps} />
           </Suspense>
         )}
         {subTab === "document-writer" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 py-16">근로계약서 로딩 중...</div>}>
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-zinc-400 py-16">근로계약서 로딩 중...</div>}>
             <DocumentWriterPage {...commonSubPageProps} allowedTabs={["contract", "settings"]} />
           </Suspense>
         )}

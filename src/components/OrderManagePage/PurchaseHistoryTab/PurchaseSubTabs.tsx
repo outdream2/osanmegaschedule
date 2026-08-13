@@ -173,21 +173,21 @@ const LedgerTab: React.FC<{
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[12px] gap-2">
+      <div className="flex-1 flex items-center justify-center py-12 text-zinc-400 text-[12px] gap-2">
         <Loader2 size={14} className="animate-spin" />
         <span>매입 이력 로딩 중...</span>
       </div>
     );
   }
   if (groups.length === 0) {
-    return <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[12px]">해당 기간 매입 이력 없음</div>;
+    return <div className="flex-1 flex items-center justify-center py-12 text-zinc-400 text-[12px]">해당 기간 매입 이력 없음</div>;
   }
 
   return (
     <div className="overflow-auto flex-1 min-h-0 bg-white">
       <table className="w-full text-[12px] min-w-[420px]" style={{ borderCollapse: "separate", borderSpacing: 0, tableLayout: "fixed" }}>
-        <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
-          <tr className="text-[11px] text-slate-500 uppercase tracking-wider">
+        <thead className="sticky top-0 bg-zinc-50 border-b border-zinc-200 z-10">
+          <tr className="text-[11px] text-zinc-500 uppercase tracking-wider">
             <th className="relative text-center py-2" style={{ width: lw("expand"), minWidth: lw("expand") }}>
               <span {...lr("expand")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
             </th>
@@ -209,7 +209,7 @@ const LedgerTab: React.FC<{
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-zinc-100">
           {groups.map((g) => {
             const isOpen = expanded.has(g.date);
             const containsHighlight = highlightId != null && g.items.some(it => String(it.id) === String(highlightId));
@@ -218,22 +218,22 @@ const LedgerTab: React.FC<{
                 <tr
                   onClick={() => toggle(g.date)}
                   className={`cursor-pointer transition-colors ${
-                    containsHighlight ? "bg-amber-50 hover:bg-amber-100/70" : isOpen ? "bg-emerald-50/40 hover:bg-emerald-50/60" : "hover:bg-slate-50/60"
+                    containsHighlight ? "bg-amber-50 hover:bg-amber-100/70" : isOpen ? "bg-emerald-50/40 hover:bg-emerald-50/60" : "hover:bg-zinc-50/60"
                   }`}
                   title={isOpen ? "접기" : "펼치기"}
                 >
                   <td className="text-center align-middle py-2">
                     {isOpen
                       ? <ChevronDown size={13} className="text-emerald-500 mx-auto" />
-                      : <ChevronRight size={13} className="text-slate-400 mx-auto" />}
+                      : <ChevronRight size={13} className="text-zinc-400 mx-auto" />}
                   </td>
-                  <td className="px-3 py-2 font-mono text-[12px] font-semibold text-slate-700 whitespace-nowrap">
+                  <td className="px-3 py-2 font-mono text-[12px] font-semibold text-zinc-700 whitespace-nowrap">
                     {/* 2026-08-06 · T-TEST-매입이력-날짜포맷 (사용자 요청) · 2026 줄바꿈 7/20 */}
                     {(() => {
                       const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(g.date);
                       if (m) return (
                         <span className="inline-flex flex-col leading-tight items-start">
-                          <span className="text-[10px] text-slate-400">{m[1]}</span>
+                          <span className="text-[10px] text-zinc-400">{m[1]}</span>
                           <span>{String(parseInt(m[2], 10))}/{String(parseInt(m[3], 10))}</span>
                         </span>
                       );
@@ -241,13 +241,13 @@ const LedgerTab: React.FC<{
                     })()}
                     {containsHighlight && <span className="ml-1 text-[10px] text-amber-600 font-black">◀</span>}
                   </td>
-                  <td className="px-3 py-2 text-slate-700 break-words whitespace-normal leading-snug">
+                  <td className="px-3 py-2 text-zinc-700 break-words whitespace-normal leading-snug">
                     <span className="font-semibold">{g.repName}</span>
                     {g.itemCount > 1 && (
-                      <span className="ml-1 text-[11px] text-slate-500 font-semibold">외 {g.itemCount - 1}건</span>
+                      <span className="ml-1 text-[11px] text-zinc-500 font-semibold">외 {g.itemCount - 1}건</span>
                     )}
                   </td>
-                  <td className="text-right px-3 py-2 tabular-nums font-mono text-[11px] text-slate-600 whitespace-nowrap">
+                  <td className="text-right px-3 py-2 tabular-nums font-mono text-[11px] text-zinc-600 whitespace-nowrap">
                     {fmt(g.itemCount)}
                   </td>
                   <td className="text-right px-3 py-2 tabular-nums font-mono font-black text-emerald-700 whitespace-nowrap">
@@ -255,21 +255,21 @@ const LedgerTab: React.FC<{
                   </td>
                 </tr>
                 {isOpen && (
-                  <tr className="bg-slate-50/40">
+                  <tr className="bg-zinc-50/40">
                     <td></td>
                     <td colSpan={4} className="px-3 py-2">
-                      <div className="overflow-x-auto rounded border border-slate-200 bg-white">
+                      <div className="overflow-x-auto rounded border border-zinc-200 bg-white">
                         <table className="w-full text-[11px]">
-                          <thead className="bg-slate-50 border-b border-slate-200">
-                            <tr className="text-[10px] text-slate-500 uppercase tracking-wider">
-                              <th className="text-left px-2 py-1.5 w-7 text-slate-300">#</th>
+                          <thead className="bg-zinc-50 border-b border-zinc-200">
+                            <tr className="text-[10px] text-zinc-500 uppercase tracking-wider">
+                              <th className="text-left px-2 py-1.5 w-7 text-zinc-300">#</th>
                               <th className="text-left px-2 py-1.5">상품명</th>
                               <th className="text-right px-2 py-1.5 w-16">수량</th>
                               <th className="text-right px-2 py-1.5 w-20">단가</th>
                               <th className="text-right px-2 py-1.5 w-24 text-emerald-600">금액</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-100">
+                          <tbody className="divide-y divide-zinc-100">
                             {g.items.map((it, i) => {
                               const isHl = highlightId != null && String(it.id) === String(highlightId);
                               return (
@@ -278,19 +278,19 @@ const LedgerTab: React.FC<{
                                   ref={isHl ? highlightRowRef : undefined}
                                   className={`transition-colors ${isHl ? "bg-amber-50" : "hover:bg-emerald-50/40"}`}
                                 >
-                                  <td className="px-2 py-1 text-slate-300 tabular-nums align-top">{i + 1}</td>
+                                  <td className="px-2 py-1 text-zinc-300 tabular-nums align-top">{i + 1}</td>
                                   <td className="px-2 py-1 align-top">
-                                    <div className="text-[12px] font-semibold text-slate-700 break-words whitespace-normal leading-snug">
+                                    <div className="text-[12px] font-semibold text-zinc-700 break-words whitespace-normal leading-snug">
                                       {it.product_name ?? "-"}
                                     </div>
                                     {it.product_code && (
-                                      <div className="text-[10px] font-mono text-slate-400 tabular-nums">{it.product_code}</div>
+                                      <div className="text-[10px] font-mono text-zinc-400 tabular-nums">{it.product_code}</div>
                                     )}
                                   </td>
-                                  <td className="text-right px-2 py-1 font-mono font-bold text-slate-800 tabular-nums align-top">
+                                  <td className="text-right px-2 py-1 font-mono font-bold text-zinc-800 tabular-nums align-top">
                                     {Number(it.quantity ?? 0) !== 0 ? fmt(Number(it.quantity ?? 0)) : "-"}
                                   </td>
-                                  <td className="text-right px-2 py-1 font-mono text-slate-500 tabular-nums align-top">
+                                  <td className="text-right px-2 py-1 font-mono text-zinc-500 tabular-nums align-top">
                                     {Number(it.unit_price ?? 0) > 0 ? fmt(Number(it.unit_price ?? 0)) : "-"}
                                   </td>
                                   <td className="text-right px-2 py-1 font-mono font-black text-emerald-700 tabular-nums align-top">
@@ -309,22 +309,22 @@ const LedgerTab: React.FC<{
             );
           })}
         </tbody>
-        <tfoot className="sticky bottom-0 bg-white border-t-2 border-slate-200">
+        <tfoot className="sticky bottom-0 bg-white border-t-2 border-zinc-200">
           <tr>
             <td className="text-center">
               <button
                 type="button"
                 onClick={() => setSumCollapsed(v => !v)}
                 title={sumCollapsed ? "합계 펼치기" : "합계 접기"}
-                className="inline-flex items-center justify-center w-5 h-5 rounded hover:bg-slate-100 text-slate-500 hover:text-emerald-600 transition cursor-pointer"
+                className="inline-flex items-center justify-center w-5 h-5 rounded hover:bg-zinc-100 text-zinc-500 hover:text-emerald-600 transition cursor-pointer"
               >
                 {sumCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
               </button>
             </td>
-            <td colSpan={2} className="px-3 py-2 text-right text-[11px] font-black text-slate-500">
-              합계 <span className="text-slate-400 font-bold">({groups.length}일)</span>
+            <td colSpan={2} className="px-3 py-2 text-right text-[11px] font-black text-zinc-500">
+              합계 <span className="text-zinc-400 font-bold">({groups.length}일)</span>
             </td>
-            <td className={`px-3 py-2 text-right tabular-nums font-mono text-[12px] font-black text-slate-700 ${sumCollapsed ? "opacity-30" : ""}`}>
+            <td className={`px-3 py-2 text-right tabular-nums font-mono text-[12px] font-black text-zinc-700 ${sumCollapsed ? "opacity-30" : ""}`}>
               {sumCollapsed ? "···" : fmt(totalItems)}
             </td>
             <td className={`px-3 py-2 text-right tabular-nums font-mono text-[13px] font-black text-emerald-700 ${sumCollapsed ? "opacity-30" : ""}`}>
@@ -425,52 +425,52 @@ const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> =
   const totalAmount = useMemo(() => aggregated.reduce((s, a) => s + a.total_amount, 0), [aggregated]);
 
   if (loading) {
-    return <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[11px]">불러오는 중...</div>;
+    return <div className="flex-1 flex items-center justify-center py-12 text-zinc-400 text-[11px]">불러오는 중...</div>;
   }
   if (aggregated.length === 0) {
-    return <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[11px]">해당 기간 매입 상품 없음</div>;
+    return <div className="flex-1 flex items-center justify-center py-12 text-zinc-400 text-[11px]">해당 기간 매입 상품 없음</div>;
   }
   return (
     <div className="overflow-auto flex-1 min-h-0">
       <table className="w-full text-xs min-w-[600px]" style={{ tableLayout: "fixed" }}>
-        <thead className="sticky top-0 bg-white z-10 border-b border-slate-100">
-          <tr className="text-[11px] text-slate-400 uppercase tracking-wider">
-            <th className="relative text-left px-2 py-2 text-slate-300" style={{ width: aw("num"), minWidth: aw("num") }}>
+        <thead className="sticky top-0 bg-white z-10 border-b border-zinc-100">
+          <tr className="text-[11px] text-zinc-400 uppercase tracking-wider">
+            <th className="relative text-left px-2 py-2 text-zinc-300" style={{ width: aw("num"), minWidth: aw("num") }}>
               #
               <span {...ar("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
             </th>
             <th onClick={() => toggleSort("product_name")}
-              className="relative text-left px-2 py-2 cursor-pointer select-none hover:bg-slate-50 transition"
+              className="relative text-left px-2 py-2 cursor-pointer select-none hover:bg-zinc-50 transition"
               style={{ width: aw("name"), minWidth: aw("name") }}>
               상품{arrow("product_name")}
               <span {...ar("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
             <th onClick={() => toggleSort("total_qty")}
-              className="relative text-right px-2 py-2 cursor-pointer select-none hover:bg-slate-50 transition"
+              className="relative text-right px-2 py-2 cursor-pointer select-none hover:bg-zinc-50 transition"
               style={{ width: aw("qty"), minWidth: aw("qty") }}>
               총매입수량{arrow("total_qty")}
               <span {...ar("qty")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
             <th onClick={() => toggleSort("avg_unit_price")}
-              className="relative text-right px-2 py-2 cursor-pointer select-none hover:bg-slate-50 transition"
+              className="relative text-right px-2 py-2 cursor-pointer select-none hover:bg-zinc-50 transition"
               style={{ width: aw("unit"), minWidth: aw("unit") }}>
               평균단가{arrow("avg_unit_price")}
               <span {...ar("unit")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
             <th onClick={() => toggleSort("avg_interval")}
-              className="relative text-right px-2 py-2 cursor-pointer select-none hover:bg-slate-50 transition leading-tight"
+              className="relative text-right px-2 py-2 cursor-pointer select-none hover:bg-zinc-50 transition leading-tight"
               style={{ width: aw("interval"), minWidth: aw("interval") }}>
               평균<br />매입주기{arrow("avg_interval")}
               <span {...ar("interval")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
             <th onClick={() => toggleSort("last_date")}
-              className="relative text-left px-2 py-2 cursor-pointer select-none hover:bg-slate-50 transition leading-tight"
+              className="relative text-left px-2 py-2 cursor-pointer select-none hover:bg-zinc-50 transition leading-tight"
               style={{ width: aw("last_date"), minWidth: aw("last_date") }}>
               최근<br />매입일{arrow("last_date")}
               <span {...ar("last_date")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
             <th onClick={() => toggleSort("purchase_count")}
-              className="relative text-right px-2 py-2 cursor-pointer select-none hover:bg-slate-50 transition leading-tight"
+              className="relative text-right px-2 py-2 cursor-pointer select-none hover:bg-zinc-50 transition leading-tight"
               style={{ width: aw("count"), minWidth: aw("count") }}>
               매입<br />횟수{arrow("purchase_count")}
               <span {...ar("count")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
@@ -483,43 +483,43 @@ const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> =
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-50">
+        <tbody className="divide-y divide-zinc-50">
           {sorted.map((a, i) => (
-            <tr key={`pa-${a.key}-${i}`} className="hover:bg-slate-50/60 transition-all duration-100">
-              <td className="px-2 py-1.5 text-slate-300 text-[11px] tabular-nums align-top">{i + 1}</td>
+            <tr key={`pa-${a.key}-${i}`} className="hover:bg-zinc-50/60 transition-all duration-100">
+              <td className="px-2 py-1.5 text-zinc-300 text-[11px] tabular-nums align-top">{i + 1}</td>
               <td className="px-2 py-1.5 align-top">
-                <div className="text-[12px] font-semibold text-slate-700 break-words whitespace-normal leading-snug">
+                <div className="text-[12px] font-semibold text-zinc-700 break-words whitespace-normal leading-snug">
                   {a.product_name}
                 </div>
                 {a.product_code && (
-                  <div className="text-[10px] text-slate-400 font-mono tabular-nums">{a.product_code}</div>
+                  <div className="text-[10px] text-zinc-400 font-mono tabular-nums">{a.product_code}</div>
                 )}
               </td>
-              <td className="px-2 py-1.5 text-right tabular-nums text-[12px] text-slate-600 align-top">
+              <td className="px-2 py-1.5 text-right tabular-nums text-[12px] text-zinc-600 align-top">
                 {fmt(a.total_qty)}
               </td>
-              <td className="px-2 py-1.5 text-right tabular-nums text-[12px] text-slate-600 align-top">
+              <td className="px-2 py-1.5 text-right tabular-nums text-[12px] text-zinc-600 align-top">
                 {a.avg_unit_price > 0 ? fmt(Math.round(a.avg_unit_price)) : "-"}
               </td>
               {/* 평균 매입주기 (2026-08-06) · 일수 · 2회 미만이면 '-' */}
-              <td className={`px-2 py-1.5 text-right tabular-nums text-[12px] align-top ${a.avg_interval == null ? "text-slate-300" : "text-slate-600"}`}
+              <td className={`px-2 py-1.5 text-right tabular-nums text-[12px] align-top ${a.avg_interval == null ? "text-zinc-300" : "text-zinc-600"}`}
                   title={a.avg_interval == null ? "매입 2회 미만" : `평균 ${a.avg_interval}일`}>
                 {a.avg_interval == null ? "—" : `${a.avg_interval}일`}
               </td>
               {/* 최근매입일 (2026-08-06) · 2026 (10px 회색) 줄바꿈 7/20 형식 */}
-              <td className="px-2 py-1.5 tabular-nums text-[11px] text-slate-500 align-top whitespace-nowrap">
+              <td className="px-2 py-1.5 tabular-nums text-[11px] text-zinc-500 align-top whitespace-nowrap">
                 {(() => {
                   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(a.last_date);
                   if (m) return (
                     <span className="inline-flex flex-col leading-tight items-start">
-                      <span className="text-[9px] text-slate-400">{m[1]}</span>
+                      <span className="text-[9px] text-zinc-400">{m[1]}</span>
                       <span>{String(parseInt(m[2], 10))}/{String(parseInt(m[3], 10))}</span>
                     </span>
                   );
                   return dateLabel(a.last_date);
                 })()}
               </td>
-              <td className="px-2 py-1.5 text-right tabular-nums text-[12px] text-slate-600 align-top">
+              <td className="px-2 py-1.5 text-right tabular-nums text-[12px] text-zinc-600 align-top">
                 {fmt(a.purchase_count)}
               </td>
               <td className="px-2 py-1.5 text-right tabular-nums text-[12px] font-semibold text-emerald-700 align-top">
@@ -528,9 +528,9 @@ const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> =
             </tr>
           ))}
         </tbody>
-        <tfoot className="sticky bottom-0 bg-white border-t-2 border-slate-200">
+        <tfoot className="sticky bottom-0 bg-white border-t-2 border-zinc-200">
           <tr>
-            <td colSpan={7} className="px-2 py-2 text-right text-[11px] font-black text-slate-500">합계</td>
+            <td colSpan={7} className="px-2 py-2 text-right text-[11px] font-black text-zinc-500">합계</td>
             <td className="px-2 py-2 text-right tabular-nums text-[13px] font-black text-emerald-700">{fmtWon(totalAmount)}</td>
           </tr>
         </tfoot>
@@ -551,7 +551,7 @@ const CHART_COLORS = [
   "#06b6d4", // cyan-500
   "#f97316", // orange-500
   "#84cc16", // lime-500
-  "#64748b", // slate-500 (기타/초과)
+  "#64748b", // zinc-500 (기타/초과)
   "#a78bfa", // violet-400
 ];
 
@@ -566,10 +566,10 @@ const ChartTooltip: React.FC<{
   const { name, value } = payload[0];
   const pct = total > 0 ? ((value / total) * 100).toFixed(1) : "0.0";
   return (
-    <div className="bg-white border border-slate-200 rounded-lg shadow-md px-3 py-2 text-[11px] min-w-[120px]">
-      <div className="font-semibold text-slate-700 mb-1 break-words whitespace-normal leading-snug">{name}</div>
+    <div className="bg-white border border-zinc-200 rounded-lg shadow-md px-3 py-2 text-[11px] min-w-[120px]">
+      <div className="font-semibold text-zinc-700 mb-1 break-words whitespace-normal leading-snug">{name}</div>
       <div className="tabular-nums text-emerald-700 font-black">{value.toLocaleString()}{unit}</div>
-      <div className="tabular-nums text-slate-500 mt-0.5">{pct}%</div>
+      <div className="tabular-nums text-zinc-500 mt-0.5">{pct}%</div>
     </div>
   );
 };
@@ -583,8 +583,8 @@ const ChartLegendList: React.FC<{
     {items.map((it, i) => (
       <div key={i} className="flex items-center gap-1.5 min-w-0 text-[11px]">
         <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: it.color }} />
-        <span className="flex-1 min-w-0 text-slate-700 font-semibold break-words whitespace-normal leading-snug">{it.name}</span>
-        <span className="tabular-nums text-slate-500 shrink-0">
+        <span className="flex-1 min-w-0 text-zinc-700 font-semibold break-words whitespace-normal leading-snug">{it.name}</span>
+        <span className="tabular-nums text-zinc-500 shrink-0">
           {total > 0 ? ((it.value / total) * 100).toFixed(0) : 0}%
         </span>
       </div>
@@ -641,7 +641,7 @@ export const CategoryPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows
 
   if (total === 0) {
     return (
-      <div className={`${CARD_BASE} p-4 flex items-center justify-center h-48 text-[11px] text-slate-400`}>
+      <div className={`${CARD_BASE} p-4 flex items-center justify-center h-48 text-[11px] text-zinc-400`}>
         데이터 없음
       </div>
     );
@@ -649,7 +649,7 @@ export const CategoryPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows
 
   return (
     <div className={`${CARD_BASE} p-4 flex flex-col gap-3`}>
-      <div className="text-[11px] font-black text-slate-600 uppercase tracking-wider">
+      <div className="text-[11px] font-black text-zinc-600 uppercase tracking-wider">
         카테고리별 매입액 비중
       </div>
       <div className="flex items-center gap-4">
@@ -677,7 +677,7 @@ export const CategoryPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows
         </div>
         <ChartLegendList items={data} total={total} />
       </div>
-      <div className="text-right text-[10px] tabular-nums text-slate-400 font-semibold">
+      <div className="text-right text-[10px] tabular-nums text-zinc-400 font-semibold">
         합계 {fmtWon(total)}원
       </div>
     </div>
@@ -715,7 +715,7 @@ export const MonthlyPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows 
 
   if (total === 0) {
     return (
-      <div className={`${CARD_BASE} p-4 flex items-center justify-center h-48 text-[11px] text-slate-400`}>
+      <div className={`${CARD_BASE} p-4 flex items-center justify-center h-48 text-[11px] text-zinc-400`}>
         최근 6개월 데이터 없음
       </div>
     );
@@ -723,7 +723,7 @@ export const MonthlyPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows 
 
   return (
     <div className={`${CARD_BASE} p-4 flex flex-col gap-3`}>
-      <div className="text-[11px] font-black text-slate-600 uppercase tracking-wider">
+      <div className="text-[11px] font-black text-zinc-600 uppercase tracking-wider">
         월별 매입액 분포 (최근 6개월)
       </div>
       <div className="flex items-center gap-4">
@@ -751,7 +751,7 @@ export const MonthlyPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows 
         </div>
         <ChartLegendList items={data} total={total} />
       </div>
-      <div className="text-right text-[10px] tabular-nums text-slate-400 font-semibold">
+      <div className="text-right text-[10px] tabular-nums text-zinc-400 font-semibold">
         합계 {fmtWon(total)}원
       </div>
     </div>
@@ -786,7 +786,7 @@ export const TopProductsPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ r
 
   if (total === 0) {
     return (
-      <div className={`${CARD_BASE} p-4 flex items-center justify-center h-48 text-[11px] text-slate-400`}>
+      <div className={`${CARD_BASE} p-4 flex items-center justify-center h-48 text-[11px] text-zinc-400`}>
         데이터 없음
       </div>
     );
@@ -794,7 +794,7 @@ export const TopProductsPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ r
 
   return (
     <div className={`${CARD_BASE} p-4 flex flex-col gap-3`}>
-      <div className="text-[11px] font-black text-slate-600 uppercase tracking-wider">
+      <div className="text-[11px] font-black text-zinc-600 uppercase tracking-wider">
         상품별 매입 Top 10
       </div>
       <div className="flex items-center gap-4">
@@ -822,7 +822,7 @@ export const TopProductsPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ r
         </div>
         <ChartLegendList items={data} total={total} />
       </div>
-      <div className="text-right text-[10px] tabular-nums text-slate-400 font-semibold">
+      <div className="text-right text-[10px] tabular-nums text-zinc-400 font-semibold">
         합계 {fmtWon(total)}원
       </div>
     </div>
@@ -840,7 +840,7 @@ const Top10Card: React.FC<{
 }> = ({ title, items, formatValue, valueColor }) => {
   if (items.length === 0) {
     return (
-      <div className={`${CARD_BASE} p-4 flex items-center justify-center h-48 text-[11px] text-slate-400`}>
+      <div className={`${CARD_BASE} p-4 flex items-center justify-center h-48 text-[11px] text-zinc-400`}>
         데이터 없음
       </div>
     );
@@ -848,23 +848,23 @@ const Top10Card: React.FC<{
   const max = Math.max(...items.map(i => i.value), 1);
   return (
     <div className={`${CARD_BASE} p-3 flex flex-col gap-2`}>
-      <div className="text-[11px] font-black text-slate-600 uppercase tracking-wider">{title}</div>
+      <div className="text-[11px] font-black text-zinc-600 uppercase tracking-wider">{title}</div>
       <div className="flex flex-col gap-1">
         {items.map(it => {
           const pct = (it.value / max) * 100;
           return (
             <div key={`${it.rank}-${it.name}`} className="flex items-center gap-2 text-[11px]">
               <span className={`shrink-0 w-6 h-5 rounded-md flex items-center justify-center font-black tabular-nums ${
-                it.rank <= 3 ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"
+                it.rank <= 3 ? "bg-amber-100 text-amber-700" : "bg-zinc-100 text-zinc-500"
               }`}>{it.rank}</span>
               <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-                <span className="font-semibold text-slate-700 break-words whitespace-normal leading-snug" title={it.name}>{it.name}</span>
-                <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+                <span className="font-semibold text-zinc-700 break-words whitespace-normal leading-snug" title={it.name}>{it.name}</span>
+                <div className="h-1 bg-zinc-100 rounded-full overflow-hidden">
                   <div className={`h-full ${valueColor.replace("text-", "bg-")}`} style={{ width: `${pct}%` }} />
                 </div>
               </div>
               <span className={`shrink-0 tabular-nums font-black ${valueColor}`}>{formatValue(it.value)}</span>
-              {it.sub && <span className="shrink-0 text-[10px] text-slate-400 tabular-nums">{it.sub}</span>}
+              {it.sub && <span className="shrink-0 text-[10px] text-zinc-400 tabular-nums">{it.sub}</span>}
             </div>
           );
         })}
@@ -1028,10 +1028,10 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
   }, [rows, metric]);
 
   if (loading) {
-    return <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[11px]">불러오는 중...</div>;
+    return <div className="flex-1 flex items-center justify-center py-12 text-zinc-400 text-[11px]">불러오는 중...</div>;
   }
   if (rows.length === 0) {
-    return <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[11px]">해당 기간 매입 데이터 없음</div>;
+    return <div className="flex-1 flex items-center justify-center py-12 text-zinc-400 text-[11px]">해당 기간 매입 데이터 없음</div>;
   }
 
   const pieTitle =
@@ -1043,14 +1043,14 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
     <div className="flex-1 min-h-0 overflow-auto p-3 flex flex-col gap-3">
       {/* 제목 + 기간 */}
       <div className="flex items-baseline gap-2 px-1">
-        <span className="text-[12px] font-black text-slate-700">매입추이 Top 10</span>
+        <span className="text-[12px] font-black text-zinc-700">매입추이 Top 10</span>
         {dateRange && (
-          <span className="text-[10.5px] text-slate-400 font-semibold tabular-nums">({dateRange})</span>
+          <span className="text-[10.5px] text-zinc-400 font-semibold tabular-nums">({dateRange})</span>
         )}
-        <span className="text-[10px] text-slate-400 tabular-nums ml-auto">{rows.length.toLocaleString()}건</span>
+        <span className="text-[10px] text-zinc-400 tabular-nums ml-auto">{rows.length.toLocaleString()}건</span>
       </div>
       {/* 3-metric 탭 */}
-      <div className="flex items-center gap-1 border-b border-slate-100 pb-0.5">
+      <div className="flex items-center gap-1 border-b border-zinc-100 pb-0.5">
         {METRIC_TABS.map(t => {
           const active = t.k === metric;
           const activeCls =
@@ -1062,12 +1062,12 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
               type="button"
               onClick={() => setMetric(t.k)}
               className={`inline-flex items-center gap-1 h-8 px-3 border-b-2 text-[12px] font-black cursor-pointer transition ${
-                active ? `${activeCls} bg-white` : "text-slate-400 border-transparent hover:text-slate-600"
+                active ? `${activeCls} bg-white` : "text-zinc-400 border-transparent hover:text-zinc-600"
               }`}
               title={t.hint}
             >
               {t.label}
-              <span className="text-[10px] font-normal text-slate-400">{t.hint}</span>
+              <span className="text-[10px] font-normal text-zinc-400">{t.hint}</span>
             </button>
           );
         })}
@@ -1079,7 +1079,7 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
       {/* 하단 원형 차트 */}
       {pieData.total > 0 && (
         <div className={`${CARD_BASE} p-4 flex flex-col gap-3`}>
-          <div className="text-[11px] font-black text-slate-600 uppercase tracking-wider">{pieTitle}</div>
+          <div className="text-[11px] font-black text-zinc-600 uppercase tracking-wider">{pieTitle}</div>
           <div className="flex items-center gap-4 flex-wrap">
             <div className="w-[140px] h-[140px] shrink-0">
               <ResponsiveContainer width="100%" height="100%">
@@ -1107,7 +1107,7 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
               <ChartLegendList items={pieData.data} total={pieData.total} />
             </div>
           </div>
-          <div className="text-right text-[10px] tabular-nums text-slate-400 font-semibold">
+          <div className="text-right text-[10px] tabular-nums text-zinc-400 font-semibold">
             합계 {pieData.total.toLocaleString()}{pieData.unitLabel}
           </div>
         </div>
@@ -1165,7 +1165,7 @@ export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
   return (
     <div className={`${CARD_BASE} flex flex-col min-h-0 flex-1`}>
       {/* 탭 헤더 */}
-      <div className="flex flex-wrap items-center border-b border-slate-200 bg-slate-50/50 px-2 pt-1 gap-0">
+      <div className="flex flex-wrap items-center border-b border-zinc-200 bg-zinc-50/50 px-2 pt-1 gap-0">
         {TABS.map(t => {
           const Icon = t.icon;
           const active = tab === t.key;
@@ -1181,18 +1181,18 @@ export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
                 "px-4 sm:px-6 py-3.5 sm:py-4",
                 "text-[16px] sm:text-[18px] font-black leading-none whitespace-nowrap",
                 "transition-colors duration-150 cursor-pointer outline-none",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-300",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-300",
                 "active:opacity-70",
-                active ? c.text : `text-slate-500 ${c.hoverText}`,
+                active ? c.text : `text-zinc-500 ${c.hoverText}`,
               ].join(" ")}
             >
-              <Icon size={19} className={`shrink-0 sm:size-[20px] transition-colors duration-150 ${active ? c.text : "text-slate-400"}`} />
+              <Icon size={19} className={`shrink-0 sm:size-[20px] transition-colors duration-150 ${active ? c.text : "text-zinc-400"}`} />
               <span>{t.label}</span>
               {active && <span className={`absolute left-0 right-0 -bottom-px h-[2.5px] ${c.bar} rounded-t-sm`} />}
             </button>
           );
         })}
-        <div className="ml-auto flex items-center gap-1 text-[10px] text-slate-400 pr-2">
+        <div className="ml-auto flex items-center gap-1 text-[10px] text-zinc-400 pr-2">
           <ArrowUpDown size={10} />
           <span>헤더 클릭 정렬</span>
         </div>

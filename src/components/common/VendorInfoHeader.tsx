@@ -130,17 +130,17 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
     : true;
 
   return (
-    <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${pad} flex flex-col gap-2.5 ${className}`}>
+    <div className={`bg-white rounded-xl border border-zinc-200 shadow-sm ${pad} flex flex-col gap-2.5 ${className}`}>
       {/* ── 공급사 헤더 라인 ── */}
       <div className="flex items-start gap-2 flex-wrap">
         <Building2 size={dense ? 14 : 16} className="text-emerald-600 shrink-0 mt-0.5" />
         <div className="flex flex-col gap-0.5 min-w-0 flex-1">
           {/* 공급사명 · 분류 · 사업자번호 · 2026-08-06 · 정제 이름 사용 */}
           <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-[15px] font-black text-slate-800 break-words" title={rawName}>{displayName}</h2>
+            <h2 className="text-[15px] font-black text-zinc-800 break-words" title={rawName}>{displayName}</h2>
             <VendorCategoryBadge category={vendor.category} />
             {vendor.business_number && (
-              <span className="text-[10px] font-semibold text-slate-500 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 tabular-nums">
+              <span className="text-[10px] font-semibold text-zinc-500 bg-zinc-50 border border-zinc-200 rounded px-1.5 py-0.5 tabular-nums">
                 {fmtBizNum(vendor.business_number)}
               </span>
             )}
@@ -150,7 +150,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
             )}
             {effectiveVatIncluded === false && (
               <span
-                className="text-[11px] font-semibold text-slate-500"
+                className="text-[11px] font-semibold text-zinc-500"
                 title={vendor.vat_included == null && nameHintsVatExcluded ? "공급사명에서 자동 추론" : undefined}
               >
                 부가세 별도
@@ -159,10 +159,10 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
           </div>
 
           {/* Sub-line · 담당자·전화·이메일·등록일 */}
-          <div className="flex items-center gap-3 flex-wrap text-[11px] text-slate-500">
+          <div className="flex items-center gap-3 flex-wrap text-[11px] text-zinc-500">
             {vendor.contact_name && (
               <span className="inline-flex items-center gap-1">
-                <User2 size={10} className="text-slate-400" />
+                <User2 size={10} className="text-zinc-400" />
                 {vendor.contact_name}
               </span>
             )}
@@ -171,7 +171,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
                 href={`tel:${vendor.phone.replace(/\D/g, "")}`}
                 className="inline-flex items-center gap-1 tabular-nums hover:text-sky-600 transition"
               >
-                <Phone size={10} className="text-slate-400" />
+                <Phone size={10} className="text-zinc-400" />
                 {fmtPhone(vendor.phone)}
               </a>
             )}
@@ -182,7 +182,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
             )}
             {vendor.created_at && (
               <span className="inline-flex items-center gap-1 tabular-nums">
-                <Calendar size={10} className="text-slate-400" />
+                <Calendar size={10} className="text-zinc-400" />
                 등록 {fmtDate(vendor.created_at)}
               </span>
             )}
@@ -194,7 +194,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
           <button
             type="button"
             onClick={onEdit}
-            className="shrink-0 inline-flex items-center gap-1 h-7 px-2.5 rounded-lg border border-slate-200 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-800 transition cursor-pointer"
+            className="shrink-0 inline-flex items-center gap-1 h-7 px-2.5 rounded-lg border border-zinc-200 text-[11px] font-semibold text-zinc-600 hover:bg-zinc-50 hover:text-zinc-800 transition cursor-pointer"
             title="공급사 정보 조회 및 수정"
           >
             <Pencil size={11} />
@@ -205,48 +205,48 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
 
       {/* ── KPI 텍스트 줄 (kpis 있을 때만) ── */}
       {kpis != null && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px] leading-tight border-t border-slate-100 pt-2">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px] leading-tight border-t border-zinc-100 pt-2">
           {/* 누적 매입액 */}
           <span className="inline-flex items-center gap-1.5">
-            <span className="text-slate-400 font-semibold">누적 매입액 (1년)</span>
+            <span className="text-zinc-400 font-semibold">누적 매입액 (1년)</span>
             <span className="tabular-nums font-black text-emerald-700">{fmtWon(kpis.totalAmount)}원</span>
-            <span className="text-slate-400 tabular-nums">
+            <span className="text-zinc-400 tabular-nums">
               ({kpisLoading ? "로딩" : detailRowCount != null ? `${detailRowCount}건` : ""})
             </span>
           </span>
-          <span className="text-slate-200">·</span>
+          <span className="text-zinc-200">·</span>
           {/* 이번달 매입 + MoM + VAT 정보 (2026-08-06 · 사용자 요청) */}
           <span className="inline-flex items-center gap-1.5">
-            <span className="text-slate-400 font-semibold">이번달 매입</span>
+            <span className="text-zinc-400 font-semibold">이번달 매입</span>
             <span className={`tabular-nums font-black ${
               momTone === "rose" ? "text-rose-700"
               : momTone === "emerald" ? "text-emerald-700"
-              : "text-slate-700"
+              : "text-zinc-700"
             }`}>{fmtWon(kpis.thisMonthAmount)}원</span>
             {effectiveVatIncluded === true && (
               <span className="text-[10.5px] font-semibold text-emerald-700">VAT 포함</span>
             )}
             {effectiveVatIncluded === false && (
-              <span className="text-[10.5px] font-semibold text-slate-500">부가세 별도</span>
+              <span className="text-[10.5px] font-semibold text-zinc-500">부가세 별도</span>
             )}
-            <span className="text-slate-400 tabular-nums inline-flex items-center gap-0.5">
+            <span className="text-zinc-400 tabular-nums inline-flex items-center gap-0.5">
               {momIcon}{momText}
             </span>
           </span>
-          <span className="text-slate-200">·</span>
+          <span className="text-zinc-200">·</span>
           {/* 평균 매입주기 */}
           <span className="inline-flex items-center gap-1.5">
-            <span className="text-slate-400 font-semibold">평균 매입주기</span>
-            <span className="tabular-nums font-black text-slate-700">
+            <span className="text-zinc-400 font-semibold">평균 매입주기</span>
+            <span className="tabular-nums font-black text-zinc-700">
               {kpis.avgCycleDays != null ? `${kpis.avgCycleDays}일` : "-"}
             </span>
           </span>
-          <span className="text-slate-200">·</span>
+          <span className="text-zinc-200">·</span>
           {/* 활성 상품 */}
           <span className="inline-flex items-center gap-1.5">
-            <Package size={11} className="text-slate-400 shrink-0" />
-            <span className="text-slate-400 font-semibold">활성 상품</span>
-            <span className="tabular-nums font-black text-slate-700">
+            <Package size={11} className="text-zinc-400 shrink-0" />
+            <span className="text-zinc-400 font-semibold">활성 상품</span>
+            <span className="tabular-nums font-black text-zinc-700">
               {kpis.activeSkuCount > 0 ? `${kpis.activeSkuCount.toLocaleString()}종` : "-"}
             </span>
           </span>

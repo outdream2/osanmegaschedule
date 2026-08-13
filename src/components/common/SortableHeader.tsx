@@ -70,7 +70,7 @@ export function SortableHeader<K extends string = string>({
   };
 
   return (
-    <tr className={`border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider ${rowClassName}`}>
+    <tr className={`border-b border-zinc-200 text-[11px] font-bold text-zinc-500 uppercase tracking-wider ${rowClassName}`}>
       {columns.map(col => {
         const isActive = col.key === activeKey;
         const alignCls = col.align === "right" ? "text-right" : col.align === "center" ? "text-center" : "text-left";
@@ -81,7 +81,7 @@ export function SortableHeader<K extends string = string>({
             className={[
               padCls,
               alignCls,
-              clickable ? "cursor-pointer select-none hover:text-slate-700 transition-colors" : "",
+              clickable ? "cursor-pointer select-none hover:text-zinc-700 transition-colors" : "",
               col.className ?? "",
             ].filter(Boolean).join(" ")}
             style={col.width != null ? { width: typeof col.width === "number" ? `${col.width}px` : col.width } : undefined}
@@ -91,12 +91,12 @@ export function SortableHeader<K extends string = string>({
             <span className={`inline-flex items-center gap-1 ${col.align === "right" ? "justify-end w-full" : col.align === "center" ? "justify-center w-full" : ""}`}>
               <span>{col.label}</span>
               {clickable && isActive && (
-                <span className="text-slate-700 text-[9px] leading-none">
+                <span className="text-zinc-700 text-[9px] leading-none">
                   {activeDir === "asc" ? "▲" : "▼"}
                 </span>
               )}
               {clickable && !isActive && (
-                <span className="text-slate-300 text-[9px] leading-none opacity-60">▲▼</span>
+                <span className="text-zinc-300 text-[9px] leading-none opacity-60">▲▼</span>
               )}
             </span>
           </th>

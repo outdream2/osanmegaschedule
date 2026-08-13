@@ -6,39 +6,39 @@
 // ─── 섹션 (카드 안) ───────────────────────────────────────────────────────
 /** 카드 상단 · 섹션 제목 · 예: "사업장 · 법인 정보" */
 export const SET_SECTION_TITLE =
-  "text-base font-bold text-slate-800 flex items-center gap-2";
+  "text-base font-bold text-zinc-800 flex items-center gap-2";
 
 /** 카드 상단 · 섹션 아이콘 (size prop 은 별도 · 컬러 클래스만) */
 export const SET_SECTION_ICON = "shrink-0";
 
 /** 카드 상단 · 섹션 설명 · 제목 아래 · 부가 안내 */
-export const SET_SECTION_DESC = "text-xs text-slate-500 mt-1 leading-relaxed";
+export const SET_SECTION_DESC = "text-xs text-zinc-500 mt-1 leading-relaxed";
 
 // ─── 필드 (라벨 · 입력 · 힌트) ────────────────────────────────────────────
 /** 폼 필드 라벨 · 예: "약국 이름" */
 export const SET_LABEL =
-  "flex items-center gap-1.5 text-xs font-semibold text-slate-600 mb-1.5";
+  "flex items-center gap-1.5 text-xs font-semibold text-zinc-600 mb-1.5";
 
 /** 폼 입력 (input · select · textarea) · text-sm · slate 톤 · focus indigo */
 export const SET_INPUT =
-  "w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 " +
+  "w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-sm text-zinc-800 " +
   "focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 " +
   "transition disabled:opacity-50";
 
 /** 폼 입력 · 강조 (font-semibold) */
 export const SET_INPUT_STRONG =
-  "w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 " +
+  "w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-sm font-semibold text-zinc-800 " +
   "focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 " +
   "transition disabled:opacity-50";
 
 /** 폼 입력 · textarea 전용 (resize-none) */
 export const SET_TEXTAREA =
-  "w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 " +
+  "w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-sm text-zinc-800 " +
   "focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 " +
   "transition disabled:opacity-50 resize-none";
 
 /** 필드 힌트 · 입력 아래 · 예: "예: 010-1234-5678" */
-export const SET_HINT = "text-xs text-slate-400 mt-1";
+export const SET_HINT = "text-xs text-zinc-400 mt-1";
 
 /** 필드 에러 · 힌트 자리 · 붉은 톤 */
 export const SET_ERROR = "text-xs text-rose-500 mt-1 font-semibold";
@@ -56,23 +56,23 @@ export const SET_INFO_BADGE =
 /** 저장 버튼 · primary · indigo */
 export const SET_BTN_PRIMARY =
   "inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white " +
-  "bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 shadow-sm transition cursor-pointer";
+  "bg-indigo-600 hover:bg-indigo-700 disabled:bg-zinc-300 shadow-sm transition cursor-pointer";
 
 /** 초기화·다시 불러오기 등 · secondary · white border */
 export const SET_BTN_SECONDARY =
-  "inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-slate-600 " +
-  "bg-white border border-slate-200 hover:bg-slate-50 transition cursor-pointer";
+  "inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-zinc-600 " +
+  "bg-white border border-zinc-200 hover:bg-zinc-50 transition cursor-pointer";
 
 /** 위험 액션 · rose */
 export const SET_BTN_DANGER =
   "inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold text-white " +
-  "bg-rose-600 hover:bg-rose-700 disabled:bg-slate-300 shadow-sm transition cursor-pointer";
+  "bg-rose-600 hover:bg-rose-700 disabled:bg-zinc-300 shadow-sm transition cursor-pointer";
 
 // ─── 하단 sticky 액션바 ───────────────────────────────────────────────────
 /** SystemSettings · ZoneLabels 등 · 저장 UI 를 하단 sticky 로 통일 */
 export const SET_ACTION_BAR =
   "sticky bottom-0 flex items-center justify-end gap-2 " +
-  "bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl px-3 py-2 shadow-sm mt-3";
+  "bg-white/95 backdrop-blur-sm border border-zinc-200 rounded-xl px-3 py-2 shadow-sm mt-3";
 
 // ─── 안내 배너 (amber · info) ─────────────────────────────────────────────
 export const SET_NOTICE_AMBER =

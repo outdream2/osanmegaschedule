@@ -56,7 +56,7 @@ const COLOR_ACTIVE: Record<ChipColor, string> = {
   violet:  "bg-violet-50  text-violet-700  border-violet-300",
   indigo:  "bg-indigo-50  text-indigo-700  border-indigo-300",
   teal:    "bg-teal-50    text-teal-700    border-teal-300",
-  slate:   "bg-slate-100  text-slate-800   border-slate-300",
+  slate:   "bg-zinc-100  text-zinc-800   border-zinc-300",
 };
 
 const SIZE_MAP = {
@@ -79,9 +79,9 @@ export function SearchFilterChips<K extends string = string>({
   return (
     <div className="inline-flex items-center gap-1.5 flex-wrap">
       {label && (
-        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 shrink-0">{label}</span>
+        <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 shrink-0">{label}</span>
       )}
-      <div className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-0.5 gap-0.5 flex-wrap">
+      <div className="inline-flex items-center rounded-lg border border-zinc-200 bg-white p-0.5 gap-0.5 flex-wrap">
         {showAll && (
           <button
             type="button"
@@ -96,7 +96,7 @@ export function SearchFilterChips<K extends string = string>({
             className={[
               "rounded-md font-black leading-none border transition-colors cursor-pointer whitespace-nowrap inline-flex items-center",
               sz,
-              allActive ? COLOR_ACTIVE.slate : "bg-white text-slate-500 border-transparent hover:text-slate-800 hover:bg-slate-50",
+              allActive ? COLOR_ACTIVE.slate : "bg-white text-zinc-500 border-transparent hover:text-zinc-800 hover:bg-zinc-50",
             ].join(" ")}
             title="모든 필터 해제"
           >
@@ -115,7 +115,7 @@ export function SearchFilterChips<K extends string = string>({
               className={[
                 "rounded-md font-black leading-none border transition-colors cursor-pointer whitespace-nowrap inline-flex items-center",
                 sz,
-                active ? COLOR_ACTIVE[color] : "bg-white text-slate-500 border-transparent hover:text-slate-800 hover:bg-slate-50",
+                active ? COLOR_ACTIVE[color] : "bg-white text-zinc-500 border-transparent hover:text-zinc-800 hover:bg-zinc-50",
               ].join(" ")}
               title={opt.hint ?? opt.label}
             >
@@ -124,7 +124,7 @@ export function SearchFilterChips<K extends string = string>({
                 <span
                   className={[
                     "tabular-nums font-black rounded px-1 text-[9px]",
-                    active ? "bg-white/60" : "bg-slate-100 text-slate-500",
+                    active ? "bg-white/60" : "bg-zinc-100 text-zinc-500",
                   ].join(" ")}
                 >{opt.count}</span>
               )}

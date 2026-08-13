@@ -52,7 +52,7 @@ const STATUS_COLOR: Record<string, string> = {
   pending:   "text-amber-600 bg-amber-50 border-amber-200",
   approved:  "text-emerald-600 bg-emerald-50 border-emerald-200",
   rejected:  "text-rose-600 bg-rose-50 border-rose-200",
-  withdrawn: "text-slate-500 bg-slate-50 border-slate-200",
+  withdrawn: "text-zinc-500 bg-zinc-50 border-zinc-200",
 };
 
 const fmtDate = fmtDateYMD;
@@ -176,8 +176,8 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
             <Warning size={24} weight="fill" />
           </div>
           <div>
-            <h2 className="text-base font-black text-slate-800 mb-1">권한 없음</h2>
-            <p className="text-[12px] text-slate-500 leading-snug">
+            <h2 className="text-base font-black text-zinc-800 mb-1">권한 없음</h2>
+            <p className="text-[12px] text-zinc-500 leading-snug">
               사직서 승인은 대표(level 8) 이상만 가능합니다.
             </p>
           </div>
@@ -196,8 +196,8 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
               <FileText size={18} weight="fill" />
             </div>
             <div>
-              <h1 className="text-lg font-black text-slate-800 leading-none">사직서 승인</h1>
-              <p className="text-[11px] text-slate-500 mt-1">
+              <h1 className="text-lg font-black text-zinc-800 leading-none">사직서 승인</h1>
+              <p className="text-[11px] text-zinc-500 mt-1">
                 제출된 사직서를 검토하여 승인 또는 반려하세요.
               </p>
             </div>
@@ -206,7 +206,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
             type="button"
             onClick={load}
             disabled={loading}
-            className="w-8 h-8 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+            className="w-8 h-8 flex items-center justify-center rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition cursor-pointer"
             title="새로고침"
           >
             <ArrowsClockwise size={14} className={loading ? "animate-spin" : ""} />
@@ -214,7 +214,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
         </div>
 
         {/* 탭 (pending · all) */}
-        <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 border border-slate-200 rounded-xl">
+        <div className="grid grid-cols-2 gap-1 p-1 bg-zinc-100 border border-zinc-200 rounded-xl">
           {(["pending", "all"] as MgrTab[]).map(t => {
             const active = tab === t;
             const count = t === "pending" ? pending.length : reviewed.length;
@@ -224,15 +224,15 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                 onClick={() => setTab(t)}
                 className={`py-2 text-xs font-bold rounded-md transition cursor-pointer flex items-center justify-center gap-1.5 ${
                   active
-                    ? "bg-white shadow-sm text-slate-800 border border-slate-200"
-                    : "text-slate-500 hover:text-slate-700"
+                    ? "bg-white shadow-sm text-zinc-800 border border-zinc-200"
+                    : "text-zinc-500 hover:text-zinc-700"
                 }`}
               >
                 {t === "pending" ? (
                   <>
                     <Clock size={12} weight="fill" />
                     승인 대기
-                    <span className={`ml-0.5 tabular-nums ${count > 0 ? "text-amber-600" : "text-slate-400"}`}>
+                    <span className={`ml-0.5 tabular-nums ${count > 0 ? "text-amber-600" : "text-zinc-400"}`}>
                       {count}
                     </span>
                   </>
@@ -240,7 +240,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                   <>
                     <FileText size={12} weight="fill" />
                     처리 완료
-                    <span className="ml-0.5 tabular-nums text-slate-500">{count}</span>
+                    <span className="ml-0.5 tabular-nums text-zinc-500">{count}</span>
                   </>
                 )}
               </button>
@@ -249,7 +249,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
         </div>
 
         {/* 리스트 */}
-        <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-4 shadow-sm">
+        <div className="bg-white rounded-xl border border-zinc-200 p-3 sm:p-4 shadow-sm">
           {error && (
             <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
               <Warning size={12} weight="fill" />
@@ -258,43 +258,43 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
           )}
 
           {loading && rows.length === 0 ? (
-            <div className="flex items-center justify-center py-10 text-slate-400 text-xs font-bold gap-2">
+            <div className="flex items-center justify-center py-10 text-zinc-400 text-xs font-bold gap-2">
               <ArrowsClockwise size={14} className="animate-spin" />
               로딩 중...
             </div>
           ) : rows.length === 0 ? (
-            <div className="text-center text-[12px] text-slate-300 py-8">
+            <div className="text-center text-[12px] text-zinc-300 py-8">
               {tab === "pending" ? "대기 중인 사직서가 없습니다." : "처리된 사직서가 없습니다."}
             </div>
           ) : (
-            <div className={`flex flex-col divide-y divide-slate-100 ${loading ? "opacity-40 pointer-events-none" : ""}`}>
+            <div className={`flex flex-col divide-y divide-zinc-100 ${loading ? "opacity-40 pointer-events-none" : ""}`}>
               {rows.map(r => {
                 const expanded = expandedId === r.id;
                 return (
                   <div
                     key={r.id}
-                    className={`py-2.5 hover:bg-slate-50/60 transition rounded-lg pl-2 border-l-2 ${
+                    className={`py-2.5 hover:bg-zinc-50/60 transition rounded-lg pl-2 border-l-2 ${
                       r.status === "pending" ? "border-amber-300"
                       : r.status === "approved" ? "border-emerald-300"
                       : r.status === "rejected" ? "border-rose-300"
-                      : "border-slate-300"
+                      : "border-zinc-300"
                     }`}
                   >
                     {/* 상단 · 이름 · 상태 */}
                     <div className="flex items-start justify-between gap-2 mb-1.5">
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <User size={13} weight="fill" className="text-slate-400 shrink-0" />
-                          <span className="text-sm font-black text-slate-800">{r.employee_name}</span>
+                          <User size={13} weight="fill" className="text-zinc-400 shrink-0" />
+                          <span className="text-sm font-black text-zinc-800">{r.employee_name}</span>
                           {r.position && (
-                            <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">
+                            <span className="text-[11px] font-semibold text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded-md">
                               {r.position}
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-1 mt-1 text-[12px] text-slate-600 font-semibold">
+                        <div className="flex items-center gap-1 mt-1 text-[12px] text-zinc-600 font-semibold">
                           <Calendar size={11} className="text-rose-400 shrink-0" />
-                          <span>마지막 근무: <span className="font-black text-slate-800">{fmtDate(r.last_work_date)}</span></span>
+                          <span>마지막 근무: <span className="font-black text-zinc-800">{fmtDate(r.last_work_date)}</span></span>
                         </div>
                       </div>
                       <span className={`shrink-0 text-[10px] font-bold px-2 py-1 rounded-full border ${STATUS_COLOR[r.status]}`}>
@@ -303,12 +303,12 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                     </div>
 
                     {/* 사유 요약 */}
-                    <div className="text-[12px] text-slate-600 mb-1 pl-4">
-                      사유: <span className="font-bold text-slate-800">{r.reason}</span>
+                    <div className="text-[12px] text-zinc-600 mb-1 pl-4">
+                      사유: <span className="font-bold text-zinc-800">{r.reason}</span>
                     </div>
 
                     {/* 메타 정보 */}
-                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-slate-400 mb-1.5 pl-4">
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-zinc-400 mb-1.5 pl-4">
                       <span>제출: {fmtDateTime(r.created_at)}</span>
                       {r.hire_date && <span>입사: {fmtDate(r.hire_date)}</span>}
                       {r.approved_at && <span>처리: {fmtDateTime(r.approved_at)} {r.approved_by && `(${r.approved_by})`}</span>}
@@ -328,11 +328,11 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                     {expanded && (
                       <div className="ml-4 mt-2 flex flex-col gap-2">
                         {r.reason_detail && (
-                          <div className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2">
-                            <div className="text-[10px] font-bold text-slate-500 mb-0.5 flex items-center gap-1">
+                          <div className="bg-zinc-50 border border-zinc-200 rounded-lg px-2.5 py-2">
+                            <div className="text-[10px] font-bold text-zinc-500 mb-0.5 flex items-center gap-1">
                               <ChatCenteredText size={10} weight="fill" /> 사유 상세
                             </div>
-                            <div className="text-[12px] text-slate-700 whitespace-pre-wrap leading-snug">
+                            <div className="text-[12px] text-zinc-700 whitespace-pre-wrap leading-snug">
                               {r.reason_detail}
                             </div>
                           </div>
@@ -346,8 +346,8 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                           </div>
                         )}
                         {r.signature_data_url && (
-                          <div className="bg-white border border-slate-200 rounded-lg px-2.5 py-2">
-                            <div className="text-[10px] font-bold text-slate-500 mb-0.5">서명</div>
+                          <div className="bg-white border border-zinc-200 rounded-lg px-2.5 py-2">
+                            <div className="text-[10px] font-bold text-zinc-500 mb-0.5">서명</div>
                             <img
                               src={r.signature_data_url}
                               alt="서명"
@@ -375,7 +375,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                             value={rejectReason}
                             onChange={e => setRejectReason(e.target.value)}
                             placeholder="반려 사유 (반려 시 필수)"
-                            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rose-500 transition"
+                            className="w-full bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rose-500 transition"
                           />
                           <div className="grid grid-cols-2 gap-2">
                             <button
@@ -397,7 +397,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                           </div>
                           <button
                             onClick={() => { setReviewingId(null); setRejectReason(""); }}
-                            className="text-[11px] text-slate-400 hover:text-slate-600 text-center cursor-pointer"
+                            className="text-[11px] text-zinc-400 hover:text-zinc-600 text-center cursor-pointer"
                           >
                             취소
                           </button>

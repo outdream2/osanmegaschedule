@@ -35,7 +35,7 @@ const SeasonSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
   if (level < 9 || !employeeId) {
     return (
       <SettingsPageShell {...commonShellProps}>
-        <div className={`${CARD_BASE} p-5 text-center text-sm text-slate-500`}>
+        <div className={`${CARD_BASE} p-5 text-center text-sm text-zinc-500`}>
           관리자(lv 9) 전용 페이지입니다.
         </div>
       </SettingsPageShell>

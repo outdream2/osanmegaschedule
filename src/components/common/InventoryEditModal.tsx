@@ -141,7 +141,7 @@ export const InventoryEditModal: React.FC<InventoryEditModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-[12px] font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
+            className="px-4 py-2 rounded-lg text-[12px] font-semibold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 transition-colors cursor-pointer"
           >
             닫기
           </button>

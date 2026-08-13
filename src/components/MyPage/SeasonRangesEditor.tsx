@@ -78,8 +78,8 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
   for (let m = 1; m <= 12; m++) if (!monthCount[m]) missingMonths.push(m);
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-      <div className="px-4 py-2 border-b border-slate-100 bg-emerald-50/60 text-[10px] font-black text-emerald-700 uppercase tracking-wider flex items-center justify-between gap-1.5">
+    <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
+      <div className="px-4 py-2 border-b border-zinc-100 bg-emerald-50/60 text-[10px] font-black text-emerald-700 uppercase tracking-wider flex items-center justify-between gap-1.5">
         <span className="flex items-center gap-1.5">
           <span>🌸☀️🍁❄️</span> 계절 정의 <span className="text-emerald-400 font-semibold normal-case">(관리자 전용)</span>
         </span>
@@ -88,7 +88,7 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
             type="button"
             onClick={resetToDefault}
             disabled={saving || loading}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-black text-slate-500 bg-slate-100 hover:bg-slate-200 transition disabled:opacity-40"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-black text-zinc-500 bg-zinc-100 hover:bg-zinc-200 transition disabled:opacity-40"
             title="기본값(3~5·6~8·9~11·12~2)으로 초기화"
           >
             <RotateCcw size={10} /> 기본값
@@ -104,13 +104,13 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
         </div>
       </div>
       <div className="p-4">
-        <p className="text-[11px] text-slate-500 font-semibold mb-3 leading-relaxed">
+        <p className="text-[11px] text-zinc-500 font-semibold mb-3 leading-relaxed">
           재고·판매 리스트 조회에서 <b>계절 버튼</b> 클릭 시, 여기 정의된 월들의 데이터 (년도 무관 · 전 기간) 가 조회됩니다.
           <br />각 계절에 속하는 월을 선택하세요.
         </p>
 
         {loading ? (
-          <div className="flex items-center justify-center py-8 text-slate-400"><Loader2 size={14} className="animate-spin mr-2" />로딩...</div>
+          <div className="flex items-center justify-center py-8 text-zinc-400"><Loader2 size={14} className="animate-spin mr-2" />로딩...</div>
         ) : (
           <div className="flex flex-col gap-2">
             {SEASONS.map(season => {
@@ -137,7 +137,7 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
                           className={`text-[10px] font-black rounded-md py-1 border transition cursor-pointer ${
                             active
                               ? `${col.active} text-white border-transparent shadow-sm`
-                              : "bg-white text-slate-500 border-slate-200 hover:border-slate-400"
+                              : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-400"
                           }`}
                           title={`${m}월 ${active ? "해제" : "추가"}`}
                         >
@@ -154,17 +154,17 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
 
         {/* 검증 안내 */}
         {(duplicateMonths.length > 0 || missingMonths.length > 0) && (
-          <div className="mt-3 text-[10px] text-slate-500 font-semibold space-y-0.5 border-t border-slate-100 pt-2">
+          <div className="mt-3 text-[10px] text-zinc-500 font-semibold space-y-0.5 border-t border-zinc-100 pt-2">
             {duplicateMonths.length > 0 && (
               <div className="text-amber-700">
                 ⚠ 여러 계절에 중복된 월: <span className="font-mono">{duplicateMonths.sort((a, b) => a - b).join("·")}월</span>
-                <span className="text-slate-400"> · 사용자가 계절 조회 시 어느 쪽을 눌러도 이 월 데이터가 함께 조회됩니다</span>
+                <span className="text-zinc-400"> · 사용자가 계절 조회 시 어느 쪽을 눌러도 이 월 데이터가 함께 조회됩니다</span>
               </div>
             )}
             {missingMonths.length > 0 && (
               <div className="text-rose-600">
                 ✕ 어느 계절에도 속하지 않는 월: <span className="font-mono">{missingMonths.join("·")}월</span>
-                <span className="text-slate-400"> · 이 월의 데이터는 계절 조회로 볼 수 없습니다</span>
+                <span className="text-zinc-400"> · 이 월의 데이터는 계절 조회로 볼 수 없습니다</span>
               </div>
             )}
           </div>

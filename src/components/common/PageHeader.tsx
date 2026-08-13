@@ -69,12 +69,12 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         )}
         <div className="min-w-0">
           <h2
-            className={`${TEXT.hero} text-slate-900 leading-tight`}
+            className={`${TEXT.hero} text-zinc-900 leading-tight`}
           >
             {title}
           </h2>
           {subtitle != null && (
-            <p className={`${TEXT.caption} text-slate-500 mt-0.5 leading-snug`}>
+            <p className={`${TEXT.caption} text-zinc-500 mt-0.5 leading-snug`}>
               {subtitle}
             </p>
           )}

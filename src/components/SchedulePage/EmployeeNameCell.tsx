@@ -65,8 +65,8 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
     <td
       className={`
         relative
-        border-r border-slate-100 bg-white sticky left-0 z-50
-        group-hover:bg-slate-50
+        border-r border-zinc-100 bg-white sticky left-0 z-50
+        group-hover:bg-zinc-50
         shadow-[1px_0_0_0_#e2e8f0]
         min-w-[90px] w-[90px]
         sm:min-w-[110px] sm:w-[110px]
@@ -79,14 +79,14 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
       <div className="flex items-stretch h-full min-h-[54px] sm:min-h-[58px]">
 
         {/* 행 번호 — 좌측 수직 스트립 */}
-        <div className="flex items-center justify-center w-4 sm:w-5 shrink-0 text-[8px] font-medium text-slate-300 select-none bg-slate-50/50 border-r border-slate-100">
+        <div className="flex items-center justify-center w-4 sm:w-5 shrink-0 text-[8px] font-medium text-zinc-300 select-none bg-zinc-50/50 border-r border-zinc-100">
           {empIdx + 1}
         </div>
 
         {/* 드래그 핸들 — 관리자 · sm 이상 */}
         {isAdmin && (
           <div
-            className="hidden sm:flex items-center justify-center w-4 shrink-0 text-slate-200 hover:text-indigo-400 cursor-grab active:cursor-grabbing transition-colors duration-150"
+            className="hidden sm:flex items-center justify-center w-4 shrink-0 text-zinc-200 hover:text-indigo-400 cursor-grab active:cursor-grabbing transition-colors duration-150"
             title="드래그하여 순서 변경"
           >
             <GripVertical size={11} />
@@ -102,7 +102,7 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
             <span
               className={`
                 text-[11px] sm:text-[12px] font-medium leading-none truncate
-                ${isPharmacist ? "text-emerald-600" : "text-slate-400"}
+                ${isPharmacist ? "text-emerald-600" : "text-zinc-400"}
               `}
             >
               {emp.position}
@@ -119,7 +119,7 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
                 text-[14px] sm:text-[15px]
                 ${isPharmacist
                   ? "text-emerald-700 hover:text-emerald-900"
-                  : "text-slate-700 hover:text-indigo-600"
+                  : "text-zinc-700 hover:text-indigo-600"
                 }
               `}
             >
@@ -130,7 +130,7 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
           {/* 줄 3: 비고 — lg 이상 표시 */}
           {emp.description && (
             <div
-              className="hidden lg:block text-[9px] text-slate-350 font-normal truncate leading-tight text-slate-400"
+              className="hidden lg:block text-[9px] text-zinc-350 font-normal truncate leading-tight text-zinc-400"
               title={emp.description}
             >
               {emp.description}

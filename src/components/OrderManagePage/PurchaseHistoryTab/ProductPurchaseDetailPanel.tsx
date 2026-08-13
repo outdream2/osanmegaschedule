@@ -60,20 +60,20 @@ export const ProductPurchaseDetailPanel: React.FC<Props> = ({ product, rows, loa
       <div className={`${CARD_BASE} px-4 py-3 flex flex-col gap-2`}>
         <div className="flex items-center gap-2 min-w-0">
           <Package size={16} className="text-sky-500 shrink-0" />
-          <span className="text-[14px] font-black text-slate-800 truncate">{product.product_name}</span>
+          <span className="text-[14px] font-black text-zinc-800 truncate">{product.product_name}</span>
           {product.product_code && (
-            <span className="text-[11px] font-mono text-slate-400 tabular-nums shrink-0">
+            <span className="text-[11px] font-mono text-zinc-400 tabular-nums shrink-0">
               {product.product_code}
             </span>
           )}
         </div>
         {product.primary_supplier && (
-          <div className="flex items-center gap-1 text-[11px] text-slate-500">
-            <Building2 size={11} className="text-slate-400 shrink-0" />
+          <div className="flex items-center gap-1 text-[11px] text-zinc-500">
+            <Building2 size={11} className="text-zinc-400 shrink-0" />
             <span className="truncate">
               {product.primary_supplier}
               {product.supplier_count > 1 && (
-                <span className="text-slate-400 ml-1">외 {product.supplier_count - 1}개 공급사</span>
+                <span className="text-zinc-400 ml-1">외 {product.supplier_count - 1}개 공급사</span>
               )}
             </span>
           </div>
@@ -84,19 +84,19 @@ export const ProductPurchaseDetailPanel: React.FC<Props> = ({ product, rows, loa
           <KpiCard label="매입 건수" value={`${fmt(product.purchase_count)}건`} color="slate" />
           <KpiCard label="평균단가"  value={avgUnitPrice > 0 ? fmt(Math.round(avgUnitPrice)) : "-"} color="emerald" />
         </div>
-        <div className="text-[10px] text-slate-400 pt-1">
+        <div className="text-[10px] text-zinc-400 pt-1">
           최근 매입일 · <span className="tabular-nums">{dateLabel(product.last_purchase_date)}</span>
         </div>
       </div>
 
       {/* 하단 · 매입 원장 · 2026-08-04 · 공통 PurchaseHistoryList 사용 (사용자 요청) */}
       <div className={`${CARD_BASE} flex flex-col min-h-0 flex-1 overflow-hidden`}>
-        <div className="flex items-center border-b border-slate-200 bg-slate-50/50 px-4 py-2.5 shrink-0">
+        <div className="flex items-center border-b border-zinc-200 bg-zinc-50/50 px-4 py-2.5 shrink-0">
           <span className="text-[13px] font-black text-sky-700">매입 원장</span>
-          <span className="ml-2 text-[11px] font-semibold text-slate-400 tabular-nums">
+          <span className="ml-2 text-[11px] font-semibold text-zinc-400 tabular-nums">
             {rows.length}건
           </span>
-          <div className="ml-auto text-[10px] text-slate-400">헤더 클릭 정렬</div>
+          <div className="ml-auto text-[10px] text-zinc-400">헤더 클릭 정렬</div>
         </div>
         <PurchaseHistoryList
           rows={rows as unknown as PurchaseHistoryRow[]}

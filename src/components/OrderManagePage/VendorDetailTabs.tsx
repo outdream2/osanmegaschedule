@@ -141,7 +141,7 @@ const LedgerContent: React.FC<{
   });
 
   if (loading) return (
-    <div className="flex-1 flex items-center justify-center py-16 text-slate-400 gap-2">
+    <div className="flex-1 flex items-center justify-center py-16 text-zinc-400 gap-2">
       <Loader2 size={18} className="animate-spin" />
       <span className="text-[12px]">원장 로딩 중...</span>
     </div>
@@ -150,7 +150,7 @@ const LedgerContent: React.FC<{
     <div className="flex-1 flex items-center justify-center py-12 text-rose-600 text-[11px]">{error}</div>
   );
   if (!ledger || rows.length === 0) return (
-    <div className="flex-1 flex items-center justify-center py-16 text-slate-400 text-[11px]">
+    <div className="flex-1 flex items-center justify-center py-16 text-zinc-400 text-[11px]">
       해당 기간 원장 내역 없음
     </div>
   );
@@ -161,20 +161,20 @@ const LedgerContent: React.FC<{
   return (
     <div className="flex-1 min-h-0 overflow-auto">
       <table className="w-full text-xs min-w-[520px]" style={{ tableLayout: "fixed" }}>
-        <thead className="sticky top-0 bg-white z-10 border-b border-slate-100">
-          <tr className="text-[10px] text-slate-400 uppercase tracking-wider">
-            <th className="relative text-left px-3 py-2 text-slate-300" style={{ width: lw("num"), minWidth: lw("num") }}>
+        <thead className="sticky top-0 bg-white z-10 border-b border-zinc-100">
+          <tr className="text-[10px] text-zinc-400 uppercase tracking-wider">
+            <th className="relative text-left px-3 py-2 text-zinc-300" style={{ width: lw("num"), minWidth: lw("num") }}>
               #
               <span {...lr("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
             </th>
             <th onClick={() => toggleSort("date")}
-              className="relative text-left px-3 py-2 cursor-pointer select-none hover:bg-slate-50 transition"
+              className="relative text-left px-3 py-2 cursor-pointer select-none hover:bg-zinc-50 transition"
               style={{ width: lw("date"), minWidth: lw("date") }}>
               날짜{arrow("date")}
               <span {...lr("date")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
             <th onClick={() => toggleSort("type")}
-              className="relative text-left px-3 py-2 cursor-pointer select-none hover:bg-slate-50 transition"
+              className="relative text-left px-3 py-2 cursor-pointer select-none hover:bg-zinc-50 transition"
               style={{ width: lw("type"), minWidth: lw("type") }}>
               구분{arrow("type")}
               <span {...lr("type")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
@@ -188,33 +188,33 @@ const LedgerContent: React.FC<{
               <span {...lr("method")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
             </th>
             <th onClick={() => toggleSort("amount")}
-              className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-slate-50 transition"
+              className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-zinc-50 transition"
               style={{ width: lw("amount"), minWidth: lw("amount") }}>
               금액{arrow("amount")}
               <span {...lr("amount")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
             {showVatCol && (
-              <th className="text-right px-3 py-2 text-slate-400 w-20" title="부가세 (row 저장값 또는 vendor.vat_included 기반 계산)">
+              <th className="text-right px-3 py-2 text-zinc-400 w-20" title="부가세 (row 저장값 또는 vendor.vat_included 기반 계산)">
                 VAT
               </th>
             )}
             <th onClick={() => toggleSort("running_balance")}
-              className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-slate-50 transition"
+              className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-zinc-50 transition"
               style={{ width: lw("balance"), minWidth: lw("balance") }}>
               잔고{arrow("running_balance")}
               <span {...lr("balance")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-50">
+        <tbody className="divide-y divide-zinc-50">
           {rows.map((r, i) => {
             const isPurchase = r.type === "purchase";
             const vat = r.vat_amount ?? 0;
             return (
               <tr key={`led-${r.id}-${i}`}
                 className={`transition-all duration-100 ${isPurchase ? "hover:bg-emerald-50/30" : "hover:bg-sky-50/30"}`}>
-                <td className="px-3 py-1.5 text-slate-300 text-[10px] tabular-nums align-top">{i + 1}</td>
-                <td className="px-3 py-1.5 tabular-nums text-[11px] text-slate-500 align-top whitespace-nowrap">
+                <td className="px-3 py-1.5 text-zinc-300 text-[10px] tabular-nums align-top">{i + 1}</td>
+                <td className="px-3 py-1.5 tabular-nums text-[11px] text-zinc-500 align-top whitespace-nowrap">
                   {dateLabel(r.date)}
                 </td>
                 <td className="px-3 py-1.5 align-top">
@@ -224,7 +224,7 @@ const LedgerContent: React.FC<{
                     {isPurchase ? "매입" : "결제"}
                   </span>
                 </td>
-                <td className="px-3 py-1.5 text-[11px] text-slate-600 align-top break-words whitespace-normal leading-snug">
+                <td className="px-3 py-1.5 text-[11px] text-zinc-600 align-top break-words whitespace-normal leading-snug">
                   {r.memo ?? "-"}
                   {!isPurchase && r.tax_invoice_no && (
                     <span className="inline-flex items-center ml-1 px-1 py-px rounded text-[9px] font-bold bg-violet-50 text-violet-700 border border-violet-200 leading-none align-middle" title={`전자세금계산서 승인번호: ${r.tax_invoice_no}`}>
@@ -232,19 +232,19 @@ const LedgerContent: React.FC<{
                     </span>
                   )}
                 </td>
-                <td className="px-3 py-1.5 text-[11px] text-slate-400 align-top whitespace-nowrap">
+                <td className="px-3 py-1.5 text-[11px] text-zinc-400 align-top whitespace-nowrap">
                   {isPurchase ? "-" : methodLabel(r.method)}
                 </td>
                 <td className={`px-3 py-1.5 text-right tabular-nums text-[12px] font-semibold align-top ${isPurchase ? "text-emerald-700" : "text-sky-700"}`}>
                   {isPurchase ? "+" : "-"}{fmt(r.amount)}
                 </td>
                 {showVatCol && (
-                  <td className="px-3 py-1.5 text-right tabular-nums text-[11px] text-slate-500 align-top">
-                    {vat > 0 ? fmt(vat) : <span className="text-slate-300">-</span>}
+                  <td className="px-3 py-1.5 text-right tabular-nums text-[11px] text-zinc-500 align-top">
+                    {vat > 0 ? fmt(vat) : <span className="text-zinc-300">-</span>}
                   </td>
                 )}
                 <td className={`px-3 py-1.5 text-right tabular-nums text-[12px] font-black align-top ${
-                  r.running_balance > 0 ? "text-amber-700" : r.running_balance < 0 ? "text-rose-700" : "text-slate-400"
+                  r.running_balance > 0 ? "text-amber-700" : r.running_balance < 0 ? "text-rose-700" : "text-zinc-400"
                 }`}>
                   {fmt(r.running_balance)}
                 </td>
@@ -252,19 +252,19 @@ const LedgerContent: React.FC<{
             );
           })}
         </tbody>
-        <tfoot className="sticky bottom-0 bg-slate-50 border-t-2 border-slate-200">
+        <tfoot className="sticky bottom-0 bg-zinc-50 border-t-2 border-zinc-200">
           <tr>
-            <td colSpan={5} className="px-3 py-2 text-right text-[11px] font-black text-slate-500">기간 합계</td>
-            <td className="px-3 py-2 text-right text-[11px] font-semibold text-slate-500 tabular-nums" title={`매입 ${fmt(ledger.total_purchase)} / 결제 ${fmt(ledger.total_payment)}`}>
+            <td colSpan={5} className="px-3 py-2 text-right text-[11px] font-black text-zinc-500">기간 합계</td>
+            <td className="px-3 py-2 text-right text-[11px] font-semibold text-zinc-500 tabular-nums" title={`매입 ${fmt(ledger.total_purchase)} / 결제 ${fmt(ledger.total_payment)}`}>
               {fmt(ledger.total_purchase - ledger.total_payment)}
             </td>
             {showVatCol && (
-              <td className="px-3 py-2 text-right text-[11px] font-black text-slate-500 tabular-nums" title={`매입VAT ${fmt(ledger.total_purchase_vat)} · 결제VAT ${fmt(ledger.total_payment_vat)}`}>
+              <td className="px-3 py-2 text-right text-[11px] font-black text-zinc-500 tabular-nums" title={`매입VAT ${fmt(ledger.total_purchase_vat)} · 결제VAT ${fmt(ledger.total_payment_vat)}`}>
                 {fmt(ledger.total_purchase_vat)}
               </td>
             )}
             <td className={`px-3 py-2 text-right tabular-nums text-[13px] font-black ${
-              ledger.current_balance > 0 ? "text-amber-700" : ledger.current_balance < 0 ? "text-rose-700" : "text-slate-400"
+              ledger.current_balance > 0 ? "text-amber-700" : ledger.current_balance < 0 ? "text-rose-700" : "text-zinc-400"
             }`}>
               {fmt(ledger.current_balance)}
             </td>
@@ -346,13 +346,13 @@ const HistoryContent: React.FC<{
   }, [detailRows, productSearch, selectedCode]);
 
   if (loading) return (
-    <div className="flex-1 flex items-center justify-center py-16 text-slate-400 gap-2">
+    <div className="flex-1 flex items-center justify-center py-16 text-zinc-400 gap-2">
       <Loader2 size={18} className="animate-spin" />
       <span className="text-[12px]">매입이력 로딩 중...</span>
     </div>
   );
   if (detailRows.length === 0) return (
-    <div className="flex-1 flex items-center justify-center py-16 text-slate-400 text-[11px]">
+    <div className="flex-1 flex items-center justify-center py-16 text-zinc-400 text-[11px]">
       해당 기간 매입이력 없음
     </div>
   );
@@ -362,15 +362,15 @@ const HistoryContent: React.FC<{
       {/* 툴바 */}
       <div className="flex items-center gap-2 flex-wrap px-1">
         {/* 뷰 토글 */}
-        <div className="flex flex-wrap bg-slate-100 border border-slate-200 rounded-lg p-0.5 gap-0.5">
+        <div className="flex flex-wrap bg-zinc-100 border border-zinc-200 rounded-lg p-0.5 gap-0.5">
           {(["sku", "all"] as const).map(mode => (
             <button
               key={mode}
               onClick={() => setViewMode(mode)}
               className={`h-6 px-3 rounded-md text-[11px] font-black transition cursor-pointer whitespace-nowrap ${
                 viewMode === mode
-                  ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
-                  : "text-slate-500 hover:text-slate-700"
+                  ? "bg-white text-zinc-800 shadow-sm ring-1 ring-zinc-200"
+                  : "text-zinc-500 hover:text-zinc-700"
               }`}
             >
               {mode === "sku" ? "상품별 집계" : "전체 원장"}
@@ -383,10 +383,10 @@ const HistoryContent: React.FC<{
           value={productSearch}
           onChange={e => setProductSearch(e.target.value)}
           placeholder="상품명·코드 검색"
-          className="h-7 px-2.5 text-[11px] border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-emerald-400 focus:border-emerald-400 transition w-40"
+          className="h-7 px-2.5 text-[11px] border border-zinc-200 rounded-lg outline-none focus:ring-1 focus:ring-emerald-400 focus:border-emerald-400 transition w-40"
         />
         {/* 건수 */}
-        <span className="text-[10px] text-slate-400 tabular-nums">
+        <span className="text-[10px] text-zinc-400 tabular-nums">
           {viewMode === "sku" ? `${productStats.length} SKU` : `${allRows.length}건`}
         </span>
         {selectedCode && (
@@ -404,9 +404,9 @@ const HistoryContent: React.FC<{
       {viewMode === "sku" && (
         <div className={`${CARD_BASE} flex-1 min-h-0 overflow-auto`}>
           <table className="w-full text-xs min-w-[500px]" style={{ tableLayout: "fixed" }}>
-            <thead className="sticky top-0 bg-white z-10 border-b border-slate-100">
-              <tr className="text-[10px] text-slate-400 uppercase tracking-wider">
-                <th className="relative text-left px-3 py-2 text-slate-300" style={{ width: sw("num"), minWidth: sw("num") }}>
+            <thead className="sticky top-0 bg-white z-10 border-b border-zinc-100">
+              <tr className="text-[10px] text-zinc-400 uppercase tracking-wider">
+                <th className="relative text-left px-3 py-2 text-zinc-300" style={{ width: sw("num"), minWidth: sw("num") }}>
                   #
                   <span {...sr("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                 </th>
@@ -436,7 +436,7 @@ const HistoryContent: React.FC<{
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-zinc-50">
               {productStats.map((s, i) => {
                 const isSel = s.product_code === selectedCode;
                 return (
@@ -444,25 +444,25 @@ const HistoryContent: React.FC<{
                     key={`ps-${s.product_code}`}
                     onClick={() => { setSelectedCode(isSel ? null : s.product_code); setViewMode("all"); }}
                     className={`cursor-pointer transition-all duration-100 ${
-                      isSel ? "bg-emerald-50 border-l-2 border-emerald-500" : "hover:bg-slate-50"
+                      isSel ? "bg-emerald-50 border-l-2 border-emerald-500" : "hover:bg-zinc-50"
                     }`}
                   >
-                    <td className="px-3 py-1.5 text-slate-300 text-[10px] tabular-nums align-top">{i + 1}</td>
+                    <td className="px-3 py-1.5 text-zinc-300 text-[10px] tabular-nums align-top">{i + 1}</td>
                     <td className="px-3 py-1.5 align-top">
-                      <div className={`text-[11px] font-semibold leading-tight break-words whitespace-normal ${isSel ? "text-emerald-800" : "text-slate-700"}`}>
+                      <div className={`text-[11px] font-semibold leading-tight break-words whitespace-normal ${isSel ? "text-emerald-800" : "text-zinc-700"}`}>
                         {s.product_name}
                       </div>
-                      <div className="text-[9px] text-slate-400">{s.product_code}</div>
+                      <div className="text-[9px] text-zinc-400">{s.product_code}</div>
                     </td>
-                    <td className="px-3 py-1.5 text-right text-[11px] tabular-nums text-slate-600 align-top">{s.buy_count}</td>
-                    <td className="px-3 py-1.5 text-right text-[11px] tabular-nums text-slate-600 align-top">{fmt(s.total_qty)}</td>
+                    <td className="px-3 py-1.5 text-right text-[11px] tabular-nums text-zinc-600 align-top">{s.buy_count}</td>
+                    <td className="px-3 py-1.5 text-right text-[11px] tabular-nums text-zinc-600 align-top">{fmt(s.total_qty)}</td>
                     <td className="px-3 py-1.5 text-right text-[11px] tabular-nums font-semibold text-emerald-700 align-top">
                       {fmt(s.total_amount)}
                     </td>
-                    <td className="px-3 py-1.5 text-right text-[11px] tabular-nums text-slate-500 align-top">
+                    <td className="px-3 py-1.5 text-right text-[11px] tabular-nums text-zinc-500 align-top">
                       {fmt(s.latest_unit_price)}
                     </td>
-                    <td className="px-3 py-1.5 text-[10px] text-slate-400 align-top whitespace-nowrap">
+                    <td className="px-3 py-1.5 text-[10px] text-zinc-400 align-top whitespace-nowrap">
                       {dateLabel(s.latest_date)}
                     </td>
                   </tr>
@@ -631,15 +631,15 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
 
       {/* 기간 필터 + 새로고침 */}
       <div className={`${CARD_BASE} px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5`}>
-        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">기간</span>
-        <div className="flex flex-wrap bg-slate-50 border border-slate-200 rounded-lg p-0.5 gap-0.5">
+        <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">기간</span>
+        <div className="flex flex-wrap bg-zinc-50 border border-zinc-200 rounded-lg p-0.5 gap-0.5">
           <button onClick={() => { setPeriodSeason(null); setPeriodMonths(0); }}
-            className={`px-2.5 h-6 text-[11px] font-semibold rounded-md transition cursor-pointer ${!periodSeason && periodMonths === 0 ? "bg-sky-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+            className={`px-2.5 h-6 text-[11px] font-semibold rounded-md transition cursor-pointer ${!periodSeason && periodMonths === 0 ? "bg-sky-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
             10일
           </button>
           {([1, 2, 3, 4, 5, 6] as const).map(m => (
             <button key={m} onClick={() => { setPeriodSeason(null); setPeriodMonths(m); }}
-              className={`px-2.5 h-6 text-[11px] font-semibold rounded-md transition cursor-pointer ${!periodSeason && periodMonths === m ? "bg-sky-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+              className={`px-2.5 h-6 text-[11px] font-semibold rounded-md transition cursor-pointer ${!periodSeason && periodMonths === m ? "bg-sky-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
               {m}개월
             </button>
           ))}
@@ -654,7 +654,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
           type="button"
           onClick={() => { loadLedger(); loadDetail(); }}
           disabled={isLoading}
-          className="ml-auto w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-sky-50 hover:border-sky-300 text-slate-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer"
+          className="ml-auto w-7 h-7 flex items-center justify-center rounded-lg border border-zinc-200 bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer"
           title="새로고침"
         >
           <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
@@ -670,7 +670,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
             className={`flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[12px] font-black transition cursor-pointer ${
               activeTab === tab.key
                 ? "bg-sky-500 text-white shadow-sm"
-                : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
             }`}
           >
             {tab.icon}
@@ -694,7 +694,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
               const vatModeCls =
                 vatMode === true  ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
                 vatMode === false ? "bg-amber-50 text-amber-700 border-amber-200" :
-                                    "bg-slate-50 text-slate-400 border-slate-200";
+                                    "bg-zinc-50 text-zinc-400 border-zinc-200";
               const items = [
                 {
                   label: "매입 금액",
@@ -722,7 +722,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
                 <div className="flex flex-col">
                   {/* VAT 모드 배지 (전체 우상단) */}
                   <div className="flex items-center justify-between px-4 pt-2.5 pb-1">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">기간 합계</span>
+                    <span className="text-[10px] font-black text-zinc-400 uppercase tracking-wider">기간 합계</span>
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black border ${vatModeCls}`}
                       title={
@@ -734,10 +734,10 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
                       {vatModeText}
                     </span>
                   </div>
-                  <div className="grid grid-cols-3 gap-0 border-b border-slate-100 bg-slate-50/40">
+                  <div className="grid grid-cols-3 gap-0 border-b border-zinc-100 bg-zinc-50/40">
                     {items.map((item, i) => (
-                      <div key={i} className={`px-4 py-3 ${i < 2 ? "border-r border-slate-100" : ""} flex flex-col gap-0.5`}>
-                        <span className="text-[11px] font-bold text-slate-500">{item.label}</span>
+                      <div key={i} className={`px-4 py-3 ${i < 2 ? "border-r border-zinc-100" : ""} flex flex-col gap-0.5`}>
+                        <span className="text-[11px] font-bold text-zinc-500">{item.label}</span>
                         <span className={`text-[15px] font-black tabular-nums leading-tight ${
                           item.tone === "emerald" ? "text-emerald-700" :
                           item.tone === "sky" ? "text-sky-700" :
@@ -745,9 +745,9 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
                         }`}>
                           {item.value.toLocaleString()}원
                         </span>
-                        <span className="text-[10px] text-slate-400 font-medium">{item.subtitle}</span>
+                        <span className="text-[10px] text-zinc-400 font-medium">{item.subtitle}</span>
                         {item.vatBadge && (
-                          <span className="text-[10px] text-slate-500 font-semibold tabular-nums mt-0.5 leading-tight">
+                          <span className="text-[10px] text-zinc-500 font-semibold tabular-nums mt-0.5 leading-tight">
                             {item.vatBadge}
                           </span>
                         )}

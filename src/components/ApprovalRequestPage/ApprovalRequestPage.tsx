@@ -82,7 +82,7 @@ const ApprovalRequestPage: React.FC<ApprovalRequestPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-zinc-50 flex flex-col">
       {/* ── 공용 상단 헤더 ── */}
       <AppNavHeader
         activePage={"approval-request" as AppNavPage}
@@ -112,7 +112,7 @@ const ApprovalRequestPage: React.FC<ApprovalRequestPageProps> = ({
           <LunchPage {...commonSubPageProps} />
         )}
         {subTab === "document-writer" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 py-16">사직서 로딩 중...</div>}>
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-zinc-400 py-16">사직서 로딩 중...</div>}>
             <DocumentWriterPage {...commonSubPageProps} allowedTabs={["resignation"]} />
           </Suspense>
         )}

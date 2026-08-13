@@ -42,7 +42,7 @@ const COLOR_MAP: Record<TabColor, { text: string; bar: string; iconActive: strin
   rose:    { text: "text-rose-700",    bar: "bg-rose-500",    iconActive: "text-rose-600",    hoverText: "hover:text-rose-700",    badge: "bg-rose-100 text-rose-700"    },
   emerald: { text: "text-emerald-700", bar: "bg-emerald-500", iconActive: "text-emerald-600", hoverText: "hover:text-emerald-700", badge: "bg-emerald-100 text-emerald-700" },
   orange:  { text: "text-orange-700",  bar: "bg-orange-500",  iconActive: "text-orange-600",  hoverText: "hover:text-orange-700",  badge: "bg-orange-100 text-orange-700"  },
-  slate:   { text: "text-slate-700",   bar: "bg-slate-500",   iconActive: "text-slate-600",   hoverText: "hover:text-slate-700",   badge: "bg-slate-100 text-slate-700"   },
+  slate:   { text: "text-zinc-700",   bar: "bg-zinc-500",   iconActive: "text-zinc-600",   hoverText: "hover:text-zinc-700",   badge: "bg-zinc-100 text-zinc-700"   },
   blue:    { text: "text-blue-700",    bar: "bg-blue-500",    iconActive: "text-blue-600",    hoverText: "hover:text-blue-700",    badge: "bg-blue-100 text-blue-700"    },
   cyan:    { text: "text-cyan-700",    bar: "bg-cyan-500",    iconActive: "text-cyan-600",    hoverText: "hover:text-cyan-700",    badge: "bg-cyan-100 text-cyan-700"    },
   red:     { text: "text-red-700",     bar: "bg-red-500",     iconActive: "text-red-600",     hoverText: "hover:text-red-700",     badge: "bg-red-100 text-red-700"     },
@@ -87,7 +87,7 @@ export interface TabBarProps<K extends string = string> {
   badgeColor?: "rose" | "sky" | "amber" | "emerald";
   /** 커스텀 컨테이너 max-width · 기본 1360 */
   maxWidth?: number | string;
-  /** 배경 (기본 white · nested 서브탭은 slate-50 등) */
+  /** 배경 (기본 white · nested 서브탭은 zinc-50 등) */
   variant?: "default" | "nested";
   className?: string;
 }
@@ -123,7 +123,7 @@ export function TabBar<K extends string = string>({
   const visibleTabs = tabs.filter(t => t.visible !== false);
 
   const outerCls = variant === "nested"
-    ? `bg-slate-50/50 border-b border-slate-200 w-full shrink-0 ${className}`
+    ? `bg-zinc-50/50 border-b border-zinc-200 w-full shrink-0 ${className}`
     : `${barCls} ${className}`;
 
   return (
@@ -169,7 +169,7 @@ export function TabBar<K extends string = string>({
                 onTouchCancel={dnd?.onTouchCancel}
                 className={[
                   btnCls,
-                  active ? c.text : `text-slate-500 ${c.hoverText}`,
+                  active ? c.text : `text-zinc-500 ${c.hoverText}`,
                   dragCls,
                 ].join(" ")}
               >
@@ -178,7 +178,7 @@ export function TabBar<K extends string = string>({
                     size={iconSize}
                     strokeWidth={active ? 2.4 : 2}
                     weight="fill"
-                    className={`shrink-0 transition-colors duration-150 ${active ? c.iconActive : "text-slate-400"}`}
+                    className={`shrink-0 transition-colors duration-150 ${active ? c.iconActive : "text-zinc-400"}`}
                   />
                 )}
                 <span>{t.label}</span>

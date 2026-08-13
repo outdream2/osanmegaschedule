@@ -57,7 +57,7 @@ function fmtBusinessNumber(bn: string | null | undefined): string {
 /** VAT 여부 라벨 · vendor.vat_included 우선 · 없으면 category=면세 · 기타 "미설정" */
 function vatFlagLabel(row: VendorBreakdownRow): { text: string; className: string; title: string } {
   if (row.category === "면세") {
-    return { text: "면세", className: "bg-slate-200 text-slate-700", title: "면세사업자 · 부가세 없음" };
+    return { text: "면세", className: "bg-zinc-200 text-zinc-700", title: "면세사업자 · 부가세 없음" };
   }
   if (row.vat_included === true) {
     return { text: "포함", className: "bg-sky-100 text-sky-700", title: "매입가에 VAT 포함 · vat = amount / 11" };
@@ -65,7 +65,7 @@ function vatFlagLabel(row: VendorBreakdownRow): { text: string; className: strin
   if (row.vat_included === false) {
     return { text: "별도", className: "bg-amber-100 text-amber-800", title: "VAT 별도 과세 · vat = amount × 10%" };
   }
-  return { text: "미설정", className: "bg-slate-100 text-slate-500", title: "공급사관리에서 VAT 포함/별도 설정 필요" };
+  return { text: "미설정", className: "bg-zinc-100 text-zinc-500", title: "공급사관리에서 VAT 포함/별도 설정 필요" };
 }
 
 const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
@@ -99,15 +99,15 @@ const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
   }, [rows]);
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col min-h-0 overflow-hidden h-full">
+    <div className="bg-white rounded-xl border border-zinc-200 shadow-sm flex flex-col min-h-0 overflow-hidden h-full">
       {/* 헤더 */}
-      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-zinc-100 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Building2 size={14} className="text-rose-500" />
-          <div className="text-[13px] font-black text-slate-800">공급사별 매입세액</div>
-          <span className="text-[10px] font-bold text-slate-400 ml-1">부가세 신고용</span>
+          <div className="text-[13px] font-black text-zinc-800">공급사별 매입세액</div>
+          <span className="text-[10px] font-bold text-zinc-400 ml-1">부가세 신고용</span>
         </div>
-        <div className="text-[10px] font-bold text-slate-500 tabular-nums">
+        <div className="text-[10px] font-bold text-zinc-500 tabular-nums">
           공급사 {fmt(totals.vendorCount)}곳 · 매입 {fmt(totals.entryCount)}건
         </div>
       </div>
@@ -115,15 +115,15 @@ const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
       {/* 리스트 */}
       <div className="overflow-y-auto flex-1 min-h-0 max-h-[60vh]">
         {loading ? (
-          <div className="flex items-center justify-center py-10 text-slate-400 gap-2 text-[12px]">
+          <div className="flex items-center justify-center py-10 text-zinc-400 gap-2 text-[12px]">
             <Loader2 size={13} className="animate-spin" />불러오는 중...
           </div>
         ) : rows.length === 0 ? (
-          <div className="py-10 text-center text-[11px] text-slate-300">매입 데이터 없음</div>
+          <div className="py-10 text-center text-[11px] text-zinc-300">매입 데이터 없음</div>
         ) : (
           <table className="w-full text-[11px]">
-            <thead className="sticky top-0 bg-slate-50 z-10 shadow-sm">
-              <tr className="text-slate-600">
+            <thead className="sticky top-0 bg-zinc-50 z-10 shadow-sm">
+              <tr className="text-zinc-600">
                 <th className="text-left px-3 py-2 font-bold">공급사</th>
                 <th className="text-right px-2 py-2 font-bold" title="공급가액 + 부가세 (실제 매입 총액)">
                   총 매입액
@@ -137,7 +137,7 @@ const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
                 <th className="text-center px-2 py-2 font-bold">VAT</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-zinc-50">
               {rows.map(v => {
                 const flag = vatFlagLabel(v);
                 const gross = v.total || v.amount + v.vat;
@@ -148,34 +148,34 @@ const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
                     className={`cursor-pointer transition ${
                       selectedVendor === v.supplier_name
                         ? "bg-rose-50 border-l-2 border-rose-500"
-                        : "hover:bg-slate-50 border-l-2 border-transparent"
+                        : "hover:bg-zinc-50 border-l-2 border-transparent"
                     }`}
                   >
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-1.5">
                         <span
                           className={`font-bold ${
-                            selectedVendor === v.supplier_name ? "text-rose-800" : "text-slate-700"
+                            selectedVendor === v.supplier_name ? "text-rose-800" : "text-zinc-700"
                           }`}
                         >
                           {v.supplier_name}
                         </span>
                         {!v.deductible && (
-                          <span className="text-[9px] font-black px-1 py-0.5 rounded bg-slate-100 text-slate-500" title="매입세액 공제 불가">
+                          <span className="text-[9px] font-black px-1 py-0.5 rounded bg-zinc-100 text-zinc-500" title="매입세액 공제 불가">
                             불공제
                           </span>
                         )}
                       </div>
                       {v.business_number && (
-                        <div className="text-[10px] text-slate-400 tabular-nums">
+                        <div className="text-[10px] text-zinc-400 tabular-nums">
                           {fmtBusinessNumber(v.business_number)}
                         </div>
                       )}
                     </td>
-                    <td className="px-2 py-2 text-right tabular-nums font-black text-slate-900">
+                    <td className="px-2 py-2 text-right tabular-nums font-black text-zinc-900">
                       {fmt(gross)}
                     </td>
-                    <td className="px-2 py-2 text-right tabular-nums text-slate-700">
+                    <td className="px-2 py-2 text-right tabular-nums text-zinc-700">
                       {fmt(v.amount)}
                     </td>
                     <td className="px-2 py-2 text-right tabular-nums font-semibold text-rose-700">
@@ -194,18 +194,18 @@ const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
               })}
             </tbody>
             {/* 하단 합계 · 부가세 강조 · 큰 폰트 */}
-            <tfoot className="sticky bottom-0 bg-slate-100 shadow-inner">
-              <tr className="text-slate-800 font-black">
+            <tfoot className="sticky bottom-0 bg-zinc-100 shadow-inner">
+              <tr className="text-zinc-800 font-black">
                 <td className="px-3 py-3">
                   <div className="text-[11px]">합계</div>
-                  <div className="text-[9px] font-bold text-slate-500 mt-0.5">
+                  <div className="text-[9px] font-bold text-zinc-500 mt-0.5">
                     {fmt(totals.vendorCount)}곳 · {fmt(totals.entryCount)}건
                   </div>
                 </td>
-                <td className="px-2 py-3 text-right tabular-nums text-[12px] text-slate-900">
+                <td className="px-2 py-3 text-right tabular-nums text-[12px] text-zinc-900">
                   {fmt(totals.grandTotal)}
                 </td>
-                <td className="px-2 py-3 text-right tabular-nums text-[11px] text-slate-700">
+                <td className="px-2 py-3 text-right tabular-nums text-[11px] text-zinc-700">
                   {fmt(totals.supplyTotal)}
                 </td>
                 {/* 부가세 합계 · 강조 · 큰 폰트 · 신고서 상 매입세액 총액 */}

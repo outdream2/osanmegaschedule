@@ -26,7 +26,7 @@ const OPTIONS: Array<{
   icon: React.ComponentType<{ size?: number; className?: string }>;
   activeCls: string;
 }> = [
-  { key: "all", icon: Layers, activeCls: "bg-slate-100 text-slate-800 border-slate-300 shadow-sm" },
+  { key: "all", icon: Layers, activeCls: "bg-zinc-100 text-zinc-800 border-zinc-300 shadow-sm" },
   { key: "stationery", icon: Pill, activeCls: "bg-violet-100 text-violet-800 border-violet-300 shadow-sm" },
   { key: "general", icon: Stethoscope, activeCls: "bg-sky-100 text-sky-800 border-sky-300 shadow-sm" },
 ];
@@ -42,9 +42,9 @@ export const ProductClassFilter: React.FC<Props> = ({
   return (
     <div className={`inline-flex items-center gap-1.5 flex-wrap ${className}`}>
       {label && (
-        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">{label}</span>
+        <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">{label}</span>
       )}
-      <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5" role="group" aria-label="상품 구분 필터">
+      <div className="inline-flex bg-zinc-50 border border-zinc-200 rounded-md p-0.5" role="group" aria-label="상품 구분 필터">
         {OPTIONS.map(opt => {
           const active = value === opt.key;
           const Icon = opt.icon;
@@ -56,7 +56,7 @@ export const ProductClassFilter: React.FC<Props> = ({
               type="button"
               onClick={() => onChange(opt.key)}
               className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer inline-flex items-center gap-1 border ${
-                active ? opt.activeCls : "border-transparent text-slate-500 hover:text-slate-700"
+                active ? opt.activeCls : "border-transparent text-zinc-500 hover:text-zinc-700"
               }`}
               title={labelText}
               aria-pressed={active}
@@ -65,13 +65,13 @@ export const ProductClassFilter: React.FC<Props> = ({
               <span className={compactOnMobile ? "hidden sm:inline" : ""}>
                 {labelText}
                 {getClassFilterRange(opt.key) && (
-                  <span className="text-[9px] font-normal text-slate-400 ml-0.5 tabular-nums">
+                  <span className="text-[9px] font-normal text-zinc-400 ml-0.5 tabular-nums">
                     {getClassFilterRange(opt.key)}
                   </span>
                 )}
               </span>
               {typeof cnt === "number" && (
-                <span className="text-[10px] font-bold text-slate-400 tabular-nums">{cnt}</span>
+                <span className="text-[10px] font-bold text-zinc-400 tabular-nums">{cnt}</span>
               )}
             </button>
           );

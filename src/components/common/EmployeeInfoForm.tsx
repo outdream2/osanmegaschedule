@@ -71,7 +71,7 @@ export interface EmployeeInfoFormProps {
   /** 표시할 필드 subset. 미지정 시 전체 필드 표시 */
   fields?: EmployeeInfoField[];
   /**
-   * "compact" : ContractWriter 스타일 (항상 편집 가능 · slate-200 border)
+   * "compact" : ContractWriter 스타일 (항상 편집 가능 · zinc-200 border)
    * "grid"    : StaffManage 스타일  (editing prop 으로 view/edit 전환 · indigo border)
    */
   layout?: "compact" | "grid";
@@ -105,17 +105,17 @@ const GENDERS = ["남", "여"] as const;
 
 /** compact (ContractWriter) 스타일 */
 const CMP = {
-  label: "block text-[10.5px] font-bold uppercase tracking-wider text-slate-500 mb-1",
-  input: "w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition placeholder:text-slate-400 placeholder:font-normal",
-  select: "w-full bg-white border border-slate-200 rounded-lg px-2 py-2 text-[13px] text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition cursor-pointer",
+  label: "block text-[10.5px] font-bold uppercase tracking-wider text-zinc-500 mb-1",
+  input: "w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition placeholder:text-zinc-400 placeholder:font-normal",
+  select: "w-full bg-white border border-zinc-200 rounded-lg px-2 py-2 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition cursor-pointer",
 } as const;
 
 /** grid (StaffManage) 스타일 */
 const GRD = {
-  label: "text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none",
+  label: "text-[11px] font-semibold text-zinc-400 flex items-center gap-0.5 leading-none",
   input: "border border-indigo-300 rounded-md px-2 py-0.5 text-[13px] focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 bg-indigo-50/40 h-7 w-full",
   view: (hasValue: boolean) =>
-    `text-[13px] font-semibold leading-snug min-h-[20px] ${hasValue ? "text-slate-700" : "text-slate-300 italic"}`,
+    `text-[13px] font-semibold leading-snug min-h-[20px] ${hasValue ? "text-zinc-700" : "text-zinc-300 italic"}`,
   select: "border border-indigo-300 rounded-md px-2 text-[13px] bg-white focus:outline-none bg-indigo-50/40 h-7 w-full",
 } as const;
 
@@ -175,13 +175,13 @@ const NameField: React.FC<NameFieldProps> = ({
       />
       {hasSearch && searchOpen && (
         matches.length === 0 ? (
-          <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-xl shadow-lg p-2.5 text-[12px] text-slate-400 text-center">
+          <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-zinc-200 rounded-xl shadow-lg p-2.5 text-[12px] text-zinc-400 text-center">
             일치하는 직원 없음 · 직접 입력
           </div>
         ) : (
-          <ul className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-xl shadow-lg max-h-52 overflow-y-auto divide-y divide-slate-100">
+          <ul className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-zinc-200 rounded-xl shadow-lg max-h-52 overflow-y-auto divide-y divide-zinc-100">
             {!value.trim() && (
-              <li className="px-3 py-1.5 text-[11px] text-slate-400 font-semibold bg-slate-50 border-b border-slate-100">
+              <li className="px-3 py-1.5 text-[11px] text-zinc-400 font-semibold bg-zinc-50 border-b border-zinc-100">
                 직원 선택 또는 성명 입력
               </li>
             )}
@@ -193,9 +193,9 @@ const NameField: React.FC<NameFieldProps> = ({
                   onClick={() => { onSelectEmployee!(e); setSearchOpen(false); }}
                   className="w-full text-left px-3 py-2 hover:bg-indigo-50 transition-colors flex items-center gap-2"
                 >
-                  <span className="text-[13px] font-bold text-slate-800">{e.name}</span>
-                  {e.position && <span className="text-[11px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">{e.position}</span>}
-                  {e.phone && <span className="text-[11px] text-slate-400 ml-auto tabular-nums">{e.phone}</span>}
+                  <span className="text-[13px] font-bold text-zinc-800">{e.name}</span>
+                  {e.position && <span className="text-[11px] text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded-md">{e.position}</span>}
+                  {e.phone && <span className="text-[11px] text-zinc-400 ml-auto tabular-nums">{e.phone}</span>}
                 </button>
               </li>
             ))}
@@ -309,7 +309,7 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
                     ? (g === "남"
                         ? "bg-blue-500 text-white border-blue-500"
                         : "bg-rose-500 text-white border-rose-500")
-                    : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                    : "bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300"
                 }`}
               >{g}</button>
             ))}

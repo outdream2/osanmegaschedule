@@ -54,7 +54,7 @@ const LEVELS = [0,1,2,3,4,5,6,7,8,9];
 
 // 2026-08-12 · #99 · 그룹 아이콘 색상 · Tailwind JIT 스캔 대상 (dynamic class 회피)
 const GROUP_COLOR_CLS: Record<string, string> = {
-  slate:   "text-slate-500",
+  slate:   "text-zinc-500",
   amber:   "text-amber-500",
   red:     "text-red-500",
   sky:     "text-sky-500",
@@ -360,10 +360,10 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
 
   if (userLevel < 9) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
         <div className="text-center">
           <AlertCircle size={40} className="text-rose-400 mx-auto mb-3" />
-          <p className="text-slate-600 font-semibold">최고관리자(레벨 9)만 접근할 수 있습니다.</p>
+          <p className="text-zinc-600 font-semibold">최고관리자(레벨 9)만 접근할 수 있습니다.</p>
         </div>
       </div>
     );
@@ -401,21 +401,21 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     return <>
         {/* 탭 · 2026-08-12 · 우측에 [저장] 버튼 · saveNow + 토스트 (사용자 지시) */}
         <div className="mb-4 flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex flex-wrap bg-slate-100 border border-slate-200 rounded-xl p-0.5 gap-0.5 w-fit">
+          <div className="flex flex-wrap bg-zinc-100 border border-zinc-200 rounded-xl p-0.5 gap-0.5 w-fit">
           <button type="button" onClick={() => setTab("permissions")}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[15px] font-black transition cursor-pointer ${tab === "permissions" ? "bg-white text-violet-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[15px] font-black transition cursor-pointer ${tab === "permissions" ? "bg-white text-violet-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
             <Shield size={15} />권한 조정
           </button>
           <button type="button" onClick={() => setTab("app-settings")}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[15px] font-black transition cursor-pointer ${tab === "app-settings" ? "bg-white text-violet-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[15px] font-black transition cursor-pointer ${tab === "app-settings" ? "bg-white text-violet-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
             <SettingsIcon size={15} />스케쥴 설정
           </button>
           <button type="button" onClick={() => setTab("positions")}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[15px] font-black transition cursor-pointer ${tab === "positions" ? "bg-white text-violet-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[15px] font-black transition cursor-pointer ${tab === "positions" ? "bg-white text-violet-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
             <IdCard size={15} />직군 설정
           </button>
           <button type="button" onClick={() => setTab("construction")}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[15px] font-black transition cursor-pointer ${tab === "construction" ? "bg-white text-amber-600 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[15px] font-black transition cursor-pointer ${tab === "construction" ? "bg-white text-amber-600 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
             <Construction size={15} />공사중
           </button>
           </div>
@@ -455,8 +455,8 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         {/* 섹션 1 · 페이지별 최소 권한 · 2026-08-13 · 저장 버튼 추가 (명시 저장) */}
         <div className="mb-2 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
-            <Shield size={13} className="text-slate-500" />
-            <h2 className="text-[17px] font-black text-slate-700">페이지별 최소 권한</h2>
+            <Shield size={13} className="text-zinc-500" />
+            <h2 className="text-[17px] font-black text-zinc-700">페이지별 최소 권한</h2>
           </div>
           <div className="flex items-center gap-2">
             {saveToast && (
@@ -485,9 +485,9 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           </div>
         </div>
         {/* 2026-08-12 · #99 · 트리 구조 · 사이드바 그룹별 접기/펼치기 · 그룹 내 페이지 리스트 */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
           {/* Table header */}
-          <div className="grid grid-cols-[minmax(0,1fr)_170px_170px] sm:grid-cols-[minmax(0,1fr)_180px_180px] px-5 py-2.5 bg-slate-50 border-b border-slate-100 text-[15px] font-bold text-slate-500 tracking-tight">
+          <div className="grid grid-cols-[minmax(0,1fr)_170px_170px] sm:grid-cols-[minmax(0,1fr)_180px_180px] px-5 py-2.5 bg-zinc-50 border-b border-zinc-100 text-[15px] font-bold text-zinc-500 tracking-tight">
             <span>페이지</span>
             <span className="text-right pr-3">읽기 최소</span>
             <span className="text-right pr-3">쓰기 최소</span>
@@ -498,20 +498,20 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
             const GroupIcon = g.icon;
             const isLastGroup = gi === groupedPages.length - 1;
             return (
-              <div key={g.id} className={isLastGroup ? "" : "border-b border-slate-100"}>
+              <div key={g.id} className={isLastGroup ? "" : "border-b border-zinc-100"}>
                 {/* 그룹 헤더 · 접기/펼치기 · 사이드바 톤 */}
                 <button
                   type="button"
                   onClick={() => toggleGroup(g.id)}
-                  className="w-full grid grid-cols-[minmax(0,1fr)_170px_170px] sm:grid-cols-[minmax(0,1fr)_180px_180px] px-4 py-2.5 items-center bg-slate-50/60 hover:bg-slate-100/70 transition-colors text-left"
+                  className="w-full grid grid-cols-[minmax(0,1fr)_170px_170px] sm:grid-cols-[minmax(0,1fr)_180px_180px] px-4 py-2.5 items-center bg-zinc-50/60 hover:bg-zinc-100/70 transition-colors text-left"
                 >
                   <div className="flex items-center gap-2">
                     {collapsed
-                      ? <CaretRight size={14} className="text-slate-500" weight="bold" />
-                      : <CaretDown  size={14} className="text-slate-500" weight="bold" />}
-                    {GroupIcon && <GroupIcon size={16} className={GROUP_COLOR_CLS[g.color] ?? "text-slate-500"} />}
-                    <span className="text-[16px] font-black text-slate-700">{g.label}</span>
-                    <span className="text-[13px] font-semibold text-slate-400">({g.pages.length})</span>
+                      ? <CaretRight size={14} className="text-zinc-500" weight="bold" />
+                      : <CaretDown  size={14} className="text-zinc-500" weight="bold" />}
+                    {GroupIcon && <GroupIcon size={16} className={GROUP_COLOR_CLS[g.color] ?? "text-zinc-500"} />}
+                    <span className="text-[16px] font-black text-zinc-700">{g.label}</span>
+                    <span className="text-[13px] font-semibold text-zinc-400">({g.pages.length})</span>
                   </div>
                   <div />
                   <div />
@@ -524,12 +524,12 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                       key={key}
                       title={desc}
                       className={`grid grid-cols-[minmax(0,1fr)_170px_170px] sm:grid-cols-[minmax(0,1fr)_180px_180px] px-5 py-2 items-center ${
-                        i < g.pages.length - 1 ? "border-t border-slate-100/70" : "border-t border-slate-100/70"
+                        i < g.pages.length - 1 ? "border-t border-zinc-100/70" : "border-t border-zinc-100/70"
                       }`}
                     >
                       {/* 페이지명 · 들여쓰기 · 트리 시각화 · 2026-08-13 · +2 */}
-                      <div className="text-[15px] font-semibold text-slate-700 truncate pl-6">
-                        <span className="text-slate-300 mr-1.5">└</span>
+                      <div className="text-[15px] font-semibold text-zinc-700 truncate pl-6">
+                        <span className="text-zinc-300 mr-1.5">└</span>
                         {label}
                       </div>
 
@@ -576,16 +576,16 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           })}
         </div>
 
-        <p className="text-[11px] text-slate-400 mt-2 mb-6 pl-1">
+        <p className="text-[11px] text-zinc-400 mt-2 mb-6 pl-1">
           레벨 9(최고관리자)는 항상 모든 페이지에 접근할 수 있습니다. 각 페이지 설명은 마우스를 올리면 표시됩니다.
         </p>
 
         {/* 섹션 2 · 직원별 개별 레벨 */}
         <div className="mb-2 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
-            <Users size={13} className="text-slate-500" />
-            <h2 className="text-[13px] font-black text-slate-700">직원별 레벨</h2>
-            <span className="text-[11px] text-slate-400 font-medium">
+            <Users size={13} className="text-zinc-500" />
+            <h2 className="text-[13px] font-black text-zinc-700">직원별 레벨</h2>
+            <span className="text-[11px] text-zinc-400 font-medium">
               ({filteredEmployees.length}명 · 약사 우선)
             </span>
           </div>
@@ -594,11 +594,11 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
             value={empSearch}
             onChange={e => setEmpSearch(e.target.value)}
             placeholder="이름·직군 검색"
-            className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 w-44"
+            className="text-xs px-3 py-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-700 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 w-44"
           />
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="grid grid-cols-[1fr_90px_130px_36px] px-5 py-2 bg-slate-50 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+        <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+          <div className="grid grid-cols-[1fr_90px_130px_36px] px-5 py-2 bg-zinc-50 border-b border-zinc-100 text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
             <span>성명</span>
             <span>직군</span>
             <span className="text-center">레벨</span>
@@ -606,7 +606,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           </div>
           <div className="max-h-[420px] overflow-y-auto">
             {filteredEmployees.length === 0 ? (
-              <div className="px-5 py-8 text-center text-xs text-slate-400">
+              <div className="px-5 py-8 text-center text-xs text-zinc-400">
                 {employees.length === 0 ? "직원 목록을 불러오는 중..." : "일치하는 직원이 없습니다."}
               </div>
             ) : filteredEmployees.map((emp, i) => {
@@ -615,13 +615,13 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                 <div
                   key={emp.id}
                   className={`grid grid-cols-[1fr_90px_130px_36px] px-5 py-1.5 items-center ${
-                    i < filteredEmployees.length - 1 ? "border-b border-slate-100" : ""
+                    i < filteredEmployees.length - 1 ? "border-b border-zinc-100" : ""
                   } ${isPharma ? "bg-violet-50/40" : ""}`}
                 >
-                  <div className="text-sm font-semibold text-slate-800 truncate">{emp.name}</div>
+                  <div className="text-sm font-semibold text-zinc-800 truncate">{emp.name}</div>
                   <div className="flex items-center">
                     <span className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded ${
-                      isPharma ? "bg-violet-100 text-violet-700" : "bg-slate-100 text-slate-600"
+                      isPharma ? "bg-violet-100 text-violet-700" : "bg-zinc-100 text-zinc-600"
                     }`}>{emp.position ?? "-"}</span>
                   </div>
                   <div className="flex justify-center">
@@ -644,7 +644,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
             })}
           </div>
         </div>
-        <p className="text-[11px] text-slate-400 mt-2 pl-1">
+        <p className="text-[11px] text-zinc-400 mt-2 pl-1">
           변경 즉시 서버에 저장됩니다. 실패 시 이전 값으로 되돌립니다.
         </p>
         </>)}
@@ -675,10 +675,10 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         {tab === "positions" && (
           <div className="w-full min-w-0 space-y-4">
             <div className="flex items-center gap-2">
-              <IdCard size={14} className="text-slate-500" />
-              <h2 className="text-[13px] font-black text-slate-700">직군 설정</h2>
+              <IdCard size={14} className="text-zinc-500" />
+              <h2 className="text-[13px] font-black text-zinc-700">직군 설정</h2>
             </div>
-            <p className="text-[12px] text-slate-500 font-semibold">
+            <p className="text-[12px] text-zinc-500 font-semibold">
               직원 등록/수정 화면의 직군 드롭박스에 표시될 목록입니다. 드래그하여 순서를 변경할 수 있습니다.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
@@ -696,10 +696,10 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                   className={`flex items-center gap-2 bg-white border rounded-lg px-3 py-2 transition ${
                     posDragOverIdx === idx && posDragIdx !== idx
                       ? "border-violet-400 bg-violet-50"
-                      : "border-slate-200 hover:border-slate-300"
+                      : "border-zinc-200 hover:border-zinc-300"
                   } ${posDragIdx === idx ? "opacity-40" : ""}`}
                 >
-                  <div className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing shrink-0">
+                  <div className="text-zinc-300 hover:text-zinc-500 cursor-grab active:cursor-grabbing shrink-0">
                     <GripVertical size={14} />
                   </div>
                   {editingPosIdx === idx ? (
@@ -712,13 +712,13 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                         if (e.key === "Enter") { e.preventDefault(); commitEditPosition(); }
                         else if (e.key === "Escape") { setEditingPosIdx(null); }
                       }}
-                      className="flex-1 text-[13px] font-semibold text-slate-800 bg-white border border-violet-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-violet-300 min-w-0"
+                      className="flex-1 text-[13px] font-semibold text-zinc-800 bg-white border border-violet-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-violet-300 min-w-0"
                     />
                   ) : (
                     <button
                       type="button"
                       onClick={() => { setEditingPosIdx(idx); setEditingPosValue(pos); }}
-                      className="flex-1 text-[13px] font-semibold text-slate-800 truncate text-left hover:text-violet-700 cursor-text"
+                      className="flex-1 text-[13px] font-semibold text-zinc-800 truncate text-left hover:text-violet-700 cursor-text"
                       title="클릭하여 이름 수정"
                     >
                       {pos}
@@ -727,7 +727,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                   <button
                     type="button"
                     onClick={() => removePositionAt(idx)}
-                    className="text-slate-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded"
+                    className="text-zinc-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded"
                     title="삭제"
                   >
                     <Trash2 size={13} />
@@ -742,7 +742,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                 onChange={(e) => setNewPositionInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNewPosition(); } }}
                 placeholder="새 직군 입력 (Enter)"
-                className="flex-1 text-[13px] rounded-lg border border-slate-200 focus:border-violet-500 p-2 bg-white focus:outline-none"
+                className="flex-1 text-[13px] rounded-lg border border-zinc-200 focus:border-violet-500 p-2 bg-white focus:outline-none"
               />
               <button
                 type="button"
@@ -761,7 +761,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           <div className="w-full min-w-0 space-y-4 max-w-xl">
             <div className="flex items-center gap-2">
               <Construction size={14} className="text-amber-600" />
-              <h2 className="text-[13px] font-black text-slate-700">공사중 (Under Construction)</h2>
+              <h2 className="text-[13px] font-black text-zinc-700">공사중 (Under Construction)</h2>
             </div>
             <label className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 hover:border-amber-400 cursor-pointer">
               <input
@@ -771,12 +771,12 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                 className="w-4 h-4 accent-amber-500"
               />
               <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-black text-slate-800 leading-tight">공사중 모드 활성화</div>
-                <div className="text-[11px] font-semibold text-slate-500 leading-tight mt-0.5">
+                <div className="text-[13px] font-black text-zinc-800 leading-tight">공사중 모드 활성화</div>
+                <div className="text-[11px] font-semibold text-zinc-500 leading-tight mt-0.5">
                   비로그인 랜딩페이지 · 재고 검색 숨김 · "곧 오픈 예정입니다" 표시
                 </div>
               </div>
-              <span className={`text-[10px] font-black px-2 py-0.5 rounded ${settingsUnderConstruction ? "bg-amber-500 text-white" : "bg-slate-200 text-slate-500"}`}>
+              <span className={`text-[10px] font-black px-2 py-0.5 rounded ${settingsUnderConstruction ? "bg-amber-500 text-white" : "bg-zinc-200 text-zinc-500"}`}>
                 {settingsUnderConstruction ? "ON" : "OFF"}
               </span>
             </label>
@@ -799,7 +799,7 @@ const LevelSelect: React.FC<LevelSelectProps> = ({ value, onChange, saving, save
       value={value}
       onChange={e => onChange(Number(e.target.value))}
       disabled={saving}
-      className="appearance-none bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-[13px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 cursor-pointer disabled:opacity-60 pr-7 min-w-[120px]"
+      className="appearance-none bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-1.5 text-[13px] font-bold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 cursor-pointer disabled:opacity-60 pr-7 min-w-[120px]"
     >
       {LEVELS.map(l => (
         <option key={l} value={l}>Lv.{l}{l === 1 ? " (직원)" : l === 9 ? " (최고관리자)" : ""}</option>
@@ -854,24 +854,24 @@ const PositionsField: React.FC<PositionsFieldProps> = ({ selected, allPositions,
         className={`h-5 px-1.5 text-[10px] font-bold rounded border transition cursor-pointer ${
           isOpen
             ? "bg-indigo-500 text-white border-indigo-500"
-            : "bg-white text-slate-500 border-slate-300 hover:border-indigo-400 hover:text-indigo-600"
+            : "bg-white text-zinc-500 border-zinc-300 hover:border-indigo-400 hover:text-indigo-600"
         }`}
         title="직군 지정 · 레벨과 함께 OR 조건"
       >+ 직군</button>
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1 z-30 w-40 bg-white border border-slate-200 rounded-lg shadow-lg p-2 flex flex-col gap-1">
-          <div className="text-[10px] font-bold text-slate-400 uppercase mb-1 px-1">직군 (OR 조건)</div>
+        <div className="absolute right-0 top-full mt-1 z-30 w-40 bg-white border border-zinc-200 rounded-lg shadow-lg p-2 flex flex-col gap-1">
+          <div className="text-[10px] font-bold text-zinc-400 uppercase mb-1 px-1">직군 (OR 조건)</div>
           {allPositions.length === 0 ? (
-            <div className="text-[11px] text-slate-400 px-1 py-2 text-center">직군 없음</div>
+            <div className="text-[11px] text-zinc-400 px-1 py-2 text-center">직군 없음</div>
           ) : allPositions.map(p => (
-            <label key={p} className="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-slate-50 cursor-pointer">
+            <label key={p} className="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-zinc-50 cursor-pointer">
               <input
                 type="checkbox"
                 checked={selected.includes(p)}
                 onChange={() => onToggle(p)}
                 className="w-3 h-3 accent-indigo-500 cursor-pointer"
               />
-              <span className="text-[12px] font-semibold text-slate-700">{p}</span>
+              <span className="text-[12px] font-semibold text-zinc-700">{p}</span>
             </label>
           ))}
         </div>

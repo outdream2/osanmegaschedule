@@ -162,7 +162,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
         className={`relative flex items-center justify-center w-9 h-9 rounded-xl border transition-all cursor-pointer shadow-sm hover:shadow-md active:scale-95 ${
           hasUnread
             ? "bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-600"
-            : "bg-white hover:bg-slate-50 border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-300"
+            : "bg-white hover:bg-zinc-50 border-zinc-200 text-zinc-600 hover:text-indigo-600 hover:border-indigo-300"
         } ${justArrived ? "notif-bell-shake" : ""}`}
         title={hasUnread ? `미확인 알림 ${unreadCount}건` : "알림"}
       >
@@ -187,13 +187,13 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
       {/* Dropdown panel · 반응형 · 모바일은 fixed 로 화면 폭에 맞춤 (2026-08-05 · 왼쪽 치우침 fix) */}
       {open && (
         <div
-          className="fixed inset-x-2 top-14 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 mx-auto sm:mx-0 max-w-[420px] bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden"
+          className="fixed inset-x-2 top-14 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 mx-auto sm:mx-0 max-w-[420px] bg-white border border-zinc-200 rounded-2xl shadow-2xl z-50 overflow-hidden"
           style={{ boxShadow: "0 8px 32px rgba(15,23,42,0.14), 0 2px 8px rgba(15,23,42,0.06)" }}>
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
             <div className="flex items-center gap-2">
-              <Bell size={13} className="text-slate-500" />
-              <span className="text-sm font-bold text-slate-800">알림</span>
+              <Bell size={13} className="text-zinc-500" />
+              <span className="text-sm font-bold text-zinc-800">알림</span>
               {unreadCount > 0 && (
                 <span className="px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-600 text-[10px] font-black">{unreadCount}</span>
               )}
@@ -202,14 +202,14 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
               {unreadCount > 0 && (
                 <button
                   onClick={markAllRead}
-                  className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition cursor-pointer"
+                  className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-zinc-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition cursor-pointer"
                 >
                   <CheckCheck size={11} /> 모두 읽음
                 </button>
               )}
               <button
                 onClick={() => setOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition cursor-pointer"
+                className="p-1 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition cursor-pointer"
               >
                 <X size={13} />
               </button>
@@ -217,16 +217,16 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
           </div>
 
           {/* Notification list */}
-          <div className="max-h-80 overflow-y-auto divide-y divide-slate-50">
+          <div className="max-h-80 overflow-y-auto divide-y divide-zinc-50">
             {loading && notifications.length === 0 ? (
-              <div className="flex items-center justify-center py-10 text-slate-400 text-xs gap-2">
-                <div className="w-3 h-3 border-2 border-slate-300 border-t-indigo-400 rounded-full animate-spin" />
+              <div className="flex items-center justify-center py-10 text-zinc-400 text-xs gap-2">
+                <div className="w-3 h-3 border-2 border-zinc-300 border-t-indigo-400 rounded-full animate-spin" />
                 불러오는 중...
               </div>
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 gap-2">
-                <BellOff size={24} className="text-slate-300" />
-                <span className="text-slate-400 text-xs">알림이 없습니다</span>
+                <BellOff size={24} className="text-zinc-300" />
+                <span className="text-zinc-400 text-xs">알림이 없습니다</span>
               </div>
             ) : (
               notifications.map((n) => {
@@ -243,20 +243,20 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
                         onNavigate(route);
                       }
                     }}
-                    className={`w-full text-left flex items-start gap-3 px-4 py-3 transition cursor-pointer ${n.read ? "bg-white hover:bg-slate-50" : "bg-indigo-50/40 hover:bg-indigo-50"}`}
+                    className={`w-full text-left flex items-start gap-3 px-4 py-3 transition cursor-pointer ${n.read ? "bg-white hover:bg-zinc-50" : "bg-indigo-50/40 hover:bg-indigo-50"}`}
                   >
                     <div className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${style.bg} ${style.border} border`}>
                       <Icon size={13} className={style.text} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <p className={`text-xs font-bold truncate ${n.read ? "text-slate-600" : "text-slate-900"}`}>{n.title}</p>
+                        <p className={`text-xs font-bold truncate ${n.read ? "text-zinc-600" : "text-zinc-900"}`}>{n.title}</p>
                         {!n.read && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />}
                       </div>
                       {n.body && (
-                        <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed line-clamp-2">{n.body}</p>
+                        <p className="text-[11px] text-zinc-500 mt-0.5 leading-relaxed line-clamp-2">{n.body}</p>
                       )}
-                      <p className="text-[10px] text-slate-400 mt-1">{timeAgo(n.created_at)}</p>
+                      <p className="text-[10px] text-zinc-400 mt-1">{timeAgo(n.created_at)}</p>
                     </div>
                   </button>
                 );
@@ -265,8 +265,8 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
           </div>
 
           {notifications.length > 0 && (
-            <div className="px-4 py-2 border-t border-slate-100 text-center">
-              <span className="text-[10px] text-slate-400">최근 30개 알림</span>
+            <div className="px-4 py-2 border-t border-zinc-100 text-center">
+              <span className="text-[10px] text-zinc-400">최근 30개 알림</span>
             </div>
           )}
         </div>

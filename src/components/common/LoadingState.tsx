@@ -29,7 +29,7 @@ export interface LoadingStateProps {
 }
 
 const TONE_CLS: Record<NonNullable<LoadingStateProps["tone"]>, string> = {
-  slate:   "text-slate-400",
+  slate:   "text-zinc-400",
   indigo:  "text-indigo-400",
   emerald: "text-emerald-400",
   sky:     "text-sky-400",
@@ -43,7 +43,7 @@ const SIZE_PAD: Record<NonNullable<LoadingStateProps["size"]>, string> = {
 
 /** shimmer 효과가 있는 skeleton 행 */
 const SkeletonRow: React.FC<{ widthCls: string }> = ({ widthCls }) => (
-  <div className={`relative overflow-hidden h-4 rounded-md bg-slate-100 ${widthCls}`}>
+  <div className={`relative overflow-hidden h-4 rounded-md bg-zinc-100 ${widthCls}`}>
     <div
       className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent"
       style={{ animation: "shimmer 1.4s ease-in-out infinite" }}

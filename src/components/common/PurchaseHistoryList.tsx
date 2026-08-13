@@ -6,7 +6,7 @@
 //   각각 다른 스타일로 매입이력 표를 렌더 → 통일된 UX 제공
 //
 // 스타일 · 통계 > 상품현황 > 상품 매입이력 모달(PurchaseHistoryModal) 기준
-//   · thead sticky bg-slate-50 · font-mono 날짜 · font-black 금액 · amber-50 highlight
+//   · thead sticky bg-zinc-50 · font-mono 날짜 · font-black 금액 · amber-50 highlight
 //   · 12px 본문 (B-2-2) · 배지 지양 · 텍스트 우선 (B-4)
 //   · 헤더 자동 정렬 (A-2) · 화살표 ▲/▼
 //
@@ -200,7 +200,7 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
   // ─── Render ────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8 text-slate-400 text-[12px] gap-2">
+      <div className="flex items-center justify-center py-8 text-zinc-400 text-[12px] gap-2">
         <Loader2 size={14} className="animate-spin" />
         <span>매입 이력 로딩 중...</span>
       </div>
@@ -215,7 +215,7 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
   }
   if (rows.length === 0) {
     return (
-      <div className="p-8 text-center text-slate-400 text-[12px]">
+      <div className="p-8 text-center text-zinc-400 text-[12px]">
         {emptyText}
       </div>
     );
@@ -229,17 +229,17 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
       style={containerStyle}
     >
       <table className="w-full text-[12px] min-w-[420px]" style={{ tableLayout: "fixed" }}>
-        <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
-          <tr className="text-[11px] text-slate-500 uppercase tracking-wider">
+        <thead className="sticky top-0 bg-zinc-50 border-b border-zinc-200 z-10">
+          <tr className="text-[11px] text-zinc-500 uppercase tracking-wider">
             {showRowNumber && (
-              <th className="relative text-left px-2 py-2 text-slate-300" style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
+              <th className="relative text-left px-2 py-2 text-zinc-300" style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
                 #
                 <span {...resizerProps("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
               </th>
             )}
             <th
               onClick={() => toggleSort("date")}
-              className="relative text-left px-3 py-2 cursor-pointer select-none hover:bg-slate-100 transition"
+              className="relative text-left px-3 py-2 cursor-pointer select-none hover:bg-zinc-100 transition"
               style={{ width: getWidth("date"), minWidth: getWidth("date") }}
             >
               매입일{arrow("date")}
@@ -254,7 +254,7 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
             {showSupplier && (
               <th
                 onClick={() => toggleSort("supplier_name")}
-                className="relative text-left px-3 py-2 cursor-pointer select-none hover:bg-slate-100 transition"
+                className="relative text-left px-3 py-2 cursor-pointer select-none hover:bg-zinc-100 transition"
                 style={{ width: getWidth("supplier"), minWidth: getWidth("supplier") }}
               >
                 공급사{arrow("supplier_name")}
@@ -264,7 +264,7 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
             {showProduct && (
               <th
                 onClick={() => toggleSort("product_name")}
-                className="relative text-left px-3 py-2 cursor-pointer select-none hover:bg-slate-100 transition"
+                className="relative text-left px-3 py-2 cursor-pointer select-none hover:bg-zinc-100 transition"
                 style={{ width: getWidth("product"), minWidth: getWidth("product") }}
               >
                 상품{arrow("product_name")}
@@ -273,7 +273,7 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
             )}
             <th
               onClick={() => toggleSort("quantity")}
-              className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-slate-100 transition"
+              className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-zinc-100 transition"
               style={{ width: getWidth("qty"), minWidth: getWidth("qty") }}
             >
               수량{arrow("quantity")}
@@ -281,7 +281,7 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
             </th>
             <th
               onClick={() => toggleSort("unit_price")}
-              className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-slate-100 transition"
+              className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-zinc-100 transition"
               style={{ width: getWidth("unit"), minWidth: getWidth("unit") }}
             >
               단가{arrow("unit_price")}
@@ -297,7 +297,7 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-zinc-100">
           {sorted.map((r, i) => {
             const d = rowDate(r);
             const isHighlightDate = !!highlightDate && d.startsWith(highlightDate);
@@ -313,9 +313,9 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
                 }`}
               >
                 {showRowNumber && (
-                  <td className="px-2 py-1.5 text-slate-300 text-[11px] tabular-nums align-top">{i + 1}</td>
+                  <td className="px-2 py-1.5 text-zinc-300 text-[11px] tabular-nums align-top">{i + 1}</td>
                 )}
-                <td className="px-3 py-1.5 font-mono text-[12px] font-semibold text-slate-700 align-top whitespace-nowrap">
+                <td className="px-3 py-1.5 font-mono text-[12px] font-semibold text-zinc-700 align-top whitespace-nowrap">
                   {d || "-"}
                   {isHighlight && <span className="ml-1 text-[10px] text-amber-600 font-black">◀</span>}
                 </td>
@@ -329,7 +329,7 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
                 )}
                 {showSupplier && (
                   <td
-                    className="px-3 py-1.5 text-slate-700 truncate max-w-[180px] align-top"
+                    className="px-3 py-1.5 text-zinc-700 truncate max-w-[180px] align-top"
                     title={r.supplier_name ?? undefined}
                   >
                     {r.supplier_name ?? "-"}
@@ -337,18 +337,18 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
                 )}
                 {showProduct && (
                   <td className="px-3 py-1.5 align-top">
-                    <div className="text-[12px] font-semibold text-slate-700 break-words whitespace-normal leading-snug">
+                    <div className="text-[12px] font-semibold text-zinc-700 break-words whitespace-normal leading-snug">
                       {r.product_name ?? "-"}
                     </div>
                     {r.product_code && (
-                      <div className="text-[10px] font-mono text-slate-400 tabular-nums">{r.product_code}</div>
+                      <div className="text-[10px] font-mono text-zinc-400 tabular-nums">{r.product_code}</div>
                     )}
                   </td>
                 )}
-                <td className="text-right px-3 py-1.5 font-mono font-bold text-slate-800 align-top">
+                <td className="text-right px-3 py-1.5 font-mono font-bold text-zinc-800 align-top">
                   {rowQty(r) !== 0 ? fmt(rowQty(r)) : "-"}
                 </td>
-                <td className="text-right px-3 py-1.5 font-mono text-slate-500 align-top">
+                <td className="text-right px-3 py-1.5 font-mono text-zinc-500 align-top">
                   {rowUnit(r) > 0 ? fmt(rowUnit(r)) : "-"}
                 </td>
                 <td className="text-right px-3 py-1.5 font-mono font-black text-emerald-700 align-top">
@@ -359,12 +359,12 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
           })}
         </tbody>
         {showFooterSum && (
-          <tfoot className="sticky bottom-0 bg-white border-t-2 border-slate-200">
+          <tfoot className="sticky bottom-0 bg-white border-t-2 border-zinc-200">
             <tr>
-              <td colSpan={colCount - 3} className="px-3 py-2 text-right text-[11px] font-black text-slate-500">
+              <td colSpan={colCount - 3} className="px-3 py-2 text-right text-[11px] font-black text-zinc-500">
                 합계
               </td>
-              <td className="px-3 py-2 text-right tabular-nums font-mono text-[12px] font-black text-slate-700">
+              <td className="px-3 py-2 text-right tabular-nums font-mono text-[12px] font-black text-zinc-700">
                 {fmt(totals.qty)}
               </td>
               <td className="px-3 py-2" />
@@ -376,7 +376,7 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
         )}
       </table>
       {footerHint && (
-        <div className="px-3 py-2 border-t border-slate-100 bg-slate-50/60 text-[11px] text-slate-400 text-center">
+        <div className="px-3 py-2 border-t border-zinc-100 bg-zinc-50/60 text-[11px] text-zinc-400 text-center">
           {footerHint}
         </div>
       )}

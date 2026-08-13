@@ -48,14 +48,14 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
   const confirm = useConfirm();
 
   return (
-    <div className="bg-white border-b border-slate-200 px-3 sm:px-6 py-2 sm:py-2.5 flex flex-col gap-2 sm:gap-3 shrink-0 shadow-sm">
+    <div className="bg-white border-b border-zinc-200 px-3 sm:px-6 py-2 sm:py-2.5 flex flex-col gap-2 sm:gap-3 shrink-0 shadow-sm">
         {/* Filter Tabs: two independent groups */}
         <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
-          <span className="text-[17px] font-bold text-slate-400 uppercase tracking-widest shrink-0 pr-0.5">필터</span>
+          <span className="text-[17px] font-bold text-zinc-400 uppercase tracking-widest shrink-0 pr-0.5">필터</span>
           {/* Group 1: Workplace */}
           {/* 2026-08-11 · 근무지 필터 그룹 제거 · 직군 그룹 하나로 통합 */}
           {/* Group 2: Position */}
-          <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
+          <div className="inline-flex p-0.5 bg-zinc-100 border border-zinc-200 rounded-lg gap-0.5">
             {([
               // 2026-08-04 · 사용자 요청 · 필터 통합: 전체 · 약사 · 창고 · 진열 · 매장(창고+진열)
               // · 창고 = position 물류(창고 포함)
@@ -72,10 +72,10 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
                 onClick={() => setPositionTab(key)}
                 className={`px-1.5 sm:px-2 py-0.5 sm:py-0.5 text-[12px] sm:text-[13px] font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[24px] sm:min-h-[26px] ${positionTab === key
                   ? `bg-white ${color} shadow-sm font-bold`
-                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                  : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
                   }`}
               >
-                <span>{label} <span className="text-slate-400 font-normal">({count})</span></span>
+                <span>{label} <span className="text-zinc-400 font-normal">({count})</span></span>
               </button>
             ))}
           </div>
@@ -83,9 +83,9 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
 
         {/* 2026-08-11 · 정렬 + 검색 + 직원등록 · PC 한줄 · 반응형 2줄 (flex-wrap) */}
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap text-xs">
-          <span className="text-[17px] font-bold text-slate-400 uppercase tracking-widest shrink-0 pr-0.5">정렬</span>
+          <span className="text-[17px] font-bold text-zinc-400 uppercase tracking-widest shrink-0 pr-0.5">정렬</span>
           {/* 2026-08-11 · 정렬 4가지 · 출근·구분·이름·직군 · 출근이 기본 · 붉은 톤 */}
-          <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
+          <div className="inline-flex p-0.5 bg-zinc-100 border border-zinc-200 rounded-lg gap-0.5">
             {(["today", "position", "name"] as const).map((key) => {
               const labels: Record<string, string> = { today: "출근", position: "직군", name: "이름" };
               const isActive = sortBy === key;
@@ -101,7 +101,7 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
                     else { setSortBy(key); setSortOrder("asc"); }
                   }}
                   className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-[12px] sm:text-[13px] font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[26px] sm:min-h-[30px] ${
-                    isActive ? activeCls : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                    isActive ? activeCls : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
                   }`}
                 >
                   <span>{labels[key]}</span>
@@ -133,12 +133,12 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
                 placeholder="성명으로 조회 (예: 정윤수)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full text-[14px] font-medium px-2.5 py-1.5 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white rounded-lg focus:outline-none placeholder-slate-400 text-slate-800 transition-all h-[34px]"
+                className="w-full text-[14px] font-medium px-2.5 py-1.5 bg-zinc-50 border border-zinc-200 focus:border-indigo-400 focus:bg-white rounded-lg focus:outline-none placeholder-zinc-400 text-zinc-800 transition-all h-[34px]"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute inset-y-0 right-2 flex items-center text-slate-400 hover:text-slate-600 transition-colors text-xs"
+                  className="absolute inset-y-0 right-2 flex items-center text-zinc-400 hover:text-zinc-600 transition-colors text-xs"
                 >
                   ×
                 </button>

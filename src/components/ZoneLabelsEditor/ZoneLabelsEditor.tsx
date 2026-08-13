@@ -277,14 +277,14 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
   // ── 권한 체크 ──
   if (userLevel < 9) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
         <div className="text-center">
           <AlertCircle size={40} className="text-rose-400 mx-auto mb-3" />
-          <p className="text-slate-600 font-semibold">최고관리자(레벨 9)만 접근할 수 있습니다.</p>
+          <p className="text-zinc-600 font-semibold">최고관리자(레벨 9)만 접근할 수 있습니다.</p>
           <button
             type="button"
             onClick={onBack}
-            className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-[12px] font-bold hover:bg-slate-200 transition"
+            className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-zinc-100 text-zinc-700 text-[12px] font-bold hover:bg-zinc-200 transition"
           >
             돌아가기
           </button>
@@ -330,7 +330,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
       {/* 본문 */}
       <div className="flex-1">
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-slate-400 text-sm gap-2">
+          <div className="flex items-center justify-center py-16 text-zinc-400 text-sm gap-2">
             <Loader2 size={16} className="animate-spin" /> 불러오는 중...
           </div>
         ) : (
@@ -361,29 +361,29 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
                 const cs = COLOR_CLASSES[cat.color];
                 const isCollapsed = collapsed[cat.key];
                 return (
-                  <div key={cat.key} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div key={cat.key} className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
                     {/* 카테고리 헤더 */}
                     <button
                       type="button"
                       onClick={() => setCollapsed(prev => ({ ...prev, [cat.key]: !prev[cat.key] }))}
-                      className={`w-full flex items-center gap-2 px-4 py-2.5 ${cs.headerBg} border-b border-slate-100 hover:bg-opacity-80 transition cursor-pointer`}
+                      className={`w-full flex items-center gap-2 px-4 py-2.5 ${cs.headerBg} border-b border-zinc-100 hover:bg-opacity-80 transition cursor-pointer`}
                     >
                       <span className={`inline-block w-2 h-2 rounded-full ${cs.accentDot}`} />
                       <span className={`text-[12px] font-black ${cs.headerText} tracking-tight`}>{cat.label}</span>
-                      <span className="text-[11px] text-slate-400 font-medium">· {cat.hint}</span>
+                      <span className="text-[11px] text-zinc-400 font-medium">· {cat.hint}</span>
                       <span className={`ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold ${cs.badgeBg} ${cs.badgeText} border ${cs.badgeBorder}`}>
                         {rows.length}
                       </span>
                       {isCollapsed
-                        ? <ChevronRight size={14} className="text-slate-400" />
-                        : <ChevronDown size={14} className="text-slate-400" />}
+                        ? <ChevronRight size={14} className="text-zinc-400" />
+                        : <ChevronDown size={14} className="text-zinc-400" />}
                     </button>
 
                     {/* 행 목록 */}
                     {!isCollapsed && (
                       <div>
                         {/* 컬럼 헤더 */}
-                        <div className="hidden sm:grid grid-cols-[80px_100px_1fr_36px] gap-3 px-4 py-2 bg-slate-50/60 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        <div className="hidden sm:grid grid-cols-[80px_100px_1fr_36px] gap-3 px-4 py-2 bg-zinc-50/60 border-b border-zinc-100 text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
                           <span>원본 ID</span>
                           <span>번호</span>
                           <span>부제 (선택)</span>
@@ -393,7 +393,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
                           const isDup = duplicateNumbers.has(Number(m.number));
                           const isBad = invalidRows.has(m.zoneId);
                           const isDirty = dirtyZoneIds.has(m.zoneId);
-                          const rowBorder = i < rows.length - 1 ? "border-b border-slate-100" : "";
+                          const rowBorder = i < rows.length - 1 ? "border-b border-zinc-100" : "";
                           return (
                             <div
                               key={m.zoneId}
@@ -411,31 +411,31 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
 
                               {/* 번호 input */}
                               <div>
-                                <label className="sm:hidden block text-[10px] font-bold text-slate-400 mb-0.5">번호</label>
+                                <label className="sm:hidden block text-[10px] font-bold text-zinc-400 mb-0.5">번호</label>
                                 <input
                                   type="number"
                                   min={1}
                                   max={60}
                                   value={m.number}
                                   onChange={(e) => updateNumber(m.zoneId, Number(e.target.value))}
-                                  className={`w-full px-2.5 py-1.5 rounded-lg border text-[12px] font-bold text-slate-800 tabular-nums text-center transition focus:outline-none focus:ring-2 ${
+                                  className={`w-full px-2.5 py-1.5 rounded-lg border text-[12px] font-bold text-zinc-800 tabular-nums text-center transition focus:outline-none focus:ring-2 ${
                                     isDup || isBad
                                       ? "border-rose-300 bg-rose-50 focus:ring-rose-200"
-                                      : "border-slate-200 bg-white focus:ring-sky-200 focus:border-sky-400"
+                                      : "border-zinc-200 bg-white focus:ring-sky-200 focus:border-sky-400"
                                   }`}
                                 />
                               </div>
 
                               {/* subLabel input */}
                               <div>
-                                <label className="sm:hidden block text-[10px] font-bold text-slate-400 mb-0.5">부제</label>
+                                <label className="sm:hidden block text-[10px] font-bold text-zinc-400 mb-0.5">부제</label>
                                 <input
                                   type="text"
                                   value={m.subLabel ?? ""}
                                   placeholder="(선택) 카테고리·이름 등"
                                   maxLength={40}
                                   onChange={(e) => updateSubLabel(m.zoneId, e.target.value)}
-                                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-[12px] text-slate-700 transition focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+                                  className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-200 bg-white text-[12px] text-zinc-700 transition focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
                                 />
                               </div>
 
@@ -448,8 +448,8 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
                                   title={isDirty ? "이 행을 기본값으로" : "변경 없음"}
                                   className={`inline-flex items-center justify-center w-7 h-7 rounded-md transition ${
                                     isDirty
-                                      ? "text-slate-500 hover:text-slate-800 hover:bg-slate-100 cursor-pointer"
-                                      : "text-slate-300 cursor-not-allowed"
+                                      ? "text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 cursor-pointer"
+                                      : "text-zinc-300 cursor-not-allowed"
                                   }`}
                                 >
                                   <RotateCcw size={12} />

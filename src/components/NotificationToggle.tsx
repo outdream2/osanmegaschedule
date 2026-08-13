@@ -82,7 +82,7 @@ export const NotificationToggle: React.FC<Props> = ({ authSession }) => {
     <div className="flex items-center gap-1 shrink-0" title={title}>
       {/* 2026-08-12 · 사용자 지시 · "알림 " prefix 제거 · ON/OFF/차단 만 · 여백 반으로 (gap-1.5→gap-1) */}
       <span className={`text-[11px] font-black tracking-tight hidden sm:inline ${
-        isDenied ? "text-slate-400" : isOn ? "text-emerald-600" : "text-slate-500"
+        isDenied ? "text-zinc-400" : isOn ? "text-emerald-600" : "text-zinc-500"
       }`}>
         {isDenied ? "차단" : isOn ? "ON" : "OFF"}
       </span>
@@ -95,10 +95,10 @@ export const NotificationToggle: React.FC<Props> = ({ authSession }) => {
         disabled={busy || isDenied}
         className={`relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full border transition-colors duration-200 cursor-pointer shadow-sm ${
           isDenied
-            ? "bg-slate-200 border-slate-400 cursor-not-allowed"
+            ? "bg-zinc-200 border-zinc-400 cursor-not-allowed"
             : isOn
             ? "bg-emerald-500 border-emerald-600"
-            : "bg-slate-300 border-slate-400"
+            : "bg-zinc-300 border-zinc-400"
         } ${busy ? "opacity-60 cursor-wait" : ""}`}
       >
         {/* 이동하는 원 */}
@@ -116,7 +116,7 @@ export const NotificationToggle: React.FC<Props> = ({ authSession }) => {
         <span className={`absolute inset-y-0 flex items-center pointer-events-none transition-opacity ${
           !isOn ? "right-1 opacity-100" : "opacity-0"
         }`}>
-          <BellOff size={9} strokeWidth={2.8} className={isDenied ? "text-slate-400" : "text-slate-500"} />
+          <BellOff size={9} strokeWidth={2.8} className={isDenied ? "text-zinc-400" : "text-zinc-500"} />
         </span>
       </button>
     </div>

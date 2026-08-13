@@ -89,8 +89,8 @@ const CATEGORIES: Array<{
   {
     key: "etc",
     label: "기타",
-    badge: "bg-slate-100 text-slate-600 border-slate-200",
-    activeBg: "bg-slate-700 text-white border-slate-700",
+    badge: "bg-zinc-100 text-zinc-600 border-zinc-200",
+    activeBg: "bg-zinc-700 text-white border-zinc-700",
     icon: FileArchive,
   },
 ];
@@ -205,7 +205,7 @@ function fileIconInfo(fileName: string | null, mimeType?: string | null): {
   if (["ppt", "pptx"].includes(ext) || mime.includes("presentation")) {
     return { Icon: FileText, colorClass: "text-orange-500 bg-orange-50", label: "PPT" };
   }
-  return { Icon: FileArchive, colorClass: "text-slate-500 bg-slate-100", label: "파일" };
+  return { Icon: FileArchive, colorClass: "text-zinc-500 bg-zinc-100", label: "파일" };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -248,7 +248,7 @@ const CatChip: React.FC<{
     <span
       className={[
         "inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-black leading-none",
-        active ? "bg-white/20 text-white" : "bg-white/60 text-slate-600",
+        active ? "bg-white/20 text-white" : "bg-white/60 text-zinc-600",
       ].join(" ")}
     >
       {count}
@@ -299,7 +299,7 @@ const DropZone: React.FC<{
           ? "border-emerald-300 bg-emerald-50/40"
           : error
           ? "border-rose-300 bg-rose-50/30"
-          : "border-slate-200 bg-slate-50/50 hover:border-amber-300 hover:bg-amber-50/30",
+          : "border-zinc-200 bg-zinc-50/50 hover:border-amber-300 hover:bg-amber-50/30",
       ].join(" ")}
     >
       <input
@@ -314,23 +314,23 @@ const DropZone: React.FC<{
         <>
           <CheckCircle2 size={28} className="text-emerald-500" />
           <div className="text-center">
-            <p className="text-sm font-bold text-slate-800 break-all">{file.name}</p>
-            <p className="text-xs text-slate-500 font-semibold mt-0.5">{fmtBytes(file.size)}</p>
+            <p className="text-sm font-bold text-zinc-800 break-all">{file.name}</p>
+            <p className="text-xs text-zinc-500 font-semibold mt-0.5">{fmtBytes(file.size)}</p>
           </div>
           <button
             type="button"
             onClick={e => { e.stopPropagation(); onFile(null); if (inputRef.current) inputRef.current.value = ""; }}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-rose-600 hover:border-rose-200 text-xs font-semibold transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-zinc-200 text-zinc-500 hover:text-rose-600 hover:border-rose-200 text-xs font-semibold transition-colors cursor-pointer"
           >
             <X size={11} /> 파일 제거
           </button>
         </>
       ) : (
         <>
-          <CloudUpload size={28} className={dragging ? "text-amber-500" : "text-slate-400"} />
+          <CloudUpload size={28} className={dragging ? "text-amber-500" : "text-zinc-400"} />
           <div className="text-center">
-            <p className="text-sm font-bold text-slate-600">클릭 또는 파일을 드래그하세요</p>
-            <p className="text-xs text-slate-400 font-semibold mt-0.5">PDF · Word · Excel · HWP · 이미지 · 최대 10MB</p>
+            <p className="text-sm font-bold text-zinc-600">클릭 또는 파일을 드래그하세요</p>
+            <p className="text-xs text-zinc-400 font-semibold mt-0.5">PDF · Word · Excel · HWP · 이미지 · 최대 10MB</p>
           </div>
         </>
       )}
@@ -347,14 +347,14 @@ const EmptyState: React.FC<{
   onUpload: () => void;
 }> = ({ isFiltered, isManager, onUpload }) => (
   <div className="py-16 flex flex-col items-center gap-4 text-center px-6">
-    <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
-      <FileText size={28} className="text-slate-400" />
+    <div className="w-16 h-16 rounded-2xl bg-zinc-100 flex items-center justify-center">
+      <FileText size={28} className="text-zinc-400" />
     </div>
     <div>
-      <p className="text-base font-black text-slate-700">
+      <p className="text-base font-black text-zinc-700">
         {isFiltered ? "검색 결과가 없습니다" : "등록된 양식이 없습니다"}
       </p>
-      <p className="text-sm text-slate-400 font-semibold mt-1">
+      <p className="text-sm text-zinc-400 font-semibold mt-1">
         {isFiltered
           ? "다른 키워드나 카테고리로 검색해 보세요"
           : isManager
@@ -556,7 +556,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
 
   // ── 렌더 ─────────────────────────────────────────────────────────────────
   return (
-    <div className={embedded ? "flex-1 flex flex-col" : "min-h-screen bg-slate-50 flex flex-col"}>
+    <div className={embedded ? "flex-1 flex flex-col" : "min-h-screen bg-zinc-50 flex flex-col"}>
       {!embedded && (
         <AppNavHeader
           activePage={"hr-forms" as AppNavPage}
@@ -576,8 +576,8 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
               <FileText size={20} />
             </div>
             <div>
-              <h1 className="text-lg sm:text-xl font-black text-slate-800 leading-tight">각종 양식</h1>
-              <p className="text-xs text-slate-500 font-semibold mt-0.5">
+              <h1 className="text-lg sm:text-xl font-black text-zinc-800 leading-tight">각종 양식</h1>
+              <p className="text-xs text-zinc-500 font-semibold mt-0.5">
                 근로계약서 · 사직서 · 서약서 · 기타 양식 다운로드 및 관리
               </p>
             </div>
@@ -588,7 +588,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
               type="button"
               onClick={load}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 text-sm font-semibold transition-colors cursor-pointer shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 text-sm font-semibold transition-colors cursor-pointer shadow-sm"
               title="새로고침"
             >
               <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
@@ -602,7 +602,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                 className={[
                   "inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all duration-150 cursor-pointer",
                   showUploadForm
-                    ? "bg-slate-100 border border-slate-200 text-slate-600 hover:bg-slate-200"
+                    ? "bg-zinc-100 border border-zinc-200 text-zinc-600 hover:bg-zinc-200"
                     : "bg-amber-600 hover:bg-amber-700 text-white border border-amber-600",
                 ].join(" ")}
                 title="양식 업로드"
@@ -628,7 +628,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
               {/* 양식명 + 카테고리 */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-black text-slate-600 block mb-1.5">
+                  <label className="text-xs font-black text-zinc-600 block mb-1.5">
                     양식명 <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -636,17 +636,17 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                     value={uploadTitle}
                     onChange={e => setUploadTitle(e.target.value)}
                     placeholder="예: 2026년 표준 근로계약서"
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-800 text-sm font-semibold focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition placeholder:text-slate-400 placeholder:font-normal"
+                    className="w-full bg-white border border-zinc-200 rounded-xl px-3.5 py-2.5 text-zinc-800 text-sm font-semibold focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition placeholder:text-zinc-400 placeholder:font-normal"
                     maxLength={120}
                     required
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-black text-slate-600 block mb-1.5">
+                  <label className="text-xs font-black text-zinc-600 block mb-1.5">
                     카테고리 <span className="text-rose-500">*</span>
                   </label>
                   {/* Segmented control */}
-                  <div className="flex gap-1 p-1 bg-slate-100 rounded-xl">
+                  <div className="flex gap-1 p-1 bg-zinc-100 rounded-xl">
                     {CATEGORIES.map(c => (
                       <button
                         key={c.key}
@@ -655,8 +655,8 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                         className={[
                           "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer",
                           uploadCategory === c.key
-                            ? "bg-white shadow-sm text-slate-800"
-                            : "text-slate-500 hover:text-slate-700",
+                            ? "bg-white shadow-sm text-zinc-800"
+                            : "text-zinc-500 hover:text-zinc-700",
                         ].join(" ")}
                       >
                         {c.label}
@@ -668,7 +668,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
 
               {/* 드래그&드롭 업로드 존 */}
               <div>
-                <label className="text-xs font-black text-slate-600 block mb-1.5">
+                <label className="text-xs font-black text-zinc-600 block mb-1.5">
                   파일 <span className="text-rose-500">*</span>
                 </label>
                 <DropZone
@@ -682,11 +682,11 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
               {/* 업로드 진행률 */}
               {uploading && uploadProgress > 0 && (
                 <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-bold text-slate-500">
+                  <div className="flex justify-between text-xs font-bold text-zinc-500">
                     <span>업로드 중...</span>
                     <span>{uploadProgress}%</span>
                   </div>
-                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="w-full h-1.5 bg-zinc-100 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-amber-500 rounded-full transition-all duration-300"
                       style={{ width: `${uploadProgress}%` }}
@@ -717,7 +717,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   type="button"
                   onClick={resetUploadForm}
                   disabled={uploading}
-                  className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 cursor-pointer transition-colors"
+                  className="px-4 py-2 rounded-xl bg-white border border-zinc-200 text-zinc-600 text-sm font-semibold hover:bg-zinc-50 disabled:opacity-50 cursor-pointer transition-colors"
                 >
                   취소
                 </button>
@@ -741,8 +741,8 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
         <FilterBar gap="tight">
           {/* 카테고리 label */}
           <div className="flex items-center gap-1.5 shrink-0">
-            <Filter size={12} className="text-slate-400" />
-            <span className="text-xs font-black text-slate-400 uppercase tracking-wide">분류</span>
+            <Filter size={12} className="text-zinc-400" />
+            <span className="text-xs font-black text-zinc-400 uppercase tracking-wide">분류</span>
           </div>
 
           {/* 카테고리 칩 그룹 */}
@@ -752,8 +752,8 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
               onClick={() => setCategoryFilter("all")}
               label="전체"
               count={forms.length}
-              badgeClass="bg-slate-100 text-slate-600 border-slate-200"
-              activeClass="bg-slate-800 text-white border-slate-800"
+              badgeClass="bg-zinc-100 text-zinc-600 border-zinc-200"
+              activeClass="bg-zinc-800 text-white border-zinc-800"
             />
             {CATEGORIES.map(c => {
               const cnt = forms.filter(f => f.category === c.key).length;
@@ -777,12 +777,12 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
             value={searchQ}
             onChange={e => setSearchQ(e.target.value)}
             placeholder="양식명 · 파일명 · 업로더 검색"
-            className="ml-auto w-full sm:w-60 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100/60 transition placeholder:text-slate-400 placeholder:font-normal"
+            className="ml-auto w-full sm:w-60 bg-white border border-zinc-200 rounded-lg px-3 py-1.5 text-sm text-zinc-800 font-semibold focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100/60 transition placeholder:text-zinc-400 placeholder:font-normal"
           />
         </FilterBar>
 
         {/* ── 리스트 ─────────────────────────────────────────────────────── */}
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
           {/* 에러 배너 */}
           {loadError && (
             <div className="flex items-center gap-2 p-3.5 text-sm text-rose-700 font-semibold bg-rose-50 border-b border-rose-200">
@@ -794,8 +794,8 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
           {/* 데스크톱 테이블 */}
           <div className="hidden md:block overflow-x-auto">
             <table className="text-sm border-collapse" style={{ tableLayout: "fixed", width: (["_icon","title","category","file_name","file_size","uploaded_by","created_at","_action"] as const).reduce((s, k) => s + getWidth(k as any), 0) }}>
-              <thead className="bg-slate-50">
-                <tr className="border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              <thead className="bg-zinc-50">
+                <tr className="border-b border-zinc-200 text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
                   {/* 파일 아이콘 컬럼 */}
                   <th
                     className="relative select-none text-left px-2.5 py-2"
@@ -808,14 +808,14 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   </th>
                   {/* 양식명 */}
                   <th
-                    className="relative select-none text-left px-2.5 py-2 cursor-pointer hover:text-slate-700 transition-colors"
+                    className="relative select-none text-left px-2.5 py-2 cursor-pointer hover:text-zinc-700 transition-colors"
                     style={{ width: getWidth("title"), minWidth: getWidth("title") }}
                     onClick={() => handleSort("title", sortKey === "title" ? (sortDir === "asc" ? "desc" : "asc") : "asc")}
                     title="양식명 · 클릭하여 정렬"
                   >
                     <span className="inline-flex items-center gap-1">
                       <span>양식명</span>
-                      {sortKey === "title" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-slate-300 opacity-60">▲▼</span>}
+                      {sortKey === "title" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-zinc-300 opacity-60">▲▼</span>}
                     </span>
                     <span {...resizerProps("title" as any)}
                       className={RESIZER_CLS}
@@ -825,14 +825,14 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   </th>
                   {/* 분류 */}
                   <th
-                    className="relative select-none text-left px-2.5 py-2 cursor-pointer hover:text-slate-700 transition-colors"
+                    className="relative select-none text-left px-2.5 py-2 cursor-pointer hover:text-zinc-700 transition-colors"
                     style={{ width: getWidth("category"), minWidth: getWidth("category") }}
                     onClick={() => handleSort("category", sortKey === "category" ? (sortDir === "asc" ? "desc" : "asc") : "asc")}
                     title="분류 · 클릭하여 정렬"
                   >
                     <span className="inline-flex items-center gap-1">
                       <span>분류</span>
-                      {sortKey === "category" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-slate-300 opacity-60">▲▼</span>}
+                      {sortKey === "category" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-zinc-300 opacity-60">▲▼</span>}
                     </span>
                     <span {...resizerProps("category" as any)}
                       className={RESIZER_CLS}
@@ -842,14 +842,14 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   </th>
                   {/* 파일명 */}
                   <th
-                    className="relative select-none text-left px-2.5 py-2 cursor-pointer hover:text-slate-700 transition-colors"
+                    className="relative select-none text-left px-2.5 py-2 cursor-pointer hover:text-zinc-700 transition-colors"
                     style={{ width: getWidth("file_name"), minWidth: getWidth("file_name") }}
                     onClick={() => handleSort("file_name", sortKey === "file_name" ? (sortDir === "asc" ? "desc" : "asc") : "asc")}
                     title="파일명 · 클릭하여 정렬"
                   >
                     <span className="inline-flex items-center gap-1">
                       <span>파일명</span>
-                      {sortKey === "file_name" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-slate-300 opacity-60">▲▼</span>}
+                      {sortKey === "file_name" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-zinc-300 opacity-60">▲▼</span>}
                     </span>
                     <span {...resizerProps("file_name" as any)}
                       className={RESIZER_CLS}
@@ -859,14 +859,14 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   </th>
                   {/* 크기 */}
                   <th
-                    className="relative select-none text-right px-2.5 py-2 cursor-pointer hover:text-slate-700 transition-colors"
+                    className="relative select-none text-right px-2.5 py-2 cursor-pointer hover:text-zinc-700 transition-colors"
                     style={{ width: getWidth("file_size"), minWidth: getWidth("file_size") }}
                     onClick={() => handleSort("file_size", sortKey === "file_size" ? (sortDir === "asc" ? "desc" : "asc") : "asc")}
                     title="크기 · 클릭하여 정렬"
                   >
                     <span className="inline-flex items-center gap-1 justify-end w-full">
                       <span>크기</span>
-                      {sortKey === "file_size" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-slate-300 opacity-60">▲▼</span>}
+                      {sortKey === "file_size" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-zinc-300 opacity-60">▲▼</span>}
                     </span>
                     <span {...resizerProps("file_size" as any)}
                       className={RESIZER_CLS}
@@ -876,14 +876,14 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   </th>
                   {/* 업로더 */}
                   <th
-                    className="relative select-none text-left px-2.5 py-2 cursor-pointer hover:text-slate-700 transition-colors"
+                    className="relative select-none text-left px-2.5 py-2 cursor-pointer hover:text-zinc-700 transition-colors"
                     style={{ width: getWidth("uploaded_by"), minWidth: getWidth("uploaded_by") }}
                     onClick={() => handleSort("uploaded_by", sortKey === "uploaded_by" ? (sortDir === "asc" ? "desc" : "asc") : "asc")}
                     title="업로더 · 클릭하여 정렬"
                   >
                     <span className="inline-flex items-center gap-1">
                       <span>업로더</span>
-                      {sortKey === "uploaded_by" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-slate-300 opacity-60">▲▼</span>}
+                      {sortKey === "uploaded_by" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-zinc-300 opacity-60">▲▼</span>}
                     </span>
                     <span {...resizerProps("uploaded_by" as any)}
                       className={RESIZER_CLS}
@@ -893,14 +893,14 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   </th>
                   {/* 업로드일 */}
                   <th
-                    className="relative select-none text-left px-2.5 py-2 cursor-pointer hover:text-slate-700 transition-colors"
+                    className="relative select-none text-left px-2.5 py-2 cursor-pointer hover:text-zinc-700 transition-colors"
                     style={{ width: getWidth("created_at"), minWidth: getWidth("created_at") }}
                     onClick={() => handleSort("created_at", sortKey === "created_at" ? (sortDir === "asc" ? "desc" : "asc") : "asc")}
                     title="업로드일 · 클릭하여 정렬"
                   >
                     <span className="inline-flex items-center gap-1">
                       <span>업로드일</span>
-                      {sortKey === "created_at" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-slate-300 opacity-60">▲▼</span>}
+                      {sortKey === "created_at" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-zinc-300 opacity-60">▲▼</span>}
                     </span>
                     <span {...resizerProps("created_at" as any)}
                       className={RESIZER_CLS}
@@ -927,7 +927,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                     <td colSpan={8} className="py-14 text-center">
                       <div className="inline-flex flex-col items-center gap-2">
                         <Loader2 size={20} className="animate-spin text-amber-500" />
-                        <span className="text-sm text-slate-400 font-bold">불러오는 중...</span>
+                        <span className="text-sm text-zinc-400 font-bold">불러오는 중...</span>
                       </div>
                     </td>
                   </tr>
@@ -948,7 +948,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   const fileInfo = fileIconInfo(f.file_name, f.mime_type);
                   const FileIcon = fileInfo.Icon;
                   return (
-                    <tr key={f.id} className="hover:bg-amber-50/30 transition-colors border-b border-slate-100 last:border-b-0 group">
+                    <tr key={f.id} className="hover:bg-amber-50/30 transition-colors border-b border-zinc-100 last:border-b-0 group">
                       {/* 파일 타입 아이콘 */}
                       <td className="px-3 py-2.5 align-middle">
                         <span className={`inline-flex items-center justify-center w-9 h-9 rounded-lg ${fileInfo.colorClass} shrink-0`}>
@@ -958,7 +958,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
 
                       {/* 양식명 */}
                       <td className="px-3 py-2.5 align-middle">
-                        <div className="text-sm font-bold text-slate-800 break-all leading-snug">{f.title}</div>
+                        <div className="text-sm font-bold text-zinc-800 break-all leading-snug">{f.title}</div>
                       </td>
 
                       {/* 분류 배지 */}
@@ -970,23 +970,23 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
 
                       {/* 파일명 */}
                       <td className="px-3 py-2.5 align-middle">
-                        <div className="text-xs text-slate-500 font-semibold break-all">{f.file_name ?? "-"}</div>
-                        <div className="text-[10px] text-slate-400 font-semibold mt-0.5">{fileInfo.label}</div>
+                        <div className="text-xs text-zinc-500 font-semibold break-all">{f.file_name ?? "-"}</div>
+                        <div className="text-[10px] text-zinc-400 font-semibold mt-0.5">{fileInfo.label}</div>
                       </td>
 
                       {/* 크기 */}
                       <td className="px-3 py-2.5 align-middle text-right">
-                        <span className="text-xs text-slate-500 font-semibold tabular-nums">{fmtBytes(f.file_size)}</span>
+                        <span className="text-xs text-zinc-500 font-semibold tabular-nums">{fmtBytes(f.file_size)}</span>
                       </td>
 
                       {/* 업로더 */}
                       <td className="px-3 py-2.5 align-middle">
-                        <span className="text-xs text-slate-600 font-semibold">{f.uploaded_by ?? "-"}</span>
+                        <span className="text-xs text-zinc-600 font-semibold">{f.uploaded_by ?? "-"}</span>
                       </td>
 
                       {/* 업로드일 */}
                       <td className="px-3 py-2.5 align-middle">
-                        <span className="text-xs text-slate-400 font-semibold whitespace-nowrap">{fmtDateTime(f.created_at)}</span>
+                        <span className="text-xs text-zinc-400 font-semibold whitespace-nowrap">{fmtDateTime(f.created_at)}</span>
                       </td>
 
                       {/* 액션 */}
@@ -1022,11 +1022,11 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
           </div>
 
           {/* 모바일 카드 */}
-          <div className="md:hidden divide-y divide-slate-100">
+          <div className="md:hidden divide-y divide-zinc-100">
             {loading && (
               <div className="py-14 flex flex-col items-center gap-2">
                 <Loader2 size={20} className="animate-spin text-amber-500" />
-                <span className="text-sm text-slate-400 font-bold">불러오는 중...</span>
+                <span className="text-sm text-zinc-400 font-bold">불러오는 중...</span>
               </div>
             )}
             {!loading && displayForms.length === 0 && (
@@ -1048,25 +1048,25 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                       <FileIcon size={18} />
                     </span>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-black text-slate-800 leading-snug break-all">{f.title}</div>
+                      <div className="text-sm font-black text-zinc-800 leading-snug break-all">{f.title}</div>
                       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black border ${cat.badge}`}>
                           {cat.label}
                         </span>
-                        <span className="text-[11px] text-slate-400 font-semibold">{fmtDateTime(f.created_at)}</span>
+                        <span className="text-[11px] text-zinc-400 font-semibold">{fmtDateTime(f.created_at)}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* 파일 정보 */}
                   <div className="mt-2.5 pl-13 flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[11px] text-slate-500 font-semibold break-all">
+                    <span className="text-[11px] text-zinc-500 font-semibold break-all">
                       {f.file_name ?? "-"}
                     </span>
-                    <span className="text-[11px] text-slate-400">·</span>
-                    <span className="text-[11px] text-slate-400 font-semibold tabular-nums">{fmtBytes(f.file_size)}</span>
-                    <span className="text-[11px] text-slate-400">·</span>
-                    <span className="text-[11px] text-slate-400 font-semibold">{f.uploaded_by ?? "-"}</span>
+                    <span className="text-[11px] text-zinc-400">·</span>
+                    <span className="text-[11px] text-zinc-400 font-semibold tabular-nums">{fmtBytes(f.file_size)}</span>
+                    <span className="text-[11px] text-zinc-400">·</span>
+                    <span className="text-[11px] text-zinc-400 font-semibold">{f.uploaded_by ?? "-"}</span>
                   </div>
 
                   {/* 액션 버튼 */}
@@ -1099,16 +1099,16 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
 
         {/* ── 관리자 안내 ────────────────────────────────────────────────── */}
         {isManager && (
-          <div className="flex items-start gap-2.5 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-400 leading-relaxed">
-            <FilePlus size={13} className="mt-0.5 shrink-0 text-slate-400" />
+          <div className="flex items-start gap-2.5 px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-[11px] text-zinc-400 leading-relaxed">
+            <FilePlus size={13} className="mt-0.5 shrink-0 text-zinc-400" />
             <div>
               Supabase Storage{" "}
-              <code className="px-1 py-0.5 rounded bg-white border border-slate-200 text-slate-500 font-mono text-[10px]">hr-forms</code>{" "}
+              <code className="px-1 py-0.5 rounded bg-white border border-zinc-200 text-zinc-500 font-mono text-[10px]">hr-forms</code>{" "}
               버킷 사용 (없으면 로컬{" "}
-              <code className="px-1 py-0.5 rounded bg-white border border-slate-200 text-slate-500 font-mono text-[10px]">uploads/hr-forms/</code>{" "}
+              <code className="px-1 py-0.5 rounded bg-white border border-zinc-200 text-zinc-500 font-mono text-[10px]">uploads/hr-forms/</code>{" "}
               자동 fallback). 최초 1회 Supabase 대시보드에서{" "}
-              <b className="text-slate-500">hr-forms</b> 버킷(Public 권장) 및{" "}
-              <code className="px-1 py-0.5 rounded bg-white border border-slate-200 text-slate-500 font-mono text-[10px]">hr_forms</code> 테이블 생성 필요.
+              <b className="text-zinc-500">hr-forms</b> 버킷(Public 권장) 및{" "}
+              <code className="px-1 py-0.5 rounded bg-white border border-zinc-200 text-zinc-500 font-mono text-[10px]">hr_forms</code> 테이블 생성 필요.
             </div>
           </div>
         )}

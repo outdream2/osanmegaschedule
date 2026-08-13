@@ -60,22 +60,22 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
     <div className="flex flex-col gap-3 min-h-0">
 
       {/* 조회 기간 · 리로드 */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-3">
+      <div className="bg-white rounded-xl border border-zinc-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-3">
         <Calendar size={14} className="text-rose-500 shrink-0" />
-        <div className="text-[12px] font-black text-slate-800">
+        <div className="text-[12px] font-black text-zinc-800">
           월별 부가세 요약
-          <span className="ml-2 text-[11px] font-bold text-slate-500 tabular-nums">
+          <span className="ml-2 text-[11px] font-bold text-zinc-500 tabular-nums">
             {fromDate} ~ {toDate}
           </span>
         </div>
-        <div className="text-[10px] text-slate-500 hidden md:inline">
+        <div className="text-[10px] text-zinc-500 hidden md:inline">
           매출·매입 DB 자동 조회 · 경비만 수동 입력
         </div>
         <button
           type="button"
           onClick={monthly.reload}
           disabled={monthly.loading}
-          className="ml-auto h-8 px-2 rounded-lg text-[11px] font-bold bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-600 cursor-pointer disabled:opacity-50 flex items-center gap-1"
+          className="ml-auto h-8 px-2 rounded-lg text-[11px] font-bold bg-zinc-50 border border-zinc-200 hover:bg-zinc-100 text-zinc-600 cursor-pointer disabled:opacity-50 flex items-center gap-1"
           title="새로고침"
         >
           <RefreshCw size={12} className={monthly.loading ? "animate-spin" : ""} />
@@ -97,78 +97,78 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
       )}
 
       {/* 계산 방식 안내 */}
-      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-start gap-2 text-[11px] text-slate-600">
-        <Info size={13} className="mt-0.5 text-slate-500 shrink-0" />
+      <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-3 flex items-start gap-2 text-[11px] text-zinc-600">
+        <Info size={13} className="mt-0.5 text-zinc-500 shrink-0" />
         <div className="leading-relaxed">
-          <b className="text-slate-700">계산 방식</b>
-          <span className="mx-1 text-slate-400">·</span>
+          <b className="text-zinc-700">계산 방식</b>
+          <span className="mx-1 text-zinc-400">·</span>
           매출 · <b>stock_history</b> 판매액 합계 (VAT 포함 총액 가정)
-          <span className="mx-1 text-slate-400">·</span>
+          <span className="mx-1 text-zinc-400">·</span>
           면세(<b className="text-amber-700">TAX FREE</b>) 매출 · 사용자 수동 입력 · 매출세액 산정 <b>제외</b>
-          <span className="mx-1 text-slate-400">·</span>
+          <span className="mx-1 text-zinc-400">·</span>
           매출세액 = <b>과세 매출</b>(=총액−면세) / 11
           <br />
           매입 · <b>purchase_details</b> + 공급사 <b>vat_included</b> flag · 면세 공급사는 공제 제외
-          <span className="mx-1 text-slate-400">·</span>
+          <span className="mx-1 text-zinc-400">·</span>
           경비 · 사용자 입력 (VAT 포함 가정 · 입력값/11 = 경비세액)
           <br />
-          <b className="text-slate-700">예상 부가세 = 과세 매출세액 − 매입세액 공제 − 경비세액</b>
-          <span className="ml-2 text-slate-500">
+          <b className="text-zinc-700">예상 부가세 = 과세 매출세액 − 매입세액 공제 − 경비세액</b>
+          <span className="ml-2 text-zinc-500">
             · 본 계산은 참고용이며, 실제 신고는 반드시 세무사 검토 후 진행하세요.
           </span>
         </div>
       </div>
 
       {/* 월별 통합 표 */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-        <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+      <div className="bg-white rounded-xl border border-zinc-200 shadow-sm">
+        <div className="px-4 py-3 border-b border-zinc-100 flex items-center gap-2">
           <TrendingUp size={14} className="text-rose-500" />
-          <div className="text-[13px] font-black text-slate-800">월별 매출 · 매입 · 경비 · 예상 부가세</div>
-          <div className="text-[10px] font-bold text-slate-500 ml-auto">
+          <div className="text-[13px] font-black text-zinc-800">월별 매출 · 매입 · 경비 · 예상 부가세</div>
+          <div className="text-[10px] font-bold text-zinc-500 ml-auto">
             {monthly.rows.length}개월
           </div>
         </div>
 
         <div className="overflow-x-auto max-h-[65vh] overflow-y-auto">
           {monthly.loading && monthly.rows.length === 0 ? (
-            <div className="flex items-center justify-center py-10 text-slate-400 gap-2 text-[12px]">
+            <div className="flex items-center justify-center py-10 text-zinc-400 gap-2 text-[12px]">
               <Loader2 size={14} className="animate-spin" />불러오는 중...
             </div>
           ) : monthly.rows.length === 0 ? (
-            <div className="py-10 text-center text-[11px] text-slate-300">해당 기간 데이터 없음</div>
+            <div className="py-10 text-center text-[11px] text-zinc-300">해당 기간 데이터 없음</div>
           ) : (
             <table className="w-full text-[12px]">
-              <thead className="sticky top-0 bg-slate-50 z-10 shadow-sm text-slate-600">
+              <thead className="sticky top-0 bg-zinc-50 z-10 shadow-sm text-zinc-600">
                 <tr>
-                  <th rowSpan={2} className="text-left px-3 py-2 font-bold border-b border-slate-200 align-bottom">월</th>
-                  <th colSpan={3} className="text-center px-2 py-1 font-bold border-b border-l border-slate-200 bg-slate-100/70">
+                  <th rowSpan={2} className="text-left px-3 py-2 font-bold border-b border-zinc-200 align-bottom">월</th>
+                  <th colSpan={3} className="text-center px-2 py-1 font-bold border-b border-l border-zinc-200 bg-zinc-100/70">
                     매출
                   </th>
-                  <th rowSpan={2} className="text-right px-2 py-2 font-bold text-rose-700 border-b border-l border-slate-200 align-bottom">
+                  <th rowSpan={2} className="text-right px-2 py-2 font-bold text-rose-700 border-b border-l border-zinc-200 align-bottom">
                     매출세액
                     <div className="text-[9px] font-medium text-rose-500/80">과세만</div>
                   </th>
-                  <th rowSpan={2} className="text-right px-2 py-2 font-bold border-b border-l border-slate-200 align-bottom">매입 총액</th>
-                  <th rowSpan={2} className="text-right px-2 py-2 font-bold text-emerald-700 border-b border-slate-200 align-bottom">매입세액 공제</th>
-                  <th rowSpan={2} className="text-right px-2 py-2 font-bold w-[110px] border-b border-l border-slate-200 align-bottom">경비 (입력)</th>
-                  <th rowSpan={2} className="text-right px-2 py-2 font-bold text-slate-700 border-b border-slate-200 align-bottom">경비세액</th>
-                  <th rowSpan={2} className="text-right px-2 py-2 font-bold border-b border-l border-slate-200 align-bottom">예상 부가세</th>
+                  <th rowSpan={2} className="text-right px-2 py-2 font-bold border-b border-l border-zinc-200 align-bottom">매입 총액</th>
+                  <th rowSpan={2} className="text-right px-2 py-2 font-bold text-emerald-700 border-b border-zinc-200 align-bottom">매입세액 공제</th>
+                  <th rowSpan={2} className="text-right px-2 py-2 font-bold w-[110px] border-b border-l border-zinc-200 align-bottom">경비 (입력)</th>
+                  <th rowSpan={2} className="text-right px-2 py-2 font-bold text-zinc-700 border-b border-zinc-200 align-bottom">경비세액</th>
+                  <th rowSpan={2} className="text-right px-2 py-2 font-bold border-b border-l border-zinc-200 align-bottom">예상 부가세</th>
                 </tr>
                 <tr>
-                  <th className="text-right px-2 py-2 font-bold border-b border-l border-slate-200 bg-slate-100/70">
+                  <th className="text-right px-2 py-2 font-bold border-b border-l border-zinc-200 bg-zinc-100/70">
                     총액
                   </th>
-                  <th className="text-right px-2 py-2 font-bold border-b border-slate-200 bg-slate-100/70 w-[130px]">
+                  <th className="text-right px-2 py-2 font-bold border-b border-zinc-200 bg-zinc-100/70 w-[130px]">
                     <span className="text-amber-700">면세</span>
                     <span className="text-[9px] font-medium text-amber-600/80 ml-0.5">(TAX FREE · 입력)</span>
                   </th>
-                  <th className="text-right px-2 py-2 font-bold border-b border-slate-200 bg-slate-100/70">
-                    <span className="text-slate-700">과세</span>
-                    <span className="text-[9px] font-medium text-slate-500 ml-0.5">(자동)</span>
+                  <th className="text-right px-2 py-2 font-bold border-b border-zinc-200 bg-zinc-100/70">
+                    <span className="text-zinc-700">과세</span>
+                    <span className="text-[9px] font-medium text-zinc-500 ml-0.5">(자동)</span>
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-zinc-50">
                 {monthly.rows.map(row => (
                   <MonthlyRow
                     key={row.month}
@@ -178,34 +178,34 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
                   />
                 ))}
               </tbody>
-              <tfoot className="sticky bottom-0 bg-slate-100 shadow-inner">
-                <tr className="text-slate-800 font-black">
+              <tfoot className="sticky bottom-0 bg-zinc-100 shadow-inner">
+                <tr className="text-zinc-800 font-black">
                   <td className="px-3 py-3 text-[11px]">합계</td>
-                  <td className="px-2 py-3 text-right tabular-nums text-[12px] border-l border-slate-200">
+                  <td className="px-2 py-3 text-right tabular-nums text-[12px] border-l border-zinc-200">
                     {fmt(monthly.totals.salesTotal)}
                   </td>
                   <td className="px-2 py-3 text-right tabular-nums text-amber-700 text-[12px]">
                     {fmt(monthly.totals.taxfreeSales)}
                   </td>
-                  <td className="px-2 py-3 text-right tabular-nums text-slate-800 text-[12px]">
+                  <td className="px-2 py-3 text-right tabular-nums text-zinc-800 text-[12px]">
                     {fmt(monthly.totals.taxableSales)}
                   </td>
-                  <td className="px-2 py-3 text-right tabular-nums text-rose-700 text-[13px] border-l border-slate-200">
+                  <td className="px-2 py-3 text-right tabular-nums text-rose-700 text-[13px] border-l border-zinc-200">
                     {fmt(monthly.totals.taxableSalesVat)}
                   </td>
-                  <td className="px-2 py-3 text-right tabular-nums text-[12px] border-l border-slate-200">
+                  <td className="px-2 py-3 text-right tabular-nums text-[12px] border-l border-zinc-200">
                     {fmt(monthly.totals.purchaseGross)}
                   </td>
                   <td className="px-2 py-3 text-right tabular-nums text-emerald-700 text-[13px]">
                     {fmt(monthly.totals.purchaseDeductibleVat)}
                   </td>
-                  <td className="px-2 py-3 text-right tabular-nums text-[12px] border-l border-slate-200">
+                  <td className="px-2 py-3 text-right tabular-nums text-[12px] border-l border-zinc-200">
                     {fmt(monthly.totals.expense)}
                   </td>
                   <td className="px-2 py-3 text-right tabular-nums text-[12px]">
                     {fmt(monthly.totals.expenseVat)}
                   </td>
-                  <td className="px-2 py-3 text-right border-l border-slate-200">
+                  <td className="px-2 py-3 text-right border-l border-zinc-200">
                     <div className={`tabular-nums text-[15px] font-black leading-tight ${
                       monthly.totals.expectedVat >= 0 ? "text-rose-700" : "text-emerald-700"
                     }`}>
@@ -303,7 +303,7 @@ const MoneyCellInput: React.FC<MoneyCellInputProps> = ({ value, onCommit, placeh
       }}
       onKeyDown={e => { if (e.key === "Enter") { e.currentTarget.blur(); } }}
       placeholder={placeholder ?? "0"}
-      className={`w-full h-8 px-2 text-[11px] text-right tabular-nums border border-slate-300 rounded outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 ${colorClass ?? ""}`}
+      className={`w-full h-8 px-2 text-[11px] text-right tabular-nums border border-zinc-300 rounded outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 ${colorClass ?? ""}`}
     />
   );
 };
@@ -312,10 +312,10 @@ const MonthlyRow: React.FC<MonthlyRowProps> = ({ row, onExpenseChange, onTaxfree
   const expectedColor = row.expectedVat >= 0 ? "text-rose-700" : "text-emerald-700";
 
   return (
-    <tr className="hover:bg-slate-50">
-      <td className="px-3 py-2 font-bold text-slate-800 tabular-nums">{row.month}</td>
+    <tr className="hover:bg-zinc-50">
+      <td className="px-3 py-2 font-bold text-zinc-800 tabular-nums">{row.month}</td>
       {/* 매출 총액 */}
-      <td className="px-2 py-2 text-right tabular-nums text-slate-700 border-l border-slate-100">
+      <td className="px-2 py-2 text-right tabular-nums text-zinc-700 border-l border-zinc-100">
         {fmt(row.salesTotal)}
       </td>
       {/* 면세(TAX FREE) 매출 · 입력 셀 */}
@@ -328,15 +328,15 @@ const MonthlyRow: React.FC<MonthlyRowProps> = ({ row, onExpenseChange, onTaxfree
         />
       </td>
       {/* 과세 매출 · 자동 계산 */}
-      <td className="px-2 py-2 text-right tabular-nums text-slate-800 font-bold">
+      <td className="px-2 py-2 text-right tabular-nums text-zinc-800 font-bold">
         {fmt(row.taxableSales)}
       </td>
       {/* 매출세액 · 과세만 */}
-      <td className="px-2 py-2 text-right tabular-nums font-black text-rose-700 border-l border-slate-100">
+      <td className="px-2 py-2 text-right tabular-nums font-black text-rose-700 border-l border-zinc-100">
         {fmt(row.taxableSalesVat)}
       </td>
       {/* 매입 총액 */}
-      <td className="px-2 py-2 text-right tabular-nums text-slate-700 border-l border-slate-100">
+      <td className="px-2 py-2 text-right tabular-nums text-zinc-700 border-l border-zinc-100">
         {fmt(row.purchaseGross)}
       </td>
       {/* 매입세액 공제 */}
@@ -344,7 +344,7 @@ const MonthlyRow: React.FC<MonthlyRowProps> = ({ row, onExpenseChange, onTaxfree
         {fmt(row.purchaseDeductibleVat)}
       </td>
       {/* 경비 (입력) */}
-      <td className="px-2 py-2 text-right border-l border-slate-100">
+      <td className="px-2 py-2 text-right border-l border-zinc-100">
         <MoneyCellInput
           value={row.expense}
           onCommit={n => onExpenseChange(row.month, n)}
@@ -352,11 +352,11 @@ const MonthlyRow: React.FC<MonthlyRowProps> = ({ row, onExpenseChange, onTaxfree
         />
       </td>
       {/* 경비세액 */}
-      <td className="px-2 py-2 text-right tabular-nums text-slate-700">
+      <td className="px-2 py-2 text-right tabular-nums text-zinc-700">
         {fmt(row.expenseVat)}
       </td>
       {/* 예상 부가세 */}
-      <td className={`px-2 py-2 text-right tabular-nums font-black border-l border-slate-100 ${expectedColor}`}>
+      <td className={`px-2 py-2 text-right tabular-nums font-black border-l border-zinc-100 ${expectedColor}`}>
         {row.expectedVat >= 0 ? "" : "−"}{fmt(Math.abs(row.expectedVat))}
       </td>
     </tr>
@@ -377,20 +377,20 @@ const SummaryCard: React.FC<SummaryCardProps> = ({ label, value, icon, color, hi
   const colors: Record<string, { bg: string; ring: string; text: string; icon: string }> = {
     rose:    { bg: "bg-rose-50",    ring: "ring-rose-200",    text: "text-rose-700",    icon: "bg-rose-500 text-white"    },
     emerald: { bg: "bg-emerald-50", ring: "ring-emerald-200", text: "text-emerald-700", icon: "bg-emerald-500 text-white" },
-    slate:   { bg: "bg-slate-50",   ring: "ring-slate-200",   text: "text-slate-700",   icon: "bg-slate-600 text-white"   },
+    slate:   { bg: "bg-zinc-50",   ring: "ring-zinc-200",   text: "text-zinc-700",   icon: "bg-zinc-600 text-white"   },
     sky:     { bg: "bg-sky-50",     ring: "ring-sky-200",     text: "text-sky-700",     icon: "bg-sky-500 text-white"     },
   };
   const c = colors[color];
   return (
-    <div className={`${c.bg} rounded-xl border border-slate-200 shadow-sm p-3.5 ${highlight ? "ring-2 " + c.ring : ""}`}>
+    <div className={`${c.bg} rounded-xl border border-zinc-200 shadow-sm p-3.5 ${highlight ? "ring-2 " + c.ring : ""}`}>
       <div className="flex items-start gap-2.5">
         <div className={`w-8 h-8 rounded-lg ${c.icon} flex items-center justify-center shrink-0`}>{icon}</div>
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wide leading-tight">{label}</div>
+          <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wide leading-tight">{label}</div>
           <div className={`text-[18px] font-black ${c.text} tabular-nums leading-tight mt-0.5`}>
             {fmt(value)}<span className="text-[12px] ml-1">원</span>
           </div>
-          {hint && <div className="text-[10px] text-slate-500 mt-0.5 leading-tight">{hint}</div>}
+          {hint && <div className="text-[10px] text-zinc-500 mt-0.5 leading-tight">{hint}</div>}
         </div>
       </div>
     </div>

@@ -150,9 +150,9 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
       <div
         id={`cell-${employeeId}-${dateStr}`}
         className={`w-full h-full rounded-sm flex flex-col ${isAdmin ? "justify-start" : "justify-center"} items-center p-0.5 relative transition-all ${
-          isAdmin ? "cursor-pointer hover:bg-slate-50/80 hover:scale-[1.02] shadow-xs" : "cursor-default"
+          isAdmin ? "cursor-pointer hover:bg-zinc-50/80 hover:scale-[1.02] shadow-xs" : "cursor-default"
         } ${
-          cellBgHex ? (cellIsLight ? "text-slate-900 font-bold" : "text-white font-bold") : "bg-white text-slate-400"
+          cellBgHex ? (cellIsLight ? "text-zinc-900 font-bold" : "text-white font-bold") : "bg-white text-zinc-400"
         }`}
         style={cellBgHex ? { backgroundColor: cellBgHex } : undefined}
         onClick={handleQuickCycle}
@@ -162,7 +162,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
         {isAdmin && (
           <button
             onClick={e => { e.stopPropagation(); setIsOpen(true); }}
-            className="w-full flex items-center justify-center gap-0.5 px-1 py-0.5 rounded bg-slate-50 hover:bg-indigo-50 border border-slate-200/60 hover:border-indigo-300 text-slate-500 hover:text-indigo-600 active:scale-95 transition-colors cursor-pointer mb-1 shrink-0"
+            className="w-full flex items-center justify-center gap-0.5 px-1 py-0.5 rounded bg-zinc-50 hover:bg-indigo-50 border border-zinc-200/60 hover:border-indigo-300 text-zinc-500 hover:text-indigo-600 active:scale-95 transition-colors cursor-pointer mb-1 shrink-0"
             title="상세 편집"
           >
             <Settings2 size={9} />
@@ -176,7 +176,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
 
         {/* Row 2: Working Hours · 폰트 +2 */}
         {displayWorkingHours && !displayActualHours && (
-          <div className="text-[10px] text-slate-400 leading-none font-medium tabular-nums mt-0.5">
+          <div className="text-[10px] text-zinc-400 leading-none font-medium tabular-nums mt-0.5">
             {displayWorkingHours}
           </div>
         )}
@@ -210,12 +210,12 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
 
       {/* Hover Floating Custom Balloon Tooltip */}
       {isHovered && schedule?.memo && schedule.memo.trim() !== "" && (
-        <div className="absolute bottom-[115%] left-1/2 -translate-x-1/2 w-48 bg-[#1e293b] text-[#f8fafc] text-[11px] p-2 rounded-lg shadow-xl z-50 pointer-events-none text-left border border-slate-700 select-text leading-relaxed">
+        <div className="absolute bottom-[115%] left-1/2 -translate-x-1/2 w-48 bg-[#1e293b] text-[#f8fafc] text-[11px] p-2 rounded-lg shadow-xl z-50 pointer-events-none text-left border border-zinc-700 select-text leading-relaxed">
           <div className="font-extrabold text-[#60a5fa] mb-0.5 flex items-center gap-1">
             <MessageSquare size={10} className="shrink-0 text-blue-400" />
             <span>메모:</span>
           </div>
-          <p className="break-words leading-tight text-[10px] text-slate-200">{schedule.memo}</p>
+          <p className="break-words leading-tight text-[10px] text-zinc-200">{schedule.memo}</p>
           <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-[5px] border-transparent border-t-[#1e293b]"></div>
         </div>
       )}
@@ -224,17 +224,17 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
       {isOpen && (
         <div
           ref={popoverRef}
-          className="fixed z-[200] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] sm:w-96 max-h-[90dvh] overflow-y-auto bg-white rounded-xl shadow-2xl p-4 border border-[#e2e8f0] text-slate-800 text-left animate-in fade-in duration-100"
+          className="fixed z-[200] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] sm:w-96 max-h-[90dvh] overflow-y-auto bg-white rounded-xl shadow-2xl p-4 border border-[#e2e8f0] text-zinc-800 text-left animate-in fade-in duration-100"
         >
           <div className="flex items-center justify-between border-b border-[#e2e8f0] pb-2 mb-3">
-            <h4 className="text-[15px] font-bold text-slate-900 flex items-center gap-1.5">
+            <h4 className="text-[15px] font-bold text-zinc-900 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded bg-[#2563eb] inline-block"></span>
               스케줄 설정 ({dateStr.split("-").slice(1).join("/")})
             </h4>
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded transition cursor-pointer"
+              className="p-1 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 rounded transition cursor-pointer"
             >
               <X size={14} />
             </button>
@@ -251,7 +251,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
                 <button
                   type="button"
                   onClick={() => setActualHours("")}
-                  className="px-2 py-1 text-[13px] font-extrabold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded transition cursor-pointer"
+                  className="px-2 py-1 text-[13px] font-extrabold bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200 rounded transition cursor-pointer"
                 >
                   초기화
                 </button>
@@ -298,10 +298,10 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
                     onClick={() => applyPreset(t.value)}
                     className={`px-2 py-1 text-[13px] sm:text-[15px] rounded border transition cursor-pointer ${
                       isSelected
-                        ? `${btnLight ? "text-slate-900" : "text-white"} !border-[#2563eb] ring-1 ring-blue-500/20`
+                        ? `${btnLight ? "text-zinc-900" : "text-white"} !border-[#2563eb] ring-1 ring-blue-500/20`
                         : dimmed
-                          ? "bg-slate-50 text-slate-300 border-slate-100 hover:text-slate-600 hover:border-slate-200"
-                          : "bg-slate-50 text-slate-700 border-[#e2e8f0] hover:bg-slate-100"
+                          ? "bg-zinc-50 text-zinc-300 border-zinc-100 hover:text-zinc-600 hover:border-zinc-200"
+                          : "bg-zinc-50 text-zinc-700 border-[#e2e8f0] hover:bg-zinc-100"
                     }`}
                     style={isSelected ? { backgroundColor: btnHex } : undefined}
                   >
@@ -312,7 +312,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
               return (
                 <div className="space-y-1.5">
                   <div>
-                    <label className="block text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-1">근무</label>
+                    <label className="block text-[13px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">근무</label>
                     <div className="flex flex-wrap gap-1.5">
                       {workTypes.map(t => renderBtn(t, currentGroup === "off"))}
                       {otherTypes.map(t => renderBtn(t, false))}
@@ -320,7 +320,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
                   </div>
                   {offTypes.length > 0 && (
                     <div>
-                      <label className="block text-[13px] font-semibold text-slate-400 uppercase tracking-wider mb-1">휴무/연차</label>
+                      <label className="block text-[13px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">휴무/연차</label>
                       <div className="flex flex-wrap gap-1.5">
                         {offTypes.map(t => renderBtn(t, currentGroup === "work"))}
                       </div>
@@ -332,7 +332,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
 
             {/* Shift Type (manual or selected from presets) */}
             <div>
-              <label className="block text-[13px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+              <label className="block text-[13px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">
                 스케줄 유형
               </label>
               <select
@@ -358,7 +358,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
 
             {/* Scheduled Working Hours */}
             <div>
-              <label className="block text-[13px] font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+              <label className="block text-[13px] font-semibold text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1">
                 <Clock size={10} /> 근무 시간 (workingHours)
               </label>
               <input
@@ -372,7 +372,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
 
             {/* Actual hours details or Notes */}
             <div>
-              <label className="block text-[13px] font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+              <label className="block text-[13px] font-semibold text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1">
                 <MessageSquare size={10} /> 실근무/기타 (actualHours)
               </label>
               <input
@@ -386,7 +386,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
 
             {/* Memo field */}
             <div>
-              <label className="block text-[13px] font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+              <label className="block text-[13px] font-semibold text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1">
                 <MessageSquare size={10} className="text-blue-500" /> 마우스 오버 팝업 메모 (memo)
               </label>
               <input
@@ -403,7 +403,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="px-3 py-1.5 text-[15px] font-semibold bg-slate-50 hover:bg-slate-100 rounded border border-[#e2e8f0] text-slate-600 transition cursor-pointer"
+                className="px-3 py-1.5 text-[15px] font-semibold bg-zinc-50 hover:bg-zinc-100 rounded border border-[#e2e8f0] text-zinc-600 transition cursor-pointer"
                 disabled={isSaving}
               >
                 취소

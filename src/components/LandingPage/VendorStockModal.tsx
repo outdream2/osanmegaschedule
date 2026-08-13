@@ -74,7 +74,7 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 bg-zinc-900/50 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto"
       onClick={onClose}
     >
       <div
@@ -82,38 +82,38 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
         onClick={(e) => e.stopPropagation()}
       >
         {/* 헤더 */}
-        <div className="px-5 py-4 border-b border-slate-200 bg-sky-50 flex items-center justify-between gap-3">
+        <div className="px-5 py-4 border-b border-zinc-200 bg-sky-50 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-sky-500 flex items-center justify-center shadow-md shrink-0">
               <Package size={18} className="text-white" />
             </div>
             <div className="min-w-0">
-              <div className="text-base font-black text-slate-900">공급사 재고확인</div>
-              <div className="text-[12px] font-semibold text-slate-500 truncate">{vendorName}</div>
+              <div className="text-base font-black text-zinc-900">공급사 재고확인</div>
+              <div className="text-[12px] font-semibold text-zinc-500 truncate">{vendorName}</div>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 text-3xl font-black w-9 h-9 rounded-lg hover:bg-white/70 cursor-pointer flex items-center justify-center shrink-0"
+            className="text-zinc-400 hover:text-zinc-700 text-3xl font-black w-9 h-9 rounded-lg hover:bg-white/70 cursor-pointer flex items-center justify-center shrink-0"
           >
             ×
           </button>
         </div>
 
         {/* 검색·요약 */}
-        <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3 flex-wrap">
+        <div className="px-5 py-3 border-b border-zinc-100 bg-zinc-50/50 flex items-center gap-3 flex-wrap">
           <div className="relative flex-1 min-w-[180px]">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="상품명·코드 검색"
-              className="w-full pl-8 pr-3 py-1.5 text-[12px] border border-slate-200 rounded-md focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-200"
+              className="w-full pl-8 pr-3 py-1.5 text-[12px] border border-zinc-200 rounded-md focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-200"
             />
           </div>
-          <div className="text-[12px] font-semibold text-slate-500">
-            상품 <span className="tabular-nums text-slate-800 font-black">{filtered.length}</span> 종 · 총 재고
+          <div className="text-[12px] font-semibold text-zinc-500">
+            상품 <span className="tabular-nums text-zinc-800 font-black">{filtered.length}</span> 종 · 총 재고
             <span className="tabular-nums text-sky-700 font-black ml-1">{totalStock.toLocaleString()}</span>
           </div>
         </div>
@@ -121,20 +121,20 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
         {/* 상품 리스트 */}
         <div className="flex-1 overflow-y-auto max-h-[60vh]">
           {loading ? (
-            <div className="flex items-center justify-center py-16 text-slate-400 text-sm font-bold gap-2">
+            <div className="flex items-center justify-center py-16 text-zinc-400 text-sm font-bold gap-2">
               <Loader2 size={16} className="animate-spin" />
               불러오는 중...
             </div>
           ) : error ? (
             <div className="p-8 text-center text-rose-600 text-sm font-bold">⚠ {error}</div>
           ) : filtered.length === 0 ? (
-            <div className="p-12 text-center text-slate-400 text-sm">
+            <div className="p-12 text-center text-zinc-400 text-sm">
               {search ? "검색 결과 없음" : "상품 없음"}
             </div>
           ) : (
             <table className="w-full text-[12px]">
-              <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
-                <tr className="text-slate-500 font-black uppercase tracking-wide text-[10px]">
+              <thead className="sticky top-0 bg-zinc-50 border-b border-zinc-200 z-10">
+                <tr className="text-zinc-500 font-black uppercase tracking-wide text-[10px]">
                   <th className="text-center px-2 py-2 w-10">#</th>
                   <th className="text-left px-3 py-2 w-24">상품코드</th>
                   <th className="text-left px-3 py-2">상품명</th>
@@ -143,19 +143,19 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
                   <th className="text-right px-3 py-2 w-16">최소</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-zinc-100">
                 {filtered.map((p, i) => (
                   <tr key={p.code} className="hover:bg-sky-50/40">
-                    <td className="text-center px-2 py-1.5 text-slate-400 tabular-nums">{i + 1}</td>
-                    <td className="px-3 py-1.5 font-mono text-[11px] text-slate-500 tabular-nums">{p.code}</td>
-                    <td className="px-3 py-1.5 font-semibold text-slate-800 truncate max-w-[280px]">{p.name}</td>
+                    <td className="text-center px-2 py-1.5 text-zinc-400 tabular-nums">{i + 1}</td>
+                    <td className="px-3 py-1.5 font-mono text-[11px] text-zinc-500 tabular-nums">{p.code}</td>
+                    <td className="px-3 py-1.5 font-semibold text-zinc-800 truncate max-w-[280px]">{p.name}</td>
                     <td className="text-right px-3 py-1.5 font-mono font-black text-sky-700 tabular-nums">
                       {p.current_stock ?? "-"}
                     </td>
-                    <td className="text-right px-3 py-1.5 font-mono text-slate-500 tabular-nums">
+                    <td className="text-right px-3 py-1.5 font-mono text-zinc-500 tabular-nums">
                       {p.optimal_stock ?? "-"}
                     </td>
-                    <td className="text-right px-3 py-1.5 font-mono text-slate-400 tabular-nums">
+                    <td className="text-right px-3 py-1.5 font-mono text-zinc-400 tabular-nums">
                       {p.min_stock ?? "-"}
                     </td>
                   </tr>
@@ -166,7 +166,7 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
         </div>
 
         {/* 푸터 · 안내 */}
-        <div className="px-5 py-2.5 border-t border-slate-100 bg-slate-50/40 text-[11px] text-slate-400">
+        <div className="px-5 py-2.5 border-t border-zinc-100 bg-zinc-50/40 text-[11px] text-zinc-400">
           ERP 재고 · 매장 시스템 기준 · 실재고 (창고·매장별) 세부는 추후 반영
         </div>
       </div>

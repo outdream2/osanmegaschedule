@@ -29,7 +29,7 @@ export const StockActionsCell: React.FC<StockActionsCellProps> = React.memo(({
       <button
         onClick={() => onHistory(row.code, row.product.name)}
         className="relative w-7 h-7 flex items-center justify-center rounded-lg
-          text-slate-300 hover:text-teal-600 hover:bg-teal-50
+          text-zinc-300 hover:text-teal-600 hover:bg-teal-50
           transition-all duration-150 cursor-pointer"
         title="실재고 저장 이력"
       >
@@ -50,7 +50,7 @@ export const StockActionsCell: React.FC<StockActionsCellProps> = React.memo(({
         className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
           storeEmpty
             ? "text-amber-500 bg-amber-50 hover:text-amber-700 hover:bg-amber-100 animate-pulse"
-            : "text-slate-300 hover:text-violet-600 hover:bg-violet-50"
+            : "text-zinc-300 hover:text-violet-600 hover:bg-violet-50"
         }`}
         title="진열요청 전송 · 매장 재고 부족 시 강조"
       >
@@ -63,7 +63,7 @@ export const StockActionsCell: React.FC<StockActionsCellProps> = React.memo(({
       <button
         onClick={() => onRemove(row.key)}
         className="w-7 h-7 flex items-center justify-center rounded-lg
-          text-slate-300 hover:text-rose-500 hover:bg-rose-50
+          text-zinc-300 hover:text-rose-500 hover:bg-rose-50
           transition-all duration-150 cursor-pointer"
         title="삭제"
       >

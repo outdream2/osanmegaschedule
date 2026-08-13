@@ -4,7 +4,7 @@
 //     - value: 현재 선택된 계절 (null 이면 아무것도 선택 안 됨)
 //     - onChange: 클릭 시 호출 (같은 버튼 다시 누르면 null 전달 · 토글 해제)
 //     - size: "sm" | "md" (기본 md)
-//   재고관리 스타일 (rounded-lg · slate-100 bg · sky-700 active)
+//   재고관리 스타일 (rounded-lg · zinc-100 bg · sky-700 active)
 import React from "react";
 import { useSeasonRanges, SEASON_LABEL, SEASON_EMOJI, formatMonths, type SeasonKey } from "../../hooks/useSeasonRanges";
 
@@ -37,9 +37,9 @@ export const SeasonButtons: React.FC<SeasonButtonsProps> = ({
   return (
     <div className={`inline-flex items-center gap-1 flex-wrap ${className}`}>
       {!hideLabel && label && (
-        <span className={`text-slate-500 font-black shrink-0 ${labelCls}`}>{label}</span>
+        <span className={`text-zinc-500 font-black shrink-0 ${labelCls}`}>{label}</span>
       )}
-      <div className="inline-flex bg-slate-100/80 border border-slate-200/60 rounded-lg p-0.5 shadow-inner">
+      <div className="inline-flex bg-zinc-100/80 border border-zinc-200/60 rounded-lg p-0.5 shadow-inner">
         {SEASONS.map((s) => {
           const active = value === s;
           const months = ranges[s];
@@ -52,8 +52,8 @@ export const SeasonButtons: React.FC<SeasonButtonsProps> = ({
               title={title}
               className={`${sizeCls} font-black rounded transition cursor-pointer inline-flex items-center gap-0.5 ${
                 active
-                  ? "bg-white text-sky-700 shadow-sm ring-1 ring-slate-200"
-                  : "text-slate-500 hover:text-slate-800"
+                  ? "bg-white text-sky-700 shadow-sm ring-1 ring-zinc-200"
+                  : "text-zinc-500 hover:text-zinc-800"
               }`}
             >
               <span aria-hidden>{SEASON_EMOJI[s]}</span>

@@ -55,20 +55,20 @@ export const CrossCheckBadge: React.FC<CrossCheckBadgeProps> = ({
           className={`cursor-pointer transition ${
             chosen === "computed"
               ? "font-black text-emerald-700 underline"
-              : "font-semibold text-slate-500 hover:text-emerald-600 hover:underline"
+              : "font-semibold text-zinc-500 hover:text-emerald-600 hover:underline"
           }`}
           title="행합을 이 페이지 소계로 채택"
         >
           금액합계 {fmt(rowSum)}
         </button>
-        <span className="text-slate-400">≠</span>
+        <span className="text-zinc-400">≠</span>
         <button
           type="button"
           onClick={() => onChooseSubtotal!(pn, "stated")}
           className={`cursor-pointer transition ${
             chosen === "stated"
               ? "font-black text-amber-700 underline"
-              : "font-semibold text-slate-500 hover:text-amber-600 hover:underline"
+              : "font-semibold text-zinc-500 hover:text-amber-600 hover:underline"
           }`}
           title="OCR 원본 소계를 이 페이지 소계로 채택"
         >

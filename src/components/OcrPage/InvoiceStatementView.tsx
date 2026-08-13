@@ -36,10 +36,10 @@ const THEME = {
     accent: "text-violet-600",
   },
   slate: {
-    border: "border-slate-200",
-    bgHeader: "bg-slate-50",
-    text: "text-slate-700",
-    accent: "text-slate-600",
+    border: "border-zinc-200",
+    bgHeader: "bg-zinc-50",
+    text: "text-zinc-700",
+    accent: "text-zinc-600",
   },
 };
 
@@ -77,37 +77,37 @@ const InvoicePageCard: React.FC<InvoicePageCardProps> = ({ page, theme }) => {
       <div className={`${theme.bgHeader} px-3 py-2 flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b ${theme.border}`}>
         <span className={`text-[12px] font-black ${theme.text}`}>page {page.page}</span>
         <span className={`text-[14px] font-black ${theme.text}`}>{supplier}</span>
-        <span className="text-[11px] text-slate-500">거래일 {date}</span>
+        <span className="text-[11px] text-zinc-500">거래일 {date}</span>
         <span className={`text-[12px] font-bold ${theme.accent} ml-auto`}>
           합계 {fmt(total)} 원 · {rowsCount}행
         </span>
       </div>
       {rowsCount === 0 ? (
-        <div className="px-3 py-4 text-center text-[12px] text-slate-400">상품 행 없음</div>
+        <div className="px-3 py-4 text-center text-[12px] text-zinc-400">상품 행 없음</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-[12px]">
-            <thead className="bg-slate-50">
+            <thead className="bg-zinc-50">
               <tr className="text-left">
-                <th className="px-2 py-1.5 text-slate-500 font-bold w-10 text-center">#</th>
-                <th className="px-2 py-1.5 text-slate-500 font-bold">품명</th>
-                <th className="px-2 py-1.5 text-slate-500 font-bold w-16">규격</th>
-                <th className="px-2 py-1.5 text-slate-500 font-bold w-14 text-right">수량</th>
-                <th className="px-2 py-1.5 text-slate-500 font-bold w-20 text-right">단가</th>
-                <th className="px-2 py-1.5 text-slate-500 font-bold w-24 text-right">금액</th>
-                <th className="px-2 py-1.5 text-slate-500 font-bold w-24">유통기한</th>
+                <th className="px-2 py-1.5 text-zinc-500 font-bold w-10 text-center">#</th>
+                <th className="px-2 py-1.5 text-zinc-500 font-bold">품명</th>
+                <th className="px-2 py-1.5 text-zinc-500 font-bold w-16">규격</th>
+                <th className="px-2 py-1.5 text-zinc-500 font-bold w-14 text-right">수량</th>
+                <th className="px-2 py-1.5 text-zinc-500 font-bold w-20 text-right">단가</th>
+                <th className="px-2 py-1.5 text-zinc-500 font-bold w-24 text-right">금액</th>
+                <th className="px-2 py-1.5 text-zinc-500 font-bold w-24">유통기한</th>
               </tr>
             </thead>
             <tbody>
               {page.rows.map((r, i) => (
-                <tr key={i} className="border-t border-slate-100 hover:bg-slate-50/60">
-                  <td className="px-2 py-1 text-slate-400 text-center">{i + 1}</td>
-                  <td className="px-2 py-1 text-slate-800 font-semibold">{nameCol >= 0 ? String(r[nameCol] ?? "-") : "-"}</td>
-                  <td className="px-2 py-1 text-slate-600">{specCol >= 0 ? String(r[specCol] ?? "-") : "-"}</td>
-                  <td className="px-2 py-1 text-slate-700 text-right tabular-nums">{qtyCol >= 0 ? fmt(r[qtyCol] as any) : "-"}</td>
-                  <td className="px-2 py-1 text-slate-700 text-right tabular-nums">{priceCol >= 0 ? fmt(r[priceCol] as any) : "-"}</td>
-                  <td className="px-2 py-1 text-slate-900 font-bold text-right tabular-nums">{amountCol >= 0 ? fmt(r[amountCol] as any) : "-"}</td>
-                  <td className="px-2 py-1 text-slate-500">{expiryCol >= 0 ? String(r[expiryCol] ?? "-") : "-"}</td>
+                <tr key={i} className="border-t border-zinc-100 hover:bg-zinc-50/60">
+                  <td className="px-2 py-1 text-zinc-400 text-center">{i + 1}</td>
+                  <td className="px-2 py-1 text-zinc-800 font-semibold">{nameCol >= 0 ? String(r[nameCol] ?? "-") : "-"}</td>
+                  <td className="px-2 py-1 text-zinc-600">{specCol >= 0 ? String(r[specCol] ?? "-") : "-"}</td>
+                  <td className="px-2 py-1 text-zinc-700 text-right tabular-nums">{qtyCol >= 0 ? fmt(r[qtyCol] as any) : "-"}</td>
+                  <td className="px-2 py-1 text-zinc-700 text-right tabular-nums">{priceCol >= 0 ? fmt(r[priceCol] as any) : "-"}</td>
+                  <td className="px-2 py-1 text-zinc-900 font-bold text-right tabular-nums">{amountCol >= 0 ? fmt(r[amountCol] as any) : "-"}</td>
+                  <td className="px-2 py-1 text-zinc-500">{expiryCol >= 0 ? String(r[expiryCol] ?? "-") : "-"}</td>
                 </tr>
               ))}
             </tbody>
@@ -132,7 +132,7 @@ export function InvoiceStatementView({
   const body = (
     <div className="flex flex-col gap-2 mt-2">
       {pages.length === 0 ? (
-        <div className="text-[12px] text-slate-400 text-center py-4">파싱된 페이지 없음</div>
+        <div className="text-[12px] text-zinc-400 text-center py-4">파싱된 페이지 없음</div>
       ) : (
         pages.map(p => <InvoicePageCard key={p.page} page={p} theme={theme} />)
       )}
@@ -149,10 +149,10 @@ export function InvoiceStatementView({
   }
 
   return (
-    <details className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2" open={defaultOpen}>
+    <details className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-3 py-2" open={defaultOpen}>
       <summary className={`cursor-pointer text-[13px] font-bold ${theme.text} select-none flex flex-wrap items-baseline gap-x-3`}>
         <span>📋 {title ?? "거래명세서 뷰"}</span>
-        <span className="text-[11px] text-slate-500 font-normal">
+        <span className="text-[11px] text-zinc-500 font-normal">
           {pages.length}페이지 · {totalRows}행 · 합계 {fmt(totalSum)} 원
         </span>
       </summary>

@@ -204,8 +204,8 @@ const BalanceConfigTab: React.FC<BalanceConfigTabProps> = ({ pages, config, onCo
 
   return (
     <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-4 flex flex-col gap-4">
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100 bg-orange-50 flex items-center gap-2">
+      <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-zinc-100 bg-orange-50 flex items-center gap-2">
           <span className="text-xs font-bold text-orange-800">잔고항목 지정</span>
           <span className="text-[11px] text-orange-500">공급처별로 잔고로 표시할 항목을 지정하세요. 확정표에 주황색으로 표시됩니다.</span>
         </div>
@@ -447,8 +447,8 @@ const ConfirmedRecordsTab: React.FC = () => {
 
   return (
     <div className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 py-4 flex flex-col gap-3">
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100 bg-rose-50 flex items-center gap-2 flex-wrap">
+      <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-zinc-100 bg-rose-50 flex items-center gap-2 flex-wrap">
           <FileText size={13} className="text-rose-600" />
           <span className="text-xs font-bold text-rose-800">거래명세서 조회</span>
           <span className="text-[11px] text-rose-500">저장된 확정 항목을 조회·삭제합니다{dateFilter ? "" : " (기본: 최근 30일)"}</span>
@@ -462,7 +462,7 @@ const ConfirmedRecordsTab: React.FC = () => {
           </button>
         </div>
 
-        <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex flex-wrap gap-2 items-center">
+        <div className="px-4 py-3 border-b border-zinc-100 bg-zinc-50 flex flex-wrap gap-2 items-center">
           <label className="flex items-center gap-1.5 text-[11px] font-bold text-gray-600">
             날짜
             <input
@@ -616,16 +616,16 @@ const ConfirmedRecordsTab: React.FC = () => {
                         </td>
                       </tr>
                       {isExpanded && (
-                        <tr className="bg-slate-50/60 border-t border-slate-200">
+                        <tr className="bg-zinc-50/60 border-t border-zinc-200">
                           <td colSpan={7} className="px-3 py-2">
                             {/* 명세서 메타 정보 요약 */}
-                            <div className="flex flex-wrap items-center gap-3 pb-2 mb-2 border-b border-slate-200 text-[11px]">
-                              <span className="font-bold text-slate-600">거래일 <span className="text-slate-900 font-mono">{g.invoiceDate}</span></span>
-                              <span className="font-bold text-slate-600">공급사 <span className="text-sky-700">{g.supplier}</span></span>
-                              <span className="font-bold text-slate-600">품목 <span className="text-gray-800">{g.count}건</span></span>
-                              <span className="font-bold text-slate-600">합계 <span className="text-amber-700">{fmtNum(g.total)}원</span></span>
+                            <div className="flex flex-wrap items-center gap-3 pb-2 mb-2 border-b border-zinc-200 text-[11px]">
+                              <span className="font-bold text-zinc-600">거래일 <span className="text-zinc-900 font-mono">{g.invoiceDate}</span></span>
+                              <span className="font-bold text-zinc-600">공급사 <span className="text-sky-700">{g.supplier}</span></span>
+                              <span className="font-bold text-zinc-600">품목 <span className="text-gray-800">{g.count}건</span></span>
+                              <span className="font-bold text-zinc-600">합계 <span className="text-amber-700">{fmtNum(g.total)}원</span></span>
                               {g.records[0]?.saved_at && (
-                                <span className="font-bold text-slate-500">저장일 <span className="text-slate-700 font-mono">{g.records[0].saved_at.slice(0, 10)}</span></span>
+                                <span className="font-bold text-zinc-500">저장일 <span className="text-zinc-700 font-mono">{g.records[0].saved_at.slice(0, 10)}</span></span>
                               )}
                               {g.imageUrl && (
                                 <button type="button"
@@ -636,15 +636,15 @@ const ConfirmedRecordsTab: React.FC = () => {
                             </div>
                             <table className="w-full text-[11px] border-collapse">
                               <thead>
-                                <tr className="bg-slate-100 border-b border-slate-200">
+                                <tr className="bg-zinc-100 border-b border-zinc-200">
                                   <th className="px-2 py-1.5 w-8 text-center" />
-                                  <th className="px-2 py-1.5 text-left font-bold text-slate-700">품명·코드</th>
-                                  <th className="px-2 py-1.5 text-right font-bold text-slate-700 w-16">수량</th>
-                                  <th className="px-2 py-1.5 text-right font-bold text-slate-700 w-20">단가</th>
-                                  <th className="px-2 py-1.5 text-right font-bold text-slate-700 w-24">금액</th>
-                                  <th className="px-2 py-1.5 text-right font-bold text-slate-700 w-20">잔고</th>
-                                  <th className="px-2 py-1.5 text-left font-bold text-slate-700 w-28">유통기한</th>
-                                  <th className="px-2 py-1.5 text-left font-bold text-slate-700 w-36">메모</th>
+                                  <th className="px-2 py-1.5 text-left font-bold text-zinc-700">품명·코드</th>
+                                  <th className="px-2 py-1.5 text-right font-bold text-zinc-700 w-16">수량</th>
+                                  <th className="px-2 py-1.5 text-right font-bold text-zinc-700 w-20">단가</th>
+                                  <th className="px-2 py-1.5 text-right font-bold text-zinc-700 w-24">금액</th>
+                                  <th className="px-2 py-1.5 text-right font-bold text-zinc-700 w-20">잔고</th>
+                                  <th className="px-2 py-1.5 text-left font-bold text-zinc-700 w-28">유통기한</th>
+                                  <th className="px-2 py-1.5 text-left font-bold text-zinc-700 w-36">메모</th>
                                   <th className="px-2 py-1.5 w-8" />
                                 </tr>
                               </thead>
@@ -720,7 +720,7 @@ const ConfirmedRecordsTab: React.FC = () => {
           onClick={() => setBalanceHistory(null)}
         >
           <div
-            className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden"
+            className="bg-white rounded-xl shadow-2xl border border-zinc-200 w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
             <div className="px-4 py-3 border-b border-gray-100 bg-orange-50 flex items-center justify-between shrink-0">
@@ -1299,32 +1299,32 @@ return (
     )}
 
     {/* Tab bar */}
-    <div className="bg-white/90 backdrop-blur-sm border-b border-slate-200/70 sticky top-0 z-10">
+    <div className="bg-white/90 backdrop-blur-sm border-b border-zinc-200/70 sticky top-0 z-10">
       <div className="max-w-5xl mx-auto px-2 sm:px-4 py-2">
-        <div className="flex flex-wrap bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
+        <div className="flex flex-wrap bg-zinc-100/70 border border-zinc-200/60 rounded-2xl p-1 gap-0.5">
           <button
             onClick={() => setMainTab("ocr")}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "ocr" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"}`}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "ocr" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
           >
-            <Upload size={13} className={mainTab === "ocr" ? "text-slate-800" : "text-slate-400"} /> OCR 추출
+            <Upload size={13} className={mainTab === "ocr" ? "text-zinc-800" : "text-zinc-400"} /> OCR 추출
           </button>
           <button
             onClick={() => setMainTab("synonyms")}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "synonyms" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"}`}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "synonyms" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
           >
-            <BookOpen size={13} className={mainTab === "synonyms" ? "text-slate-800" : "text-slate-400"} /> 동의어 관리
+            <BookOpen size={13} className={mainTab === "synonyms" ? "text-zinc-800" : "text-zinc-400"} /> 동의어 관리
           </button>
           <button
             onClick={() => setMainTab("balance")}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "balance" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"}`}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "balance" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
           >
             잔고항목 지정
           </button>
           <button
             onClick={() => setMainTab("records")}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "records" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"}`}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "records" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
           >
-            <FileText size={13} className={mainTab === "records" ? "text-slate-800" : "text-slate-400"} /> 거래명세서 조회
+            <FileText size={13} className={mainTab === "records" ? "text-zinc-800" : "text-zinc-400"} /> 거래명세서 조회
           </button>
         </div>
       </div>
@@ -1340,14 +1340,14 @@ return (
       /* ── 동의어 관리 탭 ── */
       <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-4 flex flex-col gap-4">
         {/* 동의어 서브 탭 */}
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-          <div className="flex items-center gap-1 px-4 py-2 border-b border-slate-100/80">
-            <div className="flex flex-wrap bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
-            <button onClick={() => setSynTab("product")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${synTab === "product" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"}`}>
-              <BookOpen size={12} className={synTab === "product" ? "text-slate-800" : "text-slate-400"} /> 상품명 동의어 ({productSynonyms.length})
+        <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
+          <div className="flex items-center gap-1 px-4 py-2 border-b border-zinc-100/80">
+            <div className="flex flex-wrap bg-zinc-100/70 border border-zinc-200/60 rounded-2xl p-1 gap-0.5">
+            <button onClick={() => setSynTab("product")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${synTab === "product" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}>
+              <BookOpen size={12} className={synTab === "product" ? "text-zinc-800" : "text-zinc-400"} /> 상품명 동의어 ({productSynonyms.length})
             </button>
-            <button onClick={() => setSynTab("supplier")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${synTab === "supplier" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"}`}>
-              <Building2 size={12} className={synTab === "supplier" ? "text-slate-800" : "text-slate-400"} /> 공급사 별칭 ({supplierAliases.length})
+            <button onClick={() => setSynTab("supplier")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${synTab === "supplier" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}>
+              <Building2 size={12} className={synTab === "supplier" ? "text-zinc-800" : "text-zinc-400"} /> 공급사 별칭 ({supplierAliases.length})
             </button>
             </div>
             <button onClick={fetchSynonyms} className="ml-auto p-1.5 self-center rounded-lg hover:bg-gray-100 cursor-pointer">
@@ -1382,9 +1382,9 @@ return (
 
         {/* 리스트 테이블 */}
         {synTab === "product" ? (
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
             {/* 상품명 / 공급사명 뷰 토글 */}
-            <div className="flex items-center gap-1 px-3 py-2 border-b border-slate-100 bg-slate-50">
+            <div className="flex items-center gap-1 px-3 py-2 border-b border-zinc-100 bg-zinc-50">
               <button
                 onClick={() => setProdListView("prodname")}
                 className={`px-3 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${prodListView === "prodname" ? "bg-indigo-100 text-indigo-700" : "text-gray-400 hover:text-gray-700"}`}
@@ -1483,7 +1483,7 @@ return (
             </table>
           </div>
         ) : (
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-sky-50 border-b border-sky-100">
@@ -1537,7 +1537,7 @@ return (
     <div className="flex-1 flex flex-col px-4 py-6 gap-5 w-full max-w-[1500px] mx-auto">
 
       {/* 파일 업로드 + 이미지 뷰어 */}
-      <div className="w-full bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+      <div className="w-full bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
 
         {pageImages.length === 0 ? (
           <div
@@ -1654,21 +1654,21 @@ return (
           )}
 
           {/* OCR 엔진 선택 · 2-way (AI 모델 · Gemini) */}
-          <div className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 flex flex-col gap-1.5 shadow-sm">
-            <div className="flex items-center gap-1.5 text-[11px] font-black text-slate-600">
+          <div className="w-full bg-white border border-zinc-200 rounded-xl px-3 py-2 flex flex-col gap-1.5 shadow-sm">
+            <div className="flex items-center gap-1.5 text-[11px] font-black text-zinc-600">
               <span>OCR 엔진</span>
-              <span className="text-[10px] font-mono text-slate-400">
+              <span className="text-[10px] font-mono text-zinc-400">
                 ({ocrEngine === "onnx" ? "AI 모델 (ONNX) · 완전 무료 · Render OK"
                   : "Gemini · 정확도 최상"})
               </span>
             </div>
-            <div className="inline-flex bg-slate-100 border border-slate-200 rounded-lg p-0.5 gap-0.5 w-full">
+            <div className="inline-flex bg-zinc-100 border border-zinc-200 rounded-lg p-0.5 gap-0.5 w-full">
               <button type="button" onClick={() => setOcrEngine("onnx")}
                 disabled={extracting}
                 className={`flex-1 px-2 py-1.5 text-[11px] font-black rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${
                   ocrEngine === "onnx"
                     ? "bg-emerald-500 text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-white"
+                    : "text-zinc-500 hover:text-zinc-800 hover:bg-white"
                 }`}
                 title="PP-OCRv5 한국어 AI 모델 (ONNX · ppu-paddle-ocr) · 완전 무료 · Render 배포 · 셀프호스팅">
                 🤖 AI 모델
@@ -1678,7 +1678,7 @@ return (
                 className={`flex-1 px-2 py-1.5 text-[11px] font-black rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${
                   ocrEngine === "gemini"
                     ? "bg-amber-500 text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-white"
+                    : "text-zinc-500 hover:text-zinc-800 hover:bg-white"
                 }`}
                 title="Gemini 비전 API · 정확도 최상 · 다중 키 로테이션">
                 ⚡ Gemini
@@ -1723,8 +1723,8 @@ return (
       )}
 
       {extracting && pageCount > 0 && (
-        <div className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm">
-          <div className="w-full bg-slate-100 rounded-full h-1.5">
+        <div className="w-full bg-white border border-zinc-200 rounded-xl px-4 py-3 shadow-sm">
+          <div className="w-full bg-zinc-100 rounded-full h-1.5">
             <div className="h-1.5 rounded-full transition-all bg-amber-500"
               style={{ width: `${(processed / pageCount) * 100}%` }} />
           </div>

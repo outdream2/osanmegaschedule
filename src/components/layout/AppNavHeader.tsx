@@ -88,7 +88,7 @@ const TABS: TabDef[] = DERIVED_TOP_TABS.map((t: DerivedTopTab): TabDef => ({
 
 // 2026-08-06 · 랜딩 파스텔 톤 통일 · 활성 탭: 파스텔 배경 + 진한 텍스트 + border (흰 배경+진한gradient 제거)
 const TAB_COLOR_MAP: Record<string, { activeBg: string; activeText: string; inactiveText: string; inactiveHoverText: string; }> = {
-  slate:   { activeBg: "bg-slate-100 border border-slate-300",     activeText: "text-slate-800",   inactiveText: "text-slate-500",   inactiveHoverText: "hover:text-slate-700"   },
+  slate:   { activeBg: "bg-zinc-100 border border-zinc-300",     activeText: "text-zinc-800",   inactiveText: "text-zinc-500",   inactiveHoverText: "hover:text-zinc-700"   },
   blue:    { activeBg: "bg-blue-100 border border-blue-300",       activeText: "text-blue-800",    inactiveText: "text-blue-500",    inactiveHoverText: "hover:text-blue-700"    },
   red:     { activeBg: "bg-red-100 border border-red-300",         activeText: "text-red-700",     inactiveText: "text-red-500",     inactiveHoverText: "hover:text-red-700"     },
   sky:     { activeBg: "bg-sky-100 border border-sky-300",         activeText: "text-sky-700",     inactiveText: "text-sky-500",     inactiveHoverText: "hover:text-sky-700"     },
@@ -291,7 +291,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
 
     // 색상별 underline accent 색상 (active 탭 하단 bar)
     const ACCENT_BORDER: Record<string, string> = {
-      slate:   "border-b-slate-500",
+      slate:   "border-b-zinc-500",
       blue:    "border-b-blue-500",
       red:     "border-b-red-500",
       sky:     "border-b-sky-500",
@@ -304,7 +304,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     };
     // 색상별 hover 배경 (subtle tinted)
     const HOVER_BG: Record<string, string> = {
-      slate:   "hover:bg-slate-50",
+      slate:   "hover:bg-zinc-50",
       blue:    "hover:bg-blue-50",
       red:     "hover:bg-red-50",
       sky:     "hover:bg-sky-50",
@@ -317,7 +317,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     };
     // 색상별 active 배경 (매우 연한 tint)
     const ACTIVE_BG_TINT: Record<string, string> = {
-      slate:   "bg-slate-50/80",
+      slate:   "bg-zinc-50/80",
       blue:    "bg-blue-50/80",
       red:     "bg-red-50/80",
       sky:     "bg-sky-50/80",
@@ -330,9 +330,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     };
 
     const colorKey = tab.color ?? "slate";
-    const accentBar = ACCENT_BORDER[colorKey] ?? "border-b-slate-500";
-    const hoverBg = HOVER_BG[colorKey] ?? "hover:bg-slate-50";
-    const activeBgTint = ACTIVE_BG_TINT[colorKey] ?? "bg-slate-50/80";
+    const accentBar = ACCENT_BORDER[colorKey] ?? "border-b-zinc-500";
+    const hoverBg = HOVER_BG[colorKey] ?? "hover:bg-zinc-50";
+    const activeBgTint = ACTIVE_BG_TINT[colorKey] ?? "bg-zinc-50/80";
 
     // 공통 베이스: 세로 border-b-2 underline 방식 · 상하 padding 은 Row 2 높이와 맞춤
     const baseCommon = "relative flex items-center gap-1.5 px-2.5 sm:px-2 md:px-2.5 lg:px-3 py-1.5 rounded-lg text-[15px] sm:text-[15px] md:text-[16px] lg:text-[17px] font-semibold whitespace-nowrap transition-all duration-150";
@@ -472,10 +472,10 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   //   · 사이드바 접힌 상태(icon)에서만 · 여기서 펼치기 트리거 노출 (사이드바에는 숨김 처리됨)
   if (SIDEBAR_ENABLED && !isMobileNav) {
     return (
-      <div className="flex items-center justify-between px-3 py-1 shrink-0 bg-white/60 backdrop-blur-sm border-b border-slate-200/50">
+      <div className="flex items-center justify-between px-3 py-1 shrink-0 bg-white/60 backdrop-blur-sm border-b border-zinc-200/50">
         {/* 접힘 상태 · 펼치기 트리거 · 사이드바 안 트리거는 숨겨지므로 · 대체 트리거 */}
         <SidebarTrigger
-          className="h-7 w-7 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer group-has-[[data-state=expanded]]/sidebar-wrapper:hidden"
+          className="h-7 w-7 rounded-md text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 transition cursor-pointer group-has-[[data-state=expanded]]/sidebar-wrapper:hidden"
           aria-label="사이드바 펼치기"
         />
         <div className="flex items-center gap-2 ml-auto">{rightSlot}</div>
@@ -484,7 +484,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   }
 
   return (
-    <header className="bg-white border-b border-slate-200 shrink-0">
+    <header className="bg-white border-b border-zinc-200 shrink-0">
       {/* ── Row 1 (상단): 로고 + 서비스명 · 로그인정보 · 알림 · 로그아웃 (PC/모바일 동일 · 2026-08-04 사용자 요청) ── */}
       <div className="px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
         {/* Left: logo (클릭 시 랜딩 이동) */}
@@ -520,10 +520,10 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
             <button
               type="button"
               onClick={() => onNavigate?.("mypage" as AppNavPage)}
-              className="inline-flex items-center text-[11px] sm:text-[12px] font-bold text-slate-600 whitespace-nowrap px-1.5 sm:px-2 py-1 rounded-lg hover:bg-slate-100 active:scale-95 transition cursor-pointer max-w-[42vw] sm:max-w-none"
+              className="inline-flex items-center text-[11px] sm:text-[12px] font-bold text-zinc-600 whitespace-nowrap px-1.5 sm:px-2 py-1 rounded-lg hover:bg-zinc-100 active:scale-95 transition cursor-pointer max-w-[42vw] sm:max-w-none"
               title="마이페이지"
             >
-              <span className="text-slate-800 font-black truncate">{authSession.employeeName}{authSession.employeeRank ?? ""}</span>
+              <span className="text-zinc-800 font-black truncate">{authSession.employeeName}{authSession.employeeRank ?? ""}</span>
             </button>
           )}
 
@@ -535,14 +535,14 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           {authSession && onLogout ? (
             <button
               onClick={onLogout}
-              className="flex items-center gap-1 justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-2 sm:py-1.5 text-[10px] font-semibold bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-300 rounded-lg transition-all shadow-sm hover:shadow-md active:scale-95 cursor-pointer shrink-0"
+              className="flex items-center gap-1 justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-2 sm:py-1.5 text-[10px] font-semibold bg-white hover:bg-rose-50 text-rose-600 border border-zinc-200 hover:border-rose-300 rounded-lg transition-all shadow-sm hover:shadow-md active:scale-95 cursor-pointer shrink-0"
               title="로그아웃"
             >
               <LogOut size={13} strokeWidth={2.2} />
               <span className="hidden sm:inline">로그아웃</span>
             </button>
           ) : (
-            <div className="flex items-center gap-1 justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-2 sm:py-1.5 text-[10px] font-semibold bg-slate-50 text-slate-400 border border-slate-200 rounded-lg shrink-0" title="비로그인">
+            <div className="flex items-center gap-1 justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-2 sm:py-1.5 text-[10px] font-semibold bg-zinc-50 text-zinc-400 border border-zinc-200 rounded-lg shrink-0" title="비로그인">
               <Lock size={13} strokeWidth={2.2} />
             </div>
           )}
@@ -550,7 +550,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       </div>
 
       {/* ── Row 2 (하단): Desktop/태블릿 nav tabs · 2026-08-11 리디자인 · sm+ ── */}
-      <div className="hidden sm:block px-4 sm:px-5 md:px-6 pt-0.5 pb-1.5 border-t border-slate-100/60">
+      <div className="hidden sm:block px-4 sm:px-5 md:px-6 pt-0.5 pb-1.5 border-t border-zinc-100/60">
         <div ref={desktopContainerRef} className="flex items-center gap-0.5 min-w-0 relative">
           {/* 측정용 hidden 영역 · 실제 탭 폭 계산 */}
           <div
@@ -573,8 +573,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                 onClick={() => setDesktopOverflowOpen(v => !v)}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[15px] font-semibold transition-all duration-150 active:scale-95 cursor-pointer ${
                   desktopOverflowOpen
-                    ? "bg-slate-800 text-white shadow-md"
-                    : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                    ? "bg-zinc-800 text-white shadow-md"
+                    : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
                 }`}
                 title={`더보기 (${desktopOverflowTabs.length}개)`}
                 aria-label="더보기 메뉴"
@@ -584,7 +584,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                 <span className="text-[14px]">{desktopOverflowTabs.length}</span>
               </button>
               {desktopOverflowOpen && (
-                <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl shadow-[0_8px_32px_-4px_rgba(0,0,0,0.12),0_2px_8px_-2px_rgba(0,0,0,0.06)] border border-slate-100 py-1.5 min-w-[160px] z-50 max-h-[70vh] overflow-y-auto">
+                <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl shadow-[0_8px_32px_-4px_rgba(0,0,0,0.12),0_2px_8px_-2px_rgba(0,0,0,0.06)] border border-zinc-100 py-1.5 min-w-[160px] z-50 max-h-[70vh] overflow-y-auto">
                   {desktopOverflowTabs.map(tab => {
                     const Icon = tab.icon;
                     const c = TAB_COLOR_MAP[tab.color ?? "slate"];
@@ -603,7 +603,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                         className={`w-full flex items-center gap-2.5 px-3 py-2 text-[15px] font-semibold transition-all duration-100 rounded-lg mx-1 ${
                           isActive
                             ? `${c.activeBg} ${c.activeText} font-bold`
-                            : `${c.inactiveText} hover:bg-slate-50 hover:${c.inactiveHoverText.replace("hover:", "")} cursor-pointer`
+                            : `${c.inactiveText} hover:bg-zinc-50 hover:${c.inactiveHoverText.replace("hover:", "")} cursor-pointer`
                         }`}
                         style={{ width: "calc(100% - 8px)" }}
                       >
@@ -622,7 +622,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       {/* ── Mobile 전용 탭 행: 태블릿·PC 는 상단 탭 사용 (2026-07-16) ── */}
       {visibleTabs.length > 1 && (
         <div className="sm:hidden px-4 pb-2">
-          <div ref={mobileContainerRef} className="flex items-stretch gap-1 bg-slate-100/70 rounded-xl px-2 py-1 relative">
+          <div ref={mobileContainerRef} className="flex items-stretch gap-1 bg-zinc-100/70 rounded-xl px-2 py-1 relative">
             {/* 측정용 hidden 영역 · 실제 탭 폭 계산 */}
             <div
               ref={mobileMeasureRef}
@@ -644,8 +644,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                   onClick={() => setMobileOverflowOpen(v => !v)}
                   className={`min-w-[44px] h-full flex flex-col items-center justify-center gap-0.5 px-2 rounded-lg text-[10px] font-black transition active:scale-95 ${
                     mobileOverflowOpen
-                      ? "bg-slate-800 text-white shadow-md"
-                      : "text-slate-600 hover:bg-white"
+                      ? "bg-zinc-800 text-white shadow-md"
+                      : "text-zinc-600 hover:bg-white"
                   }`}
                   title={`더보기 (${mobileOverflowTabs.length}개)`}
                   aria-label="더보기 메뉴"
@@ -655,7 +655,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                   <span className="text-[9px]">더보기</span>
                 </button>
                 {mobileOverflowOpen && (
-                  <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-xl border border-slate-200 py-1 min-w-[160px] z-50 max-h-[70vh] overflow-y-auto">
+                  <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-xl border border-zinc-200 py-1 min-w-[160px] z-50 max-h-[70vh] overflow-y-auto">
                     {mobileOverflowTabs.map(tab => {
                       const Icon = tab.icon;
                       const c = TAB_COLOR_MAP[tab.color ?? "slate"];
@@ -674,7 +674,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                           className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-[13px] font-bold min-h-[44px] transition ${
                             isActive
                               ? `${c.activeBg} ${c.activeText}`
-                              : `${c.inactiveText} hover:bg-slate-50 cursor-pointer`
+                              : `${c.inactiveText} hover:bg-zinc-50 cursor-pointer`
                           }`}
                         >
                           <Icon size={15} weight="fill" />

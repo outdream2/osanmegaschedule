@@ -38,13 +38,13 @@ export const MobileOnlyGate: React.FC<MobileOnlyGateProps> = ({
   if (userLevel >= minLevel) return <>{children}</>;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-50 p-8">
       <div className="max-w-sm text-center space-y-3">
-        <div className="w-16 h-16 mx-auto rounded-full bg-slate-100 flex items-center justify-center">
-          <Monitor size={32} className="text-slate-400" />
+        <div className="w-16 h-16 mx-auto rounded-full bg-zinc-100 flex items-center justify-center">
+          <Monitor size={32} className="text-zinc-400" />
         </div>
-        <h1 className="text-lg font-bold text-slate-800">PC 전용 화면입니다</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-lg font-bold text-zinc-800">PC 전용 화면입니다</h1>
+        <p className="text-sm text-zinc-500">
           이 페이지는 데스크탑 브라우저에서 접근해주세요.
         </p>
       </div>

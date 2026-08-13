@@ -35,12 +35,12 @@ interface Props {
 
 export const SettingsPageShell: React.FC<Props> = ({
   activePage, authSession, onBack, onNavigate, onLogout,
-  icon: Icon, title, description, iconColor = "text-slate-500",
+  icon: Icon, title, description, iconColor = "text-zinc-500",
   rightSlot, maxWidth = "max-w-3xl",
   children,
 }) => {
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-zinc-50 flex flex-col">
       <AppNavHeader
         activePage={activePage}
         authSession={authSession}
@@ -52,13 +52,13 @@ export const SettingsPageShell: React.FC<Props> = ({
       <main className={`flex-1 ${maxWidth} mx-auto w-full px-4 py-5 flex flex-col gap-3`}>
         {/* 페이지 타이틀 · 아이콘 + 제목 + 설명 */}
         <div className="flex items-start gap-2.5 mb-1">
-          <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 shadow-sm flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-lg bg-white border border-zinc-200 shadow-sm flex items-center justify-center shrink-0">
             <Icon size={20} weight="duotone" className={iconColor} />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-bold text-slate-800 leading-tight">{title}</h1>
+            <h1 className="text-lg font-bold text-zinc-800 leading-tight">{title}</h1>
             {description && (
-              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{description}</p>
+              <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">{description}</p>
             )}
           </div>
         </div>

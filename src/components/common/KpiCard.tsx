@@ -21,7 +21,7 @@ const COLOR_MAP: Record<KpiColor, { icon: string; value: string; ring: string }>
   rose:    { icon: "text-rose-500",    value: "text-rose-700",    ring: "border-rose-100"    },
   emerald: { icon: "text-emerald-500", value: "text-emerald-700", ring: "border-emerald-100" },
   orange:  { icon: "text-orange-500",  value: "text-orange-700",  ring: "border-orange-100"  },
-  slate:   { icon: "text-slate-500",   value: "text-slate-900",   ring: "border-slate-200"   },
+  slate:   { icon: "text-zinc-500",   value: "text-zinc-900",   ring: "border-zinc-200"   },
 };
 
 type IconLike = React.ComponentType<{
@@ -75,7 +75,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
         {value}
       </div>
       {subtitle != null && (
-        <div className="text-[11px] font-semibold text-slate-500">{subtitle}</div>
+        <div className="text-[11px] font-semibold text-zinc-500">{subtitle}</div>
       )}
     </div>
   );

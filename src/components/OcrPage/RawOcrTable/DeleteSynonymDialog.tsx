@@ -14,14 +14,14 @@ export const DeleteSynonymDialog: React.FC<DeleteSynonymDialogProps> = ({
 }) => {
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-slate-100 space-y-4">
-        <p className="text-sm font-bold text-slate-800">동의어를 삭제하시겠습니까?</p>
-        <p className="text-xs text-slate-500 leading-relaxed">
+      <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-zinc-100 space-y-4">
+        <p className="text-sm font-bold text-zinc-800">동의어를 삭제하시겠습니까?</p>
+        <p className="text-xs text-zinc-500 leading-relaxed">
           <span className="line-through text-gray-400">{deleteSynConfirm.origName}</span>의 동의어 매핑을 삭제합니다.
         </p>
         <div className="flex gap-2 pt-1">
           <button type="button" onClick={() => setDeleteSynConfirm(null)}
-            className="flex-1 px-3 py-2 text-xs font-bold bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-600 cursor-pointer">아니오</button>
+            className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-lg text-zinc-600 cursor-pointer">아니오</button>
           <button type="button"
             onClick={async () => {
               const { ri, origName } = deleteSynConfirm;

@@ -70,12 +70,12 @@ const DeltaInput: React.FC<DeltaInputProps> = ({
   };
   const inc = () => { if (disabled) return; onChange(cur + 1); };
   return (
-    <div className={`inline-flex items-stretch w-full h-9 bg-white border border-slate-200 rounded-lg overflow-hidden transition ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
+    <div className={`inline-flex items-stretch w-full h-9 bg-white border border-zinc-200 rounded-lg overflow-hidden transition ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
       <button
         type="button"
         onClick={dec}
         disabled={disabled || cur <= 0}
-        className="w-7 shrink-0 text-slate-500 hover:bg-slate-100 hover:text-rose-600 active:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 text-[16px] font-black leading-none flex items-center justify-center cursor-pointer border-r border-slate-200"
+        className="w-7 shrink-0 text-zinc-500 hover:bg-zinc-100 hover:text-rose-600 active:bg-zinc-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-500 text-[16px] font-black leading-none flex items-center justify-center cursor-pointer border-r border-zinc-200"
         title="감소"
         tabIndex={-1}
       >−</button>
@@ -90,13 +90,13 @@ const DeltaInput: React.FC<DeltaInputProps> = ({
           onChange(n);
         }}
         placeholder="0"
-        className={`flex-1 min-w-0 h-full text-center px-1 bg-transparent border-0 text-[13px] font-black tabular-nums focus:outline-none disabled:text-slate-300 ${accent}`}
+        className={`flex-1 min-w-0 h-full text-center px-1 bg-transparent border-0 text-[13px] font-black tabular-nums focus:outline-none disabled:text-zinc-300 ${accent}`}
       />
       <button
         type="button"
         onClick={inc}
         disabled={disabled}
-        className="w-7 shrink-0 text-slate-500 hover:bg-slate-100 hover:text-emerald-600 active:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 text-[16px] font-black leading-none flex items-center justify-center cursor-pointer border-l border-slate-200"
+        className="w-7 shrink-0 text-zinc-500 hover:bg-zinc-100 hover:text-emerald-600 active:bg-zinc-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-500 text-[16px] font-black leading-none flex items-center justify-center cursor-pointer border-l border-zinc-200"
         title="증가"
         tabIndex={-1}
       >+</button>
@@ -116,8 +116,8 @@ const ZoneInput: React.FC<ZoneInputProps> = ({ value, placeholder = "-", accentC
     value={value ?? ""}
     onChange={e => onChange(e.target.value.trim() === "" ? null : e.target.value)}
     placeholder={placeholder}
-    className={`w-full h-5 text-center px-1 bg-transparent border-0 border-b border-dashed border-slate-200
-      text-[10px] font-bold tabular-nums outline-none transition placeholder:text-slate-300 ${accentClass}`}
+    className={`w-full h-5 text-center px-1 bg-transparent border-0 border-b border-dashed border-zinc-200
+      text-[10px] font-bold tabular-nums outline-none transition placeholder:text-zinc-300 ${accentClass}`}
     title="구역 편집"
   />
 );
@@ -142,7 +142,7 @@ const ZoneRow: React.FC<ZoneRowProps> = ({
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-1">
         <span className={`text-[10px] font-semibold ${accent} block`}>{label}</span>
-        <span className="text-[10px] text-slate-400 tabular-nums">현재 <span className="font-black text-slate-700">{current}</span></span>
+        <span className="text-[10px] text-zinc-400 tabular-nums">현재 <span className="font-black text-zinc-700">{current}</span></span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="flex-1">
@@ -163,7 +163,7 @@ const ZoneRow: React.FC<ZoneRowProps> = ({
         </button>
       </div>
       {d > 0 && (
-        <div className="text-[10px] text-slate-400 text-right tabular-nums">
+        <div className="text-[10px] text-zinc-400 text-right tabular-nums">
           저장 후: <span className="font-black text-violet-700">{current + d}</span>
         </div>
       )}
@@ -188,7 +188,7 @@ const StoreZoneRow: React.FC<StoreZoneRowProps> = ({
       <div className="flex items-center justify-between gap-2">
         <span className="text-[10px] font-bold text-emerald-700 shrink-0">{label}</span>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-slate-400 tabular-nums">현재 <span className="font-black text-slate-700">{current}</span></span>
+          <span className="text-[10px] text-zinc-400 tabular-nums">현재 <span className="font-black text-zinc-700">{current}</span></span>
           <div className="max-w-[80px]">
             <ZoneInput
               value={zoneLabel}
@@ -218,7 +218,7 @@ const StoreZoneRow: React.FC<StoreZoneRowProps> = ({
         </button>
       </div>
       {d > 0 && (
-        <div className="text-[10px] text-slate-400 text-right tabular-nums">
+        <div className="text-[10px] text-zinc-400 text-right tabular-nums">
           저장 후: <span className="font-black text-violet-700">{current + d}</span>
         </div>
       )}
@@ -293,13 +293,13 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
   return (
     <div className={pad}>
       {/* 상품 정보 헤더 */}
-      <div className="flex items-start gap-2.5 pb-2 border-b border-slate-100">
+      <div className="flex items-start gap-2.5 pb-2 border-b border-zinc-100">
         <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
           <Package size={13} className="text-violet-600" strokeWidth={2.2} />
         </div>
         <div className="min-w-0">
-          <div className="text-[12px] font-bold text-slate-800 leading-snug break-words">{productName || productCode}</div>
-          <div className="text-[10px] text-slate-400 font-mono mt-0.5">{productCode}</div>
+          <div className="text-[12px] font-bold text-zinc-800 leading-snug break-words">{productName || productCode}</div>
+          <div className="text-[10px] text-zinc-400 font-mono mt-0.5">{productCode}</div>
         </div>
       </div>
 

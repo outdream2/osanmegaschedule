@@ -295,10 +295,10 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
 
   const title = useMemo(() => (
     <span className="flex items-center gap-2">
-      <span className="text-slate-500 text-[12px] font-black uppercase tracking-wider">{tabLabel}</span>
-      <span className="text-slate-300">/</span>
-      <span className="text-slate-800 truncate">{categoryTitle}</span>
-      <span className="text-slate-400 text-[12px] font-bold">· 하위메뉴 설정</span>
+      <span className="text-zinc-500 text-[12px] font-black uppercase tracking-wider">{tabLabel}</span>
+      <span className="text-zinc-300">/</span>
+      <span className="text-zinc-800 truncate">{categoryTitle}</span>
+      <span className="text-zinc-400 text-[12px] font-bold">· 하위메뉴 설정</span>
     </span>
   ), [tabLabel, categoryTitle]);
 
@@ -327,7 +327,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
                 value={newTitle}
                 onChange={e => setNewTitle(e.target.value)}
                 placeholder="항목 이름 (예: 병용 금기 요약표)"
-                className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 focus:outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 transition placeholder:text-slate-400 placeholder:font-normal"
+                className="flex-1 bg-white border border-zinc-200 rounded-lg px-3 py-2 text-sm font-semibold text-zinc-800 focus:outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 transition placeholder:text-zinc-400 placeholder:font-normal"
                 maxLength={120}
                 required
               />
@@ -342,7 +342,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-sm font-semibold transition cursor-pointer whitespace-nowrap"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 text-sm font-semibold transition cursor-pointer whitespace-nowrap"
                   title="파일 선택 (PDF 권장 · 최대 20MB)"
                 >
                   <CloudUpload size={14} />
@@ -363,12 +363,12 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
             {newFile && (
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-emerald-200">
                 <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
-                <span className="text-xs font-bold text-slate-700 break-all flex-1">{newFile.name}</span>
-                <span className="text-[10px] text-slate-400 font-semibold tabular-nums shrink-0">{fmtBytes(newFile.size)}</span>
+                <span className="text-xs font-bold text-zinc-700 break-all flex-1">{newFile.name}</span>
+                <span className="text-[10px] text-zinc-400 font-semibold tabular-nums shrink-0">{fmtBytes(newFile.size)}</span>
                 <button
                   type="button"
                   onClick={() => { setNewFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
-                  className="shrink-0 text-slate-400 hover:text-rose-600 cursor-pointer"
+                  className="shrink-0 text-zinc-400 hover:text-rose-600 cursor-pointer"
                   title="파일 제거"
                 >
                   <X size={13} />
@@ -390,7 +390,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
               </div>
             )}
 
-            <div className="text-[11px] text-slate-500 leading-relaxed">
+            <div className="text-[11px] text-zinc-500 leading-relaxed">
               · 파일 없이 이름만 등록해도 됩니다 (이후 파일 교체는 삭제 후 재등록).<br />
               · PDF 권장 · 브라우저 내장 뷰어로 열립니다 · 이미지·Word 는 새 창.<br />
               · 최대 20MB · Supabase Storage 실패 시 로컬 저장 자동 폴백.
@@ -399,11 +399,11 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
         )}
 
         {/* ── 목록 ─────────────────────────────── */}
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <div className="px-3 py-2 border-b border-slate-100 bg-slate-50 flex items-center gap-1.5">
-            <FileText size={13} className="text-slate-400" />
-            <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider">등록된 하위메뉴</span>
-            <span className="ml-auto text-[10px] font-bold text-slate-400 tabular-nums">{items.length}건</span>
+        <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
+          <div className="px-3 py-2 border-b border-zinc-100 bg-zinc-50 flex items-center gap-1.5">
+            <FileText size={13} className="text-zinc-400" />
+            <span className="text-[11px] font-black text-zinc-500 uppercase tracking-wider">등록된 하위메뉴</span>
+            <span className="ml-auto text-[10px] font-bold text-zinc-400 tabular-nums">{items.length}건</span>
           </div>
 
           {loadError && (
@@ -416,22 +416,22 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
           {loading ? (
             <div className="py-10 flex flex-col items-center gap-2">
               <Loader2 size={18} className="animate-spin text-sky-500" />
-              <span className="text-xs text-slate-400 font-bold">불러오는 중...</span>
+              <span className="text-xs text-zinc-400 font-bold">불러오는 중...</span>
             </div>
           ) : items.length === 0 ? (
             <div className="py-10 flex flex-col items-center gap-2 text-center px-4">
-              <FileText size={24} className="text-slate-300" />
-              <p className="text-sm font-bold text-slate-500">등록된 하위메뉴가 없습니다</p>
-              <p className="text-xs text-slate-400">
+              <FileText size={24} className="text-zinc-300" />
+              <p className="text-sm font-bold text-zinc-500">등록된 하위메뉴가 없습니다</p>
+              <p className="text-xs text-zinc-400">
                 {isAdmin ? "위 폼에서 첫 항목을 추가하세요" : "관리자가 등록하면 표시됩니다"}
               </p>
             </div>
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-zinc-100">
               {items.map((row, idx) => {
                 const isEdit = editingId === row.id;
                 return (
-                  <li key={row.id} className="px-3 py-2 flex items-center gap-2 hover:bg-slate-50/60">
+                  <li key={row.id} className="px-3 py-2 flex items-center gap-2 hover:bg-zinc-50/60">
                     {/* 순서 · 이동 버튼 */}
                     {isAdmin && (
                       <div className="flex flex-col gap-0.5 shrink-0">
@@ -439,7 +439,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
                           type="button"
                           onClick={() => moveItem(row, -1)}
                           disabled={idx === 0 || savingId === row.id}
-                          className="w-5 h-5 rounded flex items-center justify-center bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer text-slate-500"
+                          className="w-5 h-5 rounded flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer text-zinc-500"
                           title="위로"
                         >
                           <ArrowUp size={10} />
@@ -448,7 +448,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
                           type="button"
                           onClick={() => moveItem(row, 1)}
                           disabled={idx === items.length - 1 || savingId === row.id}
-                          className="w-5 h-5 rounded flex items-center justify-center bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer text-slate-500"
+                          className="w-5 h-5 rounded flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer text-zinc-500"
                           title="아래로"
                         >
                           <ArrowDown size={10} />
@@ -463,7 +463,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
                           type="text"
                           value={editingTitle}
                           onChange={e => setEditingTitle(e.target.value)}
-                          className="w-full bg-white border border-sky-300 rounded-md px-2 py-1 text-sm font-semibold text-slate-800 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                          className="w-full bg-white border border-sky-300 rounded-md px-2 py-1 text-sm font-semibold text-zinc-800 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
                           maxLength={120}
                           autoFocus
                           onKeyDown={e => {
@@ -473,10 +473,10 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
                         />
                       ) : (
                         <>
-                          <div className="text-sm font-bold text-slate-800 break-all leading-snug">{row.title}</div>
-                          <div className="text-[11px] text-slate-400 mt-0.5 truncate">
+                          <div className="text-sm font-bold text-zinc-800 break-all leading-snug">{row.title}</div>
+                          <div className="text-[11px] text-zinc-400 mt-0.5 truncate">
                             {row.file_name
-                              ? <>파일: <span className="text-slate-500 font-semibold">{row.file_name}</span> · {fmtBytes(row.file_size)}</>
+                              ? <>파일: <span className="text-zinc-500 font-semibold">{row.file_name}</span> · {fmtBytes(row.file_size)}</>
                               : <span className="italic">파일 없음 (이름만)</span>}
                           </div>
                         </>
@@ -500,7 +500,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
                             <button
                               type="button"
                               onClick={cancelEdit}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold cursor-pointer"
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-zinc-100 hover:bg-zinc-200 text-zinc-600 text-xs font-semibold cursor-pointer"
                               title="취소 (ESC)"
                             >
                               <X size={11} />
@@ -511,7 +511,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
                             <button
                               type="button"
                               onClick={() => startEdit(row)}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold cursor-pointer"
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-600 text-xs font-semibold cursor-pointer"
                               title="이름 변경"
                             >
                               <Pencil size={11} />

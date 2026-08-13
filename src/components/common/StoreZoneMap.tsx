@@ -71,7 +71,7 @@ function rankBadgeClass(rank: number): string {
     return "bg-emerald-500 text-white border-green-700 shadow-md";
   if (rank <= 8)
     return "bg-violet-500 text-white border-purple-700 shadow-md";
-  return "bg-slate-400 text-white border-slate-600 shadow-sm";
+  return "bg-zinc-400 text-white border-zinc-600 shadow-sm";
 }
 
 const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
@@ -217,13 +217,13 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
         )}
         <Tag
           {...extra}
-          className={`w-full text-[10px] font-bold text-slate-700 bg-white border border-slate-300 rounded px-0.5 py-1 leading-tight text-center ${centerMin} flex items-center justify-center overflow-hidden ${cellInteractive}`}
+          className={`w-full text-[10px] font-bold text-zinc-700 bg-white border border-zinc-300 rounded px-0.5 py-1 leading-tight text-center ${centerMin} flex items-center justify-center overflow-hidden ${cellInteractive}`}
           title={`${STORE_AISLE_CENTER} · ${centerLabel}${count > 0 ? ` · ${count}개 상품` : ""}`}
         >
           <span className="line-clamp-6">{centerLabel}</span>
         </Tag>
         <div className="w-full flex items-center justify-center gap-0.5 flex-wrap mt-0.5">
-          <span className="text-[10px] font-black text-white bg-slate-600 rounded px-1 leading-none py-0.5">{getZoneLabel(STORE_AISLE_CENTER)}</span>
+          <span className="text-[10px] font-black text-white bg-zinc-600 rounded px-1 leading-none py-0.5">{getZoneLabel(STORE_AISLE_CENTER)}</span>
           {count > 0 && (
             <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 border border-emerald-300 rounded px-1 leading-none tabular-nums">{count}</span>
           )}
@@ -246,14 +246,14 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
     <div className="sm:hidden">
       <table className="w-full text-left border-collapse text-[11px]">
         <thead>
-          <tr className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wide">
+          <tr className="bg-zinc-50 text-zinc-500 font-bold uppercase tracking-wide">
             <th className="px-2 py-1.5 w-[20%]">번호</th>
             <th className="px-2 py-1.5 w-[35%]">이름</th>
             <th className="px-2 py-1.5 w-[25%]">담당자</th>
             <th className="px-2 py-1.5 w-[20%] text-right">상황</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-zinc-100">
           {allZoneIds.map(zoneId => {
             const numPart = parseInt(zoneId, 10);
             const zd = ZONE_DEFS.find(z => z.num === numPart);
@@ -265,25 +265,25 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
             return (
               <tr
                 key={zoneId}
-                className={`hover:bg-slate-50/60 transition ${onZoneClick ? "cursor-pointer" : ""}`}
+                className={`hover:bg-zinc-50/60 transition ${onZoneClick ? "cursor-pointer" : ""}`}
                 onClick={onZoneClick ? () => onZoneClick(zoneId) : undefined}
               >
                 <td className="px-2 py-1.5 align-middle">
-                  <span className="font-black text-slate-700 tabular-nums">{label}</span>
+                  <span className="font-black text-zinc-700 tabular-nums">{label}</span>
                 </td>
                 <td className="px-2 py-1.5 align-middle">
-                  <span className="text-slate-600 leading-tight break-words whitespace-normal">{sub || "-"}</span>
+                  <span className="text-zinc-600 leading-tight break-words whitespace-normal">{sub || "-"}</span>
                   {count > 0 && (
                     <span className="ml-1 text-[10px] text-emerald-600 tabular-nums font-semibold">({count})</span>
                   )}
                 </td>
                 <td className="px-2 py-1.5 align-middle">
                   {staff ? (
-                    <span className="text-slate-600 inline-flex items-center gap-0.5">
-                      <User size={9} className="text-slate-400" />{staff}
+                    <span className="text-zinc-600 inline-flex items-center gap-0.5">
+                      <User size={9} className="text-zinc-400" />{staff}
                     </span>
                   ) : (
-                    <span className="text-slate-300">-</span>
+                    <span className="text-zinc-300">-</span>
                   )}
                 </td>
                 <td className="px-2 py-1.5 align-middle text-right">
@@ -292,7 +292,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
                       <MapPin size={8} /> 대기 {pending}
                     </span>
                   ) : (
-                    <span className="text-[10px] text-slate-300">-</span>
+                    <span className="text-[10px] text-zinc-300">-</span>
                   )}
                 </td>
               </tr>
@@ -318,7 +318,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
         {/* 중앙 진열대 · 22 + 8B/8A→1B/1A (17셀) */}
         <div>
           <div className="text-[8px] font-black text-blue-600 uppercase tracking-wider mb-0.5 px-0.5">중앙 진열대 (22 · 8B|8A → 1B|1A · 17구역)</div>
-          <div className="flex items-stretch justify-start gap-1.5 bg-slate-100 border border-slate-200 py-1.5 px-1.5 rounded-lg">
+          <div className="flex items-stretch justify-start gap-1.5 bg-zinc-100 border border-zinc-200 py-1.5 px-1.5 rounded-lg">
             {centerCell()}
             {STORE_AISLE_PAIRS.map(n => pairCell(n))}
           </div>

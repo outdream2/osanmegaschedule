@@ -31,7 +31,7 @@ export const VendorInfoModal: React.FC<VendorInfoModalProps> = ({ vendor, onClos
 
   return (
     <div
-      className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4"
+      className="fixed inset-0 z-[100] bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4"
       onClick={onClose}
     >
       <div

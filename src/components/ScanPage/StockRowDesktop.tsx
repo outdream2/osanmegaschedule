@@ -27,18 +27,18 @@ const NumberInput: React.FC<NumberInputProps> = ({
   const dec = () => { if (disabled) return; const n = Math.max(0, cur - 1); onChange(n === 0 && value === "" ? "" : n); };
   const inc = () => { if (disabled) return; onChange(cur + 1); };
   return (
-    <div className={`inline-flex items-stretch w-full h-11 bg-white border-2 border-slate-200 rounded-xl overflow-hidden transition-all focus-within:border-teal-400 focus-within:shadow-[0_0_0_3px_rgba(20,184,166,0.12)] ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
+    <div className={`inline-flex items-stretch w-full h-11 bg-white border-2 border-zinc-200 rounded-xl overflow-hidden transition-all focus-within:border-teal-400 focus-within:shadow-[0_0_0_3px_rgba(20,184,166,0.12)] ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
       <button type="button" onClick={dec} disabled={disabled || cur <= 0}
-        className="w-9 shrink-0 text-slate-400 hover:bg-slate-100 hover:text-rose-600 active:bg-slate-200 disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-slate-400 text-[18px] font-black leading-none flex items-center justify-center cursor-pointer border-r border-slate-200"
+        className="w-9 shrink-0 text-zinc-400 hover:bg-zinc-100 hover:text-rose-600 active:bg-zinc-200 disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-zinc-400 text-[18px] font-black leading-none flex items-center justify-center cursor-pointer border-r border-zinc-200"
         title="감소" tabIndex={-1}>−</button>
       <input
         type="number" inputMode="numeric" value={value} disabled={disabled}
         onChange={e => onChange(e.target.value === "" ? "" : Number(e.target.value))}
         placeholder={placeholder}
-        className={`flex-1 min-w-0 h-full text-center px-0.5 bg-transparent border-0 text-[15px] font-black tabular-nums text-slate-900 focus:outline-none disabled:text-slate-300 placeholder:text-slate-300 ${accent}`}
+        className={`flex-1 min-w-0 h-full text-center px-0.5 bg-transparent border-0 text-[15px] font-black tabular-nums text-zinc-900 focus:outline-none disabled:text-zinc-300 placeholder:text-zinc-300 ${accent}`}
       />
       <button type="button" onClick={inc} disabled={disabled}
-        className="w-9 shrink-0 text-slate-400 hover:bg-slate-100 hover:text-emerald-600 active:bg-slate-200 disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-slate-400 text-[18px] font-black leading-none flex items-center justify-center cursor-pointer border-l border-slate-200"
+        className="w-9 shrink-0 text-zinc-400 hover:bg-zinc-100 hover:text-emerald-600 active:bg-zinc-200 disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-zinc-400 text-[18px] font-black leading-none flex items-center justify-center cursor-pointer border-l border-zinc-200"
         title="증가" tabIndex={-1}>+</button>
     </div>
   );
@@ -57,8 +57,8 @@ const ZoneInput: React.FC<ZoneInputProps> = ({ value, placeholder = "-", accentC
     value={value ?? ""}
     onChange={e => onChange(e.target.value.trim() === "" ? null : e.target.value)}
     placeholder={placeholder}
-    className={`w-full h-7 text-center px-1.5 rounded-md bg-slate-50 border border-dashed border-slate-200
-      text-[11px] font-bold tabular-nums outline-none transition placeholder:text-slate-300
+    className={`w-full h-7 text-center px-1.5 rounded-md bg-zinc-50 border border-dashed border-zinc-200
+      text-[11px] font-bold tabular-nums outline-none transition placeholder:text-zinc-300
       focus:bg-white focus:border-solid ${accentClass}`}
     title="구역 편집"
   />
@@ -83,9 +83,9 @@ const SlotCell: React.FC<SlotCellProps> = ({
   return (
     <div className="flex flex-col gap-0.5">
       {/* 층1: 기존값 · 회색 읽기전용 */}
-      <div className="flex items-center justify-center h-6 rounded-md bg-slate-50 border border-slate-100">
-        <span className="text-[11px] text-slate-400 font-semibold tabular-nums">
-          {prev != null ? `현재 ${prev}` : <span className="text-slate-300">-</span>}
+      <div className="flex items-center justify-center h-6 rounded-md bg-zinc-50 border border-zinc-100">
+        <span className="text-[11px] text-zinc-400 font-semibold tabular-nums">
+          {prev != null ? `현재 ${prev}` : <span className="text-zinc-300">-</span>}
         </span>
       </div>
       {/* 층2: 추가 입력창 */}
@@ -97,10 +97,10 @@ const SlotCell: React.FC<SlotCellProps> = ({
       />
       {/* 층3: 합계 · 자동계산 */}
       <div className={`flex items-center justify-center h-6 rounded-md border ${
-        hasAdd ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100"
+        hasAdd ? "bg-emerald-50 border-emerald-200" : "bg-zinc-50 border-zinc-100"
       }`}>
         <span className={`text-[12px] font-black tabular-nums ${
-          hasAdd ? "text-emerald-700" : total > 0 ? "text-slate-600" : "text-slate-300"
+          hasAdd ? "text-emerald-700" : total > 0 ? "text-zinc-600" : "text-zinc-300"
         }`}>
           = {total}
         </span>
@@ -139,17 +139,17 @@ export const StockRowDesktop: React.FC<StockRowDesktopProps> = React.memo(({
   const rowBg = isRecent
     ? "bg-teal-50/60"
     : idx % 2 === 0
-      ? "bg-white hover:bg-slate-50/50"
-      : "bg-slate-50/30 hover:bg-slate-50/60";
+      ? "bg-white hover:bg-zinc-50/50"
+      : "bg-zinc-50/30 hover:bg-zinc-50/60";
   const accentColor = isRecent ? "border-l-teal-400" : "border-l-transparent";
 
   return (
-    <tr className={`border-l-[3px] border-b border-slate-100/70 transition-colors duration-100 ${accentColor} ${rowBg}`}>
+    <tr className={`border-l-[3px] border-b border-zinc-100/70 transition-colors duration-100 ${accentColor} ${rowBg}`}>
 
       {/* 상품명 · 규격 · 코드 */}
       <td className="px-2 py-2 align-middle min-w-[140px]">
         <div className="flex items-start gap-1.5 flex-wrap">
-          <p className="text-[12px] sm:text-[13px] font-black text-slate-800 break-words whitespace-normal leading-snug">
+          <p className="text-[12px] sm:text-[13px] font-black text-zinc-800 break-words whitespace-normal leading-snug">
             {row.product.name}
           </p>
           {/* A3 · 이번 세션 추가 수량 뱃지 */}
@@ -163,14 +163,14 @@ export const StockRowDesktop: React.FC<StockRowDesktopProps> = React.memo(({
         <div className="flex items-center gap-1 mt-0.5 flex-wrap">
           {(row.product as any).spec && (
             <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold
-              text-slate-500 bg-slate-100/80 rounded px-1.5 py-0.5">
-              <Box size={8} className="text-slate-400" />
+              text-zinc-500 bg-zinc-100/80 rounded px-1.5 py-0.5">
+              <Box size={8} className="text-zinc-400" />
               {(row.product as any).spec}
             </span>
           )}
           <span className="inline-flex items-center gap-0.5 text-[10px] font-mono
-            text-slate-400 bg-slate-100/60 rounded px-1.5 py-0.5">
-            <Hash size={8} className="text-slate-300" />
+            text-zinc-400 bg-zinc-100/60 rounded px-1.5 py-0.5">
+            <Hash size={8} className="text-zinc-300" />
             {row.code}
           </span>
         </div>
@@ -247,7 +247,7 @@ export const StockRowDesktop: React.FC<StockRowDesktopProps> = React.memo(({
             {rowTotal}
           </span>
         ) : (
-          <span className="text-[11px] text-slate-300">-</span>
+          <span className="text-[11px] text-zinc-300">-</span>
         )}
       </td>
 

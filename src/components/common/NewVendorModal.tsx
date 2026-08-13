@@ -66,26 +66,26 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[9998] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[9998] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-zinc-900/50 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full sm:max-w-md max-h-[90vh] bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col"
+        className="w-full sm:max-w-md max-h-[90vh] bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl border border-zinc-200 overflow-hidden flex flex-col"
       >
         {/* 헤더 */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 bg-sky-50/60">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-100 bg-sky-50/60">
           <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center">
             <Building2 size={15} className="text-sky-600" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-[10px] font-bold text-sky-600 uppercase tracking-wider">신규 공급사</div>
-            <div className="text-[14px] font-black text-slate-800">공급사 등록</div>
+            <div className="text-[14px] font-black text-zinc-800">공급사 등록</div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition cursor-pointer"
             aria-label="닫기"
             title="닫기"
           >
@@ -96,7 +96,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
         {/* 폼 */}
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
+            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">
               회사명 <span className="text-rose-500">*</span>
             </span>
             <input
@@ -105,18 +105,18 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
               placeholder="예: (주)메가헬스케어"
-              className="h-9 px-3 text-[13px] border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition"
+              className="h-9 px-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition"
             />
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">카테고리</span>
+            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">카테고리</span>
             <div className="flex flex-wrap gap-1.5">
               <button
                 type="button"
                 onClick={() => setCategory("")}
                 className={`h-8 px-3 rounded-md text-[11px] font-black transition cursor-pointer ${
-                  category === "" ? "bg-slate-700 text-white shadow-sm" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                  category === "" ? "bg-zinc-700 text-white shadow-sm" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
                 }`}
               >
                 미분류
@@ -132,8 +132,8 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
                       : c === "선결제"  ? "bg-rose-500 text-white shadow-sm"
                       : c === "60회전" ? "bg-emerald-500 text-white shadow-sm"
                       : c === "90회전" ? "bg-teal-500 text-white shadow-sm"
-                      :                    "bg-slate-500 text-white shadow-sm"
-                      : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                      :                    "bg-zinc-500 text-white shadow-sm"
+                      : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
                   }`}
                 >
                   {c}
@@ -144,57 +144,57 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
 
           <div className="grid grid-cols-2 gap-3">
             <label className="flex flex-col gap-1">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">담당자</span>
+              <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">담당자</span>
               <input
                 type="text"
                 value={contactName}
                 onChange={(e) => setContactName(e.target.value)}
                 placeholder="이름"
-                className="h-9 px-3 text-[13px] border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition"
+                className="h-9 px-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition"
               />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">전화</span>
+              <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">전화</span>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="010-0000-0000"
-                className="h-9 px-3 text-[13px] border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition tabular-nums"
+                className="h-9 px-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition tabular-nums"
               />
             </label>
           </div>
 
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">이메일</span>
+            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">이메일</span>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="email@example.com"
-              className="h-9 px-3 text-[13px] border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition"
+              className="h-9 px-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition"
             />
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">사업자번호</span>
+            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">사업자번호</span>
             <input
               type="text"
               value={businessNumber}
               onChange={(e) => setBusinessNumber(e.target.value)}
               placeholder="000-00-00000"
-              className="h-9 px-3 text-[13px] border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition tabular-nums"
+              className="h-9 px-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition tabular-nums"
             />
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">비고</span>
+            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">비고</span>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="추가 정보"
               rows={2}
-              className="px-3 py-2 text-[13px] border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition resize-none"
+              className="px-3 py-2 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition resize-none"
             />
           </label>
 
@@ -206,11 +206,11 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
         </div>
 
         {/* 액션 */}
-        <div className="flex items-center gap-2 px-4 py-3 border-t border-slate-100 bg-slate-50/60">
+        <div className="flex items-center gap-2 px-4 py-3 border-t border-zinc-100 bg-zinc-50/60">
           <button
             type="button"
             onClick={onClose}
-            className="h-9 px-4 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-[12px] font-bold transition cursor-pointer"
+            className="h-9 px-4 rounded-lg border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 text-[12px] font-bold transition cursor-pointer"
           >
             취소
           </button>

@@ -104,20 +104,20 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
   const bankbookUrl = localEmployee.bankbook_image_url;
   const hasBankbook = !!bankbookUrl;
 
-  const emptyCls = "px-2 py-1.5 text-[12px] font-semibold bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700 rounded-lg inline-flex items-center justify-center gap-1 border border-dashed border-slate-300 cursor-pointer transition disabled:opacity-60 disabled:cursor-wait";
+  const emptyCls = "px-2 py-1.5 text-[12px] font-semibold bg-zinc-50 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 rounded-lg inline-flex items-center justify-center gap-1 border border-dashed border-zinc-300 cursor-pointer transition disabled:opacity-60 disabled:cursor-wait";
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 space-y-3 shadow-sm">
+    <div className="bg-white border border-zinc-200 rounded-xl px-4 py-3 space-y-3 shadow-sm">
       {/* 이름 헤더 + [수정] 버튼 */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="min-w-0">
           <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="text-[18px] font-black text-slate-900 leading-tight">{localEmployee.name}</span>
+            <span className="text-[18px] font-black text-zinc-900 leading-tight">{localEmployee.name}</span>
             {localEmployee.employee_number && (
-              <span className="text-[11px] font-bold text-slate-400 tabular-nums">사번 {localEmployee.employee_number}</span>
+              <span className="text-[11px] font-bold text-zinc-400 tabular-nums">사번 {localEmployee.employee_number}</span>
             )}
           </div>
-          <div className="text-[12px] text-slate-500 font-semibold mt-0.5">
+          <div className="text-[12px] text-zinc-500 font-semibold mt-0.5">
             {[localEmployee.position, localEmployee.rank, localEmployee.employmentType].filter(Boolean).join(" · ")}
           </div>
         </div>
@@ -134,43 +134,43 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
 
       {/* 근로 조건 · 최신 계약서 (grid 아래 인라인 · Q2 A) */}
       {latestContract && (
-        <div className="flex items-baseline gap-3 pt-2 border-t border-slate-100 flex-wrap text-[12px]">
+        <div className="flex items-baseline gap-3 pt-2 border-t border-zinc-100 flex-wrap text-[12px]">
           <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wide">근로 조건</span>
           {latestContract.working_hours && (
-            <span className="text-slate-700"><span className="text-slate-400 font-semibold">근무</span> <span className="font-bold tabular-nums">{latestContract.working_hours}</span></span>
+            <span className="text-zinc-700"><span className="text-zinc-400 font-semibold">근무</span> <span className="font-bold tabular-nums">{latestContract.working_hours}</span></span>
           )}
           {latestContract.annual_leave_days != null && (
-            <span className="text-slate-700"><span className="text-slate-400 font-semibold">연차</span> <span className="font-bold tabular-nums">{latestContract.annual_leave_days}일</span></span>
+            <span className="text-zinc-700"><span className="text-zinc-400 font-semibold">연차</span> <span className="font-bold tabular-nums">{latestContract.annual_leave_days}일</span></span>
           )}
           {latestContract.probation_end_date && (
-            <span className="text-slate-700"><span className="text-slate-400 font-semibold">수습</span> <span className="font-bold tabular-nums">~{latestContract.probation_end_date}</span></span>
+            <span className="text-zinc-700"><span className="text-zinc-400 font-semibold">수습</span> <span className="font-bold tabular-nums">~{latestContract.probation_end_date}</span></span>
           )}
           {latestContract.base_wage_type && latestContract.base_wage_amount != null && (
-            <span className="text-slate-700"><span className="text-slate-400 font-semibold">{latestContract.base_wage_type}</span> <span className="font-bold tabular-nums">{latestContract.base_wage_amount.toLocaleString()}원</span></span>
+            <span className="text-zinc-700"><span className="text-zinc-400 font-semibold">{latestContract.base_wage_type}</span> <span className="font-bold tabular-nums">{latestContract.base_wage_amount.toLocaleString()}원</span></span>
           )}
           {(latestContract.start_date || latestContract.end_date) && (
-            <span className="text-slate-700"><span className="text-slate-400 font-semibold">계약</span> <span className="font-bold tabular-nums">{latestContract.start_date ?? "?"} ~ {latestContract.end_date ?? "무기한"}</span></span>
+            <span className="text-zinc-700"><span className="text-zinc-400 font-semibold">계약</span> <span className="font-bold tabular-nums">{latestContract.start_date ?? "?"} ~ {latestContract.end_date ?? "무기한"}</span></span>
           )}
         </div>
       )}
 
       {/* 정보 grid · 성별·입사일·근무지·연차 (한줄) · 전화 (전체 폭) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 pt-2 border-t border-slate-100">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 pt-2 border-t border-zinc-100">
         <div className="flex flex-col">
-          <span className="text-[11px] font-semibold text-slate-400">성별</span>
-          <span className="text-[13px] font-bold text-slate-700">{localEmployee.gender ?? "—"}</span>
+          <span className="text-[11px] font-semibold text-zinc-400">성별</span>
+          <span className="text-[13px] font-bold text-zinc-700">{localEmployee.gender ?? "—"}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[11px] font-semibold text-slate-400">입사일</span>
-          <span className="text-[13px] font-bold text-slate-700 tabular-nums">{localEmployee.hireDate || "—"}</span>
+          <span className="text-[11px] font-semibold text-zinc-400">입사일</span>
+          <span className="text-[13px] font-bold text-zinc-700 tabular-nums">{localEmployee.hireDate || "—"}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[11px] font-semibold text-slate-400">근무지</span>
-          <span className="text-[13px] font-bold text-slate-700">{localEmployee.workplace}</span>
+          <span className="text-[11px] font-semibold text-zinc-400">근무지</span>
+          <span className="text-[13px] font-bold text-zinc-700">{localEmployee.workplace}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[11px] font-semibold text-slate-400">연차</span>
-          <span className="text-[13px] font-bold text-slate-700">
+          <span className="text-[11px] font-semibold text-zinc-400">연차</span>
+          <span className="text-[13px] font-bold text-zinc-700">
             {localEmployee.annual_leave_days != null ? `${localEmployee.annual_leave_days}일` : "—"}
           </span>
         </div>
@@ -179,13 +179,13 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
           <span className="text-[14px] font-black text-blue-700 tabular-nums">
             {localEmployee.phone
               ? localEmployee.phone.replace(/^(\d{3})(\d{3,4})(\d{4})$/, "$1-$2-$3")
-              : <span className="text-slate-300 font-normal">미등록</span>}
+              : <span className="text-zinc-300 font-normal">미등록</span>}
           </span>
         </div>
       </div>
 
       {/* 첨부 파일 · 이력서·근계·통장사본 · 3슬롯 · 미등록 시 클릭 업로드 */}
-      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
+      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-zinc-100">
         <input ref={resumeFileRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleResumeUpload(f); e.target.value = ""; }} />
         <input ref={contractFileRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleContractUpload(f); e.target.value = ""; }} />
         <input ref={bankbookFileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleBankbookUpload(f); e.target.value = ""; }} />
@@ -256,9 +256,9 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
 
       {/* 비고 (있을 때만) */}
       {localEmployee.description && (
-        <div className="flex items-start gap-2 pt-2 border-t border-slate-100">
-          <span className="text-[11px] font-semibold text-slate-400 shrink-0 mt-0.5">비고</span>
-          <span className="text-[13px] text-slate-700 leading-snug">{localEmployee.description}</span>
+        <div className="flex items-start gap-2 pt-2 border-t border-zinc-100">
+          <span className="text-[11px] font-semibold text-zinc-400 shrink-0 mt-0.5">비고</span>
+          <span className="text-[13px] text-zinc-700 leading-snug">{localEmployee.description}</span>
         </div>
       )}
 
@@ -266,8 +266,8 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
       {contractModalOpen && localEmployee.contract_file_url && (
         <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/75 p-4">
           <div className="relative w-full max-w-3xl bg-white rounded-2xl overflow-hidden flex flex-col shadow-2xl" style={{ height: "85vh" }}>
-            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 shrink-0">
-              <span className="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-100 shrink-0">
+              <span className="text-sm font-bold text-zinc-900 flex items-center gap-2">
                 <FileText size={15} className="text-emerald-600" /> 근로계약서 — {localEmployee.name}
               </span>
               <div className="flex items-center gap-2">
@@ -275,20 +275,20 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
                   href={localEmployee.contract_file_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition"
+                  className="px-3 py-1.5 text-xs font-semibold bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg transition"
                 >
                   새 탭에서 열기
                 </a>
                 <button
                   type="button"
                   onClick={() => setContractModalOpen(false)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                  className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition cursor-pointer"
                 >
                   <X size={16} />
                 </button>
               </div>
             </div>
-            <div className="flex-1 overflow-hidden bg-slate-100">
+            <div className="flex-1 overflow-hidden bg-zinc-100">
               {/\.(pdf)$/i.test(localEmployee.contract_file_url) ? (
                 <iframe
                   src={localEmployee.contract_file_url}

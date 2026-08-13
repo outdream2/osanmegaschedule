@@ -49,7 +49,7 @@ interface ArrivalItem {
 }
 
 const STATUS_META: Record<ItemStatus, { label: string; color: string; bg: string; border: string; icon: React.ReactNode }> = {
-  pending:  { label: "미확인",     color: "text-slate-500",   bg: "bg-slate-100",   border: "border-slate-300",   icon: <ClipboardCheck size={12} /> },
+  pending:  { label: "미확인",     color: "text-zinc-500",   bg: "bg-zinc-100",   border: "border-zinc-300",   icon: <ClipboardCheck size={12} /> },
   match:    { label: "수량일치",   color: "text-emerald-700", bg: "bg-emerald-100", border: "border-emerald-400", icon: <CheckCircle2 size={12} /> },
   mismatch: { label: "수량불일치", color: "text-rose-700",    bg: "bg-rose-100",    border: "border-rose-400",    icon: <XCircle size={12} /> },
 };
@@ -63,7 +63,7 @@ const Toast: React.FC<ToastProps> = ({ message }) => (
     role="status"
     aria-live="polite"
     className="fixed top-4 right-4 z-[9999] flex items-center gap-2.5 px-4 py-3 rounded-xl
-      bg-slate-900/95 backdrop-blur-sm text-white text-xs font-bold
+      bg-zinc-900/95 backdrop-blur-sm text-white text-xs font-bold
       shadow-[0_8px_32px_rgba(0,0,0,0.32)] border border-white/10
       animate-in slide-in-from-top-2 fade-in duration-200"
   >
@@ -79,7 +79,7 @@ interface SummaryPillProps { label: string; value: number; valueClass: string; a
 const SummaryPill: React.FC<SummaryPillProps> = ({ label, value, valueClass, accent }) => (
   <div className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl transition ${accent ?? ""}`}>
     <span className={`text-[16px] sm:text-[18px] font-black tabular-nums leading-none ${valueClass}`}>{value}</span>
-    <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 leading-none">{label}</span>
+    <span className="text-[10px] sm:text-[11px] font-semibold text-zinc-400 leading-none">{label}</span>
   </div>
 );
 
@@ -87,7 +87,7 @@ const SummaryPill: React.FC<SummaryPillProps> = ({ label, value, valueClass, acc
 // SortIcon
 // ─────────────────────────────────────────────────────────────
 const SortIcon: React.FC<{ active: boolean; dir: SortDir }> = ({ active, dir }) => {
-  if (!active) return <ArrowUpDown size={11} className="text-slate-300 ml-0.5 inline" />;
+  if (!active) return <ArrowUpDown size={11} className="text-zinc-300 ml-0.5 inline" />;
   return dir === "asc"
     ? <ArrowUp size={11} className="text-sky-500 ml-0.5 inline" />
     : <ArrowDown size={11} className="text-sky-500 ml-0.5 inline" />;
@@ -325,8 +325,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
               <button
                 onClick={resetAll}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
-                  text-slate-500 hover:text-slate-800 bg-white border border-slate-200
-                  hover:bg-slate-50 hover:border-slate-300 shadow-sm
+                  text-zinc-500 hover:text-zinc-800 bg-white border border-zinc-200
+                  hover:bg-zinc-50 hover:border-zinc-300 shadow-sm
                   transition-all duration-150 cursor-pointer"
               >
                 <RotateCcw size={12} />
@@ -350,21 +350,21 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       )}
 
       {/* ── Page header strip ── */}
-      <div className="bg-white border-b border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      <div className="bg-white border-b border-zinc-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3">
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-sky-500
             flex items-center justify-center shadow-sm shrink-0">
             <PackagePlus size={16} className="text-white" />
           </div>
           <div>
-            <h1 className="text-[13px] sm:text-[14px] font-black text-slate-900 leading-none">상품 입고 검수</h1>
-            <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 leading-none">
+            <h1 className="text-[13px] sm:text-[14px] font-black text-zinc-900 leading-none">상품 입고 검수</h1>
+            <p className="text-[11px] sm:text-xs text-zinc-400 mt-0.5 leading-none">
               거래명세표와 실제 입고물품·수량 일치 확인
             </p>
           </div>
           {arrivalTab === "input" && counts.total > 0 && (
             <div className="ml-auto flex items-center gap-2">
-              <span className="text-[11px] sm:text-xs font-bold text-slate-400">
+              <span className="text-[11px] sm:text-xs font-bold text-zinc-400">
                 {counts.total}건 / {counts.totalQty}개
               </span>
               {counts.pending > 0 && (
@@ -380,7 +380,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
       {/* ── 내부 서브탭 (2026-08-03 · 상품입고 / 입고내역) ── */}
       <div className="max-w-6xl mx-auto w-full px-3 sm:px-4 lg:px-6 pt-3">
-        <div className="inline-flex bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+        <div className="inline-flex bg-white border border-zinc-200 rounded-xl p-1 shadow-sm">
           {([
             { k: "input"   as const, label: "상품입고", icon: PackagePlus, color: "sky"    },
             { k: "history" as const, label: "입고내역", icon: Package,     color: "indigo" },
@@ -395,7 +395,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 type="button"
                 onClick={() => setArrivalTab(k)}
                 className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-black transition cursor-pointer ${
-                  active ? activeColor : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                  active ? activeColor : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
                 }`}
               >
                 <Icon size={13} />
@@ -427,7 +427,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
 
           {/* ── 스캔 카드 ── */}
-          <div className="bg-white rounded-2xl border border-slate-200/80
+          <div className="bg-white rounded-2xl border border-zinc-200/80
             shadow-[0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden">
 
             {/* 상단 그라디언트 헤더 */}
@@ -450,8 +450,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                   <span className="absolute bottom-1 right-1 w-1.5 h-1.5 border-b-2 border-r-2 border-white/60 rounded-br-sm" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-black text-slate-800 leading-tight truncate">바코드 스캔</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5 leading-none truncate">
+                  <p className="text-sm font-black text-zinc-800 leading-tight truncate">바코드 스캔</p>
+                  <p className="text-[11px] text-zinc-400 mt-0.5 leading-none truncate">
                     스캔 시 자동 등록됩니다
                   </p>
                 </div>
@@ -525,7 +525,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                   </div>
 
                   {/* 상품명 */}
-                  <p className="text-[14px] sm:text-[15px] font-black text-slate-800
+                  <p className="text-[14px] sm:text-[15px] font-black text-zinc-800
                     break-words whitespace-normal leading-snug -mt-0.5">
                     {lastScannedProduct.name}
                   </p>
@@ -533,9 +533,9 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                   {/* 규격 + 공급사 */}
                   <div className="flex flex-wrap items-center gap-2">
                     {lastScannedProduct.spec && (
-                      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-600
-                        bg-white/80 border border-slate-200/60 rounded-lg px-2 py-1">
-                        <Box size={11} className="text-slate-400" />
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-zinc-600
+                        bg-white/80 border border-zinc-200/60 rounded-lg px-2 py-1">
+                        <Box size={11} className="text-zinc-400" />
                         {lastScannedProduct.spec}
                       </span>
                     )}
@@ -554,7 +554,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                       border-t border-emerald-200/60">
                       {lastScannedProduct.current_stock != null && (
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-[10px] font-semibold text-slate-400 leading-none">현재고</span>
+                          <span className="text-[10px] font-semibold text-zinc-400 leading-none">현재고</span>
                           <span className="text-[13px] font-black text-amber-700 tabular-nums leading-none">
                             {Number(lastScannedProduct.current_stock).toLocaleString()}
                           </span>
@@ -562,7 +562,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                       )}
                       {lastScannedProduct.sale_price != null && Number(lastScannedProduct.sale_price) > 0 && (
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-[10px] font-semibold text-slate-400 leading-none">판매가</span>
+                          <span className="text-[10px] font-semibold text-zinc-400 leading-none">판매가</span>
                           <span className="text-[13px] font-black text-orange-700 tabular-nums leading-none">
                             ₩{Number(lastScannedProduct.sale_price).toLocaleString()}
                           </span>
@@ -576,19 +576,19 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
           </div>
 
           {/* ── 요약 카운트 카드 ── */}
-          <div className="bg-white rounded-2xl border border-slate-200/80
+          <div className="bg-white rounded-2xl border border-zinc-200/80
             shadow-[0_2px_8px_rgba(0,0,0,0.06)] px-2 py-2">
             <div className="grid grid-cols-4 gap-1">
-              <SummaryPill label="총건수"  value={counts.total}    valueClass="text-slate-800" />
+              <SummaryPill label="총건수"  value={counts.total}    valueClass="text-zinc-800" />
               <SummaryPill label="일치"    value={counts.match}    valueClass="text-emerald-600" accent="hover:bg-emerald-50/60 rounded-xl transition" />
               <SummaryPill label="불일치"  value={counts.mismatch} valueClass="text-rose-600"    accent="hover:bg-rose-50/60 rounded-xl transition" />
               <SummaryPill label="기한임박" value={counts.expiring} valueClass="text-amber-600"   accent="hover:bg-amber-50/60 rounded-xl transition" />
             </div>
-            <div className="mx-2 mt-1 pt-2.5 border-t border-slate-100
+            <div className="mx-2 mt-1 pt-2.5 border-t border-zinc-100
               flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-slate-400">총 입고 수량</span>
-              <span className="text-[13px] font-black text-slate-800 tabular-nums">
-                {counts.totalQty}<span className="text-[10px] font-semibold text-slate-400 ml-0.5">개</span>
+              <span className="text-[11px] font-semibold text-zinc-400">총 입고 수량</span>
+              <span className="text-[13px] font-black text-zinc-800 tabular-nums">
+                {counts.totalQty}<span className="text-[10px] font-semibold text-zinc-400 ml-0.5">개</span>
               </span>
             </div>
           </div>
@@ -601,21 +601,21 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
 
           {/* ── 등록 리스트 카드 ── */}
-          <div className="bg-white rounded-2xl border border-slate-200/80
+          <div className="bg-white rounded-2xl border border-zinc-200/80
             shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex flex-col min-h-[320px] overflow-hidden">
 
             {/* 테이블 헤더 바 */}
             <div className="flex items-center justify-between
               px-4 sm:px-5 py-3 sm:py-3.5
-              border-b border-slate-200/80
-              bg-slate-50/80
+              border-b border-zinc-200/80
+              bg-zinc-50/80
               rounded-t-2xl sticky top-0 z-10
               shadow-[0_1px_0_rgba(0,0,0,0.04)]">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-sky-100 flex items-center justify-center">
                   <ClipboardCheck size={14} className="text-sky-600" />
                 </div>
-                <span className="text-sm font-black text-slate-800">등록된 입고 상품</span>
+                <span className="text-sm font-black text-zinc-800">등록된 입고 상품</span>
                 {items.length > 0 && (
                   <span className="text-[11px] font-black text-sky-700
                     bg-sky-50 border border-sky-200 rounded-full px-2 py-0.5 tabular-nums">
@@ -635,8 +635,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
             {items.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-3 py-16 sm:py-24 select-none">
                 <div className="relative">
-                  <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
-                    <Barcode size={28} className="text-slate-300" />
+                  <div className="w-16 h-16 rounded-2xl bg-zinc-100 flex items-center justify-center">
+                    <Barcode size={28} className="text-zinc-300" />
                   </div>
                   <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full
                     bg-sky-100 border-2 border-white flex items-center justify-center">
@@ -644,8 +644,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                   </div>
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-black text-slate-400">스캔한 상품이 여기에 표시됩니다</p>
-                  <p className="text-xs text-slate-300 mt-1">바코드 스캔 후 자동 등록</p>
+                  <p className="text-sm font-black text-zinc-400">스캔한 상품이 여기에 표시됩니다</p>
+                  <p className="text-xs text-zinc-300 mt-1">바코드 스캔 후 자동 등록</p>
                 </div>
               </div>
             ) : (
@@ -653,35 +653,35 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
               <div className="flex-1 overflow-auto max-h-[58vh] lg:max-h-[64vh]">
                 <table className="w-full border-collapse text-[12px] sm:text-[13px]">
                   <thead className="sticky top-0 z-10">
-                    <tr className="bg-slate-50/95 backdrop-blur-sm border-b border-slate-200/60">
+                    <tr className="bg-zinc-50/95 backdrop-blur-sm border-b border-zinc-200/60">
                       {/* 입고일 */}
                       <th
-                        className="text-left px-3 py-2.5 w-[68px] sm:w-20 font-bold text-slate-400
-                          cursor-pointer select-none hover:text-slate-600 hover:bg-slate-100/60 transition-colors"
+                        className="text-left px-3 py-2.5 w-[68px] sm:w-20 font-bold text-zinc-400
+                          cursor-pointer select-none hover:text-zinc-600 hover:bg-zinc-100/60 transition-colors"
                         onClick={() => handleSort("addedAt")}
                       >
                         입고일 <SortIcon active={sortKey === "addedAt"} dir={sortDir} />
                       </th>
                       {/* 공급사 */}
                       <th
-                        className="text-left px-2 py-2.5 w-20 sm:w-28 font-bold text-slate-400
-                          cursor-pointer select-none hover:text-slate-600 hover:bg-slate-100/60 transition-colors"
+                        className="text-left px-2 py-2.5 w-20 sm:w-28 font-bold text-zinc-400
+                          cursor-pointer select-none hover:text-zinc-600 hover:bg-zinc-100/60 transition-colors"
                         onClick={() => handleSort("supplier")}
                       >
                         공급사 <SortIcon active={sortKey === "supplier"} dir={sortDir} />
                       </th>
                       {/* 상품명 */}
                       <th
-                        className="text-left px-2 py-2.5 font-bold text-slate-400
-                          cursor-pointer select-none hover:text-slate-600 hover:bg-slate-100/60 transition-colors"
+                        className="text-left px-2 py-2.5 font-bold text-zinc-400
+                          cursor-pointer select-none hover:text-zinc-600 hover:bg-zinc-100/60 transition-colors"
                         onClick={() => handleSort("name")}
                       >
                         상품명 <SortIcon active={sortKey === "name"} dir={sortDir} />
                       </th>
                       {/* 갯수/상태 · 반응형 폭 확대 · 한 화면에 3상태 (일치/불일치/유통기한) 나란히 */}
                       <th
-                        className="text-center px-2 py-2.5 w-[220px] sm:w-[260px] font-bold text-slate-400
-                          cursor-pointer select-none hover:text-slate-600 hover:bg-slate-100/60 transition-colors"
+                        className="text-center px-2 py-2.5 w-[220px] sm:w-[260px] font-bold text-zinc-400
+                          cursor-pointer select-none hover:text-zinc-600 hover:bg-zinc-100/60 transition-colors"
                         onClick={() => handleSort("qty")}
                       >
                         갯수 / 상태 <SortIcon active={sortKey === "qty"} dir={sortDir} />
@@ -708,18 +708,18 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                         isRecent
                           ? "bg-sky-50/60"
                           : idx % 2 === 0
-                            ? "bg-white hover:bg-slate-50/60"
-                            : "bg-slate-50/30 hover:bg-slate-50/60";
+                            ? "bg-white hover:bg-zinc-50/60"
+                            : "bg-zinc-50/30 hover:bg-zinc-50/60";
 
                       return (
                         <tr
                           key={it.key}
-                          className={`border-l-[3px] border-b border-slate-100/70 transition-colors duration-100
+                          className={`border-l-[3px] border-b border-zinc-100/70 transition-colors duration-100
                             ${accentColor} ${rowBg}`}
                         >
                           {/* 입고일 */}
                           <td className="px-3 py-2.5 align-top tabular-nums font-mono text-[11px]
-                            text-slate-500 leading-tight whitespace-nowrap">
+                            text-zinc-500 leading-tight whitespace-nowrap">
                             {arrivedAt}
                           </td>
 
@@ -735,21 +735,21 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
                           {/* 상품명 · 규격 · 코드 */}
                           <td className="px-2 py-2.5 align-top">
-                            <p className="text-[13px] sm:text-[14px] font-black text-slate-800
+                            <p className="text-[13px] sm:text-[14px] font-black text-zinc-800
                               break-words whitespace-normal leading-snug">
                               {it.product?.name ?? "(미등록 상품)"}
                             </p>
                             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                               {it.product?.spec && (
                                 <span className="inline-flex items-center gap-1 text-[10px] font-semibold
-                                  text-slate-500 bg-slate-100/80 rounded px-1.5 py-0.5">
-                                  <Box size={9} className="text-slate-400" />
+                                  text-zinc-500 bg-zinc-100/80 rounded px-1.5 py-0.5">
+                                  <Box size={9} className="text-zinc-400" />
                                   {it.product.spec}
                                 </span>
                               )}
                               <span className="inline-flex items-center gap-1 text-[10px] font-mono
-                                text-slate-400 bg-slate-100/60 rounded px-1.5 py-0.5">
-                                <Hash size={9} className="text-slate-300" />
+                                text-zinc-400 bg-zinc-100/60 rounded px-1.5 py-0.5">
+                                <Hash size={9} className="text-zinc-300" />
                                 {it.code}
                               </span>
                             </div>
@@ -761,13 +761,13 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
                               {/* ── 수량 Stepper ── */}
                               <div className="inline-flex items-center rounded-xl overflow-hidden
-                                border border-slate-200/80 bg-slate-50/80
+                                border border-zinc-200/80 bg-zinc-50/80
                                 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
                                 <button
                                   onClick={() => updateQty(it.key, -1)}
                                   className="w-8 h-[44px] flex items-center justify-center
-                                    text-slate-500 hover:text-slate-800 hover:bg-white
-                                    active:bg-slate-100 transition-colors cursor-pointer"
+                                    text-zinc-500 hover:text-zinc-800 hover:bg-white
+                                    active:bg-zinc-100 transition-colors cursor-pointer"
                                   title="수량 -1"
                                 >
                                   <Minus size={12} />
@@ -778,14 +778,14 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                                   value={it.qty}
                                   onChange={(e) => setQtyDirect(it.key, Number(e.target.value) || 0)}
                                   className="w-10 h-[44px] text-center bg-transparent
-                                    text-[13px] font-black tabular-nums text-slate-800
+                                    text-[13px] font-black tabular-nums text-zinc-800
                                     focus:outline-none focus:bg-white transition-colors"
                                 />
                                 <button
                                   onClick={() => updateQty(it.key, 1)}
                                   className="w-8 h-[44px] flex items-center justify-center
-                                    text-slate-500 hover:text-slate-800 hover:bg-white
-                                    active:bg-slate-100 transition-colors cursor-pointer"
+                                    text-zinc-500 hover:text-zinc-800 hover:bg-white
+                                    active:bg-zinc-100 transition-colors cursor-pointer"
                                   title="수량 +1"
                                 >
                                   <Plus size={12} />
@@ -797,7 +797,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                                 role="group"
                                 aria-label="일치 · 불일치 · 유통기한"
                                 className="flex rounded-xl overflow-hidden
-                                  border border-slate-200/80 bg-slate-100/80
+                                  border border-zinc-200/80 bg-zinc-100/80
                                   shadow-[inset_0_1px_3px_rgba(0,0,0,0.06)]"
                               >
                                 {(["match", "mismatch"] as ItemStatus[]).map((s, segIdx) => {
@@ -814,12 +814,12 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                                         "flex flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5",
                                         "min-h-[40px] text-[10px] font-black",
                                         "transition-all duration-150 cursor-pointer select-none",
-                                        segIdx === 0 ? "" : "border-l border-slate-200/60",
+                                        segIdx === 0 ? "" : "border-l border-zinc-200/60",
                                         active
                                           ? s === "match"
                                             ? "bg-emerald-500 text-white shadow-sm"
                                             : "bg-rose-500 text-white shadow-sm"
-                                          : "text-slate-400 hover:text-slate-600 hover:bg-white/60",
+                                          : "text-zinc-400 hover:text-zinc-600 hover:bg-white/60",
                                       ].join(" ")}
                                     >
                                       {active
@@ -837,11 +837,11 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                                   title={`유통기한임박 ${it.expiring ? "on" : "off"} · 독립 토글`}
                                   className={[
                                     "flex flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5",
-                                    "min-h-[40px] text-[10px] font-black border-l border-slate-200/60",
+                                    "min-h-[40px] text-[10px] font-black border-l border-zinc-200/60",
                                     "transition-all duration-150 cursor-pointer select-none",
                                     it.expiring
                                       ? "bg-amber-500 text-white shadow-sm"
-                                      : "text-slate-400 hover:text-slate-600 hover:bg-white/60",
+                                      : "text-zinc-400 hover:text-zinc-600 hover:bg-white/60",
                                   ].join(" ")}
                                 >
                                   <Clock size={11} />
@@ -857,7 +857,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                             <button
                               onClick={() => removeItem(it.key)}
                               className="w-7 h-7 flex items-center justify-center rounded-lg mx-auto
-                                text-slate-300 hover:text-rose-500 hover:bg-rose-50
+                                text-zinc-300 hover:text-rose-500 hover:bg-rose-50
                                 transition-all duration-150 cursor-pointer"
                               title="삭제"
                             >
@@ -879,20 +879,20 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
           <div className={`bg-white rounded-2xl border-2 transition-all duration-300 overflow-hidden ${
             allDecided
               ? "border-sky-300/80 shadow-[0_0_0_4px_rgba(14,165,233,0.08),0_4px_16px_rgba(0,0,0,0.08)]"
-              : "border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.05)] opacity-90"
+              : "border-zinc-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.05)] opacity-90"
           }`}>
 
             {/* 카드 헤더 */}
-            <div className={`px-5 py-4 border-b border-slate-100/80 flex items-center justify-between gap-2 ${
-              allDecided ? "bg-sky-50/60" : "bg-slate-50/40"
+            <div className={`px-5 py-4 border-b border-zinc-100/80 flex items-center justify-between gap-2 ${
+              allDecided ? "bg-sky-50/60" : "bg-zinc-50/40"
             }`}>
               <div className="flex items-center gap-2.5">
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
-                  allDecided ? "bg-sky-100" : "bg-slate-100"
+                  allDecided ? "bg-sky-100" : "bg-zinc-100"
                 }`}>
-                  <ShieldCheck size={14} className={allDecided ? "text-sky-600" : "text-slate-400"} />
+                  <ShieldCheck size={14} className={allDecided ? "text-sky-600" : "text-zinc-400"} />
                 </div>
-                <span className="text-sm font-black text-slate-800">최종 확인 · 거래명세표 대조</span>
+                <span className="text-sm font-black text-zinc-800">최종 확인 · 거래명세표 대조</span>
               </div>
               {!allDecided && items.length > 0 && (
                 <span className="text-[10px] sm:text-[11px] font-black
@@ -903,7 +903,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
             </div>
 
             <div className="px-5 py-4 flex flex-col gap-4">
-              <p className="text-[12px] text-slate-500 leading-relaxed">
+              <p className="text-[12px] text-zinc-500 leading-relaxed">
                 모든 항목의 상태를 지정한 뒤, 거래명세표와 실제 입고 물품의
                 최종 일치 여부를 선택하세요.
               </p>
@@ -923,7 +923,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                       ? "bg-emerald-500 text-white border-emerald-500 shadow-md"
                       : allDecided
                         ? "bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50 hover:border-emerald-400 shadow-sm hover:shadow-md"
-                        : "bg-slate-50 text-slate-300 border-slate-200 shadow-none",
+                        : "bg-zinc-50 text-zinc-300 border-zinc-200 shadow-none",
                   ].join(" ")}
                 >
                   {finalDecision === "all_match" && (
@@ -946,7 +946,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                       ? "bg-rose-500 text-white border-rose-500 shadow-md"
                       : allDecided
                         ? "bg-white text-rose-700 border-rose-300 hover:bg-rose-50 hover:border-rose-400 shadow-sm hover:shadow-md"
-                        : "bg-slate-50 text-slate-300 border-slate-200 shadow-none",
+                        : "bg-zinc-50 text-zinc-300 border-zinc-200 shadow-none",
                   ].join(" ")}
                 >
                   {finalDecision === "has_mismatch" && (
@@ -971,7 +971,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                     placeholder="예) 박카스디 10병 · 3개 부족 · 명세표 20 실물 17"
                     className="w-full px-3.5 py-2.5 rounded-xl text-[13px] resize-none
                       border-2 border-rose-200 bg-rose-50/30
-                      placeholder:text-rose-300 text-slate-800
+                      placeholder:text-rose-300 text-zinc-800
                       focus:outline-none focus:border-rose-400 focus:bg-white
                       focus:ring-4 focus:ring-rose-100/60
                       transition-all duration-200"
@@ -1048,7 +1048,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                         : saveStatus === "error"
                           ? "bg-rose-500 hover:bg-rose-600 shadow-md"
                           : saveStatus === "saving"
-                            ? "bg-slate-400"
+                            ? "bg-zinc-400"
                             : "bg-sky-500 hover:bg-sky-600 shadow-md hover:shadow-lg",
                     ].join(" ")}
                   >
@@ -1070,7 +1070,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                     <p className="text-[12px] text-rose-600 font-semibold px-1">{saveError}</p>
                   )}
                   {saveStatus === "done" && (
-                    <p className="text-[12px] text-slate-400 font-medium px-1 leading-relaxed">
+                    <p className="text-[12px] text-zinc-400 font-medium px-1 leading-relaxed">
                       저장 완료. 발주/사입관리 · 입고매칭 탭에서 발주 대비 확인 가능.
                     </p>
                   )}
@@ -1087,34 +1087,34 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       {arrivalTab === "history" && (
         <main className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-5 flex flex-col gap-3 min-h-0">
           {/* 헤더 카드 */}
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-3 h-12 flex items-center gap-2">
+          <div className="bg-white border border-zinc-200 rounded-xl shadow-sm p-3 h-12 flex items-center gap-2">
             <Package size={14} className="text-indigo-500 shrink-0" />
-            <span className="text-[13px] font-semibold text-slate-700">입고내역</span>
-            <span className="text-[11px] font-black text-slate-500 bg-slate-100 rounded-full px-2 py-0.5 tabular-nums">{arrivals.length}건</span>
-            <span className="text-[11px] font-medium text-slate-400 ml-2 hidden sm:inline">최근 {arrivalDays}일</span>
-            <div className="flex items-center gap-0.5 bg-slate-50 border border-slate-200 rounded-md p-0.5 ml-auto">
+            <span className="text-[13px] font-semibold text-zinc-700">입고내역</span>
+            <span className="text-[11px] font-black text-zinc-500 bg-zinc-100 rounded-full px-2 py-0.5 tabular-nums">{arrivals.length}건</span>
+            <span className="text-[11px] font-medium text-zinc-400 ml-2 hidden sm:inline">최근 {arrivalDays}일</span>
+            <div className="flex items-center gap-0.5 bg-zinc-50 border border-zinc-200 rounded-md p-0.5 ml-auto">
               {[7, 30, 90].map(d => (
                 <button key={d} onClick={() => setArrivalDays(d as any)}
-                  className={`text-[11px] font-semibold px-2 py-1 rounded transition whitespace-nowrap cursor-pointer ${arrivalDays === d ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                  className={`text-[11px] font-semibold px-2 py-1 rounded transition whitespace-nowrap cursor-pointer ${arrivalDays === d ? "bg-white text-zinc-800 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
                   {d}일
                 </button>
               ))}
             </div>
             <button onClick={loadArrivals} disabled={arrivalsLoading}
-              className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50 cursor-pointer disabled:opacity-50"
+              className="w-8 h-8 flex items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 cursor-pointer disabled:opacity-50"
               title="새로고침">
               <RefreshCw size={13} className={arrivalsLoading ? "animate-spin" : ""} />
             </button>
           </div>
 
           {/* 리스트 카드 */}
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
             {arrivalsLoading && arrivals.length === 0 ? (
-              <div className="py-12 flex items-center justify-center gap-2 text-slate-400 text-[13px] font-semibold">
+              <div className="py-12 flex items-center justify-center gap-2 text-zinc-400 text-[13px] font-semibold">
                 <Loader2 size={16} className="animate-spin" /> 불러오는 중...
               </div>
             ) : arrivals.length === 0 ? (
-              <div className="py-12 text-center text-slate-400 text-[13px] font-semibold">최근 {arrivalDays}일 입고내역 없음</div>
+              <div className="py-12 text-center text-zinc-400 text-[13px] font-semibold">최근 {arrivalDays}일 입고내역 없음</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-[12px] border-collapse">
@@ -1130,22 +1130,22 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                       <th className="px-2 py-2 text-center font-bold text-rose-700 w-14">불일치</th>
                       <th className="px-2 py-2 text-center font-bold text-amber-700 w-14">기한임박</th>
                       <th className="px-2 py-2 text-center font-bold text-indigo-800 w-24">최종판정</th>
-                      <th className="px-2 py-2 text-center font-bold text-slate-500 w-24">액션</th>
+                      <th className="px-2 py-2 text-center font-bold text-zinc-500 w-24">액션</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-zinc-100">
                     {arrivals.map((a, i) => {
                       const d = new Date(a.arrival_date);
                       const dateStr = isNaN(d.getTime()) ? "-" : `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
                       const isSelected = selectedArrivalId === a.id;
                       return (
-                        <tr key={a.id} className={`transition ${isSelected ? "bg-indigo-50/60" : "hover:bg-slate-50/60"}`}>
-                          <td className="px-2 py-1.5 text-slate-400 tabular-nums">{i + 1}</td>
-                          <td className="px-2 py-1.5 text-slate-700 tabular-nums font-semibold">{dateStr}</td>
-                          <td className="px-2 py-1.5 text-slate-600">{a.checked_by ?? "-"}</td>
-                          <td className="px-2 py-1.5 text-slate-600 truncate max-w-[240px]" title={a.supplier_summary ?? ""}>{a.supplier_summary ?? "-"}</td>
-                          <td className="px-2 py-1.5 text-right text-slate-800 font-bold tabular-nums">{a.total_items}</td>
-                          <td className="px-2 py-1.5 text-right text-slate-800 font-bold tabular-nums">{a.total_qty.toLocaleString()}</td>
+                        <tr key={a.id} className={`transition ${isSelected ? "bg-indigo-50/60" : "hover:bg-zinc-50/60"}`}>
+                          <td className="px-2 py-1.5 text-zinc-400 tabular-nums">{i + 1}</td>
+                          <td className="px-2 py-1.5 text-zinc-700 tabular-nums font-semibold">{dateStr}</td>
+                          <td className="px-2 py-1.5 text-zinc-600">{a.checked_by ?? "-"}</td>
+                          <td className="px-2 py-1.5 text-zinc-600 truncate max-w-[240px]" title={a.supplier_summary ?? ""}>{a.supplier_summary ?? "-"}</td>
+                          <td className="px-2 py-1.5 text-right text-zinc-800 font-bold tabular-nums">{a.total_items}</td>
+                          <td className="px-2 py-1.5 text-right text-zinc-800 font-bold tabular-nums">{a.total_qty.toLocaleString()}</td>
                           <td className="px-2 py-1.5 text-center text-emerald-700 font-bold tabular-nums">{a.match_count}</td>
                           <td className="px-2 py-1.5 text-center text-rose-700 font-bold tabular-nums">{a.mismatch_count}</td>
                           <td className="px-2 py-1.5 text-center text-amber-700 font-bold tabular-nums">{a.expiring_count}</td>
@@ -1153,7 +1153,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                             <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-black border ${
                               a.final_decision === "all_match" ? "bg-emerald-50 text-emerald-700 border-emerald-300"
                                 : a.final_decision === "has_mismatch" ? "bg-rose-50 text-rose-700 border-rose-300"
-                                : "bg-slate-50 text-slate-500 border-slate-300"
+                                : "bg-zinc-50 text-zinc-500 border-zinc-300"
                             }`}>
                               {a.final_decision === "all_match" ? "완전일치" : a.final_decision === "has_mismatch" ? "불일치 있음" : "-"}
                             </span>
@@ -1165,7 +1165,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                                 상세
                               </button>
                               <button type="button" onClick={() => deleteArrival(a.id)}
-                                className="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 cursor-pointer transition"
+                                className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-400 hover:text-rose-500 hover:bg-rose-50 border border-zinc-200 hover:border-rose-200 cursor-pointer transition"
                                 title="삭제">
                                 <Trash2 size={12} />
                               </button>
@@ -1184,45 +1184,45 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
       {/* 입고내역 상세 모달 · 2026-08-03 · OrderManagePage 에서 이동 */}
       {selectedArrivalId != null && (
-        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setSelectedArrivalId(null)}>
+        <div className="fixed inset-0 z-[100] bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setSelectedArrivalId(null)}>
           <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
             {/* 헤더 */}
-            <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-200 bg-indigo-50 shrink-0">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-zinc-200 bg-indigo-50 shrink-0">
               <Package size={18} className="text-indigo-600" />
-              <h3 className="text-[16px] font-black text-slate-800">입고내역 상세</h3>
-              <span className="text-[12px] font-semibold text-slate-500 tabular-nums">ID {selectedArrivalId}</span>
+              <h3 className="text-[16px] font-black text-zinc-800">입고내역 상세</h3>
+              <span className="text-[12px] font-semibold text-zinc-500 tabular-nums">ID {selectedArrivalId}</span>
               <button type="button" onClick={() => setSelectedArrivalId(null)}
-                className="ml-auto w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer" title="닫기">
+                className="ml-auto w-8 h-8 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-600 flex items-center justify-center cursor-pointer" title="닫기">
                 ✕
               </button>
             </div>
             {/* 본문 */}
             <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
               {arrivalDetailLoading || !arrivalDetail ? (
-                <div className="py-12 flex items-center justify-center gap-2 text-slate-400 text-[13px] font-semibold">
+                <div className="py-12 flex items-center justify-center gap-2 text-zinc-400 text-[13px] font-semibold">
                   <Loader2 size={16} className="animate-spin" /> 상세 로딩 중...
                 </div>
               ) : (
                 <>
                   {/* 헤더 요약 카드 */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                      <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">등록일시</div>
-                      <div className="text-[13px] font-black text-slate-800 tabular-nums mt-0.5">
+                    <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-3">
+                      <div className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">등록일시</div>
+                      <div className="text-[13px] font-black text-zinc-800 tabular-nums mt-0.5">
                         {(() => { const d = new Date(arrivalDetail.arrival_date); return isNaN(d.getTime()) ? "-" : d.toLocaleString("ko-KR"); })()}
                       </div>
                     </div>
-                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                      <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">담당자</div>
-                      <div className="text-[13px] font-black text-slate-800 mt-0.5">{arrivalDetail.checked_by ?? "-"}</div>
+                    <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-3">
+                      <div className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">담당자</div>
+                      <div className="text-[13px] font-black text-zinc-800 mt-0.5">{arrivalDetail.checked_by ?? "-"}</div>
                     </div>
                     <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
                       <div className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">품목·수량</div>
                       <div className="text-[13px] font-black text-emerald-700 tabular-nums mt-0.5">{arrivalDetail.total_items}개 · {arrivalDetail.total_qty.toLocaleString()}수량</div>
                     </div>
-                    <div className={`border rounded-lg p-3 ${arrivalDetail.final_decision === "all_match" ? "bg-emerald-50 border-emerald-200" : arrivalDetail.final_decision === "has_mismatch" ? "bg-rose-50 border-rose-200" : "bg-slate-50 border-slate-200"}`}>
-                      <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">최종 판정</div>
-                      <div className={`text-[13px] font-black mt-0.5 ${arrivalDetail.final_decision === "all_match" ? "text-emerald-700" : arrivalDetail.final_decision === "has_mismatch" ? "text-rose-700" : "text-slate-500"}`}>
+                    <div className={`border rounded-lg p-3 ${arrivalDetail.final_decision === "all_match" ? "bg-emerald-50 border-emerald-200" : arrivalDetail.final_decision === "has_mismatch" ? "bg-rose-50 border-rose-200" : "bg-zinc-50 border-zinc-200"}`}>
+                      <div className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">최종 판정</div>
+                      <div className={`text-[13px] font-black mt-0.5 ${arrivalDetail.final_decision === "all_match" ? "text-emerald-700" : arrivalDetail.final_decision === "has_mismatch" ? "text-rose-700" : "text-zinc-500"}`}>
                         {arrivalDetail.final_decision === "all_match" ? "완전일치" : arrivalDetail.final_decision === "has_mismatch" ? "불일치 있음" : "-"}
                       </div>
                     </div>
@@ -1243,25 +1243,25 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                   {arrivalDetail.supplier_summary && (
                     <div className="bg-sky-50 border border-sky-200 rounded-lg p-3">
                       <div className="text-[11px] font-semibold text-sky-600 uppercase tracking-wider mb-1">공급사 요약</div>
-                      <div className="text-[13px] font-medium text-slate-700 break-words">{arrivalDetail.supplier_summary}</div>
+                      <div className="text-[13px] font-medium text-zinc-700 break-words">{arrivalDetail.supplier_summary}</div>
                     </div>
                   )}
                   {arrivalDetail.note && (
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                       <div className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider mb-1">메모</div>
-                      <div className="text-[13px] font-medium text-slate-700 whitespace-pre-wrap">{arrivalDetail.note}</div>
+                      <div className="text-[13px] font-medium text-zinc-700 whitespace-pre-wrap">{arrivalDetail.note}</div>
                     </div>
                   )}
                   {/* 아이템 리스트 */}
-                  <div className="border border-slate-200 rounded-lg overflow-hidden">
-                    <div className="px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
-                      <span className="text-[12px] font-black text-slate-700">입고 아이템</span>
-                      <span className="text-[11px] font-semibold text-slate-500 tabular-nums">{arrivalDetail.items?.length ?? 0}개</span>
+                  <div className="border border-zinc-200 rounded-lg overflow-hidden">
+                    <div className="px-3 py-2 bg-zinc-50 border-b border-zinc-200 flex items-center gap-2">
+                      <span className="text-[12px] font-black text-zinc-700">입고 아이템</span>
+                      <span className="text-[11px] font-semibold text-zinc-500 tabular-nums">{arrivalDetail.items?.length ?? 0}개</span>
                     </div>
                     <div className="overflow-x-auto max-h-[40vh]">
                       <table className="w-full text-[12px]">
                         <thead className="sticky top-0 bg-white z-10">
-                          <tr className="border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                          <tr className="border-b border-zinc-200 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">
                             <th className="px-2 py-1.5 text-left w-10">#</th>
                             <th className="px-2 py-1.5 text-left w-24">코드</th>
                             <th className="px-2 py-1.5 text-left min-w-[180px]">상품명</th>
@@ -1270,20 +1270,20 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                             <th className="px-2 py-1.5 text-center w-20">상태</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-zinc-100">
                           {(arrivalDetail.items ?? []).map((it, i) => (
-                            <tr key={it.id} className="hover:bg-slate-50/60">
-                              <td className="px-2 py-1.5 text-slate-400 tabular-nums">{i + 1}</td>
-                              <td className="px-2 py-1.5 text-slate-500 tabular-nums text-[11px]">{it.product_code ?? "-"}</td>
-                              <td className="px-2 py-1.5 text-slate-800 font-semibold break-words">{it.product_name ?? "-"}</td>
-                              <td className="px-2 py-1.5 text-slate-600">{it.supplier ?? "-"}</td>
-                              <td className="px-2 py-1.5 text-right font-black tabular-nums text-slate-800">{it.qty.toLocaleString()}</td>
+                            <tr key={it.id} className="hover:bg-zinc-50/60">
+                              <td className="px-2 py-1.5 text-zinc-400 tabular-nums">{i + 1}</td>
+                              <td className="px-2 py-1.5 text-zinc-500 tabular-nums text-[11px]">{it.product_code ?? "-"}</td>
+                              <td className="px-2 py-1.5 text-zinc-800 font-semibold break-words">{it.product_name ?? "-"}</td>
+                              <td className="px-2 py-1.5 text-zinc-600">{it.supplier ?? "-"}</td>
+                              <td className="px-2 py-1.5 text-right font-black tabular-nums text-zinc-800">{it.qty.toLocaleString()}</td>
                               <td className="px-2 py-1.5 text-center">
                                 <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black border ${
                                   it.status === "match" ? "bg-emerald-50 text-emerald-700 border-emerald-300"
                                     : it.status === "mismatch" ? "bg-rose-50 text-rose-700 border-rose-300"
                                     : it.status === "expiring" ? "bg-amber-50 text-amber-700 border-amber-300"
-                                    : "bg-slate-50 text-slate-500 border-slate-300"
+                                    : "bg-zinc-50 text-zinc-500 border-zinc-300"
                                 }`}>
                                   {it.status === "match" ? "일치" : it.status === "mismatch" ? "불일치" : it.status === "expiring" ? "기한임박" : "미확인"}
                                 </span>
@@ -1319,7 +1319,7 @@ const _StatusToggle: React.FC<StatusToggleProps> = ({ status, active, onToggle }
       className={`inline-flex items-center justify-center w-9 h-9 rounded-full border-2 transition cursor-pointer active:scale-95 ${
         active
           ? `${meta.bg} ${meta.color} ${meta.border} shadow-sm`
-          : "bg-white text-slate-300 border-slate-200 hover:border-slate-300 hover:text-slate-500"
+          : "bg-white text-zinc-300 border-zinc-200 hover:border-zinc-300 hover:text-zinc-500"
       }`}
       title={`${meta.label} ${active ? "on" : "off"}`}
     >

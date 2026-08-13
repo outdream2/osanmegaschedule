@@ -159,7 +159,7 @@ export const LossHistoryTab: React.FC = () => {
       {/* ── 필터바 ── */}
       <div className={`${CARD_BASE} px-3 py-2 flex flex-wrap items-center gap-2`}>
         <div className="flex items-center gap-2">
-          <Calendar size={13} className="text-slate-400" />
+          <Calendar size={13} className="text-zinc-400" />
           <div className="flex gap-1">
             {(Object.keys(PERIOD_LABEL) as PeriodKey[]).map(k => (
               <button
@@ -169,7 +169,7 @@ export const LossHistoryTab: React.FC = () => {
                 className={`px-2.5 py-1 text-[11px] font-bold rounded-md border transition cursor-pointer ${
                   period === k
                     ? "bg-violet-500 text-white border-violet-500"
-                    : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                    : "bg-white text-zinc-500 border-zinc-200 hover:bg-zinc-50"
                 }`}
               >
                 {PERIOD_LABEL[k]}
@@ -178,11 +178,11 @@ export const LossHistoryTab: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-1.5">
-          <Building2 size={13} className="text-slate-400" />
+          <Building2 size={13} className="text-zinc-400" />
           <select
             value={supplierFilter}
             onChange={(e) => setSupplierFilter(e.target.value)}
-            className="text-[11px] font-semibold border border-slate-200 rounded-md px-2 py-1 bg-white cursor-pointer max-w-[140px]"
+            className="text-[11px] font-semibold border border-zinc-200 rounded-md px-2 py-1 bg-white cursor-pointer max-w-[140px]"
           >
             <option value="">전체 공급사</option>
             {supplierOptions.map(s => (
@@ -190,7 +190,7 @@ export const LossHistoryTab: React.FC = () => {
             ))}
           </select>
         </div>
-        <div className={`${TEXT.caption} text-slate-400 hidden sm:block ml-auto`}>
+        <div className={`${TEXT.caption} text-zinc-400 hidden sm:block ml-auto`}>
           {from} ~ {to}
         </div>
         <button
@@ -207,7 +207,7 @@ export const LossHistoryTab: React.FC = () => {
           type="button"
           onClick={fetchAll}
           disabled={loading}
-          className="w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-600 transition disabled:opacity-40 cursor-pointer"
+          className="w-7 h-7 flex items-center justify-center rounded-md border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-400 hover:text-zinc-600 transition disabled:opacity-40 cursor-pointer"
           title="새로고침"
         >
           <Loader2 size={13} className={loading ? "animate-spin" : ""} />
@@ -261,8 +261,8 @@ export const LossHistoryTab: React.FC = () => {
           {/* ── 일자별 손실액 라인 차트 ── */}
           <div className={`${CARD_BASE} px-3 py-3`}>
             <div className="flex items-center justify-between mb-2">
-              <span className={`${TEXT.caption} text-slate-600`}>일자별 손실액 추이</span>
-              <span className={`${TEXT.caption} text-slate-400`}>{chartData.length}일</span>
+              <span className={`${TEXT.caption} text-zinc-600`}>일자별 손실액 추이</span>
+              <span className={`${TEXT.caption} text-zinc-400`}>{chartData.length}일</span>
             </div>
             <div style={{ width: "100%", height: 200 }}>
               <ResponsiveContainer>
@@ -300,52 +300,52 @@ export const LossHistoryTab: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
             <div className={`${CARD_BASE} px-3 py-2`}>
               <div className="flex items-center justify-between mb-1.5">
-                <span className={`${TEXT.caption} text-slate-600 flex items-center gap-1`}>
+                <span className={`${TEXT.caption} text-zinc-600 flex items-center gap-1`}>
                   <Building2 size={11} className="text-violet-500" />
                   공급사별 Top10 손실액
                 </span>
-                <span className={`${TEXT.caption} text-slate-400`}>{supplierTop10.length}건</span>
+                <span className={`${TEXT.caption} text-zinc-400`}>{supplierTop10.length}건</span>
               </div>
               <table className="w-full text-[11px]">
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-zinc-50">
                   {supplierTop10.map((r, i) => (
-                    <tr key={`sup-${r.key}`} className="hover:bg-slate-50/60">
-                      <td className="py-1.5 pr-1 text-slate-400 font-semibold tabular-nums w-6 text-right">{i + 1}</td>
-                      <td className="py-1.5 pl-1 text-slate-700 font-semibold truncate max-w-[140px]" title={r.label}>
+                    <tr key={`sup-${r.key}`} className="hover:bg-zinc-50/60">
+                      <td className="py-1.5 pr-1 text-zinc-400 font-semibold tabular-nums w-6 text-right">{i + 1}</td>
+                      <td className="py-1.5 pl-1 text-zinc-700 font-semibold truncate max-w-[140px]" title={r.label}>
                         {displayVendorName(r.label)}
                       </td>
                       <td className="py-1.5 text-right text-rose-700 font-bold tabular-nums">{fmtWon(r.loss_value)}</td>
-                      <td className="py-1.5 pl-2 text-right text-slate-400 tabular-nums text-[10px] w-14">{fmt(r.count)}건</td>
+                      <td className="py-1.5 pl-2 text-right text-zinc-400 tabular-nums text-[10px] w-14">{fmt(r.count)}건</td>
                     </tr>
                   ))}
                   {supplierTop10.length === 0 && (
-                    <tr><td colSpan={4} className="text-center text-slate-400 py-4">데이터 없음</td></tr>
+                    <tr><td colSpan={4} className="text-center text-zinc-400 py-4">데이터 없음</td></tr>
                   )}
                 </tbody>
               </table>
             </div>
             <div className={`${CARD_BASE} px-3 py-2`}>
               <div className="flex items-center justify-between mb-1.5">
-                <span className={`${TEXT.caption} text-slate-600 flex items-center gap-1`}>
+                <span className={`${TEXT.caption} text-zinc-600 flex items-center gap-1`}>
                   <Package size={11} className="text-sky-500" />
                   상품별 Top10 손실액
                 </span>
-                <span className={`${TEXT.caption} text-slate-400`}>{productTop10.length}건</span>
+                <span className={`${TEXT.caption} text-zinc-400`}>{productTop10.length}건</span>
               </div>
               <table className="w-full text-[11px]">
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-zinc-50">
                   {productTop10.map((r, i) => (
-                    <tr key={`prod-${r.key}`} className="hover:bg-slate-50/60">
-                      <td className="py-1.5 pr-1 text-slate-400 font-semibold tabular-nums w-6 text-right">{i + 1}</td>
-                      <td className="py-1.5 pl-1 text-slate-700 font-semibold truncate max-w-[140px]" title={r.label}>
+                    <tr key={`prod-${r.key}`} className="hover:bg-zinc-50/60">
+                      <td className="py-1.5 pr-1 text-zinc-400 font-semibold tabular-nums w-6 text-right">{i + 1}</td>
+                      <td className="py-1.5 pl-1 text-zinc-700 font-semibold truncate max-w-[140px]" title={r.label}>
                         {r.label}
                       </td>
                       <td className="py-1.5 text-right text-rose-700 font-bold tabular-nums">{fmtWon(r.loss_value)}</td>
-                      <td className="py-1.5 pl-2 text-right text-slate-400 tabular-nums text-[10px] w-14">{fmt(r.count)}건</td>
+                      <td className="py-1.5 pl-2 text-right text-zinc-400 tabular-nums text-[10px] w-14">{fmt(r.count)}건</td>
                     </tr>
                   ))}
                   {productTop10.length === 0 && (
-                    <tr><td colSpan={4} className="text-center text-slate-400 py-4">데이터 없음</td></tr>
+                    <tr><td colSpan={4} className="text-center text-zinc-400 py-4">데이터 없음</td></tr>
                   )}
                 </tbody>
               </table>

@@ -80,7 +80,7 @@ export function ProductSearchInput({
       {/* 검색 입력 + 확인 버튼 */}
       <div className="flex items-center gap-1.5">
         <div className="relative flex-1 min-w-0">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
           <input
             ref={inputRef}
             type="text"
@@ -91,10 +91,10 @@ export function ProductSearchInput({
               setHideList(false); // 다시 타이핑 시 리스트 보이기
             }}
             placeholder={placeholder}
-            className={`w-full h-9 pl-8 pr-3 text-[13px] border border-slate-300 rounded-lg focus:outline-none focus:ring-2 ${cls.ring} transition placeholder:text-slate-300`}
+            className={`w-full h-9 pl-8 pr-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 ${cls.ring} transition placeholder:text-zinc-300`}
           />
           {loading && (
-            <Loader2 size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin text-slate-400" />
+            <Loader2 size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin text-zinc-400" />
           )}
         </div>
         <button
@@ -111,13 +111,13 @@ export function ProductSearchInput({
 
       {/* 결과 리스트 · 2026-08-09 · hideList true 면 숨김 (선택·확인 후) */}
       {query.trim() && !hideList && (
-        <div className="max-h-[180px] overflow-y-auto border border-slate-200 rounded-lg bg-white shadow-sm">
+        <div className="max-h-[180px] overflow-y-auto border border-zinc-200 rounded-lg bg-white shadow-sm">
           {results.length === 0 && !loading ? (
-            <div className="px-3 py-3 text-center text-[11px] text-slate-400">
+            <div className="px-3 py-3 text-center text-[11px] text-zinc-400">
               검색 결과 없음
             </div>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-zinc-100">
               {results.slice(0, 20).map((p, i) => {
                 const isActive = selected?.product_code === p.product_code && selected?.product_name === p.product_name;
                 const code = String(p.product_code ?? "");
@@ -146,15 +146,15 @@ export function ProductSearchInput({
                       }
                     }}
                     className={`w-full text-left px-2.5 py-1.5 flex items-center gap-2 transition cursor-pointer ${
-                      isActive ? cls.active : "hover:bg-slate-50 border-l-2 border-transparent"
+                      isActive ? cls.active : "hover:bg-zinc-50 border-l-2 border-transparent"
                     }`}
                   >
-                    <Package size={11} className="text-slate-400 shrink-0" />
+                    <Package size={11} className="text-zinc-400 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className={`text-[12px] font-black truncate ${isActive ? "text-slate-900" : "text-slate-700"}`}>
+                      <div className={`text-[12px] font-black truncate ${isActive ? "text-zinc-900" : "text-zinc-700"}`}>
                         {name}
                       </div>
-                      <div className="text-[10px] text-slate-400 truncate">
+                      <div className="text-[10px] text-zinc-400 truncate">
                         {code || "-"} · {sup || "-"}
                       </div>
                     </div>

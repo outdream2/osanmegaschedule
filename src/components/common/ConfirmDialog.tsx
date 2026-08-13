@@ -90,12 +90,12 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm flex flex-col overflow-hidden">
         {/* 헤더 */}
         {(title || danger) && (
-          <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-200">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-zinc-200">
             {danger && <AlertTriangle size={18} className="text-rose-500 shrink-0" />}
             {title && (
               <span
                 id="confirm-dialog-title"
-                className="text-[15px] font-black text-slate-800"
+                className="text-[15px] font-black text-zinc-800"
               >
                 {title}
               </span>
@@ -106,7 +106,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         {/* 메시지 본문 */}
         <div
           id="confirm-dialog-message"
-          className="px-5 py-5 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed"
+          className="px-5 py-5 text-sm text-zinc-700 whitespace-pre-wrap leading-relaxed"
         >
           {message}
         </div>
@@ -116,7 +116,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold transition-colors cursor-pointer"
+            className="px-4 py-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-sm font-semibold transition-colors cursor-pointer"
           >
             {cancelLabel}
           </button>

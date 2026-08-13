@@ -13,12 +13,12 @@ export const AppFooter: React.FC = () => {
   const copyright = contact.copyrightText || "(주)이룸즈(IRUMS)";
   const shortName = brand.shortName || "오산메가타운";
   return (
-    <div className="w-full flex items-center justify-center gap-3 py-3 text-slate-400 text-[11px] font-medium flex-wrap">
+    <div className="w-full flex items-center justify-center gap-3 py-3 text-zinc-400 text-[11px] font-medium flex-wrap">
       <span className="flex items-center gap-1.5"><MapPin size={11} />{shortName}</span>
-      <span className="w-1 h-1 rounded-full bg-slate-300" />
+      <span className="w-1 h-1 rounded-full bg-zinc-300" />
       <span className="flex items-center gap-1.5"><Clock size={11} />{hours}</span>
-      <span className="w-1 h-1 rounded-full bg-slate-300" />
-      <span className="text-slate-400">copyright {copyright}</span>
+      <span className="w-1 h-1 rounded-full bg-zinc-300" />
+      <span className="text-zinc-400">copyright {copyright}</span>
     </div>
   );
 };

@@ -28,7 +28,7 @@ function getErpCellValue(
   ocrQty: number | null,
   pageSupplier?: string,
 ): { text: React.ReactNode; align: "left" | "right" | "center" } {
-  const dash = <span className="text-slate-300">—</span>;
+  const dash = <span className="text-zinc-300">—</span>;
   const erpName    = matched?.name ?? autoSyn?.name ?? barcode?.name ?? null;
   const erpCode    = matched?.code ?? autoSyn?.code ?? barcode?.code ?? null;
   const erpMasterP = matched?.masterPrice ?? barcode?.masterPrice ?? null;
@@ -52,7 +52,7 @@ function getErpCellValue(
         text: (
           <span className="inline-flex flex-col leading-tight gap-0.5 items-start">
             {erpCode && (
-              <span className="font-mono text-[10px] font-bold text-slate-500">#{erpCode}</span>
+              <span className="font-mono text-[10px] font-bold text-zinc-500">#{erpCode}</span>
             )}
             {erpName && (
               <span className="font-semibold text-violet-800 text-[12px] leading-snug break-words">{erpName}</span>
@@ -120,14 +120,14 @@ export const ErpMatchSubRow: React.FC<Props> = ({
   const nameIdx = dispHeaders.indexOf("품명");
 
   return (
-    <tr className={`border-b border-violet-200/70 ${anyErpInfo ? "bg-violet-50/40" : "bg-slate-50/30"}`}>
+    <tr className={`border-b border-violet-200/70 ${anyErpInfo ? "bg-violet-50/40" : "bg-zinc-50/30"}`}>
       {/* 왼쪽 체크박스 컬럼 자리 · ERP 라벨 + 취소 버튼 */}
       <td className="w-14 px-1 py-1 text-center align-middle">
         <div className="flex items-center justify-center gap-0.5">
           <span className="text-[8px] font-black bg-violet-500 text-white rounded px-1 py-px">ERP</span>
           {anyErpInfo && onCancel && (
             <button type="button" onClick={onCancel}
-              className="text-[9px] text-slate-400 hover:text-rose-500 cursor-pointer"
+              className="text-[9px] text-zinc-400 hover:text-rose-500 cursor-pointer"
               title="ERP 매칭 취소"
             >✕</button>
           )}

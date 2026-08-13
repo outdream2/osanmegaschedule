@@ -94,7 +94,7 @@ const Toast: React.FC<ToastProps> = ({ message }) => (
     role="status"
     aria-live="polite"
     className="fixed top-4 right-4 z-[9999] flex items-center gap-2.5 px-4 py-3 rounded-xl
-      bg-slate-900/95 backdrop-blur-sm text-white text-xs font-bold
+      bg-zinc-900/95 backdrop-blur-sm text-white text-xs font-bold
       shadow-[0_8px_32px_rgba(0,0,0,0.32)] border border-white/10"
   >
     <span className="w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0" />
@@ -106,7 +106,7 @@ const Toast: React.FC<ToastProps> = ({ message }) => (
 // SortIcon
 // ─────────────────────────────────────────────────────────────
 const SortIcon: React.FC<{ active: boolean; dir: SortDir }> = ({ active, dir }) => {
-  if (!active) return <ArrowUpDown size={10} className="text-slate-300 ml-0.5 inline" />;
+  if (!active) return <ArrowUpDown size={10} className="text-zinc-300 ml-0.5 inline" />;
   return dir === "asc"
     ? <ArrowUp size={10} className="text-teal-500 ml-0.5 inline" />
     : <ArrowDown size={10} className="text-teal-500 ml-0.5 inline" />;
@@ -547,8 +547,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               <button
                 onClick={resetAll}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
-                  text-slate-500 hover:text-slate-800 bg-white border border-slate-200
-                  hover:bg-slate-50 hover:border-slate-300 shadow-sm
+                  text-zinc-500 hover:text-zinc-800 bg-white border border-zinc-200
+                  hover:bg-zinc-50 hover:border-zinc-300 shadow-sm
                   transition-all duration-150 cursor-pointer"
               >
                 <RotateCcw size={12} />
@@ -572,21 +572,21 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       )}
 
       {/* ── Page header strip ── */}
-      <div className="bg-white border-b border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      <div className="bg-white border-b border-zinc-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3">
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-teal-600
             flex items-center justify-center shadow-sm shrink-0">
             <ScanLine size={16} className="text-white" />
           </div>
           <div>
-            <h1 className="text-[15px] sm:text-[17px] font-black text-slate-900 leading-none">실재고 입력</h1>
-            <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 leading-none">
+            <h1 className="text-[15px] sm:text-[17px] font-black text-zinc-900 leading-none">실재고 입력</h1>
+            <p className="text-[11px] sm:text-xs text-zinc-400 mt-0.5 leading-none">
               바코드 스캔 후 창고1·2 · 매장1·2·3 수량 입력 · 전체 저장
             </p>
           </div>
           {rows.length > 0 && (
             <div className="ml-auto flex items-center gap-2">
-              <span className="text-[11px] sm:text-xs font-bold text-slate-400">{rows.length}건</span>
+              <span className="text-[11px] sm:text-xs font-bold text-zinc-400">{rows.length}건</span>
             </div>
           )}
         </div>
@@ -644,13 +644,13 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         ══════════════════════════════════════════════════════ */}
 
           {/* 2026-08-10 · 사용자 요청 · 스캔 카드 · 그라데이션 제거 · 장식 원 제거 · 깔끔한 UI */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
             {/* 헤더 · 아이콘 + 제목 · 그라데이션·장식 없이 */}
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-100">
               <ScanLine size={18} className="text-teal-600 shrink-0" />
               <div className="min-w-0">
-                <p className="text-[14px] font-black text-slate-800 leading-tight">바코드 스캔</p>
-                <p className="text-[11px] text-slate-400 leading-tight">스캔 시 우측 리스트에 자동 등록</p>
+                <p className="text-[14px] font-black text-zinc-800 leading-tight">바코드 스캔</p>
+                <p className="text-[11px] text-zinc-400 leading-tight">스캔 시 우측 리스트에 자동 등록</p>
               </div>
             </div>
 
@@ -675,7 +675,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               />
 
               {/* 2026-08-10 · G · A4 · 자동 +1 opt-in 토글 */}
-              <label className="flex items-center gap-2 text-[11px] text-slate-600 font-semibold cursor-pointer select-none">
+              <label className="flex items-center gap-2 text-[11px] text-zinc-600 font-semibold cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={autoIncOn}
@@ -711,7 +711,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                     </div>
                     <span className="text-[10px] font-black text-teal-700 uppercase tracking-wider">최근 스캔</span>
                     {lastCode && (
-                      <span className="ml-auto text-[10px] font-mono tabular-nums text-slate-500 truncate max-w-[140px]">
+                      <span className="ml-auto text-[10px] font-mono tabular-nums text-zinc-500 truncate max-w-[140px]">
                         {lastCode}
                       </span>
                     )}
@@ -721,20 +721,20 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                   <div className="px-3.5 py-3 flex flex-col gap-1.5">
                     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                       {/* 상품명 · 큰 글씨 */}
-                      <p className="text-[15px] sm:text-[16px] font-black text-slate-900
+                      <p className="text-[15px] sm:text-[16px] font-black text-zinc-900
                         break-words whitespace-normal leading-snug">
                         {lastProduct.name}
                       </p>
                       {/* 구역 · 공급사 · 텍스트 · 상품명 옆 */}
                       {(lastProduct as any).spec && (
                         <span className="inline-flex items-baseline gap-1 text-[12px]">
-                          <span className="text-slate-400 font-semibold">구역</span>
+                          <span className="text-zinc-400 font-semibold">구역</span>
                           <span className="text-violet-700 font-black">{(lastProduct as any).spec}</span>
                         </span>
                       )}
                       {(lastProduct as any).supplier && (
                         <span className="inline-flex items-baseline gap-1 text-[12px] min-w-0">
-                          <span className="text-slate-400 font-semibold">공급사</span>
+                          <span className="text-zinc-400 font-semibold">공급사</span>
                           <span className="text-sky-700 font-black truncate">{(lastProduct as any).supplier}</span>
                         </span>
                       )}
@@ -776,17 +776,17 @@ export const ScanPage: React.FC<ScanPageProps> = ({
 
           {/* 2026-08-10 · 사용자 요청 · 상품별 실재고 집계 카드 제거 */}
 
-<div className="bg-white rounded-2xl border border-slate-200/80
+<div className="bg-white rounded-2xl border border-zinc-200/80
             shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex flex-col min-h-[320px] overflow-hidden">
 
             <div className="flex items-center justify-between
-              px-4 sm:px-5 py-3 sm:py-3.5 border-b border-slate-200/80
-              bg-slate-50/80 rounded-t-2xl sticky top-0 z-10 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+              px-4 sm:px-5 py-3 sm:py-3.5 border-b border-zinc-200/80
+              bg-zinc-50/80 rounded-t-2xl sticky top-0 z-10 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-teal-100 flex items-center justify-center">
                   <Package size={14} className="text-teal-600" />
                 </div>
-                <span className="text-sm font-black text-slate-800">스캔한 상품 · 실재고 입력</span>
+                <span className="text-sm font-black text-zinc-800">스캔한 상품 · 실재고 입력</span>
                 {rows.length > 0 && (
                   <span className="text-[11px] font-black text-teal-700
                     bg-teal-50 border border-teal-200 rounded-full px-2 py-0.5 tabular-nums">
@@ -798,68 +798,68 @@ export const ScanPage: React.FC<ScanPageProps> = ({
 
             {rows.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-3 py-16 sm:py-24 select-none">
-                <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center">
-                  <Package size={28} className="text-slate-300" />
+                <div className="w-16 h-16 rounded-xl bg-zinc-100 flex items-center justify-center">
+                  <Package size={28} className="text-zinc-300" />
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-black text-slate-400">스캔한 상품이 여기에 표시됩니다</p>
-                  <p className="text-xs text-slate-300 mt-1">좌측 바코드 스캔 후 자동 등록</p>
+                  <p className="text-sm font-black text-zinc-400">스캔한 상품이 여기에 표시됩니다</p>
+                  <p className="text-xs text-zinc-300 mt-1">좌측 바코드 스캔 후 자동 등록</p>
                 </div>
               </div>
             ) : (
               <div className="flex-1 overflow-auto max-h-[56vh] lg:max-h-[62vh]">
                 <table className="w-full border-collapse text-[12px] sm:text-[13px]">
                   <thead className="sticky top-0 z-10">
-                    <tr className="bg-slate-50/95 backdrop-blur-sm border-b border-slate-200/60">
+                    <tr className="bg-zinc-50/95 backdrop-blur-sm border-b border-zinc-200/60">
                       {/* 2026-08-10 · 사용자 요청 · 시각 컬럼 제거 */}
                       {/* 상품명 */}
                       <th
-                        className="text-left px-2 py-2.5 font-bold text-slate-400 min-w-[140px]
-                          cursor-pointer select-none hover:text-slate-600 hover:bg-slate-100/60 transition-colors"
+                        className="text-left px-2 py-2.5 font-bold text-zinc-400 min-w-[140px]
+                          cursor-pointer select-none hover:text-zinc-600 hover:bg-zinc-100/60 transition-colors"
                         onClick={() => handleSort("name")}
                       >
                         상품명 <SortIcon active={sortKey === "name"} dir={sortDir} />
                       </th>
                       {/* 2026-08-10 · 구역 (real_map) 컬럼 제거 · 사용자 요청 */}
                       {/* 창고1 · 데스크탑만 · lg 이상 개별 표시 */}
-                      <th className="hidden lg:table-cell text-center px-1.5 py-2.5 w-[80px] font-bold text-slate-400 whitespace-nowrap">
+                      <th className="hidden lg:table-cell text-center px-1.5 py-2.5 w-[80px] font-bold text-zinc-400 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1">
                           <Warehouse size={11} className="text-orange-400" /> 창고1
                         </span>
                       </th>
                       {/* 창고2 */}
-                      <th className="hidden lg:table-cell text-center px-1.5 py-2.5 w-[80px] font-bold text-slate-400 whitespace-nowrap">
+                      <th className="hidden lg:table-cell text-center px-1.5 py-2.5 w-[80px] font-bold text-zinc-400 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1">
                           <Warehouse size={11} className="text-amber-400" /> 창고2
                         </span>
                       </th>
                       {/* 매장1 */}
-                      <th className="hidden lg:table-cell text-center px-1.5 py-2.5 w-[84px] font-bold text-slate-400 whitespace-nowrap">
+                      <th className="hidden lg:table-cell text-center px-1.5 py-2.5 w-[84px] font-bold text-zinc-400 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1">
                           <Store size={11} className="text-emerald-500" /> 매장1
                         </span>
                       </th>
                       {/* 매장2 */}
-                      <th className="hidden lg:table-cell text-center px-1.5 py-2.5 w-[84px] font-bold text-slate-400 whitespace-nowrap">
+                      <th className="hidden lg:table-cell text-center px-1.5 py-2.5 w-[84px] font-bold text-zinc-400 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1">
                           <Store size={11} className="text-sky-500" /> 매장2
                         </span>
                       </th>
                       {/* 매장3 */}
-                      <th className="hidden lg:table-cell text-center px-1.5 py-2.5 w-[84px] font-bold text-slate-400 whitespace-nowrap">
+                      <th className="hidden lg:table-cell text-center px-1.5 py-2.5 w-[84px] font-bold text-zinc-400 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1">
                           <Store size={11} className="text-violet-500" /> 매장3
                         </span>
                       </th>
                       {/* 모바일·태블릿 통합 재고 헤더 · lg 미만 (2026-08-05 · 사용자 요청 반응형 wrap) */}
-                      <th className="lg:hidden text-center px-2 py-2.5 font-bold text-slate-400 whitespace-nowrap min-w-[240px]">
+                      <th className="lg:hidden text-center px-2 py-2.5 font-bold text-zinc-400 whitespace-nowrap min-w-[240px]">
                         <span className="inline-flex items-center gap-1">
                           <Warehouse size={11} className="text-amber-500" /> 재고
-                          <span className="text-[10px] text-slate-300 font-normal">(창고1·2 / 매장1·2·3)</span>
+                          <span className="text-[10px] text-zinc-300 font-normal">(창고1·2 / 매장1·2·3)</span>
                         </span>
                       </th>
                       {/* 합계 */}
-                      <th className="text-center px-2 py-2.5 w-[54px] font-bold text-slate-400 whitespace-nowrap">
+                      <th className="text-center px-2 py-2.5 w-[54px] font-bold text-zinc-400 whitespace-nowrap">
                         합계
                       </th>
                       {/* 삭제 */}
@@ -892,26 +892,26 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             <div className={`bg-white rounded-2xl border-2 overflow-hidden transition-all duration-300 ${
               saveStatus === "done"
                 ? "border-emerald-300/80 shadow-[0_0_0_4px_rgba(16,185,129,0.08),0_4px_16px_rgba(0,0,0,0.08)]"
-                : "border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
+                : "border-zinc-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
             }`}>
-              <div className={`px-5 py-3.5 border-b border-slate-100/80 flex items-center justify-between gap-2 ${
-                saveStatus === "done" ? "bg-emerald-50/60" : "bg-slate-50/40"
+              <div className={`px-5 py-3.5 border-b border-zinc-100/80 flex items-center justify-between gap-2 ${
+                saveStatus === "done" ? "bg-emerald-50/60" : "bg-zinc-50/40"
               }`}>
                 <div className="flex items-center gap-2.5">
                   <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
-                    saveStatus === "done" ? "bg-emerald-100" : "bg-slate-100"
+                    saveStatus === "done" ? "bg-emerald-100" : "bg-zinc-100"
                   }`}>
-                    <SaveAll size={14} className={saveStatus === "done" ? "text-emerald-600" : "text-slate-400"} />
+                    <SaveAll size={14} className={saveStatus === "done" ? "text-emerald-600" : "text-zinc-400"} />
                   </div>
-                  <span className="text-sm font-black text-slate-800">전체 등록</span>
+                  <span className="text-sm font-black text-zinc-800">전체 등록</span>
                 </div>
-                <span className="text-[11px] font-bold text-slate-400 tabular-nums">
+                <span className="text-[11px] font-bold text-zinc-400 tabular-nums">
                   {rows.length}건 · 총 {rows.reduce((acc, r) => acc + calcRowTotal(r), 0)}개
                 </span>
               </div>
 
               <div className="px-5 py-4 flex flex-col gap-3">
-                <p className="text-[12px] text-slate-500 leading-relaxed">
+                <p className="text-[12px] text-zinc-500 leading-relaxed">
                   리스트의 모든 항목을 한 번에 저장합니다.
                   창고1·2 · 매장1·2·3 수량과 구역을 확인한 뒤 아래 버튼을 누르세요.
                 </p>
@@ -929,7 +929,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                       : saveStatus === "error"
                         ? "bg-rose-500 hover:bg-rose-600 shadow-md"
                         : saveStatus === "saving"
-                          ? "bg-slate-400"
+                          ? "bg-zinc-400"
                           : "bg-teal-600 hover:bg-teal-700 shadow-md hover:shadow-lg",
                   ].join(" ")}
                 >
@@ -963,7 +963,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                         setSaveError(null);
                       }}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-bold
-                        text-slate-500 bg-white border border-slate-200 hover:bg-slate-50
+                        text-zinc-500 bg-white border border-zinc-200 hover:bg-zinc-50
                         transition cursor-pointer shrink-0"
                     >
                       <RotateCcw size={11} /> 목록 초기화
@@ -983,22 +983,22 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[9998] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/50 backdrop-blur-sm"
+          className="fixed inset-0 z-[9998] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-zinc-900/50 backdrop-blur-sm"
           onClick={() => setHistoryModal(null)}
         >
           <div
             onClick={e => e.stopPropagation()}
-            className="w-full sm:max-w-2xl max-h-[85vh] bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col"
+            className="w-full sm:max-w-2xl max-h-[85vh] bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl border border-zinc-200 overflow-hidden flex flex-col"
           >
-            <div className="px-5 py-3.5 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between gap-2">
+            <div className="px-5 py-3.5 border-b border-zinc-100 bg-zinc-50/60 flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <div className="text-[10px] font-bold text-teal-600 uppercase tracking-widest">실재고 저장 이력</div>
-                <div className="text-sm font-black text-slate-800 truncate">{historyModal.name}</div>
-                <div className="text-[10px] text-slate-400 font-mono">{historyModal.code}</div>
+                <div className="text-sm font-black text-zinc-800 truncate">{historyModal.name}</div>
+                <div className="text-[10px] text-zinc-400 font-mono">{historyModal.code}</div>
               </div>
               <button
                 onClick={() => setHistoryModal(null)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer shrink-0"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition cursor-pointer shrink-0"
                 title="닫기"
               >
                 <X size={16} />
@@ -1006,17 +1006,17 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             </div>
             <div className="flex-1 overflow-auto">
               {historyLoading ? (
-                <div className="flex items-center justify-center py-12 text-slate-400 text-xs font-semibold">
+                <div className="flex items-center justify-center py-12 text-zinc-400 text-xs font-semibold">
                   <Loader2 size={16} className="animate-spin mr-2" /> 이력 조회 중...
                 </div>
               ) : historyRows.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-slate-400 text-xs font-semibold">
-                  <History size={22} className="mb-2 text-slate-300" />
+                <div className="flex flex-col items-center justify-center py-12 text-zinc-400 text-xs font-semibold">
+                  <History size={22} className="mb-2 text-zinc-300" />
                   저장 이력이 없습니다.
                 </div>
               ) : (
                 <table className="w-full text-[11px]">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase tracking-widest text-slate-500 font-bold">
+                  <thead className="bg-zinc-50 border-b border-zinc-200 text-[10px] uppercase tracking-widest text-zinc-500 font-bold">
                     <tr>
                       <th className="px-3 py-2 text-left">일시</th>
                       <th className="px-2 py-2 text-center">창1</th>
@@ -1027,7 +1027,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                       <th className="px-3 py-2 text-left">담당</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-zinc-100">
                     {historyRows.map(h => {
                       const dt = h.checked_at ? new Date(h.checked_at) : null;
                       const dtLabel = dt
@@ -1036,13 +1036,13 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                       const w1 = h.warehouse1_stock ?? h.warehouse_stock;
                       return (
                         <tr key={h.id} className="hover:bg-teal-50/40">
-                          <td className="px-3 py-2 font-mono text-slate-700 whitespace-nowrap">{dtLabel}</td>
-                          <td className="px-2 py-2 text-center tabular-nums font-bold text-slate-700">{w1 ?? "-"}</td>
-                          <td className="px-2 py-2 text-center tabular-nums font-bold text-slate-700">{h.warehouse2_stock ?? "-"}</td>
-                          <td className="px-2 py-2 text-center tabular-nums font-bold text-slate-700">{h.store_stock ?? "-"}</td>
-                          <td className="px-2 py-2 text-center tabular-nums font-bold text-slate-700">{h.store_stock_2 ?? "-"}</td>
-                          <td className="px-2 py-2 text-center tabular-nums font-bold text-slate-700">{h.store3_stock ?? "-"}</td>
-                          <td className="px-3 py-2 text-slate-600 truncate max-w-[100px]">{h.checked_by ?? "-"}</td>
+                          <td className="px-3 py-2 font-mono text-zinc-700 whitespace-nowrap">{dtLabel}</td>
+                          <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{w1 ?? "-"}</td>
+                          <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{h.warehouse2_stock ?? "-"}</td>
+                          <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{h.store_stock ?? "-"}</td>
+                          <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{h.store_stock_2 ?? "-"}</td>
+                          <td className="px-2 py-2 text-center tabular-nums font-bold text-zinc-700">{h.store3_stock ?? "-"}</td>
+                          <td className="px-3 py-2 text-zinc-600 truncate max-w-[100px]">{h.checked_by ?? "-"}</td>
                         </tr>
                       );
                     })}
@@ -1050,7 +1050,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 </table>
               )}
             </div>
-            <div className="px-5 py-2.5 border-t border-slate-100 bg-slate-50/60 text-[10px] text-slate-400 font-semibold text-center">
+            <div className="px-5 py-2.5 border-t border-zinc-100 bg-zinc-50/60 text-[10px] text-zinc-400 font-semibold text-center">
               같은 날 저장은 덮어쓰고, 다른 날 저장은 이력으로 추가됩니다.
             </div>
           </div>
@@ -1065,21 +1065,21 @@ export const ScanPage: React.FC<ScanPageProps> = ({
           <div className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
             onClick={e => e.stopPropagation()}
           >
-            <div className="px-5 py-3.5 border-b border-slate-200 bg-teal-50 flex items-center justify-between">
+            <div className="px-5 py-3.5 border-b border-zinc-200 bg-teal-50 flex items-center justify-between">
               <div>
-                <div className="text-sm font-black text-slate-900">등록 전 검토</div>
-                <div className="text-[11px] font-semibold text-slate-500 mt-0.5">
+                <div className="text-sm font-black text-zinc-900">등록 전 검토</div>
+                <div className="text-[11px] font-semibold text-zinc-500 mt-0.5">
                   {rows.length}건 · 총 {rows.reduce((acc, r) => acc + calcRowTotal(r), 0)}개
                 </div>
               </div>
               <button
                 onClick={() => setReviewOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:bg-white/70 hover:text-slate-700 cursor-pointer"
+                className="p-1.5 rounded-lg text-zinc-400 hover:bg-white/70 hover:text-zinc-700 cursor-pointer"
                 title="닫기"
               >×</button>
             </div>
 
-            <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+            <div className="flex-1 overflow-y-auto divide-y divide-zinc-100">
               {rows.map(r => {
                 const total = calcRowTotal(r);
                 const added =
@@ -1091,26 +1091,26 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 return (
                   <div key={r.key} className="px-4 py-2.5 flex items-baseline justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <div className="text-[12px] font-bold text-slate-800 truncate">{r.product.name}</div>
-                      <div className="text-[10px] text-slate-400 font-mono tabular-nums truncate">{r.code}</div>
+                      <div className="text-[12px] font-bold text-zinc-800 truncate">{r.product.name}</div>
+                      <div className="text-[10px] text-zinc-400 font-mono tabular-nums truncate">{r.code}</div>
                     </div>
                     <div className="flex items-baseline gap-2 shrink-0">
                       {added > 0 ? (
                         <span className="text-[11px] font-black text-emerald-700 tabular-nums">+{added}</span>
                       ) : (
-                        <span className="text-[11px] text-slate-300">변화 없음</span>
+                        <span className="text-[11px] text-zinc-300">변화 없음</span>
                       )}
-                      <span className="text-[12px] font-black text-slate-800 tabular-nums">= {total}</span>
+                      <span className="text-[12px] font-black text-zinc-800 tabular-nums">= {total}</span>
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex items-center gap-2">
+            <div className="px-4 py-3 border-t border-zinc-200 bg-zinc-50 flex items-center gap-2">
               <button
                 onClick={() => setReviewOpen(false)}
-                className="flex-1 h-10 rounded-lg bg-white border border-slate-300 text-slate-600 text-[12px] font-bold hover:bg-slate-100 transition cursor-pointer"
+                className="flex-1 h-10 rounded-lg bg-white border border-zinc-300 text-zinc-600 text-[12px] font-bold hover:bg-zinc-100 transition cursor-pointer"
               >취소</button>
               <button
                 onClick={() => { setReviewOpen(false); handleBulkSave(); }}

@@ -136,7 +136,7 @@ export const ZoneCell: React.FC<ZoneCellProps> = ({
         const isB = zone.id.endsWith("B");
         statusCls = isA ? pair.A : isB ? pair.B : pair.A;
       } else {
-        statusCls = "bg-white text-slate-700 border-slate-300 hover:border-slate-400";
+        statusCls = "bg-white text-zinc-700 border-zinc-300 hover:border-zinc-400";
       }
     } else if (zone.num === 36) {
       statusCls = "bg-blue-50 text-blue-900 border-blue-300 hover:bg-blue-100 hover:border-blue-400";
@@ -199,7 +199,7 @@ export const ZoneCell: React.FC<ZoneCellProps> = ({
           <span className={`text-[9px] font-black px-1 py-px rounded leading-tight text-center max-w-full break-all ${
             staffColorIndex !== null && staffColorIndex !== undefined
               ? STAFF_AVATAR_COLORS[staffColorIndex % STAFF_AVATAR_COLORS.length]
-              : "bg-slate-600 text-white"
+              : "bg-zinc-600 text-white"
           }`}>
             {zone.assignedStaffName.slice(0, 3)}
           </span>

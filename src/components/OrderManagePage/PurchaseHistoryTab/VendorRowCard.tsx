@@ -50,11 +50,11 @@ function daysAgo(iso: string | null): number | null {
 
 // 최근성 텍스트 색상 (배지→텍스트 단순화)
 function recencyTextCls(days: number | null): string {
-  if (days == null) return "text-slate-300";
+  if (days == null) return "text-zinc-300";
   if (days <= 3) return "text-emerald-700";
   if (days <= 14) return "text-amber-700";
   if (days <= 60) return "text-orange-700";
-  return "text-slate-400";
+  return "text-zinc-400";
 }
 
 // 최근매입일 · YYYY-MM-DD 원본 (short: MM-DD) + N일전 tooltip
@@ -80,11 +80,11 @@ export const VendorRowCard: React.FC<VendorRowCardProps> = React.memo(({
 
   // 매입주기 색상 · 재고관리 29728bb 스타일 참조
   const cycleColor = cycle == null
-    ? "text-slate-300"
+    ? "text-zinc-300"
     : cycle <= 14 ? "text-emerald-700"
     : cycle <= 30 ? "text-sky-700"
     : cycle <= 60 ? "text-teal-700"
-    : "text-slate-500";
+    : "text-zinc-500";
 
   const recentCls = recencyTextCls(days);
 
@@ -96,14 +96,14 @@ export const VendorRowCard: React.FC<VendorRowCardProps> = React.memo(({
       className={`group w-full text-left px-2 py-2 grid gap-1.5 items-center transition cursor-pointer border-l-2 grid-cols-[1fr_64px_60px_52px] ${
         active
           ? "bg-emerald-50 border-emerald-500"
-          : "hover:bg-slate-50 border-transparent"
+          : "hover:bg-zinc-50 border-transparent"
       }`}
     >
       {/* 1. 공급사 (카테고리 좌측 · 이름) */}
       <div className="flex items-center gap-1 min-w-0">
         <VendorCategoryBadge category={category} className="text-[9px]" />
         <span className={`text-[12px] font-semibold leading-tight truncate ${
-          active ? "text-emerald-800" : "text-slate-700"
+          active ? "text-emerald-800" : "text-zinc-700"
         }`}>
           {companyName}
         </span>
@@ -111,7 +111,7 @@ export const VendorRowCard: React.FC<VendorRowCardProps> = React.memo(({
       {/* 2. 매입액 (이번달) */}
       <span
         className={`text-right text-[12px] font-black tabular-nums leading-none ${
-          thisMonth > 0 ? (active ? "text-indigo-800" : "text-indigo-700") : "text-slate-300"
+          thisMonth > 0 ? (active ? "text-indigo-800" : "text-indigo-700") : "text-zinc-300"
         }`}
         title={`이번달 매입액 · ${thisMonth.toLocaleString()}원`}
       >

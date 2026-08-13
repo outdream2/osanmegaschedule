@@ -54,26 +54,26 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[9998] flex items-center justify-center p-3 bg-slate-900/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[9998] flex items-center justify-center p-3 bg-zinc-900/50 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col"
+        className="w-full max-w-lg max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-zinc-200 overflow-hidden flex flex-col"
       >
         {/* 헤더 */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 bg-sky-50/60 shrink-0">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-100 bg-sky-50/60 shrink-0">
           <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center">
             <Building2 size={15} className="text-sky-600" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-[10px] font-bold text-sky-600 uppercase tracking-wider">공급사</div>
-            <div className="text-[14px] font-black text-slate-800">공급사 검색·등록</div>
+            <div className="text-[14px] font-black text-zinc-800">공급사 검색·등록</div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition cursor-pointer"
             aria-label="닫기"
             title="닫기"
           >
@@ -84,14 +84,14 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
         {/* 검색 + 액션 버튼 */}
         <div className="px-4 pt-3 pb-2 flex items-center gap-2 shrink-0">
           <div className="relative flex-1 min-w-0">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
             <input
               autoFocus
               type="text"
               value={query}
               onChange={(e) => { setQuery(e.target.value); setSelectedId(null); }}
               placeholder="공급사명·사업자번호·담당자 검색"
-              className="w-full h-9 pl-8 pr-3 text-[13px] border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition"
+              className="w-full h-9 pl-8 pr-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition"
             />
           </div>
           {/* 결과 있고 선택됨 · 조회수정 */}
@@ -123,24 +123,24 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
         {/* 결과 리스트 */}
         <div className="flex-1 overflow-y-auto px-4 pb-3">
           {loading ? (
-            <div className="flex items-center justify-center gap-2 py-8 text-slate-400 text-[12px]">
+            <div className="flex items-center justify-center gap-2 py-8 text-zinc-400 text-[12px]">
               <Loader2 size={13} className="animate-spin" />불러오는 중...
             </div>
           ) : filtered.length === 0 ? (
             <div className="py-8 text-center">
               {q.length === 0 ? (
-                <div className="text-[12px] text-slate-400">검색어를 입력하세요</div>
+                <div className="text-[12px] text-zinc-400">검색어를 입력하세요</div>
               ) : (
                 <div className="flex flex-col items-center gap-2">
-                  <div className="text-[12px] text-slate-500 font-semibold">
+                  <div className="text-[12px] text-zinc-500 font-semibold">
                     "{query}" · 검색 결과 없음
                   </div>
-                  <div className="text-[11px] text-slate-400">우측 상단 [신규등록] 버튼으로 등록</div>
+                  <div className="text-[11px] text-zinc-400">우측 상단 [신규등록] 버튼으로 등록</div>
                 </div>
               )}
             </div>
           ) : (
-            <div className="divide-y divide-slate-100 border border-slate-200 rounded-lg overflow-hidden">
+            <div className="divide-y divide-zinc-100 border border-zinc-200 rounded-lg overflow-hidden">
               {filtered.map(v => {
                 const active = v.id === selectedId;
                 return (
@@ -151,14 +151,14 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
                     className={`w-full text-left px-3 py-2 flex items-center gap-2 transition cursor-pointer ${
                       active
                         ? "bg-sky-50 border-l-2 border-sky-500"
-                        : "hover:bg-slate-50 border-l-2 border-transparent"
+                        : "hover:bg-zinc-50 border-l-2 border-transparent"
                     }`}
                   >
                     <div className="flex-1 min-w-0">
-                      <div className={`text-[13px] font-black truncate ${active ? "text-sky-800" : "text-slate-800"}`}>
+                      <div className={`text-[13px] font-black truncate ${active ? "text-sky-800" : "text-zinc-800"}`}>
                         {v.company_name}
                       </div>
-                      <div className="text-[10px] text-slate-400 truncate">
+                      <div className="text-[10px] text-zinc-400 truncate">
                         {v.business_number || "-"} · {v.contact_name || "-"} · {v.phone || "-"}
                       </div>
                     </div>
@@ -175,7 +175,7 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
         </div>
 
         {/* 하단 안내 */}
-        <div className="px-4 py-2 border-t border-slate-100 bg-slate-50/60 text-[10px] text-slate-400 shrink-0 leading-snug">
+        <div className="px-4 py-2 border-t border-zinc-100 bg-zinc-50/60 text-[10px] text-zinc-400 shrink-0 leading-snug">
           검색 후 결과 선택 → [조회수정] · 결과 없으면 → [신규등록]
         </div>
       </div>

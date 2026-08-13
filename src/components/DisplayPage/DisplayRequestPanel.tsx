@@ -99,7 +99,7 @@ const ActionButtons: React.FC<{
       type="button"
       onClick={onDelete}
       title="삭제"
-      className="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:bg-rose-50 hover:text-rose-500 active:scale-95 transition-all cursor-pointer border border-slate-200 hover:border-rose-200"
+      className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-400 hover:bg-rose-50 hover:text-rose-500 active:scale-95 transition-all cursor-pointer border border-zinc-200 hover:border-rose-200"
     >
       <Trash2 size={12} />
     </button>
@@ -120,15 +120,15 @@ const RequestCard: React.FC<{
     <div
       className={`rounded-lg border p-3 flex flex-col gap-2 transition-all duration-150 ${
         req.status === "done"
-          ? "bg-slate-50 border-slate-100 opacity-70"
+          ? "bg-zinc-50 border-zinc-100 opacity-70"
           : urgent
           ? "bg-rose-50/60 border-rose-200 shadow-sm shadow-rose-100"
-          : "bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm"
+          : "bg-white border-zinc-200 hover:border-zinc-300 hover:shadow-sm"
       }`}
     >
       {/* Row 1: 구역 + 상태 */}
       <div className="flex items-center justify-between">
-        <span className={`text-[13px] font-bold ${urgent ? "text-rose-800" : "text-slate-900"}`}>
+        <span className={`text-[13px] font-bold ${urgent ? "text-rose-800" : "text-zinc-900"}`}>
           {req.zoneLabel}
         </span>
         <StatusBadge req={req} />
@@ -136,10 +136,10 @@ const RequestCard: React.FC<{
       {/* Row 2: 담당 + 시각 + 액션 */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-[12px] font-medium text-slate-700 truncate">
+          <span className="text-[12px] font-medium text-zinc-700 truncate">
             {req.assignedStaffName || "미배정"}
           </span>
-          <span className="text-[11px] text-slate-400 shrink-0">{formatRel(req.requestedAt)}</span>
+          <span className="text-[11px] text-zinc-400 shrink-0">{formatRel(req.requestedAt)}</span>
         </div>
         <ActionButtons req={req} onComplete={onComplete} onDelete={onDelete} />
       </div>
@@ -164,24 +164,24 @@ const RequestTableRow: React.FC<{
           ? "opacity-60"
           : urgent
           ? "bg-rose-50/50 hover:bg-rose-50"
-          : "hover:bg-slate-50/80"
+          : "hover:bg-zinc-50/80"
       }`}
     >
       {/* 2026-08-10 · 사용자 요청 · 상품명 · 맨 앞 컬럼 */}
       <td className="px-3 py-2.5">
-        <span className={`text-[12px] font-black ${urgent ? "text-rose-800" : "text-slate-900"} block truncate max-w-[220px]`} title={req.productName ?? undefined}>
-          {req.productName ?? <span className="text-slate-300">-</span>}
+        <span className={`text-[12px] font-black ${urgent ? "text-rose-800" : "text-zinc-900"} block truncate max-w-[220px]`} title={req.productName ?? undefined}>
+          {req.productName ?? <span className="text-zinc-300">-</span>}
         </span>
       </td>
       <td className="px-3 py-2.5">
-        <span className={`text-[12px] font-bold ${urgent ? "text-rose-800" : "text-slate-700"}`}>
+        <span className={`text-[12px] font-bold ${urgent ? "text-rose-800" : "text-zinc-700"}`}>
           {req.zoneLabel}
         </span>
       </td>
-      <td className="px-3 py-2.5 text-[12px] font-medium text-slate-700">
-        {req.assignedStaffName || <span className="text-slate-400">미배정</span>}
+      <td className="px-3 py-2.5 text-[12px] font-medium text-zinc-700">
+        {req.assignedStaffName || <span className="text-zinc-400">미배정</span>}
       </td>
-      <td className="px-3 py-2.5 text-[11px] text-slate-400 whitespace-nowrap">
+      <td className="px-3 py-2.5 text-[11px] text-zinc-400 whitespace-nowrap">
         {formatRel(req.requestedAt)}
       </td>
       <td className="px-3 py-2.5 text-center">
@@ -198,8 +198,8 @@ const RequestTableRow: React.FC<{
 // Sub-component: Empty state
 // ─────────────────────────────────────────────────────────────────────────────
 const EmptyState: React.FC<{ reqFilter: "all" | "pending" | "done" }> = ({ reqFilter }) => (
-  <div className="flex flex-col items-center justify-center py-10 gap-3 text-slate-400 select-none">
-    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+  <div className="flex flex-col items-center justify-center py-10 gap-3 text-zinc-400 select-none">
+    <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center">
       <Bell size={18} className="opacity-50 animate-bounce" />
     </div>
     <p className="text-[12px] font-medium">
@@ -243,16 +243,16 @@ export const DisplayRequestPanel: React.FC<DisplayRequestPanelProps> = ({
 
   return (
     <div
-      className="w-full bg-white rounded-2xl border border-slate-200 shadow-md shadow-slate-200/60 flex flex-col overflow-hidden"
+      className="w-full bg-white rounded-2xl border border-zinc-200 shadow-md shadow-zinc-200/60 flex flex-col overflow-hidden"
     >
       {/* ── 헤더 ── */}
-      <div className="px-3 pt-3 pb-2.5 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
+      <div className="px-3 pt-3 pb-2.5 border-b border-zinc-100 flex items-center justify-between flex-wrap gap-2">
         {/* 좌: 아이콘 + 제목 + 카운트 pills */}
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
             <ClipboardList size={14} className="text-violet-600" />
           </div>
-          <span className="text-[13px] font-bold text-slate-900 whitespace-nowrap">
+          <span className="text-[13px] font-bold text-zinc-900 whitespace-nowrap">
             진열 보충 요청
           </span>
           {/* 대기 pill */}
@@ -276,7 +276,7 @@ export const DisplayRequestPanel: React.FC<DisplayRequestPanelProps> = ({
         </div>
 
         {/* 우: segmented control */}
-        <div className="flex gap-0.5 bg-slate-100 rounded-lg p-0.5 shrink-0">
+        <div className="flex gap-0.5 bg-zinc-100 rounded-lg p-0.5 shrink-0">
           {(["all", "pending", "done"] as const).map((k) => (
             <button
               key={k}
@@ -284,8 +284,8 @@ export const DisplayRequestPanel: React.FC<DisplayRequestPanelProps> = ({
               onClick={() => setReqFilter(k)}
               className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all duration-150 cursor-pointer whitespace-nowrap ${
                 reqFilter === k
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
+                  ? "bg-white text-zinc-900 shadow-sm"
+                  : "text-zinc-500 hover:text-zinc-700"
               }`}
             >
               {k === "all" ? "전체" : k === "pending" ? "대기" : "완료"}
@@ -318,16 +318,16 @@ export const DisplayRequestPanel: React.FC<DisplayRequestPanelProps> = ({
               <table className="w-full text-left border-collapse">
                 <thead>
                   {/* 2026-08-10 · 사용자 요청 · 상품명 · 맨 앞 컬럼 */}
-                  <tr className="bg-slate-50/80 border-b border-slate-100">
-                    <th className="px-3 py-2 text-[11px] font-bold text-slate-500">상품명</th>
-                    <th className="px-3 py-2 text-[11px] font-bold text-slate-500 w-24">구역</th>
-                    <th className="px-3 py-2 text-[11px] font-bold text-slate-500 w-20">담당</th>
-                    <th className="px-3 py-2 text-[11px] font-bold text-slate-500 w-16">시각</th>
-                    <th className="px-3 py-2 text-[11px] font-bold text-slate-500 text-center w-16">상태</th>
-                    <th className="px-3 py-2 text-[11px] font-bold text-slate-500 text-center w-16">작업</th>
+                  <tr className="bg-zinc-50/80 border-b border-zinc-100">
+                    <th className="px-3 py-2 text-[11px] font-bold text-zinc-500">상품명</th>
+                    <th className="px-3 py-2 text-[11px] font-bold text-zinc-500 w-24">구역</th>
+                    <th className="px-3 py-2 text-[11px] font-bold text-zinc-500 w-20">담당</th>
+                    <th className="px-3 py-2 text-[11px] font-bold text-zinc-500 w-16">시각</th>
+                    <th className="px-3 py-2 text-[11px] font-bold text-zinc-500 text-center w-16">상태</th>
+                    <th className="px-3 py-2 text-[11px] font-bold text-zinc-500 text-center w-16">작업</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100/80">
+                <tbody className="divide-y divide-zinc-100/80">
                   {filteredReqs.map((req) => (
                     <RequestTableRow
                       key={req.id}

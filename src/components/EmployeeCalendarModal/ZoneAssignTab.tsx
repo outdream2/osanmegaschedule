@@ -88,7 +88,7 @@ export const ZoneAssignTab: React.FC<{
                 className={`w-7 h-7 text-[10px] font-black rounded-lg border transition cursor-pointer ${
                   selectedDows.has(dow)
                     ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                    : "bg-white text-slate-600 border-slate-200 hover:border-indigo-400 hover:text-indigo-600"
+                    : "bg-white text-zinc-600 border-zinc-200 hover:border-indigo-400 hover:text-indigo-600"
                 }`}
               >
                 {label}
@@ -108,7 +108,7 @@ export const ZoneAssignTab: React.FC<{
                 <button
                   type="button"
                   onClick={() => setSelectedDows(new Set())}
-                  className="text-[10px] font-bold px-1.5 py-1 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 cursor-pointer transition"
+                  className="text-[10px] font-bold px-1.5 py-1 rounded-lg bg-zinc-100 text-zinc-500 hover:bg-zinc-200 cursor-pointer transition"
                 >
                   ✕
                 </button>
@@ -121,7 +121,7 @@ export const ZoneAssignTab: React.FC<{
       {/* Zone groups */}
       {grouped.map(({ section, label, zones }) => (
         <div key={section}>
-          <div className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5">{label}</div>
+          <div className="text-[10px] font-black text-zinc-500 uppercase tracking-wider mb-1.5">{label}</div>
           <div className="grid grid-cols-4 gap-1.5">
             {zones.map((z) => {
               const isAssigned = assignedZoneNums.includes(z.num);
@@ -133,13 +133,13 @@ export const ZoneAssignTab: React.FC<{
                   className={`rounded-lg border-2 p-1.5 text-left transition-all cursor-pointer active:scale-[0.96] ${
                     isAssigned
                       ? "bg-violet-100 border-violet-400 shadow-sm"
-                      : "bg-white border-slate-200 hover:border-violet-300 hover:bg-violet-50"
+                      : "bg-white border-zinc-200 hover:border-violet-300 hover:bg-violet-50"
                   }`}
                 >
-                  <div className={`text-[11px] font-black leading-tight ${isAssigned ? "text-violet-800" : "text-slate-700"}`}>
+                  <div className={`text-[11px] font-black leading-tight ${isAssigned ? "text-violet-800" : "text-zinc-700"}`}>
                     {z.num}번
                   </div>
-                  <div className={`text-[8px] leading-tight mt-0.5 line-clamp-2 ${isAssigned ? "text-violet-600" : "text-slate-400"}`}>
+                  <div className={`text-[8px] leading-tight mt-0.5 line-clamp-2 ${isAssigned ? "text-violet-600" : "text-zinc-400"}`}>
                     {z.label}
                   </div>
                   {isAssigned && (

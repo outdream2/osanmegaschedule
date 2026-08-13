@@ -137,18 +137,18 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex flex-col bg-slate-950/95 backdrop-blur-sm"
+      className="fixed inset-0 z-[9999] flex flex-col bg-zinc-950/95 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       onContextMenu={e => { e.preventDefault(); e.stopPropagation(); }}
     >
       {/* ── 헤더 ─────────────────────────────── */}
-      <div className="shrink-0 h-12 px-3 sm:px-4 flex items-center gap-2 border-b border-slate-800/60 bg-slate-900/80">
+      <div className="shrink-0 h-12 px-3 sm:px-4 flex items-center gap-2 border-b border-zinc-800/60 bg-zinc-900/80">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <FileWarning size={16} className="text-amber-400 shrink-0" />
           <div className="min-w-0">
             <div className="text-[13px] font-black text-white truncate">{fileName || "PDF 뷰어"}</div>
-            <div className="text-[10px] text-slate-400 font-semibold truncate">
+            <div className="text-[10px] text-zinc-400 font-semibold truncate">
               보안 뷰어 · 복사·인쇄·저장 · 스크린샷 금지 · {watermark} · {openedAt}
             </div>
           </div>
@@ -156,7 +156,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="w-9 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center cursor-pointer shrink-0 transition"
+          className="w-9 h-9 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white flex items-center justify-center cursor-pointer shrink-0 transition"
           title="닫기 (ESC)"
           aria-label="닫기"
         >
@@ -175,12 +175,12 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-4 p-8 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-slate-800 text-amber-400 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-2xl bg-zinc-800 text-amber-400 flex items-center justify-center">
               <FileWarning size={28} />
             </div>
             <div>
               <div className="text-lg font-black text-white">PDF 이외 파일</div>
-              <div className="text-sm text-slate-300 font-semibold mt-1">
+              <div className="text-sm text-zinc-300 font-semibold mt-1">
                 이 뷰어는 PDF 만 지원합니다.<br />
                 아래 버튼으로 새 창에서 열거나 다운로드하세요.
               </div>
@@ -200,7 +200,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
               <a
                 href={fileUrl}
                 download={fileName || undefined}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-bold cursor-pointer transition"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-bold cursor-pointer transition"
               >
                 <Download size={14} /> 다운로드
               </a>

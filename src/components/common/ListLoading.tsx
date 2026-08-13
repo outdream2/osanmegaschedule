@@ -19,7 +19,7 @@ export interface ListLoadingProps {
 }
 
 const TONE_MAP: Record<NonNullable<ListLoadingProps["tone"]>, string> = {
-  slate:   "text-slate-400",
+  slate:   "text-zinc-400",
   emerald: "text-emerald-500",
   sky:     "text-sky-500",
   indigo:  "text-indigo-500",

@@ -86,32 +86,32 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
       ref={popoverRef}
       style={style}
       onClick={(e) => e.stopPropagation()}
-      className="w-[240px] bg-white rounded-2xl border border-slate-200 shadow-2xl p-3 flex flex-col gap-2.5 animate-in fade-in zoom-in-95 duration-100"
+      className="w-[240px] bg-white rounded-2xl border border-zinc-200 shadow-2xl p-3 flex flex-col gap-2.5 animate-in fade-in zoom-in-95 duration-100"
     >
       {/* Popover Header */}
-      <div className="flex items-start justify-between border-b border-slate-100 pb-2">
+      <div className="flex items-start justify-between border-b border-zinc-100 pb-2">
         <div className="min-w-0">
-          <div className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+          <div className="text-xs font-black text-zinc-800 flex items-center gap-1.5">
             <span className={`px-1.5 py-0.5 rounded-md border text-[10px] ${statusCell(zone.status)}`}>
               {zone.num}번
             </span>
             <span className="truncate">{zone.label}</span>
           </div>
-          <p className="text-[10px] text-slate-400 truncate mt-0.5">{zone.category}</p>
+          <p className="text-[10px] text-zinc-400 truncate mt-0.5">{zone.category}</p>
         </div>
-        <button onClick={onClose} className="w-5 h-5 rounded-md hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 cursor-pointer">
+        <button onClick={onClose} className="w-5 h-5 rounded-md hover:bg-zinc-100 flex items-center justify-center text-zinc-400 hover:text-zinc-600 cursor-pointer">
           <X size={12} />
         </button>
       </div>
 
       {/* Logistics Roster */}
       <div className="space-y-1">
-        <div className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
+        <div className="text-[10px] font-bold text-zinc-500 flex items-center gap-1">
           <Users size={11} />물류 담당 배정
         </div>
 
         {logisticsStaff.length === 0 ? (
-          <div className="text-[10px] text-slate-400 italic py-2 text-center">오늘 출근한 물류 직원이 없습니다.</div>
+          <div className="text-[10px] text-zinc-400 italic py-2 text-center">오늘 출근한 물류 직원이 없습니다.</div>
         ) : (
           <div className="grid grid-cols-2 gap-1.5 max-h-[120px] overflow-y-auto pr-0.5">
             {logisticsStaff.map((ts) => {
@@ -131,10 +131,10 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
                   className={`px-2 py-1.5 rounded-lg border text-left text-[11px] font-bold truncate transition cursor-pointer flex items-center gap-1.5 ${
                     isAssigned
                       ? `${STAFF_COLORS[colorIdx % STAFF_COLORS.length]} border-indigo-400 shadow-3xs`
-                      : "bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700"
+                      : "bg-white border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300 text-zinc-700"
                   }`}
                 >
-                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isAssigned ? "bg-indigo-600" : "bg-slate-300"}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isAssigned ? "bg-indigo-600" : "bg-zinc-300"}`} />
                   {employee.name}
                 </button>
               );
@@ -144,7 +144,7 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
       </div>
 
       {/* Popover actions */}
-      <div className="border-t border-slate-100 pt-2 flex gap-1.5">
+      <div className="border-t border-zinc-100 pt-2 flex gap-1.5">
         {zone.assignedStaffId !== null && (
           <button
             type="button"
@@ -157,7 +157,7 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
         <button
           type="button"
           onClick={onOpenDetail}
-          className="flex-1 text-[10px] font-semibold text-slate-500 hover:text-slate-700 py-1.5 rounded-xl hover:bg-slate-100 border border-transparent transition cursor-pointer flex items-center justify-center gap-1"
+          className="flex-1 text-[10px] font-semibold text-zinc-500 hover:text-zinc-700 py-1.5 rounded-xl hover:bg-zinc-100 border border-transparent transition cursor-pointer flex items-center justify-center gap-1"
         >
           <Package size={11} />상세 편집
         </button>

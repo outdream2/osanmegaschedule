@@ -33,7 +33,7 @@ export interface SearchBarProps {
   resultUnit?: string;
   /** 최근 검색어 저장 키 · localStorage · 5개 · 미지정 시 저장 안 함 */
   historyKey?: string;
-  /** 좌측 아이콘 색 (Tailwind class) · 기본 slate-400 */
+  /** 좌측 아이콘 색 (Tailwind class) · 기본 zinc-400 */
   iconColorClass?: string;
   /** 포커스 링 색상 프리셋 · 기본 rose (발주필요 톤) */
   accent?: "rose" | "sky" | "indigo" | "emerald" | "amber";
@@ -60,7 +60,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   resultCount,
   resultUnit = "건",
   historyKey,
-  iconColorClass = "text-slate-400",
+  iconColorClass = "text-zinc-400",
   accent = "rose",
   widthClass = "w-64",
   autoFocus = false,
@@ -127,7 +127,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           placeholder={placeholder}
           autoFocus={autoFocus}
           className={[
-            "text-[11px] border border-slate-200 rounded-md pl-7 pr-14 h-7 w-full",
+            "text-[11px] border border-zinc-200 rounded-md pl-7 pr-14 h-7 w-full",
             "focus:outline-none focus:ring-1 transition bg-white",
             ACCENT_MAP[accent],
           ].join(" ")}
@@ -139,7 +139,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             className={[
               "absolute right-7 text-[10px] font-black tabular-nums px-1.5 py-0.5 rounded",
               resultCount === 0
-                ? "bg-slate-100 text-slate-400"
+                ? "bg-zinc-100 text-zinc-400"
                 : "bg-rose-50 text-rose-600",
             ].join(" ")}
             title={`검색 결과 ${resultCount}${resultUnit}`}
@@ -152,7 +152,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           <button
             type="button"
             onClick={() => { onChange(""); setShowHistory(false); }}
-            className="absolute right-1.5 w-5 h-5 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 cursor-pointer transition"
+            className="absolute right-1.5 w-5 h-5 flex items-center justify-center rounded hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700 cursor-pointer transition"
             title="검색 초기화 (Esc)"
             aria-label="검색 초기화"
           >
@@ -163,8 +163,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
       {/* 최근 검색어 dropdown */}
       {showHistory && historyList.length > 0 && (
-        <div className="absolute top-8 left-0 right-0 bg-white rounded-md border border-slate-200 shadow-lg z-30 py-1">
-          <div className="px-2.5 py-1 text-[9px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1">
+        <div className="absolute top-8 left-0 right-0 bg-white rounded-md border border-zinc-200 shadow-lg z-30 py-1">
+          <div className="px-2.5 py-1 text-[9px] font-black text-zinc-400 uppercase tracking-wider flex items-center gap-1">
             <Clock size={9} />최근 검색
           </div>
           {historyList.map((h, i) => (
@@ -172,7 +172,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               key={i}
               type="button"
               onMouseDown={e => { e.preventDefault(); onChange(h); setShowHistory(false); }}
-              className="w-full text-left px-2.5 py-1 text-[11px] text-slate-700 hover:bg-slate-50 cursor-pointer flex items-center justify-between group"
+              className="w-full text-left px-2.5 py-1 text-[11px] text-zinc-700 hover:bg-zinc-50 cursor-pointer flex items-center justify-between group"
             >
               <span className="truncate">{h}</span>
               <span
@@ -189,7 +189,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                     return next;
                   });
                 }}
-                className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-rose-500 ml-2 shrink-0 cursor-pointer"
+                className="opacity-0 group-hover:opacity-100 text-zinc-300 hover:text-rose-500 ml-2 shrink-0 cursor-pointer"
                 title="이 검색어 삭제"
               >
                 <X size={10} />

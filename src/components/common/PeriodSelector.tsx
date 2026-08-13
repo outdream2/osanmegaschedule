@@ -59,7 +59,7 @@ export function PeriodSelector<T extends number | string>({
     <div
       role="group"
       aria-label={ariaLabel}
-      className={`inline-flex items-center gap-0.5 bg-slate-100 rounded-md ${s.wrap} ${className}`}
+      className={`inline-flex items-center gap-0.5 bg-zinc-100 rounded-md ${s.wrap} ${className}`}
       style={style}
     >
       {options.map(opt => {
@@ -73,7 +73,7 @@ export function PeriodSelector<T extends number | string>({
             className={`${s.btn} rounded font-black transition cursor-pointer whitespace-nowrap ${
               active
                 ? activeCls
-                : "text-slate-500 hover:text-slate-700 hover:bg-white"
+                : "text-zinc-500 hover:text-zinc-700 hover:bg-white"
             }`}
           >
             {opt.label}

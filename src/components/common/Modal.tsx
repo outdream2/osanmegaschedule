@@ -87,7 +87,7 @@ export const Modal: React.FC<ModalProps> = ({
         {(title != null || showClose) && (
           <div className="modal-header">
             {title != null && (
-              <div className="flex-1 min-w-0 text-[15px] font-black text-slate-800 truncate">
+              <div className="flex-1 min-w-0 text-[15px] font-black text-zinc-800 truncate">
                 {title}
               </div>
             )}
@@ -95,7 +95,7 @@ export const Modal: React.FC<ModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer shrink-0 transition-colors"
+                className="w-8 h-8 rounded-lg bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-zinc-600 cursor-pointer shrink-0 transition-colors"
                 title="닫기 (ESC)"
                 aria-label="닫기"
               >
@@ -108,7 +108,7 @@ export const Modal: React.FC<ModalProps> = ({
           {children}
         </div>
         {footer != null && (
-          <div className="border-t border-slate-200 px-5 py-3 flex items-center justify-end gap-2 shrink-0">
+          <div className="border-t border-zinc-200 px-5 py-3 flex items-center justify-end gap-2 shrink-0">
             {footer}
           </div>
         )}

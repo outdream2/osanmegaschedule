@@ -210,16 +210,16 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
     >
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] max-h-[92vh] flex flex-col overflow-hidden">
         {/* 모달 헤더 */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-200 shrink-0">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-200 shrink-0">
           {mobileModalTitle != null && (
-            <div className="flex-1 min-w-0 text-[14px] font-black text-slate-800 break-words whitespace-normal leading-tight">
+            <div className="flex-1 min-w-0 text-[14px] font-black text-zinc-800 break-words whitespace-normal leading-tight">
               {mobileModalTitle}
             </div>
           )}
           <button
             type="button"
             onClick={closeMobileModal}
-            className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer shrink-0 transition-colors ml-auto"
+            className="w-8 h-8 rounded-lg bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-zinc-600 cursor-pointer shrink-0 transition-colors ml-auto"
             title="닫기 (ESC)"
             aria-label="닫기"
           >
@@ -251,7 +251,7 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
           className={`split-divider group ${dividerHoverCls}`}
           title="드래그하여 좌측 폭 조절"
         >
-          <span className="text-[10px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+          <span className="text-[10px] text-zinc-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
         </div>
 
         {/* 우측: 상세 · 데스크탑만 표시 (모바일은 모달로) */}

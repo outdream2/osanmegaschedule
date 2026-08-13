@@ -98,7 +98,7 @@ const ApprovalCenterPage: React.FC<ApprovalCenterPageProps> = (props) => {
           />
         )}
         {tab === "resignation" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold py-16">사직서 승인 로딩 중...</div>}>
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-zinc-400 text-sm font-bold py-16">사직서 승인 로딩 중...</div>}>
             <ResignationApprovalPage authSession={props.authSession} />
           </Suspense>
         )}

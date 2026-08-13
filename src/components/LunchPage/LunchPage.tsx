@@ -259,7 +259,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
   const noEatCount = allRequests.filter(r => !r.eating).length;
 
   return (
-    <div className={embedded ? "flex-1 flex flex-col" : "min-h-screen bg-slate-50 flex flex-col"}>
+    <div className={embedded ? "flex-1 flex flex-col" : "min-h-screen bg-zinc-50 flex flex-col"}>
       {!embedded && (
         <AppNavHeader
           activePage="lunch"
@@ -276,12 +276,12 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button onClick={() => setSelectedDate(d => addDays(d, -1))}
-              className="p-1.5 rounded-md bg-white border border-slate-200 text-slate-400 hover:text-slate-700 transition-all duration-150 cursor-pointer shadow-sm">
+              className="p-1.5 rounded-md bg-white border border-zinc-200 text-zinc-400 hover:text-zinc-700 transition-all duration-150 cursor-pointer shadow-sm">
               <ChevronLeft size={15} />
             </button>
             <div>
-              <p className="text-[12px] text-slate-400 font-semibold uppercase tracking-wide">점심 관리</p>
-              <h1 className="text-xl font-black text-slate-900">{dateLabel(selectedDate)}</h1>
+              <p className="text-[12px] text-zinc-400 font-semibold uppercase tracking-wide">점심 관리</p>
+              <h1 className="text-xl font-black text-zinc-900">{dateLabel(selectedDate)}</h1>
             </div>
             <button onClick={() => setSelectedDate(d => addDays(d, 1))} disabled={isToday}
               className="p-1.5 rounded-lg bg-white border border-gray-200 text-gray-400 hover:text-gray-700 transition cursor-pointer shadow-sm disabled:opacity-30 disabled:cursor-default">
@@ -296,7 +296,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
               </button>
             )}
             <button onClick={() => { loadLunch(); loadBreakData(); }}
-              className="w-8 h-8 flex items-center justify-center rounded-md bg-white border border-slate-200 text-slate-400 hover:text-slate-700 transition-all duration-150 cursor-pointer shadow-sm">
+              className="w-8 h-8 flex items-center justify-center rounded-md bg-white border border-zinc-200 text-zinc-400 hover:text-zinc-700 transition-all duration-150 cursor-pointer shadow-sm">
               <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
             </button>
           </div>
@@ -487,37 +487,37 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
             로그인 후 이용할 수 있습니다.
           </div>
         ) : loading && myRequest === undefined ? (
-          <div className="bg-white border border-slate-200 rounded-xl p-10 flex items-center justify-center">
+          <div className="bg-white border border-zinc-200 rounded-xl p-10 flex items-center justify-center">
             <div className="w-6 h-6 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : isToday && myRequest && !myRequest.eating ? (
-          <div className="rounded-xl border-2 bg-slate-50 border-slate-200 p-4 flex flex-col gap-3 shadow-sm">
+          <div className="rounded-xl border-2 bg-zinc-50 border-zinc-200 p-4 flex flex-col gap-3 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <UtensilsCrossed size={20} className="text-rose-400" />
-                <span className="font-black text-lg text-slate-700">오늘 점심 불참</span>
+                <span className="font-black text-lg text-zinc-700">오늘 점심 불참</span>
               </div>
               <button onClick={cancel} disabled={submitting}
-                className="text-[12px] text-slate-400 hover:text-rose-500 font-semibold transition-all duration-150 cursor-pointer disabled:opacity-50">
+                className="text-[12px] text-zinc-400 hover:text-rose-500 font-semibold transition-all duration-150 cursor-pointer disabled:opacity-50">
                 신청취소
               </button>
             </div>
-            <p className="text-[12px] text-slate-400 flex items-center gap-1">
+            <p className="text-[12px] text-zinc-400 flex items-center gap-1">
               <Clock size={10} />{fmtTime(myRequest.updated_at)} 신청
             </p>
             {myRequest.memo && (
-              <p className="text-xs text-slate-600 bg-white rounded-md px-3 py-2 border border-slate-100">{myRequest.memo}</p>
+              <p className="text-xs text-zinc-600 bg-white rounded-md px-3 py-2 border border-zinc-100">{myRequest.memo}</p>
             )}
           </div>
         ) : isToday ? (
-          <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-4 shadow-sm">
-            <p className="text-center text-base font-bold text-slate-700">오늘 점심 드시나요?</p>
-            <p className="text-center text-[12px] text-slate-400">식사하시면 그냥 두시면 됩니다. 불참일 때만 신청해주세요.</p>
+          <div className="bg-white border border-zinc-200 rounded-xl p-4 flex flex-col gap-4 shadow-sm">
+            <p className="text-center text-base font-bold text-zinc-700">오늘 점심 드시나요?</p>
+            <p className="text-center text-[12px] text-zinc-400">식사하시면 그냥 두시면 됩니다. 불참일 때만 신청해주세요.</p>
             <textarea value={memo} onChange={e => setMemo(e.target.value)}
               placeholder="메모 (선택사항)" rows={2}
-              className="w-full text-xs border border-slate-200 rounded-lg px-3 py-2 resize-none outline-none focus:border-indigo-300 text-slate-600 placeholder-slate-300" />
+              className="w-full text-xs border border-zinc-200 rounded-lg px-3 py-2 resize-none outline-none focus:border-indigo-300 text-zinc-600 placeholder-zinc-300" />
             <button onClick={() => submit(false)} disabled={submitting}
-              className="w-full flex items-center justify-center gap-2 py-4 rounded-xl text-base font-black bg-slate-100 hover:bg-slate-200 active:scale-[0.97] text-slate-700 shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-50">
+              className="w-full flex items-center justify-center gap-2 py-4 rounded-xl text-base font-black bg-zinc-100 hover:bg-zinc-200 active:scale-[0.97] text-zinc-700 shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-50">
               <UtensilsCrossed size={18} className="text-rose-400" /> 점심 불참 신청
             </button>
           </div>
@@ -525,25 +525,25 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
 
         {/* ── 불참 현황 ────────────────────────────────────── */}
         {isLoggedIn && (
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+          <div className="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-1.5">
                 <UtensilsCrossed size={14} className="text-rose-600" />
-                <span className="text-sm font-black text-slate-700">점심 불참 현황</span>
-                <span className="text-[11px] font-mono text-slate-400">({allRequests.length}명 응답)</span>
+                <span className="text-sm font-black text-zinc-700">점심 불참 현황</span>
+                <span className="text-[11px] font-mono text-zinc-400">({allRequests.length}명 응답)</span>
               </div>
-              <span className="text-[12px] font-bold text-slate-500">불참 {noEatCount}명</span>
+              <span className="text-[12px] font-bold text-zinc-500">불참 {noEatCount}명</span>
             </div>
             {noEatCount === 0 ? (
-              <div className="text-center text-[12px] text-slate-300 py-6">데이터 없음</div>
+              <div className="text-center text-[12px] text-zinc-300 py-6">데이터 없음</div>
             ) : (
-              <div className="divide-y divide-slate-50">
+              <div className="divide-y divide-zinc-50">
                 {allRequests.filter(r => !r.eating).map(r => (
                   <div key={r.id} className="flex items-center gap-3 px-1 py-2.5">
-                    <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-slate-300" />
-                    <span className="text-sm font-semibold text-slate-800 flex-1">{r.employee_name}</span>
-                    {r.memo && <span className="text-[11px] text-slate-400 max-w-[130px] truncate">{r.memo}</span>}
-                    <span className="text-[11px] text-slate-400 shrink-0">{fmtTime(r.updated_at)}</span>
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-zinc-300" />
+                    <span className="text-sm font-semibold text-zinc-800 flex-1">{r.employee_name}</span>
+                    {r.memo && <span className="text-[11px] text-zinc-400 max-w-[130px] truncate">{r.memo}</span>}
+                    <span className="text-[11px] text-zinc-400 shrink-0">{fmtTime(r.updated_at)}</span>
                   </div>
                 ))}
               </div>

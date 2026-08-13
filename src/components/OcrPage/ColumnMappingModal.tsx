@@ -197,9 +197,9 @@ export const ColumnMappingModal: React.FC<Props> = ({
         {/* 헤더 */}
         <div className="px-5 py-3 border-b border-gray-200 flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-black text-slate-800">🔧 공급사 컬럼 매핑</h3>
-            <p className="text-[11px] text-slate-500 mt-0.5">
-              <span className="font-bold text-indigo-600">{supplier || "(공급사 미지정)"}</span> — <span className="text-slate-600">OCR 원본 컬럼</span>을 표준 필드에 연결. 저장하면 다음 스캔부터 자동 적용됩니다.
+            <h3 className="text-sm font-black text-zinc-800">🔧 공급사 컬럼 매핑</h3>
+            <p className="text-[11px] text-zinc-500 mt-0.5">
+              <span className="font-bold text-indigo-600">{supplier || "(공급사 미지정)"}</span> — <span className="text-zinc-600">OCR 원본 컬럼</span>을 표준 필드에 연결. 저장하면 다음 스캔부터 자동 적용됩니다.
             </p>
             <p className="text-[10px] text-emerald-700 mt-0.5">
               💡 나눠진 데이터: 같은 필드에 여러 원본을 연결하면 자동 합침 (예: 품·명 → 품명)
@@ -208,7 +208,7 @@ export const ColumnMappingModal: React.FC<Props> = ({
               ✂️ 한 셀에 여러 값 붙어있을 때: 한 원본 선택 후 <b>Shift·Ctrl 누른 채 오른쪽 필드 여러 개 클릭</b> → 공백으로 자동 분리 (예: "20281221 454" → 유통기한 · 단가)
             </p>
           </div>
-          <button onClick={onCancel} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+          <button onClick={onCancel} className="text-zinc-400 hover:text-zinc-600 cursor-pointer">
             <X size={18} />
           </button>
         </div>
@@ -233,7 +233,7 @@ export const ColumnMappingModal: React.FC<Props> = ({
           <div className="grid grid-cols-[1fr_120px_180px] gap-4 relative">
             {/* 좌측: raw 헤더 + 샘플 값 */}
             <div className="flex flex-col gap-2">
-              <div className="text-[10px] font-black text-slate-500 uppercase mb-1">원본 컬럼</div>
+              <div className="text-[10px] font-black text-zinc-500 uppercase mb-1">원본 컬럼</div>
               {rawHeaders.map((h, ci) => {
                 const isSelected = selectedRawIdx === ci;
                 const mappingVal = mapping[ci];
@@ -254,12 +254,12 @@ export const ColumnMappingModal: React.FC<Props> = ({
                             ? "bg-indigo-50 border-indigo-200 hover:border-indigo-400"
                             : isSplittable
                               ? "bg-amber-50 border-amber-300 hover:border-amber-500"
-                              : "bg-slate-50 border-slate-200 hover:border-indigo-400"
+                              : "bg-zinc-50 border-zinc-200 hover:border-indigo-400"
                       }`}
                     >
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <div className="text-[12px] font-black text-slate-800 whitespace-nowrap overflow-hidden text-ellipsis">
-                          {h || <span className="text-slate-400 italic">(빈 헤더)</span>}
+                        <div className="text-[12px] font-black text-zinc-800 whitespace-nowrap overflow-hidden text-ellipsis">
+                          {h || <span className="text-zinc-400 italic">(빈 헤더)</span>}
                         </div>
                         {isSplittable && (
                           <span
@@ -275,7 +275,7 @@ export const ColumnMappingModal: React.FC<Props> = ({
                           </span>
                         )}
                       </div>
-                      <div className="text-[10px] text-slate-500 font-mono whitespace-nowrap overflow-hidden text-ellipsis mt-0.5">
+                      <div className="text-[10px] text-zinc-500 font-mono whitespace-nowrap overflow-hidden text-ellipsis mt-0.5">
                         {sampleRows.map((r, ri) => {
                           const v = r[ci];
                           const str = v == null ? "—" : String(v);
@@ -289,7 +289,7 @@ export const ColumnMappingModal: React.FC<Props> = ({
                       <button
                         type="button"
                         onClick={() => handleClearMapping(ci)}
-                        className="text-slate-400 hover:text-rose-500 cursor-pointer p-1"
+                        className="text-zinc-400 hover:text-rose-500 cursor-pointer p-1"
                         title="매핑 해제"
                       >
                         <X size={12} />
@@ -301,7 +301,7 @@ export const ColumnMappingModal: React.FC<Props> = ({
             </div>
 
             {/* 중앙: 안내 (선택된 좌측 표시) */}
-            <div className="flex flex-col items-center justify-center gap-2 text-[10px] text-slate-400 font-bold">
+            <div className="flex flex-col items-center justify-center gap-2 text-[10px] text-zinc-400 font-bold">
               {selectedRawIdx != null ? (
                 <div className="text-center text-indigo-600">
                   <div className="text-[11px] font-black mb-1">→</div>
@@ -317,7 +317,7 @@ export const ColumnMappingModal: React.FC<Props> = ({
 
             {/* 우측: 표준 필드 */}
             <div className="flex flex-col gap-2">
-              <div className="text-[10px] font-black text-slate-500 uppercase mb-1">표준 필드</div>
+              <div className="text-[10px] font-black text-zinc-500 uppercase mb-1">표준 필드</div>
               {fieldOptions.filter(f => f !== "제외").map(field => {
                 const usageCount = fieldUsageCount.get(field) ?? 0;
                 const isTarget = selectedRawIdx != null;
@@ -330,13 +330,13 @@ export const ColumnMappingModal: React.FC<Props> = ({
                     disabled={selectedRawIdx == null}
                     className={`text-left px-3 py-2 rounded-lg border-2 transition ${
                       selectedRawIdx == null
-                        ? "bg-slate-50 border-slate-200 opacity-50 cursor-not-allowed"
+                        ? "bg-zinc-50 border-zinc-200 opacity-50 cursor-not-allowed"
                         : usageCount > 0
                           ? "bg-indigo-50 border-indigo-300 hover:bg-indigo-100 cursor-pointer"
-                          : "bg-white border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 cursor-pointer"
+                          : "bg-white border-zinc-300 hover:border-indigo-400 hover:bg-indigo-50 cursor-pointer"
                     } ${isTarget ? "ring-2 ring-indigo-200 ring-offset-1" : ""}`}
                   >
-                    <span className="text-[12px] font-black text-slate-800">{field}</span>
+                    <span className="text-[12px] font-black text-zinc-800">{field}</span>
                     {usageCount === 1 && (
                       <span className="ml-1.5 text-[9px] font-bold text-indigo-600 bg-white border border-indigo-300 rounded px-1 py-0.5">
                         연결됨
@@ -356,12 +356,12 @@ export const ColumnMappingModal: React.FC<Props> = ({
 
         {/* 푸터 */}
         <div className="px-5 py-3 border-t border-gray-200 flex items-center justify-between gap-2">
-          <div className="text-[10px] text-slate-500">
+          <div className="text-[10px] text-zinc-500">
             {mapping.filter(f => f && f !== "제외").length}개 컬럼 매핑됨 · 나머지는 자동 "제외"
           </div>
           <div className="flex items-center gap-2">
             <button onClick={onCancel}
-              className="text-[11px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg px-3 py-1.5 cursor-pointer">
+              className="text-[11px] font-bold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 rounded-lg px-3 py-1.5 cursor-pointer">
               취소
             </button>
             <button onClick={onSave}

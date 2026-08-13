@@ -126,7 +126,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
     `px-2 py-0.5 rounded-md text-[11px] font-semibold border cursor-pointer transition-all duration-150 ${
       sortKey === k
         ? "bg-indigo-600 text-white border-indigo-600"
-        : "bg-white text-slate-500 border-slate-200 hover:border-indigo-300 hover:text-indigo-600"
+        : "bg-white text-zinc-500 border-zinc-200 hover:border-indigo-300 hover:text-indigo-600"
     }`;
 
   const clear = () => {
@@ -140,7 +140,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-screen flex flex-col bg-zinc-50">
       <AppNavHeader
         activePage="stockcheck"
         authSession={authSession ?? null}
@@ -158,7 +158,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
       <div className="flex-1 flex flex-col max-w-xl mx-auto w-full px-4 pt-6 pb-20">
         {/* Search bar */}
         <div className="relative mb-2">
-          <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
           <input
             ref={inputRef}
             type="search"
@@ -166,11 +166,11 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
             onChange={e => handleChange(e.target.value)}
             placeholder="약품·제품명 검색 (예: 타이레놀, 판콜에이…)"
             autoFocus
-            className="w-full rounded-xl pl-11 pr-10 py-3.5 text-slate-900 text-sm font-semibold placeholder:text-slate-300 placeholder:font-normal focus:outline-none border-2 border-slate-200 bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 shadow-sm transition-all"
+            className="w-full rounded-xl pl-11 pr-10 py-3.5 text-zinc-900 text-sm font-semibold placeholder:text-zinc-300 placeholder:font-normal focus:outline-none border-2 border-zinc-200 bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 shadow-sm transition-all"
           />
           {query && (
             <button type="button" onClick={clear}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition cursor-pointer">
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-300 hover:text-zinc-500 transition cursor-pointer">
               <X size={16} />
             </button>
           )}
@@ -179,7 +179,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
         {/* Sort toolbar — 결과 있을 때만 표시 */}
         {results && results.length > 0 && (
           <div className="flex items-center gap-1.5 mb-2 flex-wrap">
-            <span className="text-[10px] text-slate-400 font-bold shrink-0">정렬:</span>
+            <span className="text-[10px] text-zinc-400 font-bold shrink-0">정렬:</span>
             <button onClick={() => toggleSort("product_name")} className={sortBtnCls("product_name")} title="상품명 정렬">상품명{arrow("product_name")}</button>
             <button onClick={() => toggleSort("current_stock")} className={sortBtnCls("current_stock")} title="재고수량 정렬">재고{arrow("current_stock")}</button>
             {isLoggedIn && <>
@@ -194,7 +194,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
           {(Object.entries(STATE_META) as [StockState, typeof STATE_META[StockState]][])
             .filter(([state]) => isLoggedIn ? true : state !== "out")
             .map(([, m]) => (
-              <span key={m.label} className="flex items-center gap-1 text-[11px] font-bold text-slate-500">
+              <span key={m.label} className="flex items-center gap-1 text-[11px] font-bold text-zinc-500">
                 <span className={`w-2 h-2 rounded-full ${m.dot}`} />
                 {m.label}
               </span>
@@ -209,8 +209,8 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
           </div>
         )}
         {loading && (!sortedResults || sortedResults.length === 0) && (
-          <div className="flex items-center gap-2 py-4 px-1 text-slate-400 text-xs font-medium">
-            <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-200 border-t-indigo-500 animate-spin shrink-0" />
+          <div className="flex items-center gap-2 py-4 px-1 text-zinc-400 text-xs font-medium">
+            <div className="w-3.5 h-3.5 rounded-full border-2 border-zinc-200 border-t-indigo-500 animate-spin shrink-0" />
             검색 중...
           </div>
         )}
@@ -224,23 +224,23 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
 
         {/* Empty */}
         {!loading && !error && sortedResults?.length === 0 && (
-          <div className="text-center py-12 text-slate-400">
-            <Package size={28} className="mx-auto mb-2 text-slate-200" />
-            <p className="text-sm font-semibold text-slate-500">검색 결과가 없습니다</p>
+          <div className="text-center py-12 text-zinc-400">
+            <Package size={28} className="mx-auto mb-2 text-zinc-200" />
+            <p className="text-sm font-semibold text-zinc-500">검색 결과가 없습니다</p>
             <p className="text-xs mt-1">다른 이름으로 검색해 보세요</p>
           </div>
         )}
 
         {/* Results list */}
         {sortedResults && sortedResults.length > 0 && (
-          <div className={`bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+          <div className={`bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             {/* 결과 수 표시: 직원(로그인)만 · 일반 사용자는 숨김 */}
             {isLoggedIn && (
-              <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-500">검색 결과 {sortedResults.length}건</span>
+              <div className="px-4 py-2.5 bg-zinc-50 border-b border-zinc-100 flex items-center justify-between">
+                <span className="text-[11px] font-bold text-zinc-500">검색 결과 {sortedResults.length}건</span>
               </div>
             )}
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-zinc-50">
               {sortedResults
                 // 비로그인: 재고있음 & 판매중 상품만 노출
                 .filter(item => {
@@ -256,7 +256,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
                     && Number.isFinite(stockNum) && stockNum > 0 && stockNum < 3;
                   return (
                     <div key={`${item.product_name}-${item.spec ?? ""}-${i}`}
-                      className="px-4 py-3 flex items-center gap-3 hover:bg-slate-50/60 transition-all duration-150">
+                      className="px-4 py-3 flex items-center gap-3 hover:bg-zinc-50/60 transition-all duration-150">
                       {/* Status badges — 재고 · 판매 두 축 나란히 (로그인 무관) */}
                       <div className="shrink-0 flex flex-col gap-0.5">
                         <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap ${
@@ -269,7 +269,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
                         <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap ${
                           sellingAxis === "selling"
                             ? "bg-sky-100 text-sky-700"
-                            : "bg-slate-200 text-slate-500"
+                            : "bg-zinc-200 text-zinc-500"
                         }`}>
                           {sellingAxis === "selling" ? "판매중" : "판매중지"}
                         </span>
@@ -283,9 +283,9 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
 
                       {/* Name + spec */}
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-bold text-slate-800 break-words">{item.product_name}</div>
+                        <div className="text-sm font-bold text-zinc-800 break-words">{item.product_name}</div>
                         {item.spec && (
-                          <div className="text-[11px] text-slate-400 break-words mt-0.5" title="전산배치구역">{item.spec}</div>
+                          <div className="text-[11px] text-zinc-400 break-words mt-0.5" title="전산배치구역">{item.spec}</div>
                         )}
                         {/* 로그인 시: 구역(실제배치·진열·공급처) 표시 */}
                         {isLoggedIn && (item.real_map || item.display_location || item.supplier) && (
@@ -312,7 +312,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
                   );
                 })}
             </div>
-            <div className="px-4 py-2 border-t border-slate-50 text-[10px] text-slate-300 text-center">
+            <div className="px-4 py-2 border-t border-zinc-50 text-[10px] text-zinc-300 text-center">
               재고 정보는 실시간이 아닐 수 있습니다 · 정확한 재고는 약국에 직접 문의해 주세요
             </div>
           </div>
@@ -320,9 +320,9 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
 
         {/* Initial hint */}
         {!loading && !error && results === null && (
-          <div className="flex flex-col items-center gap-2 py-16 text-slate-300">
+          <div className="flex flex-col items-center gap-2 py-16 text-zinc-300">
             <Search size={32} />
-            <p className="text-sm font-semibold text-slate-400">제품명을 입력하면 결과가 바로 나타납니다</p>
+            <p className="text-sm font-semibold text-zinc-400">제품명을 입력하면 결과가 바로 나타납니다</p>
           </div>
         )}
       </div>
