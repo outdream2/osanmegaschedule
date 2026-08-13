@@ -80,6 +80,9 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
   const [empSavingId, setEmpSavingId] = useState<number | null>(null);
   const [empSavedIds, setEmpSavedIds] = useState<Set<number>>(new Set());
   const [empSearch, setEmpSearch] = useState<string>("");
+  // 2026-08-13 · #100 · 페이지 권한 · 레벨 OR 직군 조건 · 팝오버 열림 상태
+  const [openPositionPopover, setOpenPositionPopover] = useState<{ page: string; field: "read" | "write" } | null>(null);
+
   // 2026-08-12 · #99 · 트리 구조 · 그룹 접힘 상태 (localStorage 유지)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
     try {
@@ -224,6 +227,29 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
       .then(r => setPerms({ ...DEFAULT_PERMISSIONS, ...r.data }))
       .catch(() => setLoadError("권한 설정을 불러오지 못했습니다."));
   }, []);
+
+  // 2026-08-13 · #100 · 직군 토글 (레벨 OR 직군 · 하나만 만족해도 접근 허용)
+  const togglePositionForPerm = useCallback(async (
+    page: keyof PagePermissions,
+    field: "read" | "write",
+    position: string,
+  ) => {
+    const posField: "readPositions" | "writePositions" = field === "read" ? "readPositions" : "writePositions";
+    const current = perms[page][posField] ?? [];
+    const next = current.includes(position)
+      ? current.filter(p => p !== position)
+      : [...current, position];
+    const updated = {
+      ...perms,
+      [page]: { ...perms[page], [posField]: next.length > 0 ? next : undefined },
+    };
+    setPerms(updated);
+    try {
+      await axios.post("/api/permissions", { permissions: updated, employeeId: authSession?.employeeId });
+    } catch {
+      setPerms(perms); // revert
+    }
+  }, [perms, authSession?.employeeId]);
 
   const handleChange = useCallback(async (
     page: keyof PagePermissions,
@@ -507,23 +533,39 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                         {label}
                       </div>
 
-                      {/* Read level · 2026-08-13 · pr-3 여백 확대 · 컬럼 폭 170/180 */}
-                      <div className="flex justify-end pr-3">
+                      {/* Read level + 직군 팝오버 · 2026-08-13 · #100 · 레벨 OR 직군 */}
+                      <div className="flex flex-col items-end gap-1 pr-3">
                         <LevelSelect
                           value={perm.read}
                           onChange={v => handleChange(key, "read", v)}
                           saving={saving === `${key}.read`}
                           saved={savedKeys.has(`${key}.read`)}
                         />
+                        <PositionsField
+                          page={key} field="read"
+                          selected={perm.readPositions ?? []}
+                          allPositions={PRESET_POSITIONS}
+                          isOpen={openPositionPopover?.page === key && openPositionPopover?.field === "read"}
+                          onToggleOpen={(open) => setOpenPositionPopover(open ? { page: key, field: "read" } : null)}
+                          onToggle={(p) => togglePositionForPerm(key, "read", p)}
+                        />
                       </div>
 
-                      {/* Write level · 2026-08-13 · pr-3 여백 확대 */}
-                      <div className="flex justify-end pr-3">
+                      {/* Write level + 직군 팝오버 */}
+                      <div className="flex flex-col items-end gap-1 pr-3">
                         <LevelSelect
                           value={perm.write}
                           onChange={v => handleChange(key, "write", v)}
                           saving={saving === `${key}.write`}
                           saved={savedKeys.has(`${key}.write`)}
+                        />
+                        <PositionsField
+                          page={key} field="write"
+                          selected={perm.writePositions ?? []}
+                          allPositions={PRESET_POSITIONS}
+                          isOpen={openPositionPopover?.page === key && openPositionPopover?.field === "write"}
+                          onToggleOpen={(open) => setOpenPositionPopover(open ? { page: key, field: "write" } : null)}
+                          onToggle={(p) => togglePositionForPerm(key, "write", p)}
                         />
                       </div>
                     </div>
@@ -772,3 +814,68 @@ const LevelSelect: React.FC<LevelSelectProps> = ({ value, onChange, saving, save
     </div>
   </div>
 );
+
+// 2026-08-13 · #100 · 직군 팝오버 · 각 페이지 · 레벨 OR 직군 조건 (직군 지정 시 · 레벨 무관 접근)
+interface PositionsFieldProps {
+  page: string;
+  field: "read" | "write";
+  selected: string[];
+  allPositions: string[];
+  isOpen: boolean;
+  onToggleOpen: (open: boolean) => void;
+  onToggle: (position: string) => void;
+}
+const PositionsField: React.FC<PositionsFieldProps> = ({ selected, allPositions, isOpen, onToggleOpen, onToggle }) => {
+  const ref = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onToggleOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [isOpen, onToggleOpen]);
+  return (
+    <div className="relative flex items-center gap-1 flex-wrap justify-end max-w-full" ref={ref}>
+      {selected.map(p => (
+        <button
+          key={p}
+          type="button"
+          onClick={() => onToggle(p)}
+          className="inline-flex items-center gap-0.5 px-1.5 h-5 text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded hover:bg-indigo-100 cursor-pointer"
+          title={`${p} 직군 · 클릭 시 해제`}
+        >
+          {p}<span className="text-indigo-400">×</span>
+        </button>
+      ))}
+      <button
+        type="button"
+        onClick={() => onToggleOpen(!isOpen)}
+        className={`h-5 px-1.5 text-[10px] font-bold rounded border transition cursor-pointer ${
+          isOpen
+            ? "bg-indigo-500 text-white border-indigo-500"
+            : "bg-white text-slate-500 border-slate-300 hover:border-indigo-400 hover:text-indigo-600"
+        }`}
+        title="직군 지정 · 레벨과 함께 OR 조건"
+      >+ 직군</button>
+      {isOpen && (
+        <div className="absolute right-0 top-full mt-1 z-30 w-40 bg-white border border-slate-200 rounded-lg shadow-lg p-2 flex flex-col gap-1">
+          <div className="text-[10px] font-bold text-slate-400 uppercase mb-1 px-1">직군 (OR 조건)</div>
+          {allPositions.length === 0 ? (
+            <div className="text-[11px] text-slate-400 px-1 py-2 text-center">직군 없음</div>
+          ) : allPositions.map(p => (
+            <label key={p} className="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-slate-50 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selected.includes(p)}
+                onChange={() => onToggle(p)}
+                className="w-3 h-3 accent-indigo-500 cursor-pointer"
+              />
+              <span className="text-[12px] font-semibold text-slate-700">{p}</span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
