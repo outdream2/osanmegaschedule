@@ -4,17 +4,6 @@
 
 ## 🔴 대기 큐 (사용자 결정/재개 필요)
 
-### #110 · SplitPanel PC 폭 · 화면 넓이의 80% (사용자 요청 2026-08-14)
-- **파일**: `src/components/common/SplitPanel.tsx` · `src/index.css` (.split-container)
-- 사용자 요청: "split화면 PC버전에서 split부분 넓이 화면넓이의 80%로"
-- **결정 필요** (3안):
-  - A) 전체 split 컨테이너를 뷰포트 80% 폭 (양쪽 10% 여백 · 초광폭 모니터 대응)
-  - B) 좌측 리스트 패널 기본폭 = 뷰포트 80% (우측 상세 20%)
-  - C) 우측 상세 패널 = 뷰포트 80% (좌측 리스트 20%)
-- **범위 결정 필요**: 특정 페이지만 (StaffManage·ContractWriter·Resignation 등) · 전체 SplitPanel
-- 사용 페이지 11개 · defaultWidth 각기 다름 (256~480px)
-- 위험도: 낮음-중 · 회귀 없이 반응형 검증 필요
-
 ### #99 · 페이지별 최소 권한 · 트리 구조 재구성 (사이드바 메뉴 계층)
 - **파일**: `src/components/PermissionsPage/PermissionsPage.tsx`
 - 지금: 평면 리스트 (23개 페이지 나열)
@@ -67,10 +56,6 @@
 - 중복 필드 병합 (약국명 = 앱이름 · 대표전화 = 연락처)
 - **결정 필요**: 병합 방식 (약국명·전화 어느 쪽 우선)
 
-### #93 · 시스템 설정 안내 배너 · 폰트 -1 · 중요부분 붉은 강조
-- SystemSettingsPage amber 배너 · "재시작 필요" 등 rose 강조
-- 위험도: 낮음 · 지금 처리 가능
-
 ### #94 · 공급사 재고확인 페이지 신설 · 로그인 담당자 공급사 기간별 재고
 - TOP · 기간·계절 필터
 - 리스트 · 헤더 자동정렬 · 공통 CSS
@@ -94,18 +79,21 @@
 - 6개 심볼 (loadContractSettings 등) → `src/lib/contract/` 로 이관 필요
 - 위험도: 중
 
-### #73 · Dead code 실제 파일 정리 (감사 결과 기반)
-- 감사 결과 · `docs/DEAD_CODE_REPORT.md` (없으면 · 이전 세션 스레드에서 확인)
-- SalesTrendPage · StockManagePage 빈 껍데기 · OcrPage 미사용 4개 · YOLO 모델 파일 · 등
+### #73 · Dead code 실제 파일 정리 (감사 결과 기반) · 부분 완료 2026-08-14
+- ✅ StockManagePage.tsx (6줄 empty shell) · index.ts · LowStockPanel.tsx (524줄 · 0 imports) 삭제 (commit `4cc2ae4`)
+- ✅ ScheduleFilterBar dead prop 4개 삭제 (commit `5e50953`)
+- 남은:
+  - OcrPage 미사용 파일 (⚠ Gemini 코드 미터치 원칙 · 확인 필요)
+  - YOLO 모델 파일 (재고세기 비활성 상태 · 재활성화 대비 유지 여부 결정 필요)
+  - SalesTrendPage 는 2657줄 활성 · TASKS.md 오기 (dead 아님)
 - 위험도: 낮음-중 · 각 파일별 개별 확인
 
-### #98 · 스케쥴표 dead code 감사 결과 · 남은 정리
-- 완료: ScheduleCell·SchedulePage import 7개 · scrollDays·KNOWN_POSITIONS·totalSummaryList·attSummary 삭제
-- 남은:
-  - `displayZoneVer` (setDisplayZoneVer 참조 있음 · 조심)
-  - `onScheduleUpdate` prop 미사용 · DayTimelineModal
-  - `workplaceTab`/`todayFirst` props 정리 (ScheduleFilterBar · SchedulePage)
-  - DayTimelineModal 2704 라인 · ZoneSection/BreakTimeline/WorkerChips 파일 분리
+### #98 · 스케쥴표 dead code · 대부분 완료 2026-08-14
+- ✅ ScheduleCell·SchedulePage import 7개 · scrollDays·KNOWN_POSITIONS·totalSummaryList·attSummary 삭제
+- ✅ `onScheduleUpdate` prop 삭제 (DayTimelineModal · commit `e069f0e`)
+- ✅ `workplaceTab`/`todayFirst` orphan prop 4개 삭제 (ScheduleFilterBar · commit `5e50953`)
+- ⚠ `displayZoneVer` · 강제 re-render 패턴 · 삭제 시 회귀 위험 · 유지
+- 남은: DayTimelineModal 2704 라인 · ZoneSection/BreakTimeline/WorkerChips 파일 분리 (대형 리팩터 · 별도 태스크)
 
 ### #54 · Memory 업데이트 (세션 마감 시)
 - 이번 세션 신규 요소:
@@ -117,11 +105,11 @@
   - PermissionsPage 확장 (23개 페이지 권한)
 - 관련 memory 파일 업데이트 필요
 
-## ⏸ 사용자 액션 (SQL)
+## ✅ 사용자 액션 완료 (2026-08-14 사용자 확인)
 
-**Supabase Dashboard → SQL Editor 실행 필요**:
-- `migrations/add_employees_annual_leave_days_2026-08-12.sql` · 필수 (leave-balance 정확 동작)
-- `migrations/perf_indexes_leave_requests_2026-08-12.sql` · 권장 (성능)
+**SQL 실행 완료**:
+- `migrations/add_employees_annual_leave_days_2026-08-12.sql` ✅
+- `migrations/perf_indexes_leave_requests_2026-08-12.sql` ✅
 
 ## 📜 이번 세션 (2026-08-12) 완료 커밋 로그
 
