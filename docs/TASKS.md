@@ -4,6 +4,17 @@
 
 ## 🔴 대기 큐 (사용자 결정/재개 필요)
 
+### #110 · SplitPanel PC 폭 · 화면 넓이의 80% (사용자 요청 2026-08-14)
+- **파일**: `src/components/common/SplitPanel.tsx` · `src/index.css` (.split-container)
+- 사용자 요청: "split화면 PC버전에서 split부분 넓이 화면넓이의 80%로"
+- **결정 필요** (3안):
+  - A) 전체 split 컨테이너를 뷰포트 80% 폭 (양쪽 10% 여백 · 초광폭 모니터 대응)
+  - B) 좌측 리스트 패널 기본폭 = 뷰포트 80% (우측 상세 20%)
+  - C) 우측 상세 패널 = 뷰포트 80% (좌측 리스트 20%)
+- **범위 결정 필요**: 특정 페이지만 (StaffManage·ContractWriter·Resignation 등) · 전체 SplitPanel
+- 사용 페이지 11개 · defaultWidth 각기 다름 (256~480px)
+- 위험도: 낮음-중 · 회귀 없이 반응형 검증 필요
+
 ### #99 · 페이지별 최소 권한 · 트리 구조 재구성 (사이드바 메뉴 계층)
 - **파일**: `src/components/PermissionsPage/PermissionsPage.tsx`
 - 지금: 평면 리스트 (23개 페이지 나열)
