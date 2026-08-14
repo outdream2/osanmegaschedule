@@ -289,8 +289,10 @@ body:has(.fixed.inset-0[class*="bg-neutral-9"]) {
 
 /* ── Split 레이아웃 (마스터-디테일) ── */
 /*   예 · StaffManagePage · 좌측 리스트 + 우측 상세 */
+/*   2026-08-14 · #110 · PC (lg+) 에서 뷰포트 80% 폭 · 중앙 정렬 · 초광폭 모니터 여백 확보 */
 .split-container {
-  @apply flex flex-col lg:flex-row flex-1 gap-3 min-h-0;
+  @apply flex flex-col lg:flex-row flex-1 gap-3 min-h-0
+         lg:w-full lg:max-w-[80vw] lg:mx-auto;
 }
 .split-left {
   @apply w-full shrink-0 flex flex-col bg-white rounded-xl border border-slate-200
