@@ -1419,8 +1419,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       {/* 1.5 Sub-Header Control Bar for Workplace Tabs, Employee Sorting & Search */}
       <ScheduleFilterBar
         employees={employees}
-        workplaceTab={workplaceTab}
-        setWorkplaceTab={setWorkplaceTab}
         positionTab={positionTab}
         setPositionTab={setPositionTab}
         searchQuery={searchQuery}
@@ -1429,8 +1427,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         setSortBy={setSortBy}
         sortOrder={sortOrder}
         setSortOrder={setSortOrder}
-        todayFirst={todayFirst}
-        setTodayFirst={setTodayFirst}
         onResetCustomOrder={async () => {
           localStorage.removeItem("megatown_employee_order");
           await fetchScheduleData(undefined, true);

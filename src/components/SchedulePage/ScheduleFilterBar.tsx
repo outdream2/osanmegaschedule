@@ -11,8 +11,6 @@ export type SortOrder = "asc" | "desc";
 
 interface ScheduleFilterBarProps {
   employees: Employee[];
-  workplaceTab: WorkplaceTab;
-  setWorkplaceTab: React.Dispatch<React.SetStateAction<WorkplaceTab>>;
   positionTab: PositionTab;
   setPositionTab: React.Dispatch<React.SetStateAction<PositionTab>>;
   searchQuery: string;
@@ -21,8 +19,6 @@ interface ScheduleFilterBarProps {
   setSortBy: React.Dispatch<React.SetStateAction<SortBy>>;
   sortOrder: SortOrder;
   setSortOrder: React.Dispatch<React.SetStateAction<SortOrder>>;
-  todayFirst: boolean;
-  setTodayFirst: React.Dispatch<React.SetStateAction<boolean>>;
   onResetCustomOrder: () => void | Promise<void>;
   /** 직원 등록 · 지정 안 하면 노출 안 함 */
   onCreateEmployee?: () => void;
@@ -30,8 +26,6 @@ interface ScheduleFilterBarProps {
 
 export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
   employees,
-  workplaceTab,
-  setWorkplaceTab,
   positionTab,
   setPositionTab,
   searchQuery,
@@ -40,8 +34,6 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
   setSortBy,
   sortOrder,
   setSortOrder,
-  todayFirst,
-  setTodayFirst,
   onResetCustomOrder,
   onCreateEmployee,
 }) => {
