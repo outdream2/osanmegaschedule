@@ -1,10 +1,16 @@
 // 2026-08-10 · #23 · 거래처 로그인 · 공급사 재고확인 모달
 // 로그인한 공급사의 상품 리스트 + 재고 (ERP현재고) 조회
 // MVP: products.supplier 로 필터 · current_stock 표시
-// 향후 확장: 실재고 (창고1/2·매장1/2/3) 세부 breakdown
+// 2026-08-16 · #94 · A1 확장 · 계절 필터 + 헤더 자동정렬 + TEXT 토큰 사용
+//   · 기간 필터 (from-to) 는 백엔드 stock 시계열 API 필요 · Phase 2
+//   · 계절 · useSeasonRanges (봄·여름·가을·겨울) · 필터 상태만 (백엔드 확장 시 자동 반영)
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { X, Package, Search, Loader2 } from "lucide-react";
+import { TEXT } from "../../styles/tokens";
+import { SeasonButtons } from "../common/SeasonButtons";
+import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
+import { type SeasonKey } from "../../hooks/useSeasonRanges";
 
 interface VendorProduct {
   code: string;
@@ -21,11 +27,26 @@ interface Props {
   vendorName: string;
 }
 
+// 정렬 컬럼 · #94 A1
+type SortKey = "code" | "name" | "current_stock" | "optimal_stock" | "min_stock";
+const COMPARATORS: Record<SortKey, Comparator<VendorProduct>> = {
+  code: (a, b) => (a.code ?? "").localeCompare(b.code ?? ""),
+  name: (a, b) => (a.name ?? "").localeCompare(b.name ?? "", "ko"),
+  current_stock: (a, b) => Number(a.current_stock ?? 0) - Number(b.current_stock ?? 0),
+  optimal_stock: (a, b) => Number(a.optimal_stock ?? 0) - Number(b.optimal_stock ?? 0),
+  min_stock: (a, b) => Number(a.min_stock ?? 0) - Number(b.min_stock ?? 0),
+};
+
 export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName }) => {
   const [products, setProducts] = useState<VendorProduct[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  // 2026-08-16 · #94 · 계절 필터 (Phase 2 · 백엔드 stock 시계열 API 확장 후 · 실제 필터링 적용)
+  const [season, setSeason] = useState<SeasonKey | null>(null);
+  // 2026-08-16 · #94 · 기간 필터 (Phase 2 · 백엔드 확장 대기)
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   useEffect(() => {
     if (!open || !vendorName) return;
@@ -60,17 +81,22 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
     };
   }, [open, vendorName]);
 
+  // 검색 필터
+  const searched = useMemo(() => {
+    if (!search) return products;
+    const q = search.toLowerCase();
+    return products.filter((p) => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q));
+  }, [products, search]);
+
+  // 2026-08-16 · #94 · 헤더 자동정렬
+  const { sorted, sortKey, sortDir, toggleSort } = useSortableTable<VendorProduct, SortKey>(searched, "name", COMPARATORS, "asc");
+
   if (!open) return null;
 
-  const filtered = search
-    ? products.filter(
-        (p) =>
-          p.name.toLowerCase().includes(search.toLowerCase()) ||
-          p.code.toLowerCase().includes(search.toLowerCase())
-      )
-    : products;
+  const totalStock = sorted.reduce((sum, p) => sum + Number(p.current_stock ?? 0), 0);
 
-  const totalStock = filtered.reduce((sum, p) => sum + Number(p.current_stock ?? 0), 0);
+  const sortIcon = (key: string) => sortKey === key ? (sortDir === "asc" ? " ▲" : " ▼") : "";
+  const headerCls = "px-3 py-2 cursor-pointer hover:bg-zinc-100 transition select-none";
 
   return (
     <div
@@ -88,33 +114,52 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
               <Package size={18} className="text-white" />
             </div>
             <div className="min-w-0">
-              <div className="text-base font-black text-zinc-900">공급사 재고확인</div>
-              <div className="text-[12px] font-semibold text-zinc-500 truncate">{vendorName}</div>
+              <div className={`${TEXT.title} text-zinc-900`}>공급사 재고확인</div>
+              <div className={`${TEXT.caption} text-zinc-500 truncate`}>{vendorName}</div>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-zinc-400 hover:text-zinc-700 text-3xl font-black w-9 h-9 rounded-lg hover:bg-white/70 cursor-pointer flex items-center justify-center shrink-0"
+            className="text-zinc-400 hover:text-zinc-700 w-9 h-9 rounded-lg hover:bg-white/70 cursor-pointer flex items-center justify-center shrink-0"
+            aria-label="닫기"
           >
-            ×
+            <X size={18} />
           </button>
         </div>
 
-        {/* 검색·요약 */}
-        <div className="px-5 py-3 border-b border-zinc-100 bg-zinc-50/50 flex items-center gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-[180px]">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="상품명·코드 검색"
-              className="w-full pl-8 pr-3 py-1.5 text-[12px] border border-zinc-200 rounded-md focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-200"
-            />
+        {/* 2026-08-16 · #94 · 필터 툴바 · 계절 + 기간 + 검색 */}
+        <div className="px-5 py-3 border-b border-zinc-100 bg-zinc-50/60 flex flex-col gap-2">
+          {/* 계절 필터 */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`${TEXT.label} text-zinc-500 shrink-0`}>계절</span>
+            <SeasonButtons value={season} onChange={setSeason} />
           </div>
-          <div className="text-[12px] font-semibold text-zinc-500">
-            상품 <span className="tabular-nums text-zinc-800 font-black">{filtered.length}</span> 종 · 총 재고
+          {/* 기간 + 검색 */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`${TEXT.label} text-zinc-500 shrink-0`}>기간</span>
+            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+              className="text-[13px] px-2 py-1 border border-zinc-200 rounded-md focus:outline-none focus:border-sky-400" />
+            <span className="text-zinc-400 text-[13px]">~</span>
+            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+              className="text-[13px] px-2 py-1 border border-zinc-200 rounded-md focus:outline-none focus:border-sky-400" />
+            <div className="relative flex-1 min-w-[180px]">
+              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="상품명·코드 검색"
+                className="w-full pl-8 pr-3 py-1.5 text-[13px] border border-zinc-200 rounded-md focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-200"
+              />
+            </div>
+          </div>
+          {/* 요약 */}
+          <div className={`${TEXT.caption} text-zinc-500 pt-0.5`}>
+            상품 <span className="tabular-nums text-zinc-800 font-black">{sorted.length}</span> 종 · 총 재고
             <span className="tabular-nums text-sky-700 font-black ml-1">{totalStock.toLocaleString()}</span>
+            {(season || dateFrom || dateTo) && (
+              <span className="ml-2 text-amber-600 text-[10px] font-bold">※ 기간·계절 필터 · 백엔드 시계열 API 확장 후 적용</span>
+            )}
           </div>
         </div>
 
@@ -127,24 +172,24 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
             </div>
           ) : error ? (
             <div className="p-8 text-center text-rose-600 text-sm font-bold">⚠ {error}</div>
-          ) : filtered.length === 0 ? (
+          ) : sorted.length === 0 ? (
             <div className="p-12 text-center text-zinc-400 text-sm">
               {search ? "검색 결과 없음" : "상품 없음"}
             </div>
           ) : (
-            <table className="w-full text-[12px]">
+            <table className="w-full text-[13px]">
               <thead className="sticky top-0 bg-zinc-50 border-b border-zinc-200 z-10">
-                <tr className="text-zinc-500 font-black uppercase tracking-wide text-[10px]">
+                <tr className={`${TEXT.label} text-zinc-500`}>
                   <th className="text-center px-2 py-2 w-10">#</th>
-                  <th className="text-left px-3 py-2 w-24">상품코드</th>
-                  <th className="text-left px-3 py-2">상품명</th>
-                  <th className="text-right px-3 py-2 w-20">ERP 재고</th>
-                  <th className="text-right px-3 py-2 w-16">적정</th>
-                  <th className="text-right px-3 py-2 w-16">최소</th>
+                  <th className={`${headerCls} text-left w-24`} onClick={() => toggleSort("code")}>상품코드{sortIcon("code")}</th>
+                  <th className={`${headerCls} text-left`} onClick={() => toggleSort("name")}>상품명{sortIcon("name")}</th>
+                  <th className={`${headerCls} text-right w-20`} onClick={() => toggleSort("current_stock")}>ERP 재고{sortIcon("current_stock")}</th>
+                  <th className={`${headerCls} text-right w-16`} onClick={() => toggleSort("optimal_stock")}>적정{sortIcon("optimal_stock")}</th>
+                  <th className={`${headerCls} text-right w-16`} onClick={() => toggleSort("min_stock")}>최소{sortIcon("min_stock")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {filtered.map((p, i) => (
+                {sorted.map((p, i) => (
                   <tr key={p.code} className="hover:bg-sky-50/40">
                     <td className="text-center px-2 py-1.5 text-zinc-400 tabular-nums">{i + 1}</td>
                     <td className="px-3 py-1.5 font-mono text-[11px] text-zinc-500 tabular-nums">{p.code}</td>

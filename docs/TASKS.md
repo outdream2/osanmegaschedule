@@ -6,7 +6,16 @@
 
 ### 결정 저장
 - **S3 · Account Lockout** · ❌ 취소 (사용자 지시 · 하지마)
-- S1·S2·S4·S5·S6·S7·S8·S9·S10 · 대기
+- **S4 · Password Policy** · ❌ 유지 (D · 최소 4자 · 사용자 편의)
+- **S5 · Audit Logging** · ✅ 완료 (`00b725c` · 관리자 작업만 · winston 30일)
+- **S7 · Input Validation** · ✅ 완료 (`52ee393` · Zod · auth 4 route)
+- **S10 · Refresh Token** · ✅ 완료 (`f434e1d` · Access 15분 + Refresh 30일)
+- **S1·S2·S6·S8·S9** · ⏸ **defer 확정** (사용자 결정 2026-08-16 · "보안 이 정도면 충분")
+  - S1 CSRF · SameSite Lax 로 방어됨
+  - S2 CSP · Helmet default 로 기본 방어
+  - S6 JWT RS256 · HS256 도 안전
+  - S8 2FA · 사내 30명 과잉
+  - S9 다중 세션 · DB 필요 · 규모 불필요
 
 ## 🎨 UI 결정 진행중
 
@@ -100,9 +109,18 @@
 - 위험도: **높음** · 스케줄 = critical business logic · 대형 리팩터
 - 재산정: TASKS.md 스코프 (line 87-97) 대비 실제 훨씬 큼
 
-### #94 · 공급사 재고확인 페이지 신설
-- 로그인 담당자 공급사 기간별 재고 · TOP 기간·계절 필터 · 리스트 헤더 자동정렬
-- 규모: 큼 · 신규 페이지
+### #94 · 공급사 재고확인 페이지 신설 · A안 확정 (2026-08-16)
+- **방향**: A · Vendor 전용 (본인 공급사 상품 · 기간별 재고)
+- **기존**: `VendorStockModal.tsx` (177줄 · 상품+재고+검색만) · MVP 완료 상태
+- **확장 요구**:
+  - TOP · 기간 필터 (date range)
+  - TOP · 계절 필터 (봄·여름·가을·겨울 · useSeasonRanges)
+  - 리스트 · 헤더 자동정렬 (useSortableTable)
+  - 공통 CSS · TEXT.body/label 등 · 신규 P1 스케일 사용
+- **구현 방식 옵션**:
+  - A1 · Modal 확장 (VendorStockModal 에 필터·정렬 추가) · 소-중
+  - A2 · 전용 페이지 신규 (`VendorStockPage.tsx`) · 중-대
+- 규모: 중 · 1-2시간
 
 ### DayTimelineModal 대형 리팩터 (#98 후속)
 - 2704 라인 → ZoneSection/BreakTimeline/WorkerChips 파일 분리
