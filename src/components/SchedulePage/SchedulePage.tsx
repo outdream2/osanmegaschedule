@@ -77,15 +77,21 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     update: updateSettings,
   } = useSettings();
 
-  // Build a Record<string, string> from scheduleTypes for a specific employee
-  // Priority: 약사→pharmHours, 물류→logisticsHours, 알바→partTimeHours, else→hours
+  // 2026-08-16 · #91 · 카테고리 판별 헬퍼 (중앙화 · 30+ 하드코딩 정리 시작점)
+  //   · ScheduleTypeEntry 는 pharmHours·logisticsHours·partTimeHours 고정 컬럼 (DB 스키마 확장 필요)
+  //   · 헬퍼로 통일 · 향후 · 컬럼 확장 시 · 한 곳만 수정
+  const isPharm = (position: string) => position === "약사";
+  const isLogistics = (position: string) => position.includes("물류");
+  const isPartTime = (employmentType: string) => employmentType === "알바";
+
+  // scheduleTypes → Record<type, hours> · 우선순위: 약사 > 물류 > 알바 > 기본
   const getTypeHoursMap = (position: string, employmentType: string = ""): Record<string, string> => {
     const map: Record<string, string> = {};
     for (const entry of settingsScheduleTypes) {
       let h = entry.hours;
-      if (position === "약사" && entry.pharmHours) h = entry.pharmHours;
-      else if (position.includes("물류") && entry.logisticsHours) h = entry.logisticsHours;
-      else if (employmentType === "알바" && entry.partTimeHours) h = entry.partTimeHours;
+      if (isPharm(position) && entry.pharmHours) h = entry.pharmHours;
+      else if (isLogistics(position) && entry.logisticsHours) h = entry.logisticsHours;
+      else if (isPartTime(employmentType) && entry.partTimeHours) h = entry.partTimeHours;
       map[entry.type] = h;
     }
     return map;
