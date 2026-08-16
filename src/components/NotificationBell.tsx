@@ -153,7 +153,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
       {/* Bell button — 미확인 알림 있으면 강조 · 신규 도착 시 흔들림 */}
       <button
         onClick={() => { setOpen((v) => !v); if (!open) fetchNotifications(); }}
-        className={`relative flex items-center justify-center w-9 h-9 rounded-xl border transition-all cursor-pointer shadow-sm hover:shadow-md active:scale-95 ${
+        className={`relative flex items-center justify-center w-7 h-7 rounded-lg border transition-all cursor-pointer shadow-sm hover:shadow-md active:scale-95 ${
           hasUnread
             ? "bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-600"
             : "bg-white hover:bg-zinc-50 border-zinc-200 text-zinc-600 hover:text-indigo-600 hover:border-indigo-300"

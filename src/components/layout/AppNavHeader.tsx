@@ -354,7 +354,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const activeBgTint = ACTIVE_BG_TINT[colorKey] ?? "bg-zinc-50/80";
 
     // 공통 베이스: 세로 border-b-2 underline 방식 · 상하 padding 은 Row 2 높이와 맞춤
-    const baseCommon = "relative flex items-center gap-1.5 px-2.5 sm:px-2 md:px-2.5 lg:px-3 py-1.5 rounded-lg text-[15px] sm:text-[15px] md:text-[16px] lg:text-[17px] font-semibold whitespace-nowrap transition-all duration-150";
+    // 2026-08-17 · 사용자 지시 · 메인메뉴 폰트 +2 (15→17 · 16→18 · 17→19)
+    const baseCommon = "relative flex items-center gap-1.5 px-2.5 sm:px-2 md:px-2.5 lg:px-3 py-1.5 rounded-lg text-[17px] sm:text-[17px] md:text-[18px] lg:text-[19px] font-semibold whitespace-nowrap transition-all duration-150";
 
     const activeClass = `${baseCommon} ${activeBgTint} ${c.activeText} border-2 ${accentBar} border-x-transparent border-t-transparent font-bold`;
     const inactiveClass = `${baseCommon} ${hoverBg} ${c.inactiveText} ${c.inactiveHoverText} border-2 border-transparent hover:border-x-transparent hover:border-t-transparent hover:border-b-transparent active:scale-95 cursor-pointer disabled:opacity-40`;
