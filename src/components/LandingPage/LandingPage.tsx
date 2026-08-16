@@ -1292,7 +1292,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     );
                   })()}
                 </div>
-                <div className="text-zinc-400 text-[11px] sm:text-xs mt-1 font-semibold tracking-wide">{lpBrand.shortName || "오산 메가타운 약국"}</div>
+                <div className="text-zinc-400 text-[11px] sm:text-xs mt-1 font-semibold tracking-wide whitespace-pre-line leading-tight">{lpBrand.shortName || "오산\n메가타운약국"}</div>
               </div>
               {/* 2026-08-11 · 공사중 모드 · 재고 검색 대신 "곧 오픈 예정" 메시지 */}
               {underConstruction ? (
@@ -1421,7 +1421,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     className="w-20 h-20 rounded-lg bg-white p-1 shrink-0 object-contain border border-zinc-200"
                   />
                   <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-                    <div className="text-zinc-900 font-black text-[13px] leading-tight">{lpBrand.shortName || "오산 메가타운 약국"}</div>
+                    <div className="text-zinc-900 font-black text-[13px] leading-tight whitespace-pre-line">{lpBrand.shortName || "오산\n메가타운약국"}</div>
                     <div className="text-zinc-500 text-[11px] leading-tight">QR 스캔 또는 아래 버튼 클릭</div>
                     <a
                       href={lpContact.kakaoChannelUrl || "https://pf.kakao.com/_XWuiX/friend"}
@@ -2475,7 +2475,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </svg>
                 </div>
                 <div>
-                  <div className="text-white font-black text-2xl leading-tight tracking-tight">{lpBrand.shortName || "오산 메가타운"}</div>
+                  <div className="text-white font-black text-2xl leading-tight tracking-tight whitespace-pre-line">{lpBrand.shortName || "오산\n메가타운약국"}</div>
                 </div>
               </div>
             </div>

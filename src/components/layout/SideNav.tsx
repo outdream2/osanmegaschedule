@@ -324,12 +324,17 @@ export const SideNav: React.FC<SideNavProps> = ({
   // 2026-08-16 · 페이지 숨김 반영 · 서버 perms 참조
   const { perms } = usePagePermissions();
   const groups = filterGroupsForSession(authSession, perms).filter(g => !(isMobile && g.hideOnMobile));
-  const { startResize } = useSidebarWidth();
+  const { width, startResize } = useSidebarWidth();
   const { brand } = useBrandIdentity();
 
   return (
-    // warm hairline border · border-r border-zinc-200/60
-    <Sidebar collapsible="icon" data-sb-v2="" className="border-r border-zinc-200/60">
+    // 2026-08-16 · width 상태 실제 반영 · shadcn Sidebar --sidebar-width CSS 변수 override
+    <Sidebar
+      collapsible="icon"
+      data-sb-v2=""
+      className="border-r border-zinc-200/60"
+      style={!isMobile ? { "--sidebar-width": `${width}px` } as React.CSSProperties : undefined}
+    >
 
       {/* ── 로고 영역 · 2026-08-12 · 접기 토글 · 약국이름 옆 · 사이드바 내부 ── */}
       <SidebarHeader className="px-2 py-2 pb-1.5 border-b border-zinc-200/60">
