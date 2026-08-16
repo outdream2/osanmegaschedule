@@ -62,9 +62,11 @@ import referenceValuesRouter from "./server/routes/reference/referenceValues";
 // import inventorySalesRouter from "./server/routes/inventorySales";
 // (재고세기 loadStockCountModel · 위에서 함께 제거됨)
 import { cleanupStaleLogs } from "./server/utils/logsCleanup";
-// 2026-08-05 · T3 인증 미들웨어 · 사내 사용 중에는 미적용 (원복)
-//   · Render 클라우드 배포 직전 · 별도 세션에서 재도입 예정 · docs/TASKS.md 참조
-// import { requireAuth, authorize } from "./server/middleware/requireAuth";
+// 2026-08-16 · #112-G · requireAuth 재활성화 · 공개 라우터 순서 신중 배치
+//   · public 라우터 (login·notifications·pharmacist·settings GET·referenceValues) 는 requireAuth 이전 마운트
+//   · 이후 · 민감 라우터 (staff·contracts·payments·schedule 등) 는 requireAuth 로 자동 보호
+//   · settings/systemConfig · GET public + POST authorize(9) · 내부 authorize 유지 · 이전 마운트
+import { requireAuth } from "./server/middleware/requireAuth";
 
 async function startServer() {
   const app = express();
@@ -133,21 +135,27 @@ async function startServer() {
   // 2026-08-16 · #112-C · 로그인 무차별 대입 방어 · /api/auth/* 전체에 rate-limit 적용
   app.use("/api/auth", authLimiter);
 
-  // ── 인증 불필요 (public) ──
-  app.use(authRouter);            // /api/auth/* — 로그인·비밀번호 변경
-  app.use(notificationsRouter);   // 푸시 알림 구독 (서비스워커)
-  app.use(pharmacistMenuItemsRouter); // 약사 메뉴 표시 (공개 읽기)
+  // ── 인증 불필요 (public) · requireAuth 이전 마운트 · 최소한만 ──
+  app.use(authRouter);            // /api/auth/* · 로그인·비밀번호 변경 · rate-limit 이미 적용
+  // 혼합 (GET public + POST 내부 authorize) · 랜딩/브랜드 로딩 필수
+  app.use(settingsRouter);        // GET /api/permissions·settings (브랜드·연락처) · POST 는 내부 authorize(9)
+  app.use(systemConfigRouter);    // GET /api/system-config · 내부 authorize(9)
+  app.use(referenceValuesRouter); // GET /api/reference-values · 포지션/직급/근무지 (로그인 전에도 사용)
 
-  // ── 2026-08-05 · 인증 미들웨어 원복 (사내 사용 · 문제 발생으로 롤백) ──
-  // Render 배포 직전 · 별도 세션에서 재도입 (docs/TASKS.md T3-defer)
+  // ── 2026-08-16 · #112-G · requireAuth 재활성화 · 아래 모든 /api/* 는 로그인 필수 ──
+  //   · SPA 정적 자원 (/, /assets/*, /sw.js) · 미들웨어 내부 skip (path !startsWith("/api/"))
+  //   · /products.json · /api 접두 없음 · 자동 통과
+  //   · 이전에 public 이던 notifications·pharmacist-menu-items · POST/PATCH/DELETE 있으므로 · 안전을 위해 이 아래로 이동
+  //   · 개별 세밀 레벨 필요 시 · 각 route 에 authorize(N) 추가 (다음 단계)
+  app.use(requireAuth);
+
+  // 알림·약사 메뉴 (로그인 필수로 이관)
+  app.use(notificationsRouter);
+  app.use(pharmacistMenuItemsRouter);
 
   // 직원·스케줄 (개인정보 + DELETE 포함)
   app.use(schedulesRouter);
   app.use(staffRouter);
-
-  // 설정 (앱 전역 설정 변경)
-  app.use(settingsRouter);
-  app.use(systemConfigRouter);
 
   // 공급사 결제·정산 (금전 데이터)
   app.use(supplierPaymentsRouter);
