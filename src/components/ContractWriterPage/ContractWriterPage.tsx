@@ -42,6 +42,7 @@ import {
 } from "../../lib/contract";
 import SplitPanel from "../common/SplitPanel";
 import { EmployeeInfoForm } from "../common/EmployeeInfoForm";
+import { AddressSearchModal } from "../common/AddressSearchModal";
 import { matchHangul } from "../common/hangulSearch";
 import sungstampUrl from "../../images/sungstamp.png";
 import { useSettings, defaultWageForPosition, type WageRate } from "../../hooks/useSettings";
@@ -2710,6 +2711,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const [childrenCount, setChildrenCount] = useState<number>(0);
   // 2026-08-07 · 공제항목 (사용자 입력 · 소득세 M에서 차감 · 세후 증가)
   const [extraDeduction, setExtraDeduction] = useState<number>(0);
+  // 2026-08-16 · 주소 검색 모달 (Daum 우편번호)
+  const [addrModalOpen, setAddrModalOpen] = useState<boolean>(false);
 
   // 2026-08-07 · 통상시급/근무조건/선택항목 변경 시 · form.wageComponents 4자동항목 자동 반영
   //   · 왼쪽 임금구성표 (통상시급×시간) → 오른쪽 계약서 프리뷰 (form.wageComponents.*.amount) 동기화
@@ -4226,6 +4229,13 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               if (v.email   !== undefined) upd("employeeEmail",   v.email);
               if (v.address !== undefined) upd("employeeAddress", v.address);
             }}
+            /* 2026-08-16 · 주소 검색 API (Daum 우편번호) · AddressSearchModal 사용 */
+            onAddressSearch={() => setAddrModalOpen(true)}
+          />
+          <AddressSearchModal
+            open={addrModalOpen}
+            onClose={() => setAddrModalOpen(false)}
+            onSelect={(data) => upd("employeeAddress", data.formatted)}
           />
           <div className="grid grid-cols-2 gap-2">
             {/* T-Q (2026-08-05) · 은행 · 계좌번호 · 통장사본 업로드 (분리) */}

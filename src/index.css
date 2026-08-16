@@ -59,6 +59,30 @@ html, body {
   font-feature-settings: "kern" 1, "calt" 1, "ss03" 1, "tnum" 1, "lnum" 1;
   font-optical-sizing: auto;
   letter-spacing: -0.005em; /* Pretendard 미세 자간 조정 · 한글 밀도 개선 */
+  /* 2026-08-16 · 화면 전체 부드러움 · GPU 가속 · 리페인트 최적화 */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  text-size-adjust: 100%; /* 모바일 확대 시 폰트 크기 자동 조정 방지 */
+}
+
+/* 2026-08-16 · 이미지·아이콘 부드럽고 또렷하게 · 최신 렌더링 표준 */
+img, svg, canvas, video {
+  image-rendering: -webkit-optimize-contrast; /* Chrome/Safari · 선명 */
+  image-rendering: crisp-edges; /* Firefox · 선명 */
+  -webkit-backface-visibility: hidden; /* GPU 가속 · 흐림 방지 */
+  backface-visibility: hidden;
+  transform: translateZ(0); /* GPU 레이어 승격 · 스크롤·확대 시 부드러움 */
+}
+/* SVG 아이콘은 crisp-edges 대신 auto (곡선 매끄럽게) */
+svg {
+  image-rendering: auto;
+  shape-rendering: geometricPrecision; /* SVG 곡선 부드럽게 */
+}
+
+/* 2026-08-16 · 스크롤 부드럽게 · 관성 스크롤 (iOS 스타일) */
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* font-mono 는 Geist Mono 사용 · 명시적 숫자·코드 표시 · 슬래시 0 (0/O 구분) */
