@@ -112,10 +112,36 @@ export function installErrorReporter(): void {
     } catch { /* silent */ }
   });
 
-  // Sentry 통합 준비 · DSN 있으면 향후 @sentry/browser 로드
-  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  // Sentry 통합 · VITE_SENTRY_DSN 있으면 활성화 · 배포 환경에서만
+  const dsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
   if (dsn) {
-    console.info("[errorReporter] Sentry DSN 감지 · @sentry/browser 설치 후 통합 가능");
-    // 향후: import * as Sentry from "@sentry/browser"; Sentry.init({ dsn });
+    void initSentry(dsn);
   }
+}
+
+// Sentry · dynamic import · dev bundle 에 안 실림 · DSN 있는 배포에서만 로드
+async function initSentry(dsn: string): Promise<void> {
+  try {
+    const Sentry = await import("@sentry/browser");
+    Sentry.init({
+      dsn,
+      environment: import.meta.env.MODE,
+      tracesSampleRate: 0.1,
+      // 노이즈 필터 (errorReporter 와 중복 방지)
+      ignoreErrors: ["Script error.", "Loading chunk", "Failed to fetch dynamically imported module"],
+    });
+    console.info("[errorReporter] Sentry 초기화 완료 · env=%s", import.meta.env.MODE);
+  } catch (err) {
+    console.warn("[errorReporter] Sentry 초기화 실패 · 자체 리포터만 사용:", err);
+  }
+}
+
+/** Sentry 통합 시 사용 · report 대신 이걸로 Sentry captureException */
+export async function reportToSentry(err: unknown, context?: Record<string, unknown>): Promise<void> {
+  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  if (!dsn) return;
+  try {
+    const Sentry = await import("@sentry/browser");
+    Sentry.captureException(err, context ? { extra: context } : undefined);
+  } catch { /* silent */ }
 }

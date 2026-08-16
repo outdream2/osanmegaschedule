@@ -7,8 +7,9 @@ import { audit, auditContext } from "../../lib/auditLogger";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, unauthorized, forbidden, notFound, HttpError } from "../../middleware/errorHandler";
-// 2026-08-16 · shared 스키마 (서버·클라 공유 · 타입 duplicate 제거)
+// 2026-08-16 · shared 스키마 + 응답 DTO (서버·클라 공유 · 타입 duplicate 제거)
 import { LoginSchema, VendorLoginSchema, SetPasswordSchema, ChangePasswordSchema } from "../../../src/shared/schemas/auth";
+import type { LoginResponse, VendorLoginResponse, RefreshResponse, AuthOkResponse } from "../../../src/shared/dtos/auth";
 
 const router = Router();
 
@@ -39,7 +40,8 @@ router.post("/api/auth/login", validateBody(LoginSchema), asyncHandler(async (re
     throw new HttpError(500, "인증 시스템 설정 오류 · 관리자에게 문의 (JWT_SECRET 미설정)");
   }
   audit("LOGIN_SUCCESS", { ...auditContext(req), userId: emp.id, name: emp.name, level });
-  res.status(200).json({ id: emp.id, name: emp.name, role, level, rank: emp.rank ?? null });
+  const body: LoginResponse = { id: emp.id, name: emp.name, role, level, rank: emp.rank ?? null };
+  res.status(200).json(body);
 }));
 
 // 거래처 로그인 · 규칙 기반 · 핸드폰번호 + "00" 유지
@@ -64,13 +66,14 @@ router.post("/api/auth/vendor-login", validateBody(VendorLoginSchema), asyncHand
     throw new HttpError(500, "인증 시스템 설정 오류 · 관리자에게 문의 (JWT_SECRET 미설정)");
   }
   audit("VENDOR_LOGIN_SUCCESS", { ...auditContext(req), vendorId: vendor.id, name: vendor.company_name });
-  res.status(200).json({
+  const body: VendorLoginResponse = {
     id: vendor.id,
     name: vendor.company_name,
     contactName: vendor.contact_name ?? "",
     role: "vendor",
     level: 0,
-  });
+  };
+  res.status(200).json(body);
 }));
 
 // 관리자(lv 9) 만 임의 직원 비밀번호 재설정 가능
@@ -96,13 +99,15 @@ router.post("/api/auth/set-password", validateBody(SetPasswordSchema), asyncHand
 router.post("/api/auth/refresh", asyncHandler(async (req, res) => {
   const payload = refreshAccessToken(req, res);
   if (!payload) throw new HttpError(401, "refresh 토큰 만료 · 재로그인 필요", "REFRESH_EXPIRED");
-  res.status(200).json({ id: payload.sub, name: payload.name, role: payload.role, level: payload.level });
+  const body: RefreshResponse = { id: payload.sub, name: payload.name, role: payload.role, level: payload.level };
+  res.status(200).json(body);
 }));
 
 // 로그아웃 · 서버 세션 쿠키 제거
 router.post("/api/auth/logout", asyncHandler(async (_req, res) => {
   clearToken(res);
-  res.status(200).json({ ok: true });
+  const body: AuthOkResponse = { ok: true };
+  res.status(200).json(body);
 }));
 
 // 세션 검증 · 부트 시 JWT 쿠키 유효성 · 401 자동 로그아웃 트리거
