@@ -21,12 +21,12 @@ interface SettingsModalProps {
   onNavigatePermissions?: () => void;
 }
 
+// 2026-08-16 · account (비밀번호 변경) 탭 제거 · MyPage 에 이미 존재 · 중복 방지
 type TabId = "workplaces" | "scheduleTypes" | "account";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "workplaces", label: "근무지 종류" },
   { id: "scheduleTypes", label: "근무 유형" },
-  { id: "account", label: "비밀번호 변경" },
 ];
 
 type ScheduleHourTab = "hours" | "pharmHours" | "logisticsHours" | "partTimeHours";
