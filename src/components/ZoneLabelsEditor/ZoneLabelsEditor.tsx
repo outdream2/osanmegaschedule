@@ -20,6 +20,7 @@ import { MapPin } from "@phosphor-icons/react";
 import type { AuthSession } from "../../types";
 // 2026-08-12 · UI 통일 · 공통 SettingsPageShell + 하단 sticky 액션바 + 타이포
 import { SettingsPageShell } from "../common/SettingsPageShell";
+import { useToast } from "../../hooks/useToast";
 import { SET_ACTION_BAR, SET_BTN_PRIMARY, SET_BTN_SECONDARY, SET_INFO_BADGE } from "../common/settingsTypography";
 import type { AppNavPage } from "../layout/AppNavHeader";
 import {
@@ -147,7 +148,9 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  // 2026-08-16 · useToast 프레임워크
+  const { toast: _toastObj, show: _showToast } = useToast(2200);
+  const toast = _toastObj?.message ?? null;
   const [collapsed, setCollapsed] = useState<Record<CategoryKey, boolean>>({
     aisle: false, top: false, center: false, bottom: false, wing: false, spare: false,
   });
@@ -255,8 +258,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
       }
       // 즉시 다른 페이지 반영
       setZoneMappings(mappings);
-      setToast("저장되었습니다.");
-      window.setTimeout(() => setToast(null), 2200);
+      _showToast("저장되었습니다.");
     } catch (err: any) {
       setSaveError(err?.message ?? "저장 중 오류가 발생했습니다.");
     } finally {

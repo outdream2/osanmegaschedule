@@ -25,6 +25,7 @@ import type { AuthSession } from "../../types";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
 // 2026-08-09 · 사용자 요청 · 상품 검색·확인 · 리스트 등록 (공통)
 import { ProductSearchInput } from "../common/ProductSearchInput";
+import { useToast } from "../../hooks/useToast";
 
 interface ProductArrivalPageProps {
   onBack: () => void;
@@ -123,7 +124,9 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
   const [saveStatus, setSaveStatus]             = useState<"idle" | "saving" | "done" | "error">("idle");
   const [saveError, setSaveError]               = useState<string | null>(null);
   const [savedId, setSavedId]                   = useState<number | null>(null);
-  const [toast, setToast]                       = useState<string | null>(null);
+  // 2026-08-16 · useToast 프레임워크 · setTimeout 자동 관리
+  const { toast: _toastObj, show: _showToast } = useToast(2200);
+  const toast = _toastObj?.message ?? null;
   const [lastScannedProduct, setLastScannedProduct] = useState<ProductInfo | null>(null);
   const [lastScannedCode, setLastScannedCode]   = useState<string | null>(null);
 
@@ -199,10 +202,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
     }
   }, []);
 
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2200);
-  };
+  const showToast = (msg: string) => _showToast(msg);
 
   const handleScan = async (result: string) => {
     setScannerOpen(false);

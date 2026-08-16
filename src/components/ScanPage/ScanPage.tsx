@@ -39,6 +39,7 @@ import { ProductSearchInput } from "../common/ProductSearchInput";
 import { StockRowDesktop } from "./StockRowDesktop";
 import type { StockRow } from "./stockRowTypes";
 import { calcRowTotal, calcSlotTotal } from "./stockRowTypes";
+import { useToast } from "../../hooks/useToast";
 
 // ─────────────────────────────────────────────────────────────
 // Props
@@ -140,7 +141,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   // ── scanner
   const [scannerOpen, setScannerOpen]           = useState(false);
   const [mapLoading, setMapLoading]             = useState(false);
-  const [toast, setToast]                       = useState<string | null>(null);
+  // 2026-08-16 · useToast 프레임워크 · setTimeout 자동 관리
+  const { toast: _toastObj, show: _showRawToast } = useToast(2200);
+  const toast = _toastObj?.message ?? null;
 
   // ── 좌측 마지막 스캔 상태
   const [lastProduct, setLastProduct]           = useState<ProductInfo | null>(null);
@@ -236,10 +239,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     return () => { if (draftTimerRef.current) clearTimeout(draftTimerRef.current); };
   }, [rows]);
 
-  const showToast = useCallback((msg: string, ms = 2200) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), ms);
-  }, []);
+  const showToast = useCallback((msg: string, ms = 2200) => _showRawToast(msg, ms), [_showRawToast]);
 
   // ── A5 · draft 복구 · 배너 [복구] 버튼 핸들러
   const restoreDraft = useCallback(() => {
