@@ -1,3 +1,4 @@
+// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
 // server/routes/supplierPayments.ts
 // 2026-07-31 · 공급사 결제·잔고 관리 시스템 · Phase 2 API
 //   · Zoho / Odoo / QuickBooks 표준: payments 원장 + allocations M:N
@@ -13,6 +14,8 @@ import { queryPurchaseDetails } from "../../utils/purchaseDetailsQuery";
 import { notificationsService } from "../../services/notificationsService";
 // 2026-08-16 · #112-E1
 import { authorize } from "../../middleware/requireAuth";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { badRequest } from "../../middleware/errorHandler";
 
 const router = Router();
 
@@ -78,59 +81,54 @@ async function fetchVatIncluded(supplier: string): Promise<boolean | null> {
 // GET /api/supplier-payments?supplier=X&days=90
 //   · 결제 이력 (allocations 포함)
 // ─────────────────────────────────────────────────────────────────────
-router.get("/api/supplier-payments", async (req, res) => {
-  try {
-    const supplier = String(req.query.supplier ?? "").trim();
-    const days = Math.max(1, Math.min(3650, parseInt(String(req.query.days ?? "90"), 10) || 90));
+router.get("/api/supplier-payments", asyncHandler(async (req, res) => {
+  const supplier = String(req.query.supplier ?? "").trim();
+  const days = Math.max(1, Math.min(3650, parseInt(String(req.query.days ?? "90"), 10) || 90));
 
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - days);
-    const cutoffYmd = cutoffDate.toISOString().slice(0, 10);
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - days);
+  const cutoffYmd = cutoffDate.toISOString().slice(0, 10);
 
-    let q = supabase
-      .from("supplier_payments")
-      .select("id, supplier_name, payment_date, amount, method, memo, created_by, created_by_id, created_at")
-      .gte("payment_date", cutoffYmd)
-      .order("payment_date", { ascending: false })
-      .order("id", { ascending: false });
+  let q = supabase
+    .from("supplier_payments")
+    .select("id, supplier_name, payment_date, amount, method, memo, created_by, created_by_id, created_at")
+    .gte("payment_date", cutoffYmd)
+    .order("payment_date", { ascending: false })
+    .order("id", { ascending: false });
 
-    if (supplier) q = q.eq("supplier_name", supplier);
+  if (supplier) q = q.eq("supplier_name", supplier);
 
-    const { data: payments, error } = await q;
-    if (error) {
-      if (/relation .* does not exist/i.test(error.message)) {
-        return res.json({ rows: [], warning: "supplier_payments 테이블 없음 (docs SQL 실행 필요)" });
-      }
-      throw new Error(error.message);
+  const { data: payments, error } = await q;
+  if (error) {
+    if (/relation .* does not exist/i.test(error.message)) {
+      return res.json({ rows: [], warning: "supplier_payments 테이블 없음 (docs SQL 실행 필요)" });
     }
-
-    const paymentIds = (payments ?? []).map(p => p.id);
-    let allocMap = new Map<number, any[]>();
-    if (paymentIds.length > 0) {
-      const { data: allocs, error: aErr } = await supabase
-        .from("supplier_payment_allocations")
-        .select("id, payment_id, ocr_confirmed_item_id, allocated_amount, created_at")
-        .in("payment_id", paymentIds);
-      if (aErr && !/relation .* does not exist/i.test(aErr.message)) {
-        console.warn("[supplier-payments] allocations fetch 실패:", aErr.message);
-      }
-      for (const a of allocs ?? []) {
-        const arr = allocMap.get(a.payment_id) ?? [];
-        arr.push(a);
-        allocMap.set(a.payment_id, arr);
-      }
-    }
-
-    const rows = (payments ?? []).map(p => ({
-      ...p,
-      allocations: allocMap.get(p.id) ?? [],
-    }));
-    return res.json({ rows });
-  } catch (err: any) {
-    console.error("[GET supplier-payments] error:", err.message);
-    return res.status(500).json({ error: err.message });
+    throw new Error(error.message);
   }
-});
+
+  const paymentIds = (payments ?? []).map(p => p.id);
+  let allocMap = new Map<number, any[]>();
+  if (paymentIds.length > 0) {
+    const { data: allocs, error: aErr } = await supabase
+      .from("supplier_payment_allocations")
+      .select("id, payment_id, ocr_confirmed_item_id, allocated_amount, created_at")
+      .in("payment_id", paymentIds);
+    if (aErr && !/relation .* does not exist/i.test(aErr.message)) {
+      console.warn("[supplier-payments] allocations fetch 실패:", aErr.message);
+    }
+    for (const a of allocs ?? []) {
+      const arr = allocMap.get(a.payment_id) ?? [];
+      arr.push(a);
+      allocMap.set(a.payment_id, arr);
+    }
+  }
+
+  const rows = (payments ?? []).map(p => ({
+    ...p,
+    allocations: allocMap.get(p.id) ?? [],
+  }));
+  return res.json({ rows });
+}));
 
 // ─────────────────────────────────────────────────────────────────────
 // GET /api/supplier-payments/latest-per-supplier
@@ -140,39 +138,34 @@ router.get("/api/supplier-payments", async (req, res) => {
 //   · 서버측 groupBy · N+1 request 회피 (100개 공급사면 100 요청 방지)
 //   · supplier_payments 테이블 없으면 rows: [] 빈 배열 반환 (안전)
 // ─────────────────────────────────────────────────────────────────────
-router.get("/api/supplier-payments/latest-per-supplier", async (_req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from("supplier_payments")
-      .select("supplier_name, payment_date, amount, id")
-      .order("payment_date", { ascending: false })
-      .order("id", { ascending: false });
-    if (error) {
-      if (/relation .* does not exist/i.test(error.message)) {
-        return res.json({ rows: [], warning: "supplier_payments 테이블 없음" });
-      }
-      throw new Error(error.message);
+router.get("/api/supplier-payments/latest-per-supplier", asyncHandler(async (_req, res) => {
+  const { data, error } = await supabase
+    .from("supplier_payments")
+    .select("supplier_name, payment_date, amount, id")
+    .order("payment_date", { ascending: false })
+    .order("id", { ascending: false });
+  if (error) {
+    if (/relation .* does not exist/i.test(error.message)) {
+      return res.json({ rows: [], warning: "supplier_payments 테이블 없음" });
     }
-    // 이미 desc 정렬 · 각 supplier 첫 row 가 최근
-    const map = new Map<string, { latest_payment_date: string; latest_payment_amount: number }>();
-    for (const r of data ?? []) {
-      const nm = String(r.supplier_name ?? "").trim();
-      if (!nm || map.has(nm)) continue;
-      map.set(nm, {
-        latest_payment_date: String(r.payment_date ?? ""),
-        latest_payment_amount: Number(r.amount) || 0,
-      });
-    }
-    const rows = Array.from(map.entries()).map(([supplier_name, v]) => ({
-      supplier_name,
-      ...v,
-    }));
-    return res.json({ rows });
-  } catch (err: any) {
-    console.error("[GET supplier-payments/latest-per-supplier] error:", err.message);
-    return res.status(500).json({ error: err.message });
+    throw new Error(error.message);
   }
-});
+  // 이미 desc 정렬 · 각 supplier 첫 row 가 최근
+  const map = new Map<string, { latest_payment_date: string; latest_payment_amount: number }>();
+  for (const r of data ?? []) {
+    const nm = String(r.supplier_name ?? "").trim();
+    if (!nm || map.has(nm)) continue;
+    map.set(nm, {
+      latest_payment_date: String(r.payment_date ?? ""),
+      latest_payment_amount: Number(r.amount) || 0,
+    });
+  }
+  const rows = Array.from(map.entries()).map(([supplier_name, v]) => ({
+    supplier_name,
+    ...v,
+  }));
+  return res.json({ rows });
+}));
 
 // ─────────────────────────────────────────────────────────────────────
 // POST /api/supplier-payments
@@ -181,173 +174,148 @@ router.get("/api/supplier-payments/latest-per-supplier", async (_req, res) => {
 //           allocations?: [{ocr_confirmed_item_id, allocated_amount}] }
 //   · 원자성: allocations insert 실패 시 payment 롤백 (best-effort)
 // ─────────────────────────────────────────────────────────────────────
-router.post("/api/supplier-payments", async (req, res) => {
-  try {
-    const {
-      supplier_name,
-      payment_date,
-      amount,
-      method,
-      memo,
-      created_by,
-      created_by_id,
-      allocations,
-    } = req.body ?? {};
+router.post("/api/supplier-payments", asyncHandler(async (req, res) => {
+  const {
+    supplier_name,
+    payment_date,
+    amount,
+    method,
+    memo,
+    created_by,
+    created_by_id,
+    allocations,
+  } = req.body ?? {};
 
-    // 검증
-    if (!supplier_name || typeof supplier_name !== "string" || !supplier_name.trim()) {
-      return res.status(400).json({ error: "supplier_name 필수" });
-    }
-    if (!isYmd(payment_date)) {
-      return res.status(400).json({ error: "payment_date 는 YYYY-MM-DD 형식이어야 합니다" });
-    }
-    const amt = toNumOrNull(amount);
-    if (amt == null || amt <= 0) {
-      return res.status(400).json({ error: "amount 는 양수여야 합니다" });
-    }
-    const methodClean = String(method ?? "transfer").trim().toLowerCase();
-    if (!VALID_METHODS.has(methodClean)) {
-      return res.status(400).json({ error: `method 는 ${Array.from(VALID_METHODS).join(",")} 중 하나여야 합니다` });
-    }
-
-    // allocations 검증
-    const allocList: Array<{ ocr_confirmed_item_id: number; allocated_amount: number }> = [];
-    if (Array.isArray(allocations)) {
-      let sum = 0;
-      for (const a of allocations) {
-        const invId = Number(a?.ocr_confirmed_item_id);
-        const allocAmt = toNumOrNull(a?.allocated_amount);
-        if (!Number.isFinite(invId) || invId <= 0) {
-          return res.status(400).json({ error: "allocation.ocr_confirmed_item_id 가 유효하지 않습니다" });
-        }
-        if (allocAmt == null || allocAmt <= 0) {
-          return res.status(400).json({ error: "allocation.allocated_amount 는 양수여야 합니다" });
-        }
-        sum += allocAmt;
-        allocList.push({ ocr_confirmed_item_id: invId, allocated_amount: allocAmt });
-      }
-      // 부동소수 오차 허용치 0.5 (원 단위 데이터 · 실무상 정수)
-      if (sum > amt + 0.5) {
-        return res.status(400).json({
-          error: `배분 총액(${sum.toLocaleString()}) 이 결제 금액(${amt.toLocaleString()}) 을 초과할 수 없습니다`,
-        });
-      }
-    }
-
-    // 1. payment insert
-    const payload: Record<string, any> = {
-      supplier_name: supplier_name.trim(),
-      payment_date,
-      amount: amt,
-      method: methodClean,
-      memo: memo != null && String(memo).trim() ? String(memo).trim() : null,
-      created_by: created_by != null && String(created_by).trim() ? String(created_by).trim() : null,
-      created_by_id: Number.isFinite(Number(created_by_id)) ? Number(created_by_id) : null,
-    };
-
-    const { data: payRow, error: payErr } = await supabase
-      .from("supplier_payments")
-      .insert(payload)
-      .select("id, supplier_name, payment_date, amount, method, memo, created_by, created_by_id, created_at")
-      .single();
-
-    if (payErr) throw new Error(`payment insert 실패: ${payErr.message}`);
-    if (!payRow?.id) throw new Error("payment id 획득 실패");
-
-    // 2. allocations insert (있으면)
-    let allocatedRows: any[] = [];
-    if (allocList.length > 0) {
-      const allocPayload = allocList.map(a => ({
-        payment_id: payRow.id,
-        ocr_confirmed_item_id: a.ocr_confirmed_item_id,
-        allocated_amount: a.allocated_amount,
-      }));
-      const { data: allocRows, error: allocErr } = await supabase
-        .from("supplier_payment_allocations")
-        .insert(allocPayload)
-        .select("id, payment_id, ocr_confirmed_item_id, allocated_amount, created_at");
-
-      if (allocErr) {
-        // 롤백: payment 삭제 (CASCADE 로 이미 insert 된 alloc 도 삭제됨)
-        await supabase.from("supplier_payments").delete().eq("id", payRow.id);
-        throw new Error(`allocations insert 실패 (payment 롤백): ${allocErr.message}`);
-      }
-      allocatedRows = allocRows ?? [];
-    }
-
-    // 2026-08-13 · #107 · 관리자 broadcast · 결제 등록 알림 (인앱 + push)
-    notificationsService.notifyAllAdmins({
-      title: "💰 결제 등록",
-      body: `${supplier_name} · ${amt.toLocaleString()}원 (${methodClean}) 결제 등록됨.`,
-      type: "success",
-      push: { url: "/", tag: `payment-new-${payRow.id}` },
-    }).catch(() => null);
-
-    return res.status(201).json({ ...payRow, allocations: allocatedRows });
-  } catch (err: any) {
-    console.error("[POST supplier-payments] error:", err.message);
-    return res.status(500).json({ error: err.message });
+  // 검증
+  if (!supplier_name || typeof supplier_name !== "string" || !supplier_name.trim()) {
+    throw badRequest("supplier_name 필수");
   }
-});
+  if (!isYmd(payment_date)) {
+    throw badRequest("payment_date 는 YYYY-MM-DD 형식이어야 합니다");
+  }
+  const amt = toNumOrNull(amount);
+  if (amt == null || amt <= 0) {
+    throw badRequest("amount 는 양수여야 합니다");
+  }
+  const methodClean = String(method ?? "transfer").trim().toLowerCase();
+  if (!VALID_METHODS.has(methodClean)) {
+    throw badRequest(`method 는 ${Array.from(VALID_METHODS).join(",")} 중 하나여야 합니다`);
+  }
+
+  // allocations 검증
+  const allocList: Array<{ ocr_confirmed_item_id: number; allocated_amount: number }> = [];
+  if (Array.isArray(allocations)) {
+    let sum = 0;
+    for (const a of allocations) {
+      const invId = Number(a?.ocr_confirmed_item_id);
+      const allocAmt = toNumOrNull(a?.allocated_amount);
+      if (!Number.isFinite(invId) || invId <= 0) {
+        throw badRequest("allocation.ocr_confirmed_item_id 가 유효하지 않습니다");
+      }
+      if (allocAmt == null || allocAmt <= 0) {
+        throw badRequest("allocation.allocated_amount 는 양수여야 합니다");
+      }
+      sum += allocAmt;
+      allocList.push({ ocr_confirmed_item_id: invId, allocated_amount: allocAmt });
+    }
+    // 부동소수 오차 허용치 0.5 (원 단위 데이터 · 실무상 정수)
+    if (sum > amt + 0.5) {
+      throw badRequest(`배분 총액(${sum.toLocaleString()}) 이 결제 금액(${amt.toLocaleString()}) 을 초과할 수 없습니다`);
+    }
+  }
+
+  // 1. payment insert
+  const payload: Record<string, any> = {
+    supplier_name: supplier_name.trim(),
+    payment_date,
+    amount: amt,
+    method: methodClean,
+    memo: memo != null && String(memo).trim() ? String(memo).trim() : null,
+    created_by: created_by != null && String(created_by).trim() ? String(created_by).trim() : null,
+    created_by_id: Number.isFinite(Number(created_by_id)) ? Number(created_by_id) : null,
+  };
+
+  const { data: payRow, error: payErr } = await supabase
+    .from("supplier_payments")
+    .insert(payload)
+    .select("id, supplier_name, payment_date, amount, method, memo, created_by, created_by_id, created_at")
+    .single();
+
+  if (payErr) throw new Error(`payment insert 실패: ${payErr.message}`);
+  if (!payRow?.id) throw new Error("payment id 획득 실패");
+
+  // 2. allocations insert (있으면)
+  let allocatedRows: any[] = [];
+  if (allocList.length > 0) {
+    const allocPayload = allocList.map(a => ({
+      payment_id: payRow.id,
+      ocr_confirmed_item_id: a.ocr_confirmed_item_id,
+      allocated_amount: a.allocated_amount,
+    }));
+    const { data: allocRows, error: allocErr } = await supabase
+      .from("supplier_payment_allocations")
+      .insert(allocPayload)
+      .select("id, payment_id, ocr_confirmed_item_id, allocated_amount, created_at");
+
+    if (allocErr) {
+      // 롤백: payment 삭제 (CASCADE 로 이미 insert 된 alloc 도 삭제됨)
+      await supabase.from("supplier_payments").delete().eq("id", payRow.id);
+      throw new Error(`allocations insert 실패 (payment 롤백): ${allocErr.message}`);
+    }
+    allocatedRows = allocRows ?? [];
+  }
+
+  // 2026-08-13 · #107 · 관리자 broadcast · 결제 등록 알림 (인앱 + push)
+  notificationsService.notifyAllAdmins({
+    title: "💰 결제 등록",
+    body: `${supplier_name} · ${amt.toLocaleString()}원 (${methodClean}) 결제 등록됨.`,
+    type: "success",
+    push: { url: "/", tag: `payment-new-${payRow.id}` },
+  }).catch(() => null);
+
+  return res.status(201).json({ ...payRow, allocations: allocatedRows });
+}));
 
 // ─────────────────────────────────────────────────────────────────────
 // PATCH /api/supplier-payments/:id
 //   · memo · method 만 수정 (금액·날짜 변경은 삭제→재등록 유도)
 // ─────────────────────────────────────────────────────────────────────
-router.patch("/api/supplier-payments/:id", async (req, res) => {
-  try {
-    const id = parseInt(req.params.id, 10);
-    if (!Number.isFinite(id) || id <= 0) {
-      return res.status(400).json({ error: "invalid id" });
-    }
-    const { method, memo } = req.body ?? {};
-    const updates: Record<string, any> = {};
-    if (method !== undefined) {
-      const m = String(method ?? "").trim().toLowerCase();
-      if (!VALID_METHODS.has(m)) {
-        return res.status(400).json({ error: `method 는 ${Array.from(VALID_METHODS).join(",")} 중 하나` });
-      }
-      updates.method = m;
-    }
-    if (memo !== undefined) {
-      updates.memo = memo != null && String(memo).trim() ? String(memo).trim() : null;
-    }
-    if (Object.keys(updates).length === 0) {
-      return res.status(400).json({ error: "수정할 필드 없음 (method/memo 만 허용)" });
-    }
-
-    const { data, error } = await supabase
-      .from("supplier_payments")
-      .update(updates)
-      .eq("id", id)
-      .select("id, supplier_name, payment_date, amount, method, memo, created_at")
-      .single();
-    if (error) throw new Error(error.message);
-    return res.json(data);
-  } catch (err: any) {
-    console.error("[PATCH supplier-payments] error:", err.message);
-    return res.status(500).json({ error: err.message });
+router.patch("/api/supplier-payments/:id", asyncHandler(async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isFinite(id) || id <= 0) throw badRequest("invalid id");
+  const { method, memo } = req.body ?? {};
+  const updates: Record<string, any> = {};
+  if (method !== undefined) {
+    const m = String(method ?? "").trim().toLowerCase();
+    if (!VALID_METHODS.has(m)) throw badRequest(`method 는 ${Array.from(VALID_METHODS).join(",")} 중 하나`);
+    updates.method = m;
   }
-});
+  if (memo !== undefined) {
+    updates.memo = memo != null && String(memo).trim() ? String(memo).trim() : null;
+  }
+  if (Object.keys(updates).length === 0) throw badRequest("수정할 필드 없음 (method/memo 만 허용)");
+
+  const { data, error } = await supabase
+    .from("supplier_payments")
+    .update(updates)
+    .eq("id", id)
+    .select("id, supplier_name, payment_date, amount, method, memo, created_at")
+    .single();
+  if (error) throw new Error(error.message);
+  return res.json(data);
+}));
 
 // ─────────────────────────────────────────────────────────────────────
 // DELETE /api/supplier-payments/:id
 //   · allocations 은 FK ON DELETE CASCADE 로 자동 삭제
 // ─────────────────────────────────────────────────────────────────────
-router.delete("/api/supplier-payments/:id", authorize(9), async (req, res) => {
-  try {
-    const id = parseInt(req.params.id, 10);
-    if (!Number.isFinite(id) || id <= 0) {
-      return res.status(400).json({ error: "invalid id" });
-    }
-    const { error } = await supabase.from("supplier_payments").delete().eq("id", id);
-    if (error) throw new Error(error.message);
-    return res.json({ ok: true });
-  } catch (err: any) {
-    console.error("[DELETE supplier-payments] error:", err.message);
-    return res.status(500).json({ error: err.message });
-  }
-});
+router.delete("/api/supplier-payments/:id", authorize(9), asyncHandler(async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isFinite(id) || id <= 0) throw badRequest("invalid id");
+  const { error } = await supabase.from("supplier_payments").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  return res.json({ ok: true });
+}));
 
 // ─────────────────────────────────────────────────────────────────────
 // GET /api/supplier-balance/:supplier
@@ -355,51 +323,46 @@ router.delete("/api/supplier-payments/:id", authorize(9), async (req, res) => {
 //   · supplier 는 URL 인코딩된 회사명
 //   · 2026-08-09 · 소스 · ocr_confirmed_items → purchase_details (사용자 원칙)
 // ─────────────────────────────────────────────────────────────────────
-router.get("/api/supplier-balance/:supplier", async (req, res) => {
-  try {
-    const supplier = decodeURIComponent(req.params.supplier ?? "").trim();
-    if (!supplier) return res.status(400).json({ error: "supplier 필수" });
+router.get("/api/supplier-balance/:supplier", asyncHandler(async (req, res) => {
+  const supplier = decodeURIComponent(req.params.supplier ?? "").trim();
+  if (!supplier) throw badRequest("supplier 필수");
 
-    // 매입 합계 (purchase_details · queryPurchaseDetails 헬퍼 · NULL supplier fallback 포함)
-    let totalPurchase = 0;
-    let purchaseCount = 0;
-    {
-      const rows = await queryPurchaseDetails({ supplier });
-      for (const r of rows) {
-        totalPurchase += r.amount;
-        purchaseCount++;
-      }
+  // 매입 합계 (purchase_details · queryPurchaseDetails 헬퍼 · NULL supplier fallback 포함)
+  let totalPurchase = 0;
+  let purchaseCount = 0;
+  {
+    const rows = await queryPurchaseDetails({ supplier });
+    for (const r of rows) {
+      totalPurchase += r.amount;
+      purchaseCount++;
     }
-
-    // 결제 합계 (supplier_payments)
-    let totalPayment = 0;
-    let paymentCount = 0;
-    {
-      const { data, error } = await supabase
-        .from("supplier_payments")
-        .select("id, amount")
-        .eq("supplier_name", supplier);
-      if (error && !/relation .* does not exist/i.test(error.message)) throw new Error(error.message);
-      for (const r of data ?? []) {
-        totalPayment += Number(r.amount) || 0;
-        paymentCount++;
-      }
-    }
-
-    const balance = totalPurchase - totalPayment;
-    return res.json({
-      supplier,
-      total_purchase: totalPurchase,
-      total_payment: totalPayment,
-      balance,
-      purchase_count: purchaseCount,
-      payment_count: paymentCount,
-    });
-  } catch (err: any) {
-    console.error("[GET supplier-balance] error:", err.message);
-    return res.status(500).json({ error: err.message });
   }
-});
+
+  // 결제 합계 (supplier_payments)
+  let totalPayment = 0;
+  let paymentCount = 0;
+  {
+    const { data, error } = await supabase
+      .from("supplier_payments")
+      .select("id, amount")
+      .eq("supplier_name", supplier);
+    if (error && !/relation .* does not exist/i.test(error.message)) throw new Error(error.message);
+    for (const r of data ?? []) {
+      totalPayment += Number(r.amount) || 0;
+      paymentCount++;
+    }
+  }
+
+  const balance = totalPurchase - totalPayment;
+  return res.json({
+    supplier,
+    total_purchase: totalPurchase,
+    total_payment: totalPayment,
+    balance,
+    purchase_count: purchaseCount,
+    payment_count: paymentCount,
+  });
+}));
 
 // ─────────────────────────────────────────────────────────────────────
 // GET /api/supplier-ledger?supplier=X&days=90
@@ -407,205 +370,195 @@ router.get("/api/supplier-balance/:supplier", async (req, res) => {
 //   · 시간순 asc → running balance 계산
 //   · 2026-08-09 · 소스 · ocr_confirmed_items → purchase_details (사용자 원칙)
 // ─────────────────────────────────────────────────────────────────────
-router.get("/api/supplier-ledger", async (req, res) => {
-  try {
-    const supplier = String(req.query.supplier ?? "").trim();
-    if (!supplier) return res.status(400).json({ error: "supplier 필수" });
-    const days = Math.max(1, Math.min(3650, parseInt(String(req.query.days ?? "90"), 10) || 90));
+router.get("/api/supplier-ledger", asyncHandler(async (req, res) => {
+  const supplier = String(req.query.supplier ?? "").trim();
+  if (!supplier) throw badRequest("supplier 필수");
+  const days = Math.max(1, Math.min(3650, parseInt(String(req.query.days ?? "90"), 10) || 90));
 
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - days);
-    const cutoffYmd = cutoffDate.toISOString().slice(0, 10);
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - days);
+  const cutoffYmd = cutoffDate.toISOString().slice(0, 10);
 
-    // 공급사 VAT 설정 (병렬 fetch 는 아래에서 · 여기선 결과만 사용)
-    const vatIncludedPromise = fetchVatIncluded(supplier);
+  // 공급사 VAT 설정 (병렬 fetch 는 아래에서 · 여기선 결과만 사용)
+  const vatIncludedPromise = fetchVatIncluded(supplier);
 
-    // 매입 (purchase_details · queryPurchaseDetails 헬퍼) · vat_amount·supply_amount 있으면 우선 사용
-    const purchases: any[] = [];
-    {
-      const rows = await queryPurchaseDetails({ supplier, sinceYmd: cutoffYmd });
-      for (const r of rows) {
-        purchases.push({
-          type: "purchase",
-          id: r.id,
-          date: r.purchase_date,
-          amount: r.amount,
-          _raw_vat: r.vat_amount,
-          _raw_supply: r.supply_amount,
-          method: null,
-          memo: r.product_name || null,
-          allocations: null,
-        });
-      }
+  // 매입 (purchase_details · queryPurchaseDetails 헬퍼) · vat_amount·supply_amount 있으면 우선 사용
+  const purchases: any[] = [];
+  {
+    const rows = await queryPurchaseDetails({ supplier, sinceYmd: cutoffYmd });
+    for (const r of rows) {
+      purchases.push({
+        type: "purchase",
+        id: r.id,
+        date: r.purchase_date,
+        amount: r.amount,
+        _raw_vat: r.vat_amount,
+        _raw_supply: r.supply_amount,
+        method: null,
+        memo: r.product_name || null,
+        allocations: null,
+      });
     }
+  }
 
-    // 결제 (supplier_payments) · vat_amount 있으면 우선 사용
-    const payments: any[] = [];
-    {
-      let data: any[] | null = null;
-      const r1 = await supabase
+  // 결제 (supplier_payments) · vat_amount 있으면 우선 사용
+  const payments: any[] = [];
+  {
+    let data: any[] | null = null;
+    const r1 = await supabase
+      .from("supplier_payments")
+      .select("id, supplier_name, payment_date, amount, method, memo, vat_amount, tax_invoice_no")
+      .eq("supplier_name", supplier)
+      .gte("payment_date", cutoffYmd);
+    if (!r1.error) data = r1.data ?? [];
+    else if (/vat_amount|tax_invoice_no/i.test(r1.error.message)) {
+      const r2 = await supabase
         .from("supplier_payments")
-        .select("id, supplier_name, payment_date, amount, method, memo, vat_amount, tax_invoice_no")
+        .select("id, supplier_name, payment_date, amount, method, memo")
         .eq("supplier_name", supplier)
         .gte("payment_date", cutoffYmd);
-      if (!r1.error) data = r1.data ?? [];
-      else if (/vat_amount|tax_invoice_no/i.test(r1.error.message)) {
-        const r2 = await supabase
-          .from("supplier_payments")
-          .select("id, supplier_name, payment_date, amount, method, memo")
-          .eq("supplier_name", supplier)
-          .gte("payment_date", cutoffYmd);
-        if (!r2.error) data = (r2.data ?? []).map((x: any) => ({ ...x, vat_amount: 0, tax_invoice_no: null }));
-        else if (!/relation .* does not exist/i.test(r2.error.message)) throw new Error(r2.error.message);
-      } else if (!/relation .* does not exist/i.test(r1.error.message)) throw new Error(r1.error.message);
+      if (!r2.error) data = (r2.data ?? []).map((x: any) => ({ ...x, vat_amount: 0, tax_invoice_no: null }));
+      else if (!/relation .* does not exist/i.test(r2.error.message)) throw new Error(r2.error.message);
+    } else if (!/relation .* does not exist/i.test(r1.error.message)) throw new Error(r1.error.message);
 
-      for (const r of data ?? []) {
-        payments.push({
-          type: "payment",
-          id: r.id,
-          date: r.payment_date,
-          amount: Number(r.amount) || 0,
-          _raw_vat: Number(r.vat_amount) || 0,
-          method: r.method ?? null,
-          memo: r.memo ?? null,
-          tax_invoice_no: r.tax_invoice_no ?? null,
-          allocations: null,
-        });
-      }
+    for (const r of data ?? []) {
+      payments.push({
+        type: "payment",
+        id: r.id,
+        date: r.payment_date,
+        amount: Number(r.amount) || 0,
+        _raw_vat: Number(r.vat_amount) || 0,
+        method: r.method ?? null,
+        memo: r.memo ?? null,
+        tax_invoice_no: r.tax_invoice_no ?? null,
+        allocations: null,
+      });
     }
-
-    // VAT 계산 · row 에 저장된 값 있으면 우선 · 없으면 vendor.vat_included 로 계산
-    const vatIncluded = await vatIncludedPromise;
-    const decoratePurchase = (m: any) => {
-      let vat = m._raw_vat;
-      let supply = m._raw_supply;
-      if (!vat && !supply) {
-        const s = splitVat(m.amount, vatIncluded);
-        vat = s.vat;
-        supply = s.supply;
-      } else if (!supply) {
-        supply = Math.max(0, m.amount - vat);
-      }
-      return { ...m, vat_amount: vat, supply_amount: supply };
-    };
-    const decoratePayment = (m: any) => {
-      let vat = m._raw_vat;
-      if (!vat) {
-        // 결제에서는 vendor.vat_included=true 인 경우만 자동분리 (별도과세는 결제 시점에 VAT 라인 별도 X)
-        vat = vatIncluded === true ? splitVat(m.amount, true).vat : 0;
-      }
-      const supply = Math.max(0, m.amount - vat);
-      return { ...m, vat_amount: vat, supply_amount: supply };
-    };
-
-    const decoratedP = purchases.map(decoratePurchase);
-    const decoratedY = payments.map(decoratePayment);
-
-    // 시간순 asc · date 동일 시 매입 먼저 (재무 관례)
-    const merged = [...decoratedP, ...decoratedY].sort((a, b) => {
-      if (a.date !== b.date) return String(a.date).localeCompare(String(b.date));
-      if (a.type !== b.type) return a.type === "purchase" ? -1 : 1;
-      return a.id - b.id;
-    });
-
-    // running balance · 매입(+) · 결제(-)
-    let running = 0;
-    const rows = merged.map(m => {
-      running += m.type === "purchase" ? m.amount : -m.amount;
-      const { _raw_vat, _raw_supply, ...clean } = m;
-      void _raw_vat; void _raw_supply;
-      return { ...clean, running_balance: running };
-    });
-
-    const totalPurchaseVat = decoratedP.reduce((s, r) => s + (r.vat_amount || 0), 0);
-    const totalPurchaseSupply = decoratedP.reduce((s, r) => s + (r.supply_amount || 0), 0);
-    const totalPaymentVat = decoratedY.reduce((s, r) => s + (r.vat_amount || 0), 0);
-    const totalPaymentSupply = decoratedY.reduce((s, r) => s + (r.supply_amount || 0), 0);
-
-    // 프론트는 desc 로 보여주는 경우가 많으니 반전 옵션 제공
-    // (여기선 asc 로 반환 · 프론트에서 정렬)
-    return res.json({
-      supplier,
-      vat_included: vatIncluded,
-      rows,
-      total_purchase: decoratedP.reduce((s, r) => s + r.amount, 0),
-      total_purchase_vat: Math.round(totalPurchaseVat),
-      total_purchase_supply: Math.round(totalPurchaseSupply),
-      total_payment: decoratedY.reduce((s, r) => s + r.amount, 0),
-      total_payment_vat: Math.round(totalPaymentVat),
-      total_payment_supply: Math.round(totalPaymentSupply),
-      current_balance: running,
-    });
-  } catch (err: any) {
-    console.error("[GET supplier-ledger] error:", err.message);
-    return res.status(500).json({ error: err.message });
   }
-});
+
+  // VAT 계산 · row 에 저장된 값 있으면 우선 · 없으면 vendor.vat_included 로 계산
+  const vatIncluded = await vatIncludedPromise;
+  const decoratePurchase = (m: any) => {
+    let vat = m._raw_vat;
+    let supply = m._raw_supply;
+    if (!vat && !supply) {
+      const s = splitVat(m.amount, vatIncluded);
+      vat = s.vat;
+      supply = s.supply;
+    } else if (!supply) {
+      supply = Math.max(0, m.amount - vat);
+    }
+    return { ...m, vat_amount: vat, supply_amount: supply };
+  };
+  const decoratePayment = (m: any) => {
+    let vat = m._raw_vat;
+    if (!vat) {
+      // 결제에서는 vendor.vat_included=true 인 경우만 자동분리 (별도과세는 결제 시점에 VAT 라인 별도 X)
+      vat = vatIncluded === true ? splitVat(m.amount, true).vat : 0;
+    }
+    const supply = Math.max(0, m.amount - vat);
+    return { ...m, vat_amount: vat, supply_amount: supply };
+  };
+
+  const decoratedP = purchases.map(decoratePurchase);
+  const decoratedY = payments.map(decoratePayment);
+
+  // 시간순 asc · date 동일 시 매입 먼저 (재무 관례)
+  const merged = [...decoratedP, ...decoratedY].sort((a, b) => {
+    if (a.date !== b.date) return String(a.date).localeCompare(String(b.date));
+    if (a.type !== b.type) return a.type === "purchase" ? -1 : 1;
+    return a.id - b.id;
+  });
+
+  // running balance · 매입(+) · 결제(-)
+  let running = 0;
+  const rows = merged.map(m => {
+    running += m.type === "purchase" ? m.amount : -m.amount;
+    const { _raw_vat, _raw_supply, ...clean } = m;
+    void _raw_vat; void _raw_supply;
+    return { ...clean, running_balance: running };
+  });
+
+  const totalPurchaseVat = decoratedP.reduce((s, r) => s + (r.vat_amount || 0), 0);
+  const totalPurchaseSupply = decoratedP.reduce((s, r) => s + (r.supply_amount || 0), 0);
+  const totalPaymentVat = decoratedY.reduce((s, r) => s + (r.vat_amount || 0), 0);
+  const totalPaymentSupply = decoratedY.reduce((s, r) => s + (r.supply_amount || 0), 0);
+
+  // 프론트는 desc 로 보여주는 경우가 많으니 반전 옵션 제공
+  // (여기선 asc 로 반환 · 프론트에서 정렬)
+  return res.json({
+    supplier,
+    vat_included: vatIncluded,
+    rows,
+    total_purchase: decoratedP.reduce((s, r) => s + r.amount, 0),
+    total_purchase_vat: Math.round(totalPurchaseVat),
+    total_purchase_supply: Math.round(totalPurchaseSupply),
+    total_payment: decoratedY.reduce((s, r) => s + r.amount, 0),
+    total_payment_vat: Math.round(totalPaymentVat),
+    total_payment_supply: Math.round(totalPaymentSupply),
+    current_balance: running,
+  });
+}));
 
 // ─────────────────────────────────────────────────────────────────────
 // GET /api/supplier-open-invoices?supplier=X
 //   · 결제 미할당 or 부분할당 된 매입건 리스트
 //   · PaymentRegisterModal 에서 체크박스 매칭용
 // ─────────────────────────────────────────────────────────────────────
-router.get("/api/supplier-open-invoices", async (req, res) => {
-  try {
-    const supplier = String(req.query.supplier ?? "").trim();
-    if (!supplier) return res.status(400).json({ error: "supplier 필수" });
+router.get("/api/supplier-open-invoices", asyncHandler(async (req, res) => {
+  const supplier = String(req.query.supplier ?? "").trim();
+  if (!supplier) throw badRequest("supplier 필수");
 
-    // 매입건 조회
-    const { data: invoices, error: invErr } = await supabase
-      .from("ocr_confirmed_items")
-      .select("id, invoice_date, saved_at, supplier, product_name, amount")
-      .eq("supplier", supplier)
-      .order("invoice_date", { ascending: false })
-      .order("saved_at", { ascending: false })
-      .limit(500);
-    if (invErr) {
-      if (/relation .* does not exist/i.test(invErr.message)) return res.json({ rows: [] });
-      throw new Error(invErr.message);
-    }
-    const invList = invoices ?? [];
-    if (invList.length === 0) return res.json({ rows: [] });
-
-    // 각 invoice 에 배분된 금액 합
-    const invIds = invList.map(i => i.id);
-    const allocSumMap = new Map<number, number>();
-    {
-      const { data: allocs, error: aErr } = await supabase
-        .from("supplier_payment_allocations")
-        .select("ocr_confirmed_item_id, allocated_amount")
-        .in("ocr_confirmed_item_id", invIds);
-      if (aErr && !/relation .* does not exist/i.test(aErr.message)) {
-        console.warn("[supplier-open-invoices] allocations sum 실패:", aErr.message);
-      }
-      for (const a of allocs ?? []) {
-        const iid = a.ocr_confirmed_item_id;
-        allocSumMap.set(iid, (allocSumMap.get(iid) ?? 0) + (Number(a.allocated_amount) || 0));
-      }
-    }
-
-    const rows = invList.map((i: any) => {
-      const amount = Number(i.amount) || 0;
-      const allocated = allocSumMap.get(i.id) ?? 0;
-      const remaining = Math.max(0, amount - allocated);
-      const date = (i.invoice_date && /^\d{4}-\d{2}-\d{2}$/.test(i.invoice_date)) ? i.invoice_date : i.saved_at;
-      return {
-        id: i.id,
-        date,
-        product_name: i.product_name,
-        amount,
-        allocated,
-        remaining,
-        status: remaining <= 0.5 ? "paid" : allocated > 0 ? "partial" : "open",
-      };
-    });
-
-    return res.json({ rows });
-  } catch (err: any) {
-    console.error("[GET supplier-open-invoices] error:", err.message);
-    return res.status(500).json({ error: err.message });
+  // 매입건 조회
+  const { data: invoices, error: invErr } = await supabase
+    .from("ocr_confirmed_items")
+    .select("id, invoice_date, saved_at, supplier, product_name, amount")
+    .eq("supplier", supplier)
+    .order("invoice_date", { ascending: false })
+    .order("saved_at", { ascending: false })
+    .limit(500);
+  if (invErr) {
+    if (/relation .* does not exist/i.test(invErr.message)) return res.json({ rows: [] });
+    throw new Error(invErr.message);
   }
-});
+  const invList = invoices ?? [];
+  if (invList.length === 0) return res.json({ rows: [] });
+
+  // 각 invoice 에 배분된 금액 합
+  const invIds = invList.map(i => i.id);
+  const allocSumMap = new Map<number, number>();
+  {
+    const { data: allocs, error: aErr } = await supabase
+      .from("supplier_payment_allocations")
+      .select("ocr_confirmed_item_id, allocated_amount")
+      .in("ocr_confirmed_item_id", invIds);
+    if (aErr && !/relation .* does not exist/i.test(aErr.message)) {
+      console.warn("[supplier-open-invoices] allocations sum 실패:", aErr.message);
+    }
+    for (const a of allocs ?? []) {
+      const iid = a.ocr_confirmed_item_id;
+      allocSumMap.set(iid, (allocSumMap.get(iid) ?? 0) + (Number(a.allocated_amount) || 0));
+    }
+  }
+
+  const rows = invList.map((i: any) => {
+    const amount = Number(i.amount) || 0;
+    const allocated = allocSumMap.get(i.id) ?? 0;
+    const remaining = Math.max(0, amount - allocated);
+    const date = (i.invoice_date && /^\d{4}-\d{2}-\d{2}$/.test(i.invoice_date)) ? i.invoice_date : i.saved_at;
+    return {
+      id: i.id,
+      date,
+      product_name: i.product_name,
+      amount,
+      allocated,
+      remaining,
+      status: remaining <= 0.5 ? "paid" : allocated > 0 ? "partial" : "open",
+    };
+  });
+
+  return res.json({ rows });
+}));
 
 // ─────────────────────────────────────────────────────────────────────
 // GET /api/supplier-purchase-summary?days=90
@@ -616,9 +569,8 @@ router.get("/api/supplier-open-invoices", async (req, res) => {
 //   · 2026-08-09 · 원칙 확정 · purchase_details 만 · OCR fallback 제거
 //     사용자 요청: "매입이력없으면 ocr로넘어가면 안돼 · 매입이력은 매입이력만"
 // ─────────────────────────────────────────────────────────────────────
-router.get("/api/supplier-purchase-summary", async (req, res) => {
-  try {
-    const days = Math.max(1, Math.min(3650, parseInt(String(req.query.days ?? "90"), 10) || 90));
+router.get("/api/supplier-purchase-summary", asyncHandler(async (req, res) => {
+  const days = Math.max(1, Math.min(3650, parseInt(String(req.query.days ?? "90"), 10) || 90));
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
     const cutoffYmd = cutoffDate.toISOString().slice(0, 10);
@@ -887,11 +839,7 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
         total_rows: normRows.length,
       },
     });
-  } catch (err: any) {
-    console.error("[GET supplier-purchase-summary] error:", err.message);
-    return res.status(500).json({ error: err.message });
-  }
-});
+}));
 
 // ─────────────────────────────────────────────────────────────────────
 // GET /api/supplier-purchase-detail?supplier=X&days=365
@@ -900,10 +848,9 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
 //   · 2026-08-09 · 원칙 확정 · purchase_details 만 사용 · OCR fallback 제거
 //     사용자 요청: "매입이력없으면 ocr로넘어가면 안돼 · 매입이력은 매입이력만"
 // ─────────────────────────────────────────────────────────────────────
-router.get("/api/supplier-purchase-detail", async (req, res) => {
-  try {
-    const supplier = String(req.query.supplier ?? "").trim();
-    if (!supplier) return res.status(400).json({ error: "supplier 필수" });
+router.get("/api/supplier-purchase-detail", asyncHandler(async (req, res) => {
+  const supplier = String(req.query.supplier ?? "").trim();
+  if (!supplier) throw badRequest("supplier 필수");
     const days = Math.max(1, Math.min(3650, parseInt(String(req.query.days ?? "365"), 10) || 365));
 
     const cutoffDate = new Date();
@@ -1090,12 +1037,8 @@ router.get("/api/supplier-purchase-detail", async (req, res) => {
         supply_amount: supply,
       };
     });
-    return res.json({ supplier, vat_included: vatIncluded, rows, source: sourceUsed });
-  } catch (err: any) {
-    console.error("[GET supplier-purchase-detail] error:", err.message);
-    return res.status(500).json({ error: err.message });
-  }
-});
+  return res.json({ supplier, vat_included: vatIncluded, rows, source: sourceUsed });
+}));
 
 // ─────────────────────────────────────────────────────────────────────
 // GET /api/supplier-monthly-breakdown?supplier=X&months=N
@@ -1107,10 +1050,9 @@ router.get("/api/supplier-purchase-detail", async (req, res) => {
 //     - 판매액 · stock_history (supply_amount × sale_qty/(purchase_qty+sale_qty) 프록시)
 //     - 실재고액 · stock_history.total_amount 월별 합
 // ─────────────────────────────────────────────────────────────────────
-router.get("/api/supplier-monthly-breakdown", async (req, res) => {
-  try {
-    const supplier = String(req.query.supplier ?? "").trim();
-    if (!supplier) return res.status(400).json({ error: "supplier 필수" });
+router.get("/api/supplier-monthly-breakdown", asyncHandler(async (req, res) => {
+  const supplier = String(req.query.supplier ?? "").trim();
+  if (!supplier) throw badRequest("supplier 필수");
     const months = Math.max(1, Math.min(24, parseInt(String(req.query.months ?? "3"), 10) || 3));
 
     // 월 키 배열 (오래된 → 최근)
@@ -1293,20 +1235,16 @@ router.get("/api/supplier-monthly-breakdown", async (req, res) => {
       stockValue: stockValueCurrent,
     };
 
-    return res.json({
-      supplier,
-      months: monthKeys,
-      purchases,
-      payments,
-      sales,
-      stockValue,
-      stockValueCurrent,
-      totals,
-    });
-  } catch (err: any) {
-    console.error("[GET supplier-monthly-breakdown] error:", err.message);
-    return res.status(500).json({ error: err.message });
-  }
-});
+  return res.json({
+    supplier,
+    months: monthKeys,
+    purchases,
+    payments,
+    sales,
+    stockValue,
+    stockValueCurrent,
+    totals,
+  });
+}));
 
 export default router;

@@ -1,36 +1,16 @@
-// 2026-08-16 · asyncHandler + HttpError + validateBody 프레임워크 완전 적용
+// 2026-08-16 · asyncHandler + HttpError + validateBody + shared schema 완전 적용
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { z } from "zod";
 import { supabase } from "../../../src/supabase/client";
 import { issueToken, clearToken, refreshAccessToken, JwtPayload, getSession } from "../../middleware/requireAuth";
 import { audit, auditContext } from "../../lib/auditLogger";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, unauthorized, forbidden, notFound, HttpError } from "../../middleware/errorHandler";
+// 2026-08-16 · shared 스키마 (서버·클라 공유 · 타입 duplicate 제거)
+import { LoginSchema, VendorLoginSchema, SetPasswordSchema, ChangePasswordSchema } from "../../../src/shared/schemas/auth";
 
 const router = Router();
-
-// Zod 스키마 · Input Validation
-//   · employee_id 필드 = 실제로는 핸드폰번호 (로그인 ID 로 사용) · 하위호환
-const LoginSchema = z.object({
-  employee_id: z.union([z.string(), z.number()]).optional(),
-  password: z.string().min(1, "비밀번호를 입력해주세요").max(200),
-  rememberMe: z.boolean().optional(),
-});
-const VendorLoginSchema = z.object({
-  phone: z.string().min(1, "핸드폰번호를 입력해주세요").max(30),
-  password: z.string().min(1, "비밀번호를 입력해주세요").max(50),
-});
-const SetPasswordSchema = z.object({
-  employeeId: z.union([z.string(), z.number()]),
-  password: z.string().min(4, "비밀번호는 최소 4자 이상이어야 합니다").max(200),
-});
-const ChangePasswordSchema = z.object({
-  employeeId: z.union([z.string(), z.number()]),
-  currentPassword: z.string().min(1, "현재 비밀번호를 입력해주세요").max(200),
-  newPassword: z.string().min(4, "새 비밀번호는 최소 4자 이상이어야 합니다").max(200),
-});
 
 router.post("/api/auth/login", validateBody(LoginSchema), asyncHandler(async (req, res) => {
   const { employee_id, password, rememberMe } = req.body;

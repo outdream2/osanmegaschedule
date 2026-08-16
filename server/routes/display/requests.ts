@@ -1,3 +1,4 @@
+// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
 import { Router } from "express";
 import webpush from "web-push";
 import { supabase } from "../../../src/supabase/client";
@@ -8,10 +9,12 @@ import { authorize } from "../../middleware/requireAuth";
 import { clearLowStockCache } from "../stock/stockManage";
 // 2026-08-06 · T-LOSS-HISTORY · 실재고 저장 시 · 오늘 손실 스냅샷 fire-and-forget
 import { scheduleSnapshotBackground } from "../stock/lossTracking";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { HttpError, badRequest, notFound } from "../../middleware/errorHandler";
 
 const router = Router();
 
-router.get("/api/requests/pending-counts", async (_req, res) => {
+router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
   const today = new Date().toISOString().split("T")[0];
   const [display, order, productsWithRealMap, legacy, leave, lunch, inventory] = await Promise.all([
     supabase.from("display_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
@@ -40,9 +43,9 @@ router.get("/api/requests/pending-counts", async (_req, res) => {
     inventory: inventoryCount,
     total: (display.count ?? 0) + (order.count ?? 0) + mismatchCount + (leave.count ?? 0) + inventoryCount,
   });
-});
+}));
 
-router.get("/api/display-requests", async (req, res) => {
+router.get("/api/display-requests", asyncHandler(async (req, res) => {
   // scope=mine · employeeId 지정 시 담당자 본인 요청만 필터 (직원용 뷰)
   const scope = String(req.query.scope ?? "");
   const employeeIdRaw = req.query.employeeId;
@@ -66,7 +69,7 @@ router.get("/api/display-requests", async (req, res) => {
     query = query.eq("assigned_staff_id", employeeId);
   }
   const { data, error } = await query;
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) throw new HttpError(500, error.message);
 
   // 2026-08-10 · 사용자 요청 · 각 요청에 product_name 추가 (products JOIN · 프론트 상품명 컬럼용)
   const rows = data ?? [];
@@ -93,13 +96,13 @@ router.get("/api/display-requests", async (req, res) => {
     } catch { /* silent · products 조회 실패해도 요청 응답은 반환 */ }
   }
   res.json(rows);
-});
+}));
 
 // 2026-08-05 · 상품별 진열요청 지원 (ScanPage 진입점)
 //   · product_code 전달 시 · products 에서 real_map/spec/category/product_name 자동 조회
 //   · zone_id·zone_label 자동 채움 (real_map 기반)
 //   · 하위 호환 · 기존 zone_id 기반 요청 (zone-only) 그대로 지원
-router.post("/api/display-requests", async (req, res) => {
+router.post("/api/display-requests", asyncHandler(async (req, res) => {
   const b = req.body ?? {};
   const productCode = String(b.product_code ?? "").trim();
   const assignedStaffIdRaw = b.assigned_staff_id;
@@ -156,7 +159,7 @@ router.post("/api/display-requests", async (req, res) => {
       product_code: productCode || null,
     }])
     .select("id").single();
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) throw new HttpError(500, error.message);
 
   // 2026-08-05 · 신규 3단계 워크플로우 · pending 시 창고담당 전원 알림
   //   · position ∈ {"창고", "물류"} 인 직원 전체
@@ -234,18 +237,18 @@ router.post("/api/display-requests", async (req, res) => {
   })();
 
   res.json({ ok: true, id: data?.id });
-});
+}));
 
 // 2026-08-05 · Phase 1 · 창고담당 pending ↔ prepared 토글
 //   · pending → prepared (준비 완료)
 //   · prepared → pending (되돌리기 · 토글)
-router.patch("/api/display-requests/:id/prepare", async (req, res) => {
+router.patch("/api/display-requests/:id/prepare", asyncHandler(async (req, res) => {
   const b = req.body ?? {};
   const preparedById = b.prepared_by ? Number(b.prepared_by) : null;
   const preparedByName = String(b.prepared_by_name ?? "");
   const now = new Date().toISOString();
   const { data: cur } = await supabase.from("display_requests").select("id, status, assigned_staff_id, assigned_staff_name, zone_label, note, product_code").eq("id", req.params.id).maybeSingle();
-  if (!cur) return res.status(404).json({ error: "요청을 찾을 수 없습니다" });
+  if (!cur) throw notFound("요청을 찾을 수 없습니다");
 
   // 토글: prepared 면 pending 으로 되돌리기 · pending 이면 prepared 로 전진
   //   · done 은 완료 상태 · 토글 X (완료 버튼에서 별도 처리)
@@ -258,11 +261,11 @@ router.patch("/api/display-requests/:id/prepare", async (req, res) => {
       prepared_by: null,
       prepared_by_name: null,
     }).eq("id", req.params.id);
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) throw new HttpError(500, error.message);
     return res.json({ ok: true, action: "reverted", status: "pending" });
   }
   if (currentStatus !== "pending") {
-    return res.status(400).json({ error: `현재 상태 "${currentStatus}" · pending/prepared 만 토글 가능` });
+    throw badRequest(`현재 상태 "${currentStatus}" · pending/prepared 만 토글 가능`);
   }
   const { error } = await supabase.from("display_requests").update({
     status: "prepared",
@@ -270,7 +273,7 @@ router.patch("/api/display-requests/:id/prepare", async (req, res) => {
     prepared_by: preparedById,
     prepared_by_name: preparedByName,
   }).eq("id", req.params.id);
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) throw new HttpError(500, error.message);
 
   // 진열담당(assigned_staff_id) 에게 픽업 알림
   const assignedId = (cur as any).assigned_staff_id ? Number((cur as any).assigned_staff_id) : null;
@@ -299,18 +302,18 @@ router.patch("/api/display-requests/:id/prepare", async (req, res) => {
   }
 
   res.json({ ok: true });
-});
+}));
 
 // 2026-08-05 · Phase 1 · 진열담당 prepared/pending ↔ done 토글
 //   · pending or prepared → done (진열 완료)
 //   · done → prepared (되돌리기 · 토글 · 완료자 정보 제거)
-router.patch("/api/display-requests/:id/complete", async (req, res) => {
+router.patch("/api/display-requests/:id/complete", asyncHandler(async (req, res) => {
   const b = req.body ?? {};
   const completedById = b.completed_by ? Number(b.completed_by) : null;
   const completedByName = String(b.completed_by_name ?? "");
   const now = new Date().toISOString();
   const { data: cur } = await supabase.from("display_requests").select("id, status, zone_label, prepared_by").eq("id", req.params.id).maybeSingle();
-  if (!cur) return res.status(404).json({ error: "요청을 찾을 수 없습니다" });
+  if (!cur) throw notFound("요청을 찾을 수 없습니다");
   const currentStatus = (cur as any).status;
 
   // 토글: done 이면 prepared 로 되돌리기 (완료자 정보 제거)
@@ -323,12 +326,12 @@ router.patch("/api/display-requests/:id/complete", async (req, res) => {
       completed_by: null,
       completed_by_name: null,
     }).eq("id", req.params.id);
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) throw new HttpError(500, error.message);
     return res.json({ ok: true, action: "reverted", status: hadPrepare ? "prepared" : "pending" });
   }
 
   if (!["pending", "prepared"].includes(currentStatus)) {
-    return res.status(400).json({ error: `현재 상태 "${currentStatus}" · 완료 처리 불가` });
+    throw badRequest(`현재 상태 "${currentStatus}" · 완료 처리 불가`);
   }
   const { error } = await supabase.from("display_requests").update({
     status: "done",
@@ -336,7 +339,7 @@ router.patch("/api/display-requests/:id/complete", async (req, res) => {
     completed_by: completedById,
     completed_by_name: completedByName,
   }).eq("id", req.params.id);
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) throw new HttpError(500, error.message);
 
   // 관리자 (level ≥ 8) 알림 (기존 로직 · auth_level 기준)
   (async () => {
@@ -361,14 +364,14 @@ router.patch("/api/display-requests/:id/complete", async (req, res) => {
   })();
 
   res.json({ ok: true });
-});
+}));
 
 // 하위 호환 · 기존 클라이언트 (status 만 업데이트) 지원 · pending/prepared/done 모두 허용
-router.patch("/api/display-requests/:id", async (req, res) => {
+router.patch("/api/display-requests/:id", asyncHandler(async (req, res) => {
   const { status, zone_label, assigned_staff_name } = req.body ?? {};
-  if (!["pending", "prepared", "done"].includes(status)) return res.status(400).json({ error: "invalid status" });
+  if (!["pending", "prepared", "done"].includes(status)) throw badRequest("invalid status");
   const { error } = await supabase.from("display_requests").update({ status }).eq("id", req.params.id);
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) throw new HttpError(500, error.message);
 
   if (status === "done") {
     const { data: admins } = await supabase
@@ -391,23 +394,23 @@ router.patch("/api/display-requests/:id", async (req, res) => {
   }
 
   res.json({ ok: true });
-});
+}));
 
-router.delete("/api/display-requests/:id", authorize(2), async (req, res) => {
+router.delete("/api/display-requests/:id", authorize(2), asyncHandler(async (req, res) => {
   const { error } = await supabase.from("display_requests").delete().eq("id", req.params.id);
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) throw new HttpError(500, error.message);
   res.json({ ok: true });
-});
+}));
 
-router.get("/api/order-requests", async (req, res) => {
+router.get("/api/order-requests", asyncHandler(async (req, res) => {
   let q = supabase.from("order_requests").select("id, product_code, product_name, current_stock, optimal_stock, note, requested_at").order("requested_at", { ascending: false });
   if (req.query.product_code) q = q.eq("product_code", String(req.query.product_code));
   const { data, error } = await q;
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) throw new HttpError(500, error.message);
   res.json(data ?? []);
-});
+}));
 
-router.post("/api/order-requests", async (req, res) => {
+router.post("/api/order-requests", asyncHandler(async (req, res) => {
   const b = req.body ?? {};
   const code = String(b.product_code ?? "");
   const now = new Date().toISOString();
@@ -420,7 +423,7 @@ router.post("/api/order-requests", async (req, res) => {
   const { data: existing } = await supabase.from("order_requests").select("id").eq("product_code", code).maybeSingle();
   if (existing) {
     const { error } = await supabase.from("order_requests").update(payload).eq("id", existing.id);
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) throw new HttpError(500, error.message);
     return res.json({ ok: true, updated: true, id: existing.id });
   }
   const { data, error } = await supabase.from("order_requests").insert([{
@@ -428,7 +431,7 @@ router.post("/api/order-requests", async (req, res) => {
     product_name: String(b.product_name ?? ""),
     ...payload,
   }]).select("id").single();
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) throw new HttpError(500, error.message);
   // 2026-08-13 · #107 · 신규 발주요청 · 관리자 알림
   notificationsService.notifyAllAdmins({
     title: "📦 발주 요청",
@@ -437,86 +440,82 @@ router.post("/api/order-requests", async (req, res) => {
     push: { url: "/", tag: `order-req-${data?.id ?? code}` },
   }).catch(() => null);
   res.json({ ok: true, updated: false, id: data?.id });
-});
+}));
 
 // 2026-08-10 · #15 · 발주이력 조회 · status='ordered' · order_number 로 GROUP
 //   마이그레이션 add_order_dispatch_columns_2026-08-10.sql 실행 후 활성
 //   컬럼 없으면 gracefully empty 반환
-router.get("/api/order-history", async (req, res) => {
+router.get("/api/order-history", asyncHandler(async (req, res) => {
   const days = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "90")) || 90));
   const since = new Date(Date.now() - days * 86400000).toISOString();
   const supplier = String(req.query.supplier ?? "").trim();
 
-  try {
-    let q = supabase
-      .from("order_requests")
-      .select("id, order_number, order_date, desired_arrival, supplier, supplier_contact, supplier_email, supplier_phone, product_code, product_name, current_stock, optimal_stock, order_qty, unit_price, memo, sent_at, note")
-      .eq("status", "ordered")
-      .gte("sent_at", since)
-      .order("sent_at", { ascending: false });
-    if (supplier) q = q.eq("supplier", supplier);
-    const { data, error } = await q;
-    if (error) {
-      // 컬럼 없음 (마이그레이션 미실행) · gracefully empty
-      if (/column|does not exist|status/i.test(error.message)) {
-        return res.json({ orders: [], notice: "마이그레이션 필요: add_order_dispatch_columns_2026-08-10.sql" });
-      }
-      return res.status(500).json({ error: error.message });
+  let q = supabase
+    .from("order_requests")
+    .select("id, order_number, order_date, desired_arrival, supplier, supplier_contact, supplier_email, supplier_phone, product_code, product_name, current_stock, optimal_stock, order_qty, unit_price, memo, sent_at, note")
+    .eq("status", "ordered")
+    .gte("sent_at", since)
+    .order("sent_at", { ascending: false });
+  if (supplier) q = q.eq("supplier", supplier);
+  const { data, error } = await q;
+  if (error) {
+    // 컬럼 없음 (마이그레이션 미실행) · gracefully empty
+    if (/column|does not exist|status/i.test(error.message)) {
+      return res.json({ orders: [], notice: "마이그레이션 필요: add_order_dispatch_columns_2026-08-10.sql" });
     }
-    // order_number 로 GROUP · 발주서 단위
-    const grouped = new Map<string, any>();
-    for (const row of (data ?? []) as any[]) {
-      const key = String(row.order_number ?? row.id);
-      if (!grouped.has(key)) {
-        grouped.set(key, {
-          order_number: row.order_number,
-          order_date: row.order_date,
-          desired_arrival: row.desired_arrival,
-          supplier: row.supplier,
-          supplier_contact: row.supplier_contact,
-          supplier_email: row.supplier_email,
-          supplier_phone: row.supplier_phone,
-          memo: row.memo,
-          sent_at: row.sent_at,
-          items: [],
-          total_qty: 0,
-          total_amount: 0,
-        });
-      }
-      const g = grouped.get(key);
-      const qty = Number(row.order_qty ?? 0);
-      const price = Number(row.unit_price ?? 0);
-      g.items.push({
-        id: row.id,
-        product_code: row.product_code,
-        product_name: row.product_name,
-        order_qty: qty,
-        unit_price: price,
-        line_amount: qty * price,
-        current_stock: row.current_stock,
-        optimal_stock: row.optimal_stock,
-      });
-      g.total_qty += qty;
-      g.total_amount += qty * price;
-    }
-    const orders = [...grouped.values()].sort((a, b) => String(b.sent_at ?? "").localeCompare(String(a.sent_at ?? "")));
-    return res.json({ orders, count: orders.length });
-  } catch (e: any) {
-    return res.status(500).json({ error: e?.message ?? "unknown" });
+    throw new HttpError(500, error.message);
   }
-});
+  // order_number 로 GROUP · 발주서 단위
+  const grouped = new Map<string, any>();
+  for (const row of (data ?? []) as any[]) {
+    const key = String(row.order_number ?? row.id);
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        order_number: row.order_number,
+        order_date: row.order_date,
+        desired_arrival: row.desired_arrival,
+        supplier: row.supplier,
+        supplier_contact: row.supplier_contact,
+        supplier_email: row.supplier_email,
+        supplier_phone: row.supplier_phone,
+        memo: row.memo,
+        sent_at: row.sent_at,
+        items: [],
+        total_qty: 0,
+        total_amount: 0,
+      });
+    }
+    const g = grouped.get(key);
+    const qty = Number(row.order_qty ?? 0);
+    const price = Number(row.unit_price ?? 0);
+    g.items.push({
+      id: row.id,
+      product_code: row.product_code,
+      product_name: row.product_name,
+      order_qty: qty,
+      unit_price: price,
+      line_amount: qty * price,
+      current_stock: row.current_stock,
+      optimal_stock: row.optimal_stock,
+    });
+    g.total_qty += qty;
+    g.total_amount += qty * price;
+  }
+  const orders = [...grouped.values()].sort((a, b) => String(b.sent_at ?? "").localeCompare(String(a.sent_at ?? "")));
+  return res.json({ orders, count: orders.length });
+}));
 
-router.delete("/api/order-requests/:id", authorize(2), async (req, res) => {
+router.delete("/api/order-requests/:id", authorize(2), asyncHandler(async (req, res) => {
   const { error } = await supabase.from("order_requests").delete().eq("id", req.params.id);
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) throw new HttpError(500, error.message);
   res.json({ ok: true });
-});
+}));
 
 // ── 발주서 일괄/개별 발송 ─────────────────────────────────────────────────────
 // 공급사별로 그룹핑된 발주 항목을 받아 이메일/문자 발송 시도.
 // 실제 SMTP·SMS gateway 설정이 없으면 로그만 남기고 "미구성" 상태 반환.
 // order_dispatches 테이블에 발송 기록 저장 (없으면 로그로 대체)
-router.post("/api/order-requests/bulk-send", async (req, res) => {
+router.post("/api/order-requests/bulk-send", asyncHandler(async (req, res) => {
   const {
     order_number,
     order_date,
@@ -527,10 +526,10 @@ router.post("/api/order-requests/bulk-send", async (req, res) => {
   } = req.body ?? {};
 
   if (!Array.isArray(bySupplier) || bySupplier.length === 0) {
-    return res.status(400).json({ error: "bySupplier가 비어있습니다." });
+    throw badRequest("bySupplier가 비어있습니다.");
   }
   if (!channels || (!channels.email && !channels.sms && !channels.kakao)) {
-    return res.status(400).json({ error: "채널(이메일/문자/카카오톡) 중 하나 이상 선택해야 합니다." });
+    throw badRequest("채널(이메일/문자/카카오톡) 중 하나 이상 선택해야 합니다.");
   }
 
   const results: any[] = [];
@@ -713,11 +712,11 @@ router.post("/api/order-requests/bulk-send", async (req, res) => {
       "※ 실제 문자 발송을 활성화하려면 SMS_API_KEY 및 SMS provider (solapi/naver cloud 등) 설정 필요",
     ].join("\n"),
   });
-});
+}));
 
 // ── 실재고 점검 ──────────────────────────────────────────────────────────────
 
-router.get("/api/inventory-checks", async (req, res) => {
+router.get("/api/inventory-checks", asyncHandler(async (req, res) => {
   // 2026-08-05 · T-PERF-1a · select("*") → 명시적 컬럼 지정 (페이로드 최소화)
   //   StockReconciliationTab 사용 컬럼: product_code, product_name, checked_at, checked_by
   //   + 실재고 컬럼 전체 (warehouse1/2, store1/2/3, 레거시)
@@ -731,11 +730,11 @@ router.get("/api/inventory-checks", async (req, res) => {
   let q = supabase.from("inventory_checks").select(COLS).order("checked_at", { ascending: false });
   if (req.query.product_code) q = q.eq("product_code", String(req.query.product_code));
   const { data, error } = await q;
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) throw new HttpError(500, error.message);
   res.json(data ?? []);
-});
+}));
 
-router.post("/api/inventory-checks", async (req, res) => {
+router.post("/api/inventory-checks", asyncHandler(async (req, res) => {
   const b = req.body ?? {};
   const code = String(b.product_code ?? "");
   const now = new Date().toISOString();
@@ -808,7 +807,7 @@ router.post("/api/inventory-checks", async (req, res) => {
     }
     result = await applyPayload();
   }
-  if (result?.error) return res.status(500).json({ error: result.error });
+  if (result?.error) throw new HttpError(500, result.error);
   clearLowStockCache(); // 2026-08-05 · T-PERF-1a
   scheduleSnapshotBackground(); // 2026-08-06 · T-LOSS-HISTORY · 오늘 손실 스냅샷 자동
   // 2026-08-13 · #107 · 실재고 점검 · 관리자 알림
@@ -819,7 +818,7 @@ router.post("/api/inventory-checks", async (req, res) => {
     push: { url: "/", tag: `inv-check-${code}-${Date.now()}` },
   }).catch(() => null);
   return res.json({ ok: true, updated: !!existing });
-});
+}));
 
 // 2026-07-30 · 사용자 요청 · 실재고 일괄 저장 · 전체 등록 기능
 // 2026-08-03 · Phase 3 · 5분리 (창고1·창고2·매장1·매장2·매장3) · 구역 3개
@@ -832,112 +831,107 @@ router.post("/api/inventory-checks", async (req, res) => {
 //   - warehouse_stock (레거시 · 단일 창고) → warehouse1_stock 미지정 시 fallback
 //   - 구 클라이언트: warehouse_stock / store_stock / store_stock_2 만 보내는 경우 그대로 저장
 //   - 신규 컬럼 미존재 DB · 신규 필드 stripping 후 재시도 (자동 다운그레이드)
-router.post("/api/inventory-checks/bulk", async (req, res) => {
-  try {
-    const b = req.body ?? {};
-    const items: any[] = Array.isArray(b.items) ? b.items : [];
-    if (items.length === 0) return res.status(400).json({ error: "items 필수" });
-    const checked_by = String(b.checked_by ?? "").trim() || "익명";
-    const now = new Date().toISOString();
-    const num = (v: any): number | null => (v != null && v !== "" ? Number(v) : null);
-    const str = (v: any): string | null => {
-      if (v == null) return null;
-      const s = String(v).trim();
-      return s === "" ? null : s;
+router.post("/api/inventory-checks/bulk", asyncHandler(async (req, res) => {
+  const b = req.body ?? {};
+  const items: any[] = Array.isArray(b.items) ? b.items : [];
+  if (items.length === 0) throw badRequest("items 필수");
+  const checked_by = String(b.checked_by ?? "").trim() || "익명";
+  const now = new Date().toISOString();
+  const num = (v: any): number | null => (v != null && v !== "" ? Number(v) : null);
+  const str = (v: any): string | null => {
+    if (v == null) return null;
+    const s = String(v).trim();
+    return s === "" ? null : s;
+  };
+  let saved = 0, failed = 0;
+  let downgraded = false; // 신규 컬럼 없는 DB 감지 후 이후 아이템 전부 스트립 처리
+  for (const it of items) {
+    const code = String(it.product_code ?? "").trim();
+    if (!code) { failed++; continue; }
+    // 창고1 우선 · 없으면 레거시 warehouse_stock 사용
+    const wh1 = it.warehouse1_stock !== undefined ? num(it.warehouse1_stock) : num(it.warehouse_stock);
+    const wh2 = num(it.warehouse2_stock);
+    const s1  = num(it.store_stock);       // 매장1
+    const s2  = num(it.store_stock_2);     // 매장2
+    const s3  = num(it.store3_stock);      // 매장3
+    const payload: Record<string, any> = {
+      product_name: String(it.product_name ?? ""),
+      checked_by,
+      checked_at: now,
+      status: "pending",
+      // 레거시 mirror · 기존 소비자 (LowStockPanel · DisplayPage · RequestsPage) 하위 호환
+      warehouse_stock: wh1,
+      store_stock:     s1,
+      store_stock_2:   s2,
     };
-    let saved = 0, failed = 0;
-    let downgraded = false; // 신규 컬럼 없는 DB 감지 후 이후 아이템 전부 스트립 처리
-    for (const it of items) {
-      const code = String(it.product_code ?? "").trim();
-      if (!code) { failed++; continue; }
-      // 창고1 우선 · 없으면 레거시 warehouse_stock 사용
-      const wh1 = it.warehouse1_stock !== undefined ? num(it.warehouse1_stock) : num(it.warehouse_stock);
-      const wh2 = num(it.warehouse2_stock);
-      const s1  = num(it.store_stock);       // 매장1
-      const s2  = num(it.store_stock_2);     // 매장2
-      const s3  = num(it.store3_stock);      // 매장3
-      const payload: Record<string, any> = {
-        product_name: String(it.product_name ?? ""),
-        checked_by,
-        checked_at: now,
-        status: "pending",
-        // 레거시 mirror · 기존 소비자 (LowStockPanel · DisplayPage · RequestsPage) 하위 호환
-        warehouse_stock: wh1,
-        store_stock:     s1,
-        store_stock_2:   s2,
-      };
-      // 신규 컬럼
-      if (!downgraded) {
-        payload.warehouse1_stock = wh1;
-        payload.warehouse2_stock = wh2;
-        payload.store3_stock     = s3;
-        payload.store1_zone      = str(it.store1_zone);
-        payload.store2_zone      = str(it.store2_zone);
-        payload.store3_zone      = str(it.store3_zone);
-      }
-      // 2026-08-04 · 사용자 요청 · 날짜별 이력 관리 · 같은 날짜면 update (덮어쓰기) · 다른 날짜면 insert (이력 추가)
-      const todayYmd = now.slice(0, 10);
-      const { data: existingList } = await supabase
-        .from("inventory_checks")
-        .select("id, checked_at")
-        .eq("product_code", code)
-        .order("checked_at", { ascending: false })
-        .limit(1);
-      const existing = existingList?.[0] ?? null;
-      const existingYmd = existing?.checked_at ? String(existing.checked_at).slice(0, 10) : null;
-      const sameDay = existingYmd === todayYmd;
-      const doWrite = async (p: Record<string, any>) => {
-        if (existing && sameDay) {
-          // 같은 날 재저장 · UPDATE (덮어쓰기)
-          return supabase.from("inventory_checks").update(p).eq("id", existing.id);
-        }
-        // 다른 날 or 신규 · INSERT (이력 추가 · 상품별 시계열 보존)
-        return supabase.from("inventory_checks").insert([{ ...p, product_code: code }]);
-      };
-      let { error } = await doWrite(payload);
-      if (error && /column .* does not exist|no column named|schema cache/i.test(error.message)) {
-        // 신규 컬럼 미존재 DB → 스트립 후 재시도 · 이후 아이템도 스트립
-        downgraded = true;
-        for (const k of ["warehouse1_stock","warehouse2_stock","store3_stock","store1_zone","store2_zone","store3_zone"]) {
-          delete (payload as any)[k];
-        }
-        const retry = await doWrite(payload);
-        error = retry.error ?? null;
-      }
-      if (error) { failed++; } else { saved++; }
+    // 신규 컬럼
+    if (!downgraded) {
+      payload.warehouse1_stock = wh1;
+      payload.warehouse2_stock = wh2;
+      payload.store3_stock     = s3;
+      payload.store1_zone      = str(it.store1_zone);
+      payload.store2_zone      = str(it.store2_zone);
+      payload.store3_zone      = str(it.store3_zone);
     }
-    clearLowStockCache(); // 2026-08-05 · T-PERF-1a
-    scheduleSnapshotBackground(); // 2026-08-06 · T-LOSS-HISTORY · 오늘 손실 스냅샷 자동
-    // 2026-08-13 · #107 · 실재고 일괄 저장 · 관리자 알림
-    if (saved > 0) {
-      notificationsService.notifyAllAdmins({
-        title: "📋 실재고 일괄 저장",
-        body: `${saved}건 저장 완료 (담당: ${checked_by}${failed > 0 ? ` · 실패 ${failed}건` : ""}).`,
-        type: "info",
-        push: { url: "/", tag: `inv-bulk-${Date.now()}` },
-      }).catch(() => null);
+    // 2026-08-04 · 사용자 요청 · 날짜별 이력 관리 · 같은 날짜면 update (덮어쓰기) · 다른 날짜면 insert (이력 추가)
+    const todayYmd = now.slice(0, 10);
+    const { data: existingList } = await supabase
+      .from("inventory_checks")
+      .select("id, checked_at")
+      .eq("product_code", code)
+      .order("checked_at", { ascending: false })
+      .limit(1);
+    const existing = existingList?.[0] ?? null;
+    const existingYmd = existing?.checked_at ? String(existing.checked_at).slice(0, 10) : null;
+    const sameDay = existingYmd === todayYmd;
+    const doWrite = async (p: Record<string, any>) => {
+      if (existing && sameDay) {
+        // 같은 날 재저장 · UPDATE (덮어쓰기)
+        return supabase.from("inventory_checks").update(p).eq("id", existing.id);
+      }
+      // 다른 날 or 신규 · INSERT (이력 추가 · 상품별 시계열 보존)
+      return supabase.from("inventory_checks").insert([{ ...p, product_code: code }]);
+    };
+    let { error } = await doWrite(payload);
+    if (error && /column .* does not exist|no column named|schema cache/i.test(error.message)) {
+      // 신규 컬럼 미존재 DB → 스트립 후 재시도 · 이후 아이템도 스트립
+      downgraded = true;
+      for (const k of ["warehouse1_stock","warehouse2_stock","store3_stock","store1_zone","store2_zone","store3_zone"]) {
+        delete (payload as any)[k];
+      }
+      const retry = await doWrite(payload);
+      error = retry.error ?? null;
     }
-    res.json({ ok: true, saved, failed, total: items.length, downgraded });
-  } catch (err: any) {
-    console.error("[inventory-checks/bulk POST]", err?.message);
-    res.status(500).json({ error: err?.message ?? "일괄 저장 실패" });
+    if (error) { failed++; } else { saved++; }
   }
-});
+  clearLowStockCache(); // 2026-08-05 · T-PERF-1a
+  scheduleSnapshotBackground(); // 2026-08-06 · T-LOSS-HISTORY · 오늘 손실 스냅샷 자동
+  // 2026-08-13 · #107 · 실재고 일괄 저장 · 관리자 알림
+  if (saved > 0) {
+    notificationsService.notifyAllAdmins({
+      title: "📋 실재고 일괄 저장",
+      body: `${saved}건 저장 완료 (담당: ${checked_by}${failed > 0 ? ` · 실패 ${failed}건` : ""}).`,
+      type: "info",
+      push: { url: "/", tag: `inv-bulk-${Date.now()}` },
+    }).catch(() => null);
+  }
+  res.json({ ok: true, saved, failed, total: items.length, downgraded });
+}));
 
-router.patch("/api/inventory-checks/:id", async (req, res) => {
+router.patch("/api/inventory-checks/:id", asyncHandler(async (req, res) => {
   const { status } = req.body ?? {};
-  if (!["pending", "done"].includes(status)) return res.status(400).json({ error: "invalid status" });
+  if (!["pending", "done"].includes(status)) throw badRequest("invalid status");
   const { error } = await supabase.from("inventory_checks").update({ status }).eq("id", req.params.id);
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) throw new HttpError(500, error.message);
   clearLowStockCache(); // 2026-08-05 · T-PERF-1a
   res.json({ ok: true });
-});
+}));
 
-router.delete("/api/inventory-checks/:id", authorize(2), async (req, res) => {
+router.delete("/api/inventory-checks/:id", authorize(2), asyncHandler(async (req, res) => {
   const { error } = await supabase.from("inventory_checks").delete().eq("id", req.params.id);
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) throw new HttpError(500, error.message);
   clearLowStockCache(); // 2026-08-05 · T-PERF-1a
   res.json({ ok: true });
-});
+}));
 
 export default router;
