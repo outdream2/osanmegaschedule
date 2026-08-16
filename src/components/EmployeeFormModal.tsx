@@ -35,6 +35,9 @@ interface EmployeeFormModalProps {
   empZoneNums: number[];
   setEmpZoneNums: React.Dispatch<React.SetStateAction<number[]>>;
   employmentTypes: string[];
+  // 2026-08-16 · #122 · 사번 (외부 상태 관리 · 사용자 수정 가능)
+  empEmployeeNumber?: string;
+  setEmpEmployeeNumber?: React.Dispatch<React.SetStateAction<string>>;
   // 근로계약서
   empPhone: string;
   setEmpPhone: React.Dispatch<React.SetStateAction<string>>;
@@ -82,19 +85,24 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
   empPhone, setEmpPhone,
   empContractFile, setEmpContractFile,
   empContractUrl,
+  empEmployeeNumber, setEmpEmployeeNumber,
   onSubmit, onClose,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // 2026-08-16 · #122 · 사번 자동 생성 미리보기 · 서버 auto-gen 이미 적용됨 · 사용자에게 표시만
-  //   · 사용자 수정 필요 시 · Phase 2 (props 리팩터) · 지금은 정보 표시만 · 적정 규모
-  const [nextEmployeeNumber, setNextEmployeeNumber] = useState<string>("");
+  // 2026-08-16 · #122 · 사번 자동 프리필 (create 모드 · 서버 next-number 조회)
+  //   · 외부 상태 있으면 · 그것 사용 (사용자 편집 가능) · 없으면 로컬 fallback
+  const [localEmployeeNumber, setLocalEmployeeNumber] = useState<string>("");
+  const employeeNumber = empEmployeeNumber ?? localEmployeeNumber;
+  const setEmployeeNumber = setEmpEmployeeNumber ?? setLocalEmployeeNumber;
   useEffect(() => {
     if (empModalMode !== "create") return;
+    if (employeeNumber) return; // 이미 값 있으면 fetch 스킵
     let alive = true;
     axios.get("/api/employees/next-number").then((res) => {
-      if (alive) setNextEmployeeNumber(res.data?.nextNumber ?? "");
-    }).catch(() => { /* 실패 · 서버 auto-gen 대체 */ });
+      if (alive) setEmployeeNumber(res.data?.nextNumber ?? "");
+    }).catch(() => { /* silent · 서버 auto-gen 대체 */ });
     return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [empModalMode]);
   // DB + 하드코딩 병합 reference 값
   const { positions: dbPositions, ranks: dbRanks, workplaces: dbWorkplaces } = useReferenceValues();
@@ -123,13 +131,20 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
 
         <form onSubmit={onSubmit} className="px-5 py-4 space-y-4">
 
-          {/* 2026-08-16 · #122 · 사번 자동 배정 안내 (신규 등록만) */}
-          {empModalMode === "create" && nextEmployeeNumber && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-50 border border-indigo-200 text-[12px] text-indigo-700">
-              <IdCard size={14} className="text-indigo-500" />
-              <span className="font-semibold">사번 자동 배정:</span>
-              <span className="font-mono font-black text-indigo-900">{nextEmployeeNumber}</span>
-              <span className="text-indigo-500 text-[11px]">(등록 시 자동 반영)</span>
+          {/* 2026-08-16 · #122 · 사번 · 자동 생성 + 사용자 편집 가능 */}
+          {empModalMode === "create" && (
+            <div>
+              <label className={LABEL_CLS}>
+                <IdCard size={11} className="inline mr-1 text-indigo-500" />
+                사번 <span className="text-zinc-400 normal-case font-normal">(자동 생성 · 편집 가능)</span>
+              </label>
+              <input
+                type="text"
+                value={employeeNumber}
+                onChange={e => setEmployeeNumber(e.target.value)}
+                placeholder="예: 004"
+                className="w-full font-mono text-[13px] rounded-lg border border-zinc-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 px-3 py-2 bg-white text-zinc-900 focus:outline-none transition"
+              />
             </div>
           )}
 

@@ -221,6 +221,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   const [empLevel, setEmpLevel] = useState<number>(1);
   const [empZoneNums, setEmpZoneNums] = useState<number[]>([]);
   const [empPhone, setEmpPhone] = useState<string>("");
+  // 2026-08-16 · #122 · 사번 (자동 생성 + 사용자 편집 가능)
+  const [empEmployeeNumber, setEmpEmployeeNumber] = useState<string>("");
   const [empContractFile, setEmpContractFile] = useState<File | null>(null);
   const [empContractUrl, setEmpContractUrl] = useState<string | null>(null);
   const [yearLeaveStats, setYearLeaveStats] = useState<Record<number, number>>({});
@@ -1106,6 +1108,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           phone: empPhone.trim() || null,
           annual_leave_days: empAnnualLeave > 0 ? empAnnualLeave : null,
           level: empLevel,
+          employee_number: empEmployeeNumber.trim() || null, // 2026-08-16 · #122 · null 이면 서버 auto-gen
         });
         if (created?.id) {
           await uploadContract(created.id);
@@ -2139,6 +2142,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           empContractFile={empContractFile}
           setEmpContractFile={setEmpContractFile}
           empContractUrl={empContractUrl}
+          empEmployeeNumber={empEmployeeNumber}
+          setEmpEmployeeNumber={setEmpEmployeeNumber}
           onSubmit={handleAddEmployeeSubmit}
           onClose={() => setIsEmpModalOpen(false)}
         />

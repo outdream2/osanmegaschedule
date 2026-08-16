@@ -37,6 +37,8 @@ export interface EmployeeUpdatePayload {
   address?: string | null;
   email?: string | null;
   bankbook_image_url?: string | null;
+  // 2026-08-16 · #122 · 사번 (create · 사용자 편집 or 자동 생성)
+  employee_number?: string | null;
 }
 
 /**
