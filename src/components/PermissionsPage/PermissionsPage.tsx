@@ -236,19 +236,23 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
 
   // 2026-08-13 · #100 · 직군 토글 (레벨 OR 직군 · 하나만 만족해도 접근 허용)
   // 2026-08-16 · 버그 · 저장 실패 시 조용히 revert · 사용자 관점 "적용 안됨" · withCredentials + 에러 토스트 + 401 자동 로그아웃
+  // 2026-08-16 · #111 · storageKey (`{pageKey}:{subTab}` or `{pageKey}`) 로 저장
+  //   · 기존 값 없으면 · 부모 페이지 값 상속 후 override 시작 (독립 저장)
   const togglePositionForPerm = useCallback(async (
-    page: keyof PagePermissions,
+    storageKey: string,
+    pageKey: string,
     field: "read" | "write",
     position: string,
   ) => {
     const posField: "readPositions" | "writePositions" = field === "read" ? "readPositions" : "writePositions";
-    const current = perms[page][posField] ?? [];
+    const basePerm = perms[storageKey] ?? perms[pageKey] ?? DEFAULT_PERMISSIONS[pageKey as keyof PagePermissions] ?? { read: 1, write: 1 };
+    const current = basePerm[posField] ?? [];
     const next = current.includes(position)
       ? current.filter(p => p !== position)
       : [...current, position];
     const updated = {
       ...perms,
-      [page]: { ...perms[page], [posField]: next.length > 0 ? next : undefined },
+      [storageKey]: { ...basePerm, [posField]: next.length > 0 ? next : undefined },
     };
     setPerms(updated);
     try {
@@ -265,12 +269,13 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     }
   }, [perms, authSession?.employeeId, handleAuthExpired]);
 
-  // 2026-08-16 · 페이지 숨김 토글 · 즉시 서버 저장 + 사이드바 무효화
-  const toggleHiddenForPerm = useCallback(async (page: keyof PagePermissions) => {
-    const currentHidden = perms[page].hidden === true;
+  // 2026-08-16 · 페이지 숨김 토글 · storageKey 별 · 즉시 서버 저장 + 사이드바 무효화
+  const toggleHiddenForPerm = useCallback(async (storageKey: string, pageKey: string) => {
+    const basePerm = perms[storageKey] ?? perms[pageKey] ?? DEFAULT_PERMISSIONS[pageKey as keyof PagePermissions] ?? { read: 1, write: 1 };
+    const currentHidden = basePerm.hidden === true;
     const updated = {
       ...perms,
-      [page]: { ...perms[page], hidden: !currentHidden },
+      [storageKey]: { ...basePerm, hidden: !currentHidden },
     };
     setPerms(updated);
     try {
@@ -288,20 +293,23 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
   }, [perms, authSession?.employeeId, handleAuthExpired]);
 
   const handleChange = useCallback(async (
-    page: keyof PagePermissions,
+    storageKey: string,
+    pageKey: string,
     field: "read" | "write",
     value: number,
   ) => {
+    const basePerm = perms[storageKey] ?? perms[pageKey] ?? DEFAULT_PERMISSIONS[pageKey as keyof PagePermissions] ?? { read: 1, write: 1 };
     const updated = {
       ...perms,
-      [page]: { ...perms[page], [field]: value },
+      [storageKey]: { ...basePerm, [field]: value },
     };
     setPerms(updated);
-    const saveKey = `${page}.${field}`;
+    const saveKey = `${storageKey}.${field}`;
     setSaving(saveKey);
     setSavedKeys(s => { const n = new Set(s); n.delete(saveKey); return n; });
     try {
       await axios.post("/api/permissions", { permissions: updated, employeeId: authSession?.employeeId }, { withCredentials: true });
+      invalidatePagePermissions();
       setSavedKeys(s => new Set(s).add(saveKey));
     } catch (err: any) {
       // revert on error · 사용자에게 원인 표시 (401/403 등)
@@ -360,36 +368,58 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     return list;
   }, [employees]);
 
-  // 2026-08-12 · #99 · 페이지 → 사이드바 그룹 매핑 · 그룹별 페이지 리스트 계산
+  // 2026-08-16 · #111 · 사이드바 구조 그대로 반영 · 각 SIDE_NAV item 별 행 · subTab 복합키
   const groupedPages = useMemo(() => {
-    const pageToGroup = new Map<string, { groupId: string; groupLabel: string; groupIcon: any; color: string }>();
-    SIDE_NAV_GROUPS.forEach(g => g.items.forEach(it => {
-      if (!pageToGroup.has(it.key)) {
-        pageToGroup.set(it.key, {
-          groupId: g.id,
-          groupLabel: g.label,
-          groupIcon: g.icon ?? g.items[0]?.icon,
-          color: g.color,
-        });
-      }
-    }));
-    // system-settings · sideNavGroups 에는 있으나 PAGE_LABELS 없을 수 있음 · 매핑만 사용
-    const groups: Array<{ id: string; label: string; icon: any; color: string; pages: typeof PAGE_LABELS }> = [];
-    const seen = new Set<string>();
-    // sideNavGroups 순서 유지
+    type Row = {
+      storageKey: string;   // perms 저장 키 (`{pageKey}:{subTab}` or `{pageKey}`)
+      pageKey: string;      // 부모 페이지 (fallback 용)
+      subTab?: string;
+      label: string;
+      desc?: string;
+    };
+    type Group = {
+      id: string;
+      label: string;
+      icon: any;
+      color: string;
+      rows: Row[];
+    };
+    const groups: Group[] = [];
     for (const g of SIDE_NAV_GROUPS) {
-      const pages = PAGE_LABELS.filter(p => pageToGroup.get(p.key)?.groupId === g.id);
-      if (pages.length === 0) continue;
-      groups.push({ id: g.id, label: g.label, icon: g.icon ?? g.items[0]?.icon, color: g.color, pages });
-      pages.forEach(p => seen.add(p.key));
-    }
-    // 미분류 페이지 (기타 그룹)
-    const uncategorized = PAGE_LABELS.filter(p => !seen.has(p.key));
-    if (uncategorized.length > 0) {
-      groups.push({ id: "_misc", label: "기타", icon: Shield, color: "slate", pages: uncategorized });
+      // hideInTopTabs 는 헤더 노출용 · 여기선 무시 (모든 item 포함)
+      const rows: Row[] = g.items.map((it) => {
+        const storageKey = it.subTab ? `${it.key}:${it.subTab}` : it.key;
+        const meta = PAGE_LABELS.find(p => p.key === it.key);
+        return {
+          storageKey,
+          pageKey: it.key,
+          subTab: it.subTab,
+          // subTab 있으면 그 라벨 · 없으면 페이지 라벨 (또는 사이드바 라벨 fallback)
+          label: it.label,
+          desc: meta?.desc,
+        };
+      });
+      if (rows.length === 0) continue;
+      groups.push({
+        id: g.id,
+        label: g.label,
+        icon: g.icon ?? g.items[0]?.icon,
+        color: g.color,
+        rows,
+      });
     }
     return groups;
   }, []);
+
+  // subTab 있으면 복합키 조회 · 없으면 부모 pageKey · 둘 다 없으면 DEFAULT_PERMISSIONS[pageKey] · 최종 fallback 은 { read:1, write:1 }
+  const getPerm = useCallback((storageKey: string, pageKey: string) => {
+    return (
+      perms[storageKey] ??
+      perms[pageKey] ??
+      DEFAULT_PERMISSIONS[pageKey as keyof PagePermissions] ??
+      { read: 1, write: 1 }
+    );
+  }, [perms]);
 
   const filteredEmployees = useMemo(() => {
     const q = empSearch.trim().toLowerCase();
@@ -529,102 +559,130 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
             </button>
           </div>
         </div>
-        {/* 2026-08-12 · #99 · 트리 구조 · 사이드바 그룹별 접기/펼치기 · 그룹 내 페이지 리스트 */}
+        {/* 2026-08-16 · #111 · 사이드바 구조 그대로 반영 · 표 형식 · 체크박스 · subTab 단위 */}
         <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
-          {/* Table header */}
-          <div className="grid grid-cols-[minmax(0,1fr)_170px_170px] sm:grid-cols-[minmax(0,1fr)_180px_180px] px-5 py-2.5 bg-zinc-50 border-b border-zinc-100 text-[16px] font-bold text-zinc-500 tracking-tight">
+          {/* Table header · 4 컬럼 · 보기·페이지·읽기·쓰기 */}
+          <div className="grid grid-cols-[64px_minmax(0,1fr)_170px_170px] sm:grid-cols-[64px_minmax(0,1fr)_180px_180px] px-5 py-2.5 bg-zinc-50 border-b border-zinc-100 text-[16px] font-bold text-zinc-500 tracking-tight">
+            <span className="text-center">보기</span>
             <span>페이지</span>
             <span className="text-right pr-3">읽기 최소</span>
             <span className="text-right pr-3">쓰기 최소</span>
           </div>
 
           {groupedPages.map((g, gi) => {
-            const collapsed = collapsedGroups.has(g.id);
             const GroupIcon = g.icon;
             const isLastGroup = gi === groupedPages.length - 1;
+            const isSingle = g.rows.length === 1;
+
+            // 1개짜리 그룹 · 헤더 자체가 곧 행 (하위 X)
+            if (isSingle) {
+              const row = g.rows[0];
+              const perm = getPerm(row.storageKey, row.pageKey);
+              return (
+                <div
+                  key={g.id}
+                  title={row.desc}
+                  className={`grid grid-cols-[64px_minmax(0,1fr)_170px_170px] sm:grid-cols-[64px_minmax(0,1fr)_180px_180px] px-5 py-2.5 items-center ${isLastGroup ? "" : "border-b border-zinc-100"}`}
+                >
+                  {/* 보기 체크박스 (checked=노출, unchecked=숨김) */}
+                  <div className="flex justify-center">
+                    <input
+                      type="checkbox"
+                      checked={!perm.hidden}
+                      onChange={() => toggleHiddenForPerm(row.storageKey, row.pageKey)}
+                      title={perm.hidden ? "숨김 (사이드바 제외)" : "노출"}
+                      className="w-4 h-4 accent-indigo-500 cursor-pointer"
+                    />
+                  </div>
+                  {/* 그룹명 = 페이지명 (아이콘 + 라벨) */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    {GroupIcon && <GroupIcon size={16} className={GROUP_COLOR_CLS[g.color] ?? "text-zinc-500"} />}
+                    <span className={`text-[17px] font-black truncate ${perm.hidden ? "text-zinc-400 line-through" : "text-zinc-700"}`}>{g.label}</span>
+                  </div>
+                  {/* 읽기 */}
+                  <div className="flex flex-col items-end gap-1 pr-3">
+                    <LevelSelect value={perm.read} onChange={v => handleChange(row.storageKey, row.pageKey, "read", v)} saving={saving === `${row.storageKey}.read`} saved={savedKeys.has(`${row.storageKey}.read`)} />
+                    <PositionsField page={row.storageKey} field="read" selected={perm.readPositions ?? []} allPositions={PRESET_POSITIONS}
+                      isOpen={openPositionPopover?.page === row.storageKey && openPositionPopover?.field === "read"}
+                      onToggleOpen={(open) => setOpenPositionPopover(open ? { page: row.storageKey, field: "read" } : null)}
+                      onToggle={(p) => togglePositionForPerm(row.storageKey, row.pageKey, "read", p)}
+                    />
+                  </div>
+                  {/* 쓰기 */}
+                  <div className="flex flex-col items-end gap-1 pr-3">
+                    <LevelSelect value={perm.write} onChange={v => handleChange(row.storageKey, row.pageKey, "write", v)} saving={saving === `${row.storageKey}.write`} saved={savedKeys.has(`${row.storageKey}.write`)} />
+                    <PositionsField page={row.storageKey} field="write" selected={perm.writePositions ?? []} allPositions={PRESET_POSITIONS}
+                      isOpen={openPositionPopover?.page === row.storageKey && openPositionPopover?.field === "write"}
+                      onToggleOpen={(open) => setOpenPositionPopover(open ? { page: row.storageKey, field: "write" } : null)}
+                      onToggle={(p) => togglePositionForPerm(row.storageKey, row.pageKey, "write", p)}
+                    />
+                  </div>
+                </div>
+              );
+            }
+
+            // 여러개 그룹 · 그룹 헤더 + 각 하위 행
+            const collapsed = collapsedGroups.has(g.id);
             return (
               <div key={g.id} className={isLastGroup ? "" : "border-b border-zinc-100"}>
-                {/* 그룹 헤더 · 접기/펼치기 · 사이드바 톤 */}
+                {/* 그룹 헤더 · 접기/펼치기 */}
                 <button
                   type="button"
                   onClick={() => toggleGroup(g.id)}
-                  className="w-full grid grid-cols-[minmax(0,1fr)_170px_170px] sm:grid-cols-[minmax(0,1fr)_180px_180px] px-4 py-2.5 items-center bg-zinc-50/60 hover:bg-zinc-100/70 transition-colors text-left"
+                  className="w-full grid grid-cols-[64px_minmax(0,1fr)_170px_170px] sm:grid-cols-[64px_minmax(0,1fr)_180px_180px] px-4 py-2.5 items-center bg-zinc-50/60 hover:bg-zinc-100/70 transition-colors text-left"
                 >
+                  <div /> {/* 보기 컬럼 · 그룹 헤더는 비움 · 각 행에 개별 체크박스 */}
                   <div className="flex items-center gap-2">
                     {collapsed
                       ? <CaretRight size={14} className="text-zinc-500" weight="bold" />
                       : <CaretDown  size={14} className="text-zinc-500" weight="bold" />}
                     {GroupIcon && <GroupIcon size={16} className={GROUP_COLOR_CLS[g.color] ?? "text-zinc-500"} />}
                     <span className="text-[17px] font-black text-zinc-700">{g.label}</span>
-                    <span className="text-[14px] font-semibold text-zinc-400">({g.pages.length})</span>
+                    <span className="text-[14px] font-semibold text-zinc-400">({g.rows.length})</span>
                   </div>
                   <div />
                   <div />
                 </button>
 
-                {!collapsed && g.pages.map(({ key, label, desc }, i) => {
-                  const perm = perms[key];
+                {!collapsed && g.rows.map((row, i) => {
+                  const perm = getPerm(row.storageKey, row.pageKey);
                   return (
                     <div
-                      key={key}
-                      title={desc}
-                      className={`grid grid-cols-[minmax(0,1fr)_170px_170px] sm:grid-cols-[minmax(0,1fr)_180px_180px] px-5 py-2 items-center ${
-                        i < g.pages.length - 1 ? "border-t border-zinc-100/70" : "border-t border-zinc-100/70"
-                      }`}
+                      key={row.storageKey}
+                      title={row.desc}
+                      className={`grid grid-cols-[64px_minmax(0,1fr)_170px_170px] sm:grid-cols-[64px_minmax(0,1fr)_180px_180px] px-5 py-2 items-center border-t border-zinc-100/70`}
                     >
-                      {/* 페이지명 · 들여쓰기 · 트리 시각화 · 2026-08-16 · +1 (16→17) · 숨김 토글 */}
-                      <div className="flex items-center gap-2 min-w-0 pl-6">
-                        <button
-                          type="button"
-                          onClick={() => toggleHiddenForPerm(key)}
-                          title={perm.hidden ? "숨김 → 노출로 변경" : "노출 → 숨김으로 변경 (사이드바 제외)"}
-                          className={`shrink-0 w-6 h-6 rounded-md border transition cursor-pointer flex items-center justify-center ${
-                            perm.hidden
-                              ? "bg-rose-50 border-rose-300 text-rose-600 hover:bg-rose-100"
-                              : "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100"
-                          }`}
-                        >
-                          {perm.hidden ? <EyeOff size={12} /> : <Eye size={12} />}
-                        </button>
-                        <div className={`text-[16px] font-semibold truncate ${perm.hidden ? "text-zinc-400 line-through" : "text-zinc-700"}`}>
-                          <span className="text-zinc-300 mr-1.5">└</span>
-                          {label}
-                        </div>
-                      </div>
-
-                      {/* Read level + 직군 팝오버 · 2026-08-13 · #100 · 레벨 OR 직군 */}
-                      <div className="flex flex-col items-end gap-1 pr-3">
-                        <LevelSelect
-                          value={perm.read}
-                          onChange={v => handleChange(key, "read", v)}
-                          saving={saving === `${key}.read`}
-                          saved={savedKeys.has(`${key}.read`)}
-                        />
-                        <PositionsField
-                          page={key} field="read"
-                          selected={perm.readPositions ?? []}
-                          allPositions={PRESET_POSITIONS}
-                          isOpen={openPositionPopover?.page === key && openPositionPopover?.field === "read"}
-                          onToggleOpen={(open) => setOpenPositionPopover(open ? { page: key, field: "read" } : null)}
-                          onToggle={(p) => togglePositionForPerm(key, "read", p)}
+                      {/* 보기 체크박스 */}
+                      <div className="flex justify-center">
+                        <input
+                          type="checkbox"
+                          checked={!perm.hidden}
+                          onChange={() => toggleHiddenForPerm(row.storageKey, row.pageKey)}
+                          title={perm.hidden ? "숨김 (사이드바 제외)" : "노출"}
+                          className="w-4 h-4 accent-indigo-500 cursor-pointer"
                         />
                       </div>
-
-                      {/* Write level + 직군 팝오버 */}
+                      {/* 페이지명 · 들여쓰기 */}
+                      <div className={`text-[16px] font-semibold truncate pl-6 ${perm.hidden ? "text-zinc-400 line-through" : "text-zinc-700"}`}>
+                        <span className="text-zinc-300 mr-1.5">└</span>
+                        {row.label}
+                      </div>
+                      {/* 읽기 */}
                       <div className="flex flex-col items-end gap-1 pr-3">
-                        <LevelSelect
-                          value={perm.write}
-                          onChange={v => handleChange(key, "write", v)}
-                          saving={saving === `${key}.write`}
-                          saved={savedKeys.has(`${key}.write`)}
+                        <LevelSelect value={perm.read} onChange={v => handleChange(row.storageKey, row.pageKey, "read", v)} saving={saving === `${row.storageKey}.read`} saved={savedKeys.has(`${row.storageKey}.read`)} />
+                        <PositionsField page={row.storageKey} field="read" selected={perm.readPositions ?? []} allPositions={PRESET_POSITIONS}
+                          isOpen={openPositionPopover?.page === row.storageKey && openPositionPopover?.field === "read"}
+                          onToggleOpen={(open) => setOpenPositionPopover(open ? { page: row.storageKey, field: "read" } : null)}
+                          onToggle={(p) => togglePositionForPerm(row.storageKey, row.pageKey, "read", p)}
                         />
-                        <PositionsField
-                          page={key} field="write"
-                          selected={perm.writePositions ?? []}
-                          allPositions={PRESET_POSITIONS}
-                          isOpen={openPositionPopover?.page === key && openPositionPopover?.field === "write"}
-                          onToggleOpen={(open) => setOpenPositionPopover(open ? { page: key, field: "write" } : null)}
-                          onToggle={(p) => togglePositionForPerm(key, "write", p)}
+                      </div>
+                      {/* 쓰기 */}
+                      <div className="flex flex-col items-end gap-1 pr-3">
+                        <LevelSelect value={perm.write} onChange={v => handleChange(row.storageKey, row.pageKey, "write", v)} saving={saving === `${row.storageKey}.write`} saved={savedKeys.has(`${row.storageKey}.write`)} />
+                        <PositionsField page={row.storageKey} field="write" selected={perm.writePositions ?? []} allPositions={PRESET_POSITIONS}
+                          isOpen={openPositionPopover?.page === row.storageKey && openPositionPopover?.field === "write"}
+                          onToggleOpen={(open) => setOpenPositionPopover(open ? { page: row.storageKey, field: "write" } : null)}
+                          onToggle={(p) => togglePositionForPerm(row.storageKey, row.pageKey, "write", p)}
                         />
                       </div>
                     </div>

@@ -2,6 +2,27 @@
 
 > 2026-08-16 세션 · #82 완료 · 대기 큐 재분류
 
+## 🟠 진행 중 (세션 유실 시 이어서)
+
+### #111 · 페이지 설정 · 사이드바 구조 그대로 반영 · subTab 단위 개별 권한 (2026-08-16 진행중)
+- **파일**:
+  - `src/types.ts` · PagePermissions 인덱스 시그니처 (완료 · commit 대기)
+  - `src/lib/permissions.ts` · subTab context 지원 helper (TODO)
+  - `src/components/layout/sideNavGroups.ts` · canAccessItem 복합키 조회 (TODO · 부분)
+  - `src/components/PermissionsPage/PermissionsPage.tsx` · SIDE_NAV item 순회 · 표 형식 · 체크박스 (TODO)
+  - `src/components/layout/SideNav.tsx` · usePagePermissions 이미 연결 (완료)
+- **저장 키**: `{pageKey}:{subTab}` (예: `display:purchase-order`) · subTab 없으면 `{pageKey}`
+- **UI 요구사항** (사용자 지시 2026-08-16):
+  1. 사이드바 구조 그대로 표시 (스케쥴 1개→헤더=행 · 매장 6개→트리)
+  2. 1개짜리 그룹 (스케쥴·홈·계정 등) · 그룹 헤더가 곧 행 · 하위메뉴 X
+  3. 여러개 그룹 · 각 subTab 별로 독립 설정 (매장 6·승인요청 3·경영 4)
+  4. **보기/숨기기 컬럼 = 읽기최소 앞에 헤더** · 각 행 · 체크박스
+  5. **전체 표 형식** · Grid: [체크박스 | 페이지명 | 읽기 | 쓰기]
+- **판정 로직**:
+  - `canReadPage(session, perms, pageKey, subTab?)` · 복합키 우선 · 없으면 pageKey fallback
+  - `canAccessItem` (SideNav) · `${item.key}:${item.subTab}` 조회 · fallback
+- **회귀 위험**: 중 · 여러 페이지 · DisplayPage/ApprovalRequestPage 등 페이지 내부 subTab 접근 판정은 별도 후속
+
 ## 🔴 사용자 결정 필요 (답변 후 진행)
 
 ### #89 · DayTimelineModal · settings.positions 자동 파생 (B 옵션)

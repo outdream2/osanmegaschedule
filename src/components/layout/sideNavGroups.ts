@@ -250,8 +250,10 @@ export function canAccessItem(
   if (item.managerOnly && !isPrivileged) return false;
   if (item.pharmacistOnly && !isPharmacist) return false;
   // 2026-08-16 · 페이지 숨김 · lv 9 은 예외 (설정 페이지 접근 유지)
+  //   · subTab 있으면 복합키 (`{key}:{subTab}`) 우선 · 없으면 부모 pageKey
   if (perms && level < 9) {
-    const perm = (perms as any)[item.key];
+    const compositeKey = item.subTab ? `${item.key}:${item.subTab}` : null;
+    const perm = (compositeKey && (perms as any)[compositeKey]) || (perms as any)[item.key];
     if (perm?.hidden === true) return false;
   }
   return true;

@@ -70,6 +70,9 @@ export interface PagePermission {
 }
 
 // 2026-08-12 · 신규 페이지 반영 (승인요청·경영·설정 등) · 사이드바 그룹과 정합
+// 2026-08-16 · 인덱스 시그니처 추가 · subTab 복합키 (`{pageKey}:{subTab}`) 저장 허용
+//   예: "display:purchase-order", "approval-request:leave"
+//   기존 명시 키 (schedule, display 등) 는 부모 페이지 fallback 용
 export interface PagePermissions {
   schedule: PagePermission;
   display: PagePermission;
@@ -94,6 +97,8 @@ export interface PagePermissions {
   branding: PagePermission;
   "company-info": PagePermission;
   "season-settings": PagePermission;
+  /** subTab 복합키 · 예: "display:purchase-order" · 부모 페이지 설정 override */
+  [subTabKey: string]: PagePermission;
 }
 
 export const DEFAULT_PERMISSIONS: PagePermissions = {

@@ -44,20 +44,45 @@ export function canWritePage(session: AuthSession | null, perm: PagePermission |
   return false;
 }
 
-/** 페이지 키로 편의 판정 · perms 전체 객체 전달 */
+/** 페이지 키로 편의 판정 · perms 전체 객체 전달
+ *  2026-08-16 · subTab 파라미터 · 복합키 (`{pageKey}:{subTab}`) 우선 · 없으면 pageKey fallback */
 export function canReadPageKey(
   session: AuthSession | null,
   perms: PagePermissions | null | undefined,
-  pageKey: keyof PagePermissions,
+  pageKey: keyof PagePermissions | string,
+  subTab?: string,
 ): boolean {
   if (!perms) return false;
+  if (subTab) {
+    const composite = `${pageKey}:${subTab}`;
+    if (perms[composite]) return canReadPage(session, perms[composite]);
+  }
   return canReadPage(session, perms[pageKey]);
 }
 export function canWritePageKey(
   session: AuthSession | null,
   perms: PagePermissions | null | undefined,
-  pageKey: keyof PagePermissions,
+  pageKey: keyof PagePermissions | string,
+  subTab?: string,
 ): boolean {
   if (!perms) return false;
+  if (subTab) {
+    const composite = `${pageKey}:${subTab}`;
+    if (perms[composite]) return canWritePage(session, perms[composite]);
+  }
   return canWritePage(session, perms[pageKey]);
+}
+
+/** 페이지 (+ optional subTab) 의 실효 PagePermission 반환 · UI 편집용 */
+export function getEffectivePerm(
+  perms: PagePermissions | null | undefined,
+  pageKey: string,
+  subTab?: string,
+): PagePermission | undefined {
+  if (!perms) return undefined;
+  if (subTab) {
+    const composite = `${pageKey}:${subTab}`;
+    if (perms[composite]) return perms[composite];
+  }
+  return perms[pageKey];
 }
