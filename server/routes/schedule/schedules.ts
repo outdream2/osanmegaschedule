@@ -15,6 +15,17 @@ router.put("/api/schedules", (req, res) => scheduleController.updateSchedule(req
 router.post("/api/schedules/batch", (req, res) => scheduleController.batchUpdateSchedules(req, res));
 router.post("/api/schedules/copy", (req, res) => scheduleController.copySchedules(req, res));
 router.post("/api/employees", (req, res) => scheduleController.createEmployee(req, res));
+// 2026-08-16 · #122 · 신규 사번 자동 생성 · MAX + 1 · 3자리 zero-pad
+router.get("/api/employees/next-number", async (_req, res) => {
+  try {
+    const { scheduleService } = await import("../../services/scheduleService");
+    const next = await scheduleService.getNextEmployeeNumber();
+    return res.status(200).json({ nextNumber: next });
+  } catch (err: any) {
+    console.error("[/api/employees/next-number]", err?.message);
+    return res.status(500).json({ error: err?.message ?? "다음 사번 조회 실패" });
+  }
+});
 router.put("/api/employees/:id", (req, res) => scheduleController.updateEmployee(req, res));
 router.delete("/api/employees/:id", authorize(9), (req, res) => scheduleController.deleteEmployee(req, res));
 

@@ -101,7 +101,7 @@ export class ScheduleController {
    */
   async createEmployee(req: Request, res: Response): Promise<void> {
     try {
-      const { name, position, employmentType, hireDate, retireDate, description, workplace, rank, gender, phone, annual_leave_days, level, address } = req.body;
+      const { name, position, employmentType, hireDate, retireDate, description, workplace, rank, gender, phone, annual_leave_days, level, address, employee_number } = req.body;
       if (!name || !position) {
         res.status(400).json({ error: "name and position are required fields" });
         return;
@@ -121,6 +121,7 @@ export class ScheduleController {
         annual_leave_days: annual_leave_days != null ? Number(annual_leave_days) : undefined,
         level: level != null ? Number(level) : 1,
         address: address ?? null,
+        employee_number: employee_number ?? null, // 2026-08-16 · #122 · 없으면 서비스에서 자동 생성
       });
 
       res.status(201).json(result);

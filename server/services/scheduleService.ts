@@ -157,9 +157,19 @@ export class ScheduleService {
     return { count: saved?.length ?? rows.length };
   }
 
-  async createEmployee(data: { name: string; position: string; employmentType?: string; hireDate: string; retireDate?: string | null; description: string; workplace?: string; rank?: string | null; gender?: string | null; phone?: string | null; annual_leave_days?: number; level?: number; contract_file_url?: string | null; address?: string | null }) {
-    // retireDate가 없는 스키마의 경우를 대비해 fallback 시도
-    const base = { ...data, workplace: data.workplace ?? "매장", employmentType: data.employmentType ?? "정직원", level: data.level ?? 1 };
+  async createEmployee(data: { name: string; position: string; employmentType?: string; hireDate: string; retireDate?: string | null; description: string; workplace?: string; rank?: string | null; gender?: string | null; phone?: string | null; annual_leave_days?: number; level?: number; contract_file_url?: string | null; address?: string | null; employee_number?: string | null }) {
+    // 2026-08-16 · #122 · 사번 자동 생성 (A · 순차 · 중복 체크 · 재사용 X)
+    //   · employee_number 미제공 시 · max + 1 · 3자리 zero-pad ("004")
+    //   · 재사용 X · MAX 기준 (삭제된 번호도 skip · 자연스러운 max+1)
+    let employeeNumber = data.employee_number?.trim() || null;
+    if (!employeeNumber) {
+      employeeNumber = await this.getNextEmployeeNumber();
+    } else {
+      // 사용자 수정 값 · 중복 체크
+      const { data: dup } = await supabase.from("employees").select("id").eq("employee_number", employeeNumber).maybeSingle();
+      if (dup) throw new Error(`사번 "${employeeNumber}" 은(는) 이미 사용 중입니다`);
+    }
+    const base = { ...data, employee_number: employeeNumber, workplace: data.workplace ?? "매장", employmentType: data.employmentType ?? "정직원", level: data.level ?? 1 };
     let { data: result, error } = await supabase.from("employees").insert(base).select().single();
     if (error && /column .*retireDate.* does not exist/i.test(error.message)) {
       const { retireDate: _rd, ...noRetire } = base;
@@ -168,6 +178,22 @@ export class ScheduleService {
     }
     if (error) throw new Error(error.message);
     return result;
+  }
+
+  /** 2026-08-16 · #122 · 다음 사번 · MAX(정수 사번) + 1 · zero-pad 3자리 */
+  async getNextEmployeeNumber(): Promise<string> {
+    const { data, error } = await supabase
+      .from("employees")
+      .select("employee_number")
+      .not("employee_number", "is", null);
+    if (error) throw new Error(error.message);
+    let max = 0;
+    for (const row of (data ?? [])) {
+      const n = parseInt(String((row as any).employee_number ?? "").replace(/\D/g, ""), 10);
+      if (Number.isFinite(n) && n > max) max = n;
+    }
+    const next = max + 1;
+    return String(next).padStart(3, "0");
   }
 
   async updateEmployee(id: number, data: {
