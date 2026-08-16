@@ -18,7 +18,8 @@ import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "";
 const COOKIE_NAME = "mt_auth";
-const DEFAULT_MAX_AGE = 24 * 60 * 60;     // 24h  (seconds)
+// 2026-08-16 · 사용자 지시 · 24h → 1h (보안 강화 · 만료 시 자동 로그아웃)
+const DEFAULT_MAX_AGE = 60 * 60;          // 1h  (seconds)
 const REMEMBER_MAX_AGE = 30 * 24 * 60 * 60; // 30d
 
 if (!JWT_SECRET) {
@@ -45,7 +46,8 @@ export function issueToken(
   rememberMe = false,
 ): string {
   if (!JWT_SECRET) throw new Error("JWT_SECRET not configured");
-  const expiresIn = rememberMe ? "30d" : "24h";
+  // 2026-08-16 · 사용자 지시 · 기본 세션 1h · rememberMe 는 30일 유지
+  const expiresIn = rememberMe ? "30d" : "1h";
   const maxAge = rememberMe ? REMEMBER_MAX_AGE : DEFAULT_MAX_AGE;
   const token = jwt.sign(payload, JWT_SECRET, {
     algorithm: "HS256",

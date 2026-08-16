@@ -228,12 +228,10 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
       .catch(() => setLoadError("권한 설정을 불러오지 못했습니다."));
   }, []);
 
-  // 2026-08-16 · 401 (JWT 쿠키 만료) · 자동 로그아웃 + 재로그인 안내 배너
-  const [authExpired, setAuthExpired] = useState(false);
+  // 2026-08-16 · 401 (JWT 쿠키 만료) · 즉시 로그아웃 → 로그인 화면
   const handleAuthExpired = useCallback(() => {
-    setAuthExpired(true);
-    setSaveToast("세션 만료 · 로그인 필요");
-  }, []);
+    onLogout();
+  }, [onLogout]);
 
   // 2026-08-13 · #100 · 직군 토글 (레벨 OR 직군 · 하나만 만족해도 접근 허용)
   // 2026-08-16 · 버그 · 저장 실패 시 조용히 revert · 사용자 관점 "적용 안됨" · withCredentials + 에러 토스트 + 401 자동 로그아웃
@@ -461,25 +459,6 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         </div>
 
         {tab === "permissions" && (<>
-        {/* 2026-08-16 · 세션 만료 배너 · 401 자동 감지 · 재로그인 안내 */}
-        {authExpired && (
-          <div className="mb-4 px-4 py-3 rounded-xl bg-amber-50 border-2 border-amber-300 text-amber-800 text-sm flex items-center justify-between gap-3 shadow-sm">
-            <div className="flex items-center gap-2">
-              <AlertCircle size={16} className="text-amber-600 shrink-0" />
-              <div>
-                <div className="font-bold text-[13px]">세션이 만료되어 저장할 수 없습니다.</div>
-                <div className="text-[11px] font-medium text-amber-700">다시 로그인 후 페이지 권한을 변경하세요. (JWT 쿠키 24시간 만료)</div>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => onLogout()}
-              className="shrink-0 px-3 py-1.5 rounded-lg text-[12px] font-bold text-white bg-amber-600 hover:bg-amber-700 shadow-sm transition cursor-pointer"
-            >
-              다시 로그인
-            </button>
-          </div>
-        )}
         {loadError && (
           <div className="mb-4 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-sm flex items-center gap-2">
             <AlertCircle size={14} /> {loadError}
