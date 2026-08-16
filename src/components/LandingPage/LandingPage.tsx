@@ -1155,15 +1155,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 </div>
                 <div className="text-zinc-400 text-[11px] sm:text-xs mt-1 font-semibold tracking-wide whitespace-pre-line leading-tight">{lpBrand.shortName || "오산\n메가타운약국"}</div>
               </div>
-              {/* 2026-08-11 · 공사중 모드 · 재고 검색 대신 "곧 오픈 예정" 메시지 */}
+              {/* 2026-08-17 · #130 · 공사중 배너 개선 · gradient bg + 아이콘 pulse + 텍스트 위계 */}
               {underConstruction ? (
-                <div className="w-full rounded-3xl overflow-hidden shadow-xl border border-amber-200 bg-white">
-                  <div className="px-6 py-10 flex flex-col items-center gap-3 text-center">
-                    <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center">
-                      <Clock size={30} className="text-amber-600" />
+                <div className="w-full rounded-3xl overflow-hidden shadow-xl border border-amber-200"
+                  style={{ background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)" }}>
+                  <div className="px-6 py-12 flex flex-col items-center gap-4 text-center">
+                    <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-md"
+                      style={{ background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" }}>
+                      <Clock size={36} className="text-white animate-pulse" />
                     </div>
-                    <div className="text-zinc-900 font-black text-lg sm:text-xl">곧 오픈 예정입니다</div>
-                    <div className="text-zinc-500 text-sm font-semibold">서비스 준비 중 · 잠시만 기다려주세요</div>
+                    <div className="flex flex-col gap-1">
+                      <div className="text-amber-900 font-black text-xl sm:text-2xl tracking-tight">곧 오픈 예정입니다</div>
+                      <div className="text-amber-700 text-sm font-semibold">서비스 준비 중 · 잠시만 기다려주세요</div>
+                    </div>
                   </div>
                 </div>
               ) : (
