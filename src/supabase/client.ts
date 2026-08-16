@@ -12,8 +12,15 @@ const key = isServer
   ? (process as any).env?.SUPABASE_KEY
   : (import.meta as any).env?.VITE_SUPABASE_ANON_KEY;
 
+// 2026-08-16 · 서버 부팅 크래시 fix · throw 제거 · warn 로 격하
+//   · env 없으면 서버 부팅은 성공 · API 호출 시 500 반환 (graceful degradation)
+//   · 프론트만 편집 (env 관리자 UI) · 부팅 후 env 설정 가능
 if (isServer && (!url || !key)) {
-  throw new Error("SUPABASE_URL and SUPABASE_KEY must be set (server env)");
+  // eslint-disable-next-line no-console
+  console.warn(
+    "[supabase/client] SUPABASE_URL / SUPABASE_KEY 가 서버 env 에 없습니다. " +
+    "supabase 사용 API 호출 시 500 반환 · env 설정 후 재시작 필요."
+  );
 }
 if (!isServer && (!url || !key)) {
   // eslint-disable-next-line no-console

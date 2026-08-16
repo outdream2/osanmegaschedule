@@ -2,6 +2,16 @@
 
 > 2026-08-16 세션 · #82 완료 · 대기 큐 재분류
 
+## 🚨 보안·안정성 감사 (2026-08-16 진행중)
+
+### #112 · 백엔드 보안 · 안정성 fix 배치
+- **1. `/api/auth/set-password` 인증 없음** (auth.ts:82) · 아무나 다른 직원 비번 변경 가능 · **최우선** · `authorize(9)` 추가
+- **2. Vendor 로그인 · phone + "00"** (auth.ts:43-80) · 취약 · **bcrypt 전환** (vendors 테이블 password_hash 컬럼 추가 필요 · 마이그레이션 SQL 필요) · 또는 사용자 정책 재확정
+- **4. tsconfig.json exclude 누락** · `["dist", "node_modules", "coverage", "uploads", "logs"]` 추가
+- **5. Supabase 부팅 크래시** (client.ts:16) · `throw` → try/catch null fallback · 서버 부팅 성공 · API 호출 시 500
+- **3. requireAuth 재활성화** · **면밀 검토 필요** · 이전에 주석 처리한 이유 확인 후 · 안전한 형태로 복원
+- **6. 100MB JSON limit** · multer multipart 로 전환 · 별도 큰 리팩터
+
 ## 🟠 진행 중 (세션 유실 시 이어서)
 
 ### #111 · 페이지 설정 · 사이드바 구조 그대로 반영 · subTab 단위 개별 권한 (2026-08-16 진행중)

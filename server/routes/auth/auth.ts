@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { supabase } from "../../../src/supabase/client";
-import { issueToken, clearToken, JwtPayload } from "../../middleware/requireAuth";
+import { issueToken, clearToken, JwtPayload, getSession } from "../../middleware/requireAuth";
 
 const router = Router();
 
@@ -40,26 +40,49 @@ router.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// 거래처 로그인 · 2026-08-09 사용자 정책 · 비밀번호 = 전화번호(로그인아이디) + "00" (자동)
-//   · 관리자 비번 설정 필요 없음 · vendor.password_hash 조회·비교 X (규칙 기반)
-//   · 예: phone "010-1234-5678" · 로그인 비번 = "0101234567800"
+// 거래처 로그인 · 2026-08-09 규칙 기반 · 2026-08-16 · bcrypt 우선 · fallback 유지
+//   · vendors.password_hash 있으면 bcrypt 검증 (보안 강화)
+//   · 없으면 (마이그레이션 전) · 전화번호 + "00" 규칙 (하위호환)
+//   · 향후 vendors.password_hash 컬럼 채우면 자동으로 안전 로그인 전환
 router.post("/api/auth/vendor-login", async (req, res) => {
   const { phone, password } = req.body ?? {};
   const cleanPhone = String(phone ?? "").replace(/[^0-9]/g, "");
-  const cleanPassword = String(password ?? "").replace(/[^0-9]/g, "");
-  if (!cleanPhone || !cleanPassword) {
+  const rawPassword = String(password ?? "");
+  const cleanPassword = rawPassword.replace(/[^0-9]/g, "");
+  if (!cleanPhone || !rawPassword) {
     return res.status(400).json({ error: "전화번호와 비밀번호를 입력해주세요" });
   }
   try {
     const { data: vendor, error } = await supabase
       .from("vendors")
-      .select("id, company_name, contact_name")
+      .select("id, company_name, contact_name, password_hash")
       .eq("phone", cleanPhone)
       .maybeSingle();
-    if (error) throw new Error(error.message);
+    if (error) {
+      // password_hash 컬럼 없는 경우 (42703) · 하위호환 · 컬럼 없이 재조회
+      if ((error as any)?.code === "42703") {
+        const retry = await supabase.from("vendors").select("id, company_name, contact_name").eq("phone", cleanPhone).maybeSingle();
+        if (retry.error) throw new Error(retry.error.message);
+        if (!retry.data) return res.status(401).json({ error: "등록된 거래처를 찾을 수 없습니다" });
+        const expected = cleanPhone + "00";
+        if (cleanPassword !== expected) return res.status(401).json({ error: "전화번호 또는 비밀번호가 올바르지 않습니다" });
+        // pass · 아래 issueToken 로 진행
+        (retry.data as any).__legacy = true;
+        Object.assign(vendor ?? {}, retry.data);
+      } else {
+        throw new Error(error.message);
+      }
+    }
     if (!vendor) return res.status(401).json({ error: "등록된 거래처를 찾을 수 없습니다" });
-    const expected = cleanPhone + "00";
-    if (cleanPassword !== expected) {
+    // 우선: bcrypt (안전) · fallback: 규칙 (전화 + "00")
+    let ok = false;
+    if ((vendor as any).password_hash) {
+      try { ok = await bcrypt.compare(rawPassword, (vendor as any).password_hash); } catch { ok = false; }
+    } else {
+      const expected = cleanPhone + "00";
+      ok = (cleanPassword === expected);
+    }
+    if (!ok) {
       return res.status(401).json({ error: "전화번호 또는 비밀번호가 올바르지 않습니다" });
     }
     try {
@@ -79,7 +102,13 @@ router.post("/api/auth/vendor-login", async (req, res) => {
   }
 });
 
+// 2026-08-16 · 보안 fix · 관리자(lv 9) 만 임의 직원 비밀번호 재설정 가능
+//   이전: 인증 없이 employeeId 만 알면 누구든 · 심각한 취약점
+//   현재: JWT 세션 · lv ≥ 9 필수 · 본인 비밀번호 변경은 change-password 사용
 router.post("/api/auth/set-password", async (req, res) => {
+  const session = getSession(req);
+  if (!session) return res.status(401).json({ error: "인증이 필요합니다" });
+  if ((session.level ?? 0) < 9) return res.status(403).json({ error: "관리자(lv 9) 만 사용 가능합니다" });
   const { employeeId, password } = req.body ?? {};
   const idNum = typeof employeeId === "string" ? parseInt(employeeId) : employeeId;
   if (!idNum || isNaN(idNum)) return res.status(400).json({ error: "valid employeeId is required" });

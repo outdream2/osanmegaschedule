@@ -121,6 +121,13 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
 }
 
 // ─────────────────────────────────────────────────
+// 헬퍼: 요청에서 JWT payload 반환 (외부용 · null 이면 미인증)
+// ─────────────────────────────────────────────────
+export function getSession(req: Request): JwtPayload | null {
+  return extractPayload(req);
+}
+
+// ─────────────────────────────────────────────────
 // 미들웨어 팩토리: 최소 level 확인
 // authorize(9) → 최고관리자만 / authorize(2) → manager 이상
 // ─────────────────────────────────────────────────

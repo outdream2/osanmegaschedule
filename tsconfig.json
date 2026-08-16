@@ -22,5 +22,15 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "exclude": [
+    "dist",
+    "node_modules",
+    "coverage",
+    "uploads",
+    "logs",
+    ".claude",
+    "**/*.test.ts",
+    "**/*.test.tsx"
+  ]
 }
