@@ -67,6 +67,7 @@ import { cleanupStaleLogs } from "./server/utils/logsCleanup";
 //   · 이후 · 민감 라우터 (staff·contracts·payments·schedule 등) 는 requireAuth 로 자동 보호
 //   · settings/systemConfig · GET public + POST authorize(9) · 내부 authorize 유지 · 이전 마운트
 import { requireAuth } from "./server/middleware/requireAuth";
+import { errorHandler } from "./server/middleware/errorHandler";
 
 async function startServer() {
   const app = express();
@@ -230,6 +231,9 @@ async function startServer() {
   }
 
   // (loadStockCountModel · 2026-08-05 파일 삭제됨)
+
+  // 2026-08-16 · 프레임워크 · 전역 에러 핸들러 (last middleware)
+  app.use(errorHandler);
 
   // T38 · 부팅 시 오래된 로그 파일 자동 정리 (14일 초과)
   cleanupStaleLogs();
