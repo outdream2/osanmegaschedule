@@ -287,9 +287,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [purchaseImportBatches, setPurchaseImportBatches] = useState<Array<{ imported_at: string; count: number; startDate: string; endDate: string; periodStart: string | null; periodType: string | null }>>([]);
   const fetchPurchaseImportLog = async () => {
     try {
-      const r = await fetch("/api/purchase-details/import-log");
-      const j = await r.json().catch(() => ({}));
-      setPurchaseImportBatches(Array.isArray(j.batches) ? j.batches : []);
+      const { data: j } = await api.get<{ batches?: any[] }>("/api/purchase-details/import-log");
+      setPurchaseImportBatches(Array.isArray(j?.batches) ? j.batches : []);
     } catch { setPurchaseImportBatches([]); }
   };
   // 종료매입일 dd 로 초/중/하순 자동 판정 (재고와 동일 규칙)
@@ -441,10 +440,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       const ac = new AbortController();
       stockAbortRef.current = ac;
       try {
-        const res = await fetch(`/api/stock-check?q=${encodeURIComponent(val.trim())}`, { signal: ac.signal });
-        const data = await res.json();
-        if (res.ok) setStockResults(data);
-      } catch { /* silent */ }
+        const { data } = await api.get<any>(`/api/stock-check?q=${encodeURIComponent(val.trim())}`, { signal: ac.signal });
+        setStockResults(data);
+      } catch { /* silent · abort/network */ }
       finally { setStockSearching(false); }
     }, 300);
   };
@@ -763,45 +761,41 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       params.set("filename", purchaseUploadFile.name);
       if (purchaseFromDate) params.set("from", purchaseFromDate);
       if (purchaseToDate) params.set("to", purchaseToDate);
-      // 1차 시도: force 없이 · 서버가 기존 데이터 감지하면 409 응답
-      let res = await fetch(`/api/upload-purchase-details?${params}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/octet-stream" },
-        body: buf,
-      });
-      // 409 = 기존 데이터 존재 · 덮어쓰기 확인
-      if (res.status === 409) {
-        const j = await res.json().catch(() => ({}));
-        const ok = await confirm({
-          message:
-            `기간 ${j.period?.from ?? "?"} ~ ${j.period?.to ?? "?"} 에 ` +
-            `이미 ${j.existingCount ?? "?"}행 매입 데이터가 있습니다.\n\n` +
-            `[확인] 덮어쓰기\n[취소] 임포트 취소`,
-          confirmLabel: "덮어쓰기",
-        });
-        if (!ok) {
-          setPurchaseUploadResult({ ok: false, msg: "임포트 취소 (기존 데이터 유지)" });
-          setPurchaseUploadLoading(false);
-          return;
+      let j: any;
+      try {
+        const r = await api.post<any>(`/api/upload-purchase-details?${params}`, buf, { headers: { "Content-Type": "application/octet-stream" } });
+        j = r.data;
+      } catch (err: unknown) {
+        if (err instanceof ApiError && err.status === 409) {
+          const d = (err.data as any) ?? {};
+          const ok = await confirm({
+            message:
+              `기간 ${d.period?.from ?? "?"} ~ ${d.period?.to ?? "?"} 에 ` +
+              `이미 ${d.existingCount ?? "?"}행 매입 데이터가 있습니다.\n\n` +
+              `[확인] 덮어쓰기\n[취소] 임포트 취소`,
+            confirmLabel: "덮어쓰기",
+          });
+          if (!ok) {
+            setPurchaseUploadResult({ ok: false, msg: "임포트 취소 (기존 데이터 유지)" });
+            setPurchaseUploadLoading(false);
+            return;
+          }
+          params.set("force", "true");
+          const r2 = await api.post<any>(`/api/upload-purchase-details?${params}`, buf, { headers: { "Content-Type": "application/octet-stream" } });
+          j = r2.data;
+        } else {
+          throw err;
         }
-        // force=true 로 재요청
-        params.set("force", "true");
-        res = await fetch(`/api/upload-purchase-details?${params}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/octet-stream" },
-          body: buf,
-        });
       }
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(j.error ?? `업로드 실패 (${res.status})`);
       setPurchaseUploadResult({
         ok: true,
-        total: j.total,
-        inserted: j.inserted,
-        skipped: j.skipped,
+        total: j?.total,
+        inserted: j?.inserted,
+        skipped: j?.skipped,
       });
-    } catch (err: any) {
-      setPurchaseUploadResult({ ok: false, msg: err?.message ?? "업로드 실패" });
+    } catch (err: unknown) {
+      const msg = err instanceof ApiError ? err.message : (err as any)?.message ?? "업로드 실패";
+      setPurchaseUploadResult({ ok: false, msg });
     } finally {
       setPurchaseUploadLoading(false);
     }
@@ -872,20 +866,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
         userVisibleOnly: true,
         applicationServerKey: import.meta.env.VITE_VAPID_PUBLIC_KEY,
       });
-      const res = await fetch("/api/anon-push-subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subscription: sub.toJSON() }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error ?? `서버 오류 (${res.status})`);
-      }
+      await api.post("/api/anon-push-subscribe", { subscription: sub.toJSON() });
       localStorage.setItem("anon_push_subscribed", "1");
       setPushSubscribed(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Push subscribe error:", err);
-      alert("알림 구독 실패: " + (err.message ?? err));
+      const msg = err instanceof ApiError ? err.message : (err as any)?.message ?? String(err);
+      alert("알림 구독 실패: " + msg);
     } finally {
       setPushLoading(false);
     }
@@ -896,19 +883,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     if (!newArrivalTitle.trim() || !authSession) return;
     setCreateLoading(true);
     try {
-      const res = await fetch("/api/stock-arrivals", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: newArrivalTitle.trim(), body: newArrivalBody.trim() || undefined, employeeId: authSession.employeeId }),
+      const { data: arrival } = await api.post<any>("/api/stock-arrivals", {
+        title: newArrivalTitle.trim(),
+        body: newArrivalBody.trim() || undefined,
+        employeeId: authSession.employeeId,
       });
-      if (!res.ok) throw new Error((await res.json()).error);
-      const arrival = await res.json();
       setStockArrivals(prev => [arrival, ...prev]);
       setNewArrivalTitle("");
       setNewArrivalBody("");
       setShowCreateArrival(false);
-    } catch (err: any) {
-      alert("입고 알림 작성 실패: " + err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof ApiError ? err.message : (err as any)?.message ?? "오류";
+      alert("입고 알림 작성 실패: " + msg);
     } finally {
       setCreateLoading(false);
     }
