@@ -128,11 +128,19 @@ const BrandSection: React.FC = () => {
         <StatusBadge state={saveState as SaveState} />
       </div>
       <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* 2026-08-16 · 지역 · 사이드바/랜딩에 shortName 앞줄로 표시 (예: "오산\n메가타운 약국") */}
         <TextField
-          label="짧은 이름 (푸터·사이드바)"
+          label="지역"
+          value={brand.region ?? ""}
+          onChange={(v) => setBrand({ region: v })}
+          placeholder="예: 오산"
+          hint="사이드바·랜딩 · 브랜드명 위에 별도 줄로 표시"
+        />
+        <TextField
+          label="브랜드 이름 (푸터·사이드바)"
           value={brand.shortName}
           onChange={(v) => setBrand({ shortName: v })}
-          placeholder="예: 오산 메가타운 약국"
+          placeholder="예: 메가타운 약국"
         />
         <TextField
           label="영문 브랜드명 (랜딩)"

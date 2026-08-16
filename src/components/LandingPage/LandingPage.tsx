@@ -179,7 +179,7 @@ const PeriodCoverageWidget: React.FC<{ endpoint: string; label: string; color: "
                     </div>
                     {fullyEmptyMonths.length > 0 && (
                       <div className="flex items-start gap-1.5">
-                        <span className="text-[9px] font-black text-rose-600 bg-rose-100 border border-rose-300 rounded px-1.5 py-0.5 shrink-0 mt-0.5">완전공백</span>
+                        <span className="text-[9px] font-black text-rose-600 rounded px-1.5 py-0.5 shrink-0 mt-0.5">완전공백</span>
                         <div className="text-[11px] text-rose-700 font-mono">
                           {fullyEmptyMonths.slice(0, 8).join(" · ")}
                           {fullyEmptyMonths.length > 8 && <span className="text-rose-400"> +{fullyEmptyMonths.length - 8}개월</span>}
@@ -1002,11 +1002,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           {isManagerOrAdmin && (
             <div className="w-full mb-7">
               <div className="flex items-center gap-2 mb-3.5">
-                <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #7c3aed, #8b5cf6)" }}>
+                <div className="w-5 h-5 rounded-md flex items-center justify-center">
                   <ShieldCheck size={10} className="text-white" weight="fill" />
                 </div>
                 <span className="text-[11px] font-bold text-violet-600 uppercase tracking-widest">관리자 도구</span>
-                <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #ddd6fe, transparent)" }} />
+                <div className="flex-1 h-px" />
               </div>
               <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
 
@@ -1015,13 +1015,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   className="group relative bg-white border border-zinc-200/80 hover:border-sky-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(224,242,254,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
-                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #e0f2fe, #bae6fd)", border: "1px solid #7dd3fc" }}>
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105">
                       <SquaresFour size={16} className="text-sky-600 sm:hidden" weight="fill" /><SquaresFour size={20} className="text-sky-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight leading-tight">
                       매장관리
                     </div>
-                    <div className="text-zinc-400 text-[11px] sm:text-[13px] leading-tight block mt-0.5">
+                    <div className="text-zinc-400 text-[9px] sm:text-[11px] leading-tight block mt-0.5">
                       매장 · 발주 · 매입 · 결제 · 통계 · 입고알림
                     </div>
                   </div>
@@ -1037,7 +1037,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     </div>
                   )}
                   <div className="relative">
-                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ede9fe, #ddd6fe)", border: "1px solid #a78bfa" }}>
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105">
                       <Briefcase size={16} className="text-violet-600 sm:hidden" weight="fill" /><Briefcase size={20} className="text-violet-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight leading-tight">경영관리</div>
@@ -1056,7 +1056,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white bg-emerald-500 shadow-sm">{requestsCounts.lunch}</span>
                   </div>
                   <div className="relative">
-                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105 mt-5 sm:mt-6" style={{ background: "linear-gradient(135deg, #e0e7ff, #c7d2fe)", border: "1px solid #a5b4fc" }}>
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105 mt-5 sm:mt-6">
                       <List size={16} className="text-indigo-600 sm:hidden" weight="fill" /><List size={20} className="text-indigo-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">요청목록 조회</div>
@@ -1072,7 +1072,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     className="group relative bg-white border border-zinc-200/80 hover:border-orange-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                     <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(255,237,213,0.7) 0%, transparent 60%)" }} />
                     <div className="relative">
-                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ffedd5, #fed7aa)", border: "1px solid #fdba74" }}>
+                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105">
                         <Table size={16} className="text-orange-500 sm:hidden" weight="fill" /><Table size={20} className="text-orange-500 hidden sm:block" weight="fill" />
                       </div>
                       <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">데이터 업로드</div>
@@ -1091,7 +1091,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     className="group relative bg-white border border-fuchsia-200/80 hover:border-fuchsia-400 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                     <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(253,244,255,0.7) 0%, transparent 60%)" }} />
                     <div className="relative">
-                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #fdf4ff, #fae8ff)", border: "1px solid #e879f9" }}>
+                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105">
                         <ShieldCheck size={16} className="text-fuchsia-600 sm:hidden" weight="fill" /><ShieldCheck size={20} className="text-fuchsia-600 hidden sm:block" weight="fill" />
                       </div>
                       <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">설정</div>
@@ -1111,11 +1111,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           {isLoggedIn && !isVendor && (
             <div className="w-full mb-7">
               <div className="flex items-center gap-2 mb-3.5">
-                <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #4338ca, #6366f1)" }}>
+                <div className="w-5 h-5 rounded-md flex items-center justify-center">
                   <User size={10} className="text-white" weight="fill" />
                 </div>
                 <span className="text-[11px] font-bold text-indigo-500 uppercase tracking-widest">직원용</span>
-                <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #c7d2fe, transparent)" }} />
+                <div className="flex-1 h-px" />
               </div>
               <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
 
@@ -1125,7 +1125,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     className="order-1 group relative bg-white border border-zinc-200/80 hover:border-sky-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                     <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-sky-100/70" />
                     <div className="relative">
-                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105 bg-sky-100 border border-sky-300">
+                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105">
                         <FirstAid size={16} className="text-sky-600 sm:hidden" weight="fill" /><FirstAid size={20} className="text-sky-600 hidden sm:block" weight="fill" />
                       </div>
                       <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight leading-tight">약사 전용</div>
@@ -1139,7 +1139,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   className="order-2 group relative bg-white border border-zinc-200/80 hover:border-blue-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(219,234,254,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
-                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #dbeafe, #bfdbfe)", border: "1px solid #93c5fd" }}>
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105">
                       <Calendar size={16} className="text-blue-600 sm:hidden" weight="fill" /><Calendar size={20} className="text-blue-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">스케줄표 조회</div>
@@ -1152,7 +1152,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   className="order-3 group relative bg-white border border-zinc-200/80 hover:border-violet-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(237,233,254,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
-                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ede9fe, #ddd6fe)", border: "1px solid #c4b5fd" }}>
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105">
                       <Scan size={16} className="text-violet-600 sm:hidden" weight="fill" /><Scan size={20} className="text-violet-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">실재고 확인</div>
@@ -1165,7 +1165,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   className="order-4 group relative bg-white border border-zinc-200/80 hover:border-emerald-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(209,250,229,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
-                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #d1fae5, #a7f3d0)", border: "1px solid #6ee7b7" }}>
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105">
                       <Package size={16} className="text-emerald-600 sm:hidden" weight="fill" /><Package size={20} className="text-emerald-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">상품입고</div>
@@ -1181,7 +1181,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   className="order-5 group relative bg-white border border-zinc-200/80 hover:border-rose-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(255,228,230,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
-                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ffe4e6, #fecdd3)", border: "1px solid #fda4af" }}>
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105">
                       <CalendarDots size={16} className="text-rose-500 sm:hidden" weight="fill" /><CalendarDots size={20} className="text-rose-500 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">연차 신청</div>
@@ -1194,7 +1194,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   className="order-6 group relative bg-white border border-zinc-200/80 hover:border-orange-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(255,237,213,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
-                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ffedd5, #fed7aa)", border: "1px solid #fdba74" }}>
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105">
                       <ForkKnife size={16} className="text-red-500 sm:hidden" weight="fill" /><ForkKnife size={20} className="text-red-500 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">점심 불참</div>
@@ -1213,7 +1213,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     {/* 내부 흰색 카드 배경 */}
                     <div className="absolute inset-0.5 rounded-[14px] bg-white/95 backdrop-blur-sm" />
                     {/* 호버 시 무지개 오버레이 */}
-                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, #ef4444, #f97316, #eab308, #22c55e, #06b6d4, #8b5cf6)" }} />
+                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-200" />
                     {/* 우상단 대기 배지 (pending > 0) */}
                     {myPendingCount > 0 && (
                       <div className="absolute top-2 right-2 z-10">
@@ -1258,7 +1258,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   className="order-4 group relative bg-white border border-zinc-200/80 hover:border-amber-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(254,243,199,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
-                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #fef3c7, #fde68a)", border: "1px solid #fcd34d" }}>
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105">
                       <ChatCircle size={16} className="text-amber-600 sm:hidden" weight="fill" /><ChatCircle size={20} className="text-amber-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">이슈공유</div>
@@ -1308,7 +1308,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               ) : (
               /* 인라인 재고검색 — 검색바 + 결과 리스트 */
               <div className="w-full rounded-3xl overflow-hidden shadow-xl border border-blue-100"
-                style={{ background: "linear-gradient(135deg, #1e3a5f 0%, #1d4ed8 60%, #3b82f6 100%)" }}>
+               >
                 <div className="px-5 py-4 flex items-center gap-3 border-b border-blue-400/30">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                     style={{ background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.3)" }}>
@@ -1389,18 +1389,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <button
                   onClick={() => setPendingPage("schedule")}
                   className="flex-1 group relative overflow-hidden flex items-center justify-center gap-2 rounded-2xl px-4 py-3 transition-all duration-200 hover:shadow-md cursor-pointer border border-indigo-200/80"
-                  style={{ background: "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)" }}
+                 
                 >
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" style={{ background: "linear-gradient(135deg, #e0e7ff, #c7d2fe)" }} />
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
                   <Lock size={14} className="relative text-indigo-600" />
                   <span className="relative text-indigo-700 font-bold text-sm">직원로그인</span>
                 </button>
                 <button
                   onClick={() => setVendorLoginOpen(true)}
                   className="flex-1 group relative overflow-hidden flex items-center justify-center gap-2 rounded-2xl px-4 py-3 transition-all duration-200 hover:shadow-md cursor-pointer border border-emerald-200/80"
-                  style={{ background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)" }}
+                 
                 >
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" style={{ background: "linear-gradient(135deg, #dcfce7, #bbf7d0)" }} />
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
                   <CalendarCheck size={14} className="relative text-emerald-600" weight="fill" />
                   <span className="relative text-emerald-700 font-bold text-sm">거래처 로그인</span>
                 </button>
@@ -1442,18 +1442,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           {isLoggedIn && (isVendor || isSuperAdminLevel9) && (
             <div className="w-full">
               <div className="flex items-center gap-2 mb-3.5">
-                <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #059669, #10b981)" }}>
+                <div className="w-5 h-5 rounded-md flex items-center justify-center">
                   <CalendarCheck size={10} className="text-white" weight="fill" />
                 </div>
                 <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest">거래처용</span>
-                <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #a7f3d0, transparent)" }} />
+                <div className="flex-1 h-px" />
               </div>
               <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
                 <button onClick={() => onNavigate("reservation", authSession!)}
                   className="group relative bg-white border border-zinc-200/80 hover:border-emerald-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(209,250,229,0.6) 0%, transparent 60%)" }} />
                   <div className="relative">
-                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #d1fae5, #a7f3d0)", border: "1px solid #6ee7b7" }}>
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105">
                       <CalendarCheck size={16} className="text-emerald-600 sm:hidden" weight="fill" /><CalendarCheck size={20} className="text-emerald-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">방문예약</div>
@@ -1478,7 +1478,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   >
                     <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(186,230,253,0.5) 0%, transparent 60%)" }} />
                     <div className="relative">
-                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #e0f2fe, #bae6fd)", border: "1px solid #7dd3fc" }}>
+                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105">
                         <Building2 size={16} className="text-sky-600 sm:hidden" /><Building2 size={20} className="text-sky-600 hidden sm:block" />
                       </div>
                       <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">공급사 정보</div>
@@ -1504,7 +1504,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   >
                     <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(199,210,254,0.5) 0%, transparent 60%)" }} />
                     <div className="relative">
-                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #e0e7ff, #c7d2fe)", border: "1px solid #a5b4fc" }}>
+                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105">
                         <Package size={16} className="text-indigo-600 sm:hidden" weight="fill" /><Package size={20} className="text-indigo-600 hidden sm:block" weight="fill" />
                       </div>
                       <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">공급사 재고확인</div>
@@ -1520,11 +1520,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           {!isVendor && (
           <div className="w-full mb-6 mt-2">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0ea5e9, #38bdf8)" }}>
+              <div className="w-5 h-5 rounded-md flex items-center justify-center">
                 <Package size={10} className="text-white" weight="fill" />
               </div>
               <span className="text-[11px] font-bold text-sky-600 uppercase tracking-widest">입고 알림</span>
-              <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #bae6fd, transparent)" }} />
+              <div className="flex-1 h-px" />
               {!pushSubscribed && (
                 <button
                   onClick={handleAnonSubscribe}
@@ -2339,7 +2339,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="relative px-7 pt-8 pb-6 overflow-hidden" style={{ background: "linear-gradient(135deg, #064e3b 0%, #059669 50%, #10b981 100%)" }}>
+            <div className="relative px-7 pt-8 pb-6 overflow-hidden">
               <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-20" style={{ background: "radial-gradient(circle, #6ee7b7, transparent)" }} />
               <div className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full opacity-15" style={{ background: "radial-gradient(circle, #a7f3d0, transparent)" }} />
               <button onClick={() => setVendorLoginOpen(false)} aria-label="닫기" className="absolute top-4 right-4 w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-emerald-200 hover:text-white transition cursor-pointer">
@@ -2402,7 +2402,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <button
                   type="submit" disabled={vendorLoading}
                   className="w-full py-3.5 rounded-2xl text-white font-bold text-sm mt-1 transition-all duration-150 cursor-pointer active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
-                  style={{ background: "linear-gradient(135deg, #059669, #10b981)" }}
+                 
                 >
                   {vendorLoading ? <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /><span>로그인 중...</span></> : <span>거래처로 입장하기</span>}
                 </button>
@@ -2570,7 +2570,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   type="submit"
                   disabled={empLoading}
                   className="w-full py-3.5 rounded-2xl text-white font-bold text-sm mt-1 transition-all duration-150 cursor-pointer active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2 shadow-lg shadow-indigo-200"
-                  style={{ background: "linear-gradient(135deg, #4338ca, #6366f1)" }}
+                 
                 >
                   {empLoading ? (
                     <>

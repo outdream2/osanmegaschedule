@@ -166,7 +166,9 @@ export const DEFAULT_PAYMENT_DAY_TEXT = "당월 01일부터 당월 말일 까지
 
 /** 브랜드 아이덴티티 · settings "brand_identity" key */
 export interface BrandIdentity {
-  shortName: string;         // 사이드바/푸터 · "오산 메가타운 약국"
+  /** 2026-08-16 · 지역명 · 예: "오산" · shortName 앞에 줄바꿈으로 표시 */
+  region?: string;
+  shortName: string;         // 사이드바/푸터 · 예: "메가타운 약국"
   brandNameEn: string;       // 랜딩 히어로 · "OSAN MEGATOWN"
   brandAccentWord: string;   // 랜딩 컬러 강조 · "MEGATOWN"
   appTitle: string;          // document.title · "오산메가타운 관리시스템"
@@ -174,11 +176,18 @@ export interface BrandIdentity {
   faviconUrl?: string;       // 없으면 bundled fallback
 }
 export const DEFAULT_BRAND_IDENTITY: BrandIdentity = {
-  shortName: "오산 메가타운 약국",
+  region: "오산",
+  shortName: "메가타운 약국",
   brandNameEn: "OSAN MEGATOWN",
   brandAccentWord: "MEGATOWN",
   appTitle: "오산메가타운 관리시스템",
 };
+
+/** 지역 + 브랜드명 조합 · 2줄 표시용 · "지역\nshortName" · region 없으면 shortName 만 */
+export function formatBrandDisplay(brand: Pick<BrandIdentity, "region" | "shortName">): string {
+  if (brand.region?.trim()) return `${brand.region.trim()}\n${brand.shortName}`;
+  return brand.shortName;
+}
 
 /** 연락처·저작권 · settings "contact_info" key */
 export interface ContactInfo {
