@@ -202,6 +202,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
     setEditingDay(day);
   };
 
+  // 2026-08-17 · #139 · 사용자 지시 · 팝업 X · 클릭할 때마다 근무형태만 순환 · pending 즉시 반영
   const handleDayQuickCycle = (day: number) => {
     if (!isAdmin || !onUpdate) return;
     const sc = schedMap[day];
@@ -211,12 +212,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
     const nextWh = typeHoursMap?.[nextType] ?? "";
     const dayStr = String(day).padStart(2, "0");
     const date = `${year}-${monthStr}-${dayStr}`;
-    setEditType(nextType);
-    setEditWorkingHours(nextWh);
-    setEditActualHours(sc?.actualHours || "");
-    setEditMemo(sc?.memo || "");
-    setEditingDay(day);
-    // 즉시 서버 저장 X · pending 에만 반영 · [저장] 버튼 눌러야 batch 전송
+    // editingDay set X · 팝업 안 뜸 · pending 에만 반영 · 상단 [저장] 버튼으로 batch 전송
     setPendingChanges(prev => ({
       ...prev,
       [date]: {

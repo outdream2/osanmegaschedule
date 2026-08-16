@@ -210,10 +210,11 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
           <div className="flex flex-col gap-4">
             {/* 잔여 배너 + 신청 버튼 · 2026-08-12 · 사용자 지시 · 나란히 배치 */}
             {/* 2026-08-17 · #132 · 사용자 지시 · 버튼과 잔여 배너 여백/테두리 반 */}
+            {/* 2026-08-17 · #147 · 사용자 지시 · 버튼 py 살짝 줄이고 옆카드와 높이 맞춤 · items-stretch 유지 */}
             {(balance || !showForm) && (
               <div className="flex items-stretch gap-1">
                 {balance && (
-                  <div className="flex-1 bg-white border border-zinc-200 rounded-lg px-2 py-1.5 shadow-sm flex items-center justify-between">
+                  <div className="flex-1 bg-white border border-zinc-200 rounded-lg px-2 py-1 shadow-sm flex items-center justify-between">
                     <div className="flex items-center gap-1">
                       <CalendarDays size={16} className="text-green-600" />
                       <span className="text-xs font-semibold text-zinc-700">남은 연차</span>
@@ -227,7 +228,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                 {!showForm && (
                   <button
                     onClick={() => setShowForm(true)}
-                    className="shrink-0 flex items-center justify-center gap-1 px-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold text-xs shadow-sm transition-all duration-150 cursor-pointer"
+                    className="shrink-0 flex items-center justify-center gap-1 px-3 py-1 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold text-xs shadow-sm transition-all duration-150 cursor-pointer"
                   >
                     <Plus size={14} />
                     연차 신청
