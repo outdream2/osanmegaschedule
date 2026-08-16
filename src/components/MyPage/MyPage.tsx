@@ -6,6 +6,7 @@ import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession, Employee } from "../../types";
 import { updateEmployee } from "../../lib/employeeApi";
 import { AddressSearchModal } from "../common/AddressSearchModal";
+import { useToast, toastClass } from "../../hooks/useToast";
 
 interface MyPageProps {
   authSession: AuthSession | null;
@@ -17,12 +18,8 @@ interface MyPageProps {
 export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate, onLogout }) => {
   const [me, setMe] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState<string | null>(null);
-
-  const showToast = (msg: string, ms = 2000) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), ms);
-  };
+  // 2026-08-16 · 프레임워크 useToast 사용 · manual setToast 제거
+  const { toast, show: showToast, showError } = useToast(2000);
 
   const loadMe = useCallback(async () => {
     if (!authSession?.employeeId) return;
@@ -251,8 +248,8 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
       </main>
 
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl bg-zinc-900 text-white text-[12px] font-bold shadow-lg z-50">
-          {toast}
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+          <div className={`${toastClass(toast.tone)} shadow-lg`}>{toast.message}</div>
         </div>
       )}
     </div>
