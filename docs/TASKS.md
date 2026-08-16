@@ -33,11 +33,6 @@
 
 ## 🟡 자율진행 가능 (규모/위험 명시 · 사용자 승인 시 착수)
 
-### #99 · 페이지별 최소 권한 · 트리 구조 재구성
-- **파일**: `src/components/PermissionsPage/PermissionsPage.tsx`
-- 평면 리스트 (23개) → sideNavGroups 기반 · 그룹 접기/펼치기 · 들여쓰기
-- 위험도: 중 · UI 재구성 · 로직은 그대로
-
 ### #101 · 직군 설정 삭제·수정 시 employees 데이터 보호
 - **파일**: `src/components/PositionsSettingsPage/...`
 - 삭제 · [재매핑] 다이얼로그 · 이름 변경 · employees 참조 자동 rename (transaction) · 완전 삭제 · orphan 방지
@@ -77,9 +72,15 @@
   - YOLO 모델 파일 (재고세기 비활성 상태 · 재활성화 대비 유지 여부 결정)
   - SalesTrendPage 는 2657줄 활성 (dead 아님 · 오기 삭제됨)
 
-### #102 · 페이지 권한 · 표 형식 정렬 · 부분 완료
-- ✅ 헤더 폰트 +4 · 컬럼 폭 140/150 · 오른쪽 정렬 (2026-08-12)
-- 남은: #99 트리 구조 진행 시 재확인
+### #102 · 페이지 권한 · 표 형식 정렬 · 완료 (2026-08-12)
+- ✅ 헤더 폰트 +4 · 컬럼 폭 140/150 · 오른쪽 정렬
+- ✅ #99 트리 구조 완료 · 정렬 유지 확인 (2026-08-16)
+
+### #99 · 페이지별 최소 권한 · 트리 구조 재구성 · 완료 (2026-08-12/13)
+- ✅ SIDE_NAV_GROUPS 기반 · 그룹 접기/펼치기 (collapsedGroups + localStorage)
+- ✅ 페이지 pl-6 들여쓰기 · └ tree 시각화
+- ✅ 미분류 페이지 → "기타" 그룹
+- TASKS.md stale 이었음 · 실제로 이미 구현됨 (line 14, 86-101, 321-350, 487-577)
 
 ### #54 · Memory 업데이트 (세션 마감 시 정례)
 - 이번 세션 신규: 사이드바 V2 · 회사·브랜드 통합 · SystemSettingsPage · SettingsPageShell · LeavePage mode · PermissionsPage 23개
