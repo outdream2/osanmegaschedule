@@ -29,6 +29,8 @@ import { prefetchProducts } from "./lib/productsCache";
 import { loadZoneLabelsFromServer } from "./constants/zoneLabels";
 // 2026-08-11 · 사이드바 V2 · feature flag (VITE_SIDEBAR_V2=true) · OFF 면 기존 헤더 그대로
 import { useSidebarEnabled, useSidebarWidth } from "./hooks/useSidebar";
+import { usePagePermissions } from "./hooks/usePagePermissions";
+import { isAdminEssentialPage, deriveUserLevel } from "./lib/permissions";
 // 2026-08-16 · #113 · React lazy chunk 로드 실패 whitescreen 방지
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import { SidebarProvider, SidebarInset } from "./components/ui/sidebar";
@@ -62,6 +64,8 @@ type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "produ
 export default function App() {
   // 2026-08-16 · 사이드바 활성 · 서버 KV 설정 (env 아님)
   const sidebarEnabled = useSidebarEnabled();
+  // 2026-08-17 · #131 후속 · 페이지 렌더 레벨 hidden 차단 (사용자 지시 · "안보이기 선택하면 메뉴와 페이지 모두 안보여야")
+  const { perms: pagePerms } = usePagePermissions();
   // 전역 모달 스크롤 잠금은 CSS :has() 셀렉터로 처리 (index.css) · JS 훅 불필요
   const [page, setPage] = useState<Page>("landing");
   const [pendingEditEmpId, setPendingEditEmpId] = useState<number | null>(null);
@@ -121,14 +125,33 @@ export default function App() {
     }
   };
 
-  // 2026-08-17 · #131 · hidden 페이지 접근 차단 · 사용자 지시 · "설정에서 안보이기 처리하면 페이지도 안보여야지"
-  //   · sideNavGroups 와 동일 규칙 · admin (lv9) 은 essential (permissions/business-manage/account) 만 예외
+  // 2026-08-17 · #131 · hidden 페이지 · nav+render 차단 (사용자 지시 · "안보이기 선택하면 메뉴와 페이지 모두 안보여야")
+  //   · admin 은 essential (permissions/business-manage/account) 만 예외
+  const isHiddenPage = React.useCallback((pageKey: string): boolean => {
+    const perm = pagePerms[pageKey as keyof typeof pagePerms];
+    if (!perm?.hidden) return false;
+    const level = deriveUserLevel(authSession);
+    if (level >= 9 && isAdminEssentialPage(pageKey)) return false;
+    return true;
+  }, [pagePerms, authSession]);
+
   const handleNavigate = (next: Exclude<Page, "landing">, auth?: AuthSession) => {
     if (auth) setAuthSession(auth);
-    // hidden 페이지 · perms 조회는 usePagePermissions 훅 · 여기서는 module-level cache 활용
-    // (permissions 데이터가 아직 로드 안 됐으면 통과 · 다음 nav 에서 검증됨 · 사이드바 필터가 primary gate)
+    if (isHiddenPage(next)) {
+      console.warn(`[App] Blocked navigation to hidden page: ${next}`);
+      navigate("landing");
+      return;
+    }
     navigate(next);
   };
+
+  // 렌더 시점에도 · 현재 page 가 hidden 이면 landing 으로 강제 (permissions 뒤늦게 로드된 경우 대비)
+  React.useEffect(() => {
+    if (page !== "landing" && isHiddenPage(page)) {
+      console.warn(`[App] Current page hidden, redirecting to landing: ${page}`);
+      navigate("landing");
+    }
+  }, [page, isHiddenPage]);
 
   const goBack = () => navigate("landing");
 
