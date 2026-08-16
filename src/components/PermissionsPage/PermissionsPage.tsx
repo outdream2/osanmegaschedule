@@ -3,6 +3,7 @@ import axios from "axios";
 import { Shield, Check, Loader2, AlertCircle, Settings as SettingsIcon, Users, IdCard, Construction, Plus, Trash2, GripVertical, Save, Pencil, Eye, EyeOff } from "lucide-react";
 import { invalidatePagePermissions } from "../../hooks/usePagePermissions";
 import { useSidebarEnabled, invalidateSidebarEnabled } from "../../hooks/useSidebar";
+import { useToast, toastClass } from "../../hooks/useToast";
 import { updateEmployee } from "../../lib/employeeApi";
 import type { AuthSession, PagePermissions } from "../../types";
 import { DEFAULT_PERMISSIONS } from "../../types";
@@ -95,12 +96,10 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
       await axios.post("/api/settings", { key: "sidebar_enabled", value: !sidebarEnabled }, { withCredentials: true });
       invalidateSidebarEnabled();
       setSaveToast(!sidebarEnabled ? "사이드바 활성" : "사이드바 비활성 · 공통헤더로 전환");
-      setTimeout(() => setSaveToast(null), 2500);
     } catch (err: any) {
       const status = err?.response?.status;
       if (status === 401) { onLogout(); return; }
       setSaveToast(`저장 실패 · ${err?.response?.data?.error ?? err?.message ?? "네트워크 오류"}`);
-      setTimeout(() => setSaveToast(null), 4000);
     } finally {
       setSidebarSaving(false);
     }
@@ -136,13 +135,18 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     saveNow: saveSettingsNow,
   } = useSettings();
 
-  // 2026-08-12 · 사용자 지시 · 설정 페이지 저장 버튼 + 토스트 (자동 저장은 이미 debounce 800ms · 이건 즉시 flush + 안내)
-  const [saveToast, setSaveToast] = React.useState<string | null>(null);
+  // 2026-08-12 · 저장 토스트 · 2026-08-16 · useToast 프레임워크 (message.includes("실패") 자동 tone)
+  const { toast, show, clear } = useToast(2500);
+  const setSaveToast = React.useCallback((msg: string | null) => {
+    if (!msg) { clear(); return; }
+    const isErr = msg.includes("실패");
+    show(msg, isErr ? 4000 : 2500, isErr ? "error" : "success");
+  }, [show, clear]);
+  const saveToast = toast?.message ?? null;
   const handleSaveAll = React.useCallback(async () => {
     const ok = await saveSettingsNow();
     setSaveToast(ok ? "저장되었습니다" : "저장 실패");
-    setTimeout(() => setSaveToast(null), 2500);
-  }, [saveSettingsNow]);
+  }, [saveSettingsNow, setSaveToast]);
 
   // ─── 직군 편집 핸들러 (SettingsModal 이관) ──────────────────────────────
   const addNewPosition = () => {
@@ -183,7 +187,6 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
       setEmployees(prev => prev.map(e => (e.position === removing) ? { ...e, position: target } : e));
       updateSettings({ positions: others });
       setSaveToast(`직원 ${using.length}명 · "${removing}" → "${target}" 재매핑 후 삭제 완료`);
-      setTimeout(() => setSaveToast(null), 4000);
     } catch (err) {
       alert(`재매핑 실패 · 삭제 취소: ${(err as any)?.message ?? err}`);
     }
@@ -287,7 +290,6 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
       const msg = status === 403 ? "저장 실패 · 권한 부족 (lv 9 필요)"
                 : `저장 실패 · ${err?.response?.data?.error ?? err?.message ?? "네트워크 오류"}`;
       setSaveToast(msg);
-      setTimeout(() => setSaveToast(null), 4000);
     }
   }, [perms, authSession?.employeeId, handleAuthExpired]);
 
@@ -304,13 +306,11 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
       await axios.post("/api/permissions", { permissions: updated, employeeId: authSession?.employeeId }, { withCredentials: true });
       invalidatePagePermissions();
       setSaveToast(!currentHidden ? "숨김 처리됨 · 사이드바에서 제외" : "다시 노출됨");
-      setTimeout(() => setSaveToast(null), 2500);
     } catch (err: any) {
       setPerms(perms); // revert
       const status = err?.response?.status;
       if (status === 401) { handleAuthExpired(); return; }
       setSaveToast(`저장 실패 · ${err?.response?.data?.error ?? err?.message ?? "네트워크 오류"}`);
-      setTimeout(() => setSaveToast(null), 4000);
     }
   }, [perms, authSession?.employeeId, handleAuthExpired]);
 
@@ -341,7 +341,6 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
       const msg = status === 403 ? "저장 실패 · 권한 부족 (lv 9 필요)"
                 : `저장 실패 · ${err?.response?.data?.error ?? err?.message ?? "네트워크 오류"}`;
       setSaveToast(msg);
-      setTimeout(() => setSaveToast(null), 4000);
     } finally {
       setSaving(null);
     }
@@ -611,7 +610,6 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                             : `저장 실패 · ${err?.response?.data?.error ?? err?.message ?? "네트워크 오류"}`;
                   setSaveToast(msg);
                 }
-                setTimeout(() => setSaveToast(null), 4000);
               }}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition cursor-pointer"
               title="현재 페이지별 최소 권한을 서버에 저장"
