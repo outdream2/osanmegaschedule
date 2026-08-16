@@ -6,7 +6,7 @@
 import React, { Suspense, useCallback, useEffect, useState } from "react";
 import { UserGear, CalendarDots, ForkKnife, FileText, NotePencil, type Icon as PhIcon } from "@phosphor-icons/react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
-import { SIDEBAR_ENABLED } from "../../hooks/useSidebar";
+import { useSidebarEnabled } from "../../hooks/useSidebar";
 import { useIsMobile } from "../../hooks/use-mobile";
 import { LunchPage } from "../LunchPage/LunchPage";
 import { useSortableTabs } from "../../hooks/useSortableTabs";
@@ -67,6 +67,7 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
 }) => {
   const [subTab, setSubTab] = useState<BmSubTab>("staff-manage");
   const isBmMobile = useIsMobile();
+  const SIDEBAR_ENABLED = useSidebarEnabled(); // 2026-08-16 · 로컬 상수 유지
 
   // 2026-08-10 · A · 스케쥴 [수정] 라우팅 · initialEmployeeId 진입 시 · staff-manage 강제 이동
   useEffect(() => {

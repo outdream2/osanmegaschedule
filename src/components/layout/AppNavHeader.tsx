@@ -11,7 +11,8 @@ import { NotificationBell } from "../NotificationBell";
 import { NotificationToggle } from "../NotificationToggle";
 import logoImg from "../../images/logo.png";
 // 2026-08-11 · 사이드바 V2 · flag ON 시 슬림 헤더로 대체
-import { SIDEBAR_ENABLED } from "../../hooks/useSidebar";
+// 2026-08-16 · env → 서버 KV 설정 훅으로 이관
+import { useSidebarEnabled } from "../../hooks/useSidebar";
 // 2026-08-12 · PC 사이드바 접기 · 헤더에 토글 버튼 노출
 import { SidebarTrigger } from "../ui/sidebar";
 import { useIsMobile } from "../../hooks/use-mobile";
@@ -115,6 +116,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
 }) => {
   // 2026-08-11 · 사이드바 V2 · 데스크탑만 슬림 헤더 · 훅 rules 준수 위해 조건 return 은 모든 훅 이후로 이동
   const isMobileNav = useIsMobile();
+  const SIDEBAR_ENABLED = useSidebarEnabled(); // 2026-08-16 · 로컬 상수 유지 · body 로직 변경 최소
   // 2026-08-12 · 프레임워크 · logo alt 만 반영
   const { brand: hdrBrand } = useBrandIdentity();
   const userLevel = authSession?.level ??

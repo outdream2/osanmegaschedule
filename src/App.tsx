@@ -28,7 +28,7 @@ import type { AppNavPage } from "./components/layout/AppNavHeader";
 import { prefetchProducts } from "./lib/productsCache";
 import { loadZoneLabelsFromServer } from "./constants/zoneLabels";
 // 2026-08-11 · 사이드바 V2 · feature flag (VITE_SIDEBAR_V2=true) · OFF 면 기존 헤더 그대로
-import { SIDEBAR_ENABLED, useSidebarWidth } from "./hooks/useSidebar";
+import { useSidebarEnabled, useSidebarWidth } from "./hooks/useSidebar";
 import { SidebarProvider, SidebarInset } from "./components/ui/sidebar";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { SideNav } from "./components/layout/SideNav";
@@ -58,6 +58,8 @@ const SystemSettingsPage = React.lazy(() => import("./components/SystemSettingsP
 type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist" | "approval-request" | "branding" | "company-info" | "season-settings" | "system-settings";
 
 export default function App() {
+  // 2026-08-16 · 사이드바 활성 · 서버 KV 설정 (env 아님)
+  const sidebarEnabled = useSidebarEnabled();
   // 전역 모달 스크롤 잠금은 CSS :has() 셀렉터로 처리 (index.css) · JS 훅 불필요
   const [page, setPage] = useState<Page>("landing");
   const [pendingEditEmpId, setPendingEditEmpId] = useState<number | null>(null);
@@ -390,7 +392,7 @@ export default function App() {
 
   // 2026-08-11 · 사이드바 V2 · flag ON 시만 SidebarProvider 로 감쌈 · OFF (기본) 는 기존 그대로
   // 2026-08-11 · 사이드바 V2 · 데스크탑만 사이드바 · 모바일은 기존 상단 헤더 + BottomNav (사용자 지시)
-  if (SIDEBAR_ENABLED) {
+  if (sidebarEnabled) {
     return <SidebarLayoutWrapper pageContent={pageContent} authSession={authSession} activePage={page as AppNavPage} navigate={navigate} handleLogout={handleLogout} timeoutWarningOverlay={timeoutWarningOverlay} />;
   }
 

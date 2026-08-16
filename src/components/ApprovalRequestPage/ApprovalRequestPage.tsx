@@ -8,7 +8,7 @@
 import React, { Suspense, useEffect, useState } from "react";
 import { CalendarDots, Coffee, PencilLine } from "@phosphor-icons/react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
-import { SIDEBAR_ENABLED } from "../../hooks/useSidebar";
+import { useSidebarEnabled } from "../../hooks/useSidebar";
 import { useIsMobile } from "../../hooks/use-mobile";
 import { TabBar, type TabDef } from "../common/TabBar";
 import { LeavePage } from "../LeavePage/LeavePage";
@@ -52,6 +52,7 @@ const ApprovalRequestPage: React.FC<ApprovalRequestPageProps> = ({
 }) => {
   const [subTab, setSubTab] = useState<ArSubTab>(() => readInitialSubTab());
   const isMobile = useIsMobile();
+  const SIDEBAR_ENABLED = useSidebarEnabled(); // 2026-08-16 · 로컬 상수 유지
 
   // 초기 마운트 완료 후 · localStorage 값 정리 (StrictMode 재마운트 후에도 유지되도록 mount 이후 삭제)
   useEffect(() => {

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import axios from "axios";
 import { Shield, Check, Loader2, AlertCircle, Settings as SettingsIcon, Users, IdCard, Construction, Plus, Trash2, GripVertical, Save, Pencil, Eye, EyeOff } from "lucide-react";
 import { invalidatePagePermissions } from "../../hooks/usePagePermissions";
+import { useSidebarEnabled, invalidateSidebarEnabled } from "../../hooks/useSidebar";
 import { updateEmployee } from "../../lib/employeeApi";
 import type { AuthSession, PagePermissions } from "../../types";
 import { DEFAULT_PERMISSIONS } from "../../types";
@@ -83,6 +84,25 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
   const [empSearch, setEmpSearch] = useState<string>("");
   // 2026-08-13 · #100 · 페이지 권한 · 레벨 OR 직군 조건 · 팝오버 열림 상태
   const [openPositionPopover, setOpenPositionPopover] = useState<{ page: string; field: "read" | "write" } | null>(null);
+  // 2026-08-16 · 사이드바 활성 토글 · 서버 KV
+  const sidebarEnabled = useSidebarEnabled();
+  const [sidebarSaving, setSidebarSaving] = useState(false);
+  const toggleSidebarEnabled = useCallback(async () => {
+    setSidebarSaving(true);
+    try {
+      await axios.post("/api/settings", { key: "sidebar_enabled", value: !sidebarEnabled }, { withCredentials: true });
+      invalidateSidebarEnabled();
+      setSaveToast(!sidebarEnabled ? "사이드바 활성" : "사이드바 비활성 · 공통헤더로 전환");
+      setTimeout(() => setSaveToast(null), 2500);
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 401) { onLogout(); return; }
+      setSaveToast(`저장 실패 · ${err?.response?.data?.error ?? err?.message ?? "네트워크 오류"}`);
+      setTimeout(() => setSaveToast(null), 4000);
+    } finally {
+      setSidebarSaving(false);
+    }
+  }, [sidebarEnabled, onLogout]);
 
   // 2026-08-12 · #99 · 트리 구조 · 그룹 접힘 상태 (localStorage 유지)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
@@ -515,6 +535,24 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         </div>
 
         {tab === "permissions" && (<>
+        {/* 2026-08-16 · 사이드바 사용 토글 · 서버 KV · env 사용 X */}
+        <div className="mb-3 px-4 py-3 rounded-xl border border-indigo-200 bg-indigo-50/60 flex items-center gap-3">
+          <input
+            type="checkbox"
+            id="sidebar-enabled-toggle"
+            checked={sidebarEnabled}
+            onChange={toggleSidebarEnabled}
+            disabled={sidebarSaving}
+            className="w-5 h-5 accent-indigo-500 cursor-pointer"
+          />
+          <label htmlFor="sidebar-enabled-toggle" className="flex-1 cursor-pointer">
+            <div className="text-[14px] font-bold text-zinc-800">사이드바 사용</div>
+            <div className="text-[11px] font-semibold text-zinc-500">
+              활성 시 · PC 화면에 사이드바 표시 (모바일은 항상 공통헤더 유지) · 비활성 시 · 기존 PC 공통헤더로 전환 · 서버 저장 · 즉시 반영
+            </div>
+          </label>
+          {sidebarSaving && <Loader2 size={16} className="text-indigo-400 animate-spin" />}
+        </div>
         {loadError && (
           <div className="mb-4 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-sm flex items-center gap-2">
             <AlertCircle size={14} /> {loadError}

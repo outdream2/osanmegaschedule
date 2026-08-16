@@ -93,4 +93,66 @@ export function useSidebar() {
   return { collapsed, toggle, mobileOpen, openMobile, closeMobile };
 }
 
-export const SIDEBAR_ENABLED = import.meta.env.VITE_SIDEBAR_V2 === "true";
+// 2026-08-16 · 사이드바 활성 · env 대신 서버 KV 설정 (Supabase app_settings.sidebar_enabled) 로 관리
+//   · 사용자 요구: 배포 후에도 관리자가 UI 에서 토글 가능해야 함 (env 재배포 불필요)
+//   · env VITE_SIDEBAR_V2 는 초기 fallback (서버 미응답 시)
+//   · 기본값 · true (사이드바 활성) · env "false" 면 비활성
+const SIDEBAR_FALLBACK = import.meta.env.VITE_SIDEBAR_V2 !== "false";
+
+const SIDEBAR_ENABLED_KEY = "sidebar_enabled";
+const CACHE_EVENT = "sidebar-enabled-updated";
+let cachedEnabled: boolean | null = null;
+let inflight: Promise<boolean> | null = null;
+
+async function fetchSidebarEnabled(): Promise<boolean> {
+  if (cachedEnabled !== null) return cachedEnabled;
+  if (inflight) return inflight;
+  inflight = (async () => {
+    try {
+      const res = await fetch(`/api/settings?key=${SIDEBAR_ENABLED_KEY}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const body = await res.json();
+      const v = body?.value;
+      const enabled = typeof v === "boolean" ? v : SIDEBAR_FALLBACK;
+      cachedEnabled = enabled;
+      return enabled;
+    } catch {
+      cachedEnabled = SIDEBAR_FALLBACK;
+      return SIDEBAR_FALLBACK;
+    } finally {
+      inflight = null;
+    }
+  })();
+  return inflight;
+}
+
+/** 사이드바 활성 여부 무효화 (관리자 토글 후 호출 · 브로드캐스트) */
+export function invalidateSidebarEnabled(): void {
+  cachedEnabled = null;
+  try {
+    window.dispatchEvent(new CustomEvent<null>(CACHE_EVENT));
+  } catch { /* silent */ }
+}
+
+/** 사이드바 활성 여부 훅 · 서버 KV + 로컬 캐시 · 실시간 반영 */
+export function useSidebarEnabled(): boolean {
+  const [enabled, setEnabled] = useState<boolean>(cachedEnabled ?? SIDEBAR_FALLBACK);
+
+  useEffect(() => {
+    let alive = true;
+    fetchSidebarEnabled().then((v) => { if (alive) setEnabled(v); });
+    const handler = () => {
+      fetchSidebarEnabled().then((v) => { if (alive) setEnabled(v); });
+    };
+    window.addEventListener(CACHE_EVENT, handler);
+    return () => {
+      alive = false;
+      window.removeEventListener(CACHE_EVENT, handler);
+    };
+  }, []);
+
+  return enabled;
+}
+
+/** 하위호환 · 기존 코드용 · const 값 · 초기 render 시점 · 훅 도입 후 deprecated */
+export const SIDEBAR_ENABLED = SIDEBAR_FALLBACK;

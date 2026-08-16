@@ -49,7 +49,7 @@ import { ZoneCell } from "./ZoneCell";
 import { ZoneAssignPopover } from "./ZoneAssignPopover";
 import { ZoneGroupPanel, type ZoneGroup } from "./ZoneGroupPanel";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
-import { SIDEBAR_ENABLED } from "../../hooks/useSidebar";
+import { useSidebarEnabled } from "../../hooks/useSidebar";
 import { useIsMobile } from "../../hooks/use-mobile";
 import { DisplayRequestPanel } from "./DisplayRequestPanel";
 // DisplayRequestListPage · 2026-08-05 T-SCAN-1 · RequestsPage 로 통합 · 파일 삭제됨
@@ -309,6 +309,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const dpCanSeeStockArrivals = dpUserLevel >= 3;
   // 2026-08-11 · 사이드바 V2 · PC 는 사이드바가 서브탭 · TabBar 숨김 (모바일 유지)
   const isDpMobile = useIsMobile();
+  const SIDEBAR_ENABLED = useSidebarEnabled(); // 2026-08-16 · 로컬 상수 유지 · body 로직 변경 최소
   const [dpSubTab, setDpSubTab] = useState<DpSubTabKey>(
     dpCanSeeStockManage ? "purchase-order" : "store"
   );
