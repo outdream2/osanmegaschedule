@@ -3,7 +3,9 @@
 //   - 앱 시작 시 한 번 fetch → 모듈 캐시 + localStorage 캐시
 //   - 관리자가 계절 정의 변경 시 setSeasonRanges 로 즉시 반영
 //   - 사용처: SeasonButtons UI · 그리고 각 페이지에서 계절 클릭 → 서버에 ?season=xxx 전송
+// 2026-08-16 · apiClient 마이그레이션
 import { useEffect, useState, useCallback } from "react";
+import { api } from "../lib/apiClient";
 
 export type SeasonKey = "spring" | "summer" | "autumn" | "winter";
 export type SeasonRanges = Record<SeasonKey, number[]>;
@@ -64,9 +66,7 @@ export async function fetchSeasonRanges(): Promise<SeasonRanges> {
   if (inflight) return inflight;
   inflight = (async () => {
     try {
-      const r = await fetch("/api/settings/season-ranges");
-      if (!r.ok) throw new Error(String(r.status));
-      const j = await r.json();
+      const { data: j } = await api.get<unknown>("/api/settings/season-ranges");
       const v = normalize(j);
       cache = v;
       saveToStorage(v);
@@ -87,14 +87,8 @@ export async function fetchSeasonRanges(): Promise<SeasonRanges> {
 /** 계절 정의 저장 (관리자 전용 · level>=9 서버측 검증) */
 export async function saveSeasonRanges(ranges: SeasonRanges, employeeId: number): Promise<{ ok: boolean; error?: string }> {
   try {
-    const r = await fetch("/api/settings/season-ranges", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ranges, employeeId }),
-    });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) return { ok: false, error: j?.error ?? "저장 실패" };
-    const v = normalize(j.ranges ?? ranges);
+    const { data: j } = await api.post<{ ranges?: unknown }>("/api/settings/season-ranges", { ranges, employeeId });
+    const v = normalize(j?.ranges ?? ranges);
     cache = v;
     saveToStorage(v);
     listeners.forEach(fn => fn(v));

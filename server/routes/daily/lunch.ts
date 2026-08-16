@@ -1,9 +1,12 @@
-// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용 · slim
+// 2026-08-16 · asyncHandler + HttpError + validateBody + shared 스키마/DTO
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 import { getSession } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
+import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, forbidden, unauthorized, HttpError } from "../../middleware/errorHandler";
+import { UpsertLunchRequestSchema } from "../../../src/shared/schemas/lunch";
+import type { LunchRequestsResponse, LunchAttendanceResponse } from "../../../src/shared/dtos/lunch";
 
 const router = Router();
 const OFF_TYPES = ["휴무", "월차", "지정휴무", "결근", "오전반차", "오후반차"];
@@ -23,7 +26,8 @@ router.get("/api/lunch-attendance", asyncHandler(async (req, res) => {
   });
   const pharmacistCount = working.filter(e => e.position === "약사").length;
   const staffCount = working.length - pharmacistCount;
-  res.json({ working, pharmacistCount, staffCount, totalCount: working.length });
+  const body: LunchAttendanceResponse = { working, pharmacistCount, staffCount, totalCount: working.length };
+  res.json(body);
 }));
 
 router.get("/api/lunch-requests", asyncHandler(async (req, res) => {
@@ -33,12 +37,12 @@ router.get("/api/lunch-requests", asyncHandler(async (req, res) => {
     .select("id, employee_id, employee_name, date, eating, memo, updated_at")
     .eq("date", date).order("updated_at", { ascending: true });
   if (error) throw new HttpError(500, error.message);
-  res.json({ requests: data ?? [], count: (data ?? []).length });
+  const body: LunchRequestsResponse = { requests: (data ?? []) as any, count: (data ?? []).length };
+  res.json(body);
 }));
 
-router.put("/api/lunch-requests", asyncHandler(async (req, res) => {
-  const { employee_id, employee_name, date, eating, memo } = req.body ?? {};
-  if (!employee_id || !employee_name || !date || eating === undefined) throw badRequest("필수 항목 누락");
+router.put("/api/lunch-requests", validateBody(UpsertLunchRequestSchema), asyncHandler(async (req, res) => {
+  const { employee_id, employee_name, date, eating, memo } = req.body;
   const { error } = await supabase.from("lunch_requests").upsert(
     { employee_id, employee_name, date, eating, memo: memo || null, updated_at: new Date().toISOString() },
     { onConflict: "employee_id,date" },

@@ -1,5 +1,4 @@
-// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
-// try/catch 7곳 · res.status(...).json({error}) 반복 제거
+// 2026-08-16 · asyncHandler + HttpError + validateBody + shared 스키마/DTO
 import { Router } from "express";
 import webpush from "web-push";
 import { supabase } from "../../../src/supabase/client";
@@ -7,7 +6,10 @@ import { scheduleService } from "../../services/scheduleService";
 import { notificationsService } from "../../services/notificationsService";
 import { checkOwnershipOrAdmin } from "../../lib/ownershipCheck";
 import { asyncHandler } from "../../middleware/asyncHandler";
+import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
+import { CreateLeaveRequestSchema, ReviewLeaveRequestSchema } from "../../../src/shared/schemas/leave";
+import type { LeaveBalanceResponse, LeaveStatsResponse } from "../../../src/shared/dtos/leave";
 
 const router = Router();
 
@@ -17,7 +19,7 @@ router.get("/api/leave-stats", asyncHandler(async (req, res) => {
   const { data, error } = await supabase
     .from("schedules").select("employeeId").like("date", `${year}-%`).eq("type", "월차");
   if (error) throw new HttpError(500, error.message);
-  const counts: Record<number, number> = {};
+  const counts: LeaveStatsResponse = {};
   for (const row of (data ?? [])) {
     const id = row.employeeId as number;
     counts[id] = (counts[id] ?? 0) + 1;
@@ -63,7 +65,8 @@ router.get("/api/leave-balance", asyncHandler(async (req, res) => {
     const days = Math.max(1, Math.round((e.getTime() - s.getTime()) / 86400000) + 1);
     used += days;
   }
-  res.json({ total, used, remaining: Math.max(0, total - used) });
+  const body: LeaveBalanceResponse = { total, used, remaining: Math.max(0, total - used) };
+  res.json(body);
 }));
 
 router.get("/api/leave-requests/pending-count", asyncHandler(async (_req, res) => {
@@ -73,9 +76,8 @@ router.get("/api/leave-requests/pending-count", asyncHandler(async (_req, res) =
   res.json({ count: count ?? 0 });
 }));
 
-router.post("/api/leave-requests", asyncHandler(async (req, res) => {
-  const { employee_id, employee_name, leave_type, start_date, end_date, reason } = req.body ?? {};
-  if (!employee_id || !employee_name || !leave_type || !start_date || !end_date) throw badRequest("필수 항목이 누락되었습니다.");
+router.post("/api/leave-requests", validateBody(CreateLeaveRequestSchema), asyncHandler(async (req, res) => {
+  const { employee_id, employee_name, leave_type, start_date, end_date, reason } = req.body;
   const { data, error } = await supabase.from("leave_requests").insert([{
     employee_id: Number(employee_id),
     employee_name,
@@ -96,9 +98,8 @@ router.post("/api/leave-requests", asyncHandler(async (req, res) => {
   res.status(201).json(data);
 }));
 
-router.put("/api/leave-requests/:id", asyncHandler(async (req, res) => {
-  const { status, reviewer_note } = req.body ?? {};
-  if (!status || !["approved", "rejected"].includes(status)) throw badRequest("status must be 'approved' or 'rejected'");
+router.put("/api/leave-requests/:id", validateBody(ReviewLeaveRequestSchema), asyncHandler(async (req, res) => {
+  const { status, reviewer_note } = req.body;
   const { data, error } = await supabase
     .from("leave_requests")
     .update({ status, reviewer_note: reviewer_note ?? "", reviewed_at: new Date().toISOString() })

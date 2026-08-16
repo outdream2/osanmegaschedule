@@ -3,7 +3,9 @@
 // GET /api/reference-values → 5분 캐시 (서버 + 모듈 레벨)
 // fetch 실패 시 하드코딩 fallback 그대로 사용
 
+// 2026-08-16 · apiClient 마이그레이션 · 401 refresh 자동
 import { useState, useEffect } from "react";
+import { api } from "../lib/apiClient";
 import { VENDOR_CATEGORIES } from "../constants/vendorCategories";
 import { POSITIONS, RANKS, CONTRACT_TYPES, WORKPLACES } from "../constants/jobCategories";
 
@@ -45,9 +47,7 @@ async function _fetchRaw(force = false): Promise<RawValues> {
 
   _inflight = (async () => {
     try {
-      const res = await fetch("/api/reference-values");
-      if (!res.ok) throw new Error(String(res.status));
-      const data: RawValues = await res.json();
+      const { data } = await api.get<RawValues>("/api/reference-values");
       _cache = { data, time: Date.now() };
       return data;
     } catch (err) {

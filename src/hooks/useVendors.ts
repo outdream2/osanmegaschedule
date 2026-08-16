@@ -2,7 +2,9 @@
 // 공급사 목록 공용 훅 · 모듈 레벨 캐시 (5분 TTL) + vendors-changed 이벤트 구독
 // 사용처: OrderManagePage · ReturnListPanel · LowStockPanel · FlowTab · SupplierTab
 
+// 2026-08-16 · apiClient 마이그레이션
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { api } from "../lib/apiClient";
 import { displayVendorName, stripVendorAnnotation, normalizeVendorCategory } from "../utils/vendorNameNormalize";
 
 export interface Vendor {
@@ -31,10 +33,7 @@ async function _fetchVendors(force = false): Promise<Vendor[]> {
   if (_inflight) return _inflight;
   _inflight = (async () => {
     try {
-      const res = await fetch("/api/vendors?withBalances=1");
-      if (!res.ok) throw new Error(String(res.status));
-      const data = await res.json();
-      // legacy 정규화: DB에 저장된 "60일회전"/"90일회전" → "60회전"/"90회전"
+      const { data } = await api.get<Vendor[]>("/api/vendors?withBalances=1");
       const normalized = (Array.isArray(data) ? data : []).map((v: Vendor) => ({
         ...v,
         category: normalizeVendorCategory(v.category),
