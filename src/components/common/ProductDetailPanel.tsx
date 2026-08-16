@@ -550,9 +550,8 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }>
   useEffect(() => {
     if (tab !== "order" || !productCode) return;
     setOrdersLoading(true);
-    fetch(`/api/order-requests?product_code=${encodeURIComponent(productCode)}`)
-      .then(r => r.ok ? r.json() : { rows: [] })
-      .then((j: { rows?: unknown } | unknown) => {
+    api.get<any>(`/api/order-requests?product_code=${encodeURIComponent(productCode)}`)
+      .then(({ data: j }) => {
         const raw = (j != null && typeof j === "object" && "rows" in j) ? (j as { rows: unknown }).rows : j;
         setOrders(Array.isArray(raw) ? (raw as OrderRequestRow[]) : []);
       })

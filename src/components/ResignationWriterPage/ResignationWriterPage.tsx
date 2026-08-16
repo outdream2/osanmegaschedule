@@ -1,3 +1,4 @@
+// 2026-08-17 · apiClient 마이그레이션
 // src/components/ResignationWriterPage/ResignationWriterPage.tsx
 // 사직서 작성 페이지 · 2026-08-03 · #179+#181
 // - 좌측: 조건 입력 폼 (직원·부서/직급·입사일·마지막근무일·사유·상세사유·인수인계)
@@ -21,6 +22,7 @@
 //   - memory feedback_ui_consult · 통일된 디자인 · slate + rose 팔레트 · rounded-xl · shadow-sm
 //   - memory feedback_git_push · remote push 절대 금지
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import {
   SignOut, User, ClipboardText, CalendarBlank, Notepad, Eraser,
@@ -594,14 +596,12 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
       try {
         const now = new Date();
         const y = now.getFullYear(), m = now.getMonth() + 1;
-        const res = await fetch(`/api/schedules?year=${y}&month=${m}`);
-        if (!res.ok) throw new Error(`서버 오류 (${res.status})`);
-        const data = await res.json();
+        const { data } = await api.get<any>(`/api/schedules?year=${y}&month=${m}`);
         if (cancelled) return;
         const list = Array.isArray(data?.employees) ? data.employees : [];
         setEmployees(list);
       } catch (err: any) {
-        if (!cancelled) setEmpError(err?.message ?? "직원 목록 불러오기 실패");
+        if (!cancelled) setEmpError(err instanceof ApiError ? err.message : (err?.message ?? "직원 목록 불러오기 실패"));
       } finally {
         if (!cancelled) setEmpLoading(false);
       }
@@ -775,31 +775,23 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
 
     setSubmitting(true);
     try {
-      const res = await fetch("/api/resignations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          employee_id: form.employeeId,
-          employee_name: form.employeeName,
-          position: form.position || null,
-          hire_date: form.hireDate || null,
-          last_work_date: form.lastWorkDate,
-          reason: form.reason,
-          reason_detail: form.reasonDetail || null,
-          handover_notes: form.handoverNotes || null,
-          signature_data_url: signatureDataUrl,
-          pdf_url: null, // MVP · 별도 스토리지 업로드는 후속 개선
-        }),
+      await api.post("/api/resignations", {
+        employee_id: form.employeeId,
+        employee_name: form.employeeName,
+        position: form.position || null,
+        hire_date: form.hireDate || null,
+        last_work_date: form.lastWorkDate,
+        reason: form.reason,
+        reason_detail: form.reasonDetail || null,
+        handover_notes: form.handoverNotes || null,
+        signature_data_url: signatureDataUrl,
+        pdf_url: null, // MVP · 별도 스토리지 업로드는 후속 개선
       });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j?.error || `서버 오류 (${res.status})`);
-      }
       setNotice({ tone: "ok", text: "사직서가 제출되었습니다. 관리자에게 알림이 전송되었습니다." });
       // 승인대기 배지 즉시 갱신
       window.dispatchEvent(new CustomEvent("approval-count-updated"));
     } catch (err: any) {
-      setNotice({ tone: "err", text: err?.message ?? "사직서 제출에 실패했습니다." });
+      setNotice({ tone: "err", text: err instanceof ApiError ? err.message : (err?.message ?? "사직서 제출에 실패했습니다.") });
     } finally {
       setSubmitting(false);
     }

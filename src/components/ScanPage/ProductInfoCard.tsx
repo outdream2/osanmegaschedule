@@ -1,4 +1,6 @@
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useState, useEffect } from "react";
+import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import { Pencil, Loader2, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2, Warehouse, Store, ClipboardCheck, ScanLine, Check, X, DollarSign, Package, Info, EyeOff, Eye, TrendingUp, ChevronRight, ChevronDown } from "lucide-react";
 import { type ProductInfo } from "../../lib/productsCache";
@@ -90,24 +92,14 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
     if (!editingKey) return;
     setEditSaving(true); setEditError(null);
     try {
-      const res = await fetch(`/api/products/${encodeURIComponent(product.code)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [editingKey]: editingValue }),
-      });
-      if (!res.ok) {
-        const b = await res.json().catch(() => ({}));
-        setEditError(b.error ?? `서버 오류 (${res.status})`);
-        setEditSaving(false);
-        return;
-      }
+      await api.patch(`/api/products/${encodeURIComponent(product.code)}`, { [editingKey]: editingValue });
       // 부모 state 동기화
       const num = ["optimal_stock", "sale_price", "purchase_price", "cost_price"].includes(editingKey);
       onProductUpdate?.({ [editingKey]: num ? (editingValue === "" ? null : Number(editingValue)) : editingValue } as Partial<ProductInfo>);
       setEditingKey(null);
       setEditingValue("");
     } catch (e: any) {
-      setEditError(e?.message ?? "네트워크 오류");
+      setEditError(e instanceof ApiError ? e.message : (e?.message ?? "네트워크 오류"));
     } finally { setEditSaving(false); }
   };
   const [mapSelectorOpen, setMapSelectorOpen] = useState(false);
@@ -128,21 +120,12 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
     if (!await confirm({ message: confirmMsg, danger: next })) return;
     setHideSaving(true); setHideError(null);
     try {
-      const res = await fetch(`/api/products/${encodeURIComponent(product.code)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hidden: next }),
-      });
-      if (!res.ok) {
-        const b = await res.json().catch(() => ({}));
-        setHideError(b.error ?? `서버 오류 (${res.status})`);
-        return;
-      }
+      await api.patch(`/api/products/${encodeURIComponent(product.code)}`, { hidden: next });
       onProductUpdate?.({ hidden: next } as Partial<ProductInfo>);
       // 하위 리스트들(적정재고 이하 · 재고흐름 · ERP 차이 등)이 refetch 하도록 이벤트 발행
       try { window.dispatchEvent(new CustomEvent("products-hidden-changed", { detail: { code: product.code, hidden: next } })); } catch { /* ignore */ }
     } catch (e: any) {
-      setHideError(e?.message ?? "네트워크 오류");
+      setHideError(e instanceof ApiError ? e.message : (e?.message ?? "네트워크 오류"));
     } finally { setHideSaving(false); }
   };
 
@@ -236,31 +219,21 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
     setStatus("loading");
     setError(null);
     try {
-      const res = await fetch("/api/inventory-checks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          product_code:    product.code,
-          product_name:    product.name,
-          [field]:         Number(value),
-          system_stock:    product.current_stock != null ? Number(product.current_stock) : null,
-          optimal_stock:   product.optimal_stock != null ? Number(product.optimal_stock) : null,
-          checked_by:      checkedBy ?? "",
-        }),
+      await api.post("/api/inventory-checks", {
+        product_code:    product.code,
+        product_name:    product.name,
+        [field]:         Number(value),
+        system_stock:    product.current_stock != null ? Number(product.current_stock) : null,
+        optimal_stock:   product.optimal_stock != null ? Number(product.optimal_stock) : null,
+        checked_by:      checkedBy ?? "",
       });
-      if (res.ok) {
-        setStatus("done");
-        // 재고 관련 리스트가 자동 갱신되도록 이벤트 발행
-        window.dispatchEvent(new CustomEvent("inventory-checks-updated", {
-          detail: { product_code: product.code, field, value: Number(value) },
-        }));
-      } else {
-        const body = await res.json().catch(() => ({}));
-        setError(body.error ?? `서버 오류 (${res.status})`);
-        setStatus("error");
-      }
+      setStatus("done");
+      // 재고 관련 리스트가 자동 갱신되도록 이벤트 발행
+      window.dispatchEvent(new CustomEvent("inventory-checks-updated", {
+        detail: { product_code: product.code, field, value: Number(value) },
+      }));
     } catch (e: any) {
-      setError(e?.message ?? "네트워크 오류");
+      setError(e instanceof ApiError ? e.message : (e?.message ?? "네트워크 오류"));
       setStatus("error");
     }
   };
@@ -274,23 +247,15 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
     setOrderStatus("loading");
     setOrderConfirm(false);
     try {
-      const res = await fetch("/api/order-requests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          product_code: product.code,
-          product_name: product.name,
-          current_stock: product.current_stock != null ? Number(product.current_stock) : null,
-          optimal_stock: product.optimal_stock != null ? Number(product.optimal_stock) : null,
-          note: "",
-        }),
+      await api.post("/api/order-requests", {
+        product_code: product.code,
+        product_name: product.name,
+        current_stock: product.current_stock != null ? Number(product.current_stock) : null,
+        optimal_stock: product.optimal_stock != null ? Number(product.optimal_stock) : null,
+        note: "",
       });
-      if (res.ok) {
-        setOrderStatus("done");
-        setExistingOrder({ current_stock: product.current_stock != null ? Number(product.current_stock) : null, requested_at: new Date().toISOString() });
-      } else {
-        setOrderStatus("error");
-      }
+      setOrderStatus("done");
+      setExistingOrder({ current_stock: product.current_stock != null ? Number(product.current_stock) : null, requested_at: new Date().toISOString() });
     } catch {
       setOrderStatus("error");
     }
@@ -305,42 +270,27 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
     setSaving(true);
     setSaveError(null);
     try {
-      const res = await fetch(`/api/products/${encodeURIComponent(product.code)}/realmap`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ realMap: zoneLabel || null }),
-      });
-      if (res.ok) {
-        onRealMapUpdate(zoneLabel);
-        const specZone = product.spec || "미지정";
-        const isMismatch = !!zoneLabel && zoneLabel !== specZone;
-        if (isMismatch) {
-          fetch("/api/zone-mismatches", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              product_code: product.code,
-              product_name: product.name,
-              spec_zone: specZone,
-              real_zone: zoneLabel,
-            }),
-          }).catch(() => {});
-        } else {
-          fetch(`/api/zone-mismatches/by-code/${encodeURIComponent(product.code)}`, {
-            method: "DELETE",
-          }).catch(() => {});
-        }
+      await api.patch(`/api/products/${encodeURIComponent(product.code)}/realmap`, { realMap: zoneLabel || null });
+      onRealMapUpdate(zoneLabel);
+      const specZone = product.spec || "미지정";
+      const isMismatch = !!zoneLabel && zoneLabel !== specZone;
+      if (isMismatch) {
+        api.post("/api/zone-mismatches", {
+          product_code: product.code,
+          product_name: product.name,
+          spec_zone: specZone,
+          real_zone: zoneLabel,
+        }).catch(() => {});
       } else {
-        const body = await res.json().catch(() => ({}));
-        const msg: string = body?.error ?? `서버 오류 (${res.status})`;
-        const isColMissing = /column|does not exist|schema cache/i.test(msg);
-        setSaveError(isColMissing
-          ? "DB에 realMap 컬럼이 없습니다. Supabase SQL Editor에서 실행:\nALTER TABLE products ADD COLUMN IF NOT EXISTS \"realMap\" TEXT;"
-          : msg
-        );
+        api.del(`/api/zone-mismatches/by-code/${encodeURIComponent(product.code)}`).catch(() => {});
       }
-    } catch {
-      setSaveError("네트워크 오류 — 다시 시도해주세요");
+    } catch (e: any) {
+      const msg: string = e instanceof ApiError ? e.message : (e?.message ?? "네트워크 오류");
+      const isColMissing = /column|does not exist|schema cache/i.test(msg);
+      setSaveError(isColMissing
+        ? "DB에 realMap 컬럼이 없습니다. Supabase SQL Editor에서 실행:\nALTER TABLE products ADD COLUMN IF NOT EXISTS \"realMap\" TEXT;"
+        : msg === "네트워크 오류" ? "네트워크 오류 — 다시 시도해주세요" : msg
+      );
     }
     setSaving(false);
   };

@@ -1,5 +1,7 @@
 ﻿// src/components/SettingsModal.tsx
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useState, useEffect, useRef } from "react";
+import { api, ApiError } from "../../lib/apiClient";
 import { X, Plus, Trash2, GripVertical, Check, MapPin, ShieldCheck, ChevronRight } from "lucide-react";
 import { AppSettings, WageRate, ScheduleTypeEntry, defaultWageForPosition } from "../../hooks/useSettings";
 import { COLOR_PRESETS, findPresetByBg } from "../../constants";
@@ -138,20 +140,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
     if (pwNew === pwCurrent) { setPwMsg({ type: "err", text: "새 비밀번호가 현재 비밀번호와 동일합니다" }); return; }
     setPwSubmitting(true);
     try {
-      const res = await fetch("/api/auth/change-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employeeId: sessionEmployeeId, currentPassword: pwCurrent, newPassword: pwNew }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setPwMsg({ type: "err", text: data?.error ?? "비밀번호 변경 실패" });
-      } else {
-        setPwMsg({ type: "ok", text: "비밀번호가 변경되었습니다" });
-        setPwCurrent(""); setPwNew(""); setPwConfirm("");
-      }
+      await api.post("/api/auth/change-password", { employeeId: sessionEmployeeId, currentPassword: pwCurrent, newPassword: pwNew }, { skipRefresh: true });
+      setPwMsg({ type: "ok", text: "비밀번호가 변경되었습니다" });
+      setPwCurrent(""); setPwNew(""); setPwConfirm("");
     } catch (e: any) {
-      setPwMsg({ type: "err", text: e?.message ?? "네트워크 오류" });
+      setPwMsg({ type: "err", text: e instanceof ApiError ? e.message : (e?.message ?? "네트워크 오류") });
     } finally {
       setPwSubmitting(false);
     }

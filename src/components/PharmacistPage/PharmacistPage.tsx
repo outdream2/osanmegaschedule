@@ -1,14 +1,7 @@
 // src/components/PharmacistPage/PharmacistPage.tsx
-// 2026-08-05 · 약사 전용 페이지 · 교육탭 트리구조 리스트 + 기존 3탭 stacked 유지
-//   - 상단 정보 헤더 (약사 전용 · FirstAid) · 관리자 시 [설정] 버튼 노출
-//   - 공통 TabBar (L2) · 교육자료 · 복약지도 · 동영상 · 문서
-//     · 관리자(level>=8) long-press 드래그 재정렬 (useSortableTabs)
-//   - 교육자료 탭 · 좌측 트리구조 (카테고리 폴더 펼침/접힘 + 하위메뉴 들여쓰기)
-//   - 나머지 3탭 · 기존 stacked 방식 (카테고리 리스트 상 + 하위메뉴 리스트 하)
-//   - 하위메뉴 클릭 → 우측 인라인 PDF + 풀스크린 모달 (스크린샷 방지·워터마크)
-// 관리자만 CRUD · 약사(및 관리자) 조회·PDF 열람 · 미로그인 접근 제한
-
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import { FirstAid, BookOpen, Video, FileText, GraduationCap, Folder, FolderOpen, File as FileIcon } from "@phosphor-icons/react";
 import { Settings2, Plus, Eye, FileText as FileTextIcon, Loader2, ChevronRight, ChevronDown, CloudUpload, Trash2, X as XIcon } from "lucide-react";
@@ -150,9 +143,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
   const loadCustomCats = useCallback(async () => {
     setCustomCatsLoading(true);
     try {
-      const res = await fetch(`/api/settings?key=${encodeURIComponent(CUSTOM_CATS_SETTINGS_KEY)}`);
-      if (!res.ok) throw new Error(`서버 오류 (${res.status})`);
-      const data = await res.json().catch(() => ({ value: null }));
+      const { data } = await api.get<any>(`/api/settings?key=${encodeURIComponent(CUSTOM_CATS_SETTINGS_KEY)}`);
       const arr = Array.isArray(data?.value) ? data.value : [];
       // sanitize
       const clean: CustomCategoryRow[] = arr
@@ -175,15 +166,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
 
   // 저장 유틸 (전체 배열 upsert)
   const persistCustomCats = useCallback(async (next: CustomCategoryRow[]) => {
-    const res = await fetch(`/api/settings`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key: CUSTOM_CATS_SETTINGS_KEY, value: next }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `저장 실패 (${res.status})`);
-    }
+    await api.post(`/api/settings`, { key: CUSTOM_CATS_SETTINGS_KEY, value: next });
   }, []);
 
   const categories = useMemo<CategoryItem[]>(
@@ -214,12 +197,10 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
     setMenuError(null);
     try {
       const qs = `?tab=${encodeURIComponent(tab)}&category=${encodeURIComponent(selectedCat)}`;
-      const res = await fetch(`/api/pharmacist-menu-items${qs}`);
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `서버 오류 (${res.status})`);
-      const data = await res.json();
+      const { data } = await api.get<any>(`/api/pharmacist-menu-items${qs}`);
       setMenuItems(Array.isArray(data) ? data : []);
     } catch (err: any) {
-      setMenuError(err?.message ?? "불러오기 실패");
+      setMenuError(err instanceof ApiError ? err.message : (err?.message ?? "불러오기 실패"));
       setMenuItems([]);
     } finally {
       setMenuLoading(false);
@@ -283,28 +264,20 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
       if (newCatFile) {
         try {
           const dataUrl = await readFileAsDataUrl(newCatFile);
-          const res = await fetch(`/api/pharmacist-menu-items`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              editor_level: authSession?.level ?? 0,
-              tab_key: "education",
-              category_key: key,
-              title,
-              sort_order: 0,
-              data_url: dataUrl,
-              file_name: newCatFile.name,
-              uploaded_by: authSession?.employeeName ?? null,
-              uploaded_by_id: authSession?.employeeId ?? null,
-            }),
+          await api.post(`/api/pharmacist-menu-items`, {
+            editor_level: authSession?.level ?? 0,
+            tab_key: "education",
+            category_key: key,
+            title,
+            sort_order: 0,
+            data_url: dataUrl,
+            file_name: newCatFile.name,
+            uploaded_by: authSession?.employeeName ?? null,
+            uploaded_by_id: authSession?.employeeId ?? null,
           });
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            // 카테고리는 저장됨 · 파일만 실패 안내 (카테고리 유지)
-            setNewCatError(`카테고리는 추가됐지만 자료 업로드 실패: ${err.error || res.status}`);
-          }
         } catch (fileErr: any) {
-          setNewCatError(`카테고리는 추가됐지만 자료 업로드 실패: ${fileErr?.message ?? "unknown"}`);
+          // 카테고리는 저장됨 · 파일만 실패 안내 (카테고리 유지)
+          setNewCatError(`카테고리는 추가됐지만 자료 업로드 실패: ${fileErr instanceof ApiError ? fileErr.message : (fileErr?.message ?? "unknown")}`);
         }
       }
 

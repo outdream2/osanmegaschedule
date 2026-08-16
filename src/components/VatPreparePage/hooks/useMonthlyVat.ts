@@ -1,3 +1,4 @@
+// 2026-08-17 · apiClient 마이그레이션
 // src/components/VatPreparePage/hooks/useMonthlyVat.ts
 // 2026-08-04 · #253 · 부가세 준비 월별 매출·매입·경비 통합 hook
 // 2026-08-06 · T-DB-Migrate-LocalStorage · 경비/면세매출 · localStorage → Supabase(settings) 이관
@@ -19,6 +20,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useKvSetting } from "../../../hooks/useKvSetting";
+import { api, ApiError } from "../../../lib/apiClient";
 
 // ─── 서버 응답 타입 ─────────────────────────────────────────────
 export interface MonthlyVatServerRow {
@@ -158,17 +160,15 @@ export function useMonthlyVat(opts: UseMonthlyVatOptions): UseMonthlyVatResult {
       setError(null);
       setWarning(null);
       try {
-        const r = await fetch(
+        const { data: j } = await api.get<MonthlyVatResponse>(
           `/api/vat/monthly-summary?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
         );
-        if (!r.ok) throw new Error(`월별 부가세 조회 실패 (${r.status})`);
-        const j: MonthlyVatResponse = await r.json();
         if (cancelled) return;
         setServerRows(Array.isArray(j.months) ? j.months : []);
         setWarning(j.warning ?? null);
       } catch (e: any) {
         if (!cancelled) {
-          setError(e?.message ?? "월별 부가세 조회 실패");
+          setError(e instanceof ApiError ? e.message : (e?.message ?? "월별 부가세 조회 실패"));
           setServerRows([]);
         }
       } finally {

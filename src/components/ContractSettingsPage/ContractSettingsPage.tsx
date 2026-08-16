@@ -1,3 +1,4 @@
+// 2026-08-17 · apiClient 마이그레이션
 // src/components/ContractSettingsPage/ContractSettingsPage.tsx
 // 근로계약서 설정 페이지 · 2026-08-05 · 재설계
 // - 직군별 주중/주말 시급 (약사·매장·창고·기타)
@@ -22,6 +23,7 @@
 //   · feedback_ui_consult: 카테고리 색 분류 · 통일된 카드
 //   · embedded 모드 · DocumentWriterPage 임베드 시 자체 헤더 skip
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { api } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import {
   Gear, FloppyDisk, ArrowsClockwise, Check, Warning, Info,
@@ -214,9 +216,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/contract-clauses", { credentials: "include" });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const raw = await res.json();
+        const { data: raw } = await api.get<any>("/api/contract-clauses");
         if (cancelled) return;
 
         // 서버 응답에서 · 각 그룹이 배열이지만 비어있으면 (서버 미저장) DEFAULT 로 fallback
@@ -250,14 +250,9 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
             const legacyParsed = normalizeClauses(JSON.parse(legacyRaw));
             // legacy 가 DEFAULT 와 다르면 (실제 편집한 흔적) 업로드
             if (!clausesEqual(legacyParsed, DEFAULT_CLAUSES)) {
-              await fetch("/api/contract-clauses", {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({
-                  clauses: legacyParsed,
-                  updated_by: authSession?.employeeId ?? null,
-                }),
+              await api.put("/api/contract-clauses", {
+                clauses: legacyParsed,
+                updated_by: authSession?.employeeId ?? null,
               });
               // 마이그레이션 완료 · 화면 상태 = legacy 값
               setClauses(cloneClauses(legacyParsed));

@@ -1,3 +1,4 @@
+// 2026-08-17 · apiClient 마이그레이션
 // src/components/VatPreparePage/VatPreparePage.tsx
 // 2026-08-03 · #197 · 부가세 준비 페이지
 // 2026-08-04 · Phase 1 · 매출 탭 신설 + 5 KPI 확장 + 3 탭 컨테이너 (매출·매입·신고서)
@@ -24,6 +25,7 @@
 //   · GET /api/vat/vendor-detail?period=...&supplier=...
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { api, ApiError } from "../../lib/apiClient";
 import {
   Calculator, Calendar, Loader2, AlertTriangle, CheckSquare, Square,
   FileText, TrendingUp, ChevronRight, RefreshCw,
@@ -219,20 +221,16 @@ const VatPreparePage: React.FC = () => {
     setError(null);
     setWarning(null);
     try {
-      const [sRes, bRes] = await Promise.all([
-        fetch(`/api/vat/summary?period=${encodeURIComponent(period)}`),
-        fetch(`/api/vat/vendor-breakdown?period=${encodeURIComponent(period)}`),
+      const [{ data: sData }, { data: bData }] = await Promise.all([
+        api.get<VatSummary>(`/api/vat/summary?period=${encodeURIComponent(period)}`),
+        api.get<{ rows: VendorBreakdownRow[]; warning?: string }>(`/api/vat/vendor-breakdown?period=${encodeURIComponent(period)}`),
       ]);
-      if (!sRes.ok) throw new Error(`요약 조회 실패 (${sRes.status})`);
-      if (!bRes.ok) throw new Error(`공급사별 조회 실패 (${bRes.status})`);
-      const sData: VatSummary = await sRes.json();
-      const bData: { rows: VendorBreakdownRow[]; warning?: string } = await bRes.json();
       setSummary(sData);
       setBreakdown(bData.rows ?? []);
       if (sData.warning) setWarning(sData.warning);
       else if (bData.warning) setWarning(bData.warning);
     } catch (e: any) {
-      setError(e?.message ?? "조회 실패");
+      setError(e instanceof ApiError ? e.message : (e?.message ?? "조회 실패"));
       setSummary(null);
       setBreakdown([]);
     } finally {
@@ -246,9 +244,7 @@ const VatPreparePage: React.FC = () => {
   const loadDetail = useCallback(async (supplier: string) => {
     setDetailLoading(true);
     try {
-      const r = await fetch(`/api/vat/vendor-detail?period=${encodeURIComponent(period)}&supplier=${encodeURIComponent(supplier)}`);
-      if (!r.ok) throw new Error(String(r.status));
-      const j = await r.json();
+      const { data: j } = await api.get<{ rows: VendorDetailRow[] }>(`/api/vat/vendor-detail?period=${encodeURIComponent(period)}&supplier=${encodeURIComponent(supplier)}`);
       setDetail(j.rows ?? []);
     } catch {
       setDetail([]);

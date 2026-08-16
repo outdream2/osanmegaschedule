@@ -1,3 +1,4 @@
+// 2026-08-17 · apiClient 마이그레이션
 // src/components/HrFormsPage/HrFormsPage.tsx
 // 각종 양식 관리 페이지 (근로계약서 · 사직서 · 서약서 · 기타)
 // - 관리자(level >= 2) · 업로드 · 삭제 가능
@@ -9,6 +10,7 @@
 // - embedded 모드 · BusinessManagePage 안 서브탭 · 자체 AppNavHeader skip
 // #209 UI 세련화: 드래그&드롭 업로드 · 파일타입 아이콘 · 개선된 empty state · 카테고리 segmented control
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { api, ApiError } from "../../lib/apiClient";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
 import { useConfirm } from "../../hooks/useConfirm";
 import {
@@ -426,12 +428,10 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
     setLoadError(null);
     try {
       const qs = categoryFilter === "all" ? "" : `?category=${categoryFilter}`;
-      const res = await fetch(`/api/hr-forms${qs}`);
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `서버 오류 (${res.status})`);
-      const data = await res.json();
+      const { data } = await api.get<HrForm[]>(`/api/hr-forms${qs}`);
       setForms(Array.isArray(data) ? data : []);
     } catch (err: any) {
-      setLoadError(err?.message ?? "불러오기 실패");
+      setLoadError(err instanceof ApiError ? err.message : (err?.message ?? "불러오기 실패"));
       setForms([]);
     } finally {
       setLoading(false);
@@ -503,23 +503,15 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
     try {
       const dataUrl = await readFileAsDataUrl(uploadFile);
       setUploadProgress(50);
-      const res = await fetch("/api/hr-forms", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: uploadTitle.trim(),
-          category: uploadCategory,
-          data_url: dataUrl,
-          file_name: uploadFile.name,
-          uploaded_by: authSession?.employeeName ?? null,
-          uploaded_by_id: authSession?.employeeId ?? null,
-        }),
+      await api.post("/api/hr-forms", {
+        title: uploadTitle.trim(),
+        category: uploadCategory,
+        data_url: dataUrl,
+        file_name: uploadFile.name,
+        uploaded_by: authSession?.employeeName ?? null,
+        uploaded_by_id: authSession?.employeeId ?? null,
       });
       setUploadProgress(90);
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `업로드 실패 (${res.status})`);
-      }
       setUploadProgress(100);
       // 짧은 딜레이 후 닫기 (완료 피드백)
       setTimeout(() => {
@@ -527,7 +519,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
         load();
       }, 400);
     } catch (err: any) {
-      setUploadError(err?.message ?? "업로드 실패");
+      setUploadError(err instanceof ApiError ? err.message : (err?.message ?? "업로드 실패"));
       setUploadProgress(0);
     } finally {
       setUploading(false);
@@ -541,14 +533,10 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
     setDeletingId(row.id);
     try {
       const editorLevel = authSession?.level ?? 0;
-      const res = await fetch(`/api/hr-forms/${row.id}?editor_level=${editorLevel}`, { method: "DELETE" });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `삭제 실패 (${res.status})`);
-      }
+      await api.del(`/api/hr-forms/${row.id}?editor_level=${editorLevel}`);
       setForms(prev => prev.filter(f => f.id !== row.id));
     } catch (err: any) {
-      window.alert(err?.message ?? "삭제 실패");
+      window.alert(err instanceof ApiError ? err.message : (err?.message ?? "삭제 실패"));
     } finally {
       setDeletingId(null);
     }

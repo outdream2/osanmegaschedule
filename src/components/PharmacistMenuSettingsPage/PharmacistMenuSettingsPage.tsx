@@ -1,20 +1,8 @@
 // src/components/PharmacistMenuSettingsPage/PharmacistMenuSettingsPage.tsx
-// 2026-08-03 · 약사 전용 페이지 · 하위메뉴 CRUD 설정 (관리자 전용 · Modal)
-//   - PharmacistPage 에서 선택된 (tab, category) 컨텍스트 안에서
-//     하위메뉴 항목의 추가 / 이름·순서 변경 / 삭제
-//   - 파일 업로드 (PDF·Word·이미지 등) · 서버 /api/pharmacist-menu-items 사용
-//   - level >= 8 만 실사용 가능 (서버 이중 체크)
-//
-// 사용법:
-//   <PharmacistMenuSettingsModal
-//     open={open} onClose={close}
-//     tabKey="education" tabLabel="교육자료"
-//     categoryKey="1A"    categoryTitle="가1 · 진열대 1 A"
-//     authSession={authSession}
-//     onChanged={reload}
-//   />
+// 2026-08-17 · apiClient 마이그레이션
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import {
   Plus, Trash2, Loader2, AlertCircle, X, Save, Pencil,
@@ -115,12 +103,10 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
     setLoadError(null);
     try {
       const qs = `?tab=${encodeURIComponent(tabKey)}&category=${encodeURIComponent(categoryKey)}`;
-      const res = await fetch(`/api/pharmacist-menu-items${qs}`);
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `서버 오류 (${res.status})`);
-      const data = await res.json();
+      const { data } = await api.get<any>(`/api/pharmacist-menu-items${qs}`);
       setItems(Array.isArray(data) ? data : []);
     } catch (err: any) {
-      setLoadError(err?.message ?? "불러오기 실패");
+      setLoadError(err instanceof ApiError ? err.message : (err?.message ?? "불러오기 실패"));
       setItems([]);
     } finally {
       setLoading(false);
@@ -174,25 +160,17 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
         fileName = newFile.name;
       }
       const nextOrder = items.length > 0 ? Math.max(...items.map(i => i.sort_order ?? 0)) + 1 : 0;
-      const res = await fetch("/api/pharmacist-menu-items", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          editor_level: editorLevel,
-          tab_key: tabKey,
-          category_key: categoryKey,
-          title,
-          sort_order: nextOrder,
-          data_url: dataUrl,
-          file_name: fileName,
-          uploaded_by: authSession?.employeeName ?? null,
-          uploaded_by_id: authSession?.employeeId ?? null,
-        }),
+      await api.post("/api/pharmacist-menu-items", {
+        editor_level: editorLevel,
+        tab_key: tabKey,
+        category_key: categoryKey,
+        title,
+        sort_order: nextOrder,
+        data_url: dataUrl,
+        file_name: fileName,
+        uploaded_by: authSession?.employeeName ?? null,
+        uploaded_by_id: authSession?.employeeId ?? null,
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `등록 실패 (${res.status})`);
-      }
       // reset form + reload
       setNewTitle("");
       setNewFile(null);
@@ -201,7 +179,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
       await load();
       onChanged?.();
     } catch (err: any) {
-      setUploadError(err?.message ?? "등록 실패");
+      setUploadError(err instanceof ApiError ? err.message : (err?.message ?? "등록 실패"));
     } finally {
       setUploading(false);
     }
@@ -221,15 +199,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
     if (!t) { alert("이름을 입력하세요."); return; }
     setSavingId(row.id);
     try {
-      const res = await fetch(`/api/pharmacist-menu-items/${row.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ editor_level: editorLevel, title: t }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `저장 실패 (${res.status})`);
-      }
+      await api.patch(`/api/pharmacist-menu-items/${row.id}`, { editor_level: editorLevel, title: t });
       cancelEdit();
       await load();
       onChanged?.();
@@ -251,16 +221,8 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
     setSavingId(row.id);
     try {
       await Promise.all([
-        fetch(`/api/pharmacist-menu-items/${row.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ editor_level: editorLevel, sort_order: other.sort_order }),
-        }),
-        fetch(`/api/pharmacist-menu-items/${other.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ editor_level: editorLevel, sort_order: row.sort_order }),
-        }),
+        api.patch(`/api/pharmacist-menu-items/${row.id}`, { editor_level: editorLevel, sort_order: other.sort_order }),
+        api.patch(`/api/pharmacist-menu-items/${other.id}`, { editor_level: editorLevel, sort_order: row.sort_order }),
       ]);
       await load();
       onChanged?.();
@@ -277,13 +239,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
     if (!await confirm({ message: `정말 삭제하시겠습니까?\n\n${row.title}`, danger: true })) return;
     setDeletingId(row.id);
     try {
-      const res = await fetch(`/api/pharmacist-menu-items/${row.id}?editor_level=${editorLevel}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `삭제 실패 (${res.status})`);
-      }
+      await api.del(`/api/pharmacist-menu-items/${row.id}?editor_level=${editorLevel}`);
       await load();
       onChanged?.();
     } catch (err: any) {

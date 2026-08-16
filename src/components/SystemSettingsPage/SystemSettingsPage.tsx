@@ -1,10 +1,7 @@
 // src/components/SystemSettingsPage/SystemSettingsPage.tsx
-// 2026-08-12 · 시스템 설정 페이지 (관리자 lv≥9 전용)
-//   · env 편집 · 서버 재시작 시 반영
-//   · GET /api/system-config · 파일+env 병합 · 민감값 마스킹
-//   · POST /api/system-config · patch 저장 · restartRequired
-//   · 카테고리 탭: DB·인증 · AI/OCR · 알림톡·SMS · 이미지 CDN · Web Push · OCR 수신처 · 데이터 업로드(랜딩에서 이관)
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useState } from "react";
+import { api, ApiError } from "../../lib/apiClient";
 import {
   Gear, FloppyDisk, Warning, Info, ArrowsClockwise, Database, Robot,
   ChatCircleDots, ImageSquare, Bell, Buildings, UploadSimple,
@@ -95,14 +92,16 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
   const load = useCallback(async () => {
     setError(null);
     try {
-      const res = await fetch("/api/system-config", { credentials: "include" });
-      if (!res.ok) { setError(res.status === 401 ? "로그인이 필요합니다" : res.status === 403 ? "관리자(lv 9) 전용" : "조회 실패"); return; }
-      const data = await res.json();
+      const { data } = await api.get<Record<string, FieldState>>("/api/system-config");
       setServer(data);
       setDraft({}); // 편집 draft 초기화
       setLoaded(true);
     } catch (e: any) {
-      setError(e?.message ?? "네트워크 오류");
+      if (e instanceof ApiError) {
+        setError(e.status === 401 ? "로그인이 필요합니다" : e.status === 403 ? "관리자(lv 9) 전용" : e.message);
+      } else {
+        setError(e?.message ?? "네트워크 오류");
+      }
     }
   }, []);
 
@@ -117,19 +116,12 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch("/api/system-config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(draft),
-      });
-      const data = await res.json();
-      if (!res.ok) { setError(data?.error ?? "저장 실패"); return; }
+      const { data } = await api.post<any>("/api/system-config", draft);
       setSavedNotice(data?.message ?? "저장되었습니다");
       await load();
       setTimeout(() => setSavedNotice(null), 5000);
     } catch (e: any) {
-      setError(e?.message ?? "네트워크 오류");
+      setError(e instanceof ApiError ? e.message : (e?.message ?? "네트워크 오류"));
     } finally {
       setSaving(false);
     }

@@ -1,13 +1,7 @@
 // src/components/ResignationApprovalPage/ResignationApprovalPage.tsx
-// 사직서 승인 페이지 (관리자 · level≥8) · 2026-08-03 · #179+#180
-// - 리스트 (pending 우선 · reviewed 별도 탭)
-// - 각 행 · [승인] [반려] 버튼 · 반려 시 사유 입력
-// - 승인 시 · 서버가 employees.retire_date 자동 세팅
-// - 승인/반려 후 · CustomEvent("approval-count-updated") 브로드캐스트
-//   → 부모 배지 즉시 갱신
-//
-// LeavePage 관리자 뷰 벤치마크 · UI 스타일 통일
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useState } from "react";
+import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import {
   Clock, CheckCircle, XCircle, ArrowsClockwise,
@@ -79,20 +73,16 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/resignations");
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        const msg = j?.error ?? `서버 오류 (${res.status})`;
-        // 테이블 미생성 힌트
-        if (/relation .* does not exist|resignation_requests/i.test(String(msg))) {
-          throw new Error("DB 테이블이 없습니다. Supabase SQL Editor 에서 migrations/create_resignation_requests.sql 을 실행해주세요.");
-        }
-        throw new Error(msg);
-      }
-      const data = await res.json();
+      const { data } = await api.get<any>("/api/resignations");
       setList(Array.isArray(data) ? data : []);
     } catch (err: any) {
-      setError(err?.message ?? "불러오기 실패");
+      const msg = err instanceof ApiError ? err.message : (err?.message ?? "불러오기 실패");
+      // 테이블 미생성 힌트
+      if (/relation .* does not exist|resignation_requests/i.test(String(msg))) {
+        setError("DB 테이블이 없습니다. Supabase SQL Editor 에서 migrations/create_resignation_requests.sql 을 실행해주세요.");
+      } else {
+        setError(msg);
+      }
       setList([]);
     } finally {
       setLoading(false);
@@ -130,20 +120,12 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
 
     setProcessingId(id);
     try {
-      const res = await fetch(`/api/resignations/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status,
-          reject_reason: status === "rejected" ? rejectReason : undefined,
-          approved_by: approverName,
-          approved_by_id: approverId,
-        }),
+      await api.patch(`/api/resignations/${id}`, {
+        status,
+        reject_reason: status === "rejected" ? rejectReason : undefined,
+        approved_by: approverName,
+        approved_by_id: approverId,
       });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j?.error || `서버 오류 (${res.status})`);
-      }
       // 로컬 갱신
       setList(prev => prev.map(r =>
         r.id === id
