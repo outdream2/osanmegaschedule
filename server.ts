@@ -9,6 +9,9 @@ import http from "http";
 import path from "path";
 import compression from "compression";
 import cookieParser from "cookie-parser";
+// 2026-08-16 · #112-A · Helmet 보안 헤더 · #112-C · 로그인 rate-limit
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import webpush from "web-push";
 import { createServer as createViteServer } from "vite";
 import { supabase } from "./src/supabase/client";
@@ -85,6 +88,25 @@ async function startServer() {
     );
   }
 
+  // 2026-08-16 · #112-A · Helmet · HTTP 보안 헤더 (XSS · Clickjacking · MIME sniff 방어)
+  //   · contentSecurityPolicy · false (SPA 동적 스크립트 · Vite HMR 호환 · 별도 CSP 정책은 다음 세션)
+  //   · crossOriginEmbedderPolicy · false (Cloudinary/Supabase Storage 이미지 CORS 이슈 방지)
+  app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  }));
+
+  // 2026-08-16 · #112-C · 로그인 route · 무차별 대입 방어 (1분 10회)
+  //   · vendor-login · change-password · set-password 도 함께 보호
+  const authLimiter = rateLimit({
+    windowMs: 60 * 1000,       // 1분
+    max: 10,                    // 10회
+    standardHeaders: true,      // RateLimit-* 헤더
+    legacyHeaders: false,
+    message: { error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." },
+    skipSuccessfulRequests: true, // 성공한 로그인은 카운트 X (사용자 편의)
+  });
+
   app.use(compression());
   // 2026-08-05 T37 · DoS 방어 · 일반 API 는 10MB · 이미지 route 는 route-level 100MB
   //   body-parser 는 req._body 플래그로 재파싱 skip · 앞의 파서가 실행되면 뒤 파서는 자동 skip
@@ -107,6 +129,9 @@ async function startServer() {
   // 2026-08-05 T3 · JWT httpOnly 쿠키 파싱
   app.use(cookieParser());
   app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+
+  // 2026-08-16 · #112-C · 로그인 무차별 대입 방어 · /api/auth/* 전체에 rate-limit 적용
+  app.use("/api/auth", authLimiter);
 
   // ── 인증 불필요 (public) ──
   app.use(authRouter);            // /api/auth/* — 로그인·비밀번호 변경

@@ -29,10 +29,11 @@ router.post("/api/auth/login", async (req, res) => {
     const role = level >= 9 ? "superadmin" : level >= 2 ? "manager" : "employee";
     const rememberMe = Boolean(req.body?.rememberMe);
     // 서버 세션 토큰 발급 (httpOnly 쿠키)
+    // 2026-08-16 · JWT_SECRET 미설정 시 · silent 실패 → 명시 500 (로그인 성공한 것처럼 잘못 응답 방지)
     try {
       issueToken(res, { sub: emp.id, name: emp.name, role, level, rememberMe }, rememberMe);
-    } catch {
-      // JWT_SECRET 미설정 시 쿠키 없이 진행 (graceful degradation — 경고는 startup 에서 출력됨)
+    } catch (err: any) {
+      return res.status(500).json({ error: "인증 시스템 설정 오류 · 관리자에게 문의 (JWT_SECRET 미설정)", detail: err?.message });
     }
     return res.status(200).json({ id: emp.id, name: emp.name, role, level, rank: emp.rank ?? null });
   } catch (err: any) {
@@ -64,8 +65,8 @@ router.post("/api/auth/vendor-login", async (req, res) => {
     }
     try {
       issueToken(res, { sub: vendor.id, name: vendor.company_name, role: "vendor", level: 0 }, false);
-    } catch {
-      // JWT_SECRET 미설정 시 graceful degradation
+    } catch (err: any) {
+      return res.status(500).json({ error: "인증 시스템 설정 오류 · 관리자에게 문의 (JWT_SECRET 미설정)", detail: err?.message });
     }
     return res.status(200).json({
       id: vendor.id,
