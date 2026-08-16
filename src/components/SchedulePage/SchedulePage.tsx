@@ -1,6 +1,7 @@
 ﻿// src/components/SchedulePage.tsx
+// 2026-08-16 · apiClient 마이그레이션
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import axios from "axios";
+import { api } from "../../lib/apiClient";
 import {
   updateEmployee,
   updateEmployeeFull,
@@ -460,7 +461,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         memoOut = next.other;
       }
 
-      await axios.put("/api/schedules", {
+      await api.put("/api/schedules", {
         employeeId: breakModal.employeeId,
         date: breakModal.date,
         type: breakModal.type || "휴무",
@@ -507,7 +508,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     }
     setIsSavingPassword(true);
     try {
-      await axios.post("/api/auth/set-password", {
+      await api.post<any>("/api/auth/set-password", {
         employeeId: selectedEmpForEdit.id,
         password: newEmpPassword,
       });
@@ -545,7 +546,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         items.push({ employeeId: emp.id, date: sc.date, type: sc.type, workingHours: wh, actualHours: sc.actualHours || "", memo: sc.memo || "" });
       }
     }
-    if (items.length > 0) await axios.post("/api/schedules/batch", { items });
+    if (items.length > 0) await api.post<any>("/api/schedules/batch", { items });
     await fetchScheduleData(undefined, true);
     showNotification("기본 근무시간이 현재 월 전체에 적용되었습니다.", "success");
   };
@@ -598,7 +599,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         const daysInCur = new Date(currentYear, currentMonth, 0).getDate();
         for (let d = 1; d <= daysInCur; d++) {
           const dateStr = `${monthPrefix}-${String(d).padStart(2, "0")}`;
-          const r = await axios.get(`/api/zone-day/${dateStr}`);
+          const r = await api.get<any>(`/api/zone-day/${dateStr}`);
           if (r.data && !r.data._empty && (
             Object.keys(r.data.zone_slots ?? {}).length > 0 ||
             Object.keys(r.data.lunch_slots ?? {}).length > 0 ||
@@ -624,14 +625,14 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     try {
       const msgs: string[] = [];
       if (copySchedules) {
-        const response = await axios.post("/api/schedules/copy", {
+        const response = await api.post<any>("/api/schedules/copy", {
           targetYear: currentYear,
           targetMonth: currentMonth,
         });
         msgs.push(`월별 스케쥴 ${response.data.count || 0}건`);
       }
       if (copyDayAssignments) {
-        const r = await axios.post("/api/zone-day/copy-month", {
+        const r = await api.post<any>("/api/zone-day/copy-month", {
           targetYear: currentYear,
           targetMonth: currentMonth,
           overwrite: needsDayOverwrite || true, // 이미 확인 완료
@@ -655,7 +656,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     setIsLockLoading(true);
     try {
       const key = `schedule_lock_${currentYear}-${String(currentMonth).padStart(2, "0")}`;
-      await axios.post("/api/settings", { key, value: next });
+      await api.post<any>("/api/settings", { key, value: next });
       setIsMonthLocked(next);
       showNotification(`${currentMonth}월 스케줄이 ${label}되었습니다.`);
     } catch {
@@ -784,7 +785,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
       const responses = await Promise.all(
         months.map(({ year, month }) =>
-          axios.get(`/api/schedules?year=${year}&month=${month}`)
+          api.get<any>(`/api/schedules?year=${year}&month=${month}`)
         )
       );
 
@@ -835,7 +836,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         setSummary(responses[0].data.summary || []);
       }
       // Refresh year-to-date 월차 stats in background
-      axios.get(`/api/leave-stats?year=${currentYear}`)
+      api.get<any>(`/api/leave-stats?year=${currentYear}`)
         .then(res => setYearLeaveStats(res.data ?? {}))
         .catch(() => {});
     } catch (err: any) {
@@ -862,14 +863,14 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   // Load month lock state when month changes
   useEffect(() => {
     const key = `schedule_lock_${currentYear}-${String(currentMonth).padStart(2, "0")}`;
-    axios.get(`/api/settings?key=${key}`)
+    api.get<any>(`/api/settings?key=${key}`)
       .then(res => setIsMonthLocked(res.data?.value === true))
       .catch(() => setIsMonthLocked(false));
   }, [currentYear, currentMonth]);
 
   // Load year-to-date 월차 usage counts per employee
   useEffect(() => {
-    axios.get(`/api/leave-stats?year=${currentYear}`)
+    api.get<any>(`/api/leave-stats?year=${currentYear}`)
       .then(res => setYearLeaveStats(res.data ?? {}))
       .catch(() => {});
   }, [currentYear]);
@@ -976,7 +977,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         ]);
       }
 
-      await axios.put("/api/schedules", data);
+      await api.put("/api/schedules", data);
 
       // Update local state live without full refresh, then fetch background calculations
       setEmployees((prevEmployees) => {
@@ -1013,7 +1014,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       // (today's month is the most useful for the sidebar dashboard)
       const primaryYear = new Date().getFullYear();
       const primaryMonth = new Date().getMonth() + 1;
-      const summaryRes = await axios.get(`/api/schedules?year=${primaryYear}&month=${primaryMonth}`);
+      const summaryRes = await api.get<any>(`/api/schedules?year=${primaryYear}&month=${primaryMonth}`);
       setSummary(summaryRes.data.summary || []);
 
       showNotification(`${data.date.split("-").slice(1).join("/")} 스케줄이 성공적으로 변경되었습니다.`);
@@ -1028,7 +1029,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     const [prev, ...rest] = undoStack;
     setUndoStack(rest);
     try {
-      await axios.put("/api/schedules", prev);
+      await api.put("/api/schedules", prev);
       setEmployees(prevEmployees => prevEmployees.map(emp => {
         if (emp.id !== prev.employeeId) return emp;
         const schedules = emp.schedules.map(s =>
@@ -2273,7 +2274,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           onUpdate={isMonthLocked ? undefined : handleCellUpdate}
           onBulkSave={isMonthLocked ? undefined : async (items) => {
             try {
-              await axios.post("/api/schedules/batch", {
+              await api.post<any>("/api/schedules/batch", {
                 items: items.map(item => ({ employeeId: calendarEmployee.id, ...item })),
               });
               showNotification(`${calendarEmployee.name}님의 ${items.length}일 일괄 스케줄이 반영되었습니다.`);
