@@ -1,14 +1,14 @@
-// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
+// 2026-08-16 · asyncHandler + HttpError + shared DTO 프레임워크
 import { Router } from "express";
 import express from "express";
 import XLSX from "xlsx";
 import bcrypt from "bcryptjs";
 import { supabase } from "../../../src/supabase/client";
 import { queryPurchaseDetails } from "../../utils/purchaseDetailsQuery";
-// 2026-08-16 · #112-E1
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { HttpError, badRequest, forbidden } from "../../middleware/errorHandler";
+import type { VendorsListResponse } from "../../../src/shared/dtos/vendors";
 
 const router = Router();
 
@@ -208,9 +208,11 @@ router.get("/api/vendors", asyncHandler(async (req, res) => {
         balanceConfig: cfgMap.get(v.company_name) ?? null,
       };
     });
-    return res.json(enriched);
+    const body: VendorsListResponse = enriched as any;
+    return res.json(body);
   }
-  return res.json(data ?? []);
+  const body: VendorsListResponse = (data ?? []) as any;
+  return res.json(body);
 }));
 
 // 거래처 등록 (관리자)
