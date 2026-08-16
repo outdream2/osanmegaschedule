@@ -406,7 +406,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
               <p className="text-xs text-zinc-500 font-semibold">
                 직원의 근무지(부서) 목록을 관리합니다. 기본값: 매장, 창고
               </p>
-              <div className="space-y-1.5">
+              {/* 2026-08-16 · 사용자 지시 · 근무지 종류 · 매장·창고 나란히 (grid 2열) */}
+              <div className="grid grid-cols-2 gap-2">
                 {workplaces.map((wp, idx) => (
                   <div
                     key={wp}
