@@ -10,6 +10,8 @@ import {
 } from "../../lib/employeeApi";
 import { ZONE_DEFS, ZONES_STORAGE_KEY } from "../../constants/displayZones";
 import { Employee, MonthlySummary, Schedule, AuthSession } from "../../types";
+// 2026-08-16 · #91 · 공통 카테고리 헬퍼
+import { isPharmPosition as isPharm, isLogisticsPosition as isLogistics, isPartTimeEmployment as isPartTime, isOtherPosition } from "../../lib/employeeCategory";
 import { ScheduleCell } from "./ScheduleCell";
 import { SummaryRow } from "./SummaryRow";
 import { DayTimelineModal } from "../DayTimelineModal";
@@ -77,12 +79,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     update: updateSettings,
   } = useSettings();
 
-  // 2026-08-16 · #91 · 카테고리 판별 헬퍼 (중앙화 · 30+ 하드코딩 정리 시작점)
+  // 2026-08-16 · #91 · 공통 헬퍼 · src/lib/employeeCategory (DayTimelineModal 과 공유)
   //   · ScheduleTypeEntry 는 pharmHours·logisticsHours·partTimeHours 고정 컬럼 (DB 스키마 확장 필요)
-  //   · 헬퍼로 통일 · 향후 · 컬럼 확장 시 · 한 곳만 수정
-  const isPharm = (position: string) => position === "약사";
-  const isLogistics = (position: string) => position.includes("물류");
-  const isPartTime = (employmentType: string) => employmentType === "알바";
 
   // scheduleTypes → Record<type, hours> · 우선순위: 약사 > 물류 > 알바 > 기본
   const getTypeHoursMap = (position: string, employmentType: string = ""): Record<string, string> => {
@@ -320,7 +318,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   };
 
   const calendarLogisticsZoneProps: LogisticsZoneProps | undefined =
-    calendarEmployee?.position.includes("물류")
+    (calendarEmployee && isLogistics(calendarEmployee.position))
       ? (() => {
           const zones = loadDisplayZones();
           const assignedZoneNums = zones.filter(z => z.assignedStaffId === calendarEmployee.id).map(z => z.num);
@@ -395,7 +393,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     setEmpDescription(emp.description || "");
     setEmpWorkplace(emp.workplace || "매장");
     setEmpGender((emp.gender as "남" | "여") || "");
-    if (emp.position.includes("물류")) {
+    if (isLogistics(emp.position)) {
       const zones = loadDisplayZones();
       setEmpZoneNums(zones.filter(z => z.assignedStaffId === emp.id).map(z => z.num));
     } else {
@@ -1246,15 +1244,15 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       }
       if (positionTab !== "전체") {
         // 2026-08-11 · 필터 재정의: 전체·약사·사원·창고·매장 (진열 제거)
-        const isPharm     = emp.position === "약사";
-        const isStaff     = emp.position === "캐셔" || emp.position === "사원";
-        const isWarehouse = !isPharm && (emp.position.includes("물류") || emp.position === "창고");
-        const isStore     = !isPharm && (emp.workplace === "매장");
+        const pharm     = isPharm(emp.position);
+        const staff     = emp.position === "캐셔" || emp.position === "사원";
+        const warehouse = !pharm && (isLogistics(emp.position) || emp.position === "창고");
+        const store     = !pharm && (emp.workplace === "매장");
 
-        if (positionTab === "약사")      { if (!isPharm)     return false; }
-        else if (positionTab === "사원") { if (!isStaff)     return false; }
-        else if (positionTab === "창고") { if (!isWarehouse) return false; }
-        else if (positionTab === "매장") { if (!isStore)     return false; }
+        if (positionTab === "약사")      { if (!pharm)     return false; }
+        else if (positionTab === "사원") { if (!staff)     return false; }
+        else if (positionTab === "창고") { if (!warehouse) return false; }
+        else if (positionTab === "매장") { if (!store)     return false; }
       }
       if (searchQuery.trim() !== "") {
         return emp.name.toLowerCase().includes(searchQuery.toLowerCase().trim());
@@ -1349,9 +1347,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           // Count active workers (not on leave/off)
           const isOffType = ["휴무", "월차", "결근"].includes(type);
           if (!isOffType && type.trim() !== "") {
-            // 기타 = 직종 "기타"/"알바" 이거나 고용형태 "알바"
-            const isOther = emp.position === "기타" || emp.position === "알바" || emp.employmentType === "알바";
-            if (emp.position === "약사") pharmacistCount++;
+            const isOther = isOtherPosition(emp.position, emp.employmentType);
+            if (isPharm(emp.position)) pharmacistCount++;
             else if (isOther) otherCount++;
             else staffCount++;
           }
@@ -2017,7 +2014,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                     employeeId={emp.id}
                                     onUpdate={(isEmployeeMode || isManagerRole || isMonthLocked) ? (async () => {}) : handleCellUpdate}
                                     isAdmin={isAdmin && !isMonthLocked && editMode}
-                                    isPharmacist={emp.position === "약사"}
+                                    isPharmacist={isPharm(emp.position)}
                                     typeHoursMap={getTypeHoursMap(emp.position, emp.employmentType)}
                                     scheduleTypes={settingsScheduleTypes.map((e) => ({ value: e.type, label: e.type }))}
                                     scheduleTypeEntries={settingsScheduleTypes}
@@ -2054,7 +2051,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                       {(() => {
                         const fmtCost = (cost: number) => cost <= 0 ? "" :
                           cost >= 10000 ? `${Math.round(cost / 10000)}만원` : `${Math.round(cost).toLocaleString()}원`;
-                        const isOtherE = (e: typeof employees[number]) => e.position === "기타" || e.position === "알바" || e.employmentType === "알바";
+                        const isOtherE = (e: typeof employees[number]) => isOtherPosition(e.position, e.employmentType);
                         const pharmacistCost = filteredEmployees
                           .filter(e => e.position === "약사")
                           .reduce((sum, e) => sum + getEmpMonthStats(e).laborCost, 0);
