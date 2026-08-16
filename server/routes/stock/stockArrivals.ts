@@ -1,14 +1,14 @@
+// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
 import { Router } from "express";
 import webpush from "web-push";
 import { supabase } from "../../../src/supabase/client";
-// 2026-08-13 · #107 · 인앱 알림 hook (전체 직원 broadcast)
 import { notificationsService } from "../../services/notificationsService";
-// 2026-08-16 · #112-E1 Phase 2 · 매니저 DELETE
 import { authorize } from "../../middleware/requireAuth";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { badRequest, forbidden, notFound, HttpError } from "../../middleware/errorHandler";
 
 const router = Router();
 
-// ── 공통: 푸시 브로드캐스트 ──────────────────────────────────────────────────
 async function broadcastPush(arrivalId: number, title: string, body: string | null) {
   if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
     console.warn("[stock-arrivals] VAPID 키 미설정 — 푸시 브로드캐스트 건너뜀");
@@ -49,7 +49,7 @@ async function broadcastPush(arrivalId: number, title: string, body: string | nu
   }
 }
 
-// ── 예약 발송 스케줄러 (60초 폴링) ──────────────────────────────────────────
+// 예약 발송 스케줄러 (60초 폴링) · 원본 try/catch 유지 (setInterval 은 asyncHandler 부적용)
 setInterval(async () => {
   try {
     const { data, error } = await supabase
@@ -61,7 +61,6 @@ setInterval(async () => {
     if (error || !data?.length) return;
     for (const row of data) {
       await broadcastPush(row.id, row.title, row.body);
-      // 2026-08-13 · #107 · 예약 발송 · 인앱 알림 (전체 직원)
       notificationsService.notifyAllEmployees({
         title: `입고 알림: ${row.title}`,
         body: row.body ?? null,
@@ -75,164 +74,127 @@ setInterval(async () => {
   }
 }, 60_000);
 
-// ── GET 목록 ─────────────────────────────────────────────────────────────────
-// ── GET /api/vapid-public-key · 2026-08-06 · T-VAPID-Route ─────────────
-//   · 프론트 (StockArrivalPage 익명 푸시 구독) 에서 조회
-//   · VAPID_PUBLIC_KEY env 미설정 시 · 404 (프론트는 silent skip)
-router.get("/api/vapid-public-key", (_req, res) => {
+router.get("/api/vapid-public-key", asyncHandler(async (_req, res) => {
   const publicKey = process.env.VAPID_PUBLIC_KEY;
-  if (!publicKey) return res.status(404).json({ error: "VAPID_PUBLIC_KEY 미설정" });
-  return res.json({ publicKey });
-});
+  if (!publicKey) throw notFound("VAPID_PUBLIC_KEY 미설정");
+  res.json({ publicKey });
+}));
 
-router.get("/api/stock-arrivals", async (_req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from("stock_arrivals")
-      .select("id, title, body, created_at, created_by_id, scheduled_at, broadcast_sent")
-      .order("created_at", { ascending: false })
-      .limit(50);
-    if (error) throw new Error(error.message);
-    return res.json(data ?? []);
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
-});
+router.get("/api/stock-arrivals", asyncHandler(async (_req, res) => {
+  const { data, error } = await supabase
+    .from("stock_arrivals")
+    .select("id, title, body, created_at, created_by_id, scheduled_at, broadcast_sent")
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw new HttpError(500, error.message);
+  res.json(data ?? []);
+}));
 
-// ── POST 등록 (저장만 / 즉시발송 / 예약) ─────────────────────────────────────
-router.post("/api/stock-arrivals", async (req, res) => {
+router.post("/api/stock-arrivals", asyncHandler(async (req, res) => {
   const { title, body, employeeId, send_now, scheduled_at } = req.body ?? {};
-  if (!title || !employeeId) return res.status(400).json({ error: "title and employeeId required" });
-  try {
-    const { data: emp, error: empErr } = await supabase
-      .from("employees").select("level, name").eq("id", employeeId).single();
-    if (empErr || !emp) return res.status(403).json({ error: "Unauthorized" });
-    if ((emp.level ?? 0) < 3) return res.status(403).json({ error: "Level 3+ required" });
+  if (!title || !employeeId) throw badRequest("title and employeeId required");
+  const { data: emp, error: empErr } = await supabase
+    .from("employees").select("level, name").eq("id", employeeId).single();
+  if (empErr || !emp) throw forbidden("Unauthorized");
+  if ((emp.level ?? 0) < 3) throw forbidden("Level 3+ required");
 
-    const isScheduled = !!scheduled_at && new Date(scheduled_at) > new Date();
-    const isSendNow   = send_now === true && !isScheduled;
+  const isScheduled = !!scheduled_at && new Date(scheduled_at) > new Date();
+  const isSendNow = send_now === true && !isScheduled;
 
-    const { data: arrival, error: insertErr } = await supabase
-      .from("stock_arrivals")
-      .insert({
-        title,
-        body: body ?? null,
-        created_by_id: employeeId,
-        scheduled_at: isScheduled ? scheduled_at : null,
-        // 저장만: false(미전송), 즉시발송: true(전송됨으로 처리), 예약: false(스케줄러가 처리)
-        broadcast_sent: isSendNow,
-      })
-      .select()
-      .single();
-    if (insertErr) throw new Error(insertErr.message);
+  const { data: arrival, error: insertErr } = await supabase
+    .from("stock_arrivals")
+    .insert({
+      title,
+      body: body ?? null,
+      created_by_id: employeeId,
+      scheduled_at: isScheduled ? scheduled_at : null,
+      broadcast_sent: isSendNow,
+    })
+    .select()
+    .single();
+  if (insertErr) throw new HttpError(500, insertErr.message);
 
-    if (isSendNow) {
-      broadcastPush(arrival.id, title, body ?? null).catch(err =>
-        console.error("[stock-arrivals] 브로드캐스트 오류:", err)
-      );
-      // 2026-08-13 · #107 · 인앱 알림 (전체 직원 · 벨에도 표시)
-      notificationsService.notifyAllEmployees({
-        title: `입고 알림: ${title}`,
-        body: body ?? null,
-        type: "info",
-      }).catch(() => null);
-    }
-
-    return res.status(201).json(arrival);
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
-});
-
-// ── POST /:id/broadcast — 기존 항목 즉시 발송 ────────────────────────────────
-router.post("/api/stock-arrivals/:id/broadcast", async (req, res) => {
-  const id = Number(req.params.id);
-  const { employeeId } = req.body ?? {};
-  if (!id) return res.status(400).json({ error: "id required" });
-  try {
-    if (employeeId) {
-      const { data: emp } = await supabase.from("employees").select("level").eq("id", employeeId).maybeSingle();
-      if ((emp?.level ?? 0) < 3) return res.status(403).json({ error: "Level 3+ required" });
-    }
-    const { data: row } = await supabase
-      .from("stock_arrivals").select("id, title, body").eq("id", id).single();
-    if (!row) return res.status(404).json({ error: "Not found" });
-    await broadcastPush(row.id, row.title, row.body);
-    // 2026-08-13 · #107 · 인앱 알림 (전체 직원)
+  if (isSendNow) {
+    broadcastPush(arrival.id, title, body ?? null).catch(err =>
+      console.error("[stock-arrivals] 브로드캐스트 오류:", err),
+    );
     notificationsService.notifyAllEmployees({
-      title: `입고 알림: ${row.title}`,
-      body: row.body ?? null,
+      title: `입고 알림: ${title}`,
+      body: body ?? null,
       type: "info",
     }).catch(() => null);
-    const { data: updated } = await supabase
-      .from("stock_arrivals")
-      .update({ broadcast_sent: true, scheduled_at: null })
-      .eq("id", id).select().single();
-    return res.json(updated);
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
   }
-});
+  res.status(201).json(arrival);
+}));
 
-// ── PATCH 수정 (내용 변경 or 예약시간 변경) ──────────────────────────────────
-router.patch("/api/stock-arrivals/:id", async (req, res) => {
+router.post("/api/stock-arrivals/:id/broadcast", asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const { employeeId } = req.body ?? {};
+  if (!id) throw badRequest("id required");
+  if (employeeId) {
+    const { data: emp } = await supabase.from("employees").select("level").eq("id", employeeId).maybeSingle();
+    if ((emp?.level ?? 0) < 3) throw forbidden("Level 3+ required");
+  }
+  const { data: row } = await supabase
+    .from("stock_arrivals").select("id, title, body").eq("id", id).single();
+  if (!row) throw notFound("Not found");
+  await broadcastPush(row.id, row.title, row.body);
+  notificationsService.notifyAllEmployees({
+    title: `입고 알림: ${row.title}`,
+    body: row.body ?? null,
+    type: "info",
+  }).catch(() => null);
+  const { data: updated } = await supabase
+    .from("stock_arrivals")
+    .update({ broadcast_sent: true, scheduled_at: null })
+    .eq("id", id).select().single();
+  res.json(updated);
+}));
+
+router.patch("/api/stock-arrivals/:id", asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   const { title, body, employeeId, scheduled_at } = req.body ?? {};
-  if (!id) return res.status(400).json({ error: "id required" });
-  try {
-    if (employeeId) {
-      const { data: emp } = await supabase.from("employees").select("level").eq("id", employeeId).maybeSingle();
-      if ((emp?.level ?? 0) < 3) return res.status(403).json({ error: "Level 3+ required" });
-    }
-    const updates: Record<string, unknown> = {};
-    if (title !== undefined) updates.title = title;
-    if (body !== undefined) updates.body = body ?? null;
-    if ("scheduled_at" in req.body) {
-      updates.scheduled_at = scheduled_at ?? null;
-      if (scheduled_at && new Date(scheduled_at) > new Date()) {
-        updates.broadcast_sent = false;
-      }
-    }
-    const { data, error } = await supabase
-      .from("stock_arrivals").update(updates).eq("id", id).select().single();
-    if (error) throw new Error(error.message);
-    return res.json(data);
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+  if (!id) throw badRequest("id required");
+  if (employeeId) {
+    const { data: emp } = await supabase.from("employees").select("level").eq("id", employeeId).maybeSingle();
+    if ((emp?.level ?? 0) < 3) throw forbidden("Level 3+ required");
   }
-});
+  const updates: Record<string, unknown> = {};
+  if (title !== undefined) updates.title = title;
+  if (body !== undefined) updates.body = body ?? null;
+  if ("scheduled_at" in req.body) {
+    updates.scheduled_at = scheduled_at ?? null;
+    if (scheduled_at && new Date(scheduled_at) > new Date()) {
+      updates.broadcast_sent = false;
+    }
+  }
+  const { data, error } = await supabase
+    .from("stock_arrivals").update(updates).eq("id", id).select().single();
+  if (error) throw new HttpError(500, error.message);
+  res.json(data);
+}));
 
-// ── DELETE ────────────────────────────────────────────────────────────────────
-router.delete("/api/stock-arrivals/:id", authorize(2), async (req, res) => {
+router.delete("/api/stock-arrivals/:id", authorize(2), asyncHandler(async (req, res) => {
   const { employeeId } = req.body ?? {};
   const id = Number(req.params.id);
-  if (!id) return res.status(400).json({ error: "id required" });
-  try {
-    if (employeeId) {
-      const { data: emp } = await supabase.from("employees").select("level").eq("id", employeeId).maybeSingle();
-      if ((emp?.level ?? 0) < 3) return res.status(403).json({ error: "Level 3+ required" });
-    }
-    const { error } = await supabase.from("stock_arrivals").delete().eq("id", id);
-    if (error) throw new Error(error.message);
-    return res.json({ ok: true });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+  if (!id) throw badRequest("id required");
+  if (employeeId) {
+    const { data: emp } = await supabase.from("employees").select("level").eq("id", employeeId).maybeSingle();
+    if ((emp?.level ?? 0) < 3) throw forbidden("Level 3+ required");
   }
-});
+  const { error } = await supabase.from("stock_arrivals").delete().eq("id", id);
+  if (error) throw new HttpError(500, error.message);
+  res.json({ ok: true });
+}));
 
-// ── 비로그인 푸시 구독 ─────────────────────────────────────────────────────────
-router.post("/api/anon-push-subscribe", async (req, res) => {
+router.post("/api/anon-push-subscribe", asyncHandler(async (req, res) => {
   const { subscription } = req.body ?? {};
-  if (!subscription?.endpoint) return res.status(400).json({ error: "subscription with endpoint required" });
-  try {
-    const { error } = await supabase
-      .from("anon_push_subscriptions")
-      .upsert({ endpoint: subscription.endpoint, subscription }, { onConflict: "endpoint" });
-    if (error) throw new Error(error.message);
-    return res.json({ ok: true });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
-});
+  if (!subscription?.endpoint) throw badRequest("subscription with endpoint required");
+  const { error } = await supabase
+    .from("anon_push_subscriptions")
+    .upsert({ endpoint: subscription.endpoint, subscription }, { onConflict: "endpoint" });
+  if (error) throw new HttpError(500, error.message);
+  res.json({ ok: true });
+}));
 
 export default router;
