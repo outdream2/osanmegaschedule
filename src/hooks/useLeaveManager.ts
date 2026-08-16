@@ -1,7 +1,9 @@
 // src/hooks/useLeaveManager.ts
 // 연차 사용 이력 관리 훅 · StaffManagePage 에서 이동 (god-phase1)
 // #219 · 선택된 직원 · 지정 연도 연차 이력 로드·삭제
+// 2026-08-16 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { api } from "../lib/apiClient";
 
 export interface UsedLeaveItem {
   date: string;
@@ -46,9 +48,8 @@ export function useLeaveManager(
     try {
       const results = await Promise.all(
         Array.from({ length: 12 }, (_, i) => i + 1).map(async (m) => {
-          const res = await fetch(`/api/schedules?year=${year}&month=${m}`);
-          if (!res.ok) return null;
-          return res.json().catch(() => null);
+          try { return (await api.get<any>(`/api/schedules?year=${year}&month=${m}`)).data; }
+          catch { return null; }
         }),
       );
       const items: UsedLeaveItem[] = [];
@@ -92,21 +93,12 @@ export function useLeaveManager(
     if (!await confirm({ message: `${date} 연차 기록을 삭제할까요?\n\n스케줄표(월차)에도 반영됩니다.`, danger: true })) return;
     setDeletingLeaveDate(date);
     try {
-      const res = await fetch(`/api/schedules`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          employeeId: empId,
-          date,
-          type: "",
-          workingHours: "",
-          actualHours: "",
-          memo: "",
-        }),
-      });
-      if (!res.ok) {
-        const b = await res.json().catch(() => ({}));
-        alert(`삭제 실패: ${(b as { error?: string }).error ?? res.statusText}`);
+      try {
+        await api.put(`/api/schedules`, {
+          employeeId: empId, date, type: "", workingHours: "", actualHours: "", memo: "",
+        });
+      } catch (e: any) {
+        alert(`삭제 실패: ${e?.message ?? "네트워크 오류"}`);
         return;
       }
       // 로컬 상태 즉시 반영

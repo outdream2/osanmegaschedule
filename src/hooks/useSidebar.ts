@@ -1,6 +1,8 @@
 // src/hooks/useSidebar.ts
 // 2026-08-11 · 사이드바 V2 · collapsed 상태 · width 드래그 리사이즈 · localStorage 영속화
+// 2026-08-16 · apiClient 마이그레이션
 import { useEffect, useRef, useState, useCallback } from "react";
+import { api } from "../lib/apiClient";
 
 const COLLAPSED_KEY = "sidebar.collapsed";
 const WIDTH_KEY = "sidebar.width";
@@ -132,10 +134,8 @@ async function fetchSidebarEnabled(): Promise<boolean> {
   if (inflight) return inflight;
   inflight = (async () => {
     try {
-      const res = await fetch(`/api/settings?key=${SIDEBAR_ENABLED_KEY}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const body = await res.json();
-      const v = body?.value;
+      const { data } = await api.get<{ value?: unknown }>(`/api/settings?key=${SIDEBAR_ENABLED_KEY}`);
+      const v = data?.value;
       const enabled = typeof v === "boolean" ? v : SIDEBAR_FALLBACK;
       cachedEnabled = enabled;
       return enabled;

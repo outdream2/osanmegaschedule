@@ -6,7 +6,9 @@
 // - 이미 구독된 상태이면 skip (localStorage 로 중복 요청 방지)
 // - 실패해도 앱 동작 방해 X (silent fail)
 
+// 2026-08-16 · apiClient 마이그레이션
 import { useEffect, useRef } from "react";
+import { api } from "../lib/apiClient";
 
 const LS_KEY = "megatown_push_subscribed_auto";
 
@@ -67,14 +69,11 @@ export function usePushSubscription({ employeeId, auto = true }: Params) {
           applicationServerKey: vapidKey,
         });
       }
-      // 서버 저장
-      const res = await fetch("/api/push-subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employeeId, subscription: sub.toJSON() }),
-      });
-      if (!res.ok) {
-        console.warn("[push] 서버 저장 실패:", res.status);
+      // 서버 저장 · apiClient (401 refresh 자동)
+      try {
+        await api.post("/api/push-subscribe", { employeeId, subscription: sub.toJSON() });
+      } catch (e: any) {
+        console.warn("[push] 서버 저장 실패:", e?.message);
         return { ok: false as const, reason: "server_error" };
       }
       // 자동 구독 완료 마킹
