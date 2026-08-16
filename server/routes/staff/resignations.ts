@@ -29,7 +29,9 @@ import { supabase } from "../../../src/supabase/client";
 import { notificationsService } from "../../services/notificationsService";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
+import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
+import { CreateResignationSchema, ReviewResignationSchema } from "../../../src/shared/schemas/resignations";
 
 // ─── Storage 설정 ────────────────────────────────────────────────────────────
 // Supabase 대시보드에서 "resignation-signatures" 버킷을 Public으로 생성 필요
@@ -146,7 +148,7 @@ router.get("/api/resignations/pending-count", asyncHandler(async (_req, res) => 
 }));
 
 // ─── POST · 제출 ──────────────────────────────────────────────────────────
-router.post("/api/resignations", asyncHandler(async (req, res) => {
+router.post("/api/resignations", validateBody(CreateResignationSchema), asyncHandler(async (req, res) => {
   const {
     employee_id,
     employee_name,
@@ -158,11 +160,7 @@ router.post("/api/resignations", asyncHandler(async (req, res) => {
     handover_notes,
     signature_data_url,
     pdf_url,
-  } = req.body ?? {};
-
-  if (!employee_id || !employee_name || !last_work_date || !reason) {
-    throw badRequest("필수 항목이 누락되었습니다 (사원·마지막 근무일·사유).");
-  }
+  } = req.body;
 
   // ── 서명 이미지 · Storage 업로드 (실패해도 제출 계속) ──────────────────
   let signature_url: string | null = null;
@@ -227,11 +225,8 @@ router.post("/api/resignations", asyncHandler(async (req, res) => {
 }));
 
 // ─── PATCH · 승인/반려 ────────────────────────────────────────────────────
-router.patch("/api/resignations/:id", asyncHandler(async (req, res) => {
-  const { status, reject_reason, approved_by, approved_by_id } = req.body ?? {};
-  if (!status || !["approved", "rejected", "withdrawn"].includes(status)) {
-    throw badRequest("status must be 'approved' | 'rejected' | 'withdrawn'");
-  }
+router.patch("/api/resignations/:id", validateBody(ReviewResignationSchema), asyncHandler(async (req, res) => {
+  const { status, reject_reason, approved_by, approved_by_id } = req.body;
 
   const update: Record<string, unknown> = {
     status,
