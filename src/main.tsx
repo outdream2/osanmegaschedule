@@ -1,8 +1,13 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
+import axios from 'axios';
 import App from './App.tsx';
 import { ConfirmProvider } from './hooks/useConfirm';
 import './index.css';
+
+// 2026-08-16 · #112-G · requireAuth 재활성화 후 · 모든 axios 요청 · 인증 쿠키 자동 포함
+//   · same-origin 은 브라우저 기본으로 전송하나 · 명시로 안전 확보 (cross-origin 대비)
+axios.defaults.withCredentials = true;
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
