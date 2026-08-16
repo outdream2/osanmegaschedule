@@ -1,4 +1,4 @@
-// 2026-08-16 · asyncHandler + HttpError + validateBody + shared 스키마
+// 2026-08-17 · asyncHandler + HttpError + validateBody + shared 스키마/DTO
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 import { notificationsService } from "../../services/notificationsService";
@@ -6,6 +6,8 @@ import { asyncHandler } from "../../middleware/asyncHandler";
 import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
 import { CreateReservationSchema } from "../../../src/shared/schemas/reservation";
+import type { ReservationsListResponse } from "../../../src/shared/dtos/reservations";
+import type { OkResponse } from "../../../src/shared/dtos/common";
 
 const router = Router();
 
@@ -15,7 +17,8 @@ router.get("/api/reservations", asyncHandler(async (req, res) => {
   const { data, error } = await supabase
     .from("reservations").select("time, note, purpose, company, contact_name, phone, vendor_id").eq("date", date);
   if (error) throw new HttpError(500, error.message);
-  res.json(data ?? []);
+  const body: ReservationsListResponse = (data ?? []) as any;
+  res.json(body);
 }));
 
 router.post("/api/reservations", validateBody(CreateReservationSchema), asyncHandler(async (req, res) => {
@@ -41,7 +44,8 @@ router.post("/api/reservations", validateBody(CreateReservationSchema), asyncHan
     type: "info",
     push: { url: "/", tag: `resv-${date}-${time}` },
   }).catch(() => null);
-  res.status(201).json({ ok: true });
+  const body: OkResponse = { ok: true };
+  res.status(201).json(body);
 }));
 
 export default router;
