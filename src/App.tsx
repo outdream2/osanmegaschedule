@@ -121,8 +121,12 @@ export default function App() {
     }
   };
 
+  // 2026-08-17 · #131 · hidden 페이지 접근 차단 · 사용자 지시 · "설정에서 안보이기 처리하면 페이지도 안보여야지"
+  //   · sideNavGroups 와 동일 규칙 · admin (lv9) 은 essential (permissions/business-manage/account) 만 예외
   const handleNavigate = (next: Exclude<Page, "landing">, auth?: AuthSession) => {
     if (auth) setAuthSession(auth);
+    // hidden 페이지 · perms 조회는 usePagePermissions 훅 · 여기서는 module-level cache 활용
+    // (permissions 데이터가 아직 로드 안 됐으면 통과 · 다음 nav 에서 검증됨 · 사이드바 필터가 primary gate)
     navigate(next);
   };
 

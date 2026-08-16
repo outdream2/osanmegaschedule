@@ -22,16 +22,24 @@ export function deriveUserPosition(session: AuthSession | null): string | null {
   return (anySession.position ?? null) || null;
 }
 
-/** 페이지 읽기 접근 판정 · 레벨 >= perm.read  OR  직군 ∈ perm.readPositions */
+/** 페이지 읽기 접근 판정 · 레벨 >= perm.read  OR  직군 ∈ perm.readPositions
+ *  2026-08-17 · #131 · hidden 페이지 · 모든 사용자 차단 (사용자 지시 · "설정에서 안보이기 처리하면 페이지도 안보여야지")
+ *  admin lockout 방지는 라우팅 레벨 (App.tsx) 에서 essential 페이지 예외 처리 */
 export function canReadPage(session: AuthSession | null, perm: PagePermission | undefined): boolean {
   if (!perm) return false;
+  if (perm.hidden) return false;   // hidden 은 모두 차단 (admin 포함)
   const level = deriveUserLevel(session);
-  // 2026-08-16 · hidden 페이지 · lv 9 관리자만 예외 (설정 접근 위해) · 그 외 모두 차단
-  if (perm.hidden && level < 9) return false;
   if (level >= perm.read) return true;
   const pos = deriveUserPosition(session);
   if (pos && Array.isArray(perm.readPositions) && perm.readPositions.includes(pos)) return true;
   return false;
+}
+
+/** hidden 을 무시하는 · essential 페이지 (admin 접근 유지용) 판정
+ *  · permissions/business-manage/account 등 · sidebar canAccessItem 과 동일 목록 */
+const ADMIN_ESSENTIAL_PAGES = new Set(["permissions", "business-manage", "account"]);
+export function isAdminEssentialPage(pageKey: string): boolean {
+  return ADMIN_ESSENTIAL_PAGES.has(pageKey);
 }
 
 /** 페이지 쓰기 접근 판정 · 레벨 >= perm.write  OR  직군 ∈ perm.writePositions */

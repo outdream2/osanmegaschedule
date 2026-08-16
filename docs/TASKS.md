@@ -29,6 +29,20 @@
 - EmployeeFormModal · create 모드 · employee_number 자동 생성 로직
 - 규칙 결정 필요 (예: MEGA-YYYY-NNN · 또는 순차번호 등)
 
+### #132 · 연차신청 버튼 · 테두리·여백 반으로 (2026-08-17)
+- 사용자 지시 · "연차신청버튼과 테두리 여백반으로 줄여"
+- 파일: `src/components/LeavePage/LeavePage.tsx` · 연차 신청 form 버튼
+
+### #133 · 랜딩페이지 UI 개선 Phase 5 (2026-08-17)
+- 사용자 재요청 · "랜딩페이지 ui개선"
+- 이전 #130 4 Phase 완료 · 추가 개선 요구
+- 범위: 로그인 카드/모달 통일 · 카카오 채널 카드 · 관리자 헤더 divider · 여백 audit
+
+### #134 · 랜딩페이지 아이콘 리디자인 (2026-08-17)
+- 사용자 지시 · "랜딩페이지 아이콘 안예쁘다"
+- MenuCard 아이콘 · Phosphor icons · size/weight/color 개선
+- 헤더 로고 (Pharmacy cross SVG) · 개선
+
 ### #131 · 페이지설정 · 메뉴 안보이기 (uncheck) 안 됨 · 🐛 버그 (2026-08-17)
 - 사용자 지시 · "페이지설정에서 메뉴 안보이기(uncheck) 안돼"
 - **증상**: PermissionsPage 에서 페이지 · 보기/숨기기 컬럼 체크 해제 반영 안 됨

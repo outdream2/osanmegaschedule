@@ -24,7 +24,9 @@ import multer from "multer";
 import { supabase } from "../../../src/supabase/client";
 import { uploadToDrive } from "../../services/googleDriveService";
 import { asyncHandler } from "../../middleware/asyncHandler";
+import { validateBody } from "../../middleware/zodValidate";
 import { HttpError, badRequest } from "../../middleware/errorHandler";
+import { CreateEmployeeContractSchema } from "../../../src/shared/schemas/employeeContracts";
 // 2026-08-13 · #107 · 계약서 업로드 알림 · 사용자 지시로 제거 (알림 hook 미사용)
 
 const router = Router();
@@ -222,29 +224,24 @@ router.get("/api/employee-contracts", asyncHandler(async (req, res) => {
 }));
 
 // ─── POST · 승인 · PDF 업로드 ──────────────────────────────────────────────
-router.post("/api/employee-contracts", asyncHandler(async (req, res) => {
-  const b = req.body ?? {};
-  const employeeId    = Number.isFinite(Number(b.employee_id)) ? Number(b.employee_id) : null;
-  const employeeName  = String(b.employee_name ?? "").trim();
-  const contractType  = b.contract_type ? String(b.contract_type) : null;
-  const startDate     = b.start_date ? String(b.start_date) : null;   // YYYY-MM-DD or null
-  const endDate       = b.end_date   ? String(b.end_date)   : null;
-  const dataUrl       = String(b.pdf_data_url ?? "");
-  const approvedBy    = b.approved_by ? String(b.approved_by) : null;
-  const approvedById  = Number.isFinite(Number(b.approved_by_id)) ? Number(b.approved_by_id) : null;
-  // 신규 · employees 동기 갱신용 필드 (하위 호환 · 없으면 start_date/end_date 재사용)
-  const contractStart      = b.contract_start ? String(b.contract_start) : startDate;
-  const contractEnd        = b.contract_end !== undefined ? (b.contract_end ? String(b.contract_end) : null) : endDate;
+router.post("/api/employee-contracts", validateBody(CreateEmployeeContractSchema), asyncHandler(async (req, res) => {
+  const b = req.body;
+  const employeeId    = b.employee_id ? Number(b.employee_id) || null : null;
+  const employeeName  = b.employee_name.trim();
+  const contractType  = b.contract_type ?? null;
+  const startDate     = b.start_date ?? null;
+  const endDate       = b.end_date ?? null;
+  const dataUrl       = b.pdf_data_url;
+  const approvedBy    = b.approved_by ?? null;
+  const approvedById  = b.approved_by_id ? Number(b.approved_by_id) || null : null;
+  const contractStart      = b.contract_start ?? startDate;
+  const contractEnd        = b.contract_end !== undefined ? (b.contract_end ?? null) : endDate;
   const probationEndDate   = b.probation_end_date !== undefined
-    ? (b.probation_end_date ? String(b.probation_end_date) : null)
+    ? (b.probation_end_date ?? null)
     : undefined;
-  // 2026-08-10 · B Step 3 · 근로정보 · 사번
   const employeeNumber     = b.employee_number ? String(b.employee_number).trim() : null;
-  const workingHours       = b.working_hours ? String(b.working_hours) : null;
-  const annualLeaveDays    = Number.isFinite(Number(b.annual_leave_days)) ? Number(b.annual_leave_days) : null;
-
-  if (!employeeName) throw badRequest("employee_name required");
-  if (!dataUrl)      throw badRequest("pdf_data_url required (data:application/pdf;base64,...)");
+  const workingHours       = b.working_hours ?? null;
+  const annualLeaveDays    = b.annual_leave_days != null ? Number(b.annual_leave_days) || null : null;
 
   const parsed = parseDataUrl(dataUrl);
   if (!parsed) throw badRequest("invalid pdf_data_url");
