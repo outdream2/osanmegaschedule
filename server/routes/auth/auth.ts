@@ -139,6 +139,15 @@ router.post("/api/auth/set-password", async (req, res) => {
   }
 });
 
+// 2026-08-16 · #112-S10 · Refresh · access 만료 시 · refresh 로 새 access 재발급
+//   · 클라이언트 axios interceptor · 401 감지 시 · POST /api/auth/refresh 호출 · 성공 시 원 요청 재시도
+router.post("/api/auth/refresh", async (req, res) => {
+  const { refreshAccessToken } = await import("../../middleware/requireAuth");
+  const payload = refreshAccessToken(req, res);
+  if (!payload) return res.status(401).json({ error: "refresh 토큰 만료 · 재로그인 필요", code: "REFRESH_EXPIRED" });
+  return res.status(200).json({ id: payload.sub, name: payload.name, role: payload.role, level: payload.level });
+});
+
 // 로그아웃 — 서버 세션 쿠키 제거
 router.post("/api/auth/logout", (_req, res) => {
   clearToken(res);

@@ -17,10 +17,16 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "";
-const COOKIE_NAME = "mt_auth";
-// 2026-08-16 · 사용자 지시 · 24h → 1h (보안 강화 · 만료 시 자동 로그아웃)
-const DEFAULT_MAX_AGE = 60 * 60;          // 1h  (seconds)
-const REMEMBER_MAX_AGE = 30 * 24 * 60 * 60; // 30d
+const COOKIE_NAME = "mt_auth";               // Access token (짧게 · API 호출용)
+const REFRESH_COOKIE_NAME = "mt_refresh";    // 2026-08-16 · #112-S10 · Refresh token (길게 · access 갱신용)
+// 2026-08-16 · #112-S10 · Access + Refresh 분리
+//   Access · 15분 (짧게 · 탈취 시 노출 최소)
+//   Refresh · 30일 (길게 · 자동 갱신 · 사용자 편의)
+//   rememberMe · Refresh 30일 유지 (기본과 동일 · 명시적 · 향후 90일로 확장 가능)
+const ACCESS_MAX_AGE = 15 * 60;              // 15분 (seconds)
+const REFRESH_MAX_AGE = 30 * 24 * 60 * 60;   // 30일
+const DEFAULT_MAX_AGE = ACCESS_MAX_AGE;      // 하위호환 export
+const REMEMBER_MAX_AGE = REFRESH_MAX_AGE;
 
 if (!JWT_SECRET) {
   console.warn(
@@ -35,39 +41,64 @@ export interface JwtPayload {
   role: string;
   level: number;
   rememberMe?: boolean;
+  /** 2026-08-16 · S10 · "refresh" 이면 refresh token · 그 외 access */
+  typ?: "access" | "refresh";
 }
 
 // ─────────────────────────────────────────────────
-// 헬퍼: 토큰 발급
+// 헬퍼: 토큰 발급 · 2026-08-16 · Access + Refresh 두 쿠키 동시 발급
+//   Access · 15분 · API 호출용 (mt_auth)
+//   Refresh · 30일 · /api/auth/refresh 로 access 재발급 (mt_refresh)
 // ─────────────────────────────────────────────────
 export function issueToken(
   res: Response,
   payload: JwtPayload,
-  rememberMe = false,
+  _rememberMe = false,
 ): string {
   if (!JWT_SECRET) throw new Error("JWT_SECRET not configured");
-  // 2026-08-16 · 사용자 지시 · 기본 세션 1h · rememberMe 는 30일 유지
-  const expiresIn = rememberMe ? "30d" : "1h";
-  const maxAge = rememberMe ? REMEMBER_MAX_AGE : DEFAULT_MAX_AGE;
-  const token = jwt.sign(payload, JWT_SECRET, {
-    algorithm: "HS256",
-    expiresIn,
+  const accessPayload: JwtPayload = { ...payload, typ: "access" };
+  const refreshPayload: JwtPayload = { ...payload, typ: "refresh" };
+  const accessToken = jwt.sign(accessPayload, JWT_SECRET, { algorithm: "HS256", expiresIn: "15m" });
+  const refreshToken = jwt.sign(refreshPayload, JWT_SECRET, { algorithm: "HS256", expiresIn: "30d" });
+  const secure = process.env.NODE_ENV === "production";
+  res.cookie(COOKIE_NAME, accessToken, {
+    httpOnly: true, secure, sameSite: "lax",
+    maxAge: ACCESS_MAX_AGE * 1000, path: "/",
   });
-  res.cookie(COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: maxAge * 1000, // ms
-    path: "/",
+  res.cookie(REFRESH_COOKIE_NAME, refreshToken, {
+    httpOnly: true, secure, sameSite: "lax",
+    maxAge: REFRESH_MAX_AGE * 1000, path: "/api/auth", // refresh 는 auth 경로만
   });
-  return token;
+  return accessToken;
+}
+
+/** 2026-08-16 · S10 · Refresh token 만 검증 → 새 access token 재발급 */
+export function refreshAccessToken(req: Request, res: Response): JwtPayload | null {
+  if (!JWT_SECRET) return null;
+  const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME] as string | undefined;
+  if (!refreshToken) return null;
+  try {
+    const decoded = jwt.verify(refreshToken, JWT_SECRET, { algorithms: ["HS256"] }) as unknown as JwtPayload;
+    if (decoded.typ !== "refresh") return null;
+    // 새 access token 발급 (기존 refresh 유지 · rolling window)
+    const accessPayload: JwtPayload = { sub: decoded.sub, name: decoded.name, role: decoded.role, level: decoded.level, typ: "access" };
+    const accessToken = jwt.sign(accessPayload, JWT_SECRET, { algorithm: "HS256", expiresIn: "15m" });
+    res.cookie(COOKIE_NAME, accessToken, {
+      httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax",
+      maxAge: ACCESS_MAX_AGE * 1000, path: "/",
+    });
+    return accessPayload;
+  } catch {
+    return null;
+  }
 }
 
 // ─────────────────────────────────────────────────
-// 헬퍼: 쿠키 제거 (로그아웃)
+// 헬퍼: 쿠키 제거 (로그아웃) · access + refresh 둘 다
 // ─────────────────────────────────────────────────
 export function clearToken(res: Response): void {
   res.clearCookie(COOKIE_NAME, { path: "/" });
+  res.clearCookie(REFRESH_COOKIE_NAME, { path: "/api/auth" });
 }
 
 // ─────────────────────────────────────────────────

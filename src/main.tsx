@@ -9,6 +9,39 @@ import './index.css';
 //   · same-origin 은 브라우저 기본으로 전송하나 · 명시로 안전 확보 (cross-origin 대비)
 axios.defaults.withCredentials = true;
 
+// 2026-08-16 · #112-S10 · Access token 만료 (401) → Refresh 자동 갱신 → 원 요청 재시도
+//   · Refresh 도 실패 (REFRESH_EXPIRED) → 재로그인 필요 · 앱이 401 로 자동 로그아웃 처리 (기존 로직)
+let refreshInFlight: Promise<boolean> | null = null;
+async function tryRefresh(): Promise<boolean> {
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = (async () => {
+    try {
+      const res = await fetch("/api/auth/refresh", { method: "POST", credentials: "include" });
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      setTimeout(() => { refreshInFlight = null; }, 0);
+    }
+  })();
+  return refreshInFlight;
+}
+axios.interceptors.response.use(
+  (r) => r,
+  async (error) => {
+    const status = error?.response?.status;
+    const config = error?.config;
+    const url: string = config?.url ?? "";
+    // /api/auth/* 는 refresh 시도 X (무한 루프 방지)
+    if (status === 401 && config && !config.__retried && !url.startsWith("/api/auth/")) {
+      config.__retried = true;
+      const ok = await tryRefresh();
+      if (ok) return axios(config); // 새 access 로 원 요청 재시도
+    }
+    return Promise.reject(error);
+  },
+);
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(console.error);
