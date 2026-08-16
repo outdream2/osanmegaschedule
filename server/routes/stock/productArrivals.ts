@@ -10,21 +10,22 @@ import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
+import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
+import { CreateProductArrivalSchema } from "../../../src/shared/schemas/productArrivals";
 
 const router = Router();
 
 // POST /api/product-arrivals
 // body: { checked_by, checked_by_id?, final_decision, items: [{product_code, product_name, supplier, qty, status}] }
-router.post("/api/product-arrivals", asyncHandler(async (req, res) => {
-  const body = req.body ?? {};
-  const items: any[] = Array.isArray(body.items) ? body.items : [];
-  if (items.length === 0) throw badRequest("items 필수");
+router.post("/api/product-arrivals", validateBody(CreateProductArrivalSchema), asyncHandler(async (req, res) => {
+  const body = req.body;
+  const items = body.items;
 
-  const checked_by = String(body.checked_by ?? "").trim() || "익명";
-  const checked_by_id = Number(body.checked_by_id ?? 0) || null;
-  const final_decision = String(body.final_decision ?? "").trim() || null;
-  const note = String(body.note ?? "").trim() || null;
+  const checked_by = body.checked_by || "익명";
+  const checked_by_id = body.checked_by_id ? Number(body.checked_by_id) || null : null;
+  const final_decision = body.final_decision || null;
+  const note = body.note || null;
 
   // 카운트 계산
   let match = 0, mismatch = 0, expiring = 0, totalQty = 0;
