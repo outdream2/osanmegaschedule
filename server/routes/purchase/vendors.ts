@@ -1,4 +1,4 @@
-// 2026-08-16 · asyncHandler + HttpError + shared DTO 프레임워크
+// 2026-08-17 · asyncHandler + HttpError + shared DTO/Schema 프레임워크
 import { Router } from "express";
 import express from "express";
 import XLSX from "xlsx";
@@ -7,8 +7,10 @@ import { supabase } from "../../../src/supabase/client";
 import { queryPurchaseDetails } from "../../utils/purchaseDetailsQuery";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
+import { validateBody } from "../../middleware/zodValidate";
 import { HttpError, badRequest, forbidden } from "../../middleware/errorHandler";
 import type { VendorsListResponse } from "../../../src/shared/dtos/vendors";
+import { CreateVendorSchema } from "../../../src/shared/schemas/vendors";
 
 const router = Router();
 
@@ -216,9 +218,8 @@ router.get("/api/vendors", asyncHandler(async (req, res) => {
 }));
 
 // 거래처 등록 (관리자)
-router.post("/api/vendors", asyncHandler(async (req, res) => {
-  const { company_name, contact_name, phone, email, category, note, business_number } = req.body ?? {};
-  if (!company_name?.trim()) throw badRequest("거래처명은 필수입니다.");
+router.post("/api/vendors", validateBody(CreateVendorSchema), asyncHandler(async (req, res) => {
+  const { company_name, contact_name, phone, email, category, note, business_number } = req.body;
   const cleanPhone = phone ? String(phone).replace(/[^0-9]/g, "") : null;
   const cleanBizNum = business_number ? String(business_number).replace(/[^0-9]/g, "") : null;
   const validBizNum = cleanBizNum && cleanBizNum.length === 10 ? cleanBizNum : null;

@@ -336,7 +336,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                   onDragEnd={() => setBreakChipDrag(null)}
                   onClick={e => { e.stopPropagation(); setCellPicker({ type: dropKind, slot: slotKey }); }}
                   title={w.emp.position.includes("캐셔") && w.emp.position.includes("물류") ? "캐셔 겸직 · 드래그로 순서 변경" : "드래그로 순서 변경 · 탭하여 편집"}
-                  style={{ backgroundColor: c.chipBg, color: w.emp.position === "약사" ? "#9333ea" : c.chipText, borderColor: c.chipBorder, opacity: isDragging ? 0.4 : 1 }}
+                  style={{ backgroundColor: c.chipBg, color: w.emp.position === "약사" ? "#2563eb" : c.chipText, borderColor: c.chipBorder, opacity: isDragging ? 0.4 : 1 }}
                   className={`relative w-full text-center rounded text-[13px] border transition leading-none py-px cursor-grab active:cursor-grabbing hover:opacity-60 inline-flex items-center justify-center gap-0.5 whitespace-nowrap overflow-hidden ${w.emp.position === "약사" ? "font-black" : "font-bold"}`}
                 >
                   <span className="truncate">{w.emp.name}</span>
@@ -530,7 +530,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                               document.addEventListener("touchend", onEnd);
                             }}
                             title="드래그: 다른 구역으로 이동 | 클릭: 제거"
-                            style={{ backgroundColor: c.chipBg, color: w.emp.position === "약사" ? "#9333ea" : c.chipText, borderColor: c.chipBorder, touchAction: "none" }}
+                            style={{ backgroundColor: c.chipBg, color: w.emp.position === "약사" ? "#2563eb" : c.chipText, borderColor: c.chipBorder, touchAction: "none" }}
                             className={`relative px-1 py-px rounded text-[14px] border transition select-none cursor-grab hover:opacity-70 inline-flex items-center gap-0.5 whitespace-nowrap ${w.emp.position === "약사" ? "font-black" : "font-bold"}`}
                           >
                             {w.emp.name}

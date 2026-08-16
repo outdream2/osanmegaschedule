@@ -1,4 +1,4 @@
-// 2026-08-16 · asyncHandler + HttpError + shared DTO 프레임워크
+// 2026-08-17 · asyncHandler + HttpError + shared DTO/Schema 프레임워크
 import { Router } from "express";
 import { scheduleController } from "../../controllers/scheduleController";
 import { supabase } from "../../../src/supabase/client";
@@ -8,15 +8,17 @@ import multer from "multer";
 import { uploadToDrive, deleteFromDrive, extractDriveFileId, isDriveReady } from "../../services/googleDriveService";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
+import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
 import type { NextEmployeeNumberResponse } from "../../../src/shared/dtos/employees";
+import { UpsertScheduleSchema, BatchScheduleSchema, CopyScheduleSchema } from "../../../src/shared/schemas/schedules";
 
 const router = Router();
 
 router.get("/api/schedules", (req, res) => scheduleController.getSchedules(req, res));
-router.put("/api/schedules", (req, res) => scheduleController.updateSchedule(req, res));
-router.post("/api/schedules/batch", (req, res) => scheduleController.batchUpdateSchedules(req, res));
-router.post("/api/schedules/copy", (req, res) => scheduleController.copySchedules(req, res));
+router.put("/api/schedules", validateBody(UpsertScheduleSchema), (req, res) => scheduleController.updateSchedule(req, res));
+router.post("/api/schedules/batch", validateBody(BatchScheduleSchema), (req, res) => scheduleController.batchUpdateSchedules(req, res));
+router.post("/api/schedules/copy", validateBody(CopyScheduleSchema), (req, res) => scheduleController.copySchedules(req, res));
 router.post("/api/employees", (req, res) => scheduleController.createEmployee(req, res));
 // #122 · 신규 사번 자동 생성 · MAX + 1 · 3자리 zero-pad
 router.get("/api/employees/next-number", asyncHandler(async (_req, res) => {

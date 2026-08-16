@@ -54,7 +54,8 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
               // · 진열 = position 진열
               // · 매장 = 창고 + 진열 통합 (약사 외 매장 근무자 · 캐셔 포함)
               { key: "전체", label: "전체", color: "text-indigo-600", count: employees.length },
-              { key: "약사", label: "약사", color: "text-violet-600", count: employees.filter(e => e.position === "약사").length },
+              // 2026-08-17 · 사용자 요청 · 약사 보라 → 파랑 계열 (blue-600 · 창고 sky 와 구분)
+              { key: "약사", label: "약사", color: "text-blue-600", count: employees.filter(e => e.position === "약사").length },
               { key: "사원", label: "사원", color: "text-amber-600", count: employees.filter(e => e.position === "캐셔" || e.position === "사원").length },
               { key: "창고", label: "창고", color: "text-sky-600", count: employees.filter(e => e.position !== "약사" && (e.position.includes("물류") || e.position === "창고")).length },
               { key: "매장", label: "매장", color: "text-emerald-600", count: employees.filter(e => e.position !== "약사" && e.workplace === "매장").length },
