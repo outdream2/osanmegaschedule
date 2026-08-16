@@ -1,4 +1,6 @@
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useEffect, useState, useCallback } from "react";
+import { api, ApiError } from "../../lib/apiClient";
 import {
   CalendarDays, Clock, CheckCircle2, XCircle,
   RefreshCw, Plus, X, Trash2, ChevronDown, Loader2,
@@ -97,26 +99,25 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
     if (!employeeId) return;
     setMyLoading(true);
     try {
-      const res = await fetch(`/api/leave-requests?employeeId=${employeeId}`);
-      setMyRequests(res.ok ? await res.json() : []);
+      const { data } = await api.get<any[]>(`/api/leave-requests?employeeId=${employeeId}`);
+      setMyRequests(Array.isArray(data) ? data : []);
     } catch { setMyRequests([]); }
     finally { setMyLoading(false); }
   }, [employeeId]);
 
-  // 2026-08-12 · 잔여 연차 로드
   const loadBalance = useCallback(async () => {
     if (!employeeId) return;
     try {
-      const res = await fetch(`/api/leave-balance?employeeId=${employeeId}`);
-      if (res.ok) setBalance(await res.json());
+      const { data } = await api.get<any>(`/api/leave-balance?employeeId=${employeeId}`);
+      setBalance(data);
     } catch { /* silent */ }
   }, [employeeId]);
 
   const loadAllRequests = useCallback(async () => {
     setAllLoading(true);
     try {
-      const res = await fetch("/api/leave-requests?all=true");
-      setAllRequests(res.ok ? await res.json() : []);
+      const { data } = await api.get<any[]>("/api/leave-requests?all=true");
+      setAllRequests(Array.isArray(data) ? data : []);
     } catch { setAllRequests([]); }
     finally { setAllLoading(false); }
   }, []);
@@ -134,27 +135,22 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const res = await fetch("/api/leave-requests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          employee_id: employeeId,
-          employee_name: employeeName,
-          leave_type: formType,
-          start_date: formStart,
-          end_date: formEnd,
-          reason: formReason,
-        }),
+      await api.post("/api/leave-requests", {
+        employee_id: employeeId,
+        employee_name: employeeName,
+        leave_type: formType,
+        start_date: formStart,
+        end_date: formEnd,
+        reason: formReason,
       });
-      if (!res.ok) { const e = await res.json(); throw new Error(e.error ?? "오류 발생"); }
       setShowForm(false);
       setFormType(LEAVE_TYPES[0]);
       setFormStart(today());
       setFormEnd(today());
       setFormReason("");
       await loadMyRequests();
-    } catch (err: any) {
-      setSubmitError(err.message);
+    } catch (err: unknown) {
+      setSubmitError(err instanceof ApiError ? err.message : (err as any)?.message ?? "오류 발생");
     } finally { setSubmitting(false); }
   };
 
@@ -162,28 +158,24 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
   const handleCancel = async (id: string) => {
     setCancellingId(id);
     try {
-      await fetch(`/api/leave-requests/${id}`, { method: "DELETE" });
+      await api.del(`/api/leave-requests/${id}`);
       setMyRequests(prev => prev.filter(r => r.id !== id));
-    } finally { setCancellingId(null); }
+    } catch { /* silent · UI 이미 유지 */ }
+    finally { setCancellingId(null); }
   };
 
   // ── Approve / Reject (manager) ──────────────────────────────────────────────
   const handleReview = async (id: string, status: "approved" | "rejected") => {
     setProcessingId(id);
     try {
-      const res = await fetch(`/api/leave-requests/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status, reviewer_note: reviewNote }),
-      });
-      if (res.ok) {
-        setAllRequests(prev => prev.map(r =>
-          r.id === id ? { ...r, status, reviewer_note: reviewNote, reviewed_at: new Date().toISOString() } : r
-        ));
-        setReviewingId(null);
-        setReviewNote("");
-      }
-    } finally { setProcessingId(null); }
+      await api.put(`/api/leave-requests/${id}`, { status, reviewer_note: reviewNote });
+      setAllRequests(prev => prev.map(r =>
+        r.id === id ? { ...r, status, reviewer_note: reviewNote, reviewed_at: new Date().toISOString() } : r,
+      ));
+      setReviewingId(null);
+      setReviewNote("");
+    } catch { /* silent · UI 이미 유지 */ }
+    finally { setProcessingId(null); }
   };
 
   const pending = allRequests.filter(r => r.status === "pending");

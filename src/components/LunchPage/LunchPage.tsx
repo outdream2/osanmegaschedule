@@ -1,4 +1,6 @@
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { api, ApiError } from "../../lib/apiClient";
 import { UtensilsCrossed, Clock, RefreshCw, Users, ChevronLeft, ChevronRight, Stethoscope, UserRound, Coffee } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
@@ -175,11 +177,8 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
   //     - rest_slots: 시간대별 그룹 배정 · 구역맵과 함께 저장 (구역별)
   //   실수로 같이 편집하지 않도록 UI 에서 상호 배타적 라우팅 필요 (관리자 안내).
   const saveAssignments = async (next: BreakAssignment[]) => {
-    await fetch("/api/settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key: `break_timeline_${selectedDate}`, value: next }),
-    });
+    try { await api.post("/api/settings", { key: `break_timeline_${selectedDate}`, value: next }); }
+    catch { /* silent · UI 이미 반영 */ }
   };
 
   useEffect(() => { loadLunch(); loadBreakData(); }, [loadLunch, loadBreakData]);
@@ -190,28 +189,25 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch("/api/lunch-requests", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employee_id: employeeId, employee_name: employeeName, date: selectedDate, eating, memo }),
+      await api.put("/api/lunch-requests", {
+        employee_id: employeeId, employee_name: employeeName, date: selectedDate, eating, memo,
       });
-      const d = await safeJson(res);
-      if (!res.ok) throw new Error(d.error ?? "신청 실패");
       await loadLunch();
       setMemo("");
-    } catch (e: any) { setError(e.message); }
-    finally { setSubmitting(false); }
+    } catch (e: unknown) {
+      setError(e instanceof ApiError ? e.message : (e as any)?.message ?? "신청 실패");
+    } finally { setSubmitting(false); }
   };
 
   const cancel = async () => {
     if (!employeeId || !myRequest || submitting) return;
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/lunch-requests?employee_id=${employeeId}&date=${selectedDate}`, { method: "DELETE" });
-      if (!res.ok) { const d = await safeJson(res); throw new Error(d.error ?? "취소 실패"); }
+      await api.del(`/api/lunch-requests?employee_id=${employeeId}&date=${selectedDate}`);
       await loadLunch();
-    } catch (e: any) { setError(e.message); }
-    finally { setSubmitting(false); }
+    } catch (e: unknown) {
+      setError(e instanceof ApiError ? e.message : (e as any)?.message ?? "취소 실패");
+    } finally { setSubmitting(false); }
   };
 
   // ── 휴게 드래그 & 드롭 ───────────────────────────────────
