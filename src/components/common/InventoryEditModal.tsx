@@ -3,7 +3,9 @@
 // zone별 저장: POST /api/inventory-checks (모든 필드 포함 · 해당 zone 만 newTotal)
 // 저장 완료 후: CustomEvent "inventory-checks-updated" dispatch
 
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useState } from "react";
+import { api } from "../../lib/apiClient";
 import { Modal } from "./Modal";
 import { InventoryEditPanel, type ZoneKey } from "./InventoryEditPanel";
 import type { CurrentValues } from "./InventoryEditPanel";
@@ -89,35 +91,21 @@ export const InventoryEditModal: React.FC<InventoryEditModalProps> = ({
     else if (zone === "s3") { next.s3 = newTotal; if (zoneLabel !== undefined) next.s3z = zoneLabel ?? null; }
 
     try {
-      const res = await fetch("/api/inventory-checks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          product_code:     productCode,
-          product_name:     productName,
-          checked_by:       checkedBy ?? "",
-          warehouse1_stock: next.w1,
-          warehouse2_stock: next.w2,
-          store_stock:      next.s1,   // 매장1
-          store_stock_2:    next.s2,   // 매장2
-          store3_stock:     next.s3,   // 매장3
-          store1_zone:      next.s1z,
-          store2_zone:      next.s2z,
-          store3_zone:      next.s3z,
-          // 레거시 mirror
-          warehouse_stock:  next.w1,
-        }),
+      await api.post("/api/inventory-checks", {
+        product_code:     productCode,
+        product_name:     productName,
+        checked_by:       checkedBy ?? "",
+        warehouse1_stock: next.w1,
+        warehouse2_stock: next.w2,
+        store_stock:      next.s1,
+        store_stock_2:    next.s2,
+        store3_stock:     next.s3,
+        store1_zone:      next.s1z,
+        store2_zone:      next.s2z,
+        store3_zone:      next.s3z,
+        warehouse_stock:  next.w1, // 레거시 mirror
       });
-      if (!res.ok) {
-        const b: unknown = await res.json().catch(() => ({}));
-        const errMsg = (b != null && typeof b === "object" && "error" in b && typeof (b as { error: unknown }).error === "string")
-          ? (b as { error: string }).error
-          : `저장 실패 (${res.status})`;
-        throw new Error(errMsg);
-      }
-      // 성공: currentValues 업데이트 (Panel 의 현재값 표시 갱신)
       setCurrentValues(next);
-      // 다른 탭/컴포넌트에 재조회 트리거
       window.dispatchEvent(new CustomEvent("inventory-checks-updated"));
       onSaved?.();
     } catch (e: unknown) {

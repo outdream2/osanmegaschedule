@@ -3,7 +3,9 @@
 // 구성: 모바일fullscreen헤더 + 상단 ProductInfoCard + 기간 재고 흐름 차트 + 하단 ProductInfoCard(메타)
 // 사용처: StockManagePage(flow/low/diff/product/supplier), SalesTrendPage(supplier/loss), OrderManagePage(order/need)
 
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useEffect, useRef, useState } from "react";
+import { api } from "../../lib/apiClient";
 import { X, Package, TrendingUp, ChevronRight, ChevronDown, Building2, ClipboardList, History } from "lucide-react";
 import { ProductInfoCard, PurchaseHistorySection } from "../ScanPage/ProductInfoCard";
 import { type ProductInfo } from "../../lib/productsCache";
@@ -68,15 +70,14 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
         const params = new URLSearchParams({ code: productCode });
         if (season) params.set("season", season);
         else params.set("months", "6");
-        const r = await fetch(`/api/sales-trend/product?${params}`);
-        if (!r.ok) return;
-        const data = await r.json();
-        const fetched: PeriodRow[] = Array.isArray(data) ? data : (data.rows ?? []);
+        const { data } = await api.get<any>(`/api/sales-trend/product?${params}`);
+        const fetched: PeriodRow[] = Array.isArray(data) ? data : (data?.rows ?? []);
         if (!cancelled) {
           cache.current.set(cacheKey, fetched);
           setRows(fetched);
         }
-      } finally { if (!cancelled) setLoading(false); }
+      } catch { /* silent · 실패 시 빈 배열 유지 */ }
+      finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
   }, [productCode, season]);

@@ -4,7 +4,9 @@
 // - ON: 브라우저 팝업 → 권한 요청 → /api/push-subscribe 호출
 // - OFF: 서버에 push_subscription 삭제 요청 + 로컬 unsubscribe
 
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useEffect, useState, useCallback } from "react";
+import { api } from "../lib/apiClient";
 import { BellRing, BellOff } from "lucide-react";
 import { usePushSubscription } from "../hooks/usePushSubscription";
 import type { AuthSession } from "../types";
@@ -58,11 +60,8 @@ export const NotificationToggle: React.FC<Props> = ({ authSession }) => {
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
       if (sub) await sub.unsubscribe().catch(() => null);
-      await fetch("/api/push-subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employeeId, subscription: null }),
-      }).catch(() => null);
+      try { await api.post("/api/push-subscribe", { employeeId, subscription: null }); }
+      catch { /* silent · 서버 저장 실패 무시 */ }
       try { localStorage.removeItem("megatown_push_subscribed_auto"); } catch { /* ignore */ }
       setStatus("off");
     } finally { setBusy(false); }

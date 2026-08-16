@@ -1,5 +1,7 @@
 // src/components/NotificationBell.tsx
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import { api } from "../lib/apiClient";
 import { TIMING } from "../constants/timing";
 import { Bell, BellOff, CheckCheck, X, Info, AlertTriangle, CheckCircle, AlertCircle } from "lucide-react";
 import type { AuthSession } from "../types";
@@ -100,22 +102,18 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
     if (!employeeId) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/notifications?employeeId=${employeeId}&limit=30`);
-      if (res.ok) {
-        const list = (await res.json()) as Notification[];
-        // 신규 알림 감지 (이전 최대 id 보다 큰 알림이 있으면 신호)
-        const maxId = list.reduce((m, n) => Math.max(m, n.id), 0);
-        if (prevMaxIdRef.current > 0 && maxId > prevMaxIdRef.current) {
-          setJustArrived(true);
-          playChime();
-          setTimeout(() => setJustArrived(false), TIMING.TOAST_LONG);
-        }
-        prevMaxIdRef.current = Math.max(prevMaxIdRef.current, maxId);
-        setNotifications(list);
+      const { data: list } = await api.get<Notification[]>(`/api/notifications?employeeId=${employeeId}&limit=30`);
+      const arr = Array.isArray(list) ? list : [];
+      const maxId = arr.reduce((m, n) => Math.max(m, n.id), 0);
+      if (prevMaxIdRef.current > 0 && maxId > prevMaxIdRef.current) {
+        setJustArrived(true);
+        playChime();
+        setTimeout(() => setJustArrived(false), TIMING.TOAST_LONG);
       }
-    } finally {
-      setLoading(false);
-    }
+      prevMaxIdRef.current = Math.max(prevMaxIdRef.current, maxId);
+      setNotifications(arr);
+    } catch { /* silent · polling 실패 무시 */ }
+    finally { setLoading(false); }
   }, [employeeId, playChime]);
 
   // Initial fetch + poll every 20 seconds (기존 60→20 으로 반응성 강화)
@@ -138,17 +136,13 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
 
   const markRead = async (id: number) => {
     setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
-    await fetch(`/api/notifications/${id}/read`, { method: "PATCH" });
+    try { await api.patch(`/api/notifications/${id}/read`); } catch { /* silent · optimistic UI 유지 */ }
   };
 
   const markAllRead = async () => {
     if (!employeeId || unreadCount === 0) return;
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    await fetch("/api/notifications/read-all", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ employeeId }),
-    });
+    try { await api.post("/api/notifications/read-all", { employeeId }); } catch { /* silent */ }
   };
 
   if (!employeeId) return null;

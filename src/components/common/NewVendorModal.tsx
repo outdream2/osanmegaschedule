@@ -6,7 +6,9 @@
 // 필드: 회사명(필수) · 담당자 · 전화 · 이메일 · 카테고리 · 사업자번호 · 비고
 // 저장: POST /api/vendors · 성공 시 window "vendors-changed" 이벤트 dispatch (캐시 무효화)
 
+// 2026-08-17 · apiClient 마이그레이션
 import { useState } from "react";
+import { api } from "../../lib/apiClient";
 import { X, Loader2, Building2, Save } from "lucide-react";
 
 interface NewVendorModalProps {
@@ -34,26 +36,17 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
     if (!companyName.trim()) { setErr("회사명은 필수입니다"); return; }
     setSaving(true);
     try {
-      const res = await fetch("/api/vendors", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          company_name: companyName.trim(),
-          category: category || null,
-          contact_name: contactName.trim() || null,
-          phone: phone.trim() || null,
-          email: email.trim() || null,
-          business_number: businessNumber.trim() || null,
-          note: note.trim() || null,
-        }),
+      const { data: saved } = await api.post<unknown>("/api/vendors", {
+        company_name: companyName.trim(),
+        category: category || null,
+        contact_name: contactName.trim() || null,
+        phone: phone.trim() || null,
+        email: email.trim() || null,
+        business_number: businessNumber.trim() || null,
+        note: note.trim() || null,
       });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j?.error ?? `저장 실패 (${res.status})`);
-      }
-      const saved = await res.json();
       try { window.dispatchEvent(new CustomEvent("vendors-changed")); } catch { /* silent */ }
-      onSaved?.(saved);
+      onSaved?.(saved as any);
       onClose();
     } catch (e: any) {
       setErr(e?.message ?? "저장 실패");
