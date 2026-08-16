@@ -22,10 +22,6 @@
   3. 전체 리스트 · 바코드 스캐너 연결? 별도 리스트?
   4. 합산 버튼 · 표시만? 서버 재고 업데이트?
 
-### #96 · 랜딩 거래처 카드 관리자 접근 방식
-- 현재 관리자 노출 · `disabled={!vendorSelf}` 로 클릭 불가
-- **결정 필요**: A1 (매장>공급사 이동) / A2 (vendor 선택 모달) / A3 (원복 · isVendor 만)
-
 ### #109 Phase B · 색상 트리밍 (Phase A 후속 · 사용자 재검토 대기)
 - violet/purple/sky · badge 전용으로 축소
 - 카테고리 배지·차트 색상 · 유지
@@ -33,20 +29,17 @@
 
 ## 🟡 자율진행 가능 (규모/위험 명시 · 사용자 승인 시 착수)
 
-### #101 · 직군 설정 삭제·수정 시 employees 데이터 보호
-- **파일**: `src/components/PositionsSettingsPage/...`
-- 삭제 · [재매핑] 다이얼로그 · 이름 변경 · employees 참조 자동 rename (transaction) · 완전 삭제 · orphan 방지
-- 위험도: 중 · DB 트랜잭션 · rollback 안전
-
 ### #90 · ContractWriterPage · JOB_CATEGORIES → settings.wageRates 자동 파생
 - **파일**: `src/components/ContractWriterPage/ContractWriterPage.tsx:3097`
 - 하드코딩 `["약사","매장","창고","기타"]` → wageRates 동적
 - 위험도: 높음 · 계약서 렌더·wageRates 저장 구조 연동
 
-### #91 · SchedulePage · position 문자열 매칭 → settings 기반
-- **파일**: `src/components/SchedulePage/SchedulePage.tsx:87-97`
-- `position === "약사"/"물류"` 하드코딩 → settings.positions 매칭
-- 위험도: 중 · 스케줄 시간 계산 로직
+### #91 · SchedulePage · position 문자열 매칭 → settings 기반 (재검토 필요)
+- **파일**: `src/components/SchedulePage/SchedulePage.tsx`
+- ⚠ 실제 스캔 · 하드코딩 30+ 곳 (line 87-88, 213, 317, 375, 392, 521, 1042, 1051, 1121, 1239, 1243-1251, 1261-1262, 1346-1348, 1491, 1495, 2014 등)
+- 데이터 모델 변경 필요 (scheduleTypes.hoursByPosition 맵) · positionTab 필터 재정의
+- 위험도: **높음** · 스케줄 = critical business logic · 대형 리팩터
+- 재산정: TASKS.md 스코프 (line 87-97) 대비 실제 훨씬 큼
 
 ### #94 · 공급사 재고확인 페이지 신설
 - 로그인 담당자 공급사 기간별 재고 · TOP 기간·계절 필터 · 리스트 헤더 자동정렬
@@ -81,6 +74,16 @@
 - ✅ 페이지 pl-6 들여쓰기 · └ tree 시각화
 - ✅ 미분류 페이지 → "기타" 그룹
 - TASKS.md stale 이었음 · 실제로 이미 구현됨 (line 14, 86-101, 321-350, 487-577)
+
+### #101 · 직군 삭제·수정 시 employees 데이터 보호 · 완료 (2026-08-12)
+- ✅ `removePositionAt` · 사용중 · 재매핑 대상 prompt · transaction · orphan 방지
+- ✅ `commitEditPosition` · 이름 변경 · confirm · employees 자동 rename (transaction)
+- 파일: `src/components/PermissionsPage/PermissionsPage.tsx:131-204`
+
+### #96 · 랜딩 거래처 카드 관리자 접근 방식 · 완료 (2026-08-12) · A1 선택
+- ✅ 관리자 · display>vendor-manage 페이지 이동 (localStorage subtab 힌트)
+- ✅ vendor · 본인 정보/재고 모달
+- 파일: `src/components/LandingPage/LandingPage.tsx:1465-1509`
 
 ### #54 · Memory 업데이트 (세션 마감 시 정례)
 - 이번 세션 신규: 사이드바 V2 · 회사·브랜드 통합 · SystemSettingsPage · SettingsPageShell · LeavePage mode · PermissionsPage 23개
