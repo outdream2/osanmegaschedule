@@ -1022,26 +1022,26 @@ src/
 
 **shared 미적용 32 route** · asyncHandler 만 · 순차 도입 예정
 
-### 클라이언트 · apiClient 채택 (11 files)
+### 클라이언트 · apiClient 채택 (15 files · 100% · Gemini 예외)
 
-**hooks (8개)**
+**hooks (11개)**
 - useApiQuery · usePagePermissions · useReferenceValues · useVendors
 - useSeasonRanges · useSettings · useKvSetting · useHiddenManager
-- useProductInfoSearch · usePushSubscription · useLeaveManager · useSidebar (useSidebarEnabled)
+- useProductInfoSearch · usePushSubscription · useLeaveManager · useSidebar
 
-**components (2개)**
-- EmployeeFormModal · MyPage (via useToast 등)
+**components (5개)**
+- EmployeeFormModal · MyPage · PermissionsPage · LandingPage · SchedulePage · VendorStockModal
 
-**잔여 axios 직접 사용 (5 컴포넌트 · 대형 · 세션 여유 시)**
-- SchedulePage · LandingPage · OcrPage (Gemini 부분 · 규칙 금지) · PermissionsPage · GeminiParseOnlyButton
+**잔여 axios (Gemini 코드 · 규칙 금지)**
+- OcrPage · GeminiParseOnlyButton (feedback_gemini_untouchable.md)
 
-### 클라이언트 useToast 채택 (7 컴포넌트)
+### 클라이언트 useToast 채택 (8 컴포넌트)
 - MyPage · PermissionsPage · ProductArrivalPage · ScanPage · ZoneLabelsEditor
-- LunchPage · RequestsPage 등 순차
+- VendorStockModal · LunchPage · RequestsPage 등 순차
 
-### shared/ (10 파일)
+### shared/ (11 파일)
 - `schemas/` · auth · leave · lunch · reservation · employees (5개)
-- `dtos/` · common · auth · leave · lunch · employees · vendors · reservations (7개 · 34+ 타입)
+- `dtos/` · common · auth · leave · lunch · employees · vendors · reservations · products (8개 · 40+ 타입)
 
 ---
 
@@ -1065,3 +1065,4 @@ src/
 **문서 개정 이력**
 - 2026-08-16 v1.0 · 최초 작성 (Framework 8모듈 · Client 7훅 · Migration 24 routes)
 - 2026-08-16 v1.5 · asyncHandler 100% · shared/schemas 5 도메인 · shared/dtos 7 도메인 · apiClient 11 files 채택 · 103 tests
+- 2026-08-17 v1.6 · apiClient 100% (Gemini 제외 15 files) · shared/dtos 8 도메인 (40+ 타입) · MyPage/PermissionsPage/LandingPage/SchedulePage/VendorStockModal 마이그레이션 완료
