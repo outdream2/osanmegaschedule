@@ -1008,22 +1008,40 @@ src/
 
 ## 8. 마이그레이션 상태
 
-**작성 시점** · 2026-08-16
+**작성 시점** · 2026-08-16 (v1.5 최신)
 
-### 서버 route (35 파일 中)
+### 서버 route · asyncHandler 100% (37/37 파일 · 완료)
 
-| 상태 | 개수 | 파일 |
-|---|---|---|
-| ✅ 완료 | 24 | daily/*, reference/*, board/*, display/(mismatches·zoneAssignments·zoneLabels), purchase/(supplierBalanceConfig·ocrDeletedRows·invoiceImages·returnRequests·purchaseHistory·ocrConfirmed·vendors), settings/*, stock/(lossTracking·productArrivals·products), staff/*, schedule/schedules |
-| ⏳ 진행 중 | 2 | purchase/(purchase·vat) — batch5 백그라운드 |
-| ❌ 대기 | 5 | auth/auth (Zod 부분 적용), display/requests (943줄), ocr/ocr (1816줄), purchase/supplierPayments (1312줄), stock/(stockArrivals·stockManage 2409줄) |
+**shared 스키마 · DTO 적용 (5 route)**
+- `auth/auth.ts` · 4 스키마 (Login/VendorLogin/SetPassword/ChangePassword) + 4 DTO (Login/VendorLogin/Refresh/AuthOk)
+- `daily/leave.ts` · 2 스키마 + LeaveBalance/LeaveStats DTO
+- `daily/lunch.ts` · 1 스키마 + LunchRequests/LunchAttendance DTO
+- `daily/reservations.ts` · 1 스키마
+- `schedule/schedules.ts` · NextEmployeeNumberResponse DTO
+- `purchase/vendors.ts` · VendorsListResponse DTO
 
-### 클라이언트 컴포넌트
+**shared 미적용 32 route** · asyncHandler 만 · 순차 도입 예정
 
-| 컴포넌트 | useToast | 비고 |
-|---|---|---|
-| MyPage · PermissionsPage · ProductArrivalPage · ScanPage · ZoneLabelsEditor | ✅ | 2026-08-16 |
-| SchedulePage · StaffManagePage · ContractWriterPage 등 | ⏳ | 큐 대기 |
+### 클라이언트 · apiClient 채택 (11 files)
+
+**hooks (8개)**
+- useApiQuery · usePagePermissions · useReferenceValues · useVendors
+- useSeasonRanges · useSettings · useKvSetting · useHiddenManager
+- useProductInfoSearch · usePushSubscription · useLeaveManager · useSidebar (useSidebarEnabled)
+
+**components (2개)**
+- EmployeeFormModal · MyPage (via useToast 등)
+
+**잔여 axios 직접 사용 (5 컴포넌트 · 대형 · 세션 여유 시)**
+- SchedulePage · LandingPage · OcrPage (Gemini 부분 · 규칙 금지) · PermissionsPage · GeminiParseOnlyButton
+
+### 클라이언트 useToast 채택 (7 컴포넌트)
+- MyPage · PermissionsPage · ProductArrivalPage · ScanPage · ZoneLabelsEditor
+- LunchPage · RequestsPage 등 순차
+
+### shared/ (10 파일)
+- `schemas/` · auth · leave · lunch · reservation · employees (5개)
+- `dtos/` · common · auth · leave · lunch · employees · vendors · reservations (7개 · 34+ 타입)
 
 ---
 
@@ -1046,3 +1064,4 @@ src/
 
 **문서 개정 이력**
 - 2026-08-16 v1.0 · 최초 작성 (Framework 8모듈 · Client 7훅 · Migration 24 routes)
+- 2026-08-16 v1.5 · asyncHandler 100% · shared/schemas 5 도메인 · shared/dtos 7 도메인 · apiClient 11 files 채택 · 103 tests
