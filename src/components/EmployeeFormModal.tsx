@@ -1,6 +1,7 @@
 // src/components/EmployeeFormModal.tsx
-import React, { useEffect, useRef } from "react";
-import { X, Users, Calendar, MapPin, FileText, ExternalLink, Upload } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import axios from "axios";
+import { X, Users, Calendar, MapPin, FileText, ExternalLink, Upload, IdCard } from "lucide-react";
 import { ZONE_DEFS, SECTION_LABEL } from "../constants/displayZones";
 // POSITIONS · RANKS · WORKPLACES → useReferenceValues 로 이관 (2026-08-06 · T-DualStorage-Connect)
 import { useReferenceValues } from "../hooks/useReferenceValues";
@@ -84,6 +85,17 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
   onSubmit, onClose,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // 2026-08-16 · #122 · 사번 자동 생성 미리보기 · 서버 auto-gen 이미 적용됨 · 사용자에게 표시만
+  //   · 사용자 수정 필요 시 · Phase 2 (props 리팩터) · 지금은 정보 표시만 · 적정 규모
+  const [nextEmployeeNumber, setNextEmployeeNumber] = useState<string>("");
+  useEffect(() => {
+    if (empModalMode !== "create") return;
+    let alive = true;
+    axios.get("/api/employees/next-number").then((res) => {
+      if (alive) setNextEmployeeNumber(res.data?.nextNumber ?? "");
+    }).catch(() => { /* 실패 · 서버 auto-gen 대체 */ });
+    return () => { alive = false; };
+  }, [empModalMode]);
   // DB + 하드코딩 병합 reference 값
   const { positions: dbPositions, ranks: dbRanks, workplaces: dbWorkplaces } = useReferenceValues();
 
@@ -110,6 +122,16 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
         </div>
 
         <form onSubmit={onSubmit} className="px-5 py-4 space-y-4">
+
+          {/* 2026-08-16 · #122 · 사번 자동 배정 안내 (신규 등록만) */}
+          {empModalMode === "create" && nextEmployeeNumber && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-50 border border-indigo-200 text-[12px] text-indigo-700">
+              <IdCard size={14} className="text-indigo-500" />
+              <span className="font-semibold">사번 자동 배정:</span>
+              <span className="font-mono font-black text-indigo-900">{nextEmployeeNumber}</span>
+              <span className="text-indigo-500 text-[11px]">(등록 시 자동 반영)</span>
+            </div>
+          )}
 
           {/* ── 1. 성명 ── */}
           <div>
