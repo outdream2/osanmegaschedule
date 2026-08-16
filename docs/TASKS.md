@@ -190,6 +190,17 @@
 
 ## 📜 완료 로그
 
+### 2026-08-17 세션 (대규모 프레임워크 · 커밋 55+)
+- **프레임워크 완성** · asyncHandler 100% (37/37 route) · apiClient 100% (Gemini 제외) · shared 10 schema + 8 dto
+- **테스트** · 103 tests · 11 files · vitest node+jsdom
+- **문서** · FRAMEWORK.md v1.7 (1048+ 라인)
+- **버그 fix** · #131 페이지 uncheck (admin lockout 방지)
+- **UI 개선** · #130 랜딩 4 Phase (무지개 카드 · 로그인 모달 bg fix · 그룹 헤더 · 공사중)
+- **UI** · 약사 색상 violet → blue (사용자 요청)
+- **분리** · LandingPage StockSearch 컴포넌트 (-161 라인)
+- **대원칙 메모리 추가** · feedback_framework_first_coding.md · feedback_framework_compliance.md
+- Access+Refresh JWT · envValidation · errorReporter (Sentry 준비) · MenuCard (12 카드 통합)
+
 ### 2026-08-16 세션 (커밋 5건)
 - `5e50953` #98 · ScheduleFilterBar dead prop 4개 삭제
 - `4cc2ae4` #73 · StockManagePage 3파일 삭제 (LowStockPanel 524줄 포함)
