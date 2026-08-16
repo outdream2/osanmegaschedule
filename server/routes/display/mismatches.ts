@@ -1,13 +1,16 @@
+// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 import { authorize } from "../../middleware/requireAuth";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { badRequest, HttpError } from "../../middleware/errorHandler";
 
 const router = Router();
 
 // T-SLIM E · 표준 shape 주석 · List endpoint
 // 현재: res.json(array) · 직접 배열 반환 · 프론트 소비 패턴과 breaking 없이 유지
 // 미래 v2: { rows: array, count: number } 로 전환 예정 (프론트 마이그레이션 후)
-router.get("/api/zone-mismatches", async (_req, res) => {
+router.get("/api/zone-mismatches", asyncHandler(async (_req, res) => {
   const { data: productRows, error: prodErr } = await supabase
     .from("products")
     .select("product_code, product_name, spec, real_map, last_modified_at")
@@ -17,7 +20,7 @@ router.get("/api/zone-mismatches", async (_req, res) => {
 
   if (prodErr) {
     console.error("[zone-mismatches] products 쿼리 오류:", prodErr.message);
-    return res.status(500).json({ error: prodErr.message });
+    throw new HttpError(500, prodErr.message);
   }
   console.log(`[zone-mismatches] real_map 있는 상품 ${productRows?.length ?? 0}건`);
   if (productRows?.length) {
@@ -57,9 +60,9 @@ router.get("/api/zone-mismatches", async (_req, res) => {
     }));
 
   res.json([...computed, ...legacyRows]);
-});
+}));
 
-router.post("/api/zone-mismatches", async (req, res) => {
+router.post("/api/zone-mismatches", asyncHandler(async (req, res) => {
   const b = req.body ?? {};
   const { error } = await supabase.from("zone_mismatches").upsert([{
     product_code: String(b.product_code ?? ""),
@@ -67,24 +70,24 @@ router.post("/api/zone-mismatches", async (req, res) => {
     spec_zone: String(b.spec_zone ?? ""),
     real_zone: String(b.real_zone ?? ""),
   }], { onConflict: "product_code" });
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) throw new HttpError(500, error.message);
   res.json({ ok: true });
-});
+}));
 
-router.delete("/api/zone-mismatches/by-code/:code", async (req, res) => {
+router.delete("/api/zone-mismatches/by-code/:code", asyncHandler(async (req, res) => {
   const code = decodeURIComponent(req.params.code ?? "").trim();
-  if (!code) return res.status(400).json({ error: "code required" });
+  if (!code) throw badRequest("code required");
   const { error } = await supabase.from("zone_mismatches").delete().eq("product_code", code);
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) throw new HttpError(500, error.message);
   res.json({ ok: true });
-});
+}));
 
-router.delete("/api/zone-mismatches/:id", authorize(2), async (req, res) => {
+router.delete("/api/zone-mismatches/:id", authorize(2), asyncHandler(async (req, res) => {
   const id = decodeURIComponent(req.params.id ?? "").trim();
   const { error } = await supabase.from("products").update({ real_map: null }).eq("product_code", id);
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) throw new HttpError(500, error.message);
   try { await supabase.from("zone_mismatches").delete().eq("product_code", id); } catch {}
   res.json({ ok: true });
-});
+}));
 
 export default router;

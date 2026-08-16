@@ -8,10 +8,13 @@
 // 필수 env: CLOUDINARY_CLOUD_NAME · CLOUDINARY_API_KEY · CLOUDINARY_API_SECRET
 //
 // board(게시판) 이미지는 기존대로 Supabase Storage 사용 · 이 라우터는 명세서 전용
+// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
 
 import { Router } from "express";
 import { v2 as cloudinary, type UploadApiResponse } from "cloudinary";
 import { authorize } from "../../middleware/requireAuth";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { badRequest, HttpError } from "../../middleware/errorHandler";
 
 const router = Router();
 
@@ -59,77 +62,66 @@ function normalizeDataUri(input: string): { dataUri: string; approxBytes: number
 // POST /api/invoice-images/upload
 // body: { data_url: string, filename?: string, page?: number }
 // resp: { url: string, public_id: string, width?: number, height?: number, bytes?: number, format?: string }
-router.post("/api/invoice-images/upload", async (req, res) => {
+router.post("/api/invoice-images/upload", asyncHandler(async (req, res) => {
   if (!ensureConfigured()) {
-    return res.status(503).json({ error: "Cloudinary 설정이 없습니다 (env)." });
+    throw new HttpError(503, "Cloudinary 설정이 없습니다 (env).");
   }
 
+  const body = req.body ?? {};
+  const rawInput = typeof body.data_url === "string" ? body.data_url
+                 : typeof body.dataUrl === "string" ? body.dataUrl
+                 : typeof body.image === "string" ? body.image
+                 : "";
+  const normalized = normalizeDataUri(rawInput);
+  if (!normalized) {
+    throw badRequest("유효한 data_url (data:image/...;base64,...) 이 필요합니다.");
+  }
+  if (normalized.approxBytes > MAX_BYTES) {
+    throw new HttpError(413, `이미지 크기 초과 (${(normalized.approxBytes / 1024 / 1024).toFixed(1)}MB > ${MAX_BYTES / 1024 / 1024}MB)`);
+  }
+
+  const filename = String(body.filename ?? "").replace(/[^\w.-]+/g, "_").slice(0, 60);
+  const page = Number.isFinite(body.page) ? Number(body.page) : undefined;
+  const publicIdSuffix = filename ? `_${filename}` : "";
+  const publicId = `p${page ?? "x"}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}${publicIdSuffix}`;
+
+  let result: UploadApiResponse;
   try {
-    const body = req.body ?? {};
-    const rawInput = typeof body.data_url === "string" ? body.data_url
-                   : typeof body.dataUrl === "string" ? body.dataUrl
-                   : typeof body.image === "string" ? body.image
-                   : "";
-    const normalized = normalizeDataUri(rawInput);
-    if (!normalized) {
-      return res.status(400).json({ error: "유효한 data_url (data:image/...;base64,...) 이 필요합니다." });
-    }
-    if (normalized.approxBytes > MAX_BYTES) {
-      return res
-        .status(413)
-        .json({ error: `이미지 크기 초과 (${(normalized.approxBytes / 1024 / 1024).toFixed(1)}MB > ${MAX_BYTES / 1024 / 1024}MB)` });
-    }
-
-    const filename = String(body.filename ?? "").replace(/[^\w.-]+/g, "_").slice(0, 60);
-    const page = Number.isFinite(body.page) ? Number(body.page) : undefined;
-    const publicIdSuffix = filename ? `_${filename}` : "";
-    const publicId = `p${page ?? "x"}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}${publicIdSuffix}`;
-
-    let result: UploadApiResponse;
-    try {
-      result = await cloudinary.uploader.upload(normalized.dataUri, {
-        folder: "invoice-images",
-        public_id: publicId,
-        resource_type: "image",
-        overwrite: false,
-        // 원본 업로드 시점에 리사이즈/포맷 최적화 · 저장 용량 절감
-        transformation: [
-          { width: 1600, crop: "limit", quality: "auto:good", fetch_format: "auto" },
-        ],
-      });
-    } catch (upErr: any) {
-      console.error(`[invoice-images/upload] Cloudinary 업로드 실패: ${upErr?.message ?? upErr}`);
-      return res.status(502).json({ error: upErr?.message ?? "Cloudinary 업로드 실패" });
-    }
-
-    return res.json({
-      url: result.secure_url,
-      public_id: result.public_id,
-      width: result.width,
-      height: result.height,
-      bytes: result.bytes,
-      format: result.format,
+    result = await cloudinary.uploader.upload(normalized.dataUri, {
+      folder: "invoice-images",
+      public_id: publicId,
+      resource_type: "image",
+      overwrite: false,
+      // 원본 업로드 시점에 리사이즈/포맷 최적화 · 저장 용량 절감
+      transformation: [
+        { width: 1600, crop: "limit", quality: "auto:good", fetch_format: "auto" },
+      ],
     });
-  } catch (err: any) {
-    console.error(`[invoice-images/upload] 예외: ${err?.message ?? err}`);
-    return res.status(500).json({ error: err?.message ?? "업로드 처리 중 오류" });
+  } catch (upErr: any) {
+    console.error(`[invoice-images/upload] Cloudinary 업로드 실패: ${upErr?.message ?? upErr}`);
+    throw new HttpError(502, upErr?.message ?? "Cloudinary 업로드 실패");
   }
-});
+
+  return res.json({
+    url: result.secure_url,
+    public_id: result.public_id,
+    width: result.width,
+    height: result.height,
+    bytes: result.bytes,
+    format: result.format,
+  });
+}));
 
 // DELETE /api/invoice-images/:public_id
 // 이미지 정리용 (선택 · 관리자 정리 시)
-router.delete("/api/invoice-images/:public_id(*)", authorize(9), async (req, res) => {
+router.delete("/api/invoice-images/:public_id(*)", authorize(9), asyncHandler(async (req, res) => {
   if (!ensureConfigured()) {
-    return res.status(503).json({ error: "Cloudinary 설정이 없습니다 (env)." });
+    throw new HttpError(503, "Cloudinary 설정이 없습니다 (env).");
   }
   const publicId = req.params.public_id;
-  if (!publicId) return res.status(400).json({ error: "public_id 가 필요합니다." });
-  try {
-    const result = await cloudinary.uploader.destroy(publicId, { resource_type: "image", invalidate: true });
-    return res.json({ ok: result.result === "ok" || result.result === "not found", result: result.result });
-  } catch (err: any) {
-    return res.status(500).json({ error: err?.message ?? "삭제 실패" });
-  }
-});
+  if (!publicId) throw badRequest("public_id 가 필요합니다.");
+  const result = await cloudinary.uploader.destroy(publicId, { resource_type: "image", invalidate: true });
+  return res.json({ ok: result.result === "ok" || result.result === "not found", result: result.result });
+}));
 
 export default router;

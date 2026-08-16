@@ -1,7 +1,10 @@
+// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
 import { Router } from "express";
 import webpush from "web-push";
 import { supabase } from "../../../src/supabase/client";
 import { notificationsService } from "../../services/notificationsService";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { badRequest, HttpError } from "../../middleware/errorHandler";
 
 const router = Router();
 
@@ -155,16 +158,16 @@ const EMPTY_ROW = {
 };
 
 // GET /api/zone-assignments/:dow  →  { dow, zone_slots, lunch_slots, rest_slots, lunch_offset, rest_offset, lunch_interval, rest_interval }
-router.get("/api/zone-assignments/:dow", async (req, res) => {
+router.get("/api/zone-assignments/:dow", asyncHandler(async (req, res) => {
   const dow = parseInt(req.params.dow, 10);
-  if (isNaN(dow) || dow < 0 || dow > 6) return res.status(400).json({ error: "dow는 0~6이어야 합니다" });
+  if (isNaN(dow) || dow < 0 || dow > 6) throw badRequest("dow는 0~6이어야 합니다");
 
   const { data, error } = await supabase.from(TABLE).select("*").eq("dow", dow).maybeSingle();
   if (error) {
     if (/relation|does not exist/i.test(error.message)) {
       return res.json({ dow, ...EMPTY_ROW });
     }
-    return res.status(500).json({ error: error.message });
+    throw new HttpError(500, error.message);
   }
   if (!data) return res.json({ dow, ...EMPTY_ROW });
   // DB에 interval 컬럼이 없을 수 있으니 기본값 fallback
@@ -175,12 +178,12 @@ router.get("/api/zone-assignments/:dow", async (req, res) => {
     lunch_count:    (data as { lunch_count?: number }).lunch_count ?? 1,
     rest_count:     (data as { rest_count?: number }).rest_count ?? 1,
   });
-});
+}));
 
 // PUT /api/zone-assignments/:dow  →  upsert template for that day-of-week
-router.put("/api/zone-assignments/:dow", async (req, res) => {
+router.put("/api/zone-assignments/:dow", asyncHandler(async (req, res) => {
   const dow = parseInt(req.params.dow, 10);
-  if (isNaN(dow) || dow < 0 || dow > 6) return res.status(400).json({ error: "dow는 0~6이어야 합니다" });
+  if (isNaN(dow) || dow < 0 || dow > 6) throw badRequest("dow는 0~6이어야 합니다");
 
   const { zone_slots, lunch_slots, rest_slots, lunch_offset, rest_offset, lunch_interval, rest_interval, lunch_count, rest_count } = req.body ?? {};
 
@@ -222,13 +225,13 @@ router.put("/api/zone-assignments/:dow", async (req, res) => {
 
   if (error) {
     if (/relation|table.*does not exist/i.test(error.message)) {
-      return res.status(503).json({ error: `zone_dow_templates 테이블이 없습니다.\n${CREATE_SQL}` });
+      throw new HttpError(503, `zone_dow_templates 테이블이 없습니다.\n${CREATE_SQL}`);
     }
     console.error("[zone-dow PUT] error:", error);
-    return res.status(500).json({ error: error.message });
+    throw new HttpError(500, error.message);
   }
   return res.json({ ok: true });
-});
+}));
 
 // ─── 날짜별 배정 API ──────────────────────────────────────────────────────────
 
@@ -246,16 +249,16 @@ const EMPTY_DAY_ROW = {
 };
 
 // GET /api/zone-day/:date  →  특정 날짜 배정 불러오기
-router.get("/api/zone-day/:date", async (req, res) => {
+router.get("/api/zone-day/:date", asyncHandler(async (req, res) => {
   const { date } = req.params;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ error: "date는 YYYY-MM-DD 형식이어야 합니다" });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw badRequest("date는 YYYY-MM-DD 형식이어야 합니다");
 
   const { data, error } = await supabase.from(DAY_TABLE).select("*").eq("date", date).maybeSingle();
   if (error) {
     if (/relation|does not exist/i.test(error.message)) {
       return res.json({ date, ...EMPTY_DAY_ROW });
     }
-    return res.status(500).json({ error: error.message });
+    throw new HttpError(500, error.message);
   }
   if (!data) return res.json({ date, ...EMPTY_DAY_ROW, _empty: true });
   return res.json({
@@ -266,12 +269,12 @@ router.get("/api/zone-day/:date", async (req, res) => {
     rest_count:     (data as Record<string, unknown>).rest_count     ?? 1,
     is_confirmed:   (data as Record<string, unknown>).is_confirmed   ?? false,
   });
-});
+}));
 
 // PUT /api/zone-day/:date  →  날짜별 배정 저장 (upsert)
-router.put("/api/zone-day/:date", async (req, res) => {
+router.put("/api/zone-day/:date", asyncHandler(async (req, res) => {
   const { date } = req.params;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ error: "date는 YYYY-MM-DD 형식이어야 합니다" });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw badRequest("date는 YYYY-MM-DD 형식이어야 합니다");
 
   const {
     zone_slots, lunch_slots, rest_slots,
@@ -327,10 +330,10 @@ router.put("/api/zone-day/:date", async (req, res) => {
 
   if (error) {
     if (/relation|table.*does not exist/i.test(error.message)) {
-      return res.status(503).json({ error: `zone_day_assignments 테이블이 없습니다.\n${CREATE_DAY_SQL}` });
+      throw new HttpError(503, `zone_day_assignments 테이블이 없습니다.\n${CREATE_DAY_SQL}`);
     }
     console.error("[zone-day PUT] error:", error);
-    return res.status(500).json({ error: error.message });
+    throw new HttpError(500, error.message);
   }
   // 확정 저장 시 배정된 직원들에게 알림 발송 (실패해도 저장 성공 유지)
   if (payload.is_confirmed === true) {
@@ -343,15 +346,15 @@ router.put("/api/zone-day/:date", async (req, res) => {
     }).catch(() => { /* 이미 내부에서 로깅함 */ });
   }
   return res.json({ ok: true });
-});
+}));
 
 // POST /api/zone-day/copy-month  →  전월의 일별 배정을 이번 달로 복사
 // body: { targetYear, targetMonth, overwrite: boolean }
-router.post("/api/zone-day/copy-month", async (req, res) => {
+router.post("/api/zone-day/copy-month", asyncHandler(async (req, res) => {
   const { targetYear, targetMonth, overwrite } = req.body ?? {};
   const y = parseInt(targetYear, 10);
   const m = parseInt(targetMonth, 10);
-  if (!y || !m || m < 1 || m > 12) return res.status(400).json({ error: "targetYear/targetMonth 필수" });
+  if (!y || !m || m < 1 || m > 12) throw badRequest("targetYear/targetMonth 필수");
 
   const prevM = m === 1 ? 12 : m - 1;
   const prevY = m === 1 ? y - 1 : y;
@@ -365,7 +368,7 @@ router.post("/api/zone-day/copy-month", async (req, res) => {
     .like("date", `${prevPrefix}%`);
   if (prevErr) {
     if (/relation|does not exist/i.test(prevErr.message)) return res.json({ ok: true, count: 0 });
-    return res.status(500).json({ error: prevErr.message });
+    throw new HttpError(500, prevErr.message);
   }
   if (!prevRows || prevRows.length === 0) return res.json({ ok: true, count: 0 });
 
@@ -376,7 +379,7 @@ router.post("/api/zone-day/copy-month", async (req, res) => {
     .like("date", `${curPrefix}%`);
   const hasExisting = (curRows?.length ?? 0) > 0;
   if (hasExisting && !overwrite) {
-    return res.status(409).json({ error: "이번 달에 이미 일별 근무설정 데이터가 있습니다.", hasExisting: true });
+    throw new HttpError(409, "이번 달에 이미 일별 근무설정 데이터가 있습니다.", "CONFLICT");
   }
 
   // day-of-month 기준으로 복사 (일이 없으면 skip)
@@ -407,9 +410,9 @@ router.post("/api/zone-day/copy-month", async (req, res) => {
   const { error: upErr } = await supabase.from(DAY_TABLE).upsert(payloads, { onConflict: "date" });
   if (upErr) {
     console.error("[zone-day copy-month] error:", upErr);
-    return res.status(500).json({ error: upErr.message });
+    throw new HttpError(500, upErr.message);
   }
   return res.json({ ok: true, count: payloads.length });
-});
+}));
 
 export default router;

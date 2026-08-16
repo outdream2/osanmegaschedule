@@ -1,6 +1,9 @@
+// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 import { authorize } from "../../middleware/requireAuth";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { badRequest, HttpError } from "../../middleware/errorHandler";
 
 const router = Router();
 const TABLE = "supplier_balance_configs";
@@ -26,7 +29,7 @@ CREATE TABLE IF NOT EXISTS supplier_balance_configs (
 // T-SLIM E · 표준 shape 주석 · List endpoint
 // 현재: res.json(array) · 직접 배열 반환 · 프론트 소비 패턴과 breaking 없이 유지
 // 미래 v2: { rows: array, count: number } 로 전환 예정 (프론트 마이그레이션 후)
-router.get("/api/supplier-balance-configs", async (_req, res) => {
+router.get("/api/supplier-balance-configs", asyncHandler(async (_req, res) => {
   // column_layout 컬럼 포함 조회, 없으면 fallback
   let data: any[] | null = null;
   const first = await supabase.from(TABLE).select("supplier_name, balance_field, column_layout");
@@ -34,19 +37,19 @@ router.get("/api/supplier-balance-configs", async (_req, res) => {
     const fb = await supabase.from(TABLE).select("supplier_name, balance_field");
     if (fb.error) {
       if (/relation|does not exist/i.test(fb.error.message)) return res.json([]);
-      return res.status(500).json({ error: fb.error.message });
+      throw new HttpError(500, fb.error.message);
     }
     data = fb.data;
   } else {
     data = first.data;
   }
   return res.json(data ?? []);
-});
+}));
 
 // PUT /api/supplier-balance-configs  →  upsert { supplier_name, balance_field, column_layout? }
-router.put("/api/supplier-balance-configs", async (req, res) => {
+router.put("/api/supplier-balance-configs", asyncHandler(async (req, res) => {
   const { supplier_name, balance_field, column_layout } = req.body ?? {};
-  if (!supplier_name) return res.status(400).json({ error: "supplier_name 필수" });
+  if (!supplier_name) throw badRequest("supplier_name 필수");
 
   const payload: Record<string, unknown> = {
     supplier_name,
@@ -64,19 +67,19 @@ router.put("/api/supplier-balance-configs", async (req, res) => {
   }
   if (error) {
     if (/relation|does not exist/i.test(error.message)) {
-      return res.status(503).json({ error: `${TABLE} 테이블이 없습니다.\n${CREATE_SQL}` });
+      throw new HttpError(503, `${TABLE} 테이블이 없습니다.\n${CREATE_SQL}`);
     }
-    return res.status(500).json({ error: error.message });
+    throw new HttpError(500, error.message);
   }
   return res.json({ ok: true });
-});
+}));
 
 // DELETE /api/supplier-balance-configs/:supplier_name
-router.delete("/api/supplier-balance-configs/:name", authorize(9), async (req, res) => {
+router.delete("/api/supplier-balance-configs/:name", authorize(9), asyncHandler(async (req, res) => {
   const name = decodeURIComponent(req.params.name);
   const { error } = await supabase.from(TABLE).delete().eq("supplier_name", name);
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) throw new HttpError(500, error.message);
   return res.json({ ok: true });
-});
+}));
 
 export default router;

@@ -1,3 +1,4 @@
+// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
 // server/routes/lossTracking.ts
 // 2026-08-06 · T-LOSS-HISTORY · 손실추적 (DiffTab) 날짜별 스냅샷·이력·집계
 //
@@ -17,6 +18,8 @@
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 import { fetchAllWithRange } from "../../utils/supabaseFetchAll";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { HttpError } from "../../middleware/errorHandler";
 
 const router = Router();
 
@@ -194,41 +197,36 @@ export function scheduleSnapshotBackground(): void {
 
 // ── POST /api/loss-tracking/snapshot · 오늘 날짜 upsert ──────────────────────
 
-router.post("/api/loss-tracking/snapshot", async (_req, res) => {
+router.post("/api/loss-tracking/snapshot", asyncHandler(async (_req, res) => {
   const result = await runTodaySnapshot();
   return res.json(result);
-});
+}));
 
 // ── GET /api/loss-tracking?from=&to=&supplier= · raw rows ────────────────────
 
-router.get("/api/loss-tracking", async (req, res) => {
+router.get("/api/loss-tracking", asyncHandler(async (req, res) => {
   const from = isYmd(req.query.from) ? String(req.query.from) : daysAgoYmd(30);
   const to   = isYmd(req.query.to)   ? String(req.query.to)   : todayYmd();
   const supplier = String(req.query.supplier ?? "").trim() || null;
-  try {
-    let q = supabase
-      .from("loss_tracking_daily")
-      .select("snapshot_date, product_code, product_name, supplier, erp_stock, actual_stock, loss, purchase_price, sale_price, loss_value")
-      .gte("snapshot_date", from)
-      .lte("snapshot_date", to)
-      .order("snapshot_date", { ascending: false });
-    if (supplier) q = q.eq("supplier", supplier);
-    // 상한 · 최대 5만행
-    const { data, error } = await q.limit(50000);
-    if (error) {
-      if (isMissingRelation(error)) return res.json({ from, to, supplier, rows: [] });
-      throw error;
-    }
-    return res.json({ from, to, supplier, rows: data ?? [] });
-  } catch (err: any) {
-    console.error("[loss-tracking GET]", err?.message);
-    return res.status(500).json({ error: err?.message ?? "조회 실패" });
+  let q = supabase
+    .from("loss_tracking_daily")
+    .select("snapshot_date, product_code, product_name, supplier, erp_stock, actual_stock, loss, purchase_price, sale_price, loss_value")
+    .gte("snapshot_date", from)
+    .lte("snapshot_date", to)
+    .order("snapshot_date", { ascending: false });
+  if (supplier) q = q.eq("supplier", supplier);
+  // 상한 · 최대 5만행
+  const { data, error } = await q.limit(50000);
+  if (error) {
+    if (isMissingRelation(error)) return res.json({ from, to, supplier, rows: [] });
+    throw new HttpError(500, error.message);
   }
-});
+  return res.json({ from, to, supplier, rows: data ?? [] });
+}));
 
 // ── GET /api/loss-tracking/summary?from=&to=&groupBy=date|supplier|product ──
 
-router.get("/api/loss-tracking/summary", async (req, res) => {
+router.get("/api/loss-tracking/summary", asyncHandler(async (req, res) => {
   const from = isYmd(req.query.from) ? String(req.query.from) : daysAgoYmd(30);
   const to   = isYmd(req.query.to)   ? String(req.query.to)   : todayYmd();
   const groupBy = ["date", "supplier", "product"].includes(String(req.query.groupBy))
@@ -236,61 +234,56 @@ router.get("/api/loss-tracking/summary", async (req, res) => {
     : "date";
   const supplier = String(req.query.supplier ?? "").trim() || null;
 
-  try {
-    let q = supabase
-      .from("loss_tracking_daily")
-      .select("snapshot_date, product_code, product_name, supplier, loss, loss_value")
-      .gte("snapshot_date", from)
-      .lte("snapshot_date", to);
-    if (supplier) q = q.eq("supplier", supplier);
-    const { data, error } = await q.limit(50000);
-    if (error) {
-      if (isMissingRelation(error)) {
-        return res.json({ from, to, groupBy, supplier, rows: [], total: { loss: 0, loss_value: 0, count: 0 } });
-      }
-      throw error;
+  let q = supabase
+    .from("loss_tracking_daily")
+    .select("snapshot_date, product_code, product_name, supplier, loss, loss_value")
+    .gte("snapshot_date", from)
+    .lte("snapshot_date", to);
+  if (supplier) q = q.eq("supplier", supplier);
+  const { data, error } = await q.limit(50000);
+  if (error) {
+    if (isMissingRelation(error)) {
+      return res.json({ from, to, groupBy, supplier, rows: [], total: { loss: 0, loss_value: 0, count: 0 } });
     }
-
-    const rows = data ?? [];
-    const total = rows.reduce((acc, r) => {
-      acc.loss += Number(r.loss ?? 0) || 0;
-      acc.loss_value += Number(r.loss_value ?? 0) || 0;
-      acc.count += 1;
-      return acc;
-    }, { loss: 0, loss_value: 0, count: 0 });
-
-    // groupBy 집계 (in-memory · 50k 이하 · 순회 1회)
-    const map = new Map<string, { key: string; label: string; loss: number; loss_value: number; count: number; extra?: any }>();
-    for (const r of rows) {
-      let key: string, label: string, extra: any = undefined;
-      if (groupBy === "date") {
-        key = String(r.snapshot_date ?? "");
-        label = key;
-      } else if (groupBy === "supplier") {
-        key = String(r.supplier ?? "미지정");
-        label = key;
-      } else {
-        key = String(r.product_code ?? "");
-        label = String(r.product_name ?? key);
-        extra = { product_code: key };
-      }
-      if (!key) continue;
-      const cur = map.get(key) ?? { key, label, loss: 0, loss_value: 0, count: 0, extra };
-      cur.loss += Number(r.loss ?? 0) || 0;
-      cur.loss_value += Number(r.loss_value ?? 0) || 0;
-      cur.count += 1;
-      map.set(key, cur);
-    }
-    // 정렬: date 는 date ASC · supplier/product 는 loss_value DESC
-    const grouped = Array.from(map.values());
-    if (groupBy === "date") grouped.sort((a, b) => a.key.localeCompare(b.key));
-    else grouped.sort((a, b) => b.loss_value - a.loss_value);
-
-    return res.json({ from, to, groupBy, supplier, rows: grouped, total });
-  } catch (err: any) {
-    console.error("[loss-tracking/summary]", err?.message);
-    return res.status(500).json({ error: err?.message ?? "집계 실패" });
+    throw new HttpError(500, error.message);
   }
-});
+
+  const rows = data ?? [];
+  const total = rows.reduce((acc, r) => {
+    acc.loss += Number(r.loss ?? 0) || 0;
+    acc.loss_value += Number(r.loss_value ?? 0) || 0;
+    acc.count += 1;
+    return acc;
+  }, { loss: 0, loss_value: 0, count: 0 });
+
+  // groupBy 집계 (in-memory · 50k 이하 · 순회 1회)
+  const map = new Map<string, { key: string; label: string; loss: number; loss_value: number; count: number; extra?: any }>();
+  for (const r of rows) {
+    let key: string, label: string, extra: any = undefined;
+    if (groupBy === "date") {
+      key = String(r.snapshot_date ?? "");
+      label = key;
+    } else if (groupBy === "supplier") {
+      key = String(r.supplier ?? "미지정");
+      label = key;
+    } else {
+      key = String(r.product_code ?? "");
+      label = String(r.product_name ?? key);
+      extra = { product_code: key };
+    }
+    if (!key) continue;
+    const cur = map.get(key) ?? { key, label, loss: 0, loss_value: 0, count: 0, extra };
+    cur.loss += Number(r.loss ?? 0) || 0;
+    cur.loss_value += Number(r.loss_value ?? 0) || 0;
+    cur.count += 1;
+    map.set(key, cur);
+  }
+  // 정렬: date 는 date ASC · supplier/product 는 loss_value DESC
+  const grouped = Array.from(map.values());
+  if (groupBy === "date") grouped.sort((a, b) => a.key.localeCompare(b.key));
+  else grouped.sort((a, b) => b.loss_value - a.loss_value);
+
+  return res.json({ from, to, groupBy, supplier, rows: grouped, total });
+}));
 
 export default router;
