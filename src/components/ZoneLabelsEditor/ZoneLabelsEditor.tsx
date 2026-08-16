@@ -5,7 +5,9 @@
 //   - 카테고리 그룹 접기/펴기 · 원본 zoneId 는 read-only · 번호/부제만 편집
 //   - 번호 중복 검증 · dirty 실시간 감지
 
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import {
   Save,
@@ -247,20 +249,12 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
           sub_label: m.subLabel ?? null,
         })),
       };
-      const res = await fetch("/api/zone-labels", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j?.error ?? `저장 실패 (${res.status})`);
-      }
-      // 즉시 다른 페이지 반영
+      await api.put("/api/zone-labels", body);
       setZoneMappings(mappings);
       _showToast("저장되었습니다.");
-    } catch (err: any) {
-      setSaveError(err?.message ?? "저장 중 오류가 발생했습니다.");
+    } catch (err: unknown) {
+      const msg = err instanceof ApiError ? err.message : (err as any)?.message ?? "저장 중 오류가 발생했습니다.";
+      setSaveError(msg);
     } finally {
       setSaving(false);
     }

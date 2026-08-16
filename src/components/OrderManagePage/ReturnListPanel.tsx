@@ -1,3 +1,4 @@
+// 2026-08-17 · apiClient 마이그레이션
 // src/components/OrderManagePage/ReturnListPanel.tsx
 // 반품필요 탭을 독립 컴포넌트로 추출 (2026-07-31 · 탭 스왑 · StockManagePage 이동용)
 // 기존 OrderManagePage의 return 탭 state/fetch/JSX 를 그대로 캡슐화
@@ -15,6 +16,7 @@ import { EmptyState } from "../common/EmptyState";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { useResizablePanel } from "../../hooks/useResizablePanel";
+import { api, ApiError } from "../../lib/apiClient";
 
 // ── 반품 요청서 모달 (발주서 포맷) · 2026-08-03 ─────────────────────────
 type ReturnReasonKey = "재고 과다" | "유통기한 임박" | "저조 판매" | "기타";
@@ -164,22 +166,14 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
         total_qty:    totalQty,
         total_amount: totalAmount,
       };
-      const res = await fetch("/api/return-requests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        setSent(true);
-        setTimeout(onClose, 1400);
-      } else {
-        // 백엔드 미구현 · 콘솔 로그 fallback (요청 원칙 · API 스켈레톤 처리)
-        console.warn("[반품요청] API 실패 · payload:", payload);
-        setSendError(`전송 실패 (${res.status}) · 요청 내용은 콘솔에 기록됨`);
-      }
+      await api.post("/api/return-requests", payload);
+      setSent(true);
+      setTimeout(onClose, 1400);
     } catch (e: any) {
+      const errMsg = e instanceof ApiError ? e.message : (e?.message ?? "");
+      // 백엔드 미구현 · 콘솔 로그 fallback (요청 원칙 · API 스켈레톤 처리)
       console.warn("[반품요청] 네트워크 오류 · payload:", { returnNumber, requestDate, expectedDate, reason, supplier: supplierName, lines });
-      setSendError(`네트워크 오류: ${e?.message ?? ""} · 요청 내용은 콘솔에 기록됨`);
+      setSendError(`전송 실패: ${errMsg} · 요청 내용은 콘솔에 기록됨`);
     } finally {
       setSending(false);
     }
@@ -475,20 +469,20 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
     setReturnLoading(true);
     try {
       // 2026-08-03 · 병렬 · top-sales (반품필요 원본) + inventory-checks (실재고 컬럼용)
-      const [salesRes, invRes] = await Promise.all([
-        fetch("/api/stock-manage/top-sales?months=6&limit=5000&sort=sale&dir=desc"),
-        fetch("/api/inventory-checks").catch(() => null),
+      const [salesResult, invResult] = await Promise.allSettled([
+        api.get<any>("/api/stock-manage/top-sales?months=6&limit=5000&sort=sale&dir=desc"),
+        api.get<any>("/api/inventory-checks"),
       ]);
-      if (!salesRes.ok) throw new Error(String(salesRes.status));
-      const data = await salesRes.json();
+      if (salesResult.status === "rejected") throw salesResult.reason;
+      const data = salesResult.value.data;
       const rows: any[] = Array.isArray(data?.rows) ? data.rows : [];
 
       // 실재고 맵 · product_code 별 최신 · warehouse1+warehouse2+store1+store2+store3
       //   레거시 fallback · warehouse_stock + store_stock + store_stock_2
       const actualByCode = new Map<string, number>();
-      if (invRes && invRes.ok) {
+      if (invResult.status === "fulfilled") {
         try {
-          const invRaw: any[] = await invRes.json().catch(() => []);
+          const invRaw: any[] = Array.isArray(invResult.value.data) ? invResult.value.data : [];
           const latestByCode = new Map<string, any>();
           for (const r of Array.isArray(invRaw) ? invRaw : []) {
             const code = String(r?.product_code ?? "").trim();
@@ -588,10 +582,9 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
     setReturnPanelLoading(true); setReturnPanelError(null);
     (async () => {
       try {
-        const res = await fetch(`/api/products/${encodeURIComponent(returnSelectedProduct.code)}`);
-        if (res.ok) setReturnPanelFull(await res.json());
-        else { const b = await res.json().catch(() => ({})); setReturnPanelError(b.error ?? `조회 실패 (${res.status})`); }
-      } catch (e: any) { setReturnPanelError(e?.message ?? "네트워크 오류"); }
+        const { data } = await api.get<any>(`/api/products/${encodeURIComponent(returnSelectedProduct.code)}`);
+        setReturnPanelFull(data);
+      } catch (e: any) { setReturnPanelError(e instanceof ApiError ? e.message : (e?.message ?? "네트워크 오류")); }
       finally { setReturnPanelLoading(false); }
     })();
   }, [returnSelectedProduct]);

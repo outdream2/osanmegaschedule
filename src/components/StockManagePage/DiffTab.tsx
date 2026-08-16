@@ -1,8 +1,10 @@
 // src/components/StockManagePage/DiffTab.tsx
 // 손실추적 탭 — 실재고(창고+매장) vs ERP 현재고 차이 리스트
 // 2026-08-03 · StockManagePage 에서 분리 · OrderManagePage 통계 탭에서도 사용
+// 2026-08-17 · apiClient 마이그레이션
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { api } from "../../lib/apiClient";
 import { Layers, Loader2 as LoaderIcon, ChevronRight, ChevronDown, ListChecks, History } from "lucide-react";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";
@@ -127,8 +129,8 @@ export const DiffTab: React.FC = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/stock-manage/low-stock");
-      if (res.ok) setLowStock(await res.json());
+      const { data } = await api.get<any>("/api/stock-manage/low-stock");
+      setLowStock(data);
     } finally { setLoading(false); }
   }, []);
 

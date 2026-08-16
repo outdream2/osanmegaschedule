@@ -1,3 +1,4 @@
+// 2026-08-17 · apiClient 마이그레이션
 // src/components/OrderManagePage/OrderManagePage.tsx
 // 발주관리 페이지 — 매장관리 · 재고관리 · 입고알림관리 옆의 서브탭으로 노출
 // 기존 요청목록의 '발주요청' 탭 컨텐츠를 독립 페이지로 분리
@@ -58,6 +59,7 @@ import { InventoryEditModal } from "../common/InventoryEditModal";
 import type { InventoryEditModalInitialValues } from "../common/InventoryEditModal";
 import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
+import { api, ApiError } from "../../lib/apiClient";
 
 interface OrderRequest {
   id: string;
@@ -377,10 +379,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     setDetailLoading(true); setDetailError(null);
     (async () => {
       try {
-        const res = await fetch(`/api/products/${encodeURIComponent(detailProduct.code)}`);
-        if (res.ok) setDetailFull(await res.json());
-        else { const b = await res.json().catch(() => ({})); setDetailError(b.error ?? `조회 실패 (${res.status})`); }
-      } catch (err: any) { setDetailError(err?.message ?? "네트워크 오류"); }
+        const { data } = await api.get<any>(`/api/products/${encodeURIComponent(detailProduct.code)}`);
+        setDetailFull(data);
+      } catch (err: any) { setDetailError(err instanceof ApiError ? err.message : (err?.message ?? "네트워크 오류")); }
       finally { setDetailLoading(false); }
     })();
   }, [detailProduct]);
@@ -403,10 +404,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     setOrderPanelLoading(true); setOrderPanelError(null);
     (async () => {
       try {
-        const res = await fetch(`/api/products/${encodeURIComponent(orderPanelProduct.code)}`);
-        if (res.ok) setOrderPanelFull(await res.json());
-        else { const b = await res.json().catch(() => ({})); setOrderPanelError(b.error ?? `조회 실패 (${res.status})`); }
-      } catch (err: any) { setOrderPanelError(err?.message ?? "네트워크 오류"); }
+        const { data } = await api.get<any>(`/api/products/${encodeURIComponent(orderPanelProduct.code)}`);
+        setOrderPanelFull(data);
+      } catch (err: any) { setOrderPanelError(err instanceof ApiError ? err.message : (err?.message ?? "네트워크 오류")); }
       finally { setOrderPanelLoading(false); }
     })();
   }, [orderPanelProduct]);
@@ -573,9 +573,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     (async () => {
       try {
         // months=6 · 매입주기 계산에 충분한 이력 · limit=5000 · 전체 상품 커버
-        const res = await fetch("/api/stock-manage/top-sales?months=6&limit=5000&sort=sale&dir=desc");
-        if (!res.ok) return;
-        const body = await res.json();
+        const { data: body } = await api.get<any>("/api/stock-manage/top-sales?months=6&limit=5000&sort=sale&dir=desc");
         const rows: any[] = Array.isArray(body?.rows) ? body.rows : (Array.isArray(body) ? body : []);
         const m = new Map<string, NeedExtra>();
         for (const r of rows) {
@@ -615,10 +613,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     setNeedPanelLoading(true); setNeedPanelError(null);
     (async () => {
       try {
-        const res = await fetch(`/api/products/${encodeURIComponent(needPanelProduct.code)}`);
-        if (res.ok) setNeedPanelFull(await res.json());
-        else { const b = await res.json().catch(() => ({})); setNeedPanelError(b.error ?? `조회 실패 (${res.status})`); }
-      } catch (err: any) { setNeedPanelError(err?.message ?? "네트워크 오류"); }
+        const { data } = await api.get<any>(`/api/products/${encodeURIComponent(needPanelProduct.code)}`);
+        setNeedPanelFull(data);
+      } catch (err: any) { setNeedPanelError(err instanceof ApiError ? err.message : (err?.message ?? "네트워크 오류")); }
       finally { setNeedPanelLoading(false); }
     })();
   }, [needPanelProduct]);
@@ -626,47 +623,41 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const loadOrderReqs = useCallback(async () => {
     setOrderLoading(true); setOrderError(null);
     try {
-      const res = await fetch("/api/order-requests");
-      if (res.ok) {
-        const list: OrderRequest[] = await res.json();
-        setOrderReqs(list);
-        // 2026-08-10 · #39 · 이전 사입가 batch fetch (purchase-history · latest_unit_price)
-        const codes = Array.from(new Set(list.map(r => r.product_code).filter(Boolean)));
-        if (codes.length > 0) {
-          try {
-            const r = await fetch(`/api/products/purchase-history?codes=${encodeURIComponent(codes.join(","))}&limit=1`);
-            if (r.ok) {
-              const j = await r.json();
-              const hist = j?.history ?? {};
-              const map = new Map<string, number>();
-              for (const code of codes) {
-                const p = hist[code]?.latest_unit_price;
-                if (p != null && Number.isFinite(Number(p))) map.set(code, Number(p));
-              }
-              setPrevPriceMap(map);
-            }
-          } catch { /* silent */ }
-        }
+      const { data: list } = await api.get<OrderRequest[]>("/api/order-requests");
+      setOrderReqs(list);
+      // 2026-08-10 · #39 · 이전 사입가 batch fetch (purchase-history · latest_unit_price)
+      const codes = Array.from(new Set(list.map(r => r.product_code).filter(Boolean)));
+      if (codes.length > 0) {
+        try {
+          const { data: j } = await api.get<any>(`/api/products/purchase-history?codes=${encodeURIComponent(codes.join(","))}&limit=1`);
+          const hist = j?.history ?? {};
+          const map = new Map<string, number>();
+          for (const code of codes) {
+            const p = hist[code]?.latest_unit_price;
+            if (p != null && Number.isFinite(Number(p))) map.set(code, Number(p));
+          }
+          setPrevPriceMap(map);
+        } catch { /* silent */ }
       }
-      else { const b = await res.json().catch(() => ({})); setOrderError(b.error ?? `서버 오류 (${res.status})`); setOrderReqs([]); }
-    } catch { setOrderError("네트워크 오류"); setOrderReqs([]); }
+    } catch (err: any) { setOrderError(err instanceof ApiError ? err.message : "네트워크 오류"); setOrderReqs([]); }
     finally { setOrderLoading(false); }
   }, []);
 
   const loadProducts = useCallback(async () => {
     setProductsLoading(true);
     try {
-      const res = await fetch("/api/stock-manage/low-stock");
-      if (res.ok) { const data = await res.json(); setProducts(Array.isArray(data) ? data : []); }
-    } finally { setProductsLoading(false); }
+      const { data } = await api.get<any>("/api/stock-manage/low-stock");
+      setProducts(Array.isArray(data) ? data : []);
+    } catch { /* silent */ }
+    finally { setProductsLoading(false); }
   }, []);
 
   // 전체 products (구역·spec) — 발주요청 리스트에서 low-stock 아닌 상품에도 정보 필요
   const [allProductsMap, setAllProductsMap] = useState<Record<string, any>>({});
   const reloadAllProductsMap = useCallback(async () => {
     try {
-      const res = await fetch("/api/products-map");
-      if (res.ok) setAllProductsMap(await res.json());
+      const { data } = await api.get<any>("/api/products-map");
+      setAllProductsMap(data);
     } catch { /* silent */ }
   }, []);
   useEffect(() => { reloadAllProductsMap(); }, [reloadAllProductsMap]);
@@ -681,9 +672,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [invMap, setInvMap] = useState<Record<string, InvSplit>>({});
   const loadInvMap = useCallback(async () => {
     try {
-      const res = await fetch("/api/inventory-checks");
-      if (!res.ok) return;
-      const list = await res.json();
+      const { data: list } = await api.get<any>("/api/inventory-checks");
       if (!Array.isArray(list)) return;
       const m: Record<string, InvSplit> = {};
       const numOrNull = (v: unknown) => v == null ? null : Number(v);
@@ -723,11 +712,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const loadReceipts = useCallback(async () => {
     setReceiptsLoading(true);
     try {
-      const res = await fetch("/api/goods-receipts");
-      if (res.ok) {
-        const data = await res.json();
-        setReceipts(Array.isArray(data) ? data : (data?.receipts ?? []));
-      }
+      const { data } = await api.get<any>("/api/goods-receipts");
+      setReceipts(Array.isArray(data) ? data : (data?.receipts ?? []));
     } catch { /* silent · 서버 API 미구성일 수 있음 */ }
     finally { setReceiptsLoading(false); }
   }, []);
@@ -742,21 +728,16 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     });
     if (!proceed) return;
     try {
-      const res = await fetch(`/api/goods-receipts/${receipt.id}/confirm`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          received_at: new Date().toISOString(),
-          received_qty_map: receivedQtyMap ?? null,
-        }),
+      await api.post(`/api/goods-receipts/${receipt.id}/confirm`, {
+        received_at: new Date().toISOString(),
+        received_qty_map: receivedQtyMap ?? null,
       });
-      if (!res.ok) {
-        alert(`입고 확정 실패\n※ 서버 API (/api/goods-receipts) 미구성일 수 있습니다.\n\nSupabase 마이그레이션 SQL:\nCREATE TABLE goods_receipts (id UUID PRIMARY KEY, dispatch_id UUID, order_number TEXT, supplier TEXT, status TEXT, received_at TIMESTAMPTZ, ...);\nCREATE TABLE goods_receipt_items (...);`);
-        return;
-      }
       alert(`✅ 입고 확정 완료\n#${receipt.order_number}`);
       loadReceipts();
-    } catch (err: any) { alert(`오류: ${err?.message ?? err}`); }
+    } catch (err: any) {
+      const msg = err instanceof ApiError ? err.message : (err?.message ?? String(err));
+      alert(`입고 확정 실패\n${msg}\n※ 서버 API (/api/goods-receipts) 미구성일 수 있습니다.\n\nSupabase 마이그레이션 SQL:\nCREATE TABLE goods_receipts (id UUID PRIMARY KEY, dispatch_id UUID, order_number TEXT, supplier TEXT, status TEXT, received_at TIMESTAMPTZ, ...);\nCREATE TABLE goods_receipt_items (...);`);
+    }
   };
 
   const getCode = (p: ProductInfo) => p.code ?? p.product_code ?? "";
@@ -882,26 +863,23 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     const code = getCode(p);
     setRequestingOrder(prev => { const n = new Set(prev); n.add(code); return n; });
     try {
-      const res = await fetch("/api/order-requests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          product_code: code,
-          product_name: getName(p),
-          current_stock: p.current_stock,
-          optimal_stock: p.optimal_stock,
-          supplier: p.supplier,
-          requested_at: new Date().toISOString(),
-        }),
+      await api.post("/api/order-requests", {
+        product_code: code,
+        product_name: getName(p),
+        current_stock: p.current_stock,
+        optimal_stock: p.optimal_stock,
+        supplier: p.supplier,
+        requested_at: new Date().toISOString(),
       });
-      if (res.ok) await loadOrderReqs();
-    } finally {
+      await loadOrderReqs();
+    } catch { /* silent */ }
+    finally {
       setRequestingOrder(prev => { const n = new Set(prev); n.delete(code); return n; });
     }
   };
 
   const deleteOrder = async (ids: string[]) => {
-    await Promise.all(ids.map(id => fetch(`/api/order-requests/${id}`, { method: "DELETE" }).catch(() => {})));
+    await Promise.all(ids.map(id => api.del(`/api/order-requests/${id}`).catch(() => {})));
     setSelectedOrder(new Set());
     loadOrderReqs();
   };
@@ -1009,9 +987,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       try {
         const codes = Array.from(new Set(suppliersList.flatMap(s => s.items.map(it => it.product_code)).filter(Boolean)));
         if (codes.length === 0) return;
-        const r = await fetch(`/api/products/purchase-history?codes=${encodeURIComponent(codes.join(","))}&limit=1`);
-        if (!r.ok) return;
-        const j = await r.json();
+        const { data: j } = await api.get<any>(`/api/products/purchase-history?codes=${encodeURIComponent(codes.join(","))}&limit=1`);
         const hist = j?.history ?? {};
         setOrderModal(prev => {
           if (!prev) return prev;
@@ -1037,9 +1013,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     Promise.all(suppliersList.map(async (s) => {
       if (s.supplier === "(공급사 미지정)") return { supplier: s.supplier, items: [] as any[] };
       try {
-        const res = await fetch(`/api/ocr-confirmed-items?supplier=${encodeURIComponent(s.supplier)}&hasBalance=true`);
-        if (!res.ok) return { supplier: s.supplier, items: [] as any[] };
-        const data = await res.json();
+        const { data } = await api.get<any>(`/api/ocr-confirmed-items?supplier=${encodeURIComponent(s.supplier)}&hasBalance=true`);
         return { supplier: s.supplier, items: Array.isArray(data?.items) ? data.items : [] };
       } catch { return { supplier: s.supplier, items: [] as any[] }; }
     })).then((results) => {
@@ -1100,34 +1074,29 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       // 공급사별로 별도 발주서 (각각 고유 order_number) — 병렬 발송
       const submissions = orderModal.suppliers.map(async (s) => {
         try {
-          const res = await fetch("/api/order-requests/bulk-send", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              order_number: s.order_number,
-              order_date: orderModal.orderDate,
-              desired_arrival: orderModal.desiredArrival,
-              memo: s.memo ?? orderModal.memo,
-              channels: orderModal.channels,
-              bySupplier: [{
-                supplier: s.supplier,
-                supplier_contact: s.supplier_contact,
-                supplier_email: s.supplier_email,
-                supplier_phone: s.supplier_phone,
-                items: s.items.map(it => ({
-                  order_request_id: it.order_request_id,
-                  product_code: it.product_code,
-                  product_name: it.product_name,
-                  current_stock: it.current_stock,
-                  optimal_stock: it.optimal_stock,
-                  needed_qty: (it.optimal_stock ?? 0) - (it.current_stock ?? 0),
-                  order_qty: it.order_qty,
-                  memo: it.memo,
-                })),
-              }],
-            }),
+          const { data: body } = await api.post<any>("/api/order-requests/bulk-send", {
+            order_number: s.order_number,
+            order_date: orderModal.orderDate,
+            desired_arrival: orderModal.desiredArrival,
+            memo: s.memo ?? orderModal.memo,
+            channels: orderModal.channels,
+            bySupplier: [{
+              supplier: s.supplier,
+              supplier_contact: s.supplier_contact,
+              supplier_email: s.supplier_email,
+              supplier_phone: s.supplier_phone,
+              items: s.items.map(it => ({
+                order_request_id: it.order_request_id,
+                product_code: it.product_code,
+                product_name: it.product_name,
+                current_stock: it.current_stock,
+                optimal_stock: it.optimal_stock,
+                needed_qty: (it.optimal_stock ?? 0) - (it.current_stock ?? 0),
+                order_qty: it.order_qty,
+                memo: it.memo,
+              })),
+            }],
           });
-          const body = await res.json().catch(() => ({}));
           const outcomes = Array.isArray(body?.results?.[0]?.outcomes) ? body.results[0].outcomes as string[] : [];
           // 2026-08-10 · 실제 발송 성공 여부 판정: outcomes 중 하나라도 'skipped(' 로 시작 = 실 발송
           //   no_recipient · no_smtp_env · no_gateway_env · no_env · template_pending · error 등은 실패로 간주
@@ -1135,13 +1104,14 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           return {
             supplier: s.supplier,
             order_number: s.order_number,
-            ok: res.ok && realSent,   // HTTP 200 + 실 발송 시에만 성공
-            status: res.status,
-            error: body?.error ?? (res.ok && !realSent ? "발송된 채널 없음 (모든 채널 미구성/수신처 없음)" : null),
+            ok: realSent,
+            status: 200,
+            error: !realSent ? "발송된 채널 없음 (모든 채널 미구성/수신처 없음)" : null,
             outcomes,
           };
         } catch (e: any) {
-          return { supplier: s.supplier, order_number: s.order_number, ok: false, status: 0, error: `네트워크 오류: ${e?.message ?? e}`, outcomes: [] as string[] };
+          const errMsg = e instanceof ApiError ? e.message : (e?.message ?? String(e));
+          return { supplier: s.supplier, order_number: s.order_number, ok: false, status: (e instanceof ApiError ? e.status : 0), error: `네트워크 오류: ${errMsg}`, outcomes: [] as string[] };
         }
       });
       const results = await Promise.all(submissions);

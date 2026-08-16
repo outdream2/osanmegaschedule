@@ -1,4 +1,6 @@
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import { api } from "../../lib/apiClient";
 import { TIMING } from "../../constants/timing";
 import {
   Bell, Package, MapPin,
@@ -214,31 +216,22 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const handlePrepareDisplay = useCallback(async (req: DisplayRequest) => {
     setCompletingDisplay(prev => new Set([...prev, req.id]));
     try {
-      const res = await fetch(`/api/display-requests/${req.id}/prepare`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prepared_by: authSession?.employeeId ?? null,
-          prepared_by_name: authSession?.employeeName ?? "",
-        }),
+      const { data: body } = await api.patch<any>(`/api/display-requests/${req.id}/prepare`, {
+        prepared_by: authSession?.employeeId ?? null,
+        prepared_by_name: authSession?.employeeName ?? "",
       });
-      if (res.ok) {
-        const body = await res.json().catch(() => ({}));
-        const reverted = (body as any).action === "reverted";
-        const now = new Date().toISOString();
-        setDisplayReqs(prev => prev.map(r => r.id === req.id
-          ? reverted
-            ? { ...r, status: "pending", prepared_at: null, prepared_by: null, prepared_by_name: null }
-            : { ...r, status: "prepared", prepared_at: now,
-                prepared_by: authSession?.employeeId ?? null,
-                prepared_by_name: authSession?.employeeName ?? "" }
-          : r));
-      } else {
-        const b = await res.json().catch(() => ({}));
-        alert(`창고 준비 토글 실패: ${(b as any).error ?? res.statusText}`);
-      }
-    } catch { /* ignore */ }
-    finally {
+      const reverted = body.action === "reverted";
+      const now = new Date().toISOString();
+      setDisplayReqs(prev => prev.map(r => r.id === req.id
+        ? reverted
+          ? { ...r, status: "pending", prepared_at: null, prepared_by: null, prepared_by_name: null }
+          : { ...r, status: "prepared", prepared_at: now,
+              prepared_by: authSession?.employeeId ?? null,
+              prepared_by_name: authSession?.employeeName ?? "" }
+        : r));
+    } catch (e: any) {
+      alert(`창고 준비 토글 실패: ${e?.message ?? "오류"}`);
+    } finally {
       setCompletingDisplay(prev => { const s = new Set(prev); s.delete(req.id); return s; });
     }
   }, [authSession?.employeeId, authSession?.employeeName]);
@@ -249,32 +242,23 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const handleCompleteDisplay = useCallback(async (req: DisplayRequest) => {
     setCompletingDisplay(prev => new Set([...prev, req.id]));
     try {
-      const res = await fetch(`/api/display-requests/${req.id}/complete`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          completed_by: authSession?.employeeId ?? null,
-          completed_by_name: authSession?.employeeName ?? "",
-        }),
+      const { data: body } = await api.patch<any>(`/api/display-requests/${req.id}/complete`, {
+        completed_by: authSession?.employeeId ?? null,
+        completed_by_name: authSession?.employeeName ?? "",
       });
-      if (res.ok) {
-        const body = await res.json().catch(() => ({}));
-        const reverted = (body as any).action === "reverted";
-        const revertedStatus = (body as any).status as "prepared" | "pending" | undefined;
-        const now = new Date().toISOString();
-        setDisplayReqs(prev => prev.map(r => r.id === req.id
-          ? reverted
-            ? { ...r, status: revertedStatus ?? "prepared", completed_at: null, completed_by: null, completed_by_name: null }
-            : { ...r, status: "done", completed_at: now,
-                completed_by: authSession?.employeeId ?? null,
-                completed_by_name: authSession?.employeeName ?? "" }
-          : r));
-      } else {
-        const b = await res.json().catch(() => ({}));
-        alert(`진열완료 토글 실패: ${(b as any).error ?? res.statusText}`);
-      }
-    } catch { /* ignore */ }
-    finally {
+      const reverted = body.action === "reverted";
+      const revertedStatus = body.status as "prepared" | "pending" | undefined;
+      const now = new Date().toISOString();
+      setDisplayReqs(prev => prev.map(r => r.id === req.id
+        ? reverted
+          ? { ...r, status: revertedStatus ?? "prepared", completed_at: null, completed_by: null, completed_by_name: null }
+          : { ...r, status: "done", completed_at: now,
+              completed_by: authSession?.employeeId ?? null,
+              completed_by_name: authSession?.employeeName ?? "" }
+        : r));
+    } catch (e: any) {
+      alert(`진열완료 토글 실패: ${e?.message ?? "오류"}`);
+    } finally {
       setCompletingDisplay(prev => { const s = new Set(prev); s.delete(req.id); return s; });
     }
   }, [authSession?.employeeId, authSession?.employeeName]);
@@ -298,17 +282,13 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     try {
       await Promise.all(
         [...byStaff.entries()].map(([staffId, { name, zones }]) =>
-          fetch("/api/notifications", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              employee_id: staffId,
-              title: "📦 진열 보충 요청",
-              body: zones.length === 1
-                ? `${zones[0]} 진열 보충이 필요합니다`
-                : `${zones[0]} 외 ${zones.length - 1}개 구역 보충이 필요합니다`,
-              type: "alert",
-            }),
+          api.post("/api/notifications", {
+            employee_id: staffId,
+            title: "📦 진열 보충 요청",
+            body: zones.length === 1
+              ? `${zones[0]} 진열 보충이 필요합니다`
+              : `${zones[0]} 외 ${zones.length - 1}개 구역 보충이 필요합니다`,
+            type: "alert",
           })
         )
       );
@@ -325,13 +305,12 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const loadDisplayReqs = useCallback(async () => {
     setDisplayLoading(true);
     try {
-      // 직원(관리자 미만)은 본인이 담당자로 지정된 요청만 조회
       const empId = authSession?.employeeId;
       const url = !isManager && empId
         ? `/api/display-requests?scope=mine&employeeId=${empId}`
         : "/api/display-requests";
-      const res = await fetch(url);
-      setDisplayReqs(res.ok ? await res.json() : []);
+      const { data } = await api.get<any>(url);
+      setDisplayReqs(Array.isArray(data) ? data : []);
     }
     catch { setDisplayReqs([]); } finally { setDisplayLoading(false); }
   }, [authSession?.employeeId, isManager]);
@@ -340,15 +319,9 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     setOrderLoading(true);
     setOrderError(null);
     try {
-      const res = await fetch("/api/order-requests");
-      if (res.ok) {
-        setOrderReqs(await res.json());
-      } else {
-        const body = await res.json().catch(() => ({}));
-        setOrderError(body.error ?? `서버 오류 (${res.status})`);
-        setOrderReqs([]);
-      }
-    } catch { setOrderError("네트워크 오류"); setOrderReqs([]); }
+      const { data } = await api.get<any>("/api/order-requests");
+      setOrderReqs(data);
+    } catch (e: any) { setOrderError(e?.message ?? "네트워크 오류"); setOrderReqs([]); }
     finally { setOrderLoading(false); }
   }, []);
 
@@ -356,41 +329,29 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     setMismatchLoading(true);
     setMismatchError(null);
     try {
-      const res = await fetch("/api/zone-mismatches");
-      if (res.ok) {
-        setMismatches(await res.json());
-      } else {
-        const body = await res.json().catch(() => ({}));
-        setMismatchError(body.error ?? `서버 오류 (${res.status})`);
-        setMismatches([]);
-      }
-    } catch { setMismatchError("네트워크 오류"); setMismatches([]); }
+      const { data } = await api.get<any>("/api/zone-mismatches");
+      setMismatches(data);
+    } catch (e: any) { setMismatchError(e?.message ?? "네트워크 오류"); setMismatches([]); }
     finally { setMismatchLoading(false); }
   }, []);
 
   const loadProducts = useCallback(async () => {
     setProductsLoading(true);
     try {
-      // 재고관리와 동일한 API 사용 → 데이터·필터 완전 일치 · 항상 실시간
-      const res = await fetch("/api/stock-manage/low-stock");
-      if (res.ok) {
-        const data = await res.json();
-        setProducts(Array.isArray(data) ? data : []);
-      } else {
-        // 실패 시 fallback: 정적 캐시
-        const map = await getProductsMap();
-        setProducts(Object.values(map));
-      }
-    }
-    finally { setProductsLoading(false); }
+      const { data } = await api.get<any>("/api/stock-manage/low-stock");
+      setProducts(Array.isArray(data) ? data : []);
+    } catch {
+      // 실패 시 fallback: 정적 캐시
+      const map = await getProductsMap();
+      setProducts(Object.values(map));
+    } finally { setProductsLoading(false); }
   }, []);
 
   const loadLunch = useCallback(async () => {
     setLunchLoading(true);
     try {
       const today = new Date().toISOString().split("T")[0];
-      const res = await fetch(`/api/lunch-requests?date=${today}`);
-      const data = res.ok ? await res.json() : {};
+      const { data } = await api.get<any>(`/api/lunch-requests?date=${today}`);
       setLunchRequests(data.requests ?? []);
     } catch { setLunchRequests([]); }
     finally { setLunchLoading(false); }
@@ -399,24 +360,24 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const loadInventoryChecks = useCallback(async () => {
     setInventoryLoading(true);
     try {
-      const res = await fetch("/api/inventory-checks");
-      setInventoryChecks(res.ok ? await res.json() : []);
+      const { data } = await api.get<any>("/api/inventory-checks");
+      setInventoryChecks(Array.isArray(data) ? data : []);
     } catch { setInventoryChecks([]); }
     finally { setInventoryLoading(false); }
   }, []);
 
   const loadTabCounts = useCallback(async () => {
     try {
-      const res = await fetch("/api/requests/pending-counts");
-      if (res.ok) setTabCounts(await res.json());
+      const { data } = await api.get<any>("/api/requests/pending-counts");
+      setTabCounts(data);
     } catch {}
   }, []);
 
   // 연차 pending 건수 · 별도 API
   const loadLeavePendingCount = useCallback(async () => {
     try {
-      const res = await fetch("/api/leave-requests/pending-count");
-      if (res.ok) { const d = await res.json(); setLeavePendingCount(Number(d?.count ?? 0)); }
+      const { data: d } = await api.get<any>("/api/leave-requests/pending-count");
+      setLeavePendingCount(Number(d?.count ?? 0));
     } catch {}
   }, []);
 
@@ -442,9 +403,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const res = await fetch("/api/requests/pending-counts");
-        if (!res.ok) return;
-        const counts = await res.json();
+        const { data: counts } = await api.get<any>("/api/requests/pending-counts");
         const prev = prevCountsRef.current;
         setTabCounts(counts);
         prevCountsRef.current = counts;
@@ -462,7 +421,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   }, [tab, loadDisplayReqs, loadOrderReqs, loadMismatches, loadInventoryChecks, loadLunch]);
 
   // ── 단건 삭제 헬퍼 ──
-  async function deleteOne(url: string) { await fetch(url, { method: "DELETE" }); }
+  async function deleteOne(url: string) { await api.del(url); }
 
   // ── 진열 삭제 ──
   const deleteDisplay = async (ids: string[]) => {
@@ -497,19 +456,13 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     setOrderRequestError(null);
     const currentStock = stockOverride !== undefined ? stockOverride : (p.current_stock != null ? Number(p.current_stock) : null);
     try {
-      const res = await fetch("/api/order-requests", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ product_code: p.code, product_name: p.name,
-          current_stock: currentStock,
-          optimal_stock: p.optimal_stock != null ? Number(p.optimal_stock) : null, note: "" }),
+      await api.post("/api/order-requests", {
+        product_code: p.code, product_name: p.name,
+        current_stock: currentStock,
+        optimal_stock: p.optimal_stock != null ? Number(p.optimal_stock) : null, note: "",
       });
-      if (res.ok) {
-        await loadOrderReqs();
-      } else {
-        const body = await res.json().catch(() => ({}));
-        setOrderRequestError(body.error ?? `발주 요청 실패 (${res.status})`);
-      }
-    } catch { setOrderRequestError("네트워크 오류 — 다시 시도해주세요"); }
+      await loadOrderReqs();
+    } catch (e: any) { setOrderRequestError(e?.message ?? "네트워크 오류 — 다시 시도해주세요"); }
     finally { setRequestingOrder(prev => { const s = new Set(prev); s.delete(p.code); return s; }); }
   };
 
@@ -531,11 +484,8 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     }
     setRequestingInvOrder(prev => new Set([...prev, r.product_code]));
     try {
-      const res = await fetch("/api/order-requests", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ product_code: r.product_code, product_name: r.product_name, current_stock: r.system_stock, optimal_stock: r.optimal_stock, note: "" }),
-      });
-      if (res.ok) { await loadOrderReqs(); }
+      await api.post("/api/order-requests", { product_code: r.product_code, product_name: r.product_name, current_stock: r.system_stock, optimal_stock: r.optimal_stock, note: "" });
+      await loadOrderReqs();
     } finally {
       setRequestingInvOrder(prev => { const s = new Set(prev); s.delete(r.product_code); return s; });
     }

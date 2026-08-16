@@ -15,7 +15,9 @@
 //   ALTER TABLE inventory_checks ADD COLUMN IF NOT EXISTS store2_zone TEXT;
 //   ALTER TABLE inventory_checks ADD COLUMN IF NOT EXISTS store3_zone TEXT;
 
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import { api, ApiError } from "../../lib/apiClient";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
 import { SplitPanel } from "../common/SplitPanel";
 import {
@@ -292,24 +294,16 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     }
     setRequestingKey(row.key);
     try {
-      const res = await fetch("/api/display-requests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          product_code: row.code,
-          zone_id: targetZone,
-          zone_label: targetZone,
-          note: autoNote,
-          requested_at: new Date().toISOString(),
-        }),
+      await api.post("/api/display-requests", {
+        product_code: row.code,
+        zone_id: targetZone,
+        zone_label: targetZone,
+        note: autoNote,
+        requested_at: new Date().toISOString(),
       });
-      if (!res.ok) {
-        const b = await res.json().catch(() => ({}));
-        throw new Error((b as any).error ?? `요청 실패 (${res.status})`);
-      }
       showToast(`[${row.product.name}] ${targetZone || "배정구역"} 진열요청 전송 완료`, 3000);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "요청 실패";
+      const msg = e instanceof ApiError ? e.message : (e instanceof Error ? e.message : "요청 실패");
       showToast(`요청 실패 · ${msg}`, 3000);
     } finally {
       setRequestingKey(null);
@@ -442,9 +436,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     setHistoryLoading(true);
     setHistoryRows([]);
     try {
-      const r = await fetch(`/api/inventory-checks?product_code=${encodeURIComponent(code)}`);
-      const list = r.ok ? await r.json() : [];
-      setHistoryRows(Array.isArray(list) ? list : []);
+      const { data } = await api.get<any[]>(`/api/inventory-checks?product_code=${encodeURIComponent(code)}`);
+      setHistoryRows(Array.isArray(data) ? data : []);
     } catch { /* noop */ } finally { setHistoryLoading(false); }
   }, []);
 
@@ -466,12 +459,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     setSaveStatus("saving");
     setSaveError(null);
     try {
-      const res = await fetch("/api/inventory-checks/bulk", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          checked_by: authSession?.employeeName ?? "익명",
-          items: rows.map(r => {
+      const { data: j } = await api.post<{ saved?: number; failed?: number; downgraded?: boolean }>("/api/inventory-checks/bulk", {
+        checked_by: authSession?.employeeName ?? "익명",
+        items: rows.map(r => {
             // 증분 방식 · 저장값 = prev + add 합산
             const w1 = calcSlotTotal(r.prevWarehouse1Qty, r.warehouse1AddQty);
             const w2 = calcSlotTotal(r.prevWarehouse2Qty, r.warehouse2AddQty);
@@ -501,13 +491,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               warehouse_stock:  hasW1 ? w1 : null,
             };
           }),
-        }),
       });
-      if (!res.ok) {
-        const b = await res.json().catch(() => ({}));
-        throw new Error((b as any).error ?? `저장 실패 (${res.status})`);
-      }
-      const j = await res.json() as { saved?: number; failed?: number; downgraded?: boolean };
       setSavedCount(j.saved ?? rows.length);
       setSaveStatus("done");
       // A5 · 서버 저장 성공 시 draft 삭제
@@ -516,10 +500,10 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       showToast(
         j.downgraded
           ? `${j.saved ?? rows.length}건 저장 완료 (DB 컬럼 확장 대기 · 레거시 모드)`
-          : `${j.saved ?? rows.length}건 저장 완료`
+          : `${j.saved ?? rows.length}건 저장 완료`,
       );
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "저장 실패";
+      const msg = e instanceof ApiError ? e.message : (e instanceof Error ? e.message : "저장 실패");
       setSaveError(msg);
       setSaveStatus("error");
     }

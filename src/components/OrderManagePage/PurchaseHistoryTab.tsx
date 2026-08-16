@@ -1,3 +1,4 @@
+// 2026-08-17 · apiClient 마이그레이션
 // src/components/OrderManagePage/PurchaseHistoryTab.tsx
 // #146 · 매입 탭 > 매입이력 서브탭 · 공급사별 purchase_details 원장
 // 2026-08-03 · UX 대공사 (Phase A/B/C)
@@ -41,6 +42,7 @@ import { useVendorInfoModal } from "../common/VendorInfoModal";
 //   · 우측 상세 (VendorHeaderPanel + PurchaseSubTabs) 는 100% 유지
 import { SupplierTab } from "../StockManagePage/SupplierTab";
 import { API_LIMITS } from "../../constants/apiLimits";
+import { api, ApiError } from "../../lib/apiClient";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -179,14 +181,14 @@ export const PurchaseHistoryTab: React.FC = () => {
   const loadSummary = useCallback(async () => {
     setSummaryLoading(true);
     try {
-      const [summaryRes, salesRes] = await Promise.all([
-        fetch("/api/supplier-purchase-summary?days=90"),
+      const [summaryResult, salesResult] = await Promise.allSettled([
+        api.get<SummaryResponse & { suppliers: any[] }>("/api/supplier-purchase-summary?days=90"),
         // top-sales?months=1 · sale_qty_month · sale_amount_month · supplier_name 포함
         //   ReturnListPanel · OrderManagePage 가 warm 시켜둔 서버 캐시(TTL) 재활용
-        fetch("/api/stock-manage/top-sales?months=1&limit=5000&sort=sale&dir=desc").catch(() => null),
+        api.get<any>("/api/stock-manage/top-sales?months=1&limit=5000&sort=sale&dir=desc"),
       ]);
-      if (!summaryRes.ok) throw new Error(String(summaryRes.status));
-      const j: SummaryResponse & { suppliers: any[] } = await summaryRes.json();
+      if (summaryResult.status === "rejected") throw summaryResult.reason;
+      const j: SummaryResponse & { suppliers: any[] } = summaryResult.value.data;
       // source · diagnostics 저장 (UI 배지·console 출력)
       setSummarySource(j.source ?? null);
       setSummaryDiagnostics(j.diagnostics ?? null);
@@ -212,9 +214,9 @@ export const PurchaseHistoryTab: React.FC = () => {
          .toLowerCase();
       const salesBySupplier = new Map<string, { qty: number; amt: number }>();
       const salesBySupplierNorm = new Map<string, { qty: number; amt: number }>();
-      if (salesRes && salesRes.ok) {
+      if (salesResult.status === "fulfilled") {
         try {
-          const sb = await salesRes.json();
+          const sb = salesResult.value.data;
           const rows: any[] = Array.isArray(sb?.rows) ? sb.rows : [];
           for (const r of rows) {
             const sup = String(r.supplier_name ?? r.supplier ?? "").trim();
@@ -296,9 +298,7 @@ export const PurchaseHistoryTab: React.FC = () => {
       const fromStr = fromDate.toISOString().slice(0, 10);
       // no_cycle=1 · cycle_days 계산 스킵 → 서버 응답 수십 배 빠름
       const params = new URLSearchParams({ supplier, from: fromStr, limit: String(API_LIMITS.LARGE), no_cycle: "1" });
-      const res = await fetch(`/api/purchase-details?${params}`);
-      if (!res.ok) throw new Error(String(res.status));
-      const j = await res.json();
+      const { data: j } = await api.get<any>(`/api/purchase-details?${params}`);
       const rowsFromApi: any[] = Array.isArray(j.rows) ? j.rows : [];
       // supplier 매칭 · raw supplier_name 또는 products 조인 supplier_name 모두
       const filtered = rowsFromApi.filter(r => {
@@ -404,19 +404,19 @@ export const PurchaseHistoryTab: React.FC = () => {
         no_cycle: "1",
       });
       // 첫 페이지 + top-sales 병렬
-      const [res, salesRes] = await Promise.all([
-        fetch(`/api/purchase-details?${firstParams}`),
-        fetch("/api/stock-manage/top-sales?months=1&limit=5000&sort=sale&dir=desc").catch(() => null),
+      const [firstResult, salesResult] = await Promise.allSettled([
+        api.get<any>(`/api/purchase-details?${firstParams}`),
+        api.get<any>("/api/stock-manage/top-sales?months=1&limit=5000&sort=sale&dir=desc"),
       ]);
-      if (!res.ok) throw new Error(String(res.status));
-      const j = await res.json();
+      if (firstResult.status === "rejected") throw firstResult.reason;
+      const j = firstResult.value.data;
       const firstRows: any[] = Array.isArray(j.rows) ? j.rows : [];
 
       // 판매지표 map 구성 (product_code 기준 · leading zero 형태도 함께 저장)
       const salesMap = new Map<string, { qty: number; amt: number }>();
-      if (salesRes && salesRes.ok) {
+      if (salesResult.status === "fulfilled") {
         try {
-          const sb = await salesRes.json();
+          const sb = salesResult.value.data;
           const sRows: any[] = Array.isArray(sb?.rows) ? sb.rows : [];
           for (const r of sRows) {
             const code = String(r.product_code ?? "").trim();
@@ -480,9 +480,11 @@ export const PurchaseHistoryTab: React.FC = () => {
             page: String(page),
             no_cycle: "1",
           });
-          const moreRes = await fetch(`/api/purchase-details?${moreParams}`);
-          if (!moreRes.ok) break;
-          const mj = await moreRes.json();
+          let mj: any;
+          try {
+            const { data } = await api.get<any>(`/api/purchase-details?${moreParams}`);
+            mj = data;
+          } catch { break; }
           const moreRows: any[] = Array.isArray(mj.rows) ? mj.rows : [];
           if (moreRows.length === 0) break;
           accumulated.push(...moreRows);

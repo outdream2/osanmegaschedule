@@ -1,9 +1,11 @@
 // src/components/LandingPage/VendorListEditor.tsx
 // 공급사관리 · 한 줄 테이블 리스트 + 상세 모달 (2026-07-30 UI 리디자인)
+// 2026-08-17 · apiClient 마이그레이션
 //   리스트: shadcn data-table 스타일 · 그룹 컬러 헤더 · h-8 툴바
 //   모달:   헤더 gradient · 폼 h-9 · 매입이력 shadcn 스타일 · 하단 저장/닫기 통일
 
 import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { api } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useVendors } from "../../hooks/useVendors";
 import {
@@ -195,9 +197,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/stock-manage/supplier-purchases?months=${aggregateMonths}&limit=50000`);
-        if (!res.ok) return;
-        const j = await res.json();
+        const { data: j } = await api.get<any>(`/api/stock-manage/supplier-purchases?months=${aggregateMonths}&limit=50000`);
         const rows: any[] = Array.isArray(j?.rows) ? j.rows : [];
         const m = new Map<string, { stockValue: number; salesTotal: number }>();
         for (const r of rows) {
@@ -948,8 +948,7 @@ export const VendorDetailModal: React.FC<{
     if (!vendor?.company_name) return;
     (async () => {
       try {
-        const r1 = await fetch(`/api/products-map`);
-        const map = r1.ok ? await r1.json() : {};
+        const { data: map } = await api.get<any>(`/api/products-map`);
         // 공급사 매칭 · (주) · vat 미포함 정제 후 비교
         const target = vendor.company_name.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim();
         const items: Array<{ code: string; qty: number }> = [];
@@ -967,11 +966,8 @@ export const VendorDetailModal: React.FC<{
         const hist: Record<string, any> = {};
         for (let i = 0; i < codes.length; i += CHUNK) {
           const chunk = codes.slice(i, i + CHUNK);
-          const r2 = await fetch(`/api/products/purchase-history?codes=${encodeURIComponent(chunk.join(","))}&limit=1`);
-          if (r2.ok) {
-            const d2 = await r2.json();
-            Object.assign(hist, d2?.history ?? {});
-          }
+          const { data: d2 } = await api.get<any>(`/api/products/purchase-history?codes=${encodeURIComponent(chunk.join(","))}&limit=1`);
+          Object.assign(hist, d2?.history ?? {});
         }
         const total = items.reduce((s, it) => {
           const price = Number(hist[it.code]?.latest_unit_price ?? 0) || 0;
@@ -1006,19 +1002,13 @@ export const VendorDetailModal: React.FC<{
     try {
       const supplierEnc = encodeURIComponent(vendor.company_name);
       const [balRes, payRes, ledgerRes] = await Promise.all([
-        fetch(`/api/supplier-balance/${supplierEnc}`),
-        fetch(`/api/supplier-payments?supplier=${supplierEnc}&days=3650`),
-        fetch(`/api/supplier-ledger?supplier=${supplierEnc}&days=3650`),
+        api.get<any>(`/api/supplier-balance/${supplierEnc}`).catch(() => null),
+        api.get<any>(`/api/supplier-payments?supplier=${supplierEnc}&days=3650`).catch(() => null),
+        api.get<any>(`/api/supplier-ledger?supplier=${supplierEnc}&days=3650`).catch(() => null),
       ]);
-      if (balRes.ok) setBalanceInfo(await balRes.json());
-      if (payRes.ok) {
-        const j = await payRes.json();
-        setPayments(Array.isArray(j.rows) ? j.rows : []);
-      }
-      if (ledgerRes.ok) {
-        const j = await ledgerRes.json();
-        setLedgerRows(Array.isArray(j.rows) ? j.rows : []);
-      }
+      if (balRes) setBalanceInfo(balRes.data);
+      if (payRes) setPayments(Array.isArray(payRes.data?.rows) ? payRes.data.rows : []);
+      if (ledgerRes) setLedgerRows(Array.isArray(ledgerRes.data?.rows) ? ledgerRes.data.rows : []);
     } catch (e) {
       console.error("결제·잔고 로드 실패:", e);
     } finally {
@@ -1032,11 +1022,7 @@ export const VendorDetailModal: React.FC<{
   const handleDeletePayment = async (id: number) => {
     if (!await confirm({ message: "결제 기록을 삭제하시겠습니까? 배분(allocations) 도 함께 삭제됩니다.", danger: true })) return;
     try {
-      const res = await fetch(`/api/supplier-payments/${id}`, { method: "DELETE" });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j?.error ?? `서버 ${res.status}`);
-      }
+      await api.del(`/api/supplier-payments/${id}`);
       setPayMsg({ type: "ok", text: "삭제 완료" });
       await loadPaymentData();
     } catch (e: any) {
@@ -1047,9 +1033,9 @@ export const VendorDetailModal: React.FC<{
   // 매입 이력 · 통계 로드
   useEffect(() => {
     setPurchLoading(true);
-    fetch(`/api/purchase-details?supplier=${encodeURIComponent(vendor.company_name)}&limit=1000`)
-      .then(r => r.ok ? r.json() : { rows: [] })
-      .then(j => {
+    (async () => {
+      try {
+        const { data: j } = await api.get<any>(`/api/purchase-details?supplier=${encodeURIComponent(vendor.company_name)}&limit=1000`);
         const rows: PurchaseRow[] = Array.isArray(j.rows) ? j.rows : [];
         setPurchases(rows.slice(0, 30));
         const totalAmount = rows.reduce((s, r) => s + (Number(r.total ?? r.amount) || 0), 0);
@@ -1063,9 +1049,9 @@ export const VendorDetailModal: React.FC<{
           earliestDate: dates[0] ?? null,
           count: rows.length,
         });
-      })
-      .catch(() => { setPurchases([]); setSummary(null); })
-      .finally(() => setPurchLoading(false));
+      } catch { setPurchases([]); setSummary(null); }
+      finally { setPurchLoading(false); }
+    })();
   }, [vendor.id, vendor.company_name]);
 
   const isDirty = useMemo(() => (
@@ -1108,30 +1094,22 @@ export const VendorDetailModal: React.FC<{
     }
     setSaving(true); setSaveMsg(null);
     try {
-      const res = await fetch(`/api/vendors/${vendor.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+      await api.patch(`/api/vendors/${vendor.id}`, {
         // 2026-07-22: 'email' 컬럼이 Supabase vendors 스키마에 없어 저장 실패 · 페이로드에서 제외
         //   (UI 는 유지 · 나중에 DB 마이그레이션 시 다시 활성)
-        body: JSON.stringify({
-          company_name:    draft.company_name.trim(),
-          business_number: bnDigits || null,
-          contact_name:    draft.contact_name.trim() || null,
-          phone:           draft.phone.trim() || null,
-          category:        draft.category.trim() || null,
-          note:            draft.note.trim() || null,
-          // 2026-08-03 · #193 · VAT 포함 여부 (unset → null)
-          vat_included:    draft.vat_included === "included" ? true : draft.vat_included === "excluded" ? false : null,
-          // 2026-08-10 · #21 · 팀장·긴급연락처 (마이그레이션 실행 전엔 서버 저장 실패해도 프론트 정상)
-          team_leader_name:  draft.team_leader_name.trim()  || null,
-          team_leader_phone: draft.team_leader_phone.trim() || null,
-          emergency_contact: draft.emergency_contact.trim() || null,
-        }),
+        company_name:    draft.company_name.trim(),
+        business_number: bnDigits || null,
+        contact_name:    draft.contact_name.trim() || null,
+        phone:           draft.phone.trim() || null,
+        category:        draft.category.trim() || null,
+        note:            draft.note.trim() || null,
+        // 2026-08-03 · #193 · VAT 포함 여부 (unset → null)
+        vat_included:    draft.vat_included === "included" ? true : draft.vat_included === "excluded" ? false : null,
+        // 2026-08-10 · #21 · 팀장·긴급연락처 (마이그레이션 실행 전엔 서버 저장 실패해도 프론트 정상)
+        team_leader_name:  draft.team_leader_name.trim()  || null,
+        team_leader_phone: draft.team_leader_phone.trim() || null,
+        emergency_contact: draft.emergency_contact.trim() || null,
       });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData?.error ?? `서버 ${res.status}`);
-      }
       setSaveMsg({ type: "ok", text: "저장 완료" });
       // 2026-07-30 · 사용자 요청 · 분류(category) 저장 시 · 리스트 배지 즉시 반영 이벤트
       try { window.dispatchEvent(new CustomEvent("vendors-changed")); } catch { /* ignore */ }
@@ -1656,11 +1634,10 @@ const PaymentRegisterModal: React.FC<{
   // 미결제 매입건 로드
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/supplier-open-invoices?supplier=${encodeURIComponent(supplierName)}`)
-      .then(r => r.ok ? r.json() : { rows: [] })
-      .then(j => {
+    (async () => {
+      try {
+        const { data: j } = await api.get<any>(`/api/supplier-open-invoices?supplier=${encodeURIComponent(supplierName)}`);
         const rows: OpenInvoiceRow[] = Array.isArray(j.rows) ? j.rows : [];
-        // paid 는 아래로 · open/partial 상단
         rows.sort((a, b) => {
           const sw = (s: string) => s === "open" ? 0 : s === "partial" ? 1 : 2;
           const d = sw(a.status) - sw(b.status);
@@ -1670,9 +1647,9 @@ const PaymentRegisterModal: React.FC<{
         const m = new Map<number, { checked: boolean; alloc: string }>();
         rows.forEach(r => m.set(r.id, { checked: false, alloc: String(Math.max(0, Math.round(r.remaining))) }));
         setAllocMap(m);
-      })
-      .catch(() => setInvoices([]))
-      .finally(() => setLoading(false));
+      } catch { setInvoices([]); }
+      finally { setLoading(false); }
+    })();
   }, [supplierName]);
 
   const amountNum = Number(String(amount).replace(/[^0-9.-]/g, "")) || 0;
@@ -1746,22 +1723,14 @@ const PaymentRegisterModal: React.FC<{
     }
     setSaving(true);
     try {
-      const res = await fetch("/api/supplier-payments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          supplier_name: supplierName,
-          payment_date: paymentDate,
-          amount: amountNum,
-          method,
-          memo: memo.trim() || null,
-          allocations,
-        }),
+      await api.post("/api/supplier-payments", {
+        supplier_name: supplierName,
+        payment_date: paymentDate,
+        amount: amountNum,
+        method,
+        memo: memo.trim() || null,
+        allocations,
       });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j?.error ?? `서버 ${res.status}`);
-      }
       onSaved();
     } catch (e: any) {
       setErrMsg(`저장 실패: ${e?.message ?? e}`);

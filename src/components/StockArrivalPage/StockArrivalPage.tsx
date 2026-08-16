@@ -1,4 +1,6 @@
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { api } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import {
   Bell, BellOff, Calendar, Check, Clock,
@@ -87,8 +89,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
   const fetchArrivals = useCallback(async () => {
     setLoading(true);
     try {
-      const res  = await fetch("/api/stock-arrivals");
-      const data = await res.json();
+      const { data } = await api.get<any>("/api/stock-arrivals");
       setArrivals(Array.isArray(data) ? data : []);
     } finally { setLoading(false); }
   }, []);
@@ -111,14 +112,11 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
         const sub = await reg.pushManager.getSubscription();
         await sub?.unsubscribe(); setPushSubscribed(false); return;
       }
-      const vk = await fetch("/api/vapid-public-key").catch(() => null);
-      if (!vk?.ok) return;
-      const { publicKey } = await vk.json();
+      const vkResult = await api.get<{ publicKey: string }>("/api/vapid-public-key").catch(() => null);
+      if (!vkResult) return;
+      const { publicKey } = vkResult.data;
       const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: publicKey });
-      await fetch("/api/anon-push-subscribe", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subscription: sub }),
-      });
+      await api.post("/api/anon-push-subscribe", { subscription: sub });
       setPushSubscribed(true);
     } catch { /* 권한 거부 */ } finally { setPushLoading(false); }
   };
@@ -128,11 +126,8 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
     if (!newTitle.trim() || !employeeId) return;
     setSubmitting(true);
     try {
-      const res = await fetch("/api/stock-arrivals", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: newTitle.trim(), body: newBody.trim() || null, employeeId, send_now: false }),
-      });
-      if (res.ok) { setNewTitle(""); setNewBody(""); await fetchArrivals(); titleRef.current?.focus(); }
+      await api.post("/api/stock-arrivals", { title: newTitle.trim(), body: newBody.trim() || null, employeeId, send_now: false });
+      setNewTitle(""); setNewBody(""); await fetchArrivals(); titleRef.current?.focus();
     } finally { setSubmitting(false); }
   };
 
@@ -141,11 +136,8 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
     if (!newTitle.trim() || !employeeId) return;
     setSubmitting(true);
     try {
-      const res = await fetch("/api/stock-arrivals", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: newTitle.trim(), body: newBody.trim() || null, employeeId, send_now: true }),
-      });
-      if (res.ok) { setNewTitle(""); setNewBody(""); await fetchArrivals(); titleRef.current?.focus(); }
+      await api.post("/api/stock-arrivals", { title: newTitle.trim(), body: newBody.trim() || null, employeeId, send_now: true });
+      setNewTitle(""); setNewBody(""); await fetchArrivals(); titleRef.current?.focus();
     } finally { setSubmitting(false); }
   };
 
@@ -162,20 +154,11 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
     try {
       if (schedPickerId === "new") {
         if (!newTitle.trim()) return;
-        const res = await fetch("/api/stock-arrivals", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: newTitle.trim(), body: newBody.trim() || null, employeeId, scheduled_at: isoTime }),
-        });
-        if (res.ok) { setNewTitle(""); setNewBody(""); }
+        await api.post("/api/stock-arrivals", { title: newTitle.trim(), body: newBody.trim() || null, employeeId, scheduled_at: isoTime });
+        setNewTitle(""); setNewBody("");
       } else {
-        const res = await fetch(`/api/stock-arrivals/${schedPickerId}`, {
-          method: "PATCH", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ employeeId, scheduled_at: isoTime }),
-        });
-        if (res.ok) {
-          const updated = await res.json();
-          setArrivals(prev => prev.map(a => a.id === schedPickerId ? updated : a));
-        }
+        const { data: updated } = await api.patch<StockArrival>(`/api/stock-arrivals/${schedPickerId}`, { employeeId, scheduled_at: isoTime });
+        setArrivals(prev => prev.map(a => a.id === schedPickerId ? updated : a));
       }
       setSchedPickerId(null);
       if (schedPickerId === "new") await fetchArrivals();
@@ -185,14 +168,8 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
   // ── 기존 항목 즉시 발송 ───────────────────────────────────────────────────
   const handleBroadcast = async (id: number) => {
     if (!employeeId) return;
-    const res = await fetch(`/api/stock-arrivals/${id}/broadcast`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ employeeId }),
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      setArrivals(prev => prev.map(a => a.id === id ? updated : a));
-    }
+    const { data: updated } = await api.post<StockArrival>(`/api/stock-arrivals/${id}/broadcast`, { employeeId });
+    setArrivals(prev => prev.map(a => a.id === id ? updated : a));
   };
 
   // ── 인라인 수정 ───────────────────────────────────────────────────────────
@@ -205,24 +182,15 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
     if (!editTitle.trim()) return;
     setEditSaving(true);
     try {
-      const res = await fetch(`/api/stock-arrivals/${id}`, {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: editTitle.trim(), body: editBody.trim() || null, employeeId }),
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        setArrivals(prev => prev.map(a => a.id === id ? updated : a));
-        setEditId(null);
-      }
+      const { data: updated } = await api.patch<StockArrival>(`/api/stock-arrivals/${id}`, { title: editTitle.trim(), body: editBody.trim() || null, employeeId });
+      setArrivals(prev => prev.map(a => a.id === id ? updated : a));
+      setEditId(null);
     } finally { setEditSaving(false); }
   };
 
   const handleDelete = async (id: number) => {
     if (!await confirm({ message: "이 입고 알림을 삭제하시겠습니까?", danger: true })) return;
-    await fetch(`/api/stock-arrivals/${id}`, {
-      method: "DELETE", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ employeeId }),
-    });
+    await api.del(`/api/stock-arrivals/${id}`, { data: { employeeId } });
     setArrivals(prev => prev.filter(a => a.id !== id));
   };
 

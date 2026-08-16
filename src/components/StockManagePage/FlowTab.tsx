@@ -1,8 +1,10 @@
 // src/components/StockManagePage/FlowTab.tsx
 // 상품현황 탭 — StockManagePage 에서 완전 독립 추출
 // 2026-08-03 · StockManagePage.tsx 리팩터 · OrderManagePage 통계/flow 서브탭으로 이동
+// 2026-08-17 · apiClient 마이그레이션
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { api } from "../../lib/apiClient";
 import { useVendors } from "../../hooks/useVendors";
 import {
   Search, Boxes, Info, EyeOff, Loader2 as LoaderIcon,
@@ -287,9 +289,8 @@ export const FlowTab: React.FC = () => {
       // 1단계: skip_purchase=1 (빠른 응답)
       const basicParams = new URLSearchParams(params);
       basicParams.set("skip_purchase", "1");
-      const res = await fetch(`/api/stock-manage/top-sales?${basicParams}`);
-      if (res.ok) {
-        const data = await res.json();
+      const { data } = await api.get<any>(`/api/stock-manage/top-sales?${basicParams}`);
+      if (data) {
         setStockFlow(Array.isArray(data.rows) ? data.rows : []);
         setAvailableSnapshots(Array.isArray(data.dates) ? data.dates : []);
         setFlowPeriodType(data.period_type ?? null);
@@ -314,9 +315,8 @@ export const FlowTab: React.FC = () => {
             for (let i = 0; i < codes.length; i += URL_CHUNK) {
               const chunk = codes.slice(i, i + URL_CHUNK);
               fetchPromises.push(
-                fetch(`/api/stock-manage/purchase-info-batch?codes=${encodeURIComponent(chunk.join(","))}`)
-                  .then(r => r.ok ? r.json() : { items: {} })
-                  .then(j => j.items ?? {})
+                api.get<any>(`/api/stock-manage/purchase-info-batch?codes=${encodeURIComponent(chunk.join(","))}`)
+                  .then(r => r.data?.items ?? {})
                   .catch(() => ({}))
               );
             }
@@ -334,8 +334,6 @@ export const FlowTab: React.FC = () => {
         } else {
           GLOBAL_FLOW_CACHE.set(cacheKey, { data, ts: Date.now() });
         }
-      } else {
-        setLoading(false);
       }
     } catch { setLoading(false); }
   }, [flowSnapshot, flowSort, flowDir, flowLimit, flowMonths, flowSeason]);
@@ -357,11 +355,7 @@ export const FlowTab: React.FC = () => {
     try {
       const codes = Array.from(selectedFlowCodes) as string[];
       await Promise.all(codes.map(code =>
-        fetch(`/api/products/${encodeURIComponent(code)}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ hidden: true }),
-        }).catch(() => {})
+        api.patch(`/api/products/${encodeURIComponent(code)}`, { hidden: true }).catch(() => {})
       ));
       setStockFlow(prev => prev.filter(r => !selectedFlowCodes.has(String(r.product_code))));
       setSelectedFlowCodes(new Set());

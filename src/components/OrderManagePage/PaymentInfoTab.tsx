@@ -1,3 +1,4 @@
+// 2026-08-17 · apiClient 마이그레이션
 // src/components/OrderManagePage/PaymentInfoTab.tsx
 // 결제 탭 > 결제정보 서브탭 (2026-08-03 재설계 · #196)
 // 좌측 · 공급사 리스트 (잔고 정렬)
@@ -33,6 +34,7 @@ import { EmptyState } from "../common/EmptyState";
 import { PeriodSelector, PERIOD_DAYS_PRESET, PERIOD_MONTHS_PRESET } from "../common/PeriodSelector";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
+import { api, ApiError } from "../../lib/apiClient";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -470,15 +472,15 @@ export const PaymentInfoTab: React.FC = () => {
   const loadAggregates = useCallback(async (days: PeriodDays) => {
     setAggregatesLoading(true);
     try {
-      const [purRes, payRes] = await Promise.all([
-        fetch(`/api/supplier-purchase-summary?days=${days}`),
-        fetch(`/api/supplier-payments?days=${days}`),
+      const [purResult, payResult] = await Promise.allSettled([
+        api.get<any>(`/api/supplier-purchase-summary?days=${days}`),
+        api.get<any>(`/api/supplier-payments?days=${days}`),
       ]);
       const purMap = new Map<string, number>();
       const payMap = new Map<string, number>();
       const lastDateMap = new Map<string, string>();
-      if (purRes.ok) {
-        const j = await purRes.json();
+      if (purResult.status === "fulfilled") {
+        const j = purResult.value.data;
         const list: any[] = Array.isArray(j?.suppliers) ? j.suppliers : [];
         for (const s of list) {
           const name = String(s?.supplier ?? "").trim();
@@ -493,8 +495,8 @@ export const PaymentInfoTab: React.FC = () => {
           }
         }
       }
-      if (payRes.ok) {
-        const j = await payRes.json();
+      if (payResult.status === "fulfilled") {
+        const j = payResult.value.data;
         const rows: any[] = Array.isArray(j?.rows) ? j.rows : [];
         for (const r of rows) {
           const name = String(r?.supplier_name ?? "").trim();
@@ -531,9 +533,7 @@ export const PaymentInfoTab: React.FC = () => {
     (async () => {
       setSalesLoading(true);
       try {
-        const res = await fetch(`/api/stock-manage/supplier-purchases?months=3&limit=50000`);
-        if (!res.ok) { if (!cancelled) setSalesLoading(false); return; }
-        const j = await res.json();
+        const { data: j } = await api.get<any>(`/api/stock-manage/supplier-purchases?months=3&limit=50000`);
         const rows: any[] = Array.isArray(j?.rows) ? j.rows : [];
         const sMap = new Map<string, number>();
         const svMap = new Map<string, number>();
@@ -558,9 +558,7 @@ export const PaymentInfoTab: React.FC = () => {
   //   마운트 시 + 결제 등록 이벤트 시 재조회 · 기간 필터 무관 (전체 이력 중 최근)
   const loadLatestPayments = useCallback(async () => {
     try {
-      const res = await fetch("/api/supplier-payments/latest-per-supplier");
-      if (!res.ok) { setLatestPaymentByVendor(new Map()); return; }
-      const j = await res.json();
+      const { data: j } = await api.get<any>("/api/supplier-payments/latest-per-supplier");
       const rows: any[] = Array.isArray(j?.rows) ? j.rows : [];
       const m = new Map<string, { date: string; amount: number }>();
       for (const r of rows) {
@@ -588,9 +586,7 @@ export const PaymentInfoTab: React.FC = () => {
   const loadBalance = useCallback(async (supplierName: string) => {
     setBalanceLoading(true);
     try {
-      const res = await fetch(`/api/supplier-balance/${encodeURIComponent(supplierName)}`);
-      if (!res.ok) throw new Error(String(res.status));
-      const j: BalanceResp = await res.json();
+      const { data: j } = await api.get<BalanceResp>(`/api/supplier-balance/${encodeURIComponent(supplierName)}`);
       setBalance(j);
     } catch { setBalance(null); }
     finally { setBalanceLoading(false); }
@@ -603,9 +599,7 @@ export const PaymentInfoTab: React.FC = () => {
       //   · ledger 는 매입+결제 시간순 merge 후 각 row 에 running_balance 계산 (서버측)
       //   · 여기서는 payment type 만 필터 · 결제 시점의 running_balance = "결제 후 잔고"
       //   · 넉넉히 3650일(10년) fetch · 누적 정합성 보장 (짧게 자르면 오래된 미결제 매입 누락 위험)
-      const res = await fetch(`/api/supplier-ledger?supplier=${encodeURIComponent(supplierName)}&days=3650`);
-      if (!res.ok) throw new Error(String(res.status));
-      const j = await res.json();
+      const { data: j } = await api.get<any>(`/api/supplier-ledger?supplier=${encodeURIComponent(supplierName)}&days=3650`);
       const allRows: any[] = Array.isArray(j?.rows) ? j.rows : [];
       // payment type 만 · 최근순 (desc) 정렬 후 상위 8건
       const paymentRows = allRows
@@ -644,9 +638,9 @@ export const PaymentInfoTab: React.FC = () => {
   const loadMonthlyBreakdown = useCallback(async (supplierName: string) => {
     setMonthlyLoading(true);
     try {
-      const [detailRes, paysRes] = await Promise.all([
-        fetch(`/api/supplier-purchase-detail?supplier=${encodeURIComponent(supplierName)}&days=${FETCH_DAYS}`),
-        fetch(`/api/supplier-payments?supplier=${encodeURIComponent(supplierName)}&days=${FETCH_DAYS}`),
+      const [detailResult, paysResult] = await Promise.allSettled([
+        api.get<any>(`/api/supplier-purchase-detail?supplier=${encodeURIComponent(supplierName)}&days=${FETCH_DAYS}`),
+        api.get<any>(`/api/supplier-payments?supplier=${encodeURIComponent(supplierName)}&days=${FETCH_DAYS}`),
       ]);
       const purchase: Record<string, number> = {};
       const payment: Record<string, number> = {};
@@ -654,8 +648,8 @@ export const PaymentInfoTab: React.FC = () => {
       let totalPayment = 0;
       // T11 · 상품별 그루핑 (raw rows 를 product_code 로 집계)
       const productMap = new Map<string, ProductPurchaseSummary>();
-      if (detailRes.ok) {
-        const j = await detailRes.json();
+      if (detailResult.status === "fulfilled") {
+        const j = detailResult.value.data;
         for (const r of (Array.isArray(j?.rows) ? j.rows : [])) {
           const date = String(r?.date ?? "");
           if (!/^\d{4}-\d{2}/.test(date)) continue;
@@ -683,8 +677,8 @@ export const PaymentInfoTab: React.FC = () => {
         }
       }
       setProductSummary([...productMap.values()].sort((a, b) => b.totalAmount - a.totalAmount));
-      if (paysRes.ok) {
-        const j = await paysRes.json();
+      if (paysResult.status === "fulfilled") {
+        const j = paysResult.value.data;
         for (const r of (Array.isArray(j?.rows) ? j.rows : [])) {
           const date = String(r?.payment_date ?? "");
           if (!/^\d{4}-\d{2}/.test(date)) continue;
@@ -713,9 +707,7 @@ export const PaymentInfoTab: React.FC = () => {
   const loadSalesStockBreakdown = useCallback(async (supplierName: string, months: number) => {
     setSalesStockLoading(true);
     try {
-      const res = await fetch(`/api/supplier-monthly-breakdown?supplier=${encodeURIComponent(supplierName)}&months=${months}`);
-      if (!res.ok) { setSalesStockBreakdown(null); return; }
-      const j = await res.json();
+      const { data: j } = await api.get<any>(`/api/supplier-monthly-breakdown?supplier=${encodeURIComponent(supplierName)}&months=${months}`);
       setSalesStockBreakdown(j);
     } catch {
       setSalesStockBreakdown(null);
@@ -855,21 +847,13 @@ export const PaymentInfoTab: React.FC = () => {
 
     setSaving(true);
     try {
-      const res = await fetch("/api/supplier-payments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          supplier_name: selectedVendor.company_name,
-          payment_date: paymentDate,
-          amount: amountNum,
-          method,
-          memo: finalMemo || null,
-        }),
+      await api.post("/api/supplier-payments", {
+        supplier_name: selectedVendor.company_name,
+        payment_date: paymentDate,
+        amount: amountNum,
+        method,
+        memo: finalMemo || null,
       });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j?.error ?? `서버 ${res.status}`);
-      }
       setMsg({ type: "ok", text: "결제 등록 완료" });
       // 리셋
       setAmount("");
@@ -887,7 +871,7 @@ export const PaymentInfoTab: React.FC = () => {
         detail: { supplier: selectedVendor.company_name },
       }));
     } catch (e: any) {
-      setMsg({ type: "err", text: `저장 실패: ${e?.message ?? e}` });
+      setMsg({ type: "err", text: `저장 실패: ${e instanceof ApiError ? e.message : (e?.message ?? String(e))}` });
     } finally {
       setSaving(false);
     }

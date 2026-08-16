@@ -3,8 +3,10 @@
 // - 모든 직원 접근 가능
 // - 이미지: Cloudinary 업로드 (클라 압축 후 25GB 무료)
 // - 담당자 표시: [이름 직급] · 헤더 스타일과 통일
+// 2026-08-17 · apiClient 마이그레이션
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { api } from "../../lib/apiClient";
 import {
   HelpCircle, AlertTriangle, StickyNote, Search, Plus, Send, X as XIcon, Image as ImageIcon,
   ChevronLeft, Pin, MessageCircle, Trash2, Loader2,
@@ -110,8 +112,8 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
       if (filterType) params.set("type", filterType);
       if (filterStatus) params.set("status", filterStatus);
       if (search.trim()) params.set("search", search.trim());
-      const res = await fetch(`/api/board/posts?${params}`);
-      if (res.ok) setPosts(await res.json());
+      const { data } = await api.get<BoardPost[]>(`/api/board/posts?${params}`);
+      setPosts(data);
     } finally { setLoading(false); }
   }, [filterType, filterStatus, search]);
 
@@ -121,11 +123,8 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/employees");
-        if (res.ok) {
-          const list = await res.json();
-          setEmployees(Array.isArray(list) ? list : []);
-        }
+        const { data: list } = await api.get<Employee[]>("/api/employees");
+        setEmployees(Array.isArray(list) ? list : []);
       } catch { /* ignore */ }
     })();
   }, []);
@@ -409,8 +408,8 @@ const InlineDetail: React.FC<{
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/board/posts/${postId}`);
-      if (res.ok) setPost(await res.json());
+      const { data } = await api.get<BoardPost>(`/api/board/posts/${postId}`);
+      setPost(data);
     } finally { setLoading(false); }
   }, [postId]);
   useEffect(() => { load(); }, [load]);
@@ -419,28 +418,20 @@ const InlineDetail: React.FC<{
     if (!commentBody.trim() || !authSession?.employeeId) return;
     setPosting(true);
     try {
-      const res = await fetch(`/api/board/posts/${postId}/comments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          author_id: authSession.employeeId,
-          author_name: authSession.employeeName ?? "",
-          author_rank: authSession.employeeRank ?? null,
-          body: commentBody.trim(),
-        }),
+      await api.post(`/api/board/posts/${postId}/comments`, {
+        author_id: authSession.employeeId,
+        author_name: authSession.employeeName ?? "",
+        author_rank: authSession.employeeRank ?? null,
+        body: commentBody.trim(),
       });
-      if (res.ok) { setCommentBody(""); await load(); onChanged(); }
+      setCommentBody(""); await load(); onChanged();
     } finally { setPosting(false); }
   };
 
   const saveEdit = async (id: number) => {
     if (!editingCommentBody.trim() || !authSession) return;
-    const res = await fetch(`/api/board/comments/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ editor_id: authSession.employeeId, body: editingCommentBody.trim() }),
-    });
-    if (res.ok) { setEditingCommentId(null); setEditingCommentBody(""); await load(); onChanged(); }
+    await api.patch(`/api/board/comments/${id}`, { editor_id: authSession.employeeId, body: editingCommentBody.trim() });
+    setEditingCommentId(null); setEditingCommentBody(""); await load(); onChanged();
   };
 
   return (
@@ -571,27 +562,20 @@ function ComposerModal({
     if (!title.trim()) { alert("제목을 입력해 주세요"); return; }
     setSaving(true);
     try {
-      const res = await fetch("/api/board/posts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          author_id: authSession.employeeId,
-          author_name: authSession.employeeName ?? "",
-          author_rank: authSession.employeeRank ?? null,
-          post_type: type,
-          title: title.trim(),
-          body,
-          category: category || null,
-          mentions: mentionIds,
-          images,
-        }),
+      await api.post("/api/board/posts", {
+        author_id: authSession.employeeId,
+        author_name: authSession.employeeName ?? "",
+        author_rank: authSession.employeeRank ?? null,
+        post_type: type,
+        title: title.trim(),
+        body,
+        category: category || null,
+        mentions: mentionIds,
+        images,
       });
-      if (!res.ok) {
-        const b = await res.json().catch(() => ({}));
-        alert(b.error ?? `등록 실패 (${res.status})`);
-        return;
-      }
       onCreated();
+    } catch (e: any) {
+      alert(e?.message ?? "등록 실패");
     } finally { setSaving(false); }
   };
 
@@ -739,17 +723,11 @@ function DetailModal({
     const body = editingCommentBody.trim();
     if (!body || !authSession) return;
     try {
-      const res = await fetch(`/api/board/comments/${commentId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ editor_id: authSession.employeeId, body }),
-      });
-      if (res.ok) {
-        setEditingCommentId(null);
-        setEditingCommentBody("");
-        await load();
-        onChanged();
-      }
+      await api.patch(`/api/board/comments/${commentId}`, { editor_id: authSession.employeeId, body });
+      setEditingCommentId(null);
+      setEditingCommentBody("");
+      await load();
+      onChanged();
     } catch { /* silent */ }
   };
   const [commentImages, setCommentImages] = useState<UploadedImage[]>([]);
@@ -800,32 +778,26 @@ function DetailModal({
     if (!editDraft.title.trim()) return;
     setSavingEdit(true);
     try {
-      const res = await fetch(`/api/board/posts/${postId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          editor_id: authSession.employeeId,
-          editor_level: authSession.level ?? 0,
-          title: editDraft.title.trim(),
-          body: editDraft.body,
-          category: editDraft.category || null,
-          images: editImages,
-        }),
+      await api.patch(`/api/board/posts/${postId}`, {
+        editor_id: authSession.employeeId,
+        editor_level: authSession.level ?? 0,
+        title: editDraft.title.trim(),
+        body: editDraft.body,
+        category: editDraft.category || null,
+        images: editImages,
       });
-      if (res.ok) {
-        setEditingPost(false);
-        setEditImages([]);
-        await load();
-        onChanged();
-      }
+      setEditingPost(false);
+      setEditImages([]);
+      await load();
+      onChanged();
     } finally { setSavingEdit(false); }
   };
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/board/posts/${postId}`);
-      if (res.ok) setPost(await res.json());
+      const { data } = await api.get<BoardPost>(`/api/board/posts/${postId}`);
+      setPost(data);
     } finally { setLoading(false); }
   }, [postId]);
 
@@ -848,43 +820,29 @@ function DetailModal({
     if (!commentBody.trim() || !authSession?.employeeId) return;
     setPosting(true);
     try {
-      const res = await fetch(`/api/board/posts/${postId}/comments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          author_id: authSession.employeeId,
-          author_name: authSession.employeeName ?? "",
-          author_rank: authSession.employeeRank ?? null,
-          body: commentBody.trim(),
-          images: commentImages,
-        }),
+      await api.post(`/api/board/posts/${postId}/comments`, {
+        author_id: authSession.employeeId,
+        author_name: authSession.employeeName ?? "",
+        author_rank: authSession.employeeRank ?? null,
+        body: commentBody.trim(),
+        images: commentImages,
       });
-      if (res.ok) {
-        setCommentBody("");
-        setCommentImages([]);
-        await load();
-        onChanged();
-      }
+      setCommentBody("");
+      setCommentImages([]);
+      await load();
+      onChanged();
     } finally { setPosting(false); }
   };
 
   const changeStatus = async (status: Status) => {
     if (!canEdit || !authSession) return;
-    await fetch(`/api/board/posts/${postId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ editor_id: authSession.employeeId, editor_level: authSession.level ?? 0, status }),
-    });
+    await api.patch(`/api/board/posts/${postId}`, { editor_id: authSession.employeeId, editor_level: authSession.level ?? 0, status });
     await load(); onChanged();
   };
 
   const togglePin = async () => {
     if (!isManager || !post || !authSession) return;
-    await fetch(`/api/board/posts/${postId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ editor_id: authSession.employeeId, editor_level: authSession.level ?? 0, pinned: !post.pinned }),
-    });
+    await api.patch(`/api/board/posts/${postId}`, { editor_id: authSession.employeeId, editor_level: authSession.level ?? 0, pinned: !post.pinned });
     await load(); onChanged();
   };
 
@@ -893,7 +851,7 @@ function DetailModal({
   const deletePost = async () => {
     if (!canEdit || !authSession) return;
     if (!await confirm({ message: "이 글을 삭제할까요?", danger: true })) return;
-    await fetch(`/api/board/posts/${postId}?editor_id=${authSession.employeeId}&editor_level=${authSession.level ?? 0}`, { method: "DELETE" });
+    await api.del(`/api/board/posts/${postId}?editor_id=${authSession.employeeId}&editor_level=${authSession.level ?? 0}`);
     onChanged(); onClose();
   };
 

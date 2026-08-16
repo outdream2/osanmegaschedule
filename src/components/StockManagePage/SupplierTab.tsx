@@ -1,8 +1,10 @@
 // src/components/StockManagePage/SupplierTab.tsx
 // 공급사현황 탭 — StockManagePage 에서 분리 · OrderManagePage 결제 탭에서도 사용
 // 2026-08-03 · 독립 컴포넌트로 추출
+// 2026-08-17 · apiClient 마이그레이션
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { api } from "../../lib/apiClient";
 import { useVendors } from "../../hooks/useVendors";
 import { Building2, Loader2 as LoaderIcon, ChevronRight, ChevronDown, X as XIcon } from "lucide-react";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
@@ -274,8 +276,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
       const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: String(API_LIMITS.LARGE) });
       if (sup.supplier_code) params.set("supplier_code", sup.supplier_code);
       else if (sup.supplier) params.set("supplier", sup.supplier);
-      const res = await fetch(`/api/stock-manage/top-sales?${params}`);
-      const rows = res.ok ? (await res.json()).rows : [];
+      const { data } = await api.get<any>(`/api/stock-manage/top-sales?${params}`);
+      const rows = data?.rows ?? [];
       setSupplierRowsMap(prev => ({ ...prev, [key]: Array.isArray(rows) ? rows : [] }));
       supplierFetchedRef.current.add(key);
     } catch {
@@ -331,11 +333,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
       const params = new URLSearchParams({ limit: String(API_LIMITS.MAX) });
       if (supplierSeason) params.set("season", supplierSeason);
       else if (supplierMonths > 0) params.set("months", String(supplierMonths));
-      const res = await fetch(`/api/stock-manage/supplier-purchases?${params}`);
-      if (res.ok) {
-        const data = await res.json();
-        setXlsxSuppliers(Array.isArray(data.rows) ? data.rows : []);
-      }
+      const { data } = await api.get<any>(`/api/stock-manage/supplier-purchases?${params}`);
+      setXlsxSuppliers(Array.isArray(data.rows) ? data.rows : []);
     } catch { /* ignore */ } finally { setLoading(false); }
   }, [supplierSeason, supplierMonths]);
 
@@ -346,9 +345,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/supplier-balances");
-        if (!res.ok) return;
-        const j = await res.json();
+        const { data: j } = await api.get<any>("/api/supplier-balances");
         const rows: any[] = Array.isArray(j?.balances) ? j.balances : [];
         const map: Record<string, { balance: number; invoice_date: string | null }> = {};
         for (const r of rows) {
@@ -369,9 +366,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/supplier-purchase-summary?days=90");
-        if (!res.ok) return;
-        const j = await res.json();
+        const { data: j } = await api.get<any>("/api/supplier-purchase-summary?days=90");
         const rows: any[] = Array.isArray(j?.suppliers) ? j.suppliers : [];
         const map: Record<string, number | null> = {};
         const norm = (s: string) => s.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim().toLowerCase();

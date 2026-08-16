@@ -5,7 +5,9 @@
 // 우측: 스캔 상품 자동 등록 리스트 · 상태 선택
 // 하단: 전체 품목일치 · 품목불일치 최종 확인
 
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import { SplitPanel } from "../common/SplitPanel";
 import {
@@ -156,41 +158,29 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
   const loadArrivals = useCallback(async () => {
     setArrivalsLoading(true);
     try {
-      const res = await fetch(`/api/product-arrivals?limit=100&days=${arrivalDays}`);
-      if (res.ok) {
-        const j = await res.json();
-        setArrivals(Array.isArray(j?.rows) ? j.rows : []);
-      } else {
-        setArrivals([]);
-      }
-    } catch {
-      setArrivals([]);
-    } finally {
-      setArrivalsLoading(false);
-    }
+      const { data: j } = await api.get<{ rows?: any[] }>(`/api/product-arrivals?limit=100&days=${arrivalDays}`);
+      setArrivals(Array.isArray(j?.rows) ? j.rows : []);
+    } catch { setArrivals([]); }
+    finally { setArrivalsLoading(false); }
   }, [arrivalDays]);
   useEffect(() => { if (arrivalTab === "history") loadArrivals(); }, [arrivalTab, loadArrivals]);
   useEffect(() => {
     if (selectedArrivalId == null) { setArrivalDetail(null); return; }
     setArrivalDetailLoading(true);
-    fetch(`/api/product-arrivals/${selectedArrivalId}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(j => setArrivalDetail(j ?? null))
+    api.get<any>(`/api/product-arrivals/${selectedArrivalId}`)
+      .then(({ data }) => setArrivalDetail(data ?? null))
       .catch(() => setArrivalDetail(null))
       .finally(() => setArrivalDetailLoading(false));
   }, [selectedArrivalId]);
   const deleteArrival = async (id: number) => {
     if (!await confirm({ message: "이 입고내역을 삭제하시겠습니까? (관련 아이템 모두 삭제)", danger: true })) return;
     try {
-      const res = await fetch(`/api/product-arrivals/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setArrivals(prev => prev.filter(a => a.id !== id));
-        if (selectedArrivalId === id) setSelectedArrivalId(null);
-      } else {
-        alert(`삭제 실패 (${res.status})`);
-      }
-    } catch (e: any) {
-      alert(`삭제 실패: ${e?.message ?? "네트워크 오류"}`);
+      await api.del(`/api/product-arrivals/${id}`);
+      setArrivals(prev => prev.filter(a => a.id !== id));
+      if (selectedArrivalId === id) setSelectedArrivalId(null);
+    } catch (e: unknown) {
+      const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "네트워크 오류";
+      alert(`삭제 실패: ${msg}`);
     }
   };
 
@@ -1005,34 +995,25 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                       setSaveStatus("saving");
                       setSaveError(null);
                       try {
-                        const res = await fetch("/api/product-arrivals", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            checked_by: authSession?.employeeName ?? "익명",
-                            checked_by_id: authSession?.employeeId ?? null,
-                            final_decision: finalDecision,
-                            note: finalDecision === "has_mismatch" ? mismatchMemo.trim() : null,
-                            items: items.map(it => ({
-                              product_code: it.code,
-                              product_name: it.product?.name ?? "",
-                              supplier: it.product?.supplier ?? "",
-                              qty: it.qty,
-                              status: it.status,
-                              expiring: it.expiring,
-                            })),
-                          }),
+                        const { data: j } = await api.post<{ id?: number }>("/api/product-arrivals", {
+                          checked_by: authSession?.employeeName ?? "익명",
+                          checked_by_id: authSession?.employeeId ?? null,
+                          final_decision: finalDecision,
+                          note: finalDecision === "has_mismatch" ? mismatchMemo.trim() : null,
+                          items: items.map(it => ({
+                            product_code: it.code,
+                            product_name: it.product?.name ?? "",
+                            supplier: it.product?.supplier ?? "",
+                            qty: it.qty,
+                            status: it.status,
+                            expiring: it.expiring,
+                          })),
                         });
-                        if (!res.ok) {
-                          const b = await res.json().catch(() => ({}));
-                          throw new Error((b as any).error ?? `저장 실패 (${res.status})`);
-                        }
-                        const j = await res.json() as { id?: number };
-                        setSavedId(j.id ?? null);
+                        setSavedId(j?.id ?? null);
                         setSaveStatus("done");
                         showToast("DB에 저장 완료");
                       } catch (e: unknown) {
-                        const msg = e instanceof Error ? e.message : "저장 실패";
+                        const msg = e instanceof ApiError ? e.message : (e instanceof Error ? e.message : "저장 실패");
                         setSaveError(msg);
                         setSaveStatus("error");
                       }

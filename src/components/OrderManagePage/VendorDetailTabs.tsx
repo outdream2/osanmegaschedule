@@ -1,3 +1,4 @@
+// 2026-08-17 · apiClient 마이그레이션
 // src/components/OrderManagePage/VendorDetailTabs.tsx
 // 공급사 상세 패널 — 하단 2탭 (결제내역 · 매입이력)
 // VendorInfoHeader 아래에 배치 · vendor, ledger, purchase-detail API 활용
@@ -15,6 +16,7 @@ import { useSortableTable, type Comparator } from "../../hooks/useSortableTable"
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
+import { api, ApiError } from "../../lib/apiClient";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -535,9 +537,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
     setLedgerError(null);
     try {
       const params = new URLSearchParams({ supplier: vendor.company_name, days: String(days) });
-      const res = await fetch(`/api/supplier-ledger?${params}`);
-      if (!res.ok) throw new Error(String(res.status));
-      const j = await res.json();
+      const { data: j } = await api.get<any>(`/api/supplier-ledger?${params}`);
       setLedger({
         supplier: j.supplier ?? vendor.company_name,
         rows: Array.isArray(j.rows) ? j.rows : [],
@@ -552,7 +552,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
         total_payment_supply: Number(j.total_payment_supply ?? 0),
       });
     } catch (e: any) {
-      setLedgerError(e?.message ?? "네트워크 오류");
+      setLedgerError(e instanceof ApiError ? e.message : (e?.message ?? "네트워크 오류"));
       setLedger(null);
     } finally { setLedgerLoading(false); }
   }, [vendor, days]);
@@ -561,11 +561,8 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
     if (!vendor) return;
     setDetailLoading(true);
     try {
-      const res = await fetch(`/api/supplier-purchase-detail?supplier=${encodeURIComponent(vendor.company_name)}&days=${days}`);
-      if (res.ok) {
-        const j = await res.json();
-        setDetailRows(Array.isArray(j.rows) ? j.rows : []);
-      } else setDetailRows([]);
+      const { data: j } = await api.get<any>(`/api/supplier-purchase-detail?supplier=${encodeURIComponent(vendor.company_name)}&days=${days}`);
+      setDetailRows(Array.isArray(j.rows) ? j.rows : []);
     } catch {
       setDetailRows([]);
     } finally { setDetailLoading(false); }

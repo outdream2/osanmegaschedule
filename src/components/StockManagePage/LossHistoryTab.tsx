@@ -1,5 +1,6 @@
 // src/components/StockManagePage/LossHistoryTab.tsx
 // 2026-08-06 · T-LOSS-HISTORY · 손실추적 이력 탭
+// 2026-08-17 · apiClient 마이그레이션
 //   · 기간 선택 (오늘 · 1주 · 1개월 · 3개월)
 //   · 공급사 필터
 //   · 일자별 손실액 라인차트 (recharts)
@@ -7,6 +8,7 @@
 //   · 총 손실액 KPI
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { api, ApiError } from "../../lib/apiClient";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Calendar, Loader2, TrendingDown, Package, Building2, Camera } from "lucide-react";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
@@ -98,9 +100,9 @@ export const LossHistoryTab: React.FC = () => {
     try {
       const supplierParam = supplierFilter ? `&supplier=${encodeURIComponent(supplierFilter)}` : "";
       const [d, s, p] = await Promise.all([
-        fetch(`/api/loss-tracking/summary?from=${from}&to=${to}&groupBy=date${supplierParam}`).then(r => r.ok ? r.json() : null),
-        fetch(`/api/loss-tracking/summary?from=${from}&to=${to}&groupBy=supplier${supplierParam}`).then(r => r.ok ? r.json() : null),
-        fetch(`/api/loss-tracking/summary?from=${from}&to=${to}&groupBy=product${supplierParam}`).then(r => r.ok ? r.json() : null),
+        api.get<SummaryResponse>(`/api/loss-tracking/summary?from=${from}&to=${to}&groupBy=date${supplierParam}`).then(r => r.data).catch(() => null),
+        api.get<SummaryResponse>(`/api/loss-tracking/summary?from=${from}&to=${to}&groupBy=supplier${supplierParam}`).then(r => r.data).catch(() => null),
+        api.get<SummaryResponse>(`/api/loss-tracking/summary?from=${from}&to=${to}&groupBy=product${supplierParam}`).then(r => r.data).catch(() => null),
       ]);
       setDateSummary(d);
       setSupplierSummary(s);
@@ -117,8 +119,7 @@ export const LossHistoryTab: React.FC = () => {
     setSnapshotting(true);
     setSnapshotMsg(null);
     try {
-      const res = await fetch("/api/loss-tracking/snapshot", { method: "POST" });
-      const j = await res.json().catch(() => ({}));
+      const { data: j } = await api.post<any>("/api/loss-tracking/snapshot");
       if (j.error === "TABLE_MISSING") {
         setSnapshotMsg("테이블 미생성 · migrations/loss_tracking_daily.sql 실행 필요");
       } else if (j.ok) {
@@ -128,7 +129,8 @@ export const LossHistoryTab: React.FC = () => {
         setSnapshotMsg(j.error ?? "스냅샷 실패");
       }
     } catch (e: any) {
-      setSnapshotMsg(e?.message ?? "스냅샷 실패");
+      const msg = e instanceof ApiError ? e.message : (e?.message ?? "스냅샷 실패");
+      setSnapshotMsg(msg);
     } finally {
       setSnapshotting(false);
       setTimeout(() => setSnapshotMsg(null), 4000);
