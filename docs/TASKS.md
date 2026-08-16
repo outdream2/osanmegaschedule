@@ -60,6 +60,19 @@
 - 사용자 지시 · "랜딩페이지 버튼 글씨 사이즈 +2"
 - MenuCard · title (현재 13/15) + description (11/13) · 각 +2
 
+### #139 · EmployeeCalendarModal · 날짜 클릭 시 팝업 X · 클릭 순환 (2026-08-17)
+- 사용자 지시 · "스케쥴표 - 이름 클릭 - 모달 - 달력에서 날짜 클릭시 지금 팝업이 뜨는데 그냥 클릭할때마다 근무형태 바뀌게 수정. 팝업 필요없음"
+- 경로: SchedulePage → 이름 클릭 → EmployeeCalendarModal (달력 화면)
+- 파일: `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx`
+- 동작: 날짜 클릭 → 지정 근무형태 순환 (근무 → 휴무 → 월차 → 지정휴무 → 결근 → …)
+- 팝업 제거
+
+### #140 · EmployeeCalendarModal · 반응형 · 내용 한 화면에 (2026-08-17)
+- 사용자 지시 · "이 부분은 내용이 화면에 다 나오도록 해 반응형이든 pc든 화면에 맞춰서 내용이 다 한눈에 보이게"
+- 경로: SchedulePage → 이름 클릭 → EmployeeCalendarModal (같은 모달)
+- 파일: `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx`
+- 요구: 달력 + 정보 · overflow scroll 없이 한 화면에 (반응형 · PC 모두)
+
 ### #136 · UI 프레임워크화 검토 (2026-08-17)
 - 사용자 지시 · "UI 프레임워크화 검토"
 - 반복되는 UI 패턴 · 공용 컴포넌트 추출 검토
