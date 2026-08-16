@@ -1103,55 +1103,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   orderClass="order-6"
                   onClick={() => onNavigate("lunch", authSession!)} />
 
-                {/* 내 요청목록 · 무지개 gradient · 맨 앞 · 눈에 띄는 강조 */}
+                {/* 내 요청목록 · rose · MenuCard 통일 (2026-08-17 · #130 · 무지개 gradient 정리) */}
                 {isEmployee && (
-                  <button data-menu-card onClick={() => onNavigate("requests", authSession!)}
-                    className="order-1 group relative rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-2xl hover:-translate-y-1 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-lg ring-2 ring-white"
-                    style={{
-                      background: "linear-gradient(135deg, #ef4444 0%, #f97316 20%, #eab308 40%, #22c55e 60%, #06b6d4 80%, #8b5cf6 100%)"
-                    }}
-                  >
-                    {/* 내부 흰색 카드 배경 */}
-                    <div className="absolute inset-0.5 rounded-[14px] bg-white/95 backdrop-blur-sm" />
-                    {/* 호버 시 무지개 오버레이 */}
-                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-200" />
-                    {/* 우상단 대기 배지 (pending > 0) */}
-                    {myPendingCount > 0 && (
+                  <MenuCard color="rose" icon={Chat} title="내 요청목록"
+                    description={authSession?.employeeName
+                      ? `${authSession.employeeName}${authSession.employeeRank ? " " + authSession.employeeRank : ""} 님 · 배정된 요청 확인`
+                      : "나에게 배정된 진열 보충 요청"}
+                    orderClass="order-1"
+                    onClick={() => onNavigate("requests", authSession!)}
+                    badge={myPendingCount > 0 ? (
                       <div className="absolute top-2 right-2 z-10">
                         <span className="min-w-[24px] h-[24px] px-1.5 rounded-full flex items-center justify-center text-[11px] font-black text-white bg-rose-500 shadow-lg ring-2 ring-white animate-pulse">
                           {myPendingCount > 99 ? "99+" : myPendingCount}
                         </span>
                       </div>
-                    )}
-                    <div className="relative">
-                      <div
-                        className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-all duration-200 group-hover:scale-110 shadow-md ${myPendingCount > 0 ? "mt-5 sm:mt-6" : ""}`}
-                        style={{
-                          background: "linear-gradient(135deg, #ef4444 0%, #f97316 20%, #eab308 40%, #22c55e 60%, #06b6d4 80%, #8b5cf6 100%)"
-                        }}
-                      >
-                        <Chat size={24} className="text-white sm:hidden" weight="fill" />
-                        <Chat size={32} className="text-white hidden sm:block" weight="fill" />
-                      </div>
-                      <div
-                        className="font-black text-xs sm:text-sm mb-0.5 tracking-tight bg-clip-text text-transparent"
-                        style={{
-                          backgroundImage: "linear-gradient(135deg, #ef4444, #f97316, #eab308, #22c55e, #06b6d4, #8b5cf6)"
-                        }}
-                      >내 요청목록</div>
-                      <div className="text-zinc-500 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">나에게 배정된 진열 보충 요청</div>
-                      <div className="flex items-center gap-1 mt-2 text-xs font-bold">
-                        <span
-                          className="text-[11px] sm:text-xs bg-clip-text text-transparent font-black"
-                          style={{
-                            backgroundImage: "linear-gradient(135deg, #ef4444, #f97316, #eab308, #22c55e, #06b6d4, #8b5cf6)"
-                          }}
-                        >
-                          {authSession?.employeeName ? `${authSession.employeeName}${authSession.employeeRank ? " " + authSession.employeeRank : ""} 님` : "확인하기"}
-                        </span>
-                      </div>
-                    </div>
-                  </button>
+                    ) : undefined} />
                 )}
 
                 {/* 이슈공유 게시판 (전체 직원) — amber */}
@@ -2231,21 +2197,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             style={{ background: "rgba(255,255,255,0.98)" }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="relative px-7 pt-8 pb-6 overflow-hidden">
+            {/* Header · 2026-08-17 · #130 · header bg 누락 fix · emerald gradient */}
+            <div className="relative px-7 pt-8 pb-6 overflow-hidden" style={{ background: "linear-gradient(135deg, #059669 0%, #10b981 100%)" }}>
               <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-20" style={{ background: "radial-gradient(circle, #6ee7b7, transparent)" }} />
               <div className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full opacity-15" style={{ background: "radial-gradient(circle, #a7f3d0, transparent)" }} />
-              <button onClick={() => setVendorLoginOpen(false)} aria-label="닫기" className="absolute top-4 right-4 w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-emerald-200 hover:text-white transition cursor-pointer">
+              <button onClick={() => setVendorLoginOpen(false)} aria-label="닫기" className="absolute top-4 right-4 w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-emerald-100 hover:text-white transition cursor-pointer">
                 <X size={14} />
               </button>
               <div className="relative flex items-center gap-4 mb-3">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shrink-0" style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)" }}>
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shrink-0" style={{ background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.35)" }}>
                   <CalendarCheck size={28} className="text-white" weight="fill" />
                 </div>
                 <div>
-                  <div className="text-white/60 text-[10px] font-semibold tracking-widest uppercase mb-0.5">Vendor Portal</div>
+                  <div className="text-white/70 text-[10px] font-semibold tracking-widest uppercase mb-0.5">Vendor Portal</div>
                   <div className="text-white font-black text-2xl leading-tight tracking-tight">거래처 로그인</div>
-                  <div className="text-emerald-200 text-[11px] font-medium tracking-wide mt-0.5">방문예약 이용</div>
+                  <div className="text-emerald-100 text-[11px] font-medium tracking-wide mt-0.5">방문예약 이용</div>
                 </div>
               </div>
             </div>

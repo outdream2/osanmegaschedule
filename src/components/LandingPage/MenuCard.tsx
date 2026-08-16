@@ -4,7 +4,7 @@
 // · Tailwind JIT 안전 · 색상 클래스는 static map 으로 lookup
 import type { ReactNode, ElementType } from "react";
 
-export type MenuCardColor = "red" | "violet" | "indigo" | "orange" | "zinc" | "sky" | "amber" | "emerald" | "fuchsia";
+export type MenuCardColor = "red" | "violet" | "indigo" | "orange" | "zinc" | "sky" | "amber" | "emerald" | "fuchsia" | "rose";
 
 interface ColorTokens {
   hoverBorder: string;
@@ -23,6 +23,7 @@ const COLOR_MAP: Record<MenuCardColor, ColorTokens> = {
   amber:    { hoverBorder: "hover:border-amber-300",   hoverBg: "bg-amber-50/70",   iconText: "text-amber-600" },
   emerald:  { hoverBorder: "hover:border-emerald-300", hoverBg: "bg-emerald-50/70", iconText: "text-emerald-600" },
   fuchsia:  { hoverBorder: "hover:border-fuchsia-300", hoverBg: "bg-fuchsia-50/70", iconText: "text-fuchsia-600" },
+  rose:     { hoverBorder: "hover:border-rose-300",    hoverBg: "bg-rose-50/70",    iconText: "text-rose-600" },
 };
 
 interface MenuCardProps {
