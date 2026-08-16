@@ -423,19 +423,19 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         <div className="mb-4 flex items-center justify-between gap-2 flex-wrap">
           <div className="flex flex-wrap bg-zinc-100 border border-zinc-200 rounded-xl p-0.5 gap-0.5 w-fit">
           <button type="button" onClick={() => setTab("permissions")}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[16px] font-black transition cursor-pointer ${tab === "permissions" ? "bg-white text-violet-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[18px] font-black transition cursor-pointer ${tab === "permissions" ? "bg-white text-violet-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
             <Shield size={15} />권한 조정
           </button>
           <button type="button" onClick={() => setTab("app-settings")}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[16px] font-black transition cursor-pointer ${tab === "app-settings" ? "bg-white text-violet-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[18px] font-black transition cursor-pointer ${tab === "app-settings" ? "bg-white text-violet-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
             <SettingsIcon size={15} />스케쥴 설정
           </button>
           <button type="button" onClick={() => setTab("positions")}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[16px] font-black transition cursor-pointer ${tab === "positions" ? "bg-white text-violet-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[18px] font-black transition cursor-pointer ${tab === "positions" ? "bg-white text-violet-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
             <IdCard size={15} />직군 설정
           </button>
           <button type="button" onClick={() => setTab("construction")}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[16px] font-black transition cursor-pointer ${tab === "construction" ? "bg-white text-amber-600 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[18px] font-black transition cursor-pointer ${tab === "construction" ? "bg-white text-amber-600 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
             <Construction size={15} />공사중
           </button>
           </div>
