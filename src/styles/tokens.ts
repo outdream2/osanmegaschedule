@@ -24,15 +24,26 @@
 // 주의: index.css 전역 font-size 스케일 오버라이드 적용 중
 //   text-[Npx] 클래스는 index.css 에서 +5px 상향됨 (e.g. text-[13px] → 18px 렌더)
 // ─────────────────────────────────────────────────────────────────────────────
+// 2026-08-16 · #4 · P1 · UI audit 통합 스케일 8단계 (docs/UI_TYPOGRAPHY_AUDIT_2026-08-16.md)
+//   · index.css 오버라이드 반영 · 렌더 픽셀 예상값 주석
+//   · 프로젝트 전역 · UI 통일 기준 · 모든 컴포넌트 · 이 상수 사용 권장
 export const TEXT = {
-  /** 페이지 타이틀 · AppNavHeader 제목 · 모달 제목 등 최상위 */
-  hero: "text-[16px] sm:text-[17px] font-black tracking-tight",
-  /** 본문 · 리스트 항목 · 카드 내 주요 텍스트 */
-  body: "text-[13px] sm:text-[13.5px] font-medium",
-  /** 서브 텍스트 · 힌트 · 보조 레이블 */
-  caption: "text-[11px] sm:text-[11.5px] font-semibold",
-  /** 컬럼 헤더 · 메타 라벨 · 배지 · UPPERCASE 축약 */
-  micro: "text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider",
+  /** T-8 · 페이지 타이틀 · h1 · AppNavHeader 로고 · 모달 제목 · 27px 렌더 */
+  hero: "text-[17px] font-black tracking-tight leading-tight",
+  /** T-7 · 섹션 그룹 제목 · h2 · 26px */
+  title: "text-[16px] font-extrabold tracking-tight leading-snug",
+  /** T-6 · 카드 헤더 · 서브섹션 제목 · 25px */
+  section: "text-[15px] font-bold leading-snug",
+  /** T-5 · 탭 메뉴 · 내비게이션 항목 전용 · 24px */
+  tab: "text-[14px] font-bold leading-none",
+  /** T-4 · 본문 · 리스트 주요 텍스트 · 입력창 내용 · 버튼 텍스트 · 23px */
+  body: "text-[13px] font-semibold leading-relaxed",
+  /** T-3 · 캡션 · 서브 텍스트 · 힌트 · 보조 레이블 · 22px */
+  caption: "text-[11px] font-semibold leading-snug",
+  /** T-2 · 컬럼 헤더 · 폼 라벨 · 배지 · UPPERCASE 축약 · 22px */
+  label: "text-[10px] font-bold uppercase tracking-wider",
+  /** T-1 · 마이크로 · 최소 표시 · 21px */
+  micro: "text-[9px] font-bold uppercase tracking-widest",
   /** 숫자 전용 · 색상은 별도 지정 · tabular-nums 정렬 */
   num: "tabular-nums font-black",
 } as const;
