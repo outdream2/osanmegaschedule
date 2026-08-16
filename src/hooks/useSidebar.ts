@@ -25,30 +25,54 @@ function readWidth(): number {
   return SIDEBAR_DEFAULT_WIDTH;
 }
 
-/** 사이드바 폭 · 드래그 리사이즈 · localStorage 영속화 (PC 전용 · 모바일은 shadcn Sheet 자동 사용) */
+// 2026-08-16 · 사이드바 폭 · 모듈 레벨 shared state + subscription (여러 훅 인스턴스 간 동기화)
+//   버그 · SideNav 와 SidebarLayout 각자 useSidebarWidth() 호출 · 각자 useState = 독립 · 리사이즈 시 한쪽만 반영
+//   fix · 모듈 값 + listener set · 리사이즈 → notify → 모든 인스턴스 rerender
+let widthValue: number = 0; // 지연 초기화 · window 접근 회피
+const widthListeners = new Set<(w: number) => void>();
+
+function ensureWidthInit(): number {
+  if (widthValue === 0) widthValue = readWidth();
+  return widthValue;
+}
+
+function setWidthShared(next: number): void {
+  if (next === widthValue) return;
+  widthValue = next;
+  try { localStorage.setItem(WIDTH_KEY, String(next)); } catch { /* silent */ }
+  for (const l of widthListeners) l(next);
+}
+
+/** 사이드바 폭 · 드래그 리사이즈 · localStorage 영속화 · 모든 훅 인스턴스 동기화 */
 export function useSidebarWidth() {
-  const [width, setWidth] = useState<number>(readWidth);
-  // 2026-08-12 · 드래그 중 unmount 시 리스너/스타일 리크 방지 · cleanup 저장
+  const [width, setLocalWidth] = useState<number>(ensureWidthInit);
   const cleanupRef = useRef<(() => void) | null>(null);
 
+  // 모듈 레벨 shared state 구독 · 다른 인스턴스가 setWidth 하면 즉시 sync
   useEffect(() => {
-    localStorage.setItem(WIDTH_KEY, String(width));
-  }, [width]);
+    widthListeners.add(setLocalWidth);
+    // mount 시점에 · 이미 다른 인스턴스가 업데이트한 상태일 수도 있음 · 동기화
+    if (widthValue !== width) setLocalWidth(widthValue);
+    return () => { widthListeners.delete(setLocalWidth); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     return () => { cleanupRef.current?.(); };
   }, []);
 
+  const setWidth = useCallback((next: number) => setWidthShared(next), []);
+
   /** 마우스다운 시 · document 에 mousemove/mouseup 리스너 추가 · 폭 조정 */
   const startResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     const startX = e.clientX;
-    const startWidth = width;
+    const startWidth = widthValue;
     document.body.style.userSelect = "none";
     document.body.style.cursor = "col-resize";
     const onMove = (ev: MouseEvent) => {
       const next = Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, startWidth + (ev.clientX - startX)));
-      setWidth(next);
+      setWidthShared(next); // 모든 인스턴스 동기 rerender
     };
     const onUp = () => {
       document.removeEventListener("mousemove", onMove);
@@ -57,12 +81,11 @@ export function useSidebarWidth() {
       document.body.style.cursor = "";
       cleanupRef.current = null;
     };
-    // 이전 드래그의 cleanup 이 살아있으면 먼저 정리 (연속 mousedown 방어)
     cleanupRef.current?.();
     cleanupRef.current = onUp;
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
-  }, [width]);
+  }, []);
 
   return { width, setWidth, startResize };
 }
