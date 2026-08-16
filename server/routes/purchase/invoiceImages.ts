@@ -11,6 +11,7 @@
 
 import { Router } from "express";
 import { v2 as cloudinary, type UploadApiResponse } from "cloudinary";
+import { authorize } from "../../middleware/requireAuth";
 
 const router = Router();
 
@@ -117,7 +118,7 @@ router.post("/api/invoice-images/upload", async (req, res) => {
 
 // DELETE /api/invoice-images/:public_id
 // 이미지 정리용 (선택 · 관리자 정리 시)
-router.delete("/api/invoice-images/:public_id(*)", async (req, res) => {
+router.delete("/api/invoice-images/:public_id(*)", authorize(9), async (req, res) => {
   if (!ensureConfigured()) {
     return res.status(503).json({ error: "Cloudinary 설정이 없습니다 (env)." });
   }

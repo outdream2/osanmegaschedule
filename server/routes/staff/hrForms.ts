@@ -33,6 +33,8 @@ import path from "path";
 import { supabase } from "../../../src/supabase/client";
 // 2026-08-13 · #107 · 인사서류 업로드 · 관리자 알림
 import { notificationsService } from "../../services/notificationsService";
+// 2026-08-16 · #112-E1 · admin 삭제 보호
+import { authorize } from "../../middleware/requireAuth";
 
 const router = Router();
 
@@ -234,7 +236,7 @@ router.post("/api/hr-forms", async (req, res) => {
  * Query: editor_level  (>=2 필수)
  * - 메타 삭제 + Storage 원본 삭제 (best-effort)
  */
-router.delete("/api/hr-forms/:id", async (req, res) => {
+router.delete("/api/hr-forms/:id", authorize(9), async (req, res) => {
   try {
     const id = Number(req.params.id);
     const editorLevel = Number(req.query.editor_level ?? 0);

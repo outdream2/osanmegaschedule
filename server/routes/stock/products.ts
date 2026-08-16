@@ -5,6 +5,7 @@ import { supabase } from "../../../src/supabase/client";
 import { getProductMap, resetProductCache } from "../../productCache";
 import { COL_KEYS, xlsxToRows } from "../../utils/xlsx";
 import { sanitizeOrValue } from "../../utils/sanitize";
+import { authorize } from "../../middleware/requireAuth";
 
 const router = Router();
 
@@ -279,7 +280,7 @@ router.post("/api/upload-products", express.raw({ type: "application/octet-strea
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-router.delete("/api/product-import-log", async (_req, res) => {
+router.delete("/api/product-import-log", authorize(9), async (_req, res) => {
   await supabase.from("app_settings").upsert({ key: "product_import_log", value: [], updated_at: new Date().toISOString() }, { onConflict: "key" });
   res.json({ ok: true });
 });

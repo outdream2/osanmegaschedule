@@ -24,6 +24,7 @@ import fs from "fs";
 import path from "path";
 import { v2 as cloudinary, type UploadApiResponse } from "cloudinary";
 import { supabase } from "../../../src/supabase/client";
+import { authorize } from "../../middleware/requireAuth";
 
 const router = Router();
 
@@ -305,7 +306,7 @@ router.patch("/api/pharmacist-menu-items/:id", async (req, res) => {
  *   · Storage 원본 정리 (best-effort)
  *   · storage 값에 따라 Cloudinary / Supabase Storage / 로컬 파일 각각 처리
  */
-router.delete("/api/pharmacist-menu-items/:id", async (req, res) => {
+router.delete("/api/pharmacist-menu-items/:id", authorize(9), async (req, res) => {
   try {
     const id = Number(req.params.id);
     const editorLevel = Number(req.query.editor_level ?? 0);

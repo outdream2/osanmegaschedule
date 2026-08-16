@@ -35,6 +35,7 @@ import express from "express";
 import XLSX from "xlsx";
 import { supabase } from "../../../src/supabase/client";
 import { resolveSeasonMonths } from "../settings/settings";
+import { authorize } from "../../middleware/requireAuth";
 
 const router = express.Router();
 
@@ -417,7 +418,7 @@ router.get("/api/purchase-details/import-log", async (_req, res) => {
 });
 
 // DELETE /api/purchase-details/import-log · 이력 초기화
-router.delete("/api/purchase-details/import-log", async (_req, res) => {
+router.delete("/api/purchase-details/import-log", authorize(9), async (_req, res) => {
   try {
     await supabase.from("app_settings").upsert(
       { key: "purchase_import_log", value: [], updated_at: new Date().toISOString() },

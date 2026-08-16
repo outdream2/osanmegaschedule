@@ -26,6 +26,7 @@ import { Router } from "express";
 import webpush from "web-push";
 import { supabase } from "../../../src/supabase/client";
 import { notificationsService } from "../../services/notificationsService";
+import { authorize } from "../../middleware/requireAuth";
 
 // ─── Storage 설정 ────────────────────────────────────────────────────────────
 // Supabase 대시보드에서 "resignation-signatures" 버킷을 Public으로 생성 필요
@@ -304,7 +305,7 @@ router.patch("/api/resignations/:id", async (req, res) => {
 });
 
 // ─── DELETE · 본인 철회 (pending 만) ─────────────────────────────────────
-router.delete("/api/resignations/:id", async (req, res) => {
+router.delete("/api/resignations/:id", authorize(9), async (req, res) => {
   try {
     const { error } = await supabase
       .from("resignation_requests")

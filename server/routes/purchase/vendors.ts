@@ -4,6 +4,8 @@ import XLSX from "xlsx";
 import bcrypt from "bcryptjs";
 import { supabase } from "../../../src/supabase/client";
 import { queryPurchaseDetails } from "../../utils/purchaseDetailsQuery";
+// 2026-08-16 · #112-E1
+import { authorize } from "../../middleware/requireAuth";
 
 const router = Router();
 
@@ -328,7 +330,7 @@ router.patch("/api/vendors/:id", async (req, res) => {
 });
 
 // 거래처 삭제 (관리자)
-router.delete("/api/vendors/:id", async (req, res) => {
+router.delete("/api/vendors/:id", authorize(9), async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) return res.status(400).json({ error: "invalid id" });
   const { error } = await supabase.from("vendors").delete().eq("id", id);

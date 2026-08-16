@@ -11,6 +11,8 @@ import { supabase } from "../../../src/supabase/client";
 import { queryPurchaseDetails } from "../../utils/purchaseDetailsQuery";
 // 2026-08-13 · #107 · 결제 요청 · 관리자 알림 (인앱 + push)
 import { notificationsService } from "../../services/notificationsService";
+// 2026-08-16 · #112-E1
+import { authorize } from "../../middleware/requireAuth";
 
 const router = Router();
 
@@ -332,7 +334,7 @@ router.patch("/api/supplier-payments/:id", async (req, res) => {
 // DELETE /api/supplier-payments/:id
 //   · allocations 은 FK ON DELETE CASCADE 로 자동 삭제
 // ─────────────────────────────────────────────────────────────────────
-router.delete("/api/supplier-payments/:id", async (req, res) => {
+router.delete("/api/supplier-payments/:id", authorize(9), async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (!Number.isFinite(id) || id <= 0) {

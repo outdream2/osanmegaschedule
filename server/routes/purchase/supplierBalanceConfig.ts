@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
+import { authorize } from "../../middleware/requireAuth";
 
 const router = Router();
 const TABLE = "supplier_balance_configs";
@@ -71,7 +72,7 @@ router.put("/api/supplier-balance-configs", async (req, res) => {
 });
 
 // DELETE /api/supplier-balance-configs/:supplier_name
-router.delete("/api/supplier-balance-configs/:name", async (req, res) => {
+router.delete("/api/supplier-balance-configs/:name", authorize(9), async (req, res) => {
   const name = decodeURIComponent(req.params.name);
   const { error } = await supabase.from(TABLE).delete().eq("supplier_name", name);
   if (error) return res.status(500).json({ error: error.message });

@@ -13,6 +13,7 @@ import fs from "fs";
 import path from "path";
 import { supabase } from "../../../src/supabase/client";
 import { sanitizeOrValue } from "../../utils/sanitize";
+import { authorize } from "../../middleware/requireAuth";
 
 const router = Router();
 
@@ -342,7 +343,7 @@ router.patch("/api/board/posts/:id", async (req, res) => {
 });
 
 // ── 게시글 삭제 (작성자·관리자만)
-router.delete("/api/board/posts/:id", async (req, res) => {
+router.delete("/api/board/posts/:id", authorize(9), async (req, res) => {
   const id = Number(req.params.id);
   const editorId = Number(req.query.editor_id ?? 0);
   const editorLevel = Number(req.query.editor_level ?? 0);

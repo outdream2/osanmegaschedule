@@ -12,6 +12,8 @@ import { SUPPLIER_EXTRACT_RE } from "../../ocr/invoice-vocab";
 import { saveMatchDiagnostic, type RowMatchTrace, type MatchDiagnostic } from "../../ocr/diagnostics";
 import { invoiceMatchScore, makeMatchResult, norm, normSupplier, bigramSim } from "../../ocr/match";
 import type { GeminiResult } from "../../ocr/schema";
+// 2026-08-16 · #112-E1 · admin 삭제 보호
+import { authorize } from "../../middleware/requireAuth";
 
 // ── 세션 단위 rawText 캐시 (2026-07-10 v4c) ────────────────────────────────
 // 사용자 통찰: "여러 명세서에 공통으로 나오는 정보 = 수신처 (공급받는쪽)"
@@ -652,7 +654,7 @@ router.post("/api/ocr-synonyms/restore/:id", async (req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-router.delete("/api/ocr-synonyms/:id", async (req, res) => {
+router.delete("/api/ocr-synonyms/:id", authorize(9), async (req, res) => {
   try {
     const { error } = await supabase.from("ocr_synonyms").delete().eq("id", Number(req.params.id));
     if (error) throw new Error(error.message);
@@ -711,7 +713,7 @@ router.patch("/api/ocr-supplier-aliases/:id", async (req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-router.delete("/api/ocr-supplier-aliases/:id", async (req, res) => {
+router.delete("/api/ocr-supplier-aliases/:id", authorize(9), async (req, res) => {
   try {
     const { error } = await supabase.from("ocr_supplier_aliases").delete().eq("id", Number(req.params.id));
     if (error) throw new Error(error.message);
@@ -746,7 +748,7 @@ router.post("/api/ocr-templates", async (req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
-router.delete("/api/ocr-templates/:supplier_name", async (req, res) => {
+router.delete("/api/ocr-templates/:supplier_name", authorize(9), async (req, res) => {
   try {
     const { error } = await supabase.from("ocr_templates").delete().eq("supplier_name", req.params.supplier_name);
     if (error) throw new Error(error.message);

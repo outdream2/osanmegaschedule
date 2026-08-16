@@ -7,6 +7,7 @@
 
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
+import { authorize } from "../../middleware/requireAuth";
 
 const router = Router();
 
@@ -95,7 +96,7 @@ router.post("/api/zone-labels", async (req, res) => {
 });
 
 // DELETE /api/zone-labels/:zoneId
-router.delete("/api/zone-labels/:zoneId", async (req, res) => {
+router.delete("/api/zone-labels/:zoneId", authorize(9), async (req, res) => {
   try {
     const zone_id = String(req.params.zoneId ?? "").trim();
     if (!zone_id) return res.status(400).json({ error: "zoneId 필수" });

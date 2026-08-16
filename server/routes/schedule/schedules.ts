@@ -5,6 +5,8 @@ import path from "path";
 import fs from "fs";
 import multer from "multer";
 import { uploadToDrive, deleteFromDrive, extractDriveFileId, isDriveReady } from "../../services/googleDriveService";
+// 2026-08-16 · #112-E1 · 세밀 권한 · admin 전용 삭제 보호
+import { authorize } from "../../middleware/requireAuth";
 
 const router = Router();
 
@@ -14,7 +16,7 @@ router.post("/api/schedules/batch", (req, res) => scheduleController.batchUpdate
 router.post("/api/schedules/copy", (req, res) => scheduleController.copySchedules(req, res));
 router.post("/api/employees", (req, res) => scheduleController.createEmployee(req, res));
 router.put("/api/employees/:id", (req, res) => scheduleController.updateEmployee(req, res));
-router.delete("/api/employees/:id", (req, res) => scheduleController.deleteEmployee(req, res));
+router.delete("/api/employees/:id", authorize(9), (req, res) => scheduleController.deleteEmployee(req, res));
 
 const contractsDir = path.join(process.cwd(), "uploads", "contracts");
 if (!fs.existsSync(contractsDir)) fs.mkdirSync(contractsDir, { recursive: true });
@@ -92,8 +94,8 @@ router.post("/api/employees/:id/resume", resumeUpload.single("resume"), async (r
   }
 });
 
-// T21 · 이력서 삭제
-router.delete("/api/employees/:id/resume", async (req, res) => {
+// T21 · 이력서 삭제 · 2026-08-16 · admin 전용
+router.delete("/api/employees/:id/resume", authorize(9), async (req, res) => {
   try {
     const id = Number(req.params.id);
     const { data: emp } = await supabase.from("employees").select("resume_url").eq("id", id).maybeSingle();
