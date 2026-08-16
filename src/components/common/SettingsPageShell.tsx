@@ -29,6 +29,9 @@ interface Props {
   rightSlot?: React.ReactNode;
   /** max-width · 기본 max-w-3xl · 필요 시 override */
   maxWidth?: "max-w-2xl" | "max-w-3xl" | "max-w-4xl" | "max-w-[1100px]";
+  /** 2026-08-16 · 페이지별 title/description 폰트 커스텀 · 기본 text-lg / text-xs */
+  titleClassName?: string;
+  descriptionClassName?: string;
 
   children: React.ReactNode;
 }
@@ -37,6 +40,8 @@ export const SettingsPageShell: React.FC<Props> = ({
   activePage, authSession, onBack, onNavigate, onLogout,
   icon: Icon, title, description, iconColor = "text-zinc-500",
   rightSlot, maxWidth = "max-w-3xl",
+  titleClassName = "text-lg font-bold text-zinc-800 leading-tight",
+  descriptionClassName = "text-xs text-zinc-500 mt-0.5 leading-relaxed",
   children,
 }) => {
   return (
@@ -56,9 +61,9 @@ export const SettingsPageShell: React.FC<Props> = ({
             <Icon size={20} weight="duotone" className={iconColor} />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-bold text-zinc-800 leading-tight">{title}</h1>
+            <h1 className={titleClassName}>{title}</h1>
             {description && (
-              <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">{description}</p>
+              <p className={descriptionClassName}>{description}</p>
             )}
           </div>
         </div>

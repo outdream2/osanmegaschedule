@@ -407,8 +407,10 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
       onLogout={onLogout}
       icon={Lock}
       iconColor="text-violet-600"
-      title="직원 권한"
+      title="메뉴 설정"
       description="페이지별 최소 권한 · 직원별 레벨 · 근무 유형·직군·공사중 등 앱 전체 설정을 관리합니다. 관리자(lv 9) 전용."
+      titleClassName="text-base font-bold text-zinc-800 leading-tight"
+      descriptionClassName="text-[11px] text-zinc-500 mt-0.5 leading-relaxed"
       maxWidth="max-w-4xl"
     >
       {renderPermissionsBody()}
@@ -421,19 +423,19 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         <div className="mb-4 flex items-center justify-between gap-2 flex-wrap">
           <div className="flex flex-wrap bg-zinc-100 border border-zinc-200 rounded-xl p-0.5 gap-0.5 w-fit">
           <button type="button" onClick={() => setTab("permissions")}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[15px] font-black transition cursor-pointer ${tab === "permissions" ? "bg-white text-violet-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[16px] font-black transition cursor-pointer ${tab === "permissions" ? "bg-white text-violet-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
             <Shield size={15} />권한 조정
           </button>
           <button type="button" onClick={() => setTab("app-settings")}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[15px] font-black transition cursor-pointer ${tab === "app-settings" ? "bg-white text-violet-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[16px] font-black transition cursor-pointer ${tab === "app-settings" ? "bg-white text-violet-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
             <SettingsIcon size={15} />스케쥴 설정
           </button>
           <button type="button" onClick={() => setTab("positions")}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[15px] font-black transition cursor-pointer ${tab === "positions" ? "bg-white text-violet-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[16px] font-black transition cursor-pointer ${tab === "positions" ? "bg-white text-violet-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
             <IdCard size={15} />직군 설정
           </button>
           <button type="button" onClick={() => setTab("construction")}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[15px] font-black transition cursor-pointer ${tab === "construction" ? "bg-white text-amber-600 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[16px] font-black transition cursor-pointer ${tab === "construction" ? "bg-white text-amber-600 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
             <Construction size={15} />공사중
           </button>
           </div>
@@ -465,16 +467,13 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           </div>
         )}
 
-        {/* Level legend */}
-        <div className="mb-5 px-4 py-3 rounded-xl bg-indigo-50 border border-indigo-100 text-[11px] text-indigo-600 font-medium">
-          <span className="font-bold">레벨 기준:</span>&nbsp; 1 = 직원 &nbsp;·&nbsp; 2–8 = 관리자 등급 &nbsp;·&nbsp; 9 = 최고관리자
-        </div>
+        {/* 2026-08-16 · 사용자 지시 · "레벨 기준" 배너 제거 */}
 
         {/* 섹션 1 · 페이지별 최소 권한 · 2026-08-13 · 저장 버튼 추가 (명시 저장) */}
         <div className="mb-2 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <Shield size={13} className="text-zinc-500" />
-            <h2 className="text-[17px] font-black text-zinc-700">페이지별 최소 권한</h2>
+            <h2 className="text-[17px] font-black text-zinc-700">페이지별 설정</h2>
           </div>
           <div className="flex items-center gap-2">
             {saveToast && (
@@ -509,7 +508,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         {/* 2026-08-12 · #99 · 트리 구조 · 사이드바 그룹별 접기/펼치기 · 그룹 내 페이지 리스트 */}
         <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
           {/* Table header */}
-          <div className="grid grid-cols-[minmax(0,1fr)_170px_170px] sm:grid-cols-[minmax(0,1fr)_180px_180px] px-5 py-2.5 bg-zinc-50 border-b border-zinc-100 text-[15px] font-bold text-zinc-500 tracking-tight">
+          <div className="grid grid-cols-[minmax(0,1fr)_170px_170px] sm:grid-cols-[minmax(0,1fr)_180px_180px] px-5 py-2.5 bg-zinc-50 border-b border-zinc-100 text-[16px] font-bold text-zinc-500 tracking-tight">
             <span>페이지</span>
             <span className="text-right pr-3">읽기 최소</span>
             <span className="text-right pr-3">쓰기 최소</span>
@@ -532,8 +531,8 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                       ? <CaretRight size={14} className="text-zinc-500" weight="bold" />
                       : <CaretDown  size={14} className="text-zinc-500" weight="bold" />}
                     {GroupIcon && <GroupIcon size={16} className={GROUP_COLOR_CLS[g.color] ?? "text-zinc-500"} />}
-                    <span className="text-[16px] font-black text-zinc-700">{g.label}</span>
-                    <span className="text-[13px] font-semibold text-zinc-400">({g.pages.length})</span>
+                    <span className="text-[17px] font-black text-zinc-700">{g.label}</span>
+                    <span className="text-[14px] font-semibold text-zinc-400">({g.pages.length})</span>
                   </div>
                   <div />
                   <div />
@@ -549,8 +548,8 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                         i < g.pages.length - 1 ? "border-t border-zinc-100/70" : "border-t border-zinc-100/70"
                       }`}
                     >
-                      {/* 페이지명 · 들여쓰기 · 트리 시각화 · 2026-08-13 · +2 */}
-                      <div className="text-[15px] font-semibold text-zinc-700 truncate pl-6">
+                      {/* 페이지명 · 들여쓰기 · 트리 시각화 · 2026-08-16 · +1 (16→17) */}
+                      <div className="text-[16px] font-semibold text-zinc-700 truncate pl-6">
                         <span className="text-zinc-300 mr-1.5">└</span>
                         {label}
                       </div>

@@ -168,7 +168,7 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     topTab: { key: "permissions" },
     managerOnly: true,
     items: [
-      { key: "permissions", label: "직원권한", icon: Lock, color: "slate", minLevel: 9 },
+      { key: "permissions", label: "메뉴 설정", icon: Lock, color: "slate", minLevel: 9 },
       // 2026-08-12 · 구역 라벨 · 사이드바 항목 일단 제거 (사용자 지시 · 페이지/라우팅은 유지)
       // 2026-08-12 · 회사정보 + 앱브랜딩 통합 페이지 (약국명·대표·사업자·주소·전화·브랜드·연락처·도장·모바일)
       { key: "company-info", label: "회사·브랜드", icon: Buildings, color: "slate", minLevel: 9 },
