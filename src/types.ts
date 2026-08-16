@@ -65,6 +65,8 @@ export interface PagePermission {
   readPositions?: string[];
   /** 2026-08-12 · #100 · 이 직군에 속하면 · 레벨 무관하게 쓰기 허용 (OR 조건). 미지정 = 레벨만 판정 */
   writePositions?: string[];
+  /** 2026-08-16 · 페이지 숨김 · true 면 모든 사용자에게 사이드바에서 노출 안됨 (권한 무관) · lv 9 관리자는 예외 */
+  hidden?: boolean;
 }
 
 // 2026-08-12 · 신규 페이지 반영 (승인요청·경영·설정 등) · 사이드바 그룹과 정합

@@ -231,8 +231,13 @@ export function deriveUserLevel(session: AuthSession | null): number {
   );
 }
 
-/** authSession 기반 접근 판정 · AppNavHeader.tsx 의 필터 로직 재사용 (약사 판정 · level ≥ 3) */
-export function canAccessItem(item: SideNavItem, session: AuthSession | null): boolean {
+/** authSession 기반 접근 판정 · AppNavHeader.tsx 의 필터 로직 재사용 (약사 판정 · level ≥ 3)
+ *  2026-08-16 · perms 파라미터 추가 · PagePermission.hidden 체크 (lv 9 은 예외 · 설정 접근용) */
+export function canAccessItem(
+  item: SideNavItem,
+  session: AuthSession | null,
+  perms?: import("../../types").PagePermissions | null,
+): boolean {
   if (item.key === "landing") return true;
   if (!session) return false;
   const level = deriveUserLevel(session);
@@ -244,13 +249,22 @@ export function canAccessItem(item: SideNavItem, session: AuthSession | null): b
   if (item.minLevel != null && level < item.minLevel) return false;
   if (item.managerOnly && !isPrivileged) return false;
   if (item.pharmacistOnly && !isPharmacist) return false;
+  // 2026-08-16 · 페이지 숨김 · lv 9 은 예외 (설정 페이지 접근 유지)
+  if (perms && level < 9) {
+    const perm = (perms as any)[item.key];
+    if (perm?.hidden === true) return false;
+  }
   return true;
 }
 
-/** 그룹 안에서 접근 가능 항목만 필터 · 빈 그룹은 제외 */
-export function filterGroupsForSession(session: AuthSession | null): SideNavGroup[] {
+/** 그룹 안에서 접근 가능 항목만 필터 · 빈 그룹은 제외
+ *  2026-08-16 · perms 옵션 · 숨김 페이지 반영 */
+export function filterGroupsForSession(
+  session: AuthSession | null,
+  perms?: import("../../types").PagePermissions | null,
+): SideNavGroup[] {
   return SIDE_NAV_GROUPS
-    .map(g => ({ ...g, items: g.items.filter(it => canAccessItem(it, session)) }))
+    .map(g => ({ ...g, items: g.items.filter(it => canAccessItem(it, session, perms)) }))
     .filter(g => g.items.length > 0);
 }
 

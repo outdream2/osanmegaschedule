@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import axios from "axios";
-import { Shield, Check, Loader2, AlertCircle, Settings as SettingsIcon, Users, IdCard, Construction, Plus, Trash2, GripVertical, Save, Pencil } from "lucide-react";
+import { Shield, Check, Loader2, AlertCircle, Settings as SettingsIcon, Users, IdCard, Construction, Plus, Trash2, GripVertical, Save, Pencil, Eye, EyeOff } from "lucide-react";
+import { invalidatePagePermissions } from "../../hooks/usePagePermissions";
 import { updateEmployee } from "../../lib/employeeApi";
 import type { AuthSession, PagePermissions } from "../../types";
 import { DEFAULT_PERMISSIONS } from "../../types";
@@ -252,6 +253,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     setPerms(updated);
     try {
       await axios.post("/api/permissions", { permissions: updated, employeeId: authSession?.employeeId }, { withCredentials: true });
+      invalidatePagePermissions();
     } catch (err: any) {
       setPerms(perms); // revert
       const status = err?.response?.status;
@@ -259,6 +261,28 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
       const msg = status === 403 ? "저장 실패 · 권한 부족 (lv 9 필요)"
                 : `저장 실패 · ${err?.response?.data?.error ?? err?.message ?? "네트워크 오류"}`;
       setSaveToast(msg);
+      setTimeout(() => setSaveToast(null), 4000);
+    }
+  }, [perms, authSession?.employeeId, handleAuthExpired]);
+
+  // 2026-08-16 · 페이지 숨김 토글 · 즉시 서버 저장 + 사이드바 무효화
+  const toggleHiddenForPerm = useCallback(async (page: keyof PagePermissions) => {
+    const currentHidden = perms[page].hidden === true;
+    const updated = {
+      ...perms,
+      [page]: { ...perms[page], hidden: !currentHidden },
+    };
+    setPerms(updated);
+    try {
+      await axios.post("/api/permissions", { permissions: updated, employeeId: authSession?.employeeId }, { withCredentials: true });
+      invalidatePagePermissions();
+      setSaveToast(!currentHidden ? "숨김 처리됨 · 사이드바에서 제외" : "다시 노출됨");
+      setTimeout(() => setSaveToast(null), 2500);
+    } catch (err: any) {
+      setPerms(perms); // revert
+      const status = err?.response?.status;
+      if (status === 401) { handleAuthExpired(); return; }
+      setSaveToast(`저장 실패 · ${err?.response?.data?.error ?? err?.message ?? "네트워크 오류"}`);
       setTimeout(() => setSaveToast(null), 4000);
     }
   }, [perms, authSession?.employeeId, handleAuthExpired]);
@@ -548,10 +572,24 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                         i < g.pages.length - 1 ? "border-t border-zinc-100/70" : "border-t border-zinc-100/70"
                       }`}
                     >
-                      {/* 페이지명 · 들여쓰기 · 트리 시각화 · 2026-08-16 · +1 (16→17) */}
-                      <div className="text-[16px] font-semibold text-zinc-700 truncate pl-6">
-                        <span className="text-zinc-300 mr-1.5">└</span>
-                        {label}
+                      {/* 페이지명 · 들여쓰기 · 트리 시각화 · 2026-08-16 · +1 (16→17) · 숨김 토글 */}
+                      <div className="flex items-center gap-2 min-w-0 pl-6">
+                        <button
+                          type="button"
+                          onClick={() => toggleHiddenForPerm(key)}
+                          title={perm.hidden ? "숨김 → 노출로 변경" : "노출 → 숨김으로 변경 (사이드바 제외)"}
+                          className={`shrink-0 w-6 h-6 rounded-md border transition cursor-pointer flex items-center justify-center ${
+                            perm.hidden
+                              ? "bg-rose-50 border-rose-300 text-rose-600 hover:bg-rose-100"
+                              : "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100"
+                          }`}
+                        >
+                          {perm.hidden ? <EyeOff size={12} /> : <Eye size={12} />}
+                        </button>
+                        <div className={`text-[16px] font-semibold truncate ${perm.hidden ? "text-zinc-400 line-through" : "text-zinc-700"}`}>
+                          <span className="text-zinc-300 mr-1.5">└</span>
+                          {label}
+                        </div>
                       </div>
 
                       {/* Read level + 직군 팝오버 · 2026-08-13 · #100 · 레벨 OR 직군 */}

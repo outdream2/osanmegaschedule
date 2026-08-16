@@ -33,6 +33,7 @@ import {
 } from "./sideNavGroups";
 import { useSidebarWidth } from "../../hooks/useSidebar";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
+import { usePagePermissions } from "../../hooks/usePagePermissions";
 import logoImg from "../../images/logo.png";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
@@ -320,7 +321,9 @@ export const SideNav: React.FC<SideNavProps> = ({
 }) => {
   const isMobile = useIsMobile();
   // 2026-08-12 · hideOnMobile 그룹은 반응형(모바일)에서 숨김 (거래처 그룹 등 · PC 관리자 전용)
-  const groups = filterGroupsForSession(authSession).filter(g => !(isMobile && g.hideOnMobile));
+  // 2026-08-16 · 페이지 숨김 반영 · 서버 perms 참조
+  const { perms } = usePagePermissions();
+  const groups = filterGroupsForSession(authSession, perms).filter(g => !(isMobile && g.hideOnMobile));
   const { startResize } = useSidebarWidth();
   const { brand } = useBrandIdentity();
 

@@ -26,6 +26,8 @@ export function deriveUserPosition(session: AuthSession | null): string | null {
 export function canReadPage(session: AuthSession | null, perm: PagePermission | undefined): boolean {
   if (!perm) return false;
   const level = deriveUserLevel(session);
+  // 2026-08-16 · hidden 페이지 · lv 9 관리자만 예외 (설정 접근 위해) · 그 외 모두 차단
+  if (perm.hidden && level < 9) return false;
   if (level >= perm.read) return true;
   const pos = deriveUserPosition(session);
   if (pos && Array.isArray(perm.readPositions) && perm.readPositions.includes(pos)) return true;
