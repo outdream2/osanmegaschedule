@@ -1039,9 +1039,12 @@ src/
 - MyPage · PermissionsPage · ProductArrivalPage · ScanPage · ZoneLabelsEditor
 - VendorStockModal · LunchPage · RequestsPage 등 순차
 
-### shared/ (11 파일)
-- `schemas/` · auth · leave · lunch · reservation · employees (5개)
+### shared/ (17 파일 · 100% 매치)
+- `schemas/` · auth · leave · lunch · reservation · employees · vendors · board · schedules · resignations · hrForms (10개)
 - `dtos/` · common · auth · leave · lunch · employees · vendors · reservations · products (8개 · 40+ 타입)
+
+**서버 route validateBody 적용 (11개)**
+- auth (4) · leave (2) · lunch (1) · reservations (1) · schedules (3) · vendors (1) · board (2) · resignations (2) · hrForms (1)
 
 ---
 
@@ -1066,3 +1069,4 @@ src/
 - 2026-08-16 v1.0 · 최초 작성 (Framework 8모듈 · Client 7훅 · Migration 24 routes)
 - 2026-08-16 v1.5 · asyncHandler 100% · shared/schemas 5 도메인 · shared/dtos 7 도메인 · apiClient 11 files 채택 · 103 tests
 - 2026-08-17 v1.6 · apiClient 100% (Gemini 제외 15 files) · shared/dtos 8 도메인 (40+ 타입) · MyPage/PermissionsPage/LandingPage/SchedulePage/VendorStockModal 마이그레이션 완료
+- 2026-08-17 v1.7 · shared/schemas 10 도메인 · validateBody 11 route 적용 · LandingPage StockSearch 분리 (-161 라인 · 2331) · #131 페이지 uncheck 버그 fix (admin lockout 방지 · essential 페이지 예외)
