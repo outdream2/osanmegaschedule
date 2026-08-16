@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import axios from "axios";
-import { Shield, Check, Loader2, AlertCircle, Settings as SettingsIcon, Users, IdCard, Construction, Plus, Trash2, GripVertical, Save } from "lucide-react";
+import { Shield, Check, Loader2, AlertCircle, Settings as SettingsIcon, Users, IdCard, Construction, Plus, Trash2, GripVertical, Save, Pencil } from "lucide-react";
 import { updateEmployee } from "../../lib/employeeApi";
 import type { AuthSession, PagePermissions } from "../../types";
 import { DEFAULT_PERMISSIONS } from "../../types";
@@ -701,7 +701,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
               <h2 className="text-[13px] font-black text-zinc-700">직군 설정</h2>
             </div>
             <p className="text-[12px] text-zinc-500 font-semibold">
-              직원 등록/수정 화면의 직군 드롭박스에 표시될 목록입니다. 드래그하여 순서를 변경할 수 있습니다.
+              직원 등록/수정 화면의 직군 드롭박스에 표시될 목록입니다. 이름 클릭 또는 <Pencil size={11} className="inline align-middle text-violet-500 mx-0.5" /> 아이콘으로 편집 · 드래그로 순서 변경 · <Trash2 size={11} className="inline align-middle text-rose-500 mx-0.5" /> 로 삭제 (사용중이면 재매핑 안내).
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
               {PRESET_POSITIONS.map((pos, idx) => (
@@ -737,14 +737,24 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                       className="flex-1 text-[13px] font-semibold text-zinc-800 bg-white border border-violet-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-violet-300 min-w-0"
                     />
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => { setEditingPosIdx(idx); setEditingPosValue(pos); }}
-                      className="flex-1 text-[13px] font-semibold text-zinc-800 truncate text-left hover:text-violet-700 cursor-text"
-                      title="클릭하여 이름 수정"
-                    >
-                      {pos}
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => { setEditingPosIdx(idx); setEditingPosValue(pos); }}
+                        className="flex-1 text-[13px] font-semibold text-zinc-800 truncate text-left hover:text-violet-700 cursor-text"
+                        title="클릭하여 이름 수정"
+                      >
+                        {pos}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setEditingPosIdx(idx); setEditingPosValue(pos); }}
+                        className="text-zinc-300 hover:text-violet-500 transition cursor-pointer p-0.5 rounded"
+                        title="이름 편집"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                    </>
                   )}
                   <button
                     type="button"
