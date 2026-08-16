@@ -3,6 +3,7 @@ import webpush from "web-push";
 import { supabase } from "../../../src/supabase/client";
 import { scheduleService } from "../../services/scheduleService";
 import { notificationsService } from "../../services/notificationsService";
+import { checkOwnershipOrAdmin } from "../../lib/ownershipCheck";
 
 const router = Router();
 
@@ -192,12 +193,21 @@ router.put("/api/leave-requests/:id", async (req, res) => {
   } catch (err: any) { return res.status(500).json({ error: err.message }); }
 });
 
+// 2026-08-16 · #112-E1 Phase 2 · 프레임워크 · checkOwnershipOrAdmin 사용
 router.delete("/api/leave-requests/:id", async (req, res) => {
   try {
+    const check = await checkOwnershipOrAdmin(req, { table: "leave_requests", id: req.params.id });
+    if (check.ok !== true) return res.status(check.status).json({ error: check.error });
+    if (!check.isAdmin && check.row?.status !== "pending") {
+      return res.status(400).json({ error: "승인/거절된 요청은 삭제할 수 없습니다" });
+    }
     const { error } = await supabase.from("leave_requests").delete().eq("id", req.params.id).eq("status", "pending");
     if (error) throw new Error(error.message);
     return res.json({ ok: true });
-  } catch (err: any) { return res.status(500).json({ error: err.message }); }
+  } catch (err: any) {
+    console.error(`[/api/leave-requests DELETE] ${err?.message ?? err}`);
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 export default router;
