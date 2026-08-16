@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { supabase } from "../../../src/supabase/client";
 import { issueToken, clearToken, JwtPayload, getSession } from "../../middleware/requireAuth";
+import { audit, auditContext } from "../../lib/auditLogger";
 
 const router = Router();
 
@@ -117,15 +118,23 @@ router.post("/api/auth/set-password", async (req, res) => {
   if ((session.level ?? 0) < 9) return res.status(403).json({ error: "관리자(lv 9) 만 사용 가능합니다" });
   const parsed = SetPasswordSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: firstZodError(parsed.error) });
-  const { employeeId, password } = parsed.data;
+  const { employeeId } = parsed.data;
+  const { password } = parsed.data;
   const idNum = typeof employeeId === "string" ? parseInt(employeeId) : employeeId;
   if (!idNum || isNaN(idNum)) return res.status(400).json({ error: "유효한 employeeId 가 필요합니다" });
   try {
     const password_hash = await bcrypt.hash(password, 10);
     const { error } = await supabase.from("employees").update({ password_hash }).eq("id", idNum);
     if (error) throw new Error(error.message);
+    // 2026-08-16 · #112-S5 · Audit · 관리자가 타 직원 비번 강제 변경
+    audit("PASSWORD_SET_BY_ADMIN", {
+      actorId: session.sub, actorName: session.name,
+      targetEmployeeId: idNum,
+      ...auditContext(req),
+    }, "warn");
     return res.status(200).json({ ok: true });
   } catch (err: any) {
+    console.error(`[/api/auth/set-password] ${err?.message ?? err}`);
     return res.status(500).json({ error: err.message });
   }
 });
