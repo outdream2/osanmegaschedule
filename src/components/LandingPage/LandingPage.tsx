@@ -48,6 +48,7 @@ import { TIMING } from "../../constants/timing";
 import { VendorDetailModal, type Vendor as VendorFull } from "./VendorListEditor";
 import { VendorStockModal } from "./VendorStockModal";
 import { useVendors } from "../../hooks/useVendors";
+import { MenuCard } from "./MenuCard";
 // VendorListEditor 는 발주관리 공급사관리 에서만 사용 (LandingPage 데이터 업로드 에서 제거됨 · 2026-07-15)
 
 interface LandingPageProps {
@@ -1010,94 +1011,46 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               </div>
               <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
 
-                {/* 매장관리 — red (SIDE_NAV_GROUPS · display 그룹 통일 · 2026-08-16) */}
-                <button data-menu-card onClick={() => onNavigate("display", authSession!)}
-                  className="group relative bg-white border border-zinc-200/80 hover:border-red-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-red-50/70" />
-                  <div className="relative">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-all duration-200 group-hover:scale-105">
-                      <SquaresFour size={24} className="text-red-600 sm:hidden" weight="fill" /><SquaresFour size={32} className="text-red-600 hidden sm:block" weight="fill" />
-                    </div>
-                    <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight leading-tight">
-                      매장관리
-                    </div>
-                    <div className="text-zinc-400 text-[9px] sm:text-[11px] leading-tight block mt-0.5">
-                      매장 · 발주 · 매입 · 결제 · 통계 · 입고알림
-                    </div>
-                  </div>
-                </button>
+                {/* 매장관리 — red · MenuCard · desc 는 원본 유지 (9/11) */}
+                <MenuCard color="red" icon={SquaresFour} title="매장관리" description="매장 · 발주 · 매입 · 결제 · 통계 · 입고알림"
+                  descClass="text-[9px] sm:text-[11px] leading-tight"
+                  onClick={() => onNavigate("display", authSession!)} />
 
-                {/* 경영관리 — violet · business-manage 통합 페이지로 단순 라우팅 · 2026-08-03 */}
-                <button data-menu-card onClick={() => onNavigate("business-manage", authSession!)}
-                  className="group relative bg-white border border-zinc-200/80 hover:border-violet-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(237,233,254,0.7) 0%, transparent 60%)" }} />
-                  {leavePendingCount > 0 && (
+                {/* 경영관리 — violet · MenuCard · pending 배지 */}
+                <MenuCard color="violet" icon={Briefcase} title="경영관리" description="직원관리 · 연차승인 · 점심불참 · 권한"
+                  onClick={() => onNavigate("business-manage", authSession!)}
+                  badge={leavePendingCount > 0 ? (
                     <div className="absolute top-2.5 right-2.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-white text-[10px] font-black" style={{ background: "linear-gradient(135deg, #f43f5e, #e11d48)", boxShadow: "0 0 0 2px white, 0 2px 6px rgba(244,63,94,0.4)" }}>
                       {leavePendingCount}
                     </div>
-                  )}
-                  <div className="relative">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-all duration-200 group-hover:scale-105">
-                      <Briefcase size={24} className="text-violet-600 sm:hidden" weight="fill" /><Briefcase size={32} className="text-violet-600 hidden sm:block" weight="fill" />
-                    </div>
-                    <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight leading-tight">경영관리</div>
-                    <div className="text-zinc-400 text-[11px] sm:text-[13px] leading-tight block mt-0.5">직원관리 · 연차승인 · 점심불참 · 권한</div>
-                  </div>
-                </button>
+                  ) : undefined} />
 
-                {/* 요청목록 조회 — indigo */}
-                <button data-menu-card onClick={() => onNavigate("requests", authSession!)}
-                  className="group relative bg-white border border-zinc-200/80 hover:border-indigo-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(224,231,255,0.7) 0%, transparent 60%)" }} />
-                  <div className="absolute top-2 right-2 flex items-center gap-0.5">
-                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white bg-blue-500 shadow-sm">{requestsCounts.display}</span>
-                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white bg-red-500 shadow-sm">{requestsCounts.order}</span>
-                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white bg-orange-500 shadow-sm">{requestsCounts.mismatch}</span>
-                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white bg-emerald-500 shadow-sm">{requestsCounts.lunch}</span>
-                  </div>
-                  <div className="relative">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-all duration-200 group-hover:scale-105 mt-5 sm:mt-6">
-                      <List size={24} className="text-indigo-600 sm:hidden" weight="fill" /><List size={32} className="text-indigo-600 hidden sm:block" weight="fill" />
+                {/* 요청목록 조회 — indigo · MenuCard · 4-counter 배지 */}
+                <MenuCard color="indigo" icon={List} title="요청목록 조회" description="진열·발주요청 및 배치구역 불일치 확인"
+                  onClick={() => onNavigate("requests", authSession!)}
+                  badge={(
+                    <div className="absolute top-2 right-2 flex items-center gap-0.5 z-10">
+                      <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white bg-blue-500 shadow-sm">{requestsCounts.display}</span>
+                      <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white bg-red-500 shadow-sm">{requestsCounts.order}</span>
+                      <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white bg-orange-500 shadow-sm">{requestsCounts.mismatch}</span>
+                      <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white bg-emerald-500 shadow-sm">{requestsCounts.lunch}</span>
                     </div>
-                    <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">요청목록 조회</div>
-                    <div className="text-zinc-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">진열·발주요청 및 배치구역 불일치 확인</div>
-                  </div>
-                </button>
+                  )} />
 
                 {/* 데이터 업로드 (통합) — orange (level 9 전용) — 상품목록 · 재고리스트 서브탭 */}
                 {isSuperAdminLevel9 && (
-                  <button
-                    data-menu-card
-                    onClick={() => { setUploadOpen(true); setUploadTab("products"); setUploadResult(null); setUploadFile(null); setStockUploadResult(null); setStockUploadFile(null); fetchImportLog(); fetchStockImportLog(); }}
-                    className="group relative bg-white border border-zinc-200/80 hover:border-orange-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(255,237,213,0.7) 0%, transparent 60%)" }} />
-                    <div className="relative">
-                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-all duration-200 group-hover:scale-105">
-                        <Table size={24} className="text-orange-500 sm:hidden" weight="fill" /><Table size={32} className="text-orange-500 hidden sm:block" weight="fill" />
-                      </div>
-                      <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">데이터 업로드</div>
-                      <div className="text-zinc-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">상품목록 · 재고리스트 xlsx 업로드</div>
-                    </div>
-                  </button>
+                  <MenuCard color="orange" icon={Table} title="데이터 업로드" description="상품목록 · 재고리스트 xlsx 업로드"
+                    onClick={() => { setUploadOpen(true); setUploadTab("products"); setUploadResult(null); setUploadFile(null); setStockUploadResult(null); setStockUploadFile(null); fetchImportLog(); fetchStockImportLog(); }} />
                 )}
 
                 {/* 거래명세서 OCR 카드 · 매장관리 > 매입 > 사입·OCR 서브탭으로 이동 · 2026-08-03 랜딩 제거 */}
 
                 {/* 연차 승인 카드 · 경영관리 팝오버로 이동 · 2026-08-03 */}
 
-                {/* 설정 — fuchsia (level 9 전용) · 권한 조정 + 환경 설정 통합 */}
+                {/* 설정 — zinc (level 9 전용) · 권한 조정 + 환경 설정 통합 · 원본 inline style 문법오류 fix */}
                 {isSuperAdminLevel9 && (
-                  <button data-menu-card onClick={() => onNavigate("permissions", authSession!)}
-                    className="group relative bg-white border border-zinc-200/80 hover:border-zinc-400 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "rgba(244,244,245,0.7) 0%, transparent 60%)" }} />
-                    <div className="relative">
-                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-all duration-200 group-hover:scale-105">
-                        <ShieldCheck size={24} className="text-zinc-600 sm:hidden" weight="fill" /><ShieldCheck size={32} className="text-zinc-600 hidden sm:block" weight="fill" />
-                      </div>
-                      <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">설정</div>
-                      <div className="text-zinc-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">권한 · 근무 유형 · 시급 등 앱 전체 설정</div>
-                    </div>
-                  </button>
+                  <MenuCard color="zinc" icon={ShieldCheck} title="설정" description="권한 · 근무 유형 · 시급 등 앱 전체 설정"
+                    onClick={() => onNavigate("permissions", authSession!)} />
                 )}
 
                 {/* 구역 라벨 관리 카드 · 설정(권한관리 > 환경설정) 내부로 이동 · 2026-08-03 랜딩 제거 */}
@@ -1119,88 +1072,40 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               </div>
               <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
 
-                {/* 약사 전용 — sky · level ≥ 3 만 노출 · 2026-08-03 */}
+                {/* 약사 전용 — sky · level ≥ 3 만 노출 */}
                 {(authSession?.level ?? 0) >= 3 && (
-                  <button data-menu-card onClick={() => onNavigate("pharmacist", authSession!)}
-                    className="order-1 group relative bg-white border border-zinc-200/80 hover:border-sky-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-sky-100/70" />
-                    <div className="relative">
-                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-all duration-200 group-hover:scale-105">
-                        <FirstAid size={24} className="text-sky-600 sm:hidden" weight="fill" /><FirstAid size={32} className="text-sky-600 hidden sm:block" weight="fill" />
-                      </div>
-                      <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight leading-tight">약사 전용</div>
-                      <div className="text-zinc-400 text-[11px] sm:text-[13px] leading-tight block mt-0.5">교육자료 · 복약지도 · 참고 문서</div>
-                    </div>
-                  </button>
+                  <MenuCard color="sky" icon={FirstAid} title="약사 전용" description="교육자료 · 복약지도 · 참고 문서"
+                    orderClass="order-1"
+                    onClick={() => onNavigate("pharmacist", authSession!)} />
                 )}
 
-                {/* 스케줄표 조회 — blue */}
-                <button data-menu-card onClick={() => onNavigate("schedule", authSession!)}
-                  className="order-2 group relative bg-white border border-zinc-200/80 hover:border-amber-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-amber-50/70" />
-                  <div className="relative">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-all duration-200 group-hover:scale-105">
-                      <Calendar size={24} className="text-amber-600 sm:hidden" weight="fill" /><Calendar size={32} className="text-amber-600 hidden sm:block" weight="fill" />
-                    </div>
-                    <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">스케줄표 조회</div>
-                    <div className="text-zinc-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">직원 월간 근무 스케줄 확인 및 관리</div>
-                  </div>
-                </button>
+                {/* 스케줄표 조회 — amber */}
+                <MenuCard color="amber" icon={Calendar} title="스케줄표 조회" description="직원 월간 근무 스케줄 확인 및 관리"
+                  orderClass="order-2"
+                  onClick={() => onNavigate("schedule", authSession!)} />
 
-                {/* 상품 스캔 — violet */}
-                <button data-menu-card onClick={() => onNavigate("scan", authSession!)}
-                  className="order-3 group relative bg-white border border-zinc-200/80 hover:border-red-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-red-50/70" />
-                  <div className="relative">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-all duration-200 group-hover:scale-105">
-                      <Scan size={24} className="text-red-600 sm:hidden" weight="fill" /><Scan size={32} className="text-red-600 hidden sm:block" weight="fill" />
-                    </div>
-                    <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">실재고 확인</div>
-                    <div className="text-zinc-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">바코드 스캔 · 실재고·진열보충 요청</div>
-                  </div>
-                </button>
+                {/* 실재고 확인 — red · Scan */}
+                <MenuCard color="red" icon={Scan} title="실재고 확인" description="바코드 스캔 · 실재고·진열보충 요청"
+                  orderClass="order-3"
+                  onClick={() => onNavigate("scan", authSession!)} />
 
-                {/* 상품입고 — emerald · 2026-07-29 · 사용자 요청 · 직원 랜딩 추가 */}
-                <button data-menu-card onClick={() => onNavigate("productarrival", authSession!)}
-                  className="order-4 group relative bg-white border border-zinc-200/80 hover:border-red-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-red-50/70" />
-                  <div className="relative">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-all duration-200 group-hover:scale-105">
-                      <Package size={24} className="text-red-600 sm:hidden" weight="fill" /><Package size={32} className="text-red-600 hidden sm:block" weight="fill" />
-                    </div>
-                    <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">상품입고</div>
-                    <div className="text-zinc-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">바코드 스캔으로 입고 상품 등록</div>
-                  </div>
-                </button>
+                {/* 상품입고 — red · Package */}
+                <MenuCard color="red" icon={Package} title="상품입고" description="바코드 스캔으로 입고 상품 등록"
+                  orderClass="order-4"
+                  onClick={() => onNavigate("productarrival", authSession!)} />
 
-                {/* 연차 신청 — rose · 뒤로 배치 · 2026-08-12 · 사이드바 [승인요청]>[연차신청] 페이지로 연결 (subTab=leave) */}
-                <button data-menu-card onClick={() => {
-                  try { localStorage.setItem("sidebar.subtab.approval-request", "leave"); } catch { /* silent */ }
-                  onNavigate("approval-request", authSession!);
-                }}
-                  className="order-5 group relative bg-white border border-zinc-200/80 hover:border-indigo-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-indigo-50/70" />
-                  <div className="relative">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-all duration-200 group-hover:scale-105">
-                      <CalendarDots size={24} className="text-indigo-600 sm:hidden" weight="fill" /><CalendarDots size={32} className="text-indigo-600 hidden sm:block" weight="fill" />
-                    </div>
-                    <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">연차 신청</div>
-                    <div className="text-zinc-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">휴가·연차 신청 및 내역 조회</div>
-                  </div>
-                </button>
+                {/* 연차 신청 — indigo · 사이드바 [승인요청]>[연차신청] 로 연결 (subTab=leave) */}
+                <MenuCard color="indigo" icon={CalendarDots} title="연차 신청" description="휴가·연차 신청 및 내역 조회"
+                  orderClass="order-5"
+                  onClick={() => {
+                    try { localStorage.setItem("sidebar.subtab.approval-request", "leave"); } catch { /* silent */ }
+                    onNavigate("approval-request", authSession!);
+                  }} />
 
-                {/* 점심 불참 — orange · 맨 뒤 */}
-                <button data-menu-card onClick={() => onNavigate("lunch", authSession!)}
-                  className="order-6 group relative bg-white border border-zinc-200/80 hover:border-indigo-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-indigo-50/70" />
-                  <div className="relative">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-all duration-200 group-hover:scale-105">
-                      <ForkKnife size={24} className="text-indigo-600 sm:hidden" weight="fill" /><ForkKnife size={32} className="text-indigo-600 hidden sm:block" weight="fill" />
-                    </div>
-                    <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">점심 불참</div>
-                    <div className="text-zinc-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">오늘의 점심 불참 신청</div>
-                  </div>
-                </button>
+                {/* 점심 불참 — indigo · ForkKnife */}
+                <MenuCard color="indigo" icon={ForkKnife} title="점심 불참" description="오늘의 점심 불참 신청"
+                  orderClass="order-6"
+                  onClick={() => onNavigate("lunch", authSession!)} />
 
                 {/* 내 요청목록 · 무지개 gradient · 맨 앞 · 눈에 띄는 강조 */}
                 {isEmployee && (
@@ -1254,17 +1159,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 )}
 
                 {/* 이슈공유 게시판 (전체 직원) — amber */}
-                <button data-menu-card onClick={() => onNavigate("board" as any, authSession!)}
-                  className="order-4 group relative bg-white border border-zinc-200/80 hover:border-amber-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(254,243,199,0.7) 0%, transparent 60%)" }} />
-                  <div className="relative">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-all duration-200 group-hover:scale-105">
-                      <ChatCircle size={24} className="text-amber-600 sm:hidden" weight="fill" /><ChatCircle size={32} className="text-amber-600 hidden sm:block" weight="fill" />
-                    </div>
-                    <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">이슈공유</div>
-                    <div className="text-zinc-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">질문·이슈·메모 · 사진 첨부 · 담당자 지정</div>
-                  </div>
-                </button>
+                <MenuCard color="amber" icon={ChatCircle} title="이슈공유" description="질문·이슈·메모 · 사진 첨부 · 담당자 지정"
+                  orderClass="order-4"
+                  onClick={() => onNavigate("board" as any, authSession!)} />
 
               </div>
             </div>
