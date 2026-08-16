@@ -998,12 +998,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           {/* ── 관리자 도구 (관리자 로그인 시에만 표시) ── */}
           {isManagerOrAdmin && (
             <div className="w-full mb-7">
+              {/* 2026-08-17 · #130 · 아이콘 배경 누락 fix (white on white 무효 → violet-500 bg) */}
               <div className="flex items-center gap-2 mb-3.5">
-                <div className="w-5 h-5 rounded-md flex items-center justify-center">
+                <div className="w-5 h-5 rounded-md flex items-center justify-center bg-violet-500 shadow-sm">
                   <ShieldCheck size={10} className="text-white" weight="fill" />
                 </div>
                 <span className="text-[11px] font-bold text-violet-600 uppercase tracking-widest">관리자 도구</span>
-                <div className="flex-1 h-px" />
+                <div className="flex-1 h-px bg-gradient-to-r from-violet-200 to-transparent" />
               </div>
               <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
 
@@ -1059,12 +1060,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           {/* ── 직원용 (직원/관리자 로그인 시에만 표시) ── */}
           {isLoggedIn && !isVendor && (
             <div className="w-full mb-7">
+              {/* 2026-08-17 · #130 · 아이콘 배경 누락 fix + divider gradient */}
               <div className="flex items-center gap-2 mb-3.5">
-                <div className="w-5 h-5 rounded-md flex items-center justify-center">
+                <div className="w-5 h-5 rounded-md flex items-center justify-center bg-indigo-500 shadow-sm">
                   <User size={10} className="text-white" weight="fill" />
                 </div>
                 <span className="text-[11px] font-bold text-indigo-500 uppercase tracking-widest">직원용</span>
-                <div className="flex-1 h-px" />
+                <div className="flex-1 h-px bg-gradient-to-r from-indigo-200 to-transparent" />
               </div>
               <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
 
@@ -1165,17 +1167,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </div>
                 </div>
               ) : (
-              /* 인라인 재고검색 — 검색바 + 결과 리스트 */
-              <div className="w-full rounded-3xl overflow-hidden shadow-xl border border-blue-100"
-               >
-                <div className="px-5 py-4 flex items-center gap-3 border-b border-blue-400/30">
+              /* 인라인 재고검색 · 2026-08-17 · #130 · 헤더 gradient 배경 fix (white text 가시성) */
+              <div className="w-full rounded-3xl overflow-hidden shadow-xl border border-blue-100">
+                <div className="px-5 py-4 flex items-center gap-3 border-b border-blue-400/30"
+                  style={{ background: "linear-gradient(135deg, #1e40af 0%, #2563eb 100%)" }}>
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.3)" }}>
+                    style={{ background: "rgba(255,255,255,0.2)", border: "1.5px solid rgba(255,255,255,0.35)" }}>
                     <Package size={18} className="text-white" weight="fill" />
                   </div>
                   <div className="text-left flex-1 min-w-0">
                     <div className="text-white font-black text-base sm:text-lg tracking-tight leading-tight">재고 확인</div>
-                    <div className="text-blue-200 text-[11px] mt-0.5">약품·제품명 입력 시 실시간 재고 확인</div>
+                    <div className="text-blue-100 text-[11px] mt-0.5">약품·제품명 입력 시 실시간 재고 확인</div>
                   </div>
                 </div>
                 {/* 검색바 */}
