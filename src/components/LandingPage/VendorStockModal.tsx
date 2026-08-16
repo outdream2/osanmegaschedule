@@ -5,12 +5,15 @@
 //   · 기간 필터 (from-to) 는 백엔드 stock 시계열 API 필요 · Phase 2
 //   · 계절 · useSeasonRanges (봄·여름·가을·겨울) · 필터 상태만 (백엔드 확장 시 자동 반영)
 
+// 2026-08-16 · 프레임워크 적용 · apiClient + useToast
 import React, { useEffect, useState, useMemo } from "react";
 import { X, Package, Search, Loader2 } from "lucide-react";
 import { TEXT } from "../../styles/tokens";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
+import { api, ApiError } from "../../lib/apiClient";
+import { useToast, toastClass } from "../../hooks/useToast";
 
 interface VendorProduct {
   code: string;
@@ -48,14 +51,17 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
+  // 2026-08-16 · 프레임워크 · useToast · 에러 UX 통일
+  const { toast, showError } = useToast(4000);
+
   useEffect(() => {
     if (!open || !vendorName) return;
     let alive = true;
     setLoading(true);
     setError(null);
-    fetch(`/api/products-search?supplier=${encodeURIComponent(vendorName)}&limit=1000`)
-      .then((r) => r.json())
-      .then((data) => {
+    (async () => {
+      try {
+        const { data } = await api.get<{ items?: any[] }>(`/api/products-search?supplier=${encodeURIComponent(vendorName)}&limit=1000`);
         if (!alive) return;
         const items: VendorProduct[] = Array.isArray(data?.items)
           ? data.items.map((it: any) => ({
@@ -68,18 +74,17 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
             }))
           : [];
         setProducts(items);
-      })
-      .catch((e: Error) => {
+      } catch (e: unknown) {
         if (!alive) return;
-        setError(e?.message ?? "조회 실패");
-      })
-      .finally(() => {
+        const msg = e instanceof ApiError ? e.message : "조회 실패";
+        setError(msg);
+        showError(msg);
+      } finally {
         if (alive) setLoading(false);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [open, vendorName]);
+      }
+    })();
+    return () => { alive = false; };
+  }, [open, vendorName, showError]);
 
   // 검색 필터
   const searched = useMemo(() => {
@@ -214,6 +219,13 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
         <div className="px-5 py-2.5 border-t border-zinc-100 bg-zinc-50/40 text-[11px] text-zinc-400">
           ERP 재고 · 매장 시스템 기준 · 실재고 (창고·매장별) 세부는 추후 반영
         </div>
+
+        {/* 2026-08-16 · Toast · 조회 실패 등 · 우측 하단 */}
+        {toast && (
+          <div className="fixed bottom-6 right-6 z-[60]">
+            <div className={toastClass(toast.tone)}>{toast.message}</div>
+          </div>
+        )}
       </div>
     </div>
   );
