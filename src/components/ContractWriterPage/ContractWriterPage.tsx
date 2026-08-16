@@ -1,4 +1,5 @@
 // src/components/ContractWriterPage/ContractWriterPage.tsx
+// 2026-08-17 · apiClient 마이그레이션
 // 근로계약서 작성 페이지 · 2026-08-04 · 11차 정정 종합 재구현
 //
 // 핵심 원칙:
@@ -79,6 +80,7 @@ import {
 import {
   type SignKey, SIGN_KEYS, SIGN_LABEL, REQUIRED_SIGN_COUNT, useContractSignatures,
 } from "../../hooks/useContractSignatures";
+import { api, ApiError } from "../../lib/apiClient";
 
 type SignatureCanvasType = SignaturePad;
 
@@ -2829,14 +2831,12 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       try {
         const now = new Date();
         const y = now.getFullYear(), m = now.getMonth() + 1;
-        const res = await fetch(`/api/schedules?year=${y}&month=${m}`);
-        if (!res.ok) throw new Error(`서버 오류 (${res.status})`);
-        const data = await res.json();
+        const { data } = await api.get<any>(`/api/schedules?year=${y}&month=${m}`);
         if (cancelled) return;
         const list = Array.isArray(data?.employees) ? data.employees : [];
         setEmployees(list);
       } catch (err: any) {
-        if (!cancelled) setEmpError(err?.message ?? "직원 목록 불러오기 실패");
+        if (!cancelled) setEmpError(err instanceof ApiError ? err.message : (err?.message ?? "직원 목록 불러오기 실패"));
       } finally {
         if (!cancelled) setEmpLoading(false);
       }
@@ -3038,15 +3038,10 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     (async () => {
       setExistingLoading(true);
       try {
-        const res = await fetch(`/api/employee-contracts?employeeId=${empId}`);
-        if (res.ok) {
-          const rows = await res.json();
-          if (!cancelled) {
-            const first = Array.isArray(rows) && rows.length > 0 ? (rows[0] as ExistingContract) : null;
-            setExistingContract(first);
-          }
-        } else if (!cancelled) {
-          setExistingContract(null);
+        const { data: rows } = await api.get<any>(`/api/employee-contracts?employeeId=${empId}`);
+        if (!cancelled) {
+          const first = Array.isArray(rows) && rows.length > 0 ? (rows[0] as ExistingContract) : null;
+          setExistingContract(first);
         }
         const emp = employees.find(e => e.id === empId);
         const hd = (emp as any)?.hire_date ?? null;
@@ -3824,14 +3819,12 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         working_hours: (form.startTime && form.endTime) ? `${form.startTime}-${form.endTime}` : null,
         annual_leave_days: form.annualLeaveDays ? Number(form.annualLeaveDays) || null : null,
       };
-      const resp = await fetch("/api/employee-contracts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const saved = await resp.json().catch(() => ({}));
-      if (!resp.ok) {
-        const msg = saved?.error ?? `저장 실패 (HTTP ${resp.status})`;
+      let saved: any = {};
+      try {
+        const { data } = await api.post<any>("/api/employee-contracts", body);
+        saved = data ?? {};
+      } catch (err: any) {
+        const msg = err instanceof ApiError ? err.message : (err?.message ?? `저장 실패`);
         pdf.save(filename);
         setNotice({ tone: "err", text: `${msg} · 로컬 다운로드만 진행되었습니다.` });
         return;
@@ -3854,7 +3847,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         });
       }
     } catch (err: any) {
-      setNotice({ tone: "err", text: err?.message ?? "계약 승인·저장에 실패했습니다." });
+      setNotice({ tone: "err", text: err instanceof ApiError ? err.message : (err?.message ?? "계약 승인·저장에 실패했습니다.") });
     } finally {
       setGenerating(false);
     }
@@ -3894,13 +3887,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       if (authSession?.employeeName) fd.append("approved_by", authSession.employeeName);
       if (authSession?.employeeId != null) fd.append("approved_by_id", String(authSession.employeeId));
 
-      const resp = await fetch("/api/employee-contracts/upload", { method: "POST", body: fd });
-      const saved = await resp.json().catch(() => ({}));
-      if (!resp.ok) {
-        const msg = saved?.error ?? `업로드 실패 (HTTP ${resp.status})`;
-        setNotice({ tone: "err", text: msg });
-        return;
-      }
+      const { data: saved } = await api.post<any>("/api/employee-contracts/upload", fd);
       setNotice({
         tone: "ok",
         text: saved?.pdf_url
@@ -3921,7 +3908,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         });
       }
     } catch (err: any) {
-      setNotice({ tone: "err", text: err?.message ?? "업로드 실패" });
+      setNotice({ tone: "err", text: err instanceof ApiError ? err.message : (err?.message ?? "업로드 실패") });
     } finally {
       setUploadBusy(false);
     }

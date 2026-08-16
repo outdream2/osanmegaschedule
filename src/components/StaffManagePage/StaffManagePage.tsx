@@ -1,6 +1,7 @@
 // src/components/StaffManagePage/StaffManagePage.tsx
 // 직원관리 페이지 — 마스터-디테일 레이아웃 (이력서 스타일 우측 패널)
 // 좌측: 슬림 원라인 리스트 / 우측: 이력서 형식 상세 + 인라인 편집
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CARD_BASE } from "../../styles/tokens";
 import { useSortableTable } from "../../hooks/useSortableTable";
@@ -17,6 +18,7 @@ import {
   uploadResignationFile as apiUploadResignation,
   deleteResume as apiDeleteResume,
 } from "../../lib/employeeApi";
+import { api, ApiError } from "../../lib/apiClient";
 import {
   Award,
   Briefcase,
@@ -736,9 +738,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
     let alive = true;
     (async () => {
       try {
-        const res = await fetch("/api/employee-contracts");
-        if (!res.ok) return;
-        const rows: any[] = await res.json();
+        const { data: rows } = await api.get<any[]>("/api/employee-contracts");
         if (!Array.isArray(rows)) return;
         const map = new Map<number, number>();
         for (const r of rows) {
@@ -759,9 +759,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
     try {
       const now = new Date();
       const y = now.getFullYear(), m = now.getMonth() + 1;
-      const res = await fetch(`/api/schedules?year=${y}&month=${m}`);
-      if (!res.ok) throw new Error(`서버 오류 ${res.status}`);
-      const data = await res.json();
+      const { data } = await api.get<any>(`/api/schedules?year=${y}&month=${m}`);
       const list: Employee[] = Array.isArray(data?.employees) ? data.employees : [];
       setEmployees(list);
       if (selectedId != null && !list.find((e) => e.id === selectedId)) {
@@ -791,9 +789,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
     (async () => {
       setLatestContractLoading(true);
       try {
-        const res = await fetch(`/api/employee-contracts?employeeId=${selectedId}`);
-        if (!res.ok) { if (!cancelled) setLatestContract(null); return; }
-        const rows = await res.json();
+        const { data: rows } = await api.get<any>(`/api/employee-contracts?employeeId=${selectedId}`);
         if (cancelled) return;
         const first = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
         setLatestContract(first as LatestContract | null);
@@ -820,21 +816,13 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
       setContractHistoryLoading(true);
       setContractHistoryError(null);
       try {
-        const res = await fetch(`/api/employee-contracts?employeeId=${selectedId}`);
-        if (!res.ok) {
-          if (!cancelled) {
-            setContractHistory([]);
-            setContractHistoryError(`계약 이력 조회 실패 (${res.status})`);
-          }
-          return;
-        }
-        const rows = await res.json();
+        const { data: rows } = await api.get<any>(`/api/employee-contracts?employeeId=${selectedId}`);
         if (cancelled) return;
         setContractHistory(Array.isArray(rows) ? rows : []);
       } catch (err: any) {
         if (!cancelled) {
           setContractHistory([]);
-          setContractHistoryError(err?.message ?? "계약 이력 조회 실패");
+          setContractHistoryError(err instanceof ApiError ? err.message : (err?.message ?? "계약 이력 조회 실패"));
         }
       } finally {
         if (!cancelled) setContractHistoryLoading(false);

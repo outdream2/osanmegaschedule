@@ -1,4 +1,5 @@
 ﻿// src/components/DisplayPage/DisplayPage.tsx
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ZONE_DEFS, ZONES_STORAGE_KEY } from "../../constants/displayZones";
 import {
@@ -74,6 +75,7 @@ import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { useContactInfo } from "../../hooks/useContactInfo";
 // 2026-08-03 · StaffManagePage · 매장관리 서브탭에서 제거 · 경영관리 통합 페이지(BusinessManagePage)로 이동
 import type { AuthSession } from "../../types";
+import { api, ApiError } from "../../lib/apiClient";
 
 // ── DisplayPage 서브탭 (level 2) 정의 · 상수 · 컴포넌트 외부 배치 (참조 안정성 · 훅 재등록 방지) ──
 type DpSubTabKey = "purchase-order" | "purchase" | "payment" | "statistics" | "stock-arrivals" | "store" | "vendor-manage";
@@ -222,9 +224,7 @@ const STAFF_AVATAR_COLORS = [
 // ─── API helpers ──────────────────────────────────────────────────────────────
 const fetchZonesFromDB = async (): Promise<DisplayZone[] | null> => {
   try {
-    const res = await fetch("/api/zones");
-    if (!res.ok) return null;
-    const rows: Array<{ zone_id: string; employee_id: number | null; employee_name: string; status: string; products: string; dow_map?: DowMap }> = await res.json();
+    const { data: rows } = await api.get<Array<{ zone_id: string; employee_id: number | null; employee_name: string; status: string; products: string; dow_map?: DowMap }>>("/api/zones");
     if (!Array.isArray(rows) || rows.length === 0) return null;
     // A/B 확장 + 하위 호환: 옛 zone_id ("1") → 1A로 매핑
     return ZONE_DEFS.flatMap((def) => {
@@ -247,37 +247,27 @@ const fetchZonesFromDB = async (): Promise<DisplayZone[] | null> => {
 
 const saveZonesToDB = async (zones: DisplayZone[]): Promise<{ ok: boolean; error?: string }> => {
   try {
-    const res = await fetch("/api/zones", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        zones: zones.map((z) => ({
-          zone_id: z.id,
-          employee_id: z.assignedStaffId,
-          employee_name: z.assignedStaffName,
-          status: z.status,
-          products: z.products,
-          dow_map: z.dowMap ?? null,
-        })),
-      }),
+    await api.post("/api/zones", {
+      zones: zones.map((z) => ({
+        zone_id: z.id,
+        employee_id: z.assignedStaffId,
+        employee_name: z.assignedStaffName,
+        status: z.status,
+        products: z.products,
+        dow_map: z.dowMap ?? null,
+      })),
     });
-    if (!res.ok) {
-      const msg = await res.text().catch(() => String(res.status));
-      console.error("[saveZonesToDB] failed:", res.status, msg);
-      return { ok: false, error: msg };
-    }
     return { ok: true };
   } catch (err: any) {
-    console.error("[saveZonesToDB] exception:", err?.message);
-    return { ok: false, error: err?.message };
+    const msg = err instanceof ApiError ? err.message : (err?.message ?? String(err));
+    console.error("[saveZonesToDB] exception:", msg);
+    return { ok: false, error: msg };
   }
 };
 
 const fetchRequestsFromDB = async (): Promise<DisplayRequest[] | null> => {
   try {
-    const res = await fetch("/api/display-requests");
-    if (!res.ok) return null;
-    const rows: any[] = await res.json();
+    const { data: rows } = await api.get<any[]>("/api/display-requests");
     return rows.map((r) => ({
       id: String(r.id),
       zoneId: r.zone_id ?? "",
@@ -462,11 +452,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         userVisibleOnly: true,
         applicationServerKey: import.meta.env.VITE_VAPID_PUBLIC_KEY,
       });
-      await fetch("/api/push-subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employeeId, subscription: sub.toJSON() }),
-      });
+      await api.post("/api/push-subscribe", { employeeId, subscription: sub.toJSON() });
       const next = new Set(subscribedIds).add(employeeId);
       setSubscribedIds(next);
       localStorage.setItem("megatown_push_subscribed", JSON.stringify([...next]));
@@ -567,27 +553,19 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     saveRequests(requests);
     // DB 저장 — 에러 시 즉시 알림
     try {
-      const res = await fetch("/api/zones", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          zones: nextZones.map((z) => ({
-            zone_id: z.id,
-            employee_id: z.assignedStaffId,
-            employee_name: z.assignedStaffName,
-            status: z.status,
-            products: z.products,
-            dow_map: z.dowMap ?? null,
-          })),
-        }),
+      await api.post("/api/zones", {
+        zones: nextZones.map((z) => ({
+          zone_id: z.id,
+          employee_id: z.assignedStaffId,
+          employee_name: z.assignedStaffName,
+          status: z.status,
+          products: z.products,
+          dow_map: z.dowMap ?? null,
+        })),
       });
-      if (!res.ok) {
-        const msg = await res.text().catch(() => String(res.status));
-        alert(`❌ DB 저장 실패\n${msg}\n(로컬 캐시만 저장됨)`);
-        return;
-      }
     } catch (err: any) {
-      alert(`❌ DB 저장 중 오류: ${err?.message ?? err}\n(로컬 캐시만 저장됨)`);
+      const msg = err instanceof ApiError ? err.message : (err?.message ?? String(err));
+      alert(`❌ DB 저장 실패\n${msg}\n(로컬 캐시만 저장됨)`);
       return;
     }
 
@@ -728,27 +706,19 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     saveZones(zones);
     // DB 저장 (실패 시 사용자에게 알림)
     try {
-      const res = await fetch("/api/zones", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          zones: zones.map((z) => ({
-            zone_id: z.id,
-            employee_id: z.assignedStaffId,
-            employee_name: z.assignedStaffName,
-            status: z.status,
-            products: z.products,
-            dow_map: z.dowMap ?? null,
-          })),
-        }),
+      await api.post("/api/zones", {
+        zones: zones.map((z) => ({
+          zone_id: z.id,
+          employee_id: z.assignedStaffId,
+          employee_name: z.assignedStaffName,
+          status: z.status,
+          products: z.products,
+          dow_map: z.dowMap ?? null,
+        })),
       });
-      if (!res.ok) {
-        const msg = await res.text().catch(() => String(res.status));
-        alert(`❌ 배치확정 DB 저장 실패\n${msg}\n로컬 캐시만 저장됨 · 알림은 발송하지 않습니다.`);
-        return;
-      }
     } catch (err: any) {
-      alert(`❌ 배치확정 DB 저장 중 오류: ${err?.message ?? err}\n로컬 캐시만 저장됨 · 알림은 발송하지 않습니다.`);
+      const msg = err instanceof ApiError ? err.message : (err?.message ?? String(err));
+      alert(`❌ 배치확정 DB 저장 실패\n${msg}\n로컬 캐시만 저장됨 · 알림은 발송하지 않습니다.`);
       return;
     }
 
@@ -819,9 +789,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       setStaffLoading(true);
       try {
         const [y, m] = selectedYM.split("-").map(Number);
-        const res = await fetch(`/api/schedules?year=${y}&month=${m}`);
-        if (!res.ok) throw new Error(String(res.status));
-        const data = await res.json();
+        const { data } = await api.get<any>(`/api/schedules?year=${y}&month=${m}`);
         const empList: Employee[] = Array.isArray(data?.employees) ? data.employees : [];
         if (cancelled) return;
         setEmployees(empList);

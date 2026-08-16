@@ -1,4 +1,5 @@
 // 2026-08-16 · #8 · Phase 2A · 슬림화 · types.ts + utils.ts + WorkerChips.tsx 분리
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { X, Pencil, ChevronLeft, ChevronRight, CheckCircle, Pill } from "lucide-react";
 import { Employee } from "../../types";
@@ -17,6 +18,7 @@ import {
 } from "./utils";
 import { WorkerChips } from "./WorkerChips";
 import { BreakTimeline } from "./BreakTimeline";
+import { api, ApiError } from "../../lib/apiClient";
 
 
 // ─── Sub-component: ZoneSection ──────────────────────────────────────────────
@@ -1608,28 +1610,19 @@ export const DayTimelineModal: React.FC<Props> = ({
   const handleConfirm = useCallback(async () => {
     setConfirming(true);
     try {
-      const res = await fetch(`/api/zone-day/${date}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          zone_slots: zoneSlots, lunch_slots: lunchSlots, rest_slots: restSlots,
-          lunch_offset: lunchOffset, rest_offset: restOffset,
-          lunch_interval: lunchInterval, rest_interval: restInterval,
-          lunch_count: lunchCount, rest_count: restCount,
-          is_confirmed: true,
-        }),
+      await api.put(`/api/zone-day/${date}`, {
+        zone_slots: zoneSlots, lunch_slots: lunchSlots, rest_slots: restSlots,
+        lunch_offset: lunchOffset, rest_offset: restOffset,
+        lunch_interval: lunchInterval, rest_interval: restInterval,
+        lunch_count: lunchCount, rest_count: restCount,
+        is_confirmed: true,
       });
-      if (res.ok) {
-        setIsConfirmed(true);
-        setIsAutoSuggested(false);
-        // 확정 시 요일 템플릿도 동시 저장 → 다음번 같은 요일 열면 자동 로드
-        await saveTemplateToDow(dow).catch(() => {});
-      } else {
-        const detail = await res.text().catch(() => "");
-        alert("확정 저장에 실패했습니다.\n" + detail);
-      }
+      setIsConfirmed(true);
+      setIsAutoSuggested(false);
+      // 확정 시 요일 템플릿도 동시 저장 → 다음번 같은 요일 열면 자동 로드
+      await saveTemplateToDow(dow).catch(() => {});
     } catch (e) {
-      alert("확정 저장 오류: " + (e as Error).message);
+      alert("확정 저장 오류: " + (e instanceof ApiError ? e.message : (e as Error).message));
     } finally {
       setConfirming(false);
     }

@@ -1,3 +1,4 @@
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Search, TrendingUp, Building2, LineChart, Package, X, Info, Eye, EyeOff, CheckSquare, Square, Loader2, Award, Activity, Layers, PieChart, AlertOctagon } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
@@ -17,6 +18,7 @@ import { fmtWon } from "../../lib/format";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { API_LIMITS } from "../../constants/apiLimits";
+import { api } from "../../lib/apiClient";
 // 구역 코드 → 카테고리 설명 매핑 (매장 구역도의 ZONE_DEFS 그대로 사용)
 //   real_map 형식 예: "1A", "1B", "2A", "9B", "22" 등
 //   ZONE_DEFS 의 num + section 으로 매칭 · subA/subB 있으면 side 로 세분화
@@ -510,14 +512,11 @@ const ProductTrendTab: React.FC<{
         const params = new URLSearchParams({ code });
         if (chartSeason) params.set("season", chartSeason);
         else params.set("months", "6");
-        const r = await fetch(`/api/sales-trend/product?${params}`);
+        const { data: j } = await api.get<any>(`/api/sales-trend/product?${params}`);
         if (cancelled) return;
-        if (r.ok) {
-          const j = await r.json();
-          const list: PeriodRow[] = Array.isArray(j.rows) ? j.rows : [];
-          rowsCache.current.set(cacheKey, list);
-          if (!cancelled) setRows(list);
-        }
+        const list: PeriodRow[] = Array.isArray(j.rows) ? j.rows : [];
+        rowsCache.current.set(cacheKey, list);
+        if (!cancelled) setRows(list);
       } finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
@@ -899,9 +898,7 @@ const SupplierTrendTab: React.FC<{
         const params = new URLSearchParams({ limit: String(API_LIMITS.MEDIUM) });
         if (season) params.set("season", season);
         else if (periodMonths > 0) params.set("months", String(periodMonths));
-        const res = await fetch(`/api/stock-manage/supplier-purchases?${params}`);
-        if (!res.ok) return;
-        const data = await res.json();
+        const { data } = await api.get<any>(`/api/stock-manage/supplier-purchases?${params}`);
         if (cancelled) return;
         const src = Array.isArray(data?.rows) ? data.rows : [];
         const cleanName = (raw: string): string => raw
@@ -949,9 +946,9 @@ const SupplierTrendTab: React.FC<{
       else if (sup.supplier) params.set("supplier", sup.supplier);
       if (season) params.set("season", season);
       else if (periodMonths > 0) params.set("months", String(periodMonths));
-      const res = await fetch(`/api/stock-manage/top-sales?${params}`);
-      const rows = res.ok ? (await res.json()).rows : [];
-      setSupplierRowsMap(prev => ({ ...prev, [key]: Array.isArray(rows) ? rows : [] }));
+      const { data: j } = await api.get<any>(`/api/stock-manage/top-sales?${params}`);
+      const rows = Array.isArray(j?.rows) ? j.rows : [];
+      setSupplierRowsMap(prev => ({ ...prev, [key]: rows }));
       supplierFetchedRef.current.add(key);
     } catch {
       setSupplierRowsMap(prev => ({ ...prev, [key]: [] }));
@@ -1265,12 +1262,9 @@ export const StockFlowPanel: React.FC<{
         if (season) p.set("season", season);
         else if (months > 0) p.set("months", String(months));
         else if (snapshot) p.set("snapshot_date", snapshot);
-        const r = await fetch(`/api/stock-manage/top-sales?${p}`);
-        if (r.ok) {
-          const j = await r.json();
-          setRows(Array.isArray(j.rows) ? j.rows : []);
-          if (!season && months === 0 && !snapshot && j.snapshot_date) setSnapshot(j.snapshot_date);
-        }
+        const { data: j } = await api.get<any>(`/api/stock-manage/top-sales?${p}`);
+        setRows(Array.isArray(j.rows) ? j.rows : []);
+        if (!season && months === 0 && !snapshot && j.snapshot_date) setSnapshot(j.snapshot_date);
       } finally { setLoading(false); }
     })();
   }, [sort, dir, limit, snapshot, months, season]);
@@ -2409,14 +2403,11 @@ export const SalesTrendPage: React.FC = () => {
     if (!target && infoSearchResults.length > 0) target = infoSearchResults[0];
     if (!target && infoSearchQuery.trim()) {
       try {
-        const res = await fetch(`/api/products-search?q=${encodeURIComponent(infoSearchQuery.trim())}`);
-        if (res.ok) {
-          const list = await res.json();
-          if (Array.isArray(list) && list.length > 0) {
-            target = list[0];
-            setInfoSelected(list[0]);
-            setInfoSearchResults([]);
-          }
+        const { data: list } = await api.get<any>(`/api/products-search?q=${encodeURIComponent(infoSearchQuery.trim())}`);
+        if (Array.isArray(list) && list.length > 0) {
+          target = list[0];
+          setInfoSelected(list[0]);
+          setInfoSearchResults([]);
         }
       } catch { /* ignore */ }
     }
