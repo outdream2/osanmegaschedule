@@ -37,7 +37,9 @@ import { notificationsService } from "../../services/notificationsService";
 // 2026-08-16 · #112-E1 · admin 삭제 보호
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
+import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, forbidden, notFound, HttpError } from "../../middleware/errorHandler";
+import { CreateHrFormSchema } from "../../../src/shared/schemas/hrForms";
 
 const router = Router();
 
@@ -120,18 +122,14 @@ router.get("/api/hr-forms", asyncHandler(async (req, res) => {
  * }
  * Response: { id, file_url, ... } (hr_forms row)
  */
-router.post("/api/hr-forms", asyncHandler(async (req, res) => {
-  const b = req.body ?? {};
-  const title = String(b.title ?? "").trim();
-  const category = String(b.category ?? "contract");
-  const fileName = safeFilename(String(b.file_name ?? "form"));
-  const dataUrl = String(b.data_url ?? "");
+router.post("/api/hr-forms", validateBody(CreateHrFormSchema), asyncHandler(async (req, res) => {
+  const b = req.body;
+  const title = b.title.trim();
+  const category = b.category;
+  const fileName = safeFilename(b.file_name);
+  const dataUrl = b.data_url;
   const uploadedBy = b.uploaded_by ? String(b.uploaded_by) : null;
   const uploadedById = Number.isFinite(Number(b.uploaded_by_id)) ? Number(b.uploaded_by_id) : null;
-
-  if (!title) throw badRequest("title required");
-  if (!ALLOWED_CATEGORIES.has(category)) throw badRequest("invalid category");
-  if (!dataUrl) throw badRequest("data_url required");
 
   const parsed = parseDataUrl(dataUrl);
   if (!parsed) throw badRequest("invalid data_url (data:<mime>;base64,...)");
