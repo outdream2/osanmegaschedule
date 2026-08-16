@@ -358,14 +358,14 @@ export const SideNav: React.FC<SideNavProps> = ({
               alt={`${brand.region ? brand.region + " " : ""}${brand.shortName} 로고`}
               className="w-6 h-6 object-contain shrink-0"
             />
-            {/* icon-only 모드에서 숨김 · 2026-08-16 · 지역 + 브랜드 2줄 표시 */}
-            <div className="flex flex-col gap-px leading-none group-data-[collapsible=icon]:hidden min-w-0">
+            {/* icon-only 모드에서 숨김 · 2026-08-16 · 지역 크게 강조 + 브랜드명 아래 */}
+            <div className="flex flex-col gap-0 leading-none group-data-[collapsible=icon]:hidden min-w-0">
               {brand.region && (
-                <span className="text-[11px] font-semibold text-zinc-500 tracking-tight leading-tight truncate">
+                <span className="text-[15px] font-black text-zinc-900 tracking-tight leading-tight truncate">
                   {brand.region}
                 </span>
               )}
-              <span className="text-[14px] font-bold text-zinc-800 tracking-tight leading-tight truncate">
+              <span className="text-[11px] font-semibold text-zinc-500 tracking-tight leading-tight truncate mt-0.5">
                 {brand.shortName}
               </span>
             </div>

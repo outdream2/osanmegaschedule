@@ -72,6 +72,8 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
   const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());
   const [loadError, setLoadError] = useState<string | null>(null);
   const [tab, setTab] = useState<"permissions" | "app-settings" | "positions" | "construction">("permissions");
+  // 2026-08-16 · 권한 조정 탭 내부 · 서브 탭 (페이지별 설정 vs 직원별 레벨)
+  const [permSubTab, setPermSubTab] = useState<"page" | "employee">("page");
   // 2026-08-11 · 직군 편집 로컬 draft (SettingsModal 이관)
   const [newPositionInput, setNewPositionInput] = useState("");
   const [posDragIdx, setPosDragIdx] = useState<number | null>(null);
@@ -559,8 +561,29 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           </div>
         )}
 
-        {/* 2026-08-16 · 사용자 지시 · "레벨 기준" 배너 제거 */}
+        {/* 2026-08-16 · 서브 탭 · 페이지별 설정 vs 직원별 레벨 */}
+        <div className="mb-3 flex bg-zinc-100 border border-zinc-200 rounded-xl p-0.5 gap-0.5 w-fit">
+          <button
+            type="button"
+            onClick={() => setPermSubTab("page")}
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[16px] font-black transition cursor-pointer ${
+              permSubTab === "page" ? "bg-white text-indigo-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"
+            }`}
+          >
+            <Shield size={14} /> 페이지별 설정
+          </button>
+          <button
+            type="button"
+            onClick={() => setPermSubTab("employee")}
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[16px] font-black transition cursor-pointer ${
+              permSubTab === "employee" ? "bg-white text-emerald-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"
+            }`}
+          >
+            <Users size={14} /> 직원별 레벨
+          </button>
+        </div>
 
+        {permSubTab === "page" && (<>
         {/* 섹션 1 · 페이지별 최소 권한 · 2026-08-13 · 저장 버튼 추가 (명시 저장) */}
         <div className="mb-2 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
@@ -734,12 +757,14 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         <p className="text-[11px] text-zinc-400 mt-2 mb-6 pl-1">
           레벨 9(최고관리자)는 항상 모든 페이지에 접근할 수 있습니다. 각 페이지 설명은 마우스를 올리면 표시됩니다.
         </p>
+        </>)}
 
+        {permSubTab === "employee" && (<>
         {/* 섹션 2 · 직원별 개별 레벨 */}
         <div className="mb-2 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <Users size={13} className="text-zinc-500" />
-            <h2 className="text-[13px] font-black text-zinc-700">직원별 레벨</h2>
+            <h2 className="text-[17px] font-black text-zinc-700">직원별 레벨</h2>
             <span className="text-[11px] text-zinc-400 font-medium">
               ({filteredEmployees.length}명 · 약사 우선)
             </span>
@@ -802,6 +827,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         <p className="text-[11px] text-zinc-400 mt-2 pl-1">
           변경 즉시 서버에 저장됩니다. 실패 시 이전 값으로 되돌립니다.
         </p>
+        </>)}
         </>)}
 
         {tab === "app-settings" && (

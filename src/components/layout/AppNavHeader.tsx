@@ -13,6 +13,9 @@ import logoImg from "../../images/logo.png";
 // 2026-08-11 · 사이드바 V2 · flag ON 시 슬림 헤더로 대체
 // 2026-08-16 · env → 서버 KV 설정 훅으로 이관
 import { useSidebarEnabled } from "../../hooks/useSidebar";
+// 2026-08-16 · 페이지 hidden · 공통헤더에서도 필터
+import { usePagePermissions } from "../../hooks/usePagePermissions";
+import { SIDE_NAV_GROUPS } from "./sideNavGroups";
 // 2026-08-12 · PC 사이드바 접기 · 헤더에 토글 버튼 노출
 import { SidebarTrigger } from "../ui/sidebar";
 import { useIsMobile } from "../../hooks/use-mobile";
@@ -135,14 +138,28 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
 
   // 2026-08-10 · #22 · 거래처 로그인 (role='vendor') · [홈] 만 노출 · 스케줄·이슈·요청·기타 숨김
   const isVendor = authSession?.role === "vendor";
+  // 2026-08-16 · 페이지 hidden · 공통헤더에서도 반영 (lv 9 관리자는 예외 · 설정 접근용)
+  const { perms } = usePagePermissions();
   const visibleTabs = useMemo(() => TABS.filter((t) => {
     if (t.key === "landing") return true;
     if (!authSession) return false;
     if (isVendor) return false;  // 거래처 로그인 시 홈 외 모든 탭 숨김
     if (t.managerOnly) return isPrivileged;
     if (t.pharmacistOnly) return isPharmacist;
+    // 2026-08-16 · 그룹 내 · perms 기반 hidden 필터 · 모든 item hidden 이면 top tab 숨김
+    if (userLevel < 9 && perms) {
+      const group = SIDE_NAV_GROUPS.find(g => (g.topTab?.key ?? g.items[0]?.key) === t.key);
+      if (group) {
+        const allHidden = group.items.length > 0 && group.items.every(it => {
+          const compositeKey = it.subTab ? `${it.key}:${it.subTab}` : it.key;
+          const perm = (perms as any)[compositeKey] ?? (perms as any)[it.key];
+          return perm?.hidden === true;
+        });
+        if (allHidden) return false;
+      }
+    }
     return true;
-  }), [authSession, isPrivileged, isPharmacist, isVendor]);
+  }), [authSession, isPrivileged, isPharmacist, isVendor, perms, userLevel]);
 
   // 경영관리 하위 페이지 활성 여부 (연차승인·점심불참·권한관리)
   const isBizPage = BUSINESS_PAGES.has(activePage);
