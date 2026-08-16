@@ -1,7 +1,10 @@
+// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 import { clearOcrAggCache } from "../stock/stockManage";
 import { authorize } from "../../middleware/requireAuth";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { badRequest, HttpError } from "../../middleware/errorHandler";
 
 const router = Router();
 const TABLE = "ocr_confirmed_items";
@@ -66,14 +69,12 @@ const toNumOrNull = (v: unknown): number | null => {
 };
 
 // POST /api/ocr-confirmed-items  →  batch insert
-router.post("/api/ocr-confirmed-items", async (req, res) => {
+router.post("/api/ocr-confirmed-items", asyncHandler(async (req, res) => {
   const body = req.body ?? {};
   const rawItems: ConfirmedItemInput[] = Array.isArray(body.items) ? body.items : [];
   const defaultSavedAt: string | undefined = typeof body.saved_at === "string" ? body.saved_at : undefined;
 
-  if (rawItems.length === 0) {
-    return res.status(400).json({ error: "items 배열이 비어 있습니다." });
-  }
+  if (rawItems.length === 0) throw badRequest("items 배열이 비어 있습니다.");
 
   const rows = rawItems
     .map(item => {
@@ -100,9 +101,7 @@ router.post("/api/ocr-confirmed-items", async (req, res) => {
     })
     .filter((r): r is NonNullable<typeof r> => r !== null);
 
-  if (rows.length === 0) {
-    return res.status(400).json({ error: "저장 가능한 항목이 없습니다. (공급처/품명 필수)" });
-  }
+  if (rows.length === 0) throw badRequest("저장 가능한 항목이 없습니다. (공급처/품명 필수)");
 
   const { data, error } = await supabase.from(TABLE).insert(rows).select();
 
@@ -110,15 +109,15 @@ router.post("/api/ocr-confirmed-items", async (req, res) => {
     if (/relation|does not exist/i.test(error.message)) {
       return res.status(503).json({ error: `${TABLE} 테이블이 없습니다.\n${CREATE_SQL}` });
     }
-    return res.status(500).json({ error: error.message });
+    throw new HttpError(500, error.message);
   }
 
   clearOcrAggCache(); // 2026-07-31 · 신규 매입 저장 시 공급사/상품 캐시 무효화
-  return res.json({ ok: true, inserted: data?.length ?? rows.length, items: data ?? [] });
-});
+  res.json({ ok: true, inserted: data?.length ?? rows.length, items: data ?? [] });
+}));
 
 // GET /api/ocr-confirmed-items?date=YYYY-MM-DD&supplier=xxx&hasBalance=true
-router.get("/api/ocr-confirmed-items", async (req, res) => {
+router.get("/api/ocr-confirmed-items", asyncHandler(async (req, res) => {
   const dateParam = typeof req.query.date === "string" ? req.query.date.trim() : "";
   const supplierParam = typeof req.query.supplier === "string" ? req.query.supplier.trim() : "";
   const hasBalanceParam = typeof req.query.hasBalance === "string" && req.query.hasBalance === "true";
@@ -156,22 +155,20 @@ router.get("/api/ocr-confirmed-items", async (req, res) => {
     if (/relation|does not exist/i.test(error.message)) {
       return res.json({ items: [] });
     }
-    return res.status(500).json({ error: error.message });
+    throw new HttpError(500, error.message);
   }
 
-  return res.json({ items: data ?? [] });
-});
+  res.json({ items: data ?? [] });
+}));
 
 // DELETE /api/ocr-confirmed-items/:id
-router.delete("/api/ocr-confirmed-items/:id", authorize(2), async (req, res) => {
+router.delete("/api/ocr-confirmed-items/:id", authorize(2), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
-  if (!Number.isFinite(id) || id <= 0) {
-    return res.status(400).json({ error: "유효한 id가 필요합니다." });
-  }
+  if (!Number.isFinite(id) || id <= 0) throw badRequest("유효한 id가 필요합니다.");
   const { error } = await supabase.from(TABLE).delete().eq("id", id);
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) throw new HttpError(500, error.message);
   clearOcrAggCache(); // 2026-07-31 · 매입 삭제 시 공급사/상품 캐시 무효화
-  return res.json({ ok: true });
-});
+  res.json({ ok: true });
+}));
 
 export default router;

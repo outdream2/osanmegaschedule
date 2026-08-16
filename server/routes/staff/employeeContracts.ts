@@ -1,3 +1,4 @@
+// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
 // server/routes/employeeContracts.ts
 // 2026-08-03 · #202 · 근로계약서 승인 · PDF · DB 저장 API
 //
@@ -22,6 +23,8 @@ import path from "path";
 import multer from "multer";
 import { supabase } from "../../../src/supabase/client";
 import { uploadToDrive } from "../../services/googleDriveService";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { HttpError, badRequest } from "../../middleware/errorHandler";
 // 2026-08-13 · #107 · 계약서 업로드 알림 · 사용자 지시로 제거 (알림 hook 미사용)
 
 const router = Router();
@@ -166,99 +169,88 @@ async function syncEmployeeContractFields(
 // 2026-08-10 · 직원정보 카드 · 근로 조건 표시용
 // 우선순위: employee_number (사번) → employeeId
 // is_active=true 우선 · 없으면 created_at DESC · 첫 건
-router.get("/api/employees/latest-contract", async (req, res) => {
-  try {
-    const employeeNumber = String(req.query.employee_number ?? "").trim();
-    const employeeId = Number(req.query.employeeId);
+router.get("/api/employees/latest-contract", asyncHandler(async (req, res) => {
+  const employeeNumber = String(req.query.employee_number ?? "").trim();
+  const employeeId = Number(req.query.employeeId);
 
-    if (!employeeNumber && !Number.isFinite(employeeId)) {
-      return res.status(400).json({ error: "employee_number or employeeId required" });
-    }
-
-    let q = supabase.from("employee_contracts").select("*");
-    if (employeeNumber) q = q.eq("employee_number", employeeNumber);
-    else q = q.eq("employee_id", employeeId);
-    q = q.order("created_at", { ascending: false }).limit(1);
-
-    const { data, error } = await q;
-    if (error) {
-      if (isMissingTableError(error.message)) return res.json(null);
-      if (isMissingColumnError(error)) {
-        // employee_number 컬럼 없음 · employeeId 로 fallback
-        if (Number.isFinite(employeeId)) {
-          const retry = await supabase
-            .from("employee_contracts")
-            .select("*")
-            .eq("employee_id", employeeId)
-            .order("created_at", { ascending: false })
-            .limit(1);
-          return res.json(retry.data?.[0] ?? null);
-        }
-        return res.json(null);
-      }
-      throw new Error(error.message);
-    }
-    return res.json(data?.[0] ?? null);
-  } catch (err: any) {
-    return res.status(500).json({ error: err?.message ?? "load failed" });
+  if (!employeeNumber && !Number.isFinite(employeeId)) {
+    throw badRequest("employee_number or employeeId required");
   }
-});
+
+  let q = supabase.from("employee_contracts").select("*");
+  if (employeeNumber) q = q.eq("employee_number", employeeNumber);
+  else q = q.eq("employee_id", employeeId);
+  q = q.order("created_at", { ascending: false }).limit(1);
+
+  const { data, error } = await q;
+  if (error) {
+    if (isMissingTableError(error.message)) return res.json(null);
+    if (isMissingColumnError(error)) {
+      // employee_number 컬럼 없음 · employeeId 로 fallback
+      if (Number.isFinite(employeeId)) {
+        const retry = await supabase
+          .from("employee_contracts")
+          .select("*")
+          .eq("employee_id", employeeId)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        return res.json(retry.data?.[0] ?? null);
+      }
+      return res.json(null);
+    }
+    throw new HttpError(500, error.message);
+  }
+  return res.json(data?.[0] ?? null);
+}));
 
 // ─── GET · 직원별 이력 ─────────────────────────────────────────────────────
-router.get("/api/employee-contracts", async (req, res) => {
-  try {
-    const employeeId = Number(req.query.employeeId);
-    // select("*") · is_active 컬럼 존재 시 자동 포함 (프론트 이력 UI 활성 계약 강조용)
-    let q = supabase.from("employee_contracts").select("*").order("created_at", { ascending: false });
-    if (Number.isFinite(employeeId)) q = q.eq("employee_id", employeeId);
+router.get("/api/employee-contracts", asyncHandler(async (req, res) => {
+  const employeeId = Number(req.query.employeeId);
+  // select("*") · is_active 컬럼 존재 시 자동 포함 (프론트 이력 UI 활성 계약 강조용)
+  let q = supabase.from("employee_contracts").select("*").order("created_at", { ascending: false });
+  if (Number.isFinite(employeeId)) q = q.eq("employee_id", employeeId);
 
-    const { data, error } = await q;
-    if (error) {
-      if (isMissingTableError(error.message)) {
-        console.warn("[employee-contracts] employee_contracts 테이블 미생성 · migrations/create_employee_contracts.sql 실행 필요");
-        return res.json([]);
-      }
-      throw new Error(error.message);
+  const { data, error } = await q;
+  if (error) {
+    if (isMissingTableError(error.message)) {
+      console.warn("[employee-contracts] employee_contracts 테이블 미생성 · migrations/create_employee_contracts.sql 실행 필요");
+      return res.json([]);
     }
-    return res.json(data ?? []);
-  } catch (err: any) {
-    return res.status(500).json({ error: err?.message ?? "load failed" });
+    throw new HttpError(500, error.message);
   }
-});
+  return res.json(data ?? []);
+}));
 
 // ─── POST · 승인 · PDF 업로드 ──────────────────────────────────────────────
-router.post("/api/employee-contracts", async (req, res) => {
-  try {
-    const b = req.body ?? {};
-    const employeeId    = Number.isFinite(Number(b.employee_id)) ? Number(b.employee_id) : null;
-    const employeeName  = String(b.employee_name ?? "").trim();
-    const contractType  = b.contract_type ? String(b.contract_type) : null;
-    const startDate     = b.start_date ? String(b.start_date) : null;   // YYYY-MM-DD or null
-    const endDate       = b.end_date   ? String(b.end_date)   : null;
-    const dataUrl       = String(b.pdf_data_url ?? "");
-    const approvedBy    = b.approved_by ? String(b.approved_by) : null;
-    const approvedById  = Number.isFinite(Number(b.approved_by_id)) ? Number(b.approved_by_id) : null;
-    // 신규 · employees 동기 갱신용 필드 (하위 호환 · 없으면 start_date/end_date 재사용)
-    const contractStart      = b.contract_start ? String(b.contract_start) : startDate;
-    const contractEnd        = b.contract_end !== undefined ? (b.contract_end ? String(b.contract_end) : null) : endDate;
-    const probationEndDate   = b.probation_end_date !== undefined
-      ? (b.probation_end_date ? String(b.probation_end_date) : null)
-      : undefined;
-    // 2026-08-10 · B Step 3 · 근로정보 · 사번
-    const employeeNumber     = b.employee_number ? String(b.employee_number).trim() : null;
-    const workingHours       = b.working_hours ? String(b.working_hours) : null;
-    const annualLeaveDays    = Number.isFinite(Number(b.annual_leave_days)) ? Number(b.annual_leave_days) : null;
+router.post("/api/employee-contracts", asyncHandler(async (req, res) => {
+  const b = req.body ?? {};
+  const employeeId    = Number.isFinite(Number(b.employee_id)) ? Number(b.employee_id) : null;
+  const employeeName  = String(b.employee_name ?? "").trim();
+  const contractType  = b.contract_type ? String(b.contract_type) : null;
+  const startDate     = b.start_date ? String(b.start_date) : null;   // YYYY-MM-DD or null
+  const endDate       = b.end_date   ? String(b.end_date)   : null;
+  const dataUrl       = String(b.pdf_data_url ?? "");
+  const approvedBy    = b.approved_by ? String(b.approved_by) : null;
+  const approvedById  = Number.isFinite(Number(b.approved_by_id)) ? Number(b.approved_by_id) : null;
+  // 신규 · employees 동기 갱신용 필드 (하위 호환 · 없으면 start_date/end_date 재사용)
+  const contractStart      = b.contract_start ? String(b.contract_start) : startDate;
+  const contractEnd        = b.contract_end !== undefined ? (b.contract_end ? String(b.contract_end) : null) : endDate;
+  const probationEndDate   = b.probation_end_date !== undefined
+    ? (b.probation_end_date ? String(b.probation_end_date) : null)
+    : undefined;
+  // 2026-08-10 · B Step 3 · 근로정보 · 사번
+  const employeeNumber     = b.employee_number ? String(b.employee_number).trim() : null;
+  const workingHours       = b.working_hours ? String(b.working_hours) : null;
+  const annualLeaveDays    = Number.isFinite(Number(b.annual_leave_days)) ? Number(b.annual_leave_days) : null;
 
-    if (!employeeName) return res.status(400).json({ error: "employee_name required" });
-    if (!dataUrl)      return res.status(400).json({ error: "pdf_data_url required (data:application/pdf;base64,...)" });
+  if (!employeeName) throw badRequest("employee_name required");
+  if (!dataUrl)      throw badRequest("pdf_data_url required (data:application/pdf;base64,...)");
 
-    const parsed = parseDataUrl(dataUrl);
-    if (!parsed) return res.status(400).json({ error: "invalid pdf_data_url" });
-    if (parsed.buffer.length > MAX_BYTES) {
-      return res.status(413).json({
-        error: `PDF 크기 초과 (${(parsed.buffer.length / 1024 / 1024).toFixed(1)}MB > ${MAX_BYTES / 1024 / 1024}MB)`,
-      });
-    }
+  const parsed = parseDataUrl(dataUrl);
+  if (!parsed) throw badRequest("invalid pdf_data_url");
+  if (parsed.buffer.length > MAX_BYTES) {
+    throw new HttpError(413, `PDF 크기 초과 (${(parsed.buffer.length / 1024 / 1024).toFixed(1)}MB > ${MAX_BYTES / 1024 / 1024}MB)`);
+  }
 
     // 경로 · contracts/YYYY-MM/{ts}_{rand}_{name}_{startdate}.pdf
     const now = new Date();
@@ -336,47 +328,42 @@ router.post("/api/employee-contracts", async (req, res) => {
 
     const { row, err: insErr } = await insertContractWithIsActiveFallback(insertRow);
 
-    if (insErr || !row) {
-      // 이력 저장 실패 · 원본 정리 (best-effort)
-      if (storage === "supabase") {
-        await supabase.storage.from(CONTRACTS_BUCKET).remove([storagePath]).catch(() => null);
-      } else {
-        try { fs.unlinkSync(path.join(process.cwd(), "uploads", "contracts", storagePath)); } catch { /* noop */ }
-      }
-      if (insErr && isMissingTableError(insErr.message ?? "")) {
-        return res.status(500).json({
-          error: "employee_contracts 테이블이 없습니다. Supabase SQL Editor 에서 migrations/create_employee_contracts.sql 을 실행하세요.",
-        });
-      }
-      throw new Error(insErr?.message ?? "insert failed");
+  if (insErr || !row) {
+    // 이력 저장 실패 · 원본 정리 (best-effort)
+    if (storage === "supabase") {
+      await supabase.storage.from(CONTRACTS_BUCKET).remove([storagePath]).catch(() => null);
+    } else {
+      try { fs.unlinkSync(path.join(process.cwd(), "uploads", "contracts", storagePath)); } catch { /* noop */ }
     }
-
-    // 4) employees 동기 갱신 (contract_file_url + contract_type + contract_start/end + probation_end_date)
-    if (employeeId && Number.isFinite(employeeId)) {
-      await syncEmployeeContractFields(employeeId, {
-        contract_file_url: pdfUrl,
-        contract_type: contractType ?? (row?.contract_type ?? null),
-        contract_start: contractStart,
-        contract_end: contractEnd,
-        probation_end_date: probationEndDate,
-      });
-      // 2026-08-10 · 사번 별도 동기 (best-effort · 컬럼 미존재 시 무시)
-      if (employeeNumber) {
-        try {
-          await supabase.from("employees").update({ employee_number: employeeNumber }).eq("id", employeeId);
-        } catch (e: any) {
-          console.warn("[employee-contracts] employees.employee_number 갱신 실패 (무시):", e?.message ?? e);
-        }
-      }
+    if (insErr && isMissingTableError(insErr.message ?? "")) {
+      throw new HttpError(500, "employee_contracts 테이블이 없습니다. Supabase SQL Editor 에서 migrations/create_employee_contracts.sql 을 실행하세요.");
     }
-
-    // 2026-08-13 · 사용자 지시 · 계약서 업로드 알림 hook 제거 (조용히 저장만)
-
-    return res.status(201).json(row);
-  } catch (err: any) {
-    return res.status(500).json({ error: err?.message ?? "save failed" });
+    throw new HttpError(500, insErr?.message ?? "insert failed");
   }
-});
+
+  // 4) employees 동기 갱신 (contract_file_url + contract_type + contract_start/end + probation_end_date)
+  if (employeeId && Number.isFinite(employeeId)) {
+    await syncEmployeeContractFields(employeeId, {
+      contract_file_url: pdfUrl,
+      contract_type: contractType ?? (row?.contract_type ?? null),
+      contract_start: contractStart,
+      contract_end: contractEnd,
+      probation_end_date: probationEndDate,
+    });
+    // 2026-08-10 · 사번 별도 동기 (best-effort · 컬럼 미존재 시 무시)
+    if (employeeNumber) {
+      try {
+        await supabase.from("employees").update({ employee_number: employeeNumber }).eq("id", employeeId);
+      } catch (e: any) {
+        console.warn("[employee-contracts] employees.employee_number 갱신 실패 (무시):", e?.message ?? e);
+      }
+    }
+  }
+
+  // 2026-08-13 · 사용자 지시 · 계약서 업로드 알림 hook 제거 (조용히 저장만)
+
+  return res.status(201).json(row);
+}));
 
 // ─── POST · PDF 업로드 방식 (Google Drive · 2026-08-05) ────────────────────
 // 사용자가 미리 준비한 PDF 를 Google Drive (contract 폴더) 에 저장 · employee_contracts 이력 insert
@@ -389,91 +376,83 @@ const driveUpload = multer({
     cb(null, ok);
   },
 });
-router.post("/api/employee-contracts/upload", driveUpload.single("contract"), async (req, res) => {
+router.post("/api/employee-contracts/upload", driveUpload.single("contract"), asyncHandler(async (req, res) => {
+  if (!req.file) throw badRequest("PDF 파일이 없습니다");
+
+  const b = req.body ?? {};
+  const employeeId    = Number.isFinite(Number(b.employee_id)) ? Number(b.employee_id) : null;
+  const employeeName  = String(b.employee_name ?? "").trim();
+  const contractType  = b.contract_type ? String(b.contract_type) : null;
+  const startDate     = b.start_date ? String(b.start_date) : null;
+  const endDate       = b.end_date   ? String(b.end_date)   : null;
+  const approvedBy    = b.approved_by ? String(b.approved_by) : null;
+  const approvedById  = Number.isFinite(Number(b.approved_by_id)) ? Number(b.approved_by_id) : null;
+  // employees 동기 갱신용 필드 (하위 호환)
+  const contractStart      = b.contract_start ? String(b.contract_start) : startDate;
+  const contractEnd        = b.contract_end !== undefined ? (b.contract_end ? String(b.contract_end) : null) : endDate;
+  const probationEndDate   = b.probation_end_date !== undefined
+    ? (b.probation_end_date ? String(b.probation_end_date) : null)
+    : undefined;
+
+  if (!employeeName) throw badRequest("employee_name required");
+
+  // Drive 파일명 · {직원명}_근로계약서_{시작일}.pdf
+  const dateTag = (startDate || new Date().toISOString().slice(0, 10)).replace(/-/g, "");
+  const nameTag = safeName(employeeName);
+  const fileName = `${nameTag}_근로계약서_${dateTag}.pdf`;
+
+  // Drive 업로드 · 실패 시 500 (multer 이전 try/catch 와 달리 drive 업로드 자체 실패는 500)
+  let driveUrl = "";
+  let driveFileId = "";
   try {
-    if (!req.file) return res.status(400).json({ error: "PDF 파일이 없습니다" });
-
-    const b = req.body ?? {};
-    const employeeId    = Number.isFinite(Number(b.employee_id)) ? Number(b.employee_id) : null;
-    const employeeName  = String(b.employee_name ?? "").trim();
-    const contractType  = b.contract_type ? String(b.contract_type) : null;
-    const startDate     = b.start_date ? String(b.start_date) : null;
-    const endDate       = b.end_date   ? String(b.end_date)   : null;
-    const approvedBy    = b.approved_by ? String(b.approved_by) : null;
-    const approvedById  = Number.isFinite(Number(b.approved_by_id)) ? Number(b.approved_by_id) : null;
-    // employees 동기 갱신용 필드 (하위 호환)
-    const contractStart      = b.contract_start ? String(b.contract_start) : startDate;
-    const contractEnd        = b.contract_end !== undefined ? (b.contract_end ? String(b.contract_end) : null) : endDate;
-    const probationEndDate   = b.probation_end_date !== undefined
-      ? (b.probation_end_date ? String(b.probation_end_date) : null)
-      : undefined;
-
-    if (!employeeName) return res.status(400).json({ error: "employee_name required" });
-
-    // Drive 파일명 · {직원명}_근로계약서_{시작일}.pdf
-    const dateTag = (startDate || new Date().toISOString().slice(0, 10)).replace(/-/g, "");
-    const nameTag = safeName(employeeName);
-    const fileName = `${nameTag}_근로계약서_${dateTag}.pdf`;
-
-    // Drive 업로드
-    let driveUrl = "";
-    let driveFileId = "";
-    try {
-      const result = await uploadToDrive("contract", req.file.buffer, fileName, req.file.mimetype || "application/pdf");
-      driveUrl = result.webViewLink;
-      driveFileId = result.fileId;
-    } catch (drvErr: any) {
-      return res.status(500).json({
-        error: `Google Drive 업로드 실패 · ${drvErr?.message ?? drvErr}`,
-      });
-    }
-
-    // 재계약 감지 · 기존 활성 계약 is_active=false (컬럼 미존재 시 skip)
-    if (employeeId && Number.isFinite(employeeId)) {
-      await deactivatePriorContracts(employeeId);
-    }
-
-    // employee_contracts row insert · storage="drive" · pdf_url = Drive URL · is_active=true (fallback)
-    const insertRow: Record<string, unknown> = {
-      employee_id: employeeId ?? 0,
-      employee_name: employeeName,
-      contract_type: contractType,
-      start_date: startDate,
-      end_date: endDate,
-      pdf_url: driveUrl,
-      pdf_size: req.file.size,
-      storage_path: driveFileId,
-      storage: "drive",
-      approved_by: approvedBy,
-      approved_by_id: approvedById,
-    };
-
-    const { row, err: insErr } = await insertContractWithIsActiveFallback(insertRow);
-
-    if (insErr || !row) {
-      if (insErr && isMissingTableError(insErr.message ?? "")) {
-        return res.status(500).json({
-          error: "employee_contracts 테이블이 없습니다. Supabase SQL Editor 에서 migrations/create_employee_contracts.sql 을 실행하세요.",
-        });
-      }
-      throw new Error(insErr?.message ?? "insert failed");
-    }
-
-    // employees 동기 갱신
-    if (employeeId && Number.isFinite(employeeId)) {
-      await syncEmployeeContractFields(employeeId, {
-        contract_file_url: driveUrl,
-        contract_type: contractType ?? (row?.contract_type ?? null),
-        contract_start: contractStart,
-        contract_end: contractEnd,
-        probation_end_date: probationEndDate,
-      });
-    }
-
-    return res.status(201).json(row);
-  } catch (err: any) {
-    return res.status(500).json({ error: err?.message ?? "upload failed" });
+    const result = await uploadToDrive("contract", req.file.buffer, fileName, req.file.mimetype || "application/pdf");
+    driveUrl = result.webViewLink;
+    driveFileId = result.fileId;
+  } catch (drvErr: any) {
+    throw new HttpError(500, `Google Drive 업로드 실패 · ${drvErr?.message ?? drvErr}`);
   }
-});
+
+  // 재계약 감지 · 기존 활성 계약 is_active=false (컬럼 미존재 시 skip)
+  if (employeeId && Number.isFinite(employeeId)) {
+    await deactivatePriorContracts(employeeId);
+  }
+
+  // employee_contracts row insert · storage="drive" · pdf_url = Drive URL · is_active=true (fallback)
+  const insertRow: Record<string, unknown> = {
+    employee_id: employeeId ?? 0,
+    employee_name: employeeName,
+    contract_type: contractType,
+    start_date: startDate,
+    end_date: endDate,
+    pdf_url: driveUrl,
+    pdf_size: req.file.size,
+    storage_path: driveFileId,
+    storage: "drive",
+    approved_by: approvedBy,
+    approved_by_id: approvedById,
+  };
+
+  const { row, err: insErr } = await insertContractWithIsActiveFallback(insertRow);
+
+  if (insErr || !row) {
+    if (insErr && isMissingTableError(insErr.message ?? "")) {
+      throw new HttpError(500, "employee_contracts 테이블이 없습니다. Supabase SQL Editor 에서 migrations/create_employee_contracts.sql 을 실행하세요.");
+    }
+    throw new HttpError(500, insErr?.message ?? "insert failed");
+  }
+
+  // employees 동기 갱신
+  if (employeeId && Number.isFinite(employeeId)) {
+    await syncEmployeeContractFields(employeeId, {
+      contract_file_url: driveUrl,
+      contract_type: contractType ?? (row?.contract_type ?? null),
+      contract_start: contractStart,
+      contract_end: contractEnd,
+      probation_end_date: probationEndDate,
+    });
+  }
+
+  return res.status(201).json(row);
+}));
 
 export default router;

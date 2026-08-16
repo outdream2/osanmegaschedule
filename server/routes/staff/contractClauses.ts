@@ -1,3 +1,4 @@
+// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
 // server/routes/contractClauses.ts
 // T-C · 2026-08-05
 // 근로계약서 각 호(조항) CMS · localStorage → Supabase 서버 이전
@@ -27,6 +28,8 @@
 
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { badRequest, HttpError } from "../../middleware/errorHandler";
 
 const router = Router();
 
@@ -74,106 +77,86 @@ function normalizeContent(input: any): string[] | null {
 //   응답: { [clauseKey]: string[] }   (없는 key 는 빈 배열 → 프론트 default fallback)
 // ─────────────────────────────────────────────────────────────────────────────
 
-router.get("/api/contract-clauses", async (_req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from("contract_clauses")
-      .select("clause_key, content");
-    if (error) throw new Error(error.message);
+router.get("/api/contract-clauses", asyncHandler(async (_req, res) => {
+  const { data, error } = await supabase
+    .from("contract_clauses")
+    .select("clause_key, content");
+  if (error) throw new HttpError(500, error.message);
 
-    const out: Record<ClauseKey, string[]> = {
-      wageClauses: [],
-      workTimeClauses: [],
-      holidayClauses: [],
-      disciplineClauses: [],
-      etcClauses: [],
-      privacyClauses: [],
-    };
+  const out: Record<ClauseKey, string[]> = {
+    wageClauses: [],
+    workTimeClauses: [],
+    holidayClauses: [],
+    disciplineClauses: [],
+    etcClauses: [],
+    privacyClauses: [],
+  };
 
-    for (const row of data ?? []) {
-      const k = row?.clause_key;
-      if (!k || !CLAUSE_KEY_SET.has(k)) continue;
-      const arr = normalizeContent(row.content);
-      if (arr) out[k as ClauseKey] = arr;
-    }
-
-    res.json(out);
-  } catch (err: any) {
-    res.status(500).json({ error: err?.message ?? "조회 실패" });
+  for (const row of data ?? []) {
+    const k = row?.clause_key;
+    if (!k || !CLAUSE_KEY_SET.has(k)) continue;
+    const arr = normalizeContent(row.content);
+    if (arr) out[k as ClauseKey] = arr;
   }
-});
+
+  res.json(out);
+}));
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PUT /api/contract-clauses/:key  · 단일 조항 upsert
 //   body: { content: string[], updated_by?: number }
 // ─────────────────────────────────────────────────────────────────────────────
 
-router.put("/api/contract-clauses/:key", async (req, res) => {
-  try {
-    const key = String(req.params.key ?? "");
-    if (!CLAUSE_KEY_SET.has(key)) {
-      return res.status(400).json({ error: `유효하지 않은 clause_key: ${key}` });
-    }
-    const { content, updated_by } = req.body ?? {};
-    const normalized = normalizeContent(content);
-    if (!normalized) {
-      return res.status(400).json({ error: "content 는 string[] · 각 원소 4000자 이하 · 최대 200개" });
-    }
-    const updatedById = Number.isFinite(Number(updated_by)) ? Number(updated_by) : null;
+router.put("/api/contract-clauses/:key", asyncHandler(async (req, res) => {
+  const key = String(req.params.key ?? "");
+  if (!CLAUSE_KEY_SET.has(key)) throw badRequest(`유효하지 않은 clause_key: ${key}`);
+  const { content, updated_by } = req.body ?? {};
+  const normalized = normalizeContent(content);
+  if (!normalized) throw badRequest("content 는 string[] · 각 원소 4000자 이하 · 최대 200개");
+  const updatedById = Number.isFinite(Number(updated_by)) ? Number(updated_by) : null;
 
-    const { error } = await supabase
-      .from("contract_clauses")
-      .upsert({
-        clause_key: key,
-        content: normalized,
-        updated_by: updatedById,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "clause_key" });
-    if (error) throw new Error(error.message);
+  const { error } = await supabase
+    .from("contract_clauses")
+    .upsert({
+      clause_key: key,
+      content: normalized,
+      updated_by: updatedById,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "clause_key" });
+  if (error) throw new HttpError(500, error.message);
 
-    res.json({ ok: true, key, count: normalized.length });
-  } catch (err: any) {
-    res.status(500).json({ error: err?.message ?? "저장 실패" });
-  }
-});
+  res.json({ ok: true, key, count: normalized.length });
+}));
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PUT /api/contract-clauses  · 일괄 upsert (여러 key 동시)
 //   body: { clauses: { [key]: string[] }, updated_by?: number }
 // ─────────────────────────────────────────────────────────────────────────────
 
-router.put("/api/contract-clauses", async (req, res) => {
-  try {
-    const { clauses, updated_by } = req.body ?? {};
-    if (!clauses || typeof clauses !== "object" || Array.isArray(clauses)) {
-      return res.status(400).json({ error: "clauses 는 { [key]: string[] } 객체여야 합니다" });
-    }
-    const updatedById = Number.isFinite(Number(updated_by)) ? Number(updated_by) : null;
-    const now = new Date().toISOString();
-
-    const rows: Array<{ clause_key: string; content: string[]; updated_by: number | null; updated_at: string }> = [];
-    for (const [key, val] of Object.entries(clauses)) {
-      if (!CLAUSE_KEY_SET.has(key)) {
-        return res.status(400).json({ error: `유효하지 않은 clause_key: ${key}` });
-      }
-      const normalized = normalizeContent(val);
-      if (!normalized) {
-        return res.status(400).json({ error: `content 형식 오류 (${key})` });
-      }
-      rows.push({ clause_key: key, content: normalized, updated_by: updatedById, updated_at: now });
-    }
-
-    if (rows.length === 0) return res.json({ ok: true, count: 0 });
-
-    const { error } = await supabase
-      .from("contract_clauses")
-      .upsert(rows, { onConflict: "clause_key" });
-    if (error) throw new Error(error.message);
-
-    res.json({ ok: true, count: rows.length, keys: rows.map(r => r.clause_key) });
-  } catch (err: any) {
-    res.status(500).json({ error: err?.message ?? "일괄 저장 실패" });
+router.put("/api/contract-clauses", asyncHandler(async (req, res) => {
+  const { clauses, updated_by } = req.body ?? {};
+  if (!clauses || typeof clauses !== "object" || Array.isArray(clauses)) {
+    throw badRequest("clauses 는 { [key]: string[] } 객체여야 합니다");
   }
-});
+  const updatedById = Number.isFinite(Number(updated_by)) ? Number(updated_by) : null;
+  const now = new Date().toISOString();
+
+  const rows: Array<{ clause_key: string; content: string[]; updated_by: number | null; updated_at: string }> = [];
+  for (const [key, val] of Object.entries(clauses)) {
+    if (!CLAUSE_KEY_SET.has(key)) throw badRequest(`유효하지 않은 clause_key: ${key}`);
+    const normalized = normalizeContent(val);
+    if (!normalized) throw badRequest(`content 형식 오류 (${key})`);
+    rows.push({ clause_key: key, content: normalized, updated_by: updatedById, updated_at: now });
+  }
+
+  if (rows.length === 0) return res.json({ ok: true, count: 0 });
+
+  const { error } = await supabase
+    .from("contract_clauses")
+    .upsert(rows, { onConflict: "clause_key" });
+  if (error) throw new HttpError(500, error.message);
+
+  res.json({ ok: true, count: rows.length, keys: rows.map(r => r.clause_key) });
+}));
 
 export default router;

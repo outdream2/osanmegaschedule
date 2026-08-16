@@ -1,3 +1,4 @@
+// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
 import { Router } from "express";
 import express from "express";
 import XLSX from "xlsx";
@@ -6,11 +7,13 @@ import { getProductMap, resetProductCache } from "../../productCache";
 import { COL_KEYS, xlsxToRows } from "../../utils/xlsx";
 import { sanitizeOrValue } from "../../utils/sanitize";
 import { authorize } from "../../middleware/requireAuth";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { HttpError, badRequest, forbidden } from "../../middleware/errorHandler";
 
 const router = Router();
 
 // 공개 재고확인 API — 로그인 불필요
-router.get("/api/stock-check", async (req, res) => {
+router.get("/api/stock-check", asyncHandler(async (req, res) => {
   const raw = String(req.query.q ?? "").trim().slice(0, 60);
   if (raw.length < 1) return res.json([]);
   const { data, error } = await supabase
@@ -19,23 +22,21 @@ router.get("/api/stock-check", async (req, res) => {
     .eq("hidden", false)
     .ilike("product_name", `%${raw}%`)
     .limit(25);
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) throw new HttpError(500, error.message);
   res.json(data ?? []);
-});
+}));
 
-router.get("/api/products-map", async (_req, res) => {
-  try {
-    const map = await getProductMap();
-    res.setHeader("Cache-Control", "public, max-age=300");
-    res.json(map);
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
-});
+router.get("/api/products-map", asyncHandler(async (_req, res) => {
+  const map = await getProductMap();
+  res.setHeader("Cache-Control", "public, max-age=300");
+  res.json(map);
+}));
 
 // GET /api/inventory-latest — 상품코드별 최신 실재고 (warehouse_stock/store_stock/checked_at)
 // DisplayPage 구역별 상품 리스트에서 재고관리 페이지처럼 창고/매장/실재고 컬럼을 채우기 위해 사용
 // 2026-08-03 · Priority 3 · get_inventory_latest RPC 호출 · 단일 DISTINCT ON 쿼리로 교체
 //   fallback: RPC 미생성(does not exist) 시 → 기존 1000건 페이지루프 방식으로 graceful 처리
-router.get("/api/inventory-latest", async (_req, res) => {
+router.get("/api/inventory-latest", asyncHandler(async (_req, res) => {
   type InvRow = { warehouse_stock: number | null; store_stock: number | null; checked_at: string | null };
   const buildMap = (rows: any[]): Record<string, InvRow> => {
     const map: Record<string, InvRow> = {};
@@ -51,48 +52,44 @@ router.get("/api/inventory-latest", async (_req, res) => {
     return map;
   };
 
-  try {
-    // 1차 시도: RPC (단일 DISTINCT ON 쿼리 · 빠름)
-    const { data: rpcData, error: rpcErr } = await supabase.rpc("get_inventory_latest");
-    if (!rpcErr) {
-      res.setHeader("Cache-Control", "public, max-age=60");
-      return res.json(buildMap(rpcData ?? []));
-    }
-
-    // RPC 미생성이 아닌 실제 오류는 즉시 실패
-    if (!/function.*does not exist|could not find/i.test(rpcErr.message)) {
-      console.error("[inventory-latest] RPC error:", rpcErr.message);
-      return res.status(500).json({ error: rpcErr.message });
-    }
-
-    // 2차 fallback: 1000건 페이지루프 (RPC 생성 전 구 동작)
-    console.warn("[inventory-latest] RPC get_inventory_latest 미생성 · 페이지루프 fallback 사용");
-    const PAGE = 1000;
-    const allRows: any[] = [];
-    let from = 0;
-    while (true) {
-      const { data, error } = await supabase
-        .from("inventory_checks")
-        .select("product_code, warehouse_stock, store_stock, checked_at")
-        .order("checked_at", { ascending: false })
-        .range(from, from + PAGE - 1);
-      if (error) {
-        if (/relation|does not exist/i.test(error.message)) break;
-        throw new Error(error.message);
-      }
-      if (!data || data.length === 0) break;
-      allRows.push(...data);
-      if (data.length < PAGE) break;
-      from += PAGE;
-    }
+  // 1차 시도: RPC (단일 DISTINCT ON 쿼리 · 빠름)
+  const { data: rpcData, error: rpcErr } = await supabase.rpc("get_inventory_latest");
+  if (!rpcErr) {
     res.setHeader("Cache-Control", "public, max-age=60");
-    return res.json(buildMap(allRows));
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    return res.json(buildMap(rpcData ?? []));
   }
-});
 
-router.get("/api/products-search", async (req, res) => {
+  // RPC 미생성이 아닌 실제 오류는 즉시 실패
+  if (!/function.*does not exist|could not find/i.test(rpcErr.message)) {
+    console.error("[inventory-latest] RPC error:", rpcErr.message);
+    throw new HttpError(500, rpcErr.message);
+  }
+
+  // 2차 fallback: 1000건 페이지루프 (RPC 생성 전 구 동작)
+  console.warn("[inventory-latest] RPC get_inventory_latest 미생성 · 페이지루프 fallback 사용");
+  const PAGE = 1000;
+  const allRows: any[] = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from("inventory_checks")
+      .select("product_code, warehouse_stock, store_stock, checked_at")
+      .order("checked_at", { ascending: false })
+      .range(from, from + PAGE - 1);
+    if (error) {
+      if (/relation|does not exist/i.test(error.message)) break;
+      throw new HttpError(500, error.message);
+    }
+    if (!data || data.length === 0) break;
+    allRows.push(...data);
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  res.setHeader("Cache-Control", "public, max-age=60");
+  return res.json(buildMap(allRows));
+}));
+
+router.get("/api/products-search", asyncHandler(async (req, res) => {
   const rawQ     = String(req.query.q        ?? "").trim();
   const supplier = String(req.query.supplier ?? "").trim();
   const includeHidden = req.query.include_hidden === "1" || req.query.include_hidden === "true";
@@ -100,7 +97,7 @@ router.get("/api/products-search", async (req, res) => {
   // PostgREST or() 특수문자 방어 (쉼표·괄호 등)
   const q = sanitizeOrValue(rawQ);
   if (q.length < 1) return res.json([]);
-  try {
+  {
     // 상품명 · 검색키워드 · 상품코드 (원본·앞자리0제거·padStart8) 모두 검색
     const stripped = q.replace(/^0+/, "");
     const padded = /^\d+$/.test(q) ? q.padStart(8, "0") : q;
@@ -139,7 +136,7 @@ router.get("/api/products-search", async (req, res) => {
     }
     if (error) {
       console.error("[products-search] error:", error.message, "q:", q);
-      return res.status(500).json({ error: error.message });
+      throw new HttpError(500, error.message);
     }
     // 실재고 (inventory_checks) · 최근 스냅샷 (stock_history) 병합 조회
     const codes = (data ?? []).map((p: any) => String(p.product_code ?? "").trim()).filter(Boolean);
@@ -206,197 +203,182 @@ router.get("/api/products-search", async (req, res) => {
     });
     res.setHeader("Cache-Control", "no-store");
     res.json(merged);
-  } catch (err: any) {
-    console.error("[products-search] exception:", err?.message);
-    res.status(500).json({ error: err.message });
   }
-});
+}));
 
-router.post("/api/upload-products", express.raw({ type: "application/octet-stream", limit: "100mb" }), async (req, res) => {
+router.post("/api/upload-products", express.raw({ type: "application/octet-stream", limit: "100mb" }), asyncHandler(async (req, res) => {
   const { adminKey, managerId } = req.query as Record<string, string>;
   if (!req.body || !Buffer.isBuffer(req.body) || req.body.length === 0) {
-    return res.status(400).json({ error: "파일이 없습니다" });
+    throw badRequest("파일이 없습니다");
   }
+  let authorized = false;
+  if (adminKey && adminKey === (process.env.ADMIN_PIN ?? "1234")) {
+    authorized = true;
+  } else if (managerId) {
+    const { data: emp } = await supabase.from("employees").select("level").eq("id", Number(managerId)).maybeSingle();
+    authorized = (emp?.level ?? 0) >= 9;
+  }
+  if (!authorized) throw forbidden("관리자만 가능합니다");
+  const buf = req.body as Buffer;
+  const isXlsx = buf[0] === 0x50 && buf[1] === 0x4B && buf[2] === 0x03 && buf[3] === 0x04;
+  const isXls  = buf[0] === 0xD0 && buf[1] === 0xCF && buf[2] === 0x11 && buf[3] === 0xE0;
+  if (!isXlsx && !isXls) throw badRequest("형식이 다른 파일입니다. 상품리스트를 업로드해주세요.");
+  const wbCheck = XLSX.read(buf, { sheetRows: 1 });
+  const wsCheck = wbCheck.Sheets[wbCheck.SheetNames[0]];
+  const headerRow = XLSX.utils.sheet_to_json<any[]>(wsCheck, { header: 1 })[0] ?? [];
+  if (headerRow.length < COL_KEYS.length) {
+    throw badRequest("형식이 다른 파일입니다. 상품리스트를 업로드해주세요.");
+  }
+  const rows = xlsxToRows(buf);
+  if (rows.length === 0) throw badRequest("엑셀에 데이터가 없습니다");
+  console.log(`[upload] parsed ${rows.length} rows`);
+  const CHUNK_SIZE = 500;
+  const chunks: Record<string, any>[][] = [];
+  for (let i = 0; i < rows.length; i += CHUNK_SIZE) chunks.push(rows.slice(i, i + CHUNK_SIZE));
+  const PARALLEL = 3;
+  for (let i = 0; i < chunks.length; i += PARALLEL) {
+    const batch = chunks.slice(i, i + PARALLEL);
+    const results = await Promise.all(
+      batch.map(chunk => supabase.from("products").upsert(chunk, { onConflict: "product_code" }))
+    );
+    for (const { error: upsertErr } of results) {
+      if (upsertErr) {
+        console.error("[upload] upsert error:", upsertErr);
+        throw new HttpError(500, `업서트 실패: ${upsertErr.message}`);
+      }
+    }
+    console.log(`[upload] upserted chunks ${i + 1}~${Math.min(i + PARALLEL, chunks.length)} / ${chunks.length}`);
+  }
+  console.log("[upload] upsert done");
+  // 임포트 완료 후 optimal_stock_backup → optimal_stock 복원 (ERP wipe 방어)
+  let restoredCount = 0;
   try {
-    let authorized = false;
-    if (adminKey && adminKey === (process.env.ADMIN_PIN ?? "1234")) {
-      authorized = true;
-    } else if (managerId) {
-      const { data: emp } = await supabase.from("employees").select("level").eq("id", Number(managerId)).maybeSingle();
-      authorized = (emp?.level ?? 0) >= 9;
+    const { data: restoreData, error: restoreErr } = await supabase.rpc("restore_optimal_stock_from_backup");
+    if (restoreErr) {
+      console.warn("[upload] restore_optimal_stock RPC failed:", restoreErr.message);
+    } else {
+      restoredCount = Number(restoreData ?? 0) || 0;
+      console.log(`[upload] restored optimal_stock for ${restoredCount} products from backup`);
     }
-    if (!authorized) return res.status(403).json({ error: "관리자만 가능합니다" });
-    const buf = req.body as Buffer;
-    const isXlsx = buf[0] === 0x50 && buf[1] === 0x4B && buf[2] === 0x03 && buf[3] === 0x04;
-    const isXls  = buf[0] === 0xD0 && buf[1] === 0xCF && buf[2] === 0x11 && buf[3] === 0xE0;
-    if (!isXlsx && !isXls) return res.status(400).json({ error: "형식이 다른 파일입니다. 상품리스트를 업로드해주세요." });
-    const wbCheck = XLSX.read(buf, { sheetRows: 1 });
-    const wsCheck = wbCheck.Sheets[wbCheck.SheetNames[0]];
-    const headerRow = XLSX.utils.sheet_to_json<any[]>(wsCheck, { header: 1 })[0] ?? [];
-    if (headerRow.length < COL_KEYS.length) {
-      return res.status(400).json({ error: "형식이 다른 파일입니다. 상품리스트를 업로드해주세요." });
-    }
-    const rows = xlsxToRows(buf);
-    if (rows.length === 0) return res.status(400).json({ error: "엑셀에 데이터가 없습니다" });
-    console.log(`[upload] parsed ${rows.length} rows`);
-    const CHUNK_SIZE = 500;
-    const chunks: Record<string, any>[][] = [];
-    for (let i = 0; i < rows.length; i += CHUNK_SIZE) chunks.push(rows.slice(i, i + CHUNK_SIZE));
-    const PARALLEL = 3;
-    for (let i = 0; i < chunks.length; i += PARALLEL) {
-      const batch = chunks.slice(i, i + PARALLEL);
-      const results = await Promise.all(
-        batch.map(chunk => supabase.from("products").upsert(chunk, { onConflict: "product_code" }))
-      );
-      for (const { error: upsertErr } of results) {
-        if (upsertErr) {
-          console.error("[upload] upsert error:", upsertErr);
-          throw new Error(`업서트 실패: ${upsertErr.message}`);
-        }
-      }
-      console.log(`[upload] upserted chunks ${i + 1}~${Math.min(i + PARALLEL, chunks.length)} / ${chunks.length}`);
-    }
-    console.log("[upload] upsert done");
-    // 임포트 완료 후 optimal_stock_backup → optimal_stock 복원 (ERP wipe 방어)
-    let restoredCount = 0;
-    try {
-      const { data: restoreData, error: restoreErr } = await supabase.rpc("restore_optimal_stock_from_backup");
-      if (restoreErr) {
-        console.warn("[upload] restore_optimal_stock RPC failed:", restoreErr.message);
-      } else {
-        restoredCount = Number(restoreData ?? 0) || 0;
-        console.log(`[upload] restored optimal_stock for ${restoredCount} products from backup`);
-      }
-    } catch (e: any) {
-      console.warn("[upload] restore_optimal_stock exception:", e.message);
-    }
-    resetProductCache();
-    const { data: logData } = await supabase.from("app_settings").select("value").eq("key", "product_import_log").maybeSingle();
-    const prevLogs: unknown[] = Array.isArray(logData?.value) ? logData.value : [];
-    const newEntry = { timestamp: new Date().toISOString(), count: rows.length, restored: restoredCount };
-    const logs = [newEntry, ...prevLogs].slice(0, 20);
-    await supabase.from("app_settings").upsert({ key: "product_import_log", value: logs, updated_at: new Date().toISOString() }, { onConflict: "key" });
-    res.json({ ok: true, count: rows.length, restored: restoredCount, timestamp: newEntry.timestamp });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
-});
+  } catch (e: any) {
+    console.warn("[upload] restore_optimal_stock exception:", e.message);
+  }
+  resetProductCache();
+  const { data: logData } = await supabase.from("app_settings").select("value").eq("key", "product_import_log").maybeSingle();
+  const prevLogs: unknown[] = Array.isArray(logData?.value) ? logData.value : [];
+  const newEntry = { timestamp: new Date().toISOString(), count: rows.length, restored: restoredCount };
+  const logs = [newEntry, ...prevLogs].slice(0, 20);
+  await supabase.from("app_settings").upsert({ key: "product_import_log", value: logs, updated_at: new Date().toISOString() }, { onConflict: "key" });
+  res.json({ ok: true, count: rows.length, restored: restoredCount, timestamp: newEntry.timestamp });
+}));
 
-router.delete("/api/product-import-log", authorize(9), async (_req, res) => {
+router.delete("/api/product-import-log", authorize(9), asyncHandler(async (_req, res) => {
   await supabase.from("app_settings").upsert({ key: "product_import_log", value: [], updated_at: new Date().toISOString() }, { onConflict: "key" });
   res.json({ ok: true });
-});
+}));
 
-router.get("/api/products/realmap-check", async (_req, res) => {
+router.get("/api/products/realmap-check", asyncHandler(async (_req, res) => {
   const { data, error } = await supabase.from("products").select("real_map").limit(1);
   if (error) {
-    return res.status(500).json({
+    // 200 으로 ok:false 응답 (진단 엔드포인트 · 프론트에서 error 필드 감지)
+    return res.json({
       ok: false,
       error: error.message,
       fix: "Supabase SQL Editor에서 실행: ALTER TABLE products ADD COLUMN IF NOT EXISTS \"real_map\" TEXT;",
     });
   }
   res.json({ ok: true, sample: data?.[0]?.real_map ?? null });
-});
+}));
 
 // 숨김 처리된 상품 리스트 (숨김 관리 UI 용) — /:code 라우트보다 먼저 등록해야 매칭됨
-router.get("/api/products/hidden", async (_req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from("products")
-      .select("product_code, product_name, spec, supplier, real_map, current_stock, sale_price")
-      .eq("hidden", true)
-      .order("product_name", { ascending: true })
-      .limit(500);
-    if (error) {
-      console.error("[hidden GET] error:", error.message);
-      return res.status(500).json({ error: error.message });
-    }
-    res.setHeader("Cache-Control", "no-store");
-    res.json(Array.isArray(data) ? data : []);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+router.get("/api/products/hidden", asyncHandler(async (_req, res) => {
+  const { data, error } = await supabase
+    .from("products")
+    .select("product_code, product_name, spec, supplier, real_map, current_stock, sale_price")
+    .eq("hidden", true)
+    .order("product_name", { ascending: true })
+    .limit(500);
+  if (error) {
+    console.error("[hidden GET] error:", error.message);
+    throw new HttpError(500, error.message);
   }
-});
+  res.setHeader("Cache-Control", "no-store");
+  res.json(Array.isArray(data) ? data : []);
+}));
 
-router.get("/api/products/:code", async (req, res) => {
+router.get("/api/products/:code", asyncHandler(async (req, res) => {
   const code = (req.params.code ?? "").trim();
-  if (!code) return res.status(400).json({ error: "code required" });
+  if (!code) throw badRequest("code required");
+  let { data, error } = await supabase.from("products").select("*").eq("product_code", code).maybeSingle();
+  if (error) throw new HttpError(500, error.message);
+  if (!data && /^0+/.test(code)) {
+    const stripped = code.replace(/^0+/, "");
+    const r2 = await supabase.from("products").select("*").eq("product_code", stripped).maybeSingle();
+    if (r2.error) throw new HttpError(500, r2.error.message);
+    data = r2.data;
+  }
+  if (!data) throw new HttpError(404, "상품을 찾을 수 없습니다");
+  const productCode = data.product_code ?? code;
+
+  // inventory_checks 병합 (창고·매장 실재고)
+  let warehouseStock: number | null = null;
+  let storeStock: number | null = null;
+  let invCheckedAt: string | null = null;
   try {
-    let { data, error } = await supabase.from("products").select("*").eq("product_code", code).maybeSingle();
-    if (error) throw new Error(error.message);
-    if (!data && /^0+/.test(code)) {
-      const stripped = code.replace(/^0+/, "");
-      const r2 = await supabase.from("products").select("*").eq("product_code", stripped).maybeSingle();
-      if (r2.error) throw new Error(r2.error.message);
-      data = r2.data;
+    const { data: iv } = await supabase
+      .from("inventory_checks")
+      .select("warehouse_stock, store_stock, checked_at")
+      .eq("product_code", productCode)
+      .order("checked_at", { ascending: false })
+      .limit(1);
+    if (iv && iv.length > 0) {
+      warehouseStock = iv[0].warehouse_stock != null ? Number(iv[0].warehouse_stock) : null;
+      storeStock     = iv[0].store_stock     != null ? Number(iv[0].store_stock)     : null;
+      invCheckedAt   = iv[0].checked_at ?? null;
     }
-    if (!data) return res.status(404).json({ error: "상품을 찾을 수 없습니다" });
-    const productCode = data.product_code ?? code;
+  } catch { /* silent */ }
 
-    // inventory_checks 병합 (창고·매장 실재고)
-    let warehouseStock: number | null = null;
-    let storeStock: number | null = null;
-    let invCheckedAt: string | null = null;
-    try {
-      const { data: iv } = await supabase
-        .from("inventory_checks")
-        .select("warehouse_stock, store_stock, checked_at")
-        .eq("product_code", productCode)
-        .order("checked_at", { ascending: false })
-        .limit(1);
-      if (iv && iv.length > 0) {
-        warehouseStock = iv[0].warehouse_stock != null ? Number(iv[0].warehouse_stock) : null;
-        storeStock     = iv[0].store_stock     != null ? Number(iv[0].store_stock)     : null;
-        invCheckedAt   = iv[0].checked_at ?? null;
-      }
-    } catch { /* silent */ }
+  // 2026-07-29 · 사용자 원칙 · 매입 관련은 purchase_details (매입 테이블)
+  //   이전 · products.last_purchase_date → 없으면 stock_history 이중 fallback
+  //   현재 · purchase_details 만 조회 · 항상 원본 신뢰
+  let lastPurchase: string | null = null;
+  try {
+    const { data: pd } = await supabase
+      .from("purchase_details")
+      .select("purchase_date")
+      .eq("product_code", productCode)
+      .order("purchase_date", { ascending: false })
+      .limit(1);
+    if (pd && pd.length > 0) {
+      lastPurchase = pd[0].purchase_date ?? null;
+    }
+  } catch { /* silent */ }
 
-    // 2026-07-29 · 사용자 원칙 · 매입 관련은 purchase_details (매입 테이블)
-    //   이전 · products.last_purchase_date → 없으면 stock_history 이중 fallback
-    //   현재 · purchase_details 만 조회 · 항상 원본 신뢰
-    let lastPurchase: string | null = null;
-    try {
-      const { data: pd } = await supabase
-        .from("purchase_details")
-        .select("purchase_date")
-        .eq("product_code", productCode)
-        .order("purchase_date", { ascending: false })
-        .limit(1);
-      if (pd && pd.length > 0) {
-        lastPurchase = pd[0].purchase_date ?? null;
-      }
-    } catch { /* silent */ }
+  res.json({
+    ...data,
+    realMap: data.real_map ?? null,
+    // 재고 DB에서 병합
+    warehouse_stock: data.warehouse_stock ?? warehouseStock,
+    store_stock: data.store_stock ?? storeStock,
+    inv_checked_at: invCheckedAt,
+    // 매입 · purchase_details 만 신뢰
+    last_purchase_date: lastPurchase,
+    last_snapshot_date: null,  // deprecated · 하위 호환용
+  });
+}));
 
-    res.json({
-      ...data,
-      realMap: data.real_map ?? null,
-      // 재고 DB에서 병합
-      warehouse_stock: data.warehouse_stock ?? warehouseStock,
-      store_stock: data.store_stock ?? storeStock,
-      inv_checked_at: invCheckedAt,
-      // 매입 · purchase_details 만 신뢰
-      last_purchase_date: lastPurchase,
-      last_snapshot_date: null,  // deprecated · 하위 호환용
-    });
-  } catch (err: any) { res.status(500).json({ error: err.message }); }
-});
-
-router.patch("/api/products/:code/realmap", async (req, res) => {
+router.patch("/api/products/:code/realmap", asyncHandler(async (req, res) => {
   const code = (req.params.code ?? "").trim();
   const { realMap } = req.body ?? {};
-  if (!code) return res.status(400).json({ error: "code required" });
-  try {
-    const { error } = await supabase.from("products").update({ real_map: realMap }).eq("product_code", code);
-    if (error) {
-      console.error("[realmap PATCH] Supabase error:", error.message, "code:", code);
-      return res.status(500).json({ error: error.message });
-    }
-    resetProductCache();
-    res.json({ ok: true });
-  } catch (err: any) {
-    console.error("[realmap PATCH] exception:", err.message);
-    res.status(500).json({ error: err.message });
+  if (!code) throw badRequest("code required");
+  const { error } = await supabase.from("products").update({ real_map: realMap }).eq("product_code", code);
+  if (error) {
+    console.error("[realmap PATCH] Supabase error:", error.message, "code:", code);
+    throw new HttpError(500, error.message);
   }
-});
+  resetProductCache();
+  res.json({ ok: true });
+}));
 
 // 상품 인라인 편집 · 허용 컬럼만 수정 (부적절 컬럼 차단)
 const ALLOWED_INLINE_EDIT = new Set([
@@ -418,70 +400,65 @@ const ALLOWED_INLINE_EDIT = new Set([
 // 2026-07-28 · 사용자 요청 "적정재고 = 최근 30일 판매량"
 //   stock_history · snapshot_date >= today-30d · sale_qty 합산 → products.optimal_stock 일괄 업데이트
 //   body · { days?: number }  기본 30
-router.post("/api/products/refill-optimal-stock", async (req, res) => {
+router.post("/api/products/refill-optimal-stock", asyncHandler(async (req, res) => {
   const days = Math.max(1, Math.min(365, Number((req.body ?? {}).days ?? 30) || 30));
   const now = new Date();
   const since = new Date(now.getFullYear(), now.getMonth(), now.getDate() - days);
   const sinceStr = since.toISOString().slice(0, 10);
-  try {
-    // stock_history 판매량 집계 (페이지네이션)
-    const salesMap = new Map<string, number>();
-    const PAGE = 1000;
-    let from = 0;
-    while (true) {
-      const { data, error } = await supabase
-        .from("stock_history")
-        .select("product_code, sale_qty, snapshot_date")
-        .gte("snapshot_date", sinceStr)
-        .range(from, from + PAGE - 1);
-      if (error) {
-        if (/relation|does not exist/i.test(error.message)) {
-          return res.status(503).json({ error: "stock_history 테이블 없음" });
-        }
-        throw new Error(error.message);
+  // stock_history 판매량 집계 (페이지네이션)
+  const salesMap = new Map<string, number>();
+  const PAGE = 1000;
+  let from = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from("stock_history")
+      .select("product_code, sale_qty, snapshot_date")
+      .gte("snapshot_date", sinceStr)
+      .range(from, from + PAGE - 1);
+    if (error) {
+      if (/relation|does not exist/i.test(error.message)) {
+        throw new HttpError(503, "stock_history 테이블 없음");
       }
-      if (!data || data.length === 0) break;
-      for (const r of data) {
-        const code = String(r.product_code ?? "").trim();
-        if (!code) continue;
-        const q = Number(r.sale_qty ?? 0) || 0;
-        if (q <= 0) continue;
-        salesMap.set(code, (salesMap.get(code) ?? 0) + q);
-      }
-      if (data.length < PAGE) break;
-      from += PAGE;
+      throw new HttpError(500, error.message);
     }
-
-    if (salesMap.size === 0) {
-      return res.json({ ok: true, updated: 0, note: `${days}일 판매 이력 없음` });
+    if (!data || data.length === 0) break;
+    for (const r of data) {
+      const code = String(r.product_code ?? "").trim();
+      if (!code) continue;
+      const q = Number(r.sale_qty ?? 0) || 0;
+      if (q <= 0) continue;
+      salesMap.set(code, (salesMap.get(code) ?? 0) + q);
     }
-
-    // 일괄 업데이트 (Supabase · 개별 update · 배치 병렬)
-    let updated = 0, failed = 0;
-    const entries = [...salesMap.entries()];
-    const BATCH = 20;
-    for (let i = 0; i < entries.length; i += BATCH) {
-      const chunk = entries.slice(i, i + BATCH);
-      await Promise.all(chunk.map(async ([code, qty]) => {
-        const rounded = Math.round(qty);
-        const { error } = await supabase.from("products")
-          .update({ optimal_stock: rounded, optimal_stock_backup: rounded })
-          .eq("product_code", code);
-        if (error) failed++; else updated++;
-      }));
-    }
-    resetProductCache();
-    console.log(`[refill-optimal-stock] days=${days} · ${updated}건 업데이트 · ${failed}건 실패`);
-    return res.json({ ok: true, updated, failed, days, from: sinceStr });
-  } catch (err: any) {
-    console.error(`[refill-optimal-stock] 예외: ${err?.message}`);
-    return res.status(500).json({ error: err?.message ?? "실패" });
+    if (data.length < PAGE) break;
+    from += PAGE;
   }
-});
 
-router.patch("/api/products/:code", async (req, res) => {
+  if (salesMap.size === 0) {
+    return res.json({ ok: true, updated: 0, note: `${days}일 판매 이력 없음` });
+  }
+
+  // 일괄 업데이트 (Supabase · 개별 update · 배치 병렬)
+  let updated = 0, failed = 0;
+  const entries = [...salesMap.entries()];
+  const BATCH = 20;
+  for (let i = 0; i < entries.length; i += BATCH) {
+    const chunk = entries.slice(i, i + BATCH);
+    await Promise.all(chunk.map(async ([code, qty]) => {
+      const rounded = Math.round(qty);
+      const { error } = await supabase.from("products")
+        .update({ optimal_stock: rounded, optimal_stock_backup: rounded })
+        .eq("product_code", code);
+      if (error) failed++; else updated++;
+    }));
+  }
+  resetProductCache();
+  console.log(`[refill-optimal-stock] days=${days} · ${updated}건 업데이트 · ${failed}건 실패`);
+  return res.json({ ok: true, updated, failed, days, from: sinceStr });
+}));
+
+router.patch("/api/products/:code", asyncHandler(async (req, res) => {
   const code = (req.params.code ?? "").trim();
-  if (!code) return res.status(400).json({ error: "code required" });
+  if (!code) throw badRequest("code required");
   const body = req.body ?? {};
   const updates: Record<string, any> = {};
   for (const [k, v] of Object.entries(body)) {
@@ -496,22 +473,18 @@ router.patch("/api/products/:code", async (req, res) => {
       updates[k] = v === "" ? null : v;
     }
   }
-  if (Object.keys(updates).length === 0) return res.status(400).json({ error: "수정할 필드가 없습니다" });
+  if (Object.keys(updates).length === 0) throw badRequest("수정할 필드가 없습니다");
   // 적정재고 변경 시 백업 컬럼에 자동 저장 (ERP 임포트로 wipe 되는 것 방어)
   if (Object.prototype.hasOwnProperty.call(updates, "optimal_stock")) {
     updates.optimal_stock_backup = updates.optimal_stock;
   }
-  try {
-    const { error } = await supabase.from("products").update(updates).eq("product_code", code);
-    if (error) {
-      console.error("[products PATCH] error:", error.message);
-      return res.status(500).json({ error: error.message });
-    }
-    resetProductCache();
-    res.json({ ok: true, updated: Object.keys(updates) });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  const { error } = await supabase.from("products").update(updates).eq("product_code", code);
+  if (error) {
+    console.error("[products PATCH] error:", error.message);
+    throw new HttpError(500, error.message);
   }
-});
+  resetProductCache();
+  res.json({ ok: true, updated: Object.keys(updates) });
+}));
 
 export default router;

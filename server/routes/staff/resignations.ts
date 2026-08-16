@@ -1,3 +1,4 @@
+// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
 // server/routes/resignations.ts
 // 2026-08-03 · #179+#180+#181 · 사직서 제출/조회/승인/반려 API
 // 2026-08-03 · #204 Priority 4 · signature_data_url → Supabase Storage 업로드 · signature_url 저장
@@ -27,6 +28,8 @@ import webpush from "web-push";
 import { supabase } from "../../../src/supabase/client";
 import { notificationsService } from "../../services/notificationsService";
 import { authorize } from "../../middleware/requireAuth";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
 
 // ─── Storage 설정 ────────────────────────────────────────────────────────────
 // Supabase 대시보드에서 "resignation-signatures" 버킷을 Public으로 생성 필요
@@ -101,57 +104,49 @@ async function fetchAdmins() {
 //   status=pending · 대기만 · created_at DESC
 //   employeeId=<n> · 본인 전체 · created_at DESC
 //   (둘 다 없으면) 전체 · created_at DESC
-router.get("/api/resignations", async (req, res) => {
+router.get("/api/resignations", asyncHandler(async (req, res) => {
   const { status, employeeId } = req.query;
-  try {
-    let q = supabase
-      .from("resignation_requests")
-      .select("id, employee_id, employee_name, position, hire_date, last_work_date, reason, reason_detail, handover_notes, signature_url, pdf_url, status, approved_by, approved_by_id, approved_at, reject_reason, created_at")
-      .order("created_at", { ascending: false });
+  let q = supabase
+    .from("resignation_requests")
+    .select("id, employee_id, employee_name, position, hire_date, last_work_date, reason, reason_detail, handover_notes, signature_url, pdf_url, status, approved_by, approved_by_id, approved_at, reject_reason, created_at")
+    .order("created_at", { ascending: false });
 
-    if (status && typeof status === "string" && status !== "all") {
-      q = q.eq("status", status);
-    }
-    if (employeeId) {
-      q = q.eq("employee_id", Number(employeeId));
-    }
-
-    const { data, error } = await q;
-    if (error) {
-      // 테이블 미생성 시 · 빈 배열 + 안내 (500 대신 200)
-      if (/relation .* does not exist|table .* not found/i.test(error.message)) {
-        console.warn("[resignations] resignation_requests 테이블 미생성 · migrations/create_resignation_requests.sql 실행 필요");
-        return res.json([]);
-      }
-      throw new Error(error.message);
-    }
-    return res.json(data ?? []);
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+  if (status && typeof status === "string" && status !== "all") {
+    q = q.eq("status", status);
   }
-});
+  if (employeeId) {
+    q = q.eq("employee_id", Number(employeeId));
+  }
+
+  const { data, error } = await q;
+  if (error) {
+    // 테이블 미생성 시 · 빈 배열 + 안내 (500 대신 200)
+    if (/relation .* does not exist|table .* not found/i.test(error.message)) {
+      console.warn("[resignations] resignation_requests 테이블 미생성 · migrations/create_resignation_requests.sql 실행 필요");
+      return res.json([]);
+    }
+    throw new HttpError(500, error.message);
+  }
+  res.json(data ?? []);
+}));
 
 // ─── GET · 대기 카운트 (승인대기 배지) ────────────────────────────────────
-router.get("/api/resignations/pending-count", async (_req, res) => {
-  try {
-    const { count, error } = await supabase
-      .from("resignation_requests")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "pending");
-    if (error) {
-      if (/relation .* does not exist|table .* not found/i.test(error.message)) {
-        return res.json({ count: 0 });
-      }
-      throw new Error(error.message);
+router.get("/api/resignations/pending-count", asyncHandler(async (_req, res) => {
+  const { count, error } = await supabase
+    .from("resignation_requests")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "pending");
+  if (error) {
+    if (/relation .* does not exist|table .* not found/i.test(error.message)) {
+      return res.json({ count: 0 });
     }
-    return res.json({ count: count ?? 0 });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+    throw new HttpError(500, error.message);
   }
-});
+  res.json({ count: count ?? 0 });
+}));
 
 // ─── POST · 제출 ──────────────────────────────────────────────────────────
-router.post("/api/resignations", async (req, res) => {
+router.post("/api/resignations", asyncHandler(async (req, res) => {
   const {
     employee_id,
     employee_name,
@@ -166,157 +161,146 @@ router.post("/api/resignations", async (req, res) => {
   } = req.body ?? {};
 
   if (!employee_id || !employee_name || !last_work_date || !reason) {
-    return res.status(400).json({ error: "필수 항목이 누락되었습니다 (사원·마지막 근무일·사유)." });
+    throw badRequest("필수 항목이 누락되었습니다 (사원·마지막 근무일·사유).");
   }
 
-  try {
-    // ── 서명 이미지 · Storage 업로드 (실패해도 제출 계속) ──────────────────
-    let signature_url: string | null = null;
-    if (signature_data_url) {
-      signature_url = await uploadSignatureToStorage(
-        String(signature_data_url),
-        Number(employee_id),
-      );
-    }
-
-    const { data, error } = await supabase
-      .from("resignation_requests")
-      .insert([{
-        employee_id: Number(employee_id),
-        employee_name: String(employee_name),
-        position: position ?? null,
-        hire_date: hire_date || null,
-        last_work_date,
-        reason: String(reason),
-        reason_detail: reason_detail ?? null,
-        handover_notes: handover_notes ?? null,
-        // deprecated · 하위 호환 · 신규 레코드도 임시 유지 (클라이언트 이관 완료 후 중단 예정)
-        signature_data_url: signature_data_url ?? null,
-        // 신규 · Storage URL
-        signature_url,
-        pdf_url: pdf_url ?? null,
-        status: "pending",
-      }])
-      .select()
-      .single();
-    if (error) throw new Error(error.message);
-
-    // ── 관리자 통보 (level ≥ 8) · Web Push + in-app notifications ──
-    const admins = await fetchAdmins();
-    const pushTargets = admins.filter(a => a.push_subscription);
-    await Promise.allSettled(
-      pushTargets.map(a =>
-        webpush.sendNotification(
-          a.push_subscription as webpush.PushSubscription,
-          JSON.stringify({
-            title: "사직서 제출 도착",
-            body: `${employee_name}님이 사직서를 제출했습니다. (사유: ${reason})`,
-            url: "/",
-            tag: `resignation-new-${data?.id}`,
-          })
-        ).catch(() => null)
-      )
+  // ── 서명 이미지 · Storage 업로드 (실패해도 제출 계속) ──────────────────
+  let signature_url: string | null = null;
+  if (signature_data_url) {
+    signature_url = await uploadSignatureToStorage(
+      String(signature_data_url),
+      Number(employee_id),
     );
-    await Promise.allSettled(
-      admins.map(a =>
-        notificationsService.create({
-          employee_id: a.id,
+  }
+
+  const { data, error } = await supabase
+    .from("resignation_requests")
+    .insert([{
+      employee_id: Number(employee_id),
+      employee_name: String(employee_name),
+      position: position ?? null,
+      hire_date: hire_date || null,
+      last_work_date,
+      reason: String(reason),
+      reason_detail: reason_detail ?? null,
+      handover_notes: handover_notes ?? null,
+      // deprecated · 하위 호환 · 신규 레코드도 임시 유지 (클라이언트 이관 완료 후 중단 예정)
+      signature_data_url: signature_data_url ?? null,
+      // 신규 · Storage URL
+      signature_url,
+      pdf_url: pdf_url ?? null,
+      status: "pending",
+    }])
+    .select()
+    .single();
+  if (error) throw new HttpError(500, error.message);
+
+  // ── 관리자 통보 (level ≥ 8) · Web Push + in-app notifications ──
+  const admins = await fetchAdmins();
+  const pushTargets = admins.filter(a => a.push_subscription);
+  await Promise.allSettled(
+    pushTargets.map(a =>
+      webpush.sendNotification(
+        a.push_subscription as webpush.PushSubscription,
+        JSON.stringify({
           title: "사직서 제출 도착",
-          body: `${employee_name}님이 사직서를 제출했습니다.` +
-                ` (마지막 근무일: ${last_work_date} · 사유: ${reason})`,
-          type: "warning",
-        }).catch(() => null)
-      )
-    );
+          body: `${employee_name}님이 사직서를 제출했습니다. (사유: ${reason})`,
+          url: "/",
+          tag: `resignation-new-${data?.id}`,
+        })
+      ).catch(() => null)
+    )
+  );
+  await Promise.allSettled(
+    admins.map(a =>
+      notificationsService.create({
+        employee_id: a.id,
+        title: "사직서 제출 도착",
+        body: `${employee_name}님이 사직서를 제출했습니다.` +
+              ` (마지막 근무일: ${last_work_date} · 사유: ${reason})`,
+        type: "warning",
+      }).catch(() => null)
+    )
+  );
 
-    return res.status(201).json(data);
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
-});
+  res.status(201).json(data);
+}));
 
 // ─── PATCH · 승인/반려 ────────────────────────────────────────────────────
-router.patch("/api/resignations/:id", async (req, res) => {
+router.patch("/api/resignations/:id", asyncHandler(async (req, res) => {
   const { status, reject_reason, approved_by, approved_by_id } = req.body ?? {};
   if (!status || !["approved", "rejected", "withdrawn"].includes(status)) {
-    return res.status(400).json({ error: "status must be 'approved' | 'rejected' | 'withdrawn'" });
+    throw badRequest("status must be 'approved' | 'rejected' | 'withdrawn'");
   }
-  try {
-    const update: Record<string, unknown> = {
-      status,
-      approved_at: new Date().toISOString(),
-    };
-    if (approved_by)    update.approved_by = String(approved_by);
-    if (approved_by_id) update.approved_by_id = Number(approved_by_id);
-    if (status === "rejected" && reject_reason) update.reject_reason = String(reject_reason);
 
-    const { data, error } = await supabase
-      .from("resignation_requests")
-      .update(update)
-      .eq("id", req.params.id)
-      .select()
-      .single();
-    if (error) throw new Error(error.message);
-    if (!data) return res.status(404).json({ error: "not found" });
+  const update: Record<string, unknown> = {
+    status,
+    approved_at: new Date().toISOString(),
+  };
+  if (approved_by)    update.approved_by = String(approved_by);
+  if (approved_by_id) update.approved_by_id = Number(approved_by_id);
+  if (status === "rejected" && reject_reason) update.reject_reason = String(reject_reason);
 
-    const label = status === "approved" ? "승인" : status === "rejected" ? "반려" : "철회";
+  const { data, error } = await supabase
+    .from("resignation_requests")
+    .update(update)
+    .eq("id", req.params.id)
+    .select()
+    .single();
+  if (error) throw new HttpError(500, error.message);
+  if (!data) throw notFound("not found");
 
-    // ── 승인 시 · employees.retire_date 자동 세팅 (실패해도 무시) ──
-    if (status === "approved" && data.employee_id && data.last_work_date) {
-      await supabase
-        .from("employees")
-        .update({ retire_date: data.last_work_date })
-        .eq("id", data.employee_id)
-        .then(() => null, () => null);
-    }
+  const label = status === "approved" ? "승인" : status === "rejected" ? "반려" : "철회";
 
-    // ── 신청자에게 통보 ──
-    const { data: emp } = await supabase
+  // ── 승인 시 · employees.retire_date 자동 세팅 (실패해도 무시) ──
+  if (status === "approved" && data.employee_id && data.last_work_date) {
+    await supabase
       .from("employees")
-      .select("push_subscription")
+      .update({ retire_date: data.last_work_date })
       .eq("id", data.employee_id)
-      .maybeSingle();
-
-    await notificationsService.create({
-      employee_id: data.employee_id,
-      title: `사직서 ${label}`,
-      body: `제출하신 사직서가 ${label}되었습니다.` +
-            (status === "rejected" && reject_reason ? ` — ${reject_reason}` : ""),
-      type: status === "approved" ? "success" : status === "rejected" ? "alert" : "info",
-    }).catch(() => null);
-
-    if (emp?.push_subscription) {
-      await webpush.sendNotification(
-        emp.push_subscription as webpush.PushSubscription,
-        JSON.stringify({
-          title: `사직서 ${label}`,
-          body: `제출하신 사직서가 ${label}되었습니다.` +
-                (status === "rejected" && reject_reason ? ` (${reject_reason})` : ""),
-          url: "/",
-          tag: `resignation-reviewed-${data.id}`,
-        })
-      ).catch(() => null);
-    }
-
-    return res.json(data);
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+      .then(() => null, () => null);
   }
-});
+
+  // ── 신청자에게 통보 ──
+  const { data: emp } = await supabase
+    .from("employees")
+    .select("push_subscription")
+    .eq("id", data.employee_id)
+    .maybeSingle();
+
+  await notificationsService.create({
+    employee_id: data.employee_id,
+    title: `사직서 ${label}`,
+    body: `제출하신 사직서가 ${label}되었습니다.` +
+          (status === "rejected" && reject_reason ? ` — ${reject_reason}` : ""),
+    type: status === "approved" ? "success" : status === "rejected" ? "alert" : "info",
+  }).catch(() => null);
+
+  if (emp?.push_subscription) {
+    await webpush.sendNotification(
+      emp.push_subscription as webpush.PushSubscription,
+      JSON.stringify({
+        title: `사직서 ${label}`,
+        body: `제출하신 사직서가 ${label}되었습니다.` +
+              (status === "rejected" && reject_reason ? ` (${reject_reason})` : ""),
+        url: "/",
+        tag: `resignation-reviewed-${data.id}`,
+      })
+    ).catch(() => null);
+  }
+
+  res.json(data);
+}));
 
 // ─── DELETE · 본인 철회 (pending 만) ─────────────────────────────────────
-router.delete("/api/resignations/:id", authorize(9), async (req, res) => {
-  try {
-    const { error } = await supabase
-      .from("resignation_requests")
-      .delete()
-      .eq("id", req.params.id)
-      .eq("status", "pending");
-    if (error) throw new Error(error.message);
-    return res.json({ ok: true });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
-});
+router.delete("/api/resignations/:id", authorize(9), asyncHandler(async (req, res) => {
+  const { error } = await supabase
+    .from("resignation_requests")
+    .delete()
+    .eq("id", req.params.id)
+    .eq("status", "pending");
+  if (error) throw new HttpError(500, error.message);
+  res.json({ ok: true });
+}));
 
 export default router;

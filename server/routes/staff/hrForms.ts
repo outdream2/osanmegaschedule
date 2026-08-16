@@ -1,3 +1,4 @@
+// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
 // server/routes/hrForms.ts
 // 각종 양식 관리 API (근로계약서 · 사직서 · 서약서 · 기타)
 // - 파일 업로드: 클라이언트 base64 → 서버 → Supabase Storage ("hr-forms" bucket · private)
@@ -35,6 +36,8 @@ import { supabase } from "../../../src/supabase/client";
 import { notificationsService } from "../../services/notificationsService";
 // 2026-08-16 · #112-E1 · admin 삭제 보호
 import { authorize } from "../../middleware/requireAuth";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { badRequest, forbidden, notFound, HttpError } from "../../middleware/errorHandler";
 
 const router = Router();
 
@@ -96,18 +99,14 @@ function extFromNameOrMime(filename: string, mime: string): string {
  * Query: category? = contract|resignation|pledge|etc
  * Response: HrForm[]
  */
-router.get("/api/hr-forms", async (req, res) => {
-  try {
-    const category = typeof req.query.category === "string" ? req.query.category : "";
-    let q = supabase.from("hr_forms").select("id, title, category, file_url, file_name, file_size, mime_type, storage_path, storage, uploaded_by, uploaded_by_id, created_at").order("created_at", { ascending: false });
-    if (category && ALLOWED_CATEGORIES.has(category)) q = q.eq("category", category);
-    const { data, error } = await q;
-    if (error) throw new Error(error.message);
-    return res.json(data ?? []);
-  } catch (err: any) {
-    return res.status(500).json({ error: err?.message ?? "load failed" });
-  }
-});
+router.get("/api/hr-forms", asyncHandler(async (req, res) => {
+  const category = typeof req.query.category === "string" ? req.query.category : "";
+  let q = supabase.from("hr_forms").select("id, title, category, file_url, file_name, file_size, mime_type, storage_path, storage, uploaded_by, uploaded_by_id, created_at").order("created_at", { ascending: false });
+  if (category && ALLOWED_CATEGORIES.has(category)) q = q.eq("category", category);
+  const { data, error } = await q;
+  if (error) throw new HttpError(500, error.message);
+  res.json(data ?? []);
+}));
 
 /**
  * POST /api/hr-forms
@@ -121,157 +120,149 @@ router.get("/api/hr-forms", async (req, res) => {
  * }
  * Response: { id, file_url, ... } (hr_forms row)
  */
-router.post("/api/hr-forms", async (req, res) => {
-  try {
-    const b = req.body ?? {};
-    const title = String(b.title ?? "").trim();
-    const category = String(b.category ?? "contract");
-    const fileName = safeFilename(String(b.file_name ?? "form"));
-    const dataUrl = String(b.data_url ?? "");
-    const uploadedBy = b.uploaded_by ? String(b.uploaded_by) : null;
-    const uploadedById = Number.isFinite(Number(b.uploaded_by_id)) ? Number(b.uploaded_by_id) : null;
+router.post("/api/hr-forms", asyncHandler(async (req, res) => {
+  const b = req.body ?? {};
+  const title = String(b.title ?? "").trim();
+  const category = String(b.category ?? "contract");
+  const fileName = safeFilename(String(b.file_name ?? "form"));
+  const dataUrl = String(b.data_url ?? "");
+  const uploadedBy = b.uploaded_by ? String(b.uploaded_by) : null;
+  const uploadedById = Number.isFinite(Number(b.uploaded_by_id)) ? Number(b.uploaded_by_id) : null;
 
-    if (!title) return res.status(400).json({ error: "title required" });
-    if (!ALLOWED_CATEGORIES.has(category)) return res.status(400).json({ error: "invalid category" });
-    if (!dataUrl) return res.status(400).json({ error: "data_url required" });
+  if (!title) throw badRequest("title required");
+  if (!ALLOWED_CATEGORIES.has(category)) throw badRequest("invalid category");
+  if (!dataUrl) throw badRequest("data_url required");
 
-    const parsed = parseDataUrl(dataUrl);
-    if (!parsed) return res.status(400).json({ error: "invalid data_url (data:<mime>;base64,...)" });
-    if (parsed.buffer.length > MAX_BYTES) {
-      return res.status(413).json({ error: `파일 크기 초과 (${(parsed.buffer.length / 1024 / 1024).toFixed(1)}MB > ${MAX_BYTES / 1024 / 1024}MB)` });
-    }
-
-    const now = new Date();
-    const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const rand = Math.random().toString(36).slice(2, 8);
-    const ext = extFromNameOrMime(fileName, parsed.mime);
-    const baseNoExt = fileName.replace(/\.[^.]+$/, "").slice(0, 60) || "form";
-    const objectPath = `${category}/${ym}/${now.getTime()}_${rand}_${baseNoExt}.${ext}`;
-
-    let fileUrl = "";
-    let storage: "supabase" | "local" = "supabase";
-    let storagePath = objectPath;
-
-    // 1) Supabase Storage 우선
-    try {
-      const { error: upErr } = await supabase
-        .storage
-        .from(HR_FORMS_BUCKET)
-        .upload(objectPath, parsed.buffer, {
-          contentType: parsed.mime,
-          cacheControl: "31536000",
-          upsert: false,
-        });
-      if (upErr) {
-        console.warn(`[hr-forms/upload] Supabase Storage 실패 · fallback 로컬 · bucket=${HR_FORMS_BUCKET} · reason=${upErr.message}`);
-      } else {
-        const { data: pub } = supabase.storage.from(HR_FORMS_BUCKET).getPublicUrl(objectPath);
-        if (pub?.publicUrl) {
-          fileUrl = pub.publicUrl;
-        } else {
-          console.warn(`[hr-forms/upload] getPublicUrl 실패 · fallback 로컬 · path=${objectPath}`);
-        }
-      }
-    } catch (supErr: any) {
-      console.warn(`[hr-forms/upload] Supabase 예외 · fallback 로컬 · ${supErr?.message ?? supErr}`);
-    }
-
-    // 2) 로컬 fallback
-    if (!fileUrl) {
-      const dir = path.join(process.cwd(), "uploads", "hr-forms", category, ym);
-      fs.mkdirSync(dir, { recursive: true });
-      const fname = `${now.getTime()}_${rand}_${baseNoExt}.${ext}`;
-      const fpath = path.join(dir, fname);
-      fs.writeFileSync(fpath, parsed.buffer);
-      fileUrl = `/uploads/hr-forms/${category}/${ym}/${fname}`;
-      storage = "local";
-      storagePath = `${category}/${ym}/${fname}`;
-      console.log(`[hr-forms/upload] Local fallback · path=${fileUrl}`);
-    }
-
-    // 3) 메타 insert
-    const insertRow = {
-      title,
-      category,
-      file_url: fileUrl,
-      file_name: fileName,
-      file_size: parsed.buffer.length,
-      mime_type: parsed.mime,
-      storage_path: storagePath,
-      storage,
-      uploaded_by: uploadedBy,
-      uploaded_by_id: uploadedById,
-    };
-
-    const { data, error } = await supabase
-      .from("hr_forms")
-      .insert([insertRow])
-      .select("id, title, category, file_url, file_name, file_size, mime_type, storage_path, storage, uploaded_by, uploaded_by_id, created_at")
-      .single();
-    if (error) {
-      // 메타 저장 실패 · 업로드한 파일 정리 시도
-      if (storage === "supabase") {
-        await supabase.storage.from(HR_FORMS_BUCKET).remove([storagePath]).catch(() => null);
-      } else {
-        try { fs.unlinkSync(path.join(process.cwd(), "uploads", "hr-forms", storagePath)); } catch { /* noop */ }
-      }
-      throw new Error(error.message);
-    }
-
-    // 2026-08-13 · #107 · 관리자 broadcast · 인사서류 업로드
-    notificationsService.notifyAllAdmins({
-      title: "📎 인사서류 업로드",
-      body: `${title} (${category}) 업로드됨${uploadedBy ? ` (담당: ${uploadedBy})` : ""}.`,
-      type: "info",
-      push: { url: "/", tag: `hr-form-${data.id}` },
-    }).catch(() => null);
-    return res.status(201).json(data);
-  } catch (err: any) {
-    return res.status(500).json({ error: err?.message ?? "upload failed" });
+  const parsed = parseDataUrl(dataUrl);
+  if (!parsed) throw badRequest("invalid data_url (data:<mime>;base64,...)");
+  if (parsed.buffer.length > MAX_BYTES) {
+    throw new HttpError(413, `파일 크기 초과 (${(parsed.buffer.length / 1024 / 1024).toFixed(1)}MB > ${MAX_BYTES / 1024 / 1024}MB)`);
   }
-});
+
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const rand = Math.random().toString(36).slice(2, 8);
+  const ext = extFromNameOrMime(fileName, parsed.mime);
+  const baseNoExt = fileName.replace(/\.[^.]+$/, "").slice(0, 60) || "form";
+  const objectPath = `${category}/${ym}/${now.getTime()}_${rand}_${baseNoExt}.${ext}`;
+
+  let fileUrl = "";
+  let storage: "supabase" | "local" = "supabase";
+  let storagePath = objectPath;
+
+  // 1) Supabase Storage 우선
+  try {
+    const { error: upErr } = await supabase
+      .storage
+      .from(HR_FORMS_BUCKET)
+      .upload(objectPath, parsed.buffer, {
+        contentType: parsed.mime,
+        cacheControl: "31536000",
+        upsert: false,
+      });
+    if (upErr) {
+      console.warn(`[hr-forms/upload] Supabase Storage 실패 · fallback 로컬 · bucket=${HR_FORMS_BUCKET} · reason=${upErr.message}`);
+    } else {
+      const { data: pub } = supabase.storage.from(HR_FORMS_BUCKET).getPublicUrl(objectPath);
+      if (pub?.publicUrl) {
+        fileUrl = pub.publicUrl;
+      } else {
+        console.warn(`[hr-forms/upload] getPublicUrl 실패 · fallback 로컬 · path=${objectPath}`);
+      }
+    }
+  } catch (supErr: any) {
+    console.warn(`[hr-forms/upload] Supabase 예외 · fallback 로컬 · ${supErr?.message ?? supErr}`);
+  }
+
+  // 2) 로컬 fallback
+  if (!fileUrl) {
+    const dir = path.join(process.cwd(), "uploads", "hr-forms", category, ym);
+    fs.mkdirSync(dir, { recursive: true });
+    const fname = `${now.getTime()}_${rand}_${baseNoExt}.${ext}`;
+    const fpath = path.join(dir, fname);
+    fs.writeFileSync(fpath, parsed.buffer);
+    fileUrl = `/uploads/hr-forms/${category}/${ym}/${fname}`;
+    storage = "local";
+    storagePath = `${category}/${ym}/${fname}`;
+    console.log(`[hr-forms/upload] Local fallback · path=${fileUrl}`);
+  }
+
+  // 3) 메타 insert
+  const insertRow = {
+    title,
+    category,
+    file_url: fileUrl,
+    file_name: fileName,
+    file_size: parsed.buffer.length,
+    mime_type: parsed.mime,
+    storage_path: storagePath,
+    storage,
+    uploaded_by: uploadedBy,
+    uploaded_by_id: uploadedById,
+  };
+
+  const { data, error } = await supabase
+    .from("hr_forms")
+    .insert([insertRow])
+    .select("id, title, category, file_url, file_name, file_size, mime_type, storage_path, storage, uploaded_by, uploaded_by_id, created_at")
+    .single();
+  if (error) {
+    // 메타 저장 실패 · 업로드한 파일 정리 시도
+    if (storage === "supabase") {
+      await supabase.storage.from(HR_FORMS_BUCKET).remove([storagePath]).catch(() => null);
+    } else {
+      try { fs.unlinkSync(path.join(process.cwd(), "uploads", "hr-forms", storagePath)); } catch { /* noop */ }
+    }
+    throw new HttpError(500, error.message);
+  }
+
+  // 2026-08-13 · #107 · 관리자 broadcast · 인사서류 업로드
+  notificationsService.notifyAllAdmins({
+    title: "📎 인사서류 업로드",
+    body: `${title} (${category}) 업로드됨${uploadedBy ? ` (담당: ${uploadedBy})` : ""}.`,
+    type: "info",
+    push: { url: "/", tag: `hr-form-${data.id}` },
+  }).catch(() => null);
+  res.status(201).json(data);
+}));
 
 /**
  * DELETE /api/hr-forms/:id
  * Query: editor_level  (>=2 필수)
  * - 메타 삭제 + Storage 원본 삭제 (best-effort)
  */
-router.delete("/api/hr-forms/:id", authorize(9), async (req, res) => {
+router.delete("/api/hr-forms/:id", authorize(9), asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const editorLevel = Number(req.query.editor_level ?? 0);
+  if (!Number.isFinite(id)) throw badRequest("invalid id");
+  if (editorLevel < 2) throw forbidden("관리자 권한 필요");
+
+  // 원본 정리 위해 먼저 조회
+  const { data: row, error: getErr } = await supabase
+    .from("hr_forms")
+    .select("id, storage, storage_path")
+    .eq("id", id)
+    .maybeSingle();
+  if (getErr) throw new HttpError(500, getErr.message);
+  if (!row) throw notFound("not found");
+
+  // 메타 삭제
+  const { error: delErr } = await supabase.from("hr_forms").delete().eq("id", id);
+  if (delErr) throw new HttpError(500, delErr.message);
+
+  // 원본 삭제 · best-effort
   try {
-    const id = Number(req.params.id);
-    const editorLevel = Number(req.query.editor_level ?? 0);
-    if (!Number.isFinite(id)) return res.status(400).json({ error: "invalid id" });
-    if (editorLevel < 2) return res.status(403).json({ error: "관리자 권한 필요" });
-
-    // 원본 정리 위해 먼저 조회
-    const { data: row, error: getErr } = await supabase
-      .from("hr_forms")
-      .select("id, storage, storage_path")
-      .eq("id", id)
-      .maybeSingle();
-    if (getErr) throw new Error(getErr.message);
-    if (!row) return res.status(404).json({ error: "not found" });
-
-    // 메타 삭제
-    const { error: delErr } = await supabase.from("hr_forms").delete().eq("id", id);
-    if (delErr) throw new Error(delErr.message);
-
-    // 원본 삭제 · best-effort
-    try {
-      if (row.storage === "supabase" && row.storage_path) {
-        await supabase.storage.from(HR_FORMS_BUCKET).remove([row.storage_path]);
-      } else if (row.storage === "local" && row.storage_path) {
-        const fpath = path.join(process.cwd(), "uploads", "hr-forms", row.storage_path);
-        if (fs.existsSync(fpath)) fs.unlinkSync(fpath);
-      }
-    } catch (cleanupErr: any) {
-      console.warn(`[hr-forms/delete] 원본 정리 실패 (무시) · id=${id} · ${cleanupErr?.message ?? cleanupErr}`);
+    if (row.storage === "supabase" && row.storage_path) {
+      await supabase.storage.from(HR_FORMS_BUCKET).remove([row.storage_path]);
+    } else if (row.storage === "local" && row.storage_path) {
+      const fpath = path.join(process.cwd(), "uploads", "hr-forms", row.storage_path);
+      if (fs.existsSync(fpath)) fs.unlinkSync(fpath);
     }
-
-    return res.json({ ok: true });
-  } catch (err: any) {
-    return res.status(500).json({ error: err?.message ?? "delete failed" });
+  } catch (cleanupErr: any) {
+    console.warn(`[hr-forms/delete] 원본 정리 실패 (무시) · id=${id} · ${cleanupErr?.message ?? cleanupErr}`);
   }
-});
+
+  res.json({ ok: true });
+}));
 
 export default router;
