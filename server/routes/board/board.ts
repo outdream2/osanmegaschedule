@@ -16,7 +16,9 @@ import { supabase } from "../../../src/supabase/client";
 import { sanitizeOrValue } from "../../utils/sanitize";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
+import { validateBody } from "../../middleware/zodValidate";
 import { HttpError, badRequest, forbidden } from "../../middleware/errorHandler";
+import { CreatePostSchema, CreateCommentSchema } from "../../../src/shared/schemas/board";
 
 const router = Router();
 
@@ -219,10 +221,8 @@ router.get("/api/board/posts/:id", asyncHandler(async (req, res) => {
 }));
 
 // ── 게시글 생성
-router.post("/api/board/posts", asyncHandler(async (req, res) => {
-  const b = req.body ?? {};
-  if (!b.author_id) throw badRequest("author_id required");
-  if (!b.title) throw badRequest("title required");
+router.post("/api/board/posts", validateBody(CreatePostSchema), asyncHandler(async (req, res) => {
+  const b = req.body;
 
   const authorId = Number(b.author_id);
   const mentions: number[] = Array.isArray(b.mentions) ? b.mentions.map((n: any) => Number(n)).filter((n: number) => Number.isFinite(n) && n !== authorId) : [];
@@ -359,12 +359,10 @@ router.delete("/api/board/posts/:id", authorize(9), asyncHandler(async (req, res
 }));
 
 // ── 댓글 작성
-router.post("/api/board/posts/:id/comments", asyncHandler(async (req, res) => {
+router.post("/api/board/posts/:id/comments", validateBody(CreateCommentSchema), asyncHandler(async (req, res) => {
   const postId = Number(req.params.id);
-  const b = req.body ?? {};
+  const b = req.body;
   if (!Number.isFinite(postId)) throw badRequest("invalid post id");
-  if (!b.author_id) throw badRequest("author_id required");
-  if (!b.body) throw badRequest("body required");
 
   const authorId = Number(b.author_id);
   const mentions: number[] = Array.isArray(b.mentions) ? b.mentions.map((n: any) => Number(n)).filter((n: number) => Number.isFinite(n) && n !== authorId) : [];
