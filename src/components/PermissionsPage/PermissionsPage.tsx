@@ -229,6 +229,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
   }, []);
 
   // 2026-08-13 · #100 · 직군 토글 (레벨 OR 직군 · 하나만 만족해도 접근 허용)
+  // 2026-08-16 · 버그 · 저장 실패 시 조용히 revert · 사용자 관점 "적용 안됨" · withCredentials + 에러 토스트 추가
   const togglePositionForPerm = useCallback(async (
     page: keyof PagePermissions,
     field: "read" | "write",
@@ -245,9 +246,15 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     };
     setPerms(updated);
     try {
-      await axios.post("/api/permissions", { permissions: updated, employeeId: authSession?.employeeId });
-    } catch {
+      await axios.post("/api/permissions", { permissions: updated, employeeId: authSession?.employeeId }, { withCredentials: true });
+    } catch (err: any) {
       setPerms(perms); // revert
+      const status = err?.response?.status;
+      const msg = status === 401 ? "저장 실패 · 로그인 만료"
+                : status === 403 ? "저장 실패 · 권한 부족 (lv 9 필요)"
+                : `저장 실패 · ${err?.response?.data?.error ?? err?.message ?? "네트워크 오류"}`;
+      setSaveToast(msg);
+      setTimeout(() => setSaveToast(null), 4000);
     }
   }, [perms, authSession?.employeeId]);
 
@@ -265,11 +272,17 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     setSaving(saveKey);
     setSavedKeys(s => { const n = new Set(s); n.delete(saveKey); return n; });
     try {
-      await axios.post("/api/permissions", { permissions: updated, employeeId: authSession?.employeeId });
+      await axios.post("/api/permissions", { permissions: updated, employeeId: authSession?.employeeId }, { withCredentials: true });
       setSavedKeys(s => new Set(s).add(saveKey));
-    } catch {
-      // revert on error
+    } catch (err: any) {
+      // revert on error · 사용자에게 원인 표시 (401/403 등)
       setPerms(perms);
+      const status = err?.response?.status;
+      const msg = status === 401 ? "저장 실패 · 로그인 만료"
+                : status === 403 ? "저장 실패 · 권한 부족 (lv 9 필요)"
+                : `저장 실패 · ${err?.response?.data?.error ?? err?.message ?? "네트워크 오류"}`;
+      setSaveToast(msg);
+      setTimeout(() => setSaveToast(null), 4000);
     } finally {
       setSaving(null);
     }
@@ -470,12 +483,16 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
               type="button"
               onClick={async () => {
                 try {
-                  await axios.post("/api/permissions", { permissions: perms, employeeId: authSession?.employeeId });
+                  await axios.post("/api/permissions", { permissions: perms, employeeId: authSession?.employeeId }, { withCredentials: true });
                   setSaveToast("저장되었습니다");
-                } catch {
-                  setSaveToast("저장 실패");
+                } catch (err: any) {
+                  const status = err?.response?.status;
+                  const msg = status === 401 ? "저장 실패 · 로그인 만료"
+                            : status === 403 ? "저장 실패 · 권한 부족 (lv 9 필요)"
+                            : `저장 실패 · ${err?.response?.data?.error ?? err?.message ?? "네트워크 오류"}`;
+                  setSaveToast(msg);
                 }
-                setTimeout(() => setSaveToast(null), 2500);
+                setTimeout(() => setSaveToast(null), 4000);
               }}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition cursor-pointer"
               title="현재 페이지별 최소 권한을 서버에 저장"
