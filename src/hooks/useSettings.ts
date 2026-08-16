@@ -1,6 +1,8 @@
 // src/hooks/useSettings.ts
+// 2026-08-16 · apiClient 마이그레이션
 import { useState, useCallback, useEffect, useRef } from "react";
 import { DEFAULT_SCHEDULE_TYPES } from "../constants";
+import { api } from "../lib/apiClient";
 
 export interface ScheduleTypeEntry {
   type: string;
@@ -144,11 +146,9 @@ function loadFromLocalStorage(): AppSettings {
 
 async function fetchAllSettings(): Promise<AppSettings | null> {
   try {
-    const res = await fetch(`/api/settings?key=${DB_KEY}`);
-    if (!res.ok) return null;
-    const { value } = await res.json();
-    if (!value) return null;
-    return mergeWithDefaults(value as Partial<AppSettings>);
+    const { data } = await api.get<{ value?: Partial<AppSettings> }>(`/api/settings?key=${DB_KEY}`);
+    if (!data?.value) return null;
+    return mergeWithDefaults(data.value);
   } catch {
     return null;
   }
@@ -157,11 +157,7 @@ async function fetchAllSettings(): Promise<AppSettings | null> {
 const SETTINGS_UPDATED_EVENT = "settings-updated";
 
 async function saveAllSettings(s: AppSettings): Promise<void> {
-  await fetch("/api/settings", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ key: DB_KEY, value: s }),
-  });
+  await api.post("/api/settings", { key: DB_KEY, value: s });
 }
 
 /** 모든 useSettings 인스턴스에 변경을 알리는 이벤트 */

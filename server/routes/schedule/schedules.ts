@@ -1,4 +1,4 @@
-// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
+// 2026-08-16 · asyncHandler + HttpError + shared DTO 프레임워크
 import { Router } from "express";
 import { scheduleController } from "../../controllers/scheduleController";
 import { supabase } from "../../../src/supabase/client";
@@ -6,10 +6,10 @@ import path from "path";
 import fs from "fs";
 import multer from "multer";
 import { uploadToDrive, deleteFromDrive, extractDriveFileId, isDriveReady } from "../../services/googleDriveService";
-// 2026-08-16 · #112-E1 · 세밀 권한 · admin 전용 삭제 보호
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
+import type { NextEmployeeNumberResponse } from "../../../src/shared/dtos/employees";
 
 const router = Router();
 
@@ -18,11 +18,12 @@ router.put("/api/schedules", (req, res) => scheduleController.updateSchedule(req
 router.post("/api/schedules/batch", (req, res) => scheduleController.batchUpdateSchedules(req, res));
 router.post("/api/schedules/copy", (req, res) => scheduleController.copySchedules(req, res));
 router.post("/api/employees", (req, res) => scheduleController.createEmployee(req, res));
-// 2026-08-16 · #122 · 신규 사번 자동 생성 · MAX + 1 · 3자리 zero-pad
+// #122 · 신규 사번 자동 생성 · MAX + 1 · 3자리 zero-pad
 router.get("/api/employees/next-number", asyncHandler(async (_req, res) => {
   const { scheduleService } = await import("../../services/scheduleService");
   const next = await scheduleService.getNextEmployeeNumber();
-  res.status(200).json({ nextNumber: next });
+  const body: NextEmployeeNumberResponse = { nextNumber: next };
+  res.status(200).json(body);
 }));
 router.put("/api/employees/:id", (req, res) => scheduleController.updateEmployee(req, res));
 router.delete("/api/employees/:id", authorize(9), (req, res) => scheduleController.deleteEmployee(req, res));

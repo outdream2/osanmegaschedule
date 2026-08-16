@@ -1,6 +1,7 @@
 // src/components/EmployeeFormModal.tsx
 import React, { useEffect, useRef, useState } from "react";
-import axios from "axios";
+import { api } from "../lib/apiClient";
+import type { NextEmployeeNumberResponse } from "../shared/dtos/employees";
 import { X, Users, Calendar, MapPin, FileText, ExternalLink, Upload, IdCard } from "lucide-react";
 import { ZONE_DEFS, SECTION_LABEL } from "../constants/displayZones";
 // POSITIONS · RANKS · WORKPLACES → useReferenceValues 로 이관 (2026-08-06 · T-DualStorage-Connect)
@@ -98,7 +99,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
     if (empModalMode !== "create") return;
     if (employeeNumber) return; // 이미 값 있으면 fetch 스킵
     let alive = true;
-    axios.get("/api/employees/next-number").then((res) => {
+    api.get<NextEmployeeNumberResponse>("/api/employees/next-number").then((res) => {
       if (alive) setEmployeeNumber(res.data?.nextNumber ?? "");
     }).catch(() => { /* silent · 서버 auto-gen 대체 */ });
     return () => { alive = false; };

@@ -23,7 +23,9 @@
 //   · 여러 탭 · storage 이벤트로 동기화 (선택 · enableStorageSync)
 //   · sanitize 콜백으로 데이터 형태 검증 (필수 아님 · 값 그대로 저장할 수도 있음)
 
+// 2026-08-16 · apiClient 마이그레이션
 import { useCallback, useEffect, useRef, useState } from "react";
+import { api } from "../lib/apiClient";
 
 export interface UseKvSettingOptions<T> {
   /** app_settings.key · 서버 저장 key */
@@ -135,15 +137,11 @@ export function useKvSetting<T>(opts: UseKvSettingOptions<T>): UseKvSettingResul
   const defaultValueRef = useRef(defaultValue);
   defaultValueRef.current = defaultValue;
 
-  // ── 서버 GET
+  // ── 서버 GET · apiClient (401 refresh 자동)
   const fetchServer = useCallback(async (): Promise<{ ok: boolean; value: unknown | null }> => {
     try {
-      const res = await fetch(`/api/settings?key=${encodeURIComponent(key)}`, {
-        credentials: "include",
-      });
-      if (!res.ok) return { ok: false, value: null };
-      const body = await res.json();
-      return { ok: true, value: body?.value ?? null };
+      const { data } = await api.get<{ value?: unknown }>(`/api/settings?key=${encodeURIComponent(key)}`);
+      return { ok: true, value: data?.value ?? null };
     } catch {
       return { ok: false, value: null };
     }
@@ -152,13 +150,8 @@ export function useKvSetting<T>(opts: UseKvSettingOptions<T>): UseKvSettingResul
   // ── 서버 POST (debounced 아님 · 즉시)
   const saveToServer = useCallback(async (next: T): Promise<boolean> => {
     try {
-      const res = await fetch(`/api/settings`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ key, value: next }),
-      });
-      return res.ok;
+      await api.post("/api/settings", { key, value: next });
+      return true;
     } catch {
       return false;
     }

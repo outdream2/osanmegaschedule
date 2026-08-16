@@ -8,7 +8,9 @@
 // 동작: 두 페이지에 있던 완전 동일한 로직 (fetch /api/products/hidden · PATCH hidden:false)
 // 동작 변경 없음 · 리팩토링만 · 리로드 정책 (자동 리로드 안 함) 유지
 
+// 2026-08-16 · apiClient 마이그레이션
 import { useCallback, useState } from "react";
+import { api } from "../lib/apiClient";
 
 export interface HiddenProduct {
   product_code: string;
@@ -47,9 +49,8 @@ export function useHiddenManager(options?: UseHiddenManagerOptions): HiddenManag
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/products/hidden");
-      const data = res.ok ? await res.json() : [];
-      setList(Array.isArray(data) ? data : []);
+      const { data } = await api.get<unknown>("/api/products/hidden");
+      setList(Array.isArray(data) ? data as any : []);
     } catch { setList([]); }
     finally { setLoading(false); }
   }, []);
@@ -65,16 +66,9 @@ export function useHiddenManager(options?: UseHiddenManagerOptions): HiddenManag
     if (!code) return;
     setUnhideBusyCode(code);
     try {
-      const res = await fetch(`/api/products/${encodeURIComponent(code)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hidden: false }),
-      });
-      if (res.ok) {
-        setList(prev => prev.filter(p => String(p.product_code) !== code));
-        // 페이지별 후속 처리 (해당 페이지 리스트만 · 다른 페이지 영향 없음)
-        options?.onUnhideSuccess?.(code);
-      }
+      await api.patch(`/api/products/${encodeURIComponent(code)}`, { hidden: false });
+      setList(prev => prev.filter(p => String(p.product_code) !== code));
+      options?.onUnhideSuccess?.(code);
     } catch { /* ignore */ }
     finally { setUnhideBusyCode(null); }
   }, [options]);

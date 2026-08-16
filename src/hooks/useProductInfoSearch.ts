@@ -7,7 +7,9 @@
 // 반환:
 //   query · setQuery · results · setResults · selected · setSelected · runSearch
 
+// 2026-08-16 · apiClient 마이그레이션
 import { useCallback, useEffect, useState } from "react";
+import { api } from "../lib/apiClient";
 
 export interface ProductSearchResult {
   product_code?: string;
@@ -36,13 +38,8 @@ export function useProductInfoSearch(): ProductInfoSearch {
     const q = query.trim();
     if (!q) { setResults([]); return; }
     try {
-      const res = await fetch(`/api/products-search?q=${encodeURIComponent(q)}`);
-      if (res.ok) {
-        const list = await res.json();
-        setResults(Array.isArray(list) ? list : []);
-      } else {
-        setResults([]);
-      }
+      const { data } = await api.get<unknown>(`/api/products-search?q=${encodeURIComponent(q)}`);
+      setResults(Array.isArray(data) ? data as ProductSearchResult[] : []);
     } catch { setResults([]); }
   }, [query]);
 
