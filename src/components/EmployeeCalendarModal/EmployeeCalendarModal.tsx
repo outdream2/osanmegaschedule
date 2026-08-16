@@ -334,8 +334,9 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
       onClick={onClose}
     >
+      {/* 2026-08-17 · #140/#142 · 반응형 · 한 화면에 · max-w 확장 (모바일 fit + PC 넓게) · h-fit 자동 */}
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-xl sm:max-w-2xl overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[90vh]"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -469,7 +470,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                             isRetireDay ? `퇴사일 (${employee.retireDate})` :
                             outOfEmployment ? (beforeHire ? "입사일 이전 — 근무 불가" : "퇴사일 이후 — 근무 불가") : undefined
                           }
-                          className={`relative rounded-lg p-1 flex flex-col items-center min-h-[68px] border transition-all ${
+                          className={`relative rounded-lg p-1 flex flex-col items-center min-h-[48px] sm:min-h-[60px] border transition-all ${
                             outOfEmployment ? "bg-zinc-100 border-zinc-200 cursor-not-allowed opacity-70" :
                             (dayBgHex ? "border-transparent" : "bg-white border-zinc-100")
                           } ${isHireDay ? "ring-2 ring-emerald-500" : ""} ${isRetireDay ? "ring-2 ring-rose-500" : ""} ${isToday ? "ring-2 ring-indigo-400 ring-offset-1" : ""} ${
