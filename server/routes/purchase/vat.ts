@@ -1,3 +1,4 @@
+// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
 // server/routes/vat.ts
 // 2026-08-03 · 부가세 준비 API · #197
 //   · 매입세액 집계 (기간별 · 공급사별)
@@ -19,6 +20,8 @@
 //
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { badRequest } from "../../middleware/errorHandler";
 
 const router = Router();
 
@@ -77,236 +80,221 @@ function calcVat(amount: number, vat: number, vatIncluded: boolean | null = null
 // GET /api/vat/summary?period=2026-1H
 //   · 기간별 매입세액 총계 · 매입가 · 공급사수 · 예상 공제액
 // ═════════════════════════════════════════════════════════════════
-router.get("/api/vat/summary", async (req, res) => {
-  try {
-    const periodParam = String(req.query.period ?? "").trim();
-    const range = resolvePeriod(periodParam);
-    if (!range) return res.status(400).json({ error: "period 형식 오류 · 예: 2026-1H · 2026-Q1" });
+router.get("/api/vat/summary", asyncHandler(async (req, res) => {
+  const periodParam = String(req.query.period ?? "").trim();
+  const range = resolvePeriod(periodParam);
+  if (!range) throw badRequest("period 형식 오류 · 예: 2026-1H · 2026-Q1");
 
-    const { data: rows, error } = await supabase
-      .from("purchase_details")
-      .select("supplier_name, amount, vat, total")
-      .gte("purchase_date", range.from)
-      .lte("purchase_date", range.to)
-      .limit(50000);
+  const { data: rows, error } = await supabase
+    .from("purchase_details")
+    .select("supplier_name, amount, vat, total")
+    .gte("purchase_date", range.from)
+    .lte("purchase_date", range.to)
+    .limit(50000);
 
-    if (error) {
-      if (/relation .* does not exist/i.test(error.message)) {
-        return res.json({
-          range, next: getNextDeadline(new Date()),
-          totalAmount: 0, totalVat: 0, deductibleVat: 0, exemptVat: 0,
-          vendorCount: 0, rowCount: 0,
-          warning: "purchase_details 테이블 없음 (매입 데이터 임포트 필요)",
-        });
-      }
-      throw new Error(error.message);
+  if (error) {
+    if (/relation .* does not exist/i.test(error.message)) {
+      return res.json({
+        range, next: getNextDeadline(new Date()),
+        totalAmount: 0, totalVat: 0, deductibleVat: 0, exemptVat: 0,
+        vendorCount: 0, rowCount: 0,
+        warning: "purchase_details 테이블 없음 (매입 데이터 임포트 필요)",
+      });
     }
-
-    // 공급사별 · category + vat_included 조회 (면세·VAT 포함 여부 판단)
-    const supplierNames = Array.from(new Set((rows ?? []).map(r => String(r.supplier_name ?? "").trim()).filter(Boolean)));
-    const catMap = new Map<string, string | null>();
-    const vatIncMap = new Map<string, boolean | null>();
-    if (supplierNames.length > 0) {
-      // vat_included 컬럼 없는 DB fallback
-      let vendors: any[] | null = null;
-      const rv1 = await supabase
-        .from("vendors")
-        .select("company_name, category, vat_included")
-        .in("company_name", supplierNames);
-      if (!rv1.error) vendors = rv1.data ?? [];
-      else if (/vat_included/i.test(rv1.error.message)) {
-        const rv2 = await supabase
-          .from("vendors")
-          .select("company_name, category")
-          .in("company_name", supplierNames);
-        if (!rv2.error) vendors = (rv2.data ?? []).map((v: any) => ({ ...v, vat_included: null }));
-      }
-      for (const v of vendors ?? []) {
-        const name = String((v as any).company_name);
-        catMap.set(name, (v as any).category ?? null);
-        const vi = (v as any).vat_included;
-        vatIncMap.set(name, vi === true || vi === false ? vi : null);
-      }
-    }
-
-    let totalAmount = 0;
-    let totalVat = 0;
-    let deductibleVat = 0;
-    let exemptVat = 0;
-    const vendorSet = new Set<string>();
-
-    for (const r of rows ?? []) {
-      const sup = String(r.supplier_name ?? "").trim();
-      const amt = Number(r.amount ?? 0) || 0;
-      const vi = vatIncMap.get(sup) ?? null;
-      const vat = calcVat(amt, Number(r.vat ?? 0) || 0, vi);
-      totalAmount += amt;
-      totalVat += vat;
-      if (sup) vendorSet.add(sup);
-      const cat = catMap.get(sup) ?? "";
-      if (cat === "면세") exemptVat += vat;
-      else deductibleVat += vat;
-    }
-
-    res.json({
-      range,
-      next: getNextDeadline(new Date()),
-      totalAmount: Math.round(totalAmount),
-      totalVat: Math.round(totalVat),
-      deductibleVat: Math.round(deductibleVat),
-      exemptVat: Math.round(exemptVat),
-      vendorCount: vendorSet.size,
-      rowCount: (rows ?? []).length,
-    });
-  } catch (err: any) {
-    console.error("[vat/summary] error:", err?.message);
-    res.status(500).json({ error: err?.message ?? "부가세 요약 조회 실패" });
+    throw new Error(error.message);
   }
-});
+
+  // 공급사별 · category + vat_included 조회 (면세·VAT 포함 여부 판단)
+  const supplierNames = Array.from(new Set((rows ?? []).map(r => String(r.supplier_name ?? "").trim()).filter(Boolean)));
+  const catMap = new Map<string, string | null>();
+  const vatIncMap = new Map<string, boolean | null>();
+  if (supplierNames.length > 0) {
+    // vat_included 컬럼 없는 DB fallback
+    let vendors: any[] | null = null;
+    const rv1 = await supabase
+      .from("vendors")
+      .select("company_name, category, vat_included")
+      .in("company_name", supplierNames);
+    if (!rv1.error) vendors = rv1.data ?? [];
+    else if (/vat_included/i.test(rv1.error.message)) {
+      const rv2 = await supabase
+        .from("vendors")
+        .select("company_name, category")
+        .in("company_name", supplierNames);
+      if (!rv2.error) vendors = (rv2.data ?? []).map((v: any) => ({ ...v, vat_included: null }));
+    }
+    for (const v of vendors ?? []) {
+      const name = String((v as any).company_name);
+      catMap.set(name, (v as any).category ?? null);
+      const vi = (v as any).vat_included;
+      vatIncMap.set(name, vi === true || vi === false ? vi : null);
+    }
+  }
+
+  let totalAmount = 0;
+  let totalVat = 0;
+  let deductibleVat = 0;
+  let exemptVat = 0;
+  const vendorSet = new Set<string>();
+
+  for (const r of rows ?? []) {
+    const sup = String(r.supplier_name ?? "").trim();
+    const amt = Number(r.amount ?? 0) || 0;
+    const vi = vatIncMap.get(sup) ?? null;
+    const vat = calcVat(amt, Number(r.vat ?? 0) || 0, vi);
+    totalAmount += amt;
+    totalVat += vat;
+    if (sup) vendorSet.add(sup);
+    const cat = catMap.get(sup) ?? "";
+    if (cat === "면세") exemptVat += vat;
+    else deductibleVat += vat;
+  }
+
+  res.json({
+    range,
+    next: getNextDeadline(new Date()),
+    totalAmount: Math.round(totalAmount),
+    totalVat: Math.round(totalVat),
+    deductibleVat: Math.round(deductibleVat),
+    exemptVat: Math.round(exemptVat),
+    vendorCount: vendorSet.size,
+    rowCount: (rows ?? []).length,
+  });
+}));
 
 // ═════════════════════════════════════════════════════════════════
 // GET /api/vat/vendor-breakdown?period=2026-1H
 //   · 공급사별 매입가·부가세·건수 집계 (내림차순)
 // ═════════════════════════════════════════════════════════════════
-router.get("/api/vat/vendor-breakdown", async (req, res) => {
-  try {
-    const periodParam = String(req.query.period ?? "").trim();
-    const range = resolvePeriod(periodParam);
-    if (!range) return res.status(400).json({ error: "period 형식 오류" });
+router.get("/api/vat/vendor-breakdown", asyncHandler(async (req, res) => {
+  const periodParam = String(req.query.period ?? "").trim();
+  const range = resolvePeriod(periodParam);
+  if (!range) throw badRequest("period 형식 오류");
 
-    const { data: rows, error } = await supabase
-      .from("purchase_details")
-      .select("supplier_name, supplier_code, amount, vat, total, purchase_date")
-      .gte("purchase_date", range.from)
-      .lte("purchase_date", range.to)
-      .limit(50000);
+  const { data: rows, error } = await supabase
+    .from("purchase_details")
+    .select("supplier_name, supplier_code, amount, vat, total, purchase_date")
+    .gte("purchase_date", range.from)
+    .lte("purchase_date", range.to)
+    .limit(50000);
 
-    if (error) {
-      if (/relation .* does not exist/i.test(error.message)) {
-        return res.json({ range, rows: [], warning: "purchase_details 테이블 없음" });
-      }
-      throw new Error(error.message);
+  if (error) {
+    if (/relation .* does not exist/i.test(error.message)) {
+      return res.json({ range, rows: [], warning: "purchase_details 테이블 없음" });
     }
-
-    // 공급사 카테고리·사업자번호·vat_included 조회
-    const supplierNames = Array.from(new Set((rows ?? []).map(r => String(r.supplier_name ?? "").trim()).filter(Boolean)));
-    const vendorMap = new Map<string, { category: string | null; business_number: string | null; vat_included: boolean | null }>();
-    if (supplierNames.length > 0) {
-      let vendors: any[] | null = null;
-      const rv1 = await supabase
-        .from("vendors")
-        .select("company_name, category, business_number, vat_included")
-        .in("company_name", supplierNames);
-      if (!rv1.error) vendors = rv1.data ?? [];
-      else if (/vat_included/i.test(rv1.error.message)) {
-        const rv2 = await supabase
-          .from("vendors")
-          .select("company_name, category, business_number")
-          .in("company_name", supplierNames);
-        if (!rv2.error) vendors = (rv2.data ?? []).map((v: any) => ({ ...v, vat_included: null }));
-      }
-      for (const v of vendors ?? []) {
-        const vi = (v as any).vat_included;
-        vendorMap.set(String((v as any).company_name), {
-          category: (v as any).category ?? null,
-          business_number: (v as any).business_number ?? null,
-          vat_included: vi === true || vi === false ? vi : null,
-        });
-      }
-    }
-
-    // 공급사별 집계
-    interface Agg { supplier_name: string; supplier_code: string | null; category: string | null; business_number: string | null; vat_included: boolean | null; amount: number; vat: number; total: number; count: number; deductible: boolean; }
-    const map = new Map<string, Agg>();
-    for (const r of rows ?? []) {
-      const sup = String(r.supplier_name ?? "").trim() || "(미상)";
-      const info = vendorMap.get(sup);
-      const cur = map.get(sup) ?? {
-        supplier_name: sup,
-        supplier_code: (r.supplier_code as string) ?? null,
-        category: info?.category ?? null,
-        business_number: info?.business_number ?? null,
-        vat_included: info?.vat_included ?? null,
-        amount: 0, vat: 0, total: 0, count: 0,
-        deductible: (info?.category ?? "") !== "면세",
-      };
-      const amt = Number(r.amount ?? 0) || 0;
-      const vat = calcVat(amt, Number(r.vat ?? 0) || 0, info?.vat_included ?? null);
-      cur.amount += amt;
-      cur.vat += vat;
-      cur.total += Number(r.total ?? 0) || (amt + vat);
-      cur.count += 1;
-      map.set(sup, cur);
-    }
-
-    const rowsOut = Array.from(map.values())
-      .map(v => ({
-        ...v,
-        amount: Math.round(v.amount),
-        vat: Math.round(v.vat),
-        total: Math.round(v.total),
-      }))
-      .sort((a, b) => b.vat - a.vat);
-
-    res.json({ range, rows: rowsOut });
-  } catch (err: any) {
-    console.error("[vat/vendor-breakdown] error:", err?.message);
-    res.status(500).json({ error: err?.message ?? "공급사별 부가세 조회 실패" });
+    throw new Error(error.message);
   }
-});
+
+  // 공급사 카테고리·사업자번호·vat_included 조회
+  const supplierNames = Array.from(new Set((rows ?? []).map(r => String(r.supplier_name ?? "").trim()).filter(Boolean)));
+  const vendorMap = new Map<string, { category: string | null; business_number: string | null; vat_included: boolean | null }>();
+  if (supplierNames.length > 0) {
+    let vendors: any[] | null = null;
+    const rv1 = await supabase
+      .from("vendors")
+      .select("company_name, category, business_number, vat_included")
+      .in("company_name", supplierNames);
+    if (!rv1.error) vendors = rv1.data ?? [];
+    else if (/vat_included/i.test(rv1.error.message)) {
+      const rv2 = await supabase
+        .from("vendors")
+        .select("company_name, category, business_number")
+        .in("company_name", supplierNames);
+      if (!rv2.error) vendors = (rv2.data ?? []).map((v: any) => ({ ...v, vat_included: null }));
+    }
+    for (const v of vendors ?? []) {
+      const vi = (v as any).vat_included;
+      vendorMap.set(String((v as any).company_name), {
+        category: (v as any).category ?? null,
+        business_number: (v as any).business_number ?? null,
+        vat_included: vi === true || vi === false ? vi : null,
+      });
+    }
+  }
+
+  // 공급사별 집계
+  interface Agg { supplier_name: string; supplier_code: string | null; category: string | null; business_number: string | null; vat_included: boolean | null; amount: number; vat: number; total: number; count: number; deductible: boolean; }
+  const map = new Map<string, Agg>();
+  for (const r of rows ?? []) {
+    const sup = String(r.supplier_name ?? "").trim() || "(미상)";
+    const info = vendorMap.get(sup);
+    const cur = map.get(sup) ?? {
+      supplier_name: sup,
+      supplier_code: (r.supplier_code as string) ?? null,
+      category: info?.category ?? null,
+      business_number: info?.business_number ?? null,
+      vat_included: info?.vat_included ?? null,
+      amount: 0, vat: 0, total: 0, count: 0,
+      deductible: (info?.category ?? "") !== "면세",
+    };
+    const amt = Number(r.amount ?? 0) || 0;
+    const vat = calcVat(amt, Number(r.vat ?? 0) || 0, info?.vat_included ?? null);
+    cur.amount += amt;
+    cur.vat += vat;
+    cur.total += Number(r.total ?? 0) || (amt + vat);
+    cur.count += 1;
+    map.set(sup, cur);
+  }
+
+  const rowsOut = Array.from(map.values())
+    .map(v => ({
+      ...v,
+      amount: Math.round(v.amount),
+      vat: Math.round(v.vat),
+      total: Math.round(v.total),
+    }))
+    .sort((a, b) => b.vat - a.vat);
+
+  res.json({ range, rows: rowsOut });
+}));
 
 // ═════════════════════════════════════════════════════════════════
 // GET /api/vat/vendor-detail?period=2026-1H&supplier=코스트팜
 //   · 특정 공급사의 기간 내 매입 상세 명세
 // ═════════════════════════════════════════════════════════════════
-router.get("/api/vat/vendor-detail", async (req, res) => {
-  try {
-    const periodParam = String(req.query.period ?? "").trim();
-    const supplier = String(req.query.supplier ?? "").trim();
-    const range = resolvePeriod(periodParam);
-    if (!range) return res.status(400).json({ error: "period 형식 오류" });
-    if (!supplier) return res.status(400).json({ error: "supplier 필요" });
+router.get("/api/vat/vendor-detail", asyncHandler(async (req, res) => {
+  const periodParam = String(req.query.period ?? "").trim();
+  const supplier = String(req.query.supplier ?? "").trim();
+  const range = resolvePeriod(periodParam);
+  if (!range) throw badRequest("period 형식 오류");
+  if (!supplier) throw badRequest("supplier 필요");
 
-    // vendor.vat_included lookup (병렬 · 실패해도 null 폴백)
-    const vendorLookupPromise = (async () => {
-      const rv1 = await supabase.from("vendors").select("vat_included").eq("company_name", supplier).maybeSingle();
-      if (!rv1.error) {
-        const vi = (rv1.data as any)?.vat_included;
-        return vi === true || vi === false ? vi : null;
-      }
-      return null;
-    })();
-
-    const { data: rows, error } = await supabase
-      .from("purchase_details")
-      .select("id, purchase_date, product_code, product_name, spec, quantity, unit_price, amount, vat, total")
-      .eq("supplier_name", supplier)
-      .gte("purchase_date", range.from)
-      .lte("purchase_date", range.to)
-      .order("purchase_date", { ascending: false })
-      .limit(2000);
-
-    if (error) {
-      if (/relation .* does not exist/i.test(error.message)) {
-        return res.json({ range, supplier, rows: [], warning: "purchase_details 테이블 없음" });
-      }
-      throw new Error(error.message);
+  // vendor.vat_included lookup (병렬 · 실패해도 null 폴백)
+  const vendorLookupPromise = (async () => {
+    const rv1 = await supabase.from("vendors").select("vat_included").eq("company_name", supplier).maybeSingle();
+    if (!rv1.error) {
+      const vi = (rv1.data as any)?.vat_included;
+      return vi === true || vi === false ? vi : null;
     }
+    return null;
+  })();
 
-    const vatIncluded = await vendorLookupPromise;
-    const rowsOut = (rows ?? []).map(r => ({
-      ...r,
-      amount: Math.round(Number(r.amount ?? 0) || 0),
-      vat: Math.round(calcVat(Number(r.amount ?? 0) || 0, Number(r.vat ?? 0) || 0, vatIncluded)),
-      total: Math.round(Number(r.total ?? 0) || 0),
-    }));
+  const { data: rows, error } = await supabase
+    .from("purchase_details")
+    .select("id, purchase_date, product_code, product_name, spec, quantity, unit_price, amount, vat, total")
+    .eq("supplier_name", supplier)
+    .gte("purchase_date", range.from)
+    .lte("purchase_date", range.to)
+    .order("purchase_date", { ascending: false })
+    .limit(2000);
 
-    res.json({ range, supplier, vat_included: vatIncluded, rows: rowsOut });
-  } catch (err: any) {
-    console.error("[vat/vendor-detail] error:", err?.message);
-    res.status(500).json({ error: err?.message ?? "공급사 매입 상세 조회 실패" });
+  if (error) {
+    if (/relation .* does not exist/i.test(error.message)) {
+      return res.json({ range, supplier, rows: [], warning: "purchase_details 테이블 없음" });
+    }
+    throw new Error(error.message);
   }
-});
+
+  const vatIncluded = await vendorLookupPromise;
+  const rowsOut = (rows ?? []).map(r => ({
+    ...r,
+    amount: Math.round(Number(r.amount ?? 0) || 0),
+    vat: Math.round(calcVat(Number(r.amount ?? 0) || 0, Number(r.vat ?? 0) || 0, vatIncluded)),
+    total: Math.round(Number(r.total ?? 0) || 0),
+  }));
+
+  res.json({ range, supplier, vat_included: vatIncluded, rows: rowsOut });
+}));
 
 // ═════════════════════════════════════════════════════════════════
 // GET /api/vat/monthly-summary?from=YYYY-MM-DD&to=YYYY-MM-DD
@@ -321,244 +309,239 @@ router.get("/api/vat/vendor-detail", async (req, res) => {
 //   · 반환 · months[] 오름차순 · 각 월 { month, salesTotal, salesVat, salesSupply,
 //                                        purchaseGross, purchaseSupply, purchaseVat, purchaseDeductibleVat }
 // ═════════════════════════════════════════════════════════════════
-router.get("/api/vat/monthly-summary", async (req, res) => {
+router.get("/api/vat/monthly-summary", asyncHandler(async (req, res) => {
+  const fromParam = String(req.query.from ?? "").trim();
+  const toParam = String(req.query.to ?? "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fromParam) || !/^\d{4}-\d{2}-\d{2}$/.test(toParam)) {
+    throw badRequest("from, to (YYYY-MM-DD) 필수");
+  }
+  if (fromParam > toParam) {
+    throw badRequest("from > to");
+  }
+
+  const monthsAgg = new Map<string, {
+    month: string;
+    salesTotal: number;         // 매출 총액 (VAT 포함 가정)
+    salesVat: number;           // 매출세액 (total / 11)
+    salesSupply: number;        // 공급가액 (total - vat)
+    salesRowCount: number;
+    purchaseGross: number;      // 매입 총액 (amount + vat)
+    purchaseSupply: number;     // 공급가액
+    purchaseVat: number;        // 매입세액 (총)
+    purchaseDeductibleVat: number; // 매입세액 중 공제 가능분 (면세 공급사 제외)
+    purchaseRowCount: number;
+  }>();
+
+  const getBucket = (month: string) => {
+    if (!monthsAgg.has(month)) {
+      monthsAgg.set(month, {
+        month,
+        salesTotal: 0,
+        salesVat: 0,
+        salesSupply: 0,
+        salesRowCount: 0,
+        purchaseGross: 0,
+        purchaseSupply: 0,
+        purchaseVat: 0,
+        purchaseDeductibleVat: 0,
+        purchaseRowCount: 0,
+      });
+    }
+    return monthsAgg.get(month)!;
+  };
+
+  const warnings: string[] = [];
+
+  // ── 매출 · stock_history · snapshot_date 로 그룹 ───────────
+  //   NOTE · stock_history 는 SKU × 일자 매트릭스 · total_amount = sale_qty × sale_price
+  //   snapshot_date 기준 월 그룹 · VAT 포함 총액으로 간주
   try {
-    const fromParam = String(req.query.from ?? "").trim();
-    const toParam = String(req.query.to ?? "").trim();
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(fromParam) || !/^\d{4}-\d{2}-\d{2}$/.test(toParam)) {
-      return res.status(400).json({ error: "from, to (YYYY-MM-DD) 필수" });
+    const PAGE = 1000;
+    let fromRow = 0;
+    let salesTableMissing = false;
+    while (true) {
+      const { data: pg, error: pgErr } = await supabase
+        .from("stock_history")
+        .select("snapshot_date, total_amount")
+        .gte("snapshot_date", fromParam)
+        .lte("snapshot_date", toParam)
+        .range(fromRow, fromRow + PAGE - 1);
+      if (pgErr) {
+        if (/relation .* does not exist/i.test(pgErr.message)) {
+          salesTableMissing = true;
+          break;
+        }
+        throw new Error(pgErr.message);
+      }
+      if (!pg || pg.length === 0) break;
+      for (const r of pg) {
+        const date = String((r as any).snapshot_date ?? "");
+        const month = date.slice(0, 7);
+        if (!/^\d{4}-\d{2}$/.test(month)) continue;
+        const amt = Number((r as any).total_amount ?? 0) || 0;
+        if (amt <= 0) continue;
+        const bucket = getBucket(month);
+        bucket.salesTotal += amt;
+        bucket.salesRowCount += 1;
+      }
+      if (pg.length < PAGE) break;
+      fromRow += PAGE;
     }
-    if (fromParam > toParam) {
-      return res.status(400).json({ error: "from > to" });
+    if (salesTableMissing) {
+      warnings.push("stock_history 테이블 없음 · 매출 데이터 0 표시");
     }
+  } catch (e: any) {
+    warnings.push(`매출 조회 실패: ${e?.message ?? "unknown"}`);
+  }
 
-    const monthsAgg = new Map<string, {
-      month: string;
-      salesTotal: number;         // 매출 총액 (VAT 포함 가정)
-      salesVat: number;           // 매출세액 (total / 11)
-      salesSupply: number;        // 공급가액 (total - vat)
-      salesRowCount: number;
-      purchaseGross: number;      // 매입 총액 (amount + vat)
-      purchaseSupply: number;     // 공급가액
-      purchaseVat: number;        // 매입세액 (총)
-      purchaseDeductibleVat: number; // 매입세액 중 공제 가능분 (면세 공급사 제외)
-      purchaseRowCount: number;
-    }>();
+  // 매출 · VAT 포함 총액 기준 매출세액 계산 (총액 / 11 · 반올림)
+  for (const bucket of monthsAgg.values()) {
+    if (bucket.salesTotal > 0) {
+      bucket.salesVat = Math.round(bucket.salesTotal / 11);
+      bucket.salesSupply = bucket.salesTotal - bucket.salesVat;
+    }
+  }
 
-    const getBucket = (month: string) => {
-      if (!monthsAgg.has(month)) {
-        monthsAgg.set(month, {
-          month,
-          salesTotal: 0,
-          salesVat: 0,
-          salesSupply: 0,
-          salesRowCount: 0,
-          purchaseGross: 0,
-          purchaseSupply: 0,
-          purchaseVat: 0,
-          purchaseDeductibleVat: 0,
-          purchaseRowCount: 0,
+  // ── 매입 · purchase_details + vendors.vat_included ─────────
+  const purchaseRows: Array<{ supplier: string; date: string; amount: number; vat: number }> = [];
+  try {
+    const PAGE = 1000;
+    let fromRow = 0;
+    let purchaseTableMissing = false;
+    while (true) {
+      const { data: pg, error: pgErr } = await supabase
+        .from("purchase_details")
+        .select("supplier_name, purchase_date, amount, vat")
+        .gte("purchase_date", fromParam)
+        .lte("purchase_date", toParam)
+        .range(fromRow, fromRow + PAGE - 1);
+      if (pgErr) {
+        if (/relation .* does not exist/i.test(pgErr.message)) {
+          purchaseTableMissing = true;
+          break;
+        }
+        throw new Error(pgErr.message);
+      }
+      if (!pg || pg.length === 0) break;
+      for (const r of pg) {
+        const sup = String((r as any).supplier_name ?? "").trim();
+        const date = String((r as any).purchase_date ?? "");
+        if (!/^\d{4}-\d{2}-\d{2}/.test(date)) continue;
+        purchaseRows.push({
+          supplier: sup,
+          date,
+          amount: Number((r as any).amount ?? 0) || 0,
+          vat: Number((r as any).vat ?? 0) || 0,
         });
       }
-      return monthsAgg.get(month)!;
-    };
-
-    const warnings: string[] = [];
-
-    // ── 매출 · stock_history · snapshot_date 로 그룹 ───────────
-    //   NOTE · stock_history 는 SKU × 일자 매트릭스 · total_amount = sale_qty × sale_price
-    //   snapshot_date 기준 월 그룹 · VAT 포함 총액으로 간주
-    try {
-      const PAGE = 1000;
-      let fromRow = 0;
-      let salesTableMissing = false;
-      while (true) {
-        const { data: pg, error: pgErr } = await supabase
-          .from("stock_history")
-          .select("snapshot_date, total_amount")
-          .gte("snapshot_date", fromParam)
-          .lte("snapshot_date", toParam)
-          .range(fromRow, fromRow + PAGE - 1);
-        if (pgErr) {
-          if (/relation .* does not exist/i.test(pgErr.message)) {
-            salesTableMissing = true;
-            break;
-          }
-          throw new Error(pgErr.message);
-        }
-        if (!pg || pg.length === 0) break;
-        for (const r of pg) {
-          const date = String((r as any).snapshot_date ?? "");
-          const month = date.slice(0, 7);
-          if (!/^\d{4}-\d{2}$/.test(month)) continue;
-          const amt = Number((r as any).total_amount ?? 0) || 0;
-          if (amt <= 0) continue;
-          const bucket = getBucket(month);
-          bucket.salesTotal += amt;
-          bucket.salesRowCount += 1;
-        }
-        if (pg.length < PAGE) break;
-        fromRow += PAGE;
-      }
-      if (salesTableMissing) {
-        warnings.push("stock_history 테이블 없음 · 매출 데이터 0 표시");
-      }
-    } catch (e: any) {
-      warnings.push(`매출 조회 실패: ${e?.message ?? "unknown"}`);
+      if (pg.length < PAGE) break;
+      fromRow += PAGE;
     }
-
-    // 매출 · VAT 포함 총액 기준 매출세액 계산 (총액 / 11 · 반올림)
-    for (const bucket of monthsAgg.values()) {
-      if (bucket.salesTotal > 0) {
-        bucket.salesVat = Math.round(bucket.salesTotal / 11);
-        bucket.salesSupply = bucket.salesTotal - bucket.salesVat;
-      }
+    if (purchaseTableMissing) {
+      warnings.push("purchase_details 테이블 없음 · 매입 데이터 0 표시");
     }
-
-    // ── 매입 · purchase_details + vendors.vat_included ─────────
-    const purchaseRows: Array<{ supplier: string; date: string; amount: number; vat: number }> = [];
-    try {
-      const PAGE = 1000;
-      let fromRow = 0;
-      let purchaseTableMissing = false;
-      while (true) {
-        const { data: pg, error: pgErr } = await supabase
-          .from("purchase_details")
-          .select("supplier_name, purchase_date, amount, vat")
-          .gte("purchase_date", fromParam)
-          .lte("purchase_date", toParam)
-          .range(fromRow, fromRow + PAGE - 1);
-        if (pgErr) {
-          if (/relation .* does not exist/i.test(pgErr.message)) {
-            purchaseTableMissing = true;
-            break;
-          }
-          throw new Error(pgErr.message);
-        }
-        if (!pg || pg.length === 0) break;
-        for (const r of pg) {
-          const sup = String((r as any).supplier_name ?? "").trim();
-          const date = String((r as any).purchase_date ?? "");
-          if (!/^\d{4}-\d{2}-\d{2}/.test(date)) continue;
-          purchaseRows.push({
-            supplier: sup,
-            date,
-            amount: Number((r as any).amount ?? 0) || 0,
-            vat: Number((r as any).vat ?? 0) || 0,
-          });
-        }
-        if (pg.length < PAGE) break;
-        fromRow += PAGE;
-      }
-      if (purchaseTableMissing) {
-        warnings.push("purchase_details 테이블 없음 · 매입 데이터 0 표시");
-      }
-    } catch (e: any) {
-      warnings.push(`매입 조회 실패: ${e?.message ?? "unknown"}`);
-    }
-
-    // 공급사 정보 lookup
-    const supplierNames = Array.from(new Set(purchaseRows.map(r => r.supplier).filter(Boolean)));
-    const catMap = new Map<string, string | null>();
-    const vatIncMap = new Map<string, boolean | null>();
-    if (supplierNames.length > 0) {
-      let vendors: any[] | null = null;
-      const rv1 = await supabase
-        .from("vendors")
-        .select("company_name, category, vat_included")
-        .in("company_name", supplierNames);
-      if (!rv1.error) vendors = rv1.data ?? [];
-      else if (/vat_included/i.test(rv1.error.message)) {
-        const rv2 = await supabase
-          .from("vendors")
-          .select("company_name, category")
-          .in("company_name", supplierNames);
-        if (!rv2.error) vendors = (rv2.data ?? []).map((v: any) => ({ ...v, vat_included: null }));
-      }
-      for (const v of vendors ?? []) {
-        const name = String((v as any).company_name);
-        catMap.set(name, (v as any).category ?? null);
-        const vi = (v as any).vat_included;
-        vatIncMap.set(name, vi === true || vi === false ? vi : null);
-      }
-    }
-
-    for (const r of purchaseRows) {
-      const month = r.date.slice(0, 7);
-      const bucket = getBucket(month);
-      const vi = vatIncMap.get(r.supplier) ?? null;
-      const cat = catMap.get(r.supplier) ?? "";
-      const vat = calcVat(r.amount, r.vat, vi);
-
-      // VAT 포함 매입 · amount 가 총액 · 공급가액 = amount - vat
-      // VAT 별도 매입 · amount 가 공급가액 · 총액 = amount + vat
-      // 면세 (cat === "면세") · vat 를 0 처리 · 공급가액 = amount · 총액 = amount
-      let supply: number;
-      let gross: number;
-      let effectiveVat: number;
-      if (cat === "면세") {
-        effectiveVat = 0;
-        supply = r.amount;
-        gross = r.amount;
-      } else if (vi === true) {
-        effectiveVat = vat;
-        supply = r.amount - vat;
-        gross = r.amount;
-      } else {
-        // vi === false or null · 별도 과세 가정
-        effectiveVat = vat;
-        supply = r.amount;
-        gross = r.amount + vat;
-      }
-
-      bucket.purchaseGross += gross;
-      bucket.purchaseSupply += supply;
-      bucket.purchaseVat += effectiveVat;
-      if (cat !== "면세") {
-        bucket.purchaseDeductibleVat += effectiveVat;
-      }
-      bucket.purchaseRowCount += 1;
-    }
-
-    // ── 월 시퀀스 채우기 (from ~ to 사이 · 빈 월도 포함) ───────
-    const [fy, fm] = fromParam.slice(0, 7).split("-").map(Number);
-    const [ty, tm] = toParam.slice(0, 7).split("-").map(Number);
-    const monthList: string[] = [];
-    let cy = fy, cm = fm;
-    while (cy < ty || (cy === ty && cm <= tm)) {
-      monthList.push(`${cy}-${String(cm).padStart(2, "0")}`);
-      cm += 1;
-      if (cm > 12) { cm = 1; cy += 1; }
-      if (monthList.length > 60) break; // safety
-    }
-    for (const m of monthList) getBucket(m); // ensure empty months exist
-
-    const months = Array.from(monthsAgg.values())
-      .filter(b => monthList.includes(b.month))
-      .sort((a, b) => (a.month < b.month ? -1 : 1))
-      .map(b => ({
-        month: b.month,
-        salesTotal: Math.round(b.salesTotal),
-        salesVat: Math.round(b.salesVat),
-        salesSupply: Math.round(b.salesSupply),
-        salesRowCount: b.salesRowCount,
-        purchaseGross: Math.round(b.purchaseGross),
-        purchaseSupply: Math.round(b.purchaseSupply),
-        purchaseVat: Math.round(b.purchaseVat),
-        purchaseDeductibleVat: Math.round(b.purchaseDeductibleVat),
-        purchaseRowCount: b.purchaseRowCount,
-      }));
-
-    res.json({
-      from: fromParam,
-      to: toParam,
-      months,
-      warning: warnings.length > 0 ? warnings.join(" · ") : undefined,
-    });
-  } catch (err: any) {
-    console.error("[vat/monthly-summary] error:", err?.message);
-    res.status(500).json({ error: err?.message ?? "월별 부가세 요약 조회 실패" });
+  } catch (e: any) {
+    warnings.push(`매입 조회 실패: ${e?.message ?? "unknown"}`);
   }
-});
+
+  // 공급사 정보 lookup
+  const supplierNames = Array.from(new Set(purchaseRows.map(r => r.supplier).filter(Boolean)));
+  const catMap = new Map<string, string | null>();
+  const vatIncMap = new Map<string, boolean | null>();
+  if (supplierNames.length > 0) {
+    let vendors: any[] | null = null;
+    const rv1 = await supabase
+      .from("vendors")
+      .select("company_name, category, vat_included")
+      .in("company_name", supplierNames);
+    if (!rv1.error) vendors = rv1.data ?? [];
+    else if (/vat_included/i.test(rv1.error.message)) {
+      const rv2 = await supabase
+        .from("vendors")
+        .select("company_name, category")
+        .in("company_name", supplierNames);
+      if (!rv2.error) vendors = (rv2.data ?? []).map((v: any) => ({ ...v, vat_included: null }));
+    }
+    for (const v of vendors ?? []) {
+      const name = String((v as any).company_name);
+      catMap.set(name, (v as any).category ?? null);
+      const vi = (v as any).vat_included;
+      vatIncMap.set(name, vi === true || vi === false ? vi : null);
+    }
+  }
+
+  for (const r of purchaseRows) {
+    const month = r.date.slice(0, 7);
+    const bucket = getBucket(month);
+    const vi = vatIncMap.get(r.supplier) ?? null;
+    const cat = catMap.get(r.supplier) ?? "";
+    const vat = calcVat(r.amount, r.vat, vi);
+
+    // VAT 포함 매입 · amount 가 총액 · 공급가액 = amount - vat
+    // VAT 별도 매입 · amount 가 공급가액 · 총액 = amount + vat
+    // 면세 (cat === "면세") · vat 를 0 처리 · 공급가액 = amount · 총액 = amount
+    let supply: number;
+    let gross: number;
+    let effectiveVat: number;
+    if (cat === "면세") {
+      effectiveVat = 0;
+      supply = r.amount;
+      gross = r.amount;
+    } else if (vi === true) {
+      effectiveVat = vat;
+      supply = r.amount - vat;
+      gross = r.amount;
+    } else {
+      // vi === false or null · 별도 과세 가정
+      effectiveVat = vat;
+      supply = r.amount;
+      gross = r.amount + vat;
+    }
+
+    bucket.purchaseGross += gross;
+    bucket.purchaseSupply += supply;
+    bucket.purchaseVat += effectiveVat;
+    if (cat !== "면세") {
+      bucket.purchaseDeductibleVat += effectiveVat;
+    }
+    bucket.purchaseRowCount += 1;
+  }
+
+  // ── 월 시퀀스 채우기 (from ~ to 사이 · 빈 월도 포함) ───────
+  const [fy, fm] = fromParam.slice(0, 7).split("-").map(Number);
+  const [ty, tm] = toParam.slice(0, 7).split("-").map(Number);
+  const monthList: string[] = [];
+  let cy = fy, cm = fm;
+  while (cy < ty || (cy === ty && cm <= tm)) {
+    monthList.push(`${cy}-${String(cm).padStart(2, "0")}`);
+    cm += 1;
+    if (cm > 12) { cm = 1; cy += 1; }
+    if (monthList.length > 60) break; // safety
+  }
+  for (const m of monthList) getBucket(m); // ensure empty months exist
+
+  const months = Array.from(monthsAgg.values())
+    .filter(b => monthList.includes(b.month))
+    .sort((a, b) => (a.month < b.month ? -1 : 1))
+    .map(b => ({
+      month: b.month,
+      salesTotal: Math.round(b.salesTotal),
+      salesVat: Math.round(b.salesVat),
+      salesSupply: Math.round(b.salesSupply),
+      salesRowCount: b.salesRowCount,
+      purchaseGross: Math.round(b.purchaseGross),
+      purchaseSupply: Math.round(b.purchaseSupply),
+      purchaseVat: Math.round(b.purchaseVat),
+      purchaseDeductibleVat: Math.round(b.purchaseDeductibleVat),
+      purchaseRowCount: b.purchaseRowCount,
+    }));
+
+  res.json({
+    from: fromParam,
+    to: toParam,
+    months,
+    warning: warnings.length > 0 ? warnings.join(" · ") : undefined,
+  });
+}));
 
 export default router;
