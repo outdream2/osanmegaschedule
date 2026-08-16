@@ -3106,15 +3106,22 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         const fresh = await fetchContractWriterSettings(); // localStorage 캐시 자동 갱신
         if (!cancelled) {
           setWriterSettingsVersion(v => v + 1);
-          // DB 키 순서대로 직군 목록 재구성 (약사·매장·창고·기타 순 · 없으면 fallback)
-          const cats: ContractCategory[] = ([...JOB_CATEGORIES] as ContractCategory[]).filter(
-            k => k in fresh && typeof (fresh as unknown as Record<string, unknown>)[k] === "string"
-          );
+          // 2026-08-16 · #90 · JOB_CATEGORIES 하드코딩 → wageRates keys 동적 파생
+          //   universe · JOB_CATEGORIES ∪ Object.keys(wageRates) · 순서 유지 (JOB_CATEGORIES 먼저)
+          //   필터 · fresh 에 존재 + 문자열 값 (업무 텍스트) 인 것만
+          const universe: string[] = [
+            ...JOB_CATEGORIES,
+            ...Object.keys(settings.wageRates ?? {}).filter(k => !(JOB_CATEGORIES as readonly string[]).includes(k)),
+          ];
+          const cats = universe.filter(
+            k => k in fresh && typeof (fresh as unknown as Record<string, unknown>)[k] === "string",
+          ) as ContractCategory[];
           if (cats.length > 0) setJobCategories(cats);
         }
       } catch { /* silent · fallback = localStorage */ }
     })();
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 카테고리 → 업무 기본값 (writerSettingsVersion 변경 시에도 재계산)
