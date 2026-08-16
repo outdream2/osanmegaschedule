@@ -1,16 +1,43 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
+import { z } from "zod";
 import { supabase } from "../../../src/supabase/client";
 import { issueToken, clearToken, JwtPayload, getSession } from "../../middleware/requireAuth";
 
 const router = Router();
 
+// 2026-08-16 · #112-S7 · Zod 스키마 · Input Validation
+//   · employee_id 필드 = 실제로는 핸드폰번호 (로그인 ID 로 사용) · 하위호환 유지
+const LoginSchema = z.object({
+  employee_id: z.union([z.string(), z.number()]).optional(), // 실제: 핸드폰번호
+  password: z.string().min(1, "비밀번호를 입력해주세요").max(200),
+  rememberMe: z.boolean().optional(),
+});
+const VendorLoginSchema = z.object({
+  phone: z.string().min(1, "핸드폰번호를 입력해주세요").max(30),
+  password: z.string().min(1, "비밀번호를 입력해주세요").max(50),
+});
+const SetPasswordSchema = z.object({
+  employeeId: z.union([z.string(), z.number()]),
+  password: z.string().min(4, "비밀번호는 최소 4자 이상이어야 합니다").max(200),
+});
+const ChangePasswordSchema = z.object({
+  employeeId: z.union([z.string(), z.number()]),
+  currentPassword: z.string().min(1, "현재 비밀번호를 입력해주세요").max(200),
+  newPassword: z.string().min(4, "새 비밀번호는 최소 4자 이상이어야 합니다").max(200),
+});
+
+/** Zod 검증 실패 · 사용자용 첫 에러 메시지 반환 */
+function firstZodError(err: z.ZodError): string {
+  return err.issues[0]?.message ?? "잘못된 요청 형식";
+}
+
 router.post("/api/auth/login", async (req, res) => {
-  const { employee_id, password } = req.body ?? {};
+  const parsed = LoginSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: firstZodError(parsed.error) });
+  const { employee_id, password } = parsed.data;
   const phone = String(employee_id ?? "").replace(/[^0-9]/g, "");
-  if (!phone || !password) {
-    return res.status(400).json({ error: "전화번호와 비밀번호를 입력해주세요" });
-  }
+  if (!phone) return res.status(400).json({ error: "핸드폰번호를 입력해주세요" });
   try {
     const { data: emp, error } = await supabase
       .from("employees")
@@ -18,12 +45,12 @@ router.post("/api/auth/login", async (req, res) => {
       .eq("phone", phone)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    if (!emp) return res.status(401).json({ error: "전화번호를 찾을 수 없습니다", debug: "no_employee" });
+    if (!emp) return res.status(401).json({ error: "핸드폰번호를 찾을 수 없습니다", debug: "no_employee" });
     if (!emp.password_hash) return res.status(401).json({ error: "비밀번호가 설정되지 않았습니다", debug: "no_hash" });
     const ok = await bcrypt.compare(password, emp.password_hash);
     // password_hash 는 bcrypt 비교 후 즉시 제거 — 응답 객체에 절대 포함되지 않도록 방어
     delete (emp as any).password_hash;
-    if (!ok) return res.status(401).json({ error: "전화번호 또는 비밀번호가 올바르지 않습니다" });
+    if (!ok) return res.status(401).json({ error: "핸드폰번호 또는 비밀번호가 올바르지 않습니다" });
     const level: number = emp.level ?? 1;
     if (level === 0) return res.status(401).json({ error: "접근 권한이 없습니다", debug: "level_0" });
     const role = level >= 9 ? "superadmin" : level >= 2 ? "manager" : "employee";
@@ -41,16 +68,17 @@ router.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// 거래처 로그인 · 2026-08-09 규칙 기반 · 2026-08-16 사용자 재확정 · 전화번호 + "00" 유지
+// 거래처 로그인 · 2026-08-09 규칙 기반 · 2026-08-16 사용자 재확정 · 핸드폰번호 + "00" 유지
 //   · 관리자 비번 설정 필요 없음 · vendor.password_hash 조회·비교 X (규칙 기반)
 //   · 예: phone "010-1234-5678" · 로그인 비번 = "0101234567800"
 router.post("/api/auth/vendor-login", async (req, res) => {
-  const { phone, password } = req.body ?? {};
-  const cleanPhone = String(phone ?? "").replace(/[^0-9]/g, "");
-  const cleanPassword = String(password ?? "").replace(/[^0-9]/g, "");
-  if (!cleanPhone || !cleanPassword) {
-    return res.status(400).json({ error: "전화번호와 비밀번호를 입력해주세요" });
-  }
+  const parsed = VendorLoginSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: firstZodError(parsed.error) });
+  const { phone, password } = parsed.data;
+  const cleanPhone = String(phone).replace(/[^0-9]/g, "");
+  const cleanPassword = String(password).replace(/[^0-9]/g, "");
+  if (!cleanPhone) return res.status(400).json({ error: "핸드폰번호를 입력해주세요" });
+  if (!cleanPassword) return res.status(400).json({ error: "비밀번호를 입력해주세요" });
   try {
     const { data: vendor, error } = await supabase
       .from("vendors")
@@ -61,7 +89,7 @@ router.post("/api/auth/vendor-login", async (req, res) => {
     if (!vendor) return res.status(401).json({ error: "등록된 거래처를 찾을 수 없습니다" });
     const expected = cleanPhone + "00";
     if (cleanPassword !== expected) {
-      return res.status(401).json({ error: "전화번호 또는 비밀번호가 올바르지 않습니다" });
+      return res.status(401).json({ error: "핸드폰번호 또는 비밀번호가 올바르지 않습니다" });
     }
     try {
       issueToken(res, { sub: vendor.id, name: vendor.company_name, role: "vendor", level: 0 }, false);
@@ -87,10 +115,11 @@ router.post("/api/auth/set-password", async (req, res) => {
   const session = getSession(req);
   if (!session) return res.status(401).json({ error: "인증이 필요합니다" });
   if ((session.level ?? 0) < 9) return res.status(403).json({ error: "관리자(lv 9) 만 사용 가능합니다" });
-  const { employeeId, password } = req.body ?? {};
+  const parsed = SetPasswordSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: firstZodError(parsed.error) });
+  const { employeeId, password } = parsed.data;
   const idNum = typeof employeeId === "string" ? parseInt(employeeId) : employeeId;
-  if (!idNum || isNaN(idNum)) return res.status(400).json({ error: "valid employeeId is required" });
-  if (!password || password.length < 4) return res.status(400).json({ error: "password must be at least 4 characters" });
+  if (!idNum || isNaN(idNum)) return res.status(400).json({ error: "유효한 employeeId 가 필요합니다" });
   try {
     const password_hash = await bcrypt.hash(password, 10);
     const { error } = await supabase.from("employees").update({ password_hash }).eq("id", idNum);
@@ -140,13 +169,11 @@ router.get("/api/auth/me", (req, res) => {
 
 // 로그인한 직원 본인이 비밀번호 변경
 router.post("/api/auth/change-password", async (req, res) => {
-  const { employeeId, currentPassword, newPassword } = req.body ?? {};
+  const parsed = ChangePasswordSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: firstZodError(parsed.error) });
+  const { employeeId, currentPassword, newPassword } = parsed.data;
   const idNum = typeof employeeId === "string" ? parseInt(employeeId) : employeeId;
   if (!idNum || isNaN(idNum)) return res.status(400).json({ error: "유효한 직원 ID가 필요합니다" });
-  if (!currentPassword || typeof currentPassword !== "string")
-    return res.status(400).json({ error: "현재 비밀번호를 입력해주세요" });
-  if (!newPassword || typeof newPassword !== "string" || newPassword.length < 4)
-    return res.status(400).json({ error: "새 비밀번호는 최소 4자 이상이어야 합니다" });
   if (currentPassword === newPassword)
     return res.status(400).json({ error: "새 비밀번호가 현재 비밀번호와 동일합니다" });
   try {
