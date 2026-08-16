@@ -1,5 +1,7 @@
 // src/components/ReservationPage.tsx
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useState, useCallback, useEffect } from "react";
+import { api, ApiError } from "../../lib/apiClient";
 import {
   Calendar,
   Home,
@@ -143,14 +145,9 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
 
   const fetchMonthlyOff = useCallback(async (year: number, month: number) => {
     try {
-      const res = await fetch(`/api/staff-monthly?year=${year}&month=${month}`);
-      if (res.ok) {
-        const data = await res.json();
-        setMonthlyOff(data ?? {});
-      }
-    } catch {
-      // silently ignore
-    }
+      const { data } = await api.get<any>(`/api/staff-monthly?year=${year}&month=${month}`);
+      setMonthlyOff(data ?? {});
+    } catch { /* silent */ }
   }, []);
 
   // Fetch monthly off when month changes
@@ -170,28 +167,17 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
     setSlotsLoading(true);
     setReservations([]);
     try {
-      const res = await fetch(`/api/reservations?date=${ymd}`);
-      if (res.ok) {
-        const data = await res.json();
-        setReservations(Array.isArray(data) ? data : []);
-      }
-    } catch {
-      setReservations([]);
-    } finally {
-      setSlotsLoading(false);
-    }
+      const { data } = await api.get<any[]>(`/api/reservations?date=${ymd}`);
+      setReservations(Array.isArray(data) ? data : []);
+    } catch { setReservations([]); }
+    finally { setSlotsLoading(false); }
   }, []);
 
   const fetchBlockedSlots = useCallback(async (ymd: string) => {
     try {
-      const res = await fetch(`/api/blocked-slots?date=${ymd}`);
-      if (res.ok) {
-        const data = await res.json();
-        setBlockedSlots(data ?? {});
-      }
-    } catch {
-      setBlockedSlots({});
-    }
+      const { data } = await api.get<any>(`/api/blocked-slots?date=${ymd}`);
+      setBlockedSlots(data ?? {});
+    } catch { setBlockedSlots({}); }
   }, []);
 
   const toggleBlockedSlot = async (staffName: string, time: string) => {
@@ -211,11 +197,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
     });
     setTogglingSlot(key);
     try {
-      await fetch("/api/blocked-slots", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: selectedDate, staffName, time, blocked: !currentlyBlocked }),
-      });
+      await api.post("/api/blocked-slots", { date: selectedDate, staffName, time, blocked: !currentlyBlocked });
     } catch {
       // Revert on failure
       setBlockedSlots(prev => {
@@ -236,16 +218,10 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
   const fetchStaffAvailability = useCallback(async (ymd: string) => {
     setAvailLoading(true);
     try {
-      const res = await fetch(`/api/staff-availability?date=${ymd}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) setStaffAvailability(data);
-      }
-    } catch {
-      // silently ignore — treat all as available
-    } finally {
-      setAvailLoading(false);
-    }
+      const { data } = await api.get<any[]>(`/api/staff-availability?date=${ymd}`);
+      if (Array.isArray(data)) setStaffAvailability(data);
+    } catch { /* silent · 전부 가능으로 처리 */ }
+    finally { setAvailLoading(false); }
   }, []);
 
   useEffect(() => {
@@ -297,21 +273,16 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
     setSubmitting(true);
     try {
       const finalNote = `[대상:${modalTarget}]${note ? ` ${note}` : ""}`;
-      const res = await fetch("/api/reservations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: selectedDate, time: modalTime, company, contactName, phone, purpose, note: finalNote, ...(isVendor && authSession?.employeeId ? { vendorId: authSession.employeeId } : {}) }),
+      await api.post("/api/reservations", {
+        date: selectedDate, time: modalTime, company, contactName, phone, purpose, note: finalNote,
+        ...(isVendor && authSession?.employeeId ? { vendorId: authSession.employeeId } : {}),
       });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error || "예약 중 오류가 발생했습니다.");
-        return;
-      }
       setSubmitted(true);
       setModalTime(null);
       fetchReservations(selectedDate);
-    } catch {
-      setError("서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.");
+    } catch (e: unknown) {
+      if (e instanceof ApiError) setError(e.message);
+      else setError("서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setSubmitting(false);
     }

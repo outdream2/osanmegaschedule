@@ -1,4 +1,6 @@
+// 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { api } from "../../lib/apiClient";
 import { TIMING } from "../../constants/timing";
 import { Package, Search, X } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
@@ -101,12 +103,12 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
     setError(null);
 
     try {
-      const res = await fetch(`/api/stock-check?q=${encodeURIComponent(trimmed)}`, { signal: ac.signal });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "오류");
+      const { data } = await api.get<any>(`/api/stock-check?q=${encodeURIComponent(trimmed)}`, { signal: ac.signal });
       setResults(data);
     } catch (e: any) {
-      if (e.name !== "AbortError") setError("검색 중 오류가 발생했습니다.");
+      // axios cancel · 이름 CanceledError · abort 시 · 그 외만 노출
+      const isCancel = e?.name === "CanceledError" || e?.name === "AbortError" || e?.code === "ERR_CANCELED";
+      if (!isCancel) setError("검색 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
