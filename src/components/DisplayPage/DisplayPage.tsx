@@ -2220,18 +2220,20 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                     </div>
                   </div>{/* end SECTION 2 동측 윙 */}
 
-                  {/* 실시간 진열 보충 요청 현황 — 매장구역도 전체 아래 · 전체 폭 */}
-                  <DisplayRequestPanel
-                    filteredReqs={filteredReqs}
-                    requests={requests}
-                    reqFilter={reqFilter}
-                    setReqFilter={setReqFilter}
-                    setRequests={setRequests}
-                    formatRel={formatRel}
-                  />
-
                 </div>
               </div>{/* end overflow-x-auto */}
+
+              {/* 2026-08-16 · 사용자 지시 · 진열요청 목록 · 매장구역도 접힘 무관 · 항상 표시 · 아래 */}
+              <div className="hidden sm:block mt-3">
+                <DisplayRequestPanel
+                  filteredReqs={filteredReqs}
+                  requests={requests}
+                  reqFilter={reqFilter}
+                  setReqFilter={setReqFilter}
+                  setRequests={setRequests}
+                  formatRel={formatRel}
+                />
+              </div>
             </div>
           </section>
 

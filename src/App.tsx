@@ -29,6 +29,8 @@ import { prefetchProducts } from "./lib/productsCache";
 import { loadZoneLabelsFromServer } from "./constants/zoneLabels";
 // 2026-08-11 · 사이드바 V2 · feature flag (VITE_SIDEBAR_V2=true) · OFF 면 기존 헤더 그대로
 import { useSidebarEnabled, useSidebarWidth } from "./hooks/useSidebar";
+// 2026-08-16 · #113 · React lazy chunk 로드 실패 whitescreen 방지
+import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import { SidebarProvider, SidebarInset } from "./components/ui/sidebar";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { SideNav } from "./components/layout/SideNav";
@@ -390,16 +392,19 @@ export default function App() {
     );
   }
 
+  // 2026-08-16 · #113 · lazy chunk 로드 실패 whitescreen 방지 · pageContent 를 ErrorBoundary 로 wrap
+  const wrappedContent = <ErrorBoundary>{pageContent}</ErrorBoundary>;
+
   // 2026-08-11 · 사이드바 V2 · flag ON 시만 SidebarProvider 로 감쌈 · OFF (기본) 는 기존 그대로
   // 2026-08-11 · 사이드바 V2 · 데스크탑만 사이드바 · 모바일은 기존 상단 헤더 + BottomNav (사용자 지시)
   if (sidebarEnabled) {
-    return <SidebarLayoutWrapper pageContent={pageContent} authSession={authSession} activePage={page as AppNavPage} navigate={navigate} handleLogout={handleLogout} timeoutWarningOverlay={timeoutWarningOverlay} />;
+    return <SidebarLayoutWrapper pageContent={wrappedContent} authSession={authSession} activePage={page as AppNavPage} navigate={navigate} handleLogout={handleLogout} timeoutWarningOverlay={timeoutWarningOverlay} />;
   }
 
   return (
     <>
       <MobileOnlyGate pageKey={page} authSession={authSession}>
-        {pageContent}
+        {wrappedContent}
       </MobileOnlyGate>
       <AppFooter />
       {timeoutWarningOverlay}
