@@ -1,6 +1,7 @@
 // src/components/MyPage/MyPage.tsx
+// 2026-08-16 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useState } from "react";
-import axios from "axios";
+import { api } from "../../lib/apiClient";
 import { User, Phone, Briefcase, Calendar, Award, Save, Loader2, Lock, MapPin, Eye, EyeOff, Check, Mail, IdCard, CreditCard } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession, Employee } from "../../types";
@@ -26,8 +27,8 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
     setLoading(true);
     try {
       const now = new Date();
-      const res = await axios.get(`/api/schedules?year=${now.getFullYear()}&month=${now.getMonth() + 1}`);
-      const list: Employee[] = Array.isArray(res.data?.employees) ? res.data.employees : Array.isArray(res.data) ? res.data : [];
+      const { data } = await api.get<any>(`/api/schedules?year=${now.getFullYear()}&month=${now.getMonth() + 1}`);
+      const list: Employee[] = Array.isArray(data?.employees) ? data.employees : Array.isArray(data) ? data : [];
       const found = list.find(e => e.id === authSession.employeeId) ?? null;
       setMe(found);
     } finally {
@@ -75,17 +76,15 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
     if (currentPw === newPw) { showToast("새 비밀번호가 현재와 동일합니다", 2500); return; }
     setSavingPw(true);
     try {
-      const res = await axios.post("/api/auth/change-password", {
+      await api.post("/api/auth/change-password", {
         employeeId: authSession.employeeId,
         currentPassword: currentPw,
         newPassword: newPw,
       });
-      if (res.status === 200) {
-        setCurrentPw(""); setNewPw(""); setConfirmPw("");
-        showToast("비밀번호가 변경되었습니다");
-      }
+      setCurrentPw(""); setNewPw(""); setConfirmPw("");
+      showToast("비밀번호가 변경되었습니다");
     } catch (e: any) {
-      showToast(e?.response?.data?.error ?? "비밀번호 변경 실패", 3000);
+      showToast(e?.message ?? "비밀번호 변경 실패", 3000);
     } finally {
       setSavingPw(false);
     }

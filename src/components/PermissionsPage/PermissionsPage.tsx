@@ -1,5 +1,6 @@
+// 2026-08-16 · apiClient 마이그레이션
 import React, { useEffect, useState, useCallback, useMemo } from "react";
-import axios from "axios";
+import { api } from "../../lib/apiClient";
 import { Shield, Check, Loader2, AlertCircle, Settings as SettingsIcon, Users, IdCard, Construction, Plus, Trash2, GripVertical, Save, Pencil, Eye, EyeOff } from "lucide-react";
 import { invalidatePagePermissions } from "../../hooks/usePagePermissions";
 import { useSidebarEnabled, invalidateSidebarEnabled } from "../../hooks/useSidebar";
@@ -93,7 +94,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
   const toggleSidebarEnabled = useCallback(async () => {
     setSidebarSaving(true);
     try {
-      await axios.post("/api/settings", { key: "sidebar_enabled", value: !sidebarEnabled }, { withCredentials: true });
+      await api.post("/api/settings", { key: "sidebar_enabled", value: !sidebarEnabled });
       invalidateSidebarEnabled();
       setSaveToast(!sidebarEnabled ? "사이드바 활성" : "사이드바 비활성 · 공통헤더로 전환");
     } catch (err: any) {
@@ -231,7 +232,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
   const [employees, setEmployees] = useState<Employee[]>([]);
   useEffect(() => {
     const now = new Date();
-    axios.get(`/api/schedules?year=${now.getFullYear()}&month=${now.getMonth() + 1}`)
+    api.get<any>(`/api/schedules?year=${now.getFullYear()}&month=${now.getMonth() + 1}`)
       .then(r => {
         const list = Array.isArray(r.data?.employees) ? r.data.employees : Array.isArray(r.data) ? r.data : [];
         setEmployees(list);
@@ -249,8 +250,8 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     : authSession?.role === "employee" ? 1 : 0);
 
   useEffect(() => {
-    axios.get("/api/permissions")
-      .then(r => setPerms({ ...DEFAULT_PERMISSIONS, ...r.data }))
+    api.get<Partial<PagePermissions>>("/api/permissions")
+      .then(r => setPerms({ ...DEFAULT_PERMISSIONS, ...(r.data ?? {}) }))
       .catch(() => setLoadError("권한 설정을 불러오지 못했습니다."));
   }, []);
 
@@ -281,7 +282,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     };
     setPerms(updated);
     try {
-      await axios.post("/api/permissions", { permissions: updated, employeeId: authSession?.employeeId }, { withCredentials: true });
+      await api.post("/api/permissions", { permissions: updated, employeeId: authSession?.employeeId });
       invalidatePagePermissions();
     } catch (err: any) {
       setPerms(perms); // revert
@@ -303,7 +304,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     };
     setPerms(updated);
     try {
-      await axios.post("/api/permissions", { permissions: updated, employeeId: authSession?.employeeId }, { withCredentials: true });
+      await api.post("/api/permissions", { permissions: updated, employeeId: authSession?.employeeId });
       invalidatePagePermissions();
       setSaveToast(!currentHidden ? "숨김 처리됨 · 사이드바에서 제외" : "다시 노출됨");
     } catch (err: any) {
@@ -330,7 +331,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     setSaving(saveKey);
     setSavedKeys(s => { const n = new Set(s); n.delete(saveKey); return n; });
     try {
-      await axios.post("/api/permissions", { permissions: updated, employeeId: authSession?.employeeId }, { withCredentials: true });
+      await api.post("/api/permissions", { permissions: updated, employeeId: authSession?.employeeId });
       invalidatePagePermissions();
       setSavedKeys(s => new Set(s).add(saveKey));
     } catch (err: any) {
@@ -601,7 +602,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
               type="button"
               onClick={async () => {
                 try {
-                  await axios.post("/api/permissions", { permissions: perms, employeeId: authSession?.employeeId }, { withCredentials: true });
+                  await api.post("/api/permissions", { permissions: perms, employeeId: authSession?.employeeId });
                   setSaveToast("저장되었습니다");
                 } catch (err: any) {
                   const status = err?.response?.status;

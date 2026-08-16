@@ -1,4 +1,4 @@
-// 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
+// 2026-08-16 · asyncHandler + HttpError + shared DTO 프레임워크
 import { Router } from "express";
 import express from "express";
 import XLSX from "xlsx";
@@ -9,6 +9,7 @@ import { sanitizeOrValue } from "../../utils/sanitize";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { HttpError, badRequest, forbidden } from "../../middleware/errorHandler";
+import type { HiddenProductsResponse } from "../../../src/shared/dtos/products";
 
 const router = Router();
 
@@ -303,7 +304,8 @@ router.get("/api/products/hidden", asyncHandler(async (_req, res) => {
     throw new HttpError(500, error.message);
   }
   res.setHeader("Cache-Control", "no-store");
-  res.json(Array.isArray(data) ? data : []);
+  const body: HiddenProductsResponse = (Array.isArray(data) ? data : []) as any;
+  res.json(body);
 }));
 
 router.get("/api/products/:code", asyncHandler(async (req, res) => {
