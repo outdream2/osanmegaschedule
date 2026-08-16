@@ -91,17 +91,18 @@ const TABS: TabDef[] = DERIVED_TOP_TABS.map((t: DerivedTopTab): TabDef => ({
 }));
 
 // 2026-08-06 · 랜딩 파스텔 톤 통일 · 활성 탭: 파스텔 배경 + 진한 텍스트 + border (흰 배경+진한gradient 제거)
+// 2026-08-17 · 사용자 지시 · 헤더 제목 색깔 조금만 진하게 · inactive 500→600 · active 700→800
 const TAB_COLOR_MAP: Record<string, { activeBg: string; activeText: string; inactiveText: string; inactiveHoverText: string; }> = {
-  slate:   { activeBg: "bg-zinc-100 border border-zinc-300",     activeText: "text-zinc-800",   inactiveText: "text-zinc-500",   inactiveHoverText: "hover:text-zinc-700"   },
-  blue:    { activeBg: "bg-blue-100 border border-blue-300",       activeText: "text-blue-800",    inactiveText: "text-blue-500",    inactiveHoverText: "hover:text-blue-700"    },
-  red:     { activeBg: "bg-red-100 border border-red-300",         activeText: "text-red-700",     inactiveText: "text-red-500",     inactiveHoverText: "hover:text-red-700"     },
-  sky:     { activeBg: "bg-sky-100 border border-sky-300",         activeText: "text-sky-700",     inactiveText: "text-sky-500",     inactiveHoverText: "hover:text-sky-700"     },
-  indigo:  { activeBg: "bg-indigo-100 border border-indigo-300",   activeText: "text-indigo-700",  inactiveText: "text-indigo-500",  inactiveHoverText: "hover:text-indigo-700"  },
-  orange:  { activeBg: "bg-orange-100 border border-orange-300",   activeText: "text-orange-700",  inactiveText: "text-orange-500",  inactiveHoverText: "hover:text-orange-700"  },
-  emerald: { activeBg: "bg-emerald-100 border border-emerald-300", activeText: "text-emerald-700", inactiveText: "text-emerald-500", inactiveHoverText: "hover:text-emerald-700" },
-  violet:  { activeBg: "bg-violet-100 border border-violet-300",   activeText: "text-violet-700",  inactiveText: "text-violet-500",  inactiveHoverText: "hover:text-violet-700"  },
-  amber:   { activeBg: "bg-amber-100 border border-amber-300",     activeText: "text-amber-800",   inactiveText: "text-amber-600",   inactiveHoverText: "hover:text-amber-800"   },
-  cyan:    { activeBg: "bg-cyan-100 border border-cyan-300",       activeText: "text-cyan-700",    inactiveText: "text-cyan-500",    inactiveHoverText: "hover:text-cyan-700"    },
+  slate:   { activeBg: "bg-zinc-100 border border-zinc-300",     activeText: "text-zinc-900",   inactiveText: "text-zinc-700",   inactiveHoverText: "hover:text-zinc-900"   },
+  blue:    { activeBg: "bg-blue-100 border border-blue-300",       activeText: "text-blue-900",    inactiveText: "text-blue-700",    inactiveHoverText: "hover:text-blue-900"    },
+  red:     { activeBg: "bg-red-100 border border-red-300",         activeText: "text-red-900",     inactiveText: "text-red-700",     inactiveHoverText: "hover:text-red-900"     },
+  sky:     { activeBg: "bg-sky-100 border border-sky-300",         activeText: "text-sky-900",     inactiveText: "text-sky-700",     inactiveHoverText: "hover:text-sky-900"     },
+  indigo:  { activeBg: "bg-indigo-100 border border-indigo-300",   activeText: "text-indigo-900",  inactiveText: "text-indigo-700",  inactiveHoverText: "hover:text-indigo-900"  },
+  orange:  { activeBg: "bg-orange-100 border border-orange-300",   activeText: "text-orange-900",  inactiveText: "text-orange-700",  inactiveHoverText: "hover:text-orange-900"  },
+  emerald: { activeBg: "bg-emerald-100 border border-emerald-300", activeText: "text-emerald-900", inactiveText: "text-emerald-700", inactiveHoverText: "hover:text-emerald-900" },
+  violet:  { activeBg: "bg-violet-100 border border-violet-300",   activeText: "text-violet-900",  inactiveText: "text-violet-700",  inactiveHoverText: "hover:text-violet-900"  },
+  amber:   { activeBg: "bg-amber-100 border border-amber-300",     activeText: "text-amber-900",   inactiveText: "text-amber-700",   inactiveHoverText: "hover:text-amber-900"   },
+  cyan:    { activeBg: "bg-cyan-100 border border-cyan-300",       activeText: "text-cyan-900",    inactiveText: "text-cyan-700",    inactiveHoverText: "hover:text-cyan-900"    },
 };
 
 // 경영관리 탭이 활성인 페이지들 (통합 페이지 + 서브 페이지들 · 헤더 활성 표시용)
