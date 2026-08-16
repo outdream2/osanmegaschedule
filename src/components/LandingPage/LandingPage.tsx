@@ -1,6 +1,7 @@
 // src/components/LandingPage.tsx
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import axios from "axios";
+// 2026-08-16 · apiClient 마이그레이션
+import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useSettings } from "../../hooks/useSettings";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
@@ -527,16 +528,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     setVendorLoading(true);
     setVendorError(null);
     try {
-      const res = await axios.post("/api/auth/vendor-login", { phone, password: vendorPassword });
-      const { id, name, contactName, role, level } = res.data ?? {};
+      const { data } = await api.post<{ id?: number; name?: string; contactName?: string; role?: string; level?: number }>(
+        "/api/auth/vendor-login",
+        { phone, password: vendorPassword },
+      );
+      const { id, name, contactName, level } = data ?? {};
       if (!id) { setVendorError("로그인에 실패했습니다."); setVendorLoading(false); return; }
       setVendorLoginOpen(false);
       setVendorPassword("");
-      const auth: AuthSession = { role: "vendor", employeeId: id, employeeName: name, employeeRank: contactName || undefined, level: level ?? 0 };
+      const auth: AuthSession = { role: "vendor", employeeId: id, employeeName: name ?? "", employeeRank: contactName || undefined, level: level ?? 0 };
       onAuthOnly?.(auth);
-    } catch (err: any) {
-      const status = err?.response?.status;
-      setVendorError(status === 401 || status === 400 ? (err.response?.data?.error ?? "핸드폰번호 또는 비밀번호가 올바르지 않습니다") : "로그인 중 오류가 발생했습니다.");
+    } catch (err: unknown) {
+      const isApi = err instanceof ApiError;
+      const status = isApi ? err.status : 0;
+      setVendorError(status === 401 || status === 400 ? (isApi ? err.message : "핸드폰번호 또는 비밀번호가 올바르지 않습니다") : "로그인 중 오류가 발생했습니다.");
       setVendorPassword("");
     } finally {
       setVendorLoading(false);
@@ -564,11 +569,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     setEmpLoading(true);
     setEmpError(null);
     try {
-      const res = await axios.post("/api/auth/login", {
-        employee_id: phone,
-        password: empPassword,
-      });
-      const { id, name, role, level, rank } = res.data ?? {};
+      const { data } = await api.post<{ id?: number; name?: string; role?: string; level?: number; rank?: string | null }>(
+        "/api/auth/login",
+        { employee_id: phone, password: empPassword, rememberMe: rememberMe || undefined },
+      );
+      const { id, name, role, level, rank } = data ?? {};
       if (!id) {
         setEmpError("핸드폰번호 또는 비밀번호가 올바르지 않습니다");
         setEmpLoading(false);
@@ -587,10 +592,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       const authRole: AuthRole = (validRoles as readonly string[]).includes(role) ? (role as AuthRole) : "employee";
       const auth: AuthSession = { role: authRole, employeeId: id, employeeName: name, level: level ?? 1, employeeRank: rank ?? undefined, rememberMe: rememberMe || undefined };
       onAuthOnly?.(auth);
-    } catch (err: any) {
-      const status = err?.response?.status;
+    } catch (err: unknown) {
+      const isApi = err instanceof ApiError;
+      const status = isApi ? err.status : 0;
       if (status === 401 || status === 400) {
-        setEmpError("핸드폰번호 또는 비밀번호가 올바르지 않습니다");
+        setEmpError(isApi ? err.message : "핸드폰번호 또는 비밀번호가 올바르지 않습니다");
       } else {
         setEmpError("로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
       }
@@ -602,28 +608,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
   const fetchImportLog = async () => {
     try {
-      const res = await axios.get("/api/settings?key=product_import_log");
-      const logs = Array.isArray(res.data?.value) ? res.data.value : [];
-      setImportLog(logs);
+      const { data } = await api.get<{ value?: unknown }>("/api/settings?key=product_import_log");
+      const logs = Array.isArray(data?.value) ? data.value : [];
+      setImportLog(logs as any);
     } catch { setImportLog([]); }
   };
 
   const handleClearImportLog = async () => {
     if (!await confirm({ message: "임포트 이력을 모두 삭제할까요?", danger: true })) return;
-    await axios.delete("/api/product-import-log");
+    await api.del("/api/product-import-log");
     setImportLog([]);
   };
 
   const fetchStockImportLog = async () => {
     try {
-      const res = await axios.get("/api/stock-import-log");
-      setStockImportLog(Array.isArray(res.data) ? res.data : []);
+      const { data } = await api.get<unknown>("/api/stock-import-log");
+      setStockImportLog(Array.isArray(data) ? data as any : []);
     } catch { setStockImportLog([]); }
   };
 
   const handleClearStockImportLog = async () => {
     if (!await confirm({ message: "재고 임포트 이력을 모두 삭제할까요?", danger: true })) return;
-    await axios.delete("/api/stock-import-log");
+    await api.del("/api/stock-import-log");
     setStockImportLog([]);
   };
 
@@ -652,12 +658,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       params.set("period_type", stockPeriodType);
       const buf = await stockUploadFile.arrayBuffer();
       // 1차 시도: force 없이 · 서버가 기존 스냅샷 감지하면 409 응답
-      let res;
+      let res: { data: any };
       try {
-        res = await axios.post(`/api/upload-stock?${params}`, buf, { headers: { "Content-Type": "application/octet-stream" } });
-      } catch (err: any) {
-        if (err?.response?.status === 409) {
-          const j = err.response.data ?? {};
+        res = await api.post<any>(`/api/upload-stock?${params}`, buf, { headers: { "Content-Type": "application/octet-stream" } });
+      } catch (err: unknown) {
+        if (err instanceof ApiError && err.status === 409) {
+          const j = (err.data as any) ?? {};
           const ok = await confirm({
             message:
               `기간 ${j.period?.from ?? "?"} ~ ${j.period?.to ?? "?"} 에 ` +
@@ -671,7 +677,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             return;
           }
           params.set("force", "true");
-          res = await axios.post(`/api/upload-stock?${params}`, buf, { headers: { "Content-Type": "application/octet-stream" } });
+          res = await api.post<any>(`/api/upload-stock?${params}`, buf, { headers: { "Content-Type": "application/octet-stream" } });
         } else {
           throw err;
         }
@@ -684,8 +690,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
         snapshot_date: res.data.snapshot_date,
       });
       await fetchStockImportLog();
-    } catch (err: any) {
-      setStockUploadResult({ ok: false, msg: err?.response?.data?.error ?? "업로드 실패" });
+    } catch (err: unknown) {
+      const msg = err instanceof ApiError ? err.message : (err as any)?.message ?? "업로드 실패";
+      setStockUploadResult({ ok: false, msg });
     } finally {
       setStockUploadLoading(false);
     }
@@ -700,13 +707,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     try {
       const params = `managerId=${authSession!.employeeId}`;
       const buf = await uploadFile.arrayBuffer();
-      const res = await axios.post(`/api/upload-products?${params}`, buf, {
+      const { data } = await api.post<{ count?: number }>(`/api/upload-products?${params}`, buf, {
         headers: { "Content-Type": "application/octet-stream" },
       });
-      setUploadResult({ ok: true, count: res.data.count });
+      setUploadResult({ ok: true, count: data?.count ?? 0 });
       await fetchImportLog();
-    } catch (err: any) {
-      setUploadResult({ ok: false, msg: err?.response?.data?.error ?? "업로드 실패" });
+    } catch (err: unknown) {
+      const msg = err instanceof ApiError ? err.message : (err as any)?.message ?? "업로드 실패";
+      setUploadResult({ ok: false, msg });
     } finally {
       setUploadLoading(false);
     }
@@ -721,18 +729,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     try {
       const params = `managerId=${authSession!.employeeId}`;
       const buf = await vendorUploadFile.arrayBuffer();
-      const res = await axios.post(`/api/upload-vendors?${params}`, buf, {
-        headers: { "Content-Type": "application/octet-stream" },
-      });
+      const { data } = await api.post<{ count?: number; inserted?: number; updated?: number; failed?: number }>(
+        `/api/upload-vendors?${params}`, buf,
+        { headers: { "Content-Type": "application/octet-stream" } },
+      );
       setVendorUploadResult({
         ok: true,
-        count: res.data.count,
-        inserted: res.data.inserted,
-        updated: res.data.updated,
-        failed: res.data.failed,
+        count: data?.count ?? 0,
+        inserted: data?.inserted ?? 0,
+        updated: data?.updated ?? 0,
+        failed: data?.failed ?? 0,
       });
-    } catch (err: any) {
-      setVendorUploadResult({ ok: false, msg: err?.response?.data?.error ?? "업로드 실패" });
+    } catch (err: unknown) {
+      const msg = err instanceof ApiError ? err.message : (err as any)?.message ?? "업로드 실패";
+      setVendorUploadResult({ ok: false, msg });
     } finally {
       setVendorUploadLoading(false);
     }
