@@ -1,10 +1,11 @@
 // src/components/MyPage/MyPage.tsx
 import React, { useCallback, useEffect, useState } from "react";
 import axios from "axios";
-import { User, Phone, Briefcase, Calendar, Award, Save, Loader2, Lock, MapPin, Eye, EyeOff, Check } from "lucide-react";
+import { User, Phone, Briefcase, Calendar, Award, Save, Loader2, Lock, MapPin, Eye, EyeOff, Check, Mail, IdCard, CreditCard } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession, Employee } from "../../types";
 import { updateEmployee } from "../../lib/employeeApi";
+import { AddressSearchModal } from "../common/AddressSearchModal";
 
 interface MyPageProps {
   authSession: AuthSession | null;
@@ -42,6 +43,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
   // ─────────── 주소 편집 ───────────
   const [addressDraft, setAddressDraft] = useState<string>("");
   const [savingAddress, setSavingAddress] = useState(false);
+  const [addrModalOpen, setAddrModalOpen] = useState(false); // 2026-08-16 · Daum 우편번호 검색
   useEffect(() => { if (me) setAddressDraft(me.address ?? ""); }, [me]);
 
   const saveAddress = async () => {
@@ -130,13 +132,17 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
           ) : (
             <>
               <ReadRow icon={<User size={14} />} label="이름" value={me.name} />
+              <ReadRow icon={<IdCard size={14} />} label="사원번호" value={(me as any).employee_number ?? "-"} mono />
               <ReadRow icon={<Award size={14} />} label="직급" value={me.rank ?? "-"} />
               <ReadRow icon={<Briefcase size={14} />} label="구분" value={me.position} />
               <ReadRow icon={<Briefcase size={14} />} label="고용형태" value={me.employmentType} />
+              <ReadRow icon={<Briefcase size={14} />} label="근무지" value={me.workplace} />
               <ReadRow icon={<Calendar size={14} />} label="입사일" value={me.hireDate} mono />
               <ReadRow icon={<User size={14} />} label="성별" value={me.gender ?? "-"} />
+              <ReadRow icon={<Calendar size={14} />} label="생년월일" value={(me as any).birthDate ?? "-"} mono />
               <ReadRow icon={<Phone size={14} />} label="핸드폰번호" value={me.phone ?? "-"} mono />
-              <ReadRow icon={<Briefcase size={14} />} label="근무지" value={me.workplace} />
+              <ReadRow icon={<Mail size={14} />} label="이메일" value={(me as any).email ?? "-"} />
+              <ReadRow icon={<CreditCard size={14} />} label="계좌" value={(me as any).employeeBankAccount ?? "-"} mono />
               <ReadRow icon={<Calendar size={14} />} label="연차일수" value={`${me.annual_leave_days ?? "-"}일`} mono last />
             </>
           )}
@@ -148,13 +154,22 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
             <MapPin size={12} /> 주소
           </div>
           <div className="p-4 flex flex-col gap-2">
-            <input
-              type="text"
-              value={addressDraft}
-              onChange={e => setAddressDraft(e.target.value)}
-              placeholder="예: 경기도 오산시 …"
-              className="w-full px-3 py-2 text-[13px] border border-zinc-300 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-            />
+            <div className="flex gap-1.5 items-center">
+              <input
+                type="text"
+                value={addressDraft}
+                onChange={e => setAddressDraft(e.target.value)}
+                placeholder="예: 경기도 오산시 …"
+                className="flex-1 min-w-0 px-3 py-2 text-[13px] border border-zinc-300 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              />
+              <button
+                type="button"
+                onClick={() => setAddrModalOpen(true)}
+                className="shrink-0 h-9 px-2.5 rounded-lg border border-indigo-400 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap"
+              >
+                주소 검색
+              </button>
+            </div>
             <div className="flex items-center justify-end gap-2">
               <button
                 type="button"
@@ -167,6 +182,11 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
             </div>
           </div>
         </div>
+        <AddressSearchModal
+          open={addrModalOpen}
+          onClose={() => setAddrModalOpen(false)}
+          onSelect={(data) => setAddressDraft(data.formatted)}
+        />
 
         {/* 비밀번호 변경 카드 */}
         <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
