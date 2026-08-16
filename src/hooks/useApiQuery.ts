@@ -2,8 +2,9 @@
 // 사용:
 //   const { data, loading, error, refetch } = useApiQuery<Employee[]>("/api/employees");
 //   const { data } = useApiQuery("/api/settings?key=brand_identity", { skip: !ready });
+// 2026-08-16 · apiClient 로 통일 · 401 refresh + 에러 정규화 (ApiError) 자동
 import { useCallback, useEffect, useRef, useState } from "react";
-import axios from "axios";
+import { api, ApiError } from "../lib/apiClient";
 
 interface Options<T> {
   /** true 면 fetch skip · 조건부 fetch 용 */
@@ -33,12 +34,13 @@ export function useApiQuery<T = unknown>(url: string, opts: Options<T> = {}): Qu
   const doFetch = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const res = await axios.get(url, { withCredentials: true });
+      const res = await api.get(url);
       const transformed = optsRef.current.select ? optsRef.current.select(res.data) : (res.data as T);
       setData(transformed);
-    } catch (err: any) {
-      const status = err?.response?.status;
-      const msg = err?.response?.data?.error ?? err?.message ?? "네트워크 오류";
+    } catch (err) {
+      const isApi = err instanceof ApiError;
+      const status = isApi ? err.status : 0;
+      const msg = isApi ? err.message : (err as any)?.message ?? "네트워크 오류";
       setError(msg);
       if (status === 401 && optsRef.current.onUnauthorized) optsRef.current.onUnauthorized();
     } finally {

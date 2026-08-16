@@ -3,7 +3,11 @@ import {createRoot} from 'react-dom/client';
 import axios from 'axios';
 import App from './App.tsx';
 import { ConfirmProvider } from './hooks/useConfirm';
+import { installErrorReporter } from './lib/errorReporter';
 import './index.css';
+
+// 2026-08-16 · 프레임워크 · 클라이언트 에러 리포터 (window.error + unhandledrejection → /api/client-errors)
+installErrorReporter();
 
 // 2026-08-16 · #112-G · requireAuth 재활성화 후 · 모든 axios 요청 · 인증 쿠키 자동 포함
 //   · same-origin 은 브라우저 기본으로 전송하나 · 명시로 안전 확보 (cross-origin 대비)

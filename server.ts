@@ -4,6 +4,9 @@ import "dotenv/config";
 //   dotenv 다음 · supabase client import 전에 로드 · process.env 를 파일 값으로 덮어씀
 import { loadTenantConfig } from "./server/lib/tenantConfig";
 loadTenantConfig();
+// 2026-08-16 · 프레임워크 · 부팅 시 필수 env 검증 (미설정 시 fail-fast)
+import { validateEnv } from "./server/lib/envValidation";
+validateEnv();
 import express from "express";
 import http from "http";
 import path from "path";
@@ -26,6 +29,8 @@ import requestsRouter    from "./server/routes/display/requests";
 import mismatchesRouter  from "./server/routes/display/mismatches";
 import authRouter        from "./server/routes/auth/auth";
 import notificationsRouter from "./server/routes/board/notifications";
+// 2026-08-16 · 프레임워크 · 클라이언트 에러 수집 (audit 통합)
+import clientErrorsRouter from "./server/routes/board/clientErrors";
 import leaveRouter       from "./server/routes/daily/leave";
 import lunchRouter       from "./server/routes/daily/lunch";
 import reservationsRouter from "./server/routes/daily/reservations";
@@ -152,6 +157,7 @@ async function startServer() {
 
   // 알림·약사 메뉴 (로그인 필수로 이관)
   app.use(notificationsRouter);
+  app.use(clientErrorsRouter);
   app.use(pharmacistMenuItemsRouter);
 
   // 직원·스케줄 (개인정보 + DELETE 포함)
