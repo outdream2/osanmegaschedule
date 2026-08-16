@@ -450,7 +450,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
               <button
                 type="button"
                 onClick={handleSaveAll}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition cursor-pointer"
               >
                 <Save size={14} /> 저장
               </button>
@@ -499,7 +499,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                 }
                 setTimeout(() => setSaveToast(null), 4000);
               }}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition cursor-pointer"
               title="현재 페이지별 최소 권한을 서버에 저장"
             >
               <Save size={14} /> 저장
