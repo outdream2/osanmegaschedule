@@ -39,7 +39,7 @@ import {
   loadContractClauses,
   fetchContractClauses,
   fetchContractWriterSettings,
-} from "../ContractSettingsPage/ContractSettingsPage";
+} from "../../lib/contract";
 import SplitPanel from "../common/SplitPanel";
 import { EmployeeInfoForm } from "../common/EmployeeInfoForm";
 import { matchHangul } from "../common/hangulSearch";
