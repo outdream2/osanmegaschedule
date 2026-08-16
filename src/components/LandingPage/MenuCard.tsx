@@ -45,8 +45,8 @@ interface MenuCardProps {
 
 export function MenuCard({ color, icon: Icon, title, description, onClick, orderClass, badge, descClass }: MenuCardProps) {
   const c = COLOR_MAP[color];
-  // 2026-08-17 · 사용자 지시 · 버튼 글씨 +2 · description 기본 13/15
-  const descSize = descClass ?? "text-[13px] sm:text-[15px] leading-tight sm:leading-relaxed";
+  // 2026-08-17 · 사용자 지시 · 버튼 글씨 +2 x2 · description 15/17
+  const descSize = descClass ?? "text-[15px] sm:text-[17px] leading-tight sm:leading-relaxed";
   return (
     <button
       data-menu-card
@@ -60,7 +60,7 @@ export function MenuCard({ color, icon: Icon, title, description, onClick, order
         <div className="flex items-center gap-1.5 min-w-0">
           <Icon size={16} className={`${c.iconText} shrink-0 transition-colors sm:hidden`} weight="fill" />
           <Icon size={18} className={`${c.iconText} shrink-0 transition-colors hidden sm:block`} weight="fill" />
-          <span className={`text-zinc-900 font-black text-[15px] sm:text-[17px] tracking-tight truncate transition-colors ${c.activeAccent}`}>{title}</span>
+          <span className={`text-zinc-900 font-black text-[17px] sm:text-[19px] tracking-tight truncate transition-colors ${c.activeAccent}`}>{title}</span>
         </div>
         {/* 설명 · 좌측 정렬 · 인라인 icon padding 을 위해 pl-[22px]/[26px] */}
         <div className={`text-zinc-400 ${descSize} pl-[22px] sm:pl-[26px]`}>{description}</div>
