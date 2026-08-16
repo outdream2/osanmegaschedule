@@ -1,5 +1,6 @@
 // server/routes/reference/referenceValues.ts
 // 2026-08-06 · T-DualStorage-Connect · 5개 하드코딩 배열 → DB DISTINCT 값 조회
+// 2026-08-16 · asyncHandler 프레임워크 적용
 // GET /api/reference-values
 //   · vendors.category      → vendorCategories
 //   · employees.position    → positions
@@ -7,14 +8,13 @@
 //   · employees.employmentType → contractTypes
 //   · employees.workplace   → workplaces
 //   · 5분 in-memory 캐시
-//   · fallback: 캐시 만료 전에 fetch 실패 시 빈 배열 (프론트 하드코딩 fallback 이 병합)
 
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
+import { asyncHandler } from "../../middleware/asyncHandler";
 
 const router = Router();
 
-// ── 5분 in-memory 캐시 ───────────────────────────────────────────────────────
 const TTL_MS = 5 * 60 * 1000;
 interface CacheEntry {
   data: ReferenceValues;
@@ -51,31 +51,22 @@ async function fetchDistinct(table: string, column: string): Promise<string[]> {
 
 async function loadReferenceValues(): Promise<ReferenceValues> {
   if (_cache && Date.now() - _cache.time < TTL_MS) return _cache.data;
-
-  const [vendorCategories, positions, ranks, contractTypes, workplaces] =
-    await Promise.all([
-      fetchDistinct("vendors", "category"),
-      fetchDistinct("employees", "position"),
-      fetchDistinct("employees", "rank"),
-      fetchDistinct("employees", "employmentType"),
-      fetchDistinct("employees", "workplace"),
-    ]);
-
+  const [vendorCategories, positions, ranks, contractTypes, workplaces] = await Promise.all([
+    fetchDistinct("vendors", "category"),
+    fetchDistinct("employees", "position"),
+    fetchDistinct("employees", "rank"),
+    fetchDistinct("employees", "employmentType"),
+    fetchDistinct("employees", "workplace"),
+  ]);
   const data: ReferenceValues = { vendorCategories, positions, ranks, contractTypes, workplaces };
   _cache = { data, time: Date.now() };
   return data;
 }
 
-// ── Route ────────────────────────────────────────────────────────────────────
-router.get("/api/reference-values", async (_req, res) => {
-  try {
-    const data = await loadReferenceValues();
-    res.setHeader("Cache-Control", "public, max-age=300");
-    res.json(data);
-  } catch (err: any) {
-    console.error("[reference-values] error:", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
+router.get("/api/reference-values", asyncHandler(async (_req, res) => {
+  const data = await loadReferenceValues();
+  res.setHeader("Cache-Control", "public, max-age=300");
+  res.json(data);
+}));
 
 export default router;
