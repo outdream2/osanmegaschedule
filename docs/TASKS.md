@@ -73,6 +73,26 @@
 - 파일: `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx`
 - 요구: 달력 + 정보 · overflow scroll 없이 한 화면에 (반응형 · PC 모두)
 
+### #141 · 직원 상세정보 · 이름 아래 정보 폰트 +4 (2026-08-17)
+- 사용자 지시 · "직원관리의 직원상세정보페이지 이름 아래 정보부분 폰트사이즈+4"
+- 파일: `src/components/StaffManagePage/StaffManagePage.tsx` (또는 EmployeeProfileCard)
+
+### #142 · EmployeeCalendarModal · 세로 스크롤 안 됨 (2026-08-17)
+- 사용자 지시 · "이 부분 세로 스크롤이 안되는거 같은데 확인해보고"
+- 파일: `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx`
+- 확인 · overflow-y auto 설정 검토
+
+### #143 · 직원정보 ↔ 근로계약서 연동 확인·수정 (2026-08-17)
+- 사용자 지시 · "직원정보 근로계약서 연동 잘 되는지 확인해" · "직원등록후 근로계약서 작성후 직원정보에 반영되어야함"
+- 흐름: 직원 등록 → 근로계약서 작성 → 직원정보 (직군·계약형태·근로시간·연차·사번 등) 자동 반영
+- 확인 파일: `server/routes/staff/employeeContracts.ts` (syncEmployeeContractFields) · `src/components/ContractWriterPage/ContractWriterPage.tsx` · `src/components/StaffManagePage/StaffManagePage.tsx`
+- 원칙: `feedback_test_bugfix_principle.md` · 재현 · 즉시 수정
+
+### #144 · 근로계약서 없을 시 · "작성전입니다" 멘트 (2026-08-17)
+- 사용자 지시 · "근로계약서가 없으면 해당부분에 근로계약서 작성전입니다. 멘트 나오게"
+- 위치: 직원 상세정보 · 근로계약서 섹션
+- 파일: `src/components/StaffManagePage/StaffManagePage.tsx` 또는 EmployeeProfileCard
+
 ### #136 · UI 프레임워크화 검토 (2026-08-17)
 - 사용자 지시 · "UI 프레임워크화 검토"
 - 반복되는 UI 패턴 · 공용 컴포넌트 추출 검토

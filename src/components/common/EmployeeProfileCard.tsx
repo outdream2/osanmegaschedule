@@ -117,7 +117,8 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
               <span className="text-[11px] font-bold text-zinc-400 tabular-nums">사번 {localEmployee.employee_number}</span>
             )}
           </div>
-          <div className="text-[12px] text-zinc-500 font-semibold mt-0.5">
+          {/* 2026-08-17 · 사용자 지시 · #141 · 이름 아래 정보 폰트 +4 (12→16) */}
+          <div className="text-[16px] text-zinc-500 font-semibold mt-0.5">
             {[localEmployee.position, localEmployee.rank, localEmployee.employmentType].filter(Boolean).join(" · ")}
           </div>
         </div>
@@ -132,10 +133,16 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
         )}
       </div>
 
-      {/* 근로 조건 · 최신 계약서 (grid 아래 인라인 · Q2 A) */}
+      {/* 근로 조건 · 최신 계약서 · 2026-08-17 · #144 · 계약 없으면 "작성전입니다" 메시지 */}
+      {!latestContract && (
+        <div className="flex items-center gap-2 pt-2 border-t border-zinc-100 text-[14px]">
+          <span className="text-[11px] font-black text-amber-600 uppercase tracking-wide">근로 조건</span>
+          <span className="text-zinc-500 font-semibold">근로계약서 작성전입니다</span>
+        </div>
+      )}
       {latestContract && (
-        <div className="flex items-baseline gap-3 pt-2 border-t border-zinc-100 flex-wrap text-[12px]">
-          <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wide">근로 조건</span>
+        <div className="flex items-baseline gap-3 pt-2 border-t border-zinc-100 flex-wrap text-[16px]">
+          <span className="text-[14px] font-black text-emerald-600 uppercase tracking-wide">근로 조건</span>
           {latestContract.working_hours && (
             <span className="text-zinc-700"><span className="text-zinc-400 font-semibold">근무</span> <span className="font-bold tabular-nums">{latestContract.working_hours}</span></span>
           )}
@@ -157,26 +164,26 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
       {/* 정보 grid · 성별·입사일·근무지·연차 (한줄) · 전화 (전체 폭) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 pt-2 border-t border-zinc-100">
         <div className="flex flex-col">
-          <span className="text-[11px] font-semibold text-zinc-400">성별</span>
-          <span className="text-[13px] font-bold text-zinc-700">{localEmployee.gender ?? "—"}</span>
+          <span className="text-[15px] font-semibold text-zinc-400">성별</span>
+          <span className="text-[17px] font-bold text-zinc-700">{localEmployee.gender ?? "—"}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[11px] font-semibold text-zinc-400">입사일</span>
-          <span className="text-[13px] font-bold text-zinc-700 tabular-nums">{localEmployee.hireDate || "—"}</span>
+          <span className="text-[15px] font-semibold text-zinc-400">입사일</span>
+          <span className="text-[17px] font-bold text-zinc-700 tabular-nums">{localEmployee.hireDate || "—"}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[11px] font-semibold text-zinc-400">근무지</span>
-          <span className="text-[13px] font-bold text-zinc-700">{localEmployee.workplace}</span>
+          <span className="text-[15px] font-semibold text-zinc-400">근무지</span>
+          <span className="text-[17px] font-bold text-zinc-700">{localEmployee.workplace}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[11px] font-semibold text-zinc-400">연차</span>
-          <span className="text-[13px] font-bold text-zinc-700">
+          <span className="text-[15px] font-semibold text-zinc-400">연차</span>
+          <span className="text-[17px] font-bold text-zinc-700">
             {localEmployee.annual_leave_days != null ? `${localEmployee.annual_leave_days}일` : "—"}
           </span>
         </div>
         <div className="col-span-2 sm:col-span-4 flex flex-col">
-          <span className="text-[11px] font-semibold text-blue-400">전화 (로그인 ID)</span>
-          <span className="text-[14px] font-black text-blue-700 tabular-nums">
+          <span className="text-[15px] font-semibold text-blue-400">전화 (로그인 ID)</span>
+          <span className="text-[18px] font-black text-blue-700 tabular-nums">
             {localEmployee.phone
               ? localEmployee.phone.replace(/^(\d{3})(\d{3,4})(\d{4})$/, "$1-$2-$3")
               : <span className="text-zinc-300 font-normal">미등록</span>}
