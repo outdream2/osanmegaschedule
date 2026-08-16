@@ -495,24 +495,24 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
 
   function renderPermissionsBody() {
     return <>
-        {/* 탭 · 2026-08-12 · 우측에 [저장] 버튼 · saveNow + 토스트 (사용자 지시) */}
+        {/* 탭 · 2026-08-16 · 가시성 개선 · 컨테이너 진한 배경 + 활성 강한 그림자·색상·언더라인 */}
         <div className="mb-4 flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex flex-wrap bg-zinc-100 border border-zinc-200 rounded-xl p-0.5 gap-0.5 w-fit">
+          <div className="flex flex-wrap bg-zinc-200/70 border border-zinc-300 rounded-xl p-1 gap-0.5 w-fit shadow-inner">
           <button type="button" onClick={() => setTab("permissions")}
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[18px] font-black transition cursor-pointer ${tab === "permissions" ? "bg-white text-violet-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
-            <Shield size={15} />권한 조정
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[18px] font-black transition-all cursor-pointer border ${tab === "permissions" ? "bg-white text-violet-700 shadow-md border-violet-300 ring-2 ring-violet-100" : "bg-transparent text-zinc-600 border-transparent hover:bg-white/60 hover:text-zinc-900"}`}>
+            <Shield size={18} />권한 조정
           </button>
           <button type="button" onClick={() => setTab("app-settings")}
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[18px] font-black transition cursor-pointer ${tab === "app-settings" ? "bg-white text-violet-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
-            <SettingsIcon size={15} />스케쥴 설정
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[18px] font-black transition-all cursor-pointer border ${tab === "app-settings" ? "bg-white text-indigo-700 shadow-md border-indigo-300 ring-2 ring-indigo-100" : "bg-transparent text-zinc-600 border-transparent hover:bg-white/60 hover:text-zinc-900"}`}>
+            <SettingsIcon size={18} />스케쥴 설정
           </button>
           <button type="button" onClick={() => setTab("positions")}
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[18px] font-black transition cursor-pointer ${tab === "positions" ? "bg-white text-violet-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
-            <IdCard size={15} />직군 설정
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[18px] font-black transition-all cursor-pointer border ${tab === "positions" ? "bg-white text-emerald-700 shadow-md border-emerald-300 ring-2 ring-emerald-100" : "bg-transparent text-zinc-600 border-transparent hover:bg-white/60 hover:text-zinc-900"}`}>
+            <IdCard size={18} />직군 설정
           </button>
           <button type="button" onClick={() => setTab("construction")}
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[18px] font-black transition cursor-pointer ${tab === "construction" ? "bg-white text-amber-600 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
-            <Construction size={15} />공사중
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[18px] font-black transition-all cursor-pointer border ${tab === "construction" ? "bg-white text-amber-700 shadow-md border-amber-300 ring-2 ring-amber-100" : "bg-transparent text-zinc-600 border-transparent hover:bg-white/60 hover:text-zinc-900"}`}>
+            <Construction size={18} />공사중
           </button>
           </div>
           {/* 저장 버튼 · 스케줄/직군/공사중 탭 · saveNow 즉시 flush + 토스트 (권한은 이미 개별 저장) */}
