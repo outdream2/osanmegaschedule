@@ -11,6 +11,8 @@ import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 // 2026-08-13 · #107 · 반품요청 · 관리자 알림 (인앱 + push)
 import { notificationsService } from "../../services/notificationsService";
+// 2026-08-16 · #112-E1 Phase 2 · 매니저 DELETE
+import { authorize } from "../../middleware/requireAuth";
 
 const router = Router();
 
@@ -142,7 +144,7 @@ router.patch("/api/return-requests/:id", async (req, res) => {
 });
 
 // DELETE /api/return-requests/:id
-router.delete("/api/return-requests/:id", async (req, res) => {
+router.delete("/api/return-requests/:id", authorize(2), async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (!Number.isFinite(id)) return res.status(400).json({ error: "invalid id" });

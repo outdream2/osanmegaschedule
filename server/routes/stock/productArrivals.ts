@@ -7,6 +7,7 @@
 
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
+import { authorize } from "../../middleware/requireAuth";
 
 const router = Router();
 
@@ -208,7 +209,7 @@ router.get("/api/product-arrivals/:id", async (req, res) => {
 });
 
 // DELETE /api/product-arrivals/:id
-router.delete("/api/product-arrivals/:id", async (req, res) => {
+router.delete("/api/product-arrivals/:id", authorize(2), async (req, res) => {
   try {
     const id = Number(req.params.id);
     if (!Number.isFinite(id)) return res.status(400).json({ error: "잘못된 id" });

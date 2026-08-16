@@ -3,6 +3,8 @@ import webpush from "web-push";
 import { supabase } from "../../../src/supabase/client";
 // 2026-08-13 · #107 · 인앱 알림 hook (전체 직원 broadcast)
 import { notificationsService } from "../../services/notificationsService";
+// 2026-08-16 · #112-E1 Phase 2 · 매니저 DELETE
+import { authorize } from "../../middleware/requireAuth";
 
 const router = Router();
 
@@ -201,7 +203,7 @@ router.patch("/api/stock-arrivals/:id", async (req, res) => {
 });
 
 // ── DELETE ────────────────────────────────────────────────────────────────────
-router.delete("/api/stock-arrivals/:id", async (req, res) => {
+router.delete("/api/stock-arrivals/:id", authorize(2), async (req, res) => {
   const { employeeId } = req.body ?? {};
   const id = Number(req.params.id);
   if (!id) return res.status(400).json({ error: "id required" });

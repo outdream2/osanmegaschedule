@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
+import { authorize } from "../../middleware/requireAuth";
 
 const router = Router();
 
@@ -78,7 +79,7 @@ router.delete("/api/zone-mismatches/by-code/:code", async (req, res) => {
   res.json({ ok: true });
 });
 
-router.delete("/api/zone-mismatches/:id", async (req, res) => {
+router.delete("/api/zone-mismatches/:id", authorize(2), async (req, res) => {
   const id = decodeURIComponent(req.params.id ?? "").trim();
   const { error } = await supabase.from("products").update({ real_map: null }).eq("product_code", id);
   if (error) return res.status(500).json({ error: error.message });

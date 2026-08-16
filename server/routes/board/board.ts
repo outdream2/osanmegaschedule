@@ -433,7 +433,7 @@ router.patch("/api/board/comments/:id", async (req, res) => {
 });
 
 // ── 댓글 삭제
-router.delete("/api/board/comments/:id", async (req, res) => {
+router.delete("/api/board/comments/:id", authorize(2), async (req, res) => {
   const id = Number(req.params.id);
   const editorId = Number(req.query.editor_id ?? 0);
   const editorLevel = Number(req.query.editor_level ?? 0);

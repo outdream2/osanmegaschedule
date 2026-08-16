@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
+import { getSession } from "../../middleware/requireAuth";
 
 const router = Router();
 
@@ -52,12 +53,16 @@ router.put("/api/lunch-requests", async (req, res) => {
   return res.json({ ok: true });
 });
 
+// 2026-08-16 · #112-E1 Phase 2 · 본인 or 관리자만 lunch 삭제
 router.delete("/api/lunch-requests", async (req, res) => {
+  const session = getSession(req);
+  if (!session) return res.status(401).json({ error: "인증이 필요합니다" });
   const { employee_id, date } = req.query;
   if (!employee_id || !date) return res.status(400).json({ error: "필수 파라미터 누락" });
-  const { error } = await supabase
-    .from("lunch_requests").delete()
-    .eq("employee_id", Number(employee_id)).eq("date", date as string);
+  const empIdNum = Number(employee_id);
+  const isAdmin = (session.level ?? 0) >= 9;
+  if (!isAdmin && session.sub !== empIdNum) return res.status(403).json({ error: "본인 신청만 삭제 가능합니다" });
+  const { error } = await supabase.from("lunch_requests").delete().eq("employee_id", empIdNum).eq("date", date as string);
   if (error) return res.status(500).json({ error: error.message });
   return res.json({ ok: true });
 });

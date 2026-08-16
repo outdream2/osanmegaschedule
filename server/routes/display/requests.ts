@@ -2,6 +2,8 @@ import { Router } from "express";
 import webpush from "web-push";
 import { supabase } from "../../../src/supabase/client";
 import { notificationsService } from "../../services/notificationsService";
+// 2026-08-16 · #112-E1 Phase 2 · 매니저(lv 2+) 만 DELETE
+import { authorize } from "../../middleware/requireAuth";
 // 2026-08-05 · T-PERF-1a · inventory-checks 변경 시 low-stock 캐시 무효화
 import { clearLowStockCache } from "../stock/stockManage";
 // 2026-08-06 · T-LOSS-HISTORY · 실재고 저장 시 · 오늘 손실 스냅샷 fire-and-forget
@@ -391,7 +393,7 @@ router.patch("/api/display-requests/:id", async (req, res) => {
   res.json({ ok: true });
 });
 
-router.delete("/api/display-requests/:id", async (req, res) => {
+router.delete("/api/display-requests/:id", authorize(2), async (req, res) => {
   const { error } = await supabase.from("display_requests").delete().eq("id", req.params.id);
   if (error) return res.status(500).json({ error: error.message });
   res.json({ ok: true });
@@ -504,7 +506,7 @@ router.get("/api/order-history", async (req, res) => {
   }
 });
 
-router.delete("/api/order-requests/:id", async (req, res) => {
+router.delete("/api/order-requests/:id", authorize(2), async (req, res) => {
   const { error } = await supabase.from("order_requests").delete().eq("id", req.params.id);
   if (error) return res.status(500).json({ error: error.message });
   res.json({ ok: true });
@@ -931,7 +933,7 @@ router.patch("/api/inventory-checks/:id", async (req, res) => {
   res.json({ ok: true });
 });
 
-router.delete("/api/inventory-checks/:id", async (req, res) => {
+router.delete("/api/inventory-checks/:id", authorize(2), async (req, res) => {
   const { error } = await supabase.from("inventory_checks").delete().eq("id", req.params.id);
   if (error) return res.status(500).json({ error: error.message });
   clearLowStockCache(); // 2026-08-05 · T-PERF-1a

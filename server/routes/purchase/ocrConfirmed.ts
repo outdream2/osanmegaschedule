@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 import { clearOcrAggCache } from "../stock/stockManage";
+import { authorize } from "../../middleware/requireAuth";
 
 const router = Router();
 const TABLE = "ocr_confirmed_items";
@@ -162,7 +163,7 @@ router.get("/api/ocr-confirmed-items", async (req, res) => {
 });
 
 // DELETE /api/ocr-confirmed-items/:id
-router.delete("/api/ocr-confirmed-items/:id", async (req, res) => {
+router.delete("/api/ocr-confirmed-items/:id", authorize(2), async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id) || id <= 0) {
     return res.status(400).json({ error: "유효한 id가 필요합니다." });
