@@ -1249,25 +1249,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               </div>
               )}
 
-              {/* 직원·거래처 로그인 — 보조 */}
+              {/* 직원·거래처 로그인 · 2026-08-17 · #130 · dead overlay 제거 · 실제 hover · bg 정리 */}
               <div className="flex gap-2">
                 <button
                   onClick={() => setPendingPage("schedule")}
-                  className="flex-1 group relative overflow-hidden flex items-center justify-center gap-2 rounded-2xl px-4 py-3 transition-all duration-200 hover:shadow-md cursor-pointer border border-indigo-200/80"
-                 
+                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl px-4 py-3 bg-indigo-50/60 border border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300 transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer"
                 >
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-                  <Lock size={14} className="relative text-indigo-600" />
-                  <span className="relative text-indigo-700 font-bold text-sm">직원로그인</span>
+                  <Lock size={14} className="text-indigo-600" />
+                  <span className="text-indigo-700 font-bold text-sm">직원로그인</span>
                 </button>
                 <button
                   onClick={() => setVendorLoginOpen(true)}
-                  className="flex-1 group relative overflow-hidden flex items-center justify-center gap-2 rounded-2xl px-4 py-3 transition-all duration-200 hover:shadow-md cursor-pointer border border-emerald-200/80"
-                 
+                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl px-4 py-3 bg-emerald-50/60 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer"
                 >
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-                  <CalendarCheck size={14} className="relative text-emerald-600" weight="fill" />
-                  <span className="relative text-emerald-700 font-bold text-sm">거래처 로그인</span>
+                  <CalendarCheck size={14} className="text-emerald-600" weight="fill" />
+                  <span className="text-emerald-700 font-bold text-sm">거래처 로그인</span>
                 </button>
               </div>
 
