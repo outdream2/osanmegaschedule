@@ -50,6 +50,7 @@ import { VendorDetailModal, type Vendor as VendorFull } from "./VendorListEditor
 import { VendorStockModal } from "./VendorStockModal";
 import { useVendors } from "../../hooks/useVendors";
 import { MenuCard } from "./MenuCard";
+import { StockSearch } from "./StockSearch";
 // VendorListEditor 는 발주관리 공급사관리 에서만 사용 (LandingPage 데이터 업로드 에서 제거됨 · 2026-07-15)
 
 interface LandingPageProps {
@@ -408,63 +409,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [unauthorizedToast, setUnauthorizedToast] = useState(false);
 
   // ── 인라인 재고검색 (비로그인용) ──────────────────────────────────────
-  interface StockItem {
-    product_name: string;
-    spec: string | null;
-    current_stock: string | null;
-    sale_status: string | null;
-    category: string | null;
-    supplier: string | null;
-  }
-  const [stockQuery, setStockQuery] = useState("");
-  const [stockResults, setStockResults] = useState<StockItem[] | null>(null);
-  const [stockSearching, setStockSearching] = useState(false);
-  // 2026-08-11 · 공사중 모드 (설정) · 비로그인 랜딩 · 재고 검색 대신 "곧 오픈 예정" 표시
+  // 2026-08-17 · #130 · code_slim · StockSearch 컴포넌트로 분리
+  //   · stockQuery/Results/Searching state · getStockBadges 헬퍼 · handleStockSearch 로직 모두 이동
+  //   · 공사중 (settings.underConstruction) 은 여기서 계속 관리
   const { settings } = useSettings();
   const underConstruction = settings.underConstruction === true;
-  const stockAbortRef = useRef<AbortController | null>(null);
-  const stockDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => () => {
-    stockAbortRef.current?.abort();
-    if (stockDebounceRef.current) clearTimeout(stockDebounceRef.current);
-  }, []);
-
-  const handleStockSearch = (val: string) => {
-    setStockQuery(val);
-    if (stockDebounceRef.current) clearTimeout(stockDebounceRef.current);
-    if (!val.trim()) { setStockResults(null); setStockSearching(false); return; }
-    setStockSearching(true);
-    stockDebounceRef.current = setTimeout(async () => {
-      stockAbortRef.current?.abort();
-      const ac = new AbortController();
-      stockAbortRef.current = ac;
-      try {
-        const { data } = await api.get<any>(`/api/stock-check?q=${encodeURIComponent(val.trim())}`, { signal: ac.signal });
-        setStockResults(data);
-      } catch { /* silent · abort/network */ }
-      finally { setStockSearching(false); }
-    }, 300);
-  };
-
-  // 재고·판매 두 축을 독립적으로 반환 (나란히 표시)
-  //   재고: current_stock > 0 → 재고있음 · <= 0 or 없음 → 재고없음
-  //   판매: sale_status 에 단종/판매중지/판매불가/판매중단 → 판매중단 · 그 외 → 판매중
-  const getStockBadges = (item: StockItem): Array<{ label: string; bg: string; text: string; dot: string }> => {
-    const badges: Array<{ label: string; bg: string; text: string; dot: string }> = [];
-    const n = Number(item.current_stock ?? 0);
-    if (Number.isFinite(n) && n > 0) {
-      badges.push({ label: "재고있음", bg: "bg-emerald-100", text: "text-emerald-700", dot: "bg-emerald-500" });
-    } else {
-      badges.push({ label: "재고없음", bg: "bg-red-100", text: "text-red-600", dot: "bg-red-500" });
-    }
-    const status = item.sale_status ?? "";
-    if (/단종|판매중지|판매불가|판매\s*중단/.test(status))
-      badges.push({ label: "판매중단", bg: "bg-zinc-200", text: "text-zinc-600", dot: "bg-zinc-400" });
-    else
-      badges.push({ label: "판매중", bg: "bg-sky-100", text: "text-sky-700", dot: "bg-sky-500" });
-    return badges;
-  };
 
   const [empNumber, setEmpNumber] = useState(() => localStorage.getItem("megatown_remembered_phone") ?? "");
   const [empPassword, setEmpPassword] = useState("");
@@ -1171,82 +1120,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </div>
                 </div>
               ) : (
-              /* 인라인 재고검색 · 2026-08-17 · #130 · 헤더 gradient 배경 fix (white text 가시성) */
-              <div className="w-full rounded-3xl overflow-hidden shadow-xl border border-blue-100">
-                <div className="px-5 py-4 flex items-center gap-3 border-b border-blue-400/30"
-                  style={{ background: "linear-gradient(135deg, #1e40af 0%, #2563eb 100%)" }}>
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: "rgba(255,255,255,0.2)", border: "1.5px solid rgba(255,255,255,0.35)" }}>
-                    <Package size={18} className="text-white" weight="fill" />
-                  </div>
-                  <div className="text-left flex-1 min-w-0">
-                    <div className="text-white font-black text-base sm:text-lg tracking-tight leading-tight">재고 확인</div>
-                    <div className="text-blue-100 text-[11px] mt-0.5">약품·제품명 입력 시 실시간 재고 확인</div>
-                  </div>
-                </div>
-                {/* 검색바 */}
-                <div className="px-4 pt-3 pb-1 bg-white">
-                  <div className="relative">
-                    <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-                    <input
-                      type="search"
-                      value={stockQuery}
-                      onChange={e => handleStockSearch(e.target.value)}
-                      placeholder="예: 타이레놀, 판콜에이…"
-                      className="w-full rounded-xl pl-10 pr-9 py-2.5 text-zinc-900 text-sm font-semibold placeholder:text-zinc-300 placeholder:font-normal focus:outline-none border-2 border-zinc-200 bg-zinc-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
-                    />
-                    {stockQuery && (
-                      <button type="button"
-                        onClick={() => { setStockQuery(""); setStockResults(null); }}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-300 hover:text-zinc-500 transition cursor-pointer">
-                        <X size={14} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-                {/* 결과 리스트 */}
-                <div className="bg-white px-4 pb-3 pt-1 max-h-80 overflow-y-auto">
-                  {stockQuery.trim() && stockSearching && stockResults === null && (
-                    <div className="text-center text-zinc-400 text-xs py-4">검색 중…</div>
-                  )}
-                  {stockResults !== null && stockResults.length === 0 && !stockSearching && (
-                    <div className="text-center text-zinc-400 text-xs py-4">일치하는 상품이 없습니다.</div>
-                  )}
-                  {stockResults !== null && stockResults.length > 0 && (
-                    <div className="flex flex-col divide-y divide-zinc-100">
-                      {stockResults.slice(0, 20).map((item, idx) => {
-                        const badges = getStockBadges(item);
-                        return (
-                          <div key={idx} className="py-2 flex items-center justify-between gap-3">
-                            <div className="min-w-0 flex-1">
-                              {/* 상품명만 표시 · 구역(spec/real_map/display_location) 숨김 */}
-                              <div className="text-zinc-800 font-bold text-xs truncate">
-                                {item.product_name}
-                              </div>
-                              {item.supplier && (
-                                <div className="text-[10px] text-zinc-400 truncate mt-0.5">{item.supplier}</div>
-                              )}
-                            </div>
-                            <div className="shrink-0 flex items-center gap-1">
-                              {badges.map((badge, bi) => (
-                                <div key={bi} className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${badge.bg} ${badge.text} text-[10px] font-black`}>
-                                  <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
-                                  {badge.label}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
-                      {stockResults.length > 20 && (
-                        <div className="text-center text-[10px] text-zinc-400 pt-2">
-                          외 {stockResults.length - 20}건 · 더 자세히 보려면 로그인
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
+                /* 인라인 재고검색 · StockSearch 컴포넌트 (2026-08-17 · #130 · code_slim 분리) */
+                <StockSearch />
               )}
 
               {/* 직원·거래처 로그인 · 2026-08-17 · #130 · dead overlay 제거 · 실제 hover · bg 정리 */}
