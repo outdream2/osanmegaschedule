@@ -1,5 +1,4 @@
 // 2026-08-16 · #8 · Phase 2A · DayTimelineModal slim helpers
-import type { Employee } from "../../types";
 import { getTypeHex, derivePresetTones, type ScheduleTypeEntry } from "../../constants";
 import { DEFAULT_TONE, type TypeTone } from "./types";
 
@@ -11,9 +10,8 @@ export const HOUR_SLOTS: string[] = Array.from({ length: 13 }, (_, i) => `${Stri
 export const LUNCH_SLOTS = ["11:30", "12:00", "12:30", "13:00", "13:30", "14:00"];
 export const REST_SLOTS = ["16:00", "16:30", "17:00", "17:30", "18:00"];
 
-export const isOtherEmp = (e: Employee) => e.position === "기타" || e.position === "알바" || e.employmentType === "알바";
-export const isPharmEmp = (e: Employee) => e.position === "약사";
-export const isStaffEmp = (e: Employee) => !isPharmEmp(e) && !isOtherEmp(e);
+// 2026-08-16 · #91 · 공통 lib · src/lib/employeeCategory 로 통합 (SchedulePage 도 사용)
+export { isOtherEmp, isPharmEmp, isStaffEmp } from "../../lib/employeeCategory";
 
 // LocalStorage · tl_*_YYYY-MM-DD · 30일 만료 정리 + Quota 대응
 const TL_KEY_PREFIX = "tl_";
