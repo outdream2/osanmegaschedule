@@ -249,12 +249,22 @@ export function canAccessItem(
   if (item.minLevel != null && level < item.minLevel) return false;
   if (item.managerOnly && !isPrivileged) return false;
   if (item.pharmacistOnly && !isPharmacist) return false;
-  // 2026-08-16 · 페이지 숨김 · lv 9 은 예외 (설정 페이지 접근 유지)
+  // 2026-08-17 · #131 · 페이지 숨김 · admin(lv9) 도 hidden 적용
+  //   · 이전 버그: admin 은 hidden 무시 → uncheck 해도 사이드바에서 안 사라짐 → 사용자 리포트
+  //   · fix: admin 도 hidden 적용 · 단 · admin 잠금 방지 (permissions/business-manage/account 는 admin 예외)
   //   · subTab 있으면 복합키 (`{key}:{subTab}`) 우선 · 없으면 부모 pageKey
-  if (perms && level < 9) {
+  if (perms) {
     const compositeKey = item.subTab ? `${item.key}:${item.subTab}` : null;
     const perm = (compositeKey && (perms as any)[compositeKey]) || (perms as any)[item.key];
-    if (perm?.hidden === true) return false;
+    if (perm?.hidden === true) {
+      const ADMIN_ESSENTIAL = ["permissions", "business-manage", "account"] as const;
+      const isEssential = (ADMIN_ESSENTIAL as readonly string[]).includes(item.key);
+      if (level >= 9 && isEssential) {
+        // admin lockout 방지 · 설정·관리·계정 페이지는 admin 에게 항상 노출
+      } else {
+        return false;
+      }
+    }
   }
   return true;
 }

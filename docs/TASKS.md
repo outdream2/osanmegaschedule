@@ -29,6 +29,12 @@
 - EmployeeFormModal · create 모드 · employee_number 자동 생성 로직
 - 규칙 결정 필요 (예: MEGA-YYYY-NNN · 또는 순차번호 등)
 
+### #131 · 페이지설정 · 메뉴 안보이기 (uncheck) 안 됨 · 🐛 버그 (2026-08-17)
+- 사용자 지시 · "페이지설정에서 메뉴 안보이기(uncheck) 안돼"
+- **증상**: PermissionsPage 에서 페이지 · 보기/숨기기 컬럼 체크 해제 반영 안 됨
+- **파일**: `src/components/PermissionsPage/PermissionsPage.tsx` · `src/hooks/usePagePermissions.ts` · 서버 `/api/permissions`
+- **원칙**: 프레임워크 기반 (usePagePermissions · api.post) · test_bugfix_principle · 즉시 재현·수정
+
 ### #130 · 랜딩페이지 전체 UI 개선 (2026-08-17)
 - 사용자 지시 (2026-08-17) · "랜딩페이지 전체 UI개선"
 - **범위**:
