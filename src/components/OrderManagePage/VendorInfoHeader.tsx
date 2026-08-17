@@ -9,6 +9,7 @@ import {
   Building2, Phone, User2, Mail, Calendar, Wallet,
 } from "lucide-react";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
+import { StatusPill } from "../common/StatusPill";
 import { fmtWonFull, fmtDateSlice } from "../../lib/format";
 
 // ─── Types ────────────────────────────────────────────────────────────────
@@ -165,27 +166,19 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
               {vendor.company_name}
             </h2>
             <VendorCategoryBadge category={vendor.category} />
-            {/* VAT 배지 */}
+            {/* VAT 배지 · 2026-08-17 · StatusPill 통일 */}
             {vendor.vat_included === true && (
-              <span
-                className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"
-                title="거래명세서 총액에 VAT 포함 · 부가세 신고 시 amount÷11 로 세액 산정"
-              >
-                VAT 포함
+              <span title="거래명세서 총액에 VAT 포함 · 부가세 신고 시 amount÷11 로 세액 산정">
+                <StatusPill tone="emerald" size="xs">VAT 포함</StatusPill>
               </span>
             )}
             {vendor.vat_included === false && (
-              <span
-                className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200"
-                title="거래명세서 총액은 공급가액 · 부가세 10% 별도 · 세액 = amount×0.1"
-              >
-                VAT 별도
+              <span title="거래명세서 총액은 공급가액 · 부가세 10% 별도 · 세액 = amount×0.1">
+                <StatusPill tone="amber" size="xs">VAT 별도</StatusPill>
               </span>
             )}
             {vendor.active === false && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 text-zinc-500 border border-line">
-                비활성
-              </span>
+              <StatusPill tone="zinc" size="xs">비활성</StatusPill>
             )}
           </div>
 
