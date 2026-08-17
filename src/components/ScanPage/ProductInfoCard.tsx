@@ -7,6 +7,7 @@ import { type ProductInfo } from "../../lib/productsCache";
 import { RealMapSelector } from "./RealMapSelector";
 // 2026-08-05 · 재고세기(YOLO) 기능 제거 · StockCounterModal import 삭제
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
+import { StatusPill } from "../common/StatusPill";
 import { fmtWonCompact } from "../../lib/format";
 
 // 인라인 편집 가능 필드 종류
@@ -396,8 +397,8 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
             </button>
           </div>
           {isHidden && (
-            <span className="inline-flex text-[11px] font-semibold px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 border border-amber-200 mb-1.5">
-              숨김 처리됨
+            <span className="mb-1.5 inline-flex">
+              <StatusPill tone="amber" size="xs" dot>숨김 처리됨</StatusPill>
             </span>
           )}
           {hideError && <p className="text-[11px] text-rose-600 mb-1.5">{hideError}</p>}
