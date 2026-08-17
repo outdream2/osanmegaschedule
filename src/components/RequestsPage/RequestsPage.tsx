@@ -545,7 +545,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   );
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(160deg, #f8faff 0%, #f1f5ff 40%, #f0fdf4 100%)" }}>
+    <div className="min-h-screen flex flex-col bg-[#F4F7FA]">
       {/* Shared App Nav Header */}
       <AppNavHeader
         activePage="requests"

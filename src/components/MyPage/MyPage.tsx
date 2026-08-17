@@ -93,7 +93,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
   const addressChanged = (me?.address ?? "") !== addressDraft;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(160deg, #eff6ff 0%, #ede9fe 40%, #fdf4ff 100%)" }}>
+    <div className="min-h-screen flex flex-col bg-[#F4F7FA]">
       <AppNavHeader activePage={"mypage" as AppNavPage} authSession={authSession} onBack={onBack} onNavigate={onNavigate} onLogout={onLogout} />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-3 sm:px-4 py-4 sm:py-6 space-y-3">

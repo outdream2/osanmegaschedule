@@ -2061,11 +2061,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             style={{ background: "rgba(255,255,255,0.98)" }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header · 2026-08-17 · #130 · header bg 누락 fix · emerald gradient */}
-            <div className="relative px-7 pt-8 pb-6 overflow-hidden" style={{ background: "linear-gradient(135deg, #059669 0%, #10b981 100%)" }}>
-              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-20" style={{ background: "radial-gradient(circle, #6ee7b7, transparent)" }} />
-              <div className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full opacity-15" style={{ background: "radial-gradient(circle, #a7f3d0, transparent)" }} />
-              <button onClick={() => setVendorLoginOpen(false)} aria-label="닫기" className="absolute top-4 right-4 w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-emerald-100 hover:text-white transition cursor-pointer">
+            {/* Header · 2026-08-17 · 딥네이비 gradient 통일 (모든 로그인 모달 · 브랜드 톤 일관) */}
+            <div className="relative px-7 pt-8 pb-6 overflow-hidden" style={{ background: "linear-gradient(120deg, #0A2E4A 0%, #1E5C8E 62%, #3E7CB1 100%)" }}>
+              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-20" style={{ background: "radial-gradient(circle, #93B4D0, transparent)" }} />
+              <div className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full opacity-15" style={{ background: "radial-gradient(circle, #C4DAEE, transparent)" }} />
+              <button onClick={() => setVendorLoginOpen(false)} aria-label="닫기" className="absolute top-4 right-4 w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/80 hover:text-white transition cursor-pointer">
                 <X size={14} />
               </button>
               <div className="relative flex items-center gap-4 mb-3">
