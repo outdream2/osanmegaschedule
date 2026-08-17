@@ -333,3 +333,40 @@ export const DARK_COLOR_TONES: Record<SideNavColor, {
   violet:  { activeBg: "bg-white/[0.12]", activeText: "text-white", iconActive: "text-violet-300",  hoverBg: "hover:bg-white/[0.06]", glowShadow: "shadow-black/10" },
   cyan:    { activeBg: "bg-white/[0.12]", activeText: "text-white", iconActive: "text-cyan-300",    hoverBg: "hover:bg-white/[0.06]", glowShadow: "shadow-black/10" },
 };
+
+/**
+ * 2026-08-17 · 공통헤더 ↔ 사이드바 연동 · 단일 accent 소스
+ *   · 그룹 톤별 · gradient bar · glow · iconAccent hex
+ *   · AppNavHeader (활성 탭 하단 3px accent) + SideNav (활성 그룹/아이템 좌측 3px accent)
+ *   · 둘 다 동일 hex 참조 → drift 방지
+ *   · glow · box-shadow rgba (부드러운 색 액센트 · Linear/Cursor 톤)
+ */
+export interface NavAccent {
+  /** primary color (밝은 shade 300~400) */
+  hex: string;
+  /** deeper shade (grad 하단 · 500~600) */
+  hexDeep: string;
+  /** icon color (활성 시 tailwind class) */
+  iconText: string;
+  /** gradient · linear-gradient(180deg, hex → hexDeep) */
+  gradient: string;
+  /** glow · box-shadow with color */
+  glow: string;
+}
+
+export const NAV_ACCENT: Record<SideNavColor, NavAccent> = {
+  slate:   { hex: "#FFFFFF", hexDeep: "#C4DAEE", iconText: "text-white",         gradient: "linear-gradient(180deg, #FFFFFF 0%, #C4DAEE 100%)", glow: "0 0 12px rgba(255,255,255,0.35)" },
+  amber:   { hex: "#FFC876", hexDeep: "#FFA53A", iconText: "text-[#FFC876]",     gradient: "linear-gradient(180deg, #FFC876 0%, #FFA53A 100%)", glow: "0 0 12px rgba(255,168,60,0.55)" },
+  red:     { hex: "#FFB4AE", hexDeep: "#FF8A80", iconText: "text-[#FFB4AE]",     gradient: "linear-gradient(180deg, #FFB4AE 0%, #FF8A80 100%)", glow: "0 0 12px rgba(255,138,128,0.50)" },
+  sky:     { hex: "#7EB8E8", hexDeep: "#4A90D9", iconText: "text-[#7EB8E8]",     gradient: "linear-gradient(180deg, #7EB8E8 0%, #4A90D9 100%)", glow: "0 0 12px rgba(74,144,217,0.55)" },
+  indigo:  { hex: "#A5B4FC", hexDeep: "#7C6BF5", iconText: "text-[#A5B4FC]",     gradient: "linear-gradient(180deg, #A5B4FC 0%, #7C6BF5 100%)", glow: "0 0 12px rgba(124,107,245,0.55)" },
+  emerald: { hex: "#6FE3C2", hexDeep: "#34D39E", iconText: "text-[#6FE3C2]",     gradient: "linear-gradient(180deg, #6FE3C2 0%, #34D39E 100%)", glow: "0 0 12px rgba(52,211,158,0.50)" },
+  violet:  { hex: "#C4B5FD", hexDeep: "#A78BFA", iconText: "text-[#C4B5FD]",     gradient: "linear-gradient(180deg, #C4B5FD 0%, #A78BFA 100%)", glow: "0 0 12px rgba(167,139,250,0.50)" },
+  cyan:    { hex: "#7EE8E8", hexDeep: "#34D3D3", iconText: "text-[#7EE8E8]",     gradient: "linear-gradient(180deg, #7EE8E8 0%, #34D3D3 100%)", glow: "0 0 12px rgba(52,211,211,0.50)" },
+};
+
+/** 헤더 탭 활성 · 하단 accent bar 그라디언트 (좌우 fade) · AppNavHeader 전용 */
+export function headerAccentGradient(color: SideNavColor): string {
+  const c = NAV_ACCENT[color];
+  return `linear-gradient(90deg, transparent, ${c.hex}, ${c.hexDeep}, ${c.hex}, transparent)`;
+}

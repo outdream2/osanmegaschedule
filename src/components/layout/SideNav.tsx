@@ -27,6 +27,7 @@ import {
   filterGroupsForSession,
   isItemActive,
   DARK_COLOR_TONES,
+  NAV_ACCENT,
   subTabStorageKey,
   type SideNavGroup,
   type SideNavItem,
@@ -134,24 +135,17 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
           ].join(" ")}
         >
           <span className="flex items-center gap-2 relative">
-            {/* 2026-08-17 · 액센트 강화 · 그룹 활성 시 왼쪽 3px gradient accent bar (공통헤더 하단 accent 와 동일 톤) */}
+            {/* 2026-08-17 · 액센트 강화 · 그룹 활성 시 왼쪽 4px gradient bar + glow · NAV_ACCENT 단일 소스 */}
             {hasActiveItem && (
               <span
-                className="absolute -left-2 top-1/2 -translate-y-1/2 w-[3px] h-[70%] rounded-r-full pointer-events-none group-data-[collapsible=icon]:hidden"
+                className="absolute -left-2 top-1/2 -translate-y-1/2 w-[4px] h-[80%] rounded-r-full pointer-events-none group-data-[collapsible=icon]:hidden"
                 style={{
-                  background:
-                    group.color === "red"     ? "linear-gradient(180deg, #FFB4AE 0%, #FF8A80 100%)" :
-                    group.color === "amber"   ? "linear-gradient(180deg, #FFC876 0%, #FFA53A 100%)" :
-                    group.color === "sky"     ? "linear-gradient(180deg, #7EB8E8 0%, #4A90D9 100%)" :
-                    group.color === "indigo"  ? "linear-gradient(180deg, #A5B4FC 0%, #7C6BF5 100%)" :
-                    group.color === "emerald" ? "linear-gradient(180deg, #6FE3C2 0%, #34D39E 100%)" :
-                    group.color === "violet"  ? "linear-gradient(180deg, #C4B5FD 0%, #A78BFA 100%)" :
-                    group.color === "cyan"    ? "linear-gradient(180deg, #7EE8E8 0%, #34D3D3 100%)" :
-                                                 "linear-gradient(180deg, #FFFFFF 0%, #C4DAEE 100%)",
+                  background: NAV_ACCENT[group.color].gradient,
+                  boxShadow: NAV_ACCENT[group.color].glow,
                 }}
               />
             )}
-            {/* 2026-08-12 · 사용자 지시 · 그룹 헤더 왼쪽 · 공통헤더 탭과 동일 아이콘 */}
+            {/* 2026-08-17 · 액센트 강화 · 그룹 헤더 아이콘 · NAV_ACCENT 단일 소스 · 헤더 탭과 동일 색 */}
             {group.icon && (() => {
               const GroupIcon = group.icon;
               return (
@@ -160,10 +154,10 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                   weight={hasActiveItem ? "fill" : "duotone"}
                   className={[
                     "shrink-0",
-                    // 2026-08-17 · deep teal 배경 · 활성 = 그룹 톤 밝은 shade (300) · 비활성 = light mint
-                    hasActiveItem ? groupTone.iconActive : "text-[#C4DAEE]/80",
-                    "transition-colors duration-150 ease-out",
+                    hasActiveItem ? `${NAV_ACCENT[group.color].iconText} scale-110` : "text-[#C4DAEE]/80",
+                    "transition-all duration-150 ease-out",
                   ].join(" ")}
+                  style={hasActiveItem ? { filter: `drop-shadow(0 0 6px ${NAV_ACCENT[group.color].hex}A0)` } : undefined}
                 />
               );
             })()}
@@ -213,20 +207,13 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
 
             return (
               <SidebarMenuItem key={`${item.key}-${item.subTab ?? "_"}-${itemIdx}`} className="relative">
-                {/* 2026-08-17 · 액센트 강화 · 활성 시 좌측 3px 그룹 톤 accent bar (AppNavHeader 하단 accent 와 연동) */}
+                {/* 2026-08-17 · 액센트 강화 · 활성 시 좌측 4px gradient bar + glow · NAV_ACCENT 단일 소스 */}
                 {active && (
                   <span
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[70%] rounded-r-full pointer-events-none z-[1] group-data-[collapsible=icon]:hidden"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[4px] h-[80%] rounded-r-full pointer-events-none z-[1] group-data-[collapsible=icon]:hidden"
                     style={{
-                      background:
-                        item.color === "red"     ? "linear-gradient(180deg, #FFB4AE 0%, #FF8A80 100%)" :
-                        item.color === "amber"   ? "linear-gradient(180deg, #FFC876 0%, #FFA53A 100%)" :
-                        item.color === "sky"     ? "linear-gradient(180deg, #7EB8E8 0%, #4A90D9 100%)" :
-                        item.color === "indigo"  ? "linear-gradient(180deg, #A5B4FC 0%, #7C6BF5 100%)" :
-                        item.color === "emerald" ? "linear-gradient(180deg, #6FE3C2 0%, #34D39E 100%)" :
-                        item.color === "violet"  ? "linear-gradient(180deg, #C4B5FD 0%, #A78BFA 100%)" :
-                        item.color === "cyan"    ? "linear-gradient(180deg, #7EE8E8 0%, #34D3D3 100%)" :
-                                                    "linear-gradient(180deg, #FFFFFF 0%, #C4DAEE 100%)",
+                      background: NAV_ACCENT[item.color].gradient,
+                      boxShadow: NAV_ACCENT[item.color].glow,
                     }}
                   />
                 )}
@@ -268,12 +255,13 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                     weight={active ? "fill" : "duotone"}
                     className={[
                       "shrink-0",
-                      // 2026-08-17 · deep teal · 활성 = 그룹 밝은 shade · 비활성 = mint 톤
+                      // 2026-08-17 · 액센트 강화 · NAV_ACCENT 단일 소스 · 헤더 탭 아이콘과 동일 색
                       active
-                        ? [tone.iconActive, "scale-110"].join(" ")
+                        ? `${NAV_ACCENT[item.color].iconText} scale-110`
                         : "text-[#C4DAEE]/60",
                       "transition-transform duration-200 ease-out",
                     ].join(" ")}
+                    style={active ? { filter: `drop-shadow(0 0 4px ${NAV_ACCENT[item.color].hex}80)` } : undefined}
                   />
                   <span>{item.label}</span>
                 </SidebarMenuButton>

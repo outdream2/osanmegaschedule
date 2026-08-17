@@ -23,7 +23,7 @@ import { useIsMobile } from "../../hooks/use-mobile";
 // 2026-08-12 · 프레임워크 · logo alt 만 brand.shortName 반영 (하드코딩 fallback 유지)
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 // 2026-08-12 · #62 · 공통헤더 TABS 를 SIDE_NAV_GROUPS 로부터 파생 (단일 소스 · B 방식)
-import { DERIVED_TOP_TABS, type DerivedTopTab, type SideNavColor } from "./sideNavGroups";
+import { DERIVED_TOP_TABS, type DerivedTopTab, type SideNavColor, NAV_ACCENT, headerAccentGradient } from "./sideNavGroups";
 
 export type AppNavPage =
   | "landing"
@@ -314,38 +314,15 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const Icon = tab.icon;
     const c = TAB_COLOR_MAP[tab.color ?? "slate"];
 
-    // 2026-08-17 · 세련 · 공통헤더 · 그룹별 accent · 활성 아이콘 색 · 더 강한 시각 차별화
-    //   · 활성 · glass pill + 그룹 색 아이콘 (더 진한 색) + 하단 accent bar 강화 (2px→3px + gradient)
-    //   · 비활성 · dot 미표시 · 아이콘 muted
-    //   · Linear/Vercel/Attio 톤 + subtle glow
-    const ACCENT_BAR: Record<string, string> = {
-      slate:   "linear-gradient(90deg, transparent, #ffffff, transparent)",
-      blue:    "linear-gradient(90deg, transparent, #7EB8E8, transparent)",
-      red:     "linear-gradient(90deg, transparent, #FFB4AE, transparent)",
-      sky:     "linear-gradient(90deg, transparent, #7EB8E8, transparent)",
-      indigo:  "linear-gradient(90deg, transparent, #A5B4FC, transparent)",
-      orange:  "linear-gradient(90deg, transparent, #FFB477, transparent)",
-      emerald: "linear-gradient(90deg, transparent, #6FE3C2, transparent)",
-      violet:  "linear-gradient(90deg, transparent, #C4B5FD, transparent)",
-      amber:   "linear-gradient(90deg, transparent, #FFC876, transparent)",
-      cyan:    "linear-gradient(90deg, transparent, #7EE8E8, transparent)",
-    };
-    const ACCENT_ICON: Record<string, string> = {
-      slate:   "text-white",
-      blue:    "text-[#7EB8E8]",
-      red:     "text-[#FFB4AE]",
-      sky:     "text-[#7EB8E8]",
-      indigo:  "text-[#A5B4FC]",
-      orange:  "text-[#FFB477]",
-      emerald: "text-[#6FE3C2]",
-      violet:  "text-[#C4B5FD]",
-      amber:   "text-[#FFC876]",
-      cyan:    "text-[#7EE8E8]",
-    };
-
-    const colorKey = tab.color ?? "slate";
-    const accentGradient = ACCENT_BAR[colorKey] ?? ACCENT_BAR.slate;
-    const iconAccent = ACCENT_ICON[colorKey] ?? "text-white";
+    // 2026-08-17 · 세련 · 공통헤더 ↔ 사이드바 연동 (NAV_ACCENT 단일 소스 · sideNavGroups.ts)
+    //   · 활성 · glass pill + 그룹 색 아이콘 + 하단 gradient accent bar + subtle glow
+    //   · SideNav 좌측 accent bar 와 동일 hex 참조 → drift 방지
+    const colorKey = (tab.color ?? "slate") as SideNavColor;
+    const validColor: SideNavColor = (["slate","amber","red","sky","indigo","emerald","violet","cyan"] as SideNavColor[]).includes(colorKey) ? colorKey : "slate";
+    const accent = NAV_ACCENT[validColor];
+    const accentGradient = headerAccentGradient(validColor);
+    const iconAccent = accent.iconText;
+    const activeGlow = accent.glow;
 
     // 2026-08-17 · 딥네이비 배경 · 폰트 +2 유지
     const baseCommon = "relative flex items-center gap-1.5 px-3 sm:px-3 md:px-3.5 lg:px-4 py-1.5 rounded-lg text-[17px] sm:text-[17px] md:text-[18px] lg:text-[19px] font-semibold whitespace-nowrap transition-all duration-150";
@@ -364,7 +341,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           <span key="business" className={activeClass}>
             <Icon size={18} weight="fill" className={`shrink-0 ${iconAccent}`} />
             <span>{tab.label}</span>
-            <span className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-[70%] h-[3px] rounded-full pointer-events-none" style={{ background: accentGradient }} />
+            <span className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-[80%] h-[3px] rounded-full pointer-events-none" style={{ background: accentGradient, boxShadow: activeGlow }} />
           </span>
         );
       }
@@ -389,7 +366,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         <span key={tab.key} className={activeClass}>
           <Icon size={18} weight="fill" className={`shrink-0 ${iconAccent}`} />
           <span>{tab.label}</span>
-          <span className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-[70%] h-[3px] rounded-full pointer-events-none" style={{ background: accentGradient }} />
+          <span className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-[80%] h-[3px] rounded-full pointer-events-none" style={{ background: accentGradient, boxShadow: activeGlow }} />
         </span>
       );
     }
