@@ -20,7 +20,7 @@
 
 import type { ReactNode } from "react";
 
-export type ChipTone = "sky" | "emerald" | "amber" | "rose" | "violet" | "teal" | "indigo" | "zinc" | "brand";
+export type ChipTone = "sky" | "emerald" | "amber" | "rose" | "violet" | "teal" | "indigo" | "zinc" | "brand" | "pine";
 
 const DOT_MAP: Record<ChipTone, string> = {
   sky:     "bg-sky-500",
@@ -32,6 +32,8 @@ const DOT_MAP: Record<ChipTone, string> = {
   indigo:  "bg-indigo-500",
   zinc:    "bg-zinc-400",
   brand:   "bg-brand-deep",
+  // 2026-08-17 · Pine Green (Hermès · 청록톤 · 사용자 확정)
+  pine:    "bg-[#01796F]",
 };
 
 export interface ChipOption<V extends string | number = string> {

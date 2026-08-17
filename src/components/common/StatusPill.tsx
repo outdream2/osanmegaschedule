@@ -11,7 +11,7 @@
 
 import type { ReactNode } from "react";
 
-export type PillTone = "brand" | "sky" | "emerald" | "amber" | "rose" | "violet" | "teal" | "indigo" | "zinc";
+export type PillTone = "brand" | "sky" | "emerald" | "amber" | "rose" | "violet" | "teal" | "indigo" | "zinc" | "pine";
 
 interface PillCls {
   bg: string;
@@ -30,6 +30,8 @@ const TONE_MAP: Record<PillTone, PillCls> = {
   teal:    { bg: "bg-teal-50",     text: "text-teal-700",    border: "border-teal-200",       dot: "bg-teal-500" },
   indigo:  { bg: "bg-indigo-50",   text: "text-indigo-700",  border: "border-indigo-200",     dot: "bg-indigo-500" },
   zinc:    { bg: "bg-zinc-100",    text: "text-zinc-700",    border: "border-line",           dot: "bg-zinc-400" },
+  // 2026-08-17 · Pine Green (Hermès Pine · 청록톤 · 딥네이비 페어링) · 사용자 확정
+  pine:    { bg: "bg-[#01796F]/10", text: "text-[#01796F]",   border: "border-[#01796F]/30",   dot: "bg-[#01796F]" },
 };
 
 export interface StatusPillProps {
