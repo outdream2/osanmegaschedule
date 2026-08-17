@@ -89,44 +89,48 @@ export const VendorRowCard: React.FC<VendorRowCardProps> = React.memo(({
   const recentCls = recencyTextCls(days);
 
   return (
+    /* 2026-08-17 · 세련 · 딥네이비 active · left accent · 폰트 +2 · 정보 색상 semantic */
     <button
       type="button"
       onClick={onSelect}
       title={`${companyName}${lastDate ? ` · 최근매입 ${lastDate}${days != null ? ` (${days}일 전)` : ""}` : ""}`}
-      className={`group w-full text-left px-2 py-2 grid gap-1.5 items-center transition cursor-pointer border-l-2 grid-cols-[1fr_64px_60px_52px] ${
+      className={`group relative w-full text-left px-3 py-2.5 grid gap-2 items-center transition-colors cursor-pointer grid-cols-[1fr_68px_60px_52px] ${
         active
-          ? "bg-emerald-50 border-emerald-500"
-          : "hover:bg-zinc-50 border-transparent"
+          ? "bg-brand-tint text-ink"
+          : "hover:bg-zinc-50"
       }`}
     >
+      {/* 활성 · 좌측 딥네이비 accent bar (Linear 규칙) */}
+      {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[60%] rounded-r-full bg-brand-deep" />}
+
       {/* 1. 공급사 (카테고리 좌측 · 이름) */}
-      <div className="flex items-center gap-1 min-w-0">
-        <VendorCategoryBadge category={category} className="text-[9px]" />
-        <span className={`text-[12px] font-semibold leading-tight truncate ${
-          active ? "text-emerald-800" : "text-zinc-700"
+      <div className="flex items-center gap-1.5 min-w-0">
+        <VendorCategoryBadge category={category} className="text-[10px]" />
+        <span className={`text-[14px] font-semibold leading-tight truncate tracking-tight ${
+          active ? "text-brand-deep" : "text-ink"
         }`}>
           {companyName}
         </span>
       </div>
-      {/* 2. 매입액 (이번달) */}
+      {/* 2. 매입액 (이번달) · 뉴트럴 색 · Vercel 규칙 (KPI 뉴트럴) */}
       <span
-        className={`text-right text-[12px] font-bold tabular-nums leading-none ${
-          thisMonth > 0 ? (active ? "text-indigo-800" : "text-indigo-700") : "text-zinc-300"
+        className={`text-right text-[13px] font-bold tabular-nums leading-none ${
+          thisMonth > 0 ? (active ? "text-brand-deep" : "text-ink") : "text-ink-soft/40"
         }`}
         title={`이번달 매입액 · ${thisMonth.toLocaleString()}원`}
       >
         {thisMonth > 0 ? fmtWon(thisMonth) : "-"}
       </span>
-      {/* 3. 최근매입일 (MM-DD · tooltip 에 full ISO) */}
+      {/* 3. 최근매입일 (MM-DD · tooltip 에 full ISO) · semantic recency color */}
       <span
-        className={`text-right text-[12px] font-bold tabular-nums leading-none ${recentCls}`}
+        className={`text-right text-[13px] font-bold tabular-nums leading-none ${recentCls}`}
         title={lastDate ? `최근매입 · ${lastDate}${days != null ? ` (${days}일 전)` : ""}` : "매입 이력 없음"}
       >
         {recentLabel(lastDate)}
       </span>
-      {/* 4. 매입주기 */}
+      {/* 4. 매입주기 · semantic color */}
       <span
-        className={`text-right text-[12px] font-bold tabular-nums leading-none ${cycleColor}`}
+        className={`text-right text-[13px] font-bold tabular-nums leading-none ${cycleColor}`}
         title={cycle != null ? `매입주기 · 평균 ${cycle}일 (매입일 2회↑ 기준)` : "매입 2회 미만 · 계산 불가"}
       >
         {cycle != null ? `${cycle}일` : "-"}
