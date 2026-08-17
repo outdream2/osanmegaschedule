@@ -720,41 +720,48 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
 
   return (
     <div className="flex flex-col gap-2">
-      {/* ── 상단 필터바 ── */}
-      <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
-        <div className="flex items-center gap-2">
-          <Building2 size={14} className="text-sky-500 shrink-0" />
-          <span className={`${TEXT.body} text-zinc-800`}>공급사현황</span>
-          <span className="text-[15px] font-semibold text-sky-600 bg-sky-50 rounded-full px-2 py-0.5 border border-sky-200 tabular-nums">{displayedXlsxSuppliers.length}개 사</span>
-          <span className={`${TEXT.caption} text-zinc-400 hidden sm:inline`}>행 클릭 → 우측 상품 리스트 · 상품명 클릭 → 상세</span>
+      {/* ── 상단 필터바 · 2026-08-17 · 최신 트렌드 · 좌측 accent bar + 딥네이비 통일 ── */}
+      <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2`}>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+          <Building2 size={16} className="text-brand-deep shrink-0" />
+          <span className="text-[17px] font-bold text-ink tracking-tight">공급사현황</span>
+          <span className="text-[14px] font-semibold text-brand-deep bg-brand-tint rounded-full px-2.5 py-0.5 border border-brand/15 tabular-nums">{displayedXlsxSuppliers.length}개 사</span>
+          <span className={`${TEXT.caption} text-ink-soft hidden sm:inline`}>행 클릭 → 우측 상품 리스트 · 상품명 클릭 → 상세</span>
         </div>
-        {/* 조회기간 */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[15px] font-bold text-ink tracking-tight shrink-0">기간</span>
-          <div className="flex flex-wrap bg-zinc-50 border border-line rounded-md p-0.5 gap-0.5">
+        {/* 조회기간 · segmented pill */}
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
+            <span className="text-[13px] font-bold text-ink tracking-tight">기간</span>
+          </span>
+          <div className="flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
             <button onClick={() => { setSupplierSeason(null); setSupplierMonths(0); }}
-              className={`px-2 h-6 text-[15px] font-semibold rounded transition cursor-pointer ${!supplierSeason && supplierMonths === 0 ? "bg-sky-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>10일</button>
+              className={`px-3 h-8 text-[13px] font-semibold rounded-md transition-colors cursor-pointer ${!supplierSeason && supplierMonths === 0 ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>10일</button>
             {[1, 2, 3, 4, 5, 6].map(m => (
               <button key={m} onClick={() => { setSupplierSeason(null); setSupplierMonths(m as any); }}
-                className={`px-2 h-6 text-[15px] font-semibold rounded transition cursor-pointer ${!supplierSeason && supplierMonths === m ? "bg-sky-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>{m}개월</button>
+                className={`px-3 h-8 text-[13px] font-semibold rounded-md transition-colors cursor-pointer ${!supplierSeason && supplierMonths === m ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>{m}개월</button>
             ))}
           </div>
         </div>
         <SeasonButtons value={supplierSeason} onChange={(v) => { setSupplierSeason(v); if (v) setSupplierMonths(0); }} size="sm" hideLabel />
-        {/* Top N */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[15px] font-bold text-ink tracking-tight shrink-0">Top N</span>
-          <div className="inline-flex bg-zinc-50 border border-line rounded-md p-0.5">
+        {/* Top N · segmented pill */}
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
+            <span className="text-[13px] font-bold text-ink tracking-tight">Top N</span>
+          </span>
+          <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
             {[{ v: 100, label: "100" }, { v: 300, label: "300" }, { v: 1000, label: "1k" }, { v: 2000, label: "2k" }, { v: 999999, label: "전체" }].map(o => (
               <button key={o.v} onClick={() => setSupListLimit(o.v)}
-                className={`text-[15px] font-semibold h-6 px-2 rounded transition whitespace-nowrap cursor-pointer ${supListLimit === o.v ? "bg-sky-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}
+                className={`text-[13px] font-semibold h-8 px-3 rounded-md transition-colors whitespace-nowrap cursor-pointer ${supListLimit === o.v ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}
               >{o.label}</button>
             ))}
           </div>
         </div>
         <button type="button" onClick={fetchData} disabled={loading}
-          className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer" title="새로고침">
-          <LoaderIcon size={13} className={loading ? "animate-spin" : ""} />
+          className="ml-auto w-9 h-9 flex items-center justify-center rounded-lg border border-line bg-white hover:bg-brand-tint hover:border-brand-deep text-ink-soft hover:text-brand-deep transition-colors disabled:opacity-40 cursor-pointer" title="새로고침">
+          <LoaderIcon size={15} className={loading ? "animate-spin" : ""} />
         </button>
       </div>
 
