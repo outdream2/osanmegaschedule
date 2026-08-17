@@ -1105,13 +1105,13 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                           <td className="px-2 py-1.5 text-center text-rose-700 font-bold tabular-nums">{a.mismatch_count}</td>
                           <td className="px-2 py-1.5 text-center text-amber-700 font-bold tabular-nums">{a.expiring_count}</td>
                           <td className="px-2 py-1.5 text-center">
-                            <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[14px] font-bold border ${
-                              a.final_decision === "all_match" ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                                : a.final_decision === "has_mismatch" ? "bg-rose-50 text-rose-700 border-rose-300"
-                                : "bg-zinc-50 text-zinc-500 border-zinc-300"
-                            }`}>
+                            {/* 2026-08-17 · StatusPill 프레임워크 통일 */}
+                            <StatusPill
+                              tone={a.final_decision === "all_match" ? "emerald" : a.final_decision === "has_mismatch" ? "rose" : "zinc"}
+                              size="md"
+                            >
                               {a.final_decision === "all_match" ? "완전일치" : a.final_decision === "has_mismatch" ? "불일치 있음" : "-"}
-                            </span>
+                            </StatusPill>
                           </td>
                           <td className="px-2 py-1.5 text-center">
                             <div className="flex items-center justify-center gap-1">

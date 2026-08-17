@@ -1297,9 +1297,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
             <Users size={13} className="text-white" />
           </div>
           <span className="text-[15px] font-bold text-zinc-800">직원관리</span>
-          <span className="text-[15px] font-semibold px-1.5 py-px rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200 tabular-nums">
-            {employees.length}명
-          </span>
+          {/* 2026-08-17 · StatusPill 프레임워크 통일 */}
+          <StatusPill tone="indigo" size="md">{employees.length}명</StatusPill>
         </div>
 
         {/* 구분선 */}

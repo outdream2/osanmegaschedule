@@ -365,11 +365,9 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
               <span className="w-1.5 h-1.5 rounded-full bg-brand-deep" />
               level ≥ 3
             </span>
+            {/* 2026-08-17 · StatusPill 프레임워크 통일 */}
             {isAdmin && tab !== "education" && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                관리자 CRUD
-              </span>
+              <StatusPill tone="amber" size="md" dot>관리자 CRUD</StatusPill>
             )}
           </div>
           {/* 관리자 · 설정 버튼 · 교육탭에서는 트리 위 통합 컨트롤로 대체 (숨김) */}
