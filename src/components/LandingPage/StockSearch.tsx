@@ -69,17 +69,22 @@ export function StockSearch() {
   };
 
   return (
-    <div className="w-full rounded-3xl overflow-hidden shadow-xl border border-blue-100">
-      {/* 헤더 · gradient bg */}
-      <div className="px-5 py-4 flex items-center gap-3 border-b border-blue-400/30"
-        style={{ background: "linear-gradient(135deg, #1e40af 0%, #2563eb 100%)" }}>
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-          style={{ background: "rgba(255,255,255,0.2)", border: "1.5px solid rgba(255,255,255,0.35)" }}>
-          <Package size={18} className="text-white" weight="fill" />
+    /* 2026-08-17 · 세련 · 딥네이비 브랜드 · 상단 gradient hero · 그림자 심화 */
+    <div className="w-full rounded-3xl overflow-hidden shadow-[0_4px_24px_-4px_rgba(10,46,74,0.15),0_20px_40px_-16px_rgba(10,46,74,0.2)] border border-line bg-white">
+      {/* 헤더 · 딥네이비 gradient · 목업 톤 통일 */}
+      <div className="relative overflow-hidden px-5 py-4 flex items-center gap-3"
+        style={{ background: "linear-gradient(120deg, #0A2E4A 0%, #1E5C8E 62%, #3E7CB1 100%)" }}>
+        {/* Decorative blobs · Hero 톤 */}
+        <div className="absolute rounded-full w-[160px] h-[160px] -right-[50px] -top-[70px] pointer-events-none" style={{ background: "rgba(255,255,255,0.08)" }} />
+        <div className="absolute rounded-full w-[100px] h-[100px] right-[90px] -bottom-[50px] pointer-events-none" style={{ background: "rgba(255,255,255,0.06)" }} />
+        <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-[0_2px_8px_rgba(0,0,0,0.15)]"
+          style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.35)", backdropFilter: "blur(8px)" }}>
+          <Package size={20} className="text-white" weight="fill" />
         </div>
-        <div className="text-left flex-1 min-w-0">
-          <div className="text-white font-bold text-base sm:text-lg tracking-tight leading-tight">재고 확인</div>
-          <div className="text-blue-100 text-[11px] mt-0.5">약품·제품명 입력 시 실시간 재고 확인</div>
+        <div className="relative text-left flex-1 min-w-0">
+          <div className="text-[11px] font-bold uppercase tracking-[0.08em] mb-0.5" style={{ color: "#B9D6EA" }}>Realtime Stock</div>
+          <div className="text-white font-extrabold text-[18px] sm:text-[20px] tracking-tight leading-tight">재고 확인</div>
+          <div className="text-[12px] mt-1 leading-tight" style={{ color: "#DCE8F3" }}>약품·제품명 입력 시 실시간 재고 확인</div>
         </div>
       </div>
       {/* 검색바 */}
