@@ -23,6 +23,7 @@ import {
 // 2026-08-17 · 프레임워크 · useZoneDefs 훅 사용 · 설정 편집 시 자동 반영
 import { useZoneDefs } from "../../hooks/useZoneDefs";
 import { getZoneLabel, getZoneSubLabel } from "../../constants/zoneLabels";
+import { StatusPill } from "./StatusPill";
 import { MapPin, User } from "lucide-react";
 
 export interface StoreZoneMapProps {
@@ -291,10 +292,11 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
                   )}
                 </td>
                 <td className="px-2 py-1.5 align-middle text-right">
+                  {/* 2026-08-17 · StatusPill 프레임워크 통일 */}
                   {pending > 0 ? (
-                    <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5 tabular-nums">
-                      <MapPin size={8} /> 대기 {pending}
-                    </span>
+                    <StatusPill tone="amber" size="xs" icon={<MapPin size={8} />}>
+                      대기 {pending}
+                    </StatusPill>
                   ) : (
                     <span className="text-[10px] text-zinc-300">-</span>
                   )}
