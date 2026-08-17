@@ -125,6 +125,7 @@ async function insertContractWithIsActiveFallback(
  * contract_file_url + contract_type + contract_start + contract_end + probation_end_date
  * 개별 컬럼 미존재 (42703) 시 · 해당 컬럼만 제외 후 재시도.
  */
+// 2026-08-17 · #143 · 계약서 → 직원정보 반영 필드 확장 (working_hours · annual_leave_days · employee_number)
 async function syncEmployeeContractFields(
   employeeId: number,
   fields: {
@@ -133,6 +134,9 @@ async function syncEmployeeContractFields(
     contract_start?: string | null;
     contract_end?: string | null;
     probation_end_date?: string | null;
+    working_hours?: string | null;
+    annual_leave_days?: number | null;
+    employee_number?: string | null;
   },
 ): Promise<void> {
   const payload: Record<string, unknown> = {};
@@ -338,7 +342,7 @@ router.post("/api/employee-contracts", validateBody(CreateEmployeeContractSchema
     throw new HttpError(500, insErr?.message ?? "insert failed");
   }
 
-  // 4) employees 동기 갱신 (contract_file_url + contract_type + contract_start/end + probation_end_date)
+  // 4) employees 동기 갱신 · 2026-08-17 · #143 · working_hours/annual_leave_days/employee_number 통합
   if (employeeId && Number.isFinite(employeeId)) {
     await syncEmployeeContractFields(employeeId, {
       contract_file_url: pdfUrl,
@@ -346,15 +350,10 @@ router.post("/api/employee-contracts", validateBody(CreateEmployeeContractSchema
       contract_start: contractStart,
       contract_end: contractEnd,
       probation_end_date: probationEndDate,
+      working_hours: workingHours,
+      annual_leave_days: annualLeaveDays,
+      employee_number: employeeNumber,
     });
-    // 2026-08-10 · 사번 별도 동기 (best-effort · 컬럼 미존재 시 무시)
-    if (employeeNumber) {
-      try {
-        await supabase.from("employees").update({ employee_number: employeeNumber }).eq("id", employeeId);
-      } catch (e: any) {
-        console.warn("[employee-contracts] employees.employee_number 갱신 실패 (무시):", e?.message ?? e);
-      }
-    }
   }
 
   // 2026-08-13 · 사용자 지시 · 계약서 업로드 알림 hook 제거 (조용히 저장만)
@@ -438,7 +437,7 @@ router.post("/api/employee-contracts/upload", driveUpload.single("contract"), as
     throw new HttpError(500, insErr?.message ?? "insert failed");
   }
 
-  // employees 동기 갱신
+  // employees 동기 갱신 · 2026-08-17 · #143 · working_hours/annual_leave_days/employee_number
   if (employeeId && Number.isFinite(employeeId)) {
     await syncEmployeeContractFields(employeeId, {
       contract_file_url: driveUrl,
@@ -446,6 +445,9 @@ router.post("/api/employee-contracts/upload", driveUpload.single("contract"), as
       contract_start: contractStart,
       contract_end: contractEnd,
       probation_end_date: probationEndDate,
+      working_hours: b.working_hours ?? null,
+      annual_leave_days: b.annual_leave_days != null ? Number(b.annual_leave_days) || null : null,
+      employee_number: b.employee_number ? String(b.employee_number).trim() : null,
     });
   }
 
