@@ -8,6 +8,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { api } from "../../lib/apiClient";
 import { X, Package, TrendingUp, ChevronRight, ChevronDown, Building2, ClipboardList, History } from "lucide-react";
 import { CollapseCard } from "./CollapseCard";
+import { StatusPill } from "./StatusPill";
 import { ProductInfoCard, PurchaseHistorySection } from "../ScanPage/ProductInfoCard";
 import { type ProductInfo } from "../../lib/productsCache";
 import { SeasonButtons } from "./SeasonButtons";
@@ -626,13 +627,13 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }>
                       <td className="px-3 py-2 text-[14px] text-right tabular-nums text-amber-700 font-bold">{o.current_stock ?? "-"}</td>
                       <td className="px-3 py-2 text-[14px] text-right tabular-nums text-ink-soft">{o.optimal_stock ?? "-"}</td>
                       <td className="px-3 py-2 text-center">
-                        <span className={`text-[12px] font-semibold rounded-full px-2.5 py-0.5 border whitespace-nowrap ${
-                          o.status === "done" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-                          o.status === "sent" ? "bg-brand-tint text-brand-deep border-brand/15" :
-                          "bg-amber-50 text-amber-700 border-amber-200"
-                        }`}>
+                        {/* 2026-08-17 · StatusPill 프레임워크 통일 */}
+                        <StatusPill
+                          tone={o.status === "done" ? "emerald" : o.status === "sent" ? "brand" : "amber"}
+                          size="sm"
+                        >
                           {o.status ?? "대기"}
-                        </span>
+                        </StatusPill>
                       </td>
                     </tr>
                   ))}
