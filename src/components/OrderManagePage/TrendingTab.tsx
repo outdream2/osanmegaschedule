@@ -148,16 +148,18 @@ const PeriodBucketCard: React.FC<{
   const fmt = (n: number) => n.toLocaleString();
   return (
     <div className={`${CARD_BASE} overflow-hidden flex flex-col`}>
-      <div className="px-4 py-3 bg-indigo-50/50 border-b border-indigo-100 flex items-start justify-between gap-2">
+      {/* 2026-08-17 · 뉴트럴 헤더 + accent bar · 딥네이비 통일 */}
+      <div className="px-4 py-3 bg-zinc-50/60 border-b border-line flex items-start justify-between gap-2">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[15px] font-bold text-zinc-800">{bucket.label}</span>
-            <span className="text-[15px] text-zinc-500">({bucket.sublabel})</span>
+            <span className="w-[3px] h-[16px] rounded-full bg-brand-deep shrink-0" />
+            <span className="text-[16px] font-bold text-ink tracking-tight">{bucket.label}</span>
+            <span className="text-[13px] text-ink-soft">({bucket.sublabel})</span>
             {!bucket.loading && !bucket.error && (
               <StatusPill tone="indigo" size="md">{bucket.total}건</StatusPill>
             )}
           </div>
-          <div className="text-[15px] text-zinc-400 mt-0.5">{bucket.vsLabel}</div>
+          <div className="text-[13px] text-ink-soft mt-0.5 font-medium">{bucket.vsLabel}</div>
         </div>
       </div>
       {bucket.loading ? (
