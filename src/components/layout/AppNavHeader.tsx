@@ -341,7 +341,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           <span key="business" className={activeClass}>
             <Icon size={20} weight="fill" className={`shrink-0 ${iconAccent}`} />
             <span>{tab.label}</span>
-            <span className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-[80%] h-[3px] rounded-full pointer-events-none" style={{ background: accentGradient, boxShadow: activeGlow }} />
+            {/* 2026-08-17 · Linear/Vercel 표준 · 활성 = 얇은 solid 흰색 stripe (2px monochrome · gradient/glow 제거 · 세련) */}
+          <span className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-[80%] h-[2px] rounded-full pointer-events-none bg-white/85" />
           </span>
         );
       }
@@ -366,7 +367,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         <span key={tab.key} className={activeClass}>
           <Icon size={20} weight="fill" className={`shrink-0 ${iconAccent}`} />
           <span>{tab.label}</span>
-          <span className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-[80%] h-[3px] rounded-full pointer-events-none" style={{ background: accentGradient, boxShadow: activeGlow }} />
+          {/* 2026-08-17 · Linear/Vercel 표준 · 활성 = 얇은 solid 흰색 stripe (2px monochrome · gradient/glow 제거 · 세련) */}
+          <span className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-[80%] h-[2px] rounded-full pointer-events-none bg-white/85" />
         </span>
       );
     }

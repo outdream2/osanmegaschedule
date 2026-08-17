@@ -135,17 +135,14 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
           ].join(" ")}
         >
           <span className="flex items-center gap-2 relative">
-            {/* 2026-08-17 · 액센트 강화 · 그룹 활성 시 왼쪽 4px gradient bar + glow · NAV_ACCENT 단일 소스 */}
+            {/* 2026-08-17 · Linear/Vercel/Attio 표준 · 활성 = 얇은 solid 흰색 stripe (2px · monochrome · 세련)
+                hue rainbow gradient 는 촌스러워서 제거 · 그룹 hue 는 아이콘에만 (아래) */}
             {hasActiveItem && (
               <span
-                className="absolute -left-2 top-1/2 -translate-y-1/2 w-[4px] h-[80%] rounded-r-full pointer-events-none group-data-[collapsible=icon]:hidden"
-                style={{
-                  background: NAV_ACCENT[group.color].gradient,
-                  boxShadow: NAV_ACCENT[group.color].glow,
-                }}
+                className="absolute -left-2 top-1/2 -translate-y-1/2 w-[2px] h-[70%] rounded-r-full pointer-events-none group-data-[collapsible=icon]:hidden bg-white/85"
               />
             )}
-            {/* 2026-08-17 · 액센트 강화 · 그룹 헤더 아이콘 · NAV_ACCENT 단일 소스 · 헤더 탭과 동일 색 */}
+            {/* 2026-08-17 · Linear/Attio 표준 · 그룹 hue 는 아이콘에만 (drop-shadow 제거 · monochrome 세련) */}
             {group.icon && (() => {
               const GroupIcon = group.icon;
               return (
@@ -153,11 +150,9 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                   size={18}
                   weight={hasActiveItem ? "fill" : "duotone"}
                   className={[
-                    "shrink-0",
-                    hasActiveItem ? `${NAV_ACCENT[group.color].iconText} scale-110` : "text-[#C4DAEE]/80",
-                    "transition-all duration-150 ease-out",
+                    "shrink-0 transition-colors duration-150 ease-out",
+                    hasActiveItem ? NAV_ACCENT[group.color].iconText : "text-[#C4DAEE]/80",
                   ].join(" ")}
-                  style={hasActiveItem ? { filter: `drop-shadow(0 0 6px ${NAV_ACCENT[group.color].hex}A0)` } : undefined}
                 />
               );
             })()}
@@ -207,14 +202,11 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
 
             return (
               <SidebarMenuItem key={`${item.key}-${item.subTab ?? "_"}-${itemIdx}`} className="relative">
-                {/* 2026-08-17 · 액센트 강화 · 활성 시 좌측 4px gradient bar + glow · NAV_ACCENT 단일 소스 */}
+                {/* 2026-08-17 · Linear/Vercel/Attio 표준 · 활성 = 얇은 solid 흰색 stripe (2px monochrome)
+                    그룹 hue 는 아이콘에만 (드롭섀도우 최소) · 세련 · frosted 배경은 SidebarMenuButton isActive prop 이 담당 */}
                 {active && (
                   <span
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[4px] h-[80%] rounded-r-full pointer-events-none z-[1] group-data-[collapsible=icon]:hidden"
-                    style={{
-                      background: NAV_ACCENT[item.color].gradient,
-                      boxShadow: NAV_ACCENT[item.color].glow,
-                    }}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-[70%] rounded-r-full pointer-events-none z-[1] group-data-[collapsible=icon]:hidden bg-white/85"
                   />
                 )}
 
@@ -254,14 +246,10 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                     size={14}
                     weight={active ? "fill" : "duotone"}
                     className={[
-                      "shrink-0",
-                      // 2026-08-17 · 액센트 강화 · NAV_ACCENT 단일 소스 · 헤더 탭 아이콘과 동일 색
-                      active
-                        ? `${NAV_ACCENT[item.color].iconText} scale-110`
-                        : "text-[#C4DAEE]/60",
-                      "transition-transform duration-200 ease-out",
+                      "shrink-0 transition-colors duration-150 ease-out",
+                      // 2026-08-17 · Linear/Attio · hue 는 아이콘에만 · drop-shadow 제거 (세련)
+                      active ? NAV_ACCENT[item.color].iconText : "text-[#C4DAEE]/60",
                     ].join(" ")}
-                    style={active ? { filter: `drop-shadow(0 0 4px ${NAV_ACCENT[item.color].hex}80)` } : undefined}
                   />
                   <span>{item.label}</span>
                 </SidebarMenuButton>

@@ -10,6 +10,7 @@ import {
   Search, Boxes, Info, EyeOff, Loader2 as LoaderIcon,
   ChevronRight, ChevronDown, CheckSquare, Square, X as XIcon,
 } from "lucide-react";
+import { StatusPill } from "../common/StatusPill";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
@@ -460,12 +461,13 @@ export const FlowTab: React.FC = () => {
   return (
     <div className="flex flex-col gap-2">
 
-      {/* 상단 필터바 */}
-      <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
-        <div className="flex items-center gap-2">
-          <Boxes size={14} className="text-sky-500 shrink-0" />
-          <span className={`${TEXT.body} text-zinc-800`}>상품현황리스트</span>
-          <span className="text-[15px] font-semibold text-sky-600 bg-sky-50 rounded-full px-2 py-0.5 border border-sky-200 tabular-nums">{filteredFlow.length}건</span>
+      {/* 상단 필터바 · 2026-08-17 · accent bar + StatusPill 통일 */}
+      <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2`}>
+        <div className="flex items-center gap-2.5">
+          <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+          <Boxes size={16} className="text-brand-deep shrink-0" />
+          <span className="text-[17px] font-bold text-ink tracking-tight">상품현황리스트</span>
+          <StatusPill tone="sky" size="md">{filteredFlow.length}건</StatusPill>
         </div>
 
         {/* 조회기간 */}
