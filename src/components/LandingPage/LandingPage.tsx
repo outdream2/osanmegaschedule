@@ -1002,22 +1002,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <MenuCard color="sky" icon={Briefcase} title="경영관리" description="직원관리 · 연차승인 · 점심불참 · 권한"
                   onClick={() => onNavigate("business-manage", authSession!)}
                   badge={leavePendingCount > 0 ? (
-                    <div className="absolute top-2.5 right-2.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-white text-[10px] font-black" style={{ background: "linear-gradient(135deg, #f43f5e, #e11d48)", boxShadow: "0 0 0 2px white, 0 2px 6px rgba(244,63,94,0.4)" }}>
+                    <div className="absolute top-2.5 right-2.5 min-w-[24px] h-6 px-2 rounded-full flex items-center justify-center text-white text-[11px] font-black tabular-nums bg-brand-deep shadow-sm ring-2 ring-white z-10">
                       {leavePendingCount}
                     </div>
                   ) : undefined} />
 
-                {/* 요청목록 조회 — indigo · MenuCard · 4-counter 배지 */}
+                {/* 요청목록 조회 · 2026-08-17 · 최신 트렌드 · 단일 mono 배지 (4개 파스텔 dot → 총 건수) */}
                 <MenuCard color="coral" icon={List} title="요청목록 조회" description="진열·발주요청 및 배치구역 불일치 확인"
                   onClick={() => onNavigate("requests", authSession!)}
-                  badge={(
-                    <div className="absolute top-2 right-2 flex items-center gap-0.5 z-10">
-                      <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white bg-blue-500 shadow-sm">{requestsCounts.display}</span>
-                      <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white bg-red-500 shadow-sm">{requestsCounts.order}</span>
-                      <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white bg-orange-500 shadow-sm">{requestsCounts.mismatch}</span>
-                      <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white bg-emerald-500 shadow-sm">{requestsCounts.lunch}</span>
-                    </div>
-                  )} />
+                  badge={(() => {
+                    const total = requestsCounts.display + requestsCounts.order + requestsCounts.mismatch + requestsCounts.lunch;
+                    if (total === 0) return undefined;
+                    return (
+                      <div className="absolute top-2.5 right-2.5 min-w-[24px] h-6 px-2 rounded-full flex items-center justify-center text-white text-[11px] font-black tabular-nums bg-brand-deep shadow-sm ring-2 ring-white z-10">
+                        {total}
+                      </div>
+                    );
+                  })()} />
 
                 {/* 데이터 업로드 (통합) — orange (level 9 전용) — 상품목록 · 재고리스트 서브탭 */}
                 {isSuperAdminLevel9 && (
