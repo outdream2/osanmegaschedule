@@ -589,17 +589,11 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 </div>
                 <span className="text-sm font-bold text-zinc-800">등록된 입고 상품</span>
                 {items.length > 0 && (
-                  <span className="text-[15px] font-bold text-sky-700
-                    bg-sky-50 border border-sky-200 rounded-full px-2 py-0.5 tabular-nums">
-                    {items.length}건
-                  </span>
+                  <StatusPill tone="sky" size="md">{items.length}건</StatusPill>
                 )}
               </div>
               {counts.pending > 0 && (
-                <span className="text-[14px] sm:text-[15px] font-bold
-                  text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-1">
-                  {counts.pending}건 미결정
-                </span>
+                <StatusPill tone="amber" size="md" dot pulse>{counts.pending}건 미결정</StatusPill>
               )}
             </div>
 
@@ -867,10 +861,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 <span className="text-sm font-bold text-zinc-800">최종 확인 · 거래명세표 대조</span>
               </div>
               {!allDecided && items.length > 0 && (
-                <span className="text-[14px] sm:text-[15px] font-bold
-                  text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-1">
-                  {counts.pending}건 상태 미결정
-                </span>
+                <StatusPill tone="amber" size="md" dot pulse>{counts.pending}건 상태 미결정</StatusPill>
               )}
             </div>
 
@@ -1049,12 +1040,13 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       {/* ── 입고내역 (arrivalTab === "history") · 2026-08-03 · OrderManagePage 에서 이동 ── */}
       {arrivalTab === "history" && (
         <main className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-5 flex flex-col gap-3 min-h-0">
-          {/* 헤더 카드 */}
-          <div className="bg-white border border-line rounded-xl shadow-sm p-3 h-12 flex items-center gap-2">
-            <Package size={14} className="text-indigo-500 shrink-0" />
-            <span className="text-[15px] font-semibold text-zinc-700">입고내역</span>
-            <span className="text-[15px] font-bold text-zinc-500 bg-zinc-100 rounded-full px-2 py-0.5 tabular-nums">{arrivals.length}건</span>
-            <span className="text-[15px] font-medium text-zinc-400 ml-2 hidden sm:inline">최근 {arrivalDays}일</span>
+          {/* 헤더 카드 · 2026-08-17 · accent bar + StatusPill 통일 */}
+          <div className="bg-white border border-line rounded-xl shadow-sm p-3 h-12 flex items-center gap-2.5">
+            <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+            <Package size={16} className="text-brand-deep shrink-0" />
+            <span className="text-[16px] font-bold text-ink tracking-tight">입고내역</span>
+            <StatusPill tone="brand" size="md">{arrivals.length}건</StatusPill>
+            <span className="text-[13px] font-medium text-ink-soft ml-2 hidden sm:inline">최근 {arrivalDays}일</span>
             <div className="flex items-center gap-0.5 bg-zinc-100 border border-line rounded-lg p-1 ml-auto">
               {[7, 30, 90].map(d => (
                 <button key={d} onClick={() => setArrivalDays(d as any)}
