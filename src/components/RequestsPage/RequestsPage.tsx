@@ -62,8 +62,9 @@ type Tab = "display" | "order" | "mismatch" | "lunch" | "inventory" | "leave";
 const fmtDate = fmtDateMD;
 
 /* ── 공통 툴바 ── */
+// 2026-08-17 · 최신 트렌드 · accent bar + 폰트 +2 · 딥네이비 CTA · 컴팩트 pill 통일
 function ListToolbar({
-  total, selected, allChecked, onToggleAll, onDeleteSelected, onDeleteAll, onRefresh, loading, accentColor, extraActions, hideDeleteAll,
+  total, selected, allChecked, onToggleAll, onDeleteSelected, onDeleteAll, onRefresh, loading, extraActions, hideDeleteAll,
 }: {
   total: number; selected: number; allChecked: boolean;
   onToggleAll: () => void; onDeleteSelected: () => void;
@@ -73,19 +74,20 @@ function ListToolbar({
   hideDeleteAll?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-2 mb-2 bg-white border border-line rounded-xl px-3 h-8 shadow-sm">
-      <button onClick={onToggleAll} className="shrink-0 cursor-pointer text-zinc-400 hover:text-zinc-600 transition">
+    <div className="flex items-center gap-2.5 mb-2 bg-white border border-line rounded-xl px-3.5 h-10 shadow-sm">
+      <span className="w-[3px] h-[16px] rounded-full bg-brand-deep shrink-0" />
+      <button onClick={onToggleAll} className="shrink-0 cursor-pointer text-ink-soft hover:text-brand-deep transition-colors">
         {allChecked && total > 0
-          ? <CheckSquare size={15} className={accentColor} />
-          : <Square size={15} />}
+          ? <CheckSquare size={16} className="text-brand-deep" />
+          : <Square size={16} />}
       </button>
-      <span className="text-[14px] text-zinc-500 flex-1 select-none">
-        {selected > 0 ? <><strong className={accentColor}>{selected}개</strong> 선택됨</> : `전체 ${total}건`}
+      <span className="text-[15px] text-ink flex-1 select-none font-medium tabular-nums">
+        {selected > 0 ? <><strong className="text-brand-deep font-bold">{selected}개</strong> 선택됨</> : `전체 ${total}건`}
       </span>
       {selected > 0 && (
         <button
           onClick={onDeleteSelected}
-          className="text-[15px] font-semibold text-rose-600 bg-rose-50 border border-rose-200 px-2.5 h-6 rounded-md hover:bg-rose-100 transition-all duration-150 cursor-pointer"
+          className="text-[14px] font-semibold text-rose-700 bg-white border border-rose-200 hover:bg-rose-50 px-3 h-8 rounded-lg transition-colors cursor-pointer shadow-sm"
         >
           선택삭제
         </button>
@@ -95,14 +97,14 @@ function ListToolbar({
         <button
           onClick={onDeleteAll}
           disabled={total === 0}
-          className="text-[15px] font-semibold text-zinc-500 bg-zinc-50 border border-line px-2.5 h-6 rounded-md hover:bg-zinc-100 transition-all duration-150 cursor-pointer disabled:opacity-40"
+          className="text-[14px] font-semibold text-ink-soft bg-white border border-line hover:border-ink-soft hover:text-ink px-3 h-8 rounded-lg transition-colors cursor-pointer disabled:opacity-40 shadow-sm"
         >
           전체삭제
         </button>
       )}
-      <div className="h-4 w-px bg-zinc-200 shrink-0" />
-      <button onClick={onRefresh} className="w-6 h-6 flex items-center justify-center rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-all duration-150 cursor-pointer">
-        <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+      <div className="h-5 w-px bg-line shrink-0" />
+      <button onClick={onRefresh} className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-soft hover:text-brand-deep hover:bg-brand-tint transition-colors cursor-pointer">
+        <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
       </button>
     </div>
   );
