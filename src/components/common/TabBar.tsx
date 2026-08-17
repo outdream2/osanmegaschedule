@@ -211,15 +211,15 @@ export function TabBar<K extends string = string>({
     );
   }
 
-  // L3 · minimal text tabs · Linear docs 톤 · 세련 · 부드러운 hover + 색 gradient underline
+  // L3 · Notion style · 딥네이비 tinted container + 활성 white pill (L2 zinc pill wrap 과 색으로 확실히 구분)
   if (level === 3) {
     return (
-      <div className={`bg-white border-b border-line/60 w-full shrink-0 ${className}`}>
+      <div className={`bg-brand-tint/40 border-y border-brand/10 w-full shrink-0 ${className}`}>
         <div
-          className="tab-bar-inner"
+          className="tab-bar-inner py-2"
           style={typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth }}
         >
-          <div className={`flex flex-wrap items-stretch gap-1 ${sortable?.isDragging ? "select-none" : ""}`}>
+          <div className={`inline-flex items-center gap-1 flex-wrap ${sortable?.isDragging ? "select-none" : ""}`}>
             {visibleTabs.map(t => {
               const active = activeKey === t.key;
               const Icon = t.icon;
@@ -236,7 +236,7 @@ export function TabBar<K extends string = string>({
                 : "";
 
               return (
-                /* 2026-08-17 · L3 · Attio Segmented Control · 1px hairline + ghost fill (dot 유지) */
+                /* 2026-08-17 · L3 · Linear docs 텍스트 탭 + underline 2px · L2 pill 과 완전 구분 (컨테이너 없음) */
                 <button
                   key={t.key}
                   type="button"
@@ -256,29 +256,29 @@ export function TabBar<K extends string = string>({
                   onTouchEnd={dnd?.onTouchEnd}
                   onTouchCancel={dnd?.onTouchCancel}
                   className={[
-                    "group relative inline-flex items-center gap-1.5 h-9 px-3.5 sm:px-4 rounded-lg text-[14px] sm:text-[15px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight border",
+                    "group relative inline-flex items-center gap-1.5 h-9 px-3 sm:px-3.5 rounded-lg text-[14px] sm:text-[15px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight",
                     active
-                      ? "text-ink bg-zinc-50 border-line shadow-[0_1px_0_rgba(10,46,74,0.03)]"
-                      : "text-ink-soft border-transparent hover:text-ink hover:bg-zinc-50/70",
+                      ? "bg-brand-deep text-white shadow-[0_1px_2px_rgba(10,46,74,0.25)]"
+                      : "text-brand-deep/70 hover:text-brand-deep hover:bg-white/70",
                     dragCls,
                   ].join(" ")}
                 >
-                  {/* dot marker · 활성 시 색 accent · 카테고리 identity (Vercel ≤10px) */}
+                  {/* dot marker · 활성 시 · 흰색 dot · 비활성 · 카테고리 톤 dot */}
                   <span
-                    className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${active ? c.iconActive.replace("text-", "bg-") : "bg-zinc-300 group-hover:bg-zinc-400"}`}
+                    className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${active ? "bg-white/80" : c.iconActive.replace("text-", "bg-")}`}
                   />
                   {Icon && (
                     <Icon
                       size={14}
                       strokeWidth={active ? 2.4 : 2}
                       weight={active ? "fill" : "duotone"}
-                      className={`shrink-0 transition-colors duration-200 ${active ? c.iconActive : "text-zinc-400 group-hover:text-zinc-600"}`}
+                      className={`shrink-0 transition-colors duration-200 ${active ? "text-white" : c.iconActive}`}
                     />
                   )}
                   <span>{t.label}</span>
                   {t.badge != null && t.badge > 0 && (
                     <span
-                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold leading-none tabular-nums transition-colors ${active ? `${badgeBg} text-white shadow-sm` : "bg-zinc-100 text-zinc-500 group-hover:bg-zinc-200"}`}
+                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold leading-none tabular-nums transition-colors ${active ? "bg-white/25 text-white" : `${badgeBg} text-white`}`}
                       title={`${t.label} · ${t.badge}건`}
                     >
                       {t.badge}
