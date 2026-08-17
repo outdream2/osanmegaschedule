@@ -111,7 +111,7 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
             <button
               type="button"
               onClick={() => setOpenNew(true)}
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[12px] font-bold shadow-sm transition cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-bold shadow-sm transition cursor-pointer whitespace-nowrap"
               title="신규 공급사 등록"
             >
               <Plus size={12} strokeWidth={2.5} />

@@ -193,7 +193,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
                 href={fileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-sm font-bold cursor-pointer transition"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-sm font-bold cursor-pointer transition"
               >
                 <ExternalLink size={14} /> 새 창에서 열기
               </a>

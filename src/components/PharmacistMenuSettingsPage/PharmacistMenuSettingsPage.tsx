@@ -308,7 +308,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
               <button
                 type="submit"
                 disabled={uploading || !newTitle.trim()}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 disabled:bg-sky-200 disabled:text-sky-400 text-white text-sm font-bold shadow-sm cursor-pointer transition"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-sky-200 disabled:text-sky-400 text-white text-sm font-bold shadow-sm cursor-pointer transition"
               >
                 {uploading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                 {uploading ? "등록 중..." : "등록"}
@@ -448,7 +448,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
                               type="button"
                               onClick={() => saveEdit(row)}
                               disabled={savingId === row.id}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white text-xs font-bold cursor-pointer"
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-50 text-white text-xs font-bold cursor-pointer"
                               title="저장 (Enter)"
                             >
                               {savingId === row.id ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}

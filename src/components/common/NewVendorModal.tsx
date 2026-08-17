@@ -211,7 +211,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
             type="button"
             onClick={handleSave}
             disabled={disabled}
-            className="ml-auto h-9 px-4 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[12px] font-bold shadow-sm inline-flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+            className="ml-auto h-9 px-4 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-bold shadow-sm inline-flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
           >
             {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} strokeWidth={2.5} />}
             {saving ? "저장 중..." : "등록"}

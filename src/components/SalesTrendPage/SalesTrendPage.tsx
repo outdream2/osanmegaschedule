@@ -602,7 +602,7 @@ const ProductTrendTab: React.FC<{
               <button
                 type="button"
                 onClick={() => openScanProductModal({ ...selected, ...(rows[0] ?? {}) })}
-                className="w-8 h-8 rounded-lg bg-sky-500 hover:bg-sky-600 text-white flex items-center justify-center cursor-pointer shrink-0 shadow-sm"
+                className="w-8 h-8 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white flex items-center justify-center cursor-pointer shrink-0 shadow-sm"
                 title="상세 정보"
               >
                 <Info size={15} strokeWidth={2.4} />
@@ -640,7 +640,7 @@ const ProductTrendTab: React.FC<{
                     <button
                       type="button"
                       onClick={() => openScanProductModal({ ...selected, ...(rows[0] ?? {}) })}
-                      className="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-sky-500 hover:bg-sky-600 rounded-lg px-2 py-1 cursor-pointer transition shadow-sm shrink-0"
+                      className="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-lg px-2 py-1 cursor-pointer transition shadow-sm shrink-0"
                       title="상세 정보 · 실재고 입력 · 발주 요청"
                     >
                       <Info size={11} /> 정보확인

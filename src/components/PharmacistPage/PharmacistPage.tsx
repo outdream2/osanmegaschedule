@@ -369,7 +369,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
               type="button"
               onClick={() => selectedCatObj && setSettingsOpen(true)}
               disabled={!selectedCatObj}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-bold bg-sky-600 hover:bg-sky-700 disabled:bg-zinc-200 disabled:text-zinc-400 text-white transition cursor-pointer shrink-0 shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-zinc-200 disabled:text-zinc-400 text-white transition cursor-pointer shrink-0 shadow-sm"
               title={selectedCatObj ? "선택된 카테고리의 하위메뉴 관리" : "좌측에서 카테고리를 먼저 선택하세요"}
             >
               <Settings2 size={14} />
@@ -420,7 +420,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                       <button
                         type="button"
                         onClick={() => { setAddCatOpen(v => !v); if (!addCatOpen) resetNewCatForm(); }}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[15px] font-bold cursor-pointer transition bg-sky-600 hover:bg-sky-700 text-white shadow-sm"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[15px] font-bold cursor-pointer transition bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white shadow-sm"
                         title={addCatOpen ? "폼 닫기" : "새 카테고리 추가"}
                       >
                         {addCatOpen ? <XIcon size={11} /> : <Plus size={11} />}
@@ -469,7 +469,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                         <button
                           type="submit"
                           disabled={newCatSaving || !newCatTitle.trim()}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-sky-600 hover:bg-sky-700 disabled:bg-zinc-200 disabled:text-zinc-400 text-white text-[15px] font-bold cursor-pointer transition shadow-sm"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-zinc-200 disabled:text-zinc-400 text-white text-[15px] font-bold cursor-pointer transition shadow-sm"
                         >
                           {newCatSaving ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}
                           {newCatSaving ? "저장 중..." : "저장"}
@@ -660,7 +660,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                         <button
                           type="button"
                           onClick={() => setSettingsOpen(true)}
-                          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-sky-600 hover:bg-sky-700 text-white text-[14px] font-bold cursor-pointer transition shadow-sm shrink-0"
+                          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[14px] font-bold cursor-pointer transition shadow-sm shrink-0"
                           title="하위메뉴 추가·수정·삭제"
                         >
                           <Plus size={10} />관리
@@ -754,7 +754,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                     <button
                       type="button"
                       onClick={() => openViewerModal(selectedItem)}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-sky-600 hover:bg-sky-700 text-white text-[10.5px] font-bold cursor-pointer shrink-0"
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[10.5px] font-bold cursor-pointer shrink-0"
                       title="풀스크린 · 워터마크 스크린샷 방지 모드"
                     >
                       <Eye size={11} />풀스크린
@@ -842,7 +842,7 @@ const SubMenuListPanel: React.FC<SubMenuListPanelProps> = ({
             <button
               type="button"
               onClick={onOpenSettings}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-sky-600 hover:bg-sky-700 text-white text-[15px] font-bold cursor-pointer transition shadow-sm"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[15px] font-bold cursor-pointer transition shadow-sm"
               title="하위메뉴 추가·수정·삭제"
             >
               <Plus size={11} />

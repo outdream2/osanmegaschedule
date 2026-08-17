@@ -87,7 +87,7 @@ export const SupplierChangeDialog: React.FC<SupplierChangeDialogProps> = ({
                 }
               }
             }}
-            className="flex-1 py-2 text-xs font-bold text-white bg-sky-500 hover:bg-sky-600 rounded-xl transition cursor-pointer"
+            className="flex-1 py-2 text-xs font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-xl transition cursor-pointer"
           >
             변경 적용
           </button>

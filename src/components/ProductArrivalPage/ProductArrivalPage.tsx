@@ -1030,7 +1030,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                           ? "bg-rose-500 hover:bg-rose-600 shadow-md"
                           : saveStatus === "saving"
                             ? "bg-zinc-400"
-                            : "bg-sky-500 hover:bg-sky-600 shadow-md hover:shadow-lg",
+                            : "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-md hover:shadow-lg",
                     ].join(" ")}
                   >
                     {/* 광택 */}

@@ -202,7 +202,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
             href={localEmployee.resume_url!}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-2 py-1.5 text-[12px] font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-lg inline-flex items-center justify-center gap-1 shadow-sm transition"
+            className="px-2 py-1.5 text-[12px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg inline-flex items-center justify-center gap-1 shadow-sm transition"
             title="이력서 · 새 탭에서 열기"
           >
             <FileText size={13} /> 이력서
