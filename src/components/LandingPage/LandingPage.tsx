@@ -2148,11 +2148,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             style={{ background: "rgba(255,255,255,0.98)" }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* ── Branded hero panel ── */}
+            {/* ── Branded hero panel · 2026-08-17 · 딥네이비 톤 (Hero/사이드바와 통일) ── */}
             <div
               className="relative px-7 pt-8 pb-6 overflow-hidden"
               style={{
-                background: "linear-gradient(135deg, #312e81 0%, #4338ca 50%, #6366f1 100%)",
+                background: "linear-gradient(120deg, #0A2E4A 0%, #1E5C8E 62%, #3E7CB1 100%)",
               }}
             >
               {/* Decorative blobs */}
@@ -2281,22 +2281,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </div>
                 )}
 
-                {/* Submit button */}
-                <button
+                {/* Submit button · 2026-08-17 · 공용 Button · primary lg · 딥네이비 */}
+                <Button
                   type="submit"
-                  disabled={empLoading}
-                  className="w-full py-3.5 rounded-2xl text-white font-bold text-sm mt-1 transition-all duration-150 cursor-pointer active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2 shadow-lg shadow-indigo-200"
-                 
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  loading={empLoading}
+                  className="mt-1"
                 >
-                  {empLoading ? (
-                    <>
-                      <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                      <span>로그인 중...</span>
-                    </>
-                  ) : (
-                    <span>직원으로 입장하기</span>
-                  )}
-                </button>
+                  {empLoading ? "로그인 중..." : "직원으로 입장하기"}
+                </Button>
 
                 <p className="text-[11px] text-zinc-400 text-center leading-relaxed">
                   비밀번호 분실 시 관리자에게 문의하세요

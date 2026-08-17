@@ -41,10 +41,11 @@ const VARIANT_STYLES: Record<ButtonVariant, string> = {
     "bg-red-600 text-white shadow-sm hover:bg-red-700 active:bg-red-800 disabled:opacity-40 disabled:cursor-not-allowed border border-red-600",
 };
 
+// 2026-08-17 · 사용자 지시 · 버튼 글씨 +2 (13→15 · 15→17 · 16→18)
 const SIZE_STYLES: Record<ButtonSize, string> = {
-  sm: "h-8 px-3 text-[13px] gap-1.5 rounded-lg",
-  md: "h-10 px-4 text-[15px] gap-2 rounded-lg",
-  lg: "h-11 px-5 text-[16px] gap-2 rounded-[10px]",
+  sm: "h-8 px-3 text-[15px] gap-1.5 rounded-lg",
+  md: "h-10 px-4 text-[17px] gap-2 rounded-lg",
+  lg: "h-11 px-5 text-[18px] gap-2 rounded-[10px]",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
