@@ -14,11 +14,15 @@ interface PanelProps {
 
 export function Panel({ title, moreLabel, onMore, children, className = "" }: PanelProps) {
   return (
-    <div className={`bg-white border border-line rounded-[14px] p-4 shadow-sm ${className}`}>
+    // 2026-08-17 v2 · Attio 세련 · inset light + subtle 2-layer shadow
+    <div
+      className={`bg-white border border-line rounded-[14px] p-4 ${className}`}
+      style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.60), 0 1px 2px rgba(10,46,74,0.05), 0 2px 8px -2px rgba(10,46,74,0.06)" }}
+    >
       <div className="flex items-center justify-between mb-3">
-        <div className="text-[15px] font-bold text-ink">{title}</div>
+        <div className="text-[15px] font-bold text-ink tracking-tight">{title}</div>
         {moreLabel && onMore && (
-          <button type="button" onClick={onMore} className="text-[13px] text-brand font-semibold cursor-pointer hover:underline">
+          <button type="button" onClick={onMore} className="text-[13px] text-brand-deep font-semibold cursor-pointer hover:underline hover:underline-offset-2 transition-all duration-150">
             {moreLabel}
           </button>
         )}
