@@ -7,6 +7,8 @@ import { useSettings } from "../../hooks/useSettings";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { useContactInfo } from "../../hooks/useContactInfo";
 import kakaoQrImg from "../../images/kakao_QR.png";
+// 2026-08-17 · 사용자 지시 · 로그인 모달 · pharmacy cross(+) 대신 로고 이미지
+import logo2Img from "../../images/logo2.png";
 import {
   ChevronRight,
   Clock,
@@ -2178,20 +2180,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <X size={14} />
               </button>
 
-              {/* Brand identity */}
+              {/* Brand identity · 2026-08-17 · 사용자 지시 · + 아이콘 대신 로고 · 한 줄 "오산 메가타운약국" */}
               <div className="relative flex items-center gap-4 mb-3">
-                {/* Pharmacy cross logo */}
-                <div
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shrink-0"
-                  style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)" }}
-                >
-                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="12" y="3" width="8" height="26" rx="3" fill="white" />
-                    <rect x="3" y="12" width="26" height="8" rx="3" fill="white" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="text-white font-black text-2xl leading-tight tracking-tight whitespace-pre-line">{lpBrand.shortName || "오산\n메가타운약국"}</div>
+                <img
+                  src={logo2Img}
+                  alt={`${lpBrand.region ? lpBrand.region + " " : ""}${lpBrand.shortName} 로고`}
+                  className="w-14 h-14 object-cover rounded-2xl ring-1 ring-white/30 shadow-lg shrink-0 bg-white"
+                />
+                <div className="min-w-0">
+                  <div className="text-white font-black text-2xl leading-tight tracking-tight truncate">
+                    {(lpBrand.region ? lpBrand.region + " " : "오산 ") + (lpBrand.shortName || "메가타운약국")}
+                  </div>
                 </div>
               </div>
             </div>

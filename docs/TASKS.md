@@ -1,354 +1,227 @@
 # TASKS
 
 > 2026-08-17 저녁 · UI 최신 트렌드 · 전체 프레임워크화 진행중 · 사용자 병렬 테스트
-
-## 🔥 2026-08-17 저녁 세션 · 대규모 UI 트렌드 재설계
-
-### #149 · 전체 UI · 최신 트렌드 (파스텔 → mono/accent) · 프레임워크화 (2026-08-17)
-- **사용자 지시**:
-  - "파스텔톤이 최신 트렌드랑 안 맞는다 · 파란 사이드바랑 안 어울림"
-  - "최신 트렌드 · 가장 인기 있는 트렌드 반영"
-  - "글씨 크기·시각적 요소 모두 최신 트렌드"
-  - "버튼 색깔도 최신 트렌드"
-  - "전체 통일성 있는 UI · UI 도 프레임워크화"
-  - "갈끔하고 세련되고 아주 멋진 UI"
-  - "PC·모바일 반응형 모두"
-  - "최신 트렌드로 목업도 교체"
-- **진행**: research-strategist 리서치 실행중 (background · 2026 SaaS 트렌드 + 목업 재작성 안)
-- **범위 (리서치 결과 반영 후)**:
-  - MenuCard COLOR_MAP · 파스텔 (-100/700) → mono+accent
-  - KpiCard COLOR_MAP 동일
-  - 버튼 · 공용 Button 컴포넌트 (variant/size) 신규
-  - Card · Chip · StatCard · PageHeader · EmptyState 공용화
-  - 폰트 사이즈 · Linear/Notion 표준 반영 (+2 유지)
-  - 아이콘 · duotone → outlined/filled 조합
-  - **목업 파일 교체** · docs/UI_MOCKUP_PC_2026-08-17.html · MOBILE
-- **원칙 저장**: `feedback_ui_latest_trend_framework.md` (2026-08-17 · 최상위 UI 원칙)
-
-### #150 · 반응형 헤더 · 로고/이름/알림/로그아웃 · 사이드바 톤 통일 (2026-08-17)
-- **사용자 지시** · "반응형일때 로고와 이름 종 로그아웃버튼도 사이드바색깔톤으로 세련되게 만들어봐"
-- 파일 · `src/components/layout/AppNavHeader.tsx` 또는 모바일 헤더
-- 톤 · deep navy (#0A2E4A) + 텍스트 밝은 blue (#C4DAEE) · 사이드바와 통일
-
-### #131 · 페이지설정 · 메뉴 안보이기 (uncheck) 안 됨 · 🐛 재발 (2026-08-17 재확인)
-- **사용자 지시** · "페ㅔ이지설정에서 안보이게 엔체크했는데 아직 페이지는 보여 · 설정부분과 연동해서 페이지 보이기 숨기기 되게"
-- **이전 fix 부족** · 사용자 재보고 · 심층 진단 필요
-- 확인 · `src/App.tsx` isHiddenPage · `usePagePermissions` 캐시 · `filterGroupsForSession` 복합키
-
-
-
-## 🛡️ Spring Security 대비 · 사용자 결정 진행중 (2026-08-16)
-
-### 결정 저장
-- **S3 · Account Lockout** · ❌ 취소 (사용자 지시 · 하지마)
-- **S4 · Password Policy** · ❌ 유지 (D · 최소 4자 · 사용자 편의)
-- **S5 · Audit Logging** · ✅ 완료 (`00b725c` · 관리자 작업만 · winston 30일)
-- **S7 · Input Validation** · ✅ 완료 (`52ee393` · Zod · auth 4 route)
-- **S10 · Refresh Token** · ✅ 완료 (`f434e1d` · Access 15분 + Refresh 30일)
-- **S1·S2·S6·S8·S9** · ⏸ **defer 확정** (사용자 결정 2026-08-16 · "보안 이 정도면 충분")
-  - S1 CSRF · SameSite Lax 로 방어됨
-  - S2 CSP · Helmet default 로 기본 방어
-  - S6 JWT RS256 · HS256 도 안전
-  - S8 2FA · 사내 30명 과잉
-  - S9 다중 세션 · DB 필요 · 규모 불필요
-
-## 🎨 UI 결정 진행중
-
-### 결정 저장
-- **#3 · UI 색상 통일** (랜딩+사이드+헤더) · ✅ 지금 진행 (A) · SIDE_NAV_GROUPS 매핑
-
-## 🆕 신규 태스크
-
-### #122 · 사번 자동 생성 (신규 등록 시)
-- 사용자 지시 (2026-08-16) · "사번은 신규등록시 자동으로 만들고"
-- EmployeeFormModal · create 모드 · employee_number 자동 생성 로직
-- 규칙 결정 필요 (예: MEGA-YYYY-NNN · 또는 순차번호 등)
-
-### #132 · 연차신청 버튼 · 테두리·여백 반으로 (2026-08-17)
-- 사용자 지시 · "연차신청버튼과 테두리 여백반으로 줄여"
-- 파일: `src/components/LeavePage/LeavePage.tsx` · 연차 신청 form 버튼
-
-### #133 · 랜딩페이지 UI 개선 Phase 5 (2026-08-17)
-- 사용자 재요청 · "랜딩페이지 ui개선"
-- 이전 #130 4 Phase 완료 · 추가 개선 요구
-- 범위: 로그인 카드/모달 통일 · 카카오 채널 카드 · 관리자 헤더 divider · 여백 audit
-
-### #134 · 랜딩페이지 아이콘 리디자인 (2026-08-17)
-- 사용자 지시 · "랜딩페이지 아이콘 안예쁘다"
-- MenuCard 아이콘 · Phosphor icons · size/weight/color 개선
-- 헤더 로고 (Pharmacy cross SVG) · 개선
-
-### #135 · 랜딩페이지 전격 개선 (2026-08-17)
-- 사용자 지시 · "마음에 안드네 뭔가 전격 개선"
-- 이전 Phase 1-4 미흡 · 근본적 리디자인 요구
-- 범위: 브랜드 hero 크게 · 카드 간격/타이포/색상 최신화 · 시각적 노이즈 감소
-- **주의**: UI 대원칙 준수 (초고해상도·깔끔·세련·최신 · 파스텔·그라디언트·다색 지양)
-
-### #137 · MenuCard 배경색 여부 · 사용자 결정 필요 (2026-08-17)
-- 사용자 지시 · "버튼에 백그라운드 색깔 들어가는게 낫나? 검토해봐"
-- **옵션 A (현재)** · white bg + colored icon (500) + hover bg-{color}-50/60
-- **옵션 B** · default bg-{color}-50/60 + border-{color}-200 + hover 더 진하게
-- **원칙 검토**: bg-{color}-50 은 파스텔 계열 · `feedback_ui_design_principles.md` "파스텔 지양" 위배 소지
-- **결정 필요**
-
-### #138 · 랜딩페이지 버튼 글씨 사이즈 +2 (2026-08-17)
-- 사용자 지시 · "랜딩페이지 버튼 글씨 사이즈 +2"
-- MenuCard · title (현재 13/15) + description (11/13) · 각 +2
-
-### #139 · EmployeeCalendarModal · 날짜 클릭 시 팝업 X · 클릭 순환 (2026-08-17)
-- 사용자 지시 · "스케쥴표 - 이름 클릭 - 모달 - 달력에서 날짜 클릭시 지금 팝업이 뜨는데 그냥 클릭할때마다 근무형태 바뀌게 수정. 팝업 필요없음"
-- 경로: SchedulePage → 이름 클릭 → EmployeeCalendarModal (달력 화면)
-- 파일: `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx`
-- 동작: 날짜 클릭 → 지정 근무형태 순환 (근무 → 휴무 → 월차 → 지정휴무 → 결근 → …)
-- 팝업 제거
-
-### #140 · EmployeeCalendarModal · 반응형 · 내용 한 화면에 (2026-08-17)
-- 사용자 지시 · "이 부분은 내용이 화면에 다 나오도록 해 반응형이든 pc든 화면에 맞춰서 내용이 다 한눈에 보이게"
-- 경로: SchedulePage → 이름 클릭 → EmployeeCalendarModal (같은 모달)
-- 파일: `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx`
-- 요구: 달력 + 정보 · overflow scroll 없이 한 화면에 (반응형 · PC 모두)
-
-### #141 · 직원 상세정보 · 이름 아래 정보 폰트 +4 (2026-08-17)
-- 사용자 지시 · "직원관리의 직원상세정보페이지 이름 아래 정보부분 폰트사이즈+4"
-- 파일: `src/components/StaffManagePage/StaffManagePage.tsx` (또는 EmployeeProfileCard)
-
-### #142 · EmployeeCalendarModal · 세로 스크롤 안 됨 (2026-08-17)
-- 사용자 지시 · "이 부분 세로 스크롤이 안되는거 같은데 확인해보고"
-- 파일: `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx`
-- 확인 · overflow-y auto 설정 검토
-
-### #143 · 직원정보 ↔ 근로계약서 연동 확인·수정 (2026-08-17)
-- 사용자 지시 · "직원정보 근로계약서 연동 잘 되는지 확인해" · "직원등록후 근로계약서 작성후 직원정보에 반영되어야함"
-- 흐름: 직원 등록 → 근로계약서 작성 → 직원정보 (직군·계약형태·근로시간·연차·사번 등) 자동 반영
-- 확인 파일: `server/routes/staff/employeeContracts.ts` (syncEmployeeContractFields) · `src/components/ContractWriterPage/ContractWriterPage.tsx` · `src/components/StaffManagePage/StaffManagePage.tsx`
-- 원칙: `feedback_test_bugfix_principle.md` · 재현 · 즉시 수정
-
-### #144 · 근로계약서 없을 시 · "작성전입니다" 멘트 (2026-08-17)
-- 사용자 지시 · "근로계약서가 없으면 해당부분에 근로계약서 작성전입니다. 멘트 나오게"
-- 위치: 직원 상세정보 · 근로계약서 섹션
-- 파일: `src/components/StaffManagePage/StaffManagePage.tsx` 또는 EmployeeProfileCard
-
-### #145 · 랜딩페이지 · 거래처용 메뉴 잘못됨 (2026-08-17)
-- 사용자 지시 · "거래처용 메뉴만 생긴게 틀리잖아. 랜딩페이지에서"
-- 랜딩 · vendor 로그인 시 표시되는 메뉴 검토 · 정정
-
-### #146 · UI 프레임워크 · 버튼 세련화 (2026-08-17)
-- 사용자 지시 · "버튼들 예쁘게" · "초고해상도 깔끔 고급 세련되게"
-- UI 대원칙 memory 갱신 (5원칙 · 고급 추가 · 버튼 세부 원칙)
-- 전 앱 버튼 · shadow·gradient·hover·active 통일 검토
-
-### #147 · 연차신청 버튼 · 위아래 여백 살짝 줄여 · 옆카드 세션 높이 맞춤 (2026-08-17)
-- 사용자 지시 · "승인요청 연차신청페이지 연차신청버튼 위아래 여백 살짝 줄여서 옆카드 세션과 높이 맞춰"
-- 파일: `src/components/LeavePage/LeavePage.tsx`
-- 잔여 배너 · 신청 버튼 · 높이 완전 맞춤 (items-stretch 활용)
-
-### #148 · 페이지별 권한요청 · 반응형 UI 개선 (2026-08-17)
-- 사용자 지시 · "페이지별 권한요청 반응형 ui엉망이야 개선해"
-- 파일: `src/components/PermissionsPage/PermissionsPage.tsx`
-- 모바일·태블릿·데스크탑 · 표 형식 정렬 재검토
-
-### #136 · UI 프레임워크화 검토 (2026-08-17)
-- 사용자 지시 · "UI 프레임워크화 검토"
-- 반복되는 UI 패턴 · 공용 컴포넌트 추출 검토
-- 후보: PageHeader · ModalShell · FormField · SubmitButton 등
-
-### #131 · 페이지설정 · 메뉴 안보이기 (uncheck) 안 됨 · 🐛 버그 (2026-08-17)
-- 사용자 지시 · "페이지설정에서 메뉴 안보이기(uncheck) 안돼"
-- **증상**: PermissionsPage 에서 페이지 · 보기/숨기기 컬럼 체크 해제 반영 안 됨
-- **파일**: `src/components/PermissionsPage/PermissionsPage.tsx` · `src/hooks/usePagePermissions.ts` · 서버 `/api/permissions`
-- **원칙**: 프레임워크 기반 (usePagePermissions · api.post) · test_bugfix_principle · 즉시 재현·수정
-
-### #130 · 랜딩페이지 전체 UI 개선 (2026-08-17)
-- 사용자 지시 (2026-08-17) · "랜딩페이지 전체 UI개선"
-- **범위**:
-  - 무지개 gradient 카드 (`내 요청목록`) · 다른 카드와 통일감 없음 · 정리
-  - 로그인 카드 (직원 + 거래처) · 디자인 통일 · 세련된 spacing/typography
-  - 헤더/브랜드 영역 · 가시성·정렬 재검토
-  - 관리자 도구 그룹 vs 직원용 그룹 · 시각적 구분 개선
-  - 비로그인 상태 (재고검색·공사중 배너) · 인터랙션 개선
-  - 모바일 반응형 검토 (3col/4col/5col grid 활용도)
-- **금지**: MenuCard 컴포넌트 구조 파괴 X · 색상 팔레트 (SIDE_NAV_GROUPS 통일) 유지 X → 유지
-- **자율 진행 시 원칙**: 안전한 정리·통일부터 · 대규모 재디자인은 사용자 확인
-- **파일**: `src/components/LandingPage/LandingPage.tsx` (2492줄)
-
-## 🚨 보안·안정성 감사 (2026-08-16 진행중)
-
-### #112 · 백엔드 보안 · 안정성 fix 배치
-- **1. `/api/auth/set-password` 인증 없음** (auth.ts:82) · 아무나 다른 직원 비번 변경 가능 · **최우선** · `authorize(9)` 추가
-- **2. Vendor 로그인 · phone + "00"** (auth.ts:43-80) · 취약 · **bcrypt 전환** (vendors 테이블 password_hash 컬럼 추가 필요 · 마이그레이션 SQL 필요) · 또는 사용자 정책 재확정
-- **4. tsconfig.json exclude 누락** · `["dist", "node_modules", "coverage", "uploads", "logs"]` 추가
-- **5. Supabase 부팅 크래시** (client.ts:16) · `throw` → try/catch null fallback · 서버 부팅 성공 · API 호출 시 500
-- **3. requireAuth 재활성화** · **면밀 검토 필요** · 이전에 주석 처리한 이유 확인 후 · 안전한 형태로 복원
-- **6. 100MB JSON limit** · multer multipart 로 전환 · 별도 큰 리팩터
-
-## 🟠 진행 중 (세션 유실 시 이어서)
-
-### #111 · 페이지 설정 · 사이드바 구조 그대로 반영 · subTab 단위 개별 권한 (2026-08-16 진행중)
-- **파일**:
-  - `src/types.ts` · PagePermissions 인덱스 시그니처 (완료 · commit 대기)
-  - `src/lib/permissions.ts` · subTab context 지원 helper (TODO)
-  - `src/components/layout/sideNavGroups.ts` · canAccessItem 복합키 조회 (TODO · 부분)
-  - `src/components/PermissionsPage/PermissionsPage.tsx` · SIDE_NAV item 순회 · 표 형식 · 체크박스 (TODO)
-  - `src/components/layout/SideNav.tsx` · usePagePermissions 이미 연결 (완료)
-- **저장 키**: `{pageKey}:{subTab}` (예: `display:purchase-order`) · subTab 없으면 `{pageKey}`
-- **UI 요구사항** (사용자 지시 2026-08-16):
-  1. 사이드바 구조 그대로 표시 (스케쥴 1개→헤더=행 · 매장 6개→트리)
-  2. 1개짜리 그룹 (스케쥴·홈·계정 등) · 그룹 헤더가 곧 행 · 하위메뉴 X
-  3. 여러개 그룹 · 각 subTab 별로 독립 설정 (매장 6·승인요청 3·경영 4)
-  4. **보기/숨기기 컬럼 = 읽기최소 앞에 헤더** · 각 행 · 체크박스
-  5. **전체 표 형식** · Grid: [체크박스 | 페이지명 | 읽기 | 쓰기]
-- **판정 로직**:
-  - `canReadPage(session, perms, pageKey, subTab?)` · 복합키 우선 · 없으면 pageKey fallback
-  - `canAccessItem` (SideNav) · `${item.key}:${item.subTab}` 조회 · fallback
-- **회귀 위험**: 중 · 여러 페이지 · DisplayPage/ApprovalRequestPage 등 페이지 내부 subTab 접근 판정은 별도 후속
-
-## 🔴 사용자 결정 필요 (답변 후 진행)
-
-### #89 · DayTimelineModal · settings.positions 자동 파생 (B 옵션)
-- **파일**: `src/components/DayTimelineModal/DayTimelineModal.tsx` (2704 라인)
-- 3 그룹 (약사/사원/기타) 하드코딩 → settings.positions 배열 순회
-- **결정 (2026-08-16)**:
-  - ✅ 알바 · position 으로 흡수 · 사용자가 직군에 "알바" 추가 완료
-  - ✅ 약사 · 글씨색 눈에 띄게 강조 · 빨간색 제외 (violet 또는 sky 톤)
-- 위험도: 중 · UI 큰 변경
-
-### #92 · 회사·브랜드 페이지 · 완전 통합
-- 현재 5탭 (회사·브랜드·연락처·도장·모바일) → **하나로 통합** (사용자 결정 2026-08-16)
-- 필드 중복 완전 제거 · 단일 페이지 · 섹션 구분
-- 약국명 = 앱이름 · 대표전화 = 연락처 · 하나만 사용
-
-### #95 · 실재고입력 페이지 UI 재설계 · **다음 세션 defer** (사용자 결정 · B · 2026-08-16)
-- 현재 · ScanPage 이미 5분할 (창고1/2/매장1/2/3) · 테이블 형식 · 저장 로직 완비
-- 요청 · UX 재배치 (product-major → location-major grouped grid)
-- 사유 · 2-3h UX 재디자인 + 사용자 테스트 필요 · 세션 여유 시 진행
-- **파일**: `src/components/ScanPage/ScanPage.tsx` (실재고입력)
-- **데이터**: 창고1·2 / 매장1·2·3 → **실재고 테이블 저장** · ERP 구역 컬럼 연동
-- **UI 스펙**:
-  - 그리드 정렬 · 각 위치별 3행:
-    - 첫행 · 위치
-    - 다음행 · 구역
-    - 3가지 값 · 기존재고(저장된) 위 · 추가할 갯수 아래 · 확정갯수 마지막
-  - **창고 부분 위 · 매장 부분 아래** · 각 그룹 접기/펼치기
-  - **합산 버튼** · 합산값 → 실재고 수량 (DB 저장)
-  - **하단** · [진열요청] 버튼 · [위치불일치] 버튼
-  - 예쁘고 가시성 좋게 · 세련된 디자인
-- **Q3 답변**: 매장진열리스트 (DisplayPage) 는 지금 리스트 그대로 사용 · 별도 리스트 신규 X
-  - 단 · 진열요청이 있었던 상품이 표시되어야 함 (필터 or 강조 표시)
-
-### #109 Phase B · 색상 트리밍 (스킵 · 색상 통일 후 재검토)
-- 사용자 결정 (2026-08-16) · B · 스킵
-- 랜딩+사이드+헤더 색상 통일 (SIDE_NAV_GROUPS 매핑) 완료 후 · 재검토
-- violet/purple/sky badge 전용 축소는 · 그 결과 보고 결정
-
-## 🟡 자율진행 가능 (규모/위험 명시 · 사용자 승인 시 착수)
-
-### #90 · ContractWriterPage · JOB_CATEGORIES → settings.wageRates 자동 파생
-- **파일**: `src/components/ContractWriterPage/ContractWriterPage.tsx:3097`
-- 하드코딩 `["약사","매장","창고","기타"]` → wageRates 동적
-- 위험도: 높음 · 계약서 렌더·wageRates 저장 구조 연동
-
-### #91 · SchedulePage · position 문자열 매칭 → settings 기반 (재검토 필요)
-- **파일**: `src/components/SchedulePage/SchedulePage.tsx`
-- ⚠ 실제 스캔 · 하드코딩 30+ 곳 (line 87-88, 213, 317, 375, 392, 521, 1042, 1051, 1121, 1239, 1243-1251, 1261-1262, 1346-1348, 1491, 1495, 2014 등)
-- 데이터 모델 변경 필요 (scheduleTypes.hoursByPosition 맵) · positionTab 필터 재정의
-- 위험도: **높음** · 스케줄 = critical business logic · 대형 리팩터
-- 재산정: TASKS.md 스코프 (line 87-97) 대비 실제 훨씬 큼
-
-### #94 · 공급사 재고확인 페이지 신설 · A안 확정 (2026-08-16)
-- **방향**: A · Vendor 전용 (본인 공급사 상품 · 기간별 재고)
-- **기존**: `VendorStockModal.tsx` (177줄 · 상품+재고+검색만) · MVP 완료 상태
-- **확장 요구**:
-  - TOP · 기간 필터 (date range)
-  - TOP · 계절 필터 (봄·여름·가을·겨울 · useSeasonRanges)
-  - 리스트 · 헤더 자동정렬 (useSortableTable)
-  - 공통 CSS · TEXT.body/label 등 · 신규 P1 스케일 사용
-- **구현 방식 옵션**:
-  - A1 · Modal 확장 (VendorStockModal 에 필터·정렬 추가) · 소-중
-  - A2 · 전용 페이지 신규 (`VendorStockPage.tsx`) · 중-대
-- 규모: 중 · 1-2시간
-
-### DayTimelineModal 대형 리팩터 (#98 후속)
-- 2704 라인 → ZoneSection/BreakTimeline/WorkerChips 파일 분리
-- 위험도: 중-높음 · 대형 리팩터
-
-## ⏸ 외부 대기 (사용자 액션·외부 인프라)
-
-### #42 · 발주 · PDF 생성 + 카카오톡 자동 발송
-- **재개 조건**: 사업자등록증 발급 → SolAPI 계정 세팅 (사업자 인증 · 카카오 채널 · 알림톡 템플릿 · API 키·env 5개)
-- **완료 시**: 서버 코드 연결 (자동 진행)
-
-## 🟢 부분/대부분 완료 (참고 · 잔여 확인 필요)
-
-### #73 · Dead code 실제 파일 정리 · 부분 완료
-- ✅ StockManagePage 3파일 (commit `4cc2ae4` · LowStockPanel 524줄 포함)
-- ✅ ScheduleFilterBar dead prop 4개 (commit `5e50953`)
-- 남은:
-  - OcrPage 미사용 파일 (⚠ Gemini 코드 미터치 원칙 · 확인 필요)
-  - YOLO 모델 파일 (재고세기 비활성 상태 · 재활성화 대비 유지 여부 결정)
-  - SalesTrendPage 는 2657줄 활성 (dead 아님 · 오기 삭제됨)
-
-### #102 · 페이지 권한 · 표 형식 정렬 · 완료 (2026-08-12)
-- ✅ 헤더 폰트 +4 · 컬럼 폭 140/150 · 오른쪽 정렬
-- ✅ #99 트리 구조 완료 · 정렬 유지 확인 (2026-08-16)
-
-### #99 · 페이지별 최소 권한 · 트리 구조 재구성 · 완료 (2026-08-12/13)
-- ✅ SIDE_NAV_GROUPS 기반 · 그룹 접기/펼치기 (collapsedGroups + localStorage)
-- ✅ 페이지 pl-6 들여쓰기 · └ tree 시각화
-- ✅ 미분류 페이지 → "기타" 그룹
-- TASKS.md stale 이었음 · 실제로 이미 구현됨 (line 14, 86-101, 321-350, 487-577)
-
-### #101 · 직군 삭제·수정 시 employees 데이터 보호 · 완료 (2026-08-12)
-- ✅ `removePositionAt` · 사용중 · 재매핑 대상 prompt · transaction · orphan 방지
-- ✅ `commitEditPosition` · 이름 변경 · confirm · employees 자동 rename (transaction)
-- 파일: `src/components/PermissionsPage/PermissionsPage.tsx:131-204`
-
-### #96 · 랜딩 거래처 카드 관리자 접근 방식 · 완료 (2026-08-12) · A1 선택
-- ✅ 관리자 · display>vendor-manage 페이지 이동 (localStorage subtab 힌트)
-- ✅ vendor · 본인 정보/재고 모달
-- 파일: `src/components/LandingPage/LandingPage.tsx:1465-1509`
-
-### #54 · Memory 업데이트 (세션 마감 시 정례)
-- 이번 세션 신규: 사이드바 V2 · 회사·브랜드 통합 · SystemSettingsPage · SettingsPageShell · LeavePage mode · PermissionsPage 23개
-- + 2026-08-16 신규: `src/lib/contract/` 모듈 · `.split-container` PC 80% 폭
-
-## 📜 완료 로그
-
-### 2026-08-17 세션 (대규모 프레임워크 · 커밋 55+)
-- **프레임워크 완성** · asyncHandler 100% (37/37 route) · apiClient 100% (Gemini 제외) · shared 10 schema + 8 dto
-- **테스트** · 103 tests · 11 files · vitest node+jsdom
-- **문서** · FRAMEWORK.md v1.7 (1048+ 라인)
-- **버그 fix** · #131 페이지 uncheck (admin lockout 방지)
-- **UI 개선** · #130 랜딩 4 Phase (무지개 카드 · 로그인 모달 bg fix · 그룹 헤더 · 공사중)
-- **UI** · 약사 색상 violet → blue (사용자 요청)
-- **분리** · LandingPage StockSearch 컴포넌트 (-161 라인)
-- **대원칙 메모리 추가** · feedback_framework_first_coding.md · feedback_framework_compliance.md
-- Access+Refresh JWT · envValidation · errorReporter (Sentry 준비) · MenuCard (12 카드 통합)
-
-### 2026-08-16 세션 (커밋 5건)
-- `5e50953` #98 · ScheduleFilterBar dead prop 4개 삭제
-- `4cc2ae4` #73 · StockManagePage 3파일 삭제 (LowStockPanel 524줄 포함)
-- `c01bf0e` #110 A · SplitPanel PC 뷰포트 80% 폭 · 중앙 정렬
-- `bf7acbe` docs · TASKS.md 갱신
-- `752d796` #82 · pure logic → `src/lib/contract/index.ts` · Page 상호의존 제거
-
-### 2026-08-14 사용자 액션 완료
-- SQL migration 2건 실행: `add_employees_annual_leave_days` · `perf_indexes_leave_requests`
-
-### 2026-08-13 색상 프레임워크
-- `d5daa31` #109 Phase A · slate → zinc 전역 치환 (138 파일)
-- `80b5cc0` #109 Phase 1 · 버튼 스타일 · 2025 SaaS 트렌드
-
-### 2026-08-12 (이전 세션 · 요약)
-- Leave 신청/승인 분리 · Critical/High 안정화 · 서류작성 분리 · 사이드바 V2 · SystemSettingsPage · SettingsPageShell · settingsTypography · 회사·브랜드 통합 · 발주 리스트 편집 수량 fix · 일괄 발주 통합 · ResignationWriterPage SplitPanel
+> **원칙**: `feedback_framework_untouchable.md` (프레임워크 절대 유지) · `feedback_ui_latest_trend_framework.md` (최신 트렌드 · 파스텔 지양) · `feedback_font_plus2_default.md` (폰트 +2)
 
 ---
 
-## ❌ 취소된 항목
+## 🔥 진행중 (2026-08-17 저녁 세션 · 큰 UI 흐름)
+
+### #149 · 전체 UI · 최신 트렌드 (파스텔 → mono/accent) · 프레임워크화
+- **리서치 완료** · research-strategist · Option A (mono-neutral + brand accent) 채택
+- **완료 부분**:
+  - ✅ 브랜드 팔레트 · teal → deep navy blue (index.css @theme)
+  - ✅ 사이드바 · deep navy 톤 · DARK_COLOR_TONES 신규
+  - ✅ Hero · deep navy gradient
+  - ✅ 곧오픈 배너 · yellow → deep navy gradient
+  - ✅ MenuCard · rounded-16 · 44 icon · +2 폰트 · 랜딩 완료
+  - ✅ KpiCard 목업 톤 (rounded-16 · 26px value)
+  - ✅ 공용 Button 컴포넌트 신설 (4 variant · 3 size · +2 폰트)
+  - ✅ 로그인 모달 hero gradient · submit 버튼 Button 적용
+- **남은 작업**:
+  - 🔲 IconTile 공용 컴포넌트 · 파스텔 46곳 치환 (research reco · A안)
+  - 🔲 로그인 모달 input · indigo focus → brand navy focus
+  - 🔲 요청목록 조회 MenuCard badge · 4-color dots → mono
+  - 🔲 앱 전체 버튼 · Button 컴포넌트로 순차 이관 (각 페이지)
+  - 🔲 목업 HTML 파일 · 최신 트렌드로 재생성 (PC + Mobile)
+  - 🔲 폰트 weight 정리 (bold → semibold 통일 · Hero H1만 extrabold)
+
+### #150 · 반응형 헤더 · 사이드바 톤 통일 · ✅ 완료 (295b8d1)
+- AppNavHeader · deep navy · logo2.png rounded · 이름/로그아웃 흰 텍스트
+
+### #131 · 페이지 안보이기 (uncheck) 재발 · 🐛 심층 진단 필요
+- 사용자 재보고 · 이전 fix 후에도 미해결
+- 확인 필요: PermissionsPage 저장 · usePagePermissions 캐시 · filterGroupsForSession 복합키 · App.tsx isHiddenPage useEffect
+- **다음 세션 최우선**
+
+### 세션 만료 프로세스 강화 · ✅ 완료 (046a116)
+- main.tsx · refresh 실패 시 SESSION_EXPIRED_EVENT dispatch
+- App.tsx · window.addEventListener → handleLogout · 로그인화면 강제 이동
+
+---
+
+## 🧩 UI 프레임워크 후속 (research 반영)
+
+### #151 · IconTile 공용 컴포넌트 · 파스텔 46곳 치환
+- `common/IconTile.tsx` 신규 · variant (neutral/brand/success/warning/danger) · size prop
+- 46곳 grep 대상 · `bg-{color}-100 text-{color}-700` 패턴
+- CSS 변수 확장 · index.css @theme · tint-neutral / tint-success / tint-warning / tint-danger
+- 위험도: 낮음 (프레임워크 신규 · 시각만 변경)
+
+### #152 · 전체 앱 버튼 → 공용 Button 이관
+- 페이지별 순차 (LandingPage 로그인 모달 ✅ 부분 완료)
+- 각 페이지 · 하드코딩 `<button className="bg-indigo-600...">` → `<Button variant="primary">`
+- 위험도: 중 (사용처 많음 · 시각 회귀 리스크)
+
+### #153 · 폰트 weight 정리 · 3단계 통일
+- font-bold/black/extrabold 남발 → font-semibold (600) 기본
+- Hero H1 만 font-extrabold (800)
+- 위험도: 낮음 (Grep 치환)
+
+### #154 · 목업 HTML 재생성 · 최신 트렌드
+- docs/UI_MOCKUP_PC_2026-08-17.html + MOBILE
+- Option A (mono-neutral + brand accent) 반영
+- 위험도: 낮음 (문서만)
+
+---
+
+## 🐛 사용자 리포트 · 확인 대기
+
+### 요청목록 조회 카드 · 4-color dots 지저분
+- badge · blue/red/orange/emerald 4개 dot → mono blue 배지 or 단순 숫자
+
+### 로그인화면 · 1주일 전 정보 중 빠진 것 (구체 지목 대기)
+- 사용자 재확인 필요 · 어떤 정보인지 대기
+
+---
+
+## 🆕 신규 태스크 (이전 세션 큐 · 계속 유효)
+
+### #132 · 연차신청 버튼 · 테두리·여백 반으로
+- 파일: `src/components/LeavePage/LeavePage.tsx`
+
+### #133 · 랜딩페이지 UI 개선 Phase 5 · 부분 완료
+- ✅ #130 4 Phase + 오늘의 현황 한줄 + Hero + KPI strip · 완료
+- 잔여: 로그인 카드/모달 정리 · 카카오 채널 카드
+
+### #134 · 랜딩페이지 아이콘 리디자인 · 부분 완료
+- ✅ MenuCard 아이콘 44 rounded-12 · 완료
+- 잔여: 헤더 로고 (Pharmacy cross SVG) 개선 검토
+
+### #135 · 랜딩페이지 전격 개선 · ✅ 대부분 완료
+- Hero + KPI 한줄 + 파스텔 지양 · 딥네이비 통일
+
+### #137 · MenuCard 배경색 · 결정
+- ~~옵션 A/B~~ · research Option A 채택 · mono-neutral tint 사용 예정
+
+### #138 · 랜딩 버튼 글씨 +2 · ✅ 완료
+### #139 · EmployeeCalendarModal · 팝업 → 순환
+### #140 · EmployeeCalendarModal · 반응형 한 화면
+### #141 · 직원 상세 · 이름 아래 폰트 +4
+### #142 · EmployeeCalendarModal · 세로 스크롤 확인
+### #143 · 직원정보 ↔ 근로계약서 연동 확인
+### #144 · 근로계약서 없을 시 · "작성전입니다" 멘트
+### #145 · 랜딩 · 거래처용 메뉴 오류 · 부분 완료
+### #146 · UI 프레임워크 · 버튼 세련화 · ✅ 완료 (공용 Button)
+### #147 · 연차신청 버튼 · 위아래 여백 살짝 · 옆카드 높이 맞춤
+### #148 · 페이지 권한요청 · 반응형 UI 개선
+### #136 · UI 프레임워크화 검토 · ✅ 진행중 (Button/Hero/KpiCard/SectionLabel/MiniCard/MenuCard)
+### #122 · 사번 자동 생성 (신규 등록)
+
+---
+
+## 🛡️ Spring Security · defer 확정 (사용자 2026-08-16 · "이 정도면 충분")
+
+- ✅ S5 Audit Logging (00b725c)
+- ✅ S7 Input Validation (52ee393)
+- ✅ S10 Refresh Token (f434e1d)
+- ⏸ S1/S2/S6/S8/S9 · defer
+- ❌ S3/S4 · 취소 (사용자 지시)
+
+## 🚨 백엔드 보안 · 잔여 (#112)
+
+- **1. `/api/auth/set-password` 인증 없음** · `authorize(9)` 추가 · **최우선**
+- **2. Vendor 로그인 · bcrypt 전환** · 또는 사용자 정책 재확정
+- **3. requireAuth 재활성화** · 이전 주석 사유 확인 후 안전 복원
+- **4. tsconfig.json exclude 누락** · `["dist", "node_modules", "coverage", "uploads", "logs"]`
+- **5. Supabase 부팅 크래시** · `throw` → try/catch null fallback
+- **6. 100MB JSON limit** · multer multipart 전환 (별도 리팩터)
+
+---
+
+## 🟠 진행중 (세션 유실 시 이어서)
+
+### #111 · 페이지 설정 · subTab 단위 개별 권한 · 대부분 완료 · #131 재발과 연관
+- ✅ SIDE_NAV_GROUPS 기반 · 그룹 접기/펼치기 · 트리 · 체크박스
+- 🔲 #131 · 실제 uncheck → hide 반영 안 됨 · 심층 진단
+
+---
+
+## 🔴 사용자 결정 필요
+
+### #89 · DayTimelineModal · settings.positions 자동 파생 (B)
+- ✅ 알바 흡수 완료 · ✅ 약사 색 violet/sky 결정
+- 대기: 하드코딩 3 그룹 → settings 순회 리팩터
+
+### #92 · 회사·브랜드 페이지 · 완전 통합
+- 5탭 → 1페이지 · 사용자 결정 완료 · 구현 대기
+
+### #95 · 실재고입력 페이지 UI 재설계 · defer
+- 사유 · 2-3h UX 재디자인 · 세션 여유 시
+
+---
+
+## 🟡 자율진행 가능 (규모/위험 명시)
+
+### #90 · ContractWriterPage · JOB_CATEGORIES → wageRates 파생 · 위험 高
+### #91 · SchedulePage · position 문자열 매칭 → settings · 위험 高 · 대형
+### #94 · 공급사 재고확인 페이지 · A1 (Modal 확장) · 중 (1-2h)
+### DayTimelineModal 분리 · 2704 라인 · 중-高
+
+---
+
+## ⏸ 외부 대기
+
+### #42 · 발주 · PDF + 카카오톡 · 사업자등록증 발급 대기 (SolAPI 세팅)
+
+---
+
+## 🟢 완료 (참고)
+
+### #73 · Dead code 정리 · 부분 완료
+### #102 · 페이지 권한 · 표 형식 · 완료 (2026-08-12)
+### #99 · 페이지별 최소 권한 · 트리 · 완료
+### #101 · 직군 삭제/수정 · employees 보호 · 완료
+### #96 · 랜딩 거래처 카드 · A1 완료
+
+---
+
+## 📜 완료 로그
+
+### 2026-08-17 저녁 세션 · UI 대전환 (커밋 10+ 이후 추가)
+- **UI 톤** · teal/파스텔 → deep navy blue 전환 (전체)
+- **컴포넌트 신설** · Hero · KpiCard · SectionLabel · MiniCard · MenuCard · Button · IconButton · Panel
+- **사이드바** · deep navy + DARK_COLOR_TONES · logo2.png
+- **모바일 헤더** · 딥네이비 톤 통일
+- **곧오픈 배너** · 노랑 → 딥네이비 gradient
+- **로그인 모달** · 인디고 → 딥네이비 gradient + Button 적용
+- **오늘의 현황** · 4 KPI 카드 → 한 줄 텍스트
+- **세션 만료** · SESSION_EXPIRED_EVENT · App 자동 로그아웃
+- **폰트** · 랜딩 전체 +2 · Button +2
+- **원칙 저장** · framework_untouchable · ui_latest_trend_framework
+- **리서치** · research-strategist · 2026 SaaS 트렌드 · Option A (mono+accent) 채택
+- 목업 HTML · 브랜드 tokens blue 전환 (완전 재작성은 #154 대기)
+
+### 2026-08-17 세션 (대규모 프레임워크 · 커밋 55+)
+- **프레임워크 완성** · asyncHandler 100% (37/37) · apiClient 100% · shared 10 schema + 8 dto
+- **테스트** · 103 tests · 11 files · vitest
+- **문서** · FRAMEWORK.md v1.7 (1048+ 라인)
+- **분리** · LandingPage StockSearch (-161)
+
+### 2026-08-16 세션 (5건)
+- ScheduleFilterBar dead prop · StockManagePage 3파일 · SplitPanel 80% · TASKS 갱신 · lib/contract
+
+### 2026-08-14 사용자 액션
+- SQL migration 2건 실행
+
+### 2026-08-13 색상 프레임워크
+- Phase A · slate → zinc (138 파일) · Phase 1 버튼 2025 트렌드
+
+### 2026-08-12 (이전 세션)
+- Leave 분리 · Critical/High 안정화 · 사이드바 V2 · SystemSettingsPage · 회사·브랜드 통합
+
+---
+
+## ❌ 취소
+
 - **C** · StaffManagePage 오른쪽 상세 · EmployeeProfileCard 통합
 - **E Phase 2** · SplitPanel 미도입 페이지 이관
-- **에이전트 리서치 추가 카테고리 8개** ("추가 카테고리 하지마")
+- **에이전트 리서치 추가 카테고리 8개**
+
+---
 
 ## 세션 관리
+
 - **원칙**: `docs/AGENT_PRINCIPLES.md`
 - **임금**: `docs/PAYROLL_ALGORITHM.md`
 - **contract-master**: `.claude/agents/contract-master.md`
