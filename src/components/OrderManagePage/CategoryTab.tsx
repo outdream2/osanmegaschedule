@@ -481,8 +481,8 @@ const ZoneCategoryContent: React.FC = () => {
         title="🗺️ 매장 구역도 · 상위 map 동일 (참고)"
       />
 
-      {/* 하단: 좌측 구역 리스트 + 우측 상세 split */}
-      <div className="flex flex-col lg:flex-row gap-0 flex-1 lg:min-h-[520px]">
+      {/* 하단: 좌측 구역 리스트 + 우측 상세 split · 2026-08-17 · items-stretch · 좌우 높이 매칭 */}
+      <div className="flex flex-col lg:flex-row gap-0 items-stretch flex-1 lg:min-h-[720px]">
         {/* 좌측: 구역 리스트 */}
         <div
           className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-2"

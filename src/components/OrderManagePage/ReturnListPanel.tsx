@@ -800,8 +800,8 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
         {/* 2026-08-06 · 사용자 요청 · 조회 버튼 제거 · 필터 변경 시 자동 조회 (제목 옆 코멘트로 안내) */}
       </div>
 
-      {/* ── 좌우 split 레이아웃 ── */}
-      <div className="flex flex-col lg:flex-row lg:min-h-[520px] gap-0">
+      {/* ── 좌우 split 레이아웃 · 2026-08-17 · items-stretch · 좌우 높이 매칭 ── */}
+      <div className="flex flex-col lg:flex-row items-stretch lg:min-h-[720px] gap-0">
 
         {/* 좌측: 리스트 */}
         <div

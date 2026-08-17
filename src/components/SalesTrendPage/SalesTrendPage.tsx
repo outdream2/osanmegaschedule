@@ -551,8 +551,8 @@ const ProductTrendTab: React.FC<{
   }), [filteredRows, granularity]);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-0 lg:min-h-[520px]">
-      {/* ── 좌측: 재고흐름 리스트 (검색+정렬+Top N 내장) ── */}
+    <div className="flex flex-col lg:flex-row gap-0 items-stretch lg:min-h-[720px]">
+      {/* ── 좌측: 재고흐름 리스트 (검색+정렬+Top N 내장) · 2026-08-17 · items-stretch ── */}
       <div className="min-h-0 max-h-[75vh] lg:max-h-[720px] w-full lg:w-auto lg:shrink-0" style={{ width: window.innerWidth >= 1024 ? flowPanelWidth : undefined }}>
         <StockFlowPanel
           onProductClick={(row) => setSelected(row)}
@@ -2024,8 +2024,8 @@ const ZoneCategoryContent: React.FC = () => {
         title="🗺️ 매장 구역도 · 상위 map 동일 (참고)"
       />
 
-      {/* 하단 · 좌측 구역 리스트 + 우측 상세 split */}
-      <div className="flex flex-col lg:flex-row gap-0 flex-1 lg:min-h-[520px]">
+      {/* 하단 · 좌측 구역 리스트 + 우측 상세 split · 2026-08-17 · items-stretch */}
+      <div className="flex flex-col lg:flex-row gap-0 items-stretch flex-1 lg:min-h-[720px]">
       {/* ── 좌측: 구역 리스트 ── */}
       <div
         className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-2"
@@ -2522,9 +2522,9 @@ export const SalesTrendPage: React.FC = () => {
       <div className="flex-1 min-h-0 overflow-y-auto">
         {salesTab === "chart" && <ProductTrendTab granularity={granularity} chartRangeDays={chartRangeDays} onChartMonthsChange={setChartMonths} onGranularityChange={setGranularity} activeTab={"product"} onTabChange={setTab} onOpenProductInfo={openScanProductModal} onOpenHiddenManager={openHiddenManagerModal} />}
 
-        {/* 공급사별 판매 · 좌우 분할 레이아웃 */}
+        {/* 공급사별 판매 · 좌우 분할 레이아웃 · 2026-08-17 · items-stretch */}
         {salesTab === "supplier" && (
-        <div className="flex flex-col lg:flex-row gap-2 lg:min-h-[520px]">
+        <div className="flex flex-col lg:flex-row gap-2 items-stretch lg:min-h-[720px]">
           <div
             className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
             style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? supplierPanelWidth : undefined }}

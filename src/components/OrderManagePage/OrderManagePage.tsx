@@ -2292,9 +2292,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             { getTabProps: paymentSortable.getTabProps, isDragging: paymentSortable.isDragging },
           )}
 
-          {/* ── 공급사관리 서브탭 ── */}
+          {/* ── 공급사관리 서브탭 · 2026-08-17 · items-stretch · 좌우 높이 매칭 ── */}
           {paymentSubTab === "vendor" && (
-            <div className="flex flex-col lg:flex-row gap-2 lg:min-h-[520px]">
+            <div className="flex flex-col lg:flex-row gap-2 items-stretch lg:min-h-[720px]">
               {/* 좌측: 공급사 리스트 */}
               <div
                 className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
@@ -2428,8 +2428,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             }
           />
 
-          {/* ── 하단 split ── */}
-          <div className="flex flex-col lg:flex-row gap-2 lg:min-h-[520px]">
+          {/* ── 하단 split · 2026-08-17 · items-stretch · 좌우 높이 매칭 ── */}
+          <div className="flex flex-col lg:flex-row gap-2 items-stretch lg:min-h-[720px]">
             {/* 좌측: 발주요청 리스트 */}
             <div
               className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
