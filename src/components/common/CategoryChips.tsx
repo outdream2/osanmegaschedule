@@ -80,16 +80,17 @@ export function CategoryChips<V extends string | number = string>({
   ariaLabel = "카테고리",
   className = "",
 }: CategoryChipsProps<V>) {
-  const sizeCls = size === "sm" ? "h-8 px-2.5 text-[12px]" : "h-9 px-3 text-[13px]";
+  // 2026-08-17 · 사용자 지시 · 폰트 +2 · sm 12→14 · md 13→15
+  const sizeCls = size === "sm" ? "h-9 px-3 text-[14px]" : "h-10 px-3.5 text-[15px]";
 
   return (
     <div className={`inline-flex items-center gap-2 flex-wrap ${className}`}>
       {label != null && (
         <span className="flex items-center gap-1.5 shrink-0">
           {showAccentBar && (
-            <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
+            <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
           )}
-          <span className="text-[13px] font-bold text-ink tracking-tight">{label}</span>
+          <span className="text-[15px] font-bold text-ink tracking-tight">{label}</span>
         </span>
       )}
       <div

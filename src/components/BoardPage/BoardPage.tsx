@@ -16,6 +16,7 @@ import type { AuthSession } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { CARD_BASE } from "../../styles/tokens";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
+import { StatusPill } from "../common/StatusPill";
 import { uploadImagesToCloudinary, type UploadedImage } from "../../lib/cloudinaryUpload";
 import { fmtDateShort } from "../../lib/format";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -217,7 +218,7 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
                 <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
                 <StickyNote size={16} className="text-brand-deep" />
                 <span className="text-[16px] font-bold text-ink tracking-tight">이슈리스트</span>
-                <span className="text-[14px] font-semibold text-brand-deep bg-brand-tint rounded-full px-2.5 py-0.5 border border-brand/15 tabular-nums">{filtered.length}건</span>
+                <StatusPill tone="brand" size="md">{filtered.length}건</StatusPill>
               </div>
               <span className="text-[13px] text-ink-soft font-medium">항목 클릭 → 상세</span>
             </div>
@@ -333,9 +334,11 @@ const PostCard: React.FC<{ post: BoardPost; onOpen: () => void; showEdit?: boole
           {/* 상태 dot */}
           <span className={`shrink-0 mt-2 w-1.5 h-1.5 rounded-full ${status.dot}`} title={status.label} />
           {post.pinned && <Pin size={12} className="text-orange-500 shrink-0 mt-1.5" />}
-          {/* 카테고리 배지 */}
+          {/* 카테고리 배지 · 2026-08-17 · StatusPill 통일 */}
           {post.category && (
-            <span className="shrink-0 self-center text-[14px] font-bold text-zinc-500 bg-zinc-100 rounded-full px-2 py-0.5">{post.category}</span>
+            <span className="shrink-0 self-center">
+              <StatusPill tone="zinc" size="sm">{post.category}</StatusPill>
+            </span>
           )}
           {/* 제목 · PC에서 최대 두 줄 */}
           <span className="flex-1 min-w-0 text-[14px] font-bold text-zinc-900 line-clamp-2 break-keep leading-snug">
