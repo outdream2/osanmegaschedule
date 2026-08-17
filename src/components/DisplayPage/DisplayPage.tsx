@@ -1,7 +1,9 @@
 ﻿// src/components/DisplayPage/DisplayPage.tsx
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ZONE_DEFS, ZONES_STORAGE_KEY } from "../../constants/displayZones";
+// 2026-08-17 · 프레임워크 · useZoneDefs 훅 사용 · 설정 편집 시 자동 반영
+import { ZONES_STORAGE_KEY } from "../../constants/displayZones";
+import { useZoneDefs } from "../../hooks/useZoneDefs";
 import {
   type ZoneStatus, type DowMap, type DisplayZone,
   expandZoneDef, buildDefaultZones,
@@ -299,6 +301,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       authSession?.role === "manager" ? 2 : authSession?.role === "employee" ? 1 : 0);
   const dpCanSeeStockManage = dpUserLevel >= 9;
   const dpCanSeeStockArrivals = dpUserLevel >= 3;
+
+  // 2026-08-17 · 프레임워크 · 공통 zone defs 훅 (설정 편집 시 자동 반영)
+  const { zones: ZONE_DEFS } = useZoneDefs();
 
   // 2026-08-17 · #131 · 사용자 지시 · "메뉴에서 안보이기 처리하면 페이지도 안보여야지"
   //   · 사이드바 hidden 처리한 서브탭은 페이지 내부 tab bar 에서도 숨김
