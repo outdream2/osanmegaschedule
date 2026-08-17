@@ -361,8 +361,20 @@ function avatarGradient(name: string) {
   return AVATAR_COLORS[code % AVATAR_COLORS.length];
 }
 
+// 2026-08-17 · 사용자 지시 · 성씨 하나만 크게 표시 지양 (촌스러움)
+//   · 최신 트렌드 (Linear/Notion/Slack) · 이름 2글자 (성+이름 첫 글자) · 색 subtle
 function initials(name: string) {
-  return name ? name.charAt(0) : "?";
+  if (!name) return "?";
+  const trimmed = name.trim();
+  // Korean · 3자 이상은 성 + 이름 첫 글자 (홍길동 → 홍길)
+  // 2자면 그대로 (김철 · 이순 등)
+  // Latin · 두 단어면 각 첫 글자 (John Doe → JD) · 한 단어면 앞 2자
+  if (/^[가-힣]/.test(trimmed)) {
+    return trimmed.slice(0, 2);
+  }
+  const parts = trimmed.split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return trimmed.slice(0, 2).toUpperCase();
 }
 
 // ─── 섹션 그룹 컬러 맵 ──────────────────────────────────────────────────────
@@ -388,22 +400,24 @@ const Avatar: React.FC<{
   photoUrl?: string | null;
   size?: "xs" | "sm" | "lg";
 }> = ({ name, photoUrl, size = "sm" }) => {
+  // 2026-08-17 · 사용자 지시 · 최신 트렌드 · 이름 이니셜 subtle · 화려한 gradient 지양
+  //   · Linear/Notion · 이니셜 폰트 작게 · 뉴트럴 배경 · 텍스트 subtle
   const dim =
-    size === "lg" ? "w-20 h-20 text-2xl"
-    : size === "xs" ? "w-8 h-8 text-xs"
-    : "w-9 h-9 text-sm";
+    size === "lg" ? "w-20 h-20 text-[15px]"
+    : size === "xs" ? "w-8 h-8 text-[11px]"
+    : "w-9 h-9 text-[13px]";
   if (photoUrl) {
     return (
       <img
         src={photoUrl}
         alt={name}
-        className={`${dim} rounded-full object-cover ring-2 ring-white shadow shrink-0`}
+        className={`${dim} rounded-full object-cover ring-1 ring-line shadow-sm shrink-0`}
       />
     );
   }
   return (
     <div
-      className={`${dim} rounded-full ${avatarGradient(name)} flex items-center justify-center text-white font-bold shadow shrink-0 select-none`}
+      className={`${dim} rounded-full bg-brand-tint text-brand-deep flex items-center justify-center font-semibold shadow-sm shrink-0 select-none tracking-tight`}
     >
       {initials(name)}
     </div>

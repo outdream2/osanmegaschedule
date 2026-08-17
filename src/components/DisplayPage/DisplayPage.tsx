@@ -2299,8 +2299,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   const colorIdx = assignedStaff ? (staffColorMap.get(assignedStaff.id) ?? 0) : 0;
                   return assignedStaff ? (
                     <div className="flex items-center gap-3 px-3 py-3 rounded-xl border-2 border-indigo-200 bg-indigo-50">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-base font-bold shrink-0 ${isLogistics ? STAFF_AVATAR_COLORS[colorIdx % STAFF_AVATAR_COLORS.length] : "bg-zinc-300 text-zinc-700"}`}>
-                        {assignedStaff.name.slice(0, 1)}
+                      {/* 2026-08-17 · 최신 트렌드 · 이름 이니셜 2글자 · brand-tint 뉴트럴 · 폰트 subtle */}
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-semibold shrink-0 bg-brand-tint text-brand-deep">
+                        {assignedStaff.name.slice(0, 2)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-bold text-zinc-900">{assignedStaff.name}</div>
@@ -2458,8 +2459,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                 <div className={`px-5 py-5 ${isLogistics ? "bg-brand-deep" : "bg-zinc-700"}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold text-white shrink-0">
-                        {activeStaffInfo.employee.name.slice(0, 1)}
+                      {/* 2026-08-17 · 최신 트렌드 · 이름 이니셜 2글자 · 폰트 subtle */}
+                      <div className="w-14 h-14 rounded-full bg-white/[0.18] flex items-center justify-center text-[16px] font-semibold text-white shrink-0 ring-1 ring-white/25">
+                        {activeStaffInfo.employee.name.slice(0, 2)}
                       </div>
                       <div>
                         <div className="text-xl font-bold text-white leading-tight">{activeStaffInfo.employee.name}</div>

@@ -3127,8 +3127,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             }}
           >
             <div className="flex items-center gap-2 mb-2 pb-2 border-b border-zinc-100">
-              <div className="w-8 h-8 rounded-full bg-brand-deep flex items-center justify-center text-white font-bold text-sm">
-                {contactPopover.name.slice(0, 1)}
+              <div className="w-8 h-8 rounded-full bg-brand-tint flex items-center justify-center text-brand-deep font-semibold text-[13px]">
+                {contactPopover.name.slice(0, 2)}
               </div>
               <div className="min-w-0">
                 <div className="text-sm font-bold text-zinc-800">{contactPopover.name}</div>
