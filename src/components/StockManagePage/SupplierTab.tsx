@@ -12,6 +12,7 @@ import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { SeasonButtons } from "../common/SeasonButtons";
+import { PeriodSelector } from "../common/PeriodSelector";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { ProductPurchaseHistoryModal } from "./ProductPurchaseHistoryModal";
 import { LoadingState } from "../common/LoadingState";
@@ -729,20 +730,27 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
           <span className="text-[14px] font-semibold text-brand-deep bg-brand-tint rounded-full px-2.5 py-0.5 border border-brand/15 tabular-nums">{displayedXlsxSuppliers.length}개 사</span>
           <span className={`${TEXT.caption} text-ink-soft hidden sm:inline`}>행 클릭 → 우측 상품 리스트 · 상품명 클릭 → 상세</span>
         </div>
-        {/* 조회기간 · segmented pill */}
+        {/* 조회기간 · 2026-08-17 · PeriodSelector 공통 프레임워크 통일 */}
         <div className="flex items-center gap-2">
           <span className="flex items-center gap-1.5 shrink-0">
             <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
             <span className="text-[13px] font-bold text-ink tracking-tight">기간</span>
           </span>
-          <div className="flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
-            <button onClick={() => { setSupplierSeason(null); setSupplierMonths(0); }}
-              className={`px-3 h-8 text-[13px] font-semibold rounded-md transition-colors cursor-pointer ${!supplierSeason && supplierMonths === 0 ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>10일</button>
-            {[1, 2, 3, 4, 5, 6].map(m => (
-              <button key={m} onClick={() => { setSupplierSeason(null); setSupplierMonths(m as any); }}
-                className={`px-3 h-8 text-[13px] font-semibold rounded-md transition-colors cursor-pointer ${!supplierSeason && supplierMonths === m ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>{m}개월</button>
-            ))}
-          </div>
+          <PeriodSelector
+            options={[
+              { value: 0, label: "10일", title: "최근 10일" },
+              { value: 1, label: "1개월", title: "최근 1개월" },
+              { value: 2, label: "2개월", title: "최근 2개월" },
+              { value: 3, label: "3개월", title: "최근 3개월" },
+              { value: 4, label: "4개월", title: "최근 4개월" },
+              { value: 5, label: "5개월", title: "최근 5개월" },
+              { value: 6, label: "6개월", title: "최근 6개월" },
+            ]}
+            value={supplierMonths}
+            onChange={(v) => { setSupplierSeason(null); setSupplierMonths(v as 0|1|2|3|4|5|6); }}
+            size="sm"
+            ariaLabel="공급사 조회기간"
+          />
         </div>
         <SeasonButtons value={supplierSeason} onChange={(v) => { setSupplierSeason(v); if (v) setSupplierMonths(0); }} size="sm" hideLabel />
         {/* Top N · segmented pill */}
