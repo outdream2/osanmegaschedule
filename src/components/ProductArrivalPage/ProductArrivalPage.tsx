@@ -1073,7 +1073,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
             <span className="text-[15px] font-semibold text-zinc-700">입고내역</span>
             <span className="text-[15px] font-bold text-zinc-500 bg-zinc-100 rounded-full px-2 py-0.5 tabular-nums">{arrivals.length}건</span>
             <span className="text-[15px] font-medium text-zinc-400 ml-2 hidden sm:inline">최근 {arrivalDays}일</span>
-            <div className="flex items-center gap-0.5 bg-zinc-50 border border-line rounded-md p-0.5 ml-auto">
+            <div className="flex items-center gap-0.5 bg-zinc-100 border border-line rounded-lg p-1 ml-auto">
               {[7, 30, 90].map(d => (
                 <button key={d} onClick={() => setArrivalDays(d as any)}
                   className={`text-[15px] font-semibold px-2 py-1 rounded transition whitespace-nowrap cursor-pointer ${arrivalDays === d ? "bg-white text-zinc-800 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>

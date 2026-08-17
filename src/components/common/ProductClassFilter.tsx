@@ -44,7 +44,7 @@ export const ProductClassFilter: React.FC<Props> = ({
       {label && (
         <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">{label}</span>
       )}
-      <div className="inline-flex bg-zinc-50 border border-line rounded-md p-0.5" role="group" aria-label="상품 구분 필터">
+      <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1" role="group" aria-label="상품 구분 필터">
         {OPTIONS.map(opt => {
           const active = value === opt.key;
           const Icon = opt.icon;

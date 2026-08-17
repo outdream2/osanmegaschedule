@@ -753,7 +753,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
           </label>
         </div>
         {/* 분류 세그먼트 필터 */}
-        <div className="flex flex-wrap bg-zinc-50 border border-line rounded-md p-0.5 gap-0.5">
+        <div className="flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
           {(["전체", ...dbVendorCategories] as string[]).map(cat => (
             <button key={cat} onClick={() => setReturnCategoryFilter(cat)}
               className={`h-7 px-2.5 text-[15px] font-semibold rounded transition cursor-pointer ${

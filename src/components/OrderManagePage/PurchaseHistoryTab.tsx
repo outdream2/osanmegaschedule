@@ -852,7 +852,7 @@ export const PurchaseHistoryTab: React.FC = () => {
         {/* 2026-08-10 · #19 · 기간 chip + 계절 chip · 상단 툴바로 이동 (사용자 요청 · split 안에서 이동) */}
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">기간</span>
-          <div className="flex flex-wrap bg-zinc-50 border border-line rounded-md p-0.5 gap-0.5">
+          <div className="flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
             <button
               type="button"
               onClick={() => { setPeriodMonths(0); setPeriodSeason(null); }}

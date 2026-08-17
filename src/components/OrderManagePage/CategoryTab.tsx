@@ -271,7 +271,7 @@ const ZoneCategoryContent: React.FC = () => {
             <span className="text-[14px] font-semibold text-zinc-700">{label}</span>
             <span className="text-[15px] text-zinc-400 tabular-nums">{list.length}개 구역</span>
           </div>
-          <div className="inline-flex bg-zinc-50 border border-line rounded-md p-0.5">
+          <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1">
             {SORT_OPTIONS.map(opt => (
               <button
                 key={opt.key}

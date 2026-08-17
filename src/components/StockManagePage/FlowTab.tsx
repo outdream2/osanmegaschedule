@@ -483,7 +483,7 @@ export const FlowTab: React.FC = () => {
             const e = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
             return <span className="text-[15px] tabular-nums font-medium text-zinc-600 bg-zinc-50 border border-line rounded-md px-2 py-0.5">{s} ~ {e}</span>;
           })()}
-          <div className="flex flex-wrap bg-zinc-50 border border-line rounded-md p-0.5 gap-0.5">
+          <div className="flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
             <button onClick={() => { setFlowSeason(null); setPendingFlowMonths(0); setFlowMonths(0); }}
               className={`px-2 h-6 text-[15px] font-semibold rounded transition cursor-pointer ${!flowSeason && flowMonths === 0 ? "bg-teal-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>10일</button>
             {([1, 2, 3, 4, 5, 6] as const).map(m => (
@@ -497,7 +497,7 @@ export const FlowTab: React.FC = () => {
         {/* Top N */}
         <div className="flex items-center gap-1.5">
           <span className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">Top N</span>
-          <div className="inline-flex bg-zinc-50 border border-line rounded-md p-0.5">
+          <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1">
             {[{ v: 100, label: "100" }, { v: 300, label: "300" }, { v: 1000, label: "1k" }, { v: 2000, label: "2k" }, { v: 50000, label: "전체" }].map(o => (
               <button key={o.v} onClick={() => setFlowLimit(o.v)}
                 className={`text-[15px] font-semibold h-6 px-2 rounded transition whitespace-nowrap cursor-pointer ${flowLimit === o.v ? "bg-teal-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
@@ -569,7 +569,7 @@ export const FlowTab: React.FC = () => {
         </button>
 
         {/* 분류 세그먼트 필터 */}
-        <div className="flex flex-wrap bg-zinc-50 border border-line rounded-md p-0.5 gap-0.5">
+        <div className="flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
           {(["전체", "위탁", "선결제", "60회전", "90회전", "기타"] as const).map(cat => (
             <button key={cat} onClick={() => setFlowCategoryFilter(cat)}
               className={`h-7 px-2.5 text-[15px] font-semibold rounded transition cursor-pointer ${

@@ -1821,7 +1821,7 @@ const ZoneCategoryContent: React.FC = () => {
             <span className="text-[11px] text-zinc-400 tabular-nums">{list.length}개 구역</span>
           </div>
           {/* 정렬 segment control */}
-          <div className="inline-flex bg-zinc-50 border border-line rounded-md p-0.5">
+          <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1">
             {SORT_OPTIONS.map(opt => (
               <button
                 key={opt.key}
@@ -1971,7 +1971,7 @@ const ZoneCategoryContent: React.FC = () => {
         {/* 조회기간 */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">기간</span>
-          <div className="flex flex-wrap bg-zinc-50 border border-line rounded-md p-0.5 gap-0.5">
+          <div className="flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
             <button type="button" onClick={() => { setSeason(null); setMonths(0); }}
               className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!season && months === 0 ? "bg-amber-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
               10일
