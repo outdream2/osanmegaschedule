@@ -647,12 +647,13 @@ const VatPreparePage: React.FC = () => {
       </>
       )}
 
-      {/* ── 공통 하단: 준비 체크리스트 (모든 탭) ── */}
-      <div className="bg-white rounded-xl border border-line shadow-sm p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <CheckSquare size={14} className="text-sky-500" />
-          <div className="text-[13px] font-bold text-zinc-800">신고 준비 체크리스트</div>
-          <div className="text-[10px] text-zinc-400 ml-auto">자동 저장 · 서버 공유 (모든 관리자)</div>
+      {/* ── 공통 하단: 준비 체크리스트 · 2026-08-17 · accent bar + brand-deep 통일 ── */}
+      <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.04),0_2px_8px_rgba(10,46,74,0.06)] p-4">
+        <div className="flex items-center gap-2.5 mb-3">
+          <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+          <CheckSquare size={16} className="text-brand-deep" />
+          <div className="text-[16px] font-bold text-ink tracking-tight">신고 준비 체크리스트</div>
+          <div className="text-[12px] text-ink-soft ml-auto font-medium">자동 저장 · 서버 공유</div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <ChecklistItem
