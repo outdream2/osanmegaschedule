@@ -259,10 +259,10 @@ export function TabBar<K extends string = string>({
                   onTouchCancel={dnd?.onTouchCancel}
                   className={[
                     "group inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[14px] sm:text-[15px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight border",
-                    // Filter Chip · 활성 = 딥 초록 (British racing green · 딥네이비 럭셔리 페어링)
+                    // Filter Chip · 활성 = Pine Green 청록톤 (#01796F · Hermès Pine Green · 딥네이비 페어링)
                     active
-                      ? "bg-emerald-700 text-white border-emerald-800 font-bold shadow-[0_1px_2px_rgba(4,120,87,0.20)]"
-                      : "bg-zinc-50 text-ink-soft border-line hover:bg-white hover:text-ink hover:border-emerald-400",
+                      ? "bg-[#01796F] text-white border-[#014A44] font-bold shadow-[0_1px_2px_rgba(1,121,111,0.25)]"
+                      : "bg-zinc-50 text-ink-soft border-line hover:bg-white hover:text-ink hover:border-[#01796F]/40",
                     dragCls,
                   ].join(" ")}
                 >
@@ -281,7 +281,7 @@ export function TabBar<K extends string = string>({
                   <span>{t.label}</span>
                   {t.badge != null && t.badge > 0 && (
                     <span
-                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold leading-none tabular-nums transition-colors ${active ? `${badgeBg} text-white shadow-sm` : `${badgeBg} text-white`}`}
+                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold leading-none tabular-nums transition-colors ${active ? "bg-white/25 text-white" : "bg-zinc-200 text-zinc-700"}`}
                       title={`${t.label} · ${t.badge}건`}
                     >
                       {t.badge}
