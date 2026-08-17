@@ -5,12 +5,13 @@ import type { ReactNode } from "react";
 
 export type SectionLabelTone = "teal" | "amber" | "coral" | "sky" | "zinc";
 
+// 2026-08-17 · Tailwind @theme brand 유틸리티 사용
 const TONE_MAP: Record<SectionLabelTone, { text: string; dot: string }> = {
-  teal:  { text: "text-[#0E6B5C]", dot: "bg-[#0E6B5C]" },
-  amber: { text: "text-[#B4650F]", dot: "bg-[#E88A3D]" },
-  coral: { text: "text-[#D9584F]", dot: "bg-[#D9584F]" },
-  sky:   { text: "text-[#3E7CB1]", dot: "bg-[#3E7CB1]" },
-  zinc:  { text: "text-zinc-600",  dot: "bg-zinc-400" },
+  teal:  { text: "text-brand",           dot: "bg-brand" },
+  amber: { text: "text-brand-amber-ink", dot: "bg-brand-amber" },
+  coral: { text: "text-brand-coral",     dot: "bg-brand-coral" },
+  sky:   { text: "text-brand-sky",       dot: "bg-brand-sky" },
+  zinc:  { text: "text-zinc-600",        dot: "bg-zinc-400" },
 };
 
 interface SectionLabelProps {

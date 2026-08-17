@@ -20,7 +20,7 @@ export function IconButton({ onClick, icon, showDot, ariaLabel, title, className
       onClick={onClick}
       aria-label={ariaLabel}
       title={title}
-      className={`relative w-9 h-9 rounded-[10px] bg-white border border-[#E3E9E7] hover:border-[#0E6B5C] flex items-center justify-center text-[#5B6B66] hover:text-[#12201C] transition-colors cursor-pointer ${className}`}
+      className={`relative w-9 h-9 rounded-[10px] bg-white border border-line hover:border-brand flex items-center justify-center text-ink-soft hover:text-ink transition-colors cursor-pointer ${className}`}
     >
       {icon}
       {showDot && (

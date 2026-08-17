@@ -20,12 +20,12 @@ interface ColorTokens {
   hoverBorder: string;
 }
 
-// · brand color · sample HTML mockup 그대로 · #E7F3F0 · #FDEEE0 · #FBE7E5 · #E8F1F9
+// · 2026-08-17 · Tailwind @theme brand 유틸리티 사용 (bg-brand-tint 등 · index.css @theme 참조)
 const COLOR_MAP: Record<MenuCardColor, ColorTokens> = {
-  teal:     { iconBg: "bg-[#E7F3F0]", iconColor: "text-[#0E6B5C]", hoverBorder: "hover:border-[#0E6B5C]" },
-  amber:    { iconBg: "bg-[#FDEEE0]", iconColor: "text-[#B4650F]", hoverBorder: "hover:border-[#E88A3D]" },
-  coral:    { iconBg: "bg-[#FBE7E5]", iconColor: "text-[#D9584F]", hoverBorder: "hover:border-[#D9584F]" },
-  sky:      { iconBg: "bg-[#E8F1F9]", iconColor: "text-[#3E7CB1]", hoverBorder: "hover:border-[#3E7CB1]" },
+  teal:     { iconBg: "bg-brand-tint",       iconColor: "text-brand",           hoverBorder: "hover:border-brand" },
+  amber:    { iconBg: "bg-brand-amber-tint", iconColor: "text-brand-amber-ink", hoverBorder: "hover:border-brand-amber" },
+  coral:    { iconBg: "bg-brand-coral-tint", iconColor: "text-brand-coral",     hoverBorder: "hover:border-brand-coral" },
+  sky:      { iconBg: "bg-brand-sky-tint",   iconColor: "text-brand-sky",       hoverBorder: "hover:border-brand-sky" },
   emerald:  { iconBg: "bg-emerald-50",  iconColor: "text-emerald-700", hoverBorder: "hover:border-emerald-500" },
   indigo:   { iconBg: "bg-indigo-50",   iconColor: "text-indigo-700",  hoverBorder: "hover:border-indigo-500" },
   violet:   { iconBg: "bg-violet-50",   iconColor: "text-violet-700",  hoverBorder: "hover:border-violet-500" },
@@ -44,10 +44,10 @@ export interface MenuCardStatChip {
 }
 
 const CHIP_TONE: Record<NonNullable<MenuCardStatChip["tone"]>, string> = {
-  blue:  "bg-[#E8F1F9] text-[#3E7CB1]",
-  coral: "bg-[#FBE7E5] text-[#D9584F]",
-  amber: "bg-[#FDEEE0] text-[#B4650F]",
-  green: "bg-[#E7F3F0] text-[#0E6B5C]",
+  blue:  "bg-brand-sky-tint text-brand-sky",
+  coral: "bg-brand-coral-tint text-brand-coral",
+  amber: "bg-brand-amber-tint text-brand-amber-ink",
+  green: "bg-brand-tint text-brand",
   zinc:  "bg-zinc-100 text-zinc-600",
 };
 
@@ -74,7 +74,7 @@ export function MenuCard({ color, icon: Icon, title, description, onClick, order
     <button
       data-menu-card
       onClick={onClick}
-      className={`${orderClass ?? ""} group relative bg-white border border-[#E3E9E7] ${c.hoverBorder} rounded-[14px] p-[18px] text-left transition-all duration-150 hover:-translate-y-0.5 cursor-pointer overflow-hidden flex flex-col gap-2.5 shadow-sm hover:shadow-md`}
+      className={`${orderClass ?? ""} group relative bg-white border border-line ${c.hoverBorder} rounded-[14px] p-[18px] text-left transition-all duration-150 hover:-translate-y-0.5 cursor-pointer overflow-hidden flex flex-col gap-2.5 shadow-sm hover:shadow-md`}
     >
       {/* top · 아이콘 (좌측) + badge (우측) */}
       <div className="flex items-start justify-between">
@@ -84,11 +84,11 @@ export function MenuCard({ color, icon: Icon, title, description, onClick, order
         {badge}
       </div>
       {/* 제목 */}
-      <div className="text-[14.5px] font-bold text-[#12201C] tracking-[-0.1px] leading-tight">
+      <div className="text-[14.5px] font-bold text-ink tracking-[-0.1px] leading-tight">
         {title}
       </div>
       {/* 설명 */}
-      <div className={`text-[#5B6B66] ${descSize}`}>
+      <div className={`text-ink-soft ${descSize}`}>
         {description}
       </div>
       {/* stat chips · 하단 */}

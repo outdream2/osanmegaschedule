@@ -14,11 +14,11 @@ interface PanelProps {
 
 export function Panel({ title, moreLabel, onMore, children, className = "" }: PanelProps) {
   return (
-    <div className={`bg-white border border-[#E3E9E7] rounded-[14px] p-4 shadow-sm ${className}`}>
+    <div className={`bg-white border border-line rounded-[14px] p-4 shadow-sm ${className}`}>
       <div className="flex items-center justify-between mb-3">
-        <div className="text-[15px] font-bold text-[#12201C]">{title}</div>
+        <div className="text-[15px] font-bold text-ink">{title}</div>
         {moreLabel && onMore && (
-          <button type="button" onClick={onMore} className="text-[13px] text-[#0E6B5C] font-semibold cursor-pointer hover:underline">
+          <button type="button" onClick={onMore} className="text-[13px] text-brand font-semibold cursor-pointer hover:underline">
             {moreLabel}
           </button>
         )}

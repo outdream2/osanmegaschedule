@@ -43,6 +43,25 @@
   /* 2026-08-16 · Pretendard Variable (한글 · SaaS 표준) + Geist Variable (라틴) · 통합 스택 */
   --font-sans: "Pretendard Variable", "Geist Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, "Cascadia Code", monospace;
+
+  /* 2026-08-17 · UI 목업 브랜드 토큰 · docs/UI_MOCKUP_PC_2026-08-17.html 매칭
+   *   · Tailwind 4 · @theme 에 정의 · bg-brand · text-brand-deep · border-line 등 유틸리티 자동 생성 */
+  --color-brand: #0E6B5C;                  /* 메인 teal */
+  --color-brand-deep: #0A4F44;             /* 사이드바 · Hero deep */
+  --color-brand-tint: #E7F3F0;             /* teal 배경 (아이콘 tint) */
+  --color-brand-amber: #E88A3D;
+  --color-brand-amber-tint: #FDEEE0;
+  --color-brand-amber-ink: #B4650F;
+  --color-brand-coral: #D9584F;
+  --color-brand-coral-tint: #FBE7E5;
+  --color-brand-sky: #3E7CB1;
+  --color-brand-sky-tint: #E8F1F9;
+  /* Neutral · 목업 톤 */
+  --color-ink: #12201C;                    /* 주 텍스트 */
+  --color-ink-soft: #5B6B66;               /* 보조 텍스트 */
+  --color-surface: #FFFFFF;                /* 카드/패널 */
+  --color-line: #E3E9E7;                   /* 경계 */
+  --color-app-bg: #F5F7F7;                 /* 페이지 배경 */
 }
 
 /* 2026-08-16 · 글씨체 또렷·부드럽 · 최신 기술 통합 · macOS/iOS/Windows/Linux 균일 */
