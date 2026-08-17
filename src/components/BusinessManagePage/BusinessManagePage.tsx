@@ -3,11 +3,13 @@
 //   상단: AppNavHeader (activePage="business-manage")
 //   서브탭: 직원관리 · 연차승인 · 점심불참 · 직원권한 (DisplayPage 서브탭 스타일 벤치마크)
 //   각 서브탭 · 기존 페이지 임베드 (embedded prop 전달 → 자체 AppNavHeader skip)
-import React, { Suspense, useCallback, useEffect, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { UserGear, CalendarDots, ForkKnife, FileText, NotePencil, type Icon as PhIcon } from "@phosphor-icons/react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { useSidebarEnabled } from "../../hooks/useSidebar";
 import { useIsMobile } from "../../hooks/use-mobile";
+// 2026-08-17 · #131 · 페이지 안보이기 · 내부 subtab 필터
+import { usePagePermissions } from "../../hooks/usePagePermissions";
 import { LunchPage } from "../LunchPage/LunchPage";
 import { useSortableTabs } from "../../hooks/useSortableTabs";
 import type { AuthSession } from "../../types";
@@ -68,6 +70,30 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
   const [subTab, setSubTab] = useState<BmSubTab>("staff-manage");
   const isBmMobile = useIsMobile();
   const SIDEBAR_ENABLED = useSidebarEnabled(); // 2026-08-16 · 로컬 상수 유지
+
+  // 2026-08-17 · #131 · 페이지 안보이기 · admin (lv≥9) 예외
+  const { perms: bmPerms } = usePagePermissions();
+  const bmUserLevel = authSession?.level ??
+    (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9 :
+      authSession?.role === "manager" ? 2 : authSession?.role === "employee" ? 1 : 0);
+  const bmHiddenSubs = useMemo(() => {
+    const set = new Set<BmSubTab>();
+    const subs: BmSubTab[] = ["staff-manage", "approval-center", "lunch", "hr-forms", "document-writer"];
+    for (const s of subs) {
+      // document-writer:contract 같은 nested subtab 도 검사 (계약서 작성 · nested 형식)
+      const perm = (bmPerms as any)[`business-manage:${s}`] || (bmPerms as any)[`business-manage:${s}:contract`];
+      if (perm?.hidden === true && bmUserLevel < 9) set.add(s);
+    }
+    return set;
+  }, [bmPerms, bmUserLevel]);
+  // 현재 subtab hidden 시 · 첫번째 visible 로 이동
+  useEffect(() => {
+    if (bmHiddenSubs.has(subTab)) {
+      const priority: BmSubTab[] = ["staff-manage", "approval-center", "lunch", "hr-forms", "document-writer"];
+      const next = priority.find(k => !bmHiddenSubs.has(k));
+      if (next) setSubTab(next);
+    }
+  }, [subTab, bmHiddenSubs]);
 
   // 2026-08-10 · A · 스케쥴 [수정] 라우팅 · initialEmployeeId 진입 시 · staff-manage 강제 이동
   useEffect(() => {
@@ -169,7 +195,8 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
       {!(SIDEBAR_ENABLED && !isBmMobile) && (
       <TabBar<BmSubTab>
         level={2}
-        tabs={sortable.tabs.map((t): CommonTabDef<BmSubTab> => ({
+        // 2026-08-17 · #131 · 안보이기 처리 subtab 필터
+        tabs={sortable.tabs.filter(t => !bmHiddenSubs.has(t.key)).map((t): CommonTabDef<BmSubTab> => ({
           key: t.key,
           label: t.label,
           icon: t.icon,
