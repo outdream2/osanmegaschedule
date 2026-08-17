@@ -48,7 +48,11 @@ export function PageToolbar({
   search, right, leftSlot, className = "",
 }: PageToolbarProps) {
   return (
-    <div className={`bg-white rounded-xl border border-line shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2 ${className}`}>
+    // 2026-08-17 v2 · Attio 세련 · inset light + 2-layer shadow
+    <div
+      className={`bg-white rounded-xl border border-line px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2 ${className}`}
+      style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.60), 0 1px 2px rgba(10,46,74,0.05), 0 2px 8px -2px rgba(10,46,74,0.06)" }}
+    >
       {/* 좌측 · accent bar + icon + title + count + selected */}
       <div className="flex items-center gap-2.5 shrink-0">
         <span className="w-[3px] h-[18px] rounded-full bg-brand-deep" />

@@ -28,15 +28,16 @@ export interface PeriodSelectorProps<T extends number | string> {
   ariaLabel?: string;
 }
 
-// 2026-08-17 · 최신 트렌드 · mono neutral · 딥네이비 통일 (모든 accent → brand-deep)
+// 2026-08-17 v2 · 최신 트렌드 · mono neutral · 딥네이비 · inset light + brand shadow (세련)
+const ACTIVE_CLS = "bg-brand-deep text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_1px_2px_rgba(10,46,74,0.15),0_2px_6px_-2px_rgba(10,46,74,0.30)]";
 const ACCENT_CLS: Record<NonNullable<PeriodSelectorProps<never>["accent"]>, string> = {
-  teal:    "bg-brand-deep text-white shadow-sm",
-  indigo:  "bg-brand-deep text-white shadow-sm",
-  emerald: "bg-brand-deep text-white shadow-sm",
-  amber:   "bg-brand-deep text-white shadow-sm",
-  rose:    "bg-brand-deep text-white shadow-sm",
-  sky:     "bg-brand-deep text-white shadow-sm",
-  violet:  "bg-brand-deep text-white shadow-sm",
+  teal:    ACTIVE_CLS,
+  indigo:  ACTIVE_CLS,
+  emerald: ACTIVE_CLS,
+  amber:   ACTIVE_CLS,
+  rose:    ACTIVE_CLS,
+  sky:     ACTIVE_CLS,
+  violet:  ACTIVE_CLS,
 };
 
 // 폰트 +2 · 접근성 (h-7 이상)
@@ -72,7 +73,7 @@ export function PeriodSelector<T extends number | string>({
             type="button"
             onClick={() => onChange(opt.value)}
             title={opt.title}
-            className={`${s.btn} rounded-md font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+            className={`${s.btn} rounded-md font-semibold transition-all duration-200 ease-out cursor-pointer whitespace-nowrap ${
               active
                 ? activeCls
                 : "text-ink hover:text-brand-deep hover:bg-white"
