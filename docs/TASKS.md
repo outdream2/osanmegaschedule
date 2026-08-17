@@ -223,14 +223,22 @@
 
 ## 📜 완료 로그
 
-### 2026-08-17 밤 세션 · P0 프레임워크 확산 + Nav 세련 + 문서화 (커밋 20+)
-- **P0 · StatusPill 확산 · 12배치** · HrForms · TrendingTab · StockCheck · DisplayPage(2) · Permissions · StaffManage · Pharmacist · ProductArrival · DisplayRequestPanel · RequestsPage(2) · StockReconciliation · ProductDetailPanel · LeavePage · ScanPage · ReturnListPanel · EmployeeFormModal · DayTimelineModal · StoreZoneMap · LandingPage(초/중/하순 x2)
-- **legacy 정리** · common/StatusBadge.tsx 삭제 (미사용 확인) · tokens.ts 주석 갱신
-- **문서화** · src/components/common/README.md 신규 · 프레임워크 usage · tone/size · 원칙 10개 · primitives/features 분류
-- **Nav 세련 v2** · AppNavHeader (aurora glow · 3-layer shadow · 3-stop gradient · 로고 ring · OSAN MEGATOWN 타이포 · name chip glow · inactive translate-y · 모바일 frosted)
-- **Sidebar 세련 v2** · aurora + hairline · 그룹/아이템 frosted + translate-x · footer 성씨 initial 제거 (사용자 요청) · 종/알림 패딩 반
+### 2026-08-17 밤 세션 · P0 프레임워크 확산 + Nav/Framework CSS 세련 v2 (커밋 30+)
+- **P0 · StatusPill 확산 · 12배치** · 15+ 파일 · 20+ 위치
+- **legacy 정리** · common/StatusBadge.tsx 삭제 · tokens.ts 주석 갱신
+- **문서화** · src/components/common/README.md 신규 · 프레임워크 usage · 원칙 10개
+- **Nav 세련 v2** · AppNavHeader/SideNav · aurora glow + 3-layer shadow + 3-stop gradient + 로고 ring + tracking + name chip + translate-y hover + 모바일 frosted
+- **MyPage v2** · 성씨 initial 제거 · User 아이콘 + gradient (사용자 요청)
+- **Framework CSS 세련 v2** (전 앱 자동 반영):
+  - Modal · frosted backdrop (딥네이비 tint + blur 6px) + 3-layer shadow
+  - ConfirmDialog · Modal 통일
+  - Toast (toastClass) · 폰트 +2 + 2-layer shadow + brand-deep tone
+  - Button · inset light + 2-layer glow shadow + 200ms all transition
+  - KpiCard · inset light + 2-layer shadow + hover lift
+  - Input field · 브랜드 focus + 폰트 +2 + brand-tint ring
+  - FilterBar · inset light + subtle shadow
 - **Hero v2** · aurora + 3-layer shadow + top hairline
-- **UI 원칙 준수** · handler/state/API 절대 손대지 않음 · className/style만
+- **UI 원칙 준수** · handler/state/API 절대 손대지 않음 · className/style/CSS만
 
 ### 2026-08-17 저녁 세션 · UI 대전환 (커밋 10+ 이후 추가)
 - **UI 톤** · teal/파스텔 → deep navy blue 전환 (전체)
