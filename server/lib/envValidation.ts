@@ -17,10 +17,12 @@ interface EnvSpec {
 }
 
 const ENV_SPECS: EnvSpec[] = [
-  // ── required · 미설정 시 서버 fail ──
+  // ── required · 미설정 시 서버 fail (핵심 인프라만) ──
   { key: "SUPABASE_URL",       severity: "required",    purpose: "Supabase 접속 URL" },
-  { key: "SUPABASE_ANON_KEY",  severity: "required",    purpose: "Supabase 익명 키" },
   { key: "JWT_SECRET",         severity: "required",    purpose: "JWT 서명 (인증 시스템)" },
+  // ── recommended · 미설정 시 warn (기능 부분 비활성) ──
+  //   · 2026-08-17 · SUPABASE_ANON_KEY 를 recommended 로 완화 (SERVICE_ROLE_KEY 있으면 서버 동작) ──
+  { key: "SUPABASE_ANON_KEY",  severity: "recommended", purpose: "Supabase 익명 키 (프론트 · SERVICE_ROLE_KEY 있으면 서버 OK)" },
   // ── recommended · 미설정 시 기능 부분 비활성 ──
   { key: "VAPID_PUBLIC_KEY",   severity: "recommended", purpose: "웹푸시 알림 (공개키)" },
   { key: "VAPID_PRIVATE_KEY",  severity: "recommended", purpose: "웹푸시 알림 (비공개키)" },

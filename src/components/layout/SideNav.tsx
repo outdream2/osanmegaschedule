@@ -327,17 +327,33 @@ export const SideNav: React.FC<SideNavProps> = ({
   const { width, startResize } = useSidebarWidth();
   const { brand } = useBrandIdentity();
 
+  // 2026-08-17 · 사용자 지시 · 사이드바 deep teal (#0A4F44) 목업 톤 적용
+  //   · CSS var override · --sidebar-* · 모든 shadcn Sidebar 내부 텍스트/배경 자동 대응
+  const teal = {
+    "--sidebar": "#0A4F44",                              // deep teal bg
+    "--sidebar-foreground": "#EAF3F0",                   // primary text (light green-white)
+    "--sidebar-border": "rgba(255,255,255,0.08)",        // subtle border
+    "--sidebar-accent": "rgba(255,255,255,0.12)",        // hover/active bg
+    "--sidebar-accent-foreground": "#FFFFFF",            // hover/active text
+    "--sidebar-primary": "#43C6A0",                      // active accent (mint)
+    "--sidebar-primary-foreground": "#0A4F44",
+    "--sidebar-ring": "rgba(255,255,255,0.35)",
+  } as React.CSSProperties;
+
   return (
     // 2026-08-16 · width 상태 실제 반영 · shadcn Sidebar --sidebar-width CSS 변수 override
+    // 2026-08-17 · deep teal 적용 · 목업 톤
     <Sidebar
       collapsible="icon"
       data-sb-v2=""
-      className="border-r border-zinc-200/60"
-      style={!isMobile ? { "--sidebar-width": `${width}px` } as React.CSSProperties : undefined}
+      className="border-r border-white/8"
+      style={!isMobile
+        ? { ...teal, "--sidebar-width": `${width}px` } as React.CSSProperties
+        : teal}
     >
 
-      {/* ── 로고 영역 · 2026-08-12 · 접기 토글 · 약국이름 옆 · 사이드바 내부 ── */}
-      <SidebarHeader className="px-2 py-2 pb-1.5 border-b border-zinc-200/60">
+      {/* ── 로고 영역 · 2026-08-17 · deep teal 톤 · light text · border-white/10 ── */}
+      <SidebarHeader className="px-2 py-2 pb-1.5 border-b border-white/10">
         <div className="flex items-center gap-1 w-full">
           <button
             type="button"
@@ -347,9 +363,8 @@ export const SideNav: React.FC<SideNavProps> = ({
             className={[
               "flex-1 min-w-0 flex items-center gap-2.5",
               "px-2 py-1.5 rounded-lg",
-              // warm hover
-              "hover:bg-white/70 transition-all duration-200 ease-out",
-              "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-300",
+              "hover:bg-white/8 transition-all duration-200 ease-out",
+              "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
               "cursor-pointer",
             ].join(" ")}
           >
@@ -358,21 +373,21 @@ export const SideNav: React.FC<SideNavProps> = ({
               alt={`${brand.region ? brand.region + " " : ""}${brand.shortName} 로고`}
               className="w-6 h-6 object-contain shrink-0"
             />
-            {/* icon-only 모드에서 숨김 · 2026-08-16 · 지역 크게 강조 + 브랜드명 아래 */}
+            {/* icon-only 모드에서 숨김 · 2026-08-17 · 흰색 텍스트 (deep teal bg 대비) */}
             <div className="flex flex-col gap-0 leading-none group-data-[collapsible=icon]:hidden min-w-0">
               {brand.region && (
-                <span className="text-[15px] font-black text-zinc-900 tracking-tight leading-tight truncate">
+                <span className="text-[15px] font-black text-white tracking-tight leading-tight truncate">
                   {brand.region}
                 </span>
               )}
-              <span className="text-[11px] font-semibold text-zinc-500 tracking-tight leading-tight truncate mt-0.5">
+              <span className="text-[11px] font-semibold text-[#9CC4BA] tracking-tight leading-tight truncate mt-0.5">
                 {brand.shortName}
               </span>
             </div>
           </button>
-          {/* 접기/펼치기 토글 · 사이드바 내부 · 약국이름 우측 · icon 모드에서도 보임 */}
+          {/* 접기/펼치기 토글 · 사이드바 내부 · 약국이름 우측 */}
           <SidebarTrigger
-            className="h-7 w-7 rounded-md text-zinc-400 hover:text-zinc-800 hover:bg-white/70 transition shrink-0 group-data-[collapsible=icon]:hidden"
+            className="h-7 w-7 rounded-md text-[#9CC4BA] hover:text-white hover:bg-white/8 transition shrink-0 group-data-[collapsible=icon]:hidden"
             aria-label="사이드바 접기"
           />
         </div>
@@ -399,14 +414,13 @@ export const SideNav: React.FC<SideNavProps> = ({
         ))}
       </SidebarContent>
 
-      {/* ── 하단: 구분선 + 알림 + 로그아웃 ── */}
-      <SidebarSeparator className="bg-zinc-200/60" />
+      {/* ── 하단: 구분선 + 알림 + 로그아웃 · 2026-08-17 · deep teal 톤 ── */}
+      <SidebarSeparator className="bg-white/8" />
 
       <SidebarFooter className="px-2 py-1.5 gap-0.5">
-        {/* 2026-08-12 · 로그인 정보 · [이름] 만 · 배지/카드 배경 제거 */}
         {authSession && authSession.employeeName && (
           <div className="px-2 py-1 group-data-[collapsible=icon]:hidden">
-            <span className="text-[13px] font-bold text-zinc-800 truncate leading-tight">
+            <span className="text-[13px] font-bold text-white truncate leading-tight">
               [{authSession.employeeName}]
             </span>
           </div>
