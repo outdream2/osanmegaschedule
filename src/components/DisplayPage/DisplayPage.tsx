@@ -2787,15 +2787,16 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                           const realTotal = (wh != null || st != null) ? (Number(wh ?? 0) + Number(st ?? 0)) : null;
                           const mismatch = realTotal != null && Number.isFinite(stockNum) && realTotal !== stockNum;
                           let statusLabel = "정상";
-                          let statusClass = "text-emerald-700 bg-emerald-50 border-emerald-200";
+                          let statusTone: "emerald" | "zinc" | "rose" | "amber" = "emerald";
+                          let statusPulse = false;
                           if (!Number.isFinite(stockNum)) {
-                            statusLabel = "미확인"; statusClass = "text-zinc-500 bg-zinc-100 border-line";
+                            statusLabel = "미확인"; statusTone = "zinc";
                           } else if (stockNum <= 0) {
-                            statusLabel = "품절"; statusClass = "text-red-700 bg-red-50 border-red-300";
+                            statusLabel = "품절"; statusTone = "rose";
                           } else if (stockNum < 3) {
-                            statusLabel = "품절임박"; statusClass = "text-amber-700 bg-amber-50 border-amber-300 animate-pulse";
+                            statusLabel = "품절임박"; statusTone = "amber"; statusPulse = true;
                           } else if (Number.isFinite(optNum) && optNum > 0 && stockNum < optNum) {
-                            statusLabel = "적정이하"; statusClass = "text-orange-700 bg-orange-50 border-orange-200";
+                            statusLabel = "적정이하"; statusTone = "amber";
                           }
                           const fmt = (v: any) => v == null ? "-" : String(v);
                           return (
@@ -2823,7 +2824,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                               })()}
                               <td className={`text-right px-1 py-1.5 font-mono font-bold text-[11px] ${Number.isFinite(optNum) ? "text-zinc-600" : "text-zinc-300"}`}>{Number.isFinite(optNum) ? optNum : "-"}</td>
                               <td className="text-center px-1 py-1.5">
-                                <span className={`inline-block text-[9px] font-bold border rounded-full px-1.5 py-0.5 ${statusClass}`}>{statusLabel}</span>
+                                <StatusPill tone={statusTone} size="xs" dot={statusTone !== "zinc"} pulse={statusPulse}>{statusLabel}</StatusPill>
                               </td>
                             </tr>
                           );
