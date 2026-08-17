@@ -5,11 +5,13 @@
 //   · 사이드바 V2 (PC) 활성 시 · TabBar 숨김 · 사이드바가 서브탭 담당
 //   · sidebar:subtab CustomEvent · page="approval-request" 수신 시 setSubTab
 //   · 초기 서브탭 · localStorage("sidebar.subtab.approval-request") · 없으면 "leave"
-import React, { Suspense, useEffect, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { CalendarDots, Coffee, PencilLine } from "@phosphor-icons/react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { useSidebarEnabled } from "../../hooks/useSidebar";
 import { useIsMobile } from "../../hooks/use-mobile";
+// 2026-08-17 · #131 · 페이지 안보이기 · 내부 subtab tab bar 필터
+import { usePagePermissions } from "../../hooks/usePagePermissions";
 import { TabBar, type TabDef } from "../common/TabBar";
 import { LeavePage } from "../LeavePage/LeavePage";
 import { LunchPage } from "../LunchPage/LunchPage";
@@ -54,6 +56,32 @@ const ApprovalRequestPage: React.FC<ApprovalRequestPageProps> = ({
   const isMobile = useIsMobile();
   const SIDEBAR_ENABLED = useSidebarEnabled(); // 2026-08-16 · 로컬 상수 유지
 
+  // 2026-08-17 · #131 · 페이지 안보이기 · admin (lv≥9) 은 예외
+  const { perms: arPerms } = usePagePermissions();
+  const arUserLevel = authSession?.level ??
+    (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9 :
+      authSession?.role === "manager" ? 2 : authSession?.role === "employee" ? 1 : 0);
+  const arHiddenSubs = useMemo(() => {
+    const set = new Set<ArSubTab>();
+    const subs: ArSubTab[] = ["leave", "lunch", "document-writer"];
+    for (const s of subs) {
+      const perm = (arPerms as any)[`approval-request:${s}`];
+      if (perm?.hidden === true && arUserLevel < 9) set.add(s);
+    }
+    return set;
+  }, [arPerms, arUserLevel]);
+
+  // 현재 subtab hidden 시 · 첫번째 visible 로 이동
+  useEffect(() => {
+    if (arHiddenSubs.has(subTab)) {
+      const priority: ArSubTab[] = ["leave", "lunch", "document-writer"];
+      const next = priority.find(k => !arHiddenSubs.has(k));
+      if (next) setSubTab(next);
+    }
+  }, [subTab, arHiddenSubs]);
+
+  const visibleTabs = useMemo(() => TABS.filter(t => !arHiddenSubs.has(t.key)), [arHiddenSubs]);
+
   // 초기 마운트 완료 후 · localStorage 값 정리 (StrictMode 재마운트 후에도 유지되도록 mount 이후 삭제)
   useEffect(() => {
     try { localStorage.removeItem(STORAGE_KEY); } catch { /* silent */ }
@@ -93,12 +121,11 @@ const ApprovalRequestPage: React.FC<ApprovalRequestPageProps> = ({
         onLogout={onLogout}
       />
 
-      {/* ── 서브탭 바 · 공통 TabBar (level 2) ── */}
-      {/* 사이드바 V2 (PC) 활성 시 · 사이드바가 서브탭 담당 · TabBar 숨김 (모바일 유지) */}
-      {!(SIDEBAR_ENABLED && !isMobile) && (
+      {/* ── 서브탭 바 · 공통 TabBar (level 2) · 2026-08-17 · #131 · 안보이기 처리 filter ── */}
+      {!(SIDEBAR_ENABLED && !isMobile) && visibleTabs.length > 0 && (
         <TabBar<ArSubTab>
           level={2}
-          tabs={TABS}
+          tabs={visibleTabs}
           activeKey={subTab}
           onSelect={setSubTab}
         />
