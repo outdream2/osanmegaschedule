@@ -1023,18 +1023,24 @@ export const FlowTab: React.FC = () => {
       {hiddenModalOpen && (
         <div className="fixed inset-0 z-50 bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-1 sm:p-4" onClick={() => setHiddenModalOpen(false)}>
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[98vh] sm:max-h-[85vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-line bg-amber-50/50">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center shadow-sm">
+            {/* 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-line bg-zinc-50/60">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="w-[3px] h-[24px] rounded-full bg-brand-deep shrink-0" />
+                <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shadow-sm shrink-0">
                   <EyeOff size={18} className="text-white" />
                 </div>
-                <div>
-                  <div className="text-base font-bold text-zinc-800">숨김 항목 관리</div>
-                  <div className="text-[15px] font-semibold text-zinc-500 mt-0.5">숨김 처리된 상품 · 검색·발주 리스트에서 노출되지 않음</div>
+                <div className="min-w-0">
+                  <div className="text-[17px] font-bold text-ink tracking-tight">숨김 항목 관리</div>
+                  <div className="text-[13px] font-medium text-ink-soft mt-0.5">숨김 처리된 상품 · 검색·발주 리스트에서 노출되지 않음</div>
                 </div>
               </div>
               <button onClick={() => setHiddenModalOpen(false)}
-                className="text-zinc-400 hover:text-zinc-700 text-3xl leading-none font-bold w-9 h-9 rounded-lg hover:bg-white/70 transition cursor-pointer flex items-center justify-center shrink-0">×</button>
+                className="w-9 h-9 rounded-lg bg-white border border-line hover:border-brand-deep hover:bg-brand-tint text-ink-soft hover:text-brand-deep transition-colors cursor-pointer flex items-center justify-center shrink-0"
+                aria-label="닫기"
+              >
+                <XIcon size={16} />
+              </button>
             </div>
             <div className="flex items-center justify-between px-5 py-2.5 border-b border-zinc-100 bg-white">
               <span className="text-[15px] font-bold text-zinc-500">총 <span className="text-amber-700 font-bold">{hiddenList.length}</span>개 숨김</span>
