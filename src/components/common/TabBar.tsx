@@ -112,6 +112,10 @@ export function TabBar<K extends string = string>({
   variant = "default",
   className = "",
 }: TabBarProps<K>) {
+  // 2026-08-17 · 3 계층 · 디자인 다르게 · Linear/Vercel/Attio 2026 SaaS 표준
+  //   · L1 · underline + gradient bar (large · primary tabs) · 기존 유지
+  //   · L2 · Attio "carved" segmented pill container (medium · section tabs)
+  //   · L3 · minimal text + dot marker (small · deep tabs · Linear docs 톤)
   const barCls = level === 3 ? "tab-bar-l3" : level === 1 ? "tab-bar-l1" : "tab-bar-l2";
   const btnCls = level === 3 ? "tab-l3" : level === 1 ? "tab-l1" : "tab-l2";
   const underlineCls = level === 3 ? "tab-active-underline-l3" : level === 1 ? "tab-active-underline-l1" : "tab-active-underline-l2";
@@ -130,6 +134,165 @@ export function TabBar<K extends string = string>({
     ? `bg-zinc-50/50 border-b border-line w-full shrink-0 ${className}`
     : `${barCls} ${className}`;
 
+  // L2 · Attio carved segmented container (rounded-xl pill wrap)
+  if (level === 2 && variant !== "nested") {
+    return (
+      <div className={`bg-white border-b border-line w-full shrink-0 ${className}`}>
+        <div
+          className="tab-bar-inner py-2"
+          style={typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth }}
+        >
+          <div className={`inline-flex items-center bg-zinc-100 border border-line rounded-xl p-1 gap-0.5 flex-wrap ${sortable?.isDragging ? "select-none" : ""}`}>
+            {visibleTabs.map(t => {
+              const active = activeKey === t.key;
+              const Icon = t.icon;
+              const c = COLOR_MAP[t.color ?? "slate"] ?? COLOR_MAP.slate;
+              const dnd = sortable?.getTabProps(t.key);
+
+              const dragCls = dnd
+                ? [
+                    dnd.isBeingDragged ? "opacity-50" : "",
+                    dnd.isDropTarget ? "ring-2 ring-brand-deep ring-inset" : "",
+                    dnd.isArmed && !dnd.isBeingDragged ? "tab-shake cursor-grab" : "",
+                    dnd.isBeingDragged ? "cursor-grabbing" : "",
+                  ].filter(Boolean).join(" ")
+                : "";
+
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => onSelect(t.key)}
+                  title={t.label}
+                  draggable={dnd?.draggable}
+                  onDragStart={dnd?.onDragStart}
+                  onDragOver={dnd?.onDragOver}
+                  onDragEnter={dnd?.onDragEnter}
+                  onDragLeave={dnd?.onDragLeave}
+                  onDrop={dnd?.onDrop}
+                  onDragEnd={dnd?.onDragEnd}
+                  onMouseDown={dnd?.onMouseDown}
+                  onMouseUp={dnd?.onMouseUp}
+                  onMouseLeave={dnd?.onMouseLeave}
+                  onTouchStart={dnd?.onTouchStart}
+                  onTouchEnd={dnd?.onTouchEnd}
+                  onTouchCancel={dnd?.onTouchCancel}
+                  className={[
+                    "inline-flex items-center gap-1.5 sm:gap-2 h-10 px-3 sm:px-4 rounded-lg text-[15px] sm:text-[16px] font-semibold whitespace-nowrap transition-all duration-150 cursor-pointer tracking-tight",
+                    active
+                      ? "bg-white text-ink font-bold shadow-sm ring-1 ring-line"
+                      : "text-ink-soft hover:text-ink hover:bg-white/70",
+                    dragCls,
+                  ].join(" ")}
+                >
+                  {Icon && (
+                    <Icon
+                      size={17}
+                      strokeWidth={active ? 2.4 : 2}
+                      weight={active ? "fill" : "duotone"}
+                      className={`shrink-0 transition-colors duration-150 ${active ? c.iconActive : "text-zinc-400"}`}
+                    />
+                  )}
+                  <span>{t.label}</span>
+                  {t.badge != null && t.badge > 0 && (
+                    <span
+                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[11px] font-bold leading-none tabular-nums ${active ? `${badgeBg} text-white` : "bg-zinc-200 text-zinc-600"}`}
+                      title={`${t.label} · ${t.badge}건`}
+                    >
+                      {t.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // L3 · minimal text tabs (Linear docs 톤 · dot marker + subtle underline)
+  if (level === 3) {
+    return (
+      <div className={`bg-white border-b border-line w-full shrink-0 ${className}`}>
+        <div
+          className="tab-bar-inner"
+          style={typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth }}
+        >
+          <div className={`flex flex-wrap items-stretch gap-0 ${sortable?.isDragging ? "select-none" : ""}`}>
+            {visibleTabs.map(t => {
+              const active = activeKey === t.key;
+              const Icon = t.icon;
+              const c = COLOR_MAP[t.color ?? "slate"] ?? COLOR_MAP.slate;
+              const dnd = sortable?.getTabProps(t.key);
+
+              const dragCls = dnd
+                ? [
+                    dnd.isBeingDragged ? "opacity-50" : "",
+                    dnd.isDropTarget ? "ring-2 ring-brand-deep ring-inset" : "",
+                    dnd.isArmed && !dnd.isBeingDragged ? "tab-shake cursor-grab" : "",
+                    dnd.isBeingDragged ? "cursor-grabbing" : "",
+                  ].filter(Boolean).join(" ")
+                : "";
+
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => onSelect(t.key)}
+                  title={t.label}
+                  draggable={dnd?.draggable}
+                  onDragStart={dnd?.onDragStart}
+                  onDragOver={dnd?.onDragOver}
+                  onDragEnter={dnd?.onDragEnter}
+                  onDragLeave={dnd?.onDragLeave}
+                  onDrop={dnd?.onDrop}
+                  onDragEnd={dnd?.onDragEnd}
+                  onMouseDown={dnd?.onMouseDown}
+                  onMouseUp={dnd?.onMouseUp}
+                  onMouseLeave={dnd?.onMouseLeave}
+                  onTouchStart={dnd?.onTouchStart}
+                  onTouchEnd={dnd?.onTouchEnd}
+                  onTouchCancel={dnd?.onTouchCancel}
+                  className={[
+                    "relative inline-flex items-center gap-1.5 h-9 px-3 sm:px-4 text-[13px] sm:text-[14px] font-semibold whitespace-nowrap transition-colors duration-150 cursor-pointer tracking-tight",
+                    active ? "text-ink" : "text-ink-soft hover:text-ink",
+                    dragCls,
+                  ].join(" ")}
+                >
+                  {/* dot marker · 활성 시 색 accent · 카테고리 identity (Vercel ≤10px) */}
+                  <span className={`w-1.5 h-1.5 rounded-full transition-colors ${active ? c.iconActive.replace("text-", "bg-") : "bg-zinc-300"}`} />
+                  {Icon && (
+                    <Icon
+                      size={13}
+                      strokeWidth={active ? 2.4 : 2}
+                      weight={active ? "fill" : "duotone"}
+                      className={`shrink-0 transition-colors duration-150 ${active ? c.iconActive : "text-zinc-400"}`}
+                    />
+                  )}
+                  <span>{t.label}</span>
+                  {t.badge != null && t.badge > 0 && (
+                    <span
+                      className={`inline-flex items-center justify-center min-w-[16px] h-[16px] px-0.5 rounded-full text-[10px] font-bold leading-none tabular-nums ${active ? `${badgeBg} text-white` : "bg-zinc-100 text-zinc-500"}`}
+                      title={`${t.label} · ${t.badge}건`}
+                    >
+                      {t.badge}
+                    </span>
+                  )}
+                  {/* subtle bottom underline · 2px */}
+                  {active && (
+                    <span className={`absolute left-2 right-2 -bottom-px h-[2px] rounded-t-sm ${c.bar}`} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // L1 · underline + gradient bar (default · large primary)
   return (
     <div className={outerCls}>
       <div
@@ -146,7 +309,7 @@ export function TabBar<K extends string = string>({
             const dragCls = dnd
               ? [
                   dnd.isBeingDragged ? "opacity-50" : "",
-                  dnd.isDropTarget ? "ring-2 ring-indigo-400 ring-inset" : "",
+                  dnd.isDropTarget ? "ring-2 ring-brand-deep ring-inset" : "",
                   dnd.isArmed && !dnd.isBeingDragged ? "tab-shake cursor-grab" : "",
                   dnd.isBeingDragged ? "cursor-grabbing" : "",
                 ].filter(Boolean).join(" ")
