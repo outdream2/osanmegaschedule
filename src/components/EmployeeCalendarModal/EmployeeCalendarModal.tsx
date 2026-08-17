@@ -337,10 +337,9 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
       onClick={onClose}
     >
-      {/* 2026-08-17 · 사용자 지시 · 좌·우 분할 재설계 · 좌 = 직원정보 항상 · 우 = 탭 (달력·일괄·구역) · 반응형 stack
-          · 최신 트렌드 · 딥네이비 헤더 · 세련된 segmented tab bar */}
+      {/* 2026-08-17 · 사용자 지시 · PC 너무 넓음 · max-w-5xl → max-w-4xl · 최신 트렌드 · 보기 좋은 폭 */}
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[95vh]"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl lg:max-w-4xl overflow-hidden flex flex-col max-h-[95vh]"
         onClick={e => e.stopPropagation()}
       >
         {/* Header · 2026-08-17 · 사용자 지시 · "직원정보 / 월별 스케쥴" 타이틀 · 딥네이비 톤 */}

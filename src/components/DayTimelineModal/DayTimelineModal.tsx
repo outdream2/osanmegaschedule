@@ -1701,81 +1701,81 @@ export const DayTimelineModal: React.FC<Props> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4 pt-4 sm:pt-0" onClick={onClose}>
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-5xl overflow-hidden flex flex-col"
+        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-3xl lg:max-w-4xl xl:max-w-[1100px] overflow-hidden flex flex-col"
         style={{ maxHeight: "92vh" }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-zinc-900 text-white flex-shrink-0 gap-2 min-w-0">
-          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+        {/* Header · 2026-08-17 · 최신 트렌드 · 딥네이비 · 사이드바 통일 · 폰트 +2 */}
+        <div className="flex items-center justify-between px-5 py-3.5 bg-brand-deep text-white flex-shrink-0 gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             {onDateChange && (
               <button onClick={() => onDateChange(offsetDate(-1))}
-                className="p-1 rounded hover:bg-zinc-700 transition-colors text-zinc-400 hover:text-white cursor-pointer shrink-0">
+                className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white/80 hover:text-white cursor-pointer shrink-0">
                 <ChevronLeft size={16} />
               </button>
             )}
-            <span className="text-[17px] font-bold tracking-tight shrink-0 break-keep">{title}</span>
+            <span className="text-[19px] font-extrabold tracking-tight shrink-0 break-keep">{title}</span>
             {onDateChange && (
               <button onClick={() => onDateChange(offsetDate(1))}
-                className="p-1 rounded hover:bg-zinc-700 transition-colors text-zinc-400 hover:text-white cursor-pointer shrink-0">
+                className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white/80 hover:text-white cursor-pointer shrink-0">
                 <ChevronRight size={16} />
               </button>
             )}
-            <span className="bg-zinc-700 text-zinc-300 text-[16px] px-2 py-0.5 rounded-full font-semibold shrink-0 hidden sm:inline">
-              근무 {workers.length}명 (사원 {staffWorkers.length} / 약사 {pharmacistWorkers.length}
-              {otherWorkers.length > 0 ? ` / 기타 ${otherWorkers.length}` : ""})
+            <span className="bg-white/[0.12] text-white text-[15px] px-2.5 py-1 rounded-full font-semibold shrink-0 hidden sm:inline tabular-nums">
+              근무 {workers.length}명 · 사원 {staffWorkers.length} · 약사 {pharmacistWorkers.length}
+              {otherWorkers.length > 0 ? ` · 기타 ${otherWorkers.length}` : ""}
             </span>
-            <span className="bg-zinc-700 text-zinc-300 text-[16px] px-2 py-0.5 rounded-full font-semibold shrink-0 sm:hidden">
+            <span className="bg-white/[0.12] text-white text-[15px] px-2.5 py-1 rounded-full font-semibold shrink-0 sm:hidden tabular-nums">
               {workers.length}명
             </span>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-zinc-700 transition-colors text-zinc-400 hover:text-white shrink-0">
-            <X size={17} />
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white/80 hover:text-white shrink-0">
+            <X size={18} />
           </button>
         </div>
 
-        {/* Position filter tabs */}
-        <div className="flex items-center gap-1 px-3 sm:px-5 pt-2 pb-0 bg-white border-b border-zinc-200 flex-shrink-0 min-w-0 overflow-x-auto scrollbar-none">
+        {/* Position filter tabs · 2026-08-17 · 최신 트렌드 · segmented pill · 파스텔 지양 · 폰트 +2 */}
+        <div className="flex items-center gap-1.5 px-4 sm:px-5 pt-3 pb-2 bg-white border-b border-line flex-shrink-0 min-w-0 overflow-x-auto scrollbar-none">
           {tabs.map(({ key, count }) => (
             <button key={key} onClick={() => setActiveTab(key)}
-              className={`shrink-0 px-3 sm:px-4 py-1.5 text-[16px] font-bold rounded-t-lg border border-b-0 transition-colors cursor-pointer ${
+              className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 text-[15px] font-semibold rounded-lg transition-colors cursor-pointer ${
                 activeTab === key
-                  ? "bg-white border-zinc-200 text-zinc-800 -mb-px z-10"
-                  : "bg-zinc-50 border-transparent text-zinc-400 hover:text-zinc-600"
+                  ? "bg-brand-deep text-white shadow-sm"
+                  : "text-ink-soft hover:bg-zinc-100 hover:text-ink"
               }`}>
               {key}
-              <span className={`ml-1.5 text-[13px] px-1.5 py-0.5 rounded-full ${activeTab === key ? "bg-indigo-100 text-indigo-700" : "bg-zinc-200 text-zinc-500"}`}>{count}</span>
+              <span className={`text-[13px] px-1.5 py-0.5 rounded-full tabular-nums ${activeTab === key ? "bg-white/20 text-white" : "bg-zinc-200 text-ink-soft"}`}>{count}</span>
             </button>
           ))}
-          {/* 확정 버튼 */}
-          <div className="ml-auto flex items-center gap-2 pb-1 shrink-0 pl-2">
+          {/* 확정 버튼 · 딥네이비 accent · 최신 트렌드 */}
+          <div className="ml-auto flex items-center gap-2 shrink-0 pl-2">
             {isConfirmed ? (
-              <span className="flex items-center gap-1 text-[16px] font-semibold text-emerald-600 px-1.5 py-0.5 rounded-lg bg-emerald-50 border border-emerald-200">
-                <CheckCircle size={13} />
+              <span className="flex items-center gap-1.5 text-[15px] font-semibold text-emerald-700 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200">
+                <CheckCircle size={14} />
                 확정됨
               </span>
             ) : (
               <button
                 onClick={handleConfirm}
                 disabled={confirming}
-                className="flex items-center gap-1 text-[16px] font-semibold px-1.5 py-0.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white cursor-pointer disabled:opacity-50 transition">
-                <CheckCircle size={13} />
+                className="flex items-center gap-1.5 text-[15px] font-semibold px-3.5 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] text-white cursor-pointer disabled:opacity-40 transition-colors shadow-sm">
+                <CheckCircle size={14} />
                 {confirming ? "저장중…" : "확정"}
               </button>
             )}
           </div>
         </div>
 
-        {/* 임의배치 배너 */}
+        {/* 임의배치 배너 · 2026-08-17 · 최신 트렌드 · flat · 이모지 지양 */}
         {isAutoSuggested && (
-          <div className="flex items-center justify-between px-4 py-2 bg-amber-400 text-amber-900 flex-shrink-0">
-            <span className="text-[15px] font-black tracking-tight">
-              ⚡ 임의배치 — 확정하기 전에 배치를 조정하세요
+          <div className="flex items-center justify-between px-4 py-2.5 bg-amber-50 border-b border-amber-200 flex-shrink-0">
+            <span className="text-[15px] font-semibold text-amber-800 tracking-tight">
+              임의배치 · 확정하기 전에 배치를 조정하세요
             </span>
             <button
               onClick={handleConfirm}
               disabled={confirming}
-              className="text-[14px] font-bold px-3 py-1 rounded-lg bg-amber-900 text-amber-100 hover:bg-amber-800 cursor-pointer disabled:opacity-50 transition ml-3 shrink-0">
+              className="text-[14px] font-semibold px-3.5 py-1.5 rounded-lg bg-brand-deep text-white hover:bg-[#0d3a5c] cursor-pointer disabled:opacity-40 transition-colors ml-3 shrink-0 shadow-sm">
               {confirming ? "저장중…" : "지금 확정"}
             </button>
           </div>
