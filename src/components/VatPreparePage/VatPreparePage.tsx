@@ -696,29 +696,33 @@ interface KpiCardProps {
   bar?: number; // 0-100
 }
 
+// 2026-08-17 · 세련 · Vercel Dashboard 톤 · 뉴트럴 body + status dot + 값 semantic color
 const KpiCard: React.FC<KpiCardProps> = ({ label, value, sub, icon, color, loading, bar }) => {
-  const colors: Record<string, { bg: string; text: string; icon: string; bar: string }> = {
-    rose:    { bg: "bg-rose-50",    text: "text-rose-700",    icon: "bg-rose-500 text-white",    bar: "bg-rose-500"    },
-    sky:     { bg: "bg-sky-50",     text: "text-sky-700",     icon: "bg-sky-500 text-white",     bar: "bg-sky-500"     },
-    emerald: { bg: "bg-emerald-50", text: "text-emerald-700", icon: "bg-emerald-500 text-white", bar: "bg-emerald-500" },
-    amber:   { bg: "bg-amber-50",   text: "text-amber-700",   icon: "bg-amber-500 text-white",   bar: "bg-amber-500"   },
-    slate:   { bg: "bg-zinc-50",   text: "text-zinc-700",   icon: "bg-zinc-600 text-white",   bar: "bg-zinc-500"   },
+  const colors: Record<string, { dot: string; text: string; iconBg: string; iconColor: string; bar: string }> = {
+    rose:    { dot: "bg-rose-500",    text: "text-rose-700",    iconBg: "bg-rose-50",    iconColor: "text-rose-600",    bar: "bg-rose-500" },
+    sky:     { dot: "bg-sky-500",     text: "text-sky-700",     iconBg: "bg-sky-50",     iconColor: "text-sky-600",     bar: "bg-sky-500" },
+    emerald: { dot: "bg-emerald-500", text: "text-emerald-700", iconBg: "bg-emerald-50", iconColor: "text-emerald-600", bar: "bg-emerald-500" },
+    amber:   { dot: "bg-amber-500",   text: "text-amber-700",   iconBg: "bg-amber-50",   iconColor: "text-amber-600",   bar: "bg-amber-500" },
+    slate:   { dot: "bg-zinc-400",    text: "text-ink",         iconBg: "bg-zinc-100",   iconColor: "text-zinc-700",    bar: "bg-zinc-500" },
   };
   const c = colors[color];
   return (
-    <div className={`${c.bg} rounded-xl border border-line shadow-sm p-3.5 relative overflow-hidden`}>
+    <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] p-3.5 relative overflow-hidden">
       <div className="flex items-start gap-2.5">
-        <div className={`w-8 h-8 rounded-lg ${c.icon} flex items-center justify-center shrink-0`}>{icon}</div>
+        <div className={`w-9 h-9 rounded-lg ${c.iconBg} flex items-center justify-center shrink-0 ${c.iconColor}`}>{icon}</div>
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wide leading-tight">{label}</div>
-          <div className={`text-[16px] font-bold ${c.text} tabular-nums leading-tight mt-0.5`}>
+          <div className="flex items-center gap-1.5 leading-tight">
+            <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
+            <div className="text-[12px] font-semibold text-ink-soft tracking-tight">{label}</div>
+          </div>
+          <div className={`text-[18px] font-extrabold ${c.text} tabular-nums leading-tight mt-1`}>
             {loading ? <Loader2 size={14} className="animate-spin inline" /> : value}
           </div>
-          {sub && <div className="text-[10px] text-zinc-500 mt-0.5 leading-tight truncate">{sub}</div>}
+          {sub && <div className="text-[11px] text-ink-soft mt-0.5 leading-tight truncate font-medium">{sub}</div>}
         </div>
       </div>
       {typeof bar === "number" && (
-        <div className="mt-3 h-1.5 bg-zinc-200 rounded-full overflow-hidden">
+        <div className="mt-3 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
           <div
             className={`h-full ${c.bar} transition-all`}
             style={{ width: `${Math.max(0, Math.min(100, bar))}%` }}

@@ -13,6 +13,7 @@
 //     right={<CategoryFilters ... />}
 //   />
 import type { ReactNode } from "react";
+import { StatusPill } from "./StatusPill";
 
 export interface PageToolbarSearch {
   value: string;
@@ -54,12 +55,10 @@ export function PageToolbar({
         {icon && <span className="text-brand-deep shrink-0 inline-flex">{icon}</span>}
         <span className="text-[18px] font-bold text-ink tracking-tight">{title}</span>
         {count !== undefined && (
-          <span className="text-[15px] font-semibold text-brand-deep bg-brand-tint rounded-full px-2.5 py-0.5 border border-brand/15 tabular-nums">
-            {count}{countLabel}
-          </span>
+          <StatusPill tone="brand" size="md">{count}{countLabel}</StatusPill>
         )}
         {selectedCount !== undefined && selectedCount > 0 && (
-          <span className="text-[15px] font-semibold bg-brand-deep text-white rounded-full px-2.5 py-0.5 tabular-nums shadow-sm">
+          <span className="inline-flex items-center rounded-full font-semibold whitespace-nowrap px-2.5 py-0.5 text-[13px] bg-brand-deep text-white tabular-nums shadow-sm">
             선택 {selectedCount}
           </span>
         )}
