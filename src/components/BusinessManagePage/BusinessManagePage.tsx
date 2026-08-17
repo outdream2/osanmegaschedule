@@ -50,11 +50,11 @@ interface TabDef {
   color: TabColor;
 }
 
+// 2026-08-17 · 사용자 지시 · 점심불참 · 승인요청 그룹으로 이관 완료 · 경영 tab bar 에서 제거
+//   · lunch subtab · ApprovalRequestPage 로 노출 · BusinessManagePage 에서 중복 제거
 const TABS: TabDef[] = [
   { key: "staff-manage",     label: "직원관리",  icon: UserGear,       color: "emerald" },
-  // 2026-08-03 · #180 · "연차승인" → "승인대기" · 내부 2탭 (연차·사직서) 으로 확장
   { key: "approval-center",  label: "승인대기",  icon: CalendarDots,   color: "teal"    },
-  { key: "lunch",            label: "점심불참",  icon: ForkKnife,      color: "orange"  },
   { key: "hr-forms",         label: "각종양식",  icon: FileText,       color: "amber"   },
   { key: "document-writer",  label: "서류작성",  icon: NotePencil,     color: "indigo"  },
 ];
@@ -75,7 +75,7 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
   const { perms: bmPerms } = usePagePermissions();
   const bmHiddenSubs = useMemo(() => {
     const set = new Set<BmSubTab>();
-    const subs: BmSubTab[] = ["staff-manage", "approval-center", "lunch", "hr-forms", "document-writer"];
+    const subs: BmSubTab[] = ["staff-manage", "approval-center", "hr-forms", "document-writer"];
     for (const s of subs) {
       const perm = (bmPerms as any)[`business-manage:${s}`] || (bmPerms as any)[`business-manage:${s}:contract`];
       if (perm?.hidden === true) set.add(s);
@@ -85,7 +85,7 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
   // 현재 subtab hidden 시 · 첫번째 visible 로 이동
   useEffect(() => {
     if (bmHiddenSubs.has(subTab)) {
-      const priority: BmSubTab[] = ["staff-manage", "approval-center", "lunch", "hr-forms", "document-writer"];
+      const priority: BmSubTab[] = ["staff-manage", "approval-center", "hr-forms", "document-writer"];
       const next = priority.find(k => !bmHiddenSubs.has(k));
       if (next) setSubTab(next);
     }
