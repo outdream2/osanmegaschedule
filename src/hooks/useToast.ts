@@ -33,13 +33,18 @@ export function useToast(defaultMs = 2500) {
   return { toast, show, showSuccess, showError, showWarn, clear };
 }
 
-/** 배지 스타일 · tone 별 · settingsTypography SET_BADGE 호환 */
+/**
+ * 배지 스타일 · tone 별 · 2026-08-17 v2 · 세련 (폰트 +2 · shadow 강화 · 딥네이비 액센트)
+ *   · text-[13px] · py-1.5 (폰트 +2 규칙 · 40대+ 가독성)
+ *   · shadow · 즉시 + 원거리 (Attio/Linear 톤)
+ *   · Linear-style · rounded-xl (rounded-full 대신 · 뉴모피즘 지양)
+ */
 export function toastClass(tone: ToastTone): string {
-  const base = "inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full border";
+  const base = "inline-flex items-center gap-1.5 text-[13px] font-bold px-3 py-1.5 rounded-xl border shadow-[0_2px_8px_-2px_rgba(10,46,74,0.15),0_8px_24px_-8px_rgba(10,46,74,0.20)]";
   switch (tone) {
-    case "success": return `${base} text-emerald-600 bg-emerald-50 border-emerald-200`;
-    case "error":   return `${base} text-rose-600 bg-rose-50 border-rose-200`;
-    case "warn":    return `${base} text-amber-600 bg-amber-50 border-amber-200`;
-    default:        return `${base} text-indigo-600 bg-indigo-50 border-indigo-200`;
+    case "success": return `${base} text-emerald-700 bg-emerald-50 border-emerald-200`;
+    case "error":   return `${base} text-rose-700 bg-rose-50 border-rose-200`;
+    case "warn":    return `${base} text-amber-700 bg-amber-50 border-amber-200`;
+    default:        return `${base} text-brand-deep bg-brand-tint border-brand/15`;
   }
 }
