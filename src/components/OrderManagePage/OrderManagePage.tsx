@@ -2402,50 +2402,44 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {topTab === "purchase-order" && purchaseOrderSubTab === "order" && (
         <div className="flex flex-col gap-2">
           {/* 2026-08-10 · 사용자 요청 · PC 한 줄 · 모바일 wrap 2줄 (flex-wrap · lg+ 는 flex-nowrap 유도 · gap 자연 wrap) */}
+          {/* 2026-08-17 · 발주요청 상단 툴바 · 최신 트렌드 · 딥네이비 accent + 좌우 통일 · 폰트 +2 */}
           <div className="bg-white rounded-xl border border-line shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-            {/* 제목 + 카운트 · 2026-08-10 · 폰트 +1 (15→17 · 13→15) */}
-            <div className="flex items-center gap-2 shrink-0">
-              <ShoppingCart size={17} className="text-rose-500 shrink-0" />
-              <span className="text-[17px] font-semibold text-zinc-800">발주 요청 목록</span>
-              <span className="text-[15px] font-semibold text-rose-600 bg-rose-50 rounded-full px-2 py-0.5 border border-rose-200 tabular-nums">{orderReqs.length}건</span>
+            {/* 좌측 · 제목 + 카운트 + 선택 배지 · accent bar */}
+            <div className="flex items-center gap-2.5 shrink-0">
+              <span className="w-[3px] h-[18px] rounded-full bg-brand-deep" />
+              <ShoppingCart size={18} className="text-brand-deep shrink-0" />
+              <span className="text-[18px] font-bold text-ink tracking-tight">발주 요청 목록</span>
+              <span className="text-[15px] font-semibold text-brand-deep bg-brand-tint rounded-full px-2.5 py-0.5 border border-brand/15 tabular-nums">{orderReqs.length}건</span>
               {selectedOrder.size > 0 && (
-                <span className="text-[15px] font-semibold bg-rose-500 text-white rounded-full px-2 py-0.5 tabular-nums">선택 {selectedOrder.size}</span>
+                <span className="text-[15px] font-semibold bg-brand-deep text-white rounded-full px-2.5 py-0.5 tabular-nums shadow-sm">선택 {selectedOrder.size}</span>
               )}
             </div>
-            {/* 검색 */}
+            {/* 검색 · 딥네이비 focus */}
             <input
               type="text"
               value={orderSearch}
               onChange={e => setOrderSearch(e.target.value)}
               placeholder="상품·코드·공급사"
-              className="text-[15px] border border-line rounded-md pl-3 pr-3 h-9 flex-1 min-w-[140px] max-w-[240px] focus:outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 transition"
+              className="text-[15px] border border-line rounded-lg pl-3 pr-3 h-10 flex-1 min-w-[160px] max-w-[260px] focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors bg-white text-ink placeholder-ink-soft"
             />
-            {/* 2026-08-10 · 사용자 요청 · 일괄발주·전체선택 · 왼쪽 리스트 제목 옆으로 이동 · 툴바에는 분류 + 삭제만 */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* 2026-08-10 · 사용자 요청 · 필터 컴팩트 · 여백 최소 (h-7 px-1.5 · text-14) */}
-              <div className="flex flex-wrap bg-zinc-50 border border-line rounded p-px gap-px">
+            {/* 우측 · 카테고리 필터 · 딥네이비 통일 (전체 · 위탁 · 선결제 · 60/90회전 - identity 유지) */}
+            <div className="flex items-center gap-2 flex-wrap ml-auto">
+              <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
                 {(["all", ...dbVendorCategories] as string[]).map(cat => {
                   const active = orderCategoryFilter === cat;
                   const label = cat === "all" ? "전체" : cat;
-                  const activeCls =
-                    cat === "all"    ? "bg-zinc-700 text-white shadow-sm"
-                    : cat === "위탁"   ? "bg-violet-500 text-white shadow-sm"
-                    : cat === "선결제" ? "bg-rose-500 text-white shadow-sm"
-                    : cat === "60회전" ? "bg-emerald-500 text-white shadow-sm"
-                    : cat === "90회전" ? "bg-teal-500 text-white shadow-sm"
-                    : "bg-zinc-500 text-white shadow-sm";
                   return (
                     <button key={cat}
                       type="button"
                       onClick={() => setOrderCategoryFilter(cat)}
-                      className={`h-7 px-1.5 text-[15px] font-medium rounded transition cursor-pointer ${active ? activeCls : "text-zinc-500 hover:text-zinc-700"}`}
+                      className={`h-8 px-2.5 text-[14px] font-semibold rounded-md transition-colors cursor-pointer ${
+                        active
+                          ? "bg-brand-deep text-white shadow-sm"
+                          : "text-ink hover:text-brand-deep hover:bg-white"
+                      }`}
                     >{label}</button>
                   );
                 })}
-              </div>
-              {/* 삭제 버튼만 · 일괄발주·전체선택은 리스트 제목 옆으로 이동 */}
-              <div className="flex items-center gap-1.5 sm:ml-auto">
-                {/* 2026-08-10 · 사용자 요청 · 삭제 아이콘 제거 · 선택삭제 버튼은 리스트 제목 옆 [전체선택] 옆으로 이동 */}
               </div>
             </div>
           </div>
