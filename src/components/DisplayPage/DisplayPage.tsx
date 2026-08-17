@@ -1711,19 +1711,22 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                     <Layers size={13} />
                     구역 설정
                   </button>
-                  {/* DB 저장 상태 표시 */}
+                  {/* DB 저장 상태 표시 · 2026-08-17 · StatusPill 통일 */}
                   <span
-                    className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg border shrink-0 ${saveStatus === "saving" ? "bg-blue-50 border-blue-200 text-blue-700" :
-                        saveStatus === "saved" ? "bg-emerald-50 border-emerald-200 text-emerald-700" :
-                          saveStatus === "error" ? "bg-red-50 border-red-200 text-red-700 cursor-help" :
-                            "bg-zinc-50 border-line text-zinc-400"
-                      }`}
+                    className={saveStatus === "error" ? "cursor-help" : ""}
                     title={saveStatus === "error" ? `DB 저장 실패: ${lastSaveError ?? "알 수 없는 오류"}` : "매장맵 자동저장 상태"}
                   >
-                    {saveStatus === "saving" && <><Loader2 size={10} className="animate-spin" />저장중</>}
-                    {saveStatus === "saved" && <><CheckCircle2 size={10} />저장됨</>}
-                    {saveStatus === "error" && <>❌ 저장 실패</>}
-                    {saveStatus === "idle" && <>◎ 대기</>}
+                    <StatusPill
+                      tone={saveStatus === "saving" ? "sky" : saveStatus === "saved" ? "emerald" : saveStatus === "error" ? "rose" : "zinc"}
+                      size="xs"
+                      dot
+                      pulse={saveStatus === "saving"}
+                    >
+                      {saveStatus === "saving" && <><Loader2 size={10} className="animate-spin inline mr-0.5" />저장중</>}
+                      {saveStatus === "saved" && "저장됨"}
+                      {saveStatus === "error" && "저장 실패"}
+                      {saveStatus === "idle" && "대기"}
+                    </StatusPill>
                   </span>
                   <button
                     onClick={handleApplyToWeekday}
