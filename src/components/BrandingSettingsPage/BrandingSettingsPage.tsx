@@ -35,9 +35,9 @@ import { ImageUploadField } from "../common/ImageUploadField";
 
 // ─── 공통 카드 스타일 (ContractSettingsPage 톤과 통일) ───────────────────────
 const CARD_BASE =
-  "bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden";
+  "bg-white border border-line rounded-xl shadow-sm overflow-hidden";
 const SECTION_HEADER =
-  "flex items-center gap-2 px-4 py-3 border-b border-zinc-200 bg-zinc-50/60";
+  "flex items-center gap-2 px-4 py-3 border-b border-line bg-zinc-50/60";
 // 2026-08-12 · 공통 CSS 로 통일 (settingsTypography.ts)
 const INPUT_BASE = SET_INPUT_STRONG;
 const LABEL_BASE = SET_LABEL;
@@ -324,7 +324,7 @@ export const StampsSection: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-[14px]">
               <thead>
-                <tr className="text-left text-zinc-500 border-b border-zinc-200">
+                <tr className="text-left text-zinc-500 border-b border-line">
                   <th className="py-2 pr-2 font-semibold">이름</th>
                   <th className="py-2 pr-2 font-semibold">이미지 URL</th>
                   <th className="py-2 pr-2 font-semibold w-[140px]">Bundled Fallback</th>
@@ -380,7 +380,7 @@ export const StampsSection: React.FC = () => {
                         </select>
                       </td>
                       <td className="py-2 pr-2 align-top">
-                        <div className="w-14 h-14 rounded-lg border border-zinc-200 bg-zinc-50 flex items-center justify-center overflow-hidden">
+                        <div className="w-14 h-14 rounded-lg border border-line bg-zinc-50 flex items-center justify-center overflow-hidden">
                           {previewSrc ? (
                             <img
                               src={previewSrc}
@@ -415,7 +415,7 @@ export const StampsSection: React.FC = () => {
         )}
 
         {/* 추가 폼 · 2026-08-12 · 도장 이미지 파일 업로드 지원 */}
-        <div className="mt-2 border-t border-dashed border-zinc-200 pt-3">
+        <div className="mt-2 border-t border-dashed border-line pt-3">
           <div className="text-[14px] font-bold text-zinc-600 mb-2">새 도장 추가</div>
           <div className="flex flex-col gap-2">
             <div className="flex flex-col sm:flex-row gap-2">
@@ -541,7 +541,7 @@ export const MobileVisibilitySection: React.FC = () => {
                     <select
                       value={min}
                       onChange={(e) => setMinLevel(it.pageKey, Number(e.target.value))}
-                      className="bg-white border border-zinc-200 rounded-lg px-2 py-1 text-[14px] font-bold text-zinc-800 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint cursor-pointer"
+                      className="bg-white border border-line rounded-lg px-2 py-1 text-[14px] font-bold text-zinc-800 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint cursor-pointer"
                       aria-label={`${it.label} 모바일 최소 레벨`}
                     >
                       {MIN_LEVEL_OPTIONS.map((opt) => (

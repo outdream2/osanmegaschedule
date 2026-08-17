@@ -78,7 +78,7 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
   for (let m = 1; m <= 12; m++) if (!monthCount[m]) missingMonths.push(m);
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-sm border border-line overflow-hidden">
       <div className="px-4 py-2 border-b border-zinc-100 bg-emerald-50/60 text-[10px] font-bold text-emerald-700 uppercase tracking-wider flex items-center justify-between gap-1.5">
         <span className="flex items-center gap-1.5">
           <span>🌸☀️🍁❄️</span> 계절 정의 <span className="text-emerald-400 font-semibold normal-case">(관리자 전용)</span>
@@ -137,7 +137,7 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
                           className={`text-[10px] font-bold rounded-md py-1 border transition cursor-pointer ${
                             active
                               ? `${col.active} text-white border-transparent shadow-sm`
-                              : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-400"
+                              : "bg-white text-zinc-500 border-line hover:border-zinc-400"
                           }`}
                           title={`${m}월 ${active ? "해제" : "추가"}`}
                         >

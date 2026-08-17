@@ -23,9 +23,9 @@ const NumberInput: React.FC<NumberInputProps> = ({
   const dec = () => { if (disabled) return; const n = Math.max(0, cur - 1); onChange(n === 0 && value === "" ? "" : n); };
   const inc = () => { if (disabled) return; onChange(cur + 1); };
   return (
-    <div className={`inline-flex items-stretch w-full h-11 bg-white border-2 border-zinc-200 rounded-xl overflow-hidden transition-all focus-within:border-teal-400 focus-within:shadow-[0_0_0_3px_rgba(20,184,166,0.12)] ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
+    <div className={`inline-flex items-stretch w-full h-11 bg-white border-2 border-line rounded-xl overflow-hidden transition-all focus-within:border-teal-400 focus-within:shadow-[0_0_0_3px_rgba(20,184,166,0.12)] ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
       <button type="button" onClick={dec} disabled={disabled || cur <= 0}
-        className="w-9 shrink-0 text-zinc-400 hover:bg-zinc-100 hover:text-rose-600 active:bg-zinc-200 disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-zinc-400 text-[18px] font-bold leading-none flex items-center justify-center cursor-pointer border-r border-zinc-200"
+        className="w-9 shrink-0 text-zinc-400 hover:bg-zinc-100 hover:text-rose-600 active:bg-zinc-200 disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-zinc-400 text-[18px] font-bold leading-none flex items-center justify-center cursor-pointer border-r border-line"
         title="감소" tabIndex={-1}>−</button>
       <input
         type="number" inputMode="numeric" value={value} disabled={disabled}
@@ -34,7 +34,7 @@ const NumberInput: React.FC<NumberInputProps> = ({
         className={`flex-1 min-w-0 h-full text-center px-0.5 bg-transparent border-0 text-[15px] font-bold tabular-nums text-zinc-900 focus:outline-none disabled:text-zinc-300 placeholder:text-zinc-300 ${accent}`}
       />
       <button type="button" onClick={inc} disabled={disabled}
-        className="w-9 shrink-0 text-zinc-400 hover:bg-zinc-100 hover:text-emerald-600 active:bg-zinc-200 disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-zinc-400 text-[18px] font-bold leading-none flex items-center justify-center cursor-pointer border-l border-zinc-200"
+        className="w-9 shrink-0 text-zinc-400 hover:bg-zinc-100 hover:text-emerald-600 active:bg-zinc-200 disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-zinc-400 text-[18px] font-bold leading-none flex items-center justify-center cursor-pointer border-l border-line"
         title="증가" tabIndex={-1}>+</button>
     </div>
   );
@@ -53,7 +53,7 @@ const ZoneInput: React.FC<ZoneInputProps> = ({ value, placeholder = "-", accentC
     value={value ?? ""}
     onChange={e => onChange(e.target.value.trim() === "" ? null : e.target.value)}
     placeholder={placeholder}
-    className={`w-full h-7 text-center px-1.5 rounded-md bg-zinc-50 border border-dashed border-zinc-200
+    className={`w-full h-7 text-center px-1.5 rounded-md bg-zinc-50 border border-dashed border-line
       text-[11px] font-bold tabular-nums outline-none transition placeholder:text-zinc-300
       focus:bg-white focus:border-solid ${accentClass}`}
     title="구역 편집"
@@ -176,7 +176,7 @@ export const StockRowMobile: React.FC<StockRowMobileProps> = React.memo(({ row, 
         <button
           type="button"
           onClick={() => setManuallyExpanded(true)}
-          className="w-full py-1.5 rounded-md bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-[11px] font-bold text-zinc-500 hover:text-zinc-700 inline-flex items-center justify-center gap-1 transition cursor-pointer"
+          className="w-full py-1.5 rounded-md bg-zinc-50 hover:bg-zinc-100 border border-line text-[11px] font-bold text-zinc-500 hover:text-zinc-700 inline-flex items-center justify-center gap-1 transition cursor-pointer"
         >
           <ChevronDown size={12} /> 나머지 4칸 (창1·창2·매2·매3)
         </button>
@@ -185,7 +185,7 @@ export const StockRowMobile: React.FC<StockRowMobileProps> = React.memo(({ row, 
         <button
           type="button"
           onClick={() => setManuallyExpanded(false)}
-          className="w-full py-1.5 rounded-md bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-[11px] font-bold text-zinc-500 hover:text-zinc-700 inline-flex items-center justify-center gap-1 transition cursor-pointer"
+          className="w-full py-1.5 rounded-md bg-zinc-50 hover:bg-zinc-100 border border-line text-[11px] font-bold text-zinc-500 hover:text-zinc-700 inline-flex items-center justify-center gap-1 transition cursor-pointer"
         >
           <ChevronUp size={12} /> 접기
         </button>

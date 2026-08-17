@@ -562,7 +562,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         )}
 
         {/* 2026-08-16 · 서브 탭 · 페이지별 설정 vs 직원별 레벨 */}
-        <div className="mb-3 flex bg-zinc-100 border border-zinc-200 rounded-xl p-0.5 gap-0.5 w-fit">
+        <div className="mb-3 flex bg-zinc-100 border border-line rounded-xl p-0.5 gap-0.5 w-fit">
           <button
             type="button"
             onClick={() => setPermSubTab("page")}
@@ -620,7 +620,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           </div>
         </div>
         {/* 2026-08-16 · #111 · 사이드바 구조 · 표 형식 · 2026-08-17 · #148 · 반응형 · 모바일 컬럼 축소 */}
-        <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
           {/* Table header · 4 컬럼 · 보기·페이지·읽기·쓰기 */}
           <div className="grid grid-cols-[44px_minmax(0,1fr)_110px_110px] sm:grid-cols-[64px_minmax(0,1fr)_180px_180px] px-5 py-2.5 bg-zinc-50 border-b border-zinc-100 text-[16px] font-bold text-zinc-500 tracking-tight">
             <span className="text-center">보기</span>
@@ -773,10 +773,10 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
             value={empSearch}
             onChange={e => setEmpSearch(e.target.value)}
             placeholder="이름·직군 검색"
-            className="text-xs px-3 py-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-700 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep w-44"
+            className="text-xs px-3 py-1.5 rounded-lg border border-line bg-white text-zinc-700 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep w-44"
           />
         </div>
-        <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
           <div className="grid grid-cols-[1fr_90px_130px_36px] px-5 py-2 bg-zinc-50 border-b border-zinc-100 text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
             <span>성명</span>
             <span>직군</span>
@@ -876,7 +876,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                   className={`flex items-center gap-2 bg-white border rounded-lg px-3 py-2 transition ${
                     posDragOverIdx === idx && posDragIdx !== idx
                       ? "border-violet-400 bg-violet-50"
-                      : "border-zinc-200 hover:border-zinc-300"
+                      : "border-line hover:border-zinc-300"
                   } ${posDragIdx === idx ? "opacity-40" : ""}`}
                 >
                   <div className="text-zinc-300 hover:text-zinc-500 cursor-grab active:cursor-grabbing shrink-0">
@@ -932,7 +932,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                 onChange={(e) => setNewPositionInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNewPosition(); } }}
                 placeholder="새 직군 입력 (Enter)"
-                className="flex-1 text-[13px] rounded-lg border border-zinc-200 focus:border-brand-deep p-2 bg-white focus:outline-none"
+                className="flex-1 text-[13px] rounded-lg border border-line focus:border-brand-deep p-2 bg-white focus:outline-none"
               />
               <button
                 type="button"
@@ -989,7 +989,7 @@ const LevelSelect: React.FC<LevelSelectProps> = ({ value, onChange, saving, save
       value={value}
       onChange={e => onChange(Number(e.target.value))}
       disabled={saving}
-      className="appearance-none bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-1.5 text-[13px] font-bold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep cursor-pointer disabled:opacity-60 pr-7 min-w-[120px]"
+      className="appearance-none bg-zinc-50 border border-line rounded-lg px-3 py-1.5 text-[13px] font-bold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep cursor-pointer disabled:opacity-60 pr-7 min-w-[120px]"
     >
       {LEVELS.map(l => (
         <option key={l} value={l}>Lv.{l}{l === 1 ? " (직원)" : l === 9 ? " (최고관리자)" : ""}</option>
@@ -1049,7 +1049,7 @@ const PositionsField: React.FC<PositionsFieldProps> = ({ selected, allPositions,
         title="직군 지정 · 레벨과 함께 OR 조건"
       >+ 직군</button>
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1 z-30 w-40 bg-white border border-zinc-200 rounded-lg shadow-lg p-2 flex flex-col gap-1">
+        <div className="absolute right-0 top-full mt-1 z-30 w-40 bg-white border border-line rounded-lg shadow-lg p-2 flex flex-col gap-1">
           <div className="text-[10px] font-bold text-zinc-400 uppercase mb-1 px-1">직군 (OR 조건)</div>
           {allPositions.length === 0 ? (
             <div className="text-[11px] text-zinc-400 px-1 py-2 text-center">직군 없음</div>

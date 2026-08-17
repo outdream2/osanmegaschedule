@@ -70,12 +70,12 @@ const DeltaInput: React.FC<DeltaInputProps> = ({
   };
   const inc = () => { if (disabled) return; onChange(cur + 1); };
   return (
-    <div className={`inline-flex items-stretch w-full h-9 bg-white border border-zinc-200 rounded-lg overflow-hidden transition ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
+    <div className={`inline-flex items-stretch w-full h-9 bg-white border border-line rounded-lg overflow-hidden transition ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
       <button
         type="button"
         onClick={dec}
         disabled={disabled || cur <= 0}
-        className="w-7 shrink-0 text-zinc-500 hover:bg-zinc-100 hover:text-rose-600 active:bg-zinc-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-500 text-[16px] font-bold leading-none flex items-center justify-center cursor-pointer border-r border-zinc-200"
+        className="w-7 shrink-0 text-zinc-500 hover:bg-zinc-100 hover:text-rose-600 active:bg-zinc-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-500 text-[16px] font-bold leading-none flex items-center justify-center cursor-pointer border-r border-line"
         title="감소"
         tabIndex={-1}
       >−</button>
@@ -96,7 +96,7 @@ const DeltaInput: React.FC<DeltaInputProps> = ({
         type="button"
         onClick={inc}
         disabled={disabled}
-        className="w-7 shrink-0 text-zinc-500 hover:bg-zinc-100 hover:text-emerald-600 active:bg-zinc-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-500 text-[16px] font-bold leading-none flex items-center justify-center cursor-pointer border-l border-zinc-200"
+        className="w-7 shrink-0 text-zinc-500 hover:bg-zinc-100 hover:text-emerald-600 active:bg-zinc-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-500 text-[16px] font-bold leading-none flex items-center justify-center cursor-pointer border-l border-line"
         title="증가"
         tabIndex={-1}
       >+</button>
@@ -116,7 +116,7 @@ const ZoneInput: React.FC<ZoneInputProps> = ({ value, placeholder = "-", accentC
     value={value ?? ""}
     onChange={e => onChange(e.target.value.trim() === "" ? null : e.target.value)}
     placeholder={placeholder}
-    className={`w-full h-5 text-center px-1 bg-transparent border-0 border-b border-dashed border-zinc-200
+    className={`w-full h-5 text-center px-1 bg-transparent border-0 border-b border-dashed border-line
       text-[10px] font-bold tabular-nums outline-none transition placeholder:text-zinc-300 ${accentClass}`}
     title="구역 편집"
   />

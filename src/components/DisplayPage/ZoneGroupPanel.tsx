@@ -128,7 +128,7 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
                 key={g.id}
                 onClick={() => onActiveGroupChange(isActive ? null : g.id)}
                 className={`relative rounded-lg p-2 cursor-pointer transition border-2 ${
-                  isActive ? "shadow-md scale-[1.02]" : "border-zinc-200 hover:border-zinc-300 bg-zinc-50"
+                  isActive ? "shadow-md scale-[1.02]" : "border-line hover:border-zinc-300 bg-zinc-50"
                 }`}
                 style={isActive ? { borderColor: g.color, backgroundColor: `${g.color}10` } : undefined}
               >
@@ -144,7 +144,7 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
                     onChange={(e) => updateGroup(g.id, { name: e.target.value })}
                     className="flex-1 min-w-0 bg-transparent text-[12px] font-bold text-zinc-800 focus:outline-none focus:bg-white px-1 rounded"
                   />
-                  <span className="text-[9px] font-bold text-zinc-500 bg-white border border-zinc-200 px-1.5 py-0.5 rounded-full shrink-0">
+                  <span className="text-[9px] font-bold text-zinc-500 bg-white border border-line px-1.5 py-0.5 rounded-full shrink-0">
                     {g.areaIds.length}구역
                   </span>
                   <button
@@ -161,7 +161,7 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
                     value={g.employeeId ?? ""}
                     onClick={(e) => e.stopPropagation()}
                     onChange={(e) => handleEmployeeChange(g.id, e.target.value)}
-                    className="flex-1 text-[10px] font-semibold bg-white border border-zinc-200 rounded px-1 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400 cursor-pointer"
+                    className="flex-1 text-[10px] font-semibold bg-white border border-line rounded px-1 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400 cursor-pointer"
                   >
                     <option value="">담당자 선택...</option>
                     {employees.map((e) => (

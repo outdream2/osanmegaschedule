@@ -81,7 +81,7 @@ export function SearchFilterChips<K extends string = string>({
       {label && (
         <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 shrink-0">{label}</span>
       )}
-      <div className="inline-flex items-center rounded-lg border border-zinc-200 bg-white p-0.5 gap-0.5 flex-wrap">
+      <div className="inline-flex items-center rounded-lg border border-line bg-white p-0.5 gap-0.5 flex-wrap">
         {showAll && (
           <button
             type="button"

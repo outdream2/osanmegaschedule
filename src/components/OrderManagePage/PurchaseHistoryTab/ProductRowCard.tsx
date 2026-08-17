@@ -43,7 +43,7 @@ function daysAgo(iso: string | null): number | null {
 }
 
 function recencyStyle(days: number | null): { label: string; cls: string } {
-  if (days == null) return { label: "매입없음", cls: "bg-zinc-100 text-zinc-400 border-zinc-200" };
+  if (days == null) return { label: "매입없음", cls: "bg-zinc-100 text-zinc-400 border-line" };
   if (days === 0) return { label: "오늘", cls: "bg-emerald-100 text-emerald-700 border-emerald-300" };
   if (days <= 3) return { label: `${days}일전`, cls: "bg-emerald-50 text-emerald-700 border-emerald-200" };
   if (days <= 14) return { label: `${days}일전`, cls: "bg-amber-50 text-amber-700 border-amber-200" };

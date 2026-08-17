@@ -98,7 +98,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-3 sm:px-4 py-4 sm:py-6 space-y-3">
         {/* 프로필 헤더 */}
-        <div className="bg-white rounded-xl shadow-sm border border-zinc-200 p-4 sm:p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-line p-4 sm:p-6">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-brand-deep flex items-center justify-center text-white font-bold text-xl sm:text-2xl shadow-md shrink-0">
               {(me?.name ?? authSession?.employeeName ?? "?").slice(0, 1)}
@@ -117,7 +117,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
         </div>
 
         {/* 정보 카드 (읽기 전용) */}
-        <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-line overflow-hidden">
           <div className="px-4 py-2 border-b border-zinc-100 bg-zinc-50/60 text-[14px] font-bold text-zinc-500 uppercase tracking-wider">
             내 정보 (읽기 전용)
           </div>
@@ -145,7 +145,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
         </div>
 
         {/* 주소 편집 카드 */}
-        <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-line overflow-hidden">
           <div className="px-4 py-2 border-b border-zinc-100 bg-indigo-50/60 text-[14px] font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-1.5">
             <MapPin size={12} /> 주소
           </div>
@@ -185,7 +185,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
         />
 
         {/* 비밀번호 변경 카드 */}
-        <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-line overflow-hidden">
           <div className="px-4 py-2 border-b border-zinc-100 bg-rose-50/60 text-[14px] font-bold text-rose-600 uppercase tracking-wider flex items-center gap-1.5">
             <Lock size={12} /> 비밀번호 변경
           </div>
@@ -240,7 +240,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
         {/* 계절 정의 · 2026-08-12 · [설정] > 계절 정의 로 이동 · MyPage 에서 제거 */}
 
         {/* 안내 */}
-        <div className="px-3 py-2 bg-white/60 border border-zinc-200 rounded-xl text-[15px] text-zinc-500 flex items-start gap-2">
+        <div className="px-3 py-2 bg-white/60 border border-line rounded-xl text-[15px] text-zinc-500 flex items-start gap-2">
           <Check size={12} className="mt-0.5 text-emerald-500 shrink-0" />
           <span>본인이 직접 수정할 수 있는 항목은 <b>비밀번호·주소</b>뿐입니다. 그 외 정보(이름·직급·연차 등) 는 관리자에게 문의하세요.</span>
         </div>

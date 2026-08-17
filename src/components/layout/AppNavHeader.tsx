@@ -473,7 +473,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   //   · 사이드바 접힌 상태(icon)에서만 · 여기서 펼치기 트리거 노출 (사이드바에는 숨김 처리됨)
   if (SIDEBAR_ENABLED && !isMobileNav) {
     return (
-      <div className="flex items-center justify-between px-3 py-1 shrink-0 bg-white/60 backdrop-blur-sm border-b border-zinc-200/50">
+      <div className="flex items-center justify-between px-3 py-1 shrink-0 bg-white/60 backdrop-blur-sm border-b border-line/50">
         {/* 접힘 상태 · 펼치기 트리거 · 사이드바 안 트리거는 숨겨지므로 · 대체 트리거 */}
         <SidebarTrigger
           className="h-7 w-7 rounded-md text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 transition cursor-pointer group-has-[[data-state=expanded]]/sidebar-wrapper:hidden"
@@ -666,7 +666,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                   <span className="text-[9px]">더보기</span>
                 </button>
                 {mobileOverflowOpen && (
-                  <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-xl border border-zinc-200 py-1 min-w-[160px] z-50 max-h-[70vh] overflow-y-auto">
+                  <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-xl border border-line py-1 min-w-[160px] z-50 max-h-[70vh] overflow-y-auto">
                     {mobileOverflowTabs.map(tab => {
                       const Icon = tab.icon;
                       const c = TAB_COLOR_MAP[tab.color ?? "slate"];

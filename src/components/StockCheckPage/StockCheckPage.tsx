@@ -128,7 +128,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
     `px-2 py-0.5 rounded-md text-[15px] font-semibold border cursor-pointer transition-all duration-150 ${
       sortKey === k
         ? "bg-brand-deep text-white border-indigo-600"
-        : "bg-white text-zinc-500 border-zinc-200 hover:border-indigo-300 hover:text-indigo-600"
+        : "bg-white text-zinc-500 border-line hover:border-indigo-300 hover:text-indigo-600"
     }`;
 
   const clear = () => {
@@ -168,7 +168,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
             onChange={e => handleChange(e.target.value)}
             placeholder="약품·제품명 검색 (예: 타이레놀, 판콜에이…)"
             autoFocus
-            className="w-full rounded-xl pl-11 pr-10 py-3.5 text-zinc-900 text-sm font-semibold placeholder:text-zinc-300 placeholder:font-normal focus:outline-none border-2 border-zinc-200 bg-white focus:border-brand-deep focus:ring-4 focus:ring-brand-tint shadow-sm transition-all"
+            className="w-full rounded-xl pl-11 pr-10 py-3.5 text-zinc-900 text-sm font-semibold placeholder:text-zinc-300 placeholder:font-normal focus:outline-none border-2 border-line bg-white focus:border-brand-deep focus:ring-4 focus:ring-brand-tint shadow-sm transition-all"
           />
           {query && (
             <button type="button" onClick={clear}
@@ -212,7 +212,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
         )}
         {loading && (!sortedResults || sortedResults.length === 0) && (
           <div className="flex items-center gap-2 py-4 px-1 text-zinc-400 text-xs font-medium">
-            <div className="w-3.5 h-3.5 rounded-full border-2 border-zinc-200 border-t-indigo-500 animate-spin shrink-0" />
+            <div className="w-3.5 h-3.5 rounded-full border-2 border-line border-t-indigo-500 animate-spin shrink-0" />
             검색 중...
           </div>
         )}
@@ -235,7 +235,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
 
         {/* Results list */}
         {sortedResults && sortedResults.length > 0 && (
-          <div className={`bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+          <div className={`bg-white rounded-xl border border-line shadow-sm overflow-hidden ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             {/* 결과 수 표시: 직원(로그인)만 · 일반 사용자는 숨김 */}
             {isLoggedIn && (
               <div className="px-4 py-2.5 bg-zinc-50 border-b border-zinc-100 flex items-center justify-between">

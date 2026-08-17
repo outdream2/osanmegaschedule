@@ -820,7 +820,7 @@ export const PurchaseHistoryTab: React.FC = () => {
         </div>
 
         {/* 뷰 모드 토글 (#191) · segmented control */}
-        <div className="inline-flex bg-zinc-100 border border-zinc-200 rounded-md p-0.5">
+        <div className="inline-flex bg-zinc-100 border border-line rounded-md p-0.5">
           <button
             type="button"
             onClick={() => setViewMode("by-vendor")}
@@ -852,7 +852,7 @@ export const PurchaseHistoryTab: React.FC = () => {
         {/* 2026-08-10 · #19 · 기간 chip + 계절 chip · 상단 툴바로 이동 (사용자 요청 · split 안에서 이동) */}
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">기간</span>
-          <div className="flex flex-wrap bg-zinc-50 border border-zinc-200 rounded-md p-0.5 gap-0.5">
+          <div className="flex flex-wrap bg-zinc-50 border border-line rounded-md p-0.5 gap-0.5">
             <button
               type="button"
               onClick={() => { setPeriodMonths(0); setPeriodSeason(null); }}
@@ -892,7 +892,7 @@ export const PurchaseHistoryTab: React.FC = () => {
               loadSummary();
             }}
             disabled={ledgerLoading}
-            className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-zinc-200 bg-white hover:bg-emerald-50 hover:border-emerald-300 text-zinc-400 hover:text-emerald-500 transition disabled:opacity-40 cursor-pointer"
+            className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-emerald-50 hover:border-emerald-300 text-zinc-400 hover:text-emerald-500 transition disabled:opacity-40 cursor-pointer"
             title="새로고침"
           >
             <RefreshCw size={13} className={ledgerLoading ? "animate-spin" : ""} />
@@ -903,7 +903,7 @@ export const PurchaseHistoryTab: React.FC = () => {
             type="button"
             onClick={() => loadAllDetails(true)}
             disabled={allDetailsLoading}
-            className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-zinc-200 bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer"
+            className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer"
             title="상품별 매입이력 새로고침"
           >
             <RefreshCw size={13} className={allDetailsLoading ? "animate-spin" : ""} />
@@ -1064,13 +1064,13 @@ export const PurchaseHistoryTab: React.FC = () => {
             left={
               <div className="w-full flex flex-col gap-2 h-full min-h-0">
               {/* 검색 + 기간 필터 + 정렬 */}
-              <div className="bg-white rounded-xl border border-zinc-200 shadow-sm px-3 py-2 flex flex-col gap-2">
+              <div className="bg-white rounded-xl border border-line shadow-sm px-3 py-2 flex flex-col gap-2">
                 <input
                   type="text"
                   value={productSearch}
                   onChange={e => setProductSearch(e.target.value)}
                   placeholder="상품명 · 코드 검색"
-                  className="w-full h-7 px-2.5 text-[15px] border border-zinc-200 rounded-md outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep transition"
+                  className="w-full h-7 px-2.5 text-[15px] border border-line rounded-md outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep transition"
                 />
                 {/* 2026-08-10 · #19 · 기간·계절 chip · 상단 툴바로 이동 · 여기서 제거 (사용자 요청) */}
                 <div className="flex items-center gap-1 pt-1 border-t border-zinc-100 flex-wrap">
@@ -1102,7 +1102,7 @@ export const PurchaseHistoryTab: React.FC = () => {
               </div>
               {/* 상품 리스트 · 카드 2줄 · 상단 컬럼 헤더 */}
               {/* 2026-08-05 · max-h-[65vh] 좁아서 스크롤·데이터 안 보임 문제 · 90vh 로 확대 */}
-              <div className="bg-white rounded-xl border border-zinc-200 shadow-sm flex-1 min-h-0 max-h-[calc(100vh-200px)] flex flex-col overflow-hidden">
+              <div className="bg-white rounded-xl border border-line shadow-sm flex-1 min-h-0 max-h-[calc(100vh-200px)] flex flex-col overflow-hidden">
                 <div className="px-3 py-1.5 border-b border-zinc-100 bg-zinc-50/60 shrink-0 grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center text-[15px] font-bold text-zinc-500 uppercase tracking-wider">
                   <span>상품</span>
                   <span className="text-right whitespace-nowrap text-amber-600">매입</span>
@@ -1154,7 +1154,7 @@ export const PurchaseHistoryTab: React.FC = () => {
                 /* 2026-08-05 · 상품 선택 전 · 기간 필터 기반 전체 매입 파이차트 3종 */
                 <div className="flex flex-col gap-2 flex-1 min-h-0 overflow-auto">
                   {/* 차트 헤더 */}
-                  <div className="bg-white rounded-xl border border-zinc-200 shadow-sm px-4 py-2.5 flex items-center gap-2 shrink-0">
+                  <div className="bg-white rounded-xl border border-line shadow-sm px-4 py-2.5 flex items-center gap-2 shrink-0">
                     <Package size={14} className="text-sky-500 shrink-0" />
                     <span className="text-[15px] font-bold text-zinc-800">상품별 매입 분석</span>
                     <span className="text-[15px] text-zinc-400 font-semibold ml-1">
@@ -1166,7 +1166,7 @@ export const PurchaseHistoryTab: React.FC = () => {
                   </div>
                   {/* 3종 파이차트 · 반응형 그리드 */}
                   {allDetailsLoading ? (
-                    <div className="bg-white rounded-xl border border-zinc-200 flex-1 flex items-center justify-center text-zinc-400 text-[14px] gap-2 min-h-[300px]">
+                    <div className="bg-white rounded-xl border border-line flex-1 flex items-center justify-center text-zinc-400 text-[14px] gap-2 min-h-[300px]">
                       <Loader2 size={14} className="animate-spin" />
                       <span>매입 데이터 로딩 중...</span>
                     </div>

@@ -200,7 +200,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
     `px-2 py-0.5 rounded text-[15px] font-bold border cursor-pointer transition ${
       sortKey === k
         ? "bg-sky-600 text-white border-sky-600"
-        : "bg-white text-zinc-500 border-zinc-200 hover:border-sky-300 hover:text-sky-600"
+        : "bg-white text-zinc-500 border-line hover:border-sky-300 hover:text-sky-600"
     }`;
 
   const isPending = (a: StockArrival) =>
@@ -213,7 +213,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
     `flex items-center gap-1 px-2 py-1 rounded-lg text-[15px] font-bold border transition cursor-pointer shrink-0 ${color}`;
 
   const embeddedToolbar = (
-    <div className="flex items-center gap-2 justify-end px-4 py-2 bg-white border-b border-zinc-200 h-12">
+    <div className="flex items-center gap-2 justify-end px-4 py-2 bg-white border-b border-line h-12">
       <button
         onClick={handleSubscribe} disabled={pushLoading}
         className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[15px] font-bold border transition cursor-pointer disabled:cursor-default"
@@ -270,14 +270,14 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
           <div className="bg-white border border-sky-200 rounded-xl p-4 shadow-sm flex flex-col gap-3">
             <input
               ref={titleRef}
-              className="border border-zinc-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-brand-deep"
+              className="border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-brand-deep"
               placeholder="제목 (필수)"
               maxLength={80}
               value={newTitle}
               onChange={e => setNewTitle(e.target.value)}
             />
             <textarea
-              className="border border-zinc-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-brand-deep resize-none"
+              className="border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-brand-deep resize-none"
               placeholder="내용 (선택)"
               maxLength={200}
               rows={2}
@@ -307,7 +307,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
               <button
                 onClick={handleSave}
                 disabled={!newTitle.trim() || submitting}
-                className={actionBtn("bg-zinc-50 border-zinc-200 text-zinc-600 hover:bg-zinc-100 disabled:opacity-40")}
+                className={actionBtn("bg-zinc-50 border-line text-zinc-600 hover:bg-zinc-100 disabled:opacity-40")}
               >
                 저장
               </button>
@@ -351,7 +351,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
         )}
 
         {/* ── 리스트 ──────────────────────────────────────────────────────── */}
-        <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="bg-white border border-line rounded-xl overflow-hidden shadow-sm">
           {loading && arrivals.length > 0 && (
             <div className="flex items-center justify-center gap-1.5 text-[14px] text-emerald-600 font-bold py-1.5 bg-emerald-50 border-b border-emerald-100 sticky top-0 z-10">
               <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
@@ -377,21 +377,21 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
                 {isEditing ? (
                   <div className="px-3 py-2.5 bg-sky-50/40 flex flex-col gap-2">
                     <input
-                      className="border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-brand-deep w-full"
+                      className="border border-line rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-brand-deep w-full"
                       value={editTitle}
                       onChange={e => setEditTitle(e.target.value)}
                       placeholder="제목"
                       autoFocus
                     />
                     <input
-                      className="border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-brand-deep w-full"
+                      className="border border-line rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-brand-deep w-full"
                       value={editBody}
                       onChange={e => setEditBody(e.target.value)}
                       placeholder="내용 (선택)"
                     />
                     <div className="flex items-center justify-end gap-1.5">
                       <button onClick={() => setEditId(null)}
-                        className={actionBtn("bg-white border-gray-200 text-gray-500 hover:bg-gray-50")}>
+                        className={actionBtn("bg-white border-line text-gray-500 hover:bg-gray-50")}>
                         취소
                       </button>
                       <button onClick={() => saveEdit(a.id)} disabled={!editTitle.trim() || editSaving}
@@ -433,7 +433,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
                     {canWrite && (
                       <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
                         <button onClick={() => startEdit(a)}
-                          className={actionBtn("bg-zinc-50 border-zinc-200 text-zinc-500 hover:bg-zinc-100")}>
+                          className={actionBtn("bg-zinc-50 border-line text-zinc-500 hover:bg-zinc-100")}>
                           <Pencil size={10} /> 수정
                         </button>
                         <button onClick={() => handleBroadcast(a.id)}

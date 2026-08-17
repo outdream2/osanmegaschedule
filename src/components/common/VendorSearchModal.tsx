@@ -59,7 +59,7 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-zinc-200 overflow-hidden flex flex-col"
+        className="w-full max-w-lg max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-line overflow-hidden flex flex-col"
       >
         {/* 헤더 */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-100 bg-sky-50/60 shrink-0">
@@ -140,7 +140,7 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
               )}
             </div>
           ) : (
-            <div className="divide-y divide-zinc-100 border border-zinc-200 rounded-lg overflow-hidden">
+            <div className="divide-y divide-zinc-100 border border-line rounded-lg overflow-hidden">
               {filtered.map(v => {
                 const active = v.id === selectedId;
                 return (

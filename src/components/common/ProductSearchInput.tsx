@@ -111,7 +111,7 @@ export function ProductSearchInput({
 
       {/* 결과 리스트 · 2026-08-09 · hideList true 면 숨김 (선택·확인 후) */}
       {query.trim() && !hideList && (
-        <div className="max-h-[180px] overflow-y-auto border border-zinc-200 rounded-lg bg-white shadow-sm">
+        <div className="max-h-[180px] overflow-y-auto border border-line rounded-lg bg-white shadow-sm">
           {results.length === 0 && !loading ? (
             <div className="px-3 py-3 text-center text-[11px] text-zinc-400">
               검색 결과 없음

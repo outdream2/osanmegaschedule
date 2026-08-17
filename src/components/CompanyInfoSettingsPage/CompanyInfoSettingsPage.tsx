@@ -83,7 +83,7 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
       ) : undefined}
     >
       {/* 2026-08-12 · 상단 5탭 TabBar · 각 섹션 개별 표시 */}
-      <div className="mb-3 flex flex-wrap gap-0.5 border-b border-zinc-200">
+      <div className="mb-3 flex flex-wrap gap-0.5 border-b border-line">
         {TABS.map(({ key, label, Icon, color }) => {
           const active = tab === key;
           return (

@@ -74,7 +74,7 @@ export const OrderHistoryTab: React.FC = () => {
   return (
     <div className="flex flex-col gap-2">
       {/* 상단 툴바 · 폰트 +2 (13→15 · 11→13) */}
-      <div className="bg-white rounded-xl border border-zinc-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-3">
+      <div className="bg-white rounded-xl border border-line shadow-sm px-4 py-3 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
           <Package size={16} className="text-indigo-500" />
           <span className="text-[15px] font-bold text-zinc-800">발주이력</span>
@@ -91,7 +91,7 @@ export const OrderHistoryTab: React.FC = () => {
               className={`h-8 px-3 text-[13px] font-semibold rounded transition cursor-pointer ${
                 days === d
                   ? "bg-brand-deep text-white shadow-sm"
-                  : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 border border-zinc-200"
+                  : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 border border-line"
               }`}
             >
               {d}일
@@ -110,7 +110,7 @@ export const OrderHistoryTab: React.FC = () => {
       )}
 
       {/* 리스트 */}
-      <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-16 text-zinc-400 text-[15px] gap-2">
             <Loader2 size={16} className="animate-spin" />
@@ -187,7 +187,7 @@ export const OrderHistoryTab: React.FC = () => {
                           <span className="inline-flex items-center gap-1 tabular-nums"><Phone size={13} />{o.supplier_phone}</span>
                         )}
                         {o.memo && (
-                          <span className="italic text-zinc-600 border-l border-zinc-200 pl-2">{o.memo}</span>
+                          <span className="italic text-zinc-600 border-l border-line pl-2">{o.memo}</span>
                         )}
                         {!o.supplier_contact && !o.supplier_email && !o.supplier_phone && !o.memo && (
                           <span className="text-zinc-300">수신처·메모 정보 없음</span>
@@ -196,7 +196,7 @@ export const OrderHistoryTab: React.FC = () => {
                       {/* 아이템 테이블 · 폰트 +2 · 굵기 완화 */}
                       <table className="w-full text-[13px] tabular-nums">
                         <thead>
-                          <tr className="bg-zinc-50 text-zinc-500 font-bold tracking-wide text-[12px] border-b border-zinc-200">
+                          <tr className="bg-zinc-50 text-zinc-500 font-bold tracking-wide text-[12px] border-b border-line">
                             <th className="text-center px-2 py-2 w-8">#</th>
                             <th className="text-left px-3 py-2 w-28">코드</th>
                             <th className="text-left px-3 py-2">상품명</th>

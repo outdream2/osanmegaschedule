@@ -130,7 +130,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
     : true;
 
   return (
-    <div className={`bg-white rounded-xl border border-zinc-200 shadow-sm ${pad} flex flex-col gap-2.5 ${className}`}>
+    <div className={`bg-white rounded-xl border border-line shadow-sm ${pad} flex flex-col gap-2.5 ${className}`}>
       {/* ── 공급사 헤더 라인 ── */}
       <div className="flex items-start gap-2 flex-wrap">
         <Building2 size={dense ? 14 : 16} className="text-emerald-600 shrink-0 mt-0.5" />
@@ -140,7 +140,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
             <h2 className="text-[15px] font-bold text-zinc-800 break-words" title={rawName}>{displayName}</h2>
             <VendorCategoryBadge category={vendor.category} />
             {vendor.business_number && (
-              <span className="text-[10px] font-semibold text-zinc-500 bg-zinc-50 border border-zinc-200 rounded px-1.5 py-0.5 tabular-nums">
+              <span className="text-[10px] font-semibold text-zinc-500 bg-zinc-50 border border-line rounded px-1.5 py-0.5 tabular-nums">
                 {fmtBizNum(vendor.business_number)}
               </span>
             )}
@@ -194,7 +194,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
           <button
             type="button"
             onClick={onEdit}
-            className="shrink-0 inline-flex items-center gap-1 h-7 px-2.5 rounded-lg border border-zinc-200 text-[11px] font-semibold text-zinc-600 hover:bg-zinc-50 hover:text-zinc-800 transition cursor-pointer"
+            className="shrink-0 inline-flex items-center gap-1 h-7 px-2.5 rounded-lg border border-line text-[11px] font-semibold text-zinc-600 hover:bg-zinc-50 hover:text-zinc-800 transition cursor-pointer"
             title="공급사 정보 조회 및 수정"
           >
             <Pencil size={11} />

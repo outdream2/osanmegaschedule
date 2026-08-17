@@ -38,7 +38,7 @@ export const ImageZoomModal: React.FC<ImageZoomModalProps> = ({
         style={{ maxWidth: "min(900px, 95vw)", height: "90vh" }}
         onClick={e => e.stopPropagation()}>
 
-        <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-200 shrink-0">
+        <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-line shrink-0">
           <span className="text-xs font-bold text-gray-700 break-all min-w-0 flex-1 mr-3">{modalLabel}</span>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg px-1 py-0.5">

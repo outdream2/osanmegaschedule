@@ -46,7 +46,7 @@ const STATUS_COLOR: Record<string, string> = {
   pending:   "text-amber-600 bg-amber-50 border-amber-200",
   approved:  "text-emerald-600 bg-emerald-50 border-emerald-200",
   rejected:  "text-rose-600 bg-rose-50 border-rose-200",
-  withdrawn: "text-zinc-500 bg-zinc-50 border-zinc-200",
+  withdrawn: "text-zinc-500 bg-zinc-50 border-line",
 };
 
 const fmtDate = fmtDateYMD;
@@ -196,7 +196,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
         </div>
 
         {/* 탭 (pending · all) */}
-        <div className="grid grid-cols-2 gap-1 p-1 bg-zinc-100 border border-zinc-200 rounded-xl">
+        <div className="grid grid-cols-2 gap-1 p-1 bg-zinc-100 border border-line rounded-xl">
           {(["pending", "all"] as MgrTab[]).map(t => {
             const active = tab === t;
             const count = t === "pending" ? pending.length : reviewed.length;
@@ -206,7 +206,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                 onClick={() => setTab(t)}
                 className={`py-2 text-xs font-bold rounded-md transition cursor-pointer flex items-center justify-center gap-1.5 ${
                   active
-                    ? "bg-white shadow-sm text-zinc-800 border border-zinc-200"
+                    ? "bg-white shadow-sm text-zinc-800 border border-line"
                     : "text-zinc-500 hover:text-zinc-700"
                 }`}
               >
@@ -231,7 +231,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
         </div>
 
         {/* 리스트 */}
-        <div className="bg-white rounded-xl border border-zinc-200 p-3 sm:p-4 shadow-sm">
+        <div className="bg-white rounded-xl border border-line p-3 sm:p-4 shadow-sm">
           {error && (
             <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
               <Warning size={12} weight="fill" />
@@ -310,7 +310,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                     {expanded && (
                       <div className="ml-4 mt-2 flex flex-col gap-2">
                         {r.reason_detail && (
-                          <div className="bg-zinc-50 border border-zinc-200 rounded-lg px-2.5 py-2">
+                          <div className="bg-zinc-50 border border-line rounded-lg px-2.5 py-2">
                             <div className="text-[10px] font-bold text-zinc-500 mb-0.5 flex items-center gap-1">
                               <ChatCenteredText size={10} weight="fill" /> 사유 상세
                             </div>
@@ -328,7 +328,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                           </div>
                         )}
                         {r.signature_data_url && (
-                          <div className="bg-white border border-zinc-200 rounded-lg px-2.5 py-2">
+                          <div className="bg-white border border-line rounded-lg px-2.5 py-2">
                             <div className="text-[10px] font-bold text-zinc-500 mb-0.5">서명</div>
                             <img
                               src={r.signature_data_url}
@@ -357,7 +357,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                             value={rejectReason}
                             onChange={e => setRejectReason(e.target.value)}
                             placeholder="반려 사유 (반려 시 필수)"
-                            className="w-full bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rose-500 transition"
+                            className="w-full bg-white border border-line rounded-lg px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rose-500 transition"
                           />
                           <div className="grid grid-cols-2 gap-2">
                             <button

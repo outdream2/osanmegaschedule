@@ -113,7 +113,7 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
         onClick={(e) => e.stopPropagation()}
       >
         {/* 헤더 */}
-        <div className="px-5 py-4 border-b border-zinc-200 bg-sky-50 flex items-center justify-between gap-3">
+        <div className="px-5 py-4 border-b border-line bg-sky-50 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-sky-500 flex items-center justify-center shadow-md shrink-0">
               <Package size={18} className="text-white" />
@@ -143,10 +143,10 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
           <div className="flex items-center gap-2 flex-wrap">
             <span className={`${TEXT.label} text-zinc-500 shrink-0`}>기간</span>
             <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-              className="text-[13px] px-2 py-1 border border-zinc-200 rounded-md focus:outline-none focus:border-brand-deep" />
+              className="text-[13px] px-2 py-1 border border-line rounded-md focus:outline-none focus:border-brand-deep" />
             <span className="text-zinc-400 text-[13px]">~</span>
             <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-              className="text-[13px] px-2 py-1 border border-zinc-200 rounded-md focus:outline-none focus:border-brand-deep" />
+              className="text-[13px] px-2 py-1 border border-line rounded-md focus:outline-none focus:border-brand-deep" />
             <div className="relative flex-1 min-w-[180px]">
               <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
               <input
@@ -154,7 +154,7 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="상품명·코드 검색"
-                className="w-full pl-8 pr-3 py-1.5 text-[13px] border border-zinc-200 rounded-md focus:outline-none focus:border-brand-deep focus:ring-1 focus:ring-brand-tint"
+                className="w-full pl-8 pr-3 py-1.5 text-[13px] border border-line rounded-md focus:outline-none focus:border-brand-deep focus:ring-1 focus:ring-brand-tint"
               />
             </div>
           </div>
@@ -183,7 +183,7 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
             </div>
           ) : (
             <table className="w-full text-[13px]">
-              <thead className="sticky top-0 bg-zinc-50 border-b border-zinc-200 z-10">
+              <thead className="sticky top-0 bg-zinc-50 border-b border-line z-10">
                 <tr className={`${TEXT.label} text-zinc-500`}>
                   <th className="text-center px-2 py-2 w-10">#</th>
                   <th className={`${headerCls} text-left w-24`} onClick={() => toggleSort("code")}>상품코드{sortIcon("code")}</th>

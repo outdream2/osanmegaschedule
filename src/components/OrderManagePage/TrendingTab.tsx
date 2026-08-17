@@ -377,7 +377,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
                   .finally(() => setLoading(false));
               }}
               disabled={loading}
-              className="w-7 h-7 flex items-center justify-center rounded-md border border-zinc-200 bg-white hover:bg-indigo-50 hover:border-indigo-300 text-zinc-400 hover:text-indigo-500 transition disabled:opacity-40 cursor-pointer"
+              className="w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-indigo-50 hover:border-indigo-300 text-zinc-400 hover:text-indigo-500 transition disabled:opacity-40 cursor-pointer"
               title="새로고침"
             >
               <LoaderIcon size={13} className={loading ? "animate-spin" : ""} />
@@ -390,7 +390,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
           <span className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0 leading-tight text-center">
             비교<br />기간
           </span>
-          <div className="inline-flex bg-zinc-50 border border-zinc-200 rounded-md p-0.5">
+          <div className="inline-flex bg-zinc-50 border border-line rounded-md p-0.5">
             {([10, 30, 90, 180] as const).map(w => (
               <button key={w} onClick={() => setWindowDays(w)}
                 className={`h-7 px-2.5 text-[15px] font-semibold rounded transition cursor-pointer ${windowDays === w ? "bg-brand-deep text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
@@ -400,7 +400,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
           </div>
           <span className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">정렬</span>
           {/* 정렬 옵션 · 최근판매·성장률 2개만 (T-TRENDING-Rework) */}
-          <div className="inline-flex bg-zinc-50 border border-zinc-200 rounded-md p-0.5">
+          <div className="inline-flex bg-zinc-50 border border-line rounded-md p-0.5">
             {([
               { k: "recent" as const, label: "최근판매" },
               { k: "growth" as const, label: "성장률" },
@@ -417,7 +417,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
       {/* ── 테이블 카드 ── */}
       <div className={`${CARD_BASE} overflow-hidden`}>
         {/* 상비약/일반약/전체 3-way 필터 (좌측 리스트 상단) */}
-        <div className="flex items-center gap-1 border-b-2 border-zinc-200 bg-white px-2 pt-1">
+        <div className="flex items-center gap-1 border-b-2 border-line bg-white px-2 pt-1">
           <button type="button" onClick={() => setClassFilter("stationery")}
             className={`relative px-4 py-2 ${TEXT.body} font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-zinc-400 hover:text-zinc-600"}`}>
             상비약 <span className={`${TEXT.caption} text-zinc-400 ml-1 tabular-nums`}>({essentialCount})</span>
@@ -449,7 +449,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
             <table className="w-full text-[14px]" style={{ tableLayout: "fixed" }}>
               <thead className="sticky top-0 z-10">
                 {/* 컬럼 그룹 헤더 */}
-                <tr className="text-[14px] font-semibold uppercase tracking-wider border-b border-zinc-200">
+                <tr className="text-[14px] font-semibold uppercase tracking-wider border-b border-line">
                   <th colSpan={2} className="bg-zinc-50 text-zinc-400 text-left px-3 py-1.5">기본정보</th>
                   <th colSpan={2} className="bg-indigo-50 text-indigo-600 text-center px-3 py-1.5">판매량 비교</th>
                   <th colSpan={2} className="bg-indigo-100 text-indigo-700 text-center px-3 py-1.5">성장 지표</th>

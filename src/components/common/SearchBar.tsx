@@ -127,7 +127,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           placeholder={placeholder}
           autoFocus={autoFocus}
           className={[
-            "text-[11px] border border-zinc-200 rounded-md pl-7 pr-14 h-7 w-full",
+            "text-[11px] border border-line rounded-md pl-7 pr-14 h-7 w-full",
             "focus:outline-none focus:ring-1 transition bg-white",
             ACCENT_MAP[accent],
           ].join(" ")}
@@ -163,7 +163,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
       {/* 최근 검색어 dropdown */}
       {showHistory && historyList.length > 0 && (
-        <div className="absolute top-8 left-0 right-0 bg-white rounded-md border border-zinc-200 shadow-lg z-30 py-1">
+        <div className="absolute top-8 left-0 right-0 bg-white rounded-md border border-line shadow-lg z-30 py-1">
           <div className="px-2.5 py-1 text-[9px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
             <Clock size={9} />최근 검색
           </div>

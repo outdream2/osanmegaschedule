@@ -99,7 +99,7 @@ const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
   }, [rows]);
 
   return (
-    <div className="bg-white rounded-xl border border-zinc-200 shadow-sm flex flex-col min-h-0 overflow-hidden h-full">
+    <div className="bg-white rounded-xl border border-line shadow-sm flex flex-col min-h-0 overflow-hidden h-full">
       {/* 헤더 */}
       <div className="px-4 py-3 border-b border-zinc-100 flex items-center justify-between">
         <div className="flex items-center gap-2">

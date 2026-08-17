@@ -69,7 +69,7 @@ const ToolbarSearch: React.FC<ToolbarSearchProps> = ({
         onKeyDown={e => e.key === "Escape" && onChange("")}
         placeholder={placeholder}
         className={[
-          "w-full bg-white border border-zinc-200 rounded-lg",
+          "w-full bg-white border border-line rounded-lg",
           "pl-7 pr-7 h-7 text-[11px] text-zinc-800",
           "focus:outline-none focus:ring-2 transition",
           ACCENT_RING[accent],

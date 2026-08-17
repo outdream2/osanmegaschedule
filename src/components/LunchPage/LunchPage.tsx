@@ -307,7 +307,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
 
         {/* 출근인원 현황 · 휴게시간 배정 섹션 제거 · 점심불참만 노출 */}
         {false && isLoggedIn && attendance !== null && (
-          <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-sm flex items-center gap-4">
+          <div className="bg-white border border-line rounded-2xl px-4 py-3 shadow-sm flex items-center gap-4">
             <Users size={15} className="text-gray-400 shrink-0" />
             <div className="flex items-center gap-4 flex-1 text-sm">
               <div className="flex items-center gap-1.5">
@@ -331,7 +331,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
 
         {/* ── 휴게시간 타임라인 · 제거 (점심불참만 노출) ─────── */}
         {false && (
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-white border border-line rounded-2xl overflow-hidden shadow-sm">
           {/* 헤더 */}
           <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
@@ -343,7 +343,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
               <div className="flex gap-1">
                 {(["약사", "사원", "기타"] as BreakTab[]).map(tab => (
                   <button key={tab} onClick={() => setBreakTab(tab)}
-                    className={`px-2.5 py-1 text-[12px] font-bold rounded-lg transition ${breakTab === tab ? "bg-brand-deep text-white" : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"}`}>
+                    className={`px-2.5 py-1 text-[12px] font-bold rounded-lg transition ${breakTab === tab ? "bg-brand-deep text-white" : "bg-white border border-line text-gray-500 hover:bg-gray-50"}`}>
                     {tab}
                   </button>
                 ))}
@@ -352,7 +352,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
               <div className="flex gap-1">
                 {([30, 60] as BreakDuration[]).map(d => (
                   <button key={d} onClick={() => setBreakDuration(d)}
-                    className={`px-2.5 py-1 text-[12px] font-bold rounded-lg transition ${breakDuration === d ? "bg-blue-500 text-white" : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"}`}>
+                    className={`px-2.5 py-1 text-[12px] font-bold rounded-lg transition ${breakDuration === d ? "bg-blue-500 text-white" : "bg-white border border-line text-gray-500 hover:bg-gray-50"}`}>
                     {d === 30 ? "30분" : "1시간"}
                   </button>
                 ))}
@@ -436,7 +436,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
             </div>
             <div
               className={`min-h-[44px] flex flex-wrap gap-2 p-2 rounded-xl border-2 border-dashed transition-colors
-                ${dragOverSlot === -1 ? "border-rose-300 bg-rose-50" : "border-gray-200"}`}
+                ${dragOverSlot === -1 ? "border-rose-300 bg-rose-50" : "border-line"}`}
               onDragOver={e => { e.preventDefault(); setDragOverSlot(-1); }}
               onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverSlot(null); }}
               onDrop={handleDropToPool}
@@ -449,7 +449,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
                     draggable
                     onDragStart={() => setDraggedEmpId(emp.id)}
                     onDragEnd={() => { setDraggedEmpId(null); setDragOverSlot(null); }}
-                    className={`px-3 py-1.5 bg-white border rounded-xl text-xs font-semibold cursor-grab shadow-sm select-none transition ${isPharm ? "border-emerald-400 ring-2 ring-emerald-500 ring-offset-1 text-emerald-800 hover:border-emerald-500 hover:text-emerald-900" : "border-gray-200 text-gray-700 hover:border-indigo-300 hover:text-indigo-700"}`}
+                    className={`px-3 py-1.5 bg-white border rounded-xl text-xs font-semibold cursor-grab shadow-sm select-none transition ${isPharm ? "border-emerald-400 ring-2 ring-emerald-500 ring-offset-1 text-emerald-800 hover:border-emerald-500 hover:text-emerald-900" : "border-line text-gray-700 hover:border-indigo-300 hover:text-indigo-700"}`}
                   >
                     {emp.name}
                   </div>
@@ -470,7 +470,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
                   .filter(a => tabEmployees.some(e => e.id === a.employeeId))
                   .sort((a, b) => a.startSlot - b.startSlot)
                   .map(a => (
-                    <span key={a.employeeId} className="text-[11px] text-gray-500 bg-gray-100 border border-gray-200 rounded-lg px-2 py-0.5">
+                    <span key={a.employeeId} className="text-[11px] text-gray-500 bg-gray-100 border border-line rounded-lg px-2 py-0.5">
                       {a.employeeName} <span className="text-gray-400">{TIME_SLOTS[a.startSlot]}~{TIME_SLOTS[a.startSlot + a.duration / 30] ?? "+"}</span>
                     </span>
                   ))}

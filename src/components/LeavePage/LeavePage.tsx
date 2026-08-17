@@ -239,7 +239,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
 
             {/* 신청 폼 */}
             {showForm && (
-              <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-sm">
+              <div className="bg-white border border-line rounded-xl p-4 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-xs font-bold text-zinc-800">신규 휴가 신청</p>
                   <button onClick={() => { setShowForm(false); setSubmitError(null); }} className="text-zinc-400 hover:text-zinc-700 cursor-pointer"><X size={17} /></button>
@@ -252,7 +252,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                       <select
                         value={formType}
                         onChange={e => setFormType(e.target.value)}
-                        className="w-full bg-white border border-zinc-200 rounded-lg px-3.5 py-2 text-zinc-800 text-xs font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition appearance-none cursor-pointer"
+                        className="w-full bg-white border border-line rounded-lg px-3.5 py-2 text-zinc-800 text-xs font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition appearance-none cursor-pointer"
                       >
                         {LEAVE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
@@ -272,7 +272,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                             setFormStart(s);
                             if (formEnd < s) setFormEnd(s);
                           }}
-                          className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-zinc-800 text-xs font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
+                          className="w-full bg-white border border-line rounded-lg px-3 py-2 text-zinc-800 text-xs font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
                           required
                         />
                       </div>
@@ -283,7 +283,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                           value={formEnd}
                           min={formStart}
                           onChange={e => setFormEnd(e.target.value)}
-                          className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-zinc-800 text-xs font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
+                          className="w-full bg-white border border-line rounded-lg px-3 py-2 text-zinc-800 text-xs font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
                           required
                         />
                       </div>
@@ -302,7 +302,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                       onChange={e => setFormReason(e.target.value)}
                       placeholder="사유를 입력하세요"
                       rows={2}
-                      className="w-full bg-white border border-zinc-200 rounded-lg px-3.5 py-2 text-zinc-800 text-xs focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition resize-none"
+                      className="w-full bg-white border border-line rounded-lg px-3.5 py-2 text-zinc-800 text-xs focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition resize-none"
                     />
                   </div>
                   {submitError && <p className="text-[19px] text-rose-500 font-semibold">{submitError}</p>}
@@ -377,7 +377,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                         <button
                           onClick={() => handleCancel(r.id)}
                           disabled={cancellingId === r.id}
-                          className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[18px] font-semibold bg-zinc-50 border border-zinc-200 text-zinc-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all duration-150 cursor-pointer disabled:opacity-50"
+                          className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[18px] font-semibold bg-zinc-50 border border-line text-zinc-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all duration-150 cursor-pointer disabled:opacity-50"
                         >
                           <Trash2 size={11} />
                           {cancellingId === r.id ? "취소 중..." : "신청 취소"}
@@ -395,12 +395,12 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
         {showApproval && (
           <div className="flex flex-col gap-4">
             {/* 탭 */}
-            <div className="grid grid-cols-2 gap-1 p-1 bg-zinc-100 border border-zinc-200 rounded-xl">
+            <div className="grid grid-cols-2 gap-1 p-1 bg-zinc-100 border border-line rounded-xl">
               {(["pending", "all"] as ManagerTab[]).map(t => (
                 <button
                   key={t}
                   onClick={() => setMgrTab(t)}
-                  className={`py-1.5 text-xs font-semibold rounded-md transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 ${mgrTab === t ? "bg-white shadow-sm text-zinc-800 border border-zinc-200" : "text-zinc-400 hover:text-zinc-600"}`}
+                  className={`py-1.5 text-xs font-semibold rounded-md transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 ${mgrTab === t ? "bg-white shadow-sm text-zinc-800 border border-line" : "text-zinc-400 hover:text-zinc-600"}`}
                 >
                   {t === "pending" ? (
                     <><Clock size={12} />승인 대기 <span className={`ml-0.5 ${pending.length > 0 ? "text-amber-600" : ""}`}>{pending.length}</span></>
@@ -411,7 +411,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
               ))}
             </div>
 
-            <div className="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm">
+            <div className="bg-white rounded-xl border border-line p-4 shadow-sm">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-1.5">
                   <Clock size={14} className="text-amber-600" />
@@ -470,7 +470,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                               value={reviewNote}
                               onChange={e => setReviewNote(e.target.value)}
                               placeholder="메모 (선택)"
-                              className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
+                              className="w-full bg-white border border-line rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
                             />
                             <div className="grid grid-cols-2 gap-2">
                               <button

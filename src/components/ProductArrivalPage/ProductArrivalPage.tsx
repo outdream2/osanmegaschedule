@@ -315,7 +315,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
               <button
                 onClick={resetAll}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
-                  text-zinc-500 hover:text-zinc-800 bg-white border border-zinc-200
+                  text-zinc-500 hover:text-zinc-800 bg-white border border-line
                   hover:bg-zinc-50 hover:border-zinc-300 shadow-sm
                   transition-all duration-150 cursor-pointer"
               >
@@ -340,7 +340,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       )}
 
       {/* ── Page header strip ── */}
-      <div className="bg-white border-b border-zinc-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      <div className="bg-white border-b border-line/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3">
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-sky-500
             flex items-center justify-center shadow-sm shrink-0">
@@ -370,7 +370,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
       {/* ── 내부 서브탭 (2026-08-03 · 상품입고 / 입고내역) ── */}
       <div className="max-w-6xl mx-auto w-full px-3 sm:px-4 lg:px-6 pt-3">
-        <div className="inline-flex bg-white border border-zinc-200 rounded-xl p-1 shadow-sm">
+        <div className="inline-flex bg-white border border-line rounded-xl p-1 shadow-sm">
           {([
             { k: "input"   as const, label: "상품입고", icon: PackagePlus, color: "sky"    },
             { k: "history" as const, label: "입고내역", icon: Package,     color: "indigo" },
@@ -417,7 +417,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
 
           {/* ── 스캔 카드 ── */}
-          <div className="bg-white rounded-2xl border border-zinc-200/80
+          <div className="bg-white rounded-2xl border border-line/80
             shadow-[0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden">
 
             {/* 상단 그라디언트 헤더 */}
@@ -524,7 +524,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                   <div className="flex flex-wrap items-center gap-2">
                     {lastScannedProduct.spec && (
                       <span className="inline-flex items-center gap-1.5 text-[15px] font-bold text-zinc-600
-                        bg-white/80 border border-zinc-200/60 rounded-lg px-2 py-1">
+                        bg-white/80 border border-line/60 rounded-lg px-2 py-1">
                         <Box size={11} className="text-zinc-400" />
                         {lastScannedProduct.spec}
                       </span>
@@ -566,7 +566,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
           </div>
 
           {/* ── 요약 카운트 카드 ── */}
-          <div className="bg-white rounded-2xl border border-zinc-200/80
+          <div className="bg-white rounded-2xl border border-line/80
             shadow-[0_2px_8px_rgba(0,0,0,0.06)] px-2 py-2">
             <div className="grid grid-cols-4 gap-1">
               <SummaryPill label="총건수"  value={counts.total}    valueClass="text-zinc-800" />
@@ -591,13 +591,13 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
 
           {/* ── 등록 리스트 카드 ── */}
-          <div className="bg-white rounded-2xl border border-zinc-200/80
+          <div className="bg-white rounded-2xl border border-line/80
             shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex flex-col min-h-[320px] overflow-hidden">
 
             {/* 테이블 헤더 바 */}
             <div className="flex items-center justify-between
               px-4 sm:px-5 py-3 sm:py-3.5
-              border-b border-zinc-200/80
+              border-b border-line/80
               bg-zinc-50/80
               rounded-t-2xl sticky top-0 z-10
               shadow-[0_1px_0_rgba(0,0,0,0.04)]">
@@ -643,7 +643,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
               <div className="flex-1 overflow-auto max-h-[58vh] lg:max-h-[64vh]">
                 <table className="w-full border-collapse text-[14px] sm:text-[15px]">
                   <thead className="sticky top-0 z-10">
-                    <tr className="bg-zinc-50/95 backdrop-blur-sm border-b border-zinc-200/60">
+                    <tr className="bg-zinc-50/95 backdrop-blur-sm border-b border-line/60">
                       {/* 입고일 */}
                       <th
                         className="text-left px-3 py-2.5 w-[68px] sm:w-20 font-bold text-zinc-400
@@ -751,7 +751,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
                               {/* ── 수량 Stepper ── */}
                               <div className="inline-flex items-center rounded-xl overflow-hidden
-                                border border-zinc-200/80 bg-zinc-50/80
+                                border border-line/80 bg-zinc-50/80
                                 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
                                 <button
                                   onClick={() => updateQty(it.key, -1)}
@@ -787,7 +787,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                                 role="group"
                                 aria-label="일치 · 불일치 · 유통기한"
                                 className="flex rounded-xl overflow-hidden
-                                  border border-zinc-200/80 bg-zinc-100/80
+                                  border border-line/80 bg-zinc-100/80
                                   shadow-[inset_0_1px_3px_rgba(0,0,0,0.06)]"
                               >
                                 {(["match", "mismatch"] as ItemStatus[]).map((s, segIdx) => {
@@ -804,7 +804,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                                         "flex flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5",
                                         "min-h-[40px] text-[14px] font-bold",
                                         "transition-all duration-150 cursor-pointer select-none",
-                                        segIdx === 0 ? "" : "border-l border-zinc-200/60",
+                                        segIdx === 0 ? "" : "border-l border-line/60",
                                         active
                                           ? s === "match"
                                             ? "bg-emerald-500 text-white shadow-sm"
@@ -827,7 +827,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                                   title={`유통기한임박 ${it.expiring ? "on" : "off"} · 독립 토글`}
                                   className={[
                                     "flex flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5",
-                                    "min-h-[40px] text-[14px] font-bold border-l border-zinc-200/60",
+                                    "min-h-[40px] text-[14px] font-bold border-l border-line/60",
                                     "transition-all duration-150 cursor-pointer select-none",
                                     it.expiring
                                       ? "bg-amber-500 text-white shadow-sm"
@@ -869,7 +869,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
           <div className={`bg-white rounded-2xl border-2 transition-all duration-300 overflow-hidden ${
             allDecided
               ? "border-sky-300/80 shadow-[0_0_0_4px_rgba(14,165,233,0.08),0_4px_16px_rgba(0,0,0,0.08)]"
-              : "border-zinc-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.05)] opacity-90"
+              : "border-line/80 shadow-[0_2px_8px_rgba(0,0,0,0.05)] opacity-90"
           }`}>
 
             {/* 카드 헤더 */}
@@ -913,7 +913,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                       ? "bg-emerald-500 text-white border-emerald-500 shadow-md"
                       : allDecided
                         ? "bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50 hover:border-emerald-400 shadow-sm hover:shadow-md"
-                        : "bg-zinc-50 text-zinc-300 border-zinc-200 shadow-none",
+                        : "bg-zinc-50 text-zinc-300 border-line shadow-none",
                   ].join(" ")}
                 >
                   {finalDecision === "all_match" && (
@@ -936,7 +936,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                       ? "bg-rose-500 text-white border-rose-500 shadow-md"
                       : allDecided
                         ? "bg-white text-rose-700 border-rose-300 hover:bg-rose-50 hover:border-rose-400 shadow-sm hover:shadow-md"
-                        : "bg-zinc-50 text-zinc-300 border-zinc-200 shadow-none",
+                        : "bg-zinc-50 text-zinc-300 border-line shadow-none",
                   ].join(" ")}
                 >
                   {finalDecision === "has_mismatch" && (
@@ -1068,12 +1068,12 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       {arrivalTab === "history" && (
         <main className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-5 flex flex-col gap-3 min-h-0">
           {/* 헤더 카드 */}
-          <div className="bg-white border border-zinc-200 rounded-xl shadow-sm p-3 h-12 flex items-center gap-2">
+          <div className="bg-white border border-line rounded-xl shadow-sm p-3 h-12 flex items-center gap-2">
             <Package size={14} className="text-indigo-500 shrink-0" />
             <span className="text-[15px] font-semibold text-zinc-700">입고내역</span>
             <span className="text-[15px] font-bold text-zinc-500 bg-zinc-100 rounded-full px-2 py-0.5 tabular-nums">{arrivals.length}건</span>
             <span className="text-[15px] font-medium text-zinc-400 ml-2 hidden sm:inline">최근 {arrivalDays}일</span>
-            <div className="flex items-center gap-0.5 bg-zinc-50 border border-zinc-200 rounded-md p-0.5 ml-auto">
+            <div className="flex items-center gap-0.5 bg-zinc-50 border border-line rounded-md p-0.5 ml-auto">
               {[7, 30, 90].map(d => (
                 <button key={d} onClick={() => setArrivalDays(d as any)}
                   className={`text-[15px] font-semibold px-2 py-1 rounded transition whitespace-nowrap cursor-pointer ${arrivalDays === d ? "bg-white text-zinc-800 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
@@ -1082,14 +1082,14 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
               ))}
             </div>
             <button onClick={loadArrivals} disabled={arrivalsLoading}
-              className="w-8 h-8 flex items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 cursor-pointer disabled:opacity-50"
+              className="w-8 h-8 flex items-center justify-center rounded-lg border border-line text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 cursor-pointer disabled:opacity-50"
               title="새로고침">
               <RefreshCw size={13} className={arrivalsLoading ? "animate-spin" : ""} />
             </button>
           </div>
 
           {/* 리스트 카드 */}
-          <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
             {arrivalsLoading && arrivals.length === 0 ? (
               <div className="py-12 flex items-center justify-center gap-2 text-zinc-400 text-[15px] font-semibold">
                 <Loader2 size={16} className="animate-spin" /> 불러오는 중...
@@ -1146,7 +1146,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                                 상세
                               </button>
                               <button type="button" onClick={() => deleteArrival(a.id)}
-                                className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-400 hover:text-rose-500 hover:bg-rose-50 border border-zinc-200 hover:border-rose-200 cursor-pointer transition"
+                                className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-400 hover:text-rose-500 hover:bg-rose-50 border border-line hover:border-rose-200 cursor-pointer transition"
                                 title="삭제">
                                 <Trash2 size={12} />
                               </button>
@@ -1168,7 +1168,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
         <div className="fixed inset-0 z-[100] bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setSelectedArrivalId(null)}>
           <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
             {/* 헤더 */}
-            <div className="flex items-center gap-2 px-5 py-3 border-b border-zinc-200 bg-indigo-50 shrink-0">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-line bg-indigo-50 shrink-0">
               <Package size={18} className="text-indigo-600" />
               <h3 className="text-[16px] font-bold text-zinc-800">입고내역 상세</h3>
               <span className="text-[14px] font-semibold text-zinc-500 tabular-nums">ID {selectedArrivalId}</span>
@@ -1187,13 +1187,13 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 <>
                   {/* 헤더 요약 카드 */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-3">
+                    <div className="bg-zinc-50 border border-line rounded-lg p-3">
                       <div className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider">등록일시</div>
                       <div className="text-[15px] font-bold text-zinc-800 tabular-nums mt-0.5">
                         {(() => { const d = new Date(arrivalDetail.arrival_date); return isNaN(d.getTime()) ? "-" : d.toLocaleString("ko-KR"); })()}
                       </div>
                     </div>
-                    <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-3">
+                    <div className="bg-zinc-50 border border-line rounded-lg p-3">
                       <div className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider">담당자</div>
                       <div className="text-[15px] font-bold text-zinc-800 mt-0.5">{arrivalDetail.checked_by ?? "-"}</div>
                     </div>
@@ -1201,7 +1201,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                       <div className="text-[15px] font-semibold text-emerald-600 uppercase tracking-wider">품목·수량</div>
                       <div className="text-[15px] font-bold text-emerald-700 tabular-nums mt-0.5">{arrivalDetail.total_items}개 · {arrivalDetail.total_qty.toLocaleString()}수량</div>
                     </div>
-                    <div className={`border rounded-lg p-3 ${arrivalDetail.final_decision === "all_match" ? "bg-emerald-50 border-emerald-200" : arrivalDetail.final_decision === "has_mismatch" ? "bg-rose-50 border-rose-200" : "bg-zinc-50 border-zinc-200"}`}>
+                    <div className={`border rounded-lg p-3 ${arrivalDetail.final_decision === "all_match" ? "bg-emerald-50 border-emerald-200" : arrivalDetail.final_decision === "has_mismatch" ? "bg-rose-50 border-rose-200" : "bg-zinc-50 border-line"}`}>
                       <div className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider">최종 판정</div>
                       <div className={`text-[15px] font-bold mt-0.5 ${arrivalDetail.final_decision === "all_match" ? "text-emerald-700" : arrivalDetail.final_decision === "has_mismatch" ? "text-rose-700" : "text-zinc-500"}`}>
                         {arrivalDetail.final_decision === "all_match" ? "완전일치" : arrivalDetail.final_decision === "has_mismatch" ? "불일치 있음" : "-"}
@@ -1234,15 +1234,15 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                     </div>
                   )}
                   {/* 아이템 리스트 */}
-                  <div className="border border-zinc-200 rounded-lg overflow-hidden">
-                    <div className="px-3 py-2 bg-zinc-50 border-b border-zinc-200 flex items-center gap-2">
+                  <div className="border border-line rounded-lg overflow-hidden">
+                    <div className="px-3 py-2 bg-zinc-50 border-b border-line flex items-center gap-2">
                       <span className="text-[14px] font-bold text-zinc-700">입고 아이템</span>
                       <span className="text-[15px] font-semibold text-zinc-500 tabular-nums">{arrivalDetail.items?.length ?? 0}개</span>
                     </div>
                     <div className="overflow-x-auto max-h-[40vh]">
                       <table className="w-full text-[14px]">
                         <thead className="sticky top-0 bg-white z-10">
-                          <tr className="border-b border-zinc-200 text-[15px] font-semibold text-zinc-500 uppercase tracking-wider">
+                          <tr className="border-b border-line text-[15px] font-semibold text-zinc-500 uppercase tracking-wider">
                             <th className="px-2 py-1.5 text-left w-10">#</th>
                             <th className="px-2 py-1.5 text-left w-24">코드</th>
                             <th className="px-2 py-1.5 text-left min-w-[180px]">상품명</th>
@@ -1300,7 +1300,7 @@ const _StatusToggle: React.FC<StatusToggleProps> = ({ status, active, onToggle }
       className={`inline-flex items-center justify-center w-9 h-9 rounded-full border-2 transition cursor-pointer active:scale-95 ${
         active
           ? `${meta.bg} ${meta.color} ${meta.border} shadow-sm`
-          : "bg-white text-zinc-300 border-zinc-200 hover:border-zinc-300 hover:text-zinc-500"
+          : "bg-white text-zinc-300 border-line hover:border-zinc-300 hover:text-zinc-500"
       }`}
       title={`${meta.label} ${active ? "on" : "off"}`}
     >

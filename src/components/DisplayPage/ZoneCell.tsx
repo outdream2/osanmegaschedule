@@ -216,7 +216,7 @@ export const ZoneCell: React.FC<ZoneCellProps> = ({
       {/* Group label badge */}
       {groupLabel && (
         <span
-          className="absolute bottom-0.5 right-0.5 text-[8px] font-bold px-1 rounded leading-none text-white pointer-events-none shadow"
+          className="absolute bottom-0.5 right-0.5 text-[10px] font-bold px-1 rounded leading-none text-white pointer-events-none shadow"
           style={{ backgroundColor: groupColor ?? "#64748b" }}
         >
           {groupLabel}

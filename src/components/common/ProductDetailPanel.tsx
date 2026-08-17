@@ -83,7 +83,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
   }, [productCode, season]);
 
   return (
-    <div className="bg-white rounded-xl border border-zinc-200 p-3 shadow-sm">
+    <div className="bg-white rounded-xl border border-line p-3 shadow-sm">
       {/* 2026-07-29 · 헤더 재정리 · 3영역으로 명확히 분리 */}
       {/* 월평균 판매량 · stock_history.sale_qty 합계 / 월수 (사용자 요청) */}
       {(() => { return null; })()}
@@ -144,7 +144,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
             <span className="text-[12px] font-bold text-teal-700 shrink-0">조회기간</span>
             {/* 개월 버튼 그룹 · shrink-0 으로 버튼 뭉침 방지 */}
-            <div className="inline-flex shrink-0 bg-zinc-100 border border-zinc-200 rounded-lg p-0.5">
+            <div className="inline-flex shrink-0 bg-zinc-100 border border-line rounded-lg p-0.5">
               {([1, 2, 3, 4, 5, 6] as const).map(m => {
                 const active = !season && months === m;
                 return (
@@ -168,7 +168,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
           {/* 단위 행 · 월중/10일 · 범례 좁을 때 자동 wrap */}
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <span className="text-[12px] font-bold text-zinc-600 shrink-0">단위</span>
-            <div className="inline-flex shrink-0 bg-zinc-100 border border-zinc-200 rounded-lg p-0.5">
+            <div className="inline-flex shrink-0 bg-zinc-100 border border-line rounded-lg p-0.5">
               <button onClick={() => setXAxisMode("month")}
                 className={`min-h-[32px] px-2.5 py-0.5 text-[11px] font-bold rounded-md transition cursor-pointer ${xAxisMode === "month" ? "bg-white text-teal-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-600 hover:text-zinc-900"}`}>월중</button>
               <button onClick={() => setXAxisMode("10day")}
@@ -181,7 +181,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
       )}
       {collapsed ? null : loading ? (
         <div className="flex flex-col items-center justify-center py-10 text-zinc-400 gap-2">
-          <div className="w-8 h-8 border-4 border-zinc-200 border-t-teal-500 rounded-full animate-spin" />
+          <div className="w-8 h-8 border-4 border-line border-t-teal-500 rounded-full animate-spin" />
           <div className="text-sm font-bold">로딩 중...</div>
         </div>
       ) : rows.length === 0 ? (
@@ -256,7 +256,7 @@ export const ProductDetailEmpty: React.FC<{ message?: string; sub?: string }> = 
   message = "리스트에서 상품을 클릭하세요",
   sub = "상세 정보 · 재고 현황 · 매입/판매가",
 }) => (
-  <div className="bg-white rounded-xl border border-zinc-200 flex-1 flex flex-col items-center justify-center p-10 text-zinc-400 min-h-[400px]">
+  <div className="bg-white rounded-xl border border-line flex-1 flex flex-col items-center justify-center p-10 text-zinc-400 min-h-[400px]">
     <Package size={40} className="mb-3 opacity-30" />
     <div className="text-[11px] font-semibold">{message}</div>
     {sub && <div className="text-[11px] mt-1">{sub}</div>}
@@ -270,7 +270,7 @@ export const ProductDetailMobileHeader: React.FC<{
   onClose: () => void;
 }> = ({ product, onClose }) => (
   /* lg+ 에서 숨김 · 모바일+태블릿 전용 sticky 헤더 */
-  <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-zinc-200 shadow-sm">
+  <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-line shadow-sm">
     <div className="flex items-center gap-2 px-3 py-1.5">
       {/* 터치 대상 최소 44×44px */}
       <button
@@ -309,7 +309,7 @@ export const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({
   if (!showChart) {
     // 단순 모드: ProductInfoCard 단독 (low/diff/product/supplier/loss/order/need 탭용)
     return (
-      <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
         <ProductInfoCard
           product={product}
           context={context}
@@ -342,7 +342,7 @@ const ProductHeaderCard: React.FC<{
   const supplier = (product.supplier ?? "").toString().trim();
   const canOpenSupplier = !!supplier && !!onSupplierInfoOpen;
   return (
-    <div className="bg-white rounded-xl border border-zinc-200 shadow-sm px-3 py-2.5">
+    <div className="bg-white rounded-xl border border-line shadow-sm px-3 py-2.5">
       {/* 상품명 · 큰 글씨 · 클릭 안됨 */}
       <div className="text-[13px] font-bold text-zinc-900 break-words whitespace-normal leading-snug">
         {product.name || "-"}
@@ -389,7 +389,7 @@ const ProductDetailChartMode: React.FC<{
       <PurchaseOrderTabs productCode={product.code} productName={product.name} />
 
       {/* 상단 카드: 헤더 + 재고현황 + 매입판매가 + 발주요청 + 배정구역 · 접기 지원 (매입이력 분리됨) */}
-      <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
         <button
           type="button"
           onClick={() => setTopCollapsed(c => !c)}
@@ -420,7 +420,7 @@ const ProductDetailChartMode: React.FC<{
       </div>
 
       {/* 하단 카드: 상품코드 · 공급처 · 판매상태 · 최근매입일 + 브랜드 · 제조사 · 바코드 · 유효기간 · 메모 · 접기 지원 */}
-      <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
         <button
           type="button"
           onClick={() => setMetaCollapsed(c => !c)}
@@ -559,8 +559,8 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }>
       .finally(() => setOrdersLoading(false));
   }, [tab, productCode]);
   return (
-    <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
-      <div className="flex border-b border-zinc-200 bg-zinc-50/50">
+    <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
+      <div className="flex border-b border-line bg-zinc-50/50">
         {(["flow", "purchase", "order"] as const).map(k => {
           const active = tab === k;
           const label = k === "flow" ? "기간별 상품흐름" : k === "purchase" ? "매입이력" : "발주내역";

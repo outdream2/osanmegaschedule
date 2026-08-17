@@ -472,7 +472,7 @@ export const FlowTab: React.FC = () => {
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">기간</span>
           {flowMonths === 0 && !flowSeason && flowSnapshot && (
-            <span className="text-[15px] tabular-nums font-medium text-zinc-600 bg-zinc-50 border border-zinc-200 rounded-md px-2 py-0.5">
+            <span className="text-[15px] tabular-nums font-medium text-zinc-600 bg-zinc-50 border border-line rounded-md px-2 py-0.5">
               {flowDateRange ?? flowSnapshot}
             </span>
           )}
@@ -481,9 +481,9 @@ export const FlowTab: React.FC = () => {
             const start = new Date(today.getFullYear(), today.getMonth() - flowMonths, 1);
             const s = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
             const e = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-            return <span className="text-[15px] tabular-nums font-medium text-zinc-600 bg-zinc-50 border border-zinc-200 rounded-md px-2 py-0.5">{s} ~ {e}</span>;
+            return <span className="text-[15px] tabular-nums font-medium text-zinc-600 bg-zinc-50 border border-line rounded-md px-2 py-0.5">{s} ~ {e}</span>;
           })()}
-          <div className="flex flex-wrap bg-zinc-50 border border-zinc-200 rounded-md p-0.5 gap-0.5">
+          <div className="flex flex-wrap bg-zinc-50 border border-line rounded-md p-0.5 gap-0.5">
             <button onClick={() => { setFlowSeason(null); setPendingFlowMonths(0); setFlowMonths(0); }}
               className={`px-2 h-6 text-[15px] font-semibold rounded transition cursor-pointer ${!flowSeason && flowMonths === 0 ? "bg-teal-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>10일</button>
             {([1, 2, 3, 4, 5, 6] as const).map(m => (
@@ -497,7 +497,7 @@ export const FlowTab: React.FC = () => {
         {/* Top N */}
         <div className="flex items-center gap-1.5">
           <span className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">Top N</span>
-          <div className="inline-flex bg-zinc-50 border border-zinc-200 rounded-md p-0.5">
+          <div className="inline-flex bg-zinc-50 border border-line rounded-md p-0.5">
             {[{ v: 100, label: "100" }, { v: 300, label: "300" }, { v: 1000, label: "1k" }, { v: 2000, label: "2k" }, { v: 50000, label: "전체" }].map(o => (
               <button key={o.v} onClick={() => setFlowLimit(o.v)}
                 className={`text-[15px] font-semibold h-6 px-2 rounded transition whitespace-nowrap cursor-pointer ${flowLimit === o.v ? "bg-teal-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
@@ -515,10 +515,10 @@ export const FlowTab: React.FC = () => {
             onChange={(e) => setInfoSearchQuery(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") runInfoSearch(); }}
             placeholder="전체 DB 검색 (정보확인)"
-            className="w-48 h-7 pl-7 pr-2 text-[15px] border border-zinc-200 rounded-md outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep bg-white transition"
+            className="w-48 h-7 pl-7 pr-2 text-[15px] border border-line rounded-md outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep bg-white transition"
           />
           {infoSearchResults.length > 0 && (
-            <div className="absolute left-0 top-full mt-1 max-h-64 overflow-y-auto border border-zinc-200 bg-white rounded-lg shadow-lg z-30 divide-y divide-zinc-100 min-w-full sm:min-w-[500px]">
+            <div className="absolute left-0 top-full mt-1 max-h-64 overflow-y-auto border border-line bg-white rounded-lg shadow-lg z-30 divide-y divide-zinc-100 min-w-full sm:min-w-[500px]">
               {infoSearchResults.map((p, i) => (
                 <button key={`info-sr-${p.product_code}-${i}`}
                   onClick={() => { setInfoSelected(p); setInfoSearchQuery(p.product_name); setInfoSearchResults([]); }}
@@ -550,10 +550,10 @@ export const FlowTab: React.FC = () => {
         <div className="flex items-center gap-1.5">
           <span className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">판매출고계</span>
           <input type="number" min={0} value={salesQtyMin} onChange={e => setSalesQtyMin(e.target.value)} placeholder="최소"
-            className="w-14 h-7 px-2 text-[15px] border border-zinc-200 rounded-md outline-none focus:ring-1 focus:ring-brand-tint tabular-nums text-right transition" />
+            className="w-14 h-7 px-2 text-[15px] border border-line rounded-md outline-none focus:ring-1 focus:ring-brand-tint tabular-nums text-right transition" />
           <span className="text-zinc-400 text-[15px]">~</span>
           <input type="number" min={0} value={salesQtyMax} onChange={e => setSalesQtyMax(e.target.value)} placeholder="최대"
-            className="w-14 h-7 px-2 text-[15px] border border-zinc-200 rounded-md outline-none focus:ring-1 focus:ring-brand-tint tabular-nums text-right transition" />
+            className="w-14 h-7 px-2 text-[15px] border border-line rounded-md outline-none focus:ring-1 focus:ring-brand-tint tabular-nums text-right transition" />
           <span className="text-zinc-400 text-[15px]">개</span>
           {(salesQtyMin || salesQtyMax) && (
             <button onClick={() => { setSalesQtyMin(""); setSalesQtyMax(""); }}
@@ -563,13 +563,13 @@ export const FlowTab: React.FC = () => {
 
         {/* 숨김관리 */}
         <button onClick={() => openHiddenManagerModal()}
-          className="flex items-center gap-1 text-[15px] font-semibold text-zinc-500 bg-white border border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300 rounded-md px-2.5 h-7 cursor-pointer transition shrink-0"
+          className="flex items-center gap-1 text-[15px] font-semibold text-zinc-500 bg-white border border-line hover:bg-zinc-50 hover:border-zinc-300 rounded-md px-2.5 h-7 cursor-pointer transition shrink-0"
           title="숨김 처리된 상품을 확인/해제">
           <EyeOff size={12} /> 숨김관리
         </button>
 
         {/* 분류 세그먼트 필터 */}
-        <div className="flex flex-wrap bg-zinc-50 border border-zinc-200 rounded-md p-0.5 gap-0.5">
+        <div className="flex flex-wrap bg-zinc-50 border border-line rounded-md p-0.5 gap-0.5">
           {(["전체", "위탁", "선결제", "60회전", "90회전", "기타"] as const).map(cat => (
             <button key={cat} onClick={() => setFlowCategoryFilter(cat)}
               className={`h-7 px-2.5 text-[15px] font-semibold rounded transition cursor-pointer ${
@@ -587,7 +587,7 @@ export const FlowTab: React.FC = () => {
 
         {/* 새로고침 */}
         <button onClick={() => fetchStockFlow()} disabled={loading}
-          className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-zinc-200 bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer"
+          className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer"
           title="새로고침">
           <LoaderIcon size={13} className={loading ? "animate-spin" : ""} />
         </button>
@@ -614,7 +614,7 @@ export const FlowTab: React.FC = () => {
               </div>
 
               {/* 상비약/일반약/전체 3-way 필터 */}
-              <div className="flex items-center gap-1 border-b-2 border-zinc-200 bg-white px-1 pt-1 shrink-0">
+              <div className="flex items-center gap-1 border-b-2 border-line bg-white px-1 pt-1 shrink-0">
                 <button type="button" onClick={() => setClassFilter("stationery")}
                   className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-zinc-400 hover:text-zinc-600"}`}>
                   상비약 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({essentialCount})</span>
@@ -674,7 +674,7 @@ export const FlowTab: React.FC = () => {
                           </tr>
                         )}
                         {/* 그룹 헤더 */}
-                        <tr className="border-b border-zinc-200 text-[14px] font-bold tracking-wider">
+                        <tr className="border-b border-line text-[14px] font-bold tracking-wider">
                           <th colSpan={2} className="bg-zinc-50" />
                           {(() => {
                             const GROUP_COLOR: Record<FlowGroup, { bg: string; text: string; hover: string }> = {
@@ -905,7 +905,7 @@ export const FlowTab: React.FC = () => {
                                   className="text-left text-[15px] font-bold text-zinc-700 hover:text-zinc-900 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition">
                                   {p.product_name}
                                   {(p as any).min_order != null && (p as any).min_order > 0 && (
-                                    <span className="inline-flex items-center ml-1 px-1.5 py-0.5 rounded-sm text-[14px] font-bold text-zinc-500 bg-zinc-100 border border-zinc-200 align-middle">
+                                    <span className="inline-flex items-center ml-1 px-1.5 py-0.5 rounded-sm text-[14px] font-bold text-zinc-500 bg-zinc-100 border border-line align-middle">
                                       최소{(p as any).min_order}
                                     </span>
                                   )}
@@ -1023,7 +1023,7 @@ export const FlowTab: React.FC = () => {
       {hiddenModalOpen && (
         <div className="fixed inset-0 z-50 bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-1 sm:p-4" onClick={() => setHiddenModalOpen(false)}>
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[98vh] sm:max-h-[85vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-200 bg-amber-50/50">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-line bg-amber-50/50">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center shadow-sm">
                   <EyeOff size={18} className="text-white" />
@@ -1039,14 +1039,14 @@ export const FlowTab: React.FC = () => {
             <div className="flex items-center justify-between px-5 py-2.5 border-b border-zinc-100 bg-white">
               <span className="text-[15px] font-bold text-zinc-500">총 <span className="text-amber-700 font-bold">{hiddenList.length}</span>개 숨김</span>
               <button onClick={loadHiddenList} disabled={hiddenLoading}
-                className="text-[14px] font-bold text-zinc-500 hover:text-zinc-800 border border-zinc-200 hover:border-zinc-400 rounded-lg px-2 py-1 cursor-pointer transition">
+                className="text-[14px] font-bold text-zinc-500 hover:text-zinc-800 border border-line hover:border-zinc-400 rounded-lg px-2 py-1 cursor-pointer transition">
                 {hiddenLoading ? "..." : "새로고침"}
               </button>
             </div>
             <div className="flex-1 overflow-y-auto bg-zinc-50">
               {hiddenLoading ? (
                 <div className="flex flex-col items-center justify-center gap-3 py-8">
-                  <div className="w-10 h-10 border-4 border-zinc-200 border-t-orange-500 rounded-full animate-spin" />
+                  <div className="w-10 h-10 border-4 border-line border-t-orange-500 rounded-full animate-spin" />
                   <div className="text-xs font-bold text-zinc-600">데이터 로딩중...</div>
                 </div>
               ) : hiddenList.length === 0 ? (

@@ -210,7 +210,7 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
     >
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] max-h-[92vh] flex flex-col overflow-hidden">
         {/* 모달 헤더 */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-200 shrink-0">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-line shrink-0">
           {mobileModalTitle != null && (
             <div className="flex-1 min-w-0 text-[14px] font-bold text-zinc-800 break-words whitespace-normal leading-tight">
               {mobileModalTitle}

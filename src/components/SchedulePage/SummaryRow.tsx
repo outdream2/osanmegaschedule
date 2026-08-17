@@ -35,12 +35,12 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMo
   const valEmptyCls = "bg-transparent text-zinc-200";
 
   const monthTotalCls = isPharmacist
-    ? "bg-emerald-50 text-emerald-700 border-l-2 border-zinc-200"
+    ? "bg-emerald-50 text-emerald-700 border-l-2 border-line"
     : isStaff
-    ? "bg-zinc-100 text-zinc-600 border-l-2 border-zinc-200"
+    ? "bg-zinc-100 text-zinc-600 border-l-2 border-line"
     : isOther
-    ? "bg-zinc-50 text-zinc-500 border-l-2 border-zinc-200"
-    : "bg-indigo-50 text-indigo-700 border-l-2 border-zinc-200";
+    ? "bg-zinc-50 text-zinc-500 border-l-2 border-line"
+    : "bg-indigo-50 text-indigo-700 border-l-2 border-line";
 
   const todayStr = (() => {
     const d = new Date();
@@ -51,7 +51,7 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMo
     isPharmacist ? sum.pharmacistCount : isStaff ? sum.staffCount : isOther ? sum.otherCount : sum.totalCount;
 
   return (
-    <tr className={isTotal ? "border-t-2 border-zinc-200" : "border-t border-zinc-100/70"}>
+    <tr className={isTotal ? "border-t-2 border-line" : "border-t border-zinc-100/70"}>
       <td className={`px-2 py-1.5 sticky left-0 z-20 text-center text-[15px] font-semibold tracking-wide shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)] ${labelCls}`}>
         {label}
       </td>

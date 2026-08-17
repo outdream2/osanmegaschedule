@@ -156,7 +156,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
         className={`relative flex items-center justify-center w-7 h-7 rounded-lg border transition-all cursor-pointer shadow-sm hover:shadow-md active:scale-95 ${
           hasUnread
             ? "bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-600"
-            : "bg-white hover:bg-zinc-50 border-zinc-200 text-zinc-600 hover:text-indigo-600 hover:border-indigo-300"
+            : "bg-white hover:bg-zinc-50 border-line text-zinc-600 hover:text-indigo-600 hover:border-indigo-300"
         } ${justArrived ? "notif-bell-shake" : ""}`}
         title={hasUnread ? `미확인 알림 ${unreadCount}건` : "알림"}
       >
@@ -181,7 +181,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
       {/* Dropdown panel · 반응형 · 모바일은 fixed 로 화면 폭에 맞춤 (2026-08-05 · 왼쪽 치우침 fix) */}
       {open && (
         <div
-          className="fixed inset-x-2 top-14 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 mx-auto sm:mx-0 max-w-[420px] bg-white border border-zinc-200 rounded-2xl shadow-2xl z-50 overflow-hidden"
+          className="fixed inset-x-2 top-14 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 mx-auto sm:mx-0 max-w-[420px] bg-white border border-line rounded-2xl shadow-2xl z-50 overflow-hidden"
           style={{ boxShadow: "0 8px 32px rgba(15,23,42,0.14), 0 2px 8px rgba(15,23,42,0.06)" }}>
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">

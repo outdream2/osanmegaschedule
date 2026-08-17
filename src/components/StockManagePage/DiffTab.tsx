@@ -197,7 +197,7 @@ export const DiffTab: React.FC = () => {
           type="button"
           onClick={fetchData}
           disabled={loading}
-          className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-zinc-200 bg-white hover:bg-violet-50 hover:border-violet-300 text-zinc-400 hover:text-violet-500 transition disabled:opacity-40 cursor-pointer"
+          className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-violet-50 hover:border-violet-300 text-zinc-400 hover:text-violet-500 transition disabled:opacity-40 cursor-pointer"
           title="새로고침"
         >
           <LoaderIcon size={13} className={loading ? "animate-spin" : ""} />
@@ -213,7 +213,7 @@ export const DiffTab: React.FC = () => {
         >
           <div className={`${CARD_BASE} flex-1 min-h-0 flex flex-col overflow-hidden`}>
             {/* 상비약/일반약/전체 3-way 필터 */}
-            <div className="flex items-center gap-1 border-b-2 border-zinc-200 bg-white px-2 pt-1 shrink-0">
+            <div className="flex items-center gap-1 border-b-2 border-line bg-white px-2 pt-1 shrink-0">
               <button type="button" onClick={() => setClassFilter("stationery")}
                 className={`relative px-4 py-2 text-[13px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-zinc-400 hover:text-zinc-600"}`}>
                 상비약 <span className="text-[11px] font-semibold text-zinc-400 ml-1 tabular-nums">({essentialCount})</span>
@@ -250,7 +250,7 @@ export const DiffTab: React.FC = () => {
                   <table className="w-full text-xs sm:min-w-[280px]" style={{ tableLayout: "fixed" }}>
                     <thead className="sticky top-0 z-10">
                       {/* 카테고리 그룹 헤더 (1단) · 2026-08-06 · 상품·공급사·ERP·실재고·손실·가격 */}
-                      <tr className="text-[10px] font-semibold uppercase tracking-wider border-b border-zinc-200">
+                      <tr className="text-[10px] font-semibold uppercase tracking-wider border-b border-line">
                         <th colSpan={3} className="bg-zinc-50 text-zinc-400 text-left px-2 py-1.5">기본정보</th>
                         <th className="bg-zinc-100/60 text-zinc-500 text-right px-2 py-1.5 cursor-pointer select-none hover:bg-zinc-200/60 transition"
                           onClick={() => toggleDiffGroup("erp")}

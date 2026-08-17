@@ -254,7 +254,7 @@ const LedgerContent: React.FC<{
             );
           })}
         </tbody>
-        <tfoot className="sticky bottom-0 bg-zinc-50 border-t-2 border-zinc-200">
+        <tfoot className="sticky bottom-0 bg-zinc-50 border-t-2 border-line">
           <tr>
             <td colSpan={5} className="px-3 py-2 text-right text-[11px] font-bold text-zinc-500">기간 합계</td>
             <td className="px-3 py-2 text-right text-[11px] font-semibold text-zinc-500 tabular-nums" title={`매입 ${fmt(ledger.total_purchase)} / 결제 ${fmt(ledger.total_payment)}`}>
@@ -364,7 +364,7 @@ const HistoryContent: React.FC<{
       {/* 툴바 */}
       <div className="flex items-center gap-2 flex-wrap px-1">
         {/* 뷰 토글 */}
-        <div className="flex flex-wrap bg-zinc-100 border border-zinc-200 rounded-lg p-0.5 gap-0.5">
+        <div className="flex flex-wrap bg-zinc-100 border border-line rounded-lg p-0.5 gap-0.5">
           {(["sku", "all"] as const).map(mode => (
             <button
               key={mode}
@@ -385,7 +385,7 @@ const HistoryContent: React.FC<{
           value={productSearch}
           onChange={e => setProductSearch(e.target.value)}
           placeholder="상품명·코드 검색"
-          className="h-7 px-2.5 text-[11px] border border-zinc-200 rounded-lg outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep transition w-40"
+          className="h-7 px-2.5 text-[11px] border border-line rounded-lg outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep transition w-40"
         />
         {/* 건수 */}
         <span className="text-[10px] text-zinc-400 tabular-nums">
@@ -629,7 +629,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
       {/* 기간 필터 + 새로고침 */}
       <div className={`${CARD_BASE} px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5`}>
         <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">기간</span>
-        <div className="flex flex-wrap bg-zinc-50 border border-zinc-200 rounded-lg p-0.5 gap-0.5">
+        <div className="flex flex-wrap bg-zinc-50 border border-line rounded-lg p-0.5 gap-0.5">
           <button onClick={() => { setPeriodSeason(null); setPeriodMonths(0); }}
             className={`px-2.5 h-6 text-[11px] font-semibold rounded-md transition cursor-pointer ${!periodSeason && periodMonths === 0 ? "bg-sky-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
             10일
@@ -651,7 +651,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
           type="button"
           onClick={() => { loadLedger(); loadDetail(); }}
           disabled={isLoading}
-          className="ml-auto w-7 h-7 flex items-center justify-center rounded-lg border border-zinc-200 bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer"
+          className="ml-auto w-7 h-7 flex items-center justify-center rounded-lg border border-line bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer"
           title="새로고침"
         >
           <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
@@ -691,7 +691,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
               const vatModeCls =
                 vatMode === true  ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
                 vatMode === false ? "bg-amber-50 text-amber-700 border-amber-200" :
-                                    "bg-zinc-50 text-zinc-400 border-zinc-200";
+                                    "bg-zinc-50 text-zinc-400 border-line";
               const items = [
                 {
                   label: "매입 금액",

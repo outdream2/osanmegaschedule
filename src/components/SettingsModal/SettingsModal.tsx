@@ -75,7 +75,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => {
       />
       {open && (
         <div
-          className="absolute z-20 bottom-full right-0 mb-1 bg-white border border-zinc-200 rounded-lg shadow-xl p-2 w-[196px] animate-in fade-in zoom-in-95 duration-100"
+          className="absolute z-20 bottom-full right-0 mb-1 bg-white border border-line rounded-lg shadow-xl p-2 w-[196px] animate-in fade-in zoom-in-95 duration-100"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="grid grid-cols-6 gap-1.5 mb-2">
@@ -87,7 +87,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => {
                   type="button"
                   onClick={() => { onChange(p.bg); setOpen(false); }}
                   className={`relative w-7 h-7 rounded-md border cursor-pointer transition hover:scale-110 ${
-                    selected ? "border-zinc-800 ring-2 ring-zinc-400" : "border-zinc-200"
+                    selected ? "border-zinc-800 ring-2 ring-zinc-400" : "border-line"
                   }`}
                   style={{ backgroundColor: p.bg }}
                   title={p.label}
@@ -107,7 +107,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => {
               type="color"
               value={value}
               onChange={(e) => onChange(e.target.value)}
-              className="w-6 h-6 rounded cursor-pointer border border-zinc-200 p-0.5 bg-white"
+              className="w-6 h-6 rounded cursor-pointer border border-line p-0.5 bg-white"
               title="직접 색상 선택"
             />
             <span className="text-[10px] font-mono text-zinc-400 uppercase">{value}</span>
@@ -326,7 +326,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
     ? "w-full"
     : "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto";
   const innerCls = embedded
-    ? "relative w-full bg-white rounded-2xl border border-zinc-200 flex flex-col"
+    ? "relative w-full bg-white rounded-2xl border border-line flex flex-col"
     : "relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-zinc-100 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150";
   return (
     <div className={outerCls}>
@@ -404,7 +404,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                 {workplaces.map((wp, idx) => (
                   <div
                     key={wp}
-                    className="flex items-center gap-2 bg-white border border-zinc-200 hover:border-zinc-300 rounded-lg px-3 py-2 transition"
+                    className="flex items-center gap-2 bg-white border border-line hover:border-zinc-300 rounded-lg px-3 py-2 transition"
                   >
                     <span className="flex-1 text-xs font-semibold text-zinc-800">{wp}</span>
                     <button
@@ -425,7 +425,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                   onChange={(e) => setNewWorkplace(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addWorkplace(); } }}
                   placeholder="새 근무지 입력 (Enter)"
-                  className="flex-1 text-xs rounded-lg border border-zinc-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
+                  className="flex-1 text-xs rounded-lg border border-line focus:border-[#2563eb] p-2 bg-white focus:outline-none"
                 />
                 <button
                   type="button"
@@ -456,7 +456,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                     className={`flex-1 min-w-[72px] py-1.5 px-2 text-[11px] font-bold rounded-lg border transition cursor-pointer whitespace-nowrap ${
                       scheduleHourTab === t.id
                         ? "bg-[#2563eb] border-[#2563eb] text-white"
-                        : "bg-white border-zinc-200 text-zinc-500 hover:bg-zinc-50"
+                        : "bg-white border-line text-zinc-500 hover:bg-zinc-50"
                     }`}
                   >
                     {t.label}
@@ -474,7 +474,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                 {scheduleTypes.map((st, idx) => (
                   <div
                     key={idx}
-                    className="flex flex-col sm:grid sm:grid-cols-[minmax(0,1fr)_28px_minmax(0,1fr)_28px] gap-2 items-start sm:items-center bg-white border border-zinc-200 hover:border-zinc-300 rounded-lg px-3 py-2 transition"
+                    className="flex flex-col sm:grid sm:grid-cols-[minmax(0,1fr)_28px_minmax(0,1fr)_28px] gap-2 items-start sm:items-center bg-white border border-line hover:border-zinc-300 rounded-lg px-3 py-2 transition"
                   >
                     <div className="flex items-center gap-2 w-full min-w-0">
                       <span
@@ -509,7 +509,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                       value={st[scheduleHourTab]}
                       onChange={(e) => updateScheduleTypeEntry(idx, scheduleHourTab, e.target.value)}
                       placeholder={scheduleHourTab === "hours" ? "예: 10:00-18:00" : "비워두면 기본값"}
-                      className="w-full text-xs rounded border border-zinc-200 focus:border-[#2563eb] p-1.5 font-mono bg-white focus:outline-none"
+                      className="w-full text-xs rounded border border-line focus:border-[#2563eb] p-1.5 font-mono bg-white focus:outline-none"
                     />
                     <button
                       type="button"
@@ -529,7 +529,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                   onChange={(e) => setNewScheduleType(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addScheduleType(); } }}
                   placeholder="새 근무 유형 입력 (Enter)"
-                  className="flex-1 text-xs rounded-lg border border-zinc-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
+                  className="flex-1 text-xs rounded-lg border border-line focus:border-[#2563eb] p-2 bg-white focus:outline-none"
                 />
                 <button
                   type="button"
@@ -585,7 +585,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                       value={pwCurrent}
                       onChange={(e) => setPwCurrent(e.target.value)}
                       autoComplete="current-password"
-                      className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
+                      className="w-full px-3 py-2 text-sm border border-line rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
                       placeholder="현재 비밀번호"
                     />
                   </div>
@@ -596,7 +596,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                       value={pwNew}
                       onChange={(e) => setPwNew(e.target.value)}
                       autoComplete="new-password"
-                      className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
+                      className="w-full px-3 py-2 text-sm border border-line rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
                       placeholder="새 비밀번호"
                     />
                   </div>
@@ -607,7 +607,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                       value={pwConfirm}
                       onChange={(e) => setPwConfirm(e.target.value)}
                       autoComplete="new-password"
-                      className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
+                      className="w-full px-3 py-2 text-sm border border-line rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
                       placeholder="새 비밀번호 확인"
                       onKeyDown={(e) => { if (e.key === "Enter" && !pwSubmitting) submitPasswordChange(); }}
                     />
@@ -661,7 +661,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
               <button
                 type="button"
                 onClick={() => { setShowEditConfirm(false); onClose(); }}
-                className="flex-1 px-4 py-2 text-xs font-bold bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-lg text-zinc-600 transition cursor-pointer"
+                className="flex-1 px-4 py-2 text-xs font-bold bg-zinc-50 hover:bg-zinc-100 border border-line rounded-lg text-zinc-600 transition cursor-pointer"
               >
                 아니오
               </button>

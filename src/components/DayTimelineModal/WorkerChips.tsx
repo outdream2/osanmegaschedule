@@ -59,7 +59,7 @@ function renderChip(
       }}
       style={{ touchAction: "none", ...(assigned ? { backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder } : undefined) }}
       className={`relative flex items-center gap-1 whitespace-nowrap ${compact ? "px-1.5 py-0.5 text-[13px]" : "px-2 py-0.5 text-[14px]"} rounded-full font-bold border cursor-grab active:cursor-grabbing select-none transition ${
-        assigned ? "opacity-80" : "bg-white border-zinc-200 hover:border-zinc-400"
+        assigned ? "opacity-80" : "bg-white border-line hover:border-zinc-400"
       } ${draggingId === emp.id ? "opacity-20" : ""}`}
     >
       <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: assigned ? c.dot : isPharm ? "#9333ea" : "#cbd5e1" }} />

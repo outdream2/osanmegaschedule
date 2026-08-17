@@ -314,22 +314,22 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
       <div className="flex flex-col gap-1.5">
         {/* 상단 벽면 */}
         <div>
-          <div className="text-[8px] font-bold text-emerald-600 uppercase tracking-wider mb-0.5 px-0.5">상단 벽면 (21→9)</div>
+          <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-0.5 px-0.5">상단 벽면 (21→9)</div>
           <div className="grid gap-0.5" style={{ gridTemplateColumns: "repeat(13, minmax(0, 1fr))" }}>
             {STORE_TOP_WALL.map(n => wallCell(n))}
           </div>
         </div>
         {/* 중앙 진열대 · 22 + 8B/8A→1B/1A (17셀) */}
         <div>
-          <div className="text-[8px] font-bold text-blue-600 uppercase tracking-wider mb-0.5 px-0.5">중앙 진열대 (22 · 8B|8A → 1B|1A · 17구역)</div>
-          <div className="flex items-stretch justify-start gap-1.5 bg-zinc-100 border border-zinc-200 py-1.5 px-1.5 rounded-lg">
+          <div className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-0.5 px-0.5">중앙 진열대 (22 · 8B|8A → 1B|1A · 17구역)</div>
+          <div className="flex items-stretch justify-start gap-1.5 bg-zinc-100 border border-line py-1.5 px-1.5 rounded-lg">
             {centerCell()}
             {STORE_AISLE_PAIRS.map(n => pairCell(n))}
           </div>
         </div>
         {/* 하단 벽면 */}
         <div>
-          <div className="text-[8px] font-bold text-amber-600 uppercase tracking-wider mb-0.5 px-0.5">하단 벽면 (23→34)</div>
+          <div className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-0.5 px-0.5">하단 벽면 (23→34)</div>
           <div className="grid gap-0.5" style={{ gridTemplateColumns: "repeat(12, minmax(0, 1fr))" }}>
             {STORE_BOTTOM_WALL.map(n => wallCell(n))}
           </div>
@@ -338,7 +338,7 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
 
       {/* 하단 · 동측 wing · 수평 8셀 · 2026-08-05 · 상하 여백 추가 (겹침 방지) */}
       <div className="border-t border-violet-200 pt-3 mt-1.5">
-        <div className="text-[8px] font-bold text-violet-600 uppercase tracking-wider mb-1 px-0.5">동측 wing (35→42) · 이벤트 · 카운터 · 조제실</div>
+        <div className="text-[10px] font-bold text-violet-600 uppercase tracking-wider mb-1 px-0.5">동측 wing (35→42) · 이벤트 · 카운터 · 조제실</div>
         <div className="grid gap-0.5 pb-1" style={{ gridTemplateColumns: "repeat(8, minmax(0, 1fr))" }}>
           {STORE_VERTICAL_WING.map(n => wallCell(n))}
         </div>

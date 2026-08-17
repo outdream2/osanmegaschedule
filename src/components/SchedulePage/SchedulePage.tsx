@@ -1581,7 +1581,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       {/* 2. Grid Container Block · 데스크탑에서만 max-w 적용 (모바일은 전체 폭 사용) */}
       <div className="flex-1 flex flex-col p-2 sm:p-3 md:p-4 bg-zinc-100 gap-0 w-full lg:max-w-[1600px] lg:mx-auto min-w-0">
         {/* Month Navigation Toolbar — responsive two-row layout */}
-        <div className="bg-white border border-zinc-200 border-b-0 rounded-t-xl py-1.5 sm:py-2 flex flex-col gap-1.5 px-2.5 sm:px-5 shrink-0 shadow-sm">
+        <div className="bg-white border border-line border-b-0 rounded-t-xl py-1.5 sm:py-2 flex flex-col gap-1.5 px-2.5 sm:px-5 shrink-0 shadow-sm">
           {/* 1행: 월 네비게이션 + 오늘 + 범례 */}
           <div className="flex items-center gap-x-3 gap-y-1.5 flex-wrap min-w-0">
             {/* 월 네비 · 최신 트렌드 · 딥네이비 hover · rounded-lg 통일 */}
@@ -1762,7 +1762,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           </div>
         </div>
 
-        <div className="bg-white border border-zinc-200 rounded-b-xl flex flex-col flex-1 shadow-sm min-w-0 overflow-hidden">
+        <div className="bg-white border border-line rounded-b-xl flex flex-col flex-1 shadow-sm min-w-0 overflow-hidden">
             {/* Month locked banner */}
             {isMonthLocked && (
               <div className="mx-2 mt-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2">
@@ -1845,7 +1845,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                   <p className="text-rose-700 font-bold text-xs">{error}</p>
                   <button
                     onClick={() => fetchScheduleData()}
-                    className="mt-4 px-3 py-1 text-xs bg-zinc-50 border border-zinc-200 hover:bg-zinc-100 font-semibold rounded"
+                    className="mt-4 px-3 py-1 text-xs bg-zinc-50 border border-line hover:bg-zinc-100 font-semibold rounded"
                   >
                     다시 시도
                   </button>
@@ -2108,7 +2108,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       </div>
 
       {/* Footer — 저작권 표시 (가운데 정렬) */}
-      <footer className="h-9 bg-white border-t border-gray-200 shrink-0 px-4 sm:px-6 flex items-center justify-center text-xs font-bold text-zinc-600 tracking-wide">
+      <footer className="h-9 bg-white border-t border-line shrink-0 px-4 sm:px-6 flex items-center justify-center text-xs font-bold text-zinc-600 tracking-wide">
         <span>© {spContact.copyrightText || "(주)이룸즈(IRUMS)"}</span>
       </footer>
 
@@ -2168,7 +2168,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       {/* 4. Admin Login Dialog Modal */}
       {isLoginModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 flex flex-col justify-between overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-line p-6 flex flex-col justify-between overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
               <div className="flex items-center gap-2">
@@ -2237,7 +2237,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                     setIsLoginModalOpen(false);
                     setLoginError("");
                   }}
-                  className="flex-1 p-3 text-xs font-bold bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 text-gray-600 transition"
+                  className="flex-1 p-3 text-xs font-bold bg-gray-50 hover:bg-gray-100 rounded-xl border border-line text-gray-600 transition"
                 >
                   취소
                 </button>
@@ -2328,7 +2328,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
             </div>
 
             <div className="space-y-2 mb-5">
-              <label className="flex items-start gap-3 p-3 rounded-xl border border-zinc-200 hover:bg-zinc-50 cursor-pointer">
+              <label className="flex items-start gap-3 p-3 rounded-xl border border-line hover:bg-zinc-50 cursor-pointer">
                 <input type="checkbox" className="mt-0.5 w-4 h-4 accent-indigo-500"
                   checked={copyModal.copySchedules}
                   onChange={e => setCopyModal(prev => ({ ...prev, copySchedules: e.target.checked }))} />
@@ -2337,7 +2337,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                   <div className="text-[11px] text-zinc-500 mt-0.5">직원별 오픈/마감/휴무 등 근무 유형 스케줄</div>
                 </div>
               </label>
-              <label className="flex items-start gap-3 p-3 rounded-xl border border-zinc-200 hover:bg-zinc-50 cursor-pointer">
+              <label className="flex items-start gap-3 p-3 rounded-xl border border-line hover:bg-zinc-50 cursor-pointer">
                 <input type="checkbox" className="mt-0.5 w-4 h-4 accent-indigo-500"
                   checked={copyModal.copyDayAssignments}
                   onChange={e => setCopyModal(prev => ({ ...prev, copyDayAssignments: e.target.checked }))} />
@@ -2355,7 +2355,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
             <div className="flex gap-2">
               <button
                 onClick={() => setCopyModal(prev => ({ ...prev, open: false }))}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-zinc-200 bg-white text-zinc-600 text-xs font-bold hover:bg-zinc-50 cursor-pointer">
+                className="flex-1 px-4 py-2.5 rounded-xl border border-line bg-white text-zinc-600 text-xs font-bold hover:bg-zinc-50 cursor-pointer">
                 취소
               </button>
               <button

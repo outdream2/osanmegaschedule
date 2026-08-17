@@ -195,7 +195,7 @@ export const ColumnMappingModal: React.FC<Props> = ({
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}>
         {/* 헤더 */}
-        <div className="px-5 py-3 border-b border-gray-200 flex items-center justify-between">
+        <div className="px-5 py-3 border-b border-line flex items-center justify-between">
           <div>
             <h3 className="text-sm font-bold text-zinc-800">🔧 공급사 컬럼 매핑</h3>
             <p className="text-[11px] text-zinc-500 mt-0.5">
@@ -254,7 +254,7 @@ export const ColumnMappingModal: React.FC<Props> = ({
                             ? "bg-indigo-50 border-indigo-200 hover:border-indigo-400"
                             : isSplittable
                               ? "bg-amber-50 border-amber-300 hover:border-amber-500"
-                              : "bg-zinc-50 border-zinc-200 hover:border-indigo-400"
+                              : "bg-zinc-50 border-line hover:border-indigo-400"
                       }`}
                     >
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -330,7 +330,7 @@ export const ColumnMappingModal: React.FC<Props> = ({
                     disabled={selectedRawIdx == null}
                     className={`text-left px-3 py-2 rounded-lg border-2 transition ${
                       selectedRawIdx == null
-                        ? "bg-zinc-50 border-zinc-200 opacity-50 cursor-not-allowed"
+                        ? "bg-zinc-50 border-line opacity-50 cursor-not-allowed"
                         : usageCount > 0
                           ? "bg-indigo-50 border-indigo-300 hover:bg-indigo-100 cursor-pointer"
                           : "bg-white border-zinc-300 hover:border-indigo-400 hover:bg-indigo-50 cursor-pointer"
@@ -355,7 +355,7 @@ export const ColumnMappingModal: React.FC<Props> = ({
         </div>
 
         {/* 푸터 */}
-        <div className="px-5 py-3 border-t border-gray-200 flex items-center justify-between gap-2">
+        <div className="px-5 py-3 border-t border-line flex items-center justify-between gap-2">
           <div className="text-[10px] text-zinc-500">
             {mapping.filter(f => f && f !== "제외").length}개 컬럼 매핑됨 · 나머지는 자동 "제외"
           </div>

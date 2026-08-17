@@ -299,7 +299,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
       <div className="flex-1 flex flex-col lg:flex-row gap-0 overflow-hidden">
 
         {/* ====== LEFT PANEL: Calendar ====== */}
-        <div className="lg:w-[340px] shrink-0 bg-white border-b lg:border-b-0 lg:border-r border-gray-200 p-4 sm:p-5 flex flex-col gap-4">
+        <div className="lg:w-[340px] shrink-0 bg-white border-b lg:border-b-0 lg:border-r border-line p-4 sm:p-5 flex flex-col gap-4">
 
           {submitted && (
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-start gap-2.5">
@@ -413,7 +413,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
           </div>
 
           {/* Legend */}
-          <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-gray-200 text-[15px] text-gray-400">
+          <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-line text-[15px] text-gray-400">
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full ring-2 ring-emerald-500 inline-block" />
               오늘
@@ -427,7 +427,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
               전원 휴무
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-md bg-white border border-gray-200 flex items-end justify-center pb-0.5 inline-flex">
+              <span className="w-2.5 h-2.5 rounded-md bg-white border border-line flex items-end justify-center pb-0.5 inline-flex">
                 <span className="w-1 h-1 rounded-full bg-amber-400 inline-block" />
               </span>
               일부 휴무
@@ -443,7 +443,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
         <div className="flex-1 overflow-hidden bg-gray-50 flex flex-col">
 
           {/* Timetable sticky header */}
-          <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200 shrink-0">
+          <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-line shrink-0">
             <div className="px-3 sm:px-5 py-3 flex items-center justify-between">
               <div>
                 <h2 className="text-gray-900 font-bold text-sm">{formatKoreanDate(selectedDate)}</h2>
@@ -470,7 +470,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                     key={staff.employeeId}
                     className={`flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-bold border ${
                       staff.isOff
-                        ? "bg-gray-100 border-gray-200 text-gray-400"
+                        ? "bg-gray-100 border-line text-gray-400"
                         : "bg-indigo-50 border-indigo-200 text-indigo-700"
                     }`}
                   >
@@ -512,7 +512,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                           return (
                             <div
                               key={staff.employeeId}
-                              className="flex items-center justify-center py-2 rounded-lg bg-gray-100 border border-gray-200"
+                              className="flex items-center justify-center py-2 rounded-lg bg-gray-100 border border-line"
                             >
                               <Ban size={11} className="text-gray-300" />
                             </div>
@@ -573,7 +573,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                               isBooked
                                 ? "bg-rose-50 border-rose-200 text-rose-400 cursor-not-allowed"
                                 : isBlocked
-                                ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
+                                ? "bg-gray-100 border-line text-gray-400 cursor-not-allowed"
                                 : isPeak
                                 ? "bg-emerald-100 border-emerald-300 text-emerald-700 hover:bg-emerald-600 hover:border-emerald-500 hover:text-white cursor-pointer active:scale-[0.98]"
                                 : "bg-white border-emerald-200 text-emerald-600 hover:bg-emerald-600 hover:border-emerald-500 hover:text-white cursor-pointer active:scale-[0.98]"
@@ -599,7 +599,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
           onClick={closeModal}
         >
           <div
-            className="bg-white border-t sm:border border-gray-200 w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl shadow-2xl max-h-[92vh] flex flex-col"
+            className="bg-white border-t sm:border border-line w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl shadow-2xl max-h-[92vh] flex flex-col"
             onClick={e => e.stopPropagation()}
           >
             {/* Modal header */}

@@ -63,13 +63,13 @@ export const BreakTimeline: React.FC<Props> = React.memo(({
           <span className={`text-[14px] font-bold ${theme.hdr}`}>{theme.label}</span>
           <div className="flex items-center gap-0.5 ml-1">
             <button type="button" onClick={() => onShiftOffset(-30)} disabled={offset <= -60}
-              className="w-5 h-5 flex items-center justify-center text-[14px] font-bold rounded bg-white border border-zinc-200 text-zinc-500 hover:border-zinc-400 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              className="w-5 h-5 flex items-center justify-center text-[14px] font-bold rounded bg-white border border-line text-zinc-500 hover:border-zinc-400 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               title="30분 앞으로">-</button>
             <span className="text-[12px] font-mono text-zinc-500 min-w-[36px] text-center">
               {offset === 0 ? "기본" : `${offset > 0 ? "+" : ""}${offset}분`}
             </span>
             <button type="button" onClick={() => onShiftOffset(30)} disabled={offset >= 60}
-              className="w-5 h-5 flex items-center justify-center text-[14px] font-bold rounded bg-white border border-zinc-200 text-zinc-500 hover:border-zinc-400 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              className="w-5 h-5 flex items-center justify-center text-[14px] font-bold rounded bg-white border border-line text-zinc-500 hover:border-zinc-400 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               title="30분 뒤로">+</button>
           </div>
           {assignedIds.size > 0 && (
@@ -86,7 +86,7 @@ export const BreakTimeline: React.FC<Props> = React.memo(({
           </div>
         ) : (
           <button onClick={() => setConfirmMonth(true)}
-            className="text-[13px] font-bold px-2 py-0.5 rounded-full bg-white border border-zinc-200 text-zinc-500 hover:border-zinc-400 transition cursor-pointer">
+            className="text-[13px] font-bold px-2 py-0.5 rounded-full bg-white border border-line text-zinc-500 hover:border-zinc-400 transition cursor-pointer">
             전월 적용
           </button>
         )}
@@ -94,12 +94,12 @@ export const BreakTimeline: React.FC<Props> = React.memo(({
 
       {/* Slot grid */}
       <div className="overflow-x-auto">
-        <div className="flex rounded-lg border border-zinc-200 overflow-hidden" style={{ minWidth: `${slots.length * 68}px` }}>
+        <div className="flex rounded-lg border border-line overflow-hidden" style={{ minWidth: `${slots.length * 68}px` }}>
           {slots.map(slot => {
             const assignedHere = slotMap[slot] ?? [];
             return (
               <div key={slot} data-drop-slot={slot}
-                className={`flex-1 flex flex-col border-r border-zinc-200 last:border-r-0 transition ${theme.cellHover}`}
+                className={`flex-1 flex flex-col border-r border-line last:border-r-0 transition ${theme.cellHover}`}
                 onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
                 onDrop={e => { e.preventDefault(); if (draggingId !== null) onDropToSlot(slot, draggingId); }}
               >
@@ -129,7 +129,7 @@ export const BreakTimeline: React.FC<Props> = React.memo(({
       </div>
 
       {/* Drag-source chips */}
-      <div className="mt-2 pt-2 border-t border-zinc-200/70">
+      <div className="mt-2 pt-2 border-t border-line/70">
         <WorkerChips
           workers={workers}
           assignedIds={assignedIds}

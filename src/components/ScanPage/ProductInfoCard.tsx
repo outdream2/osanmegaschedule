@@ -372,7 +372,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
 
   return (
     <>
-      <div className="bg-white border border-zinc-200 rounded-xl p-3.5 shadow-sm">
+      <div className="bg-white border border-line rounded-xl p-3.5 shadow-sm">
         {/* 상품명 */}
         {S.header && (<>
           {/* 상품명 + 숨기기 버튼 · 좁은 화면에서 버튼이 아래로 내려가도록 flex-wrap */}
@@ -388,7 +388,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               className={`shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition cursor-pointer ${
                 isHidden
                   ? "bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100"
-                  : "bg-white border-zinc-200 text-zinc-400 hover:bg-zinc-50 hover:border-zinc-300 hover:text-zinc-600"
+                  : "bg-white border-line text-zinc-400 hover:bg-zinc-50 hover:border-zinc-300 hover:text-zinc-600"
               } ${hideSaving ? "opacity-60 cursor-wait" : ""}`}
             >
               {hideSaving ? <Loader2 size={11} className="animate-spin" /> : (isHidden ? <Eye size={11} /> : <EyeOff size={11} />)}
@@ -405,7 +405,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
 
         {/* ── 배정 구역: 전산/실제 인라인 ── */}
         {S.zoneAssignment && (<>
-        <div className="flex items-stretch gap-2 mb-2 px-2.5 py-2 rounded-xl border border-zinc-200 bg-zinc-50/60">
+        <div className="flex items-stretch gap-2 mb-2 px-2.5 py-2 rounded-xl border border-line bg-zinc-50/60">
           {/* 전산배치구역 */}
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold text-zinc-400 leading-none mb-1 uppercase tracking-wide">전산</p>
@@ -419,7 +419,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
 
           {/* 실제배치구역 */}
           <div className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 ${
-            hasMismatch ? "bg-orange-50 border border-orange-200" : realMap ? "bg-teal-50 border border-teal-200" : "bg-white border border-dashed border-zinc-200"
+            hasMismatch ? "bg-orange-50 border border-orange-200" : realMap ? "bg-teal-50 border border-teal-200" : "bg-white border border-dashed border-line"
           }`}>
             <p className={`text-[10px] font-semibold leading-none mb-1 uppercase tracking-wide ${
               hasMismatch ? "text-orange-500" : realMap ? "text-teal-600" : "text-zinc-400"
@@ -438,7 +438,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               disabled={saving}
               className={`shrink-0 flex items-center gap-1 px-2.5 py-2 rounded-lg border text-[11px] font-bold transition cursor-pointer min-h-[44px] ${
                 realMap
-                  ? "bg-white border-zinc-200 text-zinc-500 hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50"
+                  ? "bg-white border-line text-zinc-500 hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50"
                   : "bg-teal-500 border-teal-600 text-white hover:bg-teal-600"
               }`}
             >
@@ -486,7 +486,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
           const zoneS2 = storeZones[1] ?? "";
           const zoneS3 = storeZones[2] ?? "";
           return (
-            <div className={`rounded-xl border px-3 py-2 mb-2.5 ${isLow ? "bg-red-50 border-red-200" : "bg-zinc-50 border-zinc-200"}`}>
+            <div className={`rounded-xl border px-3 py-2 mb-2.5 ${isLow ? "bg-red-50 border-red-200" : "bg-zinc-50 border-line"}`}>
               {/* 2026-07-16 · 헤더 · 재고현황 라벨(클릭 시 접기/펼치기) + 재고세기 버튼 + 부족 표시 */}
               <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
                 <button
@@ -515,7 +515,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               {/* 2026-08-03 · 상단 2열 · 현재고 · 추천적정재고 · 접힌 상태에서는 숨김 */}
               {!stockSectionCollapsed && <div className="grid grid-cols-2 gap-1.5">
                 {/* 현재고 */}
-                <div className="text-center bg-white rounded-lg border border-zinc-200 py-1.5 px-1">
+                <div className="text-center bg-white rounded-lg border border-line py-1.5 px-1">
                   <p className="text-[12px] font-semibold text-zinc-500 mb-0.5">현재고</p>
                   <p className={`text-[12px] font-bold leading-none ${isLow ? "text-red-500" : "text-zinc-800"}`}>{cur ?? "-"}</p>
                 </div>
@@ -788,7 +788,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
 
         {/* ── 기타 정보 그리드 (상품코드·공급처·판매상태·최근매입일) + 추가 정보 통합 ── */}
         {(S.productMeta || S.extraInfo) && (
-        <div className="rounded-xl border border-zinc-200 bg-zinc-50/30 px-3 py-2 mb-2.5">
+        <div className="rounded-xl border border-line bg-zinc-50/30 px-3 py-2 mb-2.5">
           {S.productMeta && (
             <>
               <p className="text-[13px] font-bold text-zinc-800 mb-2 flex items-center gap-1.5">
@@ -932,7 +932,7 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
     return Math.round(totalQty / spanMonths);
   })();
   return (
-    <div className={noBorderTop ? "" : "mt-3 border-t border-zinc-200 pt-3"}>
+    <div className={noBorderTop ? "" : "mt-3 border-t border-line pt-3"}>
       {/* 2026-07-29 · 헤더 · 상품명·통계·화살표 별도 라인으로 정리 */}
       <button
         type="button"
@@ -991,7 +991,7 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
       )}
       {!collapsed && rows.length > 0 && (
         // 2026-08-04 · 공통 PurchaseHistoryList 사용 · 헤더 자동 정렬 + 매입 간격 표시
-        <div className="border border-zinc-200 rounded-lg overflow-hidden flex flex-col" style={{ maxHeight: "12rem" }}>
+        <div className="border border-line rounded-lg overflow-hidden flex flex-col" style={{ maxHeight: "12rem" }}>
           <PurchaseHistoryList
             rows={rows.slice(0, 20)}
             showSupplier={false}

@@ -531,7 +531,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               <button
                 onClick={resetAll}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
-                  text-zinc-500 hover:text-zinc-800 bg-white border border-zinc-200
+                  text-zinc-500 hover:text-zinc-800 bg-white border border-line
                   hover:bg-zinc-50 hover:border-zinc-300 shadow-sm
                   transition-all duration-150 cursor-pointer"
               >
@@ -556,7 +556,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       )}
 
       {/* ── Page header strip ── */}
-      <div className="bg-white border-b border-zinc-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      <div className="bg-white border-b border-line/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3">
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-teal-600
             flex items-center justify-center shadow-sm shrink-0">
@@ -628,7 +628,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         ══════════════════════════════════════════════════════ */}
 
           {/* 2026-08-10 · 사용자 요청 · 스캔 카드 · 그라데이션 제거 · 장식 원 제거 · 깔끔한 UI */}
-          <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
             {/* 헤더 · 아이콘 + 제목 · 그라데이션·장식 없이 */}
             <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-100">
               <ScanLine size={18} className="text-teal-600 shrink-0" />
@@ -760,11 +760,11 @@ export const ScanPage: React.FC<ScanPageProps> = ({
 
           {/* 2026-08-10 · 사용자 요청 · 상품별 실재고 집계 카드 제거 */}
 
-<div className="bg-white rounded-2xl border border-zinc-200/80
+<div className="bg-white rounded-2xl border border-line/80
             shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex flex-col min-h-[320px] overflow-hidden">
 
             <div className="flex items-center justify-between
-              px-4 sm:px-5 py-3 sm:py-3.5 border-b border-zinc-200/80
+              px-4 sm:px-5 py-3 sm:py-3.5 border-b border-line/80
               bg-zinc-50/80 rounded-t-2xl sticky top-0 z-10 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-teal-100 flex items-center justify-center">
@@ -794,7 +794,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               <div className="flex-1 overflow-auto max-h-[56vh] lg:max-h-[62vh]">
                 <table className="w-full border-collapse text-[14px] sm:text-[15px]">
                   <thead className="sticky top-0 z-10">
-                    <tr className="bg-zinc-50/95 backdrop-blur-sm border-b border-zinc-200/60">
+                    <tr className="bg-zinc-50/95 backdrop-blur-sm border-b border-line/60">
                       {/* 2026-08-10 · 사용자 요청 · 시각 컬럼 제거 */}
                       {/* 상품명 */}
                       <th
@@ -876,7 +876,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             <div className={`bg-white rounded-2xl border-2 overflow-hidden transition-all duration-300 ${
               saveStatus === "done"
                 ? "border-emerald-300/80 shadow-[0_0_0_4px_rgba(16,185,129,0.08),0_4px_16px_rgba(0,0,0,0.08)]"
-                : "border-zinc-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
+                : "border-line/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
             }`}>
               <div className={`px-5 py-3.5 border-b border-zinc-100/80 flex items-center justify-between gap-2 ${
                 saveStatus === "done" ? "bg-emerald-50/60" : "bg-zinc-50/40"
@@ -947,7 +947,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                         setSaveError(null);
                       }}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[15px] font-bold
-                        text-zinc-500 bg-white border border-zinc-200 hover:bg-zinc-50
+                        text-zinc-500 bg-white border border-line hover:bg-zinc-50
                         transition cursor-pointer shrink-0"
                     >
                       <RotateCcw size={11} /> 목록 초기화
@@ -972,7 +972,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         >
           <div
             onClick={e => e.stopPropagation()}
-            className="w-full sm:max-w-2xl max-h-[85vh] bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl border border-zinc-200 overflow-hidden flex flex-col"
+            className="w-full sm:max-w-2xl max-h-[85vh] bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl border border-line overflow-hidden flex flex-col"
           >
             <div className="px-5 py-3.5 border-b border-zinc-100 bg-zinc-50/60 flex items-center justify-between gap-2">
               <div className="min-w-0">
@@ -1000,7 +1000,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 </div>
               ) : (
                 <table className="w-full text-[15px]">
-                  <thead className="bg-zinc-50 border-b border-zinc-200 text-[14px] uppercase tracking-widest text-zinc-500 font-bold">
+                  <thead className="bg-zinc-50 border-b border-line text-[14px] uppercase tracking-widest text-zinc-500 font-bold">
                     <tr>
                       <th className="px-3 py-2 text-left">일시</th>
                       <th className="px-2 py-2 text-center">창1</th>
@@ -1049,7 +1049,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
           <div className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
             onClick={e => e.stopPropagation()}
           >
-            <div className="px-5 py-3.5 border-b border-zinc-200 bg-teal-50 flex items-center justify-between">
+            <div className="px-5 py-3.5 border-b border-line bg-teal-50 flex items-center justify-between">
               <div>
                 <div className="text-sm font-bold text-zinc-900">등록 전 검토</div>
                 <div className="text-[15px] font-semibold text-zinc-500 mt-0.5">
@@ -1091,7 +1091,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               })}
             </div>
 
-            <div className="px-4 py-3 border-t border-zinc-200 bg-zinc-50 flex items-center gap-2">
+            <div className="px-4 py-3 border-t border-line bg-zinc-50 flex items-center gap-2">
               <button
                 onClick={() => setReviewOpen(false)}
                 className="flex-1 h-10 rounded-lg bg-white border border-zinc-300 text-zinc-600 text-[14px] font-bold hover:bg-zinc-100 transition cursor-pointer"

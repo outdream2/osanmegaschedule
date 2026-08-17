@@ -83,7 +83,7 @@ export const XlsxExportSection: React.FC<XlsxExportSectionProps> = ({
         className={`flex items-center gap-1 text-[12px] font-bold px-2 py-1 rounded-lg transition cursor-pointer shrink-0 border ${
           xlsTemplateName
             ? "text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100"
-            : "text-gray-500 bg-white border-gray-200 hover:bg-gray-50"
+            : "text-gray-500 bg-white border-line hover:bg-gray-50"
         }`}
       >
         <UploadIcon size={11} />

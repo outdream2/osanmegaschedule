@@ -391,7 +391,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
       <div className="flex items-center gap-2 px-4 h-10 border-b border-zinc-100 bg-white shrink-0">
         <Building2 size={14} className="text-sky-500 shrink-0" />
         <span className={`${TEXT.body} text-zinc-800`}>공급사별 현황</span>
-        <span className="text-[15px] font-semibold tabular-nums text-zinc-400 bg-zinc-50 border border-zinc-200 rounded px-1.5 py-0.5">
+        <span className="text-[15px] font-semibold tabular-nums text-zinc-400 bg-zinc-50 border border-line rounded px-1.5 py-0.5">
           {displayedXlsxSuppliers.length}{supListLimit < xlsxSuppliers.length ? `/${xlsxSuppliers.length}` : ""}개 사
         </span>
       </div>
@@ -408,7 +408,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
           { k: "기타" as const, activeCls: "bg-zinc-500 text-white shadow-sm" },
         ]).map(o => (
           <button key={o.k} onClick={() => setSupListCategory(o.k)}
-            className={`h-7 px-2.5 rounded-md text-[15px] font-semibold transition cursor-pointer ${supListCategory === o.k ? o.activeCls : "text-zinc-500 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200"}`}>
+            className={`h-7 px-2.5 rounded-md text-[15px] font-semibold transition cursor-pointer ${supListCategory === o.k ? o.activeCls : "text-zinc-500 bg-zinc-50 hover:bg-zinc-100 border border-line"}`}>
             {o.k}
           </button>
         ))}
@@ -435,7 +435,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
           };
           return (
             <button key={o.k} onClick={() => toggleSupListSort(o.k)}
-              className={`h-7 px-2.5 rounded-md text-[15px] font-semibold transition cursor-pointer ${active ? activeMap[o.color] : "text-zinc-500 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200"}`}>
+              className={`h-7 px-2.5 rounded-md text-[15px] font-semibold transition cursor-pointer ${active ? activeMap[o.color] : "text-zinc-500 bg-zinc-50 hover:bg-zinc-100 border border-line"}`}>
               {o.label}{arrow}
             </button>
           );
@@ -459,7 +459,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
           <table className={`w-full text-[15px] ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`} style={{ borderCollapse: "separate", borderSpacing: 0 }}>
             <thead className="sticky top-0 z-10">
               {/* 그룹 헤더 */}
-              <tr className="text-[14px] font-semibold uppercase tracking-wider border-b border-zinc-200">
+              <tr className="text-[14px] font-semibold uppercase tracking-wider border-b border-line">
                 <th colSpan={3} className="bg-zinc-50 text-zinc-400 text-left px-3 py-1.5">기본정보</th>
                 <th colSpan={isSupplierGroupCollapsed("stock") ? 1 : 2}
                   className="bg-sky-50 text-sky-600 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-sky-100 transition"
@@ -489,7 +489,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                 )}
               </tr>
               {/* 서브 헤더 · 리사이즈 지원 */}
-              <tr className="text-[15px] font-semibold text-zinc-500 border-b border-zinc-200 bg-white">
+              <tr className="text-[15px] font-semibold text-zinc-500 border-b border-line bg-white">
                 <th className="relative text-center py-2" style={{ width: getWidth("toggle"), minWidth: getWidth("toggle") }}>
                   <span {...resizerProps("toggle")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                 </th>
@@ -557,7 +557,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
             <tbody className="divide-y divide-zinc-100">
               {/* 합계 요약 행 · 필터/제한된 visible 공급사 기준 · 접기/펼치기 (2026-08-06) */}
               {totalsCollapsed ? (
-                <tr className="bg-zinc-50 border-b border-zinc-200 text-[15px]">
+                <tr className="bg-zinc-50 border-b border-line text-[15px]">
                   <td colSpan={99} className="px-3 py-1 text-center">
                     <button
                       type="button"
@@ -689,7 +689,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         <div className={`${CARD_BASE} px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 shrink-0`}>
           <div className="flex items-center gap-1.5">
             <span className="text-[14px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">Top N</span>
-            <div className="inline-flex bg-zinc-50 border border-zinc-200 rounded-md p-0.5">
+            <div className="inline-flex bg-zinc-50 border border-line rounded-md p-0.5">
               {[{ v: 100, label: "100" }, { v: 300, label: "300" }, { v: 1000, label: "1k" }, { v: 2000, label: "2k" }, { v: 999999, label: "전체" }].map(o => (
                 <button key={o.v} onClick={() => setSupListLimit(o.v)}
                   className={`text-[14px] font-semibold h-5 px-1.5 rounded transition whitespace-nowrap cursor-pointer ${supListLimit === o.v ? "bg-sky-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}
@@ -698,7 +698,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
             </div>
           </div>
           <button type="button" onClick={fetchData} disabled={loading}
-            className="ml-auto w-6 h-6 flex items-center justify-center rounded-md border border-zinc-200 bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer" title="새로고침">
+            className="ml-auto w-6 h-6 flex items-center justify-center rounded-md border border-line bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer" title="새로고침">
             <LoaderIcon size={12} className={loading ? "animate-spin" : ""} />
           </button>
         </div>
@@ -731,7 +731,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         {/* 조회기간 */}
         <div className="flex items-center gap-1.5">
           <span className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">기간</span>
-          <div className="flex flex-wrap bg-zinc-50 border border-zinc-200 rounded-md p-0.5 gap-0.5">
+          <div className="flex flex-wrap bg-zinc-50 border border-line rounded-md p-0.5 gap-0.5">
             <button onClick={() => { setSupplierSeason(null); setSupplierMonths(0); }}
               className={`px-2 h-6 text-[15px] font-semibold rounded transition cursor-pointer ${!supplierSeason && supplierMonths === 0 ? "bg-sky-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>10일</button>
             {[1, 2, 3, 4, 5, 6].map(m => (
@@ -744,7 +744,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         {/* Top N */}
         <div className="flex items-center gap-1.5">
           <span className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">Top N</span>
-          <div className="inline-flex bg-zinc-50 border border-zinc-200 rounded-md p-0.5">
+          <div className="inline-flex bg-zinc-50 border border-line rounded-md p-0.5">
             {[{ v: 100, label: "100" }, { v: 300, label: "300" }, { v: 1000, label: "1k" }, { v: 2000, label: "2k" }, { v: 999999, label: "전체" }].map(o => (
               <button key={o.v} onClick={() => setSupListLimit(o.v)}
                 className={`text-[15px] font-semibold h-6 px-2 rounded transition whitespace-nowrap cursor-pointer ${supListLimit === o.v ? "bg-sky-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}
@@ -753,7 +753,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
           </div>
         </div>
         <button type="button" onClick={fetchData} disabled={loading}
-          className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-zinc-200 bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer" title="새로고침">
+          className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer" title="새로고침">
           <LoaderIcon size={13} className={loading ? "animate-spin" : ""} />
         </button>
       </div>
@@ -778,7 +778,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         {/* 우측: 공급사 상세 */}
         <div className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0 transition-transform duration-150 ${supplierSelectedObj ? "fixed inset-0 z-50 bg-zinc-50 overflow-y-auto lg:static lg:z-auto lg:bg-transparent lg:overflow-visible" : ""}`}>
           {supplierSelectedObj && (
-            <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-zinc-200 shadow-md">
+            <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-line shadow-md">
               <div className="flex items-center gap-2 px-3 py-2">
                 <button type="button" onClick={() => setSupplierSelectedKey(null)}
                   className="w-8 h-8 rounded-lg bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-zinc-600 cursor-pointer shrink-0" title="닫기">
@@ -833,7 +833,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                       <div className="text-[14px] text-sky-600 font-semibold">매입수량</div>
                       <div className="text-sm font-bold text-sky-700 mt-0.5">{fmt(supplierSelectedObj.purchaseQty)}</div>
                     </div>
-                    <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-2 text-center">
+                    <div className="bg-zinc-50 border border-line rounded-lg p-2 text-center">
                       <div className="text-[14px] text-zinc-500 font-semibold">취급상품</div>
                       <div className="text-sm font-bold text-zinc-700 mt-0.5">{fmt(supplierSelectedObj.itemCount)}종</div>
                     </div>

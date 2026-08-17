@@ -349,7 +349,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
 
       <main className="flex-1 max-w-[1360px] mx-auto w-full px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-3">
         {/* 정보 헤더 (탭 카드) */}
-        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm px-4 py-3 flex items-center gap-3">
+        <div className="bg-white rounded-2xl border border-line shadow-sm px-4 py-3 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-sky-500 shadow-sm shrink-0">
             <FirstAid size={20} className="text-white" weight="fill" />
           </div>
@@ -409,7 +409,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
             <div className="flex flex-col gap-2 w-full">
             {tab === "education" ? (
               /* ─── 교육탭 · 트리 구조 ─────────────────────── */
-              <div className="bg-white rounded-xl border border-zinc-200 shadow-sm flex flex-col overflow-hidden">
+              <div className="bg-white rounded-xl border border-line shadow-sm flex flex-col overflow-hidden">
                 {/* ── 트리 위 · 카테고리 추가 컨트롤 (통합 진입점) ── */}
                 <div className="border-b border-zinc-100 bg-sky-50/60">
                   <div className="px-3 py-2 flex items-center gap-1.5">
@@ -435,7 +435,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                         value={newCatTitle}
                         onChange={e => setNewCatTitle(e.target.value)}
                         placeholder="카테고리 제목 (예: 겨울철 감기 대응)"
-                        className="w-full bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[14px] font-semibold text-zinc-800 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition placeholder:text-zinc-400 placeholder:font-normal"
+                        className="w-full bg-white border border-line rounded-lg px-2.5 py-1.5 text-[14px] font-semibold text-zinc-800 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition placeholder:text-zinc-400 placeholder:font-normal"
                         maxLength={120}
                         disabled={newCatSaving}
                         required
@@ -453,7 +453,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                           type="button"
                           onClick={() => newCatFileRef.current?.click()}
                           disabled={newCatSaving}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 text-[15px] font-semibold transition cursor-pointer whitespace-nowrap disabled:opacity-50"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-line bg-white text-zinc-600 hover:bg-zinc-50 text-[15px] font-semibold transition cursor-pointer whitespace-nowrap disabled:opacity-50"
                           title="자료 파일 선택 (선택 · PDF·이미지 등 · 최대 20MB)"
                         >
                           <CloudUpload size={11} />
@@ -478,7 +478,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                           type="button"
                           onClick={() => { resetNewCatForm(); setAddCatOpen(false); }}
                           disabled={newCatSaving}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 text-[15px] font-semibold cursor-pointer transition"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-line bg-white text-zinc-500 hover:bg-zinc-50 text-[15px] font-semibold cursor-pointer transition"
                         >
                           취소
                         </button>
@@ -619,7 +619,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
               /* ─── 나머지 탭 · 기존 stacked 2단 ──────────── */
               <>
                 {/* 카테고리 리스트 */}
-                <div className="bg-white rounded-xl border border-zinc-200 shadow-sm flex flex-col overflow-hidden">
+                <div className="bg-white rounded-xl border border-line shadow-sm flex flex-col overflow-hidden">
                   <div className="px-3 py-2 border-b border-zinc-100 bg-zinc-50/60 flex items-center gap-1.5">
                     {activeTabDef.icon && <activeTabDef.icon size={14} className="text-zinc-500" weight="fill" />}
                     <span className="text-[15px] font-bold text-zinc-500 uppercase tracking-wider">{activeTabDef.label} · 카테고리</span>
@@ -651,7 +651,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
 
                 {/* 하위메뉴 리스트 · 선택된 카테고리 · 관리자 CRUD 버튼 포함 */}
                 {selectedCatObj && (
-                  <div className="bg-white rounded-xl border border-zinc-200 shadow-sm flex flex-col overflow-hidden">
+                  <div className="bg-white rounded-xl border border-line shadow-sm flex flex-col overflow-hidden">
                     <div className="px-3 py-2 border-b border-zinc-100 bg-sky-50/60 flex items-center gap-1.5">
                       <FileTextIcon size={13} className="text-sky-600" />
                       <span className="text-[15px] font-bold text-sky-700 uppercase tracking-wider break-words whitespace-normal">{selectedCatObj.title}</span>
@@ -724,7 +724,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
           right={
             <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 h-full">
               {!selectedItem ? (
-                <div className="bg-white rounded-xl border border-zinc-200 flex-1 flex flex-col items-center justify-center p-10 text-zinc-400 min-h-[400px]">
+                <div className="bg-white rounded-xl border border-line flex-1 flex flex-col items-center justify-center p-10 text-zinc-400 min-h-[400px]">
                   <FirstAid size={40} className="mb-3 opacity-30" />
                   <div className="text-sm font-bold">
                     {selectedCatObj ? "좌측에서 하위메뉴를 선택하세요" : `좌측에서 ${activeTabDef.label} 카테고리를 선택하세요`}
@@ -734,13 +734,13 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                   </div>
                 </div>
               ) : !selectedItem.file_url ? (
-                <div className="bg-white rounded-xl border border-zinc-200 flex-1 flex flex-col items-center justify-center p-10 text-zinc-400 min-h-[400px]">
+                <div className="bg-white rounded-xl border border-line flex-1 flex flex-col items-center justify-center p-10 text-zinc-400 min-h-[400px]">
                   <FileTextIcon size={36} className="mb-3 opacity-30" />
                   <div className="text-sm font-bold text-zinc-600">{selectedItem.title}</div>
                   <div className="text-[15px] mt-2 text-zinc-400">첨부 파일이 없습니다</div>
                 </div>
               ) : (
-                <div className="bg-white rounded-xl border border-zinc-200 shadow-sm flex-1 flex flex-col overflow-hidden min-h-[400px]">
+                <div className="bg-white rounded-xl border border-line shadow-sm flex-1 flex flex-col overflow-hidden min-h-[400px]">
                   <div className="px-4 py-2.5 border-b border-zinc-100 bg-zinc-50/60 flex items-center gap-2">
                     <FileTextIcon size={14} className="text-sky-600" />
                     <div className="min-w-0 flex-1">
@@ -802,7 +802,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
 };
 
 const EmptyRightPanel: React.FC<{ tabLabel: string }> = ({ tabLabel }) => (
-  <div className="bg-white rounded-xl border border-zinc-200 flex-1 flex flex-col items-center justify-center p-10 text-zinc-400 min-h-[400px]">
+  <div className="bg-white rounded-xl border border-line flex-1 flex flex-col items-center justify-center p-10 text-zinc-400 min-h-[400px]">
     <FirstAid size={40} className="mb-3 opacity-30" />
     <div className="text-sm font-bold">좌측에서 {tabLabel} 카테고리를 선택하세요</div>
     <div className="text-[15px] mt-1">하위메뉴가 이 영역에 표시됩니다</div>
@@ -827,7 +827,7 @@ const SubMenuListPanel: React.FC<SubMenuListPanelProps> = ({
   tabLabel, category, items, loading, error, isAdmin, onOpenViewer, onOpenSettings,
 }) => {
   return (
-    <div className="bg-white rounded-xl border border-zinc-200 shadow-sm flex flex-col overflow-hidden">
+    <div className="bg-white rounded-xl border border-line shadow-sm flex flex-col overflow-hidden">
       <div className="px-4 py-3 border-b border-zinc-100 bg-sky-50/60 flex items-center gap-2">
         <div className="min-w-0 flex-1">
           <div className="text-[14px] font-bold text-sky-600 uppercase tracking-wider">{tabLabel}</div>

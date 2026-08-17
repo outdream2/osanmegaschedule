@@ -283,7 +283,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
                 value={newTitle}
                 onChange={e => setNewTitle(e.target.value)}
                 placeholder="항목 이름 (예: 병용 금기 요약표)"
-                className="flex-1 bg-white border border-zinc-200 rounded-lg px-3 py-2 text-sm font-semibold text-zinc-800 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition placeholder:text-zinc-400 placeholder:font-normal"
+                className="flex-1 bg-white border border-line rounded-lg px-3 py-2 text-sm font-semibold text-zinc-800 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition placeholder:text-zinc-400 placeholder:font-normal"
                 maxLength={120}
                 required
               />
@@ -298,7 +298,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 text-sm font-semibold transition cursor-pointer whitespace-nowrap"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-line bg-white text-zinc-600 hover:bg-zinc-50 text-sm font-semibold transition cursor-pointer whitespace-nowrap"
                   title="파일 선택 (PDF 권장 · 최대 20MB)"
                 >
                   <CloudUpload size={14} />
@@ -355,7 +355,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
         )}
 
         {/* ── 목록 ─────────────────────────────── */}
-        <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
+        <div className="bg-white border border-line rounded-xl overflow-hidden">
           <div className="px-3 py-2 border-b border-zinc-100 bg-zinc-50 flex items-center gap-1.5">
             <FileText size={13} className="text-zinc-400" />
             <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">등록된 하위메뉴</span>
@@ -467,7 +467,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
                             <button
                               type="button"
                               onClick={() => startEdit(row)}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-600 text-xs font-semibold cursor-pointer"
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-line hover:bg-zinc-50 text-zinc-600 text-xs font-semibold cursor-pointer"
                               title="이름 변경"
                             >
                               <Pencil size={11} />

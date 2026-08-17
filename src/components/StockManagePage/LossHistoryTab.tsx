@@ -171,7 +171,7 @@ export const LossHistoryTab: React.FC = () => {
                 className={`px-2.5 py-1 text-[11px] font-bold rounded-md border transition cursor-pointer ${
                   period === k
                     ? "bg-violet-500 text-white border-violet-500"
-                    : "bg-white text-zinc-500 border-zinc-200 hover:bg-zinc-50"
+                    : "bg-white text-zinc-500 border-line hover:bg-zinc-50"
                 }`}
               >
                 {PERIOD_LABEL[k]}
@@ -184,7 +184,7 @@ export const LossHistoryTab: React.FC = () => {
           <select
             value={supplierFilter}
             onChange={(e) => setSupplierFilter(e.target.value)}
-            className="text-[11px] font-semibold border border-zinc-200 rounded-md px-2 py-1 bg-white cursor-pointer max-w-[140px]"
+            className="text-[11px] font-semibold border border-line rounded-md px-2 py-1 bg-white cursor-pointer max-w-[140px]"
           >
             <option value="">전체 공급사</option>
             {supplierOptions.map(s => (
@@ -209,7 +209,7 @@ export const LossHistoryTab: React.FC = () => {
           type="button"
           onClick={fetchAll}
           disabled={loading}
-          className="w-7 h-7 flex items-center justify-center rounded-md border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-400 hover:text-zinc-600 transition disabled:opacity-40 cursor-pointer"
+          className="w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-zinc-50 text-zinc-400 hover:text-zinc-600 transition disabled:opacity-40 cursor-pointer"
           title="새로고침"
         >
           <Loader2 size={13} className={loading ? "animate-spin" : ""} />

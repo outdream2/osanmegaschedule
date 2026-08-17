@@ -204,7 +204,7 @@ const BalanceConfigTab: React.FC<BalanceConfigTabProps> = ({ pages, config, onCo
 
   return (
     <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-4 flex flex-col gap-4">
-      <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-zinc-100 bg-orange-50 flex items-center gap-2">
           <span className="text-xs font-bold text-orange-800">잔고항목 지정</span>
           <span className="text-[15px] text-orange-500">공급처별로 잔고로 표시할 항목을 지정하세요. 확정표에 주황색으로 표시됩니다.</span>
@@ -227,7 +227,7 @@ const BalanceConfigTab: React.FC<BalanceConfigTabProps> = ({ pages, config, onCo
                   <td className="px-4 py-2 font-semibold text-gray-700">{vendor}</td>
                   <td className="px-4 py-2">
                     <select
-                      className="border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-orange-400 bg-white"
+                      className="border border-line rounded px-2 py-1 text-xs outline-none focus:border-orange-400 bg-white"
                       value={config[vendor] ?? "(없음)"}
                       onChange={e => onConfigChange(vendor, e.target.value)}
                     >
@@ -447,7 +447,7 @@ const ConfirmedRecordsTab: React.FC = () => {
 
   return (
     <div className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 py-4 flex flex-col gap-3">
-      <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-zinc-100 bg-rose-50 flex items-center gap-2 flex-wrap">
           <FileText size={13} className="text-rose-600" />
           <span className="text-xs font-bold text-rose-800">거래명세서 조회</span>
@@ -469,7 +469,7 @@ const ConfirmedRecordsTab: React.FC = () => {
               type="date"
               value={dateFilter}
               onChange={e => setDateFilter(e.target.value)}
-              className="border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-rose-400 bg-white"
+              className="border border-line rounded px-2 py-1 text-xs outline-none focus:border-rose-400 bg-white"
             />
           </label>
           {dateFilter && (
@@ -486,7 +486,7 @@ const ConfirmedRecordsTab: React.FC = () => {
               value={supplierFilter}
               onChange={e => setSupplierFilter(e.target.value)}
               placeholder="공급처명 검색"
-              className="border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-rose-400 bg-white min-w-[160px]"
+              className="border border-line rounded px-2 py-1 text-xs outline-none focus:border-rose-400 bg-white min-w-[160px]"
             />
             <datalist id="ocr-conf-supplier-list">
               {supplierOptions.map(s => <option key={s} value={s} />)}
@@ -616,10 +616,10 @@ const ConfirmedRecordsTab: React.FC = () => {
                         </td>
                       </tr>
                       {isExpanded && (
-                        <tr className="bg-zinc-50/60 border-t border-zinc-200">
+                        <tr className="bg-zinc-50/60 border-t border-line">
                           <td colSpan={7} className="px-3 py-2">
                             {/* 명세서 메타 정보 요약 */}
-                            <div className="flex flex-wrap items-center gap-3 pb-2 mb-2 border-b border-zinc-200 text-[15px]">
+                            <div className="flex flex-wrap items-center gap-3 pb-2 mb-2 border-b border-line text-[15px]">
                               <span className="font-bold text-zinc-600">거래일 <span className="text-zinc-900 font-mono">{g.invoiceDate}</span></span>
                               <span className="font-bold text-zinc-600">공급사 <span className="text-sky-700">{g.supplier}</span></span>
                               <span className="font-bold text-zinc-600">품목 <span className="text-gray-800">{g.count}건</span></span>
@@ -636,7 +636,7 @@ const ConfirmedRecordsTab: React.FC = () => {
                             </div>
                             <table className="w-full text-[15px] border-collapse">
                               <thead>
-                                <tr className="bg-zinc-100 border-b border-zinc-200">
+                                <tr className="bg-zinc-100 border-b border-line">
                                   <th className="px-2 py-1.5 w-8 text-center" />
                                   <th className="px-2 py-1.5 text-left font-bold text-zinc-700">품명·코드</th>
                                   <th className="px-2 py-1.5 text-right font-bold text-zinc-700 w-16">수량</th>
@@ -720,7 +720,7 @@ const ConfirmedRecordsTab: React.FC = () => {
           onClick={() => setBalanceHistory(null)}
         >
           <div
-            className="bg-white rounded-xl shadow-2xl border border-zinc-200 w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden"
+            className="bg-white rounded-xl shadow-2xl border border-line w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
             <div className="px-4 py-3 border-b border-gray-100 bg-orange-50 flex items-center justify-between shrink-0">
@@ -1282,8 +1282,8 @@ const saveEditSupp = async () => {
   } finally { setEditSaving(false); }
 };
 
-const cellCls = "border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-brand-deep w-full";
-const cellClsSky = "border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-brand-deep w-full";
+const cellCls = "border border-line rounded px-2 py-1 text-xs outline-none focus:border-brand-deep w-full";
+const cellClsSky = "border border-line rounded px-2 py-1 text-xs outline-none focus:border-brand-deep w-full";
 
 return (
   <div className={embedded ? "flex-1 flex flex-col min-h-0 bg-gray-50" : "min-h-screen bg-gray-50 flex flex-col"}>
@@ -1299,9 +1299,9 @@ return (
     )}
 
     {/* Tab bar */}
-    <div className="bg-white/90 backdrop-blur-sm border-b border-zinc-200/70 sticky top-0 z-10">
+    <div className="bg-white/90 backdrop-blur-sm border-b border-line/70 sticky top-0 z-10">
       <div className="max-w-5xl mx-auto px-2 sm:px-4 py-2">
-        <div className="flex flex-wrap bg-zinc-100/70 border border-zinc-200/60 rounded-2xl p-1 gap-0.5">
+        <div className="flex flex-wrap bg-zinc-100/70 border border-line/60 rounded-2xl p-1 gap-0.5">
           <button
             onClick={() => setMainTab("ocr")}
             className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-bold rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "ocr" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
@@ -1340,9 +1340,9 @@ return (
       /* ── 동의어 관리 탭 ── */
       <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-4 flex flex-col gap-4">
         {/* 동의어 서브 탭 */}
-        <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
           <div className="flex items-center gap-1 px-4 py-2 border-b border-zinc-100/80">
-            <div className="flex flex-wrap bg-zinc-100/70 border border-zinc-200/60 rounded-2xl p-1 gap-0.5">
+            <div className="flex flex-wrap bg-zinc-100/70 border border-line/60 rounded-2xl p-1 gap-0.5">
             <button onClick={() => setSynTab("product")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer ${synTab === "product" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}>
               <BookOpen size={12} className={synTab === "product" ? "text-zinc-800" : "text-zinc-400"} /> 상품명 동의어 ({productSynonyms.length})
             </button>
@@ -1360,11 +1360,11 @@ return (
               {/* 추가 폼 */}
               <p className="text-xs font-bold text-indigo-700 flex items-center gap-1.5"><Plus size={12} /> 상품명 동의어 추가</p>
               <div className="grid grid-cols-2 gap-2">
-                <input className="col-span-2 border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep font-mono" placeholder="상품코드 (필수)" value={addProdCode} onChange={e => setAddProdCode(e.target.value)} onKeyDown={e => e.key === "Enter" && addProductSynonym()} />
-                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="상품명(OCR) — 필수" value={addProdOld} onChange={e => setAddProdOld(e.target.value)} />
-                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="상품명(보정후)" value={addProdNew} onChange={e => setAddProdNew(e.target.value)} />
-                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="공급사명(OCR)" value={addProdSuppOld} onChange={e => setAddProdSuppOld(e.target.value)} />
-                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="공급사명(보정후)" value={addProdSuppNew} onChange={e => setAddProdSuppNew(e.target.value)} onKeyDown={e => e.key === "Enter" && addProductSynonym()} />
+                <input className="col-span-2 border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep font-mono" placeholder="상품코드 (필수)" value={addProdCode} onChange={e => setAddProdCode(e.target.value)} onKeyDown={e => e.key === "Enter" && addProductSynonym()} />
+                <input className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="상품명(OCR) — 필수" value={addProdOld} onChange={e => setAddProdOld(e.target.value)} />
+                <input className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="상품명(보정후)" value={addProdNew} onChange={e => setAddProdNew(e.target.value)} />
+                <input className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="공급사명(OCR)" value={addProdSuppOld} onChange={e => setAddProdSuppOld(e.target.value)} />
+                <input className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="공급사명(보정후)" value={addProdSuppNew} onChange={e => setAddProdSuppNew(e.target.value)} onKeyDown={e => e.key === "Enter" && addProductSynonym()} />
               </div>
               <button onClick={addProductSynonym} disabled={!addProdOld.trim() || !addProdCode.trim() || synSaving} className="self-end px-4 py-1.5 text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg transition disabled:opacity-40 cursor-pointer">추가</button>
             </div>
@@ -1372,8 +1372,8 @@ return (
             <div className="p-4 flex flex-col gap-3">
               <p className="text-xs font-bold text-sky-700 flex items-center gap-1.5"><Plus size={12} /> 공급사 별칭 추가</p>
               <div className="grid grid-cols-2 gap-2">
-                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="OCR 오인식 공급사명 (필수)" value={addSuppAlias} onChange={e => setAddSuppAlias(e.target.value)} onKeyDown={e => e.key === "Enter" && addSupplierAlias()} />
-                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="실제 공급사명 (필수)" value={addSuppName} onChange={e => setAddSuppName(e.target.value)} onKeyDown={e => e.key === "Enter" && addSupplierAlias()} />
+                <input className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="OCR 오인식 공급사명 (필수)" value={addSuppAlias} onChange={e => setAddSuppAlias(e.target.value)} onKeyDown={e => e.key === "Enter" && addSupplierAlias()} />
+                <input className="border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="실제 공급사명 (필수)" value={addSuppName} onChange={e => setAddSuppName(e.target.value)} onKeyDown={e => e.key === "Enter" && addSupplierAlias()} />
               </div>
               <button onClick={addSupplierAlias} disabled={!addSuppAlias.trim() || !addSuppName.trim() || synSaving} className="self-end px-4 py-1.5 text-xs font-bold bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition disabled:opacity-40 cursor-pointer">추가</button>
             </div>
@@ -1382,7 +1382,7 @@ return (
 
         {/* 리스트 테이블 */}
         {synTab === "product" ? (
-          <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
             {/* 상품명 / 공급사명 뷰 토글 */}
             <div className="flex items-center gap-1 px-3 py-2 border-b border-zinc-100 bg-zinc-50">
               <button
@@ -1483,7 +1483,7 @@ return (
             </table>
           </div>
         ) : (
-          <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-sky-50 border-b border-sky-100">
@@ -1537,7 +1537,7 @@ return (
     <div className="flex-1 flex flex-col px-4 py-6 gap-5 w-full max-w-[1500px] mx-auto">
 
       {/* 파일 업로드 + 이미지 뷰어 */}
-      <div className="w-full bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
+      <div className="w-full bg-white border border-line rounded-xl shadow-sm overflow-hidden">
 
         {pageImages.length === 0 ? (
           <div
@@ -1654,7 +1654,7 @@ return (
           )}
 
           {/* OCR 엔진 선택 · 2-way (AI 모델 · Gemini) */}
-          <div className="w-full bg-white border border-zinc-200 rounded-xl px-3 py-2 flex flex-col gap-1.5 shadow-sm">
+          <div className="w-full bg-white border border-line rounded-xl px-3 py-2 flex flex-col gap-1.5 shadow-sm">
             <div className="flex items-center gap-1.5 text-[15px] font-bold text-zinc-600">
               <span>OCR 엔진</span>
               <span className="text-[14px] font-mono text-zinc-400">
@@ -1662,7 +1662,7 @@ return (
                   : "Gemini · 정확도 최상"})
               </span>
             </div>
-            <div className="inline-flex bg-zinc-100 border border-zinc-200 rounded-lg p-0.5 gap-0.5 w-full">
+            <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-0.5 gap-0.5 w-full">
               <button type="button" onClick={() => setOcrEngine("onnx")}
                 disabled={extracting}
                 className={`flex-1 px-2 py-1.5 text-[15px] font-bold rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${
@@ -1723,7 +1723,7 @@ return (
       )}
 
       {extracting && pageCount > 0 && (
-        <div className="w-full bg-white border border-zinc-200 rounded-xl px-4 py-3 shadow-sm">
+        <div className="w-full bg-white border border-line rounded-xl px-4 py-3 shadow-sm">
           <div className="w-full bg-zinc-100 rounded-full h-1.5">
             <div className="h-1.5 rounded-full transition-all bg-amber-500"
               style={{ width: `${(processed / pageCount) * 100}%` }} />

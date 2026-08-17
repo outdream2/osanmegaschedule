@@ -91,7 +91,7 @@ const CATEGORIES: Array<{
   {
     key: "etc",
     label: "기타",
-    badge: "bg-zinc-100 text-zinc-600 border-zinc-200",
+    badge: "bg-zinc-100 text-zinc-600 border-line",
     activeBg: "bg-zinc-700 text-white border-zinc-700",
     icon: FileArchive,
   },
@@ -301,7 +301,7 @@ const DropZone: React.FC<{
           ? "border-emerald-300 bg-emerald-50/40"
           : error
           ? "border-rose-300 bg-rose-50/30"
-          : "border-zinc-200 bg-zinc-50/50 hover:border-amber-300 hover:bg-amber-50/30",
+          : "border-line bg-zinc-50/50 hover:border-amber-300 hover:bg-amber-50/30",
       ].join(" ")}
     >
       <input
@@ -322,7 +322,7 @@ const DropZone: React.FC<{
           <button
             type="button"
             onClick={e => { e.stopPropagation(); onFile(null); if (inputRef.current) inputRef.current.value = ""; }}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-zinc-200 text-zinc-500 hover:text-rose-600 hover:border-rose-200 text-xs font-semibold transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-line text-zinc-500 hover:text-rose-600 hover:border-rose-200 text-xs font-semibold transition-colors cursor-pointer"
           >
             <X size={11} /> 파일 제거
           </button>
@@ -576,7 +576,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
               type="button"
               onClick={load}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 text-sm font-semibold transition-colors cursor-pointer shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-line bg-white text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 text-sm font-semibold transition-colors cursor-pointer shadow-sm"
               title="새로고침"
             >
               <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
@@ -590,7 +590,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                 className={[
                   "inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all duration-150 cursor-pointer",
                   showUploadForm
-                    ? "bg-zinc-100 border border-zinc-200 text-zinc-600 hover:bg-zinc-200"
+                    ? "bg-zinc-100 border border-line text-zinc-600 hover:bg-zinc-200"
                     : "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white border border-amber-600",
                 ].join(" ")}
                 title="양식 업로드"
@@ -624,7 +624,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                     value={uploadTitle}
                     onChange={e => setUploadTitle(e.target.value)}
                     placeholder="예: 2026년 표준 근로계약서"
-                    className="w-full bg-white border border-zinc-200 rounded-xl px-3.5 py-2.5 text-zinc-800 text-sm font-semibold focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition placeholder:text-zinc-400 placeholder:font-normal"
+                    className="w-full bg-white border border-line rounded-xl px-3.5 py-2.5 text-zinc-800 text-sm font-semibold focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition placeholder:text-zinc-400 placeholder:font-normal"
                     maxLength={120}
                     required
                   />
@@ -705,7 +705,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   type="button"
                   onClick={resetUploadForm}
                   disabled={uploading}
-                  className="px-4 py-2 rounded-xl bg-white border border-zinc-200 text-zinc-600 text-sm font-semibold hover:bg-zinc-50 disabled:opacity-50 cursor-pointer transition-colors"
+                  className="px-4 py-2 rounded-xl bg-white border border-line text-zinc-600 text-sm font-semibold hover:bg-zinc-50 disabled:opacity-50 cursor-pointer transition-colors"
                 >
                   취소
                 </button>
@@ -740,7 +740,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
               onClick={() => setCategoryFilter("all")}
               label="전체"
               count={forms.length}
-              badgeClass="bg-zinc-100 text-zinc-600 border-zinc-200"
+              badgeClass="bg-zinc-100 text-zinc-600 border-line"
               activeClass="bg-brand-deep text-white border-zinc-800"
             />
             {CATEGORIES.map(c => {
@@ -765,12 +765,12 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
             value={searchQ}
             onChange={e => setSearchQ(e.target.value)}
             placeholder="양식명 · 파일명 · 업로더 검색"
-            className="ml-auto w-full sm:w-60 bg-white border border-zinc-200 rounded-lg px-3 py-1.5 text-sm text-zinc-800 font-semibold focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100/60 transition placeholder:text-zinc-400 placeholder:font-normal"
+            className="ml-auto w-full sm:w-60 bg-white border border-line rounded-lg px-3 py-1.5 text-sm text-zinc-800 font-semibold focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100/60 transition placeholder:text-zinc-400 placeholder:font-normal"
           />
         </FilterBar>
 
         {/* ── 리스트 ─────────────────────────────────────────────────────── */}
-        <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
           {/* 에러 배너 */}
           {loadError && (
             <div className="flex items-center gap-2 p-3.5 text-sm text-rose-700 font-semibold bg-rose-50 border-b border-rose-200">
@@ -783,7 +783,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
           <div className="hidden md:block overflow-x-auto">
             <table className="text-sm border-collapse" style={{ tableLayout: "fixed", width: (["_icon","title","category","file_name","file_size","uploaded_by","created_at","_action"] as const).reduce((s, k) => s + getWidth(k as any), 0) }}>
               <thead className="bg-zinc-50">
-                <tr className="border-b border-zinc-200 text-[15px] font-bold text-zinc-500 uppercase tracking-wider">
+                <tr className="border-b border-line text-[15px] font-bold text-zinc-500 uppercase tracking-wider">
                   {/* 파일 아이콘 컬럼 */}
                   <th
                     className="relative select-none text-left px-2.5 py-2"
@@ -1087,16 +1087,16 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
 
         {/* ── 관리자 안내 ────────────────────────────────────────────────── */}
         {isManager && (
-          <div className="flex items-start gap-2.5 px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-[15px] text-zinc-400 leading-relaxed">
+          <div className="flex items-start gap-2.5 px-4 py-3 bg-zinc-50 border border-line rounded-xl text-[15px] text-zinc-400 leading-relaxed">
             <FilePlus size={13} className="mt-0.5 shrink-0 text-zinc-400" />
             <div>
               Supabase Storage{" "}
-              <code className="px-1 py-0.5 rounded bg-white border border-zinc-200 text-zinc-500 font-mono text-[14px]">hr-forms</code>{" "}
+              <code className="px-1 py-0.5 rounded bg-white border border-line text-zinc-500 font-mono text-[14px]">hr-forms</code>{" "}
               버킷 사용 (없으면 로컬{" "}
-              <code className="px-1 py-0.5 rounded bg-white border border-zinc-200 text-zinc-500 font-mono text-[14px]">uploads/hr-forms/</code>{" "}
+              <code className="px-1 py-0.5 rounded bg-white border border-line text-zinc-500 font-mono text-[14px]">uploads/hr-forms/</code>{" "}
               자동 fallback). 최초 1회 Supabase 대시보드에서{" "}
               <b className="text-zinc-500">hr-forms</b> 버킷(Public 권장) 및{" "}
-              <code className="px-1 py-0.5 rounded bg-white border border-zinc-200 text-zinc-500 font-mono text-[14px]">hr_forms</code> 테이블 생성 필요.
+              <code className="px-1 py-0.5 rounded bg-white border border-line text-zinc-500 font-mono text-[14px]">hr_forms</code> 테이블 생성 필요.
             </div>
           </div>
         )}

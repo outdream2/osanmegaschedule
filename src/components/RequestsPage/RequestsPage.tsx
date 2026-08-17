@@ -73,7 +73,7 @@ function ListToolbar({
   hideDeleteAll?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-2 mb-2 bg-white border border-zinc-200 rounded-xl px-3 h-8 shadow-sm">
+    <div className="flex items-center gap-2 mb-2 bg-white border border-line rounded-xl px-3 h-8 shadow-sm">
       <button onClick={onToggleAll} className="shrink-0 cursor-pointer text-zinc-400 hover:text-zinc-600 transition">
         {allChecked && total > 0
           ? <CheckSquare size={15} className={accentColor} />
@@ -95,7 +95,7 @@ function ListToolbar({
         <button
           onClick={onDeleteAll}
           disabled={total === 0}
-          className="text-[15px] font-semibold text-zinc-500 bg-zinc-50 border border-zinc-200 px-2.5 h-6 rounded-md hover:bg-zinc-100 transition-all duration-150 cursor-pointer disabled:opacity-40"
+          className="text-[15px] font-semibold text-zinc-500 bg-zinc-50 border border-line px-2.5 h-6 rounded-md hover:bg-zinc-100 transition-all duration-150 cursor-pointer disabled:opacity-40"
         >
           전체삭제
         </button>
@@ -556,9 +556,9 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
       />
 
       {/* 탭 바 — 콘텐츠와 동일한 max-width 정렬 · 파스텔 pill 스타일 */}
-      <div className="bg-white/90 backdrop-blur-sm border-b border-zinc-200/70 sticky top-14 z-20" style={{ boxShadow: "0 1px 0 0 rgba(99,102,241,0.05)" }}>
+      <div className="bg-white/90 backdrop-blur-sm border-b border-line/70 sticky top-14 z-20" style={{ boxShadow: "0 1px 0 0 rgba(99,102,241,0.05)" }}>
         <div className="max-w-[1360px] mx-auto w-full px-2 sm:px-4 py-2">
-          <div className="flex flex-wrap bg-zinc-100/70 border border-zinc-200/60 rounded-xl p-1 gap-0.5">
+          <div className="flex flex-wrap bg-zinc-100/70 border border-line/60 rounded-xl p-1 gap-0.5">
             {TABS.map(([key, label, count, activeClass, _iconClass, badgeClass, inactiveClass]) => (
               <button key={key} onClick={() => setTab(key)}
                 className={`px-2.5 sm:px-4 py-1.5 flex items-center gap-1.5 sm:gap-2 rounded-lg text-[15px] sm:text-[14px] font-bold transition-all duration-200 cursor-pointer flex-1 sm:flex-none justify-center ${tab === key ? `${activeClass} ring-1 shadow-sm` : inactiveClass}`}>
@@ -725,7 +725,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                                       : "창고담당만 가능"
                                   }
                                   className={`text-[14px] font-semibold px-2.5 h-6 rounded-md border transition-all duration-150 inline-flex items-center gap-0.5 disabled:opacity-40 ${
-                                    clickable ? cls + " cursor-pointer" : "text-zinc-400 bg-zinc-100 border-zinc-200 cursor-not-allowed"
+                                    clickable ? cls + " cursor-pointer" : "text-zinc-400 bg-zinc-100 border-line cursor-not-allowed"
                                   }`}
                                 >
                                   {completing ? <Loader2 size={9} className="animate-spin" /> : <Icon size={9} />}
@@ -762,7 +762,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                                       : "진열담당만 가능"
                                   }
                                   className={`text-[14px] font-semibold px-2.5 h-6 rounded-md border transition-all duration-150 inline-flex items-center gap-0.5 disabled:opacity-40 ${
-                                    clickable ? cls + " cursor-pointer" : "text-zinc-400 bg-zinc-100 border-zinc-200 cursor-not-allowed"
+                                    clickable ? cls + " cursor-pointer" : "text-zinc-400 bg-zinc-100 border-line cursor-not-allowed"
                                   }`}
                                 >
                                   {completing ? <Loader2 size={9} className="animate-spin" /> : <Icon size={9} />}
@@ -1071,7 +1071,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               <div className="mt-2">
                 <button
                   onClick={() => setInvLogOpen(p => !p)}
-                  className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[15px] font-bold text-gray-500 hover:bg-gray-100 transition cursor-pointer"
+                  className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 border border-line rounded-xl text-[15px] font-bold text-gray-500 hover:bg-gray-100 transition cursor-pointer"
                 >
                   <span className="flex items-center gap-1.5">
                     <ScrollText size={12} className="text-purple-400" />
@@ -1138,7 +1138,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         {tab === "lunch" && (
           <div className="flex flex-col gap-3">
             {/* 요약 뱃지 */}
-            <div className="flex items-center justify-between bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">
+            <div className="flex items-center justify-between bg-white border border-line rounded-xl px-4 py-3 shadow-sm">
               <div className="flex items-center gap-2">
                 <Utensils size={14} className="text-emerald-500" />
                 <span className="text-xs font-bold text-gray-700">오늘의 점심 불참 현황</span>
@@ -1147,7 +1147,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 text-[15px] font-bold">
                   <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full">🍱 {eatCount}명</span>
-                  <span className="bg-gray-100 text-gray-500 border border-gray-200 px-2 py-0.5 rounded-full flex items-center gap-0.5"><UtensilsCrossed size={9} />{noEatCount}명</span>
+                  <span className="bg-gray-100 text-gray-500 border border-line px-2 py-0.5 rounded-full flex items-center gap-0.5"><UtensilsCrossed size={9} />{noEatCount}명</span>
                 </div>
                 <button onClick={loadLunch} className="p-1.5 text-gray-400 hover:text-gray-600 transition cursor-pointer">
                   <RefreshCw size={12} className={lunchLoading ? "animate-spin" : ""} />
@@ -1156,7 +1156,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             </div>
 
             {lunchLoading && lunchRequests.length > 0 && (
-              <div className="flex items-center justify-center gap-1.5 text-[14px] text-zinc-600 font-bold py-1.5 mb-1 bg-zinc-100 border border-zinc-200 rounded-md sticky top-0 z-10">
+              <div className="flex items-center justify-center gap-1.5 text-[14px] text-zinc-600 font-bold py-1.5 mb-1 bg-zinc-100 border border-line rounded-md sticky top-0 z-10">
                 <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
               </div>
             )}
@@ -1171,7 +1171,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                     <span className={`w-2 h-2 rounded-full shrink-0 ${r.eating ? "bg-emerald-500" : "bg-gray-300"}`} />
                     <span className="text-sm font-semibold text-gray-800 flex-1">{r.employee_name}</span>
                     {r.memo && <span className="text-[14px] text-gray-400 flex-1 min-w-0 break-keep">{r.memo}</span>}
-                    <span className={`text-[15px] font-bold px-2 py-0.5 rounded-full shrink-0 ${r.eating ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-gray-100 text-gray-500 border border-gray-200"}`}>
+                    <span className={`text-[15px] font-bold px-2 py-0.5 rounded-full shrink-0 ${r.eating ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-gray-100 text-gray-500 border border-line"}`}>
                       {r.eating ? "🍱 식사" : "불참"}
                     </span>
                     <span className="text-[14px] text-gray-300 shrink-0">
@@ -1239,7 +1239,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             <div className="flex gap-2">
               <button
                 onClick={() => setDupOrderModal(null)}
-                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 transition cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl border border-line text-sm font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 transition cursor-pointer"
               >
                 취소
               </button>

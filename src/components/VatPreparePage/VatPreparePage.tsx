@@ -299,7 +299,7 @@ const VatPreparePage: React.FC = () => {
     <div className="flex flex-col gap-3 min-h-0 h-full">
 
       {/* ── 상단: 다음 신고일 · Preset 선택 ── */}
-      <div className="bg-white rounded-xl border border-zinc-200 shadow-sm p-4">
+      <div className="bg-white rounded-xl border border-line shadow-sm p-4">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3">
           {/* 로고·타이틀 */}
           <div className="flex items-center gap-3 shrink-0">
@@ -336,7 +336,7 @@ const VatPreparePage: React.FC = () => {
                 className={`h-8 px-3 text-[11px] font-bold rounded-lg transition cursor-pointer ${
                   preset === p
                     ? "bg-rose-500 text-white shadow"
-                    : "bg-zinc-50 text-zinc-600 border border-zinc-200 hover:bg-zinc-100"
+                    : "bg-zinc-50 text-zinc-600 border border-line hover:bg-zinc-100"
                 }`}
               >
                 {p === "current-half" ? "현재 반기" : p === "prev-half" ? "직전 반기" : "올해"}
@@ -345,7 +345,7 @@ const VatPreparePage: React.FC = () => {
             <select
               value={period}
               onChange={e => { setPreset("custom"); setPeriod(e.target.value); }}
-              className="h-8 px-2 text-[11px] font-semibold border border-zinc-200 rounded-lg outline-none focus:ring-1 focus:ring-rose-400"
+              className="h-8 px-2 text-[11px] font-semibold border border-line rounded-lg outline-none focus:ring-1 focus:ring-rose-400"
             >
               {[0, 1, 2].map(offset => {
                 const y = new Date().getFullYear() - offset;
@@ -363,7 +363,7 @@ const VatPreparePage: React.FC = () => {
               type="button"
               onClick={loadData}
               disabled={loading}
-              className="h-8 w-8 flex items-center justify-center rounded-lg bg-zinc-50 border border-zinc-200 hover:bg-zinc-100 text-zinc-600 cursor-pointer disabled:opacity-50"
+              className="h-8 w-8 flex items-center justify-center rounded-lg bg-zinc-50 border border-line hover:bg-zinc-100 text-zinc-600 cursor-pointer disabled:opacity-50"
               title="새로고침"
             >
               <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
@@ -433,7 +433,7 @@ const VatPreparePage: React.FC = () => {
       </div>
 
       {/* 신고 준비도 (별도 · 5 KPI 카드 정렬 유지 위해 하단 얇은 바) */}
-      <div className="bg-white rounded-xl border border-zinc-200 shadow-sm px-4 py-3 flex items-center gap-3">
+      <div className="bg-white rounded-xl border border-line shadow-sm px-4 py-3 flex items-center gap-3">
         <CheckSquare size={14} className="text-sky-500 shrink-0" />
         <div className="text-[11px] font-bold text-zinc-600 shrink-0">신고 준비도</div>
         <div className="flex-1 h-2 bg-zinc-100 rounded-full overflow-hidden">
@@ -449,8 +449,8 @@ const VatPreparePage: React.FC = () => {
       </div>
 
       {/* ── 메인 탭 (매출 / 매입 / 신고서 미리보기) ── */}
-      <div className="bg-white rounded-xl border border-zinc-200 shadow-sm">
-        <div className="flex border-b border-zinc-200">
+      <div className="bg-white rounded-xl border border-line shadow-sm">
+        <div className="flex border-b border-line">
           {([
             { key: "sales" as const,    label: "월별 부가세",       icon: Receipt,    color: "text-rose-600",    activeBar: "bg-rose-500" },
             { key: "purchase" as const, label: "매입",             icon: PackageCheck, color: "text-emerald-600", activeBar: "bg-emerald-500" },
@@ -487,7 +487,7 @@ const VatPreparePage: React.FC = () => {
         />
       )}
       {mainTab === "sales" && !summary?.range && (
-        <div className="bg-white rounded-xl border border-zinc-200 shadow-sm p-8 text-center">
+        <div className="bg-white rounded-xl border border-line shadow-sm p-8 text-center">
           <Loader2 size={20} className="animate-spin inline text-zinc-400" />
           <div className="text-[11px] text-zinc-400 mt-2">기간 정보를 불러오는 중…</div>
         </div>
@@ -495,7 +495,7 @@ const VatPreparePage: React.FC = () => {
 
       {/* ── 신고서 미리보기 탭 (Phase 3 placeholder) ── */}
       {mainTab === "preview" && (
-        <div className="bg-white rounded-xl border border-zinc-200 shadow-sm p-10 text-center">
+        <div className="bg-white rounded-xl border border-line shadow-sm p-10 text-center">
           <FileCheck2 size={32} className="text-sky-400 mx-auto" />
           <div className="mt-3 text-[13px] font-bold text-zinc-700">신고서 미리보기 · Phase 3 예정</div>
           <div className="mt-1 text-[11px] text-zinc-500 leading-relaxed max-w-lg mx-auto">
@@ -522,7 +522,7 @@ const VatPreparePage: React.FC = () => {
         </div>
 
         {/* 우: 매입 명세 (선택 공급사) */}
-        <div className="lg:col-span-3 bg-white rounded-xl border border-zinc-200 shadow-sm flex flex-col min-h-0 overflow-hidden">
+        <div className="lg:col-span-3 bg-white rounded-xl border border-line shadow-sm flex flex-col min-h-0 overflow-hidden">
           <div className="px-4 py-3 border-b border-zinc-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <FileText size={14} className="text-rose-500" />
@@ -647,7 +647,7 @@ const VatPreparePage: React.FC = () => {
       )}
 
       {/* ── 공통 하단: 준비 체크리스트 (모든 탭) ── */}
-      <div className="bg-white rounded-xl border border-zinc-200 shadow-sm p-4">
+      <div className="bg-white rounded-xl border border-line shadow-sm p-4">
         <div className="flex items-center gap-2 mb-3">
           <CheckSquare size={14} className="text-sky-500" />
           <div className="text-[13px] font-bold text-zinc-800">신고 준비 체크리스트</div>
@@ -705,7 +705,7 @@ const KpiCard: React.FC<KpiCardProps> = ({ label, value, sub, icon, color, loadi
   };
   const c = colors[color];
   return (
-    <div className={`${c.bg} rounded-xl border border-zinc-200 shadow-sm p-3.5 relative overflow-hidden`}>
+    <div className={`${c.bg} rounded-xl border border-line shadow-sm p-3.5 relative overflow-hidden`}>
       <div className="flex items-start gap-2.5">
         <div className={`w-8 h-8 rounded-lg ${c.icon} flex items-center justify-center shrink-0`}>{icon}</div>
         <div className="flex-1 min-w-0">
@@ -738,7 +738,7 @@ const ChecklistItem: React.FC<ChecklistItemProps> = ({ label, hint, checked, onC
     className={`w-full flex items-start gap-3 p-3 rounded-lg text-left transition cursor-pointer ${
       checked
         ? "bg-emerald-50 border border-emerald-200"
-        : "bg-zinc-50 border border-zinc-200 hover:bg-zinc-100"
+        : "bg-zinc-50 border border-line hover:bg-zinc-100"
     }`}
   >
     {checked

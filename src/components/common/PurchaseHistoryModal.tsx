@@ -75,7 +75,7 @@ export const PurchaseHistoryModal: React.FC<PurchaseHistoryModalProps> = ({
         onClick={e => e.stopPropagation()}
       >
         {/* 헤더 */}
-        <div className="flex items-start gap-3 px-4 py-3 border-b border-zinc-200 bg-emerald-50">
+        <div className="flex items-start gap-3 px-4 py-3 border-b border-line bg-emerald-50">
           <TrendingUp size={20} className="text-emerald-600 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-2 flex-wrap">

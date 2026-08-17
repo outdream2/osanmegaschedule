@@ -186,7 +186,7 @@ const LedgerTab: React.FC<{
   return (
     <div className="overflow-auto flex-1 min-h-0 bg-white">
       <table className="w-full text-[12px] min-w-[420px]" style={{ borderCollapse: "separate", borderSpacing: 0, tableLayout: "fixed" }}>
-        <thead className="sticky top-0 bg-zinc-50 border-b border-zinc-200 z-10">
+        <thead className="sticky top-0 bg-zinc-50 border-b border-line z-10">
           <tr className="text-[11px] text-zinc-500 uppercase tracking-wider">
             <th className="relative text-center py-2" style={{ width: lw("expand"), minWidth: lw("expand") }}>
               <span {...lr("expand")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
@@ -258,9 +258,9 @@ const LedgerTab: React.FC<{
                   <tr className="bg-zinc-50/40">
                     <td></td>
                     <td colSpan={4} className="px-3 py-2">
-                      <div className="overflow-x-auto rounded border border-zinc-200 bg-white">
+                      <div className="overflow-x-auto rounded border border-line bg-white">
                         <table className="w-full text-[11px]">
-                          <thead className="bg-zinc-50 border-b border-zinc-200">
+                          <thead className="bg-zinc-50 border-b border-line">
                             <tr className="text-[10px] text-zinc-500 uppercase tracking-wider">
                               <th className="text-left px-2 py-1.5 w-7 text-zinc-300">#</th>
                               <th className="text-left px-2 py-1.5">상품명</th>
@@ -309,7 +309,7 @@ const LedgerTab: React.FC<{
             );
           })}
         </tbody>
-        <tfoot className="sticky bottom-0 bg-white border-t-2 border-zinc-200">
+        <tfoot className="sticky bottom-0 bg-white border-t-2 border-line">
           <tr>
             <td className="text-center">
               <button
@@ -528,7 +528,7 @@ const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> =
             </tr>
           ))}
         </tbody>
-        <tfoot className="sticky bottom-0 bg-white border-t-2 border-zinc-200">
+        <tfoot className="sticky bottom-0 bg-white border-t-2 border-line">
           <tr>
             <td colSpan={7} className="px-2 py-2 text-right text-[11px] font-bold text-zinc-500">합계</td>
             <td className="px-2 py-2 text-right tabular-nums text-[13px] font-bold text-emerald-700">{fmtWon(totalAmount)}</td>
@@ -566,7 +566,7 @@ const ChartTooltip: React.FC<{
   const { name, value } = payload[0];
   const pct = total > 0 ? ((value / total) * 100).toFixed(1) : "0.0";
   return (
-    <div className="bg-white border border-zinc-200 rounded-lg shadow-md px-3 py-2 text-[11px] min-w-[120px]">
+    <div className="bg-white border border-line rounded-lg shadow-md px-3 py-2 text-[11px] min-w-[120px]">
       <div className="font-semibold text-zinc-700 mb-1 break-words whitespace-normal leading-snug">{name}</div>
       <div className="tabular-nums text-emerald-700 font-bold">{value.toLocaleString()}{unit}</div>
       <div className="tabular-nums text-zinc-500 mt-0.5">{pct}%</div>
@@ -1165,7 +1165,7 @@ export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
   return (
     <div className={`${CARD_BASE} flex flex-col min-h-0 flex-1`}>
       {/* 탭 헤더 */}
-      <div className="flex flex-wrap items-center border-b border-zinc-200 bg-zinc-50/50 px-2 pt-1 gap-0">
+      <div className="flex flex-wrap items-center border-b border-line bg-zinc-50/50 px-2 pt-1 gap-0">
         {TABS.map(t => {
           const Icon = t.icon;
           const active = tab === t.key;

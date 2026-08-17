@@ -127,7 +127,7 @@ export function TabBar<K extends string = string>({
   const visibleTabs = tabs.filter(t => t.visible !== false);
 
   const outerCls = variant === "nested"
-    ? `bg-zinc-50/50 border-b border-zinc-200 w-full shrink-0 ${className}`
+    ? `bg-zinc-50/50 border-b border-line w-full shrink-0 ${className}`
     : `${barCls} ${className}`;
 
   return (

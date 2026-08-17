@@ -581,7 +581,7 @@ const ProductTrendTab: React.FC<{
       >
         {/* 모바일 fullscreen 헤더 — 상품명 · 닫기 · 기간 · 정보확인 통합 · fixed 부모 내에서 sticky 잘 작동하도록 z-index 60 */}
         {selected && (
-          <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-zinc-200 shadow-md">
+          <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-line shadow-md">
             <div className="flex items-center gap-2 px-3 py-2">
               <button
                 type="button"
@@ -612,18 +612,18 @@ const ProductTrendTab: React.FC<{
           </div>
         )}
         {!selected ? (
-          <div className="bg-white rounded-xl border border-zinc-200 flex-1 flex flex-col items-center justify-center p-10 text-zinc-400">
+          <div className="bg-white rounded-xl border border-line flex-1 flex flex-col items-center justify-center p-10 text-zinc-400">
             <Package size={40} className="mb-3 opacity-30" />
             <div className="text-sm font-bold">리스트에서 상품을 클릭하세요</div>
             <div className="text-[11px] mt-1">또는 검색 후 확인 버튼</div>
           </div>
         ) : loading ? (
-          <div className="bg-white rounded-xl border border-zinc-200 p-8 flex flex-col items-center justify-center gap-3 mx-3 mt-3">
-            <div className="w-10 h-10 border-4 border-zinc-200 border-t-teal-500 rounded-full animate-spin" />
+          <div className="bg-white rounded-xl border border-line p-8 flex flex-col items-center justify-center gap-3 mx-3 mt-3">
+            <div className="w-10 h-10 border-4 border-line border-t-teal-500 rounded-full animate-spin" />
             <div className="text-sm font-bold text-zinc-600">데이터 로딩중...</div>
           </div>
         ) : filteredRows.length === 0 ? (
-          <div className="bg-white rounded-xl border border-zinc-200 p-10 text-center text-zinc-400 text-sm mx-3 mt-3">
+          <div className="bg-white rounded-xl border border-line p-10 text-center text-zinc-400 text-sm mx-3 mt-3">
             <div>기간 생성 실패</div>
             <div className="text-[10px] mt-2">#{selected.product_code}</div>
           </div>
@@ -660,7 +660,7 @@ const ProductTrendTab: React.FC<{
             </div>
 
             {/* 차트 · 상단에 기간/X축 컨트롤 (모달 안으로 이동됨) */}
-            <div className="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm">
+            <div className="bg-white rounded-xl border border-line p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-3 flex-wrap">
                 <div className="flex items-center gap-1.5 shrink-0">
                   <LineChart size={14} className="text-teal-600" />
@@ -670,7 +670,7 @@ const ProductTrendTab: React.FC<{
                   {/* 전체기간 */}
                   <div className="inline-flex items-center gap-1">
                     <span className="text-[9px] font-bold text-teal-700 uppercase tracking-wider">기간</span>
-                    <div className="inline-flex bg-zinc-100 border border-zinc-200 rounded-lg p-0.5">
+                    <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-0.5">
                       {[1, 2, 3, 4, 5, 6].map(m => {
                         const active = Math.round(chartRangeDays / 30) === m;
                         return (
@@ -690,7 +690,7 @@ const ProductTrendTab: React.FC<{
                   {/* X축 단위 */}
                   <div className="inline-flex items-center gap-1">
                     <span className="text-[9px] font-bold text-teal-700 uppercase tracking-wider">X축</span>
-                    <div className="inline-flex bg-zinc-100 border border-zinc-200 rounded-lg p-0.5">
+                    <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-0.5">
                       <button
                         onClick={() => onGranularityChange?.("10day")}
                         className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition ${granularity === "10day"
@@ -718,7 +718,7 @@ const ProductTrendTab: React.FC<{
             <div className={`${CARD_BASE} overflow-hidden`}>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
-                  <thead className="sticky top-0 bg-zinc-50 border-b-2 border-zinc-200 z-10 shadow-sm">
+                  <thead className="sticky top-0 bg-zinc-50 border-b-2 border-line z-10 shadow-sm">
                     <tr className="text-[11px] text-zinc-500 uppercase tracking-wider">
                       <th className="text-left px-2 py-1.5">기간</th>
                       <th className="text-right px-2 py-1.5 w-16 bg-emerald-50/60 text-emerald-500">매입</th>
@@ -739,7 +739,7 @@ const ProductTrendTab: React.FC<{
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-zinc-50 border-t-2 border-zinc-200 text-xs">
+                  <tfoot className="bg-zinc-50 border-t-2 border-line text-xs">
                     <tr>
                       <td className="px-2 py-1.5 text-right font-bold text-zinc-500 uppercase">합계</td>
                       <td className="px-2 py-1.5 text-right tabular-nums font-bold text-emerald-700 bg-emerald-50/40">
@@ -771,7 +771,7 @@ const ProductTrendTab: React.FC<{
             className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-200 bg-emerald-50/50">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-line bg-emerald-50/50">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0 shadow-sm">
                   <Package size={18} className="text-white" />
@@ -972,7 +972,7 @@ const SupplierTrendTab: React.FC<{
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm">
+      <div className="bg-white rounded-xl border border-line p-4 shadow-sm">
         {/* 헤더 · 라벨 + 카운트 */}
         <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 min-w-0">
@@ -986,7 +986,7 @@ const SupplierTrendTab: React.FC<{
         {/* 필터 바 · 기간 프리셋 + 계절 + Top N (2026-07-16 · 전 페이지 일관 UI) */}
         <div className="flex items-center gap-2 mb-2 flex-wrap text-[11px]">
           <span className="text-zinc-500 font-bold text-[10px] shrink-0">기간</span>
-          <div className="inline-flex bg-zinc-100/80 border border-zinc-200/60 rounded-lg p-0.5 shadow-inner">
+          <div className="inline-flex bg-zinc-100/80 border border-line/60 rounded-lg p-0.5 shadow-inner">
             {PERIOD_PRESETS.map(p => (
               <button key={p.key} type="button" onClick={() => { setPeriodMonths(p.key); setSeason(null); }}
                 className={`px-2 py-1 text-[10px] font-bold rounded transition cursor-pointer ${!season && periodMonths === p.key ? "bg-white text-sky-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-500 hover:text-zinc-800"}`}>
@@ -997,7 +997,7 @@ const SupplierTrendTab: React.FC<{
           {/* 계절 조회 · 클릭 시 년도 무관 · periodMonths 자동 해제 */}
           <SeasonButtons value={season} onChange={(v) => { setSeason(v); if (v) setPeriodMonths(0); }} size="sm" hideLabel />
           <span className="text-zinc-500 font-bold text-[10px] shrink-0 ml-1">Top N</span>
-          <div className="inline-flex bg-zinc-100/80 border border-zinc-200/60 rounded-lg p-0.5 shadow-inner" title="판매액 내림차순 상위 N개만 표시">
+          <div className="inline-flex bg-zinc-100/80 border border-line/60 rounded-lg p-0.5 shadow-inner" title="판매액 내림차순 상위 N개만 표시">
             {([100, 300, 1000, 2000, 0] as const).map(n => (
               <button key={n} type="button" onClick={() => setTopN(n)}
                 className={`px-2 py-1 text-[10px] font-bold rounded transition cursor-pointer ${topN === n ? "bg-white text-sky-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-500 hover:text-zinc-800"}`}>
@@ -1011,7 +1011,7 @@ const SupplierTrendTab: React.FC<{
           <div className="relative">
             <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-400" />
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="공급사명 검색"
-              className="w-full pl-7 pr-8 py-1.5 text-xs border border-zinc-200 rounded-lg focus:outline-none focus:border-brand-deep bg-white" />
+              className="w-full pl-7 pr-8 py-1.5 text-xs border border-line rounded-lg focus:outline-none focus:border-brand-deep bg-white" />
             {query && (
               <button onClick={() => setQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-300 hover:text-zinc-600">
                 <X size={12} />
@@ -1031,7 +1031,7 @@ const SupplierTrendTab: React.FC<{
         <div className="max-h-[50vh] overflow-y-auto pr-2 relative">
           {loading && suppliers.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 py-8">
-              <div className="w-10 h-10 border-4 border-zinc-200 border-t-orange-500 rounded-full animate-spin" />
+              <div className="w-10 h-10 border-4 border-line border-t-orange-500 rounded-full animate-spin" />
               <div className="text-xs font-bold text-zinc-600">데이터 로딩중...</div>
             </div>
           ) : visibleSuppliers.length === 0 ? (
@@ -1077,7 +1077,7 @@ const SupplierTrendTab: React.FC<{
                       <div className="mt-2 border-t border-sky-100 pt-2 bg-sky-50/30 -mx-2 px-3 py-2 rounded-lg">
                         {isLoading ? (
                           <div className="flex flex-col items-center justify-center gap-3 py-6">
-                            <div className="w-8 h-8 border-4 border-zinc-200 border-t-orange-500 rounded-full animate-spin" />
+                            <div className="w-8 h-8 border-4 border-line border-t-orange-500 rounded-full animate-spin" />
                             <div className="text-xs font-bold text-zinc-600">데이터 로딩중...</div>
                           </div>
                         ) : !rows || rows.length === 0 ? (
@@ -1085,7 +1085,7 @@ const SupplierTrendTab: React.FC<{
                         ) : (
                           <div className="max-h-[50vh] overflow-auto">
                             <table className="w-full text-xs sm:min-w-[520px]">
-                              <thead className="sticky top-0 bg-zinc-50 border-b-2 border-zinc-200 z-10 shadow-sm">
+                              <thead className="sticky top-0 bg-zinc-50 border-b-2 border-line z-10 shadow-sm">
                                 <tr className="text-[11px] text-zinc-500 uppercase tracking-wider">
                                   <th className="text-left px-0.5 py-1.5 w-6">#</th>
                                   {([
@@ -1112,7 +1112,7 @@ const SupplierTrendTab: React.FC<{
                                           {active ? (
                                             <span className="text-[9px]">{supRowsSort.dir === "asc" ? "▲" : "▼"}</span>
                                           ) : (
-                                            <span className="text-[8px] text-zinc-300">⇅</span>
+                                            <span className="text-[10px] text-zinc-300">⇅</span>
                                           )}
                                         </span>
                                       </th>
@@ -1316,7 +1316,7 @@ export const StockFlowPanel: React.FC<{
   return (
     <div className={`${CARD_BASE} flex flex-col h-full overflow-hidden`}>
       {/* ── 헤더 · 상품별/공급사별 탭 + 스냅샷 날짜 + 안내 ── */}
-      <div className="flex flex-col gap-1.5 px-3 py-2 border-b border-zinc-200 bg-zinc-50/50">
+      <div className="flex flex-col gap-1.5 px-3 py-2 border-b border-line bg-zinc-50/50">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
             {/* 상품별/공급사별 세그먼트 탭 제거 (2026-07-15) · 상단 통합 5탭으로 대체 */}
@@ -1419,7 +1419,7 @@ export const StockFlowPanel: React.FC<{
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={limit >= 50000 ? "전체 상품 검색" : "TOP 리스트 내 검색"}
-              className="w-full pl-7 pr-8 py-1.5 text-xs border border-zinc-200 rounded-lg focus:outline-none focus:border-brand-deep bg-white"
+              className="w-full pl-7 pr-8 py-1.5 text-xs border border-line rounded-lg focus:outline-none focus:border-brand-deep bg-white"
             />
             {query && (
               <button onClick={() => setQuery("")}
@@ -1463,11 +1463,11 @@ export const StockFlowPanel: React.FC<{
           <span className="text-zinc-500 font-bold shrink-0">판매</span>
           <input type="number" min={0} value={saleMin}
             onChange={(e) => setSaleMin(e.target.value)} placeholder="최소"
-            className="flex-1 min-w-0 px-1.5 py-1 border border-zinc-200 rounded text-[11px] tabular-nums text-right focus:outline-none focus:border-orange-400" />
+            className="flex-1 min-w-0 px-1.5 py-1 border border-line rounded text-[11px] tabular-nums text-right focus:outline-none focus:border-orange-400" />
           <span className="text-zinc-400 shrink-0">~</span>
           <input type="number" min={0} value={saleMax}
             onChange={(e) => setSaleMax(e.target.value)} placeholder="최대"
-            className="flex-1 min-w-0 px-1.5 py-1 border border-zinc-200 rounded text-[11px] tabular-nums text-right focus:outline-none focus:border-orange-400" />
+            className="flex-1 min-w-0 px-1.5 py-1 border border-line rounded text-[11px] tabular-nums text-right focus:outline-none focus:border-orange-400" />
           {(saleMin || saleMax) && (
             <button onClick={() => { setSaleMin(""); setSaleMax(""); }}
               className="text-[10px] font-bold text-rose-500 hover:text-rose-700 px-1.5 py-1 rounded hover:bg-rose-50 transition cursor-pointer shrink-0">✕</button>
@@ -1487,7 +1487,7 @@ export const StockFlowPanel: React.FC<{
       <div className={`flex-1 overflow-auto relative max-h-[50vh] ${saleListCollapsed ? "hidden" : ""}`}>
         {loading && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1px] pointer-events-none">
-            <div className="w-10 h-10 border-4 border-zinc-200 border-t-orange-500 rounded-full animate-spin" />
+            <div className="w-10 h-10 border-4 border-line border-t-orange-500 rounded-full animate-spin" />
             <div className="mt-3 text-xs font-bold text-zinc-600">데이터 로딩중...</div>
           </div>
         )}
@@ -1497,7 +1497,7 @@ export const StockFlowPanel: React.FC<{
           <div className="text-center text-[11px] text-zinc-300 py-6">&nbsp;</div>
         ) : (
           <table className={`w-full text-xs ${loading ? "opacity-40 transition-opacity" : ""}`}>
-            <thead className="sticky top-0 bg-zinc-50 border-b-2 border-zinc-200 z-10 shadow-sm">
+            <thead className="sticky top-0 bg-zinc-50 border-b-2 border-line z-10 shadow-sm">
               {selectedCodes.size > 0 && (
                 <tr className="bg-rose-50 border-b border-rose-200">
                   <td colSpan={10} className="px-2 py-1.5">
@@ -1744,7 +1744,7 @@ const ZoneCategoryContent: React.FC = () => {
     const color = colorForZone(g.zone);
     const barCls = { sky: "bg-sky-400", emerald: "bg-emerald-400", amber: "bg-amber-400", rose: "bg-rose-400", indigo: "bg-indigo-400", teal: "bg-teal-400", violet: "bg-violet-400", orange: "bg-orange-400" }[color]!;
     const textCls = { sky: "text-sky-700", emerald: "text-emerald-700", amber: "text-amber-700", rose: "text-rose-700", indigo: "text-indigo-700", teal: "text-teal-700", violet: "text-violet-700", orange: "text-orange-700" }[color]!;
-    const selectedBorder = isSelected ? "border-violet-400 bg-violet-50/60 shadow-sm" : "border-zinc-200 hover:bg-zinc-50";
+    const selectedBorder = isSelected ? "border-violet-400 bg-violet-50/60 shadow-sm" : "border-line hover:bg-zinc-50";
     const rankCls = rank <= 2
       ? "bg-rose-500 text-white border-rose-600"
       : rank <= 4
@@ -1755,7 +1755,7 @@ const ZoneCategoryContent: React.FC = () => {
             ? "bg-violet-500 text-white border-violet-600"
             : rank <= 10
               ? "bg-zinc-400 text-white border-zinc-500"
-              : "bg-white text-zinc-400 border-zinc-200";
+              : "bg-white text-zinc-400 border-line";
     return (
       <button
         key={g.zone}
@@ -1821,7 +1821,7 @@ const ZoneCategoryContent: React.FC = () => {
             <span className="text-[11px] text-zinc-400 tabular-nums">{list.length}개 구역</span>
           </div>
           {/* 정렬 segment control */}
-          <div className="inline-flex bg-zinc-50 border border-zinc-200 rounded-md p-0.5">
+          <div className="inline-flex bg-zinc-50 border border-line rounded-md p-0.5">
             {SORT_OPTIONS.map(opt => (
               <button
                 key={opt.key}
@@ -1867,7 +1867,7 @@ const ZoneCategoryContent: React.FC = () => {
           <span className="inline-flex items-center gap-0.5">{label}
             {active
               ? <span className="text-[9px]">{itemSort.dir === "asc" ? "▲" : "▼"}</span>
-              : <span className="text-[8px] text-zinc-300">⇅</span>}
+              : <span className="text-[10px] text-zinc-300">⇅</span>}
           </span>
         </th>
       );
@@ -1903,7 +1903,7 @@ const ZoneCategoryContent: React.FC = () => {
         <div className={`${CARD_BASE} overflow-hidden flex-1`}>
           <div className="overflow-auto max-h-[55vh]">
             <table className="w-full text-xs sm:min-w-[540px]">
-              <thead className="sticky top-0 bg-zinc-50 border-b-2 border-zinc-200 z-10 shadow-sm">
+              <thead className="sticky top-0 bg-zinc-50 border-b-2 border-line z-10 shadow-sm">
                 <tr className="text-[11px] text-zinc-500 uppercase tracking-wider">
                   <th className="text-left px-1 py-1.5 w-6">#</th>
                   <th className="text-left px-0.5 py-1.5 w-24">공급사</th>
@@ -1971,7 +1971,7 @@ const ZoneCategoryContent: React.FC = () => {
         {/* 조회기간 */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">기간</span>
-          <div className="flex flex-wrap bg-zinc-50 border border-zinc-200 rounded-md p-0.5 gap-0.5">
+          <div className="flex flex-wrap bg-zinc-50 border border-line rounded-md p-0.5 gap-0.5">
             <button type="button" onClick={() => { setSeason(null); setMonths(0); }}
               className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!season && months === 0 ? "bg-amber-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
               10일
@@ -2002,7 +2002,7 @@ const ZoneCategoryContent: React.FC = () => {
               .finally(() => setLoading(false));
           }}
           disabled={loading}
-          className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-zinc-200 bg-white hover:bg-amber-50 hover:border-amber-300 text-zinc-400 hover:text-amber-500 transition disabled:opacity-40 cursor-pointer"
+          className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-amber-50 hover:border-amber-300 text-zinc-400 hover:text-amber-500 transition disabled:opacity-40 cursor-pointer"
           title="새로고침"
         >
           <Loader2 size={13} className={loading ? "animate-spin" : ""} />
@@ -2033,7 +2033,7 @@ const ZoneCategoryContent: React.FC = () => {
         )}
         {loading && grouped.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-8">
-            <div className="w-10 h-10 border-4 border-zinc-200 border-t-orange-500 rounded-full animate-spin" />
+            <div className="w-10 h-10 border-4 border-line border-t-orange-500 rounded-full animate-spin" />
             <div className="text-xs font-bold text-zinc-600">데이터 로딩중...</div>
           </div>
         ) : !loading && grouped.length === 0 ? (
@@ -2041,7 +2041,7 @@ const ZoneCategoryContent: React.FC = () => {
         ) : (
           <div className={`overflow-y-auto max-h-[65vh] pr-1 flex flex-col gap-2 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             {/* 2026-07-30 · 사용자 요청 · 탭 전환 (상비약 / 일반약) */}
-            <div className="flex items-center gap-1 border-b-2 border-zinc-200 sticky top-0 bg-white z-10 -mx-1 px-1 pt-1">
+            <div className="flex items-center gap-1 border-b-2 border-line sticky top-0 bg-white z-10 -mx-1 px-1 pt-1">
               <button type="button" onClick={() => setGroupTab("essential")}
                 className={`relative px-4 py-2 text-[13px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${
                   groupTab === "essential" ? "text-rose-700" : "text-zinc-400 hover:text-zinc-600"
@@ -2089,7 +2089,7 @@ const ZoneCategoryContent: React.FC = () => {
       >
         {/* 모바일 fullscreen 헤더 */}
         {selectedZone && (
-          <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-zinc-200 shadow-md -mx-3 px-3 py-2 mb-1">
+          <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-line shadow-md -mx-3 px-3 py-2 mb-1">
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -2111,7 +2111,7 @@ const ZoneCategoryContent: React.FC = () => {
           </div>
         )}
         {!selectedZone ? (
-          <div className="bg-white rounded-xl border border-zinc-200 flex-1 flex flex-col items-center justify-center p-10 text-zinc-400 min-h-[400px]">
+          <div className="bg-white rounded-xl border border-line flex-1 flex flex-col items-center justify-center p-10 text-zinc-400 min-h-[400px]">
             <Layers size={40} className="mb-3 opacity-30" />
             <div className="text-sm font-bold">구역을 선택하세요</div>
             <div className="text-[11px] mt-1">해당 구역의 상품 판매 상세가 표시됩니다</div>
@@ -2209,7 +2209,7 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
   const fmt = (n: number) => n.toLocaleString();
   const arrow = (k: LossSortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
   return (
-    <div className="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm flex flex-col gap-3">
+    <div className="bg-white rounded-xl border border-line p-4 shadow-sm flex flex-col gap-3">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
@@ -2236,11 +2236,11 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
         <input type="number" value={minLoss} onChange={e => setMinLoss(e.target.value)}
           placeholder="최소"
           title="음수 허용 (예: -5 → 재고 남는 상품도 표시)"
-          className="w-16 border border-zinc-200 rounded-lg px-1.5 py-1 tabular-nums text-right focus:outline-none focus:border-rose-400" />
+          className="w-16 border border-line rounded-lg px-1.5 py-1 tabular-nums text-right focus:outline-none focus:border-rose-400" />
         <span className="text-zinc-400">~</span>
         <input type="number" value={maxLoss} onChange={e => setMaxLoss(e.target.value)}
           placeholder="최대"
-          className="w-14 border border-zinc-200 rounded-lg px-1.5 py-1 tabular-nums text-right focus:outline-none focus:border-rose-400" />
+          className="w-14 border border-line rounded-lg px-1.5 py-1 tabular-nums text-right focus:outline-none focus:border-rose-400" />
         <span className="text-zinc-400">개</span>
       </div>
       {loading && filtered.length > 0 && (
@@ -2250,15 +2250,15 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
       )}
       {loading && filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 py-8">
-          <div className="w-10 h-10 border-4 border-zinc-200 border-t-orange-500 rounded-full animate-spin" />
+          <div className="w-10 h-10 border-4 border-line border-t-orange-500 rounded-full animate-spin" />
           <div className="text-xs font-bold text-zinc-600">데이터 로딩중...</div>
         </div>
       ) : !loading && filtered.length === 0 ? (
         <div className="text-center text-[11px] text-zinc-300 py-6">손실 상품 없음</div>
       ) : (
-        <div className={`overflow-auto max-h-[50vh] rounded-lg border border-zinc-200 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+        <div className={`overflow-auto max-h-[50vh] rounded-lg border border-line ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
           <table className="w-full text-xs sm:min-w-[540px]">
-            <thead className="sticky top-0 bg-zinc-50 border-b-2 border-zinc-200 z-10 shadow-sm">
+            <thead className="sticky top-0 bg-zinc-50 border-b-2 border-line z-10 shadow-sm">
               <tr className="text-[11px] text-zinc-500 uppercase tracking-wider">
                 <th className="text-left px-1 py-1.5 w-6">#</th>
                 <th onClick={() => handleSort("name")}
@@ -2492,7 +2492,7 @@ export const SalesTrendPage: React.FC = () => {
       </div>
 
       {/* 통합 탭 바 (2026-07-15) · 모바일: 3열 grid 2줄 · 데스크탑: 한 줄 · 글씨 축소 없음 */}
-      <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-x-0 sm:gap-1 border-b border-zinc-200 sm:overflow-x-auto sm:scrollbar-none">
+      <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-x-0 sm:gap-1 border-b border-line sm:overflow-x-auto sm:scrollbar-none">
         {([
           // 2026-07-16: "상품관리" 탭 재고관리 → 실재고차이 옆으로 이동 (사용자 요청)
           { k: "chart" as SalesTab, label: "판매추이차트", icon: Activity, color: "amber" },
@@ -2551,7 +2551,7 @@ export const SalesTrendPage: React.FC = () => {
       {scanProductModal && (
         <div className="fixed inset-0 z-50 bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-1 sm:p-4" onClick={() => setScanProductModal(null)}>
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[98vh] sm:max-h-[92vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-200 bg-teal-50/50">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-line bg-teal-50/50">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-xl bg-teal-500 flex items-center justify-center shrink-0 shadow-sm">
                   <Package size={18} className="text-white" />
@@ -2580,7 +2580,7 @@ export const SalesTrendPage: React.FC = () => {
       {hiddenModalOpen && (
         <div className="fixed inset-0 z-50 bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-1 sm:p-4" onClick={() => setHiddenModalOpen(false)}>
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[98vh] sm:max-h-[85vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-200 bg-amber-50/50">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-line bg-amber-50/50">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center shadow-sm">
                   <EyeOff size={18} className="text-white" />
@@ -2597,7 +2597,7 @@ export const SalesTrendPage: React.FC = () => {
                 총 <span className="text-amber-700 font-bold">{hiddenList.length}</span>개 숨김
               </span>
               <button onClick={loadHiddenList} disabled={hiddenLoading}
-                className="text-[10px] font-bold text-zinc-500 hover:text-zinc-800 border border-zinc-200 hover:border-zinc-400 rounded-lg px-2 py-1 cursor-pointer transition">
+                className="text-[10px] font-bold text-zinc-500 hover:text-zinc-800 border border-line hover:border-zinc-400 rounded-lg px-2 py-1 cursor-pointer transition">
                 {hiddenLoading ? "..." : "새로고침"}
               </button>
             </div>

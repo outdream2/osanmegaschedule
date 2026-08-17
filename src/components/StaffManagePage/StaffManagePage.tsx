@@ -227,24 +227,24 @@ const PERFORMANCE_RATINGS: { value: string; label: string }[] = [
 
 // ─── 헬퍼: 직책 컬러 ────────────────────────────────────────────────────────
 function positionColor(pos: string | null | undefined) {
-  if (!pos) return "bg-zinc-100 text-zinc-500 border-zinc-200";
+  if (!pos) return "bg-zinc-100 text-zinc-500 border-line";
   if (pos.includes("약사"))              return "bg-violet-100 text-violet-700 border-violet-200";
   if (pos.includes("매장"))              return "bg-emerald-100 text-emerald-700 border-emerald-200";
   if (pos.includes("창고"))              return "bg-orange-100 text-orange-700 border-orange-200";
   if (pos.includes("물류") || pos.includes("진열") || pos.includes("캐셔"))
                                           return "bg-orange-100 text-orange-700 border-orange-200"; // 하위 호환
   if (pos.includes("매니저"))            return "bg-rose-100 text-rose-700 border-rose-200";
-  return "bg-zinc-100 text-zinc-600 border-zinc-200";
+  return "bg-zinc-100 text-zinc-600 border-line";
 }
 
 function scheduleTypeColor(t: string | null | undefined) {
-  if (!t) return "bg-zinc-100 text-zinc-400 border-zinc-200";
+  if (!t) return "bg-zinc-100 text-zinc-400 border-line";
   if (t === "오픈")    return "bg-amber-100 text-amber-700 border-amber-200";
   if (t === "미들")    return "bg-teal-100 text-teal-700 border-teal-200";
   if (t === "마감")    return "bg-indigo-100 text-indigo-700 border-indigo-200";
   if (t === "클로징")  return "bg-purple-100 text-purple-700 border-purple-200";
   if (t === "풀타임")  return "bg-blue-100 text-blue-700 border-blue-200";
-  return "bg-zinc-100 text-zinc-500 border-zinc-200";
+  return "bg-zinc-100 text-zinc-500 border-line";
 }
 
 // 계약유형 · 배지 컬러 + 한글 라벨
@@ -257,24 +257,24 @@ function contractTypeMeta(t: string | null | undefined): { label: string; short:
   switch (t) {
     case "regular":    color = "bg-blue-100 text-blue-700 border-blue-200"; break;
     case "fixed_term": color = "bg-amber-100 text-amber-700 border-amber-200"; break;
-    case "part_time":  color = "bg-zinc-100 text-zinc-600 border-zinc-200"; break;
+    case "part_time":  color = "bg-zinc-100 text-zinc-600 border-line"; break;
     case "daily":      color = "bg-rose-100 text-rose-700 border-rose-200"; break;
     case "intern":     color = "bg-lime-100 text-lime-700 border-lime-200"; break;
-    default:           color = "bg-zinc-100 text-zinc-500 border-zinc-200";
+    default:           color = "bg-zinc-100 text-zinc-500 border-line";
   }
   return { label, short, color };
 }
 
 // 인사평가 · 배지 컬러
 function performanceRatingColor(r: string | null | undefined): string {
-  if (!r) return "bg-zinc-100 text-zinc-400 border-zinc-200";
+  if (!r) return "bg-zinc-100 text-zinc-400 border-line";
   switch (r.toUpperCase()) {
     case "S": return "bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200";
     case "A": return "bg-emerald-100 text-emerald-700 border-emerald-200";
     case "B": return "bg-sky-100 text-sky-700 border-sky-200";
     case "C": return "bg-amber-100 text-amber-700 border-amber-200";
     case "D": return "bg-rose-100 text-rose-700 border-rose-200";
-    default:  return "bg-zinc-100 text-zinc-500 border-zinc-200";
+    default:  return "bg-zinc-100 text-zinc-500 border-line";
   }
 }
 
@@ -540,7 +540,7 @@ const CreateModal: React.FC<{
         onClick={(e) => e.stopPropagation()}
       >
         {/* 모달 헤더 */}
-        <div className="px-4 py-3 border-b border-zinc-200 bg-indigo-50 flex items-center justify-between">
+        <div className="px-4 py-3 border-b border-line bg-indigo-50 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-brand-deep flex items-center justify-center shadow-sm">
               <UserPlus size={13} className="text-white" />
@@ -571,7 +571,7 @@ const CreateModal: React.FC<{
                 value={String(draft[key] ?? "")}
                 onChange={(e) => set(key, e.target.value)}
                 placeholder={placeholder}
-                className="w-full border border-zinc-200 rounded-md px-2.5 py-1.5 text-[14px] focus:outline-none focus:border-brand-deep focus:ring-1 focus:ring-brand-tint"
+                className="w-full border border-line rounded-md px-2.5 py-1.5 text-[14px] focus:outline-none focus:border-brand-deep focus:ring-1 focus:ring-brand-tint"
               />
             </div>
           ))}
@@ -580,7 +580,7 @@ const CreateModal: React.FC<{
             <select
               value={String(draft.position ?? "")}
               onChange={(e) => set("position", e.target.value)}
-              className="w-full border border-zinc-200 rounded-md px-2.5 py-1.5 text-[14px] bg-white focus:outline-none focus:border-brand-deep"
+              className="w-full border border-line rounded-md px-2.5 py-1.5 text-[14px] bg-white focus:outline-none focus:border-brand-deep"
             >
               <option value="">선택 안 함</option>
               {POSITIONS.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -593,11 +593,11 @@ const CreateModal: React.FC<{
               onChange={(e) => set("memo", e.target.value)}
               placeholder="(선택) 근무 특이사항 · 알러지 등"
               rows={2}
-              className="w-full border border-zinc-200 rounded-md px-2.5 py-1.5 text-[14px] focus:outline-none focus:border-brand-deep resize-none"
+              className="w-full border border-line rounded-md px-2.5 py-1.5 text-[14px] focus:outline-none focus:border-brand-deep resize-none"
             />
           </div>
         </div>
-        <div className="px-4 py-3 border-t border-zinc-200 bg-zinc-50/70 flex items-center justify-end gap-2">
+        <div className="px-4 py-3 border-t border-line bg-zinc-50/70 flex items-center justify-end gap-2">
           <button
             onClick={onClose}
             disabled={saving}
@@ -1131,7 +1131,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
           ) : (
             <label
               onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-0.5 text-[15px] font-semibold text-zinc-500 hover:text-emerald-700 hover:bg-emerald-50 border border-zinc-200 hover:border-emerald-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
+              className="inline-flex items-center gap-0.5 text-[15px] font-semibold text-zinc-500 hover:text-emerald-700 hover:bg-emerald-50 border border-line hover:border-emerald-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
               title="이력서 업로드 · Google Drive (PDF·DOC·이미지 · 10MB)"
             >
               <Paperclip size={10} />업로드
@@ -1162,7 +1162,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
           ) : (
             <label
               onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-0.5 text-[15px] font-semibold text-zinc-500 hover:text-sky-700 hover:bg-sky-50 border border-zinc-200 hover:border-sky-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
+              className="inline-flex items-center gap-0.5 text-[15px] font-semibold text-zinc-500 hover:text-sky-700 hover:bg-sky-50 border border-line hover:border-sky-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
               title="통장사본 업로드 · 이미지 (jpg/png · 5MB)"
             >
               <Paperclip size={10} />업로드
@@ -1238,7 +1238,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
             ) : (
               <label
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-0.5 text-[15px] font-semibold text-zinc-500 hover:text-rose-700 hover:bg-rose-50 border border-zinc-200 hover:border-rose-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
+                className="inline-flex items-center gap-0.5 text-[15px] font-semibold text-zinc-500 hover:text-rose-700 hover:bg-rose-50 border border-line hover:border-rose-200 rounded px-1 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
                 title="사직서 업로드 · PDF 또는 이미지 · 20MB"
               >
                 <Paperclip size={10} />업로드
@@ -1298,14 +1298,14 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="이름 · 직책 · 연락처"
-            className="pl-8 pr-3 h-8 text-[14px] border border-zinc-200 rounded-lg focus:outline-none focus:border-brand-deep focus:ring-1 focus:ring-brand-tint bg-zinc-50 placeholder:text-zinc-400 w-full sm:w-48"
+            className="pl-8 pr-3 h-8 text-[14px] border border-line rounded-lg focus:outline-none focus:border-brand-deep focus:ring-1 focus:ring-brand-tint bg-zinc-50 placeholder:text-zinc-400 w-full sm:w-48"
           />
         </div>
 
         {/* 재직 상태 필터 · 재직/퇴사/전체 */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[15px] font-semibold text-zinc-400 uppercase tracking-wider">상태</span>
-          <div className="inline-flex bg-zinc-50 border border-zinc-200 rounded-lg p-0.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] gap-0.5">
+          <div className="inline-flex bg-zinc-50 border border-line rounded-lg p-0.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] gap-0.5">
             {[
               { key: "active",  label: "재직",  color: "bg-emerald-600 text-white" },
               { key: "retired", label: "퇴사",  color: "bg-rose-500 text-white" },
@@ -1327,7 +1327,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
         {/* 직책 필터 */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[15px] font-semibold text-zinc-400 uppercase tracking-wider">직책</span>
-          <div className="inline-flex bg-zinc-50 border border-zinc-200 rounded-lg p-0.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] flex-wrap gap-0.5">
+          <div className="inline-flex bg-zinc-50 border border-line rounded-lg p-0.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] flex-wrap gap-0.5">
             <button
               onClick={() => setFilterPosition("")}
               className={`h-6 px-2 text-[15px] font-semibold rounded-md transition-all cursor-pointer ${
@@ -1344,7 +1344,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                 onClick={() => setFilterPosition(filterPosition === p ? "" : p)}
                 className={`h-6 px-2 text-[15px] font-semibold rounded-md transition-all cursor-pointer ${
                   filterPosition === p
-                    ? "bg-white text-zinc-800 shadow-sm border border-zinc-200"
+                    ? "bg-white text-zinc-800 shadow-sm border border-line"
                     : "text-zinc-500 hover:text-zinc-700"
                 }`}
               >
@@ -1360,7 +1360,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
           {onBackToSchedule && (
             <button
               onClick={onBackToSchedule}
-              className="h-8 px-3 flex items-center gap-1.5 text-[15px] font-semibold text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-50 rounded-lg cursor-pointer transition-colors"
+              className="h-8 px-3 flex items-center gap-1.5 text-[15px] font-semibold text-zinc-700 bg-white border border-line hover:bg-zinc-50 rounded-lg cursor-pointer transition-colors"
               title="스케쥴 페이지로 돌아가기"
             >
               ← 스케쥴
@@ -1370,7 +1370,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
             onClick={loadEmployees}
             disabled={loading}
             title="새로고침"
-            className="w-8 h-8 flex items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700 cursor-pointer disabled:opacity-40 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-lg border border-line text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700 cursor-pointer disabled:opacity-40 transition-colors"
           >
             <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
           </button>
@@ -1420,7 +1420,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
             ) : (
               <table className={`w-full border-collapse ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`} style={{ tableLayout: "fixed" }}>
                 <thead className="sticky top-0 z-10 bg-zinc-50/95 backdrop-blur">
-                  <tr className="border-b border-zinc-200 text-[15px] font-bold text-zinc-500 uppercase tracking-wider">
+                  <tr className="border-b border-line text-[15px] font-bold text-zinc-500 uppercase tracking-wider">
                     <th className="relative px-2 py-1.5 text-left cursor-pointer hover:text-indigo-600 select-none" onClick={() => toggleSort("name")} style={{ width: sw("name"), minWidth: sw("name") }}>
                       이름<SortIcon k="name" />
                       <span {...sr("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
@@ -1664,7 +1664,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                 const fmtD = (n: number) => Number.isInteger(n) ? String(n) : n.toFixed(1);
                 const rating = displayEmp.performance_rating ? String(displayEmp.performance_rating).toUpperCase() : null;
                 return (
-                  <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5 px-4 py-2.5 border-b border-zinc-200 bg-white shrink-0 text-[15px]">
+                  <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5 px-4 py-2.5 border-b border-line bg-white shrink-0 text-[15px]">
                     {/* 근속 */}
                     <span className="inline-flex items-baseline gap-1.5">
                       <span className="inline-flex items-center gap-1 text-[14px] text-zinc-400 font-semibold"><Clock size={11} className="text-indigo-400" />근속</span>
@@ -1948,7 +1948,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                           className="border border-indigo-300 rounded-md px-2 py-1 text-[14px] bg-indigo-50/40 focus:outline-none focus:border-brand-deep resize-none"
                         />
                       ) : displayEmp.memo ? (
-                        <p className="text-[14px] text-zinc-700 whitespace-pre-wrap leading-relaxed bg-zinc-50/70 border border-zinc-200 rounded-md px-2 py-1 min-h-[24px]">
+                        <p className="text-[14px] text-zinc-700 whitespace-pre-wrap leading-relaxed bg-zinc-50/70 border border-line rounded-md px-2 py-1 min-h-[24px]">
                           {displayEmp.memo}
                         </p>
                       ) : (
@@ -2064,7 +2064,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                               <button
                                 type="button"
                                 onClick={() => alert("등록된 근로계약서가 없습니다.\n편집 모드에서 계약서 URL 을 입력해 주세요.")}
-                                className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[15px] font-semibold text-zinc-400 bg-zinc-100 border border-zinc-200 rounded-md cursor-pointer hover:bg-zinc-200/60 transition-colors"
+                                className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[15px] font-semibold text-zinc-400 bg-zinc-100 border border-line rounded-md cursor-pointer hover:bg-zinc-200/60 transition-colors"
                               >
                                 <Paperclip size={11} /> 보기
                               </button>
@@ -2118,7 +2118,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                                   </span>
                                 )}
                                 {!isActive && h.is_active === false && (
-                                  <span className="text-[14px] font-semibold px-1.5 py-0.5 rounded-md border bg-zinc-100 text-zinc-500 border-zinc-200 leading-tight">
+                                  <span className="text-[14px] font-semibold px-1.5 py-0.5 rounded-md border bg-zinc-100 text-zinc-500 border-line leading-tight">
                                     이전
                                   </span>
                                 )}
@@ -2127,7 +2127,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                                     {ctMeta.label}
                                   </span>
                                 ) : h.contract_type ? (
-                                  <span className="text-[14px] font-semibold px-1.5 py-0.5 rounded-md border bg-zinc-100 text-zinc-600 border-zinc-200 leading-tight">
+                                  <span className="text-[14px] font-semibold px-1.5 py-0.5 rounded-md border bg-zinc-100 text-zinc-600 border-line leading-tight">
                                     {h.contract_type}
                                   </span>
                                 ) : null}
@@ -2320,7 +2320,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                               <span className="text-[14px] font-bold text-emerald-700 tabular-nums leading-tight">{fmtDays(remainDays)}<span className="text-[14px] font-semibold ml-0.5">일</span></span>
                             </div>
                             {/* 총 · 편집 가능 */}
-                            <div className="flex flex-col items-center px-2.5 py-1 rounded-lg bg-zinc-50 border border-zinc-200 min-w-[56px]">
+                            <div className="flex flex-col items-center px-2.5 py-1 rounded-lg bg-zinc-50 border border-line min-w-[56px]">
                               <span className="text-[14px] font-bold text-zinc-500 uppercase tracking-wider">총 부여</span>
                               {editing ? (
                                 <input
@@ -2342,7 +2342,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                             </div>
                           </div>
                           {/* 연도 선택 */}
-                          <div className="flex items-center gap-1.5 bg-white border border-zinc-200 rounded-lg px-1.5 py-1 shadow-sm">
+                          <div className="flex items-center gap-1.5 bg-white border border-line rounded-lg px-1.5 py-1 shadow-sm">
                             <button
                               type="button"
                               onClick={() => setLeaveYear(y => y - 1)}
@@ -2391,9 +2391,9 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                           ) : usedLeaves.length === 0 ? (
                             <EmptyRow label={`${leaveYear}년 사용한 연차가 없습니다`} />
                           ) : (
-                            <div className="border border-zinc-200 rounded-lg overflow-hidden bg-white">
+                            <div className="border border-line rounded-lg overflow-hidden bg-white">
                               <table className="w-full text-[14px]">
-                                <thead className="bg-zinc-50 border-b border-zinc-200">
+                                <thead className="bg-zinc-50 border-b border-line">
                                   <tr className="text-zinc-500 text-[14px] uppercase tracking-wider">
                                     <th className="text-left  font-semibold px-2.5 py-1.5 w-[110px]">날짜</th>
                                     <th className="text-center font-semibold px-1.5 py-1.5 w-[70px]">유형</th>
@@ -2407,7 +2407,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                                       leave.type === "월차"      ? "bg-amber-100 text-amber-700 border-amber-200"
                                       : leave.type === "오전반차" ? "bg-sky-100 text-sky-700 border-sky-200"
                                       : leave.type === "오후반차" ? "bg-indigo-100 text-indigo-700 border-indigo-200"
-                                      :                             "bg-zinc-100 text-zinc-600 border-zinc-200";
+                                      :                             "bg-zinc-100 text-zinc-600 border-line";
                                     const isDeleting = deletingLeaveDate === leave.date;
                                     // date → YYYY.MM.DD (요일)
                                     let dowLabel = "";
@@ -2607,7 +2607,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-3.5 bg-zinc-50/40 space-y-2.5">
-              <div className="grid grid-cols-2 gap-2.5 bg-white rounded-xl border border-zinc-200 p-3.5 shadow-sm">
+              <div className="grid grid-cols-2 gap-2.5 bg-white rounded-xl border border-line p-3.5 shadow-sm">
                 {(
                   [
                     ["연락처", selectedEmp.phone],
@@ -2645,7 +2645,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                 </div>
               </div>
               {selectedEmp.memo && (
-                <div className="bg-white rounded-xl border border-zinc-200 p-3.5 shadow-sm">
+                <div className="bg-white rounded-xl border border-line p-3.5 shadow-sm">
                   <span className="text-[15px] font-bold text-zinc-400 uppercase tracking-wider block mb-1.5">메모</span>
                   <p className="text-[14px] text-zinc-700 whitespace-pre-wrap leading-relaxed">{selectedEmp.memo}</p>
                 </div>

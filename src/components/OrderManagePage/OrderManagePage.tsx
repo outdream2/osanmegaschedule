@@ -1427,7 +1427,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           {purchaseOrderSubTab === "need" && (<>
         <div className="flex flex-col gap-2">
           {/* ══ 통합 조건 카드 · 검색 + 재고상태 + 카테고리 + 4조건 + 발주판정 설정 ══ */}
-          <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
 
             {/* ── Row 1: 검색 + 재고상태 chip ── */}
             <div className="px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-zinc-100">
@@ -1446,7 +1446,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 <button
                   type="button"
                   onClick={() => { setLowStockSearch(""); }}
-                  className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-zinc-200 bg-white hover:bg-zinc-50 text-[15px] font-bold text-zinc-500 hover:text-rose-600 transition cursor-pointer"
+                  className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-line bg-white hover:bg-zinc-50 text-[15px] font-bold text-zinc-500 hover:text-rose-600 transition cursor-pointer"
                   title="검색 초기화"
                 >
                   <RotateCcw size={11} />초기화
@@ -1459,7 +1459,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               {/* 분류 그룹 */}
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-[14px] font-bold uppercase tracking-wider text-zinc-500 shrink-0">분류</span>
-                <div className="inline-flex items-center rounded-lg border border-zinc-200 bg-white p-0.5 gap-0.5 flex-wrap">
+                <div className="inline-flex items-center rounded-lg border border-line bg-white p-0.5 gap-0.5 flex-wrap">
                   {(["all", ...dbVendorCategories] as string[]).map(cat => {
                     const label = cat === "all" ? "전체" : cat;
                     const activeCls =
@@ -1500,7 +1500,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     value={needInlineMaxSalesMonth === 0 ? "" : needInlineMaxSalesMonth}
                     onChange={e => updateInline("salesMonth", e.target.value)}
                     placeholder="50"
-                    className="w-12 h-7 px-1.5 rounded-md border border-zinc-200 text-[14px] font-bold text-zinc-800 text-right tabular-nums bg-white
+                    className="w-12 h-7 px-1.5 rounded-md border border-line text-[14px] font-bold text-zinc-800 text-right tabular-nums bg-white
                                focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep
                                hover:border-zinc-300 transition placeholder:text-zinc-300 disabled:bg-zinc-50 disabled:opacity-50"
                   />
@@ -1518,7 +1518,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     value={needInlineMaxSalesQuarter === 0 ? "" : needInlineMaxSalesQuarter}
                     onChange={e => updateInline("salesQuarter", e.target.value)}
                     placeholder="100"
-                    className="w-12 h-7 px-1.5 rounded-md border border-zinc-200 text-[14px] font-bold text-zinc-800 text-right tabular-nums bg-white
+                    className="w-12 h-7 px-1.5 rounded-md border border-line text-[14px] font-bold text-zinc-800 text-right tabular-nums bg-white
                                focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep
                                hover:border-zinc-300 transition placeholder:text-zinc-300 disabled:bg-zinc-50 disabled:opacity-50"
                   />
@@ -1540,7 +1540,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 <button
                   type="button"
                   onClick={resetInlineFilter}
-                  className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-zinc-200 bg-white
+                  className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-line bg-white
                              hover:bg-rose-50 hover:border-rose-300 hover:text-rose-600
                              text-[15px] font-bold text-zinc-500 transition cursor-pointer shrink-0"
                   title="발주 조건 모두 초기화"
@@ -1610,7 +1610,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                             "flex items-start gap-2 px-2.5 py-1.5 rounded-lg border cursor-pointer transition",
                             orderNeedConfig.shortageBasis === opt.k
                               ? "bg-indigo-50 border-indigo-300"
-                              : "bg-white border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50",
+                              : "bg-white border-line hover:border-zinc-300 hover:bg-zinc-50",
                           ].join(" ")}
                         >
                           <input
@@ -1639,7 +1639,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     {/* 실재고 미입력 포함 */}
                     <div className="flex flex-col gap-1">
                       <span className="text-[15px] font-bold text-zinc-600 uppercase tracking-wider">실재고 미입력 상품</span>
-                      <label className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-zinc-200 hover:bg-zinc-50 cursor-pointer bg-white">
+                      <label className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-line hover:bg-zinc-50 cursor-pointer bg-white">
                         <input
                           type="checkbox"
                           className="accent-indigo-600 cursor-pointer"
@@ -1667,7 +1667,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                             setOrderNeedConfig(next);
                             try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(next)); } catch { /**/ }
                           }}
-                          className="w-20 h-8 px-2 border border-zinc-200 rounded-lg text-[15px] font-bold text-zinc-800 tabular-nums text-right
+                          className="w-20 h-8 px-2 border border-line rounded-lg text-[15px] font-bold text-zinc-800 tabular-nums text-right
                                      focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep bg-white"
                         />
                         <span className="text-[14px] text-zinc-600">개 이상 부족</span>
@@ -1687,7 +1687,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                             setOrderNeedConfig(next);
                             try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(next)); } catch { /**/ }
                           }}
-                          className="w-20 h-8 px-2 border border-zinc-200 rounded-lg text-[15px] font-bold text-zinc-800 tabular-nums text-right
+                          className="w-20 h-8 px-2 border border-line rounded-lg text-[15px] font-bold text-zinc-800 tabular-nums text-right
                                      focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep bg-white"
                         />
                         <span className="text-[14px] text-zinc-600">개 이상 · 0=미적용</span>
@@ -1722,7 +1722,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           "px-2.5 h-7 rounded-md text-[14px] font-bold border transition cursor-pointer",
                           orderNeedConfig.defaultSortKey === opt.k
                             ? "bg-brand-deep text-white border-indigo-600 shadow-sm"
-                            : "bg-white text-zinc-600 border-zinc-200 hover:border-indigo-300 hover:text-indigo-600",
+                            : "bg-white text-zinc-600 border-line hover:border-indigo-300 hover:text-indigo-600",
                         ].join(" ")}
                       >{opt.label}</button>
                     ))}
@@ -1743,7 +1743,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           "px-2.5 h-7 rounded-md text-[14px] font-bold border transition cursor-pointer",
                           orderNeedConfig.defaultSortDir === opt.k
                             ? "bg-zinc-700 text-white border-zinc-700 shadow-sm"
-                            : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-400 hover:text-zinc-700",
+                            : "bg-white text-zinc-500 border-line hover:border-zinc-400 hover:text-zinc-700",
                         ].join(" ")}
                       >{opt.label}</button>
                     ))}
@@ -1771,7 +1771,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                               "px-2.5 h-7 rounded-md text-[14px] font-bold border transition cursor-pointer",
                               orderNeedConfig.defaultCategory === cat
                                 ? "bg-brand-deep text-white border-indigo-600 shadow-sm"
-                                : "bg-white text-zinc-600 border-zinc-200 hover:border-indigo-300 hover:text-indigo-600",
+                                : "bg-white text-zinc-600 border-line hover:border-indigo-300 hover:text-indigo-600",
                             ].join(" ")}
                           >{label}</button>
                         );
@@ -1809,7 +1809,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
               style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? needPanelWidth : undefined }}
             >
-          <section className="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
+          <section className="bg-white rounded-xl border border-line p-4 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
         {!lowStockCollapsed && (<>
         {productsLoading && lowStock.length > 0 && (
           <div className="flex items-center justify-center gap-1.5 py-1.5 mx-3 mb-1 bg-sky-50 border border-sky-200 rounded-md shrink-0">
@@ -1843,7 +1843,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     setSelectedLowStock(new Set(lowStockFiltered.map(p => getCode(p))));
                   }
                 }}
-                className="inline-flex items-center h-7 px-1.5 rounded text-[14px] font-medium text-zinc-500 border border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300 transition-colors cursor-pointer shrink-0"
+                className="inline-flex items-center h-7 px-1.5 rounded text-[14px] font-medium text-zinc-500 border border-line hover:bg-zinc-50 hover:border-zinc-300 transition-colors cursor-pointer shrink-0"
               >
                 전체선택
               </button>
@@ -1862,7 +1862,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             {/* 2026-08-10 · 사용자 요청 · 카테고리 헤더 폰트 +2 (10→12) · 데이터 행 +1 ([&_tbody_td]:text-[15px]) */}
             <table className="w-full text-[15px] sm:min-w-[540px] [&_tbody_td]:text-[15px]">
               <thead className="sticky top-0 bg-white z-10">
-                <tr className="border-b border-zinc-200 text-[14px] font-bold uppercase tracking-wider">
+                <tr className="border-b border-line text-[14px] font-bold uppercase tracking-wider">
                   <th colSpan={isNeedCollapsed("info") ? 1 : 2}
                     className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-zinc-100 cursor-pointer select-none hover:bg-sky-100 transition"
                     onClick={() => toggleNeedGroup("info")}
@@ -2090,7 +2090,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           </div>
         ) : needPanelError ? (
           <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0">
-            <div className="bg-white rounded-xl border border-zinc-200 p-4 text-sm text-red-700">
+            <div className="bg-white rounded-xl border border-line p-4 text-sm text-red-700">
               <div className="font-bold mb-1">조회 실패</div>
               <div className="text-[15px] font-mono">{needPanelError}</div>
             </div>
@@ -2120,7 +2120,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           {/* ── 품절임박 서브탭 · 2026-08-06 · ERP재고 기준 (사용자 요청) ── */}
           {purchaseOrderSubTab === "critical" && (
             <div className="flex flex-col gap-2">
-              <div className="bg-white rounded-xl border border-zinc-200 shadow-sm px-4 py-3 flex items-center gap-2 flex-wrap">
+              <div className="bg-white rounded-xl border border-line shadow-sm px-4 py-3 flex items-center gap-2 flex-wrap">
                 <AlertTriangle size={16} className="text-amber-500 shrink-0" />
                 <span className="text-[15px] font-bold text-zinc-800">품절임박</span>
                 <span className="text-[15px] text-zinc-500">ERP재고 3개 이하</span>
@@ -2137,9 +2137,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   );
                 })()}
               </div>
-              <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+              <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
                 <table className="w-full text-[14px] tabular-nums">
-                  <thead className="bg-zinc-50/80 text-[15px] font-bold text-zinc-500 uppercase tracking-wider border-b border-zinc-200">
+                  <thead className="bg-zinc-50/80 text-[15px] font-bold text-zinc-500 uppercase tracking-wider border-b border-line">
                     <tr>
                       <th className="text-left px-3 py-2 w-[110px]">공급사</th>
                       <th className="text-left px-3 py-2">상품명</th>
@@ -2316,7 +2316,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               {/* 우측: 선택 공급사 상세 (VendorDetailTabs — 헤더 + 2탭) */}
               <div className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 overflow-y-auto lg:relative ${vendorSelected ? "fixed inset-0 z-50 bg-zinc-50 p-3 lg:static lg:z-auto lg:bg-transparent lg:p-0 lg:overflow-visible" : ""}`}>
                 {vendorSelected && (
-                  <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-zinc-200 shadow-md -mx-3 px-3 py-2 mb-1 flex items-center gap-2">
+                  <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-line shadow-md -mx-3 px-3 py-2 mb-1 flex items-center gap-2">
                     <button type="button" onClick={() => setVendorSelected(null)}
                       className="w-8 h-8 rounded-lg bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-zinc-600 cursor-pointer shrink-0" title="닫기">
                       <span className="text-lg font-bold">×</span>
@@ -2402,7 +2402,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {topTab === "purchase-order" && purchaseOrderSubTab === "order" && (
         <div className="flex flex-col gap-2">
           {/* 2026-08-10 · 사용자 요청 · PC 한 줄 · 모바일 wrap 2줄 (flex-wrap · lg+ 는 flex-nowrap 유도 · gap 자연 wrap) */}
-          <div className="bg-white rounded-xl border border-zinc-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div className="bg-white rounded-xl border border-line shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2">
             {/* 제목 + 카운트 · 2026-08-10 · 폰트 +1 (15→17 · 13→15) */}
             <div className="flex items-center gap-2 shrink-0">
               <ShoppingCart size={17} className="text-rose-500 shrink-0" />
@@ -2418,12 +2418,12 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               value={orderSearch}
               onChange={e => setOrderSearch(e.target.value)}
               placeholder="상품·코드·공급사"
-              className="text-[15px] border border-zinc-200 rounded-md pl-3 pr-3 h-9 flex-1 min-w-[140px] max-w-[240px] focus:outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 transition"
+              className="text-[15px] border border-line rounded-md pl-3 pr-3 h-9 flex-1 min-w-[140px] max-w-[240px] focus:outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 transition"
             />
             {/* 2026-08-10 · 사용자 요청 · 일괄발주·전체선택 · 왼쪽 리스트 제목 옆으로 이동 · 툴바에는 분류 + 삭제만 */}
             <div className="flex items-center gap-2 flex-wrap">
               {/* 2026-08-10 · 사용자 요청 · 필터 컴팩트 · 여백 최소 (h-7 px-1.5 · text-14) */}
-              <div className="flex flex-wrap bg-zinc-50 border border-zinc-200 rounded p-px gap-px">
+              <div className="flex flex-wrap bg-zinc-50 border border-line rounded p-px gap-px">
                 {(["all", ...dbVendorCategories] as string[]).map(cat => {
                   const active = orderCategoryFilter === cat;
                   const label = cat === "all" ? "전체" : cat;
@@ -2458,7 +2458,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? orderPanelWidth : undefined }}
             >
           {/* 발주 요청 목록 */}
-          <section className="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
+          <section className="bg-white rounded-xl border border-line p-4 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
         {orderError && (
           <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-[15px] text-red-600 font-bold">
             ⚠ {orderError}
@@ -2489,14 +2489,14 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 <span>{sendingBulk ? "발송 중" : `일괄 발주${selectedOrder.size > 0 ? ` (${selectedOrder.size})` : ""}`}</span>
               </button>
               <button onClick={toggleAll}
-                className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[14px] font-medium text-zinc-500 border border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300 transition-colors cursor-pointer shrink-0">
+                className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[14px] font-medium text-zinc-500 border border-line hover:bg-zinc-50 hover:border-zinc-300 transition-colors cursor-pointer shrink-0">
                 {allChecked ? <CheckSquare size={12} className="text-rose-500" /> : <Square size={12} />}
                 전체선택
               </button>
               {/* 2026-08-10 · 사용자 요청 · [선택삭제] 버튼 · 텍스트만 (아이콘 제거) */}
               <button onClick={async () => { if (selectedOrder.size > 0 && await confirm({ message: `${selectedOrder.size}건 삭제할까요?`, danger: true })) deleteOrder([...selectedOrder]); }}
                 disabled={selectedOrder.size === 0}
-                className="inline-flex items-center h-7 px-2 rounded-md text-[14px] font-medium text-zinc-500 border border-zinc-200 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shrink-0"
+                className="inline-flex items-center h-7 px-2 rounded-md text-[14px] font-medium text-zinc-500 border border-line hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shrink-0"
                 title="선택 항목 삭제">
                 선택삭제{selectedOrder.size > 0 ? ` (${selectedOrder.size})` : ""}
               </button>
@@ -2513,7 +2513,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               <thead className="sticky top-0 bg-white z-10">
                 {/* 그룹 카테고리 헤더 · 클릭으로 접기/펼치기 */}
                 {/* 2026-08-10 · 사용자 요청 · 상품정보 colSpan 2→1 (공급사 제거) · 발주 액션 컬럼 제거 */}
-                <tr className="border-b border-zinc-200 text-[14px] font-bold uppercase tracking-wider">
+                <tr className="border-b border-line text-[14px] font-bold uppercase tracking-wider">
                   <th className="bg-zinc-50 w-6"></th>
                   <th colSpan={1}
                     className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-zinc-100 cursor-pointer select-none hover:bg-sky-100 transition"
@@ -2807,7 +2807,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           </div>
         ) : orderPanelError ? (
           <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0">
-            <div className="bg-white rounded-xl border border-zinc-200 p-4 text-sm text-red-700">
+            <div className="bg-white rounded-xl border border-line p-4 text-sm text-red-700">
               <div className="font-bold mb-1">조회 실패</div>
               <div className="text-[15px] font-mono">{orderPanelError}</div>
             </div>
@@ -2847,7 +2847,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             {/* 헤더 */}
-            <div className="px-5 py-4 border-b border-zinc-200 bg-rose-50 flex items-center justify-between gap-3">
+            <div className="px-5 py-4 border-b border-line bg-rose-50 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-xl bg-rose-600 flex items-center justify-center shadow-md shrink-0">
                   <ShoppingCart size={18} className="text-white" />
@@ -2871,25 +2871,25 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               <div>
                 <label className="text-zinc-500 font-bold block mb-1">발주일자</label>
                 <input type="date" value={orderModal.orderDate} onChange={e => setOrderModal(p => p && ({ ...p, orderDate: e.target.value }))}
-                  className="w-full border border-zinc-200 rounded px-2 py-1 focus:outline-none focus:border-red-400 font-mono"/>
+                  className="w-full border border-line rounded px-2 py-1 focus:outline-none focus:border-red-400 font-mono"/>
               </div>
               <div>
                 <label className="text-zinc-500 font-bold block mb-1">희망 입고일</label>
                 <input type="date" value={orderModal.desiredArrival} onChange={e => setOrderModal(p => p && ({ ...p, desiredArrival: e.target.value }))}
-                  className="w-full border border-zinc-200 rounded px-2 py-1 focus:outline-none focus:border-red-400 font-mono"/>
+                  className="w-full border border-line rounded px-2 py-1 focus:outline-none focus:border-red-400 font-mono"/>
               </div>
               <div className="col-span-2">
                 <label className="text-zinc-500 font-bold block mb-1">수신처</label>
-                <div className="border border-zinc-200 rounded px-2 py-1 bg-white text-zinc-700 font-semibold">🏪 오산 메가타운 약국</div>
+                <div className="border border-line rounded px-2 py-1 bg-white text-zinc-700 font-semibold">🏪 오산 메가타운 약국</div>
               </div>
             </div>
 
             {/* 2026-08-12 · 사용자 지시 · 일괄 발주 · 여러 카드 → 하나의 리스트 · 공급사 그룹 헤더 + 소계 rows */}
             <div className="flex-1 overflow-y-auto max-h-[45vh] px-6 py-4 bg-zinc-50/30">
-              <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden shadow-sm">
+              <div className="bg-white border border-line rounded-xl overflow-hidden shadow-sm">
                 <table className="w-full text-[17px]">
                   <thead>
-                    <tr className="bg-zinc-100 text-zinc-500 font-bold uppercase tracking-wide text-[15px] border-b border-zinc-200 sticky top-0 z-10">
+                    <tr className="bg-zinc-100 text-zinc-500 font-bold uppercase tracking-wide text-[15px] border-b border-line sticky top-0 z-10">
                       <th className="text-center p-2 w-8">#</th>
                       <th className="text-left p-2 w-56">상품</th>
                       <th className="text-right p-2 w-20">발주수량</th>
@@ -2939,13 +2939,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                               <td className="p-2 text-right">
                                 <input type="number" min={1} value={it.order_qty}
                                   onChange={e => updateModalItem(sIdx, iIdx, { order_qty: Math.max(0, Number(e.target.value) || 0) })}
-                                  className="w-16 border border-zinc-200 rounded px-1.5 py-0.5 text-right font-mono font-bold text-red-600 focus:outline-none focus:border-red-400"/>
+                                  className="w-16 border border-line rounded px-1.5 py-0.5 text-right font-mono font-bold text-red-600 focus:outline-none focus:border-red-400"/>
                               </td>
                               <td className="p-2 text-right">
                                 <input type="number" min={0} value={it.unit_price ?? ""}
                                   onChange={e => updateModalItem(sIdx, iIdx, { unit_price: e.target.value === "" ? null : Number(e.target.value) })}
                                   placeholder={it.prev_unit_price != null ? String(it.prev_unit_price) : "0"}
-                                  className="w-24 border border-zinc-200 rounded px-1.5 py-0.5 text-right font-mono focus:outline-none focus:border-red-400"/>
+                                  className="w-24 border border-line rounded px-1.5 py-0.5 text-right font-mono focus:outline-none focus:border-red-400"/>
                               </td>
                               <td className="p-2 text-right font-mono font-bold text-emerald-700">
                                 {it.unit_price ? (it.order_qty * it.unit_price).toLocaleString() + "원" : "-"}
@@ -2954,7 +2954,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                                 <input type="text" value={it.memo ?? ""}
                                   onChange={e => updateModalItem(sIdx, iIdx, { memo: e.target.value })}
                                   placeholder="(선택)"
-                                  className="w-full border border-zinc-200 rounded px-1.5 py-0.5 text-[14px] focus:outline-none focus:border-red-400"/>
+                                  className="w-full border border-line rounded px-1.5 py-0.5 text-[14px] focus:outline-none focus:border-red-400"/>
                               </td>
                             </tr>
                           ))}
@@ -2984,19 +2984,19 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   <label className="text-[15px] text-zinc-500 font-bold block">발송 채널</label>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {/* 2026-08-10 · 물류팀장에게 PDF 카톡 발송 · 기본 체크 */}
-                    <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${notifyLogisticsLeader ? "bg-indigo-50 text-indigo-700 border-indigo-300" : "bg-white text-zinc-400 border-zinc-200"}`} title="체크 시 · 관리자(물류팀장)에게 발주서 PDF 카톡 전송">
+                    <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${notifyLogisticsLeader ? "bg-indigo-50 text-indigo-700 border-indigo-300" : "bg-white text-zinc-400 border-line"}`} title="체크 시 · 관리자(물류팀장)에게 발주서 PDF 카톡 전송">
                       <input type="checkbox" checked={notifyLogisticsLeader} onChange={e => setNotifyLogisticsLeader(e.target.checked)} className="w-3 h-3"/>
                       📋 물류팀장 발송 (PDF)
                     </label>
-                    <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.kakao ? "bg-yellow-50 text-yellow-700 border-yellow-300" : "bg-white text-zinc-400 border-zinc-200"}`} title="SolAPI 알림톡 (사업자 인증·템플릿·env 필요)">
+                    <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.kakao ? "bg-yellow-50 text-yellow-700 border-yellow-300" : "bg-white text-zinc-400 border-line"}`} title="SolAPI 알림톡 (사업자 인증·템플릿·env 필요)">
                       <input type="checkbox" checked={orderModal.channels.kakao} onChange={e => setOrderModal(p => p && ({ ...p, channels: { ...p.channels, kakao: e.target.checked } }))} className="w-3 h-3"/>
                       💬 카카오톡
                     </label>
-                    <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.email ? "bg-emerald-50 text-emerald-700 border-emerald-300" : "bg-white text-zinc-400 border-zinc-200"}`}>
+                    <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.email ? "bg-emerald-50 text-emerald-700 border-emerald-300" : "bg-white text-zinc-400 border-line"}`}>
                       <input type="checkbox" checked={orderModal.channels.email} onChange={e => setOrderModal(p => p && ({ ...p, channels: { ...p.channels, email: e.target.checked } }))} className="w-3 h-3"/>
                       <Mail size={11}/> 이메일
                     </label>
-                    <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.sms ? "bg-sky-50 text-sky-700 border-sky-300" : "bg-white text-zinc-400 border-zinc-200"}`}>
+                    <label className={`text-[15px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${orderModal.channels.sms ? "bg-sky-50 text-sky-700 border-sky-300" : "bg-white text-zinc-400 border-line"}`}>
                       <input type="checkbox" checked={orderModal.channels.sms} onChange={e => setOrderModal(p => p && ({ ...p, channels: { ...p.channels, sms: e.target.checked } }))} className="w-3 h-3"/>
                       <MessageSquare size={11}/> 문자
                     </label>
@@ -3006,7 +3006,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             </div>
 
             {/* 2026-08-10 · 통합 발주 요약 + 담당자 지정 · 액션 버튼 */}
-            <div className="px-6 py-4 border-t border-zinc-200 bg-white flex flex-col gap-3">
+            <div className="px-6 py-4 border-t border-line bg-white flex flex-col gap-3">
               {/* 통합 요약 · 총 공급사·상품·금액 */}
               {(() => {
                 const totalSuppliers = orderModal.suppliers.length;
@@ -3066,7 +3066,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-200 bg-sky-50">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-line bg-sky-50">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0 shadow-md">
                   <Package size={18} className="text-white" />

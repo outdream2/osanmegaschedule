@@ -406,7 +406,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                   ? "bg-brand-deep text-white shadow-sm"
                   : dow === currentDow
                     ? "bg-indigo-200 text-indigo-700 border border-indigo-300"
-                    : "bg-white border border-zinc-200 text-zinc-600 hover:border-indigo-400 hover:text-indigo-600"
+                    : "bg-white border border-line text-zinc-600 hover:border-indigo-400 hover:text-indigo-600"
               }`}>
               {label}
             </button>
@@ -568,16 +568,16 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
               </div>
               <div className="flex items-center gap-0.5">
                 <button type="button" onClick={() => onShiftLunchOffset(-30)} disabled={lunchOffset <= -60}
-                  className="w-4 h-4 flex items-center justify-center text-[12px] font-bold rounded bg-white border border-zinc-200 text-zinc-500 disabled:opacity-30 cursor-pointer">−</button>
+                  className="w-4 h-4 flex items-center justify-center text-[12px] font-bold rounded bg-white border border-line text-zinc-500 disabled:opacity-30 cursor-pointer">−</button>
                 <span className="text-[13px] font-mono text-zinc-400 leading-none">{offsetLabel(lunchOffset)}</span>
                 <button type="button" onClick={() => onShiftLunchOffset(30)} disabled={lunchOffset >= 60}
-                  className="w-4 h-4 flex items-center justify-center text-[12px] font-bold rounded bg-white border border-zinc-200 text-zinc-500 disabled:opacity-30 cursor-pointer">+</button>
+                  className="w-4 h-4 flex items-center justify-center text-[12px] font-bold rounded bg-white border border-line text-zinc-500 disabled:opacity-30 cursor-pointer">+</button>
               </div>
               <div className="flex gap-0.5 mt-0.5">
                 {([30, 60, 90] as BreakInterval[]).map(v => (
                   <button key={v} type="button" onClick={() => onSetLunchInterval(v)}
                     className={`text-[11px] px-0.5 py-px rounded font-bold border transition cursor-pointer ${
-                      lunchInterval === v ? "bg-yellow-500 text-white border-yellow-500" : "bg-white text-zinc-400 border-zinc-200 hover:border-yellow-300"
+                      lunchInterval === v ? "bg-yellow-500 text-white border-yellow-500" : "bg-white text-zinc-400 border-line hover:border-yellow-300"
                     }`}>
                     {v === 30 ? "30분" : v === 60 ? "1h" : "1.5h"}
                   </button>
@@ -637,16 +637,16 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
               </div>
               <div className="flex items-center gap-0.5">
                 <button type="button" onClick={() => onShiftRestOffset(-30)} disabled={restOffset <= -60}
-                  className="w-4 h-4 flex items-center justify-center text-[12px] font-bold rounded bg-white border border-zinc-200 text-zinc-500 disabled:opacity-30 cursor-pointer">−</button>
+                  className="w-4 h-4 flex items-center justify-center text-[12px] font-bold rounded bg-white border border-line text-zinc-500 disabled:opacity-30 cursor-pointer">−</button>
                 <span className="text-[13px] font-mono text-zinc-400 leading-none">{offsetLabel(restOffset)}</span>
                 <button type="button" onClick={() => onShiftRestOffset(30)} disabled={restOffset >= 60}
-                  className="w-4 h-4 flex items-center justify-center text-[12px] font-bold rounded bg-white border border-zinc-200 text-zinc-500 disabled:opacity-30 cursor-pointer">+</button>
+                  className="w-4 h-4 flex items-center justify-center text-[12px] font-bold rounded bg-white border border-line text-zinc-500 disabled:opacity-30 cursor-pointer">+</button>
               </div>
               <div className="flex gap-0.5 mt-0.5">
                 {([30, 60, 90] as BreakInterval[]).map(v => (
                   <button key={v} type="button" onClick={() => onSetRestInterval(v)}
                     className={`text-[11px] px-0.5 py-px rounded font-bold border transition cursor-pointer ${
-                      restInterval === v ? "bg-violet-500 text-white border-violet-500" : "bg-white text-zinc-400 border-zinc-200 hover:border-violet-300"
+                      restInterval === v ? "bg-violet-500 text-white border-violet-500" : "bg-white text-zinc-400 border-line hover:border-violet-300"
                     }`}>
                     {v === 30 ? "30분" : v === 60 ? "1h" : "1.5h"}
                   </button>
@@ -820,7 +820,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                 )}
                 {/* 현재 배정된 인원 · 순서 변경 가능 (점심·휴게 슬롯) */}
                 {canReorder && assignedList.length > 0 && (
-                  <div className="border-b border-zinc-200 bg-indigo-50/30">
+                  <div className="border-b border-line bg-indigo-50/30">
                     <div className="px-5 py-1.5 text-[13px] font-bold uppercase tracking-wider text-indigo-700 border-b border-indigo-100 flex items-center justify-between">
                       <span>배정된 인원 · 순서 조정</span>
                       <span className="text-[12px] font-bold text-indigo-500">↑↓ 로 순서 변경</span>
@@ -836,14 +836,14 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                             type="button"
                             onClick={() => moveAssigned(empId, -1)}
                             disabled={i === 0}
-                            className="w-9 h-9 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 disabled:opacity-30 disabled:cursor-not-allowed text-zinc-600 font-bold text-base flex items-center justify-center cursor-pointer transition"
+                            className="w-9 h-9 rounded-lg border border-line bg-white hover:bg-zinc-50 disabled:opacity-30 disabled:cursor-not-allowed text-zinc-600 font-bold text-base flex items-center justify-center cursor-pointer transition"
                             title="위로 이동"
                           >↑</button>
                           <button
                             type="button"
                             onClick={() => moveAssigned(empId, 1)}
                             disabled={i === assignedList.length - 1}
-                            className="w-9 h-9 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 disabled:opacity-30 disabled:cursor-not-allowed text-zinc-600 font-bold text-base flex items-center justify-center cursor-pointer transition"
+                            className="w-9 h-9 rounded-lg border border-line bg-white hover:bg-zinc-50 disabled:opacity-30 disabled:cursor-not-allowed text-zinc-600 font-bold text-base flex items-center justify-center cursor-pointer transition"
                             title="아래로 이동"
                           >↓</button>
                           <button
@@ -1847,7 +1847,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                   <div className="h-7" />
                   {displayGroups.flatMap(g => [
                     <div key={`hdr-${g.label}`}
-                      className={`mb-1 h-5 px-1 flex items-end text-[12px] font-bold uppercase tracking-wider border-b border-zinc-200 ${g.hdrCls}`}>
+                      className={`mb-1 h-5 px-1 flex items-end text-[12px] font-bold uppercase tracking-wider border-b border-line ${g.hdrCls}`}>
                       {g.label} · {g.items.length}
                     </div>,
                     ...g.items.map(({ emp, schedule }) => {

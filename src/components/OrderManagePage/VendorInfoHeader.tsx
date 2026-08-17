@@ -151,7 +151,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
   const hasMonthly = monthlyAgg.length > 0;
 
   return (
-    <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-4 flex flex-col gap-3">
+    <div className="bg-white rounded-2xl border border-line shadow-sm p-4 flex flex-col gap-3">
 
       {/* 헤더 · 공급사명 + 배지 + 활성 pill */}
       <div className="flex items-start gap-3">
@@ -183,7 +183,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
               </span>
             )}
             {vendor.active === false && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 text-zinc-500 border border-zinc-200">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 text-zinc-500 border border-line">
                 비활성
               </span>
             )}
@@ -194,7 +194,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
               type="button"
               onClick={copyBizNum}
               title="클릭하여 복사"
-              className="self-start inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-50 border border-zinc-200 hover:bg-sky-50 hover:border-sky-300 transition text-[11px] font-semibold text-zinc-600 tabular-nums cursor-pointer"
+              className="self-start inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-50 border border-line hover:bg-sky-50 hover:border-sky-300 transition text-[11px] font-semibold text-zinc-600 tabular-nums cursor-pointer"
             >
               <span className="text-zinc-400 text-[9px] font-bold uppercase tracking-wider">사업자</span>
               {fmtBizNum(vendor.business_number)}
@@ -260,7 +260,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
           <div className="overflow-x-auto -mx-1">
             <table className="w-full min-w-[480px] border-collapse text-[12px] tabular-nums">
               <thead className="sticky top-0 z-10 bg-zinc-50">
-                <tr className="border-b-2 border-zinc-200">
+                <tr className="border-b-2 border-line">
                   <th className="text-left px-2 py-1.5 font-bold text-zinc-600 text-[11px] uppercase tracking-wider">
                     월
                   </th>

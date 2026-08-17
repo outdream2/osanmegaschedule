@@ -229,7 +229,7 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
       style={containerStyle}
     >
       <table className="w-full text-[12px] min-w-[420px]" style={{ tableLayout: "fixed" }}>
-        <thead className="sticky top-0 bg-zinc-50 border-b border-zinc-200 z-10">
+        <thead className="sticky top-0 bg-zinc-50 border-b border-line z-10">
           <tr className="text-[11px] text-zinc-500 uppercase tracking-wider">
             {showRowNumber && (
               <th className="relative text-left px-2 py-2 text-zinc-300" style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
@@ -359,7 +359,7 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
           })}
         </tbody>
         {showFooterSum && (
-          <tfoot className="sticky bottom-0 bg-white border-t-2 border-zinc-200">
+          <tfoot className="sticky bottom-0 bg-white border-t-2 border-line">
             <tr>
               <td colSpan={colCount - 3} className="px-3 py-2 text-right text-[11px] font-bold text-zinc-500">
                 합계

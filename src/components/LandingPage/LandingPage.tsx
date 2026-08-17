@@ -101,7 +101,7 @@ const PeriodCoverageWidget: React.FC<{ endpoint: string; label: string; color: "
   const periods = data?.periods ?? [];
   const missingCount = (data?.missing ?? []).length;
   return (
-    <div className="mb-4 border border-zinc-200 rounded-xl overflow-hidden">
+    <div className="mb-4 border border-line rounded-xl overflow-hidden">
       <button type="button" onClick={() => setCollapsed(c => !c)}
         className={`w-full flex items-center justify-between px-3 py-2 bg-zinc-50 hover:bg-zinc-100 transition cursor-pointer`}>
         <div className="flex items-center gap-2 min-w-0">
@@ -936,7 +936,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   value={menuSearch}
                   onChange={e => setMenuSearch(e.target.value)}
                   placeholder="메뉴 검색"
-                  className="w-full h-10 pl-9 pr-9 text-[13px] font-semibold text-zinc-800 bg-white border border-zinc-200 rounded-xl shadow-sm placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
+                  className="w-full h-10 pl-9 pr-9 text-[13px] font-semibold text-zinc-800 bg-white border border-line rounded-xl shadow-sm placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
                 />
                 {menuSearch && (
                   <button
@@ -1191,7 +1191,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   <img
                     src={lpContact.kakaoQrImageUrl || kakaoQrImg}
                     alt="카카오톡 채널 QR"
-                    className="w-20 h-20 rounded-lg bg-white p-1 shrink-0 object-contain border border-zinc-200"
+                    className="w-20 h-20 rounded-lg bg-white p-1 shrink-0 object-contain border border-line"
                   />
                   <div className="flex-1 flex flex-col gap-1.5 min-w-0">
                     <div className="text-zinc-900 font-bold text-[13px] leading-tight whitespace-pre-line">{lpBrand.shortName || "오산\n메가타운약국"}</div>
@@ -1295,7 +1295,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       {/* ── 데이터 업로드 통합 모달 (상품목록 · 재고리스트 서브탭) ── */}
       {uploadOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-2 sm:p-4" onClick={() => setUploadOpen(false)}>
-          <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-white border border-line rounded-2xl p-4 sm:p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
@@ -1308,7 +1308,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
             {/* 서브탭: 상품 · 재고 · 공급사 · 매입 · 이력 */}
             <div className="w-full mb-4">
-              <div className="flex bg-zinc-100/70 border border-zinc-200/60 rounded-2xl p-1 gap-0.5 overflow-x-auto scrollbar-none">
+              <div className="flex bg-zinc-100/70 border border-line/60 rounded-2xl p-1 gap-0.5 overflow-x-auto scrollbar-none">
                 <button
                   onClick={() => setUploadTab("products")}
                   className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer leading-tight ${uploadTab === "products" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"
@@ -1455,7 +1455,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                             type="date"
                             value={stockStartDate}
                             onChange={(e) => setStockStartDate(e.target.value)}
-                            className="w-full px-2 py-1.5 text-xs font-mono border-2 border-gray-200 rounded-lg focus:outline-none focus:border-brand-deep"
+                            className="w-full px-2 py-1.5 text-xs font-mono border-2 border-line rounded-lg focus:outline-none focus:border-brand-deep"
                           />
                         </label>
                         <label className="flex flex-col gap-1">
@@ -1464,7 +1464,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                             type="date"
                             value={stockEndDate}
                             onChange={(e) => setStockEndDate(e.target.value)}
-                            className="w-full px-2 py-1.5 text-xs font-mono border-2 border-gray-200 rounded-lg focus:outline-none focus:border-brand-deep"
+                            className="w-full px-2 py-1.5 text-xs font-mono border-2 border-line rounded-lg focus:outline-none focus:border-brand-deep"
                           />
                         </label>
                       </div>
@@ -1703,7 +1703,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                             type="date"
                             value={purchaseFromDate}
                             onChange={(e) => setPurchaseFromDate(e.target.value)}
-                            className="w-full px-2 py-1.5 text-xs font-mono border-2 border-gray-200 rounded-lg focus:outline-none focus:border-brand-deep"
+                            className="w-full px-2 py-1.5 text-xs font-mono border-2 border-line rounded-lg focus:outline-none focus:border-brand-deep"
                           />
                         </label>
                         <label className="flex flex-col gap-1">
@@ -1712,7 +1712,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                             type="date"
                             value={purchaseToDate}
                             onChange={(e) => setPurchaseToDate(e.target.value)}
-                            className="w-full px-2 py-1.5 text-xs font-mono border-2 border-gray-200 rounded-lg focus:outline-none focus:border-brand-deep"
+                            className="w-full px-2 py-1.5 text-xs font-mono border-2 border-line rounded-lg focus:outline-none focus:border-brand-deep"
                           />
                         </label>
                       </div>
@@ -1853,7 +1853,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </div>
                 )}
                 {/* 필터 UI */}
-                <div className="flex flex-col gap-2 mb-3 p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl">
+                <div className="flex flex-col gap-2 mb-3 p-2.5 bg-zinc-50 border border-line rounded-xl">
                   <div className="flex flex-wrap items-center gap-1">
                     {([
                       { k: "all", label: "전체", cls: "text-zinc-700 border-zinc-300" },
@@ -1866,7 +1866,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                         key={t.k}
                         type="button"
                         onClick={() => setLogFilter(f => ({ ...f, type: t.k }))}
-                        className={`text-[10px] font-bold rounded-full px-2 py-0.5 border transition cursor-pointer ${logFilter.type === t.k ? `${t.cls} bg-white shadow-sm` : "text-zinc-400 border-zinc-200 bg-white/60 hover:bg-white"
+                        className={`text-[10px] font-bold rounded-full px-2 py-0.5 border transition cursor-pointer ${logFilter.type === t.k ? `${t.cls} bg-white shadow-sm` : "text-zinc-400 border-line bg-white/60 hover:bg-white"
                           }`}
                       >{t.label}</button>
                     ))}
@@ -1876,7 +1876,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       type="date"
                       value={logFilter.from}
                       onChange={e => setLogFilter(f => ({ ...f, from: e.target.value }))}
-                      className="text-[11px] font-mono border border-zinc-200 rounded-lg px-2 py-1 bg-white text-zinc-700"
+                      className="text-[11px] font-mono border border-line rounded-lg px-2 py-1 bg-white text-zinc-700"
                       title="시작일"
                     />
                     <span className="text-[10px] text-zinc-400">~</span>
@@ -1884,7 +1884,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       type="date"
                       value={logFilter.to}
                       onChange={e => setLogFilter(f => ({ ...f, to: e.target.value }))}
-                      className="text-[11px] font-mono border border-zinc-200 rounded-lg px-2 py-1 bg-white text-zinc-700"
+                      className="text-[11px] font-mono border border-line rounded-lg px-2 py-1 bg-white text-zinc-700"
                       title="종료일"
                     />
                     <input
@@ -1892,7 +1892,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       placeholder="검색 (기간·파일명)"
                       value={logFilter.search}
                       onChange={e => setLogFilter(f => ({ ...f, search: e.target.value }))}
-                      className="flex-1 min-w-[100px] text-[11px] border border-zinc-200 rounded-lg px-2 py-1 bg-white text-zinc-700 placeholder:text-zinc-300"
+                      className="flex-1 min-w-[100px] text-[11px] border border-line rounded-lg px-2 py-1 bg-white text-zinc-700 placeholder:text-zinc-300"
                     />
                     {(logFilter.type !== "all" || logFilter.from || logFilter.to || logFilter.search) && (
                       <button
@@ -1943,10 +1943,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       <div className="text-[10px] text-zinc-400 mb-1.5 px-1">
                         <b className="text-zinc-600">{filtered.length}</b> / {allLogs.length} 건
                       </div>
-                      <div className="max-h-[400px] overflow-y-auto border border-gray-200 rounded-xl bg-white">
+                      <div className="max-h-[400px] overflow-y-auto border border-line rounded-xl bg-white">
                         <table className="w-full text-[11px]">
                           <thead>
-                            <tr className="text-[10px] uppercase tracking-wider text-gray-400 border-b border-gray-200 bg-gray-50/70">
+                            <tr className="text-[10px] uppercase tracking-wider text-gray-400 border-b border-line bg-gray-50/70">
                               <th className="text-left py-2 pl-4 pr-3 font-bold w-14">유형</th>
                               <th className="text-left py-2 pr-3 font-bold">시작일</th>
                               <th className="text-left py-2 pr-3 font-bold">종료일</th>
@@ -2093,7 +2093,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       onChange={(e) => { setVendorPhone(e.target.value); setVendorError(null); }}
                       placeholder="01012345678"
                       style={{ fontSize: "16px" }}
-                      className={`w-full rounded-2xl pl-10 pr-4 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${vendorError ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100" : "border-2 border-zinc-200 bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"}`}
+                      className={`w-full rounded-2xl pl-10 pr-4 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${vendorError ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100" : "border-2 border-line bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"}`}
                       autoComplete="username" disabled={vendorLoading}
                     />
                   </div>
@@ -2108,7 +2108,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       onChange={(e) => { setVendorPassword(e.target.value); setVendorError(null); }}
                       placeholder="비밀번호 입력"
                       style={{ fontSize: "16px" }}
-                      className={`w-full rounded-2xl pl-10 pr-12 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${vendorError ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100" : "border-2 border-zinc-200 bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"}`}
+                      className={`w-full rounded-2xl pl-10 pr-12 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${vendorError ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100" : "border-2 border-line bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"}`}
                       autoComplete="current-password" disabled={vendorLoading}
                     />
                     <button type="button" onClick={() => setShowVendorPassword((v) => !v)} className="absolute inset-y-0 right-4 flex items-center text-zinc-400 hover:text-zinc-600 transition cursor-pointer">
@@ -2225,7 +2225,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       style={{ fontSize: "16px" }}
                       className={`w-full rounded-2xl pl-10 pr-4 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${empError
                         ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100"
-                        : "border-2 border-zinc-200 bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"
+                        : "border-2 border-line bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"
                         }`}
                       autoComplete="username"
                       disabled={empLoading}
@@ -2250,7 +2250,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       style={{ fontSize: "16px" }}
                       className={`w-full rounded-2xl pl-10 pr-12 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${empError
                         ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100"
-                        : "border-2 border-zinc-200 bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"
+                        : "border-2 border-line bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"
                         }`}
                       autoComplete="current-password"
                       disabled={empLoading}

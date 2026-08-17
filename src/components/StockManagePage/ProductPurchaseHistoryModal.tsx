@@ -43,7 +43,7 @@ export const ProductPurchaseHistoryModal: React.FC<{
         className="relative bg-white rounded-xl shadow-2xl w-full max-w-3xl h-[90vh] md:h-auto md:min-h-[70vh] md:max-h-[90vh] flex flex-col overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-zinc-200 bg-emerald-50/50">
+        <div className="flex items-start justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-line bg-emerald-50/50">
           <div className="flex items-center gap-2 min-w-0">
             <TrendingUp size={20} className="text-emerald-600 shrink-0" />
             <div className="min-w-0">
@@ -54,7 +54,7 @@ export const ProductPurchaseHistoryModal: React.FC<{
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg bg-white hover:bg-zinc-100 border border-zinc-200 flex items-center justify-center text-zinc-500 shrink-0 ml-2 transition"><XIcon size={16} /></button>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg bg-white hover:bg-zinc-100 border border-line flex items-center justify-center text-zinc-500 shrink-0 ml-2 transition"><XIcon size={16} /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 sm:p-4">
@@ -81,7 +81,7 @@ export const ProductPurchaseHistoryModal: React.FC<{
             </>
           )}
           {/* 공통 PurchaseHistoryList · 헤더 자동 정렬 · 통일 스타일 */}
-          <div className="rounded-lg border border-zinc-200 overflow-hidden max-h-[50vh] flex flex-col">
+          <div className="rounded-lg border border-line overflow-hidden max-h-[50vh] flex flex-col">
             <PurchaseHistoryList
               rows={rows}
               loading={loading}

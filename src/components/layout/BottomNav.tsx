@@ -57,7 +57,7 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
       {/* Bottom safe-area padding for pages · fixed 나 sticky 요소에 가리지 않도록 하단 여백 확보 */}
       <div className="sm:hidden h-20" style={{ marginBottom: "env(safe-area-inset-bottom, 0px)" }} aria-hidden="true" />
 
-      <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-zinc-200 shadow-[0_-4px_20px_rgba(15,23,42,0.06)]"
+      <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-line shadow-[0_-4px_20px_rgba(15,23,42,0.06)]"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <div className="grid grid-cols-5 gap-0.5 px-1 pt-1">
           {TABS.map(t => {
@@ -134,7 +134,7 @@ const TILE_COLORS: Record<string, { bg: string; border: string; text: string; ic
   emerald: { bg: "hover:bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700", iconBg: "bg-emerald-100" },
   rose:    { bg: "hover:bg-rose-50",    border: "border-rose-200",    text: "text-rose-700",    iconBg: "bg-rose-100" },
   red:     { bg: "hover:bg-red-50",     border: "border-red-200",     text: "text-red-700",     iconBg: "bg-red-100" },
-  slate:   { bg: "hover:bg-zinc-50",   border: "border-zinc-200",   text: "text-zinc-700",   iconBg: "bg-zinc-100" },
+  slate:   { bg: "hover:bg-zinc-50",   border: "border-line",   text: "text-zinc-700",   iconBg: "bg-zinc-100" },
 };
 
 function SheetTile({

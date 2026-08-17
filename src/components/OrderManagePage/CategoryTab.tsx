@@ -175,7 +175,7 @@ const ZoneCategoryContent: React.FC = () => {
     const color = colorForZone(g.zone);
     const barCls = { sky: "bg-sky-400", emerald: "bg-emerald-400", amber: "bg-amber-400", rose: "bg-rose-400", indigo: "bg-indigo-400", teal: "bg-teal-400", violet: "bg-violet-400", orange: "bg-orange-400" }[color]!;
     const textCls = { sky: "text-sky-700", emerald: "text-emerald-700", amber: "text-amber-700", rose: "text-rose-700", indigo: "text-indigo-700", teal: "text-teal-700", violet: "text-violet-700", orange: "text-orange-700" }[color]!;
-    const selectedBorder = isSelected ? "border-violet-400 bg-violet-50/60 shadow-sm" : "border-zinc-200 hover:bg-zinc-50";
+    const selectedBorder = isSelected ? "border-violet-400 bg-violet-50/60 shadow-sm" : "border-line hover:bg-zinc-50";
     const rankCls = rank <= 2
       ? "bg-rose-500 text-white border-rose-600"
       : rank <= 4
@@ -186,7 +186,7 @@ const ZoneCategoryContent: React.FC = () => {
             ? "bg-violet-500 text-white border-violet-600"
             : rank <= 10
               ? "bg-zinc-400 text-white border-zinc-500"
-              : "bg-white text-zinc-400 border-zinc-200";
+              : "bg-white text-zinc-400 border-line";
 
     // 판매량 상위 베스트 아이템 (최대 3개)
     const bestItems = [...g.items]
@@ -206,7 +206,7 @@ const ZoneCategoryContent: React.FC = () => {
             {bestItems.map((it, i) => (
               <span
                 key={it.code}
-                className="inline-flex items-center gap-0.5 text-[14px] font-semibold text-zinc-600 bg-zinc-50 border border-zinc-200 rounded px-1.5 py-0.5 leading-tight break-words whitespace-normal"
+                className="inline-flex items-center gap-0.5 text-[14px] font-semibold text-zinc-600 bg-zinc-50 border border-line rounded px-1.5 py-0.5 leading-tight break-words whitespace-normal"
                 title={it.name}
               >
                 <span className="text-[15px] font-bold text-orange-500 tabular-nums shrink-0">{i + 1}</span>
@@ -271,7 +271,7 @@ const ZoneCategoryContent: React.FC = () => {
             <span className="text-[14px] font-semibold text-zinc-700">{label}</span>
             <span className="text-[15px] text-zinc-400 tabular-nums">{list.length}개 구역</span>
           </div>
-          <div className="inline-flex bg-zinc-50 border border-zinc-200 rounded-md p-0.5">
+          <div className="inline-flex bg-zinc-50 border border-line rounded-md p-0.5">
             {SORT_OPTIONS.map(opt => (
               <button
                 key={opt.key}
@@ -316,7 +316,7 @@ const ZoneCategoryContent: React.FC = () => {
           <span className="inline-flex items-center gap-0.5">{label}
             {active
               ? <span className="text-[15px]">{itemSort.dir === "asc" ? "▲" : "▼"}</span>
-              : <span className="text-[8px] text-zinc-300">⇅</span>}
+              : <span className="text-[10px] text-zinc-300">⇅</span>}
           </span>
           <span {...resizerProps(colKey)} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
         </th>
@@ -351,7 +351,7 @@ const ZoneCategoryContent: React.FC = () => {
         <div className={`${CARD_BASE} overflow-hidden flex-1`}>
           <div className="overflow-auto max-h-[55vh]">
             <table className="w-full text-xs sm:min-w-[540px]" style={{ tableLayout: "fixed" }}>
-              <thead className="sticky top-0 bg-zinc-50 border-b-2 border-zinc-200 z-10 shadow-sm">
+              <thead className="sticky top-0 bg-zinc-50 border-b-2 border-line z-10 shadow-sm">
                 <tr className="text-[15px] text-zinc-500 uppercase tracking-wider">
                   <th className="relative text-left px-1 py-1.5" style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
                     #
@@ -427,7 +427,7 @@ const ZoneCategoryContent: React.FC = () => {
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">기간</span>
-          <div className="flex flex-wrap bg-zinc-50 border border-zinc-200 rounded-md p-0.5 gap-0.5">
+          <div className="flex flex-wrap bg-zinc-50 border border-line rounded-md p-0.5 gap-0.5">
             <button type="button" onClick={() => { setSeason(null); setMonths(0); }}
               className={`px-2 h-6 text-[15px] font-semibold rounded transition cursor-pointer ${!season && months === 0 ? "bg-amber-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
               10일
@@ -458,7 +458,7 @@ const ZoneCategoryContent: React.FC = () => {
               .finally(() => setLoading(false));
           }}
           disabled={loading}
-          className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-zinc-200 bg-white hover:bg-amber-50 hover:border-amber-300 text-zinc-400 hover:text-amber-500 transition disabled:opacity-40 cursor-pointer"
+          className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-amber-50 hover:border-amber-300 text-zinc-400 hover:text-amber-500 transition disabled:opacity-40 cursor-pointer"
           title="새로고침"
         >
           <Loader2 size={13} className={loading ? "animate-spin" : ""} />
@@ -489,14 +489,14 @@ const ZoneCategoryContent: React.FC = () => {
           )}
           {loading && grouped.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 py-8">
-              <div className="w-10 h-10 border-4 border-zinc-200 border-t-orange-500 rounded-full animate-spin" />
+              <div className="w-10 h-10 border-4 border-line border-t-orange-500 rounded-full animate-spin" />
               <div className="text-xs font-bold text-zinc-600">데이터 로딩중...</div>
             </div>
           ) : !loading && grouped.length === 0 ? (
             <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
           ) : (
             <div className={`overflow-y-auto max-h-[65vh] pr-1 flex flex-col gap-2 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-              <div className="flex items-center gap-1 border-b-2 border-zinc-200 sticky top-0 bg-white z-10 -mx-1 px-1 pt-1">
+              <div className="flex items-center gap-1 border-b-2 border-line sticky top-0 bg-white z-10 -mx-1 px-1 pt-1">
                 <button type="button" onClick={() => setClassFilter("stationery")}
                   className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-zinc-400 hover:text-zinc-600"}`}>
                   상비약 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({essentialGroups.length})</span>
@@ -551,7 +551,7 @@ const ZoneCategoryContent: React.FC = () => {
         >
           {/* 모바일 fullscreen 헤더 */}
           {selectedZone && (
-            <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-zinc-200 shadow-md -mx-3 px-3 py-2 mb-1">
+            <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-line shadow-md -mx-3 px-3 py-2 mb-1">
               <div className="flex items-center gap-2">
                 <button
                   type="button"

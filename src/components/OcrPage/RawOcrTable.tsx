@@ -3034,7 +3034,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
 
       {/* ── OCR 원본 표 (이미지+테이블 2컬럼 · rowSpan 방식) ── */}
       {structuredPages.length > 0 && (
-        <div className="w-full bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="w-full bg-white border border-line rounded-2xl overflow-hidden shadow-sm">
           <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] font-bold text-white bg-sky-500 px-1.5 py-0.5 rounded shrink-0">1차보정</span>
@@ -3163,7 +3163,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                   {/* 이미지 컬럼 헤더 (이미지가 있을 때) */}
                   {pageImages?.length ? (
                     <th
-                      className="p-0 text-center bg-gray-50 border-r border-gray-200 text-[10px] font-bold text-gray-500 whitespace-nowrap select-none"
+                      className="p-0 text-center bg-gray-50 border-r border-line text-[10px] font-bold text-gray-500 whitespace-nowrap select-none"
                       style={{ width: effectiveInvColWidth, minWidth: effectiveInvColWidth, maxWidth: effectiveInvColWidth, position: "relative", boxSizing: "border-box" }}
                     >
                       <div style={{ padding: "8px 4px", textAlign: "center" }}>
@@ -3399,7 +3399,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                           {pageImages?.length ? (
                             <td
                               rowSpan={imgRowSpan}
-                              className="align-top bg-gray-50 border-r border-gray-200"
+                              className="align-top bg-gray-50 border-r border-line"
                               style={{
                                 width: effectiveInvColWidth, minWidth: effectiveInvColWidth, maxWidth: effectiveInvColWidth,
                                 verticalAlign: "top", padding: 0, position: "relative", boxSizing: "border-box",
@@ -4810,7 +4810,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                       {/* 2026-07-27 · 왼쪽 거래명세서 이미지 컬럼 · 접기/펴기 (2026-07-28) */}
                       {pageImages?.length ? (
                         <th
-                          className="p-0 text-center bg-gray-50 border-r border-gray-200 text-[10px] font-bold text-gray-500 whitespace-nowrap select-none"
+                          className="p-0 text-center bg-gray-50 border-r border-line text-[10px] font-bold text-gray-500 whitespace-nowrap select-none"
                           style={{
                             width: confImageCollapsed ? 24 : effectiveInvColWidth,
                             minWidth: confImageCollapsed ? 24 : effectiveInvColWidth,
@@ -4916,7 +4916,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                 {pageImages?.length ? (
                                   <td
                                     rowSpan={imgRowSpanConf}
-                                    className="align-top bg-gray-50 border-r border-gray-200"
+                                    className="align-top bg-gray-50 border-r border-line"
                                     style={{
                                       width: confImageCollapsed ? 24 : effectiveInvColWidth,
                                       minWidth: confImageCollapsed ? 24 : effectiveInvColWidth,
@@ -4950,9 +4950,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                             <button type="button" onClick={e => { e.stopPropagation(); setConfImageZoom(prev => ({ ...prev, [pn]: Math.min(4, (prev[pn] ?? 1) + 0.25) })); }}
                                               className="text-[11px] font-bold px-1.5 py-0.5 hover:bg-emerald-50 cursor-pointer" title="확대">+</button>
                                             <button type="button" onClick={e => { e.stopPropagation(); setConfImageZoom(prev => ({ ...prev, [pn]: Math.max(0.5, (prev[pn] ?? 1) - 0.25) })); }}
-                                              className="text-[11px] font-bold px-1.5 py-0.5 hover:bg-emerald-50 cursor-pointer border-t border-zinc-200" title="축소">−</button>
+                                              className="text-[11px] font-bold px-1.5 py-0.5 hover:bg-emerald-50 cursor-pointer border-t border-line" title="축소">−</button>
                                             <button type="button" onClick={e => { e.stopPropagation(); setConfImageZoom(prev => { const n = { ...prev }; delete n[pn]; return n; }); setConfImagePan(prev => { const n = { ...prev }; delete n[pn]; return n; }); }}
-                                              className="text-[9px] font-bold px-1.5 py-0.5 hover:bg-zinc-100 cursor-pointer border-t border-zinc-200" title="원본 크기">⛶</button>
+                                              className="text-[9px] font-bold px-1.5 py-0.5 hover:bg-zinc-100 cursor-pointer border-t border-line" title="원본 크기">⛶</button>
                                           </div>
                                           <div
                                             onMouseDown={canDrag ? e => {
@@ -5184,7 +5184,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                               return (
                                 <tr aria-hidden="true" style={{ height: shortfallConf + 24 }}>
                                   {/* 이미지 td 는 rowSpan(3+N) 으로 이 spacer tr 까지 이미 커버 · colSpan 에서 제외 */}
-                                  <td colSpan={CONF_HEADERS.length} className="bg-zinc-50 border-b-2 border-zinc-200" style={{ padding: 0 }} />
+                                  <td colSpan={CONF_HEADERS.length} className="bg-zinc-50 border-b-2 border-line" style={{ padding: 0 }} />
                                 </tr>
                               );
                             })()}

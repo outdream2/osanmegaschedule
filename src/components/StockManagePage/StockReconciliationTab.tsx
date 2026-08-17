@@ -245,7 +245,7 @@ export const StockReconciliationTab: React.FC<{
             <span className="text-[15px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 tabular-nums">
               초과 {overCount}개
             </span>
-            <span className="text-[15px] font-bold text-zinc-500 bg-zinc-50 border border-zinc-200 rounded-full px-2 py-0.5 tabular-nums">
+            <span className="text-[15px] font-bold text-zinc-500 bg-zinc-50 border border-line rounded-full px-2 py-0.5 tabular-nums">
               차이합 {totalDiffAbs}
             </span>
           </>
@@ -260,7 +260,7 @@ export const StockReconciliationTab: React.FC<{
           <button
             onClick={load}
             disabled={loading}
-            className="w-8 h-8 flex items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 cursor-pointer disabled:opacity-50 transition"
+            className="w-8 h-8 flex items-center justify-center rounded-lg border border-line text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 cursor-pointer disabled:opacity-50 transition"
             title="새로고침"
           >
             <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
@@ -277,7 +277,7 @@ export const StockReconciliationTab: React.FC<{
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="상품명 · 상품코드 · 공급사 검색"
-            className="w-full h-8 pl-7 pr-2 text-[14px] bg-zinc-50 border border-zinc-200 rounded-lg
+            className="w-full h-8 pl-7 pr-2 text-[14px] bg-zinc-50 border border-line rounded-lg
               focus:outline-none focus:border-brand-deep focus:bg-white transition"
           />
         </div>
@@ -286,7 +286,7 @@ export const StockReconciliationTab: React.FC<{
           <select
             value={supplierFilter}
             onChange={e => setSupplierFilter(e.target.value)}
-            className="h-8 pl-7 pr-6 text-[14px] font-semibold bg-zinc-50 border border-zinc-200 rounded-lg
+            className="h-8 pl-7 pr-6 text-[14px] font-semibold bg-zinc-50 border border-line rounded-lg
               focus:outline-none focus:border-brand-deep focus:bg-white transition cursor-pointer appearance-none"
           >
             <option value="">전체 공급사</option>
@@ -299,7 +299,7 @@ export const StockReconciliationTab: React.FC<{
           <button
             onClick={() => { setQuery(""); setSupplierFilter(""); }}
             className="h-8 px-3 text-[15px] font-bold text-zinc-500 hover:text-zinc-800
-              bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-lg cursor-pointer transition"
+              bg-zinc-50 hover:bg-zinc-100 border border-line rounded-lg cursor-pointer transition"
           >
             초기화
           </button>

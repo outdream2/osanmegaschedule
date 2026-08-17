@@ -57,7 +57,7 @@ export const SettingsPageShell: React.FC<Props> = ({
       <main className={`flex-1 ${maxWidth} mx-auto w-full px-4 py-5 flex flex-col gap-3`}>
         {/* 페이지 타이틀 · 아이콘 + 제목 + 설명 */}
         <div className="flex items-start gap-2.5 mb-1">
-          <div className="w-9 h-9 rounded-lg bg-white border border-zinc-200 shadow-sm flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-lg bg-white border border-line shadow-sm flex items-center justify-center shrink-0">
             <Icon size={20} weight="duotone" className={iconColor} />
           </div>
           <div className="flex-1 min-w-0">

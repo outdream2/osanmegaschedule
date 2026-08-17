@@ -79,7 +79,7 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
       <div className="flex items-stretch h-full min-h-[54px] sm:min-h-[58px]">
 
         {/* 행 번호 — 좌측 수직 스트립 */}
-        <div className="flex items-center justify-center w-4 sm:w-5 shrink-0 text-[8px] font-medium text-zinc-300 select-none bg-zinc-50/50 border-r border-zinc-100">
+        <div className="flex items-center justify-center w-4 sm:w-5 shrink-0 text-[10px] font-medium text-zinc-300 select-none bg-zinc-50/50 border-r border-zinc-100">
           {empIdx + 1}
         </div>
 

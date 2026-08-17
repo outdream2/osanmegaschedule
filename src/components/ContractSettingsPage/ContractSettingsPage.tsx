@@ -108,7 +108,7 @@ const JOB_META: Array<{
   { key: "약사", label: "약사", color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-200", accent: "border-l-violet-400" },
   { key: "매장", label: "매장", color: "text-sky-700",    bg: "bg-sky-50",   border: "border-sky-200",   accent: "border-l-sky-400"    },
   { key: "창고", label: "창고", color: "text-amber-700",  bg: "bg-amber-50",  border: "border-amber-200",  accent: "border-l-amber-400"  },
-  { key: "기타", label: "기타", color: "text-zinc-700",  bg: "bg-zinc-50",  border: "border-zinc-200",  accent: "border-l-zinc-400"  },
+  { key: "기타", label: "기타", color: "text-zinc-700",  bg: "bg-zinc-50",  border: "border-line",  accent: "border-l-zinc-400"  },
 ];
 
 const CLAUSE_GROUP_META: Array<{
@@ -125,7 +125,7 @@ const CLAUSE_GROUP_META: Array<{
   { key: "holidayClauses",    label: "휴일",           desc: "주휴일·공휴일·휴무",      icon: Calendar,   color: "text-teal-700",    bg: "bg-teal-50",    border: "border-teal-200"    },
   { key: "disciplineClauses", label: "징계·해지 사유", desc: "근로계약 해지 각 호",      icon: Shield,     color: "text-rose-700",    bg: "bg-rose-50",    border: "border-rose-200"    },
   { key: "etcClauses",        label: "기타",           desc: "지급방법·비밀·인수인계",  icon: ListChecks, color: "text-indigo-700",  bg: "bg-indigo-50",  border: "border-indigo-200"  },
-  { key: "privacyClauses",    label: "개인정보",       desc: "개인정보·CCTV 수집",      icon: Lock,       color: "text-zinc-700",   bg: "bg-zinc-50",   border: "border-zinc-200"   },
+  { key: "privacyClauses",    label: "개인정보",       desc: "개인정보·CCTV 수집",      icon: Lock,       color: "text-zinc-700",   bg: "bg-zinc-50",   border: "border-line"   },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -468,7 +468,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
       <main className="flex-1 max-w-[1100px] mx-auto w-full px-3 sm:px-5 py-4 flex flex-col gap-3">
 
         {/* ── 상단 sticky · 전체 저장 배너 ──────────────────────────────── */}
-        <div className="sticky top-0 z-20 -mx-3 sm:-mx-5 px-3 sm:px-5 py-2 bg-white/95 backdrop-blur-sm border-b border-zinc-200 shadow-sm flex items-center justify-between gap-2">
+        <div className="sticky top-0 z-20 -mx-3 sm:-mx-5 px-3 sm:px-5 py-2 bg-white/95 backdrop-blur-sm border-b border-line shadow-sm flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
               <Gear size={15} weight="fill" />
@@ -512,7 +512,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
             <button
               type="button"
               onClick={handleResetToDefault}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 text-[12px] font-semibold transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-line bg-white text-zinc-500 hover:bg-zinc-50 text-[12px] font-semibold transition-colors cursor-pointer"
               title="기본값 초기화"
             >
               <ArrowsClockwise size={13} />
@@ -522,7 +522,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
               type="button"
               onClick={handleRevert}
               disabled={!dirty}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed text-[12px] font-semibold transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-line bg-white text-zinc-500 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed text-[12px] font-semibold transition-colors cursor-pointer"
             >
               취소
             </button>
@@ -544,7 +544,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
             className={`rounded-lg border px-3 py-2 text-[12px] font-semibold flex items-center gap-2 ${
               notice.tone === "ok"  ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
               notice.tone === "err" ? "bg-rose-50 text-rose-700 border-rose-200" :
-                                      "bg-zinc-50 text-zinc-700 border-zinc-200"
+                                      "bg-zinc-50 text-zinc-700 border-line"
             }`}
           >
             {notice.tone === "ok"  ? <Check size={13} weight="bold" /> :
@@ -558,7 +558,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
 
           {/* 섹션 0 · 회사 정보 · 2026-08-07 · 기본 접힘 (사용자 요청) */}
-          <section className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
+          <section className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
             <button
               type="button"
               onClick={() => setCompanyInfoOpen(o => !o)}
@@ -602,7 +602,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                   onChange={(e) => setCompanyInfo(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="예) 오산 메가타운 약국"
                   disabled={!companyInfoLoaded}
-                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
+                  className="bg-white border border-line rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
                 />
               </div>
               {/* 대표자 이름 */}
@@ -614,7 +614,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                   onChange={(e) => setCompanyInfo(prev => ({ ...prev, representativeName: e.target.value }))}
                   placeholder="예) 강남성"
                   disabled={!companyInfoLoaded}
-                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
+                  className="bg-white border border-line rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
                 />
               </div>
               {/* 사업장 주소 */}
@@ -626,7 +626,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                   onChange={(e) => setCompanyInfo(prev => ({ ...prev, address: e.target.value }))}
                   placeholder="예) 경기도 오산시 경기대로 868-4 2층"
                   disabled={!companyInfoLoaded}
-                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
+                  className="bg-white border border-line rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
                 />
               </div>
               {/* 사업자등록번호 */}
@@ -638,7 +638,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                   onChange={(e) => setCompanyInfo(prev => ({ ...prev, regNo: e.target.value }))}
                   placeholder="예) 123-45-67890"
                   disabled={!companyInfoLoaded}
-                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
+                  className="bg-white border border-line rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
                 />
               </div>
               {/* 대표자 직함 */}
@@ -650,7 +650,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                   onChange={(e) => setCompanyInfo(prev => ({ ...prev, representativeTitle: e.target.value }))}
                   placeholder="예) 대표약사"
                   disabled={!companyInfoLoaded}
-                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
+                  className="bg-white border border-line rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
                 />
               </div>
               {/* 임금지급일 · 계약서 "2. 임금지급일" 항목에 그대로 표시 */}
@@ -664,7 +664,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                   placeholder="예) 당월 01일부터 당월 말일 까지 근로한 부분에 대하여 당월 말일에 '을' 본인 명의의 통장으로 지급한다."
                   disabled={!paymentDayLoaded}
                   rows={2}
-                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50 resize-none"
+                  className="bg-white border border-line rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50 resize-none"
                 />
               </div>
               {/* 회사 정보 개별 저장 버튼 */}
@@ -686,7 +686,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
           </section>
 
           {/* 섹션 1 · 직군별 시급 */}
-          <section className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
+          <section className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
             <header className="flex items-center gap-2 px-3 py-2.5 border-b border-zinc-100 bg-zinc-50/60">
               <div className="w-7 h-7 rounded-md bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
                 <CurrencyKrw size={14} weight="fill" />
@@ -741,7 +741,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                           value={rate.weekday || ""}
                           placeholder={String(fallback.weekday)}
                           onChange={(e) => updWage(job.key, "weekday", Math.max(0, Number(e.target.value) || 0))}
-                          className={`w-full bg-zinc-50 border rounded-lg px-2 py-1.5 text-[13px] font-bold text-right tabular-nums focus:outline-none focus:bg-white focus:border-brand-deep transition ${isDefault ? "border-zinc-200 text-zinc-400" : "border-zinc-200 text-zinc-800"}`}
+                          className={`w-full bg-zinc-50 border rounded-lg px-2 py-1.5 text-[13px] font-bold text-right tabular-nums focus:outline-none focus:bg-white focus:border-brand-deep transition ${isDefault ? "border-line text-zinc-400" : "border-line text-zinc-800"}`}
                         />
                       </div>
                       <div className="flex-1 flex flex-col gap-1 pl-3">
@@ -753,7 +753,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                           value={rate.weekend || ""}
                           placeholder={String(fallback.weekend)}
                           onChange={(e) => updWage(job.key, "weekend", Math.max(0, Number(e.target.value) || 0))}
-                          className={`w-full bg-zinc-50 border rounded-lg px-2 py-1.5 text-[13px] font-bold text-right tabular-nums focus:outline-none focus:bg-white focus:border-brand-deep transition ${isDefault ? "border-zinc-200 text-zinc-400" : "border-zinc-200 text-zinc-800"}`}
+                          className={`w-full bg-zinc-50 border rounded-lg px-2 py-1.5 text-[13px] font-bold text-right tabular-nums focus:outline-none focus:bg-white focus:border-brand-deep transition ${isDefault ? "border-line text-zinc-400" : "border-line text-zinc-800"}`}
                         />
                       </div>
                     </div>
@@ -790,7 +790,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
           <button
             type="button"
             onClick={toggleAllOpen}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 text-[11px] font-bold transition-colors cursor-pointer shrink-0"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-line bg-white text-zinc-500 hover:bg-zinc-50 text-[11px] font-bold transition-colors cursor-pointer shrink-0"
           >
             {allOpen ? <CaretDown size={11} weight="bold" /> : <CaretRight size={11} weight="bold" />}
             {allOpen ? "전체 접기" : "전체 펼치기"}
@@ -832,7 +832,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                 {isOpen && (
                   <div className={`border-t ${grp.border} p-3 flex flex-col gap-2`}>
                     {list.length === 0 && (
-                      <div className="text-[11px] text-zinc-400 font-semibold text-center py-3 border border-dashed border-zinc-200 rounded-lg">
+                      <div className="text-[11px] text-zinc-400 font-semibold text-center py-3 border border-dashed border-line rounded-lg">
                         등록된 항목이 없습니다.
                       </div>
                     )}
@@ -840,7 +840,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                     {list.map((text, idx) => (
                       <div
                         key={idx}
-                        className="flex items-start gap-2 p-2 rounded-lg border border-zinc-100 bg-zinc-50/40 hover:border-zinc-200 transition-colors"
+                        className="flex items-start gap-2 p-2 rounded-lg border border-zinc-100 bg-zinc-50/40 hover:border-line transition-colors"
                       >
                         <div className={`flex items-center justify-center min-w-[22px] h-[22px] rounded-md ${grp.bg} ${grp.color} text-[10px] font-bold shrink-0 mt-1`}>
                           {idx + 1}
@@ -850,14 +850,14 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                           onChange={(e) => updClause(grp.key, idx, e.target.value)}
                           rows={Math.max(2, Math.min(5, Math.ceil(text.length / 55) || 2))}
                           placeholder="내용을 입력하세요."
-                          className="flex-1 bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep focus:shadow-sm transition resize-y leading-relaxed"
+                          className="flex-1 bg-white border border-line rounded-lg px-2 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep focus:shadow-sm transition resize-y leading-relaxed"
                         />
                         <div className="flex flex-col gap-1 shrink-0 pt-0.5">
                           <button
                             type="button"
                             onClick={() => moveClause(grp.key, idx, -1)}
                             disabled={idx === 0}
-                            className="w-6 h-6 rounded-md border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer transition-colors"
+                            className="w-6 h-6 rounded-md border border-line bg-white text-zinc-500 hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer transition-colors"
                             title="위로 이동"
                           >
                             <ArrowUp size={10} weight="bold" />
@@ -866,7 +866,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                             type="button"
                             onClick={() => moveClause(grp.key, idx, 1)}
                             disabled={idx === list.length - 1}
-                            className="w-6 h-6 rounded-md border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer transition-colors"
+                            className="w-6 h-6 rounded-md border border-line bg-white text-zinc-500 hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer transition-colors"
                             title="아래로 이동"
                           >
                             <ArrowDown size={10} weight="bold" />

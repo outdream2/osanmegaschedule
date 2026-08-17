@@ -90,7 +90,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm flex flex-col overflow-hidden">
         {/* 헤더 */}
         {(title || danger) && (
-          <div className="flex items-center gap-2 px-5 py-4 border-b border-zinc-200">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-line">
             {danger && <AlertTriangle size={18} className="text-rose-500 shrink-0" />}
             {title && (
               <span

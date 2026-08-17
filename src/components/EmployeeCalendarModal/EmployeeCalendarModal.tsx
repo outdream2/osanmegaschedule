@@ -524,7 +524,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                             outOfEmployment ? (beforeHire ? "입사일 이전 — 근무 불가" : "퇴사일 이후 — 근무 불가") : undefined
                           }
                           className={`relative rounded-xl p-1.5 flex flex-col items-center min-h-[64px] border transition-all overflow-hidden ${
-                            outOfEmployment ? "bg-zinc-100 border-zinc-200 cursor-not-allowed opacity-70" :
+                            outOfEmployment ? "bg-zinc-100 border-line cursor-not-allowed opacity-70" :
                             (dayBgHex ? "border-transparent" : "bg-white border-zinc-100")
                           } ${isHireDay ? "ring-2 ring-emerald-500" : ""} ${isRetireDay ? "ring-2 ring-rose-500" : ""} ${isToday ? "ring-2 ring-indigo-400 ring-offset-1" : ""} ${
                             isEditing ? "ring-2 ring-blue-500 scale-105 z-10 shadow-md" : ""
@@ -533,12 +533,12 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                         >
                           {/* 입사일/퇴사일 배지 (셀 우상단) */}
                           {isHireDay && (
-                            <span className="absolute -top-1.5 -right-1 text-[8px] font-bold px-1 py-px rounded bg-emerald-500 text-white leading-none shadow-sm z-10">
+                            <span className="absolute -top-1.5 -right-1 text-[10px] font-bold px-1 py-px rounded bg-emerald-500 text-white leading-none shadow-sm z-10">
                               입사
                             </span>
                           )}
                           {isRetireDay && (
-                            <span className="absolute -top-1.5 -right-1 text-[8px] font-bold px-1 py-px rounded bg-rose-500 text-white leading-none shadow-sm z-10">
+                            <span className="absolute -top-1.5 -right-1 text-[10px] font-bold px-1 py-px rounded bg-rose-500 text-white leading-none shadow-sm z-10">
                               퇴사
                             </span>
                           )}

@@ -903,7 +903,7 @@ export const PaymentInfoTab: React.FC = () => {
               value={vendorSearch}
               onChange={e => setVendorSearch(e.target.value)}
               placeholder="공급사명 검색"
-              className="w-full h-7 px-2.5 text-[15px] border border-zinc-200 rounded-lg outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep transition"
+              className="w-full h-7 px-2.5 text-[15px] border border-line rounded-lg outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep transition"
             />
             <div className="flex flex-wrap gap-0.5">
               {(["전체", ...dbVendorCategories] as string[]).map(cat => (
@@ -913,7 +913,7 @@ export const PaymentInfoTab: React.FC = () => {
                   className={`h-6 px-2 text-[15px] font-semibold rounded-lg transition cursor-pointer ${
                     vendorCategoryFilter === cat
                       ? CATEGORY_COLORS[cat as keyof typeof CATEGORY_COLORS] ?? "bg-zinc-500 text-white shadow-sm"
-                      : "bg-zinc-50 text-zinc-500 border border-zinc-200 hover:text-zinc-700"
+                      : "bg-zinc-50 text-zinc-500 border border-line hover:text-zinc-700"
                   }`}
                 >
                   {cat}
@@ -1079,7 +1079,7 @@ export const PaymentInfoTab: React.FC = () => {
           ) : (
             <>
               {/* ── 공급사 요약 카드 (T-COMMON-VendorInfo · VendorInfoHeader 위임) ── */}
-              <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-4 flex flex-col gap-2.5">
+              <div className="bg-white rounded-2xl border border-line shadow-sm p-4 flex flex-col gap-2.5">
                 <VendorInfoHeader
                   vendor={selectedVendor}
                   onEdit={() => openVendorInfo(selectedVendor as any)}
@@ -1103,9 +1103,9 @@ export const PaymentInfoTab: React.FC = () => {
                   const fmt = (n: number) => n === 0 ? "-" : fmtWonShort(n);
                   const showLoading = salesStockLoading || balanceLoading;
                   return (
-                    <div className="overflow-hidden rounded-lg border border-zinc-200 shadow-xs">
+                    <div className="overflow-hidden rounded-lg border border-line shadow-xs">
                       {/* 상단 · 제목 + PeriodSelector */}
-                      <div className="flex items-center gap-2 px-3 py-2 bg-zinc-50/80 border-b border-zinc-200">
+                      <div className="flex items-center gap-2 px-3 py-2 bg-zinc-50/80 border-b border-line">
                         <span className="text-[15px] font-bold text-zinc-700">월별 요약</span>
                         <PeriodSelector
                           options={PERIOD_MONTHS_PRESET}
@@ -1122,7 +1122,7 @@ export const PaymentInfoTab: React.FC = () => {
                       <table className="w-full min-w-[520px] text-[14px] tabular-nums">
                         <thead className="bg-zinc-50/80 text-[15px] font-bold uppercase tracking-wider text-zinc-500">
                           <tr>
-                            <th className="text-center px-2 py-1.5 w-[56px] border-r border-zinc-200">카테고리</th>
+                            <th className="text-center px-2 py-1.5 w-[56px] border-r border-line">카테고리</th>
                             <th className="text-left px-2 py-1.5 w-[64px]">항목</th>
                             {months.map(k => (
                               <th key={k} className="text-right px-2 py-1.5 whitespace-nowrap">
@@ -1132,7 +1132,7 @@ export const PaymentInfoTab: React.FC = () => {
                                 </span>
                               </th>
                             ))}
-                            <th className="text-right px-2 py-1.5 whitespace-nowrap text-zinc-700 border-l border-zinc-200 bg-zinc-50/40">
+                            <th className="text-right px-2 py-1.5 whitespace-nowrap text-zinc-700 border-l border-line bg-zinc-50/40">
                               <span className="inline-flex items-center gap-1 justify-end"><Layers size={11} />합계</span>
                             </th>
                           </tr>
@@ -1140,7 +1140,7 @@ export const PaymentInfoTab: React.FC = () => {
                         <tbody className="divide-y divide-zinc-100">
                           {/* ── 공급사 카테고리 · 매입/결제/실잔고 (원복 · 사용자 요청) ── */}
                           <tr className="bg-white">
-                            <td rowSpan={3} className="text-center px-2 py-1.5 font-bold text-zinc-600 bg-emerald-50/40 border-r border-zinc-200 align-middle">
+                            <td rowSpan={3} className="text-center px-2 py-1.5 font-bold text-zinc-600 bg-emerald-50/40 border-r border-line align-middle">
                               공급사
                             </td>
                             <td className="px-2 py-1.5 font-bold text-emerald-700 whitespace-nowrap">
@@ -1151,7 +1151,7 @@ export const PaymentInfoTab: React.FC = () => {
                                 {fmt(purMap[k] ?? 0)}
                               </td>
                             ))}
-                            <td className="px-2 py-1.5 text-right font-bold text-emerald-800 border-l border-zinc-200 bg-zinc-50/40">{fmt(totals.purchases)}</td>
+                            <td className="px-2 py-1.5 text-right font-bold text-emerald-800 border-l border-line bg-zinc-50/40">{fmt(totals.purchases)}</td>
                           </tr>
                           <tr className="bg-zinc-50/40">
                             <td className="px-2 py-1.5 font-bold text-sky-700 whitespace-nowrap">
@@ -1162,7 +1162,7 @@ export const PaymentInfoTab: React.FC = () => {
                                 {fmt(payMap[k] ?? 0)}
                               </td>
                             ))}
-                            <td className="px-2 py-1.5 text-right font-bold text-sky-800 border-l border-zinc-200 bg-zinc-50/40">{fmt(totals.payments)}</td>
+                            <td className="px-2 py-1.5 text-right font-bold text-sky-800 border-l border-line bg-zinc-50/40">{fmt(totals.payments)}</td>
                           </tr>
                           <tr className="bg-white">
                             <td className="px-2 py-1.5 font-bold text-amber-700 whitespace-nowrap">
@@ -1178,7 +1178,7 @@ export const PaymentInfoTab: React.FC = () => {
                                 </td>
                               );
                             })}
-                            <td className={`px-2 py-1.5 text-right font-bold border-l border-zinc-200 bg-amber-50/60 ${
+                            <td className={`px-2 py-1.5 text-right font-bold border-l border-line bg-amber-50/60 ${
                               totals.balance > 0 ? "text-amber-700" : totals.balance < 0 ? "text-rose-700" : "text-zinc-500"
                             }`}>
                               {totals.balance === 0 ? "0" : (totals.balance > 0 ? "" : "-") + fmtWonShort(Math.abs(totals.balance))}
@@ -1186,7 +1186,7 @@ export const PaymentInfoTab: React.FC = () => {
                           </tr>
                           {/* ── 판매 카테고리 · 매입/판매액/실재고액 · 구분선 (border-t 강조) ── */}
                           <tr className="bg-white border-t-2 border-zinc-300">
-                            <td rowSpan={3} className="text-center px-2 py-1.5 font-bold text-zinc-600 bg-indigo-50/40 border-r border-zinc-200 align-middle">
+                            <td rowSpan={3} className="text-center px-2 py-1.5 font-bold text-zinc-600 bg-indigo-50/40 border-r border-line align-middle">
                               판매
                             </td>
                             <td className="px-2 py-1.5 font-bold text-emerald-700 whitespace-nowrap">
@@ -1197,7 +1197,7 @@ export const PaymentInfoTab: React.FC = () => {
                                 {fmt(purMap[k] ?? 0)}
                               </td>
                             ))}
-                            <td className="px-2 py-1.5 text-right font-bold text-emerald-800 border-l border-zinc-200 bg-zinc-50/40">{fmt(totals.purchases)}</td>
+                            <td className="px-2 py-1.5 text-right font-bold text-emerald-800 border-l border-line bg-zinc-50/40">{fmt(totals.purchases)}</td>
                           </tr>
                           <tr className="bg-zinc-50/40">
                             <td className="px-2 py-1.5 font-bold text-indigo-700 whitespace-nowrap">
@@ -1208,7 +1208,7 @@ export const PaymentInfoTab: React.FC = () => {
                                 {fmt(salesMap[k] ?? 0)}
                               </td>
                             ))}
-                            <td className="px-2 py-1.5 text-right font-bold text-indigo-800 border-l border-zinc-200 bg-zinc-50/40">{fmt(totals.sales)}</td>
+                            <td className="px-2 py-1.5 text-right font-bold text-indigo-800 border-l border-line bg-zinc-50/40">{fmt(totals.sales)}</td>
                           </tr>
                           <tr className="bg-white">
                             <td className="px-2 py-1.5 font-bold text-rose-700 whitespace-nowrap">
@@ -1219,7 +1219,7 @@ export const PaymentInfoTab: React.FC = () => {
                             {months.map(k => (
                               <td key={k} className="px-2 py-1.5 text-right text-zinc-300">-</td>
                             ))}
-                            <td className={`px-2 py-1.5 text-right font-bold border-l border-zinc-200 bg-rose-50/60 ${
+                            <td className={`px-2 py-1.5 text-right font-bold border-l border-line bg-rose-50/60 ${
                               totals.stockValue > 0 ? "text-rose-700" : "text-zinc-400"
                             }`}>
                               {totals.stockValue === 0 ? "-" : fmtWonShort(totals.stockValue)}
@@ -1237,7 +1237,7 @@ export const PaymentInfoTab: React.FC = () => {
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 items-start">
 
               {/* ── 결제 입력 폼 (리디자인 · 깔끔·세련 · 2026-08-04) ── */}
-              <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden flex flex-col">
+              <div className="bg-white rounded-2xl border border-line shadow-sm overflow-hidden flex flex-col">
 
                 {/* 폼 헤더 */}
                 <div className="flex items-center gap-2.5 px-4 py-3 border-b border-zinc-100 bg-emerald-50/60 shrink-0">
@@ -1275,7 +1275,7 @@ export const PaymentInfoTab: React.FC = () => {
                             onClick={openDatePicker}
                             title="달력 열기"
                             aria-label="달력 열기"
-                            className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-zinc-200 bg-white hover:bg-emerald-50 hover:border-emerald-400 text-zinc-400 hover:text-emerald-600 transition cursor-pointer shrink-0"
+                            className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-line bg-white hover:bg-emerald-50 hover:border-emerald-400 text-zinc-400 hover:text-emerald-600 transition cursor-pointer shrink-0"
                           >
                             <Calendar size={13} strokeWidth={2.25} />
                           </button>
@@ -1297,7 +1297,7 @@ export const PaymentInfoTab: React.FC = () => {
                                     : opt.key === "cash"
                                     ? "bg-amber-500 border-amber-500 text-white shadow-sm"
                                     : "bg-zinc-600 border-zinc-600 text-white shadow-sm"
-                                  : "bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:text-zinc-700"
+                                  : "bg-white border-line text-zinc-500 hover:border-zinc-300 hover:text-zinc-700"
                               }`}
                             >
                               {opt.label}
@@ -1512,7 +1512,7 @@ export const PaymentInfoTab: React.FC = () => {
               </div>
 
               {/* ── 최근 결제 내역 ───────────────────────────── */}
-              <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-4 flex flex-col gap-2">
+              <div className="bg-white rounded-2xl border border-line shadow-sm p-4 flex flex-col gap-2">
                 <div className="flex items-center gap-2 pb-1 border-b border-zinc-100">
                   <div className="w-6 h-6 rounded-lg bg-sky-100 flex items-center justify-center">
                     <ReceiptText size={13} className="text-sky-700" strokeWidth={2.5} />
@@ -1524,7 +1524,7 @@ export const PaymentInfoTab: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => selectedVendor && loadRecentPayments(selectedVendor.company_name)}
-                    className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-zinc-200 hover:bg-zinc-50 text-zinc-500 transition"
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-line hover:bg-zinc-50 text-zinc-500 transition"
                     title="새로고침"
                   >
                     <RefreshCw size={12} className={recentLoading ? "animate-spin" : ""} />
@@ -1557,7 +1557,7 @@ export const PaymentInfoTab: React.FC = () => {
                                 {p.payment_date}
                               </span>
                               {subLabel && (
-                                <span className="text-[14px] font-semibold text-zinc-500 px-1.5 py-0.5 rounded bg-zinc-50 border border-zinc-200 truncate">
+                                <span className="text-[14px] font-semibold text-zinc-500 px-1.5 py-0.5 rounded bg-zinc-50 border border-line truncate">
                                   {subLabel}
                                 </span>
                               )}
@@ -1610,7 +1610,7 @@ export const PaymentInfoTab: React.FC = () => {
 
               {/* T11 · 상품별 매입 요약 (2026-08-04 · 이 공급사에서 매입한 상품별 집계) */}
               {productSummary.length > 0 && (
-                <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm">
+                <div className="bg-white rounded-2xl border border-line shadow-sm">
                   <button
                     type="button"
                     onClick={() => setShowProductGroup(v => !v)}
@@ -1832,7 +1832,7 @@ const VendorListHeader: React.FC<{
   count: number;
   loading?: boolean;
 }> = ({ sortKey, sortDir, onSort, count, loading = false }) => (
-  <div className="px-2 py-1.5 border-b border-zinc-200 bg-zinc-50/70 shrink-0 flex items-center gap-1.5 text-[15px] font-bold uppercase tracking-wider">
+  <div className="px-2 py-1.5 border-b border-line bg-zinc-50/70 shrink-0 flex items-center gap-1.5 text-[15px] font-bold uppercase tracking-wider">
     {/* 분류 · 정렬 X (badge column) */}
     <span className="w-[42px] shrink-0 text-zinc-400">분류</span>
     {/* VAT · 포함/불포함 · 2026-08-06 · 사용자 요청 */}
@@ -1894,11 +1894,11 @@ const KpiMini: React.FC<{
     sky:     { text: "text-sky-700",     badge: "bg-sky-50 text-sky-600 border-sky-100" },
     amber:   { text: "text-amber-700",   badge: "bg-amber-50 text-amber-600 border-amber-100" },
     rose:    { text: "text-rose-700",    badge: "bg-rose-50 text-rose-600 border-rose-100" },
-    slate:   { text: "text-zinc-600",   badge: "bg-zinc-50 text-zinc-500 border-zinc-200" },
+    slate:   { text: "text-zinc-600",   badge: "bg-zinc-50 text-zinc-500 border-line" },
   } as const;
   const t = map[tone];
   return (
-    <div className="bg-white rounded-lg border border-zinc-200 shadow-xs px-2.5 py-2 flex flex-col gap-1">
+    <div className="bg-white rounded-lg border border-line shadow-xs px-2.5 py-2 flex flex-col gap-1">
       <div className="flex items-center gap-1.5 min-w-0">
         {icon && (
           <span className={`w-5 h-5 flex items-center justify-center rounded border ${t.badge} shrink-0`}>

@@ -414,30 +414,30 @@ const ResignationPreview = React.forwardRef<HTMLDivElement, {
         <table className="w-full text-[18px] border-collapse">
           <tbody>
             <tr className="border-t-2 border-zinc-800">
-              <th className="w-[110px] py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-zinc-200 pl-3">성명</th>
-              <td className="py-2 px-3 text-ink font-semibold border-b border-zinc-200">{form.employeeName || "-"}</td>
-              <th className="w-[110px] py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-zinc-200 pl-3">생년월일</th>
-              <td className="py-2 px-3 text-ink font-semibold border-b border-zinc-200">{fmtKoreanDate(form.birthDate) || "-"}</td>
+              <th className="w-[110px] py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-line pl-3">성명</th>
+              <td className="py-2 px-3 text-ink font-semibold border-b border-line">{form.employeeName || "-"}</td>
+              <th className="w-[110px] py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-line pl-3">생년월일</th>
+              <td className="py-2 px-3 text-ink font-semibold border-b border-line">{fmtKoreanDate(form.birthDate) || "-"}</td>
             </tr>
             <tr>
-              <th className="py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-zinc-200 pl-3">부서 / 직급</th>
-              <td className="py-2 px-3 text-ink font-semibold border-b border-zinc-200">
+              <th className="py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-line pl-3">부서 / 직급</th>
+              <td className="py-2 px-3 text-ink font-semibold border-b border-line">
                 {form.department || "-"}{form.position ? ` / ${form.position}` : ""}
               </td>
-              <th className="py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-zinc-200 pl-3">입사일</th>
-              <td className="py-2 px-3 text-ink font-semibold border-b border-zinc-200">{fmtKoreanDate(form.hireDate) || "-"}</td>
+              <th className="py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-line pl-3">입사일</th>
+              <td className="py-2 px-3 text-ink font-semibold border-b border-line">{fmtKoreanDate(form.hireDate) || "-"}</td>
             </tr>
             <tr>
-              <th className="py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-zinc-200 pl-3">사직일<br/><span className="text-[17px] font-semibold text-ink-soft">(마지막 근무일)</span></th>
-              <td className="py-2 px-3 text-ink font-bold border-b border-zinc-200">{fmtKoreanDate(form.lastWorkDate) || "-"}</td>
-              <th className="py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-zinc-200 pl-3">근속기간</th>
-              <td className="py-2 px-3 text-ink font-semibold border-b border-zinc-200">{tenure}</td>
+              <th className="py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-line pl-3">사직일<br/><span className="text-[17px] font-semibold text-ink-soft">(마지막 근무일)</span></th>
+              <td className="py-2 px-3 text-ink font-bold border-b border-line">{fmtKoreanDate(form.lastWorkDate) || "-"}</td>
+              <th className="py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-line pl-3">근속기간</th>
+              <td className="py-2 px-3 text-ink font-semibold border-b border-line">{tenure}</td>
             </tr>
             <tr>
-              <th className="py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-zinc-200 pl-3">사직서 제출일</th>
-              <td className="py-2 px-3 text-ink font-semibold border-b border-zinc-200">{fmtKoreanDate(form.submitDate) || "-"}</td>
-              <th className="py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-zinc-200 pl-3">수신</th>
-              <td className="py-2 px-3 text-ink font-semibold border-b border-zinc-200">{form.recipient || "-"} 귀하</td>
+              <th className="py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-line pl-3">사직서 제출일</th>
+              <td className="py-2 px-3 text-ink font-semibold border-b border-line">{fmtKoreanDate(form.submitDate) || "-"}</td>
+              <th className="py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b border-line pl-3">수신</th>
+              <td className="py-2 px-3 text-ink font-semibold border-b border-line">{form.recipient || "-"} 귀하</td>
             </tr>
             <tr>
               <th className="py-2 pr-3 text-left font-bold text-zinc-700 bg-zinc-50 border-b-2 border-zinc-800 pl-3 align-top">사유</th>

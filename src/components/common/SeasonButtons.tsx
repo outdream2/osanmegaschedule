@@ -39,7 +39,7 @@ export const SeasonButtons: React.FC<SeasonButtonsProps> = ({
       {!hideLabel && label && (
         <span className={`text-zinc-500 font-bold shrink-0 ${labelCls}`}>{label}</span>
       )}
-      <div className="inline-flex bg-zinc-100/80 border border-zinc-200/60 rounded-lg p-0.5 shadow-inner">
+      <div className="inline-flex bg-zinc-100/80 border border-line/60 rounded-lg p-0.5 shadow-inner">
         {SEASONS.map((s) => {
           const active = value === s;
           const months = ranges[s];

@@ -162,7 +162,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
         {isAdmin && (
           <button
             onClick={e => { e.stopPropagation(); setIsOpen(true); }}
-            className="w-full flex items-center justify-center gap-0.5 px-1 py-0.5 rounded bg-zinc-50 hover:bg-indigo-50 border border-zinc-200/60 hover:border-indigo-300 text-zinc-500 hover:text-indigo-600 active:scale-95 transition-colors cursor-pointer mb-1 shrink-0"
+            className="w-full flex items-center justify-center gap-0.5 px-1 py-0.5 rounded bg-zinc-50 hover:bg-indigo-50 border border-line/60 hover:border-indigo-300 text-zinc-500 hover:text-indigo-600 active:scale-95 transition-colors cursor-pointer mb-1 shrink-0"
             title="상세 편집"
           >
             <Settings2 size={9} />
@@ -251,7 +251,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
                 <button
                   type="button"
                   onClick={() => setActualHours("")}
-                  className="px-2 py-1 text-[13px] font-extrabold bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200 rounded transition cursor-pointer"
+                  className="px-2 py-1 text-[13px] font-extrabold bg-white hover:bg-zinc-100 text-zinc-700 border border-line rounded transition cursor-pointer"
                 >
                   초기화
                 </button>
@@ -300,7 +300,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
                       isSelected
                         ? `${btnLight ? "text-zinc-900" : "text-white"} !border-[#2563eb] ring-1 ring-blue-500/20`
                         : dimmed
-                          ? "bg-zinc-50 text-zinc-300 border-zinc-100 hover:text-zinc-600 hover:border-zinc-200"
+                          ? "bg-zinc-50 text-zinc-300 border-zinc-100 hover:text-zinc-600 hover:border-line"
                           : "bg-zinc-50 text-zinc-700 border-[#e2e8f0] hover:bg-zinc-100"
                     }`}
                     style={isSelected ? { backgroundColor: btnHex } : undefined}

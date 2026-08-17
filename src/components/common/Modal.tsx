@@ -108,7 +108,7 @@ export const Modal: React.FC<ModalProps> = ({
           {children}
         </div>
         {footer != null && (
-          <div className="border-t border-zinc-200 px-5 py-3 flex items-center justify-end gap-2 shrink-0">
+          <div className="border-t border-line px-5 py-3 flex items-center justify-end gap-2 shrink-0">
             {footer}
           </div>
         )}

@@ -32,7 +32,7 @@ export const BreakModal: React.FC<BreakModalProps> = ({ breakModal, setBreakModa
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 flex flex-col gap-4 animate-in zoom-in-95 duration-200">
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-line p-6 flex flex-col gap-4 animate-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between pb-3 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <div className="p-1.5 bg-amber-500 text-white rounded-lg">
@@ -110,7 +110,7 @@ export const BreakModal: React.FC<BreakModalProps> = ({ breakModal, setBreakModa
           <button
             type="button"
             onClick={() => setBreakModal(null)}
-            className="flex-1 p-3 text-xs font-bold bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 text-gray-600 transition"
+            className="flex-1 p-3 text-xs font-bold bg-gray-50 hover:bg-gray-100 rounded-xl border border-line text-gray-600 transition"
           >
             취소
           </button>

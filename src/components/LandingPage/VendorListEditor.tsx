@@ -300,7 +300,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
 
       {/* ── compact 툴바 ── */}
       {compact ? (
-        <div className="flex flex-col gap-1.5 bg-white rounded-xl border border-zinc-200 shadow-sm px-3 py-2">
+        <div className="flex flex-col gap-1.5 bg-white rounded-xl border border-line shadow-sm px-3 py-2">
           {/* 검색 + 새로고침 */}
           <div className="flex items-center gap-2">
             <div className="relative flex-1 min-w-0">
@@ -309,7 +309,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="회사명 · 담당자 · 전화"
-                className="h-7 pl-7 pr-2 text-[12px] border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep w-full transition"
+                className="h-7 pl-7 pr-2 text-[12px] border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep w-full transition"
               />
             </div>
             {/* 건수 */}
@@ -321,7 +321,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
             <button
               onClick={loadVendors}
               disabled={loading}
-              className="inline-flex items-center justify-center h-7 w-7 shrink-0 border border-zinc-200 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 transition-colors cursor-pointer"
+              className="inline-flex items-center justify-center h-7 w-7 shrink-0 border border-line rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 transition-colors cursor-pointer"
               title="새로고침"
             >
               <RefreshCw size={11} className={loading ? "animate-spin" : ""} />
@@ -360,17 +360,17 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
         </div>
       ) : (
         /* ── 일반 모드 툴바 (기존) ── */
-        <div className="flex items-center gap-2 flex-wrap bg-white rounded-xl border border-zinc-200 shadow-sm px-3 py-2">
+        <div className="flex items-center gap-2 flex-wrap bg-white rounded-xl border border-line shadow-sm px-3 py-2">
           <div className="relative flex-1 min-w-[200px] sm:min-w-[260px] sm:flex-none">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="회사명 · 사업자번호 · 담당자 · 전화 · 이메일"
-              className="h-8 pl-8 pr-3 text-[12px] border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep w-full sm:w-80 transition"
+              className="h-8 pl-8 pr-3 text-[12px] border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep w-full sm:w-80 transition"
             />
           </div>
-          <div className="inline-flex items-center bg-zinc-100 border border-zinc-200 rounded-lg p-0.5 gap-0.5 flex-wrap">
+          <div className="inline-flex items-center bg-zinc-100 border border-line rounded-lg p-0.5 gap-0.5 flex-wrap">
             {(["전체", "위탁", "선결제", "60회전", "90회전", "기타"] as const).map(cat => (
               <button
                 key={cat}
@@ -408,7 +408,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
           <button
             onClick={loadVendors}
             disabled={loading}
-            className="inline-flex items-center justify-center h-8 w-8 border border-zinc-200 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 transition-colors cursor-pointer"
+            className="inline-flex items-center justify-center h-8 w-8 border border-line rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 transition-colors cursor-pointer"
             title="새로고침"
           >
             <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
@@ -419,7 +419,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
       {/* ── compact 모드: 표 형식 리스트 (헤더 정렬 · 결제/공급사 컬럼) ── */}
       {/* 2026-08-04 · #101 · 컬럼 재정비 · 5개 (공급사·총잔고·총재고자산·총판매액·최근매입) */}
       {compact ? (
-        <div className="flex-1 min-h-0 overflow-auto bg-white rounded-xl border border-zinc-200 shadow-sm">
+        <div className="flex-1 min-h-0 overflow-auto bg-white rounded-xl border border-line shadow-sm">
           <table className="w-full min-w-[420px] text-xs border-collapse">
             <thead>
               <tr>
@@ -427,7 +427,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 <th
                   onClick={() => toggleCompactSort("company_name")}
                   className={[
-                    "sticky top-0 z-10 border-b border-zinc-200",
+                    "sticky top-0 z-10 border-b border-line",
                     "text-[11px] font-bold uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-zinc-100 transition-colors duration-100",
                     "py-1.5 text-left pl-2 pr-1 w-[140px]",
@@ -451,7 +451,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 <th
                   onClick={() => toggleCompactSort("balance")}
                   className={[
-                    "sticky top-0 z-10 border-b border-zinc-200",
+                    "sticky top-0 z-10 border-b border-line",
                     "text-[11px] font-bold uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-zinc-100 transition-colors duration-100",
                     "py-1.5 text-right pr-2 pl-1 w-20",
@@ -470,7 +470,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 <th
                   onClick={() => toggleCompactSort("stock_value")}
                   className={[
-                    "sticky top-0 z-10 border-b border-zinc-200",
+                    "sticky top-0 z-10 border-b border-line",
                     "text-[11px] font-bold uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-zinc-100 transition-colors duration-100",
                     "py-1.5 text-right pr-2 pl-1 w-20",
@@ -489,7 +489,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 <th
                   onClick={() => toggleCompactSort("sales_total")}
                   className={[
-                    "sticky top-0 z-10 border-b border-zinc-200",
+                    "sticky top-0 z-10 border-b border-line",
                     "text-[11px] font-bold uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-zinc-100 transition-colors duration-100",
                     "py-1.5 text-right pr-2 pl-1 w-20",
@@ -508,7 +508,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 <th
                   onClick={() => toggleCompactSort("invoice_date")}
                   className={[
-                    "sticky top-0 z-10 border-b border-zinc-200",
+                    "sticky top-0 z-10 border-b border-line",
                     "text-[11px] font-bold uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-zinc-100 transition-colors duration-100",
                     "py-1.5 text-left px-2 w-16",
@@ -617,7 +617,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
         </div>
       ) : (
         /* ── 일반 모드: 기존 반응형 테이블 ── */
-        <div className="flex-1 min-h-0 overflow-auto bg-white rounded-xl border border-zinc-200 shadow-sm">
+        <div className="flex-1 min-h-0 overflow-auto bg-white rounded-xl border border-line shadow-sm">
 
           {/* 모바일(< md): 카드 · compactSorted 사용 (헤더 정렬이 mobile 에도 적용되도록 · 2026-08-04 #68) */}
           <div className="md:hidden divide-y divide-zinc-100">
@@ -658,7 +658,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
 
           {/* 태블릿·데스크탑(md+): shadcn data-table 스타일 */}
           <table className="hidden md:table w-full text-xs">
-            <thead className="sticky top-0 bg-white z-10 border-b border-zinc-200">
+            <thead className="sticky top-0 bg-white z-10 border-b border-line">
               {/* 그룹 컬러 헤더 */}
               <tr className="text-[10px] font-bold uppercase tracking-wider border-b border-zinc-100">
                 <th colSpan={4} className="text-center py-1.5 bg-sky-50 text-sky-700 border-r border-zinc-100">
@@ -1123,7 +1123,7 @@ export const VendorDetailModal: React.FC<{
 
   // ── 래퍼: panel 모드는 인라인 · 기본은 backdrop 모달 ──
   const backdropCls = panel
-    ? "relative bg-white rounded-xl border border-zinc-200 shadow-sm flex flex-col overflow-hidden min-h-0 flex-1"
+    ? "relative bg-white rounded-xl border border-line shadow-sm flex flex-col overflow-hidden min-h-0 flex-1"
     : "fixed inset-0 z-50 bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4";
 
   const innerCls = panel
@@ -1137,7 +1137,7 @@ export const VendorDetailModal: React.FC<{
         onClick={panel ? undefined : (e => e.stopPropagation())}
       >
         {/* ── 헤더 · 2026-08-10 · 아이콘 제거 · 텍스트 위주 · 폰트 +2 */}
-        <div className="flex items-start justify-between px-6 py-4 border-b border-zinc-200 bg-sky-50 shrink-0 gap-3">
+        <div className="flex items-start justify-between px-6 py-4 border-b border-line bg-sky-50 shrink-0 gap-3">
           {/* 2026-08-10 · 사용자 요청 · 분류 위 · 공급사명 아래 · 옆에 사업자·담당·전화 (PC 한줄 · 모바일 2줄) */}
           <div className="min-w-0 flex-1">
             {/* 분류 · 위쪽 별도 라인 */}
@@ -1177,7 +1177,7 @@ export const VendorDetailModal: React.FC<{
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-white hover:bg-zinc-100 border border-zinc-200 flex items-center justify-center text-zinc-500 shrink-0 ml-3 transition"
+            className="w-8 h-8 rounded-lg bg-white hover:bg-zinc-100 border border-line flex items-center justify-center text-zinc-500 shrink-0 ml-3 transition"
             title="닫기 (ESC)"
           >
             <X size={15} />
@@ -1424,7 +1424,7 @@ export const VendorDetailModal: React.FC<{
               <button
                 onClick={loadPaymentData}
                 disabled={paymentLoading}
-                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-600 text-[12px] font-semibold transition cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-line bg-white hover:bg-zinc-50 text-zinc-600 text-[12px] font-semibold transition cursor-pointer disabled:opacity-50"
                 title="새로고침"
               >
                 <RefreshCw size={12} className={paymentLoading ? "animate-spin" : ""} />
@@ -1442,7 +1442,7 @@ export const VendorDetailModal: React.FC<{
             </div>
 
             {/* 원장 테이블 · 시간순 desc */}
-            <div className="rounded-lg border border-zinc-200 overflow-auto max-h-[420px] bg-white">
+            <div className="rounded-lg border border-line overflow-auto max-h-[420px] bg-white">
               {paymentLoading ? (
                 <div className="flex items-center justify-center gap-1.5 py-8 text-zinc-400 text-[12px]">
                   <Loader2 size={14} className="animate-spin" />로딩중...
@@ -1451,7 +1451,7 @@ export const VendorDetailModal: React.FC<{
                 <div className="py-8 text-center text-zinc-400 text-[12px]">거래 내역 없음</div>
               ) : (
                 <table className="w-full text-[12px]">
-                  <thead className="sticky top-0 z-10 bg-zinc-50 border-b border-zinc-200">
+                  <thead className="sticky top-0 z-10 bg-zinc-50 border-b border-line">
                     <tr className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">
                       <th className="text-left px-3 py-2 w-20">날짜</th>
                       <th className="text-left px-3 py-2 w-16">유형</th>
@@ -1528,7 +1528,7 @@ export const VendorDetailModal: React.FC<{
               color="amber"
               hint={purchLoading ? "로딩..." : `${purchases.length}건`}
             />
-            <div className="rounded-lg border border-zinc-200 overflow-hidden bg-white flex flex-col" style={{ maxHeight: 520 }}>
+            <div className="rounded-lg border border-line overflow-hidden bg-white flex flex-col" style={{ maxHeight: 520 }}>
               <PurchaseHistoryList
                 rows={purchases as unknown as PurchaseHistoryRow[]}
                 loading={purchLoading}
@@ -1545,7 +1545,7 @@ export const VendorDetailModal: React.FC<{
         </div>
 
         {/* ── 푸터 · 저장/닫기 ── */}
-        <div className="px-5 py-3 border-t border-zinc-200 bg-zinc-50/80 flex items-center gap-2 flex-wrap shrink-0">
+        <div className="px-5 py-3 border-t border-line bg-zinc-50/80 flex items-center gap-2 flex-wrap shrink-0">
           {saveMsg && (
             <span className={`inline-flex items-center gap-1 text-[12px] font-bold ${saveMsg.type === "ok" ? "text-emerald-600" : "text-rose-600"}`}>
               {saveMsg.type === "ok"
@@ -1749,7 +1749,7 @@ const PaymentRegisterModal: React.FC<{
         className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl h-[92vh] md:h-auto md:max-h-[88vh] flex flex-col overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-200 bg-emerald-50 shrink-0">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-line bg-emerald-50 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
               <Wallet size={18} className="text-emerald-700" />
@@ -1761,7 +1761,7 @@ const PaymentRegisterModal: React.FC<{
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-white hover:bg-zinc-100 border border-zinc-200 flex items-center justify-center text-zinc-500 shrink-0 ml-3 transition"
+            className="w-8 h-8 rounded-lg bg-white hover:bg-zinc-100 border border-line flex items-center justify-center text-zinc-500 shrink-0 ml-3 transition"
             title="닫기 (ESC)"
           >
             <X size={15} />
@@ -1836,7 +1836,7 @@ const PaymentRegisterModal: React.FC<{
               </button>
             </div>
 
-            <div className="rounded-lg border border-zinc-200 overflow-auto max-h-[300px] bg-white">
+            <div className="rounded-lg border border-line overflow-auto max-h-[300px] bg-white">
               {loading ? (
                 <div className="flex items-center justify-center gap-1.5 py-8 text-zinc-400 text-[12px]">
                   <Loader2 size={14} className="animate-spin" />로딩중...
@@ -1847,7 +1847,7 @@ const PaymentRegisterModal: React.FC<{
                 </div>
               ) : (
                 <table className="w-full text-[12px]">
-                  <thead className="sticky top-0 z-10 bg-zinc-50 border-b border-zinc-200">
+                  <thead className="sticky top-0 z-10 bg-zinc-50 border-b border-line">
                     <tr className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">
                       <th className="px-2 py-2 w-8"></th>
                       <th className="text-left px-3 py-2 w-20">일자</th>
@@ -1895,7 +1895,7 @@ const PaymentRegisterModal: React.FC<{
                               value={v?.alloc ?? ""}
                               disabled={disabled || !v?.checked}
                               onChange={e => updateAlloc(inv.id, e.target.value.replace(/[^0-9]/g, ""))}
-                              className="w-full h-7 px-2 text-right text-[11px] font-mono tabular-nums border border-zinc-200 rounded focus:outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep disabled:bg-zinc-50 disabled:text-zinc-400"
+                              className="w-full h-7 px-2 text-right text-[11px] font-mono tabular-nums border border-line rounded focus:outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep disabled:bg-zinc-50 disabled:text-zinc-400"
                             />
                           </td>
                         </tr>
@@ -1937,7 +1937,7 @@ const PaymentRegisterModal: React.FC<{
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-zinc-200 bg-zinc-50/80 flex items-center gap-2 flex-wrap shrink-0">
+        <div className="px-5 py-3 border-t border-line bg-zinc-50/80 flex items-center gap-2 flex-wrap shrink-0">
           {errMsg && (
             <span className="inline-flex items-center gap-1 text-[12px] font-bold text-rose-600">
               <X size={13} strokeWidth={3} />

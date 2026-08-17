@@ -357,7 +357,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
                 const cs = COLOR_CLASSES[cat.color];
                 const isCollapsed = collapsed[cat.key];
                 return (
-                  <div key={cat.key} className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+                  <div key={cat.key} className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
                     {/* 카테고리 헤더 */}
                     <button
                       type="button"
@@ -417,7 +417,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
                                   className={`w-full px-2.5 py-1.5 rounded-lg border text-[14px] font-bold text-zinc-800 tabular-nums text-center transition focus:outline-none focus:ring-2 ${
                                     isDup || isBad
                                       ? "border-rose-300 bg-rose-50 focus:ring-rose-200"
-                                      : "border-zinc-200 bg-white focus:ring-brand-tint focus:border-brand-deep"
+                                      : "border-line bg-white focus:ring-brand-tint focus:border-brand-deep"
                                   }`}
                                 />
                               </div>
@@ -431,7 +431,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
                                   placeholder="(선택) 카테고리·이름 등"
                                   maxLength={40}
                                   onChange={(e) => updateSubLabel(m.zoneId, e.target.value)}
-                                  className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-200 bg-white text-[14px] text-zinc-700 transition focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep"
+                                  className="w-full px-2.5 py-1.5 rounded-lg border border-line bg-white text-[14px] text-zinc-700 transition focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep"
                                 />
                               </div>
 

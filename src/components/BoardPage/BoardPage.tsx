@@ -52,7 +52,7 @@ interface Employee { id: number; name: string; rank?: string; level?: number; }
 const TYPE_META: Record<PostType, { label: string; icon: any; bg: string; text: string; border: string; }> = {
   question: { label: "질문", icon: HelpCircle,    bg: "bg-blue-50",   text: "text-blue-700",   border: "border-blue-200" },
   issue:    { label: "이슈", icon: AlertTriangle, bg: "bg-amber-50",  text: "text-amber-700",  border: "border-amber-200" },
-  memo:     { label: "메모", icon: StickyNote,    bg: "bg-zinc-50",  text: "text-zinc-700",  border: "border-zinc-200" },
+  memo:     { label: "메모", icon: StickyNote,    bg: "bg-zinc-50",  text: "text-zinc-700",  border: "border-line" },
 };
 
 const STATUS_META: Record<Status, { label: string; dot: string; text: string; }> = {
@@ -149,7 +149,7 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="제목·본문 검색"
-              className="w-full pl-9 pr-3 py-2 text-[15px] font-semibold bg-white border border-zinc-200 rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint shadow-sm"
+              className="w-full pl-9 pr-3 py-2 text-[15px] font-semibold bg-white border border-line rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint shadow-sm"
             />
           </div>
           <button
@@ -454,7 +454,7 @@ const InlineDetail: React.FC<{
   };
 
   return (
-    <div className="bg-zinc-50/60 border-t border-zinc-200 px-3 py-2.5">
+    <div className="bg-zinc-50/60 border-t border-line px-3 py-2.5">
       {loading || !post ? (
         <div className="flex justify-center py-3 text-zinc-400"><Loader2 size={16} className="animate-spin" /></div>
       ) : (
@@ -471,7 +471,7 @@ const InlineDetail: React.FC<{
                   key={img.id}
                   type="button"
                   onClick={() => setPreviewImg(img.image_url)}
-                  className="block w-full aspect-square rounded-xl overflow-hidden border border-zinc-200 hover:border-line hover:shadow-md transition"
+                  className="block w-full aspect-square rounded-xl overflow-hidden border border-line hover:border-line hover:shadow-md transition"
                   title="크게 보기"
                 >
                   <img src={img.image_url} alt="" loading="lazy"
@@ -533,7 +533,7 @@ const InlineDetail: React.FC<{
                 onChange={(e) => setCommentBody(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}
                 placeholder="댓글 작성"
-                className="flex-1 px-2 py-1 text-[14px] border border-zinc-200 rounded-lg focus:outline-none focus:border-brand-deep"
+                className="flex-1 px-2 py-1 text-[14px] border border-line rounded-lg focus:outline-none focus:border-brand-deep"
               />
               <button onClick={submit} disabled={posting || !commentBody.trim()}
                 className="p-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white disabled:opacity-40 shrink-0">
@@ -620,7 +620,7 @@ function ComposerModal({
   return (
     <div className="fixed inset-0 z-50 bg-zinc-900/50 backdrop-blur-sm flex items-center justify-center" onClick={onClose}>
       <div className="bg-white w-full sm:w-[560px] sm:rounded-xl sm:max-h-[86vh] max-h-[92vh] overflow-y-auto rounded-t-2xl shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="sticky top-0 bg-white/95 backdrop-blur border-b border-zinc-200 px-4 py-3 flex items-center justify-between">
+        <div className="sticky top-0 bg-white/95 backdrop-blur border-b border-line px-4 py-3 flex items-center justify-between">
           <h2 className="text-base font-bold text-zinc-900">새 글 작성</h2>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-500"><XIcon size={18} /></button>
         </div>
@@ -634,7 +634,7 @@ function ComposerModal({
               const active = type === t;
               return (
                 <button key={t} onClick={() => setType(t)}
-                  className={`flex flex-col items-center gap-1 py-2.5 rounded-xl border-2 transition ${active ? `${meta.bg} ${meta.border} ${meta.text}` : "bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300"}`}>
+                  className={`flex flex-col items-center gap-1 py-2.5 rounded-xl border-2 transition ${active ? `${meta.bg} ${meta.border} ${meta.text}` : "bg-white border-line text-zinc-500 hover:border-zinc-300"}`}>
                   <Icon size={18} />
                   <span className="text-[15px] font-bold">{meta.label}</span>
                 </button>
@@ -648,7 +648,7 @@ function ComposerModal({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="제목 (필수)"
-            className="w-full px-3 py-2.5 text-[15px] font-bold border border-zinc-200 rounded-xl focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
+            className="w-full px-3 py-2.5 text-[15px] font-bold border border-line rounded-xl focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
             maxLength={300}
           />
 
@@ -669,7 +669,7 @@ function ComposerModal({
             onChange={(e) => setBody(e.target.value)}
             placeholder="본문 · 상황을 자세히 남겨주세요"
             rows={5}
-            className="w-full px-3 py-2 text-[15px] border border-zinc-200 rounded-xl focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint resize-none"
+            className="w-full px-3 py-2 text-[15px] border border-line rounded-xl focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint resize-none"
           />
 
           {/* 이미지 첨부 */}
@@ -694,7 +694,7 @@ function ComposerModal({
             {images.length > 0 && (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {images.map((img, i) => (
-                  <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-zinc-200">
+                  <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-line">
                     <img src={img.image_url} alt="" className="w-full h-full object-cover" />
                     <button onClick={() => removeImg(i)}
                       className="absolute top-1 right-1 w-6 h-6 rounded-full bg-white/90 text-rose-600 hover:bg-white shadow-md flex items-center justify-center">
@@ -710,7 +710,7 @@ function ComposerModal({
           {/* 담당자 지정 기능 제거됨 · 관리자 전원 자동 알림만 유지 */}
         </div>
 
-        <div className="sticky bottom-0 bg-white border-t border-zinc-200 px-4 py-3 flex items-center justify-end gap-2">
+        <div className="sticky bottom-0 bg-white border-t border-line px-4 py-3 flex items-center justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-[15px] font-bold">취소</button>
           <button onClick={submit} disabled={saving || uploading || !title.trim()}
             className="px-4 py-2 rounded-xl bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[15px] font-bold shadow-sm disabled:opacity-40 flex items-center gap-1">
@@ -890,7 +890,7 @@ function DetailModal({
     <div className="fixed inset-0 z-50 bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center" onClick={onClose}>
       <div className="bg-white w-full sm:w-[640px] sm:rounded-xl sm:max-h-[92vh] max-h-[95vh] overflow-y-auto rounded-t-2xl shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
         {/* 헤더 */}
-        <div className="sticky top-0 bg-white/95 backdrop-blur border-b border-zinc-200 px-3 sm:px-4 py-3 flex items-center gap-2">
+        <div className="sticky top-0 bg-white/95 backdrop-blur border-b border-line px-3 sm:px-4 py-3 flex items-center gap-2">
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-500"><ChevronLeft size={18} /></button>
           <span className="text-[14px] font-bold text-zinc-800">이슈공유</span>
           <span className="flex-1" />
@@ -971,7 +971,7 @@ function DetailModal({
                     ))}
                   </div>
                   {/* 이미지 편집: 기존 이미지 + 신규 첨부 + 취소(X) */}
-                  <div className="mt-3 border border-zinc-200 rounded-xl p-2 bg-zinc-50/50">
+                  <div className="mt-3 border border-line rounded-xl p-2 bg-zinc-50/50">
                     <div className="flex items-center gap-2 mb-2">
                       <input ref={editFileRef} type="file" accept="image/*" multiple capture="environment" className="hidden"
                         onChange={(e) => { handleEditFiles(e.target.files); e.target.value = ""; }} />
@@ -990,7 +990,7 @@ function DetailModal({
                     {editImages.length > 0 && (
                       <div className="grid grid-cols-4 gap-1.5">
                         {editImages.map((img, i) => (
-                          <div key={`${img.image_url}-${i}`} className="relative aspect-square rounded-lg overflow-hidden border border-zinc-200 bg-white">
+                          <div key={`${img.image_url}-${i}`} className="relative aspect-square rounded-lg overflow-hidden border border-line bg-white">
                             <img src={img.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
                             <button type="button" onClick={() => removeEditImage(i)}
                               className="absolute top-0.5 right-0.5 w-6 h-6 rounded-full bg-black/70 hover:bg-black text-white text-xs font-bold flex items-center justify-center cursor-pointer shadow"
@@ -1019,7 +1019,7 @@ function DetailModal({
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3">
                   {post.images.map(img => (
                     <button key={img.id} onClick={() => setPreviewImg(img.image_url)}
-                      className="aspect-square rounded-xl overflow-hidden border border-zinc-200 hover:border-line transition">
+                      className="aspect-square rounded-xl overflow-hidden border border-line hover:border-line transition">
                       <img src={img.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
                     </button>
                   ))}
@@ -1090,7 +1090,7 @@ function DetailModal({
                             <div className="flex gap-1.5 mt-2 flex-wrap">
                               {c.images.map(img => (
                                 <button key={img.id} onClick={() => setPreviewImg(img.image_url)}
-                                  className="w-16 h-16 rounded-md overflow-hidden border border-zinc-200">
+                                  className="w-16 h-16 rounded-md overflow-hidden border border-line">
                                   <img src={img.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
                                 </button>
                               ))}
@@ -1113,11 +1113,11 @@ function DetailModal({
 
             {/* 댓글 입력 */}
             {authSession?.employeeId && (
-              <div className="sticky bottom-0 bg-white border-t border-zinc-200 p-3 flex flex-col gap-2">
+              <div className="sticky bottom-0 bg-white border-t border-line p-3 flex flex-col gap-2">
                 {commentImages.length > 0 && (
                   <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
                     {commentImages.map((img, i) => (
-                      <div key={i} className="relative w-14 h-14 rounded-md overflow-hidden border border-zinc-200 shrink-0">
+                      <div key={i} className="relative w-14 h-14 rounded-md overflow-hidden border border-line shrink-0">
                         <img src={img.image_url} alt="" className="w-full h-full object-cover" />
                         <button onClick={() => setCommentImages(prev => prev.filter((_, x) => x !== i))}
                           className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-white/90 text-rose-600 flex items-center justify-center shadow">
@@ -1140,7 +1140,7 @@ function DetailModal({
                     onChange={(e) => setCommentBody(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); } }}
                     placeholder="댓글 작성"
-                    className="flex-1 px-3 py-2 text-[15px] border border-zinc-200 rounded-xl focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
+                    className="flex-1 px-3 py-2 text-[15px] border border-line rounded-xl focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
                   />
                   <button onClick={submitComment} disabled={posting || !commentBody.trim()}
                     className="p-2 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white shrink-0 disabled:opacity-40">

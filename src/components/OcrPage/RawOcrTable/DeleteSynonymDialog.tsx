@@ -21,7 +21,7 @@ export const DeleteSynonymDialog: React.FC<DeleteSynonymDialogProps> = ({
         </p>
         <div className="flex gap-2 pt-1">
           <button type="button" onClick={() => setDeleteSynConfirm(null)}
-            className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-lg text-zinc-600 cursor-pointer">아니오</button>
+            className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-50 hover:bg-zinc-100 border border-line rounded-lg text-zinc-600 cursor-pointer">아니오</button>
           <button type="button"
             onClick={async () => {
               const { ri, origName } = deleteSynConfirm;

@@ -36,7 +36,7 @@ const THEME = {
     accent: "text-violet-600",
   },
   slate: {
-    border: "border-zinc-200",
+    border: "border-line",
     bgHeader: "bg-zinc-50",
     text: "text-zinc-700",
     accent: "text-zinc-600",
@@ -149,7 +149,7 @@ export function InvoiceStatementView({
   }
 
   return (
-    <details className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl px-3 py-2" open={defaultOpen}>
+    <details className="w-full bg-zinc-50/50 border border-line rounded-xl px-3 py-2" open={defaultOpen}>
       <summary className={`cursor-pointer text-[13px] font-bold ${theme.text} select-none flex flex-wrap items-baseline gap-x-3`}>
         <span>📋 {title ?? "거래명세서 뷰"}</span>
         <span className="text-[11px] text-zinc-500 font-normal">

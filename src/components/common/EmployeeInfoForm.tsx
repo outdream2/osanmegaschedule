@@ -106,8 +106,8 @@ const GENDERS = ["남", "여"] as const;
 /** compact (ContractWriter) 스타일 */
 const CMP = {
   label: "block text-[10.5px] font-bold uppercase tracking-wider text-zinc-500 mb-1",
-  input: "w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition placeholder:text-zinc-400 placeholder:font-normal",
-  select: "w-full bg-white border border-zinc-200 rounded-lg px-2 py-2 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition cursor-pointer",
+  input: "w-full bg-white border border-line rounded-lg px-3 py-2 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition placeholder:text-zinc-400 placeholder:font-normal",
+  select: "w-full bg-white border border-line rounded-lg px-2 py-2 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition cursor-pointer",
 } as const;
 
 /** grid (StaffManage) 스타일 */
@@ -175,11 +175,11 @@ const NameField: React.FC<NameFieldProps> = ({
       />
       {hasSearch && searchOpen && (
         matches.length === 0 ? (
-          <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-zinc-200 rounded-xl shadow-lg p-2.5 text-[12px] text-zinc-400 text-center">
+          <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-line rounded-xl shadow-lg p-2.5 text-[12px] text-zinc-400 text-center">
             일치하는 직원 없음 · 직접 입력
           </div>
         ) : (
-          <ul className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-zinc-200 rounded-xl shadow-lg max-h-52 overflow-y-auto divide-y divide-zinc-100">
+          <ul className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-line rounded-xl shadow-lg max-h-52 overflow-y-auto divide-y divide-zinc-100">
             {!value.trim() && (
               <li className="px-3 py-1.5 text-[11px] text-zinc-400 font-semibold bg-zinc-50 border-b border-zinc-100">
                 직원 선택 또는 성명 입력
@@ -309,7 +309,7 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
                     ? (g === "남"
                         ? "bg-blue-500 text-white border-blue-500"
                         : "bg-rose-500 text-white border-rose-500")
-                    : "bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300"
+                    : "bg-white border-line text-zinc-500 hover:border-zinc-300"
                 }`}
               >{g}</button>
             ))}

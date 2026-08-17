@@ -86,7 +86,7 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
       ref={popoverRef}
       style={style}
       onClick={(e) => e.stopPropagation()}
-      className="w-[240px] bg-white rounded-2xl border border-zinc-200 shadow-2xl p-3 flex flex-col gap-2.5 animate-in fade-in zoom-in-95 duration-100"
+      className="w-[240px] bg-white rounded-2xl border border-line shadow-2xl p-3 flex flex-col gap-2.5 animate-in fade-in zoom-in-95 duration-100"
     >
       {/* Popover Header */}
       <div className="flex items-start justify-between border-b border-zinc-100 pb-2">
@@ -131,7 +131,7 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
                   className={`px-2 py-1.5 rounded-lg border text-left text-[11px] font-bold truncate transition cursor-pointer flex items-center gap-1.5 ${
                     isAssigned
                       ? `${STAFF_COLORS[colorIdx % STAFF_COLORS.length]} border-indigo-400 shadow-3xs`
-                      : "bg-white border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300 text-zinc-700"
+                      : "bg-white border-line hover:bg-zinc-50 hover:border-zinc-300 text-zinc-700"
                   }`}
                 >
                   <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isAssigned ? "bg-brand-deep" : "bg-zinc-300"}`} />

@@ -99,7 +99,7 @@ const ActionButtons: React.FC<{
       type="button"
       onClick={onDelete}
       title="삭제"
-      className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-400 hover:bg-rose-50 hover:text-rose-500 active:scale-95 transition-all cursor-pointer border border-zinc-200 hover:border-rose-200"
+      className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-400 hover:bg-rose-50 hover:text-rose-500 active:scale-95 transition-all cursor-pointer border border-line hover:border-rose-200"
     >
       <Trash2 size={12} />
     </button>
@@ -123,7 +123,7 @@ const RequestCard: React.FC<{
           ? "bg-zinc-50 border-zinc-100 opacity-70"
           : urgent
           ? "bg-rose-50/60 border-rose-200 shadow-sm shadow-rose-100"
-          : "bg-white border-zinc-200 hover:border-zinc-300 hover:shadow-sm"
+          : "bg-white border-line hover:border-zinc-300 hover:shadow-sm"
       }`}
     >
       {/* Row 1: 구역 + 상태 */}
@@ -243,7 +243,7 @@ export const DisplayRequestPanel: React.FC<DisplayRequestPanelProps> = ({
 
   return (
     <div
-      className="w-full bg-white rounded-2xl border border-zinc-200 shadow-md shadow-zinc-200/60 flex flex-col overflow-hidden"
+      className="w-full bg-white rounded-2xl border border-line shadow-md shadow-zinc-200/60 flex flex-col overflow-hidden"
     >
       {/* ── 헤더 ── */}
       <div className="px-3 pt-3 pb-2.5 border-b border-zinc-100 flex items-center justify-between flex-wrap gap-2">

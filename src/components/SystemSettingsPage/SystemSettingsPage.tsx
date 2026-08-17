@@ -172,7 +172,7 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
                     <span>{meta.label}</span>
                     <span className="text-[14px] font-mono text-zinc-400">{k}</span>
                     {cur?.source === "file" && <span className="text-[14px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded">파일 저장됨</span>}
-                    {cur?.source === "env"  && <span className="text-[14px] font-bold text-zinc-500 bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">env 기본값</span>}
+                    {cur?.source === "env"  && <span className="text-[14px] font-bold text-zinc-500 bg-zinc-100 border border-line px-1.5 py-0.5 rounded">env 기본값</span>}
                   </label>
                   {meta.multiline ? (
                     <textarea

@@ -70,7 +70,7 @@ export function SortableHeader<K extends string = string>({
   };
 
   return (
-    <tr className={`border-b border-zinc-200 text-[11px] font-bold text-zinc-500 uppercase tracking-wider ${rowClassName}`}>
+    <tr className={`border-b border-line text-[11px] font-bold text-zinc-500 uppercase tracking-wider ${rowClassName}`}>
       {columns.map(col => {
         const isActive = col.key === activeKey;
         const alignCls = col.align === "right" ? "text-right" : col.align === "center" ? "text-center" : "text-left";

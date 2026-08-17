@@ -49,7 +49,7 @@ interface EmployeeFormModalProps {
   onClose: () => void;
 }
 
-const SELECT_CLS = "w-full text-xs rounded border border-zinc-200 focus:border-brand-deep focus:ring-2 focus:ring-brand-tint p-2 bg-white text-zinc-800 focus:outline-none transition-all";
+const SELECT_CLS = "w-full text-xs rounded border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint p-2 bg-white text-zinc-800 focus:outline-none transition-all";
 const LABEL_CLS = "block text-[11px] font-bold text-zinc-500 uppercase tracking-wide mb-1";
 
 // POSITIONS · RANKS · WORKPLACES → src/constants/jobCategories.ts
@@ -116,7 +116,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full sm:max-w-md bg-white rounded-2xl shadow-2xl border border-zinc-200 transform scale-100 transition animate-in zoom-in-95 duration-100 max-h-[92vh] overflow-y-auto">
+      <div className="relative w-full sm:max-w-md bg-white rounded-2xl shadow-2xl border border-line transform scale-100 transition animate-in zoom-in-95 duration-100 max-h-[92vh] overflow-y-auto">
         {/* 헤더 */}
         <div className="sticky top-0 z-10 bg-white border-b border-zinc-100 px-5 py-3.5 flex items-center justify-between rounded-t-2xl">
           <div className="flex items-center gap-2">
@@ -144,7 +144,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                 value={employeeNumber}
                 onChange={e => setEmployeeNumber(e.target.value)}
                 placeholder="예: 004"
-                className="w-full font-mono text-[13px] rounded-lg border border-zinc-200 focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2 bg-white text-zinc-900 focus:outline-none transition"
+                className="w-full font-mono text-[13px] rounded-lg border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2 bg-white text-zinc-900 focus:outline-none transition"
               />
             </div>
           )}
@@ -159,7 +159,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
               placeholder="홍길동"
               value={empName}
               onChange={e => setEmpName(e.target.value)}
-              className="w-full text-sm font-semibold rounded-lg border border-zinc-200 focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2.5 bg-white text-zinc-900 placeholder:text-zinc-300 focus:outline-none transition-all"
+              className="w-full text-sm font-semibold rounded-lg border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2.5 bg-white text-zinc-900 placeholder:text-zinc-300 focus:outline-none transition-all"
               required
             />
           </div>
@@ -176,7 +176,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
               value={empPhone}
               onChange={e => setEmpPhone(e.target.value)}
               required={empModalMode === "create"}
-              className="w-full text-sm rounded-lg border border-zinc-200 focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2.5 bg-white text-zinc-900 placeholder:text-zinc-300 focus:outline-none transition-all"
+              className="w-full text-sm rounded-lg border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2.5 bg-white text-zinc-900 placeholder:text-zinc-300 focus:outline-none transition-all"
             />
             {empPhone && !/^01[0-9]{8,9}$/.test(empPhone.replace(/[^0-9]/g, "")) && (
               <p className="mt-1 text-[11px] text-rose-500 font-semibold">
@@ -225,7 +225,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                         placeholder="직종 직접 입력"
                         value={empCustomPosition}
                         onChange={e => setEmpCustomPosition(e.target.value)}
-                        className="mt-1.5 w-full text-xs rounded border border-zinc-200 focus:border-brand-deep px-2 py-1.5 bg-white focus:outline-none"
+                        className="mt-1.5 w-full text-xs rounded border border-line focus:border-brand-deep px-2 py-1.5 bg-white focus:outline-none"
                       />
                     )}
                     {/* 물류 선택시 캐셔 겸직 체크박스 */}
@@ -392,12 +392,12 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                             <button key={z.num} type="button"
                               onClick={() => setEmpZoneNums(prev => isOn ? prev.filter(n => n !== z.num) : [...prev, z.num])}
                               className={`px-1.5 py-1 rounded-lg border text-left transition-all cursor-pointer active:scale-[0.96] ${
-                                isOn ? "bg-violet-100 border-violet-400 shadow-sm" : "bg-white border-zinc-200 hover:border-violet-300 hover:bg-violet-50"
+                                isOn ? "bg-violet-100 border-violet-400 shadow-sm" : "bg-white border-line hover:border-violet-300 hover:bg-violet-50"
                               }`}
                               title={z.category}
                             >
                               <span className={`text-[10px] font-bold leading-none ${isOn ? "text-violet-800" : "text-zinc-600"}`}>{z.num}</span>
-                              <span className={`text-[8px] ml-0.5 ${isOn ? "text-violet-600" : "text-zinc-400"}`}>{z.label}</span>
+                              <span className={`text-[10px] ml-0.5 ${isOn ? "text-violet-600" : "text-zinc-400"}`}>{z.label}</span>
                             </button>
                           );
                         })}
@@ -410,7 +410,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
           )}
 
           {/* ── 8. 상세사항 ── */}
-          <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-200">
+          <div className="bg-zinc-50 p-3 rounded-xl border border-line">
             <label className="block text-xs font-bold text-zinc-700 mb-1.5 flex items-center gap-1">
               상세사항
               <span className="text-[10px] font-normal text-zinc-400">(근무 패턴 / 메모)</span>
@@ -420,13 +420,13 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
               placeholder="예: 주6일 일 휴무, 수목휴무, 토일 등"
               value={empDescription}
               onChange={e => setEmpDescription(e.target.value)}
-              className="w-full text-xs rounded-lg border border-zinc-200 focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2 bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none transition-all"
+              className="w-full text-xs rounded-lg border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2 bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none transition-all"
             />
-            <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-zinc-200">
+            <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-line">
               <span className="text-[10px] text-zinc-400 font-semibold self-center mr-0.5">패턴:</span>
               {["주6일 일 휴무", "수목 휴무", "토일", "금일", "일월", "3주 목<->토", "월화", "화수", "평일마감 주말오픈"].map(pat => (
                 <button key={pat} type="button" onClick={() => setEmpDescription(pat)}
-                  className="px-1.5 py-0.5 text-[9px] bg-white hover:bg-zinc-100 border border-zinc-200 hover:border-zinc-400 rounded text-zinc-600 font-semibold cursor-pointer transition">
+                  className="px-1.5 py-0.5 text-[9px] bg-white hover:bg-zinc-100 border border-line hover:border-zinc-400 rounded text-zinc-600 font-semibold cursor-pointer transition">
                   {pat}
                 </button>
               ))}
@@ -434,7 +434,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
           </div>
 
           {/* ── 9. 근로계약서 첨부 ── */}
-          <div className="border border-zinc-200 rounded-xl p-3">
+          <div className="border border-line rounded-xl p-3">
             <label className="block text-xs font-bold text-zinc-700 mb-2 flex items-center gap-1.5">
               <FileText size={13} className="text-zinc-500" />
               근로계약서 첨부
@@ -464,7 +464,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
               className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 border-dashed transition cursor-pointer text-xs font-semibold ${
                 empContractFile
                   ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                  : "border-zinc-200 bg-zinc-50 text-zinc-500 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600"
+                  : "border-line bg-zinc-50 text-zinc-500 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600"
               }`}
             >
               <Upload size={13} />
@@ -483,7 +483,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
           {/* ── 버튼 ── */}
           <div className="flex justify-end gap-2 pt-2 border-t border-zinc-100 mt-2">
             <button type="button" onClick={onClose}
-              className="px-4 py-2 text-xs font-bold bg-zinc-50 hover:bg-zinc-100 rounded-lg border border-zinc-200 text-zinc-600 transition cursor-pointer">
+              className="px-4 py-2 text-xs font-bold bg-zinc-50 hover:bg-zinc-100 rounded-lg border border-line text-zinc-600 transition cursor-pointer">
               취소
             </button>
             <button type="submit"

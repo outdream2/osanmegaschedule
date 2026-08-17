@@ -49,7 +49,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
     return (
       <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl border border-zinc-200 shadow-lg p-6 flex flex-col gap-4">
+        <div className="max-w-md w-full bg-white rounded-2xl border border-line shadow-lg p-6 flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600 text-2xl">
               {isChunkError ? "🔄" : "⚠️"}

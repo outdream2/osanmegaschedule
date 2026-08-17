@@ -91,7 +91,7 @@ export const ProductPurchaseDetailPanel: React.FC<Props> = ({ product, rows, loa
 
       {/* 하단 · 매입 원장 · 2026-08-04 · 공통 PurchaseHistoryList 사용 (사용자 요청) */}
       <div className={`${CARD_BASE} flex flex-col min-h-0 flex-1 overflow-hidden`}>
-        <div className="flex items-center border-b border-zinc-200 bg-zinc-50/50 px-4 py-2.5 shrink-0">
+        <div className="flex items-center border-b border-line bg-zinc-50/50 px-4 py-2.5 shrink-0">
           <span className="text-[13px] font-bold text-sky-700">매입 원장</span>
           <span className="ml-2 text-[11px] font-semibold text-zinc-400 tabular-nums">
             {rows.length}건

@@ -37,7 +37,7 @@ function ZoneBtn({
       <span className={`text-[11px] font-bold ${selected ? "text-white" : "text-gray-800"}`}>
         {z.num}
       </span>
-      <span className={`text-[8px] font-semibold text-center leading-none mt-0.5 ${selected ? "text-teal-100" : "text-gray-400"}`}>
+      <span className={`text-[10px] font-semibold text-center leading-none mt-0.5 ${selected ? "text-teal-100" : "text-gray-400"}`}>
         {z.label.replace("진열대 ", "").replace("벽면 ", "")}
       </span>
     </button>
@@ -69,7 +69,7 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-line shrink-0">
           <div className="flex items-center gap-2">
             <MapPin size={15} className="text-teal-500" />
             <p className="text-sm font-bold text-gray-900">매장 지도에서 구역 선택</p>
@@ -88,7 +88,7 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
             className={`w-full py-2 rounded-xl border text-sm font-bold transition cursor-pointer ${
               !current
                 ? "bg-gray-200 border-gray-400 text-gray-800"
-                : "bg-white border-gray-200 text-gray-400 hover:bg-gray-100"
+                : "bg-white border-line text-gray-400 hover:bg-gray-100"
             }`}
           >
             미지정 (없음)
@@ -129,7 +129,7 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
             </div>
 
             {/* 구분선 */}
-            <div className="border-t border-dashed border-gray-200" />
+            <div className="border-t border-dashed border-line" />
 
             {/* 우측 윙 (36-41) + 이벤트존 (42) */}
             <div>

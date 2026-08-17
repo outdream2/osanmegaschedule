@@ -64,7 +64,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full sm:max-w-md max-h-[90vh] bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl border border-zinc-200 overflow-hidden flex flex-col"
+        className="w-full sm:max-w-md max-h-[90vh] bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl border border-line overflow-hidden flex flex-col"
       >
         {/* 헤더 */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-100 bg-sky-50/60">
@@ -203,7 +203,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
           <button
             type="button"
             onClick={onClose}
-            className="h-9 px-4 rounded-lg border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 text-[12px] font-bold transition cursor-pointer"
+            className="h-9 px-4 rounded-lg border border-line bg-white text-zinc-600 hover:bg-zinc-50 text-[12px] font-bold transition cursor-pointer"
           >
             취소
           </button>
