@@ -958,12 +958,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
 
                 {/* 매장관리 — red · MenuCard · desc 는 원본 유지 (9/11) */}
-                <MenuCard color="red" icon={SquaresFour} title="매장관리" description="매장 · 발주 · 매입 · 결제 · 통계 · 입고알림"
+                <MenuCard color="teal" icon={SquaresFour} title="매장관리" description="매장 · 발주 · 매입 · 결제 · 통계 · 입고알림"
                   descClass="text-[9px] sm:text-[11px] leading-tight"
                   onClick={() => onNavigate("display", authSession!)} />
 
                 {/* 경영관리 — violet · MenuCard · pending 배지 */}
-                <MenuCard color="violet" icon={Briefcase} title="경영관리" description="직원관리 · 연차승인 · 점심불참 · 권한"
+                <MenuCard color="sky" icon={Briefcase} title="경영관리" description="직원관리 · 연차승인 · 점심불참 · 권한"
                   onClick={() => onNavigate("business-manage", authSession!)}
                   badge={leavePendingCount > 0 ? (
                     <div className="absolute top-2.5 right-2.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-white text-[10px] font-black" style={{ background: "linear-gradient(135deg, #f43f5e, #e11d48)", boxShadow: "0 0 0 2px white, 0 2px 6px rgba(244,63,94,0.4)" }}>
@@ -972,7 +972,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   ) : undefined} />
 
                 {/* 요청목록 조회 — indigo · MenuCard · 4-counter 배지 */}
-                <MenuCard color="indigo" icon={List} title="요청목록 조회" description="진열·발주요청 및 배치구역 불일치 확인"
+                <MenuCard color="coral" icon={List} title="요청목록 조회" description="진열·발주요청 및 배치구역 불일치 확인"
                   onClick={() => onNavigate("requests", authSession!)}
                   badge={(
                     <div className="absolute top-2 right-2 flex items-center gap-0.5 z-10">
@@ -985,7 +985,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
                 {/* 데이터 업로드 (통합) — orange (level 9 전용) — 상품목록 · 재고리스트 서브탭 */}
                 {isSuperAdminLevel9 && (
-                  <MenuCard color="orange" icon={Table} title="데이터 업로드" description="상품목록 · 재고리스트 xlsx 업로드"
+                  <MenuCard color="amber" icon={Table} title="데이터 업로드" description="상품목록 · 재고리스트 xlsx 업로드"
                     onClick={() => { setUploadOpen(true); setUploadTab("products"); setUploadResult(null); setUploadFile(null); setStockUploadResult(null); setStockUploadFile(null); fetchImportLog(); fetchStockImportLog(); }} />
                 )}
 
@@ -1021,7 +1021,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
                 {/* 약사 전용 — sky · level ≥ 3 만 노출 */}
                 {(authSession?.level ?? 0) >= 3 && (
-                  <MenuCard color="sky" icon={FirstAid} title="약사 전용" description="교육자료 · 복약지도 · 참고 문서"
+                  <MenuCard color="teal" icon={FirstAid} title="약사 전용" description="교육자료 · 복약지도 · 참고 문서"
                     orderClass="order-1"
                     onClick={() => onNavigate("pharmacist", authSession!)} />
                 )}
@@ -1032,17 +1032,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   onClick={() => onNavigate("schedule", authSession!)} />
 
                 {/* 실재고 확인 — red · Scan */}
-                <MenuCard color="red" icon={Scan} title="실재고 확인" description="바코드 스캔 · 실재고·진열보충 요청"
+                <MenuCard color="amber" icon={Scan} title="실재고 확인" description="바코드 스캔 · 실재고·진열보충 요청"
                   orderClass="order-3"
                   onClick={() => onNavigate("scan", authSession!)} />
 
                 {/* 상품입고 — red · Package */}
-                <MenuCard color="red" icon={Package} title="상품입고" description="바코드 스캔으로 입고 상품 등록"
+                <MenuCard color="coral" icon={Package} title="상품입고" description="바코드 스캔으로 입고 상품 등록"
                   orderClass="order-4"
                   onClick={() => onNavigate("productarrival", authSession!)} />
 
                 {/* 연차 신청 — indigo · 사이드바 [승인요청]>[연차신청] 로 연결 (subTab=leave) */}
-                <MenuCard color="indigo" icon={CalendarDots} title="연차 신청" description="휴가·연차 신청 및 내역 조회"
+                <MenuCard color="sky" icon={CalendarDots} title="연차 신청" description="휴가·연차 신청 및 내역 조회"
                   orderClass="order-5"
                   onClick={() => {
                     try { localStorage.setItem("sidebar.subtab.approval-request", "leave"); } catch { /* silent */ }
@@ -1050,7 +1050,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   }} />
 
                 {/* 점심 불참 — indigo · ForkKnife */}
-                <MenuCard color="indigo" icon={ForkKnife} title="점심 불참" description="오늘의 점심 불참 신청"
+                <MenuCard color="amber" icon={ForkKnife} title="점심 불참" description="오늘의 점심 불참 신청"
                   orderClass="order-6"
                   onClick={() => onNavigate("lunch", authSession!)} />
 

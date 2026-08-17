@@ -1,32 +1,54 @@
-// 2026-08-16 · Landing 공용 메뉴 카드 · 랜딩 12+ 카드 DRY 통합
-// 2026-08-17 · 사용자 지시 · 아이콘 제목 앞 · 공통헤더 스타일 · 버튼 세련화
-//   · 이전: 큰 아이콘 (48/56) 상단 · 제목·설명 아래
-//   · 지금: 작은 아이콘 (16/18) 제목과 같은 줄 · 공통헤더 style · 더 컴팩트
+// 2026-08-17 · UI 프레임워크 · Landing 카드 · 사용자 제공 mockup 적용
+//   · 아이콘 · 좌상단 색상 tint 박스 (38x38 · rounded-11)
+//   · 제목 · 아이콘 아래
+//   · 설명 · 제목 아래
+//   · optional stat chips · 하단
+//   · brand palette: teal(#0E6B5C) · amber(#E88A3D) · coral(#D9584F) · sky(#3E7CB1)
+//   · surface: white · border #E3E9E7 · shadow soft · radius 14
 import type { ReactNode, ElementType } from "react";
 
-export type MenuCardColor = "red" | "violet" | "indigo" | "orange" | "zinc" | "sky" | "amber" | "emerald" | "fuchsia" | "rose";
+export type MenuCardColor =
+  | "teal" | "amber" | "coral" | "sky"
+  | "emerald" | "indigo" | "violet" | "fuchsia" | "rose" | "red" | "orange" | "zinc";
 
 interface ColorTokens {
-  bgBase: string;      // default 상태 · subtle colored bg (사용자 지시 · 세련미 우선)
-  borderBase: string;
+  /** icon 배경 tint */
+  iconBg: string;
+  /** icon 색상 */
+  iconColor: string;
+  /** hover 시 카드 border accent */
   hoverBorder: string;
-  hoverBg: string;
-  iconText: string;
-  activeAccent: string; // hover 시 title 색상
 }
 
-// · 2026-08-17 · #137 · 사용자 결정 · 옵션 B · subtle colored bg (세련미 > 파스텔 지양)
+// · brand color · sample HTML mockup 그대로 · #E7F3F0 · #FDEEE0 · #FBE7E5 · #E8F1F9
 const COLOR_MAP: Record<MenuCardColor, ColorTokens> = {
-  red:      { bgBase: "bg-red-50/40",     borderBase: "border-red-100",     hoverBorder: "hover:border-red-300",     hoverBg: "bg-red-100/60",     iconText: "text-red-600",     activeAccent: "group-hover:text-red-800" },
-  violet:   { bgBase: "bg-violet-50/40",  borderBase: "border-violet-100",  hoverBorder: "hover:border-violet-300",  hoverBg: "bg-violet-100/60",  iconText: "text-violet-600",  activeAccent: "group-hover:text-violet-800" },
-  indigo:   { bgBase: "bg-indigo-50/40",  borderBase: "border-indigo-100",  hoverBorder: "hover:border-indigo-300",  hoverBg: "bg-indigo-100/60",  iconText: "text-indigo-600",  activeAccent: "group-hover:text-indigo-800" },
-  orange:   { bgBase: "bg-orange-50/40",  borderBase: "border-orange-100",  hoverBorder: "hover:border-orange-300",  hoverBg: "bg-orange-100/60",  iconText: "text-orange-600",  activeAccent: "group-hover:text-orange-700" },
-  zinc:     { bgBase: "bg-zinc-50/50",    borderBase: "border-zinc-200",    hoverBorder: "hover:border-zinc-400",    hoverBg: "bg-zinc-100/70",    iconText: "text-zinc-600",    activeAccent: "group-hover:text-zinc-900" },
-  sky:      { bgBase: "bg-sky-50/40",     borderBase: "border-sky-100",     hoverBorder: "hover:border-sky-300",     hoverBg: "bg-sky-100/60",     iconText: "text-sky-600",     activeAccent: "group-hover:text-sky-800" },
-  amber:    { bgBase: "bg-amber-50/40",   borderBase: "border-amber-100",   hoverBorder: "hover:border-amber-300",   hoverBg: "bg-amber-100/60",   iconText: "text-amber-600",   activeAccent: "group-hover:text-amber-800" },
-  emerald:  { bgBase: "bg-emerald-50/40", borderBase: "border-emerald-100", hoverBorder: "hover:border-emerald-300", hoverBg: "bg-emerald-100/60", iconText: "text-emerald-600", activeAccent: "group-hover:text-emerald-800" },
-  fuchsia:  { bgBase: "bg-fuchsia-50/40", borderBase: "border-fuchsia-100", hoverBorder: "hover:border-fuchsia-300", hoverBg: "bg-fuchsia-100/60", iconText: "text-fuchsia-600", activeAccent: "group-hover:text-fuchsia-800" },
-  rose:     { bgBase: "bg-rose-50/40",    borderBase: "border-rose-100",    hoverBorder: "hover:border-rose-300",    hoverBg: "bg-rose-100/60",    iconText: "text-rose-600",    activeAccent: "group-hover:text-rose-800" },
+  teal:     { iconBg: "bg-[#E7F3F0]", iconColor: "text-[#0E6B5C]", hoverBorder: "hover:border-[#0E6B5C]" },
+  amber:    { iconBg: "bg-[#FDEEE0]", iconColor: "text-[#B4650F]", hoverBorder: "hover:border-[#E88A3D]" },
+  coral:    { iconBg: "bg-[#FBE7E5]", iconColor: "text-[#D9584F]", hoverBorder: "hover:border-[#D9584F]" },
+  sky:      { iconBg: "bg-[#E8F1F9]", iconColor: "text-[#3E7CB1]", hoverBorder: "hover:border-[#3E7CB1]" },
+  emerald:  { iconBg: "bg-emerald-50",  iconColor: "text-emerald-700", hoverBorder: "hover:border-emerald-500" },
+  indigo:   { iconBg: "bg-indigo-50",   iconColor: "text-indigo-700",  hoverBorder: "hover:border-indigo-500" },
+  violet:   { iconBg: "bg-violet-50",   iconColor: "text-violet-700",  hoverBorder: "hover:border-violet-500" },
+  fuchsia:  { iconBg: "bg-fuchsia-50",  iconColor: "text-fuchsia-700", hoverBorder: "hover:border-fuchsia-500" },
+  rose:     { iconBg: "bg-rose-50",     iconColor: "text-rose-700",    hoverBorder: "hover:border-rose-500" },
+  red:      { iconBg: "bg-red-50",      iconColor: "text-red-700",     hoverBorder: "hover:border-red-500" },
+  orange:   { iconBg: "bg-orange-50",   iconColor: "text-orange-700",  hoverBorder: "hover:border-orange-500" },
+  zinc:     { iconBg: "bg-zinc-100",    iconColor: "text-zinc-700",    hoverBorder: "hover:border-zinc-400" },
+};
+
+/** stat chip · Landing 카드 하단 · 카운터 등 */
+export interface MenuCardStatChip {
+  label: string;
+  value: number | string;
+  tone?: "blue" | "coral" | "amber" | "green" | "zinc";
+}
+
+const CHIP_TONE: Record<NonNullable<MenuCardStatChip["tone"]>, string> = {
+  blue:  "bg-[#E8F1F9] text-[#3E7CB1]",
+  coral: "bg-[#FBE7E5] text-[#D9584F]",
+  amber: "bg-[#FDEEE0] text-[#B4650F]",
+  green: "bg-[#E7F3F0] text-[#0E6B5C]",
+  zinc:  "bg-zinc-100 text-zinc-600",
 };
 
 interface MenuCardProps {
@@ -35,36 +57,54 @@ interface MenuCardProps {
   title: string;
   description: string;
   onClick: () => void;
-  /** order-N 등 grid 순서 클래스 · 필요 시 */
+  /** grid 순서 (order-N) */
   orderClass?: string;
-  /** 우측 상단 절대배치 배지 · title 라인 · 크기 조정 불필요 (compact 레이아웃) */
+  /** 우측 상단 절대배치 배지 (pending count 등) */
   badge?: ReactNode;
-  /** 설명 텍스트 크기 override · default: text-[11px] sm:text-[13px] */
+  /** 설명 폰트 크기 override · default: text-[13px] leading-[1.5] */
   descClass?: string;
+  /** 하단 stat chips · 옵션 (진열·발주 카운터 등) */
+  statChips?: MenuCardStatChip[];
 }
 
-export function MenuCard({ color, icon: Icon, title, description, onClick, orderClass, badge, descClass }: MenuCardProps) {
+export function MenuCard({ color, icon: Icon, title, description, onClick, orderClass, badge, descClass, statChips }: MenuCardProps) {
   const c = COLOR_MAP[color];
-  // 2026-08-17 · 사용자 지시 · 버튼 글씨 +2 x2 · description 15/17
-  const descSize = descClass ?? "text-[15px] sm:text-[17px] leading-tight sm:leading-relaxed";
+  const descSize = descClass ?? "text-[13px] leading-[1.5]";
   return (
     <button
       data-menu-card
       onClick={onClick}
-      className={`${orderClass ?? ""} group relative bg-white border border-zinc-200 ${c.hoverBorder} rounded-xl px-3.5 py-3 sm:px-4 sm:py-3.5 text-left transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm active:scale-[0.99] cursor-pointer overflow-hidden`}
+      className={`${orderClass ?? ""} group relative bg-white border border-[#E3E9E7] ${c.hoverBorder} rounded-[14px] p-[18px] text-left transition-all duration-150 hover:-translate-y-0.5 cursor-pointer overflow-hidden flex flex-col gap-2.5 shadow-sm hover:shadow-md`}
     >
-      <div className={`absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${c.hoverBg}`} />
-      {badge}
-      <div className="relative flex flex-col gap-1">
-        {/* 제목 라인 · 아이콘 · 텍스트 인라인 (공통헤더 스타일) */}
-        <div className="flex items-center gap-1.5 min-w-0">
-          <Icon size={16} className={`${c.iconText} shrink-0 transition-colors sm:hidden`} weight="fill" />
-          <Icon size={18} className={`${c.iconText} shrink-0 transition-colors hidden sm:block`} weight="fill" />
-          <span className={`text-zinc-900 font-black text-[17px] sm:text-[19px] tracking-tight truncate transition-colors ${c.activeAccent}`}>{title}</span>
+      {/* top · 아이콘 (좌측) + badge (우측) */}
+      <div className="flex items-start justify-between">
+        <div className={`w-[38px] h-[38px] rounded-[11px] flex items-center justify-center ${c.iconBg}`}>
+          <Icon size={16} className={c.iconColor} weight="fill" />
         </div>
-        {/* 설명 · 좌측 정렬 · 인라인 icon padding 을 위해 pl-[22px]/[26px] */}
-        <div className={`text-zinc-400 ${descSize} pl-[22px] sm:pl-[26px]`}>{description}</div>
+        {badge}
       </div>
+      {/* 제목 */}
+      <div className="text-[14.5px] font-bold text-[#12201C] tracking-[-0.1px] leading-tight">
+        {title}
+      </div>
+      {/* 설명 */}
+      <div className={`text-[#5B6B66] ${descSize}`}>
+        {description}
+      </div>
+      {/* stat chips · 하단 */}
+      {statChips && statChips.length > 0 && (
+        <div className="flex gap-1.5 flex-wrap">
+          {statChips.map((chip, i) => (
+            <div
+              key={i}
+              className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-[9px] py-[3px] pl-[7px] rounded-full ${CHIP_TONE[chip.tone ?? "zinc"]}`}
+            >
+              <span className="tabular-nums">{chip.value}</span>
+              {chip.label}
+            </div>
+          ))}
+        </div>
+      )}
     </button>
   );
 }
