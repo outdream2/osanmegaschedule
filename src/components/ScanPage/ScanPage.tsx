@@ -770,11 +770,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                   <Package size={14} className="text-teal-600" />
                 </div>
                 <span className="text-sm font-bold text-zinc-800">스캔한 상품 · 실재고 입력</span>
+                {/* 2026-08-17 · StatusPill 프레임워크 통일 */}
                 {rows.length > 0 && (
-                  <span className="text-[15px] font-bold text-teal-700
-                    bg-teal-50 border border-teal-200 rounded-full px-2 py-0.5 tabular-nums">
-                    {rows.length}건
-                  </span>
+                  <StatusPill tone="teal" size="md">{rows.length}건</StatusPill>
                 )}
               </div>
             </div>
