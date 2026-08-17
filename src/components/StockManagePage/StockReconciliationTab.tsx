@@ -380,9 +380,6 @@ export const StockReconciliationTab: React.FC<{
               <tbody className="divide-y divide-zinc-100">
                 {visibleRows.map((r, i) => {
                   const negative = r.diff < 0;
-                  const badgeCls = negative
-                    ? "bg-rose-50 text-rose-700 border-rose-200"
-                    : "bg-amber-50 text-amber-800 border-amber-200";
                   return (
                     <tr key={r.product_code} className="hover:bg-zinc-50/60 transition">
                       <td className="px-2 py-1.5 text-zinc-400 tabular-nums">{i + 1}</td>
@@ -396,9 +393,10 @@ export const StockReconciliationTab: React.FC<{
                       <td className="px-2 py-1.5 text-right text-zinc-700 font-bold tabular-nums">{r.erp_qty}</td>
                       <td className="px-2 py-1.5 text-right text-teal-700 font-bold tabular-nums">{r.actual_qty}</td>
                       <td className="px-2 py-1.5 text-right">
-                        <span className={`inline-flex items-center justify-center min-w-[48px] px-2 py-0.5 rounded-full text-[15px] font-bold border tabular-nums ${badgeCls}`}>
+                        {/* 2026-08-17 · StatusPill 프레임워크 통일 */}
+                        <StatusPill tone={negative ? "rose" : "amber"} size="md" className="min-w-[48px] justify-center">
                           {r.diff > 0 ? `+${r.diff}` : r.diff}
-                        </span>
+                        </StatusPill>
                       </td>
                       <td className="px-2 py-1.5 text-center text-zinc-500 tabular-nums text-[15px]">
                         {fmtDate(r.checked_at)}
