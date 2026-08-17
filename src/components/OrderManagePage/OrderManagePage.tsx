@@ -1822,9 +1822,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             </div>
           </div>
 
-          {/* ── 하단 split ── */}
-          <div className="flex flex-col lg:flex-row gap-2 lg:min-h-[520px]">
-            {/* 좌측: 발주필요 리스트 */}
+          {/* ── 하단 split · 2026-08-17 · PC 좌우 높이 매칭 · items-stretch + lg:h-[720px] ── */}
+          <div className="flex flex-col lg:flex-row gap-2 items-stretch lg:min-h-[720px]">
+            {/* 좌측: 발주필요 리스트 · PC 우측 상세와 같은 높이 · flex-1 로 채움 */}
             <div
               className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
               style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? needPanelWidth : undefined }}
