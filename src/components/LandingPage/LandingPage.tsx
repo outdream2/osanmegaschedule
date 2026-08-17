@@ -1246,38 +1246,40 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           {/* ── 입고 알림 · 2026-08-10 · #22 · 거래처 로그인 시 숨김 ── */}
           {!isVendor && (
           <div className="w-full mb-6 mt-2">
-            {/* 2026-08-17 · SectionLabel + right slot (알림 받기 / 구독 중) */}
+            {/* 2026-08-17 · SectionLabel + right slot (알림 받기 / 구독 중) · 최신 트렌드 · 딥네이비 톤 */}
             <SectionLabel tone="sky" right={
               !pushSubscribed ? (
                 <button
                   onClick={handleAnonSubscribe}
                   disabled={pushLoading}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[13px] font-bold text-[#3E7CB1] border border-[#E8F1F9] bg-[#E8F1F9] hover:bg-sky-100 transition disabled:opacity-50 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[14px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-sm transition-colors disabled:opacity-40 cursor-pointer"
                 >
-                  <Bell size={11} />알림 받기
+                  <Bell size={13} weight="fill" />알림 받기
                 </button>
               ) : (
-                <span className="inline-flex items-center gap-1 text-[13px] text-[#0E6B5C] font-bold">
-                  <Bell size={11} /> 구독 중
+                <span className="inline-flex items-center gap-1.5 text-[14px] text-brand-deep font-semibold bg-brand-tint border border-brand/15 rounded-full px-3 py-1.5">
+                  <Bell size={13} weight="fill" /> 구독 중
                 </span>
               )
             }>입고 알림</SectionLabel>
             {arrivalsLoading && stockArrivals.length > 0 && (
-              <div className="flex items-center justify-center gap-1.5 text-[10px] text-sky-600 font-bold py-1.5 mb-1 bg-sky-50 border border-sky-200 rounded-md sticky top-0 z-10">
-                <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
+              <div className="flex items-center justify-center gap-1.5 text-[13px] text-brand-deep font-semibold py-1.5 mb-1 bg-brand-tint border border-brand/15 rounded-lg sticky top-0 z-10">
+                <Loader2 size={13} className="animate-spin" /> 새로 불러오는 중...
               </div>
             )}
             {arrivalsLoading && stockArrivals.length === 0 ? (
-              <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+              <div className="flex items-center justify-center py-10 text-ink-soft text-[14px] font-medium gap-2"><Loader2 size={16} className="animate-spin" />로딩 중...</div>
             ) : !arrivalsLoading && stockArrivals.length === 0 ? (
-              <div className="text-center text-[11px] text-zinc-300 py-6">데이터 없음</div>
+              <div className="text-center text-[14px] text-ink-soft py-8 bg-white border border-line rounded-xl">데이터 없음</div>
             ) : (
-              <div className={`bg-white border border-zinc-200 rounded-xl overflow-hidden divide-y divide-zinc-100 shadow-sm ${arrivalsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+              <div className={`bg-white border border-line rounded-xl overflow-hidden divide-y divide-line/70 shadow-sm ${arrivalsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {stockArrivals.slice(0, 5).map(a => (
-                  <div key={a.id} className="flex items-center gap-2.5 px-3.5 py-2.5">
-                    <Package size={12} className="text-sky-500 shrink-0" weight="fill" />
-                    <span className="flex-1 text-sm font-medium text-zinc-700 truncate">{a.title}</span>
-                    <span className="text-[11px] text-zinc-400 shrink-0 whitespace-nowrap">
+                  <div key={a.id} className="flex items-center gap-3 px-4 py-3 hover:bg-brand-tint/40 transition-colors">
+                    <div className="w-8 h-8 rounded-lg bg-brand-tint flex items-center justify-center shrink-0">
+                      <Package size={15} className="text-brand-deep" weight="fill" />
+                    </div>
+                    <span className="flex-1 text-[15px] font-semibold text-ink truncate">{a.title}</span>
+                    <span className="text-[13px] text-ink-soft shrink-0 whitespace-nowrap tabular-nums">
                       {new Date(a.created_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
