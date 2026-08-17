@@ -363,7 +363,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                             <button
                               onClick={() => handleReview(r.id, "approved")}
                               disabled={processingId === r.id}
-                              className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition cursor-pointer disabled:opacity-50"
+                              className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white transition cursor-pointer disabled:opacity-50"
                             >
                               <CheckCircle size={12} weight="fill" />
                               {processingId === r.id ? "처리 중..." : "승인"}

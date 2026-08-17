@@ -97,7 +97,7 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
             type="button"
             onClick={handleSave}
             disabled={saving || loading || !dirty}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-black text-white bg-emerald-500 hover:bg-emerald-600 shadow-sm transition disabled:opacity-40"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-black text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-sm transition disabled:opacity-40"
           >
             {saving ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />} 저장
           </button>

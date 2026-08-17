@@ -1967,7 +1967,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                             <button
                               type="button"
                               onClick={() => window.open(displayEmp.resume_url as string, "_blank", "noopener,noreferrer")}
-                              className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[15px] font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md shadow-sm cursor-pointer transition-colors"
+                              className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[15px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-md shadow-sm cursor-pointer transition-colors"
                             >
                               <ExternalLink size={11} /> 이력서 보기
                             </button>

@@ -222,7 +222,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
           <button
             type="button"
             onClick={() => setContractModalOpen(true)}
-            className="px-2 py-1.5 text-[12px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg inline-flex items-center justify-center gap-1 shadow-sm transition cursor-pointer"
+            className="px-2 py-1.5 text-[12px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg inline-flex items-center justify-center gap-1 shadow-sm transition cursor-pointer"
             title="근로계약서 · 미리보기"
           >
             <FileText size={13} /> 근로계약서

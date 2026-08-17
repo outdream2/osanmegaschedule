@@ -3137,7 +3137,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                 <span>{pn}번 명세서 재파싱 완료</span>
                 <span className="text-gray-500 font-normal">이 결과를 <span className="font-bold text-sky-700">"{supplier}"</span> 공급처 템플릿으로 저장하면 다음부터 자동 적용됩니다.</span>
                 <button onClick={() => saveTemplate(pn, supplier)}
-                  className="ml-auto text-[11px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 px-2 py-0.5 rounded transition cursor-pointer shrink-0">
+                  className="ml-auto text-[11px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] px-2 py-0.5 rounded transition cursor-pointer shrink-0">
                   템플릿 저장
                 </button>
                 <button onClick={() => setReparseStatus(prev => { const s = { ...prev }; delete s[pn]; return s; })}
@@ -3549,7 +3549,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                               {/* 2026-07-22 · 명세서마다 행추가 (사용자 요청) */}
                               <button type="button"
                                 onClick={() => addManualRow(pn)}
-                                className="ml-1 text-[10px] font-black text-white bg-emerald-500 hover:bg-emerald-600 rounded px-2 py-0.5 cursor-pointer shadow-sm whitespace-nowrap"
+                                className="ml-1 text-[10px] font-black text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded px-2 py-0.5 cursor-pointer shadow-sm whitespace-nowrap"
                                 title={`${pn}번 명세서 하단에 빈 상품 행 추가 · 수동 입력`}
                               >➕ 행추가</button>
                             </span>
@@ -4648,8 +4648,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                                     disabled={!!matchingPage[pn]}
                                                     className={`text-[13px] font-black text-white disabled:bg-zinc-300 disabled:cursor-not-allowed border-2 rounded-lg px-3 py-1 cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow-md ring-1 transition shrink-0 ${
                                                       isConfirmed
-                                                        ? "bg-emerald-600 hover:bg-emerald-700 border-emerald-800 ring-emerald-200"
-                                                        : "bg-emerald-500 hover:bg-emerald-600 border-emerald-700 ring-emerald-200 animate-pulse"
+                                                        ? "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] border-emerald-800 ring-emerald-200"
+                                                        : "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] border-emerald-700 ring-emerald-200 animate-pulse"
                                                     }`}
                                                     title={isConfirmed ? `${pn}번 · 확정 완료 · 확정표 반영` : `${pn}번 · 확정 → 3차 거래명세서 확정표에 반영`}
                                                   >

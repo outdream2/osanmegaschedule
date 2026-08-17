@@ -1184,7 +1184,7 @@ const SignatureModal: React.FC<SignatureModalProps> = ({ open, title, onClose, o
               type="button"
               onClick={submit}
               disabled={empty}
-              className="text-[14px] font-black text-white bg-emerald-600 hover:bg-emerald-700 rounded-md h-8 px-4 cursor-pointer disabled:bg-zinc-300 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-sm"
+              className="text-[14px] font-black text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-md h-8 px-4 cursor-pointer disabled:bg-zinc-300 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-sm"
             >
               <Check size={12} weight="bold" />
               서명 저장
@@ -5312,7 +5312,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             <button type="button" onClick={handleComplete} disabled={generating || !hasBothSigns}
               className={`inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-[14px] font-bold shadow-sm transition-colors whitespace-nowrap
                 ${hasBothSigns && !generating
-                  ? "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                  ? "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white cursor-pointer"
                   : "bg-zinc-300 text-zinc-500 cursor-not-allowed opacity-60"}`}
               title={hasBothSigns ? "PDF 로컬 다운로드" : "서명 후 저장 가능합니다 (사업주·근로자 서명 필요)"}
             >

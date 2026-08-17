@@ -1416,7 +1416,7 @@ export const VendorDetailModal: React.FC<{
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => setShowPayModal(true)}
-                className="inline-flex items-center gap-1.5 h-8 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[12px] font-bold shadow-sm transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 h-8 px-4 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-bold shadow-sm transition cursor-pointer"
               >
                 <Plus size={13} strokeWidth={2.5} />
                 결제 등록
@@ -1564,7 +1564,7 @@ export const VendorDetailModal: React.FC<{
           <button
             onClick={handleSave}
             disabled={!isDirty || saving}
-            className="inline-flex items-center gap-1.5 h-8 px-5 text-[12px] font-bold bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg transition shadow-sm cursor-pointer"
+            className="inline-flex items-center gap-1.5 h-8 px-5 text-[12px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg transition shadow-sm cursor-pointer"
           >
             {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} strokeWidth={2.5} />}
             저장
@@ -1954,7 +1954,7 @@ const PaymentRegisterModal: React.FC<{
           <button
             onClick={handleSubmit}
             disabled={saving || amountNum <= 0}
-            className="inline-flex items-center gap-1.5 h-8 px-5 text-[12px] font-bold bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg transition shadow-sm cursor-pointer"
+            className="inline-flex items-center gap-1.5 h-8 px-5 text-[12px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg transition shadow-sm cursor-pointer"
           >
             {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} strokeWidth={2.5} />}
             결제 등록

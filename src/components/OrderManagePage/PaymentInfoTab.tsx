@@ -1503,7 +1503,7 @@ export const PaymentInfoTab: React.FC = () => {
                     type="button"
                     onClick={handleSubmit}
                     disabled={saving || amountNum <= 0}
-                    className="inline-flex items-center gap-1.5 h-9 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[14px] font-black shadow-sm hover:shadow-md transition-all cursor-pointer"
+                    className="inline-flex items-center gap-1.5 h-9 px-6 rounded-xl bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] active:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[14px] font-black shadow-sm hover:shadow-md transition-all cursor-pointer"
                   >
                     {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} strokeWidth={3} />}
                     {saving ? "등록 중..." : "결제 등록"}

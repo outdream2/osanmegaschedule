@@ -834,7 +834,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                     className="w-full text-[13px] font-black border-2 border-indigo-400 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-tint resize-none"
                   />
                   <div className="flex items-center gap-1 justify-end">
-                    <button onClick={commitEdit} disabled={editSaving} className="text-[11px] font-black text-white bg-emerald-500 hover:bg-emerald-600 rounded px-2 py-1 flex items-center gap-1 disabled:opacity-40 cursor-pointer">
+                    <button onClick={commitEdit} disabled={editSaving} className="text-[11px] font-black text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded px-2 py-1 flex items-center gap-1 disabled:opacity-40 cursor-pointer">
                       {editSaving ? <Loader2 size={11} className="animate-spin"/> : <Check size={11}/>}저장
                     </button>
                     <button onClick={cancelEdit} disabled={editSaving} className="text-[11px] font-black text-zinc-600 bg-zinc-200 hover:bg-zinc-300 rounded px-2 py-1 flex items-center gap-1 disabled:opacity-40 cursor-pointer">

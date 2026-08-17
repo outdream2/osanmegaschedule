@@ -675,7 +675,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                     await Promise.all([saveCompanyInfoNow(), savePaymentDayNow()]);
                   }}
                   disabled={!companyInfoLoaded || companyInfoSaveState === "saving"}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-[12px] font-black shadow-sm transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-emerald-300 text-white text-[12px] font-black shadow-sm transition-colors cursor-pointer"
                 >
                   <FloppyDisk size={12} weight="bold" />
                   {companyInfoSaveState === "saving" ? "저장 중..." : "회사 정보 저장"}

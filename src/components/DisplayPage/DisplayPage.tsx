@@ -1728,7 +1728,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   <button
                     onClick={handleApplyToWeekday}
                     title={`현재 배정을 매주 ${dayNames[selectedDateObj.getDay()]}에 적용 · DB 저장`}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition cursor-pointer shrink-0"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-xs font-bold rounded-lg shadow-sm transition cursor-pointer shrink-0"
                   >
                     <Save size={13} />
                     📅 매주 {dayNames[selectedDateObj.getDay()]}에 적용
@@ -1784,7 +1784,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                       <button
                         type="button"
                         onClick={() => setFullMapOpen(true)}
-                        className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black shadow-sm active:scale-95 transition"
+                        className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[10px] font-black shadow-sm active:scale-95 transition"
                         title="매장 구역도 보기 (읽기 전용)"
                       >
                         🗺️ 매장 구역도 보기
@@ -1905,7 +1905,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                 <button
                   type="button"
                   onClick={() => setMapCollapsed(v => !v)}
-                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[12px] font-black shadow-sm transition cursor-pointer"
+                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-black shadow-sm transition cursor-pointer"
                   title="매장 구역도 열기/접기"
                 >
                   🗺️ {mapCollapsed ? "매장 구역도 펼치기" : "매장 구역도 접기"}
@@ -1963,7 +1963,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                             <button
                               onClick={handleConfirmAutoAssign}
                               title="DB 저장 + 각 담당자에게 날짜·배정구역 알림 전송"
-                              className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black rounded-full shadow-sm transition cursor-pointer border border-emerald-700 animate-pulse"
+                              className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[10px] font-black rounded-full shadow-sm transition cursor-pointer border border-emerald-700 animate-pulse"
                             >
                               <Bell size={9} /> 배치확정 ({pendingAutoAssign.assignedList.length})
                             </button>

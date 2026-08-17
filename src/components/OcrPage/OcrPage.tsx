@@ -1704,7 +1704,7 @@ return (
                   ? "bg-emerald-600 ring-2 ring-emerald-300"
                   : extracting
                     ? "bg-emerald-300"
-                    : "bg-emerald-500 hover:bg-emerald-600"
+                    : "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a]"
               }`}
               title="ONNX (PP-OCRv5) 로 rawText 추출 → 로컬 파이프라인 (vendor-match·normalize·verify) 으로 파싱/매칭">
               {activeParser === "local"

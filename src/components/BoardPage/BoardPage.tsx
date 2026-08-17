@@ -501,7 +501,7 @@ const InlineDetail: React.FC<{
                       <textarea value={editingCommentBody} onChange={(e) => setEditingCommentBody(e.target.value)} rows={2}
                         className="w-full px-2 py-1 text-[14px] border border-orange-300 rounded focus:outline-none focus:border-orange-500 resize-none" />
                       <div className="flex gap-1">
-                        <button onClick={() => saveEdit(c.id)} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500 hover:bg-emerald-600 text-white text-[14px] font-black">
+                        <button onClick={() => saveEdit(c.id)} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[14px] font-black">
                           <Check size={10} strokeWidth={3} /> 저장
                         </button>
                         <button onClick={() => { setEditingCommentId(null); setEditingCommentBody(""); }} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-zinc-100 hover:bg-zinc-200 text-zinc-600 text-[14px] font-black">
@@ -1075,7 +1075,7 @@ function DetailModal({
                           <div className="flex items-center gap-1.5">
                             <button
                               onClick={() => saveCommentEdit(c.id)}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white text-[15px] font-black"
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[15px] font-black"
                             ><Check size={11} strokeWidth={3} /> 저장</button>
                             <button
                               onClick={() => { setEditingCommentId(null); setEditingCommentBody(""); }}

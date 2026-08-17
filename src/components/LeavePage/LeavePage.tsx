@@ -476,7 +476,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                               <button
                                 onClick={() => handleReview(r.id, "approved")}
                                 disabled={processingId === r.id}
-                                className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-all duration-150 cursor-pointer disabled:opacity-50"
+                                className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white transition-all duration-150 cursor-pointer disabled:opacity-50"
                               >
                                 <CheckCircle2 size={12} />
                                 {processingId === r.id ? "처리 중..." : "승인"}

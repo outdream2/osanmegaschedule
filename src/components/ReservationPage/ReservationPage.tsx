@@ -717,7 +717,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-sm rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                  className="w-full py-3 bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-50 text-white font-bold text-sm rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                 >
                   {submitting ? (
                     <>
