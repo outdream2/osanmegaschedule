@@ -15,6 +15,7 @@ import { type ClassFilter } from "../../utils/productClassify";
 import { CARD_BASE } from "../../styles/tokens";
 import { fmtWonCompact } from "../../lib/format";
 import { EmptyState } from "../common/EmptyState";
+import { StatusPill } from "../common/StatusPill";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { API_LIMITS } from "../../constants/apiLimits";
 import { useResizablePanel } from "../../hooks/useResizablePanel";
@@ -424,7 +425,7 @@ const ZoneCategoryContent: React.FC = () => {
           <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
           <PieChart size={16} className="text-brand-deep shrink-0" />
           <span className="text-[17px] font-bold text-ink tracking-tight">구역현황</span>
-          <span className="text-[14px] font-semibold text-brand-deep bg-brand-tint rounded-full px-2.5 py-0.5 border border-brand/15 tabular-nums">{grouped.length}개 구역</span>
+          <StatusPill tone="brand" size="md">{grouped.length}개 구역</StatusPill>
           <span className="text-[13px] text-ink-soft hidden md:inline">real_map 기반 · 구역 클릭 → 상품 상세</span>
         </div>
         {/* 기간 필터 · 통일 톤 · segmented pill */}

@@ -10,6 +10,7 @@ import { matchClassFilter, type ClassFilter } from "../../utils/productClassify"
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE, TEXT } from "../../styles/tokens";
+import { StatusPill } from "../common/StatusPill";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
@@ -153,9 +154,7 @@ const PeriodBucketCard: React.FC<{
             <span className="text-[15px] font-bold text-zinc-800">{bucket.label}</span>
             <span className="text-[15px] text-zinc-500">({bucket.sublabel})</span>
             {!bucket.loading && !bucket.error && (
-              <span className="text-[14px] font-semibold text-indigo-700 bg-indigo-100 border border-indigo-200 rounded-full px-2 py-0.5 tabular-nums">
-                {bucket.total}건
-              </span>
+              <StatusPill tone="indigo" size="md">{bucket.total}건</StatusPill>
             )}
           </div>
           <div className="text-[15px] text-zinc-400 mt-0.5">{bucket.vsLabel}</div>
@@ -355,9 +354,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
           <TrendingUp size={14} className="text-indigo-500 shrink-0" />
           <span className="text-[15px] font-semibold text-zinc-800">판매 급상승</span>
           {meta && (
-            <span className="text-[15px] font-medium text-indigo-700 bg-indigo-100 rounded-full px-2 py-0.5 tabular-nums">
-              {fmt(meta.total)}건
-            </span>
+            <StatusPill tone="indigo" size="md">{fmt(meta.total)}건</StatusPill>
           )}
           <span className="text-[15px] text-zinc-400 hidden sm:block">
             {meta ? `최근 ${windowDays}일 (${meta.recent_from} ~) vs 이전 ${windowDays}일 비교` : `최근 ${windowDays}일 vs 이전 기간 판매 비교 · 신규진입 상단`}
