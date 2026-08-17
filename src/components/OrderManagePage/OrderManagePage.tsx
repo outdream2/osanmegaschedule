@@ -12,6 +12,7 @@ import { SearchFilterChips, type ChipOption } from "../common/SearchFilterChips"
 // 2026-08-17 · 공용 페이지 툴바 프레임워크 (좌 accent+제목·중앙 검색·우 액션)
 import { PageToolbar } from "../common/PageToolbar";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
+import { StatusPill } from "../common/StatusPill";
 import { matchHangul } from "../common/hangulSearch";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
 import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp, ScanLine, PackagePlus, RotateCcw, X, Search, Info, MapPin } from "lucide-react";
@@ -1550,23 +1551,17 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 </button>
               )}
 
-              {/* 적용 중 조건 요약 badge */}
+              {/* 적용 중 조건 요약 badge · 2026-08-17 · StatusPill 통일 */}
               {inlineActive && (
                 <div className="hidden sm:flex items-center gap-1.5 ml-1 flex-wrap">
                   {deferredCurrentEnabled && deferredInlineCurrent > 0 && (
-                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[15px] font-bold text-amber-700 whitespace-nowrap">
-                      재고 ≤{deferredInlineCurrent}개
-                    </span>
+                    <StatusPill tone="amber" size="md">재고 ≤{deferredInlineCurrent}개</StatusPill>
                   )}
                   {deferredSalesMonthEnabled && deferredInlineSalesMonth > 0 && (
-                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-sky-50 border border-sky-200 text-[15px] font-bold text-sky-700 whitespace-nowrap">
-                      한달 판매 ≤{deferredInlineSalesMonth}개
-                    </span>
+                    <StatusPill tone="sky" size="md">한달 판매 ≤{deferredInlineSalesMonth}개</StatusPill>
                   )}
                   {deferredSalesQuarterEnabled && deferredInlineSalesQuarter > 0 && (
-                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-[15px] font-bold text-indigo-700 whitespace-nowrap">
-                      3달 판매 ≤{deferredInlineSalesQuarter}개
-                    </span>
+                    <StatusPill tone="indigo" size="md">3달 판매 ≤{deferredInlineSalesQuarter}개</StatusPill>
                   )}
                 </div>
               )}
