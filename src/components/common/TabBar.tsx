@@ -211,15 +211,17 @@ export function TabBar<K extends string = string>({
     );
   }
 
-  // L3 · Linear "Underline Accent" 2026 최신 트렌드 · brand-tint 컨테이너 유지 (딥블루 톤) · 활성 = underline only
+  // L3 · Filter Chip Row · Attio/Vercel 2026 · 탭 대신 필터 chip 스타일 (L2 tabs 와 완전히 다른 UX)
+  //   · 사용자 선택 · L3 제거 · filter chip row 로 흡수 (research-strategist 1순위)
+  //   · 탭처럼 콘텐츠 전환 · 시각은 filter chip · pill 스타일
   if (level === 3) {
     return (
-      <div className={`bg-brand-tint/30 border-y border-brand/10 w-full shrink-0 ${className}`}>
+      <div className={`bg-white border-b border-line w-full shrink-0 ${className}`}>
         <div
-          className="tab-bar-inner"
+          className="tab-bar-inner py-2.5"
           style={typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth }}
         >
-          <div className={`inline-flex items-stretch gap-4 sm:gap-6 flex-wrap px-1 ${sortable?.isDragging ? "select-none" : ""}`}>
+          <div className={`inline-flex items-center gap-1.5 flex-wrap ${sortable?.isDragging ? "select-none" : ""}`}>
             {visibleTabs.map(t => {
               const active = activeKey === t.key;
               const Icon = t.icon;
@@ -256,38 +258,34 @@ export function TabBar<K extends string = string>({
                   onTouchEnd={dnd?.onTouchEnd}
                   onTouchCancel={dnd?.onTouchCancel}
                   className={[
-                    "group relative inline-flex items-center gap-1.5 h-11 px-1 pt-2 pb-2 text-[14px] sm:text-[15px] whitespace-nowrap transition-colors duration-200 cursor-pointer tracking-tight",
-                    // Linear "Underline Accent" 2026 · bg 없음 · text + underline only
+                    "group inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[14px] sm:text-[15px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight border",
+                    // Filter Chip · 활성 = brand-deep fill · 비활성 = zinc-50 ghost (Attio/Vercel filter chip 표준)
                     active
-                      ? "text-brand-deep font-bold"
-                      : "text-brand-deep/55 hover:text-brand-deep font-semibold",
+                      ? "bg-brand-deep text-white border-brand-deep shadow-[0_1px_2px_rgba(10,46,74,0.15)]"
+                      : "bg-zinc-50 text-ink-soft border-line hover:bg-white hover:text-ink hover:border-brand-deep/30",
                     dragCls,
                   ].join(" ")}
                 >
-                  {/* dot marker · 활성 시 · 카테고리 색 · 비활성 · muted */}
+                  {/* dot marker · 활성 시 · white · 비활성 · 카테고리 톤 */}
                   <span
-                    className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${active ? c.iconActive.replace("text-", "bg-") : "bg-brand-deep/25 group-hover:bg-brand-deep/50"}`}
+                    className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${active ? "bg-white/80" : c.iconActive.replace("text-", "bg-")}`}
                   />
                   {Icon && (
                     <Icon
                       size={14}
                       strokeWidth={active ? 2.4 : 2}
                       weight={active ? "fill" : "duotone"}
-                      className={`shrink-0 transition-colors duration-200 ${active ? c.iconActive : "text-brand-deep/40 group-hover:text-brand-deep/70"}`}
+                      className={`shrink-0 transition-colors duration-200 ${active ? "text-white" : c.iconActive}`}
                     />
                   )}
                   <span>{t.label}</span>
                   {t.badge != null && t.badge > 0 && (
                     <span
-                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold leading-none tabular-nums transition-colors ${active ? `${badgeBg} text-white shadow-sm` : "bg-brand-deep/10 text-brand-deep/70"}`}
+                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold leading-none tabular-nums transition-colors ${active ? "bg-white/25 text-white" : `${badgeBg} text-white`}`}
                       title={`${t.label} · ${t.badge}건`}
                     >
                       {t.badge}
                     </span>
-                  )}
-                  {/* 활성 · 하단 underline 2.5px brand-deep (Linear Docs 2026 표준) */}
-                  {active && (
-                    <span className="absolute left-0 right-0 -bottom-px h-[2.5px] rounded-t-full bg-brand-deep pointer-events-none" />
                   )}
                 </button>
               );
