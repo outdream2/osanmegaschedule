@@ -11,6 +11,7 @@
 import React, { useEffect, useState } from "react";
 import { X, TrendingUp, Package } from "lucide-react";
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "./PurchaseHistoryList";
+import { StatusPill } from "./StatusPill";
 
 interface PurchaseHistoryModalProps {
   productCode: string;
@@ -90,7 +91,7 @@ export const PurchaseHistoryModal: React.FC<PurchaseHistoryModalProps> = ({
             )}
             {!loading && rows.length > 0 && (
               <div className="mt-1.5 flex items-center gap-2 flex-wrap text-[11px] font-mono text-zinc-500">
-                <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold">{rows.length}건</span>
+                <StatusPill tone="emerald" size="xs">{rows.length}건</StatusPill>
                 <span>총 <b>{fmt(totalQty)}</b>개</span>
                 <span>·</span>
                 <span className="text-emerald-700 font-bold">{fmtWon(totalAmt)}</span>

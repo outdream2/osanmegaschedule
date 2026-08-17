@@ -79,10 +79,10 @@ export const ProductPurchaseDetailPanel: React.FC<Props> = ({ product, rows, loa
           </div>
         )}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-          <KpiCard label="총 매입액" value={fmtWon(product.total_amount)} color="sky" />
-          <KpiCard label="총 수량"   value={fmt(product.total_qty)}     color="slate" />
-          <KpiCard label="매입 건수" value={`${fmt(product.purchase_count)}건`} color="slate" />
-          <KpiCard label="평균단가"  value={avgUnitPrice > 0 ? fmt(Math.round(avgUnitPrice)) : "-"} color="emerald" />
+          <KpiCard label="총 매입액" value={fmtWon(product.total_amount)} tone="sky" />
+          <KpiCard label="총 수량"   value={fmt(product.total_qty)}     tone="brand" />
+          <KpiCard label="매입 건수" value={fmt(product.purchase_count)} unit="건" tone="brand" />
+          <KpiCard label="평균단가"  value={avgUnitPrice > 0 ? fmt(Math.round(avgUnitPrice)) : "-"} tone="emerald" />
         </div>
         <div className="text-[10px] text-zinc-400 pt-1">
           최근 매입일 · <span className="tabular-nums">{dateLabel(product.last_purchase_date)}</span>
