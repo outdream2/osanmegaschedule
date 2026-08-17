@@ -9,6 +9,8 @@ import { useVendors } from "../../hooks/useVendors";
 // 2026-08-03 (#201) · 발주필요 검색 · 공통 SearchBar · SearchFilterChips · 한글 초성
 import { SearchBar } from "../common/SearchBar";
 import { SearchFilterChips, type ChipOption } from "../common/SearchFilterChips";
+// 2026-08-17 · 공용 페이지 툴바 프레임워크 (좌 accent+제목·중앙 검색·우 액션)
+import { PageToolbar } from "../common/PageToolbar";
 import { matchHangul } from "../common/hangulSearch";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
 import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp, ScanLine, PackagePlus, RotateCcw, X, Search, Info, MapPin } from "lucide-react";
@@ -2401,29 +2403,14 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {/* ── 발주요청 서브탭 (purchase-order > order) ── */}
       {topTab === "purchase-order" && purchaseOrderSubTab === "order" && (
         <div className="flex flex-col gap-2">
-          {/* 2026-08-10 · 사용자 요청 · PC 한 줄 · 모바일 wrap 2줄 (flex-wrap · lg+ 는 flex-nowrap 유도 · gap 자연 wrap) */}
-          {/* 2026-08-17 · 발주요청 상단 툴바 · 최신 트렌드 · 딥네이비 accent + 좌우 통일 · 폰트 +2 */}
-          <div className="bg-white rounded-xl border border-line shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-            {/* 좌측 · 제목 + 카운트 + 선택 배지 · accent bar */}
-            <div className="flex items-center gap-2.5 shrink-0">
-              <span className="w-[3px] h-[18px] rounded-full bg-brand-deep" />
-              <ShoppingCart size={18} className="text-brand-deep shrink-0" />
-              <span className="text-[18px] font-bold text-ink tracking-tight">발주 요청 목록</span>
-              <span className="text-[15px] font-semibold text-brand-deep bg-brand-tint rounded-full px-2.5 py-0.5 border border-brand/15 tabular-nums">{orderReqs.length}건</span>
-              {selectedOrder.size > 0 && (
-                <span className="text-[15px] font-semibold bg-brand-deep text-white rounded-full px-2.5 py-0.5 tabular-nums shadow-sm">선택 {selectedOrder.size}</span>
-              )}
-            </div>
-            {/* 검색 · 딥네이비 focus */}
-            <input
-              type="text"
-              value={orderSearch}
-              onChange={e => setOrderSearch(e.target.value)}
-              placeholder="상품·코드·공급사"
-              className="text-[15px] border border-line rounded-lg pl-3 pr-3 h-10 flex-1 min-w-[160px] max-w-[260px] focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors bg-white text-ink placeholder-ink-soft"
-            />
-            {/* 우측 · 카테고리 필터 · 딥네이비 통일 (전체 · 위탁 · 선결제 · 60/90회전 - identity 유지) */}
-            <div className="flex items-center gap-2 flex-wrap ml-auto">
+          {/* 2026-08-17 · 공용 PageToolbar 프레임워크 · 발주요청 상단 · 재사용 · 톤 자동 */}
+          <PageToolbar
+            icon={<ShoppingCart size={18} strokeWidth={2.2} />}
+            title="발주 요청 목록"
+            count={orderReqs.length}
+            selectedCount={selectedOrder.size}
+            search={{ value: orderSearch, onChange: setOrderSearch, placeholder: "상품·코드·공급사" }}
+            right={
               <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
                 {(["all", ...dbVendorCategories] as string[]).map(cat => {
                   const active = orderCategoryFilter === cat;
@@ -2441,8 +2428,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   );
                 })}
               </div>
-            </div>
-          </div>
+            }
+          />
 
           {/* ── 하단 split ── */}
           <div className="flex flex-col lg:flex-row gap-2 lg:min-h-[520px]">
