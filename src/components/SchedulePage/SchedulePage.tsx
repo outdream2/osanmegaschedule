@@ -1818,10 +1818,12 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
               </div>
             )}
 
-            {/* Schedule table — expands to content height, horizontal scroll only */}
+            {/* Schedule table · 2026-08-17 · 사용자 지시 · 반응형 10명↑·PC 15명↑ 세로 스크롤 */}
             <div
               ref={scrollTableRef}
-              className="relative overflow-x-auto w-full"
+              className={`relative overflow-x-auto w-full ${
+                employees.length > 10 ? "max-h-[70vh] overflow-y-auto" : ""
+              } ${employees.length > 15 ? "md:max-h-[calc(100vh-260px)] md:overflow-y-auto" : "md:max-h-none md:overflow-y-visible"}`}
             >
               {/* Full spinner ONLY on initial load (no employees yet). Once data is loaded
                   all subsequent fetches are invisible so the table stays mounted and

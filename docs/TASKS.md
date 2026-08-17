@@ -29,6 +29,25 @@
 ### #150 · 반응형 헤더 · 사이드바 톤 통일 · ✅ 완료 (295b8d1)
 - AppNavHeader · deep navy · logo2.png rounded · 이름/로그아웃 흰 텍스트
 
+### #155 · EmployeeCalendarModal 좌우 분할 · ✅ 완료 (2026-08-17)
+- 사용자 지시: "스케쥴표 이름 클릭 모달 · 좌우 나눠 · 좌=직원정보 항상 · 우=탭 (달력/일괄/구역) · 최신 트렌드 · 반응형 stack"
+- 좌 · aside 300px · EmployeeProfileCard 항상 노출
+- 우 · segmented tab bar (딥네이비 accent) + 기존 calendar/bulk/zone 콘텐츠
+- 반응형 · max-md 스택
+- info 탭 제거 (좌측 항상 노출로 대체)
+- 모달 · max-w-5xl · 딥네이비 헤더
+
+### #156 · 스케줄표 세로 스크롤 · ✅ 완료 (2026-08-17)
+- 사용자 지시: "반응형 10명 이상 세로 스크롤 · PC 15명 이상 세로 스크롤"
+- SchedulePage.tsx 스크롤 wrapper · employees.length 조건별 max-h + overflow-y
+
+### #157 · 공통헤더 Row 2 탭 · 딥네이비 톤 · ✅ 완료 (890713a)
+- Row 2 · Linear/Vercel 세련 톤 · bg-white/[0.14] active pill · white/60 hover
+
+### #158 · 계정 비밀번호 변경 · ✅ 확인 (2026-08-17)
+- 검증: MyPage · api.post `/api/auth/change-password` · Zod schema · bcrypt compare/hash · audit
+- 클라이언트 사전검증 · 서버 로직 · 이상 없음
+
 ### #131 · 페이지 안보이기 (uncheck) 재발 · 🐛 심층 진단 필요
 - 사용자 재보고 · 이전 fix 후에도 미해결
 - 확인 필요: PermissionsPage 저장 · usePagePermissions 캐시 · filterGroupsForSession 복합키 · App.tsx isHiddenPage useEffect
