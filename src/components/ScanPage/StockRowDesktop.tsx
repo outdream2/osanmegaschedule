@@ -21,7 +21,7 @@ interface NumberInputProps {
   accent?: string;
 }
 const NumberInput: React.FC<NumberInputProps> = ({
-  value, onChange, placeholder = "0", disabled = false, accent = "focus:border-teal-400",
+  value, onChange, placeholder = "0", disabled = false, accent = "focus:border-brand-deep",
 }) => {
   const cur = value === "" ? 0 : Number(value) || 0;
   const dec = () => { if (disabled) return; const n = Math.max(0, cur - 1); onChange(n === 0 && value === "" ? "" : n); };
@@ -202,9 +202,9 @@ export const StockRowDesktop: React.FC<StockRowDesktopProps> = React.memo(({
           prev={row.prevStore1Qty}
           addValue={row.store1AddQty}
           onAddChange={v => onPatch(row.key, { store1AddQty: v })}
-          accent="focus:border-emerald-400"
+          accent="focus:border-brand-deep"
           zone={row.store1Zone}
-          zoneAccentClass="text-emerald-600 focus:border-emerald-400"
+          zoneAccentClass="text-emerald-600 focus:border-brand-deep"
           onZoneChange={v => onPatch(row.key, { store1Zone: v })}
         />
       </td>
@@ -215,9 +215,9 @@ export const StockRowDesktop: React.FC<StockRowDesktopProps> = React.memo(({
           prev={row.prevStore2Qty}
           addValue={row.store2AddQty}
           onAddChange={v => onPatch(row.key, { store2AddQty: v })}
-          accent="focus:border-sky-400"
+          accent="focus:border-brand-deep"
           zone={row.store2Zone}
-          zoneAccentClass="text-sky-600 focus:border-sky-400"
+          zoneAccentClass="text-sky-600 focus:border-brand-deep"
           onZoneChange={v => onPatch(row.key, { store2Zone: v })}
         />
       </td>
@@ -228,9 +228,9 @@ export const StockRowDesktop: React.FC<StockRowDesktopProps> = React.memo(({
           prev={row.prevStore3Qty}
           addValue={row.store3AddQty}
           onAddChange={v => onPatch(row.key, { store3AddQty: v })}
-          accent="focus:border-violet-400"
+          accent="focus:border-brand-deep"
           zone={row.store3Zone}
-          zoneAccentClass="text-violet-600 focus:border-violet-400"
+          zoneAccentClass="text-violet-600 focus:border-brand-deep"
           onZoneChange={v => onPatch(row.key, { store3Zone: v })}
         />
       </td>

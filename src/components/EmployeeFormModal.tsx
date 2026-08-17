@@ -49,7 +49,7 @@ interface EmployeeFormModalProps {
   onClose: () => void;
 }
 
-const SELECT_CLS = "w-full text-xs rounded border border-zinc-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 p-2 bg-white text-zinc-800 focus:outline-none transition-all";
+const SELECT_CLS = "w-full text-xs rounded border border-zinc-200 focus:border-brand-deep focus:ring-2 focus:ring-brand-tint p-2 bg-white text-zinc-800 focus:outline-none transition-all";
 const LABEL_CLS = "block text-[11px] font-bold text-zinc-500 uppercase tracking-wide mb-1";
 
 // POSITIONS · RANKS · WORKPLACES → src/constants/jobCategories.ts
@@ -144,7 +144,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                 value={employeeNumber}
                 onChange={e => setEmployeeNumber(e.target.value)}
                 placeholder="예: 004"
-                className="w-full font-mono text-[13px] rounded-lg border border-zinc-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 px-3 py-2 bg-white text-zinc-900 focus:outline-none transition"
+                className="w-full font-mono text-[13px] rounded-lg border border-zinc-200 focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2 bg-white text-zinc-900 focus:outline-none transition"
               />
             </div>
           )}
@@ -159,7 +159,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
               placeholder="홍길동"
               value={empName}
               onChange={e => setEmpName(e.target.value)}
-              className="w-full text-sm font-semibold rounded-lg border border-zinc-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 px-3 py-2.5 bg-white text-zinc-900 placeholder:text-zinc-300 focus:outline-none transition-all"
+              className="w-full text-sm font-semibold rounded-lg border border-zinc-200 focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2.5 bg-white text-zinc-900 placeholder:text-zinc-300 focus:outline-none transition-all"
               required
             />
           </div>
@@ -176,7 +176,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
               value={empPhone}
               onChange={e => setEmpPhone(e.target.value)}
               required={empModalMode === "create"}
-              className="w-full text-sm rounded-lg border border-zinc-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 px-3 py-2.5 bg-white text-zinc-900 placeholder:text-zinc-300 focus:outline-none transition-all"
+              className="w-full text-sm rounded-lg border border-zinc-200 focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2.5 bg-white text-zinc-900 placeholder:text-zinc-300 focus:outline-none transition-all"
             />
             {empPhone && !/^01[0-9]{8,9}$/.test(empPhone.replace(/[^0-9]/g, "")) && (
               <p className="mt-1 text-[11px] text-rose-500 font-semibold">
@@ -225,7 +225,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                         placeholder="직종 직접 입력"
                         value={empCustomPosition}
                         onChange={e => setEmpCustomPosition(e.target.value)}
-                        className="mt-1.5 w-full text-xs rounded border border-zinc-200 focus:border-blue-400 px-2 py-1.5 bg-white focus:outline-none"
+                        className="mt-1.5 w-full text-xs rounded border border-zinc-200 focus:border-brand-deep px-2 py-1.5 bg-white focus:outline-none"
                       />
                     )}
                     {/* 물류 선택시 캐셔 겸직 체크박스 */}
@@ -420,7 +420,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
               placeholder="예: 주6일 일 휴무, 수목휴무, 토일 등"
               value={empDescription}
               onChange={e => setEmpDescription(e.target.value)}
-              className="w-full text-xs rounded-lg border border-zinc-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 px-3 py-2 bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none transition-all"
+              className="w-full text-xs rounded-lg border border-zinc-200 focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2 bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none transition-all"
             />
             <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-zinc-200">
               <span className="text-[10px] text-zinc-400 font-semibold self-center mr-0.5">패턴:</span>

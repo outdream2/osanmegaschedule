@@ -921,7 +921,7 @@ function DetailModal({
                   value={editDraft.title}
                   onChange={e => setEditDraft(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="제목"
-                  className="w-full text-lg sm:text-xl font-black text-zinc-900 leading-snug bg-white border-2 border-indigo-300 rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500"
+                  className="w-full text-lg sm:text-xl font-black text-zinc-900 leading-snug bg-white border-2 border-indigo-300 rounded-xl px-3 py-2 focus:outline-none focus:border-brand-deep"
                 />
               ) : (
                 <h1 className="text-lg sm:text-xl font-black text-zinc-900 leading-snug break-keep">
@@ -940,7 +940,7 @@ function DetailModal({
                     onChange={e => setEditDraft(prev => ({ ...prev, body: e.target.value }))}
                     rows={6}
                     placeholder="본문"
-                    className="w-full mt-3 text-[13px] text-zinc-700 leading-relaxed bg-white border border-zinc-300 rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500 resize-y"
+                    className="w-full mt-3 text-[13px] text-zinc-700 leading-relaxed bg-white border border-zinc-300 rounded-xl px-3 py-2 focus:outline-none focus:border-brand-deep resize-y"
                   />
                   <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                     <span className="text-[10px] font-black text-zinc-500 mr-1">카테고리:</span>

@@ -340,7 +340,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               onKeyDown={e => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") cancelEdit(); }}
               disabled={editSaving}
               autoFocus
-              className="flex-1 min-w-0 text-[13px] font-black border-2 border-indigo-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+              className="flex-1 min-w-0 text-[13px] font-black border-2 border-indigo-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-brand-tint"
             />
             <button onClick={commitEdit} disabled={editSaving} className="shrink-0 w-6 h-6 rounded bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 disabled:opacity-40 cursor-pointer">
               {editSaving ? <Loader2 size={11} className="animate-spin" /> : <Check size={12} />}
@@ -611,7 +611,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                       type="number" min="0"
                       value={store1Stock}
                       onChange={e => { setStore1Stock(e.target.value === "" ? "" : Number(e.target.value)); setS1Status("idle"); }}
-                      className="w-full text-sm font-black text-center bg-violet-50/50 border border-violet-200 rounded px-1 py-0 outline-none focus:border-violet-400 transition"
+                      className="w-full text-sm font-black text-center bg-violet-50/50 border border-violet-200 rounded px-1 py-0 outline-none focus:border-brand-deep transition"
                       placeholder="—"
                     />
                     {s1Status === "done" ? (
@@ -636,7 +636,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                       type="number" min="0"
                       value={store2Stock}
                       onChange={e => { setStore2Stock(e.target.value === "" ? "" : Number(e.target.value)); setS2Status("idle"); }}
-                      className="w-full text-sm font-black text-center bg-violet-100/40 border border-violet-300 rounded px-1 py-0 outline-none focus:border-violet-500 transition"
+                      className="w-full text-sm font-black text-center bg-violet-100/40 border border-violet-300 rounded px-1 py-0 outline-none focus:border-brand-deep transition"
                       placeholder="—"
                     />
                     {s2Status === "done" ? (
@@ -831,7 +831,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                     disabled={editSaving}
                     autoFocus
                     rows={2}
-                    className="w-full text-[13px] font-black border-2 border-indigo-400 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-100 resize-none"
+                    className="w-full text-[13px] font-black border-2 border-indigo-400 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-tint resize-none"
                   />
                   <div className="flex items-center gap-1 justify-end">
                     <button onClick={commitEdit} disabled={editSaving} className="text-[11px] font-black text-white bg-emerald-500 hover:bg-emerald-600 rounded px-2 py-1 flex items-center gap-1 disabled:opacity-40 cursor-pointer">

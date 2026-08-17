@@ -156,7 +156,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
                 value={addressDraft}
                 onChange={e => setAddressDraft(e.target.value)}
                 placeholder="예: 경기도 오산시 …"
-                className="flex-1 min-w-0 px-3 py-2 text-[13px] border border-zinc-300 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                className="flex-1 min-w-0 px-3 py-2 text-[13px] border border-zinc-300 rounded-xl focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
               />
               <button
                 type="button"

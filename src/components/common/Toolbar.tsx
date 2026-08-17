@@ -38,10 +38,10 @@ export interface ToolbarProps {
 }
 
 const ACCENT_RING: Record<NonNullable<ToolbarSearchProps["accent"]>, string> = {
-  indigo:  "focus:ring-indigo-400/60 focus:border-indigo-400",
+  indigo:  "focus:ring-brand-tint/60 focus:border-brand-deep",
   rose:    "focus:ring-rose-400/60   focus:border-rose-400",
-  sky:     "focus:ring-sky-400/60    focus:border-sky-400",
-  emerald: "focus:ring-emerald-400/60 focus:border-emerald-400",
+  sky:     "focus:ring-brand-tint/60    focus:border-brand-deep",
+  emerald: "focus:ring-brand-tint/60 focus:border-brand-deep",
   amber:   "focus:ring-amber-400/60  focus:border-amber-400",
 };
 

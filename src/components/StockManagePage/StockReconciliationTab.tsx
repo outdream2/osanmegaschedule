@@ -278,7 +278,7 @@ export const StockReconciliationTab: React.FC<{
             onChange={e => setQuery(e.target.value)}
             placeholder="상품명 · 상품코드 · 공급사 검색"
             className="w-full h-8 pl-7 pr-2 text-[12px] bg-zinc-50 border border-zinc-200 rounded-lg
-              focus:outline-none focus:border-emerald-400 focus:bg-white transition"
+              focus:outline-none focus:border-brand-deep focus:bg-white transition"
           />
         </div>
         <div className="relative">
@@ -287,7 +287,7 @@ export const StockReconciliationTab: React.FC<{
             value={supplierFilter}
             onChange={e => setSupplierFilter(e.target.value)}
             className="h-8 pl-7 pr-6 text-[12px] font-semibold bg-zinc-50 border border-zinc-200 rounded-lg
-              focus:outline-none focus:border-emerald-400 focus:bg-white transition cursor-pointer appearance-none"
+              focus:outline-none focus:border-brand-deep focus:bg-white transition cursor-pointer appearance-none"
           >
             <option value="">전체 공급사</option>
             {supplierOptions.map(s => (

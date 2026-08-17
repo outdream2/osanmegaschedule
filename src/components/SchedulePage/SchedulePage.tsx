@@ -2210,7 +2210,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                   value={loginId}
                   onChange={(e) => setLoginId(e.target.value)}
                   placeholder="아이디를 입력하세요"
-                  className="w-full text-xs rounded-xl border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 p-3 bg-white focus:outline-none font-semibold text-gray-800 transition"
+                  className="w-full text-xs rounded-xl border border-gray-300 focus:border-brand-deep focus:ring-2 focus:ring-brand-tint/10 p-3 bg-white focus:outline-none font-semibold text-gray-800 transition"
                   required
                   autoFocus
                 />
@@ -2225,7 +2225,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                   value={loginPw}
                   onChange={(e) => setLoginPw(e.target.value)}
                   placeholder="비밀번호를 입력하세요"
-                  className="w-full text-xs rounded-xl border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 p-3 bg-white focus:outline-none font-semibold text-gray-800 transition"
+                  className="w-full text-xs rounded-xl border border-gray-300 focus:border-brand-deep focus:ring-2 focus:ring-brand-tint/10 p-3 bg-white focus:outline-none font-semibold text-gray-800 transition"
                   required
                 />
               </div>

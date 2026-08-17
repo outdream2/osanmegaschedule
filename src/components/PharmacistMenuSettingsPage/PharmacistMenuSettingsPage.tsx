@@ -283,7 +283,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
                 value={newTitle}
                 onChange={e => setNewTitle(e.target.value)}
                 placeholder="항목 이름 (예: 병용 금기 요약표)"
-                className="flex-1 bg-white border border-zinc-200 rounded-lg px-3 py-2 text-sm font-semibold text-zinc-800 focus:outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 transition placeholder:text-zinc-400 placeholder:font-normal"
+                className="flex-1 bg-white border border-zinc-200 rounded-lg px-3 py-2 text-sm font-semibold text-zinc-800 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition placeholder:text-zinc-400 placeholder:font-normal"
                 maxLength={120}
                 required
               />
@@ -419,7 +419,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
                           type="text"
                           value={editingTitle}
                           onChange={e => setEditingTitle(e.target.value)}
-                          className="w-full bg-white border border-sky-300 rounded-md px-2 py-1 text-sm font-semibold text-zinc-800 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                          className="w-full bg-white border border-sky-300 rounded-md px-2 py-1 text-sm font-semibold text-zinc-800 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
                           maxLength={120}
                           autoFocus
                           onKeyDown={e => {

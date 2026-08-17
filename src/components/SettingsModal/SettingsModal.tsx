@@ -585,7 +585,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                       value={pwCurrent}
                       onChange={(e) => setPwCurrent(e.target.value)}
                       autoComplete="current-password"
-                      className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
                       placeholder="현재 비밀번호"
                     />
                   </div>
@@ -596,7 +596,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                       value={pwNew}
                       onChange={(e) => setPwNew(e.target.value)}
                       autoComplete="new-password"
-                      className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
                       placeholder="새 비밀번호"
                     />
                   </div>
@@ -607,7 +607,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                       value={pwConfirm}
                       onChange={(e) => setPwConfirm(e.target.value)}
                       autoComplete="new-password"
-                      className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      className="w-full px-3 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
                       placeholder="새 비밀번호 확인"
                       onKeyDown={(e) => { if (e.key === "Enter" && !pwSubmitting) submitPasswordChange(); }}
                     />

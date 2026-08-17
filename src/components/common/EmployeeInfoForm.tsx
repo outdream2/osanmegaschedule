@@ -106,14 +106,14 @@ const GENDERS = ["남", "여"] as const;
 /** compact (ContractWriter) 스타일 */
 const CMP = {
   label: "block text-[10.5px] font-bold uppercase tracking-wider text-zinc-500 mb-1",
-  input: "w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition placeholder:text-zinc-400 placeholder:font-normal",
-  select: "w-full bg-white border border-zinc-200 rounded-lg px-2 py-2 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition cursor-pointer",
+  input: "w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition placeholder:text-zinc-400 placeholder:font-normal",
+  select: "w-full bg-white border border-zinc-200 rounded-lg px-2 py-2 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition cursor-pointer",
 } as const;
 
 /** grid (StaffManage) 스타일 */
 const GRD = {
   label: "text-[11px] font-semibold text-zinc-400 flex items-center gap-0.5 leading-none",
-  input: "border border-indigo-300 rounded-md px-2 py-0.5 text-[13px] focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 bg-indigo-50/40 h-7 w-full",
+  input: "border border-indigo-300 rounded-md px-2 py-0.5 text-[13px] focus:outline-none focus:border-brand-deep focus:ring-1 focus:ring-brand-tint bg-indigo-50/40 h-7 w-full",
   view: (hasValue: boolean) =>
     `text-[13px] font-semibold leading-snug min-h-[20px] ${hasValue ? "text-zinc-700" : "text-zinc-300 italic"}`,
   select: "border border-indigo-300 rounded-md px-2 text-[13px] bg-white focus:outline-none bg-indigo-50/40 h-7 w-full",

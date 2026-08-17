@@ -45,9 +45,9 @@ export interface SearchBarProps {
 
 const ACCENT_MAP = {
   rose:    "focus:ring-rose-400 focus:border-rose-400",
-  sky:     "focus:ring-sky-400 focus:border-sky-400",
-  indigo:  "focus:ring-indigo-400 focus:border-indigo-400",
-  emerald: "focus:ring-emerald-400 focus:border-emerald-400",
+  sky:     "focus:ring-brand-tint focus:border-brand-deep",
+  indigo:  "focus:ring-brand-tint focus:border-brand-deep",
+  emerald: "focus:ring-brand-tint focus:border-brand-deep",
   amber:   "focus:ring-amber-400 focus:border-amber-400",
 };
 

@@ -602,7 +602,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                   onChange={(e) => setCompanyInfo(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="예) 오산 메가타운 약국"
                   disabled={!companyInfoLoaded}
-                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
                 />
               </div>
               {/* 대표자 이름 */}
@@ -614,7 +614,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                   onChange={(e) => setCompanyInfo(prev => ({ ...prev, representativeName: e.target.value }))}
                   placeholder="예) 강남성"
                   disabled={!companyInfoLoaded}
-                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
                 />
               </div>
               {/* 사업장 주소 */}
@@ -626,7 +626,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                   onChange={(e) => setCompanyInfo(prev => ({ ...prev, address: e.target.value }))}
                   placeholder="예) 경기도 오산시 경기대로 868-4 2층"
                   disabled={!companyInfoLoaded}
-                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
                 />
               </div>
               {/* 사업자등록번호 */}
@@ -638,7 +638,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                   onChange={(e) => setCompanyInfo(prev => ({ ...prev, regNo: e.target.value }))}
                   placeholder="예) 123-45-67890"
                   disabled={!companyInfoLoaded}
-                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
                 />
               </div>
               {/* 대표자 직함 */}
@@ -650,7 +650,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                   onChange={(e) => setCompanyInfo(prev => ({ ...prev, representativeTitle: e.target.value }))}
                   placeholder="예) 대표약사"
                   disabled={!companyInfoLoaded}
-                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50"
+                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50"
                 />
               </div>
               {/* 임금지급일 · 계약서 "2. 임금지급일" 항목에 그대로 표시 */}
@@ -664,7 +664,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                   placeholder="예) 당월 01일부터 당월 말일 까지 근로한 부분에 대하여 당월 말일에 '을' 본인 명의의 통장으로 지급한다."
                   disabled={!paymentDayLoaded}
                   rows={2}
-                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:opacity-50 resize-none"
+                  className="bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition disabled:opacity-50 resize-none"
                 />
               </div>
               {/* 회사 정보 개별 저장 버튼 */}
@@ -741,7 +741,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                           value={rate.weekday || ""}
                           placeholder={String(fallback.weekday)}
                           onChange={(e) => updWage(job.key, "weekday", Math.max(0, Number(e.target.value) || 0))}
-                          className={`w-full bg-zinc-50 border rounded-lg px-2 py-1.5 text-[13px] font-black text-right tabular-nums focus:outline-none focus:bg-white focus:border-indigo-400 transition ${isDefault ? "border-zinc-200 text-zinc-400" : "border-zinc-200 text-zinc-800"}`}
+                          className={`w-full bg-zinc-50 border rounded-lg px-2 py-1.5 text-[13px] font-black text-right tabular-nums focus:outline-none focus:bg-white focus:border-brand-deep transition ${isDefault ? "border-zinc-200 text-zinc-400" : "border-zinc-200 text-zinc-800"}`}
                         />
                       </div>
                       <div className="flex-1 flex flex-col gap-1 pl-3">
@@ -753,7 +753,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                           value={rate.weekend || ""}
                           placeholder={String(fallback.weekend)}
                           onChange={(e) => updWage(job.key, "weekend", Math.max(0, Number(e.target.value) || 0))}
-                          className={`w-full bg-zinc-50 border rounded-lg px-2 py-1.5 text-[13px] font-black text-right tabular-nums focus:outline-none focus:bg-white focus:border-indigo-400 transition ${isDefault ? "border-zinc-200 text-zinc-400" : "border-zinc-200 text-zinc-800"}`}
+                          className={`w-full bg-zinc-50 border rounded-lg px-2 py-1.5 text-[13px] font-black text-right tabular-nums focus:outline-none focus:bg-white focus:border-brand-deep transition ${isDefault ? "border-zinc-200 text-zinc-400" : "border-zinc-200 text-zinc-800"}`}
                         />
                       </div>
                     </div>
@@ -850,7 +850,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                           onChange={(e) => updClause(grp.key, idx, e.target.value)}
                           rows={Math.max(2, Math.min(5, Math.ceil(text.length / 55) || 2))}
                           placeholder="내용을 입력하세요."
-                          className="flex-1 bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-indigo-500 focus:shadow-sm transition resize-y leading-relaxed"
+                          className="flex-1 bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[12px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep focus:shadow-sm transition resize-y leading-relaxed"
                         />
                         <div className="flex flex-col gap-1 shrink-0 pt-0.5">
                           <button

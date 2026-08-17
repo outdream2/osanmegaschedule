@@ -541,7 +541,7 @@ export const MobileVisibilitySection: React.FC = () => {
                     <select
                       value={min}
                       onChange={(e) => setMinLevel(it.pageKey, Number(e.target.value))}
-                      className="bg-white border border-zinc-200 rounded-lg px-2 py-1 text-[12px] font-bold text-zinc-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 cursor-pointer"
+                      className="bg-white border border-zinc-200 rounded-lg px-2 py-1 text-[12px] font-bold text-zinc-800 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint cursor-pointer"
                       aria-label={`${it.label} 모바일 최소 레벨`}
                     >
                       {MIN_LEVEL_OPTIONS.map((opt) => (

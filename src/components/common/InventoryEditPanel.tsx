@@ -60,7 +60,7 @@ interface DeltaInputProps {
   accent?: string;
 }
 const DeltaInput: React.FC<DeltaInputProps> = ({
-  value, onChange, disabled = false, accent = "focus:border-teal-400",
+  value, onChange, disabled = false, accent = "focus:border-brand-deep",
 }) => {
   const cur = value === "" ? 0 : Math.max(0, Number(value) || 0);
   const dec = () => {
@@ -192,7 +192,7 @@ const StoreZoneRow: React.FC<StoreZoneRowProps> = ({
           <div className="max-w-[80px]">
             <ZoneInput
               value={zoneLabel}
-              accentClass="text-emerald-600 focus:border-emerald-400"
+              accentClass="text-emerald-600 focus:border-brand-deep"
               placeholder="구역"
               onChange={onZoneLabelChange}
             />
@@ -205,7 +205,7 @@ const StoreZoneRow: React.FC<StoreZoneRowProps> = ({
             value={delta}
             onChange={onDeltaChange}
             disabled={saving}
-            accent="focus:border-emerald-400"
+            accent="focus:border-brand-deep"
           />
         </div>
         <button

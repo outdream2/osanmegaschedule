@@ -934,7 +934,7 @@ const SelectOrCustom: React.FC<{
               onChange(e.target.value);
             }
           }}
-          className="flex-1 min-w-0 bg-white border border-zinc-200 rounded-lg px-2 py-1 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:border-emerald-500 transition cursor-pointer"
+          className="flex-1 min-w-0 bg-white border border-zinc-200 rounded-lg px-2 py-1 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition cursor-pointer"
         >
           {options.map(o => (
             <option key={o} value={o}>{o}{suffix ? ` ${suffix}` : ""}</option>
@@ -948,7 +948,7 @@ const SelectOrCustom: React.FC<{
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
-            className="flex-1 min-w-0 bg-white border border-zinc-200 rounded-lg px-2 py-1 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+            className="flex-1 min-w-0 bg-white border border-zinc-200 rounded-lg px-2 py-1 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep transition"
           />
           <button
             type="button"
@@ -1419,7 +1419,7 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
                       value={entry.hours}
                       onChange={(e) => updEntry(r.key, "hours", Number(e.target.value) || 0)}
                       disabled={dim}
-                      className={`w-8 bg-white border border-zinc-200 rounded px-0.5 py-0.5 text-[11px] font-semibold text-right focus:outline-none focus:border-indigo-500 transition ${dim ? "bg-zinc-50 text-zinc-300 cursor-not-allowed" : "text-zinc-800"}`}
+                      className={`w-8 bg-white border border-zinc-200 rounded px-0.5 py-0.5 text-[11px] font-semibold text-right focus:outline-none focus:border-brand-deep transition ${dim ? "bg-zinc-50 text-zinc-300 cursor-not-allowed" : "text-zinc-800"}`}
                       placeholder="0"
                     />
                     <span>h</span>
@@ -1430,7 +1430,7 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
                       value={entry.minutes}
                       onChange={(e) => updEntry(r.key, "minutes", Math.max(0, Math.min(59, Number(e.target.value) || 0)))}
                       disabled={dim}
-                      className={`w-7 bg-white border border-zinc-200 rounded px-0.5 py-0.5 text-[11px] font-semibold text-right focus:outline-none focus:border-indigo-500 transition ${dim ? "bg-zinc-50 text-zinc-300 cursor-not-allowed" : "text-zinc-800"}`}
+                      className={`w-7 bg-white border border-zinc-200 rounded px-0.5 py-0.5 text-[11px] font-semibold text-right focus:outline-none focus:border-brand-deep transition ${dim ? "bg-zinc-50 text-zinc-300 cursor-not-allowed" : "text-zinc-800"}`}
                       placeholder="0"
                     />
                     <span>m</span>
@@ -1464,7 +1464,7 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
                       value={entry.amount === 0 ? "" : String(entry.amount)}
                       onChange={(e) => updEntry(r.key, "amount", Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
                       disabled={dim}
-                      className={`w-full bg-white border rounded px-1 py-0.5 text-[11px] font-black text-right focus:outline-none focus:border-indigo-500 transition ${
+                      className={`w-full bg-white border rounded px-1 py-0.5 text-[11px] font-black text-right focus:outline-none focus:border-brand-deep transition ${
                         dim
                           ? "border-zinc-100 text-zinc-300 bg-zinc-50 cursor-not-allowed"
                           : isEmpty ? "border-zinc-100 text-zinc-300" : "border-zinc-200 text-zinc-800"
@@ -1517,7 +1517,7 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
                       updFlat("mealAllowance", n);
                     }}
                     disabled={!enabled}
-                    className={`w-full bg-white border rounded px-1 py-0.5 text-[11px] font-black text-right focus:outline-none focus:border-indigo-500 transition ${
+                    className={`w-full bg-white border rounded px-1 py-0.5 text-[11px] font-black text-right focus:outline-none focus:border-brand-deep transition ${
                       !enabled
                         ? "border-zinc-100 text-zinc-300 bg-zinc-50 cursor-not-allowed"
                         : "border-zinc-200 text-zinc-800"
@@ -1568,7 +1568,7 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
                       updFlat("vehicleAllowance", n);
                     }}
                     disabled={!enabled}
-                    className={`w-full bg-white border rounded px-1 py-0.5 text-[11px] font-black text-right focus:outline-none focus:border-indigo-500 transition ${
+                    className={`w-full bg-white border rounded px-1 py-0.5 text-[11px] font-black text-right focus:outline-none focus:border-brand-deep transition ${
                       !enabled
                         ? "border-zinc-100 text-zinc-300 bg-zinc-50 cursor-not-allowed"
                         : "border-zinc-200 text-zinc-800"
@@ -1713,7 +1713,7 @@ const WageCalcModePanel: React.FC<WageCalcModePanelProps> = ({
               inputMode="numeric"
               value={targetTotal}
               onChange={(e) => setTargetTotal(e.target.value.replace(/[^0-9]/g, ""))}
-              className="flex-1 min-w-0 bg-white border border-zinc-200 rounded px-1.5 py-0.5 text-[12px] text-zinc-800 font-black text-right focus:outline-none focus:border-emerald-500 transition"
+              className="flex-1 min-w-0 bg-white border border-zinc-200 rounded px-1.5 py-0.5 text-[12px] text-zinc-800 font-black text-right focus:outline-none focus:border-brand-deep transition"
             />
             <span className="text-[10px] font-bold">원</span>
           </div>
@@ -2580,7 +2580,7 @@ const ExtendContractModal: React.FC<{
               })}
               <div className="flex items-center gap-1 ml-1">
                 <input type="number" min={1} max={120} value={months} onChange={(e) => setMonths(e.target.value.replace(/[^0-9]/g, ""))}
-                  className="w-16 bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[13px] text-zinc-800 font-black text-right focus:outline-none focus:border-indigo-500 focus:shadow-sm transition" placeholder="직접" />
+                  className="w-16 bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[13px] text-zinc-800 font-black text-right focus:outline-none focus:border-brand-deep focus:shadow-sm transition" placeholder="직접" />
                 <span className="text-[11px] font-semibold text-zinc-500">개월</span>
               </div>
             </div>
@@ -3923,7 +3923,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   // ────────────────────────────────────────────────────────────────
 
   // 폼 내 공용 스타일 토큰
-  const fldInput = "w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition placeholder:text-zinc-400 placeholder:font-normal";
+  const fldInput = "w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition placeholder:text-zinc-400 placeholder:font-normal";
   const fldLabel = "block text-[10.5px] font-bold uppercase tracking-wider text-zinc-500 mb-1";
   const cardBase = "rounded-xl border border-zinc-200 bg-white p-3 flex flex-col gap-3 shadow-sm";
   const cardInner = "rounded-lg border border-zinc-100 bg-zinc-50/60 p-2.5 flex flex-col gap-2";
@@ -4197,7 +4197,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     upd("primaryFocusPercent", Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 70);
                   }}
                   disabled={form.primaryFocus == null}
-                  className="w-14 bg-white border border-zinc-200 rounded-lg px-2 py-1 text-[12px] text-zinc-800 font-black text-right focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition disabled:bg-zinc-100 disabled:text-zinc-400"
+                  className="w-14 bg-white border border-zinc-200 rounded-lg px-2 py-1 text-[12px] text-zinc-800 font-black text-right focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition disabled:bg-zinc-100 disabled:text-zinc-400"
                 />
                 <span className="text-[11px] text-indigo-700 font-bold">%</span>
               </div>
@@ -4245,7 +4245,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     const acct = form.bankAccountNumber;
                     upd("employeeBankAccount", [v, acct].filter(Boolean).join(" ").trim());
                   }}
-                  className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-2 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition cursor-pointer"
+                  className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-2 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition cursor-pointer"
                 >
                   <option value="">선택</option>
                   {BANK_LIST.map(b => <option key={b} value={b}>{b}</option>)}
@@ -4390,7 +4390,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   <input type="number" min={0} value={form.annualLeaveDays} onChange={(e) => upd("annualLeaveDays", e.target.value)}
                     placeholder="15"
                     title="연차 일수"
-                    className="w-full bg-white border border-zinc-200 rounded-lg pl-2 pr-10 py-1.5 text-[13px] text-zinc-800 font-semibold text-right focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition"
+                    className="w-full bg-white border border-zinc-200 rounded-lg pl-2 pr-10 py-1.5 text-[13px] text-zinc-800 font-semibold text-right focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition"
                   />
                   <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9.5px] text-zinc-400 font-semibold pointer-events-none leading-tight">일/연차</span>
                 </div>
@@ -4495,7 +4495,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             </label>
             <div className="relative">
               <input type="number" min={0} value={form.breakMinutes} onChange={(e) => upd("breakMinutes", e.target.value)}
-                className="w-full bg-white border border-zinc-200 rounded-lg pl-2 pr-5 py-1.5 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition text-right"
+                className="w-full bg-white border border-zinc-200 rounded-lg pl-2 pr-5 py-1.5 text-[13px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition text-right"
               />
               <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-zinc-400 font-semibold pointer-events-none">분</span>
             </div>
@@ -4505,7 +4505,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             <select
               value={form.breakStart}
               onChange={(e) => upd("breakStart", e.target.value)}
-              className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[13px] text-zinc-700 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition cursor-pointer"
+              className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[13px] text-zinc-700 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition cursor-pointer"
             >
               {BREAK_TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
@@ -4515,7 +4515,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             <select
               value={form.breakEnd}
               onChange={(e) => upd("breakEnd", e.target.value)}
-              className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[13px] text-zinc-700 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition cursor-pointer"
+              className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[13px] text-zinc-700 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition cursor-pointer"
             >
               {BREAK_TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
@@ -4644,7 +4644,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           </label>
           <textarea value={form.additionalContent} onChange={(e) => upd("additionalContent", e.target.value)} rows={2}
             placeholder="예: 수습기간 3개월 · 명절 상여 별도"
-            className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[12.5px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400 transition resize-y placeholder:text-zinc-400 placeholder:font-normal"
+            className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[12.5px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition resize-y placeholder:text-zinc-400 placeholder:font-normal"
           />
         </div>
         </>)}
@@ -4898,7 +4898,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                       const v = Number(e.target.value);
                       setWageHourlyOverride(Number.isFinite(v) && v > 0 ? v : null);
                     }}
-                    className="w-24 tabular-nums bg-white border border-zinc-300 rounded px-1.5 py-0.5 text-[13px] font-black text-zinc-900 text-right focus:outline-none focus:border-indigo-400"
+                    className="w-24 tabular-nums bg-white border border-zinc-300 rounded px-1.5 py-0.5 text-[13px] font-black text-zinc-900 text-right focus:outline-none focus:border-brand-deep"
                   />
                   <span className="text-zinc-500 text-[11px]">원</span>
                   {autoMonthlyNet > 0 && (
@@ -4943,7 +4943,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                         const v = Number(e.target.value);
                         setDependentsCount(Number.isFinite(v) && v >= 1 ? Math.floor(v) : 1);
                       }}
-                      className="w-12 tabular-nums bg-white border border-zinc-300 rounded px-1.5 py-0.5 text-[11px] font-black text-zinc-800 text-right focus:outline-none focus:border-indigo-400"
+                      className="w-12 tabular-nums bg-white border border-zinc-300 rounded px-1.5 py-0.5 text-[11px] font-black text-zinc-800 text-right focus:outline-none focus:border-brand-deep"
                     />
                     <span className="text-zinc-500">인</span>
                   </span>
@@ -4959,7 +4959,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                         const v = Number(e.target.value);
                         setChildrenCount(Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
                       }}
-                      className="w-12 tabular-nums bg-white border border-zinc-300 rounded px-1.5 py-0.5 text-[11px] font-black text-zinc-800 text-right focus:outline-none focus:border-indigo-400"
+                      className="w-12 tabular-nums bg-white border border-zinc-300 rounded px-1.5 py-0.5 text-[11px] font-black text-zinc-800 text-right focus:outline-none focus:border-brand-deep"
                       title="자녀 세액공제 · 8~20세 자녀 (1인 25만/2인 55만/3인+ 55만+40만×(n-2))"
                     />
                     <span className="text-zinc-500">인</span>
@@ -4969,7 +4969,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     <select
                       value={withholdingRate}
                       onChange={(e) => setWithholdingRate(Number(e.target.value) as WithholdingRate)}
-                      className="tabular-nums bg-white border border-zinc-300 rounded px-1.5 py-0.5 text-[11px] font-black text-zinc-800 focus:outline-none focus:border-indigo-400 cursor-pointer"
+                      className="tabular-nums bg-white border border-zinc-300 rounded px-1.5 py-0.5 text-[11px] font-black text-zinc-800 focus:outline-none focus:border-brand-deep cursor-pointer"
                       title="근로자 선택 · 80%: 매달 적게(연말 추납) · 100%: 표준 · 120%: 매달 많이(연말 환급)"
                     >
                       {WITHHOLDING_RATES.map(r => (
@@ -4988,7 +4988,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                         setExtraDeduction(Math.max(0, v));
                       }}
                       placeholder="0"
-                      className="w-20 tabular-nums bg-white border border-zinc-300 rounded px-1.5 py-0.5 text-[11px] font-black text-zinc-800 text-right focus:outline-none focus:border-indigo-400"
+                      className="w-20 tabular-nums bg-white border border-zinc-300 rounded px-1.5 py-0.5 text-[11px] font-black text-zinc-800 text-right focus:outline-none focus:border-brand-deep"
                       title="추가 공제항목 (비과세·특별공제 등) · 소득세 과세대상 M에서 차감"
                     />
                     <span className="text-zinc-500">원</span>
@@ -5057,7 +5057,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                             inputMode="numeric"
                             value={meal ? meal.toLocaleString("ko-KR") : ""}
                             onChange={(e) => setMeal(Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
-                            className="w-24 bg-white border border-zinc-200 rounded px-2 py-0.5 text-right text-[11px] font-bold text-zinc-800 focus:outline-none focus:border-indigo-400"
+                            className="w-24 bg-white border border-zinc-200 rounded px-2 py-0.5 text-right text-[11px] font-bold text-zinc-800 focus:outline-none focus:border-brand-deep"
                           />
                           <span className="ml-1 text-zinc-400 text-[10.5px]">원</span>
                         </span>
@@ -5088,7 +5088,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                             inputMode="numeric"
                             value={vehicle ? vehicle.toLocaleString("ko-KR") : ""}
                             onChange={(e) => setVehicle(Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
-                            className="w-24 bg-white border border-zinc-200 rounded px-2 py-0.5 text-right text-[11px] font-bold text-zinc-800 focus:outline-none focus:border-indigo-400"
+                            className="w-24 bg-white border border-zinc-200 rounded px-2 py-0.5 text-right text-[11px] font-bold text-zinc-800 focus:outline-none focus:border-brand-deep"
                           />
                           <span className="ml-1 text-zinc-400 text-[10.5px]">원</span>
                         </span>

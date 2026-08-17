@@ -903,7 +903,7 @@ export const PaymentInfoTab: React.FC = () => {
               value={vendorSearch}
               onChange={e => setVendorSearch(e.target.value)}
               placeholder="공급사명 검색"
-              className="w-full h-7 px-2.5 text-[11px] border border-zinc-200 rounded-lg outline-none focus:ring-1 focus:ring-sky-400 focus:border-sky-400 transition"
+              className="w-full h-7 px-2.5 text-[11px] border border-zinc-200 rounded-lg outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep transition"
             />
             <div className="flex flex-wrap gap-0.5">
               {(["전체", ...dbVendorCategories] as string[]).map(cat => (
@@ -1863,7 +1863,7 @@ const VendorListHeader: React.FC<{
 );
 
 const inputCls =
-  "w-full h-9 px-3 text-[12px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 bg-white transition placeholder:text-zinc-300";
+  "w-full h-9 px-3 text-[12px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep bg-white transition placeholder:text-zinc-300";
 
 const FieldLabel: React.FC<{
   label: string;

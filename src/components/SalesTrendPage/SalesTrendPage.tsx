@@ -1011,7 +1011,7 @@ const SupplierTrendTab: React.FC<{
           <div className="relative">
             <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-400" />
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="공급사명 검색"
-              className="w-full pl-7 pr-8 py-1.5 text-xs border border-zinc-200 rounded-lg focus:outline-none focus:border-sky-400 bg-white" />
+              className="w-full pl-7 pr-8 py-1.5 text-xs border border-zinc-200 rounded-lg focus:outline-none focus:border-brand-deep bg-white" />
             {query && (
               <button onClick={() => setQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-300 hover:text-zinc-600">
                 <X size={12} />
@@ -1419,7 +1419,7 @@ export const StockFlowPanel: React.FC<{
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={limit >= 50000 ? "전체 상품 검색" : "TOP 리스트 내 검색"}
-              className="w-full pl-7 pr-8 py-1.5 text-xs border border-zinc-200 rounded-lg focus:outline-none focus:border-teal-400 bg-white"
+              className="w-full pl-7 pr-8 py-1.5 text-xs border border-zinc-200 rounded-lg focus:outline-none focus:border-brand-deep bg-white"
             />
             {query && (
               <button onClick={() => setQuery("")}

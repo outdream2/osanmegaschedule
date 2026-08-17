@@ -435,7 +435,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                         value={newCatTitle}
                         onChange={e => setNewCatTitle(e.target.value)}
                         placeholder="카테고리 제목 (예: 겨울철 감기 대응)"
-                        className="w-full bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] font-semibold text-zinc-800 focus:outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 transition placeholder:text-zinc-400 placeholder:font-normal"
+                        className="w-full bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-[12px] font-semibold text-zinc-800 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition placeholder:text-zinc-400 placeholder:font-normal"
                         maxLength={120}
                         disabled={newCatSaving}
                         required

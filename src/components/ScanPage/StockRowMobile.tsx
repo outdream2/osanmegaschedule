@@ -17,7 +17,7 @@ interface NumberInputProps {
   accent?: string;
 }
 const NumberInput: React.FC<NumberInputProps> = ({
-  value, onChange, placeholder = "0", disabled = false, accent = "focus:border-teal-400",
+  value, onChange, placeholder = "0", disabled = false, accent = "focus:border-brand-deep",
 }) => {
   const cur = value === "" ? 0 : Number(value) || 0;
   const dec = () => { if (disabled) return; const n = Math.max(0, cur - 1); onChange(n === 0 && value === "" ? "" : n); };
@@ -103,9 +103,9 @@ export const StockRowMobile: React.FC<StockRowMobileProps> = React.memo(({ row, 
     zoneAccent: string;
     color: string;
   }> = [
-    { addKey: "store1AddQty", zoneKey: "store1Zone", prev: row.prevStore1Qty, zone: row.store1Zone, spec: spec1, label: "매1", accent: "focus:border-emerald-400", zoneAccent: "text-emerald-600 focus:border-emerald-400", color: "text-emerald-600" },
-    { addKey: "store2AddQty", zoneKey: "store2Zone", prev: row.prevStore2Qty, zone: row.store2Zone, spec: spec2, label: "매2", accent: "focus:border-sky-400",     zoneAccent: "text-sky-600 focus:border-sky-400",     color: "text-sky-600"     },
-    { addKey: "store3AddQty", zoneKey: "store3Zone", prev: row.prevStore3Qty, zone: row.store3Zone, spec: spec3, label: "매3", accent: "focus:border-violet-400",  zoneAccent: "text-violet-600 focus:border-violet-400", color: "text-violet-600"  },
+    { addKey: "store1AddQty", zoneKey: "store1Zone", prev: row.prevStore1Qty, zone: row.store1Zone, spec: spec1, label: "매1", accent: "focus:border-brand-deep", zoneAccent: "text-emerald-600 focus:border-brand-deep", color: "text-emerald-600" },
+    { addKey: "store2AddQty", zoneKey: "store2Zone", prev: row.prevStore2Qty, zone: row.store2Zone, spec: spec2, label: "매2", accent: "focus:border-brand-deep",     zoneAccent: "text-sky-600 focus:border-brand-deep",     color: "text-sky-600"     },
+    { addKey: "store3AddQty", zoneKey: "store3Zone", prev: row.prevStore3Qty, zone: row.store3Zone, spec: spec3, label: "매3", accent: "focus:border-brand-deep",  zoneAccent: "text-violet-600 focus:border-brand-deep", color: "text-violet-600"  },
   ];
 
   // 매장1 (주 매장 · 항상 노출)

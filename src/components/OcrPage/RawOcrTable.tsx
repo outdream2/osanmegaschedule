@@ -5129,7 +5129,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                             else setPageDateOverride(prev => { const n = { ...prev }; delete n[pn]; return n; });
                                             setEditingConfDate(null); setEditingConfDateVal("");
                                           }}
-                                          className="w-[100px] text-[11px] bg-white border border-emerald-400 rounded px-1.5 py-0.5 focus:outline-none focus:border-emerald-600"
+                                          className="w-[100px] text-[11px] bg-white border border-emerald-400 rounded px-1.5 py-0.5 focus:outline-none focus:border-brand-deep"
                                         />
                                       ) : (
                                         <button type="button"

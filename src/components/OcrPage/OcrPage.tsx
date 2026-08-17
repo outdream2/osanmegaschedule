@@ -1282,8 +1282,8 @@ const saveEditSupp = async () => {
   } finally { setEditSaving(false); }
 };
 
-const cellCls = "border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-indigo-400 w-full";
-const cellClsSky = "border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-sky-400 w-full";
+const cellCls = "border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-brand-deep w-full";
+const cellClsSky = "border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-brand-deep w-full";
 
 return (
   <div className={embedded ? "flex-1 flex flex-col min-h-0 bg-gray-50" : "min-h-screen bg-gray-50 flex flex-col"}>
@@ -1360,11 +1360,11 @@ return (
               {/* 추가 폼 */}
               <p className="text-xs font-bold text-indigo-700 flex items-center gap-1.5"><Plus size={12} /> 상품명 동의어 추가</p>
               <div className="grid grid-cols-2 gap-2">
-                <input className="col-span-2 border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-indigo-400 font-mono" placeholder="상품코드 (필수)" value={addProdCode} onChange={e => setAddProdCode(e.target.value)} onKeyDown={e => e.key === "Enter" && addProductSynonym()} />
-                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-indigo-400" placeholder="상품명(OCR) — 필수" value={addProdOld} onChange={e => setAddProdOld(e.target.value)} />
-                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-indigo-400" placeholder="상품명(보정후)" value={addProdNew} onChange={e => setAddProdNew(e.target.value)} />
-                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-sky-400" placeholder="공급사명(OCR)" value={addProdSuppOld} onChange={e => setAddProdSuppOld(e.target.value)} />
-                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-sky-400" placeholder="공급사명(보정후)" value={addProdSuppNew} onChange={e => setAddProdSuppNew(e.target.value)} onKeyDown={e => e.key === "Enter" && addProductSynonym()} />
+                <input className="col-span-2 border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep font-mono" placeholder="상품코드 (필수)" value={addProdCode} onChange={e => setAddProdCode(e.target.value)} onKeyDown={e => e.key === "Enter" && addProductSynonym()} />
+                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="상품명(OCR) — 필수" value={addProdOld} onChange={e => setAddProdOld(e.target.value)} />
+                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="상품명(보정후)" value={addProdNew} onChange={e => setAddProdNew(e.target.value)} />
+                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="공급사명(OCR)" value={addProdSuppOld} onChange={e => setAddProdSuppOld(e.target.value)} />
+                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="공급사명(보정후)" value={addProdSuppNew} onChange={e => setAddProdSuppNew(e.target.value)} onKeyDown={e => e.key === "Enter" && addProductSynonym()} />
               </div>
               <button onClick={addProductSynonym} disabled={!addProdOld.trim() || !addProdCode.trim() || synSaving} className="self-end px-4 py-1.5 text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg transition disabled:opacity-40 cursor-pointer">추가</button>
             </div>
@@ -1372,8 +1372,8 @@ return (
             <div className="p-4 flex flex-col gap-3">
               <p className="text-xs font-bold text-sky-700 flex items-center gap-1.5"><Plus size={12} /> 공급사 별칭 추가</p>
               <div className="grid grid-cols-2 gap-2">
-                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-sky-400" placeholder="OCR 오인식 공급사명 (필수)" value={addSuppAlias} onChange={e => setAddSuppAlias(e.target.value)} onKeyDown={e => e.key === "Enter" && addSupplierAlias()} />
-                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-sky-400" placeholder="실제 공급사명 (필수)" value={addSuppName} onChange={e => setAddSuppName(e.target.value)} onKeyDown={e => e.key === "Enter" && addSupplierAlias()} />
+                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="OCR 오인식 공급사명 (필수)" value={addSuppAlias} onChange={e => setAddSuppAlias(e.target.value)} onKeyDown={e => e.key === "Enter" && addSupplierAlias()} />
+                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-deep" placeholder="실제 공급사명 (필수)" value={addSuppName} onChange={e => setAddSuppName(e.target.value)} onKeyDown={e => e.key === "Enter" && addSupplierAlias()} />
               </div>
               <button onClick={addSupplierAlias} disabled={!addSuppAlias.trim() || !addSuppName.trim() || synSaving} className="self-end px-4 py-1.5 text-xs font-bold bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition disabled:opacity-40 cursor-pointer">추가</button>
             </div>

@@ -1628,7 +1628,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="약 · 증상 검색 (예: 감기약)"
-                      className="w-full pl-8 pr-8 py-1.5 border border-gray-300 rounded-lg shadow-3xs focus:outline-none focus:ring-1 focus:ring-emerald-400 bg-white text-xs"
+                      className="w-full pl-8 pr-8 py-1.5 border border-gray-300 rounded-lg shadow-3xs focus:outline-none focus:ring-1 focus:ring-brand-tint bg-white text-xs"
                     />
                     <Search className="absolute left-2 top-2 text-gray-400" size={13} />
                     {searchQuery && (
@@ -2318,7 +2318,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   ) : (
                     <select value="" onChange={(e) => setDraftStaffId(e.target.value === "" ? null : Number(e.target.value))}
                       disabled={employees.length === 0}
-                      className="w-full px-3 py-2.5 text-sm rounded-xl border-2 border-dashed border-zinc-300 bg-white focus:border-violet-400 outline-none transition cursor-pointer disabled:bg-zinc-50 text-zinc-500">
+                      className="w-full px-3 py-2.5 text-sm rounded-xl border-2 border-dashed border-zinc-300 bg-white focus:border-brand-deep outline-none transition cursor-pointer disabled:bg-zinc-50 text-zinc-500">
                       <option value="">— 담당 직원 선택 —</option>
                       {employees.map((emp) => (
                         <option key={emp.id} value={emp.id}>{emp.name}{emp.position ? ` (${emp.position})` : ""}</option>
@@ -2401,7 +2401,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                 </div>
                 <textarea value={draftProducts} onChange={(e) => setDraftProducts(e.target.value)} rows={2}
                   placeholder="예: 타이레놀 500mg, 베아제, 판콜에이..."
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-zinc-300 bg-white focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none transition resize-none" />
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-zinc-300 bg-white focus:border-brand-deep focus:ring-2 focus:ring-brand-tint outline-none transition resize-none" />
               </div>
 
               {/* Request note */}
@@ -2410,7 +2410,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   <label className="text-xs font-semibold text-zinc-600 mb-1.5 block">요청 메모 (선택)</label>
                   <input type="text" value={requestNote} onChange={(e) => setRequestNote(e.target.value)}
                     placeholder="오늘 오후까지 보충 부탁드립니다"
-                    className="w-full px-3 py-2 text-sm rounded-xl border border-zinc-300 bg-white focus:border-violet-500 outline-none transition" />
+                    className="w-full px-3 py-2 text-sm rounded-xl border border-zinc-300 bg-white focus:border-brand-deep outline-none transition" />
                 </div>
               )}
 
@@ -2706,7 +2706,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               {/* Filters */}
               <div className="px-4 py-2 bg-zinc-50 border-b border-zinc-200 flex items-center gap-2 flex-wrap">
                 <input type="text" value={zoneProductsSearch} onChange={e => setZoneProductsSearch(e.target.value)} placeholder="상품명 검색"
-                  className="flex-1 min-w-[120px] text-[11px] border border-zinc-300 rounded px-2 py-1 focus:outline-none focus:border-emerald-400" />
+                  className="flex-1 min-w-[120px] text-[11px] border border-zinc-300 rounded px-2 py-1 focus:outline-none focus:border-brand-deep" />
                 <div className="inline-flex bg-white border border-zinc-300 rounded p-0.5">
                   <button onClick={() => setZoneProductsFilter("all")} className={`px-2 py-0.5 text-[10px] font-bold rounded cursor-pointer transition ${zoneProductsFilter === "all" ? "bg-zinc-800 text-white" : "text-zinc-500"}`}>전체</button>
                   <button onClick={() => setZoneProductsFilter("mismatch")} className={`px-2 py-0.5 text-[10px] font-bold rounded cursor-pointer transition ${zoneProductsFilter === "mismatch" ? "bg-rose-500 text-white" : "text-rose-500"}`}>⚠️ 불일치</button>
@@ -2972,7 +2972,7 @@ const VendorManageSplit: React.FC = () => {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="회사명 · 담당자 · 전화"
-              className="w-full h-9 pl-8 pr-2 text-[14px] border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-400 focus:border-indigo-400 transition"
+              className="w-full h-9 pl-8 pr-2 text-[14px] border border-zinc-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep transition"
             />
           </div>
           <span className="text-[13px] text-zinc-400 tabular-nums whitespace-nowrap shrink-0">

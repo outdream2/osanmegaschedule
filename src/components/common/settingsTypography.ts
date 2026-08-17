@@ -28,19 +28,19 @@ export const SET_LABEL =
 /** 폼 입력 (input · select · textarea) · TEXT.body 정렬 */
 export const SET_INPUT =
   "w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[13px] text-zinc-800 " +
-  "focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 " +
+  "focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint " +
   "transition disabled:opacity-50";
 
 /** 폼 입력 · 강조 (font-semibold) */
 export const SET_INPUT_STRONG =
   "w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[13px] font-semibold text-zinc-800 " +
-  "focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 " +
+  "focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint " +
   "transition disabled:opacity-50";
 
 /** 폼 입력 · textarea 전용 (resize-none) */
 export const SET_TEXTAREA =
   "w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[13px] text-zinc-800 " +
-  "focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 " +
+  "focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint " +
   "transition disabled:opacity-50 resize-none";
 
 /** 필드 힌트 · 입력 아래 · 예: "예: 010-1234-5678" · TEXT.label 정렬 */

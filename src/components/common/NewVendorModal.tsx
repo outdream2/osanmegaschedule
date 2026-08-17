@@ -98,7 +98,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
               placeholder="예: (주)메가헬스케어"
-              className="h-9 px-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition"
+              className="h-9 px-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
             />
           </label>
 
@@ -143,7 +143,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
                 value={contactName}
                 onChange={(e) => setContactName(e.target.value)}
                 placeholder="이름"
-                className="h-9 px-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition"
+                className="h-9 px-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
               />
             </label>
             <label className="flex flex-col gap-1">
@@ -153,7 +153,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="010-0000-0000"
-                className="h-9 px-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition tabular-nums"
+                className="h-9 px-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition tabular-nums"
               />
             </label>
           </div>
@@ -165,7 +165,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="email@example.com"
-              className="h-9 px-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition"
+              className="h-9 px-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
             />
           </label>
 
@@ -176,7 +176,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
               value={businessNumber}
               onChange={(e) => setBusinessNumber(e.target.value)}
               placeholder="000-00-00000"
-              className="h-9 px-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition tabular-nums"
+              className="h-9 px-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition tabular-nums"
             />
           </label>
 
@@ -187,7 +187,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
               onChange={(e) => setNote(e.target.value)}
               placeholder="추가 정보"
               rows={2}
-              className="px-3 py-2 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition resize-none"
+              className="px-3 py-2 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition resize-none"
             />
           </label>
 

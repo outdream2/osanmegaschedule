@@ -270,14 +270,14 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
           <div className="bg-white border border-sky-200 rounded-xl p-4 shadow-sm flex flex-col gap-3">
             <input
               ref={titleRef}
-              className="border border-zinc-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-sky-400"
+              className="border border-zinc-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-brand-deep"
               placeholder="제목 (필수)"
               maxLength={80}
               value={newTitle}
               onChange={e => setNewTitle(e.target.value)}
             />
             <textarea
-              className="border border-zinc-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-sky-400 resize-none"
+              className="border border-zinc-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-brand-deep resize-none"
               placeholder="내용 (선택)"
               maxLength={200}
               rows={2}
@@ -377,14 +377,14 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
                 {isEditing ? (
                   <div className="px-3 py-2.5 bg-sky-50/40 flex flex-col gap-2">
                     <input
-                      className="border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-sky-400 w-full"
+                      className="border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-brand-deep w-full"
                       value={editTitle}
                       onChange={e => setEditTitle(e.target.value)}
                       placeholder="제목"
                       autoFocus
                     />
                     <input
-                      className="border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-sky-400 w-full"
+                      className="border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-brand-deep w-full"
                       value={editBody}
                       onChange={e => setEditBody(e.target.value)}
                       placeholder="내용 (선택)"

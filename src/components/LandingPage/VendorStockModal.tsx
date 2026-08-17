@@ -143,10 +143,10 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
           <div className="flex items-center gap-2 flex-wrap">
             <span className={`${TEXT.label} text-zinc-500 shrink-0`}>기간</span>
             <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-              className="text-[13px] px-2 py-1 border border-zinc-200 rounded-md focus:outline-none focus:border-sky-400" />
+              className="text-[13px] px-2 py-1 border border-zinc-200 rounded-md focus:outline-none focus:border-brand-deep" />
             <span className="text-zinc-400 text-[13px]">~</span>
             <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-              className="text-[13px] px-2 py-1 border border-zinc-200 rounded-md focus:outline-none focus:border-sky-400" />
+              className="text-[13px] px-2 py-1 border border-zinc-200 rounded-md focus:outline-none focus:border-brand-deep" />
             <div className="relative flex-1 min-w-[180px]">
               <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
               <input
@@ -154,7 +154,7 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="상품명·코드 검색"
-                className="w-full pl-8 pr-3 py-1.5 text-[13px] border border-zinc-200 rounded-md focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-200"
+                className="w-full pl-8 pr-3 py-1.5 text-[13px] border border-zinc-200 rounded-md focus:outline-none focus:border-brand-deep focus:ring-1 focus:ring-brand-tint"
               />
             </div>
           </div>

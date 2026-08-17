@@ -433,7 +433,7 @@ const InlineField: React.FC<{
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="border border-indigo-300 rounded-md px-2 py-0.5 text-[13px] focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 bg-indigo-50/40 h-7"
+        className="border border-indigo-300 rounded-md px-2 py-0.5 text-[13px] focus:outline-none focus:border-brand-deep focus:ring-1 focus:ring-brand-tint bg-indigo-50/40 h-7"
       />
     ) : (
       <span
@@ -571,7 +571,7 @@ const CreateModal: React.FC<{
                 value={String(draft[key] ?? "")}
                 onChange={(e) => set(key, e.target.value)}
                 placeholder={placeholder}
-                className="w-full border border-zinc-200 rounded-md px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200"
+                className="w-full border border-zinc-200 rounded-md px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-brand-deep focus:ring-1 focus:ring-brand-tint"
               />
             </div>
           ))}
@@ -580,7 +580,7 @@ const CreateModal: React.FC<{
             <select
               value={String(draft.position ?? "")}
               onChange={(e) => set("position", e.target.value)}
-              className="w-full border border-zinc-200 rounded-md px-2.5 py-1.5 text-[12px] bg-white focus:outline-none focus:border-indigo-400"
+              className="w-full border border-zinc-200 rounded-md px-2.5 py-1.5 text-[12px] bg-white focus:outline-none focus:border-brand-deep"
             >
               <option value="">선택 안 함</option>
               {POSITIONS.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -593,7 +593,7 @@ const CreateModal: React.FC<{
               onChange={(e) => set("memo", e.target.value)}
               placeholder="(선택) 근무 특이사항 · 알러지 등"
               rows={2}
-              className="w-full border border-zinc-200 rounded-md px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-indigo-400 resize-none"
+              className="w-full border border-zinc-200 rounded-md px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-brand-deep resize-none"
             />
           </div>
         </div>
@@ -1298,7 +1298,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="이름 · 직책 · 연락처"
-            className="pl-8 pr-3 h-8 text-[12px] border border-zinc-200 rounded-lg focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 bg-zinc-50 placeholder:text-zinc-400 w-full sm:w-48"
+            className="pl-8 pr-3 h-8 text-[12px] border border-zinc-200 rounded-lg focus:outline-none focus:border-brand-deep focus:ring-1 focus:ring-brand-tint bg-zinc-50 placeholder:text-zinc-400 w-full sm:w-48"
           />
         </div>
 
@@ -1552,7 +1552,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                         <select
                           value={draft?.position ?? ""}
                           onChange={(e) => setField("position", e.target.value)}
-                          className="text-[11px] border border-zinc-300 rounded-md px-2 h-6 bg-white focus:outline-none focus:border-indigo-400"
+                          className="text-[11px] border border-zinc-300 rounded-md px-2 h-6 bg-white focus:outline-none focus:border-brand-deep"
                         >
                           <option value="">직책 없음</option>
                           {POSITIONS.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -1586,7 +1586,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                         <select
                           value={draft?.contract_type ?? ""}
                           onChange={(e) => setField("contract_type", e.target.value)}
-                          className="text-[11px] border border-zinc-300 rounded-md px-2 h-6 bg-white focus:outline-none focus:border-indigo-400"
+                          className="text-[11px] border border-zinc-300 rounded-md px-2 h-6 bg-white focus:outline-none focus:border-brand-deep"
                         >
                           <option value="">계약유형 없음</option>
                           {CONTRACT_TYPES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
@@ -1690,7 +1690,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                             value={draft?.annual_leave_days ?? ""}
                             onChange={(e) => setField("annual_leave_days", e.target.value === "" ? null : Number(e.target.value))}
                             placeholder="15"
-                            className="w-12 h-6 px-1 rounded border border-indigo-300 bg-indigo-50/40 text-[12px] font-bold text-zinc-700 text-right tabular-nums focus:outline-none focus:border-indigo-500"
+                            className="w-12 h-6 px-1 rounded border border-indigo-300 bg-indigo-50/40 text-[12px] font-bold text-zinc-700 text-right tabular-nums focus:outline-none focus:border-brand-deep"
                           />
                           <span>· 사용 {fmtD(usedDays)}</span>
                         </span>
@@ -1829,7 +1829,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                         <select
                           value={draft?.contract_type ?? ""}
                           onChange={(e) => setField("contract_type", e.target.value || null)}
-                          className="border border-indigo-300 rounded-md px-2 text-[13px] bg-indigo-50/40 focus:outline-none focus:border-indigo-500 h-7"
+                          className="border border-indigo-300 rounded-md px-2 text-[13px] bg-indigo-50/40 focus:outline-none focus:border-brand-deep h-7"
                         >
                           <option value="">선택 안 함</option>
                           {CONTRACT_TYPES.map((c) => (
@@ -1913,7 +1913,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                         <select
                           value={draft?.performance_rating ?? ""}
                           onChange={(e) => setField("performance_rating", e.target.value || null)}
-                          className="border border-indigo-300 rounded-md px-2 text-[13px] bg-indigo-50/40 focus:outline-none focus:border-indigo-500 max-w-[200px] h-7"
+                          className="border border-indigo-300 rounded-md px-2 text-[13px] bg-indigo-50/40 focus:outline-none focus:border-brand-deep max-w-[200px] h-7"
                         >
                           <option value="">평가 없음</option>
                           {PERFORMANCE_RATINGS.map((r) => (
@@ -1945,7 +1945,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                           onChange={(e) => setField("memo", e.target.value)}
                           placeholder="근무 특이사항 · 평가 코멘트 · 알러지 등 (선택)"
                           rows={2}
-                          className="border border-indigo-300 rounded-md px-2 py-1 text-[12px] bg-indigo-50/40 focus:outline-none focus:border-indigo-500 resize-none"
+                          className="border border-indigo-300 rounded-md px-2 py-1 text-[12px] bg-indigo-50/40 focus:outline-none focus:border-brand-deep resize-none"
                         />
                       ) : displayEmp.memo ? (
                         <p className="text-[12px] text-zinc-700 whitespace-pre-wrap leading-relaxed bg-zinc-50/70 border border-zinc-200 rounded-md px-2 py-1 min-h-[24px]">
@@ -2042,7 +2042,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                           value={draft?.contract_file_url ?? ""}
                           onChange={(e) => setField("contract_file_url", e.target.value)}
                           placeholder="계약서 URL 입력 (https://...)"
-                          className="border border-indigo-300 rounded-md px-2.5 py-1 text-[12px] focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
+                          className="border border-indigo-300 rounded-md px-2.5 py-1 text-[12px] focus:outline-none focus:border-brand-deep bg-indigo-50/40"
                         />
                       ) : (
                         <div className="flex items-center gap-2 py-1">
@@ -2251,7 +2251,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                         <select
                           value={draft?.wage_calc_type ?? ""}
                           onChange={(e) => setField("wage_calc_type", e.target.value || null)}
-                          className="border border-indigo-300 rounded-md px-2 text-[13px] focus:outline-none focus:border-indigo-500 bg-indigo-50/40 h-7"
+                          className="border border-indigo-300 rounded-md px-2 text-[13px] focus:outline-none focus:border-brand-deep bg-indigo-50/40 h-7"
                         >
                           <option value="">선택 안 함</option>
                           <option value="hourly">시급</option>
@@ -2329,7 +2329,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                                   step={1}
                                   value={String(draft?.annual_leave_days ?? "")}
                                   onChange={(e) => setField("annual_leave_days", e.target.value === "" ? null : Number(e.target.value))}
-                                  className="w-12 text-center border border-indigo-300 rounded-md px-1 py-0.5 text-[13px] font-black text-zinc-800 tabular-nums bg-white focus:outline-none focus:border-indigo-500"
+                                  className="w-12 text-center border border-indigo-300 rounded-md px-1 py-0.5 text-[13px] font-black text-zinc-800 tabular-nums bg-white focus:outline-none focus:border-brand-deep"
                                 />
                               ) : (
                                 <span className="text-[14px] font-black text-zinc-800 tabular-nums leading-tight">{fmtDays(totalDays)}<span className="text-[10px] font-semibold ml-0.5">일</span></span>
@@ -2470,7 +2470,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                           type="date"
                           value={draft?.insurance_nps_date ?? ""}
                           onChange={(e) => setField("insurance_nps_date", e.target.value)}
-                          className="h-7 px-1.5 border border-indigo-300 rounded-md text-[12px] tabular-nums focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
+                          className="h-7 px-1.5 border border-indigo-300 rounded-md text-[12px] tabular-nums focus:outline-none focus:border-brand-deep bg-indigo-50/40"
                         />
                       ) : (
                         <span className={`text-[12px] font-semibold leading-snug min-h-[20px] tabular-nums ${displayEmp.insurance_nps_date ? "text-zinc-700" : "text-zinc-300 italic"}`}>
@@ -2485,7 +2485,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                           type="date"
                           value={draft?.insurance_nhis_date ?? ""}
                           onChange={(e) => setField("insurance_nhis_date", e.target.value)}
-                          className="h-7 px-1.5 border border-indigo-300 rounded-md text-[12px] tabular-nums focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
+                          className="h-7 px-1.5 border border-indigo-300 rounded-md text-[12px] tabular-nums focus:outline-none focus:border-brand-deep bg-indigo-50/40"
                         />
                       ) : (
                         <span className={`text-[12px] font-semibold leading-snug min-h-[20px] tabular-nums ${displayEmp.insurance_nhis_date ? "text-zinc-700" : "text-zinc-300 italic"}`}>
@@ -2500,7 +2500,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                           type="date"
                           value={draft?.insurance_ei_date ?? ""}
                           onChange={(e) => setField("insurance_ei_date", e.target.value)}
-                          className="h-7 px-1.5 border border-indigo-300 rounded-md text-[12px] tabular-nums focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
+                          className="h-7 px-1.5 border border-indigo-300 rounded-md text-[12px] tabular-nums focus:outline-none focus:border-brand-deep bg-indigo-50/40"
                         />
                       ) : (
                         <span className={`text-[12px] font-semibold leading-snug min-h-[20px] tabular-nums ${displayEmp.insurance_ei_date ? "text-zinc-700" : "text-zinc-300 italic"}`}>
@@ -2515,7 +2515,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                           type="date"
                           value={draft?.insurance_wcia_date ?? ""}
                           onChange={(e) => setField("insurance_wcia_date", e.target.value)}
-                          className="h-7 px-1.5 border border-indigo-300 rounded-md text-[12px] tabular-nums focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
+                          className="h-7 px-1.5 border border-indigo-300 rounded-md text-[12px] tabular-nums focus:outline-none focus:border-brand-deep bg-indigo-50/40"
                         />
                       ) : (
                         <span className={`text-[12px] font-semibold leading-snug min-h-[20px] tabular-nums ${displayEmp.insurance_wcia_date ? "text-zinc-700" : "text-zinc-300 italic"}`}>
@@ -2566,7 +2566,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                       onChange={(e) => setField("memo", e.target.value)}
                       placeholder="근무 특이사항 · 알러지 · 기타 참고 사항"
                       rows={3}
-                      className="w-full border border-indigo-300 rounded-md px-2.5 py-2 text-[12px] focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 bg-indigo-50/40 resize-none"
+                      className="w-full border border-indigo-300 rounded-md px-2.5 py-2 text-[12px] focus:outline-none focus:border-brand-deep focus:ring-1 focus:ring-brand-tint bg-indigo-50/40 resize-none"
                     />
                   ) : (
                     <p className={`text-[12px] whitespace-pre-wrap ${displayEmp.memo ? "text-zinc-700" : "text-zinc-300 italic"}`}>

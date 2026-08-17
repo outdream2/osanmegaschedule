@@ -644,7 +644,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                     value={company}
                     onChange={e => setCompany(e.target.value)}
                     placeholder="(주)한국제약"
-                    className="w-full bg-white border border-gray-300 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none transition"
+                    className="w-full bg-white border border-gray-300 focus:border-brand-deep rounded-xl px-4 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none transition"
                     autoFocus
                   />
                 </div>
@@ -660,7 +660,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                       value={contactName}
                       onChange={e => setContactName(e.target.value)}
                       placeholder="홍길동"
-                      className="w-full bg-white border border-gray-300 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none transition"
+                      className="w-full bg-white border border-gray-300 focus:border-brand-deep rounded-xl px-4 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none transition"
                     />
                   </div>
                   <div>
@@ -672,7 +672,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                       value={phone}
                       onChange={e => handlePhoneChange(e.target.value)}
                       placeholder="010-0000-0000"
-                      className="w-full bg-white border border-gray-300 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none transition"
+                      className="w-full bg-white border border-gray-300 focus:border-brand-deep rounded-xl px-4 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none transition"
                     />
                   </div>
                 </div>
@@ -710,7 +710,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                     onChange={e => setNote(e.target.value)}
                     placeholder="특이사항이 있으면 입력해 주세요"
                     rows={2}
-                    className="w-full bg-white border border-gray-300 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none transition resize-none"
+                    className="w-full bg-white border border-gray-300 focus:border-brand-deep rounded-xl px-4 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none transition resize-none"
                   />
                 </div>
 

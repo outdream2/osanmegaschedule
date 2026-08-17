@@ -168,7 +168,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
             onChange={e => handleChange(e.target.value)}
             placeholder="약품·제품명 검색 (예: 타이레놀, 판콜에이…)"
             autoFocus
-            className="w-full rounded-xl pl-11 pr-10 py-3.5 text-zinc-900 text-sm font-semibold placeholder:text-zinc-300 placeholder:font-normal focus:outline-none border-2 border-zinc-200 bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 shadow-sm transition-all"
+            className="w-full rounded-xl pl-11 pr-10 py-3.5 text-zinc-900 text-sm font-semibold placeholder:text-zinc-300 placeholder:font-normal focus:outline-none border-2 border-zinc-200 bg-white focus:border-brand-deep focus:ring-4 focus:ring-brand-tint shadow-sm transition-all"
           />
           {query && (
             <button type="button" onClick={clear}

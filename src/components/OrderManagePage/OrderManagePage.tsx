@@ -1492,7 +1492,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 {/* 조건 1 · 최근 한달 판매량 N개 이하 */}
                 <label className="inline-flex items-center gap-1 shrink-0">
                   <input type="checkbox" checked={needSalesMonthEnabled} onChange={e => setNeedSalesMonthEnabled(e.target.checked)}
-                    className="w-3.5 h-3.5 text-emerald-600 rounded border-zinc-300 focus:ring-emerald-400 cursor-pointer" />
+                    className="w-3.5 h-3.5 text-emerald-600 rounded border-zinc-300 focus:ring-brand-tint cursor-pointer" />
                   <span className={`text-[12px] font-medium whitespace-nowrap ${needSalesMonthEnabled ? "text-zinc-700" : "text-zinc-400"}`}>1M판매</span>
                   <input
                     type="number" min={0} step={1}
@@ -1501,7 +1501,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     onChange={e => updateInline("salesMonth", e.target.value)}
                     placeholder="50"
                     className="w-12 h-7 px-1.5 rounded-md border border-zinc-200 text-[12px] font-bold text-zinc-800 text-right tabular-nums bg-white
-                               focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
+                               focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep
                                hover:border-zinc-300 transition placeholder:text-zinc-300 disabled:bg-zinc-50 disabled:opacity-50"
                   />
                   <span className={`text-[11px] whitespace-nowrap ${needSalesMonthEnabled ? "text-zinc-500" : "text-zinc-300"}`}>개↓</span>
@@ -1510,7 +1510,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 {/* 조건 3 · 최근 3달 판매량 N개 이하 */}
                 <label className="inline-flex items-center gap-1 shrink-0">
                   <input type="checkbox" checked={needSalesQuarterEnabled} onChange={e => setNeedSalesQuarterEnabled(e.target.checked)}
-                    className="w-3.5 h-3.5 text-emerald-600 rounded border-zinc-300 focus:ring-emerald-400 cursor-pointer" />
+                    className="w-3.5 h-3.5 text-emerald-600 rounded border-zinc-300 focus:ring-brand-tint cursor-pointer" />
                   <span className={`text-[12px] font-medium whitespace-nowrap ${needSalesQuarterEnabled ? "text-zinc-700" : "text-zinc-400"}`}>3M판매</span>
                   <input
                     type="number" min={0} step={1}
@@ -1519,7 +1519,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     onChange={e => updateInline("salesQuarter", e.target.value)}
                     placeholder="100"
                     className="w-12 h-7 px-1.5 rounded-md border border-zinc-200 text-[12px] font-bold text-zinc-800 text-right tabular-nums bg-white
-                               focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
+                               focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep
                                hover:border-zinc-300 transition placeholder:text-zinc-300 disabled:bg-zinc-50 disabled:opacity-50"
                   />
                   <span className={`text-[11px] whitespace-nowrap ${needSalesQuarterEnabled ? "text-zinc-500" : "text-zinc-300"}`}>개↓</span>
@@ -1668,7 +1668,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                             try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(next)); } catch { /**/ }
                           }}
                           className="w-20 h-8 px-2 border border-zinc-200 rounded-lg text-[13px] font-bold text-zinc-800 tabular-nums text-right
-                                     focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white"
+                                     focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep bg-white"
                         />
                         <span className="text-[12px] text-zinc-600">개 이상 부족</span>
                       </div>
@@ -1688,7 +1688,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                             try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(next)); } catch { /**/ }
                           }}
                           className="w-20 h-8 px-2 border border-zinc-200 rounded-lg text-[13px] font-bold text-zinc-800 tabular-nums text-right
-                                     focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white"
+                                     focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep bg-white"
                         />
                         <span className="text-[12px] text-zinc-600">개 이상 · 0=미적용</span>
                       </div>

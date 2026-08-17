@@ -892,7 +892,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                         if (e.key === "Enter") { e.preventDefault(); commitEditPosition(); }
                         else if (e.key === "Escape") { setEditingPosIdx(null); }
                       }}
-                      className="flex-1 text-[13px] font-semibold text-zinc-800 bg-white border border-violet-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-violet-300 min-w-0"
+                      className="flex-1 text-[13px] font-semibold text-zinc-800 bg-white border border-violet-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-brand-tint min-w-0"
                     />
                   ) : (
                     <>
@@ -932,7 +932,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                 onChange={(e) => setNewPositionInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNewPosition(); } }}
                 placeholder="새 직군 입력 (Enter)"
-                className="flex-1 text-[13px] rounded-lg border border-zinc-200 focus:border-violet-500 p-2 bg-white focus:outline-none"
+                className="flex-1 text-[13px] rounded-lg border border-zinc-200 focus:border-brand-deep p-2 bg-white focus:outline-none"
               />
               <button
                 type="button"

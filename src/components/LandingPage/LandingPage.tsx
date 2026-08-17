@@ -936,7 +936,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   value={menuSearch}
                   onChange={e => setMenuSearch(e.target.value)}
                   placeholder="메뉴 검색"
-                  className="w-full h-10 pl-9 pr-9 text-[13px] font-semibold text-zinc-800 bg-white border border-zinc-200 rounded-xl shadow-sm placeholder:text-zinc-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition"
+                  className="w-full h-10 pl-9 pr-9 text-[13px] font-semibold text-zinc-800 bg-white border border-zinc-200 rounded-xl shadow-sm placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
                 />
                 {menuSearch && (
                   <button
@@ -1453,7 +1453,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                             type="date"
                             value={stockStartDate}
                             onChange={(e) => setStockStartDate(e.target.value)}
-                            className="w-full px-2 py-1.5 text-xs font-mono border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-400"
+                            className="w-full px-2 py-1.5 text-xs font-mono border-2 border-gray-200 rounded-lg focus:outline-none focus:border-brand-deep"
                           />
                         </label>
                         <label className="flex flex-col gap-1">
@@ -1462,7 +1462,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                             type="date"
                             value={stockEndDate}
                             onChange={(e) => setStockEndDate(e.target.value)}
-                            className="w-full px-2 py-1.5 text-xs font-mono border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-400"
+                            className="w-full px-2 py-1.5 text-xs font-mono border-2 border-gray-200 rounded-lg focus:outline-none focus:border-brand-deep"
                           />
                         </label>
                       </div>
@@ -1701,7 +1701,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                             type="date"
                             value={purchaseFromDate}
                             onChange={(e) => setPurchaseFromDate(e.target.value)}
-                            className="w-full px-2 py-1.5 text-xs font-mono border-2 border-gray-200 rounded-lg focus:outline-none focus:border-sky-400"
+                            className="w-full px-2 py-1.5 text-xs font-mono border-2 border-gray-200 rounded-lg focus:outline-none focus:border-brand-deep"
                           />
                         </label>
                         <label className="flex flex-col gap-1">
@@ -1710,7 +1710,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                             type="date"
                             value={purchaseToDate}
                             onChange={(e) => setPurchaseToDate(e.target.value)}
-                            className="w-full px-2 py-1.5 text-xs font-mono border-2 border-gray-200 rounded-lg focus:outline-none focus:border-sky-400"
+                            className="w-full px-2 py-1.5 text-xs font-mono border-2 border-gray-200 rounded-lg focus:outline-none focus:border-brand-deep"
                           />
                         </label>
                       </div>
@@ -2091,7 +2091,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       onChange={(e) => { setVendorPhone(e.target.value); setVendorError(null); }}
                       placeholder="01012345678"
                       style={{ fontSize: "16px" }}
-                      className={`w-full rounded-2xl pl-10 pr-4 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${vendorError ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100" : "border-2 border-zinc-200 bg-zinc-50 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"}`}
+                      className={`w-full rounded-2xl pl-10 pr-4 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${vendorError ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100" : "border-2 border-zinc-200 bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"}`}
                       autoComplete="username" disabled={vendorLoading}
                     />
                   </div>
@@ -2106,7 +2106,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       onChange={(e) => { setVendorPassword(e.target.value); setVendorError(null); }}
                       placeholder="비밀번호 입력"
                       style={{ fontSize: "16px" }}
-                      className={`w-full rounded-2xl pl-10 pr-12 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${vendorError ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100" : "border-2 border-zinc-200 bg-zinc-50 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"}`}
+                      className={`w-full rounded-2xl pl-10 pr-12 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${vendorError ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100" : "border-2 border-zinc-200 bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"}`}
                       autoComplete="current-password" disabled={vendorLoading}
                     />
                     <button type="button" onClick={() => setShowVendorPassword((v) => !v)} className="absolute inset-y-0 right-4 flex items-center text-zinc-400 hover:text-zinc-600 transition cursor-pointer">
@@ -2223,7 +2223,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       style={{ fontSize: "16px" }}
                       className={`w-full rounded-2xl pl-10 pr-4 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${empError
                         ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100"
-                        : "border-2 border-zinc-200 bg-zinc-50 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                        : "border-2 border-zinc-200 bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"
                         }`}
                       autoComplete="username"
                       disabled={empLoading}
@@ -2248,7 +2248,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       style={{ fontSize: "16px" }}
                       className={`w-full rounded-2xl pl-10 pr-12 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${empError
                         ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100"
-                        : "border-2 border-zinc-200 bg-zinc-50 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                        : "border-2 border-zinc-200 bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"
                         }`}
                       autoComplete="current-password"
                       disabled={empLoading}

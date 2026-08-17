@@ -91,7 +91,7 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
               value={query}
               onChange={(e) => { setQuery(e.target.value); setSelectedId(null); }}
               placeholder="공급사명·사업자번호·담당자 검색"
-              className="w-full h-9 pl-8 pr-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition"
+              className="w-full h-9 pl-8 pr-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
             />
           </div>
           {/* 결과 있고 선택됨 · 조회수정 */}
