@@ -555,18 +555,21 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         onLogout={onLogout}
       />
 
-      {/* 탭 바 — 콘텐츠와 동일한 max-width 정렬 · 파스텔 pill 스타일 */}
-      <div className="bg-white/90 backdrop-blur-sm border-b border-line/70 sticky top-14 z-20" style={{ boxShadow: "0 1px 0 0 rgba(99,102,241,0.05)" }}>
+      {/* 2026-08-17 · 탭 바 · 최신 트렌드 · 딥네이비 segmented pill · 통일 (프레임워크 톤) */}
+      <div className="bg-white/95 backdrop-blur-sm border-b border-line sticky top-14 z-20 shadow-sm">
         <div className="max-w-[1360px] mx-auto w-full px-2 sm:px-4 py-2">
-          <div className="flex flex-wrap bg-zinc-100/70 border border-line/60 rounded-xl p-1 gap-0.5">
-            {TABS.map(([key, label, count, activeClass, _iconClass, badgeClass, inactiveClass]) => (
+          <div className="inline-flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
+            {TABS.map(([key, label, count]) => (
               <button key={key} onClick={() => setTab(key)}
-                className={`px-2.5 sm:px-4 py-1.5 flex items-center gap-1.5 sm:gap-2 rounded-lg text-[15px] sm:text-[14px] font-bold transition-colors duration-150 cursor-pointer flex-1 sm:flex-none justify-center ${tab === key ? `${activeClass} ring-1 shadow-sm` : inactiveClass}`}>
+                className={`px-3 sm:px-4 py-1.5 flex items-center gap-2 rounded-md text-[15px] sm:text-[16px] font-semibold transition-colors cursor-pointer justify-center ${
+                  tab === key
+                    ? "bg-brand-deep text-white shadow-sm"
+                    : "text-ink hover:text-brand-deep hover:bg-white"
+                }`}>
                 <span>{label}</span>
-                {count > 0
-                  ? <span className={`text-[14px] font-bold px-1.5 py-0.5 rounded-full ${tab === key ? badgeClass : "bg-zinc-100 text-zinc-400"}`}>{count}</span>
-                  : <span className="text-[14px] text-zinc-300">0</span>
-                }
+                {count > 0 && (
+                  <span className={`text-[13px] font-semibold px-1.5 py-0.5 rounded-full tabular-nums ${tab === key ? "bg-white/20 text-white" : "bg-brand-tint text-brand-deep"}`}>{count}</span>
+                )}
               </button>
             ))}
           </div>
