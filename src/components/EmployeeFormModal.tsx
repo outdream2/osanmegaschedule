@@ -487,7 +487,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
               취소
             </button>
             <button type="submit"
-              className="px-5 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition cursor-pointer shadow-sm">
+              className="px-5 py-2 text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg transition cursor-pointer shadow-sm">
               {empModalMode === "edit" ? "수정 완료" : "등록 완료"}
             </button>
           </div>

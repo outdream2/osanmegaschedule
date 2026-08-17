@@ -33,23 +33,27 @@ import type { TabHandlerProps } from "../../hooks/useSortableTabs";
 // ── 색상 프리셋 (Tailwind JIT purge 안전 · 정적 클래스 맵) ──
 type TabColor = "sky" | "amber" | "violet" | "teal" | "indigo" | "rose" | "emerald" | "orange" | "slate" | "blue" | "cyan" | "red" | "green" | "yellow" | "pink" | "purple";
 
+// 2026-08-17 · 사용자 지시 · 전체 앱 최신 트렌드 통일 · mono neutral + brand-deep accent
+//   · 활성 · text-ink + bar bg-brand-deep · Linear/Vercel 톤
+//   · 아이콘 · 소량의 색상 identity 유지 (Phosphor duotone 매력)
+//   · 배지 · 통일 · brand-tint bg / brand-deep text (신호 · 우연 색상 지양)
 const COLOR_MAP: Record<TabColor, { text: string; bar: string; iconActive: string; hoverText: string; badge: string }> = {
-  sky:     { text: "text-sky-700",     bar: "bg-sky-500",     iconActive: "text-sky-600",     hoverText: "hover:text-sky-700",     badge: "bg-sky-100 text-sky-700"     },
-  amber:   { text: "text-amber-700",   bar: "bg-amber-500",   iconActive: "text-amber-600",   hoverText: "hover:text-amber-700",   badge: "bg-amber-100 text-amber-700"   },
-  violet:  { text: "text-violet-700",  bar: "bg-violet-500",  iconActive: "text-violet-600",  hoverText: "hover:text-violet-700",  badge: "bg-violet-100 text-violet-700"  },
-  teal:    { text: "text-teal-700",    bar: "bg-teal-500",    iconActive: "text-teal-600",    hoverText: "hover:text-teal-700",    badge: "bg-teal-100 text-teal-700"    },
-  indigo:  { text: "text-indigo-700",  bar: "bg-brand-deep",  iconActive: "text-indigo-600",  hoverText: "hover:text-indigo-700",  badge: "bg-indigo-100 text-indigo-700"  },
-  rose:    { text: "text-rose-700",    bar: "bg-rose-500",    iconActive: "text-rose-600",    hoverText: "hover:text-rose-700",    badge: "bg-rose-100 text-rose-700"    },
-  emerald: { text: "text-emerald-700", bar: "bg-emerald-500", iconActive: "text-emerald-600", hoverText: "hover:text-emerald-700", badge: "bg-emerald-100 text-emerald-700" },
-  orange:  { text: "text-orange-700",  bar: "bg-orange-500",  iconActive: "text-orange-600",  hoverText: "hover:text-orange-700",  badge: "bg-orange-100 text-orange-700"  },
-  slate:   { text: "text-zinc-700",   bar: "bg-zinc-500",   iconActive: "text-zinc-600",   hoverText: "hover:text-zinc-700",   badge: "bg-zinc-100 text-zinc-700"   },
-  blue:    { text: "text-blue-700",    bar: "bg-blue-500",    iconActive: "text-blue-600",    hoverText: "hover:text-blue-700",    badge: "bg-blue-100 text-blue-700"    },
-  cyan:    { text: "text-cyan-700",    bar: "bg-cyan-500",    iconActive: "text-cyan-600",    hoverText: "hover:text-cyan-700",    badge: "bg-cyan-100 text-cyan-700"    },
-  red:     { text: "text-red-700",     bar: "bg-red-500",     iconActive: "text-red-600",     hoverText: "hover:text-red-700",     badge: "bg-red-100 text-red-700"     },
-  green:   { text: "text-green-700",   bar: "bg-green-500",   iconActive: "text-green-600",   hoverText: "hover:text-green-700",   badge: "bg-green-100 text-green-700"   },
-  yellow:  { text: "text-yellow-700",  bar: "bg-yellow-500",  iconActive: "text-yellow-600",  hoverText: "hover:text-yellow-700",  badge: "bg-yellow-100 text-yellow-700"  },
-  pink:    { text: "text-pink-700",    bar: "bg-pink-500",    iconActive: "text-pink-600",    hoverText: "hover:text-pink-700",    badge: "bg-pink-100 text-pink-700"    },
-  purple:  { text: "text-purple-700",  bar: "bg-purple-500",  iconActive: "text-purple-600",  hoverText: "hover:text-purple-700",  badge: "bg-purple-100 text-purple-700"  },
+  sky:     { text: "text-ink", bar: "bg-brand-deep", iconActive: "text-sky-600",     hoverText: "hover:text-brand-deep", badge: "bg-brand-tint text-brand-deep" },
+  amber:   { text: "text-ink", bar: "bg-brand-deep", iconActive: "text-amber-600",   hoverText: "hover:text-brand-deep", badge: "bg-brand-tint text-brand-deep" },
+  violet:  { text: "text-ink", bar: "bg-brand-deep", iconActive: "text-violet-600",  hoverText: "hover:text-brand-deep", badge: "bg-brand-tint text-brand-deep" },
+  teal:    { text: "text-ink", bar: "bg-brand-deep", iconActive: "text-teal-600",    hoverText: "hover:text-brand-deep", badge: "bg-brand-tint text-brand-deep" },
+  indigo:  { text: "text-ink", bar: "bg-brand-deep", iconActive: "text-brand-deep",  hoverText: "hover:text-brand-deep", badge: "bg-brand-tint text-brand-deep" },
+  rose:    { text: "text-ink", bar: "bg-brand-deep", iconActive: "text-rose-600",    hoverText: "hover:text-brand-deep", badge: "bg-brand-tint text-brand-deep" },
+  emerald: { text: "text-ink", bar: "bg-brand-deep", iconActive: "text-emerald-600", hoverText: "hover:text-brand-deep", badge: "bg-brand-tint text-brand-deep" },
+  orange:  { text: "text-ink", bar: "bg-brand-deep", iconActive: "text-orange-600",  hoverText: "hover:text-brand-deep", badge: "bg-brand-tint text-brand-deep" },
+  slate:   { text: "text-ink", bar: "bg-brand-deep", iconActive: "text-ink-soft",    hoverText: "hover:text-brand-deep", badge: "bg-zinc-100 text-ink" },
+  blue:    { text: "text-ink", bar: "bg-brand-deep", iconActive: "text-blue-600",    hoverText: "hover:text-brand-deep", badge: "bg-brand-tint text-brand-deep" },
+  cyan:    { text: "text-ink", bar: "bg-brand-deep", iconActive: "text-cyan-600",    hoverText: "hover:text-brand-deep", badge: "bg-brand-tint text-brand-deep" },
+  red:     { text: "text-ink", bar: "bg-brand-deep", iconActive: "text-red-600",     hoverText: "hover:text-brand-deep", badge: "bg-brand-tint text-brand-deep" },
+  green:   { text: "text-ink", bar: "bg-brand-deep", iconActive: "text-green-600",   hoverText: "hover:text-brand-deep", badge: "bg-brand-tint text-brand-deep" },
+  yellow:  { text: "text-ink", bar: "bg-brand-deep", iconActive: "text-yellow-600",  hoverText: "hover:text-brand-deep", badge: "bg-brand-tint text-brand-deep" },
+  pink:    { text: "text-ink", bar: "bg-brand-deep", iconActive: "text-pink-600",    hoverText: "hover:text-brand-deep", badge: "bg-brand-tint text-brand-deep" },
+  purple:  { text: "text-ink", bar: "bg-brand-deep", iconActive: "text-purple-600",  hoverText: "hover:text-brand-deep", badge: "bg-brand-tint text-brand-deep" },
 };
 
 // Phosphor / Lucide 두 라이브러리 모두 지원 · 원본 타입에 얽매이지 않음
