@@ -443,10 +443,18 @@ export const SideNav: React.FC<SideNavProps> = ({
       <div className="relative h-px shrink-0" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.12) 50%, transparent)" }} aria-hidden />
 
       <SidebarFooter className="relative px-2 py-1.5 gap-0.5 z-10">
+        {/* 2026-08-17 v2 · 사용자 이름 · avatar circle + 라벨 · Attio/Linear 톤 */}
         {authSession && authSession.employeeName && (
-          <div className="px-2 py-1 group-data-[collapsible=icon]:hidden">
-            <span className="text-[13px] font-bold text-white truncate leading-tight">
-              [{authSession.employeeName}]
+          <div className="flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:justify-center">
+            <span
+              className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold text-white ring-1 ring-white/20 shadow-[0_0_12px_rgba(94,169,232,0.35)]"
+              style={{ background: "linear-gradient(135deg, #5EA9E8 0%, #6FE3C2 100%)" }}
+              aria-hidden
+            >
+              {authSession.employeeName.slice(0, 1)}
+            </span>
+            <span className="text-[13px] font-bold text-white truncate leading-tight group-data-[collapsible=icon]:hidden">
+              {authSession.employeeName}
             </span>
           </div>
         )}
@@ -466,9 +474,9 @@ export const SideNav: React.FC<SideNavProps> = ({
                 className={[
                   "h-7 rounded-md pl-2",
                   "text-[16px] font-semibold",
-                  // 2026-08-17 · 사용자 지시 · 사이드바 로그아웃 · 흰색 텍스트
-                  "text-white hover:bg-white/[0.06]",
-                  "transition-colors duration-150 ease-out",
+                  // 2026-08-17 v2 · frosted hover · translate-x · 세련
+                  "text-white hover:bg-white/[0.08] hover:translate-x-[1px]",
+                  "transition-all duration-200 ease-out",
                 ].join(" ")}
               >
                 <LogOut size={13} strokeWidth={2} className="shrink-0" />

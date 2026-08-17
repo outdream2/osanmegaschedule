@@ -324,14 +324,13 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const iconAccent = accent.iconText;
     const activeGlow = accent.glow;
 
-    // 2026-08-17 · 딥네이비 배경 · 폰트 +2 유지
-    const baseCommon = "relative flex items-center gap-1.5 px-3 sm:px-3 md:px-3.5 lg:px-4 py-1.5 rounded-lg text-[19px] sm:text-[19px] md:text-[20px] lg:text-[21px] font-semibold whitespace-nowrap transition-all duration-150";
+    // 2026-08-17 v2 · 딥네이비 · 폰트 +2 유지 · 200ms ease-out · 세련
+    const baseCommon = "relative flex items-center gap-1.5 px-3 sm:px-3 md:px-3.5 lg:px-4 py-1.5 rounded-lg text-[19px] sm:text-[19px] md:text-[20px] lg:text-[21px] font-semibold whitespace-nowrap transition-all duration-200 ease-out";
 
-    // active · 흰 반투명 pill + 흰 텍스트 + gradient accent bar (하단)
-    // Attio/Linear · frosted pill · white/12 bg + inset highlight 만 (border 제거 · 노이즈 감소 · 세련)
+    // active · frosted pill + inset highlight (Attio/Linear · border 제거 · 노이즈 감소 · 세련)
     const activeClass = `${baseCommon} bg-white/[0.12] text-white font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]`;
-    // inactive · 라이트 블루 텍스트 + hover subtle
-    const inactiveClass = `${baseCommon} text-[#C4DAEE] hover:bg-white/[0.06] hover:text-white active:scale-95 cursor-pointer disabled:opacity-40`;
+    // inactive · light blue · hover · translate-y (subtle · Vercel 톤) + underline reveal
+    const inactiveClass = `${baseCommon} text-[#C4DAEE] hover:bg-white/[0.06] hover:text-white hover:-translate-y-[1px] active:scale-95 cursor-pointer disabled:opacity-40 group/tab`;
 
     // 경영관리 탭 · business-manage 통합 페이지로 단순 라우팅 (2026-08-03)
     if (tab.key === "business") {
