@@ -15,6 +15,7 @@ import { useCompanyInfo } from "../../hooks/useCompanyInfo";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { ImageUploadField } from "../common/ImageUploadField";
 import { SettingsPageShell } from "../common/SettingsPageShell";
+import { StatusPill } from "../common/StatusPill";
 // 2026-08-12 · 연락처·도장·모바일 가시성 개별 섹션 (개별 export · 5탭 배치용)
 import { ContactSection, StampsSection, MobileVisibilitySection } from "../BrandingSettingsPage/BrandingSettingsPage";
 import {
@@ -62,10 +63,10 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
     saveState === "saving" ? "저장 중..." :
     saveState === "saved"  ? "저장됨" :
     saveState === "error"  ? "오류" : "";
-  const badgeCls =
-    saveState === "saving" ? "text-amber-600 bg-amber-50 border-amber-200" :
-    saveState === "saved"  ? "text-emerald-600 bg-emerald-50 border-emerald-200" :
-    saveState === "error"  ? "text-rose-600 bg-rose-50 border-rose-200" : "";
+  const badgeTone: "amber" | "emerald" | "rose" | null =
+    saveState === "saving" ? "amber" :
+    saveState === "saved"  ? "emerald" :
+    saveState === "error"  ? "rose" : null;
 
   return (
     <SettingsPageShell
@@ -78,8 +79,10 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
       iconColor="text-indigo-500"
       title="회사·브랜드"
       description="근로계약서·사직서·PDF·랜딩·푸터 등에 표시되는 사업장 정보 · 앱 브랜딩 · 연락처 · 도장 · 모바일 가시성을 한 곳에서 관리합니다. 관리자(lv 9) 전용."
-      rightSlot={badgeText ? (
-        <span className={`${SET_BADGE} ${badgeCls}`}>{badgeText}</span>
+      rightSlot={badgeText && badgeTone ? (
+        <StatusPill tone={badgeTone} size="sm" dot pulse={saveState === "saving"}>
+          {badgeText}
+        </StatusPill>
       ) : undefined}
     >
       {/* 2026-08-12 · 상단 5탭 TabBar · 각 섹션 개별 표시 */}
