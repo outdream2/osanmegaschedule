@@ -19,6 +19,7 @@ import { displayVendorName } from "../../utils/vendorNameNormalize";
 // 2026-08-04 · 매입이력 공통 리스트 컴포넌트
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
 import { PeriodSelector, PERIOD_MONTHS_PRESET } from "../common/PeriodSelector";
+import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 import { fmtWonCompact } from "../../lib/format";
 // 2026-08-09 · 신규 공급사 등록 모달 (사용자 요청)
 import { NewVendorModal } from "../common/NewVendorModal";
@@ -365,26 +366,23 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
               className="h-8 pl-8 pr-3 text-[12px] border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep w-full sm:w-80 transition"
             />
           </div>
-          <div className="inline-flex items-center bg-zinc-100 border border-line rounded-lg p-0.5 gap-0.5 flex-wrap">
-            {(["전체", "위탁", "선결제", "60회전", "90회전", "기타"] as const).map(cat => (
-              <button
-                key={cat}
-                onClick={() => setCategoryFilter(cat)}
-                className={`h-7 px-2.5 rounded-md text-[11px] font-bold transition cursor-pointer whitespace-nowrap ${
-                  categoryFilter === cat
-                    ? cat === "전체"    ? "bg-white text-zinc-800 shadow-sm ring-1 ring-zinc-200"
-                    : cat === "위탁"    ? "bg-violet-500 text-white shadow-sm"
-                    : cat === "선결제"  ? "bg-rose-500 text-white shadow-sm"
-                    : cat === "60회전" ? "bg-emerald-500 text-white shadow-sm"
-                    : cat === "90회전" ? "bg-teal-500 text-white shadow-sm"
-                    :                    "bg-zinc-500 text-white shadow-sm"
-                    : "text-zinc-500 hover:text-zinc-700 hover:bg-white/60"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
+          {/* 2026-08-17 · CategoryChips 프레임워크 통일 · status dot per identity */}
+          <CategoryChips
+            value={categoryFilter}
+            onChange={setCategoryFilter}
+            size="sm"
+            ariaLabel="공급사 카테고리 필터"
+            options={(["전체", "위탁", "선결제", "60회전", "90회전", "기타"] as const).map(cat => ({
+              value: cat,
+              label: cat,
+              tone: (cat === "전체"    ? "zinc"
+                   : cat === "위탁"    ? "violet"
+                   : cat === "선결제"  ? "rose"
+                   : cat === "60회전" ? "emerald"
+                   : cat === "90회전" ? "teal"
+                   : "zinc") as ChipTone,
+            }))}
+          />
           {/* 2026-08-09 · 사업자번호 미등록 필터 · 사용자 요청 · 제거 */}
           <span className="text-[12px] text-zinc-400 tabular-nums">
             {loading
