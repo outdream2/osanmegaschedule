@@ -9,6 +9,7 @@ import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
 import { SplitPanel } from "../common/SplitPanel";
+import { StatusPill } from "../common/StatusPill";
 import { ZONE_DEFS } from "../../constants/displayZones";
 import { getZoneLabel } from "../../constants/zoneLabels";
 import type { AuthSession } from "../../types";
@@ -843,9 +844,7 @@ const SubMenuListPanel: React.FC<SubMenuListPanelProps> = ({
           <div className="text-[15px] text-zinc-500 mt-0.5 truncate">{category.subtitle}</div>
         </div>
         <div className="shrink-0 flex items-center gap-1.5">
-          <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 text-[14px] font-bold tabular-nums">
-            {items.length}건
-          </span>
+          <StatusPill tone="sky" size="sm">{items.length}건</StatusPill>
           {isAdmin && (
             <button
               type="button"
