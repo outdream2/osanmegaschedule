@@ -1154,9 +1154,10 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 <span className="text-[14px] text-gray-400">({lunchRequests.length}명 응답)</span>
               </div>
               <div className="flex items-center gap-2">
+                {/* 2026-08-17 · StatusPill 프레임워크 통일 */}
                 <div className="flex items-center gap-1 text-[15px] font-bold">
-                  <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full">🍱 {eatCount}명</span>
-                  <span className="bg-gray-100 text-gray-500 border border-line px-2 py-0.5 rounded-full flex items-center gap-0.5"><UtensilsCrossed size={9} />{noEatCount}명</span>
+                  <StatusPill tone="emerald" size="md">🍱 {eatCount}명</StatusPill>
+                  <StatusPill tone="zinc" size="md" icon={<UtensilsCrossed size={9} />}>{noEatCount}명</StatusPill>
                 </div>
                 <button onClick={loadLunch} className="p-1.5 text-gray-400 hover:text-gray-600 transition cursor-pointer">
                   <RefreshCw size={12} className={lunchLoading ? "animate-spin" : ""} />

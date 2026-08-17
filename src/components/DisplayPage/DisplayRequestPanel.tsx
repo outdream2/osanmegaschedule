@@ -241,23 +241,15 @@ export const DisplayRequestPanel: React.FC<DisplayRequestPanelProps> = ({
           <span className="text-[13px] font-bold text-zinc-900 whitespace-nowrap">
             진열 보충 요청
           </span>
-          {/* 대기 pill */}
+          {/* 대기 pill · 2026-08-17 · StatusPill 프레임워크 통일 */}
           {pendingCount > 0 && (
-            <span
-              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${
-                urgentCount > 0
-                  ? "bg-rose-50 border-rose-300 text-rose-700"
-                  : "bg-amber-50 border-amber-300 text-amber-700"
-              }`}
-            >
+            <StatusPill tone={urgentCount > 0 ? "rose" : "amber"} size="xs" pulse={urgentCount > 0}>
               {urgentCount > 0 ? `긴급 ${urgentCount}건` : `대기 ${pendingCount}건`}
-            </span>
+            </StatusPill>
           )}
-          {/* 완료 pill */}
+          {/* 완료 pill · 2026-08-17 · StatusPill 프레임워크 통일 */}
           {doneCount > 0 && (
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-emerald-50 border-emerald-200 text-emerald-700 whitespace-nowrap">
-              완료 {doneCount}건
-            </span>
+            <StatusPill tone="emerald" size="xs">완료 {doneCount}건</StatusPill>
           )}
         </div>
 
