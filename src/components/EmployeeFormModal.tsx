@@ -6,6 +6,7 @@ import { X, Users, Calendar, MapPin, FileText, ExternalLink, Upload, IdCard } fr
 import { ZONE_DEFS, SECTION_LABEL } from "../constants/displayZones";
 // POSITIONS · RANKS · WORKPLACES → useReferenceValues 로 이관 (2026-08-06 · T-DualStorage-Connect)
 import { useReferenceValues } from "../hooks/useReferenceValues";
+import { StatusPill } from "./common/StatusPill";
 
 interface EmployeeFormModalProps {
   empModalMode: "create" | "edit";
@@ -366,10 +367,9 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                   <span className="text-[10px] font-normal text-violet-500">(복수 선택)</span>
                 </label>
                 <div className="flex items-center gap-2">
+                  {/* 2026-08-17 · StatusPill 프레임워크 통일 */}
                   {empZoneNums.length > 0 && (
-                    <span className="text-[10px] font-bold text-violet-700 bg-violet-100 border border-violet-200 px-2 py-0.5 rounded-full">
-                      {empZoneNums.length}개 선택
-                    </span>
+                    <StatusPill tone="violet" size="xs">{empZoneNums.length}개 선택</StatusPill>
                   )}
                   {empZoneNums.length > 0 && (
                     <button type="button" onClick={() => setEmpZoneNums([])}
