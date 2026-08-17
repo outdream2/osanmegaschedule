@@ -335,12 +335,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 onClick={() => setCategoryFilter(cat)}
                 className={`h-6 px-2 rounded-md text-[10px] font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
                   categoryFilter === cat
-                    ? cat === "전체"    ? "bg-zinc-700 text-white shadow-sm"
-                    : cat === "위탁"    ? "bg-violet-500 text-white shadow-sm"
-                    : cat === "선결제"  ? "bg-rose-500 text-white shadow-sm"
-                    : cat === "60회전" ? "bg-emerald-500 text-white shadow-sm"
-                    : cat === "90회전" ? "bg-teal-500 text-white shadow-sm"
-                    :                    "bg-zinc-500 text-white shadow-sm"
+                    ? "bg-brand-deep text-white shadow-sm"
                     : "text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-md"
                 }`}
               >
