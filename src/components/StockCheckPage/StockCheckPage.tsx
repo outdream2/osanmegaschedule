@@ -6,6 +6,7 @@ import { Package, Search, X } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
+import { StatusPill } from "../common/StatusPill";
 
 interface StockItem {
   product_name: string;
@@ -259,27 +260,16 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
                   return (
                     <div key={`${item.product_name}-${item.spec ?? ""}-${i}`}
                       className="px-4 py-3 flex items-center gap-3 hover:bg-zinc-50/60 transition-all duration-150">
-                      {/* Status badges — 재고 · 판매 두 축 나란히 (로그인 무관) */}
-                      <div className="shrink-0 flex flex-col gap-0.5">
-                        <span className={`text-[15px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap ${
-                          stockAxis === "in-stock"
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-red-100 text-red-600"
-                        }`}>
+                      {/* Status badges · 2026-08-17 · StatusPill 통일 · 3배지 스택 */}
+                      <div className="shrink-0 flex flex-col gap-1">
+                        <StatusPill tone={stockAxis === "in-stock" ? "emerald" : "rose"} size="sm" dot>
                           {stockAxis === "in-stock" ? "재고있음" : "재고없음"}
-                        </span>
-                        <span className={`text-[15px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap ${
-                          sellingAxis === "selling"
-                            ? "bg-sky-100 text-sky-700"
-                            : "bg-zinc-200 text-zinc-500"
-                        }`}>
+                        </StatusPill>
+                        <StatusPill tone={sellingAxis === "selling" ? "sky" : "zinc"} size="sm" dot>
                           {sellingAxis === "selling" ? "판매중" : "판매중지"}
-                        </span>
-                        {/* 3개 미만 재고 → 품절임박 (재고있음 상태일 때만) */}
+                        </StatusPill>
                         {lowStock && (
-                          <span className="text-[14px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap bg-amber-100 text-amber-700 border border-amber-200 animate-pulse">
-                            품절임박
-                          </span>
+                          <StatusPill tone="amber" size="sm" dot pulse>품절임박</StatusPill>
                         )}
                       </div>
 
