@@ -214,23 +214,23 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
             {(balance || !showForm) && (
               <div className="flex items-stretch gap-1">
                 {balance && (
-                  <div className="flex-1 bg-white border border-zinc-200 rounded-lg px-2 py-1 shadow-sm flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                      <CalendarDays size={16} className="text-green-600" />
-                      <span className="text-xs font-semibold text-zinc-700">남은 연차</span>
+                  <div className="flex-1 bg-white border border-line rounded-lg px-3 py-2 shadow-sm flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <CalendarDays size={16} className="text-brand-deep" />
+                      <span className="text-[14px] font-semibold text-ink">남은 연차</span>
                     </div>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-bold text-green-700 tabular-nums">{balance.remaining}</span>
-                      <span className="text-[10px] text-zinc-400">일 / 총 {balance.total}일 (사용 {balance.used}일)</span>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-[19px] font-extrabold text-brand-deep tabular-nums">{balance.remaining}</span>
+                      <span className="text-[12px] text-ink-soft">일 / 총 {balance.total}일 · 사용 {balance.used}일</span>
                     </div>
                   </div>
                 )}
                 {!showForm && (
                   <button
                     onClick={() => setShowForm(true)}
-                    className="shrink-0 flex items-center justify-center gap-1 px-3 py-1 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold text-xs shadow-sm transition-all duration-150 cursor-pointer"
+                    className="shrink-0 flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white font-semibold text-[14px] shadow-sm transition-colors cursor-pointer"
                   >
-                    <Plus size={14} />
+                    <Plus size={14} strokeWidth={2.2} />
                     연차 신청
                   </button>
                 )}
@@ -252,7 +252,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                       <select
                         value={formType}
                         onChange={e => setFormType(e.target.value)}
-                        className="w-full bg-white border border-zinc-200 rounded-lg px-3.5 py-2 text-zinc-800 text-xs font-semibold focus:outline-none focus:border-green-500 transition appearance-none cursor-pointer"
+                        className="w-full bg-white border border-zinc-200 rounded-lg px-3.5 py-2 text-zinc-800 text-xs font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition appearance-none cursor-pointer"
                       >
                         {LEAVE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
@@ -272,7 +272,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                             setFormStart(s);
                             if (formEnd < s) setFormEnd(s);
                           }}
-                          className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-zinc-800 text-xs font-semibold focus:outline-none focus:border-green-500 transition"
+                          className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-zinc-800 text-xs font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
                           required
                         />
                       </div>
@@ -283,14 +283,13 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                           value={formEnd}
                           min={formStart}
                           onChange={e => setFormEnd(e.target.value)}
-                          className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-zinc-800 text-xs font-semibold focus:outline-none focus:border-green-500 transition"
+                          className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-zinc-800 text-xs font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
                           required
                         />
                       </div>
                     </div>
-                    {/* 일수 자동 계산 */}
                     {formStart && formEnd && (
-                      <p className="text-[11px] text-green-600 font-semibold text-right">
+                      <p className="text-[13px] text-brand-deep font-semibold text-right tabular-nums">
                         총 {Math.round((new Date(formEnd).getTime() - new Date(formStart).getTime()) / 86400000) + 1}일
                       </p>
                     )}
@@ -303,28 +302,28 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                       onChange={e => setFormReason(e.target.value)}
                       placeholder="사유를 입력하세요"
                       rows={2}
-                      className="w-full bg-white border border-zinc-200 rounded-lg px-3.5 py-2 text-zinc-800 text-xs focus:outline-none focus:border-green-500 transition resize-none"
+                      className="w-full bg-white border border-zinc-200 rounded-lg px-3.5 py-2 text-zinc-800 text-xs focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition resize-none"
                     />
                   </div>
                   {submitError && <p className="text-[11px] text-rose-500 font-semibold">{submitError}</p>}
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-semibold rounded-lg transition-all duration-150 cursor-pointer text-xs flex items-center justify-center gap-2"
+                    className="w-full h-10 bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-40 text-white font-semibold rounded-lg transition-colors cursor-pointer text-[15px] flex items-center justify-center gap-2 shadow-sm"
                   >
-                    {submitting ? <><div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" /><span>신청 중...</span></> : "신청 제출"}
+                    {submitting ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /><span>신청 중...</span></> : "신청 제출"}
                   </button>
                 </form>
               </div>
             )}
 
-            {/* 내 신청 내역 */}
-            <div className="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm">
+            {/* 내 신청 내역 · 최신 트렌드 · accent bar + brand-deep */}
+            <div className="bg-white rounded-xl border border-line p-4 shadow-sm">
               <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-1.5">
-                  <CalendarDays size={14} className="text-green-600" />
-                  <span className="text-xs font-bold text-zinc-700">내 신청 내역</span>
-                  <span className="text-[9px] font-mono text-zinc-400">({myRequests.length}건)</span>
+                <div className="flex items-center gap-2.5">
+                  <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+                  <span className="text-[15px] font-bold text-ink tracking-tight">내 신청 내역</span>
+                  <span className="text-[13px] font-medium text-ink-soft tabular-nums">· {myRequests.length}건</span>
                 </div>
                 <button onClick={loadMyRequests} disabled={myLoading} className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-all duration-150 cursor-pointer">
                   <RefreshCw size={11} className={myLoading ? "animate-spin" : ""} />
@@ -471,7 +470,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                               value={reviewNote}
                               onChange={e => setReviewNote(e.target.value)}
                               placeholder="메모 (선택)"
-                              className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-green-500 transition"
+                              className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
                             />
                             <div className="grid grid-cols-2 gap-2">
                               <button
