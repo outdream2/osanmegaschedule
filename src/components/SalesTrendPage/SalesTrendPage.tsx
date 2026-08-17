@@ -1411,8 +1411,8 @@ export const StockFlowPanel: React.FC<{
           const s = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
           const e = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
           return (
-            <span className="text-[10px] tabular-nums font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5 ml-1">
-              {s} ~ {e}
+            <span className="ml-1">
+              <StatusPill tone="emerald" size="xs">{s} ~ {e}</StatusPill>
             </span>
           );
         })()}
