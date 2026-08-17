@@ -16,6 +16,7 @@ import {
   Barcode, Building2, Box, Hash, ArrowUpDown, ArrowUp, ArrowDown,
   Sparkles, ShieldCheck, Package, RefreshCw, X,
 } from "lucide-react";
+import { StatusPill } from "../common/StatusPill";
 import { BarcodeScanner } from "../BarcodeScanner";
 import { loadZBar } from "../BarcodeScanner/zbar";
 import {
@@ -355,14 +356,9 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
           </div>
           {arrivalTab === "input" && counts.total > 0 && (
             <div className="ml-auto flex items-center gap-2 shrink-0">
-              <span className="text-[14px] font-semibold text-brand-deep bg-brand-tint rounded-full px-2.5 py-0.5 border border-brand/15 tabular-nums">
-                {counts.total}건 / {counts.totalQty}개
-              </span>
+              <StatusPill tone="brand" size="md">{counts.total}건 / {counts.totalQty}개</StatusPill>
               {counts.pending > 0 && (
-                <span className="text-[14px] font-semibold px-2.5 py-0.5 rounded-full
-                  bg-amber-50 text-amber-700 border border-amber-200 tabular-nums">
-                  {counts.pending}건 미결
-                </span>
+                <StatusPill tone="amber" size="md" dot pulse>{counts.pending}건 미결</StatusPill>
               )}
             </div>
           )}

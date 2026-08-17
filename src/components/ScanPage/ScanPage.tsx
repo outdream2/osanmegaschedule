@@ -20,6 +20,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
 import { SplitPanel } from "../common/SplitPanel";
+import { StatusPill } from "../common/StatusPill";
 import {
   ScanLine, Loader2, AlertCircle, Package,
   CheckCircle2, RotateCcw, Warehouse, Store,
@@ -571,9 +572,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
           </div>
           {rows.length > 0 && (
             <div className="ml-auto flex items-center gap-2 shrink-0">
-              <span className="text-[14px] font-semibold text-brand-deep bg-brand-tint rounded-full px-2.5 py-0.5 border border-brand/15 tabular-nums">
-                {rows.length}건
-              </span>
+              <StatusPill tone="brand" size="md">{rows.length}건</StatusPill>
             </div>
           )}
         </div>

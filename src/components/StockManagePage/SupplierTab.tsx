@@ -13,6 +13,7 @@ import { VendorDetailModal } from "../LandingPage/VendorListEditor";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { PeriodSelector } from "../common/PeriodSelector";
+import { StatusPill } from "../common/StatusPill";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { ProductPurchaseHistoryModal } from "./ProductPurchaseHistoryModal";
 import { LoadingState } from "../common/LoadingState";
@@ -727,7 +728,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
           <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
           <Building2 size={16} className="text-brand-deep shrink-0" />
           <span className="text-[17px] font-bold text-ink tracking-tight">공급사현황</span>
-          <span className="text-[14px] font-semibold text-brand-deep bg-brand-tint rounded-full px-2.5 py-0.5 border border-brand/15 tabular-nums">{displayedXlsxSuppliers.length}개 사</span>
+          <StatusPill tone="brand" size="md">{displayedXlsxSuppliers.length}개 사</StatusPill>
           <span className={`${TEXT.caption} text-ink-soft hidden sm:inline`}>행 클릭 → 우측 상품 리스트 · 상품명 클릭 → 상세</span>
         </div>
         {/* 조회기간 · 2026-08-17 · PeriodSelector 공통 프레임워크 통일 */}

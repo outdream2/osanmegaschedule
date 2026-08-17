@@ -32,6 +32,7 @@ import PurchaseSubTabs, {
 } from "./PurchaseHistoryTab/PurchaseSubTabs";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { PeriodSelector } from "../common/PeriodSelector";
+import { StatusPill } from "../common/StatusPill";
 import ProductRowCard, { type ProductSummary } from "./PurchaseHistoryTab/ProductRowCard";
 import ProductPurchaseDetailPanel, {
   type ProductPurchaseRow,
@@ -768,55 +769,46 @@ export const PurchaseHistoryTab: React.FC = () => {
             : <Package size={16} className="text-brand-deep shrink-0" />}
           <span className="text-[17px] font-bold text-ink tracking-tight">매입이력</span>
           {viewMode === "by-vendor" && selectedVendor && (
-            <span className="text-[14px] font-semibold text-brand-deep bg-brand-tint rounded-full px-2.5 py-0.5 border border-brand/15 tabular-nums">
-              {ledgerRows.length}건
-            </span>
+            <StatusPill tone="brand" size="md">{ledgerRows.length}건</StatusPill>
           )}
           {viewMode === "by-product" && (
-            <span className="text-[14px] font-semibold text-brand-deep bg-brand-tint rounded-full px-2.5 py-0.5 border border-brand/15 tabular-nums">
-              {productList.length}종
-            </span>
+            <StatusPill tone="brand" size="md">{productList.length}종</StatusPill>
           )}
-          {/* 데이터 소스 배지 (2026-08-04) · 사용자가 매입이력 vs 거래명세서 소스 구분 · fallback 시 warning */}
-          {summarySource && (
-            <span
-              className={`text-[14px] font-bold uppercase tracking-wider rounded-full px-2 py-0.5 border tabular-nums cursor-help ${
-                summarySource === "purchase_details"
-                  ? "text-emerald-700 bg-emerald-50 border-emerald-200"
-                  : "text-amber-800 bg-amber-50 border-amber-300 animate-pulse"
-              }`}
-              title={
-                summarySource === "purchase_details"
-                  ? `ERP 매입상세 (xlsx 임포트) · ${summaryDiagnostics?.pd_row_count ?? 0}행 (최근 90일)` +
-                    (summaryDiagnostics?.pd_skipped_null_supplier
-                      ? ` · 스킵 ${summaryDiagnostics.pd_skipped_null_supplier}행 (supplier_name NULL)`
-                      : "") +
-                    ` · 전체 ${summaryDiagnostics?.pd_total_all_time ?? "?"}행 · 최근매입 ${summaryDiagnostics?.pd_latest_date ?? "-"}`
-                  : summaryDiagnostics?.pd_relation_missing
-                    ? "⚠ purchase_details 테이블이 Supabase 에 없음. xlsx 임포트 실행 필요."
-                    : (summaryDiagnostics?.pd_total_all_time ?? 0) === 0
-                      ? "⚠ purchase_details 테이블은 있지만 데이터 없음. xlsx 임포트 실행 필요."
-                      : (summaryDiagnostics?.pd_row_count ?? 0) === 0 && (summaryDiagnostics?.pd_total_all_time ?? 0) > 0
-                        ? `⚠ 90일 이내 매입 없음. 전체 ${summaryDiagnostics?.pd_total_all_time}행 · 최근 매입 ${summaryDiagnostics?.pd_latest_date ?? "-"} · 90일보다 오래됨`
-                        : (summaryDiagnostics?.pd_skipped_null_supplier ?? 0) > 0
-                          ? `⚠ supplier_name NULL 로 ${summaryDiagnostics?.pd_skipped_null_supplier}행 스킵 · vendors.supplier_code 매핑 실패`
-                          : "⚠ 매입이력이 거래명세서(OCR)로 폴백됨. 원인 미상 · console 확인."
-              }
-            >
-              {summarySource === "purchase_details" ? "🟢 ERP" : "🟠 OCR"}
-            </span>
-          )}
+          {/* 데이터 소스 배지 · 2026-08-17 · StatusPill 공용 · semantic tone */}
+          {summarySource && (() => {
+            const isErp = summarySource === "purchase_details";
+            const title = isErp
+              ? `ERP 매입상세 (xlsx 임포트) · ${summaryDiagnostics?.pd_row_count ?? 0}행 (최근 90일)` +
+                (summaryDiagnostics?.pd_skipped_null_supplier
+                  ? ` · 스킵 ${summaryDiagnostics.pd_skipped_null_supplier}행 (supplier_name NULL)`
+                  : "") +
+                ` · 전체 ${summaryDiagnostics?.pd_total_all_time ?? "?"}행 · 최근매입 ${summaryDiagnostics?.pd_latest_date ?? "-"}`
+              : summaryDiagnostics?.pd_relation_missing
+                ? "⚠ purchase_details 테이블이 Supabase 에 없음. xlsx 임포트 실행 필요."
+                : (summaryDiagnostics?.pd_total_all_time ?? 0) === 0
+                  ? "⚠ purchase_details 테이블은 있지만 데이터 없음. xlsx 임포트 실행 필요."
+                  : (summaryDiagnostics?.pd_row_count ?? 0) === 0 && (summaryDiagnostics?.pd_total_all_time ?? 0) > 0
+                    ? `⚠ 90일 이내 매입 없음. 전체 ${summaryDiagnostics?.pd_total_all_time}행 · 최근 매입 ${summaryDiagnostics?.pd_latest_date ?? "-"} · 90일보다 오래됨`
+                    : (summaryDiagnostics?.pd_skipped_null_supplier ?? 0) > 0
+                      ? `⚠ supplier_name NULL 로 ${summaryDiagnostics?.pd_skipped_null_supplier}행 스킵 · vendors.supplier_code 매핑 실패`
+                      : "⚠ 매입이력이 거래명세서(OCR)로 폴백됨. 원인 미상 · console 확인.";
+            return (
+              <span title={title} className="cursor-help">
+                <StatusPill tone={isErp ? "emerald" : "amber"} size="md" dot pulse={!isErp}>
+                  {isErp ? "ERP" : "OCR"}
+                </StatusPill>
+              </span>
+            );
+          })()}
           {/* 선택 공급사 detail source · summary 와 다르면 표시 */}
           {selectedVendor && detailSource && detailSource !== summarySource && (
             <span
-              className={`text-[14px] font-bold uppercase tracking-wider rounded-full px-2 py-0.5 border tabular-nums cursor-help ${
-                detailSource === "purchase_details"
-                  ? "text-emerald-700 bg-emerald-50 border-emerald-200"
-                  : "text-amber-800 bg-amber-50 border-amber-300 animate-pulse"
-              }`}
               title={`선택 공급사 원장 소스: ${detailSource === "purchase_details" ? "ERP 매입상세" : "거래명세서(OCR) 폴백"}`}
+              className="cursor-help"
             >
-              선택: {detailSource === "purchase_details" ? "🟢 ERP" : "🟠 OCR"}
+              <StatusPill tone={detailSource === "purchase_details" ? "emerald" : "amber"} size="md" dot pulse={detailSource !== "purchase_details"}>
+                선택: {detailSource === "purchase_details" ? "ERP" : "OCR"}
+              </StatusPill>
             </span>
           )}
         </div>

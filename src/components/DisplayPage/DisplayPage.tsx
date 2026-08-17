@@ -2898,6 +2898,7 @@ import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { Search as SearchIcon } from "lucide-react";
 import { CARD_BASE } from "../../styles/tokens";
 import { NewVendorModal } from "../common/NewVendorModal";
+import { StatusPill } from "../common/StatusPill";
 
 const VendorManageSplit: React.FC = () => {
   const { vendors, loading, refresh } = useVendorsHook();
@@ -2971,9 +2972,9 @@ const VendorManageSplit: React.FC = () => {
         <div className="flex items-center gap-2.5">
           <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
           <span className="text-[17px] font-bold text-ink tracking-tight">공급사관리</span>
-          <span className="text-[14px] font-semibold text-brand-deep bg-brand-tint rounded-full px-2.5 py-0.5 border border-brand/15 tabular-nums">
+          <StatusPill tone="brand" size="md">
             {loading ? <Loader2 size={12} className="animate-spin inline" /> : `${filtered.length}건`}
-          </span>
+          </StatusPill>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative flex-1 min-w-0">
