@@ -22,6 +22,7 @@ import { MapPin } from "@phosphor-icons/react";
 import type { AuthSession } from "../../types";
 // 2026-08-12 · UI 통일 · 공통 SettingsPageShell + 하단 sticky 액션바 + 타이포
 import { SettingsPageShell } from "../common/SettingsPageShell";
+import { StatusPill } from "../common/StatusPill";
 import { useToast } from "../../hooks/useToast";
 import { SET_ACTION_BAR, SET_BTN_PRIMARY, SET_BTN_SECONDARY, SET_INFO_BADGE } from "../common/settingsTypography";
 import type { AppNavPage } from "../layout/AppNavHeader";
@@ -395,11 +396,9 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
                               key={m.zoneId}
                               className={`grid grid-cols-1 sm:grid-cols-[80px_100px_1fr_36px] gap-2 sm:gap-3 px-4 py-2.5 items-center ${rowBorder} ${isDup || isBad ? "bg-rose-50/40" : ""}`}
                             >
-                              {/* 원본 zoneId 배지 */}
+                              {/* 원본 zoneId 배지 · 2026-08-17 · StatusPill 통일 */}
                               <div className="flex items-center gap-1.5">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-md bg-sky-50 border border-sky-200 text-sky-700 text-[14px] font-bold`}>
-                                  {m.zoneId}
-                                </span>
+                                <StatusPill tone="sky" size="sm">{m.zoneId}</StatusPill>
                                 {isDirty && (
                                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400" title="변경됨" />
                                 )}
