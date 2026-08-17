@@ -237,6 +237,19 @@
   - KpiCard · inset light + 2-layer shadow + hover lift
   - Input field · 브랜드 focus + 폰트 +2 + brand-tint ring
   - FilterBar · inset light + subtle shadow
+  - .label-field · 폰트 +2 + ink-soft
+  - .modal-header · border line 통일
+  - .card-panel + .split-right · Attio inset light + 2-layer shadow
+  - IconButton · inset light + hover brand shadow + 200ms
+  - Panel · Attio 세련 · tracking + brand-deep link
+  - MiniCard · inset light + hover lift · translate-y
+  - PageHeader · iconColor brand-deep 기본
+  - CollapseCard · 3-layer shadow · inset light 추가
+  - Scrollbar · 딥네이비 tint + transparent track (전 앱)
+  - PageToolbar · inset light + subtle 2-layer
+  - PeriodSelector · 활성 pill brand glow shadow
+  - CategoryChips · 활성 chip brand glow shadow
+  - SearchBar · 폰트 +2 + inset light + dropdown 3-layer shadow
 - **Hero v2** · aurora + 3-layer shadow + top hairline
 - **UI 원칙 준수** · handler/state/API 절대 손대지 않음 · className/style/CSS만
 
