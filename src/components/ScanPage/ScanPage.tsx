@@ -627,14 +627,15 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             LEFT PANEL · 스캐너 + 마지막 스캔 상품
         ══════════════════════════════════════════════════════ */}
 
-          {/* 2026-08-10 · 사용자 요청 · 스캔 카드 · 그라데이션 제거 · 장식 원 제거 · 깔끔한 UI */}
+          {/* 2026-08-17 · 최신 트렌드 · 좌측 accent bar + 딥네이비 통일 */}
           <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
-            {/* 헤더 · 아이콘 + 제목 · 그라데이션·장식 없이 */}
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-100">
-              <ScanLine size={18} className="text-teal-600 shrink-0" />
+            {/* 헤더 · accent bar + 아이콘 + 제목 */}
+            <div className="flex items-center gap-2.5 px-4 py-3 border-b border-line bg-zinc-50/60">
+              <span className="w-[3px] h-[16px] rounded-full bg-brand-deep shrink-0" />
+              <ScanLine size={18} className="text-brand-deep shrink-0" />
               <div className="min-w-0">
-                <p className="text-[14px] font-bold text-zinc-800 leading-tight">바코드 스캔</p>
-                <p className="text-[15px] text-zinc-400 leading-tight">스캔 시 우측 리스트에 자동 등록</p>
+                <p className="text-[16px] font-bold text-ink leading-tight tracking-tight">바코드 스캔</p>
+                <p className="text-[13px] text-ink-soft leading-tight mt-0.5">스캔 시 우측 리스트에 자동 등록</p>
               </div>
             </div>
 
