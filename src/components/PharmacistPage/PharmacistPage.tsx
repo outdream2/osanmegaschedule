@@ -348,20 +348,28 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
       </div>
 
       <main className="flex-1 max-w-[1360px] mx-auto w-full px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-3">
-        {/* 정보 헤더 (탭 카드) */}
-        <div className="bg-white rounded-2xl border border-line shadow-sm px-4 py-3 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-sky-500 shadow-sm shrink-0">
+        {/* 정보 헤더 · 2026-08-17 · 세련 · accent bar + gradient icon card + 폰트 +2 */}
+        <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_16px_rgba(10,46,74,0.06)] px-4 py-3.5 flex items-center gap-3">
+          <span className="w-[3px] h-[40px] rounded-full bg-gradient-to-b from-brand-deep to-[#1E5C8E] shrink-0" />
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-gradient-to-br from-brand-deep to-[#1E5C8E] shadow-[0_2px_8px_rgba(10,46,74,0.25)] ring-1 ring-brand/10 shrink-0">
             <FirstAid size={20} className="text-white" weight="fill" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-[15px] sm:text-[16px] font-bold text-zinc-800 tracking-tight leading-tight">약사 전용</h1>
-            <p className="text-[15px] text-zinc-500 mt-0.5 truncate">교육자료 · 복약지도 · 동영상 강의 · 각종 문서</p>
+            <h1 className="text-[18px] sm:text-[19px] font-bold text-ink tracking-tight leading-tight">약사 전용</h1>
+            <p className="text-[14px] text-ink-soft mt-0.5 truncate">교육자료 · 복약지도 · 동영상 강의 · 각종 문서</p>
           </div>
           <div className="flex-1" />
-          <div className="hidden sm:flex items-center gap-1.5 text-[15px] text-zinc-500 font-bold">
-            <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200">level ≥ 3</span>
-            {/* 관리자 CRUD 배지 · 교육탭에서는 숨김 (사용자 요청 · 2026-08-05) */}
-            {isAdmin && tab !== "education" && <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">관리자 CRUD</span>}
+          <div className="hidden sm:flex items-center gap-1.5 text-[13px] font-semibold">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-tint text-brand-deep border border-brand/15">
+              <span className="w-1.5 h-1.5 rounded-full bg-brand-deep" />
+              level ≥ 3
+            </span>
+            {isAdmin && tab !== "education" && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                관리자 CRUD
+              </span>
+            )}
           </div>
           {/* 관리자 · 설정 버튼 · 교육탭에서는 트리 위 통합 컨트롤로 대체 (숨김) */}
           {isAdmin && tab !== "education" && (
