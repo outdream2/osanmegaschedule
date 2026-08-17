@@ -211,15 +211,15 @@ export function TabBar<K extends string = string>({
     );
   }
 
-  // L3 · Notion style · 딥네이비 tinted container (사용자: 아까 딥블루로 했던거 좋았어) + 활성 white pill (덜 진하게)
+  // L3 · Linear "Underline Accent" 2026 최신 트렌드 · brand-tint 컨테이너 유지 (딥블루 톤) · 활성 = underline only
   if (level === 3) {
     return (
-      <div className={`bg-brand-tint/40 border-y border-brand/10 w-full shrink-0 ${className}`}>
+      <div className={`bg-brand-tint/30 border-y border-brand/10 w-full shrink-0 ${className}`}>
         <div
-          className="tab-bar-inner py-2"
+          className="tab-bar-inner"
           style={typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth }}
         >
-          <div className={`inline-flex items-center gap-1 flex-wrap ${sortable?.isDragging ? "select-none" : ""}`}>
+          <div className={`inline-flex items-stretch gap-4 sm:gap-6 flex-wrap px-1 ${sortable?.isDragging ? "select-none" : ""}`}>
             {visibleTabs.map(t => {
               const active = activeKey === t.key;
               const Icon = t.icon;
@@ -256,11 +256,11 @@ export function TabBar<K extends string = string>({
                   onTouchEnd={dnd?.onTouchEnd}
                   onTouchCancel={dnd?.onTouchCancel}
                   className={[
-                    "group relative inline-flex items-center gap-1.5 h-9 px-3 sm:px-3.5 rounded-lg text-[14px] sm:text-[15px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight",
-                    // 2026 · Ghost Tinted (Linear/Attio/Vercel 표준 · deep solid 아님 · tint 10%)
+                    "group relative inline-flex items-center gap-1.5 h-11 px-1 pt-2 pb-2 text-[14px] sm:text-[15px] whitespace-nowrap transition-colors duration-200 cursor-pointer tracking-tight",
+                    // Linear "Underline Accent" 2026 · bg 없음 · text + underline only
                     active
-                      ? "bg-brand-deep/10 text-brand-deep font-bold"
-                      : "text-brand-deep/60 hover:text-brand-deep hover:bg-brand-deep/[0.04]",
+                      ? "text-brand-deep font-bold"
+                      : "text-brand-deep/55 hover:text-brand-deep font-semibold",
                     dragCls,
                   ].join(" ")}
                 >
@@ -284,6 +284,10 @@ export function TabBar<K extends string = string>({
                     >
                       {t.badge}
                     </span>
+                  )}
+                  {/* 활성 · 하단 underline 2.5px brand-deep (Linear Docs 2026 표준) */}
+                  {active && (
+                    <span className="absolute left-0 right-0 -bottom-px h-[2.5px] rounded-t-full bg-brand-deep pointer-events-none" />
                   )}
                 </button>
               );
