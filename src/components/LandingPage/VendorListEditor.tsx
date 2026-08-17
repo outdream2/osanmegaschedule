@@ -1900,32 +1900,38 @@ const PaymentRegisterModal: React.FC<{
             </div>
           </div>
 
-          {/* 합계 요약 */}
+          {/* 합계 요약 · 2026-08-17 · Vercel Dashboard 톤 · white body + status dot */}
           <div className="grid grid-cols-3 gap-2.5">
-            <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2">
-              <div className="text-[10px] font-bold uppercase text-emerald-600 tracking-wider">결제 금액</div>
-              <div className="text-sm font-bold font-mono tabular-nums text-emerald-800 mt-0.5">{amountNum.toLocaleString()}</div>
-            </div>
-            <div className="rounded-lg bg-teal-50 border border-teal-200 px-3 py-2">
-              <div className="text-[10px] font-bold uppercase text-teal-600 tracking-wider">배분 총액</div>
-              <div className="text-sm font-bold font-mono tabular-nums text-teal-800 mt-0.5">{allocSum.toLocaleString()}</div>
-            </div>
-            <div className={`rounded-lg border px-3 py-2 ${
-              Math.abs(diff) < 0.5 ? "bg-emerald-50 border-emerald-200"
-              : diff > 0            ? "bg-amber-50 border-amber-200"
-              :                       "bg-rose-50 border-rose-200"
-            }`}>
-              <div className={`text-[10px] font-bold uppercase tracking-wider ${
-                Math.abs(diff) < 0.5 ? "text-emerald-600" : diff > 0 ? "text-amber-600" : "text-rose-600"
-              }`}>
-                {Math.abs(diff) < 0.5 ? "일치" : diff > 0 ? "미배분" : "초과"}
+            <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] px-3 py-2.5">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <div className="text-[11px] font-semibold text-ink-soft tracking-tight">결제 금액</div>
               </div>
-              <div className={`text-sm font-bold font-mono tabular-nums mt-0.5 ${
-                Math.abs(diff) < 0.5 ? "text-emerald-800" : diff > 0 ? "text-amber-800" : "text-rose-800"
-              }`}>
-                {diff.toLocaleString()}
-              </div>
+              <div className="text-[15px] font-extrabold font-mono tabular-nums text-emerald-700 leading-tight">{amountNum.toLocaleString()}</div>
             </div>
+            <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] px-3 py-2.5">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
+                <div className="text-[11px] font-semibold text-ink-soft tracking-tight">배분 총액</div>
+              </div>
+              <div className="text-[15px] font-extrabold font-mono tabular-nums text-teal-700 leading-tight">{allocSum.toLocaleString()}</div>
+            </div>
+            {(() => {
+              const isMatch = Math.abs(diff) < 0.5;
+              const isPos = diff > 0;
+              const dotCls = isMatch ? "bg-emerald-500" : isPos ? "bg-amber-500" : "bg-rose-500";
+              const textCls = isMatch ? "text-emerald-700" : isPos ? "text-amber-700" : "text-rose-700";
+              const label = isMatch ? "일치" : isPos ? "미배분" : "초과";
+              return (
+                <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] px-3 py-2.5">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className={`w-1.5 h-1.5 rounded-full ${dotCls}`} />
+                    <div className="text-[11px] font-semibold text-ink-soft tracking-tight">{label}</div>
+                  </div>
+                  <div className={`text-[15px] font-extrabold font-mono tabular-nums leading-tight ${textCls}`}>{diff.toLocaleString()}</div>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
