@@ -62,18 +62,28 @@ export const ProductPurchaseHistoryModal: React.FC<{
         <div className="flex-1 overflow-y-auto p-3 sm:p-4">
           {!loading && !error && rows.length > 0 && (
             <>
+              {/* 2026-08-17 · Vercel Dashboard 톤 · white body + status dot */}
               <div className="grid grid-cols-3 gap-2 mb-3">
-                <div className="bg-emerald-50/70 border border-emerald-200 rounded-lg px-3 py-2">
-                  <div className="text-[12px] font-semibold text-emerald-800 opacity-70 uppercase">총 매입 건수</div>
-                  <div className="text-lg font-semibold text-emerald-800 tabular-nums">{rows.length.toLocaleString()}건</div>
+                <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] px-3 py-2.5">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <div className="text-[12px] font-semibold text-ink-soft tracking-tight">총 매입 건수</div>
+                  </div>
+                  <div className="text-[18px] font-extrabold text-emerald-700 tabular-nums leading-tight">{rows.length.toLocaleString()}건</div>
                 </div>
-                <div className="bg-indigo-50/70 border border-indigo-200 rounded-lg px-3 py-2">
-                  <div className="text-[12px] font-semibold text-indigo-800 opacity-70 uppercase">총 매입 수량</div>
-                  <div className="text-lg font-semibold text-indigo-800 tabular-nums">{totalQty.toLocaleString()}</div>
+                <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] px-3 py-2.5">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                    <div className="text-[12px] font-semibold text-ink-soft tracking-tight">총 매입 수량</div>
+                  </div>
+                  <div className="text-[18px] font-extrabold text-indigo-700 tabular-nums leading-tight">{totalQty.toLocaleString()}</div>
                 </div>
-                <div className="bg-violet-50/70 border border-violet-200 rounded-lg px-3 py-2">
-                  <div className="text-[12px] font-semibold text-violet-800 opacity-70 uppercase">총 매입 금액</div>
-                  <div className="text-lg font-semibold text-violet-800 tabular-nums">{totalAmount.toLocaleString()}<span className="text-xs ml-0.5">원</span></div>
+                <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] px-3 py-2.5">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
+                    <div className="text-[12px] font-semibold text-ink-soft tracking-tight">총 매입 금액</div>
+                  </div>
+                  <div className="text-[18px] font-extrabold text-violet-700 tabular-nums leading-tight">{totalAmount.toLocaleString()}<span className="text-[12px] ml-0.5 font-semibold text-ink-soft">원</span></div>
                 </div>
               </div>
               <div className="text-[12px] text-zinc-500 mb-1 flex items-center gap-2">

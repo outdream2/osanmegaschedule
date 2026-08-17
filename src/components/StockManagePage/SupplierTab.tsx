@@ -837,21 +837,33 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                 const balInfo = supplierBalanceMap[supName] ?? supplierBalanceMap[supplierSelectedObj.supplier ?? ""] ?? null;
                 return (
                   <div className="grid grid-cols-4 gap-2">
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 text-center" title={balInfo?.invoice_date ? `기준일 ${balInfo.invoice_date}` : "최신 잔고 없음"}>
-                      <div className="text-[14px] text-amber-600 font-semibold">최신잔고</div>
-                      <div className="text-sm font-bold text-amber-700 mt-0.5">{balInfo ? fmtWon(balInfo.balance) : "-"}</div>
+                    <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] p-2.5" title={balInfo?.invoice_date ? `기준일 ${balInfo.invoice_date}` : "최신 잔고 없음"}>
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                        <div className="text-[12px] font-semibold text-ink-soft tracking-tight">최신잔고</div>
+                      </div>
+                      <div className="text-[14px] font-extrabold text-amber-700 tabular-nums leading-tight">{balInfo ? fmtWon(balInfo.balance) : "-"}</div>
                     </div>
-                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2 text-center">
-                      <div className="text-[14px] text-emerald-600 font-semibold">재고자산</div>
-                      <div className="text-sm font-bold text-emerald-700 mt-0.5">{fmtWon(supplierSelectedObj.totalStockAmount)}</div>
+                    <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] p-2.5">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        <div className="text-[12px] font-semibold text-ink-soft tracking-tight">재고자산</div>
+                      </div>
+                      <div className="text-[14px] font-extrabold text-emerald-700 tabular-nums leading-tight">{fmtWon(supplierSelectedObj.totalStockAmount)}</div>
                     </div>
-                    <div className="bg-sky-50 border border-sky-200 rounded-lg p-2 text-center">
-                      <div className="text-[14px] text-sky-600 font-semibold">매입수량</div>
-                      <div className="text-sm font-bold text-sky-700 mt-0.5">{fmt(supplierSelectedObj.purchaseQty)}</div>
+                    <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] p-2.5">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                        <div className="text-[12px] font-semibold text-ink-soft tracking-tight">매입수량</div>
+                      </div>
+                      <div className="text-[14px] font-extrabold text-sky-700 tabular-nums leading-tight">{fmt(supplierSelectedObj.purchaseQty)}</div>
                     </div>
-                    <div className="bg-zinc-50 border border-line rounded-lg p-2 text-center">
-                      <div className="text-[14px] text-zinc-500 font-semibold">취급상품</div>
-                      <div className="text-sm font-bold text-zinc-700 mt-0.5">{fmt(supplierSelectedObj.itemCount)}종</div>
+                    <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] p-2.5">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+                        <div className="text-[12px] font-semibold text-ink-soft tracking-tight">취급상품</div>
+                      </div>
+                      <div className="text-[14px] font-extrabold text-ink tabular-nums leading-tight">{fmt(supplierSelectedObj.itemCount)}종</div>
                     </div>
                   </div>
                 );
