@@ -51,6 +51,9 @@ import { VendorStockModal } from "./VendorStockModal";
 import { useVendors } from "../../hooks/useVendors";
 import { MenuCard } from "./MenuCard";
 import { StockSearch } from "./StockSearch";
+// 2026-08-17 · UI 프레임워크 · SectionLabel · MiniCard (목업 톤)
+import { SectionLabel } from "../common/SectionLabel";
+import { MiniCard } from "../common/MiniCard";
 // VendorListEditor 는 발주관리 공급사관리 에서만 사용 (LandingPage 데이터 업로드 에서 제거됨 · 2026-07-15)
 
 interface LandingPageProps {
@@ -944,18 +947,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             </div>
           )}
 
-          {/* ── 관리자 도구 (관리자 로그인 시에만 표시) ── */}
+          {/* ── 관리자 도구 (관리자 로그인 시에만 표시) · 2026-08-17 · SectionLabel + 반응형 grid ── */}
           {isManagerOrAdmin && (
             <div className="w-full mb-7">
-              {/* 2026-08-17 · #130 · 아이콘 배경 누락 fix (white on white 무효 → violet-500 bg) */}
-              <div className="flex items-center gap-2 mb-3.5">
-                <div className="w-5 h-5 rounded-md flex items-center justify-center bg-violet-500 shadow-sm">
-                  <ShieldCheck size={10} className="text-white" weight="fill" />
-                </div>
-                <span className="text-[11px] font-bold text-violet-600 uppercase tracking-widest">관리자 도구</span>
-                <div className="flex-1 h-px bg-gradient-to-r from-violet-200 to-transparent" />
-              </div>
-              <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
+              <SectionLabel tone="teal">관리자 도구</SectionLabel>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3.5">
 
                 {/* 매장관리 — red · MenuCard · desc 는 원본 유지 (9/11) */}
                 <MenuCard color="teal" icon={SquaresFour} title="매장관리" description="매장 · 발주 · 매입 · 결제 · 통계 · 입고알림"
@@ -1006,18 +1002,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             </div>
           )}
 
-          {/* ── 직원용 (직원/관리자 로그인 시에만 표시) ── */}
+          {/* ── 직원용 · 2026-08-17 · SectionLabel + 반응형 grid ── */}
           {isLoggedIn && !isVendor && (
             <div className="w-full mb-7">
-              {/* 2026-08-17 · #130 · 아이콘 배경 누락 fix + divider gradient */}
-              <div className="flex items-center gap-2 mb-3.5">
-                <div className="w-5 h-5 rounded-md flex items-center justify-center bg-indigo-500 shadow-sm">
-                  <User size={10} className="text-white" weight="fill" />
-                </div>
-                <span className="text-[11px] font-bold text-indigo-500 uppercase tracking-widest">직원용</span>
-                <div className="flex-1 h-px bg-gradient-to-r from-indigo-200 to-transparent" />
-              </div>
-              <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
+              <SectionLabel tone="sky">직원용</SectionLabel>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3.5">
 
                 {/* 약사 전용 — sky · level ≥ 3 만 노출 */}
                 {(authSession?.level ?? 0) >= 3 && (
@@ -1174,79 +1163,33 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             </div>
           )}
 
-          {/* ── 거래처용 (거래처 로그인 시 또는 최고관리자도 표시) ── */}
+          {/* ── 거래처용 · 2026-08-17 · #145 · SectionLabel + MenuCard 통일 (인라인 button 3개 제거) ── */}
           {isLoggedIn && (isVendor || isSuperAdminLevel9) && (
             <div className="w-full">
-              <div className="flex items-center gap-2 mb-3.5">
-                <div className="w-5 h-5 rounded-md flex items-center justify-center">
-                  <CalendarCheck size={10} className="text-white" weight="fill" />
-                </div>
-                <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest">거래처용</span>
-                <div className="flex-1 h-px" />
-              </div>
-              <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
-                <button onClick={() => onNavigate("reservation", authSession!)}
-                  className="group relative bg-white border border-zinc-200/80 hover:border-emerald-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(209,250,229,0.6) 0%, transparent 60%)" }} />
-                  <div className="relative">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-all duration-200 group-hover:scale-105">
-                      <CalendarCheck size={24} className="text-emerald-600 sm:hidden" weight="fill" /><CalendarCheck size={32} className="text-emerald-600 hidden sm:block" weight="fill" />
-                    </div>
-                    <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">방문예약</div>
-                    <div className="text-zinc-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">상담 및 방문 일정을 간편하게 예약</div>
-                  </div>
-                </button>
-                {/* 2026-08-09 · 거래처 담당자용 · 본인 공급사 조회·수정 · VendorDetailModal
-                    2026-08-12 · 사용자 요청 · lv 9 관리자도 노출 (테스트/미리보기용) */}
+              <SectionLabel tone="teal">거래처용</SectionLabel>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3.5">
+                <MenuCard color="teal" icon={CalendarCheck} title="방문예약" description="상담 및 방문 일정을 간편하게 예약"
+                  onClick={() => onNavigate("reservation", authSession!)} />
                 {(isVendor || isSuperAdminLevel9) && (
-                  <button
+                  <MenuCard color="sky" icon={Building2} title="공급사 정보"
+                    description={isVendor && !vendorSelf ? "정보를 불러올 수 없습니다" : "본인 공급사 정보 조회·수정"}
                     onClick={() => {
-                      // 2026-08-12 · #96 · vendor 는 자기 모달 · 관리자는 매장>공급사 페이지로 이동
                       if (isVendor && vendorSelf) { setShowVendorSelf(true); return; }
                       if (isSuperAdminLevel9) {
                         try { localStorage.setItem("sidebar.subtab.display", "vendor-manage"); } catch { /* silent */ }
                         onNavigate("display", authSession!);
                       }
-                    }}
-                    disabled={isVendor && !vendorSelf}
-                    title={isVendor ? (vendorSelf ? "본인 공급사 정보 조회·수정" : "본인 공급사 정보를 불러올 수 없습니다") : "매장>공급사 관리 이동"}
-                    className="group relative bg-white border border-zinc-200/80 hover:border-sky-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-                  >
-                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(186,230,253,0.5) 0%, transparent 60%)" }} />
-                    <div className="relative">
-                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-all duration-200 group-hover:scale-105">
-                        <Building2 size={24} className="text-sky-600 sm:hidden" /><Building2 size={32} className="text-sky-600 hidden sm:block" />
-                      </div>
-                      <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">공급사 정보</div>
-                      <div className="text-zinc-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">본인 공급사 정보 조회·수정</div>
-                    </div>
-                  </button>
+                    }} />
                 )}
-                {/* 2026-08-10 · #23 · 공급사 재고확인 · 상품·재고 리스트 모달
-                    2026-08-12 · 사용자 요청 · lv 9 관리자도 노출 (테스트/미리보기용) */}
                 {(isVendor || isSuperAdminLevel9) && (
-                  <button
+                  <MenuCard color="amber" icon={Package} title="공급사 재고확인" description="상품별 재고 현황 조회"
                     onClick={() => {
-                      // 2026-08-12 · #96 · vendor 는 자기 재고 모달 · 관리자는 매장>공급사 페이지로 이동
                       if (isVendor && vendorSelf) { setShowVendorStock(true); return; }
                       if (isSuperAdminLevel9) {
                         try { localStorage.setItem("sidebar.subtab.display", "vendor-manage"); } catch { /* silent */ }
                         onNavigate("display", authSession!);
                       }
-                    }}
-                    disabled={isVendor && !vendorSelf}
-                    title={isVendor ? (vendorSelf ? "본인 공급사의 상품·재고 현황 조회" : "본인 공급사 정보를 불러올 수 없습니다") : "매장>공급사 관리 이동"}
-                    className="group relative bg-white border border-zinc-200/80 hover:border-indigo-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-                  >
-                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(199,210,254,0.5) 0%, transparent 60%)" }} />
-                    <div className="relative">
-                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-all duration-200 group-hover:scale-105">
-                        <Package size={24} className="text-indigo-600 sm:hidden" weight="fill" /><Package size={32} className="text-indigo-600 hidden sm:block" weight="fill" />
-                      </div>
-                      <div className="text-zinc-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">공급사 재고확인</div>
-                      <div className="text-zinc-400 text-[11px] sm:text-[13px] leading-tight sm:leading-relaxed block mt-0.5">상품별 재고 현황 조회</div>
-                    </div>
-                  </button>
+                    }} />
                 )}
               </div>
             </div>
