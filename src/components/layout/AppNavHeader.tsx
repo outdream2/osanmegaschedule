@@ -325,7 +325,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const activeGlow = accent.glow;
 
     // 2026-08-17 · 딥네이비 배경 · 폰트 +2 유지
-    const baseCommon = "relative flex items-center gap-1.5 px-3 sm:px-3 md:px-3.5 lg:px-4 py-1.5 rounded-lg text-[17px] sm:text-[17px] md:text-[18px] lg:text-[19px] font-semibold whitespace-nowrap transition-all duration-150";
+    const baseCommon = "relative flex items-center gap-1.5 px-3 sm:px-3 md:px-3.5 lg:px-4 py-1.5 rounded-lg text-[19px] sm:text-[19px] md:text-[20px] lg:text-[21px] font-semibold whitespace-nowrap transition-all duration-150";
 
     // active · 흰 반투명 pill + 흰 텍스트 + gradient accent bar (하단)
     const activeClass = `${baseCommon} bg-white/[0.14] text-white ring-1 ring-white/20 font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_2px_8px_rgba(0,0,0,0.15)]`;
@@ -339,7 +339,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       if (isActive) {
         return (
           <span key="business" className={activeClass}>
-            <Icon size={18} weight="fill" className={`shrink-0 ${iconAccent}`} />
+            <Icon size={20} weight="fill" className={`shrink-0 ${iconAccent}`} />
             <span>{tab.label}</span>
             <span className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-[80%] h-[3px] rounded-full pointer-events-none" style={{ background: accentGradient, boxShadow: activeGlow }} />
           </span>
@@ -353,7 +353,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           disabled={!onNavigate}
           className={inactiveClass}
         >
-          <Icon size={18} weight="duotone" className="shrink-0 opacity-70" />
+          <Icon size={20} weight="duotone" className="shrink-0 opacity-70" />
           <span>{tab.label}</span>
         </button>
       );
@@ -364,7 +364,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     if (isActive) {
       return (
         <span key={tab.key} className={activeClass}>
-          <Icon size={18} weight="fill" className={`shrink-0 ${iconAccent}`} />
+          <Icon size={20} weight="fill" className={`shrink-0 ${iconAccent}`} />
           <span>{tab.label}</span>
           <span className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-[80%] h-[3px] rounded-full pointer-events-none" style={{ background: accentGradient, boxShadow: activeGlow }} />
         </span>
@@ -377,7 +377,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         disabled={!onNavigate && !onBack}
         className={inactiveClass}
       >
-        <Icon size={18} weight="duotone" className="shrink-0 opacity-70" />
+        <Icon size={20} weight="duotone" className="shrink-0 opacity-70" />
         <span>{tab.label}</span>
       </button>
     );

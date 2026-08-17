@@ -1359,9 +1359,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     setTab: (k: K) => void,
     sortable?: { getTabProps: (key: K) => TabHandlerProps; isDragging: boolean },
   ) => (
+    // 2026-08-17 · 3계층 시각 위계 · L3 (Linear minimal + dot marker) · 최상위 탭 (L2 pill) 과 차별화
     <TabBar<K>
-      level={2}
-      variant="nested"
+      level={3}
       tabs={tabs.map((t): CommonTabDef<K> => ({
         key: t.k,
         label: t.label,

@@ -134,15 +134,15 @@ export function TabBar<K extends string = string>({
     ? `bg-zinc-50/50 border-b border-line w-full shrink-0 ${className}`
     : `${barCls} ${className}`;
 
-  // L2 · Attio carved segmented container (rounded-xl pill wrap)
+  // L2 · Attio "carved" segmented container (rounded-2xl pill wrap · 세련 · 부드러운 그림자)
   if (level === 2 && variant !== "nested") {
     return (
-      <div className={`bg-white border-b border-line w-full shrink-0 ${className}`}>
+      <div className={`bg-gradient-to-b from-white to-zinc-50/30 border-b border-line w-full shrink-0 ${className}`}>
         <div
-          className="tab-bar-inner py-2"
+          className="tab-bar-inner py-2.5"
           style={typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth }}
         >
-          <div className={`inline-flex items-center bg-zinc-100 border border-line rounded-xl p-1 gap-0.5 flex-wrap ${sortable?.isDragging ? "select-none" : ""}`}>
+          <div className={`inline-flex items-center bg-zinc-100/80 backdrop-blur-sm border border-line rounded-2xl p-1 gap-0.5 flex-wrap shadow-[inset_0_1px_2px_rgba(10,46,74,0.04)] ${sortable?.isDragging ? "select-none" : ""}`}>
             {visibleTabs.map(t => {
               const active = activeKey === t.key;
               const Icon = t.icon;
@@ -178,10 +178,10 @@ export function TabBar<K extends string = string>({
                   onTouchEnd={dnd?.onTouchEnd}
                   onTouchCancel={dnd?.onTouchCancel}
                   className={[
-                    "inline-flex items-center gap-1.5 sm:gap-2 h-10 px-3 sm:px-4 rounded-lg text-[15px] sm:text-[16px] font-semibold whitespace-nowrap transition-all duration-150 cursor-pointer tracking-tight",
+                    "inline-flex items-center gap-1.5 sm:gap-2 h-11 px-3.5 sm:px-4.5 rounded-xl text-[15px] sm:text-[16px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight",
                     active
-                      ? "bg-white text-ink font-bold shadow-sm ring-1 ring-line"
-                      : "text-ink-soft hover:text-ink hover:bg-white/70",
+                      ? "bg-white text-ink font-bold shadow-[0_2px_8px_rgba(10,46,74,0.08),0_1px_2px_rgba(10,46,74,0.04)] ring-1 ring-line/80"
+                      : "text-ink-soft hover:text-ink hover:bg-white/80",
                     dragCls,
                   ].join(" ")}
                 >
@@ -190,13 +190,13 @@ export function TabBar<K extends string = string>({
                       size={17}
                       strokeWidth={active ? 2.4 : 2}
                       weight={active ? "fill" : "duotone"}
-                      className={`shrink-0 transition-colors duration-150 ${active ? c.iconActive : "text-zinc-400"}`}
+                      className={`shrink-0 transition-colors duration-200 ${active ? c.iconActive : "text-zinc-400"}`}
                     />
                   )}
                   <span>{t.label}</span>
                   {t.badge != null && t.badge > 0 && (
                     <span
-                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[11px] font-bold leading-none tabular-nums ${active ? `${badgeBg} text-white` : "bg-zinc-200 text-zinc-600"}`}
+                      className={`inline-flex items-center justify-center min-w-[20px] h-[20px] px-1 rounded-full text-[11px] font-bold leading-none tabular-nums transition-colors ${active ? `${badgeBg} text-white shadow-sm` : "bg-zinc-200/80 text-zinc-600"}`}
                       title={`${t.label} · ${t.badge}건`}
                     >
                       {t.badge}
@@ -211,15 +211,15 @@ export function TabBar<K extends string = string>({
     );
   }
 
-  // L3 · minimal text tabs (Linear docs 톤 · dot marker + subtle underline)
+  // L3 · minimal text tabs · Linear docs 톤 · 세련 · 부드러운 hover + 색 gradient underline
   if (level === 3) {
     return (
-      <div className={`bg-white border-b border-line w-full shrink-0 ${className}`}>
+      <div className={`bg-white border-b border-line/60 w-full shrink-0 ${className}`}>
         <div
           className="tab-bar-inner"
           style={typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth }}
         >
-          <div className={`flex flex-wrap items-stretch gap-0 ${sortable?.isDragging ? "select-none" : ""}`}>
+          <div className={`flex flex-wrap items-stretch gap-1 ${sortable?.isDragging ? "select-none" : ""}`}>
             {visibleTabs.map(t => {
               const active = activeKey === t.key;
               const Icon = t.icon;
@@ -255,33 +255,39 @@ export function TabBar<K extends string = string>({
                   onTouchEnd={dnd?.onTouchEnd}
                   onTouchCancel={dnd?.onTouchCancel}
                   className={[
-                    "relative inline-flex items-center gap-1.5 h-9 px-3 sm:px-4 text-[13px] sm:text-[14px] font-semibold whitespace-nowrap transition-colors duration-150 cursor-pointer tracking-tight",
-                    active ? "text-ink" : "text-ink-soft hover:text-ink",
+                    "group relative inline-flex items-center gap-1.5 h-10 px-3.5 sm:px-4 rounded-lg text-[14px] sm:text-[15px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight",
+                    active ? "text-ink" : "text-ink-soft hover:text-ink hover:bg-zinc-50",
                     dragCls,
                   ].join(" ")}
                 >
-                  {/* dot marker · 활성 시 색 accent · 카테고리 identity (Vercel ≤10px) */}
-                  <span className={`w-1.5 h-1.5 rounded-full transition-colors ${active ? c.iconActive.replace("text-", "bg-") : "bg-zinc-300"}`} />
+                  {/* dot marker · 활성 시 색 accent · 카테고리 identity (Vercel ≤10px) · glow */}
+                  <span
+                    className={`w-2 h-2 rounded-full transition-all duration-200 ${active ? c.iconActive.replace("text-", "bg-") : "bg-zinc-300 group-hover:bg-zinc-400"}`}
+                    style={active && c.iconActive !== "text-ink-soft" ? { boxShadow: `0 0 8px ${(c.iconActive.match(/\[(#[A-F0-9]+)\]/i)?.[1]) ?? "rgba(10,46,74,0.3)"}` } : undefined}
+                  />
                   {Icon && (
                     <Icon
-                      size={13}
+                      size={14}
                       strokeWidth={active ? 2.4 : 2}
                       weight={active ? "fill" : "duotone"}
-                      className={`shrink-0 transition-colors duration-150 ${active ? c.iconActive : "text-zinc-400"}`}
+                      className={`shrink-0 transition-colors duration-200 ${active ? c.iconActive : "text-zinc-400 group-hover:text-zinc-600"}`}
                     />
                   )}
                   <span>{t.label}</span>
                   {t.badge != null && t.badge > 0 && (
                     <span
-                      className={`inline-flex items-center justify-center min-w-[16px] h-[16px] px-0.5 rounded-full text-[10px] font-bold leading-none tabular-nums ${active ? `${badgeBg} text-white` : "bg-zinc-100 text-zinc-500"}`}
+                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold leading-none tabular-nums transition-colors ${active ? `${badgeBg} text-white shadow-sm` : "bg-zinc-100 text-zinc-500 group-hover:bg-zinc-200"}`}
                       title={`${t.label} · ${t.badge}건`}
                     >
                       {t.badge}
                     </span>
                   )}
-                  {/* subtle bottom underline · 2px */}
+                  {/* 활성 · 하단 gradient underline (2.5px · 세련) */}
                   {active && (
-                    <span className={`absolute left-2 right-2 -bottom-px h-[2px] rounded-t-sm ${c.bar}`} />
+                    <span
+                      className="absolute left-3 right-3 -bottom-px h-[2.5px] rounded-t-full pointer-events-none"
+                      style={{ background: `linear-gradient(90deg, transparent 0%, currentColor 30%, currentColor 70%, transparent 100%)`, color: "var(--color-brand-deep, #0A2E4A)" }}
+                    />
                   )}
                 </button>
               );

@@ -8,6 +8,7 @@ import { Package, Loader2, ChevronDown, ChevronRight, Mail, Phone, User, Calenda
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { PageToolbar } from "../common/PageToolbar";
 import { PeriodSelector, PERIOD_DAYS_PRESET } from "../common/PeriodSelector";
+import { StatusPill } from "../common/StatusPill";
 
 interface OrderHistoryItem {
   id: string | number;
@@ -154,10 +155,8 @@ export const OrderHistoryTab: React.FC = () => {
                     <span className="text-[15px] font-bold text-zinc-800 truncate">
                       {displayVendorName(o.supplier) || o.supplier || "(공급사 미지정)"}
                     </span>
-                    {/* 상품 종·수량 · 명확한 라벨 (종=SKU 수 · 개=총 수량) */}
-                    <span className="text-[13px] font-semibold text-zinc-500 tabular-nums shrink-0 bg-zinc-100 rounded-full px-2 py-0.5">
-                      {o.items.length}종 · {o.total_qty}개
-                    </span>
+                    {/* 상품 종·수량 · 2026-08-17 · StatusPill 통일 */}
+                    <StatusPill tone="zinc" size="sm">{o.items.length}종 · {o.total_qty}개</StatusPill>
                     {/* 2026-08-12 · 발주일 · 헤더로 이동 · 상품수 옆 */}
                     {o.order_date && (
                       <span className="inline-flex items-center gap-1 text-[13px] font-medium text-zinc-500 tabular-nums shrink-0">
