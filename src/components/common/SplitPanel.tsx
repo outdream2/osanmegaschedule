@@ -35,14 +35,15 @@ const STORAGE_PREFIX = "megatown_"; // 앱 관례 (useAuth · settings 와 동�
 
 type DividerColor = "indigo" | "teal" | "sky" | "emerald" | "amber" | "rose" | "violet";
 
+// 2026-08-17 · 최신 트렌드 · divider hover · 모든 색상 → brand-deep 통일 (mono neutral)
 const DIVIDER_HOVER: Record<DividerColor, string> = {
-  indigo:  "hover:bg-indigo-400",
-  teal:    "hover:bg-teal-400",
-  sky:     "hover:bg-sky-400",
-  emerald: "hover:bg-emerald-400",
-  amber:   "hover:bg-amber-400",
-  rose:    "hover:bg-rose-400",
-  violet:  "hover:bg-violet-400",
+  indigo:  "hover:bg-brand-deep",
+  teal:    "hover:bg-brand-deep",
+  sky:     "hover:bg-brand-deep",
+  emerald: "hover:bg-brand-deep",
+  amber:   "hover:bg-brand-deep",
+  rose:    "hover:bg-brand-deep",
+  violet:  "hover:bg-brand-deep",
 };
 
 export interface SplitPanelProps {
@@ -208,18 +209,19 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
       role="dialog"
       aria-modal="true"
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] max-h-[92vh] flex flex-col overflow-hidden">
-        {/* 모달 헤더 */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-line shrink-0">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] max-h-[92vh] flex flex-col overflow-hidden border border-line">
+        {/* 모달 헤더 · 2026-08-17 · 최신 트렌드 · accent bar + 폰트 +2 */}
+        <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-line bg-zinc-50/60 shrink-0">
+          <span className="w-[3px] h-[16px] rounded-full bg-brand-deep shrink-0" />
           {mobileModalTitle != null && (
-            <div className="flex-1 min-w-0 text-[14px] font-bold text-zinc-800 break-words whitespace-normal leading-tight">
+            <div className="flex-1 min-w-0 text-[16px] font-bold text-ink break-words whitespace-normal leading-tight tracking-tight">
               {mobileModalTitle}
             </div>
           )}
           <button
             type="button"
             onClick={closeMobileModal}
-            className="w-8 h-8 rounded-lg bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-zinc-600 cursor-pointer shrink-0 transition-colors ml-auto"
+            className="w-9 h-9 rounded-lg bg-white border border-line hover:border-brand-deep hover:bg-brand-tint flex items-center justify-center text-ink-soft hover:text-brand-deep cursor-pointer shrink-0 transition-colors ml-auto"
             title="닫기 (ESC)"
             aria-label="닫기"
           >
