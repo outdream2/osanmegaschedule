@@ -1898,7 +1898,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                               <th
                                 ref={isToday ? todayColRef : undefined}
                                 onClick={() => setTimelineDate(fullDate)}
-                                className={`p-0.5 sm:p-1 text-center text-[15px] sm:text-[16px] font-bold border-r border-b border-line w-[44px] cursor-pointer hover:bg-brand-tint hover:text-brand-deep transition-colors ${headerClass} ${isToday ? "bg-brand-tint text-brand-deep ring-2 ring-inset ring-brand-deep z-40 relative" : ""}`}
+                                className={`p-0.5 sm:p-1 text-center text-[15px] sm:text-[16px] font-bold border-r border-b border-line w-[44px] cursor-pointer hover:bg-brand-tint hover:text-brand-deep transition-colors ${headerClass} ${isToday ? "bg-rose-50 text-rose-700 ring-2 ring-inset ring-rose-500 z-40 relative" : ""}`}
                                 title={`${fullDate} 타임라인 보기`}
                               >
                                 {dayNum}
@@ -1930,7 +1930,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                           return (
                             <React.Fragment key={`day-name-${dateStr}`}>
                               <th
-                                className={`p-0.5 text-center text-[13px] sm:text-[14px] border-r border-b border-line w-[44px] bg-zinc-50/60 ${wordClass} ${isToday ? "bg-brand-tint text-brand-deep ring-2 ring-inset ring-brand-deep z-40 relative" : ""}`}
+                                className={`p-0.5 text-center text-[13px] sm:text-[14px] border-r border-b border-line w-[44px] bg-zinc-50/60 ${wordClass} ${isToday ? "bg-rose-50 text-rose-700 ring-2 ring-inset ring-rose-500 z-40 relative" : ""}`}
                               >
                                 {dayWord}
                               </th>
@@ -1996,7 +1996,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                             const cell = (
                               <td
                                 key={`${emp.id}-${dateStr}`}
-                                className={`relative p-0 border-r border-line ${isToday ? "ring-2 ring-inset ring-brand-deep z-[25] relative" : ""} ${isHireDay ? "ring-2 ring-inset ring-emerald-500 z-[24] relative" : ""} ${isRetireDay ? "ring-2 ring-inset ring-rose-500 z-[24] relative" : ""} ${outOfEmployment ? "bg-zinc-100/60 cursor-not-allowed" : (canOpenBreak ? "cursor-pointer hover:bg-brand-tint/60" : "")}`}
+                                className={`relative p-0 border-r border-line ${isToday ? "ring-2 ring-inset ring-rose-500 z-[25] relative" : ""} ${isHireDay ? "ring-2 ring-inset ring-emerald-500 z-[24] relative" : ""} ${isRetireDay ? "ring-2 ring-inset ring-rose-500 z-[24] relative" : ""} ${outOfEmployment ? "bg-zinc-100/60 cursor-not-allowed" : (canOpenBreak ? "cursor-pointer hover:bg-brand-tint/60" : "")}`}
                                 onClick={canOpenBreak ? () => openBreakModalForCell(emp.id, fullDate) : undefined}
                                 title={
                                   isHireDay ? `입사일 (${emp.hireDate})` :

@@ -9,6 +9,7 @@ import {
   Trash2,
   AlertTriangle,
 } from "lucide-react";
+import { StatusPill } from "../common/StatusPill";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -53,27 +54,12 @@ function isUrgent(req: DisplayRequest): boolean {
 const StatusBadge: React.FC<{ req: DisplayRequest }> = ({ req }) => {
   const urgent = isUrgent(req);
   if (req.status === "done") {
-    return (
-      <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-        <CheckCircle2 size={10} />
-        완료
-      </span>
-    );
+    return <StatusPill tone="emerald" size="sm" dot>완료</StatusPill>;
   }
   if (urgent) {
-    return (
-      <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-300 animate-pulse">
-        <AlertTriangle size={10} />
-        긴급
-      </span>
-    );
+    return <StatusPill tone="rose" size="sm" dot pulse>긴급</StatusPill>;
   }
-  return (
-    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-300">
-      <Clock size={10} />
-      대기
-    </span>
-  );
+  return <StatusPill tone="amber" size="sm" dot>대기</StatusPill>;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
