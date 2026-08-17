@@ -20,7 +20,8 @@ import {
   STORE_TOP_WALL, STORE_AISLE_CENTER, STORE_AISLE_PAIRS, STORE_BOTTOM_WALL, STORE_VERTICAL_WING,
   CAT_A_COLORS, CAT_B_COLORS,
 } from "../../constants/storeMapLayout";
-import { ZONE_DEFS } from "../../constants/displayZones";
+// 2026-08-17 · 프레임워크 · useZoneDefs 훅 사용 · 설정 편집 시 자동 반영
+import { useZoneDefs } from "../../hooks/useZoneDefs";
 import { getZoneLabel, getZoneSubLabel } from "../../constants/zoneLabels";
 import { MapPin, User } from "lucide-react";
 
@@ -94,6 +95,9 @@ const StoreZoneMap: React.FC<StoreZoneMapProps> = ({
     window.addEventListener("zone-labels-changed", handler);
     return () => window.removeEventListener("zone-labels-changed", handler);
   }, []);
+
+  // 2026-08-17 · 프레임워크 · 공통 zone defs 훅 · 설정 편집 시 자동 반영
+  const { zones: ZONE_DEFS } = useZoneDefs();
 
   const [collapsed, setCollapsed] = useState(collapsible ? defaultCollapsed : false);
 

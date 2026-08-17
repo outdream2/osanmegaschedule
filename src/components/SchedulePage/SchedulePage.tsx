@@ -1662,18 +1662,18 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
           {/* 2행: [직원등록·오늘·편집·확정·전월복사] + 다음줄 [합계·인건비] */}
           <div className="flex items-center gap-x-2 flex-nowrap justify-start min-w-0">
-            {/* 직원등록 (오늘 앞 · indigo 톤) · 2026-08-11 · 필터바에서 이동 */}
+            {/* 2026-08-17 · 최신 트렌드 · 모두 rounded-lg · 딥네이비 primary · 파스텔 지양 · 폰트 통일 */}
             {isAdmin && (
               <button
                 type="button"
                 onClick={() => openCreateEmployeeModal()}
                 title="새 직원 등록"
-                className="shrink-0 inline-flex items-center justify-center px-3 py-1.5 text-[13px] sm:text-[15px] font-black text-white bg-indigo-600 hover:bg-indigo-700 border border-indigo-600 rounded-md shadow-sm transition cursor-pointer active:scale-95"
+                className="shrink-0 inline-flex items-center justify-center px-3.5 py-1.5 text-[14px] sm:text-[15px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-lg shadow-sm transition-colors cursor-pointer"
               >
                 직원 등록
               </button>
             )}
-            {/* 오늘로 이동 · 2026-08-13 · 사용자 지시 · 관리자만 노출 */}
+            {/* 오늘로 이동 · 최신 트렌드 · 뉴트럴 · mono */}
             {isAdmin && (
               <button
                 type="button"
@@ -1685,27 +1685,27 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                   setEditMode(false);
                 }}
                 title="오늘 날짜로 이동"
-                className="flex items-center px-2.5 py-1.5 text-[13px] sm:text-[15px] font-bold rounded-md border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-800 transition cursor-pointer shrink-0"
+                className="flex items-center px-3 py-1.5 text-[14px] sm:text-[15px] font-semibold rounded-lg border border-line bg-white hover:border-brand-deep hover:text-brand-deep text-ink transition-colors cursor-pointer shrink-0"
               >
                 오늘
               </button>
             )}
-            {/* 관리자 액션 버튼: 편집 / 확정 / 전월복사 · 통일된 컴팩트 스타일 */}
+            {/* 관리자 액션 · 편집 · 확정 · 전월복사 · 통일 톤 · 딥네이비 active */}
             {isAdmin && (
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex items-center gap-1.5 shrink-0">
                 {!isMonthLocked && (
                   <button
                     onClick={() => setEditMode(m => !m)}
                     title={editMode ? "편집 모드 종료" : "편집 모드 활성화 — 셀 클릭으로 스케줄 변경 가능"}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 text-[13px] sm:text-[15px] font-bold rounded-md border transition-all cursor-pointer ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-[14px] sm:text-[15px] font-semibold rounded-lg border transition-colors cursor-pointer ${
                       editMode
-                        ? "border-emerald-400 bg-emerald-500 text-white shadow-sm"
-                        : "border-zinc-300 bg-white text-zinc-600 hover:border-zinc-400"
+                        ? "border-brand-deep bg-brand-deep text-white shadow-sm"
+                        : "border-line bg-white text-ink hover:border-brand-deep hover:text-brand-deep"
                     }`}
                   >
                     {editMode
                       ? <><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /><span>편집중</span></>
-                      : <><Edit size={11} /><span>편집</span></>
+                      : <><Edit size={13} strokeWidth={2.2} /><span>편집</span></>
                     }
                   </button>
                 )}
@@ -1714,15 +1714,15 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                   onClick={handleToggleMonthLock}
                   disabled={isLockLoading}
                   title={isMonthLocked ? `${currentMonth}월 확정 해제` : `${currentMonth}월 스케줄 확정 (이후 수정 불가)`}
-                  className={`flex items-center gap-1 px-2.5 py-1.5 text-[13px] sm:text-[15px] font-bold rounded-md border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-[14px] sm:text-[15px] font-semibold rounded-lg border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                     isMonthLocked
-                      ? "border-amber-400 bg-amber-500 text-white shadow-sm"
-                      : "border-zinc-300 bg-white text-zinc-600 hover:border-zinc-400"
+                      ? "border-amber-500 bg-amber-500 text-white shadow-sm"
+                      : "border-line bg-white text-ink hover:border-brand-deep hover:text-brand-deep"
                   }`}
                 >
                   {isLockLoading
-                    ? <div className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                    : <Lock size={11} />
+                    ? <div className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                    : <Lock size={13} strokeWidth={2.2} />
                   }
                   <span>{isMonthLocked ? "확정해제" : "확정"}</span>
                 </button>
@@ -1732,24 +1732,28 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                     onClick={handleCopyFromPreviousMonth}
                     disabled={isCopying}
                     title={`${currentMonth === 1 ? 12 : currentMonth - 1}월 스케줄을 ${currentMonth}월로 복사`}
-                    className="flex items-center gap-1 px-2.5 py-1.5 text-[13px] sm:text-[15px] font-bold rounded-md border border-violet-300 bg-white text-violet-600 hover:border-violet-400 hover:bg-violet-50 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-[14px] sm:text-[15px] font-semibold rounded-lg border border-line bg-white text-ink hover:border-brand-deep hover:text-brand-deep transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {isCopying
-                      ? <><div className="w-3 h-3 rounded-full border-2 border-violet-400 border-t-transparent animate-spin" /><span>복사 중</span></>
-                      : <><Layers size={11} /><span>전월복사</span></>
+                      ? <><div className="w-3.5 h-3.5 rounded-full border-2 border-brand-deep border-t-transparent animate-spin" /><span>복사 중</span></>
+                      : <><Layers size={13} strokeWidth={2.2} /><span>전월복사</span></>
                     }
                   </button>
                 )}
               </div>
             )}
 
-            {/* 인건비(hr) · 관리자만 · 2026-08-13 · 합계(hr) 제거 · 인건비 → 인건비(hr) 로 통합 */}
+            {/* 인건비(hr) · 최신 트렌드 · 딥네이비 active */}
             {isAdmin && (
               <div className="flex items-center gap-1 shrink-0">
                 <button
                   onClick={() => setShowSummary(v => v === "labor" ? "hidden" : "labor")}
                   title="월별 합계(근무일수/시간) + 인건비 표시 토글"
-                  className={`px-2.5 py-1.5 text-[13px] sm:text-[15px] rounded-md font-bold border transition cursor-pointer ${showSummary === "labor" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-zinc-600 border-zinc-300 hover:border-zinc-400"}`}
+                  className={`px-3 py-1.5 text-[14px] sm:text-[15px] rounded-lg font-semibold border transition-colors cursor-pointer ${
+                    showSummary === "labor"
+                      ? "bg-brand-deep text-white border-brand-deep shadow-sm"
+                      : "bg-white text-ink border-line hover:border-brand-deep hover:text-brand-deep"
+                  }`}
                 >
                   인건비(hr)
                 </button>
@@ -1766,16 +1770,16 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 <span className="text-xs font-bold text-amber-700">{currentMonth}월 스케줄이 확정된 상태입니다. 수정하려면 확정해제 후 진행하세요.</span>
               </div>
             )}
-            {/* Copy Previous Month Callout Banner */}
+            {/* Copy Previous Month Callout Banner · 2026-08-17 · 최신 트렌드 · brand tint · flat */}
             {!isLoading && !error && isAdmin && employees.length > 0 && !employees.some(emp => emp.schedules && emp.schedules.some(s => s.type.trim() !== "")) && (
-              <div className="m-2 sm:m-4 p-3 sm:p-4 bg-indigo-50/50 border border-indigo-200/70 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="m-2 sm:m-4 p-3 sm:p-4 bg-brand-tint border border-brand/15 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
                 <div className="flex items-start gap-3">
-                  <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg shrink-0">
+                  <div className="p-2 bg-white/70 text-brand-deep rounded-lg shrink-0 ring-1 ring-brand/10">
                     <Layers size={18} />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-zinc-800">이번 달 ({currentMonth}월) 스케줄 데이터가 비어 있습니다</h4>
-                    <p className="text-[10px] text-zinc-500 mt-0.5 leading-relaxed">
+                    <h4 className="text-[14px] font-bold text-brand-deep">이번 달 ({currentMonth}월) 스케줄 데이터가 비어 있습니다</h4>
+                    <p className="text-[13px] text-brand-deep/80 mt-0.5 leading-relaxed">
                       이전 달의 스케줄 패턴을 그대로 복사해 오시겠습니까?
                     </p>
                   </div>
@@ -1783,16 +1787,16 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 <button
                   onClick={handleCopyFromPreviousMonth}
                   disabled={isCopying}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5 transition disabled:opacity-50 select-none cursor-pointer shrink-0"
+                  className="h-9 px-4 bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg text-[14px] font-semibold shadow-sm flex items-center gap-1.5 transition-colors disabled:opacity-40 select-none cursor-pointer shrink-0"
                 >
                   {isCopying ? (
                     <>
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                      <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white"></div>
                       <span>복사 중...</span>
                     </>
                   ) : (
                     <>
-                      <Layers size={12} />
+                      <Layers size={13} strokeWidth={2.2} />
                       <span>이전달({currentMonth === 1 ? 12 : currentMonth - 1}월) 복사</span>
                     </>
                   )}
@@ -1800,19 +1804,19 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
               </div>
             )}
 
-            {/* Admin quick-edit hint bar */}
+            {/* Admin quick-edit hint bar · 2026-08-17 · 최신 트렌드 · flat · brand accent */}
             {isAdmin && !isMonthLocked && (
-              <div className={`flex items-center gap-2 px-3 py-1.5 border-b shrink-0 min-w-0 overflow-hidden sticky top-0 z-30 ${editMode ? "bg-emerald-50 border-emerald-200" : "bg-white border-zinc-100"}`}>
+              <div className={`flex items-center gap-2 px-3 py-1.5 border-b shrink-0 min-w-0 overflow-hidden sticky top-0 z-30 ${editMode ? "bg-brand-tint border-brand/20" : "bg-white border-line"}`}>
                 {editMode ? (
                   <>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                    <span className="text-[10px] text-emerald-700 font-medium truncate min-w-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-deep animate-pulse shrink-0" />
+                    <span className="text-[13px] text-brand-deep font-semibold truncate min-w-0">
                       편집 모드 — 셀 클릭: 오픈 → 미들 → 마감 → 휴무 순환 · 설정 버튼: 상세 편집
                     </span>
                   </>
                 ) : (
-                  <span className="text-[10px] text-zinc-400 truncate min-w-0">
-                    셀을 수정하려면 상단 <strong className="text-zinc-500 font-semibold">편집</strong> 버튼을 눌러 편집 모드를 켜세요
+                  <span className="text-[13px] text-ink-soft truncate min-w-0">
+                    셀을 수정하려면 상단 <strong className="text-ink font-semibold">편집</strong> 버튼을 눌러 편집 모드를 켜세요
                   </span>
                 )}
               </div>
