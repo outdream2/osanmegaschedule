@@ -51,9 +51,10 @@ import { VendorStockModal } from "./VendorStockModal";
 import { useVendors } from "../../hooks/useVendors";
 import { MenuCard } from "./MenuCard";
 import { StockSearch } from "./StockSearch";
-// 2026-08-17 · UI 프레임워크 · SectionLabel · MiniCard (목업 톤)
+// 2026-08-17 · UI 프레임워크 · SectionLabel · MiniCard · Hero · HeroButton (목업 톤)
 import { SectionLabel } from "../common/SectionLabel";
 import { MiniCard } from "../common/MiniCard";
+import { Hero, HeroButton } from "../common/Hero";
 // VendorListEditor 는 발주관리 공급사관리 에서만 사용 (LandingPage 데이터 업로드 에서 제거됨 · 2026-07-15)
 
 interface LandingPageProps {
@@ -947,15 +948,41 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             </div>
           )}
 
+          {/* ── Hero · 2026-08-17 · 관리자 인사말 + pending 요약 · 목업 톤 · UI 만 ── */}
+          {isManagerOrAdmin && authSession && (() => {
+            const now = new Date();
+            const w = ["일","월","화","수","목","금","토"][now.getDay()];
+            const dateStr = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일 ${w}요일`;
+            const pendingParts: string[] = [];
+            if (leavePendingCount > 0) pendingParts.push(`연차 승인 ${leavePendingCount}건`);
+            const displayTotal = requestsCounts.display + requestsCounts.order + requestsCounts.mismatch;
+            if (displayTotal > 0) pendingParts.push(`진열·발주 ${displayTotal}건`);
+            const desc = pendingParts.length > 0
+              ? `오늘 처리할 ${pendingParts.join(", ")}이 있어요.`
+              : "오늘 대기 중인 승인/요청이 없습니다.";
+            return (
+              <Hero
+                eyebrow={dateStr}
+                title={<>안녕하세요, {authSession.employeeName}{authSession.employeeRank ? ` ${authSession.employeeRank}` : ""}님 👋</>}
+                description={desc}
+                actions={<>
+                  <HeroButton icon={<CheckCircle size={14} weight="fill" />} onClick={() => onNavigate("requests", authSession!)}>승인요청 확인</HeroButton>
+                  {isSuperAdminLevel9 && (
+                    <HeroButton ghost icon={<Upload size={14} />} onClick={() => { setUploadOpen(true); setUploadTab("products"); setUploadResult(null); setUploadFile(null); setStockUploadResult(null); setStockUploadFile(null); fetchImportLog(); fetchStockImportLog(); }}>데이터 업로드</HeroButton>
+                  )}
+                </>}
+              />
+            );
+          })()}
+
           {/* ── 관리자 도구 (관리자 로그인 시에만 표시) · 2026-08-17 · SectionLabel + 반응형 grid ── */}
           {isManagerOrAdmin && (
             <div className="w-full mb-7">
               <SectionLabel tone="teal">관리자 도구</SectionLabel>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3.5">
 
-                {/* 매장관리 — red · MenuCard · desc 는 원본 유지 (9/11) */}
+                {/* 매장관리 · teal · 목업 톤 기본 사이즈 */}
                 <MenuCard color="teal" icon={SquaresFour} title="매장관리" description="매장 · 발주 · 매입 · 결제 · 통계 · 입고알림"
-                  descClass="text-[9px] sm:text-[11px] leading-tight"
                   onClick={() => onNavigate("display", authSession!)} />
 
                 {/* 경영관리 — violet · MenuCard · pending 배지 */}
