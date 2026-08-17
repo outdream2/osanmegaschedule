@@ -428,10 +428,13 @@ body:has(.fixed.inset-0[class*="bg-neutral-9"]) {
   @apply text-[14.5px] font-semibold text-ink-soft;
 }
 
-/* ── 필터바 (상단 검색/필터 컨테이너) ── */
+/* ── 필터바 · 2026-08-17 v2 · Attio 세련 · inset light + subtle shadow ── */
 .filter-bar {
-  @apply bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3
+  @apply bg-white rounded-xl border border-line px-4 py-3
          flex flex-wrap items-center gap-x-4 gap-y-2;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.60),
+    0 1px 2px rgba(10, 46, 74, 0.05);
 }
 
 /* ── 폼 요소 · 2026-08-17 v2 · Attio/Linear 세련 · 브랜드 focus · 폰트 +2 ── */
