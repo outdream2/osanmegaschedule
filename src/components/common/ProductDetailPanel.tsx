@@ -7,6 +7,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { api } from "../../lib/apiClient";
 import { X, Package, TrendingUp, ChevronRight, ChevronDown, Building2, ClipboardList, History } from "lucide-react";
+import { CollapseCard } from "./CollapseCard";
 import { ProductInfoCard, PurchaseHistorySection } from "../ScanPage/ProductInfoCard";
 import { type ProductInfo } from "../../lib/productsCache";
 import { SeasonButtons } from "./SeasonButtons";
@@ -406,81 +407,54 @@ const ProductDetailChartMode: React.FC<{
   editable: boolean;
   onSupplierInfoOpen?: (supplierName: string) => void;
 }> = ({ product, onProductUpdate, onRealMapUpdate, context, editable, onSupplierInfoOpen }) => {
-  const [topCollapsed, setTopCollapsed] = useState(false);
-  const [metaCollapsed, setMetaCollapsed] = useState(false);
   return (
     <>
-      {/* 상단 헤더 카드 · 상품명 + 공급사 + 공급사조회 (2026-07-31 · 사용자 요청) */}
+      {/* 상단 헤더 카드 · 상품명 + 공급사 + 공급사조회 (2026-07-31) */}
       <ProductHeaderCard product={product} onSupplierInfoOpen={onSupplierInfoOpen} />
 
-      {/* 3탭 · 기간별상품흐름 · 매입이력 · 발주내역 (2026-07-31 · 사용자 요청) */}
+      {/* 3탭 · 기간별상품흐름 · 매입이력 · 발주내역 */}
       <PurchaseOrderTabs productCode={product.code} productName={product.name} />
 
-      {/* 상단 카드: 헤더 + 재고현황 + 매입판매가 + 발주요청 + 배정구역 · 접기 지원 · 2026-08-17 · 세련 · shadow depth */}
-      <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_16px_rgba(10,46,74,0.06)] overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setTopCollapsed(c => !c)}
-          className="w-full flex items-center gap-2.5 px-4 min-h-[44px] py-2.5 hover:bg-zinc-50 transition-colors cursor-pointer border-b border-line"
-          title={topCollapsed ? "펼치기" : "접기"}
-        >
-          {/* status dot · 열림=brand-deep · 닫힘=zinc-300 · Vercel 규칙 6~10px */}
-          <span className={`w-2 h-2 rounded-full shrink-0 transition-colors ${topCollapsed ? "bg-zinc-300" : "bg-brand-deep"}`} />
-          {topCollapsed
-            ? <ChevronRight size={17} className="text-ink-soft shrink-0" />
-            : <ChevronDown size={17} className="text-brand-deep shrink-0" />}
-          <Package size={17} className="text-ink-soft shrink-0" strokeWidth={2.2} />
-          <span className="text-[17px] font-bold text-ink tracking-tight break-keep whitespace-normal leading-tight text-left">재고 · 매입판매가 · 발주 · 배정구역</span>
-          {topCollapsed && <span className="text-[14px] font-medium text-ink-soft ml-1 shrink-0">— 펼치기</span>}
-        </button>
-        {!topCollapsed && (
-          <ProductInfoCard
-            product={product}
-            context={context}
-            editable={editable}
-            onRealMapUpdate={onRealMapUpdate}
-            onProductUpdate={onProductUpdate}
-            sections={{
-              header: true, zoneAssignment: true, stockStatus: true, actualStockInput: true,
-              orderRequest: true, financial: true, purchaseHistory: false,
-              productMeta: false, extraInfo: false,
-            }}
-          />
-        )}
-      </div>
+      {/* 2026-08-17 · 공용 CollapseCard 프레임워크 · contentPadding=none · ProductInfoCard 자체 padding */}
+      <CollapseCard
+        title="재고 · 매입판매가 · 발주 · 배정구역"
+        icon={<Package size={17} strokeWidth={2.2} />}
+        defaultOpen
+        contentPadding="none"
+      >
+        <ProductInfoCard
+          product={product}
+          context={context}
+          editable={editable}
+          onRealMapUpdate={onRealMapUpdate}
+          onProductUpdate={onProductUpdate}
+          sections={{
+            header: true, zoneAssignment: true, stockStatus: true, actualStockInput: true,
+            orderRequest: true, financial: true, purchaseHistory: false,
+            productMeta: false, extraInfo: false,
+          }}
+        />
+      </CollapseCard>
 
-      {/* 하단 카드: 상품코드 · 공급처 · 판매상태 · 최근매입일 + 브랜드 · 제조사 · 바코드 · 유효기간 · 메모 · 접기 지원 · 2026-08-17 · 최신 트렌드 */}
-      <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setMetaCollapsed(c => !c)}
-          className="w-full flex items-center gap-2.5 px-4 min-h-[44px] py-2.5 hover:bg-zinc-50 transition-colors cursor-pointer border-b border-line"
-          title={metaCollapsed ? "펼치기" : "접기"}
-        >
-          {/* status dot · Vercel 규칙 · 열림=brand-deep · 닫힘=zinc-300 */}
-          <span className={`w-2 h-2 rounded-full shrink-0 transition-colors ${metaCollapsed ? "bg-zinc-300" : "bg-brand-deep"}`} />
-          {metaCollapsed
-            ? <ChevronRight size={17} className="text-ink-soft shrink-0" />
-            : <ChevronDown size={17} className="text-brand-deep shrink-0" />}
-          <Package size={17} className="text-ink-soft shrink-0" strokeWidth={2.2} />
-          <span className="text-[17px] font-bold text-ink tracking-tight break-keep whitespace-normal leading-tight text-left">상품 정보 · 추가 정보</span>
-          {metaCollapsed && <span className="text-[14px] font-medium text-ink-soft ml-1 shrink-0">— 펼치기</span>}
-        </button>
-        {!metaCollapsed && (
-          <ProductInfoCard
-            product={product}
-            context={context}
-            editable={editable}
-            onRealMapUpdate={onRealMapUpdate}
-            onProductUpdate={onProductUpdate}
-            sections={{
-              header: false, zoneAssignment: false, stockStatus: false, actualStockInput: false,
-              orderRequest: false, financial: false, purchaseHistory: false,
-              productMeta: true, extraInfo: true,
-            }}
-          />
-        )}
-      </div>
+      <CollapseCard
+        title="상품 정보 · 추가 정보"
+        icon={<Package size={17} strokeWidth={2.2} />}
+        defaultOpen
+        contentPadding="none"
+      >
+        <ProductInfoCard
+          product={product}
+          context={context}
+          editable={editable}
+          onRealMapUpdate={onRealMapUpdate}
+          onProductUpdate={onProductUpdate}
+          sections={{
+            header: false, zoneAssignment: false, stockStatus: false, actualStockInput: false,
+            orderRequest: false, financial: false, purchaseHistory: false,
+            productMeta: true, extraInfo: true,
+          }}
+        />
+      </CollapseCard>
     </>
   );
 };

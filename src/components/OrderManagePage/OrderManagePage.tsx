@@ -11,6 +11,7 @@ import { SearchBar } from "../common/SearchBar";
 import { SearchFilterChips, type ChipOption } from "../common/SearchFilterChips";
 // 2026-08-17 · 공용 페이지 툴바 프레임워크 (좌 accent+제목·중앙 검색·우 액션)
 import { PageToolbar } from "../common/PageToolbar";
+import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 import { matchHangul } from "../common/hangulSearch";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
 import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp, ScanLine, PackagePlus, RotateCcw, X, Search, Info, MapPin } from "lucide-react";
@@ -1465,46 +1466,26 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               )}
             </div>
 
-            {/* 2026-08-17 · 세련 · 딥네이비 통일 · 카테고리는 좌측 accent dot 으로 identity · Attio 규칙 */}
+            {/* 2026-08-17 · 공용 CategoryChips 프레임워크 · 딥네이비 · status dot 통일 */}
             <div className="px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-zinc-50/40">
-              {/* 분류 그룹 */}
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="flex items-center gap-1.5 shrink-0">
-                  <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
-                  <span className="text-[13px] font-bold text-ink tracking-tight">분류</span>
-                </span>
-                <div className="inline-flex items-center rounded-lg border border-line bg-zinc-100 p-1 gap-0.5 flex-wrap">
-                  {(["all", ...dbVendorCategories] as string[]).map(cat => {
-                    const label = cat === "all" ? "전체" : cat;
-                    /* status dot · category identity (Vercel ≤10px 규칙) · 8px */
-                    const dotCls =
-                      cat === "all"    ? "bg-zinc-400"
-                      : cat === "위탁"   ? "bg-violet-500"
-                      : cat === "선결제" ? "bg-rose-500"
-                      : cat === "60회전" ? "bg-emerald-500"
-                      : cat === "90회전" ? "bg-teal-500"
-                      : "bg-zinc-400";
-                    const active = needCategoryFilter === cat;
-                    return (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => setNeedCategoryFilter(cat)}
-                        className={[
-                          "inline-flex items-center gap-1.5 px-3 h-8 rounded-md text-[13px] font-semibold leading-none transition-colors cursor-pointer whitespace-nowrap",
-                          active
-                            ? "bg-brand-deep text-white shadow-sm"
-                            : "text-ink hover:text-brand-deep hover:bg-white",
-                        ].join(" ")}
-                        title={`${label} 카테고리만 표시`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${dotCls} ${active ? "" : "opacity-70"}`} />
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <CategoryChips
+                label="분류"
+                value={needCategoryFilter}
+                onChange={setNeedCategoryFilter}
+                size="sm"
+                ariaLabel="공급사 카테고리 필터"
+                options={(["all", ...dbVendorCategories] as string[]).map(cat => ({
+                  value: cat,
+                  label: cat === "all" ? "전체" : cat,
+                  tone: (cat === "all"    ? "zinc"
+                       : cat === "위탁"   ? "violet"
+                       : cat === "선결제" ? "rose"
+                       : cat === "60회전" ? "emerald"
+                       : cat === "90회전" ? "teal"
+                       : "zinc") as ChipTone,
+                  title: `${cat === "all" ? "전체" : cat} 카테고리만 표시`,
+                }))}
+              />
 
               {/* 2026-08-10 · 사용자 요청 · 발주조건 · 입력 항목 나란히 (label + 2 checkboxes · 같은 flex-nowrap wrapper) */}
               <div className="flex items-center gap-2 flex-nowrap shrink-0">

@@ -60,6 +60,7 @@ import { Button } from "../common/Button";
 import { SectionLabel } from "../common/SectionLabel";
 import { MiniCard } from "../common/MiniCard";
 import { Hero } from "../common/Hero";
+import { KpiCard, type KpiTone } from "../common/KpiCard";
 // VendorListEditor 는 발주관리 공급사관리 에서만 사용 (LandingPage 데이터 업로드 에서 제거됨 · 2026-07-15)
 
 interface LandingPageProps {
@@ -977,30 +978,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             );
           })()}
 
-          {/* ── 오늘의 현황 · 2026-08-17 · 세련 · KPI mini-card · 카테고리 dot + 값 색상 semantic ── */}
+          {/* ── 오늘의 현황 · 2026-08-17 · 공용 KpiCard 프레임워크 · Vercel Dashboard 톤 ── */}
           {isManagerOrAdmin && (
             <div className="w-full mb-6">
               <div className="flex items-center gap-2.5 mb-2.5">
                 <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
                 <div className="text-ink font-bold tracking-tight text-[16px]">오늘의 현황</div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {(() => {
-                  const stats = [
-                    { label: "승인 대기",    value: leavePendingCount,                              color: "amber",   dotBg: "bg-amber-500",   valueCls: leavePendingCount > 0 ? "text-amber-700" : "text-ink-soft" },
-                    { label: "진열·발주 요청", value: requestsCounts.display + requestsCounts.order, color: "sky",     dotBg: "bg-sky-500",     valueCls: (requestsCounts.display + requestsCounts.order) > 0 ? "text-sky-700" : "text-ink-soft" },
-                    { label: "배치구역 불일치", value: requestsCounts.mismatch,                       color: "rose",    dotBg: "bg-rose-500",    valueCls: requestsCounts.mismatch > 0 ? "text-rose-700" : "text-ink-soft" },
-                    { label: "점심 신청",    value: requestsCounts.lunch,                          color: "emerald", dotBg: "bg-emerald-500", valueCls: requestsCounts.lunch > 0 ? "text-emerald-700" : "text-ink-soft" },
-                  ];
-                  return stats.map((s, i) => (
-                    <div key={i} className="group inline-flex items-center gap-2.5 bg-white border border-line rounded-xl px-3.5 py-2 shadow-[0_1px_2px_rgba(10,46,74,0.03)] hover:shadow-[0_2px_8px_rgba(10,46,74,0.08)] hover:border-brand-deep/20 transition-all">
-                      <span className={`w-2 h-2 rounded-full ${s.dotBg} ${s.value > 0 ? "shadow-[0_0_0_3px_currentColor]/[0.15]" : "opacity-40"}`} />
-                      <span className="text-[14px] font-medium text-ink-soft tracking-tight">{s.label}</span>
-                      <span className={`text-[18px] font-extrabold tabular-nums leading-none ${s.valueCls}`}>{s.value}</span>
-                      <span className="text-[13px] font-semibold text-ink-soft">건</span>
-                    </div>
-                  ));
-                })()}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                {([
+                  { label: "승인 대기",     value: leavePendingCount,                              tone: "amber"   as KpiTone },
+                  { label: "진열·발주 요청", value: requestsCounts.display + requestsCounts.order,  tone: "sky"     as KpiTone },
+                  { label: "배치구역 불일치", value: requestsCounts.mismatch,                       tone: "rose"    as KpiTone },
+                  { label: "점심 신청",     value: requestsCounts.lunch,                          tone: "emerald" as KpiTone },
+                ] as const).map((s, i) => (
+                  <KpiCard key={i} label={s.label} value={s.value} unit="건" tone={s.tone} />
+                ))}
               </div>
             </div>
           )}
