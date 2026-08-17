@@ -417,31 +417,37 @@ const ZoneCategoryContent: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-2">
-      {/* 상단 필터바 */}
-      <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
-        <div className="flex items-center gap-2">
-          <PieChart size={14} className="text-amber-500 shrink-0" />
-          <span className="text-[15px] font-semibold text-zinc-800">구역현황</span>
-          <span className="text-[15px] font-semibold text-amber-600 bg-amber-50 rounded-full px-2 py-0.5 border border-amber-200 tabular-nums">{grouped.length}개 구역</span>
-          <span className="text-[15px] text-zinc-400 hidden sm:inline">real_map 기반 · 구역 클릭 → 상품 상세</span>
+      {/* 2026-08-17 · 상단 필터바 · 공용 프레임워크 톤 · 딥네이비 accent + 라벨 · 폰트 통일 */}
+      <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2`}>
+        {/* 좌측 · accent bar + 아이콘 + 제목 + count */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+          <PieChart size={16} className="text-brand-deep shrink-0" />
+          <span className="text-[17px] font-bold text-ink tracking-tight">구역현황</span>
+          <span className="text-[14px] font-semibold text-brand-deep bg-brand-tint rounded-full px-2.5 py-0.5 border border-brand/15 tabular-nums">{grouped.length}개 구역</span>
+          <span className="text-[13px] text-ink-soft hidden md:inline">real_map 기반 · 구역 클릭 → 상품 상세</span>
         </div>
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">기간</span>
-          <div className="flex flex-wrap bg-zinc-50 border border-line rounded-md p-0.5 gap-0.5">
+        {/* 기간 필터 · 통일 톤 · segmented pill */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="flex items-center gap-2 shrink-0">
+            <span className="w-[3px] h-[15px] rounded-full bg-brand-deep" />
+            <span className="text-[15px] font-bold text-ink tracking-tight">기간</span>
+          </span>
+          <div className="inline-flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
             <button type="button" onClick={() => { setSeason(null); setMonths(0); }}
-              className={`px-2 h-6 text-[15px] font-semibold rounded transition cursor-pointer ${!season && months === 0 ? "bg-amber-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
+              className={`px-2.5 h-7 text-[14px] font-semibold rounded-md transition-colors cursor-pointer ${!season && months === 0 ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>
               10일
             </button>
             {[1, 2, 3, 4, 5, 6].map(m => (
               <button key={m} type="button" onClick={() => { setSeason(null); setMonths(m as any); }}
-                className={`px-2 h-6 text-[15px] font-semibold rounded transition cursor-pointer ${!season && months === m ? "bg-amber-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
+                className={`px-2.5 h-7 text-[14px] font-semibold rounded-md transition-colors cursor-pointer ${!season && months === m ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>
                 {m}개월
               </button>
             ))}
           </div>
           <SeasonButtons value={season} onChange={(v) => { setSeason(v); if (v) setMonths(0); }} size="sm" hideLabel />
         </div>
-        {/* #229 · 상단 ProductClassFilter 제거 · 좌측 리스트 위 탭으로 통일 */}
+        {/* 새로고침 · 우측 정렬 · 딥네이비 hover */}
         <button
           type="button"
           onClick={() => {
@@ -458,10 +464,10 @@ const ZoneCategoryContent: React.FC = () => {
               .finally(() => setLoading(false));
           }}
           disabled={loading}
-          className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-amber-50 hover:border-amber-300 text-zinc-400 hover:text-amber-500 transition disabled:opacity-40 cursor-pointer"
+          className="ml-auto w-9 h-9 flex items-center justify-center rounded-lg border border-line bg-white hover:bg-brand-tint hover:border-brand-deep text-ink-soft hover:text-brand-deep transition-colors disabled:opacity-40 cursor-pointer"
           title="새로고침"
         >
-          <Loader2 size={13} className={loading ? "animate-spin" : ""} />
+          <Loader2 size={14} className={loading ? "animate-spin" : ""} />
         </button>
       </div>
 
