@@ -715,9 +715,10 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
             }).length;
             const isFiltered = !!q || returnCategoryFilter !== "전체";
             return (
-              <span className="text-[15px] font-semibold text-rose-600 bg-rose-50 rounded-full px-2 py-0.5 border border-rose-200 tabular-nums">
+              /* 2026-08-17 · StatusPill 프레임워크 통일 */
+              <StatusPill tone="rose" size="md">
                 {isFiltered ? `${filteredCount}/${returnList.length}` : returnList.length}건
-              </span>
+              </StatusPill>
             );
           })()}
         </div>
