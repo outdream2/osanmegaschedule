@@ -136,7 +136,7 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
   }, [posts, filterCategory]);
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(160deg, #fff7ed 0%, #fef3c7 40%, #fef9c3 100%)" }}>
+    <div className="min-h-screen flex flex-col bg-[#F4F7FA]">
       <AppNavHeader activePage="board" authSession={authSession} onBack={onBack} onNavigate={onNavigate} onLogout={onLogout} />
 
       <main className="flex-1 max-w-[900px] mx-auto w-full px-3 sm:px-4 py-3 sm:py-4">
@@ -149,7 +149,7 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="제목·본문 검색"
-              className="w-full pl-9 pr-3 py-2 text-[15px] font-semibold bg-white border border-zinc-200 rounded-lg focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 shadow-sm"
+              className="w-full pl-9 pr-3 py-2 text-[15px] font-semibold bg-white border border-zinc-200 rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint shadow-sm"
             />
           </div>
           <button
@@ -217,7 +217,7 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
 
         {/* 목록 · 재고관리 스타일 통일 (2026-07-16) */}
         {loading && filtered.length > 0 && (
-          <div className="flex items-center justify-center gap-1.5 text-[14px] text-orange-600 font-bold py-1.5 mb-1 bg-orange-50 border border-orange-200 rounded-md sticky top-0 z-10">
+          <div className="flex items-center justify-center gap-1.5 text-[14px] text-brand-deep font-bold py-1.5 mb-1 bg-brand-tint border border-brand/15 rounded-md sticky top-0 z-10">
             <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
           </div>
         )}
@@ -471,7 +471,7 @@ const InlineDetail: React.FC<{
                   key={img.id}
                   type="button"
                   onClick={() => setPreviewImg(img.image_url)}
-                  className="block w-full aspect-square rounded-xl overflow-hidden border border-zinc-200 hover:border-orange-300 hover:shadow-md transition"
+                  className="block w-full aspect-square rounded-xl overflow-hidden border border-zinc-200 hover:border-line hover:shadow-md transition"
                   title="크게 보기"
                 >
                   <img src={img.image_url} alt="" loading="lazy"
@@ -484,7 +484,7 @@ const InlineDetail: React.FC<{
           <div className="flex flex-col gap-1.5 mt-1">
             <div className="flex items-center gap-1.5 text-[14px] font-black text-zinc-500 uppercase tracking-wider">
               <MessageCircle size={11} /> 댓글 {post.comments?.length ?? 0}
-              <button onClick={onOpenFull} className="ml-auto text-[14px] font-black text-orange-600 hover:text-orange-800 normal-case tracking-normal">전체보기 →</button>
+              <button onClick={onOpenFull} className="ml-auto text-[14px] font-black text-brand-deep hover:text-[#0d3a5c] normal-case tracking-normal">전체보기 →</button>
             </div>
             {(post.comments ?? []).map(c => {
               const canEdit = c.author_id === authSession?.employeeId;
@@ -499,7 +499,7 @@ const InlineDetail: React.FC<{
                   {editing ? (
                     <div className="flex flex-col gap-1">
                       <textarea value={editingCommentBody} onChange={(e) => setEditingCommentBody(e.target.value)} rows={2}
-                        className="w-full px-2 py-1 text-[14px] border border-orange-300 rounded focus:outline-none focus:border-orange-500 resize-none" />
+                        className="w-full px-2 py-1 text-[14px] border border-line rounded focus:outline-none focus:border-brand-deep resize-none" />
                       <div className="flex gap-1">
                         <button onClick={() => saveEdit(c.id)} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[14px] font-black">
                           <Check size={10} strokeWidth={3} /> 저장
@@ -514,7 +514,7 @@ const InlineDetail: React.FC<{
                       <p className="text-[14px] text-zinc-700 whitespace-pre-wrap">{c.body}</p>
                       {canEdit && (
                         <button onClick={() => { setEditingCommentId(c.id); setEditingCommentBody(c.body); }}
-                          className="mt-1 inline-flex items-center gap-0.5 text-[15px] font-black text-orange-600 hover:text-orange-800">
+                          className="mt-1 inline-flex items-center gap-0.5 text-[15px] font-black text-brand-deep hover:text-[#0d3a5c]">
                           <Pencil size={9} /> 수정
                         </button>
                       )}
@@ -533,7 +533,7 @@ const InlineDetail: React.FC<{
                 onChange={(e) => setCommentBody(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}
                 placeholder="댓글 작성"
-                className="flex-1 px-2 py-1 text-[14px] border border-zinc-200 rounded-lg focus:outline-none focus:border-orange-400"
+                className="flex-1 px-2 py-1 text-[14px] border border-zinc-200 rounded-lg focus:outline-none focus:border-brand-deep"
               />
               <button onClick={submit} disabled={posting || !commentBody.trim()}
                 className="p-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white disabled:opacity-40 shrink-0">
@@ -648,7 +648,7 @@ function ComposerModal({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="제목 (필수)"
-            className="w-full px-3 py-2.5 text-[15px] font-bold border border-zinc-200 rounded-xl focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+            className="w-full px-3 py-2.5 text-[15px] font-bold border border-zinc-200 rounded-xl focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
             maxLength={300}
           />
 
@@ -669,7 +669,7 @@ function ComposerModal({
             onChange={(e) => setBody(e.target.value)}
             placeholder="본문 · 상황을 자세히 남겨주세요"
             rows={5}
-            className="w-full px-3 py-2 text-[15px] border border-zinc-200 rounded-xl focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 resize-none"
+            className="w-full px-3 py-2 text-[15px] border border-zinc-200 rounded-xl focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint resize-none"
           />
 
           {/* 이미지 첨부 */}
@@ -1019,7 +1019,7 @@ function DetailModal({
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3">
                   {post.images.map(img => (
                     <button key={img.id} onClick={() => setPreviewImg(img.image_url)}
-                      className="aspect-square rounded-xl overflow-hidden border border-zinc-200 hover:border-orange-300 transition">
+                      className="aspect-square rounded-xl overflow-hidden border border-zinc-200 hover:border-line transition">
                       <img src={img.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
                     </button>
                   ))}
@@ -1070,7 +1070,7 @@ function DetailModal({
                             value={editingCommentBody}
                             onChange={(e) => setEditingCommentBody(e.target.value)}
                             rows={3}
-                            className="w-full px-2 py-1.5 text-[15px] border border-orange-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 resize-none"
+                            className="w-full px-2 py-1.5 text-[15px] border border-line rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint resize-none"
                           />
                           <div className="flex items-center gap-1.5">
                             <button
@@ -1099,7 +1099,7 @@ function DetailModal({
                           {canEdit && (
                             <button
                               onClick={() => { setEditingCommentId(c.id); setEditingCommentBody(c.body); }}
-                              className="mt-2 inline-flex items-center gap-1 text-[14px] font-black text-orange-600 hover:text-orange-800"
+                              className="mt-2 inline-flex items-center gap-1 text-[14px] font-black text-brand-deep hover:text-[#0d3a5c]"
                             ><Pencil size={10} /> 수정</button>
                           )}
                         </>
@@ -1140,7 +1140,7 @@ function DetailModal({
                     onChange={(e) => setCommentBody(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); } }}
                     placeholder="댓글 작성"
-                    className="flex-1 px-3 py-2 text-[15px] border border-zinc-200 rounded-xl focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                    className="flex-1 px-3 py-2 text-[15px] border border-zinc-200 rounded-xl focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
                   />
                   <button onClick={submitComment} disabled={posting || !commentBody.trim()}
                     className="p-2 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white shrink-0 disabled:opacity-40">

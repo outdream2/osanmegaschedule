@@ -368,7 +368,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
             <button
               type="button"
               onClick={onAutoSuggest}
-              className="text-[13px] font-black px-2 py-0.5 rounded-full bg-amber-500 hover:bg-amber-600 text-white cursor-pointer shadow-sm transition"
+              className="text-[13px] font-black px-2 py-0.5 rounded-full bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white cursor-pointer shadow-sm transition"
               title="현재 탭 인원 기준으로 카운터·매장을 자동 배치 (약사 1시간 로테이션 + 캐셔 팀)"
             >
               ⚡ 임의배치

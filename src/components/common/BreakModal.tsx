@@ -118,7 +118,7 @@ export const BreakModal: React.FC<BreakModalProps> = ({ breakModal, setBreakModa
             type="button"
             onClick={onSave}
             disabled={isSavingBreak}
-            className="flex-1 p-3 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white border border-amber-500 rounded-xl transition shadow-sm disabled:opacity-60"
+            className="flex-1 p-3 text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white border border-amber-500 rounded-xl transition shadow-sm disabled:opacity-60"
           >
             {isSavingBreak ? "저장 중…" : "저장"}
           </button>

@@ -368,7 +368,7 @@ const EmptyState: React.FC<{
       <button
         type="button"
         onClick={onUpload}
-        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold shadow-sm transition-colors cursor-pointer"
+        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-sm font-bold shadow-sm transition-colors cursor-pointer"
       >
         <Plus size={15} />
         첫 양식 업로드하기
@@ -591,7 +591,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   "inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all duration-150 cursor-pointer",
                   showUploadForm
                     ? "bg-zinc-100 border border-zinc-200 text-zinc-600 hover:bg-zinc-200"
-                    : "bg-amber-600 hover:bg-amber-700 text-white border border-amber-600",
+                    : "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white border border-amber-600",
                 ].join(" ")}
                 title="양식 업로드"
               >
@@ -712,7 +712,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                 <button
                   type="submit"
                   disabled={uploading || !uploadFile || !uploadTitle.trim()}
-                  className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:bg-amber-200 disabled:text-amber-400 text-white text-sm font-bold shadow-sm transition-all duration-150 cursor-pointer"
+                  className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-amber-200 disabled:text-amber-400 text-white text-sm font-bold shadow-sm transition-all duration-150 cursor-pointer"
                 >
                   {uploading ? (
                     <><Loader2 size={14} className="animate-spin" /><span>업로드 중...</span></>
