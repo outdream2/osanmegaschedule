@@ -2005,11 +2005,12 @@ const SectionTitle: React.FC<{
   );
 };
 
-const statColorMap: Record<string, string> = {
-  emerald: "bg-emerald-50 border-emerald-200 text-emerald-800",
-  indigo:  "bg-indigo-50 border-indigo-200 text-indigo-800",
-  violet:  "bg-violet-50 border-violet-200 text-violet-800",
-  rose:    "bg-rose-50 border-rose-200 text-rose-800",
+// 2026-08-17 · 세련 · Vercel Dashboard 톤 · 뉴트럴 body + status dot + 값 semantic color
+const statColorMap: Record<string, { dot: string; text: string; iconBg: string; iconColor: string }> = {
+  emerald: { dot: "bg-emerald-500", text: "text-emerald-700", iconBg: "bg-emerald-50", iconColor: "text-emerald-600" },
+  indigo:  { dot: "bg-indigo-500",  text: "text-indigo-700",  iconBg: "bg-indigo-50",  iconColor: "text-indigo-600" },
+  violet:  { dot: "bg-violet-500",  text: "text-violet-700",  iconBg: "bg-violet-50",  iconColor: "text-violet-600" },
+  rose:    { dot: "bg-rose-500",    text: "text-rose-700",    iconBg: "bg-rose-50",    iconColor: "text-rose-600" },
 };
 
 const StatCard: React.FC<{
@@ -2018,12 +2019,18 @@ const StatCard: React.FC<{
   label: string;
   value: string;
   sub?: string;
-}> = ({ icon, color, label, value, sub }) => (
-  <div className={`${statColorMap[color]} border rounded-xl px-3 py-2.5 shadow-sm`}>
-    <div className="flex items-center gap-1 text-[10px] font-bold opacity-70 uppercase tracking-wider mb-1">
-      {icon}<span>{label}</span>
+}> = ({ icon, color, label, value, sub }) => {
+  const c = statColorMap[color];
+  return (
+    <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] px-3 py-2.5">
+      <div className="flex items-center gap-1.5 mb-1">
+        <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
+        <span className={`inline-flex items-center gap-1 text-[11px] font-semibold text-ink-soft tracking-tight`}>
+          <span className={c.iconColor}>{icon}</span><span>{label}</span>
+        </span>
+      </div>
+      <div className={`text-[15px] font-extrabold ${c.text} font-mono tabular-nums truncate leading-tight`} title={value}>{value}</div>
+      {sub && <div className="text-[11px] font-medium text-ink-soft mt-0.5 truncate" title={sub}>{sub}</div>}
     </div>
-    <div className="text-sm font-bold font-mono truncate" title={value}>{value}</div>
-    {sub && <div className="text-[10px] font-semibold opacity-60 mt-0.5 truncate" title={sub}>{sub}</div>}
-  </div>
-);
+  );
+};
