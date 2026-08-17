@@ -883,20 +883,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* Fields · 폰트 +4 · rounded-lg · 딥 focus */}
+              {/* Fields · 2026-08-17 · 사용자 지시 · 근무 시간 필드 제거 (근무 패턴 pick 시 자동 · 중복) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[14px] font-semibold text-ink-soft mb-1.5 flex items-center gap-1.5">
-                    <Clock size={13} strokeWidth={2.2} /> 근무 시간
-                  </label>
-                  <input
-                    type="text"
-                    value={bulkWorkingHours}
-                    onChange={e => setBulkWorkingHours(e.target.value)}
-                    placeholder="예: 09:30-18:30"
-                    className="w-full text-[15px] rounded-lg border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2 bg-white focus:outline-none transition-colors"
-                  />
-                </div>
                 <div>
                   <label className="text-[14px] font-semibold text-ink-soft mb-1.5 flex items-center gap-1.5">
                     <MessageSquare size={13} strokeWidth={2.2} /> 특이사항
@@ -909,7 +897,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                     className="w-full text-[15px] rounded-lg border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2 bg-white focus:outline-none transition-colors"
                   />
                 </div>
-                <div className="sm:col-span-2">
+                <div>
                   <label className="text-[14px] font-semibold text-ink-soft mb-1.5 flex items-center gap-1.5">
                     <MessageSquare size={13} strokeWidth={2.2} /> 메모
                   </label>
