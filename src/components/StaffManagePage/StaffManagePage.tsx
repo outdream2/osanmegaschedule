@@ -55,6 +55,7 @@ import {
 } from "lucide-react";
 import { EmployeeInfoForm } from "../common/EmployeeInfoForm";
 import { AddressSearchModal } from "../common/AddressSearchModal";
+import { StatusPill } from "../common/StatusPill";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 interface Employee {
@@ -1274,12 +1275,10 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
             <span className="text-[15px] text-zinc-200">-</span>
           )}
         </td>
-        {/* 상태 배지 · 퇴사·퇴사예정 */}
+        {/* 상태 배지 · 퇴사·퇴사예정 · 2026-08-17 · StatusPill 통일 */}
         <td className="px-1 py-2 text-center">
           {isRetired && (
-            <span className="text-[14px] font-bold px-1.5 py-0.5 rounded-md border leading-tight bg-rose-50 text-rose-700 border-rose-200">
-              퇴사
-            </span>
+            <StatusPill tone="rose" size="xs" dot>퇴사</StatusPill>
           )}
         </td>
       </tr>
