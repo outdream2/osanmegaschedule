@@ -223,13 +223,13 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                     "h-7 rounded-lg",
                     // 하위 항목 텍스트 크기 · 2026-08-12 · 사용자 지시 +2
                     "text-[18px]",
-                    // 2026-08-17 · deep teal · 활성 = white/12 pill · 비활성 = light mint
+                    // 2026-08-17 · Attio/Linear · frosted pill · ring 제거 (세련 · 노이즈 감소)
                     active
                       ? [
                           tone.activeBg,   // bg-white/[0.12]
                           tone.activeText, // text-white
                           "font-bold",
-                          "ring-1 ring-white/10",
+                          "shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
                         ].join(" ")
                       : [
                           // 비활성 · 목업 톤 · #C4DAEE · 하위 살짝 opacity 낮춤

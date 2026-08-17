@@ -328,8 +328,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const baseCommon = "relative flex items-center gap-1.5 px-3 sm:px-3 md:px-3.5 lg:px-4 py-1.5 rounded-lg text-[19px] sm:text-[19px] md:text-[20px] lg:text-[21px] font-semibold whitespace-nowrap transition-all duration-150";
 
     // active · 흰 반투명 pill + 흰 텍스트 + gradient accent bar (하단)
-    const activeClass = `${baseCommon} bg-white/[0.14] text-white ring-1 ring-white/20 font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_2px_8px_rgba(0,0,0,0.15)]`;
-    // inactive · 라이트 블루 텍스트 + hover 반투명 흰 배경
+    // Attio/Linear · frosted pill · white/12 bg + inset highlight 만 (border 제거 · 노이즈 감소 · 세련)
+    const activeClass = `${baseCommon} bg-white/[0.12] text-white font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]`;
+    // inactive · 라이트 블루 텍스트 + hover subtle
     const inactiveClass = `${baseCommon} text-[#C4DAEE] hover:bg-white/[0.06] hover:text-white active:scale-95 cursor-pointer disabled:opacity-40`;
 
     // 경영관리 탭 · business-manage 통합 페이지로 단순 라우팅 (2026-08-03)
