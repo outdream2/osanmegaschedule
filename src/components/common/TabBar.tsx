@@ -259,23 +259,23 @@ export function TabBar<K extends string = string>({
                   onTouchCancel={dnd?.onTouchCancel}
                   className={[
                     "group inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[14px] sm:text-[15px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight border",
-                    // Filter Chip · 활성 = 민트/틸 (Attio/Cursor 2026 · 딥네이비 최적 페어링)
+                    // Filter Chip · 활성 = Digital Lavender / Indigo (Linear #5E6AD2 · WGSN 2023→2026 dominant · 딥네이비 자매색)
                     active
-                      ? "bg-teal-100 text-teal-800 border-teal-300 font-bold shadow-[0_1px_2px_rgba(20,184,166,0.15)]"
-                      : "bg-zinc-50 text-ink-soft border-line hover:bg-white hover:text-ink hover:border-teal-300",
+                      ? "bg-indigo-100 text-indigo-800 border-indigo-200 font-bold shadow-[0_1px_2px_rgba(94,106,210,0.15)]"
+                      : "bg-zinc-50 text-ink-soft border-line hover:bg-white hover:text-ink hover:border-indigo-200",
                     dragCls,
                   ].join(" ")}
                 >
-                  {/* dot marker · 활성 시 · teal-600 (딥네이비 최적 페어링) · 비활성 · 카테고리 톤 */}
+                  {/* dot marker · 활성 시 · indigo-600 (Linear lavender · 딥네이비 자매색) · 비활성 · 카테고리 톤 */}
                   <span
-                    className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${active ? "bg-teal-600" : c.iconActive.replace("text-", "bg-")}`}
+                    className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${active ? "bg-indigo-600" : c.iconActive.replace("text-", "bg-")}`}
                   />
                   {Icon && (
                     <Icon
                       size={14}
                       strokeWidth={active ? 2.4 : 2}
                       weight={active ? "fill" : "duotone"}
-                      className={`shrink-0 transition-colors duration-200 ${active ? "text-teal-700" : c.iconActive}`}
+                      className={`shrink-0 transition-colors duration-200 ${active ? "text-indigo-700" : c.iconActive}`}
                     />
                   )}
                   <span>{t.label}</span>
