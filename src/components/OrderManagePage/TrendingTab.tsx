@@ -384,29 +384,32 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
             </button>
           </div>
         </div>
-        {/* 컨트롤 행 */}
-        <div className="flex items-center gap-3 px-4 py-2.5 flex-wrap border-b border-zinc-100 bg-white">
-          {/* 비교기간 · 두 줄 라벨 */}
-          <span className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0 leading-tight text-center">
-            비교<br />기간
+        {/* 2026-08-17 · 컨트롤 · 공용 FilterSortBar 톤 · accent bar + segmented pill · 딥네이비 */}
+        <div className="flex items-center gap-3 px-4 py-2.5 flex-wrap border-b border-line bg-white">
+          {/* 비교기간 */}
+          <span className="flex items-center gap-2 shrink-0">
+            <span className="w-[3px] h-[15px] rounded-full bg-brand-deep" />
+            <span className="text-[15px] font-bold text-ink tracking-tight">비교 기간</span>
           </span>
-          <div className="inline-flex bg-zinc-50 border border-line rounded-md p-0.5">
+          <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
             {([10, 30, 90, 180] as const).map(w => (
               <button key={w} onClick={() => setWindowDays(w)}
-                className={`h-7 px-2.5 text-[15px] font-semibold rounded transition cursor-pointer ${windowDays === w ? "bg-brand-deep text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
+                className={`h-7 px-2.5 text-[14px] font-semibold rounded-md transition-colors cursor-pointer ${windowDays === w ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>
                 {w === 10 ? "10일" : w === 30 ? "1개월" : w === 90 ? "3개월" : "6개월"}
               </button>
             ))}
           </div>
-          <span className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">정렬</span>
-          {/* 정렬 옵션 · 최근판매·성장률 2개만 (T-TRENDING-Rework) */}
-          <div className="inline-flex bg-zinc-50 border border-line rounded-md p-0.5">
+          <span className="flex items-center gap-2 shrink-0">
+            <span className="w-[3px] h-[15px] rounded-full bg-brand-deep" />
+            <span className="text-[15px] font-bold text-ink tracking-tight">정렬</span>
+          </span>
+          <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
             {([
               { k: "recent" as const, label: "최근판매" },
               { k: "growth" as const, label: "성장률" },
             ]).map(o => (
               <button key={o.k} onClick={() => setSort(o.k, "desc")}
-                className={`h-7 px-2.5 text-[15px] font-semibold rounded transition cursor-pointer ${sortKey === o.k ? "bg-brand-deep text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
+                className={`h-7 px-2.5 text-[14px] font-semibold rounded-md transition-colors cursor-pointer ${sortKey === o.k ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>
                 {o.label}
               </button>
             ))}
