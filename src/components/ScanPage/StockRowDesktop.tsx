@@ -11,6 +11,7 @@ import type { StockRow } from "./stockRowTypes";
 import { calcRowTotal, calcSlotTotal, calcTotalAdded } from "./stockRowTypes";
 import { StockActionsCell } from "./StockActionsCell";
 import { StockRowMobile } from "./StockRowMobile";
+import { StatusPill } from "../common/StatusPill";
 
 // ── 수량 입력 (+/-) ─────────────────────────────────────────
 interface NumberInputProps {
@@ -152,12 +153,9 @@ export const StockRowDesktop: React.FC<StockRowDesktopProps> = React.memo(({
           <p className="text-[12px] sm:text-[13px] font-bold text-zinc-800 break-words whitespace-normal leading-snug">
             {row.product.name}
           </p>
-          {/* A3 · 이번 세션 추가 수량 뱃지 */}
+          {/* A3 · 이번 세션 추가 수량 뱃지 · 2026-08-17 · StatusPill 통일 */}
           {totalAdded > 0 && (
-            <span className="inline-flex items-center shrink-0 text-[10px] font-bold tabular-nums
-              px-1.5 py-0.5 rounded-md leading-none bg-emerald-50 text-emerald-700 border border-emerald-200">
-              +{totalAdded}
-            </span>
+            <StatusPill tone="emerald" size="xs">+{totalAdded}</StatusPill>
           )}
         </div>
         <div className="flex items-center gap-1 mt-0.5 flex-wrap">
