@@ -1465,21 +1465,25 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               )}
             </div>
 
-            {/* 2026-08-10 · #31 · Row 2 + Row 3 통합 · 분류 · 발주조건 · PC 한줄 · 모바일 2줄 wrap */}
-            <div className="px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-zinc-100 bg-zinc-50/40">
+            {/* 2026-08-17 · 세련 · 딥네이비 통일 · 카테고리는 좌측 accent dot 으로 identity · Attio 규칙 */}
+            <div className="px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-zinc-50/40">
               {/* 분류 그룹 */}
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[14px] font-bold uppercase tracking-wider text-zinc-500 shrink-0">분류</span>
-                <div className="inline-flex items-center rounded-lg border border-line bg-white p-0.5 gap-0.5 flex-wrap">
+                <span className="flex items-center gap-1.5 shrink-0">
+                  <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
+                  <span className="text-[13px] font-bold text-ink tracking-tight">분류</span>
+                </span>
+                <div className="inline-flex items-center rounded-lg border border-line bg-zinc-100 p-1 gap-0.5 flex-wrap">
                   {(["all", ...dbVendorCategories] as string[]).map(cat => {
                     const label = cat === "all" ? "전체" : cat;
-                    const activeCls =
-                      cat === "all"    ? "bg-zinc-100  text-zinc-800  border-zinc-300"
-                      : cat === "위탁"   ? "bg-violet-50  text-violet-700 border-violet-300"
-                      : cat === "선결제" ? "bg-rose-50    text-rose-700   border-rose-300"
-                      : cat === "60회전" ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                      : cat === "90회전" ? "bg-teal-50    text-teal-700   border-teal-300"
-                      : "bg-zinc-50   text-zinc-700  border-zinc-300";
+                    /* status dot · category identity (Vercel ≤10px 규칙) · 8px */
+                    const dotCls =
+                      cat === "all"    ? "bg-zinc-400"
+                      : cat === "위탁"   ? "bg-violet-500"
+                      : cat === "선결제" ? "bg-rose-500"
+                      : cat === "60회전" ? "bg-emerald-500"
+                      : cat === "90회전" ? "bg-teal-500"
+                      : "bg-zinc-400";
                     const active = needCategoryFilter === cat;
                     return (
                       <button
@@ -1487,11 +1491,16 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         type="button"
                         onClick={() => setNeedCategoryFilter(cat)}
                         className={[
-                          "px-3 h-8 rounded-md text-[15px] font-bold leading-none border transition-colors cursor-pointer whitespace-nowrap",
-                          active ? activeCls : "bg-white text-zinc-500 border-transparent hover:text-zinc-800 hover:bg-zinc-50",
+                          "inline-flex items-center gap-1.5 px-3 h-8 rounded-md text-[13px] font-semibold leading-none transition-colors cursor-pointer whitespace-nowrap",
+                          active
+                            ? "bg-brand-deep text-white shadow-sm"
+                            : "text-ink hover:text-brand-deep hover:bg-white",
                         ].join(" ")}
                         title={`${label} 카테고리만 표시`}
-                      >{label}</button>
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${dotCls} ${active ? "" : "opacity-70"}`} />
+                        {label}
+                      </button>
                     );
                   })}
                 </div>
