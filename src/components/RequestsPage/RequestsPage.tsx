@@ -79,13 +79,13 @@ function ListToolbar({
           ? <CheckSquare size={15} className={accentColor} />
           : <Square size={15} />}
       </button>
-      <span className="text-[12px] text-zinc-500 flex-1 select-none">
+      <span className="text-[14px] text-zinc-500 flex-1 select-none">
         {selected > 0 ? <><strong className={accentColor}>{selected}개</strong> 선택됨</> : `전체 ${total}건`}
       </span>
       {selected > 0 && (
         <button
           onClick={onDeleteSelected}
-          className="text-[11px] font-semibold text-rose-600 bg-rose-50 border border-rose-200 px-2.5 h-6 rounded-md hover:bg-rose-100 transition-all duration-150 cursor-pointer"
+          className="text-[15px] font-semibold text-rose-600 bg-rose-50 border border-rose-200 px-2.5 h-6 rounded-md hover:bg-rose-100 transition-all duration-150 cursor-pointer"
         >
           선택삭제
         </button>
@@ -95,7 +95,7 @@ function ListToolbar({
         <button
           onClick={onDeleteAll}
           disabled={total === 0}
-          className="text-[11px] font-semibold text-zinc-500 bg-zinc-50 border border-zinc-200 px-2.5 h-6 rounded-md hover:bg-zinc-100 transition-all duration-150 cursor-pointer disabled:opacity-40"
+          className="text-[15px] font-semibold text-zinc-500 bg-zinc-50 border border-zinc-200 px-2.5 h-6 rounded-md hover:bg-zinc-100 transition-all duration-150 cursor-pointer disabled:opacity-40"
         >
           전체삭제
         </button>
@@ -561,11 +561,11 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
           <div className="flex flex-wrap bg-zinc-100/70 border border-zinc-200/60 rounded-xl p-1 gap-0.5">
             {TABS.map(([key, label, count, activeClass, _iconClass, badgeClass, inactiveClass]) => (
               <button key={key} onClick={() => setTab(key)}
-                className={`px-2.5 sm:px-4 py-1.5 flex items-center gap-1.5 sm:gap-2 rounded-lg text-[11px] sm:text-[12px] font-black transition-all duration-200 cursor-pointer flex-1 sm:flex-none justify-center ${tab === key ? `${activeClass} ring-1 shadow-sm` : inactiveClass}`}>
+                className={`px-2.5 sm:px-4 py-1.5 flex items-center gap-1.5 sm:gap-2 rounded-lg text-[15px] sm:text-[14px] font-black transition-all duration-200 cursor-pointer flex-1 sm:flex-none justify-center ${tab === key ? `${activeClass} ring-1 shadow-sm` : inactiveClass}`}>
                 <span>{label}</span>
                 {count > 0
-                  ? <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${tab === key ? badgeClass : "bg-zinc-100 text-zinc-400"}`}>{count}</span>
-                  : <span className="text-[10px] text-zinc-300">0</span>
+                  ? <span className={`text-[14px] font-black px-1.5 py-0.5 rounded-full ${tab === key ? badgeClass : "bg-zinc-100 text-zinc-400"}`}>{count}</span>
+                  : <span className="text-[14px] text-zinc-300">0</span>
                 }
               </button>
             ))}
@@ -596,7 +596,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                   <button
                     onClick={handleNotifyAll}
                     disabled={notifying || displayReqs.filter(r => r.status === "pending").length === 0}
-                    className="flex items-center gap-1.5 text-[11px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] border border-blue-400 px-2.5 h-6 rounded-md transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                    className="flex items-center gap-1.5 text-[15px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] border border-blue-400 px-2.5 h-6 rounded-md transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                   >
                     {notifying ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
                     알림전송
@@ -606,14 +606,14 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             />
 
             {displayLoading && displayReqs.length > 0 && (
-              <div className="flex items-center justify-center gap-1.5 text-[10px] text-blue-600 font-bold py-1.5 mb-1 bg-blue-50 border border-blue-200 rounded-md sticky top-0 z-10">
+              <div className="flex items-center justify-center gap-1.5 text-[14px] text-blue-600 font-bold py-1.5 mb-1 bg-blue-50 border border-blue-200 rounded-md sticky top-0 z-10">
                 <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
               </div>
             )}
             {displayLoading && displayReqs.length === 0 ? (
               <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
             ) : !displayLoading && displayReqs.length === 0 ? (
-              <div className="text-center text-[11px] text-zinc-300 py-6">데이터 없음</div>
+              <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
             ) : (
               <div className={`${CARD_BASE} overflow-x-auto ${displayLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 <table className="w-full min-w-[640px] border-collapse text-left" style={{ tableLayout: "fixed" }}>
@@ -627,27 +627,27 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                         </button>
                         <span {...rr("check")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                       </th>
-                      <th className="relative px-3 py-2 text-[11px] font-bold text-zinc-500 tracking-wide" style={{ width: rw("name"), minWidth: rw("name") }}>
+                      <th className="relative px-3 py-2 text-[15px] font-bold text-zinc-500 tracking-wide" style={{ width: rw("name"), minWidth: rw("name") }}>
                         상품명
                         <span {...rr("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                       </th>
-                      <th className="relative px-3 py-2 text-[11px] font-bold text-zinc-500 tracking-wide" style={{ width: rw("zone"), minWidth: rw("zone") }}>
+                      <th className="relative px-3 py-2 text-[15px] font-bold text-zinc-500 tracking-wide" style={{ width: rw("zone"), minWidth: rw("zone") }}>
                         진열구역
                         <span {...rr("zone")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                       </th>
-                      <th className="relative px-3 py-2 text-[11px] font-bold text-zinc-500 tracking-wide" style={{ width: rw("staff"), minWidth: rw("staff") }}>
+                      <th className="relative px-3 py-2 text-[15px] font-bold text-zinc-500 tracking-wide" style={{ width: rw("staff"), minWidth: rw("staff") }}>
                         담당자
                         <span {...rr("staff")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                       </th>
-                      <th className="relative px-3 py-2 text-[11px] font-bold text-zinc-500 tracking-wide text-center" style={{ width: rw("wh_prep"), minWidth: rw("wh_prep") }}>
+                      <th className="relative px-3 py-2 text-[15px] font-bold text-zinc-500 tracking-wide text-center" style={{ width: rw("wh_prep"), minWidth: rw("wh_prep") }}>
                         창고준비
                         <span {...rr("wh_prep")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                       </th>
-                      <th className="relative px-3 py-2 text-[11px] font-bold text-zinc-500 tracking-wide text-center" style={{ width: rw("disp"), minWidth: rw("disp") }}>
+                      <th className="relative px-3 py-2 text-[15px] font-bold text-zinc-500 tracking-wide text-center" style={{ width: rw("disp"), minWidth: rw("disp") }}>
                         진열완료
                         <span {...rr("disp")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                       </th>
-                      <th className="relative px-3 py-2 text-[11px] font-bold text-zinc-500 tracking-wide" style={{ width: rw("date"), minWidth: rw("date") }}>
+                      <th className="relative px-3 py-2 text-[15px] font-bold text-zinc-500 tracking-wide" style={{ width: rw("date"), minWidth: rw("date") }}>
                         날짜
                         <span {...rr("date")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                       </th>
@@ -683,14 +683,14 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
 
                           {/* 상품명 */}
                           <td className="px-3 py-2 max-w-[200px]">
-                            <span className={`text-[12px] font-semibold break-words whitespace-normal leading-tight ${isDone ? "line-through text-zinc-400" : "text-zinc-800"}`}>
+                            <span className={`text-[14px] font-semibold break-words whitespace-normal leading-tight ${isDone ? "line-through text-zinc-400" : "text-zinc-800"}`}>
                               {productName}
                             </span>
                           </td>
 
                           {/* 진열구역 */}
                           <td className="px-3 py-2 whitespace-nowrap">
-                            <span className="text-[12px] font-bold text-zinc-700 break-keep">
+                            <span className="text-[14px] font-bold text-zinc-700 break-keep">
                               {r.zone_label || r.zone_id || "—"}
                             </span>
                           </td>
@@ -698,8 +698,8 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                           {/* 담당자 */}
                           <td className="px-3 py-2 whitespace-nowrap">
                             {r.assigned_staff_name
-                              ? <span className="text-[12px] font-black text-indigo-700">{r.assigned_staff_name}</span>
-                              : <span className="text-[11px] text-zinc-300">미지정</span>}
+                              ? <span className="text-[14px] font-black text-indigo-700">{r.assigned_staff_name}</span>
+                              : <span className="text-[15px] text-zinc-300">미지정</span>}
                           </td>
 
                           {/* 창고준비 · 토글 (대기 ↔ 완료) · 2026-08-05 */}
@@ -724,7 +724,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                                         : "창고 준비 완료 처리"
                                       : "창고담당만 가능"
                                   }
-                                  className={`text-[10px] font-semibold px-2.5 h-6 rounded-md border transition-all duration-150 inline-flex items-center gap-0.5 disabled:opacity-40 ${
+                                  className={`text-[14px] font-semibold px-2.5 h-6 rounded-md border transition-all duration-150 inline-flex items-center gap-0.5 disabled:opacity-40 ${
                                     clickable ? cls + " cursor-pointer" : "text-zinc-400 bg-zinc-100 border-zinc-200 cursor-not-allowed"
                                   }`}
                                 >
@@ -761,7 +761,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                                           : "진열 완료 처리"
                                       : "진열담당만 가능"
                                   }
-                                  className={`text-[10px] font-semibold px-2.5 h-6 rounded-md border transition-all duration-150 inline-flex items-center gap-0.5 disabled:opacity-40 ${
+                                  className={`text-[14px] font-semibold px-2.5 h-6 rounded-md border transition-all duration-150 inline-flex items-center gap-0.5 disabled:opacity-40 ${
                                     clickable ? cls + " cursor-pointer" : "text-zinc-400 bg-zinc-100 border-zinc-200 cursor-not-allowed"
                                   }`}
                                 >
@@ -774,7 +774,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
 
                           {/* 날짜 */}
                           <td className="px-3 py-2 whitespace-nowrap">
-                            <span className="text-[10px] text-zinc-400 tabular-nums">{fmtDate(r.requested_at)}</span>
+                            <span className="text-[14px] text-zinc-400 tabular-nums">{fmtDate(r.requested_at)}</span>
                           </td>
                         </tr>
                       );
@@ -791,7 +791,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
           <div className="flex flex-col gap-4">
             {/* 발주 요청 목록 */}
             <div className="flex flex-col gap-2">
-              <p className="text-[10px] font-black text-red-500 uppercase tracking-widest px-1">발주 요청 목록</p>
+              <p className="text-[14px] font-black text-red-500 uppercase tracking-widest px-1">발주 요청 목록</p>
               <ListToolbar
                 total={orderReqs.length} selected={selectedOrder.size}
                 allChecked={selectedOrder.size === orderReqs.length && orderReqs.length > 0}
@@ -801,20 +801,20 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 onRefresh={loadOrderReqs} loading={orderLoading} accentColor="text-red-600"
               />
               {orderError && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-[11px] text-red-600 font-bold">
+                <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-[15px] text-red-600 font-bold">
                   <span>⚠ {orderError}</span>
                   <button onClick={loadOrderReqs} className="ml-auto text-red-500 underline cursor-pointer">재시도</button>
                 </div>
               )}
               {orderLoading && orderReqs.length > 0 && (
-                <div className="flex items-center justify-center gap-1.5 text-[10px] text-red-600 font-bold py-1.5 mb-1 bg-red-50 border border-red-200 rounded-md sticky top-0 z-10">
+                <div className="flex items-center justify-center gap-1.5 text-[14px] text-red-600 font-bold py-1.5 mb-1 bg-red-50 border border-red-200 rounded-md sticky top-0 z-10">
                   <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
                 </div>
               )}
               {orderLoading && orderReqs.length === 0 ? (
                 <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
               ) : !orderLoading && orderReqs.length === 0 && !orderError ? (
-                <div className="text-center text-[11px] text-zinc-300 py-6">데이터 없음</div>
+                <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
               ) : (
                 <div className={`${CARD_BASE} divide-y divide-zinc-50 ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                   {orderReqs.map(r => {
@@ -825,21 +825,21 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                         <Checkbox checked={selectedOrder.has(r.id)} onChange={() => toggleOne(selectedOrder, r.id, setSelectedOrder)} />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[10px] font-semibold text-zinc-400 shrink-0">{r.product_code}</span>
-                            <span className="text-gray-300 text-[10px]">·</span>
-                            <span className="text-[12px] font-black text-zinc-800 break-keep">{r.product_name || "(상품명 없음)"}</span>
-                            <span className="text-gray-300 text-[10px]">·</span>
-                            <span className="text-[11px] text-zinc-500">현재 <span className="font-bold text-zinc-700">{r.current_stock ?? "-"}</span> / 적정 <span className="font-bold text-zinc-700">{r.optimal_stock ?? "-"}</span></span>
+                            <span className="text-[14px] font-semibold text-zinc-400 shrink-0">{r.product_code}</span>
+                            <span className="text-gray-300 text-[14px]">·</span>
+                            <span className="text-[14px] font-black text-zinc-800 break-keep">{r.product_name || "(상품명 없음)"}</span>
+                            <span className="text-gray-300 text-[14px]">·</span>
+                            <span className="text-[15px] text-zinc-500">현재 <span className="font-bold text-zinc-700">{r.current_stock ?? "-"}</span> / 적정 <span className="font-bold text-zinc-700">{r.optimal_stock ?? "-"}</span></span>
                             {inv && (
                               <>
-                                <span className="text-gray-300 text-[10px]">·</span>
-                                <span className="text-[11px] text-purple-600 font-bold">실재고 {inv.total}<span className="font-normal text-purple-400">(창고 {inv.warehouse ?? "-"}+매장 {inv.store ?? "-"})</span></span>
+                                <span className="text-gray-300 text-[14px]">·</span>
+                                <span className="text-[15px] text-purple-600 font-bold">실재고 {inv.total}<span className="font-normal text-purple-400">(창고 {inv.warehouse ?? "-"}+매장 {inv.store ?? "-"})</span></span>
                               </>
                             )}
                           </div>
                         </div>
-                        <span className="text-[11px] font-black text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-lg shrink-0">-{short}개</span>
-                        <span className="text-[10px] text-gray-400 shrink-0">{fmtDate(r.requested_at)}</span>
+                        <span className="text-[15px] font-black text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-lg shrink-0">-{short}개</span>
+                        <span className="text-[14px] text-gray-400 shrink-0">{fmtDate(r.requested_at)}</span>
                       </div>
                     );
                   })}
@@ -849,23 +849,23 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
 
             {/* 발주 필요 상품 */}
             <div className="flex flex-col gap-2">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">
+              <p className="text-[14px] font-black text-gray-400 uppercase tracking-widest px-1">
                 발주 필요 상품 <span className="normal-case font-normal">(현재고 &lt; 추천적정재고)</span>
               </p>
               {orderRequestError && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-[11px] text-red-600 font-bold">
+                <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-[15px] text-red-600 font-bold">
                   ⚠ {orderRequestError}
                 </div>
               )}
               {productsLoading && lowStock.length > 0 && (
-                <div className="flex items-center justify-center gap-1.5 text-[10px] text-red-600 font-bold py-1.5 mb-1 bg-red-50 border border-red-200 rounded-md sticky top-0 z-10">
+                <div className="flex items-center justify-center gap-1.5 text-[14px] text-red-600 font-bold py-1.5 mb-1 bg-red-50 border border-red-200 rounded-md sticky top-0 z-10">
                   <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
                 </div>
               )}
               {productsLoading && lowStock.length === 0 ? (
                 <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
               ) : !productsLoading && lowStock.length === 0 ? (
-                <div className="text-center text-[11px] text-zinc-300 py-6">데이터 없음</div>
+                <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
               ) : (
                 <div className={`${CARD_BASE} divide-y divide-zinc-50 ${productsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                   {lowStock.map(p => {
@@ -879,25 +879,25 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                       <div key={code} className="flex items-center gap-3 px-0.5 py-1.5 hover:bg-zinc-50/60 transition-all duration-150">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-[10px] font-semibold text-zinc-400 shrink-0">{code}</span>
-                                <span className="text-gray-300 text-[10px]">·</span>
-                                <span className="text-[12px] font-black text-zinc-800 break-keep">{name || "(상품명 없음)"}</span>
-                                <span className="text-gray-300 text-[10px]">·</span>
-                                <span className="text-[11px] text-zinc-500">현재 <span className="font-bold text-zinc-700">{cur}</span> / 적정 <span className="font-bold text-zinc-700">{opt}</span></span>
+                                <span className="text-[14px] font-semibold text-zinc-400 shrink-0">{code}</span>
+                                <span className="text-gray-300 text-[14px]">·</span>
+                                <span className="text-[14px] font-black text-zinc-800 break-keep">{name || "(상품명 없음)"}</span>
+                                <span className="text-gray-300 text-[14px]">·</span>
+                                <span className="text-[15px] text-zinc-500">현재 <span className="font-bold text-zinc-700">{cur}</span> / 적정 <span className="font-bold text-zinc-700">{opt}</span></span>
                                 {supplier && (
                                   <>
-                                    <span className="text-gray-300 text-[10px]">·</span>
-                                    <span className="text-[11px] text-sky-600 font-semibold break-keep">{supplier}</span>
+                                    <span className="text-gray-300 text-[14px]">·</span>
+                                    <span className="text-[15px] text-sky-600 font-semibold break-keep">{supplier}</span>
                                   </>
                                 )}
                               </div>
                             </div>
-                            <span className="text-[11px] font-black text-red-600 shrink-0">-{opt - cur}개</span>
+                            <span className="text-[15px] font-black text-red-600 shrink-0">-{opt - cur}개</span>
                         {alreadyRequested ? (
-                          <button onClick={() => handleRequestOrder(p)} className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg shrink-0 cursor-pointer hover:bg-emerald-100 transition">요청됨</button>
+                          <button onClick={() => handleRequestOrder(p)} className="text-[14px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg shrink-0 cursor-pointer hover:bg-emerald-100 transition">요청됨</button>
                         ) : (
                           <button onClick={() => handleRequestOrder(p)} disabled={busy}
-                            className="text-[11px] font-bold text-white bg-red-500 hover:bg-red-600 px-2.5 py-1.5 rounded-lg transition cursor-pointer disabled:opacity-50 shrink-0 flex items-center gap-1">
+                            className="text-[15px] font-bold text-white bg-red-500 hover:bg-red-600 px-2.5 py-1.5 rounded-lg transition cursor-pointer disabled:opacity-50 shrink-0 flex items-center gap-1">
                             <ShoppingCart size={11} />{busy ? "..." : "발주요청 리스트에 추가"}
                           </button>
                         )}
@@ -922,7 +922,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               onRefresh={loadMismatches} loading={mismatchLoading} accentColor="text-orange-600"
             />
             {mismatchLoading && mismatches.length > 0 && (
-              <div className="flex items-center justify-center gap-1.5 text-[10px] text-orange-600 font-bold py-1.5 mb-1 bg-orange-50 border border-orange-200 rounded-md sticky top-0 z-10">
+              <div className="flex items-center justify-center gap-1.5 text-[14px] text-orange-600 font-bold py-1.5 mb-1 bg-orange-50 border border-orange-200 rounded-md sticky top-0 z-10">
                 <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
               </div>
             )}
@@ -936,7 +936,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 <button onClick={loadMismatches} className="mt-2 text-xs text-orange-600 underline cursor-pointer">다시 시도</button>
               </div>
             ) : !mismatchLoading && mismatches.length === 0 ? (
-              <div className="text-center text-[11px] text-zinc-300 py-6">데이터 없음</div>
+              <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
             ) : (
               <div className={`${CARD_BASE} divide-y divide-zinc-50 ${mismatchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {mismatches.map(m => (
@@ -944,16 +944,16 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                     <Checkbox checked={selectedMismatch.has(m.id)} onChange={() => toggleOne(selectedMismatch, m.id, setSelectedMismatch)} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[12px] font-black text-zinc-800 break-keep">{m.product_name}</span>
-                        <span className="text-gray-300 text-[10px]">·</span>
-                        <span className="text-[10px] font-semibold text-zinc-400">{m.product_code}</span>
-                        <span className="text-gray-300 text-[10px]">·</span>
-                        <span className="text-[11px] text-zinc-500" title="전산배치구역">전산 <span className="font-bold text-zinc-700">{m.spec_zone || "미지정"}</span></span>
-                        <span className="text-gray-300 text-[10px]">→</span>
-                        <span className="text-[11px] font-black text-red-600" title="실제배치구역">실제 {m.real_zone}</span>
+                        <span className="text-[14px] font-black text-zinc-800 break-keep">{m.product_name}</span>
+                        <span className="text-gray-300 text-[14px]">·</span>
+                        <span className="text-[14px] font-semibold text-zinc-400">{m.product_code}</span>
+                        <span className="text-gray-300 text-[14px]">·</span>
+                        <span className="text-[15px] text-zinc-500" title="전산배치구역">전산 <span className="font-bold text-zinc-700">{m.spec_zone || "미지정"}</span></span>
+                        <span className="text-gray-300 text-[14px]">→</span>
+                        <span className="text-[15px] font-black text-red-600" title="실제배치구역">실제 {m.real_zone}</span>
                       </div>
                     </div>
-                    <span className="text-[10px] text-gray-400 shrink-0">{fmtDate(m.registered_at)}</span>
+                    <span className="text-[14px] text-gray-400 shrink-0">{fmtDate(m.registered_at)}</span>
                   </div>
                 ))}
               </div>
@@ -983,7 +983,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   {metrics.map(m => (
                     <div key={m.label} className={`${m.bg} border ${m.border} rounded-xl px-3 py-2 shadow-sm`}>
-                      <p className={`text-[10px] font-bold ${m.color} opacity-80`}>{m.label}</p>
+                      <p className={`text-[14px] font-bold ${m.color} opacity-80`}>{m.label}</p>
                       <p className={`text-lg font-black ${m.color} leading-tight`}>{m.value}</p>
                     </div>
                   ))}
@@ -999,14 +999,14 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               onRefresh={loadInventoryChecks} loading={inventoryLoading} accentColor="text-purple-600"
             />
             {inventoryLoading && inventoryChecks.length > 0 && (
-              <div className="flex items-center justify-center gap-1.5 text-[10px] text-purple-600 font-bold py-1.5 mb-1 bg-purple-50 border border-purple-200 rounded-md sticky top-0 z-10">
+              <div className="flex items-center justify-center gap-1.5 text-[14px] text-purple-600 font-bold py-1.5 mb-1 bg-purple-50 border border-purple-200 rounded-md sticky top-0 z-10">
                 <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
               </div>
             )}
             {inventoryLoading && inventoryChecks.length === 0 ? (
               <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
             ) : !inventoryLoading && inventoryChecks.length === 0 ? (
-              <div className="text-center text-[11px] text-zinc-300 py-6">데이터 없음</div>
+              <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
             ) : (
               <div className={`${CARD_BASE} divide-y divide-zinc-50 ${inventoryLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {inventoryChecks.map(r => {
@@ -1019,28 +1019,28 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                       <Checkbox checked={selectedInventory.has(r.id)} onChange={() => toggleOne(selectedInventory, r.id, setSelectedInventory)} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[12px] font-black text-zinc-800 break-keep">{r.product_name}</span>
-                          <span className="text-gray-300 text-[10px]">·</span>
-                          <span className="text-[10px] font-semibold text-zinc-400">{r.product_code}</span>
-                          <span className="text-gray-300 text-[10px]">·</span>
-                          <span className="text-[11px] text-zinc-500">
+                          <span className="text-[14px] font-black text-zinc-800 break-keep">{r.product_name}</span>
+                          <span className="text-gray-300 text-[14px]">·</span>
+                          <span className="text-[14px] font-semibold text-zinc-400">{r.product_code}</span>
+                          <span className="text-gray-300 text-[14px]">·</span>
+                          <span className="text-[15px] text-zinc-500">
                             창고 <span className="font-bold text-zinc-700">{r.warehouse_stock ?? "—"}</span>
                             <span className="text-zinc-300 mx-0.5">+</span>
                             매장 <span className="font-bold text-zinc-700">{r.store_stock ?? "—"}</span>
                             <span className="text-zinc-300 mx-0.5">=</span>
                             <span className="font-black text-purple-700">{totalActual}</span>
                           </span>
-                          <span className="text-gray-300 text-[10px]">·</span>
-                          <span className="text-[11px] text-zinc-500">현재고 <span className="font-bold text-zinc-700">{r.system_stock ?? "—"}</span></span>
+                          <span className="text-gray-300 text-[14px]">·</span>
+                          <span className="text-[15px] text-zinc-500">현재고 <span className="font-bold text-zinc-700">{r.system_stock ?? "—"}</span></span>
                           {diff != null && (
-                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${isShort ? "bg-red-50 text-red-600 border border-red-200" : isOver ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-zinc-100 text-zinc-500"}`}>
+                            <span className={`text-[14px] font-black px-1.5 py-0.5 rounded-md ${isShort ? "bg-red-50 text-red-600 border border-red-200" : isOver ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-zinc-100 text-zinc-500"}`}>
                               {diff > 0 ? "+" : ""}{diff}
                             </span>
                           )}
                           {r.checked_by && (
                             <>
-                              <span className="text-gray-300 text-[10px]">·</span>
-                              <span className="text-[10px] text-gray-400">점검자 {r.checked_by}</span>
+                              <span className="text-gray-300 text-[14px]">·</span>
+                              <span className="text-[14px] text-gray-400">점검자 {r.checked_by}</span>
                             </>
                           )}
                         </div>
@@ -1049,7 +1049,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                         <button
                           onClick={() => handleOrderFromInventory(r)}
                           disabled={requestingInvOrder.has(r.product_code)}
-                          className={`text-[10px] font-bold px-2 py-1 rounded-lg transition cursor-pointer disabled:opacity-50 flex items-center gap-1 ${
+                          className={`text-[14px] font-bold px-2 py-1 rounded-lg transition cursor-pointer disabled:opacity-50 flex items-center gap-1 ${
                             requestedCodes.has(r.product_code)
                               ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
                               : "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
@@ -1058,7 +1058,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                           <ShoppingCart size={9} />
                           {requestingInvOrder.has(r.product_code) ? "..." : requestedCodes.has(r.product_code) ? "요청됨" : "발주요청"}
                         </button>
-                        <span className="text-[10px] text-gray-400">{fmtDate(r.checked_at)}</span>
+                        <span className="text-[14px] text-gray-400">{fmtDate(r.checked_at)}</span>
                       </div>
                     </div>
                   );
@@ -1071,7 +1071,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               <div className="mt-2">
                 <button
                   onClick={() => setInvLogOpen(p => !p)}
-                  className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[11px] font-bold text-gray-500 hover:bg-gray-100 transition cursor-pointer"
+                  className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[15px] font-bold text-gray-500 hover:bg-gray-100 transition cursor-pointer"
                 >
                   <span className="flex items-center gap-1.5">
                     <ScrollText size={12} className="text-purple-400" />
@@ -1094,7 +1094,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                       {[...groups.entries()].map(([date, rows]) => (
                         <div key={date}>
                           <div className="px-4 py-1.5 bg-gray-50 border-b border-gray-100">
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-wide">{date}</span>
+                            <span className="text-[14px] font-black text-gray-400 uppercase tracking-wide">{date}</span>
                           </div>
                           {rows.map(r => {
                             const totalActual = (r.warehouse_stock ?? 0) + (r.store_stock ?? 0);
@@ -1103,22 +1103,22 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                             const time = `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
                             return (
                               <div key={r.id} className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-50 last:border-0 hover:bg-purple-50/30 transition">
-                                <span className="text-[10px] text-gray-400 tabular-nums shrink-0 w-10">{time}</span>
+                                <span className="text-[14px] text-gray-400 tabular-nums shrink-0 w-10">{time}</span>
                                 <div className="flex-1 min-w-0">
-                                  <span className="text-[12px] font-bold text-gray-800 break-keep">{r.product_name}</span>
-                                  <span className="text-[10px] text-gray-400">
+                                  <span className="text-[14px] font-bold text-gray-800 break-keep">{r.product_name}</span>
+                                  <span className="text-[14px] text-gray-400">
                                     창고 {r.warehouse_stock ?? "—"} + 매장 {r.store_stock ?? "—"} = <strong className="text-purple-700">{totalActual}</strong>
                                     {r.system_stock != null && <> · 현재고 {r.system_stock}</>}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-1.5 shrink-0">
                                   {diff != null && (
-                                    <span className={`text-[11px] font-black px-1.5 py-0.5 rounded ${diff < 0 ? "bg-red-50 text-red-600" : diff > 0 ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-500"}`}>
+                                    <span className={`text-[15px] font-black px-1.5 py-0.5 rounded ${diff < 0 ? "bg-red-50 text-red-600" : diff > 0 ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-500"}`}>
                                       {diff > 0 ? "+" : ""}{diff}
                                     </span>
                                   )}
                                   {r.checked_by && (
-                                    <span className="text-[10px] text-gray-400">{r.checked_by}</span>
+                                    <span className="text-[14px] text-gray-400">{r.checked_by}</span>
                                   )}
                                 </div>
                               </div>
@@ -1142,10 +1142,10 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               <div className="flex items-center gap-2">
                 <Utensils size={14} className="text-emerald-500" />
                 <span className="text-xs font-bold text-gray-700">오늘의 점심 불참 현황</span>
-                <span className="text-[10px] text-gray-400">({lunchRequests.length}명 응답)</span>
+                <span className="text-[14px] text-gray-400">({lunchRequests.length}명 응답)</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 text-[11px] font-bold">
+                <div className="flex items-center gap-1 text-[15px] font-bold">
                   <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full">🍱 {eatCount}명</span>
                   <span className="bg-gray-100 text-gray-500 border border-gray-200 px-2 py-0.5 rounded-full flex items-center gap-0.5"><UtensilsCrossed size={9} />{noEatCount}명</span>
                 </div>
@@ -1156,25 +1156,25 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             </div>
 
             {lunchLoading && lunchRequests.length > 0 && (
-              <div className="flex items-center justify-center gap-1.5 text-[10px] text-zinc-600 font-bold py-1.5 mb-1 bg-zinc-100 border border-zinc-200 rounded-md sticky top-0 z-10">
+              <div className="flex items-center justify-center gap-1.5 text-[14px] text-zinc-600 font-bold py-1.5 mb-1 bg-zinc-100 border border-zinc-200 rounded-md sticky top-0 z-10">
                 <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
               </div>
             )}
             {lunchLoading && lunchRequests.length === 0 ? (
               <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
             ) : !lunchLoading && lunchRequests.length === 0 ? (
-              <div className="text-center text-[11px] text-zinc-300 py-6">데이터 없음</div>
+              <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
             ) : (
               <div className={`${CARD_BASE} divide-y divide-zinc-50 ${lunchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {lunchRequests.map(r => (
                   <div key={r.id} className="flex items-center gap-3 px-0.5 py-1.5 hover:bg-zinc-50/60 transition-all duration-150">
                     <span className={`w-2 h-2 rounded-full shrink-0 ${r.eating ? "bg-emerald-500" : "bg-gray-300"}`} />
                     <span className="text-sm font-semibold text-gray-800 flex-1">{r.employee_name}</span>
-                    {r.memo && <span className="text-[10px] text-gray-400 flex-1 min-w-0 break-keep">{r.memo}</span>}
-                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${r.eating ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-gray-100 text-gray-500 border border-gray-200"}`}>
+                    {r.memo && <span className="text-[14px] text-gray-400 flex-1 min-w-0 break-keep">{r.memo}</span>}
+                    <span className={`text-[15px] font-bold px-2 py-0.5 rounded-full shrink-0 ${r.eating ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-gray-100 text-gray-500 border border-gray-200"}`}>
                       {r.eating ? "🍱 식사" : "불참"}
                     </span>
-                    <span className="text-[10px] text-gray-300 shrink-0">
+                    <span className="text-[14px] text-gray-300 shrink-0">
                       {new Date(r.updated_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
@@ -1210,23 +1210,23 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               </div>
               <div>
                 <p className="font-black text-gray-900 text-sm">이미 발주요청이 있습니다</p>
-                <p className="text-[11px] text-gray-500 mt-0.5">실재고를 확인 후 업데이트하세요.</p>
+                <p className="text-[15px] text-gray-500 mt-0.5">실재고를 확인 후 업데이트하세요.</p>
               </div>
             </div>
 
             <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 flex flex-col gap-1.5">
-              <p className="text-[10px] font-black text-orange-600 uppercase tracking-wide">기존 발주요청</p>
+              <p className="text-[14px] font-black text-orange-600 uppercase tracking-wide">기존 발주요청</p>
               <p className="text-sm font-bold text-gray-900">{dupOrderModal.existing.product_name}</p>
-              <p className="text-[11px] text-gray-500 font-semibold">{dupOrderModal.existing.product_code}</p>
+              <p className="text-[15px] text-gray-500 font-semibold">{dupOrderModal.existing.product_code}</p>
               <div className="flex gap-3 mt-0.5">
-                <span className="text-[11px] text-gray-500">기록 현재고: <strong className="text-gray-800">{dupOrderModal.existing.current_stock ?? "—"}</strong></span>
-                <span className="text-[11px] text-gray-500">추천적정재고: <strong className="text-gray-800">{dupOrderModal.existing.optimal_stock ?? "—"}</strong></span>
+                <span className="text-[15px] text-gray-500">기록 현재고: <strong className="text-gray-800">{dupOrderModal.existing.current_stock ?? "—"}</strong></span>
+                <span className="text-[15px] text-gray-500">추천적정재고: <strong className="text-gray-800">{dupOrderModal.existing.optimal_stock ?? "—"}</strong></span>
               </div>
-              <p className="text-[10px] text-gray-400">{fmtDate(dupOrderModal.existing.requested_at)} 요청됨</p>
+              <p className="text-[14px] text-gray-400">{fmtDate(dupOrderModal.existing.requested_at)} 요청됨</p>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-gray-500 uppercase tracking-wide">실재고 (현재)</label>
+              <label className="text-[14px] font-black text-gray-500 uppercase tracking-wide">실재고 (현재)</label>
               <input
                 type="number" min="0"
                 value={dupOrderModal.editStock}
@@ -1250,7 +1250,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                   setDupOrderModal(null);
                   doSubmitOrderRequest(p, stock);
                 }}
-                className="flex-1 py-2.5 rounded-xl text-sm font-black text-white bg-orange-500 hover:bg-orange-600 transition cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl text-sm font-black text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] transition cursor-pointer"
               >
                 업데이트
               </button>

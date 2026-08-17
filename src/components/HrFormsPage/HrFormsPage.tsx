@@ -249,7 +249,7 @@ const CatChip: React.FC<{
     <span>{label}</span>
     <span
       className={[
-        "inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-black leading-none",
+        "inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[14px] font-black leading-none",
         active ? "bg-white/20 text-white" : "bg-white/60 text-zinc-600",
       ].join(" ")}
     >
@@ -783,7 +783,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
           <div className="hidden md:block overflow-x-auto">
             <table className="text-sm border-collapse" style={{ tableLayout: "fixed", width: (["_icon","title","category","file_name","file_size","uploaded_by","created_at","_action"] as const).reduce((s, k) => s + getWidth(k as any), 0) }}>
               <thead className="bg-zinc-50">
-                <tr className="border-b border-zinc-200 text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
+                <tr className="border-b border-zinc-200 text-[15px] font-bold text-zinc-500 uppercase tracking-wider">
                   {/* 파일 아이콘 컬럼 */}
                   <th
                     className="relative select-none text-left px-2.5 py-2"
@@ -803,7 +803,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   >
                     <span className="inline-flex items-center gap-1">
                       <span>양식명</span>
-                      {sortKey === "title" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-zinc-300 opacity-60">▲▼</span>}
+                      {sortKey === "title" ? <span className="text-[15px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[15px] text-zinc-300 opacity-60">▲▼</span>}
                     </span>
                     <span {...resizerProps("title" as any)}
                       className={RESIZER_CLS}
@@ -820,7 +820,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   >
                     <span className="inline-flex items-center gap-1">
                       <span>분류</span>
-                      {sortKey === "category" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-zinc-300 opacity-60">▲▼</span>}
+                      {sortKey === "category" ? <span className="text-[15px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[15px] text-zinc-300 opacity-60">▲▼</span>}
                     </span>
                     <span {...resizerProps("category" as any)}
                       className={RESIZER_CLS}
@@ -837,7 +837,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   >
                     <span className="inline-flex items-center gap-1">
                       <span>파일명</span>
-                      {sortKey === "file_name" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-zinc-300 opacity-60">▲▼</span>}
+                      {sortKey === "file_name" ? <span className="text-[15px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[15px] text-zinc-300 opacity-60">▲▼</span>}
                     </span>
                     <span {...resizerProps("file_name" as any)}
                       className={RESIZER_CLS}
@@ -854,7 +854,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   >
                     <span className="inline-flex items-center gap-1 justify-end w-full">
                       <span>크기</span>
-                      {sortKey === "file_size" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-zinc-300 opacity-60">▲▼</span>}
+                      {sortKey === "file_size" ? <span className="text-[15px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[15px] text-zinc-300 opacity-60">▲▼</span>}
                     </span>
                     <span {...resizerProps("file_size" as any)}
                       className={RESIZER_CLS}
@@ -871,7 +871,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   >
                     <span className="inline-flex items-center gap-1">
                       <span>업로더</span>
-                      {sortKey === "uploaded_by" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-zinc-300 opacity-60">▲▼</span>}
+                      {sortKey === "uploaded_by" ? <span className="text-[15px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[15px] text-zinc-300 opacity-60">▲▼</span>}
                     </span>
                     <span {...resizerProps("uploaded_by" as any)}
                       className={RESIZER_CLS}
@@ -888,7 +888,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   >
                     <span className="inline-flex items-center gap-1">
                       <span>업로드일</span>
-                      {sortKey === "created_at" ? <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[9px] text-zinc-300 opacity-60">▲▼</span>}
+                      {sortKey === "created_at" ? <span className="text-[15px]">{sortDir === "asc" ? "▲" : "▼"}</span> : <span className="text-[15px] text-zinc-300 opacity-60">▲▼</span>}
                     </span>
                     <span {...resizerProps("created_at" as any)}
                       className={RESIZER_CLS}
@@ -951,7 +951,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
 
                       {/* 분류 배지 */}
                       <td className="px-3 py-2.5 align-middle">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-black border ${cat.badge}`}>
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[15px] font-black border ${cat.badge}`}>
                           {cat.label}
                         </span>
                       </td>
@@ -959,7 +959,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                       {/* 파일명 */}
                       <td className="px-3 py-2.5 align-middle">
                         <div className="text-xs text-zinc-500 font-semibold break-all">{f.file_name ?? "-"}</div>
-                        <div className="text-[10px] text-zinc-400 font-semibold mt-0.5">{fileInfo.label}</div>
+                        <div className="text-[14px] text-zinc-400 font-semibold mt-0.5">{fileInfo.label}</div>
                       </td>
 
                       {/* 크기 */}
@@ -1038,23 +1038,23 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-black text-zinc-800 leading-snug break-all">{f.title}</div>
                       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black border ${cat.badge}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[14px] font-black border ${cat.badge}`}>
                           {cat.label}
                         </span>
-                        <span className="text-[11px] text-zinc-400 font-semibold">{fmtDateTime(f.created_at)}</span>
+                        <span className="text-[15px] text-zinc-400 font-semibold">{fmtDateTime(f.created_at)}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* 파일 정보 */}
                   <div className="mt-2.5 pl-13 flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[11px] text-zinc-500 font-semibold break-all">
+                    <span className="text-[15px] text-zinc-500 font-semibold break-all">
                       {f.file_name ?? "-"}
                     </span>
-                    <span className="text-[11px] text-zinc-400">·</span>
-                    <span className="text-[11px] text-zinc-400 font-semibold tabular-nums">{fmtBytes(f.file_size)}</span>
-                    <span className="text-[11px] text-zinc-400">·</span>
-                    <span className="text-[11px] text-zinc-400 font-semibold">{f.uploaded_by ?? "-"}</span>
+                    <span className="text-[15px] text-zinc-400">·</span>
+                    <span className="text-[15px] text-zinc-400 font-semibold tabular-nums">{fmtBytes(f.file_size)}</span>
+                    <span className="text-[15px] text-zinc-400">·</span>
+                    <span className="text-[15px] text-zinc-400 font-semibold">{f.uploaded_by ?? "-"}</span>
                   </div>
 
                   {/* 액션 버튼 */}
@@ -1087,16 +1087,16 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
 
         {/* ── 관리자 안내 ────────────────────────────────────────────────── */}
         {isManager && (
-          <div className="flex items-start gap-2.5 px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-[11px] text-zinc-400 leading-relaxed">
+          <div className="flex items-start gap-2.5 px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-[15px] text-zinc-400 leading-relaxed">
             <FilePlus size={13} className="mt-0.5 shrink-0 text-zinc-400" />
             <div>
               Supabase Storage{" "}
-              <code className="px-1 py-0.5 rounded bg-white border border-zinc-200 text-zinc-500 font-mono text-[10px]">hr-forms</code>{" "}
+              <code className="px-1 py-0.5 rounded bg-white border border-zinc-200 text-zinc-500 font-mono text-[14px]">hr-forms</code>{" "}
               버킷 사용 (없으면 로컬{" "}
-              <code className="px-1 py-0.5 rounded bg-white border border-zinc-200 text-zinc-500 font-mono text-[10px]">uploads/hr-forms/</code>{" "}
+              <code className="px-1 py-0.5 rounded bg-white border border-zinc-200 text-zinc-500 font-mono text-[14px]">uploads/hr-forms/</code>{" "}
               자동 fallback). 최초 1회 Supabase 대시보드에서{" "}
               <b className="text-zinc-500">hr-forms</b> 버킷(Public 권장) 및{" "}
-              <code className="px-1 py-0.5 rounded bg-white border border-zinc-200 text-zinc-500 font-mono text-[10px]">hr_forms</code> 테이블 생성 필요.
+              <code className="px-1 py-0.5 rounded bg-white border border-zinc-200 text-zinc-500 font-mono text-[14px]">hr_forms</code> 테이블 생성 필요.
             </div>
           </div>
         )}

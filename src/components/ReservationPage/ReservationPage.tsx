@@ -306,7 +306,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
               <CheckCircle size={16} className="text-emerald-600 shrink-0 mt-0.5" />
               <div>
                 <p className="text-emerald-800 text-xs font-bold">예약이 접수되었습니다</p>
-                <p className="text-emerald-600 text-[11px] mt-0.5">담당자가 확인 후 연락드립니다.</p>
+                <p className="text-emerald-600 text-[15px] mt-0.5">담당자가 확인 후 연락드립니다.</p>
               </div>
               <button onClick={() => setSubmitted(false)} className="ml-auto text-emerald-500 hover:text-emerald-700 cursor-pointer">
                 <X size={14} />
@@ -344,7 +344,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
             {WEEKDAYS.map((wd, i) => (
               <div
                 key={wd}
-                className={`text-center text-[11px] font-bold py-1 ${
+                className={`text-center text-[15px] font-bold py-1 ${
                   i === 0 ? "text-rose-500" : i === 6 ? "text-sky-600" : "text-gray-400"
                 }`}
               >
@@ -413,7 +413,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
           </div>
 
           {/* Legend */}
-          <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-gray-200 text-[11px] text-gray-400">
+          <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-gray-200 text-[15px] text-gray-400">
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full ring-2 ring-emerald-500 inline-block" />
               오늘
@@ -476,7 +476,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                   >
                     <span>{staff.name}</span>
                     {staff.isOff && (
-                      <span className="text-[10px] font-bold text-gray-400 bg-gray-200 px-1 rounded">
+                      <span className="text-[14px] font-bold text-gray-400 bg-gray-200 px-1 rounded">
                         {staff.scheduleType ?? "휴무"}
                       </span>
                     )}
@@ -502,7 +502,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                   <div key={t} className="flex items-center gap-2">
                     {/* Time label */}
                     <div className="w-12 shrink-0 text-right">
-                      <span className="text-[11px] font-bold tabular-nums text-gray-400">{t}</span>
+                      <span className="text-[15px] font-bold tabular-nums text-gray-400">{t}</span>
                     </div>
 
                     {/* 3 columns */}
@@ -530,7 +530,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                             return (
                               <div
                                 key={staff.employeeId}
-                                className="py-2 rounded-lg text-[11px] font-bold border bg-rose-50 border-rose-200 text-rose-400 text-center"
+                                className="py-2 rounded-lg text-[15px] font-bold border bg-rose-50 border-rose-200 text-rose-400 text-center"
                               >
                                 완료
                               </div>
@@ -542,7 +542,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                               type="button"
                               disabled={isToggling}
                               onClick={() => toggleBlockedSlot(staff.name, t)}
-                              className={`py-2 rounded-lg text-[11px] font-bold border transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-[0.98] ${
+                              className={`py-2 rounded-lg text-[15px] font-bold border transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-[0.98] ${
                                 isBlocked
                                   ? "bg-gray-200 border-gray-300 text-gray-500 hover:bg-gray-100"
                                   : isPeak
@@ -569,7 +569,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                             type="button"
                             disabled={isBooked || isBlocked}
                             onClick={() => openModal(t, staff.name)}
-                            className={`py-2 rounded-lg text-[11px] font-bold border transition-all ${
+                            className={`py-2 rounded-lg text-[15px] font-bold border transition-all ${
                               isBooked
                                 ? "bg-rose-50 border-rose-200 text-rose-400 cursor-not-allowed"
                                 : isBlocked
