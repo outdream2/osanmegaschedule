@@ -2965,21 +2965,26 @@ const VendorManageSplit: React.FC = () => {
 
   const left = (
     <div className="flex flex-col h-full min-h-0 gap-2">
-      {/* 툴바 · 공통 CARD_BASE · 2026-08-10 사용자 요청 */}
-      <div className={`${CARD_BASE} px-3 py-2 flex flex-col gap-2 shrink-0`}>
+      {/* 툴바 · 공통 CARD_BASE · 2026-08-17 · 최신 트렌드 · 좌측 accent bar */}
+      <div className={`${CARD_BASE} px-4 py-3 flex flex-col gap-2.5 shrink-0`}>
+        {/* 헤더 · 좌 accent bar + 제목 + count */}
+        <div className="flex items-center gap-2.5">
+          <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+          <span className="text-[17px] font-bold text-ink tracking-tight">공급사관리</span>
+          <span className="text-[14px] font-semibold text-brand-deep bg-brand-tint rounded-full px-2.5 py-0.5 border border-brand/15 tabular-nums">
+            {loading ? <Loader2 size={12} className="animate-spin inline" /> : `${filtered.length}건`}
+          </span>
+        </div>
         <div className="flex items-center gap-2">
           <div className="relative flex-1 min-w-0">
-            <SearchIcon size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+            <SearchIcon size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-soft pointer-events-none" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="회사명 · 담당자 · 전화"
-              className="w-full h-9 pl-8 pr-2 text-[14px] border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
+              className="w-full h-9 pl-9 pr-2 text-[14px] border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors"
             />
           </div>
-          <span className="text-[13px] text-zinc-400 tabular-nums whitespace-nowrap shrink-0">
-            {loading ? <Loader2 size={12} className="animate-spin" /> : `${filtered.length}건`}
-          </span>
         </div>
         <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-0.5">
           {(["전체", "위탁", "선결제", "60회전", "90회전"] as const).map(cat => (
@@ -3080,12 +3085,16 @@ const VendorManageSplit: React.FC = () => {
   );
 
   const right = selected ? (
-    <React.Suspense fallback={<div className="flex-1 flex items-center justify-center text-zinc-400 py-16">공급사 상세 로딩 중...</div>}>
+    <React.Suspense fallback={<div className="flex-1 flex items-center justify-center text-ink-soft py-16 text-[14px]">공급사 상세 로딩 중...</div>}>
       <VendorDetailModalLazy vendor={selected as any} onClose={() => setSelectedId(null)} onSaved={refresh} panel />
     </React.Suspense>
   ) : (
-    <div className="flex-1 flex items-center justify-center text-zinc-400 py-16 text-[13px]">
-      좌측에서 공급사를 선택하세요
+    <div className="bg-white rounded-xl border border-line flex-1 flex flex-col items-center justify-center p-10 min-h-[400px] gap-3 shadow-sm">
+      <div className="w-16 h-16 rounded-2xl bg-brand-tint flex items-center justify-center">
+        <Building2 size={30} className="text-brand-deep/70" />
+      </div>
+      <div className="text-[15px] font-semibold text-ink tracking-tight">좌측에서 공급사를 선택하세요</div>
+      <div className="text-[13px] text-ink-soft">사업자번호 · 담당자 · 결제 조건 상세</div>
     </div>
   );
 
