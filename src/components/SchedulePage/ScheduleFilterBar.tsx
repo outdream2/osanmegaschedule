@@ -40,51 +40,47 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
   const confirm = useConfirm();
 
   return (
-    <div className="bg-white border-b border-zinc-200 px-3 sm:px-6 py-2 sm:py-2.5 flex flex-col gap-2 sm:gap-3 shrink-0 shadow-sm">
-        {/* Filter Tabs: two independent groups */}
-        <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
-          <span className="text-[17px] font-bold text-zinc-400 uppercase tracking-widest shrink-0 pr-0.5">필터</span>
-          {/* Group 1: Workplace */}
-          {/* 2026-08-11 · 근무지 필터 그룹 제거 · 직군 그룹 하나로 통합 */}
-          {/* Group 2: Position */}
-          <div className="inline-flex p-0.5 bg-zinc-100 border border-zinc-200 rounded-lg gap-0.5">
+    // 2026-08-17 · 최신 트렌드 · 파스텔 지양 · 딥네이비 accent · flat · 폰트 통일
+    <div className="bg-white border-b border-line px-3 sm:px-6 py-2.5 sm:py-3 flex flex-col gap-2.5 sm:gap-3 shrink-0">
+        {/* Filter · 좌측 accent + segmented pill (mono neutral · active bg-white shadow) */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="flex items-center gap-2 shrink-0">
+            <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
+            <span className="text-[14px] font-bold text-ink tracking-tight">필터</span>
+          </span>
+          <div className="inline-flex p-1 bg-zinc-100 border border-line rounded-lg gap-0.5">
             {([
-              // 2026-08-04 · 사용자 요청 · 필터 통합: 전체 · 약사 · 창고 · 진열 · 매장(창고+진열)
-              // · 창고 = position 물류(창고 포함)
-              // · 진열 = position 진열
-              // · 매장 = 창고 + 진열 통합 (약사 외 매장 근무자 · 캐셔 포함)
-              { key: "전체", label: "전체", color: "text-indigo-600", count: employees.length },
-              // 2026-08-17 · 사용자 요청 · 약사 보라 → 파랑 계열 (blue-600 · 창고 sky 와 구분)
-              { key: "약사", label: "약사", color: "text-blue-600", count: employees.filter(e => e.position === "약사").length },
-              { key: "사원", label: "사원", color: "text-amber-600", count: employees.filter(e => e.position === "캐셔" || e.position === "사원").length },
-              { key: "창고", label: "창고", color: "text-sky-600", count: employees.filter(e => e.position !== "약사" && (e.position.includes("물류") || e.position === "창고")).length },
-              { key: "매장", label: "매장", color: "text-emerald-600", count: employees.filter(e => e.position !== "약사" && e.workplace === "매장").length },
-            ] as const).map(({ key, label, color, count }) => (
+              { key: "전체", label: "전체", count: employees.length },
+              { key: "약사", label: "약사", count: employees.filter(e => e.position === "약사").length },
+              { key: "사원", label: "사원", count: employees.filter(e => e.position === "캐셔" || e.position === "사원").length },
+              { key: "창고", label: "창고", count: employees.filter(e => e.position !== "약사" && (e.position.includes("물류") || e.position === "창고")).length },
+              { key: "매장", label: "매장", count: employees.filter(e => e.position !== "약사" && e.workplace === "매장").length },
+            ] as const).map(({ key, label, count }) => (
               <button
                 key={key}
                 onClick={() => setPositionTab(key)}
-                className={`px-1.5 sm:px-2 py-0.5 sm:py-0.5 text-[12px] sm:text-[13px] font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[24px] sm:min-h-[26px] ${positionTab === key
-                  ? `bg-white ${color} shadow-sm font-bold`
-                  : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
+                className={`px-2.5 sm:px-3 py-1 text-[13px] sm:text-[14px] font-semibold rounded-md cursor-pointer transition-colors flex items-center gap-1.5 min-h-[28px] sm:min-h-[30px] ${positionTab === key
+                  ? "bg-brand-deep text-white shadow-sm"
+                  : "text-ink hover:text-brand-deep hover:bg-white"
                   }`}
               >
-                <span>{label} <span className="text-zinc-400 font-normal">({count})</span></span>
+                <span>{label}</span>
+                <span className={`text-[12px] font-normal tabular-nums ${positionTab === key ? "text-white/80" : "text-ink-soft"}`}>({count})</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* 2026-08-11 · 정렬 + 검색 + 직원등록 · PC 한줄 · 반응형 2줄 (flex-wrap) */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap text-xs">
-          <span className="text-[17px] font-bold text-zinc-400 uppercase tracking-widest shrink-0 pr-0.5">정렬</span>
-          {/* 2026-08-11 · 정렬 4가지 · 출근·구분·이름·직군 · 출근이 기본 · 붉은 톤 */}
-          <div className="inline-flex p-0.5 bg-zinc-100 border border-zinc-200 rounded-lg gap-0.5">
+        {/* 정렬 + 검색 + 등록 · PC 한줄 · 반응형 2줄 */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <span className="flex items-center gap-2 shrink-0">
+            <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
+            <span className="text-[14px] font-bold text-ink tracking-tight">정렬</span>
+          </span>
+          <div className="inline-flex p-1 bg-zinc-100 border border-line rounded-lg gap-0.5">
             {(["today", "position", "name"] as const).map((key) => {
               const labels: Record<string, string> = { today: "출근", position: "직군", name: "이름" };
               const isActive = sortBy === key;
-              const activeCls = key === "today"
-                ? "bg-rose-500 text-white shadow-sm font-bold"
-                : "bg-white text-indigo-600 shadow-sm font-bold";
               return (
                 <button
                   key={key}
@@ -93,12 +89,14 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
                     if (isActive && key !== "today") setSortOrder(prev => prev === "asc" ? "desc" : "asc");
                     else { setSortBy(key); setSortOrder("asc"); }
                   }}
-                  className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-[12px] sm:text-[13px] font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[26px] sm:min-h-[30px] ${
-                    isActive ? activeCls : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
+                  className={`px-2.5 sm:px-3 py-1 text-[13px] sm:text-[14px] font-semibold rounded-md cursor-pointer transition-colors flex items-center gap-1 min-h-[28px] sm:min-h-[30px] ${
+                    isActive
+                      ? "bg-brand-deep text-white shadow-sm"
+                      : "text-ink hover:text-brand-deep hover:bg-white"
                   }`}
                 >
                   <span>{labels[key]}</span>
-                  {isActive && key !== "today" && <span className="text-[10px] font-mono">{sortOrder === "asc" ? "↑" : "↓"}</span>}
+                  {isActive && key !== "today" && <span className="text-[11px] font-semibold">{sortOrder === "asc" ? "↑" : "↓"}</span>}
                 </button>
               );
             })}
@@ -110,7 +108,7 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
                     await onResetCustomOrder();
                   }
                 }}
-                className="px-2 py-1 sm:py-1.5 text-[10px] font-bold text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-md transition cursor-pointer shrink-0 min-h-[28px] sm:min-h-[32px]"
+                className="px-2.5 py-1 text-[12px] font-semibold text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-md transition-colors cursor-pointer shrink-0 min-h-[28px]"
                 title="드래그앤드롭 사용자 지정 순서 초기화"
               >
                 순서초기화
@@ -118,20 +116,20 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
             )}
           </div>
 
-          {/* 검색 · 직원등록 · 2026-08-13 · 반응형 · 좁은 폭에서 wrap 허용 (nowrap 이 overflow 원인) */}
+          {/* 검색 · 직원등록 */}
           <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap justify-end">
-            <div className="relative flex-1 min-w-[120px] max-w-[180px] sm:max-w-[220px]">
+            <div className="relative flex-1 min-w-[140px] max-w-[220px]">
               <input
                 type="text"
-                placeholder="성명으로 조회 (예: 정윤수)"
+                placeholder="성명으로 조회"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full text-[14px] font-medium px-2.5 py-1.5 bg-zinc-50 border border-zinc-200 focus:border-indigo-400 focus:bg-white rounded-lg focus:outline-none placeholder-zinc-400 text-zinc-800 transition-all h-[34px]"
+                className="w-full text-[14px] font-medium px-3 py-1.5 bg-white border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint rounded-lg focus:outline-none placeholder-ink-soft text-ink transition-colors h-[34px]"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute inset-y-0 right-2 flex items-center text-zinc-400 hover:text-zinc-600 transition-colors text-xs"
+                  className="absolute inset-y-0 right-2 flex items-center text-ink-soft hover:text-ink transition-colors text-[15px]"
                 >
                   ×
                 </button>
@@ -142,7 +140,7 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
                 type="button"
                 onClick={onCreateEmployee}
                 title="새 직원 등록"
-                className="shrink-0 inline-flex items-center justify-center px-3 py-1.5 text-[13px] font-black text-white bg-indigo-600 hover:bg-indigo-700 border border-indigo-600 rounded-lg shadow-sm transition cursor-pointer active:scale-95"
+                className="shrink-0 inline-flex items-center justify-center px-3.5 py-1.5 text-[14px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-lg shadow-sm transition-colors cursor-pointer"
               >
                 직원 등록
               </button>

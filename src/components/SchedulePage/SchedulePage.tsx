@@ -1958,8 +1958,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                             setDraggedRowId(null);
                             setDragOverRowId(null);
                           }}
-                          className={`bg-white group transition-colors duration-100 ${draggedRowId === emp.id ? "opacity-30" : ""
-                            } ${dragOverRowId === emp.id ? "bg-indigo-50/40 border-t-2 border-t-indigo-400" : "hover:bg-zinc-50/60"
+                          className={`bg-white group transition-colors duration-150 ${draggedRowId === emp.id ? "opacity-30" : ""
+                            } ${dragOverRowId === emp.id ? "bg-brand-tint border-t-2 border-t-brand-deep" : "hover:bg-zinc-50/50"
                             }`}
                         >
 
@@ -1996,7 +1996,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                             const cell = (
                               <td
                                 key={`${emp.id}-${dateStr}`}
-                                className={`relative p-0 border-r border-[#e2e8f0] ${isToday ? "ring-2 ring-inset ring-red-500 z-[25] relative" : ""} ${isHireDay ? "ring-2 ring-inset ring-emerald-500 z-[24] relative" : ""} ${isRetireDay ? "ring-2 ring-inset ring-rose-500 z-[24] relative" : ""} ${outOfEmployment ? "bg-zinc-100/80 cursor-not-allowed" : (canOpenBreak ? "cursor-pointer hover:bg-amber-50/50" : "")}`}
+                                className={`relative p-0 border-r border-line ${isToday ? "ring-2 ring-inset ring-brand-deep z-[25] relative" : ""} ${isHireDay ? "ring-2 ring-inset ring-emerald-500 z-[24] relative" : ""} ${isRetireDay ? "ring-2 ring-inset ring-rose-500 z-[24] relative" : ""} ${outOfEmployment ? "bg-zinc-100/60 cursor-not-allowed" : (canOpenBreak ? "cursor-pointer hover:bg-brand-tint/60" : "")}`}
                                 onClick={canOpenBreak ? () => openBreakModalForCell(emp.id, fullDate) : undefined}
                                 title={
                                   isHireDay ? `입사일 (${emp.hireDate})` :
@@ -2045,10 +2045,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                             return (
                               <React.Fragment key={`${emp.id}-${dateStr}`}>
                                 {cell}
-                                <td className="border-l-2 border-zinc-200 bg-zinc-50 text-center align-middle p-1">
-                                  <div className="text-[11px] sm:text-xs font-bold text-zinc-700 leading-tight">{workDays}일</div>
-                                  {hoursLabel && <div className="text-[9px] sm:text-[10px] text-zinc-400 font-medium leading-tight">{hoursLabel}</div>}
-                                  {isAdmin && showSummary === "labor" && costLabel && <div className="text-[9px] sm:text-[10px] text-emerald-600 font-semibold leading-tight">{costLabel}원</div>}
+                                <td className="border-l-2 border-line bg-zinc-50/60 text-center align-middle p-1">
+                                  <div className="text-[13px] sm:text-[14px] font-bold text-ink leading-tight tabular-nums">{workDays}일</div>
+                                  {hoursLabel && <div className="text-[11px] sm:text-[12px] text-ink-soft font-medium leading-tight tabular-nums">{hoursLabel}</div>}
+                                  {isAdmin && showSummary === "labor" && costLabel && <div className="text-[11px] sm:text-[12px] text-brand-deep font-semibold leading-tight tabular-nums">{costLabel}원</div>}
                                 </td>
                               </React.Fragment>
                             );
