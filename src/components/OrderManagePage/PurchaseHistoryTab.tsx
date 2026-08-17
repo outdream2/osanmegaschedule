@@ -31,6 +31,7 @@ import PurchaseSubTabs, {
   TopProductsPieChart,
 } from "./PurchaseHistoryTab/PurchaseSubTabs";
 import { SeasonButtons } from "../common/SeasonButtons";
+import { PeriodSelector } from "../common/PeriodSelector";
 import ProductRowCard, { type ProductSummary } from "./PurchaseHistoryTab/ProductRowCard";
 import ProductPurchaseDetailPanel, {
   type ProductPurchaseRow,
@@ -850,32 +851,27 @@ export const PurchaseHistoryTab: React.FC = () => {
           </button>
         </div>
 
-        {/* 2026-08-10 · #19 · 기간 chip + 계절 chip · 상단 툴바로 이동 (사용자 요청 · split 안에서 이동) */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">기간</span>
-          <div className="flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
-            <button
-              type="button"
-              onClick={() => { setPeriodMonths(0); setPeriodSeason(null); }}
-              className={`px-2 h-6 text-[14px] font-semibold rounded transition cursor-pointer ${
-                !periodSeason && periodMonths === 0
-                  ? "bg-sky-500 text-white shadow-sm"
-                  : "text-zinc-500 hover:text-zinc-700"
-              }`}
-            >10일</button>
-            {([1, 2, 3, 4, 5, 6] as const).map(m => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => { setPeriodMonths(m as 0|1|2|3|4|5|6); setPeriodSeason(null); }}
-                className={`px-2 h-6 text-[14px] font-semibold rounded transition cursor-pointer ${
-                  !periodSeason && periodMonths === m
-                    ? "bg-sky-500 text-white shadow-sm"
-                    : "text-zinc-500 hover:text-zinc-700"
-                }`}
-              >{m}개월</button>
-            ))}
-          </div>
+        {/* 2026-08-17 · 기간 UI 프레임워크 통일 · PeriodSelector 공통 · 딥네이비 */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
+            <span className="text-[13px] font-bold text-ink tracking-tight">기간</span>
+          </span>
+          <PeriodSelector
+            options={[
+              { value: 0, label: "10일", title: "최근 10일" },
+              { value: 1, label: "1개월", title: "최근 1개월" },
+              { value: 2, label: "2개월", title: "최근 2개월" },
+              { value: 3, label: "3개월", title: "최근 3개월" },
+              { value: 4, label: "4개월", title: "최근 4개월" },
+              { value: 5, label: "5개월", title: "최근 5개월" },
+              { value: 6, label: "6개월", title: "최근 6개월" },
+            ]}
+            value={periodMonths}
+            onChange={(v) => { setPeriodMonths(v as 0|1|2|3|4|5|6); setPeriodSeason(null); }}
+            size="sm"
+            ariaLabel="매입이력 조회기간"
+          />
           <SeasonButtons
             value={periodSeason ?? null}
             onChange={(v) => { setPeriodSeason(v); }}
