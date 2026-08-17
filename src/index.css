@@ -393,17 +393,25 @@ body:has(.fixed.inset-0[class*="bg-neutral-9"]) {
          bg-slate-200 hover:bg-indigo-400 rounded-full cursor-col-resize
          transition-all shrink-0 relative;
 }
+/* 2026-08-17 v2 · split-right · Attio inset light */
 .split-right {
   @apply flex-1 flex flex-col min-w-0 min-h-0 bg-white rounded-xl
-         border border-slate-200 shadow-sm overflow-hidden;
+         border border-line overflow-hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.60),
+    0 1px 2px rgba(10, 46, 74, 0.05),
+    0 2px 8px -2px rgba(10, 46, 74, 0.06);
 }
 
-/* ── 카드 패널 (KPI · 리스트 카드 등) ── */
+/* ── 카드 패널 · 2026-08-17 v2 · Attio 세련 (KPI · 리스트 카드 등) ── */
 .card-panel {
-  @apply bg-white rounded-xl border border-slate-200 shadow-sm;
+  @apply bg-white rounded-xl border border-line;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.60),
+    0 1px 2px rgba(10, 46, 74, 0.05);
 }
 .card-header {
-  @apply flex items-center gap-2 px-4 h-10 border-b border-slate-100 shrink-0;
+  @apply flex items-center gap-2 px-4 h-10 border-b border-line shrink-0;
 }
 
 /* ── KPI 카드 (상단 요약 통계) · 2026-08-17 v2 · Attio/Linear 세련 · 2-layer shadow ── */
