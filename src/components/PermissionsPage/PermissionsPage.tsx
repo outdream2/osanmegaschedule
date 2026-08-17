@@ -619,10 +619,10 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
             </button>
           </div>
         </div>
-        {/* 2026-08-16 · #111 · 사이드바 구조 그대로 반영 · 표 형식 · 체크박스 · subTab 단위 */}
+        {/* 2026-08-16 · #111 · 사이드바 구조 · 표 형식 · 2026-08-17 · #148 · 반응형 · 모바일 컬럼 축소 */}
         <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
           {/* Table header · 4 컬럼 · 보기·페이지·읽기·쓰기 */}
-          <div className="grid grid-cols-[64px_minmax(0,1fr)_170px_170px] sm:grid-cols-[64px_minmax(0,1fr)_180px_180px] px-5 py-2.5 bg-zinc-50 border-b border-zinc-100 text-[16px] font-bold text-zinc-500 tracking-tight">
+          <div className="grid grid-cols-[44px_minmax(0,1fr)_110px_110px] sm:grid-cols-[64px_minmax(0,1fr)_180px_180px] px-5 py-2.5 bg-zinc-50 border-b border-zinc-100 text-[16px] font-bold text-zinc-500 tracking-tight">
             <span className="text-center">보기</span>
             <span>페이지</span>
             <span className="text-right pr-3">읽기 최소</span>
@@ -642,7 +642,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                 <div
                   key={g.id}
                   title={row.desc}
-                  className={`grid grid-cols-[64px_minmax(0,1fr)_170px_170px] sm:grid-cols-[64px_minmax(0,1fr)_180px_180px] px-5 py-2.5 items-center ${isLastGroup ? "" : "border-b border-zinc-100"}`}
+                  className={`grid grid-cols-[44px_minmax(0,1fr)_110px_110px] sm:grid-cols-[64px_minmax(0,1fr)_180px_180px] px-5 py-2.5 items-center ${isLastGroup ? "" : "border-b border-zinc-100"}`}
                 >
                   {/* 보기 체크박스 (checked=노출, unchecked=숨김) */}
                   <div className="flex justify-center">
@@ -689,7 +689,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                 <button
                   type="button"
                   onClick={() => toggleGroup(g.id)}
-                  className="w-full grid grid-cols-[64px_minmax(0,1fr)_170px_170px] sm:grid-cols-[64px_minmax(0,1fr)_180px_180px] px-4 py-2.5 items-center bg-zinc-50/60 hover:bg-zinc-100/70 transition-colors text-left"
+                  className="w-full grid grid-cols-[44px_minmax(0,1fr)_110px_110px] sm:grid-cols-[64px_minmax(0,1fr)_180px_180px] px-4 py-2.5 items-center bg-zinc-50/60 hover:bg-zinc-100/70 transition-colors text-left"
                 >
                   <div /> {/* 보기 컬럼 · 그룹 헤더는 비움 · 각 행에 개별 체크박스 */}
                   <div className="flex items-center gap-2">
@@ -710,7 +710,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                     <div
                       key={row.storageKey}
                       title={row.desc}
-                      className={`grid grid-cols-[64px_minmax(0,1fr)_170px_170px] sm:grid-cols-[64px_minmax(0,1fr)_180px_180px] px-5 py-2 items-center border-t border-zinc-100/70`}
+                      className={`grid grid-cols-[44px_minmax(0,1fr)_110px_110px] sm:grid-cols-[64px_minmax(0,1fr)_180px_180px] px-5 py-2 items-center border-t border-zinc-100/70`}
                     >
                       {/* 보기 체크박스 */}
                       <div className="flex justify-center">
