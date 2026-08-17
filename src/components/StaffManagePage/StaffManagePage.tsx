@@ -1316,20 +1316,23 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
           />
         </div>
 
-        {/* 재직 상태 필터 · 재직/퇴사/전체 */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[15px] font-semibold text-zinc-400 uppercase tracking-wider">상태</span>
-          <div className="inline-flex bg-zinc-50 border border-line rounded-lg p-0.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] gap-0.5">
+        {/* 2026-08-17 · 재직 상태 필터 · 최신 트렌드 · segmented pill · 딥네이비 통일 */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="flex items-center gap-2 shrink-0">
+            <span className="w-[3px] h-[15px] rounded-full bg-brand-deep" />
+            <span className="text-[15px] font-bold text-ink tracking-tight">상태</span>
+          </span>
+          <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
             {[
-              { key: "active",  label: "재직",  color: "bg-emerald-600 text-white" },
-              { key: "retired", label: "퇴사",  color: "bg-rose-500 text-white" },
-              { key: "all",     label: "전체",  color: "bg-zinc-700 text-white" },
+              { key: "active",  label: "재직" },
+              { key: "retired", label: "퇴사" },
+              { key: "all",     label: "전체" },
             ].map(s => (
               <button
                 key={s.key}
                 onClick={() => setFilterStatus(s.key as typeof filterStatus)}
-                className={`h-6 px-2 text-[15px] font-semibold rounded-md transition-all cursor-pointer ${
-                  filterStatus === s.key ? `${s.color} shadow-sm` : "text-zinc-500 hover:text-zinc-700"
+                className={`h-7 px-2.5 text-[14px] font-semibold rounded-md transition-colors cursor-pointer ${
+                  filterStatus === s.key ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"
                 }`}
               >
                 {s.label}
@@ -1338,16 +1341,17 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
           </div>
         </div>
 
-        {/* 직책 필터 */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[15px] font-semibold text-zinc-400 uppercase tracking-wider">직책</span>
-          <div className="inline-flex bg-zinc-50 border border-line rounded-lg p-0.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] flex-wrap gap-0.5">
+        {/* 직책 필터 · 최신 트렌드 · 통일 */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="flex items-center gap-2 shrink-0">
+            <span className="w-[3px] h-[15px] rounded-full bg-brand-deep" />
+            <span className="text-[15px] font-bold text-ink tracking-tight">직책</span>
+          </span>
+          <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 flex-wrap gap-0.5">
             <button
               onClick={() => setFilterPosition("")}
-              className={`h-6 px-2 text-[15px] font-semibold rounded-md transition-all cursor-pointer ${
-                filterPosition === ""
-                  ? "bg-brand-deep text-white shadow-sm"
-                  : "text-zinc-500 hover:text-zinc-700"
+              className={`h-7 px-2.5 text-[14px] font-semibold rounded-md transition-colors cursor-pointer ${
+                filterPosition === "" ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"
               }`}
             >
               전체
@@ -1356,10 +1360,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
               <button
                 key={p}
                 onClick={() => setFilterPosition(filterPosition === p ? "" : p)}
-                className={`h-6 px-2 text-[15px] font-semibold rounded-md transition-all cursor-pointer ${
-                  filterPosition === p
-                    ? "bg-white text-zinc-800 shadow-sm border border-line"
-                    : "text-zinc-500 hover:text-zinc-700"
+                className={`h-7 px-2.5 text-[14px] font-semibold rounded-md transition-colors cursor-pointer ${
+                  filterPosition === p ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"
                 }`}
               >
                 {p}
