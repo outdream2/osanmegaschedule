@@ -15,6 +15,7 @@ import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
 import { LoadingState } from "../common/LoadingState";
 import { KpiCard } from "../common/KpiCard";
+import { StatusPill } from "../common/StatusPill";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 type PeriodKey = "today" | "week" | "month" | "3months";
@@ -217,8 +218,8 @@ export const LossHistoryTab: React.FC = () => {
       </div>
 
       {snapshotMsg && (
-        <div className="text-[11px] font-semibold text-violet-700 bg-violet-50 border border-violet-200 rounded-md px-3 py-1.5">
-          {snapshotMsg}
+        <div className="inline-flex">
+          <StatusPill tone="violet" size="sm" dot>{snapshotMsg}</StatusPill>
         </div>
       )}
 
