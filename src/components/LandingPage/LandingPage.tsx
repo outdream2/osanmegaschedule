@@ -1489,15 +1489,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                           />
                         </label>
                       </div>
-                      {/* 자동 판정 표시 */}
+                      {/* 자동 판정 표시 · 2026-08-17 · StatusPill 프레임워크 통일 */}
                       <div className="mt-2 flex items-center gap-2 flex-wrap text-[10px]">
                         {stockPeriodType ? (
-                          <span className={`font-bold px-2 py-0.5 rounded-full border ${stockPeriodType === "early" ? "text-sky-700 bg-sky-50 border-sky-300" :
-                            stockPeriodType === "mid" ? "text-indigo-700 bg-indigo-50 border-indigo-300" :
-                              "text-purple-700 bg-purple-50 border-purple-300"
-                            }`}>
+                          <StatusPill tone={stockPeriodType === "early" ? "sky" : stockPeriodType === "mid" ? "indigo" : "violet"} size="xs">
                             자동판정: {stockPeriodType === "early" ? "초순 (1-10일)" : stockPeriodType === "mid" ? "중순 (11-20일)" : "하순 (21-말일)"}
-                          </span>
+                          </StatusPill>
                         ) : (
                           <span className="text-gray-400">종료일 입력 시 초/중/하순 자동 판정</span>
                         )}
@@ -1738,14 +1735,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                         </label>
                       </div>
                       {/* 자동판정 배지 · 재고와 동일 규칙 (종료매입일 dd 로 초/중/하순) */}
+                      {/* 2026-08-17 · StatusPill 프레임워크 통일 */}
                       <div className="mt-2 flex items-center gap-2 flex-wrap text-[10px]">
                         {purchasePeriodType ? (
-                          <span className={`font-bold px-2 py-0.5 rounded-full border ${purchasePeriodType === "early" ? "text-sky-700 bg-sky-50 border-sky-300" :
-                            purchasePeriodType === "mid" ? "text-indigo-700 bg-indigo-50 border-indigo-300" :
-                              "text-purple-700 bg-purple-50 border-purple-300"
-                            }`}>
+                          <StatusPill tone={purchasePeriodType === "early" ? "sky" : purchasePeriodType === "mid" ? "indigo" : "violet"} size="xs">
                             자동판정: {purchasePeriodType === "early" ? "초순 (1-10일)" : purchasePeriodType === "mid" ? "중순 (11-20일)" : "하순 (21-말일)"}
-                          </span>
+                          </StatusPill>
                         ) : (
                           <span className="text-gray-400">종료매입일 입력 시 초/중/하순 자동 판정</span>
                         )}
