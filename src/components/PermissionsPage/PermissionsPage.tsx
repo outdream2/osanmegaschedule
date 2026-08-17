@@ -561,34 +561,35 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           </div>
         )}
 
-        {/* 2026-08-16 · 서브 탭 · 페이지별 설정 vs 직원별 레벨 */}
-        <div className="mb-3 flex bg-zinc-100 border border-line rounded-xl p-0.5 gap-0.5 w-fit">
+        {/* 2026-08-17 · 서브 탭 · 딥네이비 통일 · 세련 · Attio carved segmented */}
+        <div className="mb-3 flex bg-zinc-100 border border-line rounded-xl p-1 gap-0.5 w-fit">
           <button
             type="button"
             onClick={() => setPermSubTab("page")}
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[16px] font-bold transition cursor-pointer ${
-              permSubTab === "page" ? "bg-brand-deep text-white shadow-sm" : "text-ink-soft hover:text-ink"
+            className={`inline-flex items-center gap-1.5 px-3 h-9 rounded-lg text-[14px] font-semibold transition-colors cursor-pointer ${
+              permSubTab === "page" ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"
             }`}
           >
-            <Shield size={14} /> 페이지별 설정
+            <Shield size={15} /> 페이지별 설정
           </button>
           <button
             type="button"
             onClick={() => setPermSubTab("employee")}
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[16px] font-bold transition cursor-pointer ${
-              permSubTab === "employee" ? "bg-white text-emerald-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"
+            className={`inline-flex items-center gap-1.5 px-3 h-9 rounded-lg text-[14px] font-semibold transition-colors cursor-pointer ${
+              permSubTab === "employee" ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"
             }`}
           >
-            <Users size={14} /> 직원별 레벨
+            <Users size={15} /> 직원별 레벨
           </button>
         </div>
 
         {permSubTab === "page" && (<>
-        {/* 섹션 1 · 페이지별 최소 권한 · 2026-08-13 · 저장 버튼 추가 (명시 저장) */}
+        {/* 섹션 1 · 페이지별 최소 권한 · 2026-08-17 · accent bar + 딥네이비 */}
         <div className="mb-2 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5">
-            <Shield size={13} className="text-zinc-500" />
-            <h2 className="text-[17px] font-bold text-zinc-700">페이지별 설정</h2>
+          <div className="flex items-center gap-2.5">
+            <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+            <Shield size={16} className="text-brand-deep" />
+            <h2 className="text-[17px] font-bold text-ink tracking-tight">페이지별 설정</h2>
           </div>
           <div className="flex items-center gap-2">
             {saveToast && (
