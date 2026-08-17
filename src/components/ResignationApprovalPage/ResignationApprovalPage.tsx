@@ -171,15 +171,16 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-1 max-w-3xl mx-auto w-full px-3 sm:px-5 py-5 flex flex-col gap-3">
-        {/* 페이지 헤더 */}
+        {/* 페이지 헤더 · 2026-08-17 · 세련 · accent bar + gradient icon card */}
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center">
-              <FileText size={18} weight="fill" />
+          <div className="flex items-center gap-3">
+            <span className="w-[3px] h-[40px] rounded-full bg-gradient-to-b from-brand-deep to-[#1E5C8E] shrink-0" />
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-tint to-white border border-brand/15 text-brand-deep flex items-center justify-center shadow-[0_1px_2px_rgba(10,46,74,0.04),0_2px_8px_rgba(10,46,74,0.06)]">
+              <FileText size={20} weight="fill" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-zinc-800 leading-none">사직서 승인</h1>
-              <p className="text-[11px] text-zinc-500 mt-1">
+              <h1 className="text-[18px] sm:text-[19px] font-bold text-ink leading-tight tracking-tight">사직서 승인</h1>
+              <p className="text-[13px] text-ink-soft mt-0.5 font-medium">
                 제출된 사직서를 검토하여 승인 또는 반려하세요.
               </p>
             </div>
