@@ -14,6 +14,7 @@ import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useConfirm } from "../../hooks/useConfirm";
 import { CARD_BASE } from "../../styles/tokens";
+import { StatusPill, type PillTone } from "../common/StatusPill";
 // 2026-08-12 · 연차승인 탭 · LeavePage mode="approval" 로 임베드 (관리자용 승인 UI)
 import { LeavePage } from "../LeavePage/LeavePage";
 
@@ -1037,11 +1038,14 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                           </span>
                           <span className="text-gray-300 text-[14px]">·</span>
                           <span className="text-[15px] text-zinc-500">현재고 <span className="font-bold text-zinc-700">{r.system_stock ?? "—"}</span></span>
-                          {diff != null && (
-                            <span className={`text-[14px] font-bold px-1.5 py-0.5 rounded-md ${isShort ? "bg-red-50 text-red-600 border border-red-200" : isOver ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-zinc-100 text-zinc-500"}`}>
-                              {diff > 0 ? "+" : ""}{diff}
-                            </span>
-                          )}
+                          {diff != null && (() => {
+                            const tone: PillTone = isShort ? "rose" : isOver ? "emerald" : "zinc";
+                            return (
+                              <StatusPill tone={tone} size="sm">
+                                {diff > 0 ? "+" : ""}{diff}
+                              </StatusPill>
+                            );
+                          })()}
                           {r.checked_by && (
                             <>
                               <span className="text-gray-300 text-[14px]">·</span>
