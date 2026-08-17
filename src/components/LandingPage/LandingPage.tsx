@@ -51,12 +51,11 @@ import { VendorStockModal } from "./VendorStockModal";
 import { useVendors } from "../../hooks/useVendors";
 import { MenuCard } from "./MenuCard";
 import { StockSearch } from "./StockSearch";
-// 2026-08-17 · UI 프레임워크 · SectionLabel · MiniCard · Hero · KpiCard (목업 톤)
-//   HeroButton · 관리자 Hero CTA 제거로 미사용 (2026-08-17 사용자 지시)
+// 2026-08-17 · UI 프레임워크 · SectionLabel · MiniCard · Hero (목업 톤)
+//   HeroButton · KpiCard · 오늘의 현황 한줄 텍스트화로 미사용 (2026-08-17 사용자 지시)
 import { SectionLabel } from "../common/SectionLabel";
 import { MiniCard } from "../common/MiniCard";
 import { Hero } from "../common/Hero";
-import { KpiCard } from "../common/KpiCard";
 // VendorListEditor 는 발주관리 공급사관리 에서만 사용 (LandingPage 데이터 업로드 에서 제거됨 · 2026-07-15)
 
 interface LandingPageProps {
@@ -972,16 +971,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             );
           })()}
 
-          {/* ── KPI 요약 · 2026-08-17 · 관리자 · 목업 톤 · 기존 state 재사용 ── */}
+          {/* ── 오늘의 현황 · 2026-08-17 · 사용자 지시 · 한 줄 텍스트 · 깔끔 ── */}
           {isManagerOrAdmin && (
-            <div className="w-full mb-7">
-              <SectionLabel tone="teal">오늘의 현황</SectionLabel>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-                <KpiCard label="승인 대기" value={leavePendingCount} subtitle={leavePendingCount > 0 ? "건 · 대기중" : "건"} />
-                <KpiCard label="진열·발주 요청" value={requestsCounts.display + requestsCounts.order} subtitle="건" />
-                <KpiCard label="배치구역 불일치" value={requestsCounts.mismatch} subtitle="건" />
-                <KpiCard label="점심 신청" value={requestsCounts.lunch} subtitle="건" />
-              </div>
+            <div className="w-full mb-6 flex flex-wrap items-baseline gap-x-5 gap-y-1.5 text-[17px] text-ink-soft">
+              <span className="text-brand font-bold tracking-tight">오늘의 현황</span>
+              <span>승인 대기 <b className="text-ink font-bold tabular-nums">{leavePendingCount}</b>건</span>
+              <span>진열·발주 요청 <b className="text-ink font-bold tabular-nums">{requestsCounts.display + requestsCounts.order}</b>건</span>
+              <span>배치구역 불일치 <b className="text-ink font-bold tabular-nums">{requestsCounts.mismatch}</b>건</span>
+              <span>점심 신청 <b className="text-ink font-bold tabular-nums">{requestsCounts.lunch}</b>건</span>
             </div>
           )}
 

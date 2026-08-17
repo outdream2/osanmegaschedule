@@ -9,7 +9,8 @@ import { Lock, LogOut, Menu } from "lucide-react";
 import type { AuthSession } from "../../types";
 import { NotificationBell } from "../NotificationBell";
 import { NotificationToggle } from "../NotificationToggle";
-import logoImg from "../../images/logo.png";
+// 2026-08-17 · 사용자 지시 · 반응형 헤더 · logo2 (사이드바와 통일)
+import logoImg from "../../images/logo2.png";
 // 2026-08-11 · 사이드바 V2 · flag ON 시 슬림 헤더로 대체
 // 2026-08-16 · env → 서버 KV 설정 훅으로 이관
 import { useSidebarEnabled } from "../../hooks/useSidebar";
@@ -505,46 +506,47 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   }
 
   return (
-    <header className="bg-white border-b border-zinc-200 shrink-0">
-      {/* ── Row 1 (상단): 로고 + 서비스명 · 로그인정보 · 알림 · 로그아웃 (PC/모바일 동일 · 2026-08-04 사용자 요청) ── */}
+    // 2026-08-17 · 사용자 지시 · 반응형 헤더 · 사이드바 톤 통일 (deep navy) · 세련 · 최신 트렌드
+    <header className="bg-brand-deep border-b border-white/[0.08] shrink-0 shadow-sm">
+      {/* ── Row 1 (상단): 로고 + 서비스명 · 로그인정보 · 알림 · 로그아웃 · deep navy 톤 ── */}
       <div className="px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
-        {/* Left: logo (클릭 시 랜딩 이동) */}
+        {/* Left: logo (클릭 시 랜딩 이동) · logo2 · 라운드 · ring-white/20 */}
         <div className="flex items-center min-w-0">
           <button
             type="button"
             onClick={onBack ?? (() => onNavigate?.("landing"))}
-            className="flex items-center gap-3 sm:gap-4 shrink-0 px-1 py-0.5 cursor-pointer hover:opacity-80 active:opacity-70 transition rounded-lg"
+            className="flex items-center gap-3 sm:gap-4 shrink-0 px-1 py-0.5 cursor-pointer hover:opacity-90 active:opacity-75 transition rounded-lg"
             title="홈으로"
             aria-label="랜딩 페이지로 이동"
           >
             <img
               src={logoImg}
               alt={`${hdrBrand.shortName || "OSAN MEGATOWN"} 로고`}
-              className="w-12 h-12 sm:w-14 sm:h-14 object-contain shrink-0"
+              className="w-9 h-9 sm:w-10 sm:h-10 object-cover rounded-full ring-1 ring-white/20 shrink-0"
               draggable={false}
               onError={(e) => {
                 const el = e.currentTarget;
                 if (!el.dataset.retried) { el.dataset.retried = "1"; el.src = "/src/images/logo.png"; }
               }}
             />
-            {/* 2026-07-30 · 사용자 재요청 · 반응형(md 미만) OSAN MEGATOWN 텍>스트 숨김 · 로고만 노출 */}
+            {/* PC (md+) · 서비스명 · 흰 텍스트 톤 */}
             <div className="hidden md:flex flex-col gap-0.5 font-black tracking-tight leading-none select-none">
-              <span className="text-red-500 text-lg leading-none">OSAN</span>
-              <span className="text-gray-900 text-sm leading-none">MEGATOWN</span>
+              <span className="text-white text-[17px] leading-none">OSAN</span>
+              <span className="text-[#93B4D0] text-[13px] leading-none">MEGATOWN</span>
             </div>
           </button>
         </div>
 
-        {/* Right: 로그인 이름 + rightSlot + logout */}
+        {/* Right: 로그인 이름 + rightSlot + logout · deep navy 톤 · 흰 텍스트 · 반투명 hover */}
         <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
           {authSession?.employeeName && (
             <button
               type="button"
               onClick={() => onNavigate?.("mypage" as AppNavPage)}
-              className="inline-flex items-center text-[11px] sm:text-[12px] font-bold text-zinc-600 whitespace-nowrap px-1.5 sm:px-2 py-1 rounded-lg hover:bg-zinc-100 active:scale-95 transition cursor-pointer max-w-[42vw] sm:max-w-none"
+              className="inline-flex items-center text-[13px] sm:text-[14px] font-bold text-white whitespace-nowrap px-2 sm:px-2.5 py-1.5 rounded-lg hover:bg-white/[0.10] active:scale-95 transition cursor-pointer max-w-[42vw] sm:max-w-none"
               title="마이페이지"
             >
-              <span className="text-zinc-800 font-black truncate">{authSession.employeeName}{authSession.employeeRank ?? ""}</span>
+              <span className="truncate">{authSession.employeeName}{authSession.employeeRank ?? ""}</span>
             </button>
           )}
 
@@ -556,14 +558,14 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           {authSession && onLogout ? (
             <button
               onClick={onLogout}
-              className="flex items-center gap-1 justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-2 sm:py-1.5 text-[10px] font-semibold bg-white hover:bg-rose-50 text-rose-600 border border-zinc-200 hover:border-rose-300 rounded-lg transition-all shadow-sm hover:shadow-md active:scale-95 cursor-pointer shrink-0"
+              className="flex items-center gap-1.5 justify-center w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 text-[13px] font-semibold text-white bg-white/[0.10] hover:bg-white/[0.18] border border-white/15 hover:border-white/30 rounded-lg transition-all shadow-sm active:scale-95 cursor-pointer shrink-0"
               title="로그아웃"
             >
-              <LogOut size={13} strokeWidth={2.2} />
+              <LogOut size={14} strokeWidth={2.2} />
               <span className="hidden sm:inline">로그아웃</span>
             </button>
           ) : (
-            <div className="flex items-center gap-1 justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-2 sm:py-1.5 text-[10px] font-semibold bg-zinc-50 text-zinc-400 border border-zinc-200 rounded-lg shrink-0" title="비로그인">
+            <div className="flex items-center gap-1 justify-center w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 text-[12px] font-semibold bg-white/[0.05] text-white/50 border border-white/10 rounded-lg shrink-0" title="비로그인">
               <Lock size={13} strokeWidth={2.2} />
             </div>
           )}

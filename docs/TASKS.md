@@ -1,6 +1,41 @@
 # TASKS
 
-> 2026-08-16 세션 · #82 완료 · 대기 큐 재분류
+> 2026-08-17 저녁 · UI 최신 트렌드 · 전체 프레임워크화 진행중 · 사용자 병렬 테스트
+
+## 🔥 2026-08-17 저녁 세션 · 대규모 UI 트렌드 재설계
+
+### #149 · 전체 UI · 최신 트렌드 (파스텔 → mono/accent) · 프레임워크화 (2026-08-17)
+- **사용자 지시**:
+  - "파스텔톤이 최신 트렌드랑 안 맞는다 · 파란 사이드바랑 안 어울림"
+  - "최신 트렌드 · 가장 인기 있는 트렌드 반영"
+  - "글씨 크기·시각적 요소 모두 최신 트렌드"
+  - "버튼 색깔도 최신 트렌드"
+  - "전체 통일성 있는 UI · UI 도 프레임워크화"
+  - "갈끔하고 세련되고 아주 멋진 UI"
+  - "PC·모바일 반응형 모두"
+  - "최신 트렌드로 목업도 교체"
+- **진행**: research-strategist 리서치 실행중 (background · 2026 SaaS 트렌드 + 목업 재작성 안)
+- **범위 (리서치 결과 반영 후)**:
+  - MenuCard COLOR_MAP · 파스텔 (-100/700) → mono+accent
+  - KpiCard COLOR_MAP 동일
+  - 버튼 · 공용 Button 컴포넌트 (variant/size) 신규
+  - Card · Chip · StatCard · PageHeader · EmptyState 공용화
+  - 폰트 사이즈 · Linear/Notion 표준 반영 (+2 유지)
+  - 아이콘 · duotone → outlined/filled 조합
+  - **목업 파일 교체** · docs/UI_MOCKUP_PC_2026-08-17.html · MOBILE
+- **원칙 저장**: `feedback_ui_latest_trend_framework.md` (2026-08-17 · 최상위 UI 원칙)
+
+### #150 · 반응형 헤더 · 로고/이름/알림/로그아웃 · 사이드바 톤 통일 (2026-08-17)
+- **사용자 지시** · "반응형일때 로고와 이름 종 로그아웃버튼도 사이드바색깔톤으로 세련되게 만들어봐"
+- 파일 · `src/components/layout/AppNavHeader.tsx` 또는 모바일 헤더
+- 톤 · deep navy (#0A2E4A) + 텍스트 밝은 blue (#C4DAEE) · 사이드바와 통일
+
+### #131 · 페이지설정 · 메뉴 안보이기 (uncheck) 안 됨 · 🐛 재발 (2026-08-17 재확인)
+- **사용자 지시** · "페ㅔ이지설정에서 안보이게 엔체크했는데 아직 페이지는 보여 · 설정부분과 연동해서 페이지 보이기 숨기기 되게"
+- **이전 fix 부족** · 사용자 재보고 · 심층 진단 필요
+- 확인 · `src/App.tsx` isHiddenPage · `usePagePermissions` 캐시 · `filterGroupsForSession` 복합키
+
+
 
 ## 🛡️ Spring Security 대비 · 사용자 결정 진행중 (2026-08-16)
 

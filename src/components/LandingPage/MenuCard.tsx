@@ -69,8 +69,8 @@ interface MenuCardProps {
 
 export function MenuCard({ color, icon: Icon, title, description, onClick, orderClass, badge, descClass, statChips }: MenuCardProps) {
   const c = COLOR_MAP[color];
-  // 2026-08-17 · 사용자 지시 · 랜딩 메뉴 폰트 확대 · +2 (기존 13 → 15)
-  const descSize = descClass ?? "text-[15px] leading-[1.5]";
+  // 2026-08-17 · 사용자 지시 · 반응형 랜딩 메뉴 폰트 +2 (기존 15 → 17)
+  const descSize = descClass ?? "text-[17px] leading-[1.5]";
   return (
     <button
       data-menu-card
@@ -84,8 +84,8 @@ export function MenuCard({ color, icon: Icon, title, description, onClick, order
         </div>
         {badge}
       </div>
-      {/* 제목 · 2026-08-17 · +2 폰트 (17px) · 살짝만 굵게 (font-bold · 700) */}
-      <div className="text-[17px] font-bold text-ink tracking-[-0.2px] leading-tight">
+      {/* 제목 · 2026-08-17 · 반응형 랜딩 +2 (사용자 지시) · 19px bold */}
+      <div className="text-[19px] font-bold text-ink tracking-[-0.2px] leading-tight">
         {title}
       </div>
       {/* 설명 · 2026-08-17 · +2 폰트 (15px) */}
