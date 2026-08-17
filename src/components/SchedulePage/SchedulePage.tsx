@@ -1584,10 +1584,11 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         <div className="bg-white border border-zinc-200 border-b-0 rounded-t-xl py-1.5 sm:py-2 flex flex-col gap-1.5 px-2.5 sm:px-5 shrink-0 shadow-sm">
           {/* 1행: 월 네비게이션 + 오늘 + 범례 */}
           <div className="flex items-center gap-x-3 gap-y-1.5 flex-wrap min-w-0">
-            <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+            {/* 월 네비 · 최신 트렌드 · 딥네이비 hover · rounded-lg 통일 */}
+            <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={handlePrevMonth}
-                className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-indigo-50 active:bg-indigo-100 rounded-xl text-zinc-400 hover:text-indigo-600 transition-all cursor-pointer"
+                className="w-9 h-9 flex items-center justify-center hover:bg-brand-tint text-ink-soft hover:text-brand-deep rounded-lg transition-colors cursor-pointer"
                 title="이전 달"
               >
                 <ChevronLeft size={18} />
@@ -1598,7 +1599,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 onClick={() => {
                   const firstOfMonth = `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`;
                   pendingScrollDateRef.current = firstOfMonth;
-                  // Trigger scroll directly without waiting for useEffect
                   requestAnimationFrame(() => {
                     const el = scrollTableRef.current;
                     if (!el) return;
@@ -1612,29 +1612,29 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                     setTimeout(() => { suppressScrollRef.current = false; }, 300);
                   });
                 }}
-                className="font-black tracking-tight text-zinc-900 text-base sm:text-sm px-1 min-w-[100px] sm:min-w-[90px] text-center animate-in fade-in zoom-in-95 duration-200 hover:text-indigo-600 cursor-pointer rounded-lg hover:bg-indigo-50 transition-colors"
+                className="font-extrabold tracking-tight text-ink text-[17px] sm:text-[16px] px-2 min-w-[100px] sm:min-w-[90px] text-center animate-in fade-in zoom-in-95 duration-200 hover:text-brand-deep cursor-pointer rounded-lg hover:bg-brand-tint transition-colors tabular-nums"
               >
                 {currentYear}년 {String(currentMonth).padStart(2, "0")}월
               </button>
               <button
                 onClick={handleNextMonth}
-                className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-indigo-50 active:bg-indigo-100 rounded-xl text-zinc-400 hover:text-indigo-600 transition-all cursor-pointer"
+                className="w-9 h-9 flex items-center justify-center hover:bg-brand-tint text-ink-soft hover:text-brand-deep rounded-lg transition-colors cursor-pointer"
                 title="다음 달"
               >
                 <ChevronRight size={18} />
               </button>
-              {/* 2026-08-11 · 오늘 요약 · 년월/화살표 옆으로 이동 */}
+              {/* 오늘 요약 · 최신 트렌드 · mono · 폰트 +1 */}
               {(() => {
                 const today = new Date();
                 const isThisMonth = today.getFullYear() === currentYear && today.getMonth() + 1 === currentMonth;
                 const todaySummary = isThisMonth ? currentSummaryList.find(s => s.day === today.getDate()) : null;
                 if (!todaySummary) return null;
                 return (
-                  <span className="ml-2 flex items-baseline gap-2 pl-2 border-l border-zinc-200 text-[15px] font-semibold">
-                    <span className="text-emerald-700">약사 {todaySummary.pharmacistCount}</span>
-                    <span className="text-zinc-600">사원 {todaySummary.staffCount}</span>
-                    <span className="text-zinc-500">기타 {todaySummary.otherCount}</span>
-                    <span className="text-indigo-600 font-bold">총 {todaySummary.totalCount}명</span>
+                  <span className="ml-2 flex items-baseline gap-2.5 pl-3 border-l border-line text-[15px] font-semibold tabular-nums">
+                    <span className="text-ink-soft">약사 <b className="text-ink font-bold">{todaySummary.pharmacistCount}</b></span>
+                    <span className="text-ink-soft">사원 <b className="text-ink font-bold">{todaySummary.staffCount}</b></span>
+                    <span className="text-ink-soft">기타 <b className="text-ink font-bold">{todaySummary.otherCount}</b></span>
+                    <span className="text-brand-deep font-bold">총 {todaySummary.totalCount}명</span>
                   </span>
                 );
               })()}

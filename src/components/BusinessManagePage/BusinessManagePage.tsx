@@ -71,21 +71,17 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
   const isBmMobile = useIsMobile();
   const SIDEBAR_ENABLED = useSidebarEnabled(); // 2026-08-16 · 로컬 상수 유지
 
-  // 2026-08-17 · #131 · 페이지 안보이기 · admin (lv≥9) 예외
+  // 2026-08-17 · #131 · 사용자 지시 · admin 도 hidden 적용 (subtab 은 essential 아님)
   const { perms: bmPerms } = usePagePermissions();
-  const bmUserLevel = authSession?.level ??
-    (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9 :
-      authSession?.role === "manager" ? 2 : authSession?.role === "employee" ? 1 : 0);
   const bmHiddenSubs = useMemo(() => {
     const set = new Set<BmSubTab>();
     const subs: BmSubTab[] = ["staff-manage", "approval-center", "lunch", "hr-forms", "document-writer"];
     for (const s of subs) {
-      // document-writer:contract 같은 nested subtab 도 검사 (계약서 작성 · nested 형식)
       const perm = (bmPerms as any)[`business-manage:${s}`] || (bmPerms as any)[`business-manage:${s}:contract`];
-      if (perm?.hidden === true && bmUserLevel < 9) set.add(s);
+      if (perm?.hidden === true) set.add(s);
     }
     return set;
-  }, [bmPerms, bmUserLevel]);
+  }, [bmPerms]);
   // 현재 subtab hidden 시 · 첫번째 visible 로 이동
   useEffect(() => {
     if (bmHiddenSubs.has(subTab)) {

@@ -305,19 +305,18 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   // 2026-08-17 · 프레임워크 · 공통 zone defs 훅 (설정 편집 시 자동 반영)
   const { zones: ZONE_DEFS } = useZoneDefs();
 
-  // 2026-08-17 · #131 · 사용자 지시 · "메뉴에서 안보이기 처리하면 페이지도 안보여야지"
-  //   · 사이드바 hidden 처리한 서브탭은 페이지 내부 tab bar 에서도 숨김
-  //   · usePagePermissions · perms["display:{subTab}"].hidden 체크
+  // 2026-08-17 · #131 · 사용자 지시 · admin 도 hidden 적용 (subtab 은 essential 아님)
+  //   · 사이드바 hidden 처리한 서브탭 · 페이지 내부 tab bar 에서도 숨김 (admin 뷰 포함)
   const { perms: dpPerms } = usePagePermissions();
   const dpHiddenSubs = React.useMemo(() => {
     const set = new Set<DpSubTabKey>();
     const subs: DpSubTabKey[] = ["purchase-order", "purchase", "payment", "statistics", "stock-arrivals", "store", "vendor-manage"];
     for (const s of subs) {
       const perm = (dpPerms as any)[`display:${s}`];
-      if (perm?.hidden === true && dpUserLevel < 9) set.add(s);
+      if (perm?.hidden === true) set.add(s);
     }
     return set;
-  }, [dpPerms, dpUserLevel]);
+  }, [dpPerms]);
   // 2026-08-11 · 사이드바 V2 · PC 는 사이드바가 서브탭 · TabBar 숨김 (모바일 유지)
   const isDpMobile = useIsMobile();
   const SIDEBAR_ENABLED = useSidebarEnabled(); // 2026-08-16 · 로컬 상수 유지 · body 로직 변경 최소

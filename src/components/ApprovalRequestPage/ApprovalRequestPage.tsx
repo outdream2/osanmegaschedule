@@ -56,20 +56,18 @@ const ApprovalRequestPage: React.FC<ApprovalRequestPageProps> = ({
   const isMobile = useIsMobile();
   const SIDEBAR_ENABLED = useSidebarEnabled(); // 2026-08-16 · 로컬 상수 유지
 
-  // 2026-08-17 · #131 · 페이지 안보이기 · admin (lv≥9) 은 예외
+  // 2026-08-17 · #131 · 페이지 안보이기 · 사용자 지시 · admin 도 hidden 적용 (subtab · 관리자도 안 보이게)
+  //   · essential (설정 접근용) 이 아닌 일반 subtab · admin 이 hide 하면 admin 뷰에서도 사라짐
   const { perms: arPerms } = usePagePermissions();
-  const arUserLevel = authSession?.level ??
-    (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9 :
-      authSession?.role === "manager" ? 2 : authSession?.role === "employee" ? 1 : 0);
   const arHiddenSubs = useMemo(() => {
     const set = new Set<ArSubTab>();
     const subs: ArSubTab[] = ["leave", "lunch", "document-writer"];
     for (const s of subs) {
       const perm = (arPerms as any)[`approval-request:${s}`];
-      if (perm?.hidden === true && arUserLevel < 9) set.add(s);
+      if (perm?.hidden === true) set.add(s);
     }
     return set;
-  }, [arPerms, arUserLevel]);
+  }, [arPerms]);
 
   // 현재 subtab hidden 시 · 첫번째 visible 로 이동
   useEffect(() => {
