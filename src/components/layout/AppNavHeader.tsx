@@ -487,15 +487,24 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   }
 
   return (
-    // 2026-08-17 · 사용자 지시 · 반응형 헤더 · 최신 트렌드 · 딥네이비 gradient + 세련 · 초고해상도 · 부드러움
-    //   · gradient · 딥네이비 → 살짝 밝은 네이비 (subtle depth · Linear/Vercel 2026 톤)
-    //   · shadow · 2-layer subtle · GPU 가속 백그라운드
-    //   · border · white/8 + accent glow strip (mint · 4px 아래 위치)
+    // 2026-08-17 · 최신 트렌드 v2 · Linear/Vercel/Attio SaaS · 세련 · 초고해상도 · 부드러움
+    //   · gradient · 딥네이비 → 살짝 밝은 네이비 (subtle depth · 3-stop)
+    //   · aurora radial · 좌측 상단 sky glow + 우측 상단 warm glow (매우 저채도 · 브랜드 identity)
+    //   · shadow · 3-layer (즉시/중거리/원거리 · GPU 가속)
+    //   · top hairline · white/6 (subtle inner light · glass 효과 시작점)
+    //   · bottom hairline · mint accent (기존 유지)
     <header
-      className="relative border-b border-white/[0.08] shrink-0 shadow-[0_1px_3px_rgba(10,46,74,0.15),0_4px_20px_-4px_rgba(10,46,74,0.20)]"
-      style={{ background: "linear-gradient(180deg, #0A2E4A 0%, #0F3855 100%)" }}
+      className="relative border-b border-white/[0.08] shrink-0 shadow-[0_1px_3px_rgba(10,46,74,0.15),0_4px_20px_-4px_rgba(10,46,74,0.20),0_12px_40px_-16px_rgba(10,46,74,0.25)]"
+      style={{ background: "linear-gradient(180deg, #0A2E4A 0%, #0D3350 50%, #0F3855 100%)" }}
     >
-      {/* subtle accent glow · 하단 1px · mint accent · 은은한 브랜드 시그니처 */}
+      {/* 2026-08-17 · aurora radial glow · 좌상단 sky (#5EA9E8) · 우상단 mint (#6FE3C2) · 매우 저채도 · 브랜드 signature */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-24 -left-16 w-[420px] h-[240px] rounded-full opacity-[0.16] blur-3xl" style={{ background: "radial-gradient(closest-side, #5EA9E8, transparent)" }} />
+        <div className="absolute -top-24 -right-20 w-[380px] h-[220px] rounded-full opacity-[0.10] blur-3xl" style={{ background: "radial-gradient(closest-side, #6FE3C2, transparent)" }} />
+      </div>
+      {/* top hairline · inner light · glass 효과 시작점 · 세련 */}
+      <div className="absolute top-0 left-0 right-0 h-px pointer-events-none" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.10) 30%, rgba(255,255,255,0.14) 50%, rgba(255,255,255,0.10) 70%, transparent 100%)" }} />
+      {/* bottom hairline · mint accent · 은은한 브랜드 시그니처 */}
       <div className="absolute bottom-0 left-0 right-0 h-[1px] pointer-events-none" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(94,169,232,0.3) 20%, rgba(94,169,232,0.5) 50%, rgba(94,169,232,0.3) 80%, transparent 100%)" }} />
 
       {/* ── Row 1 · 로고 + 서비스명 · 이름 · 알림 · 로그아웃 ── */}
@@ -509,31 +518,36 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
             title="홈으로"
             aria-label="랜딩 페이지로 이동"
           >
+            {/* 2026-08-17 · 로고 · ring-2 · gradient border · subtle glow (브랜드 identity) */}
             <img
               src={logoImg}
               alt={`${hdrBrand.shortName || "OSAN MEGATOWN"} 로고`}
-              className="w-9 h-9 sm:w-10 sm:h-10 object-cover rounded-full ring-1 ring-white/20 shrink-0"
+              className="w-9 h-9 sm:w-10 sm:h-10 object-cover rounded-full ring-2 ring-white/25 shadow-[0_0_20px_rgba(94,169,232,0.25)] shrink-0 transition-all duration-200 group-hover:ring-white/40"
               draggable={false}
               onError={(e) => {
                 const el = e.currentTarget;
                 if (!el.dataset.retried) { el.dataset.retried = "1"; el.src = "/src/images/logo.png"; }
               }}
             />
-            {/* PC (md+) · 서비스명 · 흰 텍스트 톤 */}
-            <div className="hidden md:flex flex-col gap-0.5 font-bold tracking-tight leading-none select-none">
-              <span className="text-white text-[17px] leading-none">OSAN</span>
-              <span className="text-[#93B4D0] text-[13px] leading-none">MEGATOWN</span>
+            {/* 2026-08-17 · PC (md+) · 서비스명 · subtle divider (좌측 hairline) · 타이포 개선 */}
+            <div className="hidden md:flex items-center gap-3">
+              <span className="w-px h-7 bg-gradient-to-b from-transparent via-white/25 to-transparent" aria-hidden />
+              <div className="flex flex-col gap-0.5 font-bold leading-none select-none">
+                <span className="text-white text-[17px] leading-none tracking-[0.05em]">OSAN</span>
+                <span className="text-[#93B4D0] text-[13px] leading-none tracking-[0.20em] mt-0.5">MEGATOWN</span>
+              </div>
             </div>
           </button>
         </div>
 
         {/* Right: 로그인 이름 + rightSlot + logout · deep navy 톤 · 흰 텍스트 · 반투명 hover */}
         <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+          {/* 2026-08-17 · 사용자 name chip · subtle ring · hover glow · 세련 */}
           {authSession?.employeeName && (
             <button
               type="button"
               onClick={() => onNavigate?.("mypage" as AppNavPage)}
-              className="inline-flex items-center text-[13px] sm:text-[14px] font-bold text-white whitespace-nowrap px-2 sm:px-2.5 py-1.5 rounded-lg hover:bg-white/[0.10] active:scale-95 transition cursor-pointer max-w-[42vw] sm:max-w-none"
+              className="inline-flex items-center text-[13px] sm:text-[14px] font-bold text-white whitespace-nowrap px-2 sm:px-2.5 py-1.5 rounded-lg ring-1 ring-white/10 hover:ring-white/25 hover:bg-white/[0.10] hover:shadow-[0_0_16px_rgba(94,169,232,0.25)] active:scale-95 transition-all duration-150 cursor-pointer max-w-[42vw] sm:max-w-none"
               title="마이페이지"
             >
               <span className="truncate">{authSession.employeeName}{authSession.employeeRank ?? ""}</span>

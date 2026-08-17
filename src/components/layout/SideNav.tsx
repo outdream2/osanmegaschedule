@@ -115,20 +115,21 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
             "px-2.5 py-1.5 mt-1.5 mb-0",
             "rounded-lg",
             "text-[19px] leading-none", // 2026-08-12 · 사용자 지시 · 사이드바 폰트 +2
-            // 200ms ease-out · 모든 인터랙션 통일
-            "transition-colors duration-150 ease-out",
+            // 2026-08-17 v2 · 200ms ease-out · 모든 인터랙션 통일 · 세련
+            "transition-all duration-200 ease-out",
             "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
-            // 2026-08-17 · deep teal 배경 · 목업 톤 · 활성/비활성 pill
+            // 2026-08-17 v2 · deep teal · 활성 · frosted pill + inner light (Attio 세련)
             hasActiveItem
               ? [
                   groupTone.activeBg,      // bg-white/[0.12]
                   groupTone.activeText,    // text-white
                   "font-bold",
+                  "shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
                 ].join(" ")
               : [
-                  // 비활성 · 목업 · #C4DAEE (light mint)
+                  // 비활성 · light mint · 부드러운 hover
                   "text-[#C4DAEE]",
-                  "hover:bg-white/[0.06] hover:text-white",
+                  "hover:bg-white/[0.06] hover:text-white hover:translate-x-[1px]",
                   "font-semibold",
                 ].join(" "),
             "group-data-[collapsible=icon]:hidden",
@@ -295,17 +296,19 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, on
         "text-[19px] leading-none",
         "transition-colors duration-150 ease-out",
         "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
-        // 2026-08-17 · deep teal · 목업 톤
+        // 2026-08-17 v2 · deep teal · 활성 · frosted pill + inner light (Attio 세련)
         active
           ? [
               tone.activeBg,   // bg-white/[0.12]
               tone.activeText, // text-white
               "font-bold",
+              "shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
             ].join(" ")
           : [
               "text-[#C4DAEE]",
-              "hover:bg-white/[0.06] hover:text-white",
+              "hover:bg-white/[0.06] hover:text-white hover:translate-x-[1px]",
               "font-semibold",
+              "transition-all duration-200 ease-out",
             ].join(" "),
         "group-data-[collapsible=icon]:justify-center",
       ].join(" ")}
@@ -365,8 +368,15 @@ export const SideNav: React.FC<SideNavProps> = ({
         : teal}
     >
 
-      {/* ── 로고 영역 · 2026-08-17 · deep teal 톤 · light text · border-white/10 ── */}
-      <SidebarHeader className="px-2 py-2 pb-1.5 border-b border-white/10">
+      {/* ── 로고 영역 · 2026-08-17 v2 · aurora glow + top hairline + deep teal · 세련 ── */}
+      {/* aurora radial glow · 사이드바 상단 · brand identity signature (subtle) */}
+      <div className="absolute inset-x-0 top-0 h-40 pointer-events-none overflow-hidden">
+        <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-[340px] h-[220px] rounded-full opacity-[0.14] blur-3xl" style={{ background: "radial-gradient(closest-side, #5EA9E8, transparent)" }} />
+      </div>
+      {/* top hairline · inner light · glass 세련 */}
+      <div className="absolute top-0 left-0 right-0 h-px pointer-events-none z-10" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.14) 50%, transparent)" }} />
+
+      <SidebarHeader className="relative px-2 py-2 pb-1.5 border-b border-white/10 z-10">
         <div className="flex items-center gap-1 w-full">
           <button
             type="button"
@@ -407,8 +417,8 @@ export const SideNav: React.FC<SideNavProps> = ({
         </div>
       </SidebarHeader>
 
-      {/* ── 그룹 트리 ── */}
-      <SidebarContent className="px-1 pt-1">
+      {/* ── 그룹 트리 · 2026-08-17 · relative + z-10 (aurora glow 뒤로) ── */}
+      <SidebarContent className="relative px-1 pt-1 z-10">
         {groups.map((group) => (
           group.items.length === 1 ? (
             <SingleItemGroup
@@ -428,10 +438,11 @@ export const SideNav: React.FC<SideNavProps> = ({
         ))}
       </SidebarContent>
 
-      {/* ── 하단: 구분선 + 알림 + 로그아웃 · 2026-08-17 · deep teal 톤 ── */}
-      <SidebarSeparator className="bg-white/8" />
+      {/* ── 하단: 구분선 + 알림 + 로그아웃 · 2026-08-17 v2 · gradient hairline · glass 세련 ── */}
+      {/* footer 상단 gradient hairline · fade edges · Attio/Linear 톤 */}
+      <div className="relative h-px shrink-0" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.12) 50%, transparent)" }} aria-hidden />
 
-      <SidebarFooter className="px-2 py-1.5 gap-0.5">
+      <SidebarFooter className="relative px-2 py-1.5 gap-0.5 z-10">
         {authSession && authSession.employeeName && (
           <div className="px-2 py-1 group-data-[collapsible=icon]:hidden">
             <span className="text-[13px] font-bold text-white truncate leading-tight">
