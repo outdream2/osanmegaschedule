@@ -307,3 +307,28 @@ export const COLOR_TONES: Record<SideNavColor, {
   violet:  { activeBar: "bg-violet-500",  activeBg: "bg-violet-100",  activeText: "text-violet-800", iconActive: "text-violet-700",  hoverBg: "hover:bg-white/70",   glowShadow: "shadow-violet-200/40" },
   cyan:    { activeBar: "bg-cyan-500",    activeBg: "bg-cyan-100",    activeText: "text-cyan-800",   iconActive: "text-cyan-700",    hoverBg: "hover:bg-white/70",   glowShadow: "shadow-cyan-200/40" },
 };
+
+/**
+ * 2026-08-17 · 사이드바 deep teal 배경 (#0A4F44) 전용 다크 톤
+ *   · 사용자 지시 · "왼쪽사이드바 글씨 하나도 안보여 목업참고해서 UI개선"
+ *   · 목업 (docs/UI_MOCKUP_PC_2026-08-17.html · .nav-item)
+ *     · text: #CFE6DF  · active bg: rgba(255,255,255,0.12)  · active text: #FFFFFF
+ *     · active icon: #6FE3C2 (mint) · hover bg: rgba(255,255,255,0.06)
+ *   · 그룹 색상은 · 활성 아이콘의 밝은 shade (300) 로 표현 · 텍스트/배경은 통일
+ */
+export const DARK_COLOR_TONES: Record<SideNavColor, {
+  activeBg: string;
+  activeText: string;
+  iconActive: string;
+  hoverBg: string;
+  glowShadow: string;
+}> = {
+  slate:   { activeBg: "bg-white/[0.12]", activeText: "text-white", iconActive: "text-zinc-100",    hoverBg: "hover:bg-white/[0.06]", glowShadow: "shadow-black/10" },
+  amber:   { activeBg: "bg-white/[0.12]", activeText: "text-white", iconActive: "text-amber-300",   hoverBg: "hover:bg-white/[0.06]", glowShadow: "shadow-black/10" },
+  red:     { activeBg: "bg-white/[0.12]", activeText: "text-white", iconActive: "text-red-300",     hoverBg: "hover:bg-white/[0.06]", glowShadow: "shadow-black/10" },
+  sky:     { activeBg: "bg-white/[0.12]", activeText: "text-white", iconActive: "text-sky-300",     hoverBg: "hover:bg-white/[0.06]", glowShadow: "shadow-black/10" },
+  indigo:  { activeBg: "bg-white/[0.12]", activeText: "text-white", iconActive: "text-indigo-300",  hoverBg: "hover:bg-white/[0.06]", glowShadow: "shadow-black/10" },
+  emerald: { activeBg: "bg-white/[0.12]", activeText: "text-white", iconActive: "text-emerald-300", hoverBg: "hover:bg-white/[0.06]", glowShadow: "shadow-black/10" },
+  violet:  { activeBg: "bg-white/[0.12]", activeText: "text-white", iconActive: "text-violet-300",  hoverBg: "hover:bg-white/[0.06]", glowShadow: "shadow-black/10" },
+  cyan:    { activeBg: "bg-white/[0.12]", activeText: "text-white", iconActive: "text-cyan-300",    hoverBg: "hover:bg-white/[0.06]", glowShadow: "shadow-black/10" },
+};

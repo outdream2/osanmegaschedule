@@ -26,7 +26,7 @@ import type { AuthSession } from "../../types";
 import {
   filterGroupsForSession,
   isItemActive,
-  COLOR_TONES,
+  DARK_COLOR_TONES,
   subTabStorageKey,
   type SideNavGroup,
   type SideNavItem,
@@ -83,8 +83,8 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
     isItemActive(item, activePage),
   );
 
-  // 상위 그룹 헤더 톤 (공통헤더 AppNavHeader Tab 톤 매핑)
-  const groupTone = COLOR_TONES[group.color];
+  // 2026-08-17 · 사이드바 deep teal 배경 · DARK_COLOR_TONES 사용 (목업 톤)
+  const groupTone = DARK_COLOR_TONES[group.color];
 
   // 서브탭 클릭 시 · localStorage 저장 + custom event dispatch → 각 페이지가 리스닝하여 setSubTab
   //   · subTab 형식 "sub:nested" (예: "document-writer:contract") 는 3레벨 지원
@@ -115,20 +115,18 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
             "text-[19px] leading-none", // 2026-08-12 · 사용자 지시 · 사이드바 폰트 +2
             // 200ms ease-out · 모든 인터랙션 통일
             "transition-all duration-200 ease-out",
-            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-300",
-            // 활성/비활성 · warm pill
+            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
+            // 2026-08-17 · deep teal 배경 · 목업 톤 · 활성/비활성 pill
             hasActiveItem
               ? [
-                  groupTone.activeBg,
-                  groupTone.activeText,
+                  groupTone.activeBg,      // bg-white/[0.12]
+                  groupTone.activeText,    // text-white
                   "font-bold",
-                  "shadow-sm",
-                  groupTone.glowShadow,
                 ].join(" ")
               : [
-                  // 비활성 · text-zinc-700 (시인성 강화)
-                  "text-zinc-700",
-                  "hover:bg-white/70 hover:text-zinc-900",
+                  // 비활성 · 목업 · #CFE6DF (light mint)
+                  "text-[#CFE6DF]",
+                  "hover:bg-white/[0.06] hover:text-white",
                   "font-semibold",
                 ].join(" "),
             "group-data-[collapsible=icon]:hidden",
@@ -144,25 +142,23 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                   weight={hasActiveItem ? "fill" : "duotone"}
                   className={[
                     "shrink-0",
-                    // 2026-08-12 · 공통헤더 톤 완전 동일 · fill+opacity-90 (활성) · duotone+opacity-70 (비활성)
-                    groupTone.iconActive,
-                    hasActiveItem ? "opacity-90" : "opacity-70",
+                    // 2026-08-17 · deep teal 배경 · 활성 = 그룹 톤 밝은 shade (300) · 비활성 = light mint
+                    hasActiveItem ? groupTone.iconActive : "text-[#CFE6DF]/80",
                     "transition-all duration-200 ease-out",
                   ].join(" ")}
                 />
               );
             })()}
-            {/* 글씨 · 공통헤더 톤 · 활성=그룹컬러 · 비활성=zinc-700 (이미 부모 button className 에 적용됨) */}
             <span className="tracking-wide">{group.label}</span>
           </span>
 
-          {/* 2026-08-12 · CaretDown · 닫힘 = -90도 (좌) · 열림 = 0도 (아래) · 부드러운 화살표 */}
+          {/* CaretDown · 닫힘 = -90도 (좌) · 열림 = 0도 (아래) · 부드러운 화살표 · 2026-08-17 · deep teal 톤 */}
           <span
             className={[
               "flex items-center justify-center",
               "w-7 h-7 rounded-md",
               "transition-colors duration-200 ease-out",
-              hasActiveItem ? "bg-transparent" : "hover:bg-zinc-100",
+              hasActiveItem ? "bg-transparent" : "hover:bg-white/[0.06]",
             ].join(" ")}
             aria-hidden="true"
           >
@@ -171,7 +167,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
               weight="bold"
               className={[
                 "shrink-0 transition-transform duration-200 ease-out",
-                hasActiveItem ? groupTone.activeText : "text-zinc-600",
+                hasActiveItem ? "text-white" : "text-white/60",
                 open ? "rotate-0" : "-rotate-90",
               ].join(" ")}
             />
@@ -194,7 +190,8 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
             // 2026-08-12 · 사용자 지시 · 하위 메뉴 아이콘 = 그룹 아이콘 (공통헤더 탭 아이콘) 통일
             const Icon = group.icon || item.icon;
             const active = isItemActive(item, activePage);
-            const tone = COLOR_TONES[item.color];
+            // 2026-08-17 · deep teal · DARK_COLOR_TONES
+            const tone = DARK_COLOR_TONES[item.color];
 
             return (
               <SidebarMenuItem key={`${item.key}-${item.subTab ?? "_"}-${itemIdx}`} className="relative">
@@ -213,19 +210,17 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                     "h-7 rounded-lg",
                     // 하위 항목 텍스트 크기 · 2026-08-12 · 사용자 지시 +2
                     "text-[18px]",
-                    // 활성 스타일 · pill + glow
+                    // 2026-08-17 · deep teal · 활성 = white/12 pill · 비활성 = light mint
                     active
                       ? [
-                          tone.activeBg,
-                          tone.activeText,
+                          tone.activeBg,   // bg-white/[0.12]
+                          tone.activeText, // text-white
                           "font-bold",
-                          "shadow-sm",
-                          tone.glowShadow,
                         ].join(" ")
                       : [
-                          // 비활성 · text-zinc-700 (시인성 강화)
-                          "font-semibold text-zinc-700",
-                          "hover:bg-white/70 hover:text-zinc-900",
+                          // 비활성 · 목업 톤 · #CFE6DF · 하위 살짝 opacity 낮춤
+                          "font-semibold text-[#CFE6DF]/85",
+                          "hover:bg-white/[0.06] hover:text-white",
                           // subtle slide on hover
                           "hover:translate-x-px",
                         ].join(" "),
@@ -238,9 +233,10 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                     weight={active ? "fill" : "duotone"}
                     className={[
                       "shrink-0",
+                      // 2026-08-17 · deep teal · 활성 = 그룹 밝은 shade · 비활성 = mint 톤
                       active
                         ? [tone.iconActive, "scale-105"].join(" ")
-                        : "text-zinc-500",
+                        : "text-[#CFE6DF]/60",
                       "transition-transform duration-200 ease-out",
                     ].join(" ")}
                   />
@@ -264,7 +260,8 @@ interface SingleItemGroupProps {
 const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, onNavigate }) => {
   const item = group.items[0];
   const active = isItemActive(item, activePage);
-  const tone = COLOR_TONES[group.color];
+  // 2026-08-17 · deep teal · DARK_COLOR_TONES
+  const tone = DARK_COLOR_TONES[group.color];
   const Icon = item.icon;
   return (
     <button
@@ -279,31 +276,29 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, on
         "rounded-lg",
         "text-[19px] leading-none",
         "transition-all duration-200 ease-out",
-        "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-300",
+        "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
+        // 2026-08-17 · deep teal · 목업 톤
         active
           ? [
-              tone.activeBg,
-              tone.activeText,
+              tone.activeBg,   // bg-white/[0.12]
+              tone.activeText, // text-white
               "font-bold",
-              "shadow-sm",
-              tone.glowShadow,
             ].join(" ")
           : [
-              "text-zinc-700",
-              "hover:bg-white/70 hover:text-zinc-900",
+              "text-[#CFE6DF]",
+              "hover:bg-white/[0.06] hover:text-white",
               "font-semibold",
             ].join(" "),
         "group-data-[collapsible=icon]:justify-center",
       ].join(" ")}
     >
-      {/* 2026-08-12 · CollapsibleGroup 헤더와 완전 동일 · dot 제거 · 아이콘 size 18 · 그룹 톤 컬러 */}
+      {/* 2026-08-17 · deep teal · 활성 = 그룹 밝은 shade (300) · 비활성 = mint */}
       <Icon
         size={18}
         weight={active ? "fill" : "duotone"}
         className={[
           "shrink-0",
-          tone.iconActive,
-          active ? "opacity-90" : "opacity-70",
+          active ? tone.iconActive : "text-[#CFE6DF]/80",
           "transition-all duration-200 ease-out",
         ].join(" ")}
       />
@@ -441,7 +436,8 @@ export const SideNav: React.FC<SideNavProps> = ({
                 className={[
                   "h-7 rounded-md pl-2",
                   "text-[16px] font-semibold",
-                  "text-rose-500 hover:bg-rose-50 hover:text-rose-600",
+                  // 2026-08-17 · deep teal · rose 대신 밝은 coral · 배경 반투명
+                  "text-[#FFB4AE] hover:bg-white/[0.06] hover:text-white",
                   "transition-all duration-200 ease-out",
                 ].join(" ")}
               >
@@ -456,7 +452,8 @@ export const SideNav: React.FC<SideNavProps> = ({
       {/* PC 드래그 리사이즈 handle · warm 톤 */}
       <div
         onMouseDown={startResize}
-        className="hidden md:block absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-zinc-300/50 active:bg-zinc-400/60 transition z-30 group-data-[collapsible=icon]:hidden"
+        // 2026-08-17 · deep teal · 반투명 흰 hover 로 대비
+        className="hidden md:block absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-white/25 active:bg-white/40 transition z-30 group-data-[collapsible=icon]:hidden"
         title="드래그하여 사이드바 폭 조절"
         aria-label="사이드바 폭 조절"
         aria-hidden="true"
