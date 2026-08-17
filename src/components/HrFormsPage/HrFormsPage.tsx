@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { FilterBar } from "../common/FilterBar";
+import { StatusPill, type PillTone } from "../common/StatusPill";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import type { AuthSession } from "../../types";
 
@@ -65,6 +66,7 @@ const CATEGORIES: Array<{
   label: string;
   badge: string;
   activeBg: string;
+  tone: PillTone; // 2026-08-17 · StatusPill 프레임워크 통일
   icon: React.ComponentType<{ size?: number; className?: string }>;
 }> = [
   {
@@ -72,6 +74,7 @@ const CATEGORIES: Array<{
     label: "근로계약서",
     badge: "bg-emerald-50 text-emerald-700 border-emerald-200",
     activeBg: "bg-emerald-600 text-white border-emerald-600",
+    tone: "emerald",
     icon: FileSignature,
   },
   {
@@ -79,6 +82,7 @@ const CATEGORIES: Array<{
     label: "사직서",
     badge: "bg-rose-50 text-rose-700 border-rose-200",
     activeBg: "bg-rose-600 text-white border-rose-600",
+    tone: "rose",
     icon: FileEdit,
   },
   {
@@ -86,6 +90,7 @@ const CATEGORIES: Array<{
     label: "서약서",
     badge: "bg-indigo-50 text-indigo-700 border-indigo-200",
     activeBg: "bg-brand-deep text-white border-indigo-600",
+    tone: "indigo",
     icon: FileText,
   },
   {
@@ -93,6 +98,7 @@ const CATEGORIES: Array<{
     label: "기타",
     badge: "bg-zinc-100 text-zinc-600 border-line",
     activeBg: "bg-zinc-700 text-white border-zinc-700",
+    tone: "zinc",
     icon: FileArchive,
   },
 ];
@@ -950,11 +956,9 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                         <div className="text-sm font-bold text-zinc-800 break-all leading-snug">{f.title}</div>
                       </td>
 
-                      {/* 분류 배지 */}
+                      {/* 분류 배지 · 2026-08-17 · StatusPill 프레임워크 통일 */}
                       <td className="px-3 py-2.5 align-middle">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[15px] font-bold border ${cat.badge}`}>
-                          {cat.label}
-                        </span>
+                        <StatusPill tone={cat.tone} size="md">{cat.label}</StatusPill>
                       </td>
 
                       {/* 파일명 */}
@@ -1039,9 +1043,8 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-bold text-zinc-800 leading-snug break-all">{f.title}</div>
                       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[14px] font-bold border ${cat.badge}`}>
-                          {cat.label}
-                        </span>
+                        {/* 2026-08-17 · StatusPill 프레임워크 통일 */}
+                        <StatusPill tone={cat.tone} size="sm">{cat.label}</StatusPill>
                         <span className="text-[15px] text-zinc-400 font-semibold">{fmtDateTime(f.created_at)}</span>
                       </div>
                     </div>
