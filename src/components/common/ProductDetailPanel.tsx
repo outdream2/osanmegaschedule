@@ -108,30 +108,30 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
           >
             {/* 1행 · 아이콘 · 제목 · 화살표 · 2026-08-17 · 딥네이비 통일 */}
             <div className="flex items-center gap-2">
-              <span className="w-[3px] h-[14px] rounded-full bg-brand-deep shrink-0" />
-              <TrendingUp size={15} className="text-brand-deep shrink-0" />
-              <span className="text-[14px] font-bold text-ink tracking-tight">기간별 상품흐름</span>
+              <span className="w-[3px] h-[16px] rounded-full bg-brand-deep shrink-0" />
+              <TrendingUp size={17} className="text-brand-deep shrink-0" />
+              <span className="text-[16px] font-bold text-ink tracking-tight">기간별 상품흐름</span>
               {collapsed
-                ? <ChevronRight size={15} className="ml-auto text-ink-soft shrink-0" />
-                : <ChevronDown size={15} className="ml-auto text-brand-deep shrink-0" />}
+                ? <ChevronRight size={17} className="ml-auto text-ink-soft shrink-0" />
+                : <ChevronDown size={17} className="ml-auto text-brand-deep shrink-0" />}
             </div>
             {/* 2행 · 상품명 (줄바꿈) */}
             {productName && (
-              <div className="text-[13px] font-bold text-ink break-words whitespace-normal leading-snug pl-[22px] tracking-tight">
+              <div className="text-[15px] font-bold text-ink break-words whitespace-normal leading-snug pl-[24px] tracking-tight">
                 {productName}
               </div>
             )}
             {/* 3행 · 판매량 통계 (상품명 아래) */}
             {!collapsed && (totalSaleQty > 0 || last30Sale > 0) && (
-              <div className="flex items-center gap-3 flex-wrap pl-[22px] text-[12px] tabular-nums font-medium text-ink-soft">
+              <div className="flex items-center gap-3 flex-wrap pl-[24px] text-[14px] tabular-nums font-medium text-ink-soft">
                 {totalSaleQty > 0 && (
                   <span title={`stock_history.sale_qty 합계 ${totalSaleQty.toLocaleString()} / ${monthSpan}개월 = 월평균 ${avgMonthlySale}개`}>
-                    월평균 판매 <span className="font-bold text-rose-700 text-[13px]">{avgMonthlySale.toLocaleString()}</span>개
+                    월평균 판매 <span className="font-bold text-rose-700 text-[15px]">{avgMonthlySale.toLocaleString()}</span>개
                   </span>
                 )}
                 {last30Sale > 0 && (
                   <span title="최근 30일 판매량 (stock_history · snapshot_date >= 30일 전)">
-                    최근 한달 판매 <span className="font-bold text-brand-deep text-[13px]">{last30Sale.toLocaleString()}</span>개
+                    최근 한달 판매 <span className="font-bold text-brand-deep text-[15px]">{last30Sale.toLocaleString()}</span>개
                   </span>
                 )}
               </div>
@@ -144,8 +144,8 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
           {/* 조회기간 행 · 2026-08-17 · 딥네이비 통일 · segmented pill */}
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <span className="flex items-center gap-1.5 shrink-0">
-              <span className="w-[3px] h-[12px] rounded-full bg-brand-deep" />
-              <span className="text-[12px] font-bold text-ink tracking-tight">조회기간</span>
+              <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
+              <span className="text-[14px] font-bold text-ink tracking-tight">조회기간</span>
             </span>
             <div className="inline-flex shrink-0 bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
               {([1, 2, 3, 4, 5, 6] as const).map(m => {
@@ -154,32 +154,32 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
                   <button
                     key={m}
                     onClick={() => { setSeason(null); setMonths(m); }}
-                    className={`min-w-[28px] min-h-[32px] px-2 py-0.5 text-[12px] font-semibold rounded-md transition-colors cursor-pointer ${active
+                    className={`min-w-[32px] min-h-[34px] px-2 py-0.5 text-[14px] font-semibold rounded-md transition-colors cursor-pointer ${active
                       ? "bg-brand-deep text-white shadow-sm"
                       : "text-ink hover:text-brand-deep hover:bg-white"
                     }`}
                   >{m}</button>
                 );
               })}
-              <span className="text-[12px] font-semibold text-ink-soft self-center px-1">개월</span>
+              <span className="text-[14px] font-semibold text-ink-soft self-center px-1">개월</span>
             </div>
             <div className="shrink-0">
               <SeasonButtons value={season} onChange={setSeason} size="sm" hideLabel />
             </div>
           </div>
-          {/* 단위 행 · 2026-08-17 · 딥네이비 통일 */}
+          {/* 단위 행 · 2026-08-17 · 폰트 +2 */}
           <div className="flex items-center gap-2 mb-2.5 flex-wrap">
             <span className="flex items-center gap-1.5 shrink-0">
-              <span className="w-[3px] h-[12px] rounded-full bg-brand-deep" />
-              <span className="text-[12px] font-bold text-ink tracking-tight">단위</span>
+              <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
+              <span className="text-[14px] font-bold text-ink tracking-tight">단위</span>
             </span>
             <div className="inline-flex shrink-0 bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
               <button onClick={() => setXAxisMode("month")}
-                className={`min-h-[32px] px-3 py-0.5 text-[12px] font-semibold rounded-md transition-colors cursor-pointer ${xAxisMode === "month" ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>월중</button>
+                className={`min-h-[34px] px-3 py-0.5 text-[14px] font-semibold rounded-md transition-colors cursor-pointer ${xAxisMode === "month" ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>월중</button>
               <button onClick={() => setXAxisMode("10day")}
-                className={`min-h-[32px] px-3 py-0.5 text-[12px] font-semibold rounded-md transition-colors cursor-pointer ${xAxisMode === "10day" ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>10일 (초·중·하순)</button>
+                className={`min-h-[34px] px-3 py-0.5 text-[14px] font-semibold rounded-md transition-colors cursor-pointer ${xAxisMode === "10day" ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>10일 (초·중·하순)</button>
             </div>
-            <span className="text-[12px] font-medium text-ink-soft sm:ml-auto tracking-tight">매입 · 판매 · 폐기 · 손실</span>
+            <span className="text-[14px] font-medium text-ink-soft sm:ml-auto tracking-tight">매입 · 판매 · 폐기 · 손실</span>
           </div>
         </>
       )}
@@ -348,31 +348,49 @@ const ProductHeaderCard: React.FC<{
   const supplier = (product.supplier ?? "").toString().trim();
   const canOpenSupplier = !!supplier && !!onSupplierInfoOpen;
   return (
-    /* 2026-08-17 · 최신 트렌드 · accent bar + 폰트 +2 · 딥네이비 통일 */
-    <div className="bg-white rounded-xl border border-line shadow-sm px-4 py-3">
-      {/* 상품명 · accent bar + 큰 글씨 */}
-      <div className="flex items-start gap-2.5">
-        <span className="w-[3px] h-[18px] rounded-full bg-brand-deep shrink-0 mt-1" />
-        <div className="text-[16px] font-bold text-ink break-words whitespace-normal leading-snug tracking-tight flex-1 min-w-0">
-          {product.name || "-"}
+    /* 2026-08-17 · Linear/Vercel/Attio 규칙 · 히어로 카드 · Top hairline gradient (딱 1군데) + 뉴트럴 base */
+    <div className="relative bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_20px_rgba(10,46,74,0.08)] overflow-hidden">
+      {/* 상단 1px hairline gradient · 브랜드 accent → transparent · ONE 위치만 */}
+      <div className="h-[2px] w-full bg-gradient-to-r from-brand-deep via-[#1E5A8F] to-transparent" />
+
+      <div className="relative px-4 py-4">
+        {/* 상품명 행 · brand-deep icon chip + 상품명 크게 */}
+        <div className="relative flex items-start gap-3">
+          <div className="w-11 h-11 rounded-xl bg-brand-deep flex items-center justify-center shadow-[0_2px_8px_rgba(10,46,74,0.20)] shrink-0 ring-1 ring-brand/10">
+            <Package size={20} className="text-white" strokeWidth={2.2} />
+          </div>
+          <div className="flex-1 min-w-0 pt-0.5">
+            <div className="inline-flex items-center gap-1.5 mb-1">
+              {/* status dot · 8px · Vercel 규칙 · 상태만 emerald */}
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.15)]" />
+              <span className="text-[12px] font-semibold text-ink-soft uppercase tracking-widest">Product</span>
+            </div>
+            <div className="text-[19px] font-bold text-ink break-words whitespace-normal leading-tight tracking-tight">
+              {product.name || "-"}
+            </div>
+          </div>
         </div>
-      </div>
-      {/* 공급사 + 조회 버튼 */}
-      <div className="mt-2 flex items-center gap-2 flex-wrap pl-[13px]">
-        <Building2 size={14} className="text-brand-deep shrink-0" />
-        <span className="text-[14px] font-semibold text-ink break-words whitespace-normal">
-          {supplier || <span className="text-ink-soft font-medium">공급사 정보 없음</span>}
-        </span>
-        {canOpenSupplier && (
-          <button
-            type="button"
-            onClick={() => onSupplierInfoOpen!(supplier)}
-            className="ml-auto inline-flex items-center gap-1.5 min-h-[32px] px-3 py-1 text-[13px] font-semibold rounded-md border border-line bg-white text-ink-soft hover:border-brand-deep hover:bg-brand-tint hover:text-brand-deep transition-colors cursor-pointer shrink-0"
-            title={`공급사 정보 조회 · ${supplier}`}
-          >
-            공급사조회
-          </button>
-        )}
+
+        {/* 공급사 + 조회 버튼 · 뉴트럴 pill · icon 만 brand-deep */}
+        <div className="relative mt-3.5 pt-3.5 border-t border-line/60 flex items-center gap-2 flex-wrap">
+          <div className="inline-flex items-center gap-2 h-9 pl-2.5 pr-3 rounded-full bg-zinc-50 border border-line min-w-0 max-w-full">
+            <Building2 size={15} className="text-brand-deep shrink-0" strokeWidth={2.3} />
+            <span className="text-[15px] font-semibold text-ink truncate">
+              {supplier || <span className="text-ink-soft font-medium">공급사 정보 없음</span>}
+            </span>
+          </div>
+          {canOpenSupplier && (
+            <button
+              type="button"
+              onClick={() => onSupplierInfoOpen!(supplier)}
+              className="ml-auto inline-flex items-center gap-1.5 h-9 px-3.5 text-[14px] font-semibold rounded-full border border-line bg-white text-ink-soft hover:border-brand-deep hover:bg-brand-tint hover:text-brand-deep transition-colors cursor-pointer shrink-0 shadow-sm"
+              title={`공급사 정보 조회 · ${supplier}`}
+            >
+              공급사조회
+              <ChevronRight size={14} strokeWidth={2.5} />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -398,21 +416,22 @@ const ProductDetailChartMode: React.FC<{
       {/* 3탭 · 기간별상품흐름 · 매입이력 · 발주내역 (2026-07-31 · 사용자 요청) */}
       <PurchaseOrderTabs productCode={product.code} productName={product.name} />
 
-      {/* 상단 카드: 헤더 + 재고현황 + 매입판매가 + 발주요청 + 배정구역 · 접기 지원 · 2026-08-17 · 최신 트렌드 */}
-      <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
+      {/* 상단 카드: 헤더 + 재고현황 + 매입판매가 + 발주요청 + 배정구역 · 접기 지원 · 2026-08-17 · 세련 · shadow depth */}
+      <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_16px_rgba(10,46,74,0.06)] overflow-hidden">
         <button
           type="button"
           onClick={() => setTopCollapsed(c => !c)}
           className="w-full flex items-center gap-2.5 px-4 min-h-[44px] py-2.5 hover:bg-zinc-50 transition-colors cursor-pointer border-b border-line"
           title={topCollapsed ? "펼치기" : "접기"}
         >
-          <span className="w-[3px] h-[16px] rounded-full bg-brand-deep shrink-0" />
+          {/* status dot · 열림=brand-deep · 닫힘=zinc-300 · Vercel 규칙 6~10px */}
+          <span className={`w-2 h-2 rounded-full shrink-0 transition-colors ${topCollapsed ? "bg-zinc-300" : "bg-brand-deep"}`} />
           {topCollapsed
-            ? <ChevronRight size={15} className="text-ink-soft shrink-0" />
-            : <ChevronDown size={15} className="text-brand-deep shrink-0" />}
-          <Package size={16} className="text-brand-deep shrink-0" />
-          <span className="text-[15px] font-bold text-ink tracking-tight break-keep whitespace-normal leading-tight text-left">재고 · 매입판매가 · 발주 · 배정구역</span>
-          {topCollapsed && <span className="text-[12px] font-medium text-ink-soft ml-1 shrink-0">— 펼치기</span>}
+            ? <ChevronRight size={17} className="text-ink-soft shrink-0" />
+            : <ChevronDown size={17} className="text-brand-deep shrink-0" />}
+          <Package size={17} className="text-ink-soft shrink-0" strokeWidth={2.2} />
+          <span className="text-[17px] font-bold text-ink tracking-tight break-keep whitespace-normal leading-tight text-left">재고 · 매입판매가 · 발주 · 배정구역</span>
+          {topCollapsed && <span className="text-[14px] font-medium text-ink-soft ml-1 shrink-0">— 펼치기</span>}
         </button>
         {!topCollapsed && (
           <ProductInfoCard
@@ -438,13 +457,14 @@ const ProductDetailChartMode: React.FC<{
           className="w-full flex items-center gap-2.5 px-4 min-h-[44px] py-2.5 hover:bg-zinc-50 transition-colors cursor-pointer border-b border-line"
           title={metaCollapsed ? "펼치기" : "접기"}
         >
-          <span className="w-[3px] h-[16px] rounded-full bg-brand-deep shrink-0" />
+          {/* status dot · Vercel 규칙 · 열림=brand-deep · 닫힘=zinc-300 */}
+          <span className={`w-2 h-2 rounded-full shrink-0 transition-colors ${metaCollapsed ? "bg-zinc-300" : "bg-brand-deep"}`} />
           {metaCollapsed
-            ? <ChevronRight size={15} className="text-ink-soft shrink-0" />
-            : <ChevronDown size={15} className="text-brand-deep shrink-0" />}
-          <Package size={16} className="text-brand-deep shrink-0" />
-          <span className="text-[15px] font-bold text-ink tracking-tight break-keep whitespace-normal leading-tight text-left">상품 정보 · 추가 정보</span>
-          {metaCollapsed && <span className="text-[12px] font-medium text-ink-soft ml-1 shrink-0">— 펼치기</span>}
+            ? <ChevronRight size={17} className="text-ink-soft shrink-0" />
+            : <ChevronDown size={17} className="text-brand-deep shrink-0" />}
+          <Package size={17} className="text-ink-soft shrink-0" strokeWidth={2.2} />
+          <span className="text-[17px] font-bold text-ink tracking-tight break-keep whitespace-normal leading-tight text-left">상품 정보 · 추가 정보</span>
+          {metaCollapsed && <span className="text-[14px] font-medium text-ink-soft ml-1 shrink-0">— 펼치기</span>}
         </button>
         {!metaCollapsed && (
           <ProductInfoCard
@@ -571,22 +591,24 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }>
       .finally(() => setOrdersLoading(false));
   }, [tab, productCode]);
   return (
-    /* 2026-08-17 · 최신 트렌드 · 딥네이비 통일 · 카테고리 identity 는 icon */
-    <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
-      <div className="flex border-b border-line bg-zinc-50/60">
+    /* 2026-08-17 · Attio "carved" segmented · 단일 brand accent · 폰트 +2 */
+    <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_16px_rgba(10,46,74,0.06)] overflow-hidden">
+      <div className="relative flex border-b border-line bg-zinc-50/40 p-1.5 gap-1">
         {(["flow", "purchase", "order"] as const).map(k => {
           const active = tab === k;
           const label = k === "flow" ? "기간별 상품흐름" : k === "purchase" ? "매입이력" : "발주내역";
           const Icon = k === "flow" ? TrendingUp : k === "purchase" ? History : ClipboardList;
           const cls = active
-            ? "text-brand-deep border-brand-deep bg-white"
-            : "text-ink-soft border-transparent hover:text-brand-deep hover:bg-white/60";
+            ? "text-ink bg-white shadow-sm ring-1 ring-line"
+            : "text-ink-soft hover:text-ink hover:bg-white/70";
           return (
             <button key={k} type="button" onClick={() => setTab(k)}
-              className={`flex-1 min-h-[44px] py-2.5 px-2 text-[13px] font-semibold border-b-2 transition-colors cursor-pointer flex items-center justify-center gap-1.5 tracking-tight ${cls}`}
+              className={`relative flex-1 min-h-[42px] py-2 px-2 text-[14px] font-semibold rounded-xl transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 tracking-tight ${cls}`}
               title={label}>
-              <Icon size={15} className="shrink-0" />
+              <Icon size={16} className={`shrink-0 ${active ? "text-brand-deep" : ""}`} strokeWidth={active ? 2.4 : 2} />
               <span className="truncate">{label}</span>
+              {/* 활성 · 하단 2px accent · Linear 규칙 */}
+              {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-full bg-brand-deep" />}
             </button>
           );
         })}
@@ -610,27 +632,27 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }>
           ) : (
             /* 2026-08-17 · 최신 트렌드 · 폰트 +2 · 딥네이비 헤더 톤 · status 는 semantic 색 유지 */
             <div className="overflow-x-auto -mx-1 px-1">
-              <table className="w-full text-[12px] min-w-[320px]">
-                <thead className="text-[12px] font-semibold text-ink-soft border-b border-line bg-zinc-50/60">
+              <table className="w-full text-[14px] min-w-[340px]">
+                <thead className="text-[13px] font-semibold text-ink-soft border-b border-line bg-zinc-50/60">
                   <tr>
-                    <th className="text-left px-2.5 py-2 whitespace-nowrap tracking-tight">요청일시</th>
-                    <th className="text-left px-2.5 py-2 tracking-tight">공급사</th>
-                    <th className="text-right px-2.5 py-2 w-14 tracking-tight">현재고</th>
-                    <th className="text-right px-2.5 py-2 w-12 tracking-tight">적정</th>
-                    <th className="text-center px-2.5 py-2 w-14 tracking-tight">상태</th>
+                    <th className="text-left px-3 py-2.5 whitespace-nowrap tracking-tight">요청일시</th>
+                    <th className="text-left px-3 py-2.5 tracking-tight">공급사</th>
+                    <th className="text-right px-3 py-2.5 w-16 tracking-tight">현재고</th>
+                    <th className="text-right px-3 py-2.5 w-14 tracking-tight">적정</th>
+                    <th className="text-center px-3 py-2.5 w-16 tracking-tight">상태</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
                   {orders.map(o => (
                     <tr key={o.id} className="hover:bg-brand-tint/40 transition-colors">
-                      <td className="px-2.5 py-1.5 tabular-nums text-ink-soft text-[12px] whitespace-nowrap">
+                      <td className="px-3 py-2 tabular-nums text-ink-soft text-[13px] whitespace-nowrap">
                         {o.requested_at ? new Date(o.requested_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "-"}
                       </td>
-                      <td className="px-2.5 py-1.5 text-[12px] text-ink font-medium break-words">{o.supplier ?? "-"}</td>
-                      <td className="px-2.5 py-1.5 text-[12px] text-right tabular-nums text-amber-700 font-bold">{o.current_stock ?? "-"}</td>
-                      <td className="px-2.5 py-1.5 text-[12px] text-right tabular-nums text-ink-soft">{o.optimal_stock ?? "-"}</td>
-                      <td className="px-2.5 py-1.5 text-center">
-                        <span className={`text-[11px] font-semibold rounded-full px-2 py-0.5 border whitespace-nowrap ${
+                      <td className="px-3 py-2 text-[14px] text-ink font-medium break-words">{o.supplier ?? "-"}</td>
+                      <td className="px-3 py-2 text-[14px] text-right tabular-nums text-amber-700 font-bold">{o.current_stock ?? "-"}</td>
+                      <td className="px-3 py-2 text-[14px] text-right tabular-nums text-ink-soft">{o.optimal_stock ?? "-"}</td>
+                      <td className="px-3 py-2 text-center">
+                        <span className={`text-[12px] font-semibold rounded-full px-2.5 py-0.5 border whitespace-nowrap ${
                           o.status === "done" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
                           o.status === "sent" ? "bg-brand-tint text-brand-deep border-brand/15" :
                           "bg-amber-50 text-amber-700 border-amber-200"
