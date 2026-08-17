@@ -5,6 +5,7 @@ import { api } from "../lib/apiClient";
 import { TIMING } from "../constants/timing";
 import { Bell, BellOff, CheckCheck, X, Info, AlertTriangle, CheckCircle, AlertCircle } from "lucide-react";
 import type { AuthSession } from "../types";
+import { StatusPill } from "./common/StatusPill";
 
 interface Notification {
   id: number;
@@ -191,7 +192,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
               <Bell size={15} className="text-brand-deep" />
               <span className="text-[16px] font-bold text-ink tracking-tight">알림</span>
               {unreadCount > 0 && (
-                <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white text-[12px] font-semibold tabular-nums shadow-sm">{unreadCount}</span>
+                <StatusPill tone="rose" size="sm" dot pulse>{unreadCount}</StatusPill>
               )}
             </div>
             <div className="flex items-center gap-1">
