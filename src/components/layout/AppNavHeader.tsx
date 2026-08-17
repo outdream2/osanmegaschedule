@@ -310,57 +310,32 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const Icon = tab.icon;
     const c = TAB_COLOR_MAP[tab.color ?? "slate"];
 
-    // 색상별 underline accent 색상 (active 탭 하단 bar)
+    // 2026-08-17 · 사용자 지시 · 공통헤더 파란 배경 · 최신 트렌드 · 깔끔·고급·세련
+    //   · 딥네이비 배경 · 라이트 텍스트 · 활성 = 흰 pill (glass) + mint accent underline
+    //   · Linear/Vercel 톤 · flat + subtle · 색상 통일 (그룹별 accent 는 아이콘 색만 유지)
     const ACCENT_BORDER: Record<string, string> = {
-      slate:   "border-b-zinc-500",
-      blue:    "border-b-blue-500",
-      red:     "border-b-red-500",
-      sky:     "border-b-sky-500",
-      indigo:  "border-b-indigo-500",
-      orange:  "border-b-orange-500",
-      emerald: "border-b-emerald-500",
-      violet:  "border-b-violet-500",
-      amber:   "border-b-amber-500",
-      cyan:    "border-b-cyan-500",
-    };
-    // 색상별 hover 배경 (subtle tinted)
-    const HOVER_BG: Record<string, string> = {
-      slate:   "hover:bg-zinc-50",
-      blue:    "hover:bg-blue-50",
-      red:     "hover:bg-red-50",
-      sky:     "hover:bg-sky-50",
-      indigo:  "hover:bg-indigo-50",
-      orange:  "hover:bg-orange-50",
-      emerald: "hover:bg-emerald-50",
-      violet:  "hover:bg-violet-50",
-      amber:   "hover:bg-amber-50",
-      cyan:    "hover:bg-cyan-50",
-    };
-    // 색상별 active 배경 (매우 연한 tint)
-    const ACTIVE_BG_TINT: Record<string, string> = {
-      slate:   "bg-zinc-50/80",
-      blue:    "bg-blue-50/80",
-      red:     "bg-red-50/80",
-      sky:     "bg-sky-50/80",
-      indigo:  "bg-indigo-50/80",
-      orange:  "bg-orange-50/80",
-      emerald: "bg-emerald-50/80",
-      violet:  "bg-violet-50/80",
-      amber:   "bg-amber-50/80",
-      cyan:    "bg-cyan-50/80",
+      slate:   "border-b-white/70",
+      blue:    "border-b-[#7EB8E8]",
+      red:     "border-b-[#FFB4AE]",
+      sky:     "border-b-[#7EB8E8]",
+      indigo:  "border-b-[#A5B4FC]",
+      orange:  "border-b-[#FFB477]",
+      emerald: "border-b-[#6FE3C2]",
+      violet:  "border-b-[#C4B5FD]",
+      amber:   "border-b-[#FFC876]",
+      cyan:    "border-b-[#7EE8E8]",
     };
 
     const colorKey = tab.color ?? "slate";
-    const accentBar = ACCENT_BORDER[colorKey] ?? "border-b-zinc-500";
-    const hoverBg = HOVER_BG[colorKey] ?? "hover:bg-zinc-50";
-    const activeBgTint = ACTIVE_BG_TINT[colorKey] ?? "bg-zinc-50/80";
+    const accentBar = ACCENT_BORDER[colorKey] ?? "border-b-white/70";
 
-    // 공통 베이스: 세로 border-b-2 underline 방식 · 상하 padding 은 Row 2 높이와 맞춤
-    // 2026-08-17 · 사용자 지시 · 메인메뉴 폰트 +2 (15→17 · 16→18 · 17→19)
-    const baseCommon = "relative flex items-center gap-1.5 px-2.5 sm:px-2 md:px-2.5 lg:px-3 py-1.5 rounded-lg text-[17px] sm:text-[17px] md:text-[18px] lg:text-[19px] font-semibold whitespace-nowrap transition-all duration-150";
+    // 2026-08-17 · 딥네이비 배경 · 폰트 +2 유지
+    const baseCommon = "relative flex items-center gap-1.5 px-3 sm:px-3 md:px-3.5 lg:px-4 py-1.5 rounded-lg text-[17px] sm:text-[17px] md:text-[18px] lg:text-[19px] font-semibold whitespace-nowrap transition-colors duration-150";
 
-    const activeClass = `${baseCommon} ${activeBgTint} ${c.activeText} border-2 ${accentBar} border-x-transparent border-t-transparent font-bold`;
-    const inactiveClass = `${baseCommon} ${hoverBg} ${c.inactiveText} ${c.inactiveHoverText} border-2 border-transparent hover:border-x-transparent hover:border-t-transparent hover:border-b-transparent active:scale-95 cursor-pointer disabled:opacity-40`;
+    // active · 흰 반투명 pill + 흰 텍스트 + subtle 하단 accent (그룹 톤)
+    const activeClass = `${baseCommon} bg-white/[0.14] text-white border-2 ${accentBar} border-x-transparent border-t-transparent font-bold shadow-sm`;
+    // inactive · 라이트 블루 텍스트 + hover 반투명 흰 배경
+    const inactiveClass = `${baseCommon} text-[#C4DAEE] hover:bg-white/[0.06] hover:text-white border-2 border-transparent active:scale-95 cursor-pointer disabled:opacity-40`;
 
     // 경영관리 탭 · business-manage 통합 페이지로 단순 라우팅 (2026-08-03)
     if (tab.key === "business") {
@@ -572,8 +547,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         </div>
       </div>
 
-      {/* ── Row 2 (하단): Desktop/태블릿 nav tabs · 2026-08-11 리디자인 · sm+ ── */}
-      <div className="hidden sm:block px-4 sm:px-5 md:px-6 pt-0.5 pb-1.5 border-t border-zinc-100/60">
+      {/* ── Row 2 (하단): Desktop/태블릿 nav tabs · 2026-08-17 · 딥네이비 배경 · 최신 트렌드 ── */}
+      <div className="hidden sm:block px-4 sm:px-5 md:px-6 pt-1 pb-2 border-t border-white/[0.08]">
         <div ref={desktopContainerRef} className="flex items-center gap-0.5 min-w-0 relative">
           {/* 측정용 hidden 영역 · 실제 탭 폭 계산 */}
           <div
@@ -594,10 +569,10 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
               <button
                 type="button"
                 onClick={() => setDesktopOverflowOpen(v => !v)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[15px] font-semibold transition-all duration-150 active:scale-95 cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[15px] font-semibold transition-colors duration-150 active:scale-95 cursor-pointer ${
                   desktopOverflowOpen
-                    ? "bg-zinc-800 text-white shadow-md"
-                    : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+                    ? "bg-white/[0.14] text-white"
+                    : "text-[#C4DAEE] hover:bg-white/[0.06] hover:text-white"
                 }`}
                 title={`더보기 (${desktopOverflowTabs.length}개)`}
                 aria-label="더보기 메뉴"

@@ -975,21 +975,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             );
           })()}
 
-          {/* ── 오늘의 현황 · 2026-08-17 · 사용자 지시 · 한 줄 텍스트 · 깔끔 ── */}
+          {/* ── 오늘의 현황 · 2026-08-17 · 사용자 지시 · 헤더 + 줄바꿈 · 나머지 정보 노출 ── */}
           {isManagerOrAdmin && (
-            <div className="w-full mb-6 flex flex-wrap items-baseline gap-x-5 gap-y-1.5 text-[17px] text-ink-soft">
-              <span className="text-brand font-bold tracking-tight">오늘의 현황</span>
-              <span>승인 대기 <b className="text-ink font-bold tabular-nums">{leavePendingCount}</b>건</span>
-              <span>진열·발주 요청 <b className="text-ink font-bold tabular-nums">{requestsCounts.display + requestsCounts.order}</b>건</span>
-              <span>배치구역 불일치 <b className="text-ink font-bold tabular-nums">{requestsCounts.mismatch}</b>건</span>
-              <span>점심 신청 <b className="text-ink font-bold tabular-nums">{requestsCounts.lunch}</b>건</span>
+            <div className="w-full mb-6">
+              <div className="text-brand font-bold tracking-tight text-[16px] mb-1.5">오늘의 현황</div>
+              <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-[17px] text-ink-soft">
+                <span>승인 대기 <b className="text-ink font-bold tabular-nums">{leavePendingCount}</b>건</span>
+                <span>진열·발주 요청 <b className="text-ink font-bold tabular-nums">{requestsCounts.display + requestsCounts.order}</b>건</span>
+                <span>배치구역 불일치 <b className="text-ink font-bold tabular-nums">{requestsCounts.mismatch}</b>건</span>
+                <span>점심 신청 <b className="text-ink font-bold tabular-nums">{requestsCounts.lunch}</b>건</span>
+              </div>
             </div>
           )}
 
           {/* ── 관리자 도구 (관리자 로그인 시에만 표시) · 2026-08-17 · SectionLabel + 반응형 grid ── */}
           {isManagerOrAdmin && (
             <div className="w-full mb-7">
-              <SectionLabel tone="teal">관리자 도구</SectionLabel>
+              <SectionLabel tone="teal">관리자 도구 바로가기</SectionLabel>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3.5">
 
                 {/* 매장관리 · teal · 목업 톤 기본 사이즈 */}
@@ -1043,7 +1045,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           {/* ── 직원용 · 2026-08-17 · SectionLabel + 반응형 grid ── */}
           {isLoggedIn && !isVendor && (
             <div className="w-full mb-7">
-              <SectionLabel tone="sky">직원용</SectionLabel>
+              <SectionLabel tone="sky">직원용 바로가기</SectionLabel>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3.5">
 
                 {/* 약사 전용 — sky · level ≥ 3 만 노출 */}
@@ -1211,7 +1213,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           {/* ── 거래처용 · 2026-08-17 · #145 · SectionLabel + MenuCard 통일 (인라인 button 3개 제거) ── */}
           {isLoggedIn && (isVendor || isSuperAdminLevel9) && (
             <div className="w-full">
-              <SectionLabel tone="teal">거래처용</SectionLabel>
+              <SectionLabel tone="teal">거래처용 바로가기</SectionLabel>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3.5">
                 <MenuCard color="teal" icon={CalendarCheck} title="방문예약" description="상담 및 방문 일정을 간편하게 예약"
                   onClick={() => onNavigate("reservation", authSession!)} />

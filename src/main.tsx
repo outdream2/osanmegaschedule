@@ -38,12 +38,18 @@ axios.interceptors.response.use(
     const status = error?.response?.status;
     const config = error?.config;
     const url: string = config?.url ?? "";
-    // /api/auth/* 는 refresh 시도 X (무한 루프 방지)
-    if (status === 401 && config && !config.__retried && !url.startsWith("/api/auth/")) {
+    // 2026-08-17 · 강화 · 토큰/쿠키 만료 시 무조건 로그아웃 + 로그인화면
+    //   1) /api/auth/login · /api/auth/vendor-login · POST 는 정상 검증 실패 → skip
+    //   2) 그 외 401 → refresh 1회 시도 → 실패 시 SESSION_EXPIRED_EVENT dispatch → App handleLogout
+    const isLoginAttempt = url.includes("/api/auth/login") || url.includes("/api/auth/vendor-login");
+    if (status === 401 && config && !config.__retried && !isLoginAttempt) {
       config.__retried = true;
-      const ok = await tryRefresh();
-      if (ok) return axios(config); // 새 access 로 원 요청 재시도
-      // 2026-08-17 · refresh 실패 · 세션만료 이벤트 dispatch (App 리스너 → 로그아웃 + 로그인화면)
+      // /api/auth/refresh 자체가 401 이면 refresh 재시도 X · 바로 만료
+      if (!url.startsWith("/api/auth/")) {
+        const ok = await tryRefresh();
+        if (ok) return axios(config); // 새 access 로 원 요청 재시도
+      }
+      // refresh 실패 OR auth 엔드포인트 401 · 세션만료 이벤트 dispatch (App 리스너 → 로그아웃 + 로그인화면)
       try { window.dispatchEvent(new CustomEvent<null>(SESSION_EXPIRED_EVENT)); } catch { /* silent */ }
     }
     return Promise.reject(error);
