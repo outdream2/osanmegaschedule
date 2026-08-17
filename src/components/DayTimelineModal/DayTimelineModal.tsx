@@ -19,6 +19,7 @@ import {
 import { WorkerChips } from "./WorkerChips";
 import { BreakTimeline } from "./BreakTimeline";
 import { api, ApiError } from "../../lib/apiClient";
+import { StatusPill } from "../common/StatusPill";
 
 
 // ─── Sub-component: ZoneSection ──────────────────────────────────────────────
@@ -1750,10 +1751,10 @@ export const DayTimelineModal: React.FC<Props> = ({
           {/* 확정 버튼 · 딥네이비 accent · 최신 트렌드 */}
           <div className="ml-auto flex items-center gap-2 shrink-0 pl-2">
             {isConfirmed ? (
-              <span className="flex items-center gap-1.5 text-[15px] font-semibold text-emerald-700 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200">
-                <CheckCircle size={14} />
+              <StatusPill tone="emerald" size="md" dot>
+                <CheckCircle size={14} className="inline mr-1" />
                 확정됨
-              </span>
+              </StatusPill>
             ) : (
               <button
                 onClick={handleConfirm}
