@@ -117,9 +117,9 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
               <span className="text-[11px] font-bold text-zinc-400 tabular-nums">사번 {localEmployee.employee_number}</span>
             )}
           </div>
-          {/* 2026-08-17 · 사용자 지시 · #141 · 이름 아래 정보 폰트 +4 (12→16) */}
+          {/* 2026-08-17 · 사용자 지시 · 이름 아래 · 직군 · 근무형태 2개만 (rank 제외) · 폰트 +4 */}
           <div className="text-[16px] text-zinc-500 font-semibold mt-0.5">
-            {[localEmployee.position, localEmployee.rank, localEmployee.employmentType].filter(Boolean).join(" · ")}
+            {[localEmployee.position, localEmployee.employmentType].filter(Boolean).join(" · ")}
           </div>
         </div>
         {onEdit && (

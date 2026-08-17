@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
-  X, ChevronLeft, ChevronRight, Save, Clock, MessageSquare,
+  X, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Save, Clock, MessageSquare,
   Calendar, CheckCircle, MapPin, User, Lock,
 } from "lucide-react";
 import { Employee, Schedule } from "../../types";
@@ -72,6 +72,10 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
   // 로컬 employee state · 자식 (EmployeeProfileCard) 파일 업로드 성공 시 반영
   const [localEmployee, setLocalEmployee] = useState<Employee>(employee);
   useEffect(() => { setLocalEmployee(employee); }, [employee]);
+
+  // 2026-08-17 · 사용자 지시 · 반응형 · 직원정보 접기 · 달력·일괄등록 우선 노출
+  //   · md 미만 기본 접힘 (달력 우선) · 토글로 펼침 · md+ 항상 노출 (좌측 sidebar)
+  const [profileCollapsedMobile, setProfileCollapsedMobile] = useState(true);
 
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
@@ -340,24 +344,37 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
         className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[95vh]"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header · 2026-08-17 · 딥네이비 · 사이드바 톤 통일 */}
+        {/* Header · 2026-08-17 · 딥네이비 · 사용자 지시 · 이름 중복 제거 · "직원정보" 타이틀만 */}
         <div className="bg-brand-deep text-white px-5 py-3.5 flex-shrink-0 flex items-center justify-between gap-3">
-          <div className="min-w-0 flex items-center gap-3">
-            <span className="text-[19px] font-extrabold tracking-tight truncate">{employee.name}</span>
-            <span className="text-[#93B4D0] text-[14px] truncate">{employee.position}</span>
-            {employee.workplace && (
-              <span className="text-[#C4DAEE] text-[13px] truncate hidden sm:inline">· {employee.workplace}</span>
-            )}
+          <div className="min-w-0 flex items-center gap-2">
+            <User size={18} strokeWidth={2.2} className="text-white/85 shrink-0" />
+            <span className="text-[18px] font-extrabold tracking-tight">직원정보</span>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-white/80 hover:text-white transition-colors shrink-0">
             <X size={18} />
           </button>
         </div>
 
+        {/* 2026-08-17 · 사용자 지시 · 반응형 · 직원정보 접기 토글 (md 미만 · md+ 는 사이드바 상시) */}
+        <button
+          type="button"
+          onClick={() => setProfileCollapsedMobile(v => !v)}
+          className="md:hidden flex items-center justify-between gap-2 px-4 py-2 border-b border-zinc-100 bg-zinc-50 text-[13px] font-semibold text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer shrink-0"
+        >
+          <span className="flex items-center gap-2">
+            <User size={14} strokeWidth={2.2} />
+            직원정보
+          </span>
+          <span className="flex items-center gap-1 text-[12px] text-zinc-500">
+            {profileCollapsedMobile ? "펼치기" : "접기"}
+            {profileCollapsedMobile ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+          </span>
+        </button>
+
         {/* Body · 좌 (직원정보 항상) + 우 (탭) · 반응형 stack (md 미만은 위/아래) */}
         <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden">
-          {/* ── LEFT · 직원정보 (항상) ── */}
-          <aside className="md:w-[300px] md:min-w-[300px] md:max-w-[300px] md:border-r border-b md:border-b-0 border-zinc-100 bg-zinc-50/50 overflow-y-auto shrink-0">
+          {/* ── LEFT · 직원정보 · md 미만 접힘 시 hidden · md+ 항상 노출 ── */}
+          <aside className={`${profileCollapsedMobile ? "hidden" : "block"} md:!block md:w-[300px] md:min-w-[300px] md:max-w-[300px] md:border-r border-b md:border-b-0 border-zinc-100 bg-zinc-50/50 overflow-y-auto shrink-0 max-h-[45vh] md:max-h-none`}>
             <div className="p-3.5 space-y-3">
               {isLocked && (
                 <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
