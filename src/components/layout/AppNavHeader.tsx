@@ -394,8 +394,10 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   const renderMobileTab = (tab: TabDef) => {
     const Icon = tab.icon;
     const c = TAB_COLOR_MAP[tab.color ?? "slate"];
-    // 2026-08-10 · 하단 모바일 탭 · +2 (10→12)
-    const base = "flex-1 min-w-[52px] flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 rounded-lg text-[12px] font-bold transition-all active:scale-95";
+    // 2026-08-17 v2 · 하단 모바일 탭 · 폰트 +2 · 200ms ease-out · 세련
+    const base = "flex-1 min-w-[52px] flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 rounded-lg text-[12px] font-bold transition-all duration-200 ease-out active:scale-95";
+    // 2026-08-17 v2 · 활성 · frosted pill + inset light (Attio 세련 · 데스크탑과 통일)
+    const activeInset = "shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]";
 
     // 경영관리 탭 (모바일) · business-manage 단순 라우팅 (2026-08-03)
     if (tab.key === "business") {
@@ -403,7 +405,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       const bizOnClick = () => onNavigate?.("business-manage");
       if (isActive) {
         return (
-          <span key="business" className={`${base} ${c.activeBg} ${c.activeText} shadow-sm font-bold`}>
+          <span key="business" className={`${base} ${c.activeBg} ${c.activeText} ${activeInset} font-bold`}>
             <Icon size={26} weight="fill" />
             <span className="leading-tight text-center whitespace-nowrap">경영</span>
           </span>
@@ -427,7 +429,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const onClick = tab.key === "landing" ? (onBack ?? (() => onNavigate?.("landing"))) : () => onNavigate?.(tab.key as AppNavPage);
     if (isActive) {
       return (
-        <span key={tab.key} className={`${base} ${c.activeBg} ${c.activeText} shadow-sm font-bold`}>
+        <span key={tab.key} className={`${base} ${c.activeBg} ${c.activeText} ${activeInset} font-bold`}>
           <Icon size={26} weight="fill" />
           <span className="leading-tight text-center">
             {(() => {
@@ -646,9 +648,10 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       </div>
 
       {/* ── Mobile 전용 탭 행: 태블릿·PC 는 상단 탭 사용 (2026-07-16) ── */}
+      {/* 2026-08-17 v2 · 모바일 탭 컨테이너 · frosted glass + inset light + subtle shadow · 세련 */}
       {visibleTabs.length > 1 && (
         <div className="sm:hidden px-4 pb-2">
-          <div ref={mobileContainerRef} className="flex items-stretch gap-1 bg-white/[0.06] border border-white/10 rounded-xl px-2 py-1 relative">
+          <div ref={mobileContainerRef} className="flex items-stretch gap-1 bg-white/[0.08] border border-white/[0.12] rounded-xl px-2 py-1 relative shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-sm">
             {/* 측정용 hidden 영역 · 실제 탭 폭 계산 */}
             <div
               ref={mobileMeasureRef}
