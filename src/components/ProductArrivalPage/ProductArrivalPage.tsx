@@ -339,27 +339,28 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
         />
       )}
 
-      {/* ── Page header strip ── */}
-      <div className="bg-white border-b border-line/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      {/* ── Page header strip · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 ── */}
+      <div className="bg-white border-b border-line shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-sky-500
+          <span className="w-[3px] h-[22px] rounded-full bg-brand-deep shrink-0" />
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand-deep
             flex items-center justify-center shadow-sm shrink-0">
-            <PackagePlus size={16} className="text-white" />
+            <PackagePlus size={17} className="text-white" />
           </div>
-          <div>
-            <h1 className="text-[15px] sm:text-[14px] font-bold text-zinc-900 leading-none">상품 입고 검수</h1>
-            <p className="text-[15px] sm:text-xs text-zinc-400 mt-0.5 leading-none">
+          <div className="min-w-0">
+            <h1 className="text-[17px] sm:text-[19px] font-bold text-ink leading-tight tracking-tight">상품 입고 검수</h1>
+            <p className="text-[13px] sm:text-[14px] text-ink-soft mt-0.5 leading-tight">
               거래명세표와 실제 입고물품·수량 일치 확인
             </p>
           </div>
           {arrivalTab === "input" && counts.total > 0 && (
-            <div className="ml-auto flex items-center gap-2">
-              <span className="text-[15px] sm:text-xs font-bold text-zinc-400">
+            <div className="ml-auto flex items-center gap-2 shrink-0">
+              <span className="text-[14px] font-semibold text-brand-deep bg-brand-tint rounded-full px-2.5 py-0.5 border border-brand/15 tabular-nums">
                 {counts.total}건 / {counts.totalQty}개
               </span>
               {counts.pending > 0 && (
-                <span className="text-[14px] sm:text-[15px] font-bold px-2 py-0.5 rounded-full
-                  bg-amber-50 text-amber-700 border border-amber-200">
+                <span className="text-[14px] font-semibold px-2.5 py-0.5 rounded-full
+                  bg-amber-50 text-amber-700 border border-amber-200 tabular-nums">
                   {counts.pending}건 미결
                 </span>
               )}
