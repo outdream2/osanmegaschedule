@@ -127,52 +127,52 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           placeholder={placeholder}
           autoFocus={autoFocus}
           className={[
-            "text-[11px] border border-line rounded-md pl-7 pr-14 h-7 w-full",
-            "focus:outline-none focus:ring-1 transition bg-white",
+            "text-[14px] border border-line rounded-lg pl-8 pr-16 h-9 w-full",
+            "focus:outline-none focus:ring-2 transition-colors bg-white text-ink placeholder-ink-soft",
             ACCENT_MAP[accent],
           ].join(" ")}
           aria-label={placeholder}
         />
-        {/* 결과 카운트 배지 · 검색어 있을 때만 */}
+        {/* 결과 카운트 배지 · 최신 트렌드 · brand-tint 통일 · 폰트 +2 */}
         {showResultBadge && (
           <span
             className={[
-              "absolute right-7 text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded",
+              "absolute right-8 text-[12px] font-semibold tabular-nums px-2 py-0.5 rounded-full",
               resultCount === 0
-                ? "bg-zinc-100 text-zinc-400"
-                : "bg-rose-50 text-rose-600",
+                ? "bg-zinc-100 text-ink-soft"
+                : "bg-brand-tint text-brand-deep border border-brand/15",
             ].join(" ")}
             title={`검색 결과 ${resultCount}${resultUnit}`}
           >
             {resultCount}{resultUnit}
           </span>
         )}
-        {/* 초기화 X 버튼 · 검색어 있을 때만 */}
+        {/* 초기화 X 버튼 · 폰트 +2 · brand hover */}
         {hasQuery && (
           <button
             type="button"
             onClick={() => { onChange(""); setShowHistory(false); }}
-            className="absolute right-1.5 w-5 h-5 flex items-center justify-center rounded hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700 cursor-pointer transition"
+            className="absolute right-2 w-6 h-6 flex items-center justify-center rounded-md hover:bg-brand-tint text-ink-soft hover:text-brand-deep cursor-pointer transition-colors"
             title="검색 초기화 (Esc)"
             aria-label="검색 초기화"
           >
-            <X size={11} />
+            <X size={13} />
           </button>
         )}
       </div>
 
-      {/* 최근 검색어 dropdown */}
+      {/* 최근 검색어 dropdown · 최신 트렌드 · 폰트 +2 */}
       {showHistory && historyList.length > 0 && (
-        <div className="absolute top-8 left-0 right-0 bg-white rounded-md border border-line shadow-lg z-30 py-1">
-          <div className="px-2.5 py-1 text-[9px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-            <Clock size={9} />최근 검색
+        <div className="absolute top-10 left-0 right-0 bg-white rounded-lg border border-line shadow-lg z-30 py-1">
+          <div className="px-3 py-1.5 text-[12px] font-semibold text-ink-soft tracking-tight flex items-center gap-1.5">
+            <Clock size={12} />최근 검색
           </div>
           {historyList.map((h, i) => (
             <button
               key={i}
               type="button"
               onMouseDown={e => { e.preventDefault(); onChange(h); setShowHistory(false); }}
-              className="w-full text-left px-2.5 py-1 text-[11px] text-zinc-700 hover:bg-zinc-50 cursor-pointer flex items-center justify-between group"
+              className="w-full text-left px-3 py-1.5 text-[14px] text-ink hover:bg-brand-tint hover:text-brand-deep cursor-pointer flex items-center justify-between group transition-colors"
             >
               <span className="truncate">{h}</span>
               <span
