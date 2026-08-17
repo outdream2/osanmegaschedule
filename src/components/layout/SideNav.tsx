@@ -363,11 +363,17 @@ export const SideNav: React.FC<SideNavProps> = ({
               "cursor-pointer",
             ].join(" ")}
           >
-            <img
-              src={brand.logoUrl || logoImg}
-              alt={`${brand.region ? brand.region + " " : ""}${brand.shortName} 로고`}
-              className="w-6 h-6 object-contain shrink-0"
-            />
+            {/* 2026-08-17 · 목업 .brand-mark 톤 · deep teal 배경에서 로고 시인성 확보
+                · 흰 배경 rounded 컨테이너 · 로고가 어두운 색이어도 또렷하게 표시 */}
+            <div
+              className="w-9 h-9 rounded-[10px] bg-white shadow-sm shrink-0 flex items-center justify-center overflow-hidden ring-1 ring-white/20"
+            >
+              <img
+                src={brand.logoUrl || logoImg}
+                alt={`${brand.region ? brand.region + " " : ""}${brand.shortName} 로고`}
+                className="w-7 h-7 object-contain"
+              />
+            </div>
             {/* icon-only 모드에서 숨김 · 2026-08-17 · 흰색 텍스트 (deep teal bg 대비) */}
             <div className="flex flex-col gap-0 leading-none group-data-[collapsible=icon]:hidden min-w-0">
               {brand.region && (
