@@ -2827,24 +2827,27 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl my-8 flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* 헤더 */}
-            <div className="px-5 py-4 border-b border-line bg-rose-50 flex items-center justify-between gap-3">
+            {/* 헤더 · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
+            <div className="px-5 py-4 border-b border-line bg-zinc-50/60 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-rose-600 flex items-center justify-center shadow-md shrink-0">
+                <span className="w-[3px] h-[24px] rounded-full bg-brand-deep shrink-0" />
+                <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shadow-sm shrink-0">
                   <ShoppingCart size={18} className="text-white" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-base font-bold text-zinc-900 flex items-center gap-1 flex-wrap">
-                    발주서 {orderModal.suppliers.length > 1 && <span className="text-[15px] font-bold text-zinc-500">· 공급사별 {orderModal.suppliers.length}건 개별 발주</span>}
+                  <div className="text-[17px] font-bold text-ink tracking-tight flex items-center gap-1.5 flex-wrap">
+                    발주서 {orderModal.suppliers.length > 1 && <span className="text-[13px] font-semibold text-ink-soft">· 공급사별 {orderModal.suppliers.length}건 개별 발주</span>}
                   </div>
-                  <div className="text-[15px] font-mono text-zinc-500 mt-0.5 truncate">{orderModal.suppliers.length > 1 ? "일괄 발송 · 각 공급사별 고유 번호" : `#${orderModal.suppliers[0]?.order_number ?? orderModal.orderNumber}`}</div>
+                  <div className="text-[13px] font-mono text-ink-soft mt-0.5 truncate">{orderModal.suppliers.length > 1 ? "일괄 발송 · 각 공급사별 고유 번호" : `#${orderModal.suppliers[0]?.order_number ?? orderModal.orderNumber}`}</div>
                 </div>
               </div>
               <button
                 onClick={() => !sendingBulk && setOrderModal(null)}
                 disabled={sendingBulk}
-                className="text-zinc-400 hover:text-zinc-700 text-3xl font-bold w-9 h-9 rounded-lg hover:bg-white/70 cursor-pointer flex items-center justify-center disabled:opacity-40 shrink-0"
-              >×</button>
+                className="w-9 h-9 rounded-lg bg-white border border-line hover:border-brand-deep hover:bg-brand-tint flex items-center justify-center text-ink-soft hover:text-brand-deep cursor-pointer disabled:opacity-40 shrink-0 transition-colors"
+              >
+                <X size={16} />
+              </button>
             </div>
 
             {/* 발주 기본 정보 · 2026-08-12 · 폰트 +4 (text-[15px] → text-[15px]) */}
@@ -3047,20 +3050,24 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-line bg-sky-50">
+            {/* 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-line bg-zinc-50/60">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0 shadow-md">
+                <span className="w-[3px] h-[24px] rounded-full bg-brand-deep shrink-0" />
+                <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shrink-0 shadow-sm">
                   <Package size={18} className="text-white" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-base font-bold text-zinc-800 truncate">{detailProduct.name}</div>
-                  <div className="text-[15px] font-mono text-zinc-500 mt-0.5">#{detailProduct.code}</div>
+                  <div className="text-[17px] font-bold text-ink tracking-tight truncate">{detailProduct.name}</div>
+                  <div className="text-[13px] font-mono text-ink-soft mt-0.5">#{detailProduct.code}</div>
                 </div>
               </div>
               <button
                 onClick={() => setDetailProduct(null)}
-                className="text-zinc-400 hover:text-zinc-700 text-3xl leading-none font-bold w-9 h-9 rounded-lg hover:bg-white/70 transition cursor-pointer flex items-center justify-center shrink-0"
-              >×</button>
+                className="w-9 h-9 rounded-lg bg-white border border-line hover:border-brand-deep hover:bg-brand-tint text-ink-soft hover:text-brand-deep transition-colors cursor-pointer flex items-center justify-center shrink-0"
+              >
+                <X size={16} />
+              </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 bg-zinc-50">
               {detailLoading ? (
