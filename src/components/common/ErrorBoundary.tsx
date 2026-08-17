@@ -76,7 +76,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             <button
               type="button"
               onClick={this.hardReload}
-              className="flex-1 h-10 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-[13px] font-black shadow-sm transition cursor-pointer active:scale-95"
+              className="flex-1 h-10 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[13px] font-black shadow-sm transition cursor-pointer active:scale-95"
             >
               🔄 새로고침
             </button>

@@ -378,7 +378,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
             const active = arrivalTab === k;
             const activeColor = color === "sky"
               ? "bg-sky-500 text-white shadow-sm"
-              : "bg-indigo-500 text-white shadow-sm";
+              : "bg-brand-deep text-white shadow-sm";
             return (
               <button
                 key={k}

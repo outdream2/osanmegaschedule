@@ -393,7 +393,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
           <div className="inline-flex bg-zinc-50 border border-zinc-200 rounded-md p-0.5">
             {([10, 30, 90, 180] as const).map(w => (
               <button key={w} onClick={() => setWindowDays(w)}
-                className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${windowDays === w ? "bg-indigo-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
+                className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${windowDays === w ? "bg-brand-deep text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
                 {w === 10 ? "10일" : w === 30 ? "1개월" : w === 90 ? "3개월" : "6개월"}
               </button>
             ))}
@@ -406,7 +406,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
               { k: "growth" as const, label: "성장률" },
             ]).map(o => (
               <button key={o.k} onClick={() => setSort(o.k, "desc")}
-                className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${sortKey === o.k ? "bg-indigo-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
+                className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${sortKey === o.k ? "bg-brand-deep text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
                 {o.label}
               </button>
             ))}

@@ -340,7 +340,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
               <div className="flex gap-1">
                 {(["약사", "사원", "기타"] as BreakTab[]).map(tab => (
                   <button key={tab} onClick={() => setBreakTab(tab)}
-                    className={`px-2.5 py-1 text-[12px] font-bold rounded-lg transition ${breakTab === tab ? "bg-indigo-600 text-white" : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"}`}>
+                    className={`px-2.5 py-1 text-[12px] font-bold rounded-lg transition ${breakTab === tab ? "bg-brand-deep text-white" : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"}`}>
                     {tab}
                   </button>
                 ))}

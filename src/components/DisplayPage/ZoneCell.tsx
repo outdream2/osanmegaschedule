@@ -122,7 +122,7 @@ export const ZoneCell: React.FC<ZoneCellProps> = ({
           B: "bg-sky-300 text-sky-950 border-sky-400 hover:bg-sky-400",
         },
         7: {
-          A: "bg-indigo-600 text-white border-indigo-700 hover:bg-indigo-700",
+          A: "bg-brand-deep text-white border-indigo-700 hover:bg-[#0d3a5c]",
           B: "bg-indigo-300 text-indigo-950 border-indigo-400 hover:bg-indigo-400",
         },
         8: {

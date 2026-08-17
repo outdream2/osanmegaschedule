@@ -489,7 +489,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
             type="button"
             onClick={handleSaveAll}
             disabled={overallSaving}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white text-[12px] font-black shadow-sm transition-colors cursor-pointer shrink-0"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-indigo-300 text-white text-[12px] font-black shadow-sm transition-colors cursor-pointer shrink-0"
           >
             <FloppyDisk size={13} weight="bold" />
             {overallSaving ? "저장 중..." : "모두 저장"}
@@ -530,7 +530,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
               type="button"
               onClick={handleSave}
               disabled={!dirty || saving}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white text-[12px] font-black shadow-sm transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-indigo-300 text-white text-[12px] font-black shadow-sm transition-colors cursor-pointer"
             >
               <FloppyDisk size={13} weight="bold" />
               {saving ? "저장 중..." : "각 호 저장"}
@@ -765,7 +765,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                 <button
                   type="button"
                   onClick={saveSettingsNow}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[12px] font-black shadow-sm transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-black shadow-sm transition-colors cursor-pointer"
                   title="시급 즉시 서버 저장 (자동 저장 중이지만 명시적 저장도 가능)"
                 >
                   <FloppyDisk size={12} weight="bold" />

@@ -1293,7 +1293,7 @@ export const PaymentInfoTab: React.FC = () => {
                               className={`flex-1 h-9 rounded-lg text-[11px] font-black border transition cursor-pointer ${
                                 method === opt.key
                                   ? opt.key === "card"
-                                    ? "bg-indigo-600 border-indigo-600 text-white shadow-sm"
+                                    ? "bg-brand-deep border-indigo-600 text-white shadow-sm"
                                     : opt.key === "cash"
                                     ? "bg-amber-500 border-amber-500 text-white shadow-sm"
                                     : "bg-zinc-600 border-zinc-600 text-white shadow-sm"

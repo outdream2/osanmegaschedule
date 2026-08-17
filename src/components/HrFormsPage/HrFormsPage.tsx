@@ -85,7 +85,7 @@ const CATEGORIES: Array<{
     key: "pledge",
     label: "서약서",
     badge: "bg-indigo-50 text-indigo-700 border-indigo-200",
-    activeBg: "bg-indigo-600 text-white border-indigo-600",
+    activeBg: "bg-brand-deep text-white border-indigo-600",
     icon: FileText,
   },
   {

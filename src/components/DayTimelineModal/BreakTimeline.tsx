@@ -80,7 +80,7 @@ export const BreakTimeline: React.FC<Props> = React.memo(({
           <div className="flex items-center gap-1">
             <span className="text-[13px] text-zinc-500">이 달 전체에 적용?</span>
             <button onClick={() => { onApplyMonth(); setConfirmMonth(false); }}
-              className="text-[13px] font-bold px-2 py-0.5 rounded bg-indigo-500 text-white hover:bg-indigo-600 cursor-pointer">예</button>
+              className="text-[13px] font-bold px-2 py-0.5 rounded bg-brand-deep text-white hover:bg-brand-deep cursor-pointer">예</button>
             <button onClick={() => setConfirmMonth(false)}
               className="text-[13px] font-bold px-2 py-0.5 rounded bg-zinc-100 text-zinc-600 hover:bg-zinc-200 cursor-pointer">취소</button>
           </div>

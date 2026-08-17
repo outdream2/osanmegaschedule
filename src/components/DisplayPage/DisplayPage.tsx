@@ -1704,7 +1704,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   <button
                     onClick={() => { setZoneConfigOpen((v) => !v); setActiveGroupId(null); }}
                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer shrink-0 ${zoneConfigOpen
-                        ? "bg-indigo-600 text-white shadow-sm"
+                        ? "bg-brand-deep text-white shadow-sm"
                         : "bg-white border border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-600"
                       }`}
                   >
@@ -1760,7 +1760,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   1: "bg-blue-500 text-white", 2: "bg-yellow-400 text-yellow-950",
                   3: "bg-red-500 text-white", 4: "bg-pink-500 text-white",
                   5: "bg-lime-500 text-lime-950", 6: "bg-sky-500 text-white",
-                  7: "bg-indigo-500 text-white", 8: "bg-purple-500 text-white",
+                  7: "bg-brand-deep text-white", 8: "bg-purple-500 text-white",
                 };
                 const catBColors: Record<number, string> = {
                   1: "bg-blue-100 text-blue-900", 2: "bg-yellow-100 text-yellow-900",
@@ -2352,7 +2352,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                   className={`w-7 h-7 text-[11px] font-bold rounded-md border transition cursor-pointer ${active
                                       ? (dow === 0 ? "bg-rose-500 text-white border-rose-500"
                                         : dow === 6 ? "bg-sky-500 text-white border-sky-500"
-                                          : "bg-indigo-500 text-white border-indigo-500")
+                                          : "bg-brand-deep text-white border-indigo-500")
                                       : "bg-white text-zinc-400 border-zinc-200 hover:border-zinc-300"
                                     }`}
                                   title={`${lb}요일 ${active ? "제외" : "포함"}`}
@@ -2455,7 +2455,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               const colorIdx = staffColorMap.get(activeStaffInfo.employee.id) ?? 0;
               const isLogistics = activeStaffInfo.employee.position.includes("물류");
               return (
-                <div className={`px-5 py-5 ${isLogistics ? "bg-indigo-600" : "bg-zinc-700"}`}>
+                <div className={`px-5 py-5 ${isLogistics ? "bg-brand-deep" : "bg-zinc-700"}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-2xl font-black text-white shrink-0">
@@ -3000,7 +3000,7 @@ const VendorManageSplit: React.FC = () => {
           {/* 2026-08-10 · 사용자 요청 · 90회전 옆 · 신규 공급사 등록 버튼 */}
           <button
             onClick={() => setShowNewVendor(true)}
-            className="ml-auto h-8 px-3 rounded-md text-[12px] font-black text-white bg-indigo-600 hover:bg-indigo-700 transition cursor-pointer whitespace-nowrap shrink-0"
+            className="ml-auto h-8 px-3 rounded-md text-[12px] font-black text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] transition cursor-pointer whitespace-nowrap shrink-0"
             title="새 공급사 등록"
           >
             + 신규 등록

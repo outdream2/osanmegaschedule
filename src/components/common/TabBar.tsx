@@ -38,7 +38,7 @@ const COLOR_MAP: Record<TabColor, { text: string; bar: string; iconActive: strin
   amber:   { text: "text-amber-700",   bar: "bg-amber-500",   iconActive: "text-amber-600",   hoverText: "hover:text-amber-700",   badge: "bg-amber-100 text-amber-700"   },
   violet:  { text: "text-violet-700",  bar: "bg-violet-500",  iconActive: "text-violet-600",  hoverText: "hover:text-violet-700",  badge: "bg-violet-100 text-violet-700"  },
   teal:    { text: "text-teal-700",    bar: "bg-teal-500",    iconActive: "text-teal-600",    hoverText: "hover:text-teal-700",    badge: "bg-teal-100 text-teal-700"    },
-  indigo:  { text: "text-indigo-700",  bar: "bg-indigo-500",  iconActive: "text-indigo-600",  hoverText: "hover:text-indigo-700",  badge: "bg-indigo-100 text-indigo-700"  },
+  indigo:  { text: "text-indigo-700",  bar: "bg-brand-deep",  iconActive: "text-indigo-600",  hoverText: "hover:text-indigo-700",  badge: "bg-indigo-100 text-indigo-700"  },
   rose:    { text: "text-rose-700",    bar: "bg-rose-500",    iconActive: "text-rose-600",    hoverText: "hover:text-rose-700",    badge: "bg-rose-100 text-rose-700"    },
   emerald: { text: "text-emerald-700", bar: "bg-emerald-500", iconActive: "text-emerald-600", hoverText: "hover:text-emerald-700", badge: "bg-emerald-100 text-emerald-700" },
   orange:  { text: "text-orange-700",  bar: "bg-orange-500",  iconActive: "text-orange-600",  hoverText: "hover:text-orange-700",  badge: "bg-orange-100 text-orange-700"  },

@@ -96,7 +96,7 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
           type="button"
           onClick={addGroup}
           disabled={groups.length >= PALETTE.length}
-          className="flex items-center gap-1 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-zinc-300 disabled:cursor-not-allowed text-white text-[11px] font-bold rounded-lg transition cursor-pointer"
+          className="flex items-center gap-1 px-2.5 py-1 bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-zinc-300 disabled:cursor-not-allowed text-white text-[11px] font-bold rounded-lg transition cursor-pointer"
         >
           <Plus size={12} />
           새 구역 추가

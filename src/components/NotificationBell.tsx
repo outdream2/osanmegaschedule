@@ -245,7 +245,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <p className={`text-xs font-bold truncate ${n.read ? "text-zinc-600" : "text-zinc-900"}`}>{n.title}</p>
-                        {!n.read && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />}
+                        {!n.read && <span className="w-1.5 h-1.5 rounded-full bg-brand-deep shrink-0" />}
                       </div>
                       {n.body && (
                         <p className="text-[11px] text-zinc-500 mt-0.5 leading-relaxed line-clamp-2">{n.body}</p>

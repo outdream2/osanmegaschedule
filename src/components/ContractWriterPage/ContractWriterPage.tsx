@@ -2550,7 +2550,7 @@ const ExtendContractModal: React.FC<{
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="px-4 py-3 border-b border-zinc-200 bg-indigo-50 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center shadow-sm">
+            <div className="w-7 h-7 rounded-lg bg-brand-deep flex items-center justify-center shadow-sm">
               <ClockCounterClockwise size={13} weight="fill" className="text-white" />
             </div>
             <span className="text-sm font-black text-zinc-800">근로계약 연장</span>
@@ -2571,7 +2571,7 @@ const ExtendContractModal: React.FC<{
                 return (
                   <button key={m} type="button" onClick={() => setMonths(m)}
                     className={`px-3 py-1.5 rounded-lg border text-[13px] font-black transition-colors cursor-pointer ${
-                      active ? "bg-indigo-500 text-white border-indigo-600 shadow-sm" : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
+                      active ? "bg-brand-deep text-white border-indigo-600 shadow-sm" : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
                     }`}
                   >
                     {m}개월
@@ -2603,7 +2603,7 @@ const ExtendContractModal: React.FC<{
         <div className="px-4 py-3 border-t border-zinc-200 bg-zinc-50/70 flex items-center justify-end gap-2">
           <button type="button" onClick={onClose} className="text-[12px] font-bold text-zinc-600 bg-white border border-zinc-300 rounded-md h-8 px-3 hover:bg-zinc-50 cursor-pointer">취소</button>
           <button type="button" onClick={onConfirm} disabled={!preview}
-            className="text-[12px] font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-md h-8 px-4 cursor-pointer disabled:bg-zinc-300 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-sm">
+            className="text-[12px] font-black text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-md h-8 px-4 cursor-pointer disabled:bg-zinc-300 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-sm">
             <Check size={12} weight="bold" />연장 확정
           </button>
         </div>
@@ -4099,7 +4099,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             disabled={!uploadFile || uploadBusy || !form.employeeName.trim()}
             className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white text-[13px] font-black shadow-sm transition-all cursor-pointer disabled:cursor-not-allowed ${
               uploadFile && !uploadBusy && form.employeeName.trim()
-                ? "bg-indigo-500 hover:brightness-110"
+                ? "bg-brand-deep hover:brightness-110"
                 : "bg-zinc-300 text-zinc-500"
             }`}
             title="Google Drive contract 폴더에 저장 · employee_contracts 이력 insert"
@@ -4425,7 +4425,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                       on
                         ? isWeekend
                           ? "bg-rose-500 text-white border-rose-600 shadow-sm"
-                          : "bg-indigo-500 text-white border-indigo-600 shadow-sm"
+                          : "bg-brand-deep text-white border-indigo-600 shadow-sm"
                         : "bg-white text-zinc-500 border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300",
                     ].join(" ")}
                   >{d}</button>

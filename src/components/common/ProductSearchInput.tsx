@@ -35,7 +35,7 @@ const ACCENT_MAP = {
   sky:     { ring: "focus:ring-sky-400 focus:border-sky-400", btn: "bg-sky-600 hover:bg-sky-700", active: "bg-sky-50 border-l-2 border-sky-500" },
   emerald: { ring: "focus:ring-emerald-400 focus:border-emerald-400", btn: "bg-emerald-600 hover:bg-emerald-700", active: "bg-emerald-50 border-l-2 border-emerald-500" },
   amber:   { ring: "focus:ring-amber-400 focus:border-amber-400", btn: "bg-amber-600 hover:bg-amber-700", active: "bg-amber-50 border-l-2 border-amber-500" },
-  indigo:  { ring: "focus:ring-indigo-400 focus:border-indigo-400", btn: "bg-indigo-600 hover:bg-indigo-700", active: "bg-indigo-50 border-l-2 border-indigo-500" },
+  indigo:  { ring: "focus:ring-indigo-400 focus:border-indigo-400", btn: "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a]", active: "bg-indigo-50 border-l-2 border-indigo-500" },
 };
 
 export function ProductSearchInput({

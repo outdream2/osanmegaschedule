@@ -552,7 +552,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                       onApplyShiftHours().finally(() => setApplying(false));
                     }
                   }}
-                  className="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-300 text-white rounded-lg transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+                  className="px-4 py-2 text-xs font-bold bg-brand-deep hover:bg-brand-deep disabled:bg-indigo-300 text-white rounded-lg transition cursor-pointer flex items-center gap-1.5 shadow-sm"
                 >
                   {applying ? (
                     <>
@@ -674,7 +674,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                   try { await onApplyShiftHours(); } finally { setApplying(false); }
                   onClose();
                 }}
-                className="flex-1 px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition cursor-pointer"
+                className="flex-1 px-4 py-2 text-xs font-bold bg-brand-deep hover:bg-brand-deep text-white rounded-lg transition cursor-pointer"
               >
                 켜기
               </button>

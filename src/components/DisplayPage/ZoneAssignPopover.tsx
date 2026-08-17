@@ -134,7 +134,7 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
                       : "bg-white border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300 text-zinc-700"
                   }`}
                 >
-                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isAssigned ? "bg-indigo-600" : "bg-zinc-300"}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isAssigned ? "bg-brand-deep" : "bg-zinc-300"}`} />
                   {employee.name}
                 </button>
               );

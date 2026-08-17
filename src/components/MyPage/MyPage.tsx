@@ -100,7 +100,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
         {/* 프로필 헤더 */}
         <div className="bg-white rounded-xl shadow-sm border border-zinc-200 p-4 sm:p-6">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-indigo-500 flex items-center justify-center text-white font-black text-xl sm:text-2xl shadow-md shrink-0">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-brand-deep flex items-center justify-center text-white font-black text-xl sm:text-2xl shadow-md shrink-0">
               {(me?.name ?? authSession?.employeeName ?? "?").slice(0, 1)}
             </div>
             <div className="flex-1 min-w-0">
@@ -171,7 +171,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
                 type="button"
                 onClick={saveAddress}
                 disabled={savingAddress || !addressChanged}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-[12px] font-black shadow-sm active:scale-95 transition disabled:opacity-40"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-black shadow-sm active:scale-95 transition disabled:opacity-40"
               >
                 {savingAddress ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} 주소 저장
               </button>

@@ -30,7 +30,7 @@ export interface PeriodSelectorProps<T extends number | string> {
 
 const ACCENT_CLS: Record<NonNullable<PeriodSelectorProps<never>["accent"]>, string> = {
   teal:    "bg-teal-500 text-white shadow-sm",
-  indigo:  "bg-indigo-500 text-white shadow-sm",
+  indigo:  "bg-brand-deep text-white shadow-sm",
   emerald: "bg-emerald-500 text-white shadow-sm",
   amber:   "bg-amber-500 text-white shadow-sm",
   rose:    "bg-rose-500 text-white shadow-sm",

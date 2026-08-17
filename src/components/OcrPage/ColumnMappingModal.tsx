@@ -366,7 +366,7 @@ export const ColumnMappingModal: React.FC<Props> = ({
             </button>
             <button onClick={onSave}
               disabled={saving || !supplier}
-              className="text-[11px] font-bold text-white bg-indigo-500 hover:bg-indigo-600 disabled:opacity-40 rounded-lg px-3 py-1.5 cursor-pointer flex items-center gap-1"
+              className="text-[11px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-40 rounded-lg px-3 py-1.5 cursor-pointer flex items-center gap-1"
             >
               {saving ? <><Loader2 size={12} className="animate-spin" />저장 중</> : <><Save size={12} />공급사에 저장</>}
             </button>

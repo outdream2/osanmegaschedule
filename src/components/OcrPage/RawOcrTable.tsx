@@ -3543,7 +3543,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                               <button type="button"
                                 onClick={() => runColumnPipeline(pn)}
                                 disabled={!!runningPipeline[pn]}
-                                className="ml-1 text-[10px] font-black text-white bg-indigo-500 hover:bg-indigo-600 disabled:bg-zinc-300 disabled:cursor-not-allowed rounded px-2 py-0.5 cursor-pointer shadow-sm whitespace-nowrap"
+                                className="ml-1 text-[10px] font-black text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-zinc-300 disabled:cursor-not-allowed rounded px-2 py-0.5 cursor-pointer shadow-sm whitespace-nowrap"
                                 title="상품명 매칭 → 빈 단가 DB 조회 → OCR vs DB 큰차이 스왑 · 페이지 로드 시 자동 실행됨 · 재실행용"
                               >{runningPipeline[pn] ? "⏳ 정리중..." : "🎯 자동정리"}</button>
                               {/* 2026-07-22 · 명세서마다 행추가 (사용자 요청) */}
@@ -4091,7 +4091,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                   <div className="flex flex-col gap-0">
                                     <span className="flex items-center gap-1">
                                       {/* 2026-07-23 · 사용자 요청 "db매칭 한 경우 품명에 db배지 표시해" */}
-                                      <span className="text-[9px] font-black bg-indigo-500 text-white px-1 py-px rounded shrink-0" title="products DB 에서 자동 매칭">DB</span>
+                                      <span className="text-[9px] font-black bg-brand-deep text-white px-1 py-px rounded shrink-0" title="products DB 에서 자동 매칭">DB</span>
                                       <BookOpen size={9} className="text-indigo-400 shrink-0" />
                                       <span className="font-semibold text-indigo-700 break-words whitespace-normal">{renderTextWithBreaks(autoMatch.name)}</span>
                                       <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
@@ -4157,7 +4157,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                           disabled={reextractingName.has(ri)}
                                           className={`text-[10px] px-1.5 py-0.5 rounded disabled:opacity-50 cursor-pointer shrink-0 transition font-bold ${
                                             isCycling
-                                              ? "bg-indigo-500 text-white hover:bg-indigo-600"
+                                              ? "bg-brand-deep text-white hover:bg-brand-deep"
                                               : "bg-sky-100 text-sky-700 hover:bg-sky-500 hover:text-white"
                                           }`}
                                         >{reextractingName.has(ri) ? "⏳ 재추출중" : `🔄 재추출${cycleLabel}`}</button>
@@ -4624,7 +4624,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                                     className={`text-[13px] font-black text-white disabled:bg-zinc-300 disabled:cursor-not-allowed border-2 rounded-lg px-3 py-1 cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow-md ring-1 transition shrink-0 ${
                                                       hasErpSubRow
                                                         ? "bg-violet-500 hover:bg-violet-600 border-violet-700 ring-violet-200"
-                                                        : "bg-indigo-500 hover:bg-indigo-600 border-indigo-700 ring-indigo-200"
+                                                        : "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] border-indigo-700 ring-indigo-200"
                                                     }`}
                                                     title={hasErpSubRow ? `${pn}번 · ERP 재매칭` : `${pn}번 · ERP 매칭 실행 · 각 행 아래 ERP 정보 표시`}
                                                   >
@@ -5254,7 +5254,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                 <button
                   type="button"
                   onClick={() => onReparsePage(p.page, supplier).catch(() => {})}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-indigo-500 hover:bg-indigo-600 rounded px-1.5 py-0.5 whitespace-nowrap"
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded px-1.5 py-0.5 whitespace-nowrap"
                   title="이 페이지 재파싱 시도"
                 >🔄 재파싱</button>
               )}

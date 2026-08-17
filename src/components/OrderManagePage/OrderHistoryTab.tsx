@@ -90,7 +90,7 @@ export const OrderHistoryTab: React.FC = () => {
               onClick={() => setDays(d)}
               className={`h-8 px-3 text-[13px] font-semibold rounded transition cursor-pointer ${
                 days === d
-                  ? "bg-indigo-500 text-white shadow-sm"
+                  ? "bg-brand-deep text-white shadow-sm"
                   : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 border border-zinc-200"
               }`}
             >

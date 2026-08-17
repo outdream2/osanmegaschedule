@@ -948,7 +948,7 @@ function DetailModal({
                       className={`px-2 py-0.5 rounded-full text-[11px] font-black ${editDraft.category === "" ? "bg-zinc-800 text-white" : "bg-zinc-100 text-zinc-500"}`}>없음</button>
                     {CATEGORIES.map(c => (
                       <button key={c} type="button" onClick={() => setEditDraft(prev => ({ ...prev, category: c }))}
-                        className={`px-2 py-0.5 rounded-full text-[11px] font-black ${editDraft.category === c ? "bg-indigo-500 text-white" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"}`}>{c}</button>
+                        className={`px-2 py-0.5 rounded-full text-[11px] font-black ${editDraft.category === c ? "bg-brand-deep text-white" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"}`}>{c}</button>
                     ))}
                   </div>
                   {/* 이미지 편집: 기존 이미지 + 신규 첨부 + 취소(X) */}
@@ -986,7 +986,7 @@ function DetailModal({
                     <button type="button" onClick={() => { setEditingPost(false); setEditImages([]); }} disabled={savingEdit || editUploading}
                       className="px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-600 text-[12px] font-black disabled:opacity-40">취소</button>
                     <button type="button" onClick={saveEditPost} disabled={savingEdit || editUploading || !editDraft.title.trim()}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-[12px] font-black disabled:opacity-40">
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-black disabled:opacity-40">
                       {savingEdit ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />} 저장
                     </button>
                   </div>

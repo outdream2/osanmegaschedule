@@ -104,7 +104,7 @@ const COLOR_CLASSES: Record<CategoryDef["color"], {
   accentDot: string;
 }> = {
   sky:     { headerBg: "bg-sky-50",     headerText: "text-sky-700",     badgeBg: "bg-sky-50",     badgeText: "text-sky-700",     badgeBorder: "border-sky-200",     accentDot: "bg-sky-500"     },
-  indigo:  { headerBg: "bg-indigo-50",  headerText: "text-indigo-700",  badgeBg: "bg-indigo-50",  badgeText: "text-indigo-700",  badgeBorder: "border-indigo-200",  accentDot: "bg-indigo-500"  },
+  indigo:  { headerBg: "bg-indigo-50",  headerText: "text-indigo-700",  badgeBg: "bg-indigo-50",  badgeText: "text-indigo-700",  badgeBorder: "border-indigo-200",  accentDot: "bg-brand-deep"  },
   violet:  { headerBg: "bg-violet-50",  headerText: "text-violet-700",  badgeBg: "bg-violet-50",  badgeText: "text-violet-700",  badgeBorder: "border-violet-200",  accentDot: "bg-violet-500"  },
   emerald: { headerBg: "bg-emerald-50", headerText: "text-emerald-700", badgeBg: "bg-emerald-50", badgeText: "text-emerald-700", badgeBorder: "border-emerald-200", accentDot: "bg-emerald-500" },
   amber:   { headerBg: "bg-amber-50",   headerText: "text-amber-800",   badgeBg: "bg-amber-50",   badgeText: "text-amber-800",   badgeBorder: "border-amber-200",   accentDot: "bg-amber-500"   },

@@ -126,7 +126,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
           <button
             type="button"
             onClick={onEdit}
-            className="px-3 py-1.5 text-[13px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg inline-flex items-center gap-1 shadow-sm transition cursor-pointer shrink-0"
+            className="px-3 py-1.5 text-[13px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg inline-flex items-center gap-1 shadow-sm transition cursor-pointer shrink-0"
           >
             <Edit2 size={14} /> 수정
           </button>

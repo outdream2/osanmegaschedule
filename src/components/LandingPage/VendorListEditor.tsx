@@ -1989,7 +1989,7 @@ const colorMap = {
   amber:   { bar: "bg-amber-500",   text: "text-amber-700",   icon: "text-amber-600"   },
   rose:    { bar: "bg-rose-500",    text: "text-rose-700",    icon: "text-rose-600"    },
   teal:    { bar: "bg-teal-500",    text: "text-teal-700",    icon: "text-teal-600"    },
-  indigo:  { bar: "bg-indigo-500",  text: "text-indigo-700",  icon: "text-indigo-600"  },
+  indigo:  { bar: "bg-brand-deep",  text: "text-indigo-700",  icon: "text-indigo-600"  },
   violet:  { bar: "bg-violet-500",  text: "text-violet-700",  icon: "text-violet-600"  },
 } as const;
 

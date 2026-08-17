@@ -598,7 +598,7 @@ const ConfirmedRecordsTab: React.FC = () => {
                           {g.imageUrl ? (
                             <button type="button"
                               onClick={() => { setImageModalUrl(g.imageUrl); setImageModalTitle(`${g.invoiceDate} · ${g.supplier}`); }}
-                              className="text-[11px] font-bold text-indigo-600 hover:text-white hover:bg-indigo-500 border border-indigo-300 rounded px-2 py-0.5 transition cursor-pointer"
+                              className="text-[11px] font-bold text-indigo-600 hover:text-white hover:bg-brand-deep border border-indigo-300 rounded px-2 py-0.5 transition cursor-pointer"
                               title="거래명세서 이미지 보기"
                             >🖼 보기</button>
                           ) : (
@@ -630,7 +630,7 @@ const ConfirmedRecordsTab: React.FC = () => {
                               {g.imageUrl && (
                                 <button type="button"
                                   onClick={() => { setImageModalUrl(g.imageUrl); setImageModalTitle(`${g.invoiceDate} · ${g.supplier}`); }}
-                                  className="ml-auto text-[10px] font-bold text-indigo-600 hover:text-white hover:bg-indigo-500 border border-indigo-300 rounded px-2 py-0.5 transition cursor-pointer"
+                                  className="ml-auto text-[10px] font-bold text-indigo-600 hover:text-white hover:bg-brand-deep border border-indigo-300 rounded px-2 py-0.5 transition cursor-pointer"
                                 >🖼 이미지</button>
                               )}
                             </div>
@@ -1366,7 +1366,7 @@ return (
                 <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-sky-400" placeholder="공급사명(OCR)" value={addProdSuppOld} onChange={e => setAddProdSuppOld(e.target.value)} />
                 <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-sky-400" placeholder="공급사명(보정후)" value={addProdSuppNew} onChange={e => setAddProdSuppNew(e.target.value)} onKeyDown={e => e.key === "Enter" && addProductSynonym()} />
               </div>
-              <button onClick={addProductSynonym} disabled={!addProdOld.trim() || !addProdCode.trim() || synSaving} className="self-end px-4 py-1.5 text-xs font-bold bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition disabled:opacity-40 cursor-pointer">추가</button>
+              <button onClick={addProductSynonym} disabled={!addProdOld.trim() || !addProdCode.trim() || synSaving} className="self-end px-4 py-1.5 text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg transition disabled:opacity-40 cursor-pointer">추가</button>
             </div>
           ) : (
             <div className="p-4 flex flex-col gap-3">

@@ -2502,7 +2502,7 @@ export const SalesTrendPage: React.FC = () => {
           const Icon = t.icon;
           const active = salesTab === t.k;
           const activeText = { sky: "text-sky-700", violet: "text-violet-700", amber: "text-amber-700", rose: "text-rose-700", indigo: "text-indigo-700" }[t.color]!;
-          const activeBar = { sky: "bg-sky-500", violet: "bg-violet-500", amber: "bg-amber-500", rose: "bg-rose-500", indigo: "bg-indigo-500" }[t.color]!;
+          const activeBar = { sky: "bg-sky-500", violet: "bg-violet-500", amber: "bg-amber-500", rose: "bg-rose-500", indigo: "bg-brand-deep" }[t.color]!;
           return (
             <button key={t.k} onClick={() => setSalesTab(t.k)}
               className={`relative basis-1/3 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 px-2 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-[13px] font-bold leading-tight transition-colors duration-150 ${active ? activeText : "text-zinc-400 hover:text-zinc-700"}`}>

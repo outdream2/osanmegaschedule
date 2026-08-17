@@ -62,7 +62,7 @@ export const SET_INFO_BADGE =
 /** 저장 버튼 · primary · indigo · TEXT.body 정렬 */
 export const SET_BTN_PRIMARY =
   "inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-bold text-white " +
-  "bg-indigo-600 hover:bg-indigo-700 disabled:bg-zinc-300 shadow-sm transition cursor-pointer";
+  "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-zinc-300 shadow-sm transition cursor-pointer";
 
 /** 초기화·다시 불러오기 등 · secondary · white border · TEXT.body 정렬 */
 export const SET_BTN_SECONDARY =

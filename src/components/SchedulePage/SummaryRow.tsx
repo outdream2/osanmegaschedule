@@ -22,7 +22,7 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMo
     ? "bg-zinc-600 text-white border-r border-zinc-500"
     : isOther
     ? "bg-zinc-400 text-white border-r border-zinc-300"
-    : "bg-indigo-600 text-white border-r border-indigo-500";
+    : "bg-brand-deep text-white border-r border-indigo-500";
 
   const valActiveCls = isPharmacist
     ? "bg-emerald-50 text-emerald-700 font-bold"

@@ -384,7 +384,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                 type="button"
                 onClick={onConfirm}
                 disabled={confirming}
-                className="text-[13px] font-black px-2 py-0.5 rounded-full bg-indigo-500 hover:bg-indigo-600 text-white cursor-pointer shadow-sm transition disabled:opacity-50"
+                className="text-[13px] font-black px-2 py-0.5 rounded-full bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white cursor-pointer shadow-sm transition disabled:opacity-50"
                 title="현재 배치를 확정하고 날짜/요일 템플릿에 저장"
               >
                 {confirming ? "저장중…" : "✓ 확정"}
@@ -403,7 +403,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
               })}
               className={`w-6 h-6 text-[12px] font-black rounded transition cursor-pointer ${
                 selectedDows.has(dow)
-                  ? "bg-indigo-600 text-white shadow-sm"
+                  ? "bg-brand-deep text-white shadow-sm"
                   : dow === currentDow
                     ? "bg-indigo-200 text-indigo-700 border border-indigo-300"
                     : "bg-white border border-zinc-200 text-zinc-600 hover:border-indigo-400 hover:text-indigo-600"
@@ -421,7 +421,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                   setSaving(false);
                   setSelectedDows(new Set());
                 }}
-                className="text-[13px] font-bold px-2 py-0.5 rounded bg-indigo-500 text-white hover:bg-indigo-600 cursor-pointer disabled:opacity-50 ml-0.5">
+                className="text-[13px] font-bold px-2 py-0.5 rounded bg-brand-deep text-white hover:bg-brand-deep cursor-pointer disabled:opacity-50 ml-0.5">
                 {saving ? "저장중…" : `저장(${selectedDows.size})`}
               </button>
               <button onClick={() => setSelectedDows(new Set())}
@@ -881,7 +881,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                             >
                               {/* Check indicator */}
                               <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                                assigned ? "bg-indigo-500 border-indigo-500" : "border-zinc-300"
+                                assigned ? "bg-brand-deep border-indigo-500" : "border-zinc-300"
                               }`}>
                                 {assigned && <span className="text-white text-[15px] font-black">✓</span>}
                               </div>

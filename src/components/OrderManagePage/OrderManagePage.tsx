@@ -1721,7 +1721,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         className={[
                           "px-2.5 h-7 rounded-md text-[12px] font-bold border transition cursor-pointer",
                           orderNeedConfig.defaultSortKey === opt.k
-                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                            ? "bg-brand-deep text-white border-indigo-600 shadow-sm"
                             : "bg-white text-zinc-600 border-zinc-200 hover:border-indigo-300 hover:text-indigo-600",
                         ].join(" ")}
                       >{opt.label}</button>
@@ -1770,7 +1770,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                             className={[
                               "px-2.5 h-7 rounded-md text-[12px] font-bold border transition cursor-pointer",
                               orderNeedConfig.defaultCategory === cat
-                                ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                                ? "bg-brand-deep text-white border-indigo-600 shadow-sm"
                                 : "bg-white text-zinc-600 border-zinc-200 hover:border-indigo-300 hover:text-indigo-600",
                             ].join(" ")}
                           >{label}</button>
@@ -2051,7 +2051,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           className={`h-6 px-1.5 rounded text-[12px] font-black transition cursor-pointer disabled:opacity-40 ${
                             alreadyRequested
                               ? "text-emerald-700 bg-emerald-50 border border-emerald-300 hover:bg-emerald-100"
-                              : "text-white bg-indigo-600 hover:bg-indigo-700"
+                              : "text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a]"
                           }`}
                           title={alreadyRequested ? "발주요청 리스트에 추가됨 · 다시 요청" : "발주요청 리스트에 추가"}
                         >
@@ -2184,7 +2184,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                                 className={`h-7 px-3 rounded-md text-[12px] font-black cursor-pointer transition ${
                                   alreadyRequested
                                     ? "bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-not-allowed"
-                                    : "bg-indigo-600 text-white hover:bg-indigo-700"
+                                    : "bg-brand-deep text-white hover:bg-[#0d3a5c]"
                                 }`}
                               >{alreadyRequested ? "요청됨" : "요청"}</button>
                             </td>
@@ -3045,7 +3045,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 <button
                   onClick={submitOrderModal}
                   disabled={sendingBulk}
-                  className="inline-flex items-center gap-1 h-8 px-3 rounded-md text-[13px] font-black text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1 h-8 px-3 rounded-md text-[13px] font-black text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                 >
                   {sendingBulk && <Loader2 size={12} strokeWidth={2.5} className="animate-spin" />}
                   {sendingBulk ? "발송 중..." : "발주 발송"}
@@ -3127,7 +3127,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             }}
           >
             <div className="flex items-center gap-2 mb-2 pb-2 border-b border-zinc-100">
-              <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-black text-sm">
+              <div className="w-8 h-8 rounded-full bg-brand-deep flex items-center justify-center text-white font-black text-sm">
                 {contactPopover.name.slice(0, 1)}
               </div>
               <div className="min-w-0">

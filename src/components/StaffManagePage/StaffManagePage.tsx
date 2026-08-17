@@ -348,7 +348,7 @@ function calcTenure(hireDate: string | null | undefined): string {
 
 // ─── 헬퍼: 아바타 그라디언트 ────────────────────────────────────────────────
 const AVATAR_COLORS = [
-  "bg-indigo-500",
+  "bg-brand-deep",
   "bg-sky-500",
   "bg-emerald-500",
   "bg-orange-500",
@@ -542,7 +542,7 @@ const CreateModal: React.FC<{
         {/* 모달 헤더 */}
         <div className="px-4 py-3 border-b border-zinc-200 bg-indigo-50 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center shadow-sm">
+            <div className="w-7 h-7 rounded-lg bg-brand-deep flex items-center justify-center shadow-sm">
               <UserPlus size={13} className="text-white" />
             </div>
             <span className="text-sm font-semibold text-zinc-800">직원 신규 등록</span>
@@ -608,7 +608,7 @@ const CreateModal: React.FC<{
           <button
             onClick={() => onSave(draft)}
             disabled={saving}
-            className="text-[11px] font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md h-7 px-3.5 cursor-pointer disabled:opacity-40 flex items-center gap-1.5 shadow-sm"
+            className="text-[11px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-md h-7 px-3.5 cursor-pointer disabled:opacity-40 flex items-center gap-1.5 shadow-sm"
           >
             {saving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
             {saving ? "저장 중..." : "저장"}
@@ -1278,7 +1278,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
       <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
         {/* 페이지 아이콘 + 타이틀 */}
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center shadow-sm shrink-0">
+          <div className="w-7 h-7 rounded-lg bg-brand-deep flex items-center justify-center shadow-sm shrink-0">
             <Users size={13} className="text-white" />
           </div>
           <span className="text-[13px] font-bold text-zinc-800">직원관리</span>
@@ -1332,7 +1332,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
               onClick={() => setFilterPosition("")}
               className={`h-6 px-2 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
                 filterPosition === ""
-                  ? "bg-indigo-600 text-white shadow-sm"
+                  ? "bg-brand-deep text-white shadow-sm"
                   : "text-zinc-500 hover:text-zinc-700"
               }`}
             >
@@ -1376,7 +1376,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
           </button>
           <button
             onClick={() => setCreateOpen(true)}
-            className="h-8 px-3 flex items-center gap-1.5 text-[11px] font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg cursor-pointer shadow-sm transition-colors"
+            className="h-8 px-3 flex items-center gap-1.5 text-[11px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-lg cursor-pointer shadow-sm transition-colors"
           >
             <UserPlus size={12} />
             신규 등록
@@ -1628,7 +1628,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                         <button
                           onClick={saveEdit}
                           disabled={saving}
-                          className="h-7 px-2.5 text-[11px] font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg cursor-pointer flex items-center gap-1.5 shadow-sm disabled:opacity-40 transition-colors"
+                          className="h-7 px-2.5 text-[11px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-lg cursor-pointer flex items-center gap-1.5 shadow-sm disabled:opacity-40 transition-colors"
                         >
                           {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                           {saving ? "저장 중..." : "저장"}
@@ -2051,7 +2051,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                               <button
                                 type="button"
                                 onClick={() => window.open(displayEmp.contract_file_url as string, "_blank", "noopener,noreferrer")}
-                                className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md shadow-sm cursor-pointer transition-colors"
+                                className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-md shadow-sm cursor-pointer transition-colors"
                               >
                                 <ExternalLink size={11} /> 보기
                               </button>
@@ -2635,7 +2635,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                     <button
                       type="button"
                       onClick={() => window.open(selectedEmp.contract_file_url as string, "_blank", "noopener,noreferrer")}
-                      className="mt-1 inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md shadow-sm cursor-pointer self-start"
+                      className="mt-1 inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-md shadow-sm cursor-pointer self-start"
                     >
                       <ExternalLink size={11} /> 보기
                     </button>

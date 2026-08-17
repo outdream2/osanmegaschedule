@@ -127,7 +127,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
   const sortBtnCls = (k: StockSortKey) =>
     `px-2 py-0.5 rounded-md text-[11px] font-semibold border cursor-pointer transition-all duration-150 ${
       sortKey === k
-        ? "bg-indigo-600 text-white border-indigo-600"
+        ? "bg-brand-deep text-white border-indigo-600"
         : "bg-white text-zinc-500 border-zinc-200 hover:border-indigo-300 hover:text-indigo-600"
     }`;
 

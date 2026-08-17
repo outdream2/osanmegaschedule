@@ -303,7 +303,7 @@ export const COLOR_TONES: Record<SideNavColor, {
   amber:   { activeBar: "bg-amber-500",   activeBg: "bg-amber-100",   activeText: "text-amber-900",  iconActive: "text-amber-700",   hoverBg: "hover:bg-white/70",   glowShadow: "shadow-amber-200/40" },
   red:     { activeBar: "bg-red-500",     activeBg: "bg-red-100",     activeText: "text-red-800",    iconActive: "text-red-700",     hoverBg: "hover:bg-white/70",   glowShadow: "shadow-red-200/40" },
   sky:     { activeBar: "bg-sky-500",     activeBg: "bg-sky-100",     activeText: "text-sky-800",    iconActive: "text-sky-700",     hoverBg: "hover:bg-white/70",   glowShadow: "shadow-sky-200/40" },
-  indigo:  { activeBar: "bg-indigo-500",  activeBg: "bg-indigo-100",  activeText: "text-indigo-800", iconActive: "text-indigo-700",  hoverBg: "hover:bg-white/70",   glowShadow: "shadow-indigo-200/40" },
+  indigo:  { activeBar: "bg-brand-deep",  activeBg: "bg-indigo-100",  activeText: "text-indigo-800", iconActive: "text-indigo-700",  hoverBg: "hover:bg-white/70",   glowShadow: "shadow-indigo-200/40" },
   emerald: { activeBar: "bg-emerald-500", activeBg: "bg-emerald-100", activeText: "text-emerald-800",iconActive: "text-emerald-700", hoverBg: "hover:bg-white/70",   glowShadow: "shadow-emerald-200/40" },
   violet:  { activeBar: "bg-violet-500",  activeBg: "bg-violet-100",  activeText: "text-violet-800", iconActive: "text-violet-700",  hoverBg: "hover:bg-white/70",   glowShadow: "shadow-violet-200/40" },
   cyan:    { activeBar: "bg-cyan-500",    activeBg: "bg-cyan-100",    activeText: "text-cyan-800",   iconActive: "text-cyan-700",    hoverBg: "hover:bg-white/70",   glowShadow: "shadow-cyan-200/40" },

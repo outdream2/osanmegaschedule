@@ -1413,7 +1413,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
               <button
                 onClick={() => { setLoginError(""); setIsLoginModalOpen(true); }}
                 title="관리자 로그인"
-                className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition cursor-pointer shadow-sm"
+                className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 text-xs font-semibold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg transition cursor-pointer shadow-sm"
               >
                 <Lock size={12} />
                 <span className="hidden sm:inline">관리자 로그인</span>
@@ -2172,7 +2172,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-indigo-600 text-white rounded-lg">
+                <div className="p-1.5 bg-brand-deep text-white rounded-lg">
                   <Lock size={16} />
                 </div>
                 <div>
@@ -2243,7 +2243,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 p-3 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-600 rounded-xl transition shadow-sm inline-flex items-center justify-center gap-1.5"
+                  className="flex-1 p-3 text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white border border-indigo-600 rounded-xl transition shadow-sm inline-flex items-center justify-center gap-1.5"
                 >
                   <LogIn size={13} />
                   <span>로그인</span>
