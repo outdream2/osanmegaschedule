@@ -12,31 +12,33 @@ export type MenuCardColor =
   | "emerald" | "indigo" | "violet" | "fuchsia" | "rose" | "red" | "orange" | "zinc";
 
 interface ColorTokens {
-  /** icon 배경 tint */
+  /** icon 배경 tint (soft · 카테고리 identity) */
   iconBg: string;
-  /** icon 색상 */
+  /** icon 색상 (mid saturation · 톤 유지) */
   iconColor: string;
   /** hover 시 카드 border accent */
   hoverBorder: string;
+  /** top gradient bar · 카드 상단 1px hairline (색 accent · Linear/Vercel 대시보드 규칙) */
+  topAccent: string;
 }
 
-// 2026-08-17 · 사용자 지시 · 랜딩 메뉴 · 최신 트렌드 · mono neutral 통일
-//   · 모든 색상 preset · brand-tint bg + brand-deep icon + brand-deep hover border
-//   · category identity · 아이콘 자체로 표현 (Phosphor duotone) · 색 통일
-//   · Linear/Vercel 2026 톤 · 파스텔 다색 지양 · 딥네이비 accent
+// 2026-08-17 · 세련 · 카테고리 identity 색 도입 (아이콘 tint + 상단 gradient bar)
+//   · 카드 body 는 mono neutral (white + border-line) 유지
+//   · 아이콘 배경/색 · 상단 1px hairline gradient 에만 category 색 사용 (Vercel Dashboard 규칙)
+//   · Linear/Vercel 2026 · "단일 accent + category identity" 조화
 const COLOR_MAP: Record<MenuCardColor, ColorTokens> = {
-  teal:     { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
-  amber:    { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
-  coral:    { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
-  sky:      { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
-  emerald:  { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
-  indigo:   { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
-  violet:   { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
-  fuchsia:  { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
-  rose:     { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
-  red:      { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
-  orange:   { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
-  zinc:     { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
+  teal:     { iconBg: "bg-teal-50",    iconColor: "text-teal-600",    hoverBorder: "hover:border-teal-300",    topAccent: "from-teal-400 to-transparent" },
+  amber:    { iconBg: "bg-amber-50",   iconColor: "text-amber-600",   hoverBorder: "hover:border-amber-300",   topAccent: "from-amber-400 to-transparent" },
+  coral:    { iconBg: "bg-rose-50",    iconColor: "text-rose-600",    hoverBorder: "hover:border-rose-300",    topAccent: "from-rose-400 to-transparent" },
+  sky:      { iconBg: "bg-sky-50",     iconColor: "text-sky-600",     hoverBorder: "hover:border-sky-300",     topAccent: "from-sky-400 to-transparent" },
+  emerald:  { iconBg: "bg-emerald-50", iconColor: "text-emerald-600", hoverBorder: "hover:border-emerald-300", topAccent: "from-emerald-400 to-transparent" },
+  indigo:   { iconBg: "bg-indigo-50",  iconColor: "text-indigo-600",  hoverBorder: "hover:border-indigo-300",  topAccent: "from-indigo-400 to-transparent" },
+  violet:   { iconBg: "bg-violet-50",  iconColor: "text-violet-600",  hoverBorder: "hover:border-violet-300",  topAccent: "from-violet-400 to-transparent" },
+  fuchsia:  { iconBg: "bg-fuchsia-50", iconColor: "text-fuchsia-600", hoverBorder: "hover:border-fuchsia-300", topAccent: "from-fuchsia-400 to-transparent" },
+  rose:     { iconBg: "bg-rose-50",    iconColor: "text-rose-600",    hoverBorder: "hover:border-rose-300",    topAccent: "from-rose-400 to-transparent" },
+  red:      { iconBg: "bg-red-50",     iconColor: "text-red-600",     hoverBorder: "hover:border-red-300",     topAccent: "from-red-400 to-transparent" },
+  orange:   { iconBg: "bg-orange-50",  iconColor: "text-orange-600",  hoverBorder: "hover:border-orange-300",  topAccent: "from-orange-400 to-transparent" },
+  zinc:     { iconBg: "bg-zinc-100",   iconColor: "text-zinc-700",    hoverBorder: "hover:border-zinc-300",    topAccent: "from-zinc-400 to-transparent" },
 };
 
 /** stat chip · Landing 카드 하단 · 카운터 등 */
@@ -78,11 +80,14 @@ export function MenuCard({ color, icon: Icon, title, description, onClick, order
     <button
       data-menu-card
       onClick={onClick}
-      className={`${orderClass ?? ""} group relative bg-white border border-line ${c.hoverBorder} rounded-[16px] p-[20px] text-left transition-colors duration-150 hover:-translate-y-0.5 cursor-pointer overflow-hidden flex flex-col gap-3 shadow-sm hover:shadow-lg`}
+      className={`${orderClass ?? ""} group relative bg-white border border-line ${c.hoverBorder} rounded-[16px] p-[20px] text-left transition-all duration-200 hover:-translate-y-1 cursor-pointer overflow-hidden flex flex-col gap-3 shadow-[0_1px_2px_rgba(10,46,74,0.04),0_2px_8px_rgba(10,46,74,0.04)] hover:shadow-[0_2px_4px_rgba(10,46,74,0.06),0_12px_28px_rgba(10,46,74,0.12)]`}
     >
-      {/* top · 아이콘 (좌측) + badge (우측) · 2026-08-17 · 최신 트렌드 · 44 icon tint · rounded-12 */}
+      {/* 상단 1px hairline gradient · 카테고리 identity accent · Linear/Vercel 규칙 · hover 시 진해짐 */}
+      <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${c.topAccent} opacity-70 group-hover:opacity-100 transition-opacity`} />
+
+      {/* top · 아이콘 (좌측) + badge (우측) · category tint icon */}
       <div className="flex items-start justify-between">
-        <div className={`w-[44px] h-[44px] rounded-[12px] flex items-center justify-center ${c.iconBg}`}>
+        <div className={`w-[44px] h-[44px] rounded-[12px] flex items-center justify-center ${c.iconBg} transition-transform group-hover:scale-105`}>
           <Icon size={20} className={c.iconColor} weight="fill" />
         </div>
         {badge}
