@@ -93,17 +93,21 @@ const TABS: TabDef[] = DERIVED_TOP_TABS.map((t: DerivedTopTab): TabDef => ({
 
 // 2026-08-06 · 랜딩 파스텔 톤 통일 · 활성 탭: 파스텔 배경 + 진한 텍스트 + border (흰 배경+진한gradient 제거)
 // 2026-08-17 · 사용자 지시 · 헤더 제목 색깔 조금만 진하게 · inactive 500→600 · active 700→800
+// 2026-08-17 · 사용자 지시 · 반응형 · 메인 헤더 딥네이비 배경 · 모바일 tab bar 통일
+//   · 활성 · 반투명 흰 pill (bg-white/[0.14]) · text-white · shadow-sm
+//   · 비활성 · text-[#C4DAEE] (light blue) · hover text-white
+//   · 카테고리 identity · 아이콘 색만 살짝 유지 (renderMobileTab 에서 icon)
 const TAB_COLOR_MAP: Record<string, { activeBg: string; activeText: string; inactiveText: string; inactiveHoverText: string; }> = {
-  slate:   { activeBg: "bg-zinc-100 border border-zinc-300",     activeText: "text-zinc-900",   inactiveText: "text-zinc-700",   inactiveHoverText: "hover:text-zinc-900"   },
-  blue:    { activeBg: "bg-blue-100 border border-blue-300",       activeText: "text-blue-900",    inactiveText: "text-blue-700",    inactiveHoverText: "hover:text-blue-900"    },
-  red:     { activeBg: "bg-red-100 border border-red-300",         activeText: "text-red-900",     inactiveText: "text-red-700",     inactiveHoverText: "hover:text-red-900"     },
-  sky:     { activeBg: "bg-sky-100 border border-sky-300",         activeText: "text-sky-900",     inactiveText: "text-sky-700",     inactiveHoverText: "hover:text-sky-900"     },
-  indigo:  { activeBg: "bg-indigo-100 border border-indigo-300",   activeText: "text-indigo-900",  inactiveText: "text-indigo-700",  inactiveHoverText: "hover:text-indigo-900"  },
-  orange:  { activeBg: "bg-orange-100 border border-orange-300",   activeText: "text-orange-900",  inactiveText: "text-orange-700",  inactiveHoverText: "hover:text-orange-900"  },
-  emerald: { activeBg: "bg-emerald-100 border border-emerald-300", activeText: "text-emerald-900", inactiveText: "text-emerald-700", inactiveHoverText: "hover:text-emerald-900" },
-  violet:  { activeBg: "bg-violet-100 border border-violet-300",   activeText: "text-violet-900",  inactiveText: "text-violet-700",  inactiveHoverText: "hover:text-violet-900"  },
-  amber:   { activeBg: "bg-amber-100 border border-amber-300",     activeText: "text-amber-900",   inactiveText: "text-amber-700",   inactiveHoverText: "hover:text-amber-900"   },
-  cyan:    { activeBg: "bg-cyan-100 border border-cyan-300",       activeText: "text-cyan-900",    inactiveText: "text-cyan-700",    inactiveHoverText: "hover:text-cyan-900"    },
+  slate:   { activeBg: "bg-white/[0.14] border border-white/20 shadow-sm", activeText: "text-white", inactiveText: "text-[#C4DAEE]", inactiveHoverText: "hover:text-white" },
+  blue:    { activeBg: "bg-white/[0.14] border border-white/20 shadow-sm", activeText: "text-white", inactiveText: "text-[#C4DAEE]", inactiveHoverText: "hover:text-white" },
+  red:     { activeBg: "bg-white/[0.14] border border-white/20 shadow-sm", activeText: "text-white", inactiveText: "text-[#C4DAEE]", inactiveHoverText: "hover:text-white" },
+  sky:     { activeBg: "bg-white/[0.14] border border-white/20 shadow-sm", activeText: "text-white", inactiveText: "text-[#C4DAEE]", inactiveHoverText: "hover:text-white" },
+  indigo:  { activeBg: "bg-white/[0.14] border border-white/20 shadow-sm", activeText: "text-white", inactiveText: "text-[#C4DAEE]", inactiveHoverText: "hover:text-white" },
+  orange:  { activeBg: "bg-white/[0.14] border border-white/20 shadow-sm", activeText: "text-white", inactiveText: "text-[#C4DAEE]", inactiveHoverText: "hover:text-white" },
+  emerald: { activeBg: "bg-white/[0.14] border border-white/20 shadow-sm", activeText: "text-white", inactiveText: "text-[#C4DAEE]", inactiveHoverText: "hover:text-white" },
+  violet:  { activeBg: "bg-white/[0.14] border border-white/20 shadow-sm", activeText: "text-white", inactiveText: "text-[#C4DAEE]", inactiveHoverText: "hover:text-white" },
+  amber:   { activeBg: "bg-white/[0.14] border border-white/20 shadow-sm", activeText: "text-white", inactiveText: "text-[#C4DAEE]", inactiveHoverText: "hover:text-white" },
+  cyan:    { activeBg: "bg-white/[0.14] border border-white/20 shadow-sm", activeText: "text-white", inactiveText: "text-[#C4DAEE]", inactiveHoverText: "hover:text-white" },
 };
 
 // 경영관리 탭이 활성인 페이지들 (통합 페이지 + 서브 페이지들 · 헤더 활성 표시용)
@@ -410,7 +414,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           type="button"
           onClick={bizOnClick}
           disabled={!onNavigate}
-          className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white/80 cursor-pointer disabled:opacity-40`}
+          className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white/[0.10] cursor-pointer disabled:opacity-40`}
         >
           <Icon size={26} weight="fill" />
           <span className="leading-tight text-center">경영</span>
@@ -448,7 +452,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         key={tab.key}
         onClick={onClick}
         disabled={!onNavigate && !onBack}
-        className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white/80 cursor-pointer disabled:opacity-40`}
+        className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white/[0.10] cursor-pointer disabled:opacity-40`}
       >
         <Icon size={26} weight="fill" />
         <span className="leading-tight text-center whitespace-nowrap">
@@ -481,10 +485,19 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   }
 
   return (
-    // 2026-08-17 · 사용자 지시 · 반응형 헤더 · 사이드바 톤 통일 (deep navy) · 세련 · 최신 트렌드
-    <header className="bg-brand-deep border-b border-white/[0.08] shrink-0 shadow-sm">
-      {/* ── Row 1 (상단): 로고 + 서비스명 · 로그인정보 · 알림 · 로그아웃 · deep navy 톤 ── */}
-      <div className="px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+    // 2026-08-17 · 사용자 지시 · 반응형 헤더 · 최신 트렌드 · 딥네이비 gradient + 세련 · 초고해상도 · 부드러움
+    //   · gradient · 딥네이비 → 살짝 밝은 네이비 (subtle depth · Linear/Vercel 2026 톤)
+    //   · shadow · 2-layer subtle · GPU 가속 백그라운드
+    //   · border · white/8 + accent glow strip (mint · 4px 아래 위치)
+    <header
+      className="relative border-b border-white/[0.08] shrink-0 shadow-[0_1px_3px_rgba(10,46,74,0.15),0_4px_20px_-4px_rgba(10,46,74,0.20)]"
+      style={{ background: "linear-gradient(180deg, #0A2E4A 0%, #0F3855 100%)" }}
+    >
+      {/* subtle accent glow · 하단 1px · mint accent · 은은한 브랜드 시그니처 */}
+      <div className="absolute bottom-0 left-0 right-0 h-[1px] pointer-events-none" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(94,169,232,0.3) 20%, rgba(94,169,232,0.5) 50%, rgba(94,169,232,0.3) 80%, transparent 100%)" }} />
+
+      {/* ── Row 1 · 로고 + 서비스명 · 이름 · 알림 · 로그아웃 ── */}
+      <div className="relative px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
         {/* Left: logo (클릭 시 랜딩 이동) · logo2 · 라운드 · ring-white/20 */}
         <div className="flex items-center min-w-0">
           <button
@@ -547,8 +560,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         </div>
       </div>
 
-      {/* ── Row 2 (하단): Desktop/태블릿 nav tabs · 2026-08-17 · 딥네이비 배경 · 최신 트렌드 ── */}
-      <div className="hidden sm:block px-4 sm:px-5 md:px-6 pt-1 pb-2 border-t border-white/[0.08]">
+      {/* ── Row 2 · Desktop/태블릿 nav tabs · 딥네이비 · Row 1 gradient 연장 ── */}
+      <div className="relative hidden sm:block px-4 sm:px-5 md:px-6 pt-1 pb-2 border-t border-white/[0.06]">
         <div ref={desktopContainerRef} className="flex items-center gap-0.5 min-w-0 relative">
           {/* 측정용 hidden 영역 · 실제 탭 폭 계산 */}
           <div
@@ -620,7 +633,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       {/* ── Mobile 전용 탭 행: 태블릿·PC 는 상단 탭 사용 (2026-07-16) ── */}
       {visibleTabs.length > 1 && (
         <div className="sm:hidden px-4 pb-2">
-          <div ref={mobileContainerRef} className="flex items-stretch gap-1 bg-zinc-100/70 rounded-xl px-2 py-1 relative">
+          <div ref={mobileContainerRef} className="flex items-stretch gap-1 bg-white/[0.06] border border-white/10 rounded-xl px-2 py-1 relative">
             {/* 측정용 hidden 영역 · 실제 탭 폭 계산 */}
             <div
               ref={mobileMeasureRef}
@@ -640,10 +653,10 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                 <button
                   type="button"
                   onClick={() => setMobileOverflowOpen(v => !v)}
-                  className={`min-w-[44px] h-full flex flex-col items-center justify-center gap-0.5 px-2 rounded-lg text-[10px] font-black transition active:scale-95 ${
+                  className={`min-w-[44px] h-full flex flex-col items-center justify-center gap-0.5 px-2 rounded-lg text-[12px] font-bold transition-colors active:scale-95 ${
                     mobileOverflowOpen
-                      ? "bg-zinc-800 text-white shadow-md"
-                      : "text-zinc-600 hover:bg-white"
+                      ? "bg-white/[0.18] text-white shadow-sm"
+                      : "text-[#C4DAEE] hover:bg-white/[0.10] hover:text-white"
                   }`}
                   title={`더보기 (${mobileOverflowTabs.length}개)`}
                   aria-label="더보기 메뉴"
