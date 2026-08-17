@@ -75,7 +75,7 @@ export function MenuCard({ color, icon: Icon, title, description, onClick, order
     <button
       data-menu-card
       onClick={onClick}
-      className={`${orderClass ?? ""} group relative bg-white border border-line ${c.hoverBorder} rounded-[16px] p-[20px] text-left transition-all duration-200 hover:-translate-y-0.5 cursor-pointer overflow-hidden flex flex-col gap-3 shadow-sm hover:shadow-lg`}
+      className={`${orderClass ?? ""} group relative bg-white border border-line ${c.hoverBorder} rounded-[16px] p-[20px] text-left transition-colors duration-150 hover:-translate-y-0.5 cursor-pointer overflow-hidden flex flex-col gap-3 shadow-sm hover:shadow-lg`}
     >
       {/* top · 아이콘 (좌측) + badge (우측) · 2026-08-17 · 최신 트렌드 · 44 icon tint · rounded-12 */}
       <div className="flex items-start justify-between">

@@ -1304,25 +1304,25 @@ return (
         <div className="flex flex-wrap bg-zinc-100/70 border border-line/60 rounded-2xl p-1 gap-0.5">
           <button
             onClick={() => setMainTab("ocr")}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-bold rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "ocr" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-bold rounded-lg shrink-0 transition-colors duration-150 cursor-pointer ${mainTab === "ocr" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
           >
             <Upload size={13} className={mainTab === "ocr" ? "text-zinc-800" : "text-zinc-400"} /> OCR 추출
           </button>
           <button
             onClick={() => setMainTab("synonyms")}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-bold rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "synonyms" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-bold rounded-lg shrink-0 transition-colors duration-150 cursor-pointer ${mainTab === "synonyms" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
           >
             <BookOpen size={13} className={mainTab === "synonyms" ? "text-zinc-800" : "text-zinc-400"} /> 동의어 관리
           </button>
           <button
             onClick={() => setMainTab("balance")}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-bold rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "balance" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-bold rounded-lg shrink-0 transition-colors duration-150 cursor-pointer ${mainTab === "balance" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
           >
             잔고항목 지정
           </button>
           <button
             onClick={() => setMainTab("records")}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-bold rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "records" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-bold rounded-lg shrink-0 transition-colors duration-150 cursor-pointer ${mainTab === "records" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
           >
             <FileText size={13} className={mainTab === "records" ? "text-zinc-800" : "text-zinc-400"} /> 거래명세서 조회
           </button>
@@ -1343,10 +1343,10 @@ return (
         <div className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
           <div className="flex items-center gap-1 px-4 py-2 border-b border-zinc-100/80">
             <div className="flex flex-wrap bg-zinc-100/70 border border-line/60 rounded-2xl p-1 gap-0.5">
-            <button onClick={() => setSynTab("product")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer ${synTab === "product" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}>
+            <button onClick={() => setSynTab("product")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors duration-150 cursor-pointer ${synTab === "product" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}>
               <BookOpen size={12} className={synTab === "product" ? "text-zinc-800" : "text-zinc-400"} /> 상품명 동의어 ({productSynonyms.length})
             </button>
-            <button onClick={() => setSynTab("supplier")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer ${synTab === "supplier" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}>
+            <button onClick={() => setSynTab("supplier")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors duration-150 cursor-pointer ${synTab === "supplier" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}>
               <Building2 size={12} className={synTab === "supplier" ? "text-zinc-800" : "text-zinc-400"} /> 공급사 별칭 ({supplierAliases.length})
             </button>
             </div>

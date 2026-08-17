@@ -873,7 +873,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
 
           {/* ── 전체 저장 카드 ── */}
           {rows.length > 0 && (
-            <div className={`bg-white rounded-2xl border-2 overflow-hidden transition-all duration-300 ${
+            <div className={`bg-white rounded-2xl border-2 overflow-hidden transition-colors duration-150 ${
               saveStatus === "done"
                 ? "border-emerald-300/80 shadow-[0_0_0_4px_rgba(16,185,129,0.08),0_4px_16px_rgba(0,0,0,0.08)]"
                 : "border-line/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
@@ -906,7 +906,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                   className={[
                     "relative w-full min-h-[56px] py-3.5 rounded-xl",
                     "font-bold text-[14px] sm:text-[15px] text-white",
-                    "transition-all duration-200 cursor-pointer disabled:cursor-not-allowed",
+                    "transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed",
                     "active:scale-[0.99] overflow-hidden",
                     saveStatus === "done"
                       ? "bg-emerald-500 shadow-md"

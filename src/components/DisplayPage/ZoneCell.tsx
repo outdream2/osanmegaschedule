@@ -165,7 +165,7 @@ export const ZoneCell: React.FC<ZoneCellProps> = ({
       onDrop={onDrop ? (e) => onDrop(e, zone) : undefined}
       onDragLeave={onDragLeave}
       style={inlineStyle}
-      className={`relative w-full rounded-lg border-2 transition-all duration-300 active:scale-[0.96] cursor-pointer flex flex-col font-bold shadow-sm overflow-hidden ${statusCls} ${ringCls} ${configDimCls} ${configOtherGroupDimCls} ${className}`}
+      className={`relative w-full rounded-lg border-2 transition-colors duration-150 active:scale-[0.96] cursor-pointer flex flex-col font-bold shadow-sm overflow-hidden ${statusCls} ${ringCls} ${configDimCls} ${configOtherGroupDimCls} ${className}`}
     >
       {/* Group color strip */}
       {groupColor && (

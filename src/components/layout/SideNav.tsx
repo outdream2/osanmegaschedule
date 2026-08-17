@@ -115,7 +115,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
             "rounded-lg",
             "text-[19px] leading-none", // 2026-08-12 · 사용자 지시 · 사이드바 폰트 +2
             // 200ms ease-out · 모든 인터랙션 통일
-            "transition-all duration-200 ease-out",
+            "transition-colors duration-150 ease-out",
             "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
             // 2026-08-17 · deep teal 배경 · 목업 톤 · 활성/비활성 pill
             hasActiveItem
@@ -145,7 +145,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                     "shrink-0",
                     // 2026-08-17 · deep teal 배경 · 활성 = 그룹 톤 밝은 shade (300) · 비활성 = light mint
                     hasActiveItem ? groupTone.iconActive : "text-[#C4DAEE]/80",
-                    "transition-all duration-200 ease-out",
+                    "transition-colors duration-150 ease-out",
                   ].join(" ")}
                 />
               );
@@ -225,7 +225,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                           // subtle slide on hover
                           "hover:translate-x-px",
                         ].join(" "),
-                    "transition-all duration-200 ease-out",
+                    "transition-colors duration-150 ease-out",
                   ].join(" ")}
                 >
                   {/* 2026-08-12 · 사용자 지시 · 하위 메뉴 아이콘 = 그룹 아이콘 (공통헤더 탭과 통일) */}
@@ -276,7 +276,7 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, on
         "px-2.5 py-1.5 mt-1.5 mb-0",
         "rounded-lg",
         "text-[19px] leading-none",
-        "transition-all duration-200 ease-out",
+        "transition-colors duration-150 ease-out",
         "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
         // 2026-08-17 · deep teal · 목업 톤
         active
@@ -300,7 +300,7 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, on
         className={[
           "shrink-0",
           active ? tone.iconActive : "text-[#C4DAEE]/80",
-          "transition-all duration-200 ease-out",
+          "transition-colors duration-150 ease-out",
         ].join(" ")}
       />
       <span className="group-data-[collapsible=icon]:hidden tracking-wide">{group.label}</span>
@@ -359,7 +359,7 @@ export const SideNav: React.FC<SideNavProps> = ({
             className={[
               "flex-1 min-w-0 flex items-center gap-2.5",
               "px-2 py-1.5 rounded-lg",
-              "hover:bg-white/8 transition-all duration-200 ease-out",
+              "hover:bg-white/8 transition-colors duration-150 ease-out",
               "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
               "cursor-pointer",
             ].join(" ")}
@@ -440,7 +440,7 @@ export const SideNav: React.FC<SideNavProps> = ({
                   "text-[16px] font-semibold",
                   // 2026-08-17 · 사용자 지시 · 사이드바 로그아웃 · 흰색 텍스트
                   "text-white hover:bg-white/[0.06]",
-                  "transition-all duration-200 ease-out",
+                  "transition-colors duration-150 ease-out",
                 ].join(" ")}
               >
                 <LogOut size={13} strokeWidth={2} className="shrink-0" />

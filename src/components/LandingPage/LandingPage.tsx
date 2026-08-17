@@ -1311,31 +1311,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               <div className="flex bg-zinc-100/70 border border-line/60 rounded-2xl p-1 gap-0.5 overflow-x-auto scrollbar-none">
                 <button
                   onClick={() => setUploadTab("products")}
-                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer leading-tight ${uploadTab === "products" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"
+                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-colors duration-150 cursor-pointer leading-tight ${uploadTab === "products" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"
                     }`}>
                   상품목록
                 </button>
                 <button
                   onClick={() => setUploadTab("stock")}
-                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer leading-tight ${uploadTab === "stock" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"
+                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-colors duration-150 cursor-pointer leading-tight ${uploadTab === "stock" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"
                     }`}>
                   재고리스트
                 </button>
                 <button
                   onClick={() => { setUploadTab("vendors"); setVendorUploadResult(null); setVendorUploadFile(null); }}
-                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer leading-tight ${uploadTab === "vendors" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"
+                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-colors duration-150 cursor-pointer leading-tight ${uploadTab === "vendors" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"
                     }`}>
                   공급사관리
                 </button>
                 <button
                   onClick={() => { setUploadTab("purchase"); setPurchaseUploadResult(null); setPurchaseUploadFile(null); fetchPurchaseImportLog(); }}
-                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer leading-tight ${uploadTab === "purchase" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"
+                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-colors duration-150 cursor-pointer leading-tight ${uploadTab === "purchase" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"
                     }`}>
                   매입상세
                 </button>
                 <button
                   onClick={() => { setUploadTab("log"); fetchImportLog(); fetchStockImportLog(); fetchPurchaseImportLog(); }}
-                  className={`flex-1 min-w-0 flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer leading-tight ${uploadTab === "log" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"
+                  className={`flex-1 min-w-0 flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-colors duration-150 cursor-pointer leading-tight ${uploadTab === "log" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"
                     }`}>
                   임포트 목록
                   {(importLog.length + stockImportLog.length + purchaseImportBatches.length) > 0 && (

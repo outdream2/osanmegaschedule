@@ -461,7 +461,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                   disabled:opacity-50 disabled:cursor-not-allowed
                   shadow-md
                   hover:shadow-lg
-                  transition-all duration-200 cursor-pointer overflow-hidden"
+                  transition-colors duration-150 cursor-pointer overflow-hidden"
               >
                 {/* 광택 레이어 */}
                 <span className="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
@@ -866,7 +866,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
           {/* ══════════════════════════════════════════════════════
               최종 확인 카드
           ══════════════════════════════════════════════════════ */}
-          <div className={`bg-white rounded-2xl border-2 transition-all duration-300 overflow-hidden ${
+          <div className={`bg-white rounded-2xl border-2 transition-colors duration-150 overflow-hidden ${
             allDecided
               ? "border-sky-300/80 shadow-[0_0_0_4px_rgba(14,165,233,0.08),0_4px_16px_rgba(0,0,0,0.08)]"
               : "border-line/80 shadow-[0_2px_8px_rgba(0,0,0,0.05)] opacity-90"
@@ -907,7 +907,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                   className={[
                     "relative inline-flex items-center justify-center gap-2.5",
                     "min-h-[56px] py-3.5 rounded-xl font-bold text-[14px] sm:text-[15px]",
-                    "border-2 transition-all duration-200 cursor-pointer",
+                    "border-2 transition-colors duration-150 cursor-pointer",
                     "disabled:cursor-not-allowed active:scale-[0.98] overflow-hidden",
                     finalDecision === "all_match"
                       ? "bg-emerald-500 text-white border-emerald-500 shadow-md"
@@ -930,7 +930,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                   className={[
                     "relative inline-flex items-center justify-center gap-2.5",
                     "min-h-[56px] py-3.5 rounded-xl font-bold text-[14px] sm:text-[15px]",
-                    "border-2 transition-all duration-200 cursor-pointer",
+                    "border-2 transition-colors duration-150 cursor-pointer",
                     "disabled:cursor-not-allowed active:scale-[0.98] overflow-hidden",
                     finalDecision === "has_mismatch"
                       ? "bg-rose-500 text-white border-rose-500 shadow-md"
@@ -964,7 +964,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                       placeholder:text-rose-300 text-zinc-800
                       focus:outline-none focus:border-rose-400 focus:bg-white
                       focus:ring-4 focus:ring-rose-100/60
-                      transition-all duration-200"
+                      transition-colors duration-150"
                   />
                 </div>
               )}
@@ -1022,7 +1022,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                     className={[
                       "relative w-full min-h-[56px] py-3.5 rounded-xl",
                       "font-bold text-[14px] sm:text-[15px] text-white",
-                      "transition-all duration-200 cursor-pointer disabled:cursor-not-allowed",
+                      "transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed",
                       "active:scale-[0.99] overflow-hidden",
                       saveStatus === "done"
                         ? "bg-emerald-500 shadow-md"

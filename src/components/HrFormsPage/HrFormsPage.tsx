@@ -676,7 +676,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   </div>
                   <div className="w-full h-1.5 bg-zinc-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-amber-500 rounded-full transition-all duration-300"
+                      className="h-full bg-amber-500 rounded-full transition-colors duration-150"
                       style={{ width: `${uploadProgress}%` }}
                     />
                   </div>

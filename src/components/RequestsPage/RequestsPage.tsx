@@ -561,7 +561,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
           <div className="flex flex-wrap bg-zinc-100/70 border border-line/60 rounded-xl p-1 gap-0.5">
             {TABS.map(([key, label, count, activeClass, _iconClass, badgeClass, inactiveClass]) => (
               <button key={key} onClick={() => setTab(key)}
-                className={`px-2.5 sm:px-4 py-1.5 flex items-center gap-1.5 sm:gap-2 rounded-lg text-[15px] sm:text-[14px] font-bold transition-all duration-200 cursor-pointer flex-1 sm:flex-none justify-center ${tab === key ? `${activeClass} ring-1 shadow-sm` : inactiveClass}`}>
+                className={`px-2.5 sm:px-4 py-1.5 flex items-center gap-1.5 sm:gap-2 rounded-lg text-[15px] sm:text-[14px] font-bold transition-colors duration-150 cursor-pointer flex-1 sm:flex-none justify-center ${tab === key ? `${activeClass} ring-1 shadow-sm` : inactiveClass}`}>
                 <span>{label}</span>
                 {count > 0
                   ? <span className={`text-[14px] font-bold px-1.5 py-0.5 rounded-full ${tab === key ? badgeClass : "bg-zinc-100 text-zinc-400"}`}>{count}</span>
