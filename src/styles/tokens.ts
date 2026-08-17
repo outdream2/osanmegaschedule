@@ -198,7 +198,8 @@ export const SECTION_TITLE =
 export const DIVIDER = "border-t border-zinc-100";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 상태별 색상 매핑 (StatusBadge 컴포넌트에서도 사용)
+// 상태별 색상 매핑 · LeavePage/DisplayPage/ResignationApprovalPage 에서 참조
+//   · 2026-08-17 · legacy common/StatusBadge 삭제됨 · StatusPill 프레임워크로 대체
 // ─────────────────────────────────────────────────────────────────────────────
 export type StatusKey = "pending" | "prepared" | "done" | "success" | "warning" | "danger" | "info" | "neutral";
 
