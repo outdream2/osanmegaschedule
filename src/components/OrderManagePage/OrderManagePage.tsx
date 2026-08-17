@@ -2119,26 +2119,25 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           </div>
         </div>
           </>)}
-          {/* ── 품절임박 서브탭 · 2026-08-06 · ERP재고 기준 (사용자 요청) ── */}
+          {/* ── 품절임박 서브탭 · 2026-08-17 · PageToolbar 프레임워크 통일 ── */}
           {purchaseOrderSubTab === "critical" && (
             <div className="flex flex-col gap-2">
-              <div className="bg-white rounded-xl border border-line shadow-sm px-4 py-3 flex items-center gap-2 flex-wrap">
-                <AlertTriangle size={16} className="text-amber-500 shrink-0" />
-                <span className="text-[15px] font-bold text-zinc-800">품절임박</span>
-                <span className="text-[15px] text-zinc-500">ERP재고 3개 이하</span>
-                {(() => {
-                  const critical = products.filter(p => {
-                    const cur = Number(p.current_stock ?? NaN);
-                    if (!Number.isFinite(cur)) return false;
-                    return cur <= 3;
-                  });
-                  return (
-                    <span className="ml-auto text-[15px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-0.5 tabular-nums">
-                      {critical.length}건
-                    </span>
-                  );
-                })()}
-              </div>
+              {(() => {
+                const criticalCount = products.filter(p => {
+                  const cur = Number(p.current_stock ?? NaN);
+                  return Number.isFinite(cur) && cur <= 3;
+                }).length;
+                return (
+                  <PageToolbar
+                    icon={<AlertTriangle size={18} strokeWidth={2.2} />}
+                    title="품절임박"
+                    count={criticalCount}
+                    leftSlot={
+                      <span className="text-[13px] text-ink-soft font-medium tracking-tight">ERP재고 3개 이하</span>
+                    }
+                  />
+                );
+              })()}
               <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
                 <table className="w-full text-[14px] tabular-nums">
                   <thead className="bg-zinc-50/80 text-[15px] font-bold text-zinc-500 uppercase tracking-wider border-b border-line">

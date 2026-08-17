@@ -6,6 +6,8 @@
 import React, { useEffect, useState } from "react";
 import { Package, Loader2, ChevronDown, ChevronRight, Mail, Phone, User, Calendar, CalendarCheck } from "lucide-react";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
+import { PageToolbar } from "../common/PageToolbar";
+import { PeriodSelector, PERIOD_DAYS_PRESET } from "../common/PeriodSelector";
 
 interface OrderHistoryItem {
   id: string | number;
@@ -73,32 +75,38 @@ export const OrderHistoryTab: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-2">
-      {/* 상단 툴바 · 폰트 +2 (13→15 · 11→13) */}
-      <div className="bg-white rounded-xl border border-line shadow-sm px-4 py-3 flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2">
-          <Package size={16} className="text-indigo-500" />
-          <span className="text-[15px] font-bold text-zinc-800">발주이력</span>
-          <span className="text-[13px] font-semibold text-indigo-600 bg-indigo-50 rounded-full px-2.5 py-0.5 border border-indigo-200 tabular-nums">
-            {orders.length}건 · {totalItems}종 · {fmtWon(totalAmount)}
+      {/* 상단 툴바 · 2026-08-17 · PageToolbar 프레임워크 · PeriodSelector 공통 · 조회기간 통일 */}
+      <PageToolbar
+        icon={<Package size={18} strokeWidth={2.2} />}
+        title="발주이력"
+        count={orders.length}
+        leftSlot={
+          <span className="text-[13px] font-medium text-ink-soft tracking-tight tabular-nums">
+            {totalItems}종 · {fmtWon(totalAmount)}
           </span>
-        </div>
-        <div className="flex items-center gap-1.5 ml-auto">
-          <span className="text-[13px] font-semibold text-zinc-500">기간</span>
-          {[7, 30, 90, 180, 365].map((d) => (
-            <button
-              key={d}
-              onClick={() => setDays(d)}
-              className={`h-8 px-3 text-[13px] font-semibold rounded transition cursor-pointer ${
-                days === d
-                  ? "bg-brand-deep text-white shadow-sm"
-                  : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 border border-line"
-              }`}
-            >
-              {d}일
-            </button>
-          ))}
-        </div>
-      </div>
+        }
+        right={
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 shrink-0">
+              <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
+              <span className="text-[13px] font-bold text-ink tracking-tight">기간</span>
+            </span>
+            <PeriodSelector
+              options={[
+                { value: 7,   label: "7일",   title: "최근 7일" },
+                { value: 30,  label: "30일",  title: "최근 30일" },
+                { value: 90,  label: "90일",  title: "최근 90일" },
+                { value: 180, label: "180일", title: "최근 180일" },
+                { value: 365, label: "1년",   title: "최근 1년" },
+              ]}
+              value={days}
+              onChange={(v) => setDays(v)}
+              size="sm"
+              ariaLabel="발주이력 조회기간"
+            />
+          </div>
+        }
+      />
 
       {/* 마이그레이션 안내 · 폰트 +2 */}
       {notice && (
