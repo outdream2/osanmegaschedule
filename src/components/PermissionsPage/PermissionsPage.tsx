@@ -503,7 +503,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
             <Shield size={18} />권한 조정
           </button>
           <button type="button" onClick={() => setTab("app-settings")}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[18px] font-black transition-all cursor-pointer border ${tab === "app-settings" ? "bg-white text-indigo-700 shadow-md border-indigo-300 ring-2 ring-indigo-100" : "bg-transparent text-zinc-600 border-transparent hover:bg-white/60 hover:text-zinc-900"}`}>
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[18px] font-bold transition-colors cursor-pointer border ${tab === "app-settings" ? "bg-brand-deep text-white border-brand-deep shadow-sm" : "bg-transparent text-ink-soft border-transparent hover:bg-white/60 hover:text-ink"}`}>
             <SettingsIcon size={18} />스케쥴 설정
           </button>
           <button type="button" onClick={() => setTab("positions")}
@@ -528,7 +528,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
               <button
                 type="button"
                 onClick={handleSaveAll}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-sm transition cursor-pointer"
               >
                 <Save size={14} /> 저장
               </button>
@@ -538,14 +538,14 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
 
         {tab === "permissions" && (<>
         {/* 2026-08-16 · 사이드바 사용 토글 · 서버 KV · env 사용 X */}
-        <div className="mb-3 px-4 py-3 rounded-xl border border-indigo-200 bg-indigo-50/60 flex items-center gap-3">
+        <div className="mb-3 px-4 py-3 rounded-xl border border-brand/15 bg-brand-tint/60 flex items-center gap-3">
           <input
             type="checkbox"
             id="sidebar-enabled-toggle"
             checked={sidebarEnabled}
             onChange={toggleSidebarEnabled}
             disabled={sidebarSaving}
-            className="w-5 h-5 accent-indigo-500 cursor-pointer"
+            className="w-5 h-5 accent-[#1E5C8E] cursor-pointer"
           />
           <label htmlFor="sidebar-enabled-toggle" className="flex-1 cursor-pointer">
             <div className="text-[14px] font-bold text-zinc-800">사이드바 사용</div>
@@ -567,7 +567,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
             type="button"
             onClick={() => setPermSubTab("page")}
             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[16px] font-black transition cursor-pointer ${
-              permSubTab === "page" ? "bg-white text-indigo-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"
+              permSubTab === "page" ? "bg-brand-deep text-white shadow-sm" : "text-ink-soft hover:text-ink"
             }`}
           >
             <Shield size={14} /> 페이지별 설정
@@ -612,7 +612,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                   setSaveToast(msg);
                 }
               }}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-sm transition cursor-pointer"
               title="현재 페이지별 최소 권한을 서버에 저장"
             >
               <Save size={14} /> 저장
@@ -651,7 +651,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                       checked={!perm.hidden}
                       onChange={() => toggleHiddenForPerm(row.storageKey, row.pageKey)}
                       title={perm.hidden ? "숨김 (사이드바 제외)" : "노출"}
-                      className="w-4 h-4 accent-indigo-500 cursor-pointer"
+                      className="w-4 h-4 accent-[#1E5C8E] cursor-pointer"
                     />
                   </div>
                   {/* 그룹명 = 페이지명 (아이콘 + 라벨) */}
@@ -719,7 +719,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                           checked={!perm.hidden}
                           onChange={() => toggleHiddenForPerm(row.storageKey, row.pageKey)}
                           title={perm.hidden ? "숨김 (사이드바 제외)" : "노출"}
-                          className="w-4 h-4 accent-indigo-500 cursor-pointer"
+                          className="w-4 h-4 accent-[#1E5C8E] cursor-pointer"
                         />
                       </div>
                       {/* 페이지명 · 들여쓰기 */}
@@ -773,7 +773,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
             value={empSearch}
             onChange={e => setEmpSearch(e.target.value)}
             placeholder="이름·직군 검색"
-            className="text-xs px-3 py-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-700 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 w-44"
+            className="text-xs px-3 py-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-700 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep w-44"
           />
         </div>
         <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
@@ -989,7 +989,7 @@ const LevelSelect: React.FC<LevelSelectProps> = ({ value, onChange, saving, save
       value={value}
       onChange={e => onChange(Number(e.target.value))}
       disabled={saving}
-      className="appearance-none bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-1.5 text-[13px] font-bold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 cursor-pointer disabled:opacity-60 pr-7 min-w-[120px]"
+      className="appearance-none bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-1.5 text-[13px] font-bold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep cursor-pointer disabled:opacity-60 pr-7 min-w-[120px]"
     >
       {LEVELS.map(l => (
         <option key={l} value={l}>Lv.{l}{l === 1 ? " (직원)" : l === 9 ? " (최고관리자)" : ""}</option>
@@ -1032,19 +1032,19 @@ const PositionsField: React.FC<PositionsFieldProps> = ({ selected, allPositions,
           key={p}
           type="button"
           onClick={() => onToggle(p)}
-          className="inline-flex items-center gap-0.5 px-1.5 h-5 text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded hover:bg-indigo-100 cursor-pointer"
+          className="inline-flex items-center gap-0.5 px-1.5 h-5 text-[10px] font-bold text-brand-deep bg-brand-tint border border-brand/15 rounded hover:brightness-95 cursor-pointer"
           title={`${p} 직군 · 클릭 시 해제`}
         >
-          {p}<span className="text-indigo-400">×</span>
+          {p}<span className="text-brand-deep/60">×</span>
         </button>
       ))}
       <button
         type="button"
         onClick={() => onToggleOpen(!isOpen)}
-        className={`h-5 px-1.5 text-[10px] font-bold rounded border transition cursor-pointer ${
+        className={`h-5 px-1.5 text-[10px] font-bold rounded border transition-colors cursor-pointer ${
           isOpen
-            ? "bg-indigo-500 text-white border-indigo-500"
-            : "bg-white text-zinc-500 border-zinc-300 hover:border-indigo-400 hover:text-indigo-600"
+            ? "bg-brand-deep text-white border-brand-deep"
+            : "bg-white text-ink-soft border-line hover:border-brand-deep hover:text-brand-deep"
         }`}
         title="직군 지정 · 레벨과 함께 OR 조건"
       >+ 직군</button>
@@ -1059,7 +1059,7 @@ const PositionsField: React.FC<PositionsFieldProps> = ({ selected, allPositions,
                 type="checkbox"
                 checked={selected.includes(p)}
                 onChange={() => onToggle(p)}
-                className="w-3 h-3 accent-indigo-500 cursor-pointer"
+                className="w-3 h-3 accent-[#1E5C8E] cursor-pointer"
               />
               <span className="text-[12px] font-semibold text-zinc-700">{p}</span>
             </label>
