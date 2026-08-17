@@ -516,7 +516,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   // Render
   // ─────────────────────────────────────────────────────────────
   return (
-    <div className={embedded ? "flex-1 flex flex-col bg-[#f8f9fb]" : "min-h-screen bg-[#f8f9fb] flex flex-col"}>
+    <div className={embedded ? "flex-1 flex flex-col bg-[#F4F7FA]" : "min-h-screen bg-[#F4F7FA] flex flex-col"}>
 
       {/* ── AppNavHeader (embedded 모드에선 부모가 헤더 렌더 · skip) ── */}
       {!embedded && (

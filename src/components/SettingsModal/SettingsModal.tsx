@@ -430,7 +430,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                 <button
                   type="button"
                   onClick={addWorkplace}
-                  className="px-3 py-2 text-xs font-bold bg-[#2563eb] hover:bg-blue-700 text-white rounded-lg flex items-center gap-1 transition cursor-pointer"
+                  className="px-3 py-2 text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg flex items-center gap-1 transition cursor-pointer"
                 >
                   <Plus size={13} />
                   추가
@@ -455,7 +455,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                     onClick={() => setScheduleHourTab(t.id)}
                     className={`flex-1 min-w-[72px] py-1.5 px-2 text-[11px] font-bold rounded-lg border transition cursor-pointer whitespace-nowrap ${
                       scheduleHourTab === t.id
-                        ? "bg-[#2563eb] border-[#2563eb] text-white"
+                        ? "bg-brand-deep border-[#2563eb] text-white"
                         : "bg-white border-line text-zinc-500 hover:bg-zinc-50"
                     }`}
                   >
@@ -534,7 +534,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                 <button
                   type="button"
                   onClick={addScheduleType}
-                  className="px-3 py-2 text-xs font-bold bg-[#2563eb] hover:bg-blue-700 text-white rounded-lg flex items-center gap-1 transition cursor-pointer"
+                  className="px-3 py-2 text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg flex items-center gap-1 transition cursor-pointer"
                 >
                   <Plus size={13} />
                   추가
@@ -626,7 +626,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                       type="button"
                       onClick={submitPasswordChange}
                       disabled={pwSubmitting}
-                      className="px-4 py-2 text-xs font-bold text-white bg-[#2563eb] hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition cursor-pointer"
+                      className="px-4 py-2 text-xs font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition cursor-pointer"
                     >
                       {pwSubmitting ? "변경 중..." : "비밀번호 변경"}
                     </button>
@@ -643,7 +643,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 text-xs font-bold text-white bg-[#2563eb] hover:bg-blue-700 rounded-lg shadow-sm transition cursor-pointer"
+            className="px-5 py-2 text-xs font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-lg shadow-sm transition cursor-pointer"
           >
             완료 및 닫기
           </button>

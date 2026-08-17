@@ -1859,7 +1859,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                   {isAdmin && (
                     <button
                       onClick={() => openCreateEmployeeModal()}
-                      className="mt-4 px-3 py-1.5 text-xs bg-[#2563eb] font-semibold text-white rounded flex items-center gap-1"
+                      className="mt-4 px-3 py-1.5 text-xs bg-brand-deep font-semibold text-white rounded flex items-center gap-1"
                     >
                       <UserPlus size={14} />
                       <span>첫 직원 등록하기</span>

@@ -228,7 +228,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
         >
           <div className="flex items-center justify-between border-b border-[#e2e8f0] pb-2 mb-3">
             <h4 className="text-[15px] font-bold text-zinc-900 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded bg-[#2563eb] inline-block"></span>
+              <span className="w-2 h-2 rounded bg-brand-deep inline-block"></span>
               스케줄 설정 ({dateStr.split("-").slice(1).join("/")})
             </h4>
             <button
@@ -410,7 +410,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
               </button>
               <button
                 type="submit"
-                className="px-3 py-1.5 text-[15px] font-semibold bg-[#2563eb] hover:bg-blue-700 text-white rounded border border-[#2563eb] inline-flex items-center gap-1 transition cursor-pointer"
+                className="px-3 py-1.5 text-[15px] font-semibold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded border border-brand-deep inline-flex items-center gap-1 transition cursor-pointer"
                 disabled={isSaving}
               >
                 <Save size={12} />
