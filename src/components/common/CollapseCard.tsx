@@ -70,9 +70,10 @@ export const CollapseCard: React.FC<CollapseCardProps> = ({
     else setInternalOpen(v => !v);
   }, [isControlled, onOpenChange, open]);
 
+  // 2026-08-17 v2 · Attio 세련 · inset light + 2-layer (기존 shadow 유지 + inset 추가)
   const shadowCls = depth === "md"
-    ? "shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_16px_rgba(10,46,74,0.06)]"
-    : "shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)]";
+    ? "shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(10,46,74,0.06),0_4px_16px_-4px_rgba(10,46,74,0.10)]"
+    : "shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(10,46,74,0.05),0_2px_8px_-2px_rgba(10,46,74,0.06)]";
 
   const paddingCls = useMemo(() => {
     if (contentPadding === "none") return "";
