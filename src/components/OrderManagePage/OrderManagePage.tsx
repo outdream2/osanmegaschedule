@@ -1532,9 +1532,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
               {/* 2026-08-06 · 실시간 배지 제거 · 조회중일 때만 표시 (사용자 요청) */}
               {inlineFiltering && (
-                <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[14px] font-bold whitespace-nowrap shrink-0">
-                  <Loader2 size={12} className="animate-spin" />조회중...
-                </span>
+                <StatusPill tone="emerald" size="md" dot pulse>
+                  <Loader2 size={12} className="animate-spin inline mr-1" />조회중
+                </StatusPill>
               )}
 
               {/* 초기화 버튼 (조건 활성 시) */}
