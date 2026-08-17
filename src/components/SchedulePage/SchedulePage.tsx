@@ -1870,12 +1870,12 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 return (
                   <table className="text-left border-collapse table-fixed w-full min-w-max">
                     {/* Table Headers */}
-                    <thead className="sticky top-0 z-30 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
-                      {/* Header Row 1: Day of Month Numbers */}
-                      <tr className="bg-zinc-100 text-zinc-600 select-none">
+                    <thead className="sticky top-0 z-30 shadow-[0_1px_2px_rgba(15,27,42,0.04)]">
+                      {/* Header Row 1 · 날짜 · 2026-08-17 · 최신 트렌드 · 파스텔 (indigo/rose 50) 지양 · brand 톤 */}
+                      <tr className="bg-white text-ink select-none">
                         <th
                           ref={nameThRef}
-                          className="text-center text-[12px] sm:text-[13px] font-semibold border-r border-zinc-200 border-b border-b-zinc-200 sticky left-0 bg-zinc-100 z-50 py-2 sm:py-2.5 tracking-wide whitespace-nowrap px-0.5 sm:px-1.5 min-w-[90px] sm:min-w-[110px] lg:min-w-[120px] w-[90px] sm:w-[110px] lg:w-[120px]"
+                          className="text-center text-[13px] sm:text-[14px] font-semibold border-r border-line border-b border-b-line sticky left-0 bg-white z-50 py-2 sm:py-2.5 tracking-tight whitespace-nowrap px-0.5 sm:px-1.5 min-w-[90px] sm:min-w-[110px] lg:min-w-[120px] w-[90px] sm:w-[110px] lg:w-[120px] text-ink-soft"
                         >
                           <span className="hidden sm:inline">직원 성명</span>
                           <span className="sm:hidden">성명</span>
@@ -1886,10 +1886,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                           const dayNum = parseInt(dateStr.split('-')[2]);
                           const dayIndex = new Date(dateStr + 'T00:00:00').getDay();
                           const headerClass = dayIndex === 6
-                            ? "text-indigo-600 bg-indigo-50/60"
+                            ? "text-sky-600 bg-white"
                             : dayIndex === 0
-                              ? "text-rose-600 bg-rose-50"
-                              : "text-zinc-600 bg-zinc-100";
+                              ? "text-rose-600 bg-white"
+                              : "text-ink bg-white";
                           const nextDate = displayDates[dateIdx + 1];
                           const isMonthEnd = !nextDate || nextDate.substring(0, 7) !== dateStr.substring(0, 7);
                           const monthLabel = parseInt(dateStr.substring(5, 7));
@@ -1898,13 +1898,13 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                               <th
                                 ref={isToday ? todayColRef : undefined}
                                 onClick={() => setTimelineDate(fullDate)}
-                                className={`p-0.5 sm:p-1 text-center text-[14px] sm:text-[15px] font-bold border-r border-b border-zinc-200 w-[44px] cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 transition-colors ${headerClass} ${isToday ? "ring-2 ring-inset ring-rose-500 z-40 relative" : ""}`}
+                                className={`p-0.5 sm:p-1 text-center text-[15px] sm:text-[16px] font-bold border-r border-b border-line w-[44px] cursor-pointer hover:bg-brand-tint hover:text-brand-deep transition-colors ${headerClass} ${isToday ? "bg-brand-tint text-brand-deep ring-2 ring-inset ring-brand-deep z-40 relative" : ""}`}
                                 title={`${fullDate} 타임라인 보기`}
                               >
                                 {dayNum}
                               </th>
                               {isMonthEnd && showSummary !== "hidden" && (
-                                <th className="p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-semibold border-b border-zinc-200 bg-zinc-50 text-zinc-500 whitespace-nowrap border-l-2 border-l-zinc-200 w-[44px] sm:w-[52px]">
+                                <th className="p-0.5 sm:p-1 text-center text-[11px] sm:text-[12px] font-semibold border-b border-line bg-zinc-50 text-ink-soft whitespace-nowrap border-l-2 border-l-line w-[44px] sm:w-[52px]">
                                   {monthLabel}월합
                                 </th>
                               )}
@@ -1913,30 +1913,29 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                         })}
                       </tr>
 
-                      {/* Header Row 2: Day of Week Characters */}
-                      <tr className="bg-zinc-50 text-zinc-400 select-none">
-                        {/* Left spacing header matching Name column */}
-                        <th className="border-r border-b border-zinc-200 sticky left-0 bg-zinc-50 z-50 h-5 sm:h-6 min-w-[90px] sm:min-w-[110px] lg:min-w-[120px]"></th>
+                      {/* Header Row 2 · 요일 · 최신 트렌드 · flat · tracking */}
+                      <tr className="bg-zinc-50/60 text-ink-soft select-none">
+                        <th className="border-r border-b border-line sticky left-0 bg-zinc-50/60 z-50 h-5 sm:h-6 min-w-[90px] sm:min-w-[110px] lg:min-w-[120px]"></th>
 
                         {displayDates.map((dateStr, dateIdx) => {
                           const { dayWord, isToday } = getDayDetails(dateStr);
                           const dayIndex = new Date(dateStr + 'T00:00:00').getDay();
                           const wordClass = dayIndex === 6
-                            ? "text-indigo-500 font-bold"
+                            ? "text-sky-500 font-semibold"
                             : dayIndex === 0
-                              ? "text-rose-500 font-bold"
-                              : "text-zinc-400";
+                              ? "text-rose-500 font-semibold"
+                              : "text-ink-soft font-medium";
                           const nextDate = displayDates[dateIdx + 1];
                           const isMonthEnd = !nextDate || nextDate.substring(0, 7) !== dateStr.substring(0, 7);
                           return (
                             <React.Fragment key={`day-name-${dateStr}`}>
                               <th
-                                className={`p-0.5 text-center text-[13px] sm:text-[14px] border-r border-b border-zinc-200 w-[44px] bg-zinc-50 ${wordClass} ${isToday ? "ring-2 ring-inset ring-rose-500 z-40 relative" : ""}`}
+                                className={`p-0.5 text-center text-[13px] sm:text-[14px] border-r border-b border-line w-[44px] bg-zinc-50/60 ${wordClass} ${isToday ? "bg-brand-tint text-brand-deep ring-2 ring-inset ring-brand-deep z-40 relative" : ""}`}
                               >
                                 {dayWord}
                               </th>
                               {isMonthEnd && showSummary !== "hidden" && (
-                                <th className="p-0.5 text-center text-[8px] sm:text-[9px] border-b border-zinc-200 bg-zinc-50 text-zinc-400 border-l-2 border-l-zinc-200 w-[44px] sm:w-[52px]">
+                                <th className="p-0.5 text-center text-[10px] sm:text-[11px] border-b border-line bg-zinc-50/60 text-ink-soft border-l-2 border-l-line w-[44px] sm:w-[52px]">
                                   일·시간
                                 </th>
                               )}
