@@ -105,6 +105,34 @@ html {
   -webkit-overflow-scrolling: touch;
 }
 
+/* 2026-08-17 · 사용자 지시 · "부드럽게" · 전역 부드러움 강화
+ *   · 모든 scroll container · 관성/smooth 스크롤 · overscroll 격리
+ *   · 모든 interactive · will-change transform/opacity · GPU hint
+ *   · button/a · transition 통일 (150ms cubic-bezier)
+ *   · 모션 감소 사용자 · prefers-reduced-motion 존중 */
+[class*="overflow-auto"],
+[class*="overflow-y-auto"],
+[class*="overflow-x-auto"],
+[class*="overflow-scroll"] {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+button, a, [role="button"], [role="tab"], [role="menuitem"] {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* 모션 감소 접근성 · 애니메이션 최소화 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* font-mono 는 Geist Mono 사용 · 명시적 숫자·코드 표시 · 슬래시 0 (0/O 구분) */
 .font-mono {
   font-variant-numeric: tabular-nums lining-nums slashed-zero;
