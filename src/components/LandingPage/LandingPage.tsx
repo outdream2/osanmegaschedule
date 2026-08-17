@@ -977,15 +977,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             );
           })()}
 
-          {/* ── 오늘의 현황 · 2026-08-17 · 사용자 지시 · 헤더 + 줄바꿈 · 나머지 정보 노출 ── */}
+          {/* ── 오늘의 현황 · 2026-08-17 · 세련 · KPI mini-card · 카테고리 dot + 값 색상 semantic ── */}
           {isManagerOrAdmin && (
             <div className="w-full mb-6">
-              <div className="text-brand font-bold tracking-tight text-[16px] mb-1.5">오늘의 현황</div>
-              <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-[17px] text-ink-soft">
-                <span>승인 대기 <b className="text-ink font-bold tabular-nums">{leavePendingCount}</b>건</span>
-                <span>진열·발주 요청 <b className="text-ink font-bold tabular-nums">{requestsCounts.display + requestsCounts.order}</b>건</span>
-                <span>배치구역 불일치 <b className="text-ink font-bold tabular-nums">{requestsCounts.mismatch}</b>건</span>
-                <span>점심 신청 <b className="text-ink font-bold tabular-nums">{requestsCounts.lunch}</b>건</span>
+              <div className="flex items-center gap-2.5 mb-2.5">
+                <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+                <div className="text-ink font-bold tracking-tight text-[16px]">오늘의 현황</div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(() => {
+                  const stats = [
+                    { label: "승인 대기",    value: leavePendingCount,                              color: "amber",   dotBg: "bg-amber-500",   valueCls: leavePendingCount > 0 ? "text-amber-700" : "text-ink-soft" },
+                    { label: "진열·발주 요청", value: requestsCounts.display + requestsCounts.order, color: "sky",     dotBg: "bg-sky-500",     valueCls: (requestsCounts.display + requestsCounts.order) > 0 ? "text-sky-700" : "text-ink-soft" },
+                    { label: "배치구역 불일치", value: requestsCounts.mismatch,                       color: "rose",    dotBg: "bg-rose-500",    valueCls: requestsCounts.mismatch > 0 ? "text-rose-700" : "text-ink-soft" },
+                    { label: "점심 신청",    value: requestsCounts.lunch,                          color: "emerald", dotBg: "bg-emerald-500", valueCls: requestsCounts.lunch > 0 ? "text-emerald-700" : "text-ink-soft" },
+                  ];
+                  return stats.map((s, i) => (
+                    <div key={i} className="group inline-flex items-center gap-2.5 bg-white border border-line rounded-xl px-3.5 py-2 shadow-[0_1px_2px_rgba(10,46,74,0.03)] hover:shadow-[0_2px_8px_rgba(10,46,74,0.08)] hover:border-brand-deep/20 transition-all">
+                      <span className={`w-2 h-2 rounded-full ${s.dotBg} ${s.value > 0 ? "shadow-[0_0_0_3px_currentColor]/[0.15]" : "opacity-40"}`} />
+                      <span className="text-[14px] font-medium text-ink-soft tracking-tight">{s.label}</span>
+                      <span className={`text-[18px] font-extrabold tabular-nums leading-none ${s.valueCls}`}>{s.value}</span>
+                      <span className="text-[13px] font-semibold text-ink-soft">건</span>
+                    </div>
+                  ));
+                })()}
               </div>
             </div>
           )}
