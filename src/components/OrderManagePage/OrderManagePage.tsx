@@ -1425,14 +1425,23 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             setPurchaseOrderSubTab,
             { getTabProps: purchaseOrderSortable.getTabProps, isDragging: purchaseOrderSortable.isDragging },
           )}
-          {/* ── 발주필요 서브탭 ── */}
+          {/* ── 발주필요 서브탭 · 2026-08-17 · 상단 PageToolbar 프레임워크 + 조건 카드 ── */}
           {purchaseOrderSubTab === "need" && (<>
         <div className="flex flex-col gap-2">
-          {/* ══ 통합 조건 카드 · 검색 + 재고상태 + 카테고리 + 4조건 + 발주판정 설정 ══ */}
+          {/* ── 상단 툴바 · 제목 + count + 검색 · Linear/Vercel 두 줄 배치 ── */}
+          <PageToolbar
+            icon={<ClipboardList size={18} strokeWidth={2.2} />}
+            title="발주 필요"
+            count={lowStockFiltered.length}
+            leftSlot={
+              <span className="text-[13px] text-ink-soft font-medium tracking-tight">현재고 &lt; 적정재고</span>
+            }
+          />
+          {/* ══ 통합 조건 카드 · 검색 + 카테고리 + 4조건 + 발주판정 설정 ══ */}
           <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
 
-            {/* ── Row 1: 검색 + 재고상태 chip ── */}
-            <div className="px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-zinc-100">
+            {/* ── Row 1: 검색 + 초기화 ── */}
+            <div className="px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line">
               <SearchBar
                 value={lowStockSearch}
                 onChange={setLowStockSearch}
