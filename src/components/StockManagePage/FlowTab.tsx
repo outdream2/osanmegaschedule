@@ -470,7 +470,7 @@ export const FlowTab: React.FC = () => {
 
         {/* 조회기간 */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">기간</span>
+          <span className="text-[15px] font-bold text-ink tracking-tight shrink-0">기간</span>
           {flowMonths === 0 && !flowSeason && flowSnapshot && (
             <span className="text-[15px] tabular-nums font-medium text-zinc-600 bg-zinc-50 border border-line rounded-md px-2 py-0.5">
               {flowDateRange ?? flowSnapshot}
@@ -496,7 +496,7 @@ export const FlowTab: React.FC = () => {
 
         {/* Top N */}
         <div className="flex items-center gap-1.5">
-          <span className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">Top N</span>
+          <span className="text-[15px] font-bold text-ink tracking-tight shrink-0">Top N</span>
           <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1">
             {[{ v: 100, label: "100" }, { v: 300, label: "300" }, { v: 1000, label: "1k" }, { v: 2000, label: "2k" }, { v: 50000, label: "전체" }].map(o => (
               <button key={o.v} onClick={() => setFlowLimit(o.v)}
@@ -548,7 +548,7 @@ export const FlowTab: React.FC = () => {
 
         {/* 판매출고계 범위 필터 */}
         <div className="flex items-center gap-1.5">
-          <span className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">판매출고계</span>
+          <span className="text-[15px] font-bold text-ink tracking-tight shrink-0">판매출고계</span>
           <input type="number" min={0} value={salesQtyMin} onChange={e => setSalesQtyMin(e.target.value)} placeholder="최소"
             className="w-14 h-7 px-2 text-[15px] border border-line rounded-md outline-none focus:ring-1 focus:ring-brand-tint tabular-nums text-right transition" />
           <span className="text-zinc-400 text-[15px]">~</span>

@@ -730,7 +730,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         </div>
         {/* 조회기간 */}
         <div className="flex items-center gap-1.5">
-          <span className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">기간</span>
+          <span className="text-[15px] font-bold text-ink tracking-tight shrink-0">기간</span>
           <div className="flex flex-wrap bg-zinc-50 border border-line rounded-md p-0.5 gap-0.5">
             <button onClick={() => { setSupplierSeason(null); setSupplierMonths(0); }}
               className={`px-2 h-6 text-[15px] font-semibold rounded transition cursor-pointer ${!supplierSeason && supplierMonths === 0 ? "bg-sky-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>10일</button>
@@ -743,7 +743,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         <SeasonButtons value={supplierSeason} onChange={(v) => { setSupplierSeason(v); if (v) setSupplierMonths(0); }} size="sm" hideLabel />
         {/* Top N */}
         <div className="flex items-center gap-1.5">
-          <span className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">Top N</span>
+          <span className="text-[15px] font-bold text-ink tracking-tight shrink-0">Top N</span>
           <div className="inline-flex bg-zinc-50 border border-line rounded-md p-0.5">
             {[{ v: 100, label: "100" }, { v: 300, label: "300" }, { v: 1000, label: "1k" }, { v: 2000, label: "2k" }, { v: 999999, label: "전체" }].map(o => (
               <button key={o.v} onClick={() => setSupListLimit(o.v)}

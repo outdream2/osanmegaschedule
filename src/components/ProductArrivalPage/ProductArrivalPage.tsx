@@ -1188,13 +1188,13 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                   {/* 헤더 요약 카드 */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="bg-zinc-50 border border-line rounded-lg p-3">
-                      <div className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider">등록일시</div>
+                      <div className="text-[15px] font-bold text-ink tracking-tight">등록일시</div>
                       <div className="text-[15px] font-bold text-zinc-800 tabular-nums mt-0.5">
                         {(() => { const d = new Date(arrivalDetail.arrival_date); return isNaN(d.getTime()) ? "-" : d.toLocaleString("ko-KR"); })()}
                       </div>
                     </div>
                     <div className="bg-zinc-50 border border-line rounded-lg p-3">
-                      <div className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider">담당자</div>
+                      <div className="text-[15px] font-bold text-ink tracking-tight">담당자</div>
                       <div className="text-[15px] font-bold text-zinc-800 mt-0.5">{arrivalDetail.checked_by ?? "-"}</div>
                     </div>
                     <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
@@ -1202,7 +1202,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                       <div className="text-[15px] font-bold text-emerald-700 tabular-nums mt-0.5">{arrivalDetail.total_items}개 · {arrivalDetail.total_qty.toLocaleString()}수량</div>
                     </div>
                     <div className={`border rounded-lg p-3 ${arrivalDetail.final_decision === "all_match" ? "bg-emerald-50 border-emerald-200" : arrivalDetail.final_decision === "has_mismatch" ? "bg-rose-50 border-rose-200" : "bg-zinc-50 border-line"}`}>
-                      <div className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider">최종 판정</div>
+                      <div className="text-[15px] font-bold text-ink tracking-tight">최종 판정</div>
                       <div className={`text-[15px] font-bold mt-0.5 ${arrivalDetail.final_decision === "all_match" ? "text-emerald-700" : arrivalDetail.final_decision === "has_mismatch" ? "text-rose-700" : "text-zinc-500"}`}>
                         {arrivalDetail.final_decision === "all_match" ? "완전일치" : arrivalDetail.final_decision === "has_mismatch" ? "불일치 있음" : "-"}
                       </div>
@@ -1242,7 +1242,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                     <div className="overflow-x-auto max-h-[40vh]">
                       <table className="w-full text-[14px]">
                         <thead className="sticky top-0 bg-white z-10">
-                          <tr className="border-b border-line text-[15px] font-semibold text-zinc-500 uppercase tracking-wider">
+                          <tr className="border-b border-line text-[15px] font-bold text-ink tracking-tight">
                             <th className="px-2 py-1.5 text-left w-10">#</th>
                             <th className="px-2 py-1.5 text-left w-24">코드</th>
                             <th className="px-2 py-1.5 text-left min-w-[180px]">상품명</th>
