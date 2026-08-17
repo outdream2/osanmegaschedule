@@ -259,24 +259,23 @@ export function TabBar<K extends string = string>({
                   onTouchCancel={dnd?.onTouchCancel}
                   className={[
                     "group inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[14px] sm:text-[15px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight border",
-                    // Filter Chip · 활성 = Rose Blush (2026 Pantone Cloud Dancer 계열 · warm neutral · 40대 여성 최적)
-                    //   · 리서치 · 딥네이비 브랜드 옆 · Navy+Blush 클래식 프리미엄 페어링 · 채도 낮아 오래 봐도 피로 없음
+                    // Filter Chip · 활성 = 딥 초록 (British racing green · 딥네이비 럭셔리 페어링)
                     active
-                      ? "bg-rose-50 text-rose-900 border-rose-200/60 font-bold shadow-[0_1px_2px_rgba(244,63,94,0.10)]"
-                      : "bg-zinc-50 text-ink-soft border-line hover:bg-white hover:text-ink hover:border-rose-200/60",
+                      ? "bg-emerald-700 text-white border-emerald-800 font-bold shadow-[0_1px_2px_rgba(4,120,87,0.20)]"
+                      : "bg-zinc-50 text-ink-soft border-line hover:bg-white hover:text-ink hover:border-emerald-400",
                     dragCls,
                   ].join(" ")}
                 >
-                  {/* dot marker · 활성 시 · rose-500 (warm blush · 딥네이비 페어링) · 비활성 · 카테고리 톤 */}
+                  {/* dot marker · 활성 시 · white (deep green solid pill) · 비활성 · 카테고리 톤 */}
                   <span
-                    className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${active ? "bg-rose-500" : c.iconActive.replace("text-", "bg-")}`}
+                    className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${active ? "bg-white/80" : c.iconActive.replace("text-", "bg-")}`}
                   />
                   {Icon && (
                     <Icon
                       size={14}
                       strokeWidth={active ? 2.4 : 2}
                       weight={active ? "fill" : "duotone"}
-                      className={`shrink-0 transition-colors duration-200 ${active ? "text-rose-700" : c.iconActive}`}
+                      className={`shrink-0 transition-colors duration-200 ${active ? "text-white" : c.iconActive}`}
                     />
                   )}
                   <span>{t.label}</span>
