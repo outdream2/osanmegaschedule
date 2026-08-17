@@ -373,24 +373,28 @@ interface SummaryCardProps {
   highlight?: boolean;
 }
 
+// 2026-08-17 · 세련 · Vercel Dashboard 톤 · 뉴트럴 body + status dot + 값 semantic
 const SummaryCard: React.FC<SummaryCardProps> = ({ label, value, icon, color, hint, highlight }) => {
-  const colors: Record<string, { bg: string; ring: string; text: string; icon: string }> = {
-    rose:    { bg: "bg-rose-50",    ring: "ring-rose-200",    text: "text-rose-700",    icon: "bg-rose-500 text-white"    },
-    emerald: { bg: "bg-emerald-50", ring: "ring-emerald-200", text: "text-emerald-700", icon: "bg-emerald-500 text-white" },
-    slate:   { bg: "bg-zinc-50",   ring: "ring-zinc-200",   text: "text-zinc-700",   icon: "bg-zinc-600 text-white"   },
-    sky:     { bg: "bg-sky-50",     ring: "ring-sky-200",     text: "text-sky-700",     icon: "bg-sky-500 text-white"     },
+  const colors: Record<string, { dot: string; text: string; iconBg: string; iconColor: string; ring: string }> = {
+    rose:    { dot: "bg-rose-500",    text: "text-rose-700",    iconBg: "bg-rose-50",    iconColor: "text-rose-600",    ring: "ring-rose-200/60" },
+    emerald: { dot: "bg-emerald-500", text: "text-emerald-700", iconBg: "bg-emerald-50", iconColor: "text-emerald-600", ring: "ring-emerald-200/60" },
+    slate:   { dot: "bg-zinc-400",    text: "text-ink",         iconBg: "bg-zinc-100",   iconColor: "text-zinc-700",    ring: "ring-zinc-200/60" },
+    sky:     { dot: "bg-sky-500",     text: "text-sky-700",     iconBg: "bg-sky-50",     iconColor: "text-sky-600",     ring: "ring-sky-200/60" },
   };
   const c = colors[color];
   return (
-    <div className={`${c.bg} rounded-xl border border-line shadow-sm p-3.5 ${highlight ? "ring-2 " + c.ring : ""}`}>
+    <div className={`bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] p-3.5 ${highlight ? "ring-2 " + c.ring : ""}`}>
       <div className="flex items-start gap-2.5">
-        <div className={`w-8 h-8 rounded-lg ${c.icon} flex items-center justify-center shrink-0`}>{icon}</div>
+        <div className={`w-9 h-9 rounded-lg ${c.iconBg} flex items-center justify-center shrink-0 ${c.iconColor}`}>{icon}</div>
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wide leading-tight">{label}</div>
-          <div className={`text-[18px] font-bold ${c.text} tabular-nums leading-tight mt-0.5`}>
-            {fmt(value)}<span className="text-[12px] ml-1">원</span>
+          <div className="flex items-center gap-1.5 leading-tight">
+            <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
+            <div className="text-[12px] font-semibold text-ink-soft tracking-tight">{label}</div>
           </div>
-          {hint && <div className="text-[10px] text-zinc-500 mt-0.5 leading-tight">{hint}</div>}
+          <div className={`text-[19px] font-extrabold ${c.text} tabular-nums leading-tight mt-1`}>
+            {fmt(value)}<span className="text-[13px] ml-1 font-semibold text-ink-soft">원</span>
+          </div>
+          {hint && <div className="text-[11px] text-ink-soft mt-0.5 leading-tight font-medium">{hint}</div>}
         </div>
       </div>
     </div>

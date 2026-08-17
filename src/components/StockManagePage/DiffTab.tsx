@@ -18,6 +18,7 @@ import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 // 2026-08-06 · T-LOSS-HISTORY · 서브탭 (현황/이력) · TabBar 공용
 import { TabBar, type TabDef } from "../common/TabBar";
+import { StatusPill } from "../common/StatusPill";
 import { LossHistoryTab } from "./LossHistoryTab";
 
 // 2026-08-06 · T-LOSS-HISTORY · 서브탭 종류
@@ -185,13 +186,14 @@ export const DiffTab: React.FC = () => {
         <LossHistoryTab />
       ) : (
       <>
-      {/* ── 상단 필터바 ── */}
-      <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
-        <div className="flex items-center gap-2">
-          <Layers size={14} className="text-violet-500 shrink-0" />
-          <span className={`${TEXT.body} text-zinc-800`}>손실추적</span>
-          <span className="text-[11px] font-semibold text-violet-600 bg-violet-50 rounded-full px-2 py-0.5 border border-violet-200 tabular-nums">{diffList.length}건</span>
-          <span className={`${TEXT.caption} text-zinc-400 hidden sm:inline`}>실재고(창고+매장) ↔ ERP 차이 · 도난·파손·미기록 판매·재고 오류 · 상품명 클릭 → 상세</span>
+      {/* ── 상단 필터바 · 2026-08-17 · accent bar + StatusPill 통일 ── */}
+      <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2`}>
+        <div className="flex items-center gap-2.5">
+          <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+          <Layers size={16} className="text-brand-deep shrink-0" />
+          <span className="text-[17px] font-bold text-ink tracking-tight">손실추적</span>
+          <StatusPill tone="violet" size="md">{diffList.length}건</StatusPill>
+          <span className={`${TEXT.caption} text-ink-soft hidden sm:inline`}>실재고(창고+매장) ↔ ERP 차이 · 도난·파손·미기록 판매·재고 오류 · 상품명 클릭 → 상세</span>
         </div>
         <button
           type="button"
