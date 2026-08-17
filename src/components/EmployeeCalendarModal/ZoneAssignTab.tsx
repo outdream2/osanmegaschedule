@@ -1,7 +1,10 @@
+// 2026-08-17 · 사용자 지시 · 구역 배정 · 최신 트렌드 · 깔끔·세련·고급 · 배지·이모지 지양 · 딥네이비 accent
+//   · 프레임워크 · ZONE_DEFS (constants/displayZones.ts) 공통 · DisplayPage/StoreZoneMap 과 정합
+//   · TODO Phase 2 · zone defs 서버 저장 (settings 페이지 편집) · DB 마이그레이션 · 별도 태스크
 import React, { useState } from "react";
-import { MapPin, Save } from "lucide-react";
+import { MapPin, Save, X } from "lucide-react";
 import { Employee } from "../../types";
-import { ZONE_DEFS, SECTION_LABEL, type ZoneSection } from "../../constants/displayZones";
+import { useZoneDefs, SECTION_LABEL, type ZoneSection } from "../../hooks/useZoneDefs";
 
 export interface LogisticsZoneProps {
   assignedZoneNums: number[];
@@ -10,7 +13,6 @@ export interface LogisticsZoneProps {
   onSaveToDow?: (dow: number) => Promise<void>;
 }
 
-// ─── Zone assignment sub-component (logistics only) ───────────────────────────
 const SECTION_ORDER: ZoneSection[] = ["top_wall", "aisle", "left_wall", "bottom_wall", "wing"];
 const DOW_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -21,6 +23,8 @@ export const ZoneAssignTab: React.FC<{
   onClearAll: () => void;
   onSaveToDow?: (dow: number) => Promise<void>;
 }> = ({ employee, assignedZoneNums, onToggle, onClearAll, onSaveToDow }) => {
+  // 2026-08-17 · 프레임워크 훅 · 정적 ZONE_DEFS · 향후 서버/설정 편집 반영
+  const { zones: ZONE_DEFS } = useZoneDefs();
   const [selectedDows, setSelectedDows] = useState<Set<number>>(new Set());
   const [saving, setSaving] = useState(false);
 
@@ -50,79 +54,92 @@ export const ZoneAssignTab: React.FC<{
     zones: ZONE_DEFS.filter((z) => z.section === section),
   }));
 
+  const sortedAssigned = [...assignedZoneNums].sort((a, b) => a - b);
+
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
-      {/* Summary bar */}
-      <div className="flex items-center justify-between bg-violet-50 border border-violet-200 rounded-xl px-3 py-2">
-        <div className="flex items-center gap-2">
-          <MapPin size={13} className="text-violet-600 shrink-0" />
-          <span className="text-xs font-bold text-violet-800">
-            {employee.name}님 배정 구역: {assignedZoneNums.length > 0 ? assignedZoneNums.sort((a, b) => a - b).join(", ") + "번" : "없음"}
-          </span>
+    <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+      {/* Summary · 배지 지양 · 텍스트 + 아이콘 · 딥네이비 accent */}
+      <div className="flex items-start justify-between gap-3 bg-brand-tint border border-brand/15 rounded-xl px-4 py-3">
+        <div className="flex items-start gap-2.5 min-w-0">
+          <MapPin size={16} strokeWidth={2.2} className="text-brand-deep shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <div className="text-[15px] font-bold text-brand-deep tracking-tight">{employee.name}님 배정 구역</div>
+            <div className="text-[14px] font-semibold text-brand-deep/80 mt-0.5 tabular-nums">
+              {sortedAssigned.length > 0 ? `${sortedAssigned.join(", ")}번 · 총 ${sortedAssigned.length}개` : "미배정"}
+            </div>
+          </div>
         </div>
-        {assignedZoneNums.length > 0 && (
+        {sortedAssigned.length > 0 && (
           <button
             type="button"
             onClick={onClearAll}
-            className="text-[10px] font-bold text-rose-500 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded-lg transition cursor-pointer"
+            className="text-[14px] font-semibold text-rose-600 hover:text-rose-800 hover:bg-white/60 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer shrink-0"
           >
             전체 해제
           </button>
         )}
       </div>
 
-      {/* DOW template save bar */}
+      {/* DOW 템플릿 저장 · 배지 지양 · flat card · 딥네이비 톤 */}
       {onSaveToDow && (
-        <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 space-y-2">
-          <div className="flex items-center gap-1.5">
-            <Save size={11} className="text-indigo-600 shrink-0" />
-            <span className="text-[10px] font-black text-indigo-800">요일 템플릿 저장</span>
-            <span className="text-[9px] text-indigo-500 font-medium">— 현재 구역배정을 선택 요일의 기본값으로 저장</span>
+        <div className="border border-line rounded-xl px-4 py-3 space-y-2.5 bg-white">
+          <div className="flex items-center gap-2.5">
+            <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+            <span className="text-[15px] font-bold text-ink tracking-tight">요일 템플릿 저장</span>
+            <span className="text-[13px] font-medium text-ink-soft">— 현재 배정을 선택 요일 기본값으로 저장</span>
           </div>
           <div className="flex items-center gap-1.5 flex-wrap">
-            {DOW_LABELS.map((label, dow) => (
-              <button
-                key={dow}
-                type="button"
-                onClick={() => toggleDow(dow)}
-                className={`w-7 h-7 text-[10px] font-black rounded-lg border transition cursor-pointer ${
-                  selectedDows.has(dow)
-                    ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                    : "bg-white text-zinc-600 border-zinc-200 hover:border-indigo-400 hover:text-indigo-600"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+            {DOW_LABELS.map((label, dow) => {
+              const active = selectedDows.has(dow);
+              return (
+                <button
+                  key={dow}
+                  type="button"
+                  onClick={() => toggleDow(dow)}
+                  className={`w-9 h-9 text-[14px] font-semibold rounded-lg border transition-colors cursor-pointer ${
+                    active
+                      ? "bg-brand-deep text-white border-brand-deep shadow-sm"
+                      : "bg-white text-ink border-line hover:border-brand-deep hover:bg-brand-tint"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
             {selectedDows.size > 0 && (
-              <>
+              <div className="flex items-center gap-1.5 ml-1">
                 <button
                   type="button"
                   disabled={saving}
                   onClick={handleSaveToDows}
-                  className="ml-1 px-2.5 py-1 text-[10px] font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition cursor-pointer disabled:opacity-50 flex items-center gap-1"
+                  className="h-9 px-3.5 text-[14px] font-semibold rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
                 >
-                  <Save size={10} />
-                  {saving ? "저장 중…" : `저장 (${selectedDows.size}요일)`}
+                  <Save size={13} strokeWidth={2.2} />
+                  {saving ? "저장 중…" : `저장 · ${selectedDows.size}요일`}
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedDows(new Set())}
-                  className="text-[10px] font-bold px-1.5 py-1 rounded-lg bg-zinc-100 text-zinc-500 hover:bg-zinc-200 cursor-pointer transition"
+                  className="h-9 w-9 flex items-center justify-center rounded-lg bg-white text-ink-soft hover:bg-zinc-100 border border-line cursor-pointer transition-colors"
+                  aria-label="선택 해제"
                 >
-                  ✕
+                  <X size={14} />
                 </button>
-              </>
+              </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Zone groups */}
+      {/* Zone groups · section 별 · 배지·checkmark 지양 · border 톤 통일 · 폰트 +3 */}
       {grouped.map(({ section, label, zones }) => (
-        <div key={section}>
-          <div className="text-[10px] font-black text-zinc-500 uppercase tracking-wider mb-1.5">{label}</div>
-          <div className="grid grid-cols-4 gap-1.5">
+        <section key={section} className="space-y-2">
+          <div className="flex items-center gap-2.5">
+            <span className="w-[3px] h-[14px] rounded-full bg-brand-deep/70" />
+            <div className="text-[14px] font-bold text-ink tracking-tight">{label}</div>
+            <span className="text-[13px] font-medium text-ink-soft tabular-nums">· {zones.length}개</span>
+          </div>
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
             {zones.map((z) => {
               const isAssigned = assignedZoneNums.includes(z.num);
               return (
@@ -130,28 +147,23 @@ export const ZoneAssignTab: React.FC<{
                   key={z.num}
                   type="button"
                   onClick={() => onToggle(z.num)}
-                  className={`rounded-lg border-2 p-1.5 text-left transition-all cursor-pointer active:scale-[0.96] ${
+                  className={`rounded-lg border p-2 text-left transition-colors cursor-pointer ${
                     isAssigned
-                      ? "bg-violet-100 border-violet-400 shadow-sm"
-                      : "bg-white border-zinc-200 hover:border-violet-300 hover:bg-violet-50"
+                      ? "bg-brand-deep border-brand-deep text-white shadow-sm"
+                      : "bg-white border-line text-ink hover:border-brand-deep hover:bg-brand-tint"
                   }`}
                 >
-                  <div className={`text-[11px] font-black leading-tight ${isAssigned ? "text-violet-800" : "text-zinc-700"}`}>
+                  <div className={`text-[14px] font-bold leading-tight tabular-nums ${isAssigned ? "text-white" : "text-ink"}`}>
                     {z.num}번
                   </div>
-                  <div className={`text-[8px] leading-tight mt-0.5 line-clamp-2 ${isAssigned ? "text-violet-600" : "text-zinc-400"}`}>
+                  <div className={`text-[12px] leading-snug mt-1 line-clamp-2 ${isAssigned ? "text-white/85" : "text-ink-soft"}`}>
                     {z.label}
                   </div>
-                  {isAssigned && (
-                    <div className="mt-1 w-3 h-3 rounded-full bg-violet-500 flex items-center justify-center">
-                      <span className="text-white text-[7px] font-black">✓</span>
-                    </div>
-                  )}
                 </button>
               );
             })}
           </div>
-        </div>
+        </section>
       ))}
     </div>
   );
