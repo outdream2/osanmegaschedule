@@ -1160,40 +1160,53 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 </div>
               ) : (
                 <>
-                  {/* 헤더 요약 카드 */}
+                  {/* 헤더 요약 4카드 · 2026-08-17 · Vercel Dashboard 톤 · white body + status dot */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="bg-zinc-50 border border-line rounded-lg p-3">
-                      <div className="text-[15px] font-bold text-ink tracking-tight">등록일시</div>
-                      <div className="text-[15px] font-bold text-zinc-800 tabular-nums mt-0.5">
+                    <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] p-3">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+                        <div className="text-[12px] font-semibold text-ink-soft tracking-tight">등록일시</div>
+                      </div>
+                      <div className="text-[15px] font-extrabold text-ink tabular-nums leading-tight">
                         {(() => { const d = new Date(arrivalDetail.arrival_date); return isNaN(d.getTime()) ? "-" : d.toLocaleString("ko-KR"); })()}
                       </div>
                     </div>
-                    <div className="bg-zinc-50 border border-line rounded-lg p-3">
-                      <div className="text-[15px] font-bold text-ink tracking-tight">담당자</div>
-                      <div className="text-[15px] font-bold text-zinc-800 mt-0.5">{arrivalDetail.checked_by ?? "-"}</div>
-                    </div>
-                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
-                      <div className="text-[15px] font-semibold text-emerald-600 uppercase tracking-wider">품목·수량</div>
-                      <div className="text-[15px] font-bold text-emerald-700 tabular-nums mt-0.5">{arrivalDetail.total_items}개 · {arrivalDetail.total_qty.toLocaleString()}수량</div>
-                    </div>
-                    <div className={`border rounded-lg p-3 ${arrivalDetail.final_decision === "all_match" ? "bg-emerald-50 border-emerald-200" : arrivalDetail.final_decision === "has_mismatch" ? "bg-rose-50 border-rose-200" : "bg-zinc-50 border-line"}`}>
-                      <div className="text-[15px] font-bold text-ink tracking-tight">최종 판정</div>
-                      <div className={`text-[15px] font-bold mt-0.5 ${arrivalDetail.final_decision === "all_match" ? "text-emerald-700" : arrivalDetail.final_decision === "has_mismatch" ? "text-rose-700" : "text-zinc-500"}`}>
-                        {arrivalDetail.final_decision === "all_match" ? "완전일치" : arrivalDetail.final_decision === "has_mismatch" ? "불일치 있음" : "-"}
+                    <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] p-3">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+                        <div className="text-[12px] font-semibold text-ink-soft tracking-tight">담당자</div>
                       </div>
+                      <div className="text-[15px] font-extrabold text-ink leading-tight">{arrivalDetail.checked_by ?? "-"}</div>
                     </div>
+                    <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] p-3">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        <div className="text-[12px] font-semibold text-ink-soft tracking-tight">품목·수량</div>
+                      </div>
+                      <div className="text-[15px] font-extrabold text-emerald-700 tabular-nums leading-tight">{arrivalDetail.total_items}개 · {arrivalDetail.total_qty.toLocaleString()}수량</div>
+                    </div>
+                    {(() => {
+                      const isMatch = arrivalDetail.final_decision === "all_match";
+                      const isMismatch = arrivalDetail.final_decision === "has_mismatch";
+                      const dotCls = isMatch ? "bg-emerald-500" : isMismatch ? "bg-rose-500" : "bg-zinc-400";
+                      const textCls = isMatch ? "text-emerald-700" : isMismatch ? "text-rose-700" : "text-ink-soft";
+                      const label = isMatch ? "완전일치" : isMismatch ? "불일치 있음" : "-";
+                      return (
+                        <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] p-3">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className={`w-1.5 h-1.5 rounded-full ${dotCls}`} />
+                            <div className="text-[12px] font-semibold text-ink-soft tracking-tight">최종 판정</div>
+                          </div>
+                          <div className={`text-[15px] font-extrabold leading-tight ${textCls}`}>{label}</div>
+                        </div>
+                      );
+                    })()}
                   </div>
-                  {/* 상태 카운트 */}
-                  <div className="flex items-center gap-3 flex-wrap text-[14px] font-semibold">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-300">
-                      수량일치 <span className="font-bold tabular-nums">{arrivalDetail.match_count}</span>
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 border border-rose-300">
-                      수량불일치 <span className="font-bold tabular-nums">{arrivalDetail.mismatch_count}</span>
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 border border-amber-300">
-                      유통기한 임박 <span className="font-bold tabular-nums">{arrivalDetail.expiring_count}</span>
-                    </span>
+                  {/* 상태 카운트 · StatusPill 통일 */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <StatusPill tone="emerald" size="md" dot>수량일치 {arrivalDetail.match_count}</StatusPill>
+                    <StatusPill tone="rose" size="md" dot>수량불일치 {arrivalDetail.mismatch_count}</StatusPill>
+                    <StatusPill tone="amber" size="md" dot>유통기한 임박 {arrivalDetail.expiring_count}</StatusPill>
                   </div>
                   {/* 공급사 요약 · 메모 */}
                   {arrivalDetail.supplier_summary && (
