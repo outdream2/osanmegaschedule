@@ -236,6 +236,7 @@ export function TabBar<K extends string = string>({
                 : "";
 
               return (
+                /* 2026-08-17 · L3 · Attio Segmented Control · 1px hairline + ghost fill (dot 유지) */
                 <button
                   key={t.key}
                   type="button"
@@ -255,15 +256,16 @@ export function TabBar<K extends string = string>({
                   onTouchEnd={dnd?.onTouchEnd}
                   onTouchCancel={dnd?.onTouchCancel}
                   className={[
-                    "group relative inline-flex items-center gap-1.5 h-10 px-3.5 sm:px-4 rounded-lg text-[14px] sm:text-[15px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight",
-                    active ? "text-ink" : "text-ink-soft hover:text-ink hover:bg-zinc-50",
+                    "group relative inline-flex items-center gap-1.5 h-9 px-3.5 sm:px-4 rounded-lg text-[14px] sm:text-[15px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight border",
+                    active
+                      ? "text-ink bg-zinc-50 border-line shadow-[0_1px_0_rgba(10,46,74,0.03)]"
+                      : "text-ink-soft border-transparent hover:text-ink hover:bg-zinc-50/70",
                     dragCls,
                   ].join(" ")}
                 >
-                  {/* dot marker · 활성 시 색 accent · 카테고리 identity (Vercel ≤10px) · glow */}
+                  {/* dot marker · 활성 시 색 accent · 카테고리 identity (Vercel ≤10px) */}
                   <span
-                    className={`w-2 h-2 rounded-full transition-all duration-200 ${active ? c.iconActive.replace("text-", "bg-") : "bg-zinc-300 group-hover:bg-zinc-400"}`}
-                    style={active && c.iconActive !== "text-ink-soft" ? { boxShadow: `0 0 8px ${(c.iconActive.match(/\[(#[A-F0-9]+)\]/i)?.[1]) ?? "rgba(10,46,74,0.3)"}` } : undefined}
+                    className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${active ? c.iconActive.replace("text-", "bg-") : "bg-zinc-300 group-hover:bg-zinc-400"}`}
                   />
                   {Icon && (
                     <Icon
@@ -281,13 +283,6 @@ export function TabBar<K extends string = string>({
                     >
                       {t.badge}
                     </span>
-                  )}
-                  {/* 활성 · 하단 gradient underline (2.5px · 세련) */}
-                  {active && (
-                    <span
-                      className="absolute left-3 right-3 -bottom-px h-[2.5px] rounded-t-full pointer-events-none"
-                      style={{ background: `linear-gradient(90deg, transparent 0%, currentColor 30%, currentColor 70%, transparent 100%)`, color: "var(--color-brand-deep, #0A2E4A)" }}
-                    />
                   )}
                 </button>
               );
