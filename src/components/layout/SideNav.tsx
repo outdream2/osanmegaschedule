@@ -443,23 +443,17 @@ export const SideNav: React.FC<SideNavProps> = ({
       <div className="relative h-px shrink-0" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.12) 50%, transparent)" }} aria-hidden />
 
       <SidebarFooter className="relative px-2 py-1.5 gap-0.5 z-10">
-        {/* 2026-08-17 v2 · 사용자 이름 · avatar circle + 라벨 · Attio/Linear 톤 */}
+        {/* 2026-08-17 v3 · 사용자 이름 · 성씨 initial 제거 · 이름만 표시 (사용자 요청) */}
         {authSession && authSession.employeeName && (
-          <div className="flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:justify-center">
-            <span
-              className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold text-white ring-1 ring-white/20 shadow-[0_0_12px_rgba(94,169,232,0.35)]"
-              style={{ background: "linear-gradient(135deg, #5EA9E8 0%, #6FE3C2 100%)" }}
-              aria-hidden
-            >
-              {authSession.employeeName.slice(0, 1)}
-            </span>
-            <span className="text-[13px] font-bold text-white truncate leading-tight group-data-[collapsible=icon]:hidden">
+          <div className="px-2 py-1 group-data-[collapsible=icon]:hidden">
+            <span className="text-[13px] font-bold text-white truncate leading-tight">
               {authSession.employeeName}
             </span>
           </div>
         )}
+        {/* 2026-08-17 v3 · 종 아이콘 테두리 여백 반 (PC · 사용자 요청) · px-2 py-1 → px-1 py-0.5 */}
         {authSession && (
-          <div className="flex items-center gap-2 px-2 py-1 rounded-lg group-data-[collapsible=icon]:justify-center">
+          <div className="flex items-center gap-1 px-1 py-0.5 rounded-lg group-data-[collapsible=icon]:justify-center">
             <NotificationToggle authSession={authSession} />
             <NotificationBell authSession={authSession} onNavigate={onNavigate as unknown as (page: string) => void} />
           </div>
