@@ -75,8 +75,8 @@ const InvoicePageCard: React.FC<InvoicePageCardProps> = ({ page, theme }) => {
   return (
     <div className={`bg-white border ${theme.border} rounded-lg overflow-hidden shadow-sm`}>
       <div className={`${theme.bgHeader} px-3 py-2 flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b ${theme.border}`}>
-        <span className={`text-[12px] font-black ${theme.text}`}>page {page.page}</span>
-        <span className={`text-[14px] font-black ${theme.text}`}>{supplier}</span>
+        <span className={`text-[12px] font-bold ${theme.text}`}>page {page.page}</span>
+        <span className={`text-[14px] font-bold ${theme.text}`}>{supplier}</span>
         <span className="text-[11px] text-zinc-500">거래일 {date}</span>
         <span className={`text-[12px] font-bold ${theme.accent} ml-auto`}>
           합계 {fmt(total)} 원 · {rowsCount}행
@@ -142,7 +142,7 @@ export function InvoiceStatementView({
   if (!collapsible) {
     return (
       <div className="w-full">
-        {title && <div className={`text-[13px] font-black ${theme.text}`}>{title}</div>}
+        {title && <div className={`text-[13px] font-bold ${theme.text}`}>{title}</div>}
         {body}
       </div>
     );

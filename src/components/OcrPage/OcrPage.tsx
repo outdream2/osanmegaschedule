@@ -591,9 +591,9 @@ const ConfirmedRecordsTab: React.FC = () => {
                           />
                         </td>
                         <td className="px-3 py-2 text-gray-700 whitespace-nowrap font-mono text-[14px]">{g.invoiceDate}</td>
-                        <td className="px-3 py-2 text-sky-700 font-black whitespace-nowrap">{g.supplier}</td>
+                        <td className="px-3 py-2 text-sky-700 font-bold whitespace-nowrap">{g.supplier}</td>
                         <td className="px-3 py-2 text-right text-gray-600 whitespace-nowrap tabular-nums">{g.count}건</td>
-                        <td className="px-3 py-2 text-right font-black text-amber-700 whitespace-nowrap tabular-nums">{fmtNum(g.total)}원</td>
+                        <td className="px-3 py-2 text-right font-bold text-amber-700 whitespace-nowrap tabular-nums">{fmtNum(g.total)}원</td>
                         <td className="px-3 py-2 text-center">
                           {g.imageUrl ? (
                             <button type="button"
@@ -1304,25 +1304,25 @@ return (
         <div className="flex flex-wrap bg-zinc-100/70 border border-zinc-200/60 rounded-2xl p-1 gap-0.5">
           <button
             onClick={() => setMainTab("ocr")}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "ocr" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-bold rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "ocr" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
           >
             <Upload size={13} className={mainTab === "ocr" ? "text-zinc-800" : "text-zinc-400"} /> OCR 추출
           </button>
           <button
             onClick={() => setMainTab("synonyms")}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "synonyms" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-bold rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "synonyms" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
           >
             <BookOpen size={13} className={mainTab === "synonyms" ? "text-zinc-800" : "text-zinc-400"} /> 동의어 관리
           </button>
           <button
             onClick={() => setMainTab("balance")}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "balance" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-bold rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "balance" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
           >
             잔고항목 지정
           </button>
           <button
             onClick={() => setMainTab("records")}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "records" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-bold rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "records" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
           >
             <FileText size={13} className={mainTab === "records" ? "text-zinc-800" : "text-zinc-400"} /> 거래명세서 조회
           </button>
@@ -1343,10 +1343,10 @@ return (
         <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
           <div className="flex items-center gap-1 px-4 py-2 border-b border-zinc-100/80">
             <div className="flex flex-wrap bg-zinc-100/70 border border-zinc-200/60 rounded-2xl p-1 gap-0.5">
-            <button onClick={() => setSynTab("product")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${synTab === "product" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}>
+            <button onClick={() => setSynTab("product")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer ${synTab === "product" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}>
               <BookOpen size={12} className={synTab === "product" ? "text-zinc-800" : "text-zinc-400"} /> 상품명 동의어 ({productSynonyms.length})
             </button>
-            <button onClick={() => setSynTab("supplier")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${synTab === "supplier" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}>
+            <button onClick={() => setSynTab("supplier")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer ${synTab === "supplier" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}>
               <Building2 size={12} className={synTab === "supplier" ? "text-zinc-800" : "text-zinc-400"} /> 공급사 별칭 ({supplierAliases.length})
             </button>
             </div>
@@ -1655,7 +1655,7 @@ return (
 
           {/* OCR 엔진 선택 · 2-way (AI 모델 · Gemini) */}
           <div className="w-full bg-white border border-zinc-200 rounded-xl px-3 py-2 flex flex-col gap-1.5 shadow-sm">
-            <div className="flex items-center gap-1.5 text-[15px] font-black text-zinc-600">
+            <div className="flex items-center gap-1.5 text-[15px] font-bold text-zinc-600">
               <span>OCR 엔진</span>
               <span className="text-[14px] font-mono text-zinc-400">
                 ({ocrEngine === "onnx" ? "AI 모델 (ONNX) · 완전 무료 · Render OK"
@@ -1665,7 +1665,7 @@ return (
             <div className="inline-flex bg-zinc-100 border border-zinc-200 rounded-lg p-0.5 gap-0.5 w-full">
               <button type="button" onClick={() => setOcrEngine("onnx")}
                 disabled={extracting}
-                className={`flex-1 px-2 py-1.5 text-[15px] font-black rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${
+                className={`flex-1 px-2 py-1.5 text-[15px] font-bold rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${
                   ocrEngine === "onnx"
                     ? "bg-emerald-500 text-white shadow-sm"
                     : "text-zinc-500 hover:text-zinc-800 hover:bg-white"
@@ -1675,7 +1675,7 @@ return (
               </button>
               <button type="button" onClick={() => setOcrEngine("gemini")}
                 disabled={extracting}
-                className={`flex-1 px-2 py-1.5 text-[15px] font-black rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${
+                className={`flex-1 px-2 py-1.5 text-[15px] font-bold rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${
                   ocrEngine === "gemini"
                     ? "bg-amber-500 text-white shadow-sm"
                     : "text-zinc-500 hover:text-zinc-800 hover:bg-white"

@@ -63,9 +63,9 @@ function renderChip(
       } ${draggingId === emp.id ? "opacity-20" : ""}`}
     >
       <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: assigned ? c.dot : isPharm ? "#9333ea" : "#cbd5e1" }} />
-      <span className={isPharm ? "text-purple-600 font-black" : (!assigned ? "text-zinc-600" : "")}>{emp.name}</span>
+      <span className={isPharm ? "text-purple-600 font-bold" : (!assigned ? "text-zinc-600" : "")}>{emp.name}</span>
       {hasLunch && (
-        <span className="absolute -top-1.5 -left-1 w-3.5 h-3.5 rounded-full bg-yellow-400 border border-white text-yellow-900 text-[11px] font-black leading-none flex items-center justify-center shadow-sm pointer-events-none" title="점심 배정됨" aria-label="점심">점</span>
+        <span className="absolute -top-1.5 -left-1 w-3.5 h-3.5 rounded-full bg-yellow-400 border border-white text-yellow-900 text-[11px] font-bold leading-none flex items-center justify-center shadow-sm pointer-events-none" title="점심 배정됨" aria-label="점심">점</span>
       )}
     </div>
   );
@@ -99,7 +99,7 @@ export const WorkerChips: React.FC<Props> = React.memo(({
       {workers.length === 0 && <span className="text-[15px] text-zinc-300 italic">근무자 없음</span>}
       {assignedByGroup.map(({ label, items, labelCls }) => items.length === 0 ? null : (
         <div key={label}>
-          <span className={`text-[12px] font-black uppercase tracking-wider ${labelCls} mb-0.5 block`}>{label}</span>
+          <span className={`text-[12px] font-bold uppercase tracking-wider ${labelCls} mb-0.5 block`}>{label}</span>
           <div className="flex flex-wrap gap-1">{renderList(items)}</div>
         </div>
       ))}
@@ -107,7 +107,7 @@ export const WorkerChips: React.FC<Props> = React.memo(({
         <>
           {hasAnyAssigned && <div className="h-px bg-sky-200/70 my-0.5" />}
           <div>
-            <span className="text-[12px] font-black uppercase tracking-wider text-zinc-400 mb-0.5 block">
+            <span className="text-[12px] font-bold uppercase tracking-wider text-zinc-400 mb-0.5 block">
               미배정 ({unassigned.length}명)
             </span>
             <div className="flex flex-wrap gap-1">{renderList(unassigned)}</div>

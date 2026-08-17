@@ -29,16 +29,16 @@ const NumberInput: React.FC<NumberInputProps> = ({
   return (
     <div className={`inline-flex items-stretch w-full h-11 bg-white border-2 border-zinc-200 rounded-xl overflow-hidden transition-all focus-within:border-teal-400 focus-within:shadow-[0_0_0_3px_rgba(20,184,166,0.12)] ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
       <button type="button" onClick={dec} disabled={disabled || cur <= 0}
-        className="w-9 shrink-0 text-zinc-400 hover:bg-zinc-100 hover:text-rose-600 active:bg-zinc-200 disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-zinc-400 text-[18px] font-black leading-none flex items-center justify-center cursor-pointer border-r border-zinc-200"
+        className="w-9 shrink-0 text-zinc-400 hover:bg-zinc-100 hover:text-rose-600 active:bg-zinc-200 disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-zinc-400 text-[18px] font-bold leading-none flex items-center justify-center cursor-pointer border-r border-zinc-200"
         title="감소" tabIndex={-1}>−</button>
       <input
         type="number" inputMode="numeric" value={value} disabled={disabled}
         onChange={e => onChange(e.target.value === "" ? "" : Number(e.target.value))}
         placeholder={placeholder}
-        className={`flex-1 min-w-0 h-full text-center px-0.5 bg-transparent border-0 text-[15px] font-black tabular-nums text-zinc-900 focus:outline-none disabled:text-zinc-300 placeholder:text-zinc-300 ${accent}`}
+        className={`flex-1 min-w-0 h-full text-center px-0.5 bg-transparent border-0 text-[15px] font-bold tabular-nums text-zinc-900 focus:outline-none disabled:text-zinc-300 placeholder:text-zinc-300 ${accent}`}
       />
       <button type="button" onClick={inc} disabled={disabled}
-        className="w-9 shrink-0 text-zinc-400 hover:bg-zinc-100 hover:text-emerald-600 active:bg-zinc-200 disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-zinc-400 text-[18px] font-black leading-none flex items-center justify-center cursor-pointer border-l border-zinc-200"
+        className="w-9 shrink-0 text-zinc-400 hover:bg-zinc-100 hover:text-emerald-600 active:bg-zinc-200 disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-zinc-400 text-[18px] font-bold leading-none flex items-center justify-center cursor-pointer border-l border-zinc-200"
         title="증가" tabIndex={-1}>+</button>
     </div>
   );
@@ -99,7 +99,7 @@ const SlotCell: React.FC<SlotCellProps> = ({
       <div className={`flex items-center justify-center h-6 rounded-md border ${
         hasAdd ? "bg-emerald-50 border-emerald-200" : "bg-zinc-50 border-zinc-100"
       }`}>
-        <span className={`text-[12px] font-black tabular-nums ${
+        <span className={`text-[12px] font-bold tabular-nums ${
           hasAdd ? "text-emerald-700" : total > 0 ? "text-zinc-600" : "text-zinc-300"
         }`}>
           = {total}
@@ -149,12 +149,12 @@ export const StockRowDesktop: React.FC<StockRowDesktopProps> = React.memo(({
       {/* 상품명 · 규격 · 코드 */}
       <td className="px-2 py-2 align-middle min-w-[140px]">
         <div className="flex items-start gap-1.5 flex-wrap">
-          <p className="text-[12px] sm:text-[13px] font-black text-zinc-800 break-words whitespace-normal leading-snug">
+          <p className="text-[12px] sm:text-[13px] font-bold text-zinc-800 break-words whitespace-normal leading-snug">
             {row.product.name}
           </p>
           {/* A3 · 이번 세션 추가 수량 뱃지 */}
           {totalAdded > 0 && (
-            <span className="inline-flex items-center shrink-0 text-[10px] font-black tabular-nums
+            <span className="inline-flex items-center shrink-0 text-[10px] font-bold tabular-nums
               px-1.5 py-0.5 rounded-md leading-none bg-emerald-50 text-emerald-700 border border-emerald-200">
               +{totalAdded}
             </span>
@@ -243,7 +243,7 @@ export const StockRowDesktop: React.FC<StockRowDesktopProps> = React.memo(({
       {/* 합계 */}
       <td className="px-2 py-2 align-middle text-center">
         {rowTotal > 0 ? (
-          <span className="text-[13px] font-black tabular-nums text-teal-700">
+          <span className="text-[13px] font-bold tabular-nums text-teal-700">
             {rowTotal}
           </span>
         ) : (

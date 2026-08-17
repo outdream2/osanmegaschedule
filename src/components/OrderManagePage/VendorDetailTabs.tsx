@@ -220,7 +220,7 @@ const LedgerContent: React.FC<{
                   {dateLabel(r.date)}
                 </td>
                 <td className="px-3 py-1.5 align-top">
-                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black leading-none ${
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold leading-none ${
                     isPurchase ? "bg-emerald-100 text-emerald-700" : "bg-sky-100 text-sky-700"
                   }`}>
                     {isPurchase ? "매입" : "결제"}
@@ -245,7 +245,7 @@ const LedgerContent: React.FC<{
                     {vat > 0 ? fmt(vat) : <span className="text-zinc-300">-</span>}
                   </td>
                 )}
-                <td className={`px-3 py-1.5 text-right tabular-nums text-[12px] font-black align-top ${
+                <td className={`px-3 py-1.5 text-right tabular-nums text-[12px] font-bold align-top ${
                   r.running_balance > 0 ? "text-amber-700" : r.running_balance < 0 ? "text-rose-700" : "text-zinc-400"
                 }`}>
                   {fmt(r.running_balance)}
@@ -256,16 +256,16 @@ const LedgerContent: React.FC<{
         </tbody>
         <tfoot className="sticky bottom-0 bg-zinc-50 border-t-2 border-zinc-200">
           <tr>
-            <td colSpan={5} className="px-3 py-2 text-right text-[11px] font-black text-zinc-500">기간 합계</td>
+            <td colSpan={5} className="px-3 py-2 text-right text-[11px] font-bold text-zinc-500">기간 합계</td>
             <td className="px-3 py-2 text-right text-[11px] font-semibold text-zinc-500 tabular-nums" title={`매입 ${fmt(ledger.total_purchase)} / 결제 ${fmt(ledger.total_payment)}`}>
               {fmt(ledger.total_purchase - ledger.total_payment)}
             </td>
             {showVatCol && (
-              <td className="px-3 py-2 text-right text-[11px] font-black text-zinc-500 tabular-nums" title={`매입VAT ${fmt(ledger.total_purchase_vat)} · 결제VAT ${fmt(ledger.total_payment_vat)}`}>
+              <td className="px-3 py-2 text-right text-[11px] font-bold text-zinc-500 tabular-nums" title={`매입VAT ${fmt(ledger.total_purchase_vat)} · 결제VAT ${fmt(ledger.total_payment_vat)}`}>
                 {fmt(ledger.total_purchase_vat)}
               </td>
             )}
-            <td className={`px-3 py-2 text-right tabular-nums text-[13px] font-black ${
+            <td className={`px-3 py-2 text-right tabular-nums text-[13px] font-bold ${
               ledger.current_balance > 0 ? "text-amber-700" : ledger.current_balance < 0 ? "text-rose-700" : "text-zinc-400"
             }`}>
               {fmt(ledger.current_balance)}
@@ -369,7 +369,7 @@ const HistoryContent: React.FC<{
             <button
               key={mode}
               onClick={() => setViewMode(mode)}
-              className={`h-6 px-3 rounded-md text-[11px] font-black transition cursor-pointer whitespace-nowrap ${
+              className={`h-6 px-3 rounded-md text-[11px] font-bold transition cursor-pointer whitespace-nowrap ${
                 viewMode === mode
                   ? "bg-white text-zinc-800 shadow-sm ring-1 ring-zinc-200"
                   : "text-zinc-500 hover:text-zinc-700"
@@ -664,7 +664,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[12px] font-black transition cursor-pointer ${
+            className={`flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[12px] font-bold transition cursor-pointer ${
               activeTab === tab.key
                 ? "bg-sky-500 text-white shadow-sm"
                 : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
@@ -719,9 +719,9 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
                 <div className="flex flex-col">
                   {/* VAT 모드 배지 (전체 우상단) */}
                   <div className="flex items-center justify-between px-4 pt-2.5 pb-1">
-                    <span className="text-[10px] font-black text-zinc-400 uppercase tracking-wider">기간 합계</span>
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">기간 합계</span>
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black border ${vatModeCls}`}
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${vatModeCls}`}
                       title={
                         vatMode === true  ? "거래명세서 총액에 VAT 포함 · amount÷11 로 세액 산정" :
                         vatMode === false ? "거래명세서 총액은 공급가액 · amount×0.1 별도 세액" :
@@ -735,7 +735,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
                     {items.map((item, i) => (
                       <div key={i} className={`px-4 py-3 ${i < 2 ? "border-r border-zinc-100" : ""} flex flex-col gap-0.5`}>
                         <span className="text-[11px] font-bold text-zinc-500">{item.label}</span>
-                        <span className={`text-[15px] font-black tabular-nums leading-tight ${
+                        <span className={`text-[15px] font-bold tabular-nums leading-tight ${
                           item.tone === "emerald" ? "text-emerald-700" :
                           item.tone === "sky" ? "text-sky-700" :
                           "text-amber-700"

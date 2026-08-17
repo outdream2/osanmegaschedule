@@ -169,7 +169,7 @@ const RequestTableRow: React.FC<{
     >
       {/* 2026-08-10 · 사용자 요청 · 상품명 · 맨 앞 컬럼 */}
       <td className="px-3 py-2.5">
-        <span className={`text-[12px] font-black ${urgent ? "text-rose-800" : "text-zinc-900"} block truncate max-w-[220px]`} title={req.productName ?? undefined}>
+        <span className={`text-[12px] font-bold ${urgent ? "text-rose-800" : "text-zinc-900"} block truncate max-w-[220px]`} title={req.productName ?? undefined}>
           {req.productName ?? <span className="text-zinc-300">-</span>}
         </span>
       </td>

@@ -570,7 +570,7 @@ const ProductTrendTab: React.FC<{
         className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-teal-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
         title="드래그하여 폭 조절"
       >
-        <span className="text-[9px] text-zinc-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+        <span className="text-[9px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
       </div>
 
       {/* ── 우측: 차트 + 표 · 모바일에서 상품 선택 시 fullscreen 모달로 표시 · GPU 가속 힌트 ── */}
@@ -620,7 +620,7 @@ const ProductTrendTab: React.FC<{
         ) : loading ? (
           <div className="bg-white rounded-xl border border-zinc-200 p-8 flex flex-col items-center justify-center gap-3 mx-3 mt-3">
             <div className="w-10 h-10 border-4 border-zinc-200 border-t-teal-500 rounded-full animate-spin" />
-            <div className="text-sm font-black text-zinc-600">데이터 로딩중...</div>
+            <div className="text-sm font-bold text-zinc-600">데이터 로딩중...</div>
           </div>
         ) : filteredRows.length === 0 ? (
           <div className="bg-white rounded-xl border border-zinc-200 p-10 text-center text-zinc-400 text-sm mx-3 mt-3">
@@ -634,13 +634,13 @@ const ProductTrendTab: React.FC<{
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <div className="text-base font-black text-zinc-800 truncate">
+                    <div className="text-base font-bold text-zinc-800 truncate">
                       {rows[0]?.product_name ?? selected.product_name}
                     </div>
                     <button
                       type="button"
                       onClick={() => openScanProductModal({ ...selected, ...(rows[0] ?? {}) })}
-                      className="inline-flex items-center gap-1 text-[10px] font-black text-white bg-sky-500 hover:bg-sky-600 rounded-lg px-2 py-1 cursor-pointer transition shadow-sm shrink-0"
+                      className="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-sky-500 hover:bg-sky-600 rounded-lg px-2 py-1 cursor-pointer transition shadow-sm shrink-0"
                       title="상세 정보 · 실재고 입력 · 발주 요청"
                     >
                       <Info size={11} /> 정보확인
@@ -652,9 +652,9 @@ const ProductTrendTab: React.FC<{
                   </div>
                 </div>
                 <div className="text-[11px] text-zinc-500">
-                  최근 <span className="font-black text-teal-600">{rangeDays}일</span>
-                  {" · "}기간 <span className="font-black text-zinc-800">{filteredRows.length}</span>개
-                  {" · "}데이터 있음 <span className="font-black text-emerald-600">{filteredRows.filter(r => (r.purchase_qty ?? 0) > 0 || (r.sale_qty ?? 0) > 0 || (r.closing_stock ?? 0) > 0).length}</span>개
+                  최근 <span className="font-bold text-teal-600">{rangeDays}일</span>
+                  {" · "}기간 <span className="font-bold text-zinc-800">{filteredRows.length}</span>개
+                  {" · "}데이터 있음 <span className="font-bold text-emerald-600">{filteredRows.filter(r => (r.purchase_qty ?? 0) > 0 || (r.sale_qty ?? 0) > 0 || (r.closing_stock ?? 0) > 0).length}</span>개
                 </div>
               </div>
             </div>
@@ -664,12 +664,12 @@ const ProductTrendTab: React.FC<{
               <div className="flex items-center gap-2 mb-3 flex-wrap">
                 <div className="flex items-center gap-1.5 shrink-0">
                   <LineChart size={14} className="text-teal-600" />
-                  <span className="text-sm font-black text-zinc-700">기간별 판매 · 매입 · 종료재고</span>
+                  <span className="text-sm font-bold text-zinc-700">기간별 판매 · 매입 · 종료재고</span>
                 </div>
                 <div className="flex items-center gap-1.5 ml-auto flex-wrap">
                   {/* 전체기간 */}
                   <div className="inline-flex items-center gap-1">
-                    <span className="text-[9px] font-black text-teal-700 uppercase tracking-wider">기간</span>
+                    <span className="text-[9px] font-bold text-teal-700 uppercase tracking-wider">기간</span>
                     <div className="inline-flex bg-zinc-100 border border-zinc-200 rounded-lg p-0.5">
                       {[1, 2, 3, 4, 5, 6].map(m => {
                         const active = Math.round(chartRangeDays / 30) === m;
@@ -677,7 +677,7 @@ const ProductTrendTab: React.FC<{
                           <button
                             key={m}
                             onClick={() => onChartMonthsChange?.(m as any)}
-                            className={`min-w-[24px] px-1.5 py-0.5 text-[10px] font-black rounded-md transition ${active
+                            className={`min-w-[24px] px-1.5 py-0.5 text-[10px] font-bold rounded-md transition ${active
                               ? "bg-orange-500 text-white shadow-sm"
                               : "text-zinc-500 hover:text-zinc-800 hover:bg-white"
                               }`}
@@ -689,18 +689,18 @@ const ProductTrendTab: React.FC<{
                   </div>
                   {/* X축 단위 */}
                   <div className="inline-flex items-center gap-1">
-                    <span className="text-[9px] font-black text-teal-700 uppercase tracking-wider">X축</span>
+                    <span className="text-[9px] font-bold text-teal-700 uppercase tracking-wider">X축</span>
                     <div className="inline-flex bg-zinc-100 border border-zinc-200 rounded-lg p-0.5">
                       <button
                         onClick={() => onGranularityChange?.("10day")}
-                        className={`px-2 py-0.5 text-[10px] font-black rounded-md transition ${granularity === "10day"
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition ${granularity === "10day"
                           ? "bg-orange-500 text-white shadow-sm"
                           : "text-zinc-500 hover:text-zinc-800 hover:bg-white"
                           }`}
                       >10일</button>
                       <button
                         onClick={() => onGranularityChange?.("month")}
-                        className={`px-2 py-0.5 text-[10px] font-black rounded-md transition ${granularity === "month"
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition ${granularity === "month"
                           ? "bg-orange-500 text-white shadow-sm"
                           : "text-zinc-500 hover:text-zinc-800 hover:bg-white"
                           }`}
@@ -730,25 +730,25 @@ const ProductTrendTab: React.FC<{
                     {filteredRows.map((r, i) => (
                       <tr key={`r-${i}`} className="hover:bg-teal-50/30 transition">
                         <td className="px-2 py-1.5 align-top">
-                          <div className="text-[13px] font-black text-zinc-800 tabular-nums leading-tight">{periodLabel(r.period_start_date, r.snapshot_date)}</div>
+                          <div className="text-[13px] font-bold text-zinc-800 tabular-nums leading-tight">{periodLabel(r.period_start_date, r.snapshot_date)}</div>
                           <div className="text-[11px] text-zinc-400">{r.period_type === "early" ? "초순" : r.period_type === "mid" ? "중순" : r.period_type === "late" ? "하순" : "-"}</div>
                         </td>
                         <td className="px-2 py-1.5 text-right tabular-nums text-[12px] font-bold text-emerald-700 bg-emerald-50/40 align-top">{fmt(r.purchase_qty ?? 0)}</td>
-                        <td className="px-2 py-1.5 text-right tabular-nums text-[12px] font-black text-orange-700 bg-orange-50/40 align-top">{fmt(r.sale_qty ?? 0)}</td>
+                        <td className="px-2 py-1.5 text-right tabular-nums text-[12px] font-bold text-orange-700 bg-orange-50/40 align-top">{fmt(r.sale_qty ?? 0)}</td>
                         <td className="px-2 py-1.5 text-right tabular-nums text-[12px] font-bold text-indigo-700 bg-indigo-50/40 align-top">{fmt(r.closing_stock ?? 0)}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot className="bg-zinc-50 border-t-2 border-zinc-200 text-xs">
                     <tr>
-                      <td className="px-2 py-1.5 text-right font-black text-zinc-500 uppercase">합계</td>
-                      <td className="px-2 py-1.5 text-right tabular-nums font-black text-emerald-700 bg-emerald-50/40">
+                      <td className="px-2 py-1.5 text-right font-bold text-zinc-500 uppercase">합계</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums font-bold text-emerald-700 bg-emerald-50/40">
                         {fmt(filteredRows.reduce((n, r) => n + Number(r.purchase_qty ?? 0), 0))}
                       </td>
-                      <td className="px-2 py-1.5 text-right tabular-nums font-black text-orange-700 bg-orange-50/40">
+                      <td className="px-2 py-1.5 text-right tabular-nums font-bold text-orange-700 bg-orange-50/40">
                         {fmt(filteredRows.reduce((n, r) => n + Number(r.sale_qty ?? 0), 0))}
                       </td>
-                      <td className="px-2 py-1.5 text-right tabular-nums font-black text-indigo-700 bg-indigo-50/40">
+                      <td className="px-2 py-1.5 text-right tabular-nums font-bold text-indigo-700 bg-indigo-50/40">
                         {/* 종료재고는 합계 개념이 없어서 최종값 표시 */}
                         {fmt(Number(filteredRows[filteredRows.length - 1]?.closing_stock ?? 0))}
                       </td>
@@ -777,13 +777,13 @@ const ProductTrendTab: React.FC<{
                   <Package size={18} className="text-white" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-base font-black text-zinc-800 truncate">{scanProductModal.name}</div>
+                  <div className="text-base font-bold text-zinc-800 truncate">{scanProductModal.name}</div>
                   <div className="text-[11px] tabular-nums text-zinc-500 mt-0.5">#{scanProductModal.code}</div>
                 </div>
               </div>
               <button
                 onClick={() => setScanProductModal(null)}
-                className="text-zinc-400 hover:text-zinc-700 text-3xl leading-none font-black w-9 h-9 rounded-lg hover:bg-white/70 transition cursor-pointer flex items-center justify-center shrink-0"
+                className="text-zinc-400 hover:text-zinc-700 text-3xl leading-none font-bold w-9 h-9 rounded-lg hover:bg-white/70 transition cursor-pointer flex items-center justify-center shrink-0"
               >×</button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 bg-zinc-50">
@@ -977,7 +977,7 @@ const SupplierTrendTab: React.FC<{
         <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 min-w-0">
             <Building2 size={14} className="text-sky-600" />
-            <span className="text-sm font-black text-zinc-700">공급사별 판매현황<span className="text-[10px] font-semibold text-zinc-400 ml-1">(판매액 내림차순)</span></span>
+            <span className="text-sm font-bold text-zinc-700">공급사별 판매현황<span className="text-[10px] font-semibold text-zinc-400 ml-1">(판매액 내림차순)</span></span>
           </div>
           <span className="text-[11px] font-bold text-zinc-500 shrink-0">
             {visibleSuppliers.length}개 사<span className="text-zinc-400 font-semibold"> / 총 {filteredSuppliers.length}개</span>
@@ -985,22 +985,22 @@ const SupplierTrendTab: React.FC<{
         </div>
         {/* 필터 바 · 기간 프리셋 + 계절 + Top N (2026-07-16 · 전 페이지 일관 UI) */}
         <div className="flex items-center gap-2 mb-2 flex-wrap text-[11px]">
-          <span className="text-zinc-500 font-black text-[10px] shrink-0">기간</span>
+          <span className="text-zinc-500 font-bold text-[10px] shrink-0">기간</span>
           <div className="inline-flex bg-zinc-100/80 border border-zinc-200/60 rounded-lg p-0.5 shadow-inner">
             {PERIOD_PRESETS.map(p => (
               <button key={p.key} type="button" onClick={() => { setPeriodMonths(p.key); setSeason(null); }}
-                className={`px-2 py-1 text-[10px] font-black rounded transition cursor-pointer ${!season && periodMonths === p.key ? "bg-white text-sky-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-500 hover:text-zinc-800"}`}>
+                className={`px-2 py-1 text-[10px] font-bold rounded transition cursor-pointer ${!season && periodMonths === p.key ? "bg-white text-sky-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-500 hover:text-zinc-800"}`}>
                 {p.label}
               </button>
             ))}
           </div>
           {/* 계절 조회 · 클릭 시 년도 무관 · periodMonths 자동 해제 */}
           <SeasonButtons value={season} onChange={(v) => { setSeason(v); if (v) setPeriodMonths(0); }} size="sm" hideLabel />
-          <span className="text-zinc-500 font-black text-[10px] shrink-0 ml-1">Top N</span>
+          <span className="text-zinc-500 font-bold text-[10px] shrink-0 ml-1">Top N</span>
           <div className="inline-flex bg-zinc-100/80 border border-zinc-200/60 rounded-lg p-0.5 shadow-inner" title="판매액 내림차순 상위 N개만 표시">
             {([100, 300, 1000, 2000, 0] as const).map(n => (
               <button key={n} type="button" onClick={() => setTopN(n)}
-                className={`px-2 py-1 text-[10px] font-black rounded transition cursor-pointer ${topN === n ? "bg-white text-sky-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-500 hover:text-zinc-800"}`}>
+                className={`px-2 py-1 text-[10px] font-bold rounded transition cursor-pointer ${topN === n ? "bg-white text-sky-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-500 hover:text-zinc-800"}`}>
                 {n === 0 ? "전체" : `Top ${n}`}
               </button>
             ))}
@@ -1032,7 +1032,7 @@ const SupplierTrendTab: React.FC<{
           {loading && suppliers.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 py-8">
               <div className="w-10 h-10 border-4 border-zinc-200 border-t-orange-500 rounded-full animate-spin" />
-              <div className="text-xs font-black text-zinc-600">데이터 로딩중...</div>
+              <div className="text-xs font-bold text-zinc-600">데이터 로딩중...</div>
             </div>
           ) : visibleSuppliers.length === 0 ? (
             <div className="text-center text-[11px] text-zinc-300 py-6">데이터 없음</div>
@@ -1054,7 +1054,7 @@ const SupplierTrendTab: React.FC<{
                     >
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className={`text-zinc-400 text-xs transition-transform shrink-0 ${isExpanded ? "rotate-90" : ""}`}>▶</span>
-                        <span className="text-[10px] font-black text-sky-600 shrink-0">{i + 1}</span>
+                        <span className="text-[10px] font-bold text-sky-600 shrink-0">{i + 1}</span>
                         <Building2 size={11} className="text-sky-500 shrink-0" />
                         <span className="text-xs font-bold text-zinc-700 break-words whitespace-normal leading-tight">{sup.supplier}</span>
                         {sup.supplier_code && (
@@ -1065,7 +1065,7 @@ const SupplierTrendTab: React.FC<{
                             title="같은 이름에 여러 공급사코드가 존재 — 중복 의심">⚠</span>
                         )}
                       </div>
-                      <span className="text-[11px] font-black text-orange-700 shrink-0" title={`판매액 합계 · 판매수량 ${fmt(sup.saleQty)}개`}>{fmt(sup.saleAmount ?? 0)}원</span>
+                      <span className="text-[11px] font-bold text-orange-700 shrink-0" title={`판매액 합계 · 판매수량 ${fmt(sup.saleQty)}개`}>{fmt(sup.saleAmount ?? 0)}원</span>
                     </button>
                     <div className="flex items-center justify-end mt-0.5">
                       <span className="text-[10px] text-zinc-400 shrink-0 text-right" title={`상품 ${sup.itemCount}종`}>
@@ -1078,7 +1078,7 @@ const SupplierTrendTab: React.FC<{
                         {isLoading ? (
                           <div className="flex flex-col items-center justify-center gap-3 py-6">
                             <div className="w-8 h-8 border-4 border-zinc-200 border-t-orange-500 rounded-full animate-spin" />
-                            <div className="text-xs font-black text-zinc-600">데이터 로딩중...</div>
+                            <div className="text-xs font-bold text-zinc-600">데이터 로딩중...</div>
                           </div>
                         ) : !rows || rows.length === 0 ? (
                           <div className="text-center text-[11px] text-zinc-300 py-6">상품 데이터 없음</div>
@@ -1104,7 +1104,7 @@ const SupplierTrendTab: React.FC<{
                                     return (
                                       <th key={col.k}
                                         onClick={(e) => { e.stopPropagation(); toggleSupRowsSort(col.k); }}
-                                        className={`${col.align} px-0.5 py-1.5 ${col.w ?? ""} ${bgCls} cursor-pointer select-none ${hoverCls} transition ${active ? `${activeCls} font-black` : inactiveCls}`}
+                                        className={`${col.align} px-0.5 py-1.5 ${col.w ?? ""} ${bgCls} cursor-pointer select-none ${hoverCls} transition ${active ? `${activeCls} font-bold` : inactiveCls}`}
                                         title={`${col.label} 정렬 (${active ? (supRowsSort.dir === "asc" ? "오름차순 · 클릭 → 내림차순" : "내림차순 · 클릭 → 오름차순") : "클릭하여 정렬"})`}
                                       >
                                         <span className="inline-flex items-center gap-0.5">
@@ -1129,7 +1129,7 @@ const SupplierTrendTab: React.FC<{
                                   const profitRate = salePrice > 0 && purchasePrice > 0 ? ((salePrice - purchasePrice) / salePrice) * 100 : null;
                                   return (
                                     <tr key={`${key}-${r.product_code ?? ri}`} className="hover:bg-zinc-50/60 transition align-top">
-                                      <td className="px-0.5 py-1.5 text-[12px] font-black text-orange-600">{ri + 1}</td>
+                                      <td className="px-0.5 py-1.5 text-[12px] font-bold text-orange-600">{ri + 1}</td>
                                       <td className="px-0.5 py-1.5 break-words whitespace-normal leading-tight">
                                         <button
                                           type="button"
@@ -1138,11 +1138,11 @@ const SupplierTrendTab: React.FC<{
                                           title={`${r.product_name} — 클릭 시 상세 정보`}
                                         >{r.product_name}</button>
                                       </td>
-                                      <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-orange-700 bg-orange-50/40">{fmt(saleQty)}</td>
-                                      <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-orange-700 bg-orange-50/40" title={saleAmount > 0 ? `판매수량 × 판매가 = ${saleAmount.toLocaleString()}원` : undefined}>{saleAmount > 0 ? saleAmount.toLocaleString() : "-"}</td>
+                                      <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-orange-700 bg-orange-50/40">{fmt(saleQty)}</td>
+                                      <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-orange-700 bg-orange-50/40" title={saleAmount > 0 ? `판매수량 × 판매가 = ${saleAmount.toLocaleString()}원` : undefined}>{saleAmount > 0 ? saleAmount.toLocaleString() : "-"}</td>
                                       <td className="text-right px-0.5 py-1.5 tabular-nums text-zinc-800" title={salePrice > 0 ? `${salePrice.toLocaleString()}원` : "판매가 없음"}>{salePrice > 0 ? salePrice.toLocaleString() : "-"}</td>
                                       <td className="text-right px-0.5 py-1.5 tabular-nums text-emerald-700 bg-emerald-50/40" title={purchasePrice > 0 ? `${purchasePrice.toLocaleString()}원` : "사입가 없음"}>{purchasePrice > 0 ? purchasePrice.toLocaleString() : "-"}</td>
-                                      <td className={`text-right px-0.5 py-1.5 tabular-nums font-black bg-emerald-50/40 ${profitRate == null ? "text-zinc-400" : profitRate >= 30 ? "text-emerald-700" : profitRate >= 10 ? "text-emerald-600" : "text-rose-600"}`} title={profitRate != null ? `(판매가 - 사입가) / 판매가 = ${profitRate.toFixed(2)}%` : "판매가 또는 사입가 없음"}>{profitRate == null ? "-" : `${profitRate.toFixed(1)}%`}</td>
+                                      <td className={`text-right px-0.5 py-1.5 tabular-nums font-bold bg-emerald-50/40 ${profitRate == null ? "text-zinc-400" : profitRate >= 30 ? "text-emerald-700" : profitRate >= 10 ? "text-emerald-600" : "text-rose-600"}`} title={profitRate != null ? `(판매가 - 사입가) / 판매가 = ${profitRate.toFixed(2)}%` : "판매가 또는 사입가 없음"}>{profitRate == null ? "-" : `${profitRate.toFixed(1)}%`}</td>
                                     </tr>
                                   );
                                 })}
@@ -1323,7 +1323,7 @@ export const StockFlowPanel: React.FC<{
             <TrendingUp size={14} className="text-orange-600" />
             {/* 스냅샷 날짜 · 재고관리와 동일 형식 */}
             {snapshot && (
-              <span className="text-[10px] tabular-nums font-black text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">
+              <span className="text-[10px] tabular-nums font-bold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">
                 {snapshot}
               </span>
             )}
@@ -1345,7 +1345,7 @@ export const StockFlowPanel: React.FC<{
                 cls = "text-purple-700 bg-purple-50 border-purple-300";
               }
               return (
-                <span className={`text-[10px] font-black rounded-full px-2 py-0.5 border tabular-nums${cls}`}>
+                <span className={`text-[10px] font-bold rounded-full px-2 py-0.5 border tabular-nums${cls}`}>
                   {label}
                 </span>
               );
@@ -1360,7 +1360,7 @@ export const StockFlowPanel: React.FC<{
               { v: 50000, label: "전체" },
             ].map(o => (
               <button key={o.v} onClick={() => setLimit(o.v)}
-                className={`text-[10px] font-black px-1.5 py-0.5 rounded transition ${limit === o.v ? "bg-orange-500 text-white" : "text-zinc-500 hover:bg-zinc-100"
+                className={`text-[10px] font-bold px-1.5 py-0.5 rounded transition ${limit === o.v ? "bg-orange-500 text-white" : "text-zinc-500 hover:bg-zinc-100"
                   }`}
               >{o.label}</button>
             ))}
@@ -1373,18 +1373,18 @@ export const StockFlowPanel: React.FC<{
       </div>
       {/* 조회기간 · 버튼 선택 후 [확인] 클릭 시 조회 (자동 조회 X) */}
       <div className="px-3 py-2 border-b border-zinc-100 flex items-center gap-1 flex-wrap text-[10px]">
-        <span className="text-zinc-500 font-black shrink-0 mr-1">조회기간</span>
+        <span className="text-zinc-500 font-bold shrink-0 mr-1">조회기간</span>
         <button onClick={() => { setPendingMonths(0); setSeason(null); }}
-          className={`px-1.5 py-0.5 rounded font-black transition ${!season && pendingMonths === 0 ? "bg-orange-500 text-white" : "text-zinc-500 hover:bg-zinc-100"
+          className={`px-1.5 py-0.5 rounded font-bold transition ${!season && pendingMonths === 0 ? "bg-orange-500 text-white" : "text-zinc-500 hover:bg-zinc-100"
             }`}>10일</button>
         {[1, 2, 3, 4, 5, 6].map(m => (
           <button key={m} onClick={() => { setPendingMonths(m as any); setSeason(null); }}
-            className={`px-1.5 py-0.5 rounded font-black transition ${!season && pendingMonths === m ? "bg-orange-500 text-white" : "text-zinc-500 hover:bg-zinc-100"
+            className={`px-1.5 py-0.5 rounded font-bold transition ${!season && pendingMonths === m ? "bg-orange-500 text-white" : "text-zinc-500 hover:bg-zinc-100"
               }`}>{m}개월</button>
         ))}
         {pendingMonths !== months && !season ? (
           <button onClick={() => setMonths(pendingMonths)}
-            className="ml-1 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-orange-500 text-white font-black hover:bg-orange-600 shadow-sm cursor-pointer transition animate-pulse"
+            className="ml-1 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-orange-500 text-white font-bold hover:bg-orange-600 shadow-sm cursor-pointer transition animate-pulse"
             title="선택한 기간으로 조회">확인 →</button>
         ) : (
           <span className="ml-1 text-[9px] text-zinc-400 font-semibold">{season ? "계절 조회 중" : "조회 완료"}</span>
@@ -1405,7 +1405,7 @@ export const StockFlowPanel: React.FC<{
           const s = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
           const e = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
           return (
-            <span className="text-[10px] tabular-nums font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5 ml-1">
+            <span className="text-[10px] tabular-nums font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5 ml-1">
               {s} ~ {e}
             </span>
           );
@@ -1443,7 +1443,7 @@ export const StockFlowPanel: React.FC<{
               }}
               disabled={!query.trim() && displayRows.length === 0}
               title="선택 상품의 상세 정보 (판매리스트 상품명 클릭과 동일)"
-              className="shrink-0 inline-flex items-center gap-1 text-[11px] font-black text-white bg-teal-500 hover:bg-teal-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg px-2 py-1.5 cursor-pointer transition shadow-sm active:scale-95"
+              className="shrink-0 inline-flex items-center gap-1 text-[11px] font-bold text-white bg-teal-500 hover:bg-teal-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg px-2 py-1.5 cursor-pointer transition shadow-sm active:scale-95"
             >
               <Info size={12} /> 정보확인
             </button>
@@ -1453,14 +1453,14 @@ export const StockFlowPanel: React.FC<{
               type="button"
               onClick={onOpenHiddenManager}
               title="숨김 처리된 상품 관리"
-              className="shrink-0 inline-flex items-center gap-1 text-[11px] font-black text-amber-700 bg-white border border-amber-300 hover:bg-amber-50 rounded-lg px-2 py-1.5 cursor-pointer transition shadow-sm active:scale-95"
+              className="shrink-0 inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-white border border-amber-300 hover:bg-amber-50 rounded-lg px-2 py-1.5 cursor-pointer transition shadow-sm active:scale-95"
             >
               <EyeOff size={12} /> 숨김 관리
             </button>
           )}
         </div>
         <div className="flex items-center gap-1.5 text-[10px]">
-          <span className="text-zinc-500 font-black shrink-0">판매</span>
+          <span className="text-zinc-500 font-bold shrink-0">판매</span>
           <input type="number" min={0} value={saleMin}
             onChange={(e) => setSaleMin(e.target.value)} placeholder="최소"
             className="flex-1 min-w-0 px-1.5 py-1 border border-zinc-200 rounded text-[11px] tabular-nums text-right focus:outline-none focus:border-orange-400" />
@@ -1470,7 +1470,7 @@ export const StockFlowPanel: React.FC<{
             className="flex-1 min-w-0 px-1.5 py-1 border border-zinc-200 rounded text-[11px] tabular-nums text-right focus:outline-none focus:border-orange-400" />
           {(saleMin || saleMax) && (
             <button onClick={() => { setSaleMin(""); setSaleMax(""); }}
-              className="text-[10px] font-black text-rose-500 hover:text-rose-700 px-1.5 py-1 rounded hover:bg-rose-50 transition cursor-pointer shrink-0">✕</button>
+              className="text-[10px] font-bold text-rose-500 hover:text-rose-700 px-1.5 py-1 rounded hover:bg-rose-50 transition cursor-pointer shrink-0">✕</button>
           )}
         </div>
       </div>
@@ -1481,14 +1481,14 @@ export const StockFlowPanel: React.FC<{
         title={saleListCollapsed ? "펼치기" : "접기"}
       >
         <span className={`text-zinc-400 text-xs transition-transform ${saleListCollapsed ? "" : "rotate-90"}`}>▶</span>
-        <span className="text-[11px] font-black text-zinc-600">{listLabel}</span>
+        <span className="text-[11px] font-bold text-zinc-600">{listLabel}</span>
         <span className="text-[10px] tabular-nums text-zinc-400">({displayRows.length}건)</span>
       </div>
       <div className={`flex-1 overflow-auto relative max-h-[50vh] ${saleListCollapsed ? "hidden" : ""}`}>
         {loading && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1px] pointer-events-none">
             <div className="w-10 h-10 border-4 border-zinc-200 border-t-orange-500 rounded-full animate-spin" />
-            <div className="mt-3 text-xs font-black text-zinc-600">데이터 로딩중...</div>
+            <div className="mt-3 text-xs font-bold text-zinc-600">데이터 로딩중...</div>
           </div>
         )}
         {displayRows.length === 0 && !loading ? (
@@ -1502,14 +1502,14 @@ export const StockFlowPanel: React.FC<{
                 <tr className="bg-rose-50 border-b border-rose-200">
                   <td colSpan={10} className="px-2 py-1.5">
                     <div className="flex items-center gap-2 text-[11px]">
-                      <span className="font-black text-rose-700">{selectedCodes.size}개 선택됨</span>
+                      <span className="font-bold text-rose-700">{selectedCodes.size}개 선택됨</span>
                       <button onClick={bulkHide} disabled={bulkHiding}
-                        className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-black shadow-sm disabled:opacity-50">
+                        className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-bold shadow-sm disabled:opacity-50">
                         {bulkHiding ? <Loader2 size={11} className="animate-spin" /> : <EyeOff size={11} />}
                         선택 숨김
                       </button>
                       <button onClick={() => setSelectedCodes(new Set())}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-zinc-100 hover:bg-zinc-200 text-zinc-600 font-black">
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-zinc-100 hover:bg-zinc-200 text-zinc-600 font-bold">
                         <X size={11} /> 해제
                       </button>
                     </div>
@@ -1529,24 +1529,24 @@ export const StockFlowPanel: React.FC<{
                 </th>
                 <th className="text-left px-0.5 py-1.5 w-6">#</th>
                 <th onClick={() => toggleSort("name")}
-                  className={`text-left px-1 py-1.5 min-w-[120px] cursor-pointer select-none hover:bg-zinc-50 ${sort === "name" ? "text-zinc-800 font-black" : "text-zinc-500"}`}
+                  className={`text-left px-1 py-1.5 min-w-[120px] cursor-pointer select-none hover:bg-zinc-50 ${sort === "name" ? "text-zinc-800 font-bold" : "text-zinc-500"}`}
                 ><span className="inline-flex items-center gap-0.5">상품명{arrow("name")}</span></th>
                 <th onClick={() => toggleSort("sale")}
-                  className={`text-right px-0.5 py-1.5 w-14 cursor-pointer select-none hover:bg-orange-100 bg-orange-50/60 ${sort === "sale" ? "text-orange-700 font-black" : "text-orange-500"}`}
+                  className={`text-right px-0.5 py-1.5 w-14 cursor-pointer select-none hover:bg-orange-100 bg-orange-50/60 ${sort === "sale" ? "text-orange-700 font-bold" : "text-orange-500"}`}
                 ><span className="inline-flex items-center gap-0.5">판매{arrow("sale")}</span></th>
                 <th onClick={() => toggleSort("loss")}
-                  className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-rose-100 bg-rose-50/60 ${sort === "loss" ? "text-rose-700 font-black" : "text-rose-500"}`}
+                  className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-rose-100 bg-rose-50/60 ${sort === "loss" ? "text-rose-700 font-bold" : "text-rose-500"}`}
                 ><span className="inline-flex items-center gap-0.5">손실{arrow("loss")}</span></th>
                 <th onClick={() => toggleSort("amount")}
-                  className={`text-right px-0.5 py-1.5 w-16 cursor-pointer select-none hover:bg-indigo-100 bg-indigo-50/60 ${sort === "amount" ? "text-indigo-700 font-black" : "text-indigo-500"}`}
+                  className={`text-right px-0.5 py-1.5 w-16 cursor-pointer select-none hover:bg-indigo-100 bg-indigo-50/60 ${sort === "amount" ? "text-indigo-700 font-bold" : "text-indigo-500"}`}
                   title="판매가 (products.sale_price)"
                 ><span className="inline-flex items-center gap-0.5">판매가{arrow("amount")}</span></th>
                 <th onClick={() => toggleSort("purchase_price")}
-                  className={`text-right px-0.5 py-1.5 w-16 cursor-pointer select-none hover:bg-zinc-100 bg-zinc-50/60 ${sort === "purchase_price" ? "text-zinc-800 font-black" : "text-zinc-500"}`}
+                  className={`text-right px-0.5 py-1.5 w-16 cursor-pointer select-none hover:bg-zinc-100 bg-zinc-50/60 ${sort === "purchase_price" ? "text-zinc-800 font-bold" : "text-zinc-500"}`}
                   title="사입가 (products.purchase_price)"
                 ><span className="inline-flex items-center gap-0.5">사입가{arrow("purchase_price")}</span></th>
                 <th onClick={() => toggleSort("profit_rate")}
-                  className={`text-right px-0.5 py-1.5 w-14 cursor-pointer select-none hover:bg-emerald-100 bg-emerald-50/60 ${sort === "profit_rate" ? "text-emerald-800 font-black" : "text-emerald-600"}`}
+                  className={`text-right px-0.5 py-1.5 w-14 cursor-pointer select-none hover:bg-emerald-100 bg-emerald-50/60 ${sort === "profit_rate" ? "text-emerald-800 font-bold" : "text-emerald-600"}`}
                   title="이익률 = (판매가 − 사입가) / 판매가 × 100"
                 ><span className="inline-flex items-center gap-0.5">이익률{arrow("profit_rate")}</span></th>
               </tr>
@@ -1572,12 +1572,12 @@ export const StockFlowPanel: React.FC<{
                         ? <CheckSquare size={13} className="text-rose-500 inline" />
                         : <Square size={13} className="text-zinc-300 hover:text-rose-500 inline" />}
                     </td>
-                    <td className="px-0.5 py-1.5 text-[12px] font-black text-orange-600 align-top">{i + 1}</td>
+                    <td className="px-0.5 py-1.5 text-[12px] font-bold text-orange-600 align-top">{i + 1}</td>
                     <td className="px-1 py-1.5 align-top">
                       <div className="text-[13px] font-medium text-zinc-800 break-words whitespace-normal leading-tight" title={p.product_name}>
                         {p.product_name}
                         {(p as any).min_order != null && (p as any).min_order > 0 && (
-                          <span className="inline-flex items-center ml-1 px-1 py-0.5 rounded text-[10px] font-black text-sky-700 bg-sky-100 border border-sky-300 align-middle" title={`최소주문량 ${(p as any).min_order}`}>
+                          <span className="inline-flex items-center ml-1 px-1 py-0.5 rounded text-[10px] font-bold text-sky-700 bg-sky-100 border border-sky-300 align-middle" title={`최소주문량 ${(p as any).min_order}`}>
                             최소{(p as any).min_order}
                           </span>
                         )}
@@ -1591,12 +1591,12 @@ export const StockFlowPanel: React.FC<{
                     </td>
                     <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-orange-700 text-[12px] bg-orange-50/40 align-top">{fmt(p.sale_qty)}</td>
                     <td
-                      className={`text-right px-0.5 py-1.5 tabular-nums text-[12px] bg-rose-50/40 align-top ${loss > 0 ? "text-rose-600 font-black" : loss < 0 ? "text-emerald-600 font-bold" : "text-zinc-400"}`}
+                      className={`text-right px-0.5 py-1.5 tabular-nums text-[12px] bg-rose-50/40 align-top ${loss > 0 ? "text-rose-600 font-bold" : loss < 0 ? "text-emerald-600 font-bold" : "text-zinc-400"}`}
                       title={`손실 = (시작${fmt(Number(p.opening_stock))} − 판매${fmt(Number(p.sale_qty))}) − 종료${fmt(close)} = ${loss > 0 ? "-" + fmt(loss) : loss < 0 ? "+" + fmt(Math.abs(loss)) : "0"}${Number(p.purchase_qty) > 0 ? `\n입고: ${fmt(Number(p.purchase_qty))} (참고)` : ""}${Number(p.disposal_qty ?? 0) > 0 ? `\n폐기: ${fmt(Number(p.disposal_qty ?? 0))} (참고)` : ""}`}
                     >{loss === 0 ? "0" : loss > 0 ? `-${fmt(loss)}` : `+${fmt(Math.abs(loss))}`}</td>
                     <td className="text-right px-0.5 py-1.5 tabular-nums text-[12px] text-indigo-700 font-bold bg-indigo-50/40 align-top" title={salePrice > 0 ? `${salePrice.toLocaleString()}원` : undefined}>{salePrice > 0 ? fmtWon(salePrice) : "-"}</td>
                     <td className="text-right px-0.5 py-1.5 tabular-nums text-[12px] text-zinc-700 font-bold bg-zinc-50/40 align-top" title={purchasePrice > 0 ? `${purchasePrice.toLocaleString()}원` : undefined}>{purchasePrice > 0 ? fmtWon(purchasePrice) : "-"}</td>
-                    <td className={`text-right px-0.5 py-1.5 tabular-nums text-[12px] font-black bg-emerald-50/40 align-top ${profitRate == null ? "text-zinc-400" : profitRate >= 30 ? "text-emerald-700" : profitRate >= 10 ? "text-emerald-600" : "text-rose-600"}`} title={profitRate != null ? `(판매가 ${salePrice.toLocaleString()} - 사입가 ${purchasePrice.toLocaleString()}) / 판매가 = ${profitRate.toFixed(2)}%` : "판매가 또는 사입가 미설정"}>
+                    <td className={`text-right px-0.5 py-1.5 tabular-nums text-[12px] font-bold bg-emerald-50/40 align-top ${profitRate == null ? "text-zinc-400" : profitRate >= 30 ? "text-emerald-700" : profitRate >= 10 ? "text-emerald-600" : "text-rose-600"}`} title={profitRate != null ? `(판매가 ${salePrice.toLocaleString()} - 사입가 ${purchasePrice.toLocaleString()}) / 판매가 = ${profitRate.toFixed(2)}%` : "판매가 또는 사입가 미설정"}>
                       {profitRate == null ? "-" : `${profitRate.toFixed(1)}%`}
                     </td>
                   </tr>
@@ -1765,11 +1765,11 @@ const ZoneCategoryContent: React.FC = () => {
       >
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2 min-w-0">
-            <span className={`inline-flex items-center justify-center w-[20px] h-[20px] text-[12px] font-black rounded-md border tabular-nums shrink-0 ${rankCls}`}
+            <span className={`inline-flex items-center justify-center w-[20px] h-[20px] text-[12px] font-bold rounded-md border tabular-nums shrink-0 ${rankCls}`}
               title={`그룹 내 순위 ${rank}위`}>
               {rank}
             </span>
-            <span className={`text-[13px] font-black ${textCls} tabular-nums shrink-0`}>{getZoneLabel(g.zone)}</span>
+            <span className={`text-[13px] font-bold ${textCls} tabular-nums shrink-0`}>{getZoneLabel(g.zone)}</span>
             {zoneCategoryLabel(g.zone) && (
               <span className={`text-[11px] font-bold ${textCls} break-words whitespace-normal leading-tight`}
                 title={zoneCategoryLabel(g.zone)}>
@@ -1781,12 +1781,12 @@ const ZoneCategoryContent: React.FC = () => {
         </div>
         <div className="flex items-center justify-between gap-2 flex-wrap text-[11px] tabular-nums">
           <div className="flex items-center gap-1.5 text-zinc-500 font-semibold">
-            <span>상품 <span className="font-black text-zinc-700">{g.items.length}</span>종</span>
+            <span>상품 <span className="font-bold text-zinc-700">{g.items.length}</span>종</span>
             <span className="text-zinc-300">·</span>
-            <span>판매 <span className="font-black text-orange-700">{fmt(g.saleQty)}</span></span>
+            <span>판매 <span className="font-bold text-orange-700">{fmt(g.saleQty)}</span></span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="font-black text-emerald-700 text-[12px]">{fmtWon(g.totalAmount)}</span>
+            <span className="font-bold text-emerald-700 text-[12px]">{fmtWon(g.totalAmount)}</span>
             <span className="text-[10px] font-bold text-zinc-400">{pct.toFixed(1)}%</span>
           </div>
         </div>
@@ -1816,7 +1816,7 @@ const ZoneCategoryContent: React.FC = () => {
         {/* 섹션 헤더 */}
         <div className="flex items-center justify-between gap-2 flex-wrap px-0.5 pt-1">
           <div className="flex items-center gap-1.5">
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-black border ${badgeCls}`}>{badge}</span>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border ${badgeCls}`}>{badge}</span>
             <span className="text-[12px] font-semibold text-zinc-700">{label}</span>
             <span className="text-[11px] text-zinc-400 tabular-nums">{list.length}개 구역</span>
           </div>
@@ -1862,7 +1862,7 @@ const ZoneCategoryContent: React.FC = () => {
       const active = itemSort.key === k;
       return (
         <th onClick={() => toggleItemSort(k)}
-          className={`cursor-pointer select-none hover:bg-zinc-50 transition ${extraCls} ${active ? "font-black" : ""}`}
+          className={`cursor-pointer select-none hover:bg-zinc-50 transition ${extraCls} ${active ? "font-bold" : ""}`}
           title={`${label} 정렬 (${active ? (itemSort.dir === "asc" ? "오름차순 · 클릭 → 내림차순" : "내림차순 · 클릭 → 오름차순") : "클릭하여 정렬"})`}>
           <span className="inline-flex items-center gap-0.5">{label}
             {active
@@ -1878,7 +1878,7 @@ const ZoneCategoryContent: React.FC = () => {
         <div className="bg-violet-50/60 border border-violet-200 rounded-xl p-3 shadow-sm">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2 min-w-0">
-              <span className={`text-[15px] font-black ${textCls} tabular-nums`}>{getZoneLabel(g.zone)}</span>
+              <span className={`text-[15px] font-bold ${textCls} tabular-nums`}>{getZoneLabel(g.zone)}</span>
               {zoneCategoryLabel(g.zone) && (
                 <span className={`text-sm font-semibold ${textCls}`}>{zoneCategoryLabel(g.zone)}</span>
               )}
@@ -1893,10 +1893,10 @@ const ZoneCategoryContent: React.FC = () => {
             </button>
           </div>
           <div className="flex items-center gap-3 mt-2 flex-wrap text-[11px]">
-            <span className="text-zinc-500">상품 <span className="font-black text-zinc-800">{g.items.length}개</span></span>
-            <span className="text-zinc-500">판매 <span className="font-black text-violet-700">{fmt(g.saleQty)}개</span></span>
-            <span className="text-zinc-500">금액 <span className="font-black text-emerald-700">{fmtWon(g.totalAmount)}</span></span>
-            <span className="text-zinc-500">비중 <span className="font-black text-orange-700">{pct.toFixed(1)}%</span></span>
+            <span className="text-zinc-500">상품 <span className="font-bold text-zinc-800">{g.items.length}개</span></span>
+            <span className="text-zinc-500">판매 <span className="font-bold text-violet-700">{fmt(g.saleQty)}개</span></span>
+            <span className="text-zinc-500">금액 <span className="font-bold text-emerald-700">{fmtWon(g.totalAmount)}</span></span>
+            <span className="text-zinc-500">비중 <span className="font-bold text-orange-700">{pct.toFixed(1)}%</span></span>
           </div>
         </div>
         {/* 상품 테이블 */}
@@ -1922,7 +1922,7 @@ const ZoneCategoryContent: React.FC = () => {
                     : "-";
                   return (
                     <tr key={`${g.zone}-${it.code}`} className="hover:bg-zinc-50/60 align-top transition">
-                      <td className="px-0.5 py-1.5 text-[12px] font-black text-orange-600">{i + 1}</td>
+                      <td className="px-0.5 py-1.5 text-[12px] font-bold text-orange-600">{i + 1}</td>
                       <td className="px-0.5 py-1.5 text-[11px] text-zinc-500 break-words whitespace-normal leading-tight" title={it.supplier || undefined}>{it.supplier || "-"}</td>
                       <td className="px-0.5 py-1.5 break-words whitespace-normal leading-tight">
                         <span className="text-[13px] font-medium text-zinc-800 break-words whitespace-normal leading-tight" title={it.name}>{it.name}</span>
@@ -2034,7 +2034,7 @@ const ZoneCategoryContent: React.FC = () => {
         {loading && grouped.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-8">
             <div className="w-10 h-10 border-4 border-zinc-200 border-t-orange-500 rounded-full animate-spin" />
-            <div className="text-xs font-black text-zinc-600">데이터 로딩중...</div>
+            <div className="text-xs font-bold text-zinc-600">데이터 로딩중...</div>
           </div>
         ) : !loading && grouped.length === 0 ? (
           <div className="text-center text-[11px] text-zinc-300 py-6">데이터 없음</div>
@@ -2043,14 +2043,14 @@ const ZoneCategoryContent: React.FC = () => {
             {/* 2026-07-30 · 사용자 요청 · 탭 전환 (상비약 / 일반약) */}
             <div className="flex items-center gap-1 border-b-2 border-zinc-200 sticky top-0 bg-white z-10 -mx-1 px-1 pt-1">
               <button type="button" onClick={() => setGroupTab("essential")}
-                className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${
+                className={`relative px-4 py-2 text-[13px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${
                   groupTab === "essential" ? "text-rose-700" : "text-zinc-400 hover:text-zinc-600"
                 }`}>
                 상비약 <span className="text-[11px] font-semibold text-zinc-400 ml-1 tabular-nums">({essentialGroups.length})</span>
                 {groupTab === "essential" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-rose-500" />}
               </button>
               <button type="button" onClick={() => setGroupTab("general")}
-                className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${
+                className={`relative px-4 py-2 text-[13px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${
                   groupTab === "general" ? "text-sky-700" : "text-zinc-400 hover:text-zinc-600"
                 }`}>
                 일반약 <span className="text-[11px] font-semibold text-zinc-400 ml-1 tabular-nums">({generalGroups.length})</span>
@@ -2079,7 +2079,7 @@ const ZoneCategoryContent: React.FC = () => {
         className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-violet-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
         title="드래그하여 폭 조절"
       >
-        <span className="text-[9px] text-zinc-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+        <span className="text-[9px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
       </div>
 
       {/* ── 우측: 선택 구역 상세 · 모바일 fullscreen 모달 ── */}
@@ -2214,7 +2214,7 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <AlertOctagon size={14} className="text-rose-600" />
-          <span className="text-sm font-black text-zinc-700">손실추적</span>
+          <span className="text-sm font-bold text-zinc-700">손실추적</span>
           <span className="text-[10px] text-zinc-400">(시작재고 − 판매) − 종료재고</span>
         </div>
         <span className="text-[11px] font-bold text-zinc-500">{filtered.length}건</span>
@@ -2225,7 +2225,7 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
         <div className="inline-flex bg-zinc-100 rounded-md p-0.5">
           {([0, 100, 300, 1000, 2000] as const).map(n => (
             <button key={n} type="button" onClick={() => setTopN(n)}
-              className={`px-1.5 py-0.5 text-[10px] font-black rounded transition ${topN === n ? "bg-white text-rose-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-500 hover:text-zinc-800"}`}>
+              className={`px-1.5 py-0.5 text-[10px] font-bold rounded transition ${topN === n ? "bg-white text-rose-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-500 hover:text-zinc-800"}`}>
               {n === 0 ? "전체" : `Top ${n}`}
             </button>
           ))}
@@ -2251,7 +2251,7 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
       {loading && filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 py-8">
           <div className="w-10 h-10 border-4 border-zinc-200 border-t-orange-500 rounded-full animate-spin" />
-          <div className="text-xs font-black text-zinc-600">데이터 로딩중...</div>
+          <div className="text-xs font-bold text-zinc-600">데이터 로딩중...</div>
         </div>
       ) : !loading && filtered.length === 0 ? (
         <div className="text-center text-[11px] text-zinc-300 py-6">손실 상품 없음</div>
@@ -2262,30 +2262,30 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
               <tr className="text-[11px] text-zinc-500 uppercase tracking-wider">
                 <th className="text-left px-1 py-1.5 w-6">#</th>
                 <th onClick={() => handleSort("name")}
-                  className={`text-left px-1 py-1.5 cursor-pointer select-none hover:bg-zinc-100 transition ${sortKey === "name" ? "text-zinc-800 font-black" : ""}`}>
+                  className={`text-left px-1 py-1.5 cursor-pointer select-none hover:bg-zinc-100 transition ${sortKey === "name" ? "text-zinc-800 font-bold" : ""}`}>
                   <span className="inline-flex items-center gap-0.5">상품명{arrow("name")}</span>
                 </th>
                 <th onClick={() => handleSort("supplier")}
-                  className={`text-left px-1 py-1.5 hidden sm:table-cell cursor-pointer select-none hover:bg-zinc-100 transition ${sortKey === "supplier" ? "text-zinc-800 font-black" : ""}`}>
+                  className={`text-left px-1 py-1.5 hidden sm:table-cell cursor-pointer select-none hover:bg-zinc-100 transition ${sortKey === "supplier" ? "text-zinc-800 font-bold" : ""}`}>
                   <span className="inline-flex items-center gap-0.5">공급사{arrow("supplier")}</span>
                 </th>
                 <th onClick={() => handleSort("opening")}
-                  className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-zinc-100 transition ${sortKey === "opening" ? "text-zinc-800 font-black" : ""}`}
+                  className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-zinc-100 transition ${sortKey === "opening" ? "text-zinc-800 font-bold" : ""}`}
                   title="시작재고"><span className="inline-flex items-center gap-0.5">시작{arrow("opening")}</span></th>
                 <th onClick={() => handleSort("sale")}
-                  className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-orange-100/60 bg-orange-50/60 transition ${sortKey === "sale" ? "text-orange-700 font-black" : "text-orange-500"}`}
+                  className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-orange-100/60 bg-orange-50/60 transition ${sortKey === "sale" ? "text-orange-700 font-bold" : "text-orange-500"}`}
                   title="판매출고계 · 실제 팔린 양"><span className="inline-flex items-center gap-0.5">판매{arrow("sale")}</span></th>
                 <th onClick={() => handleSort("current")}
-                  className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-amber-100/60 bg-amber-50/60 transition ${sortKey === "current" ? "text-amber-800 font-black" : "text-amber-600"}`}
+                  className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-amber-100/60 bg-amber-50/60 transition ${sortKey === "current" ? "text-amber-800 font-bold" : "text-amber-600"}`}
                   title="현재고 (products.current_stock)"><span className="inline-flex items-center gap-0.5">현재고{arrow("current")}</span></th>
                 <th onClick={() => handleSort("expected")}
-                  className={`text-right px-1 py-1.5 w-14 hidden md:table-cell cursor-pointer select-none hover:bg-zinc-100 transition ${sortKey === "expected" ? "text-zinc-800 font-black" : ""}`}
+                  className={`text-right px-1 py-1.5 w-14 hidden md:table-cell cursor-pointer select-none hover:bg-zinc-100 transition ${sortKey === "expected" ? "text-zinc-800 font-bold" : ""}`}
                   title="시작 − 판매 = 예상 종료재고"><span className="inline-flex items-center gap-0.5">예상{arrow("expected")}</span></th>
                 <th onClick={() => handleSort("purchase")}
-                  className={`text-right px-1 py-1.5 w-14 hidden md:table-cell cursor-pointer select-none hover:bg-emerald-100/60 bg-emerald-50/60 transition ${sortKey === "purchase" ? "text-emerald-800 font-black" : "text-emerald-500"}`}
+                  className={`text-right px-1 py-1.5 w-14 hidden md:table-cell cursor-pointer select-none hover:bg-emerald-100/60 bg-emerald-50/60 transition ${sortKey === "purchase" ? "text-emerald-800 font-bold" : "text-emerald-500"}`}
                   title="입고계 (참고)"><span className="inline-flex items-center gap-0.5">입고{arrow("purchase")}</span></th>
                 <th onClick={() => handleSort("loss")}
-                  className={`text-right px-1 py-1.5 w-16 cursor-pointer select-none hover:bg-rose-100/60 bg-rose-50/60 transition ${sortKey === "loss" ? "text-rose-700 font-black" : "text-rose-500"}`}
+                  className={`text-right px-1 py-1.5 w-16 cursor-pointer select-none hover:bg-rose-100/60 bg-rose-50/60 transition ${sortKey === "loss" ? "text-rose-700 font-bold" : "text-rose-500"}`}
                   title="예상 − 종료 (양수면 손실)"><span className="inline-flex items-center gap-0.5">손실{arrow("loss")}</span></th>
               </tr>
             </thead>
@@ -2299,7 +2299,7 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
                 return (
                   <tr key={r.product_code ?? i} className="hover:bg-zinc-50/60 transition align-top"
                     title={`예상 = 시작(${open}) − 판매(${sale}) = ${expected}\n실제 종료 = ${close}\n손실 = ${expected - close}${purch > 0 ? `\n※ 이 기간 입고 ${purch} 있음 (예상 계산에 미반영)` : ""}`}>
-                    <td className="px-0.5 py-1.5 text-[12px] font-black text-orange-600">{i + 1}</td>
+                    <td className="px-0.5 py-1.5 text-[12px] font-bold text-orange-600">{i + 1}</td>
                     <td className="px-0.5 py-1.5 align-top">
                       <button onClick={() => onOpenProductInfo(r)} className="text-left text-[13px] font-medium text-zinc-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition">
                         {r.product_name}
@@ -2308,10 +2308,10 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
                     </td>
                     <td className="px-0.5 py-1.5 text-zinc-500 text-[11px] hidden sm:table-cell break-words whitespace-normal leading-tight align-top">{r.supplier}</td>
                     <td className="text-right px-0.5 py-1.5 tabular-nums text-zinc-800 align-top">{fmt(open)}</td>
-                    <td className="text-right px-0.5 py-1.5 tabular-nums text-orange-700 font-black bg-orange-50/40 align-top">{fmt(sale)}</td>
-                    <td className="text-right px-0.5 py-1.5 tabular-nums text-amber-800 font-black bg-amber-50/40 align-top">{fmt(close)}</td>
+                    <td className="text-right px-0.5 py-1.5 tabular-nums text-orange-700 font-bold bg-orange-50/40 align-top">{fmt(sale)}</td>
+                    <td className="text-right px-0.5 py-1.5 tabular-nums text-amber-800 font-bold bg-amber-50/40 align-top">{fmt(close)}</td>
                     <td className="text-right px-0.5 py-1.5 tabular-nums text-zinc-800 hidden md:table-cell align-top">{fmt(expected)}</td>
-                    <td className={`text-right px-0.5 py-1.5 tabular-nums hidden md:table-cell bg-emerald-50/40 align-top ${purch > 0 ? "text-emerald-700 font-black" : "text-zinc-400"}`}>
+                    <td className={`text-right px-0.5 py-1.5 tabular-nums hidden md:table-cell bg-emerald-50/40 align-top ${purch > 0 ? "text-emerald-700 font-bold" : "text-zinc-400"}`}>
                       {purch > 0 ? (
                         <button
                           type="button"
@@ -2321,7 +2321,7 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
                         >{fmt(purch)}</button>
                       ) : fmt(purch)}
                     </td>
-                    <td className={`text-right px-0.5 py-1.5 tabular-nums font-black bg-rose-50/40 align-top ${r.loss < 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                    <td className={`text-right px-0.5 py-1.5 tabular-nums font-bold bg-rose-50/40 align-top ${r.loss < 0 ? "text-emerald-600" : "text-rose-600"}`}>
                       {r.loss > 0 ? `-${fmt(r.loss)}` : r.loss < 0 ? `+${fmt(-r.loss)}` : "0"}
                     </td>
                   </tr>
@@ -2487,7 +2487,7 @@ export const SalesTrendPage: React.FC = () => {
       {/* 페이지 상단 제목 */}
       <div className="flex items-center gap-2 min-w-0">
         <TrendingUp size={18} className="text-teal-600 shrink-0" />
-        <h2 className="text-lg font-black text-zinc-800">판매추이</h2>
+        <h2 className="text-lg font-bold text-zinc-800">판매추이</h2>
         <span className="text-[11px] font-semibold text-zinc-400 hidden md:inline">10일 스냅샷</span>
       </div>
 
@@ -2529,7 +2529,7 @@ export const SalesTrendPage: React.FC = () => {
           <div onMouseDown={onSupplierResizeStart}
             className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-sky-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
             title="드래그하여 폭 조절">
-            <span className="text-[9px] text-zinc-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+            <span className="text-[9px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
           </div>
           <ProductDetailRightPanel
             selected={supplierSelectedProduct}
@@ -2557,11 +2557,11 @@ export const SalesTrendPage: React.FC = () => {
                   <Package size={18} className="text-white" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-base font-black text-zinc-800 truncate">{scanProductModal.name}</div>
+                  <div className="text-base font-bold text-zinc-800 truncate">{scanProductModal.name}</div>
                   <div className="text-[11px] tabular-nums text-zinc-500 mt-0.5">#{scanProductModal.code}</div>
                 </div>
               </div>
-              <button onClick={() => setScanProductModal(null)} className="text-zinc-400 hover:text-zinc-700 text-3xl leading-none font-black w-9 h-9 rounded-lg hover:bg-white/70 transition cursor-pointer flex items-center justify-center shrink-0">×</button>
+              <button onClick={() => setScanProductModal(null)} className="text-zinc-400 hover:text-zinc-700 text-3xl leading-none font-bold w-9 h-9 rounded-lg hover:bg-white/70 transition cursor-pointer flex items-center justify-center shrink-0">×</button>
             </div>
             <div className="flex-1 overflow-y-auto p-2 sm:p-4 bg-zinc-50">
               <ProductInfoCard
@@ -2586,15 +2586,15 @@ export const SalesTrendPage: React.FC = () => {
                   <EyeOff size={18} className="text-white" />
                 </div>
                 <div>
-                  <div className="text-base font-black text-zinc-800">숨김 항목 관리</div>
+                  <div className="text-base font-bold text-zinc-800">숨김 항목 관리</div>
                   <div className="text-[11px] font-semibold text-zinc-500 mt-0.5">숨김 처리된 상품 · 검색·발주 리스트에서 노출되지 않음</div>
                 </div>
               </div>
-              <button onClick={() => setHiddenModalOpen(false)} className="text-zinc-400 hover:text-zinc-700 text-3xl leading-none font-black w-9 h-9 rounded-lg hover:bg-white/70 transition cursor-pointer flex items-center justify-center shrink-0">×</button>
+              <button onClick={() => setHiddenModalOpen(false)} className="text-zinc-400 hover:text-zinc-700 text-3xl leading-none font-bold w-9 h-9 rounded-lg hover:bg-white/70 transition cursor-pointer flex items-center justify-center shrink-0">×</button>
             </div>
             <div className="flex items-center justify-between px-5 py-2.5 border-b border-zinc-100 bg-white">
               <span className="text-[11px] font-bold text-zinc-500">
-                총 <span className="text-amber-700 font-black">{hiddenList.length}</span>개 숨김
+                총 <span className="text-amber-700 font-bold">{hiddenList.length}</span>개 숨김
               </span>
               <button onClick={loadHiddenList} disabled={hiddenLoading}
                 className="text-[10px] font-bold text-zinc-500 hover:text-zinc-800 border border-zinc-200 hover:border-zinc-400 rounded-lg px-2 py-1 cursor-pointer transition">
@@ -2618,7 +2618,7 @@ export const SalesTrendPage: React.FC = () => {
                     return (
                       <li key={`st-hidden-${code}`} className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-amber-50/30 transition">
                         <div className="min-w-0 flex-1">
-                          <div className="text-sm font-black text-zinc-800 truncate" title={p.product_name}>{p.product_name}</div>
+                          <div className="text-sm font-bold text-zinc-800 truncate" title={p.product_name}>{p.product_name}</div>
                           <div className="text-[10px] tabular-nums text-zinc-400 truncate">
                             #{code}
                             {p.supplier ? ` · ${p.supplier}` : ""}
@@ -2627,7 +2627,7 @@ export const SalesTrendPage: React.FC = () => {
                           </div>
                         </div>
                         <button onClick={() => unhideProduct(code)} disabled={busy}
-                          className="shrink-0 flex items-center gap-1 text-[10px] font-black text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-wait rounded-lg px-2.5 py-1.5 cursor-pointer transition"
+                          className="shrink-0 flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-wait rounded-lg px-2.5 py-1.5 cursor-pointer transition"
                           title="숨김 해제 · 다시 검색·발주 리스트에 표시">
                           {busy ? <Loader2 size={11} className="animate-spin" /> : <Eye size={11} />}
                           다시 표시

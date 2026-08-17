@@ -6,7 +6,7 @@
 //   각각 다른 스타일로 매입이력 표를 렌더 → 통일된 UX 제공
 //
 // 스타일 · 통계 > 상품현황 > 상품 매입이력 모달(PurchaseHistoryModal) 기준
-//   · thead sticky bg-zinc-50 · font-mono 날짜 · font-black 금액 · amber-50 highlight
+//   · thead sticky bg-zinc-50 · font-mono 날짜 · font-bold 금액 · amber-50 highlight
 //   · 12px 본문 (B-2-2) · 배지 지양 · 텍스트 우선 (B-4)
 //   · 헤더 자동 정렬 (A-2) · 화살표 ▲/▼
 //
@@ -317,7 +317,7 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
                 )}
                 <td className="px-3 py-1.5 font-mono text-[12px] font-semibold text-zinc-700 align-top whitespace-nowrap">
                   {d || "-"}
-                  {isHighlight && <span className="ml-1 text-[10px] text-amber-600 font-black">◀</span>}
+                  {isHighlight && <span className="ml-1 text-[10px] text-amber-600 font-bold">◀</span>}
                 </td>
                 {showGap && (
                   <td
@@ -351,7 +351,7 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
                 <td className="text-right px-3 py-1.5 font-mono text-zinc-500 align-top">
                   {rowUnit(r) > 0 ? fmt(rowUnit(r)) : "-"}
                 </td>
-                <td className="text-right px-3 py-1.5 font-mono font-black text-emerald-700 align-top">
+                <td className="text-right px-3 py-1.5 font-mono font-bold text-emerald-700 align-top">
                   {rowAmount(r) > 0 ? fmtWon(rowAmount(r)) : "-"}
                 </td>
               </tr>
@@ -361,14 +361,14 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
         {showFooterSum && (
           <tfoot className="sticky bottom-0 bg-white border-t-2 border-zinc-200">
             <tr>
-              <td colSpan={colCount - 3} className="px-3 py-2 text-right text-[11px] font-black text-zinc-500">
+              <td colSpan={colCount - 3} className="px-3 py-2 text-right text-[11px] font-bold text-zinc-500">
                 합계
               </td>
-              <td className="px-3 py-2 text-right tabular-nums font-mono text-[12px] font-black text-zinc-700">
+              <td className="px-3 py-2 text-right tabular-nums font-mono text-[12px] font-bold text-zinc-700">
                 {fmt(totals.qty)}
               </td>
               <td className="px-3 py-2" />
-              <td className="px-3 py-2 text-right tabular-nums font-mono text-[13px] font-black text-emerald-700">
+              <td className="px-3 py-2 text-right tabular-nums font-mono text-[13px] font-bold text-emerald-700">
                 {fmtWon(totals.amt)}
               </td>
             </tr>

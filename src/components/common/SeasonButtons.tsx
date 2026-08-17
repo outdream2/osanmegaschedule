@@ -37,7 +37,7 @@ export const SeasonButtons: React.FC<SeasonButtonsProps> = ({
   return (
     <div className={`inline-flex items-center gap-1 flex-wrap ${className}`}>
       {!hideLabel && label && (
-        <span className={`text-zinc-500 font-black shrink-0 ${labelCls}`}>{label}</span>
+        <span className={`text-zinc-500 font-bold shrink-0 ${labelCls}`}>{label}</span>
       )}
       <div className="inline-flex bg-zinc-100/80 border border-zinc-200/60 rounded-lg p-0.5 shadow-inner">
         {SEASONS.map((s) => {
@@ -50,7 +50,7 @@ export const SeasonButtons: React.FC<SeasonButtonsProps> = ({
               type="button"
               onClick={() => onChange(active ? null : s)}
               title={title}
-              className={`${sizeCls} font-black rounded transition cursor-pointer inline-flex items-center gap-0.5 ${
+              className={`${sizeCls} font-bold rounded transition cursor-pointer inline-flex items-center gap-0.5 ${
                 active
                   ? "bg-white text-sky-700 shadow-sm ring-1 ring-zinc-200"
                   : "text-zinc-500 hover:text-zinc-800"

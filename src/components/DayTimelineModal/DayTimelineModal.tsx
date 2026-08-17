@@ -238,7 +238,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
           onClick={() => setCellPicker({ type: dropKind, slot: slotKey })}
           title="탭하여 인원 배정 (순차)"
         >
-          <span className="text-[13px] font-black text-zinc-300 select-none">+</span>
+          <span className="text-[13px] font-bold text-zinc-300 select-none">+</span>
         </div>
       );
     }
@@ -337,7 +337,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                   onClick={e => { e.stopPropagation(); setCellPicker({ type: dropKind, slot: slotKey }); }}
                   title={w.emp.position.includes("캐셔") && w.emp.position.includes("물류") ? "캐셔 겸직 · 드래그로 순서 변경" : "드래그로 순서 변경 · 탭하여 편집"}
                   style={{ backgroundColor: c.chipBg, color: w.emp.position === "약사" ? "#2563eb" : c.chipText, borderColor: c.chipBorder, opacity: isDragging ? 0.4 : 1 }}
-                  className={`relative w-full text-center rounded text-[13px] border transition leading-none py-px cursor-grab active:cursor-grabbing hover:opacity-60 inline-flex items-center justify-center gap-0.5 whitespace-nowrap overflow-hidden ${w.emp.position === "약사" ? "font-black" : "font-bold"}`}
+                  className={`relative w-full text-center rounded text-[13px] border transition leading-none py-px cursor-grab active:cursor-grabbing hover:opacity-60 inline-flex items-center justify-center gap-0.5 whitespace-nowrap overflow-hidden ${w.emp.position === "약사" ? "font-bold" : "font-bold"}`}
                 >
                   <span className="truncate">{w.emp.name}</span>
                 </div>
@@ -360,7 +360,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
       <div className="flex items-center justify-between mb-2.5 flex-wrap gap-1.5">
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-sky-400" />
-          <span className="text-[14px] font-black text-sky-800">구역 · 점심 · 휴게 배정</span>
+          <span className="text-[14px] font-bold text-sky-800">구역 · 점심 · 휴게 배정</span>
           {assignedIds.size > 0 && (
             <span className="text-[13px] font-semibold text-sky-700 opacity-70">{assignedIds.size}명 배정됨</span>
           )}
@@ -368,7 +368,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
             <button
               type="button"
               onClick={onAutoSuggest}
-              className="text-[13px] font-black px-2 py-0.5 rounded-full bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white cursor-pointer shadow-sm transition"
+              className="text-[13px] font-bold px-2 py-0.5 rounded-full bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white cursor-pointer shadow-sm transition"
               title="현재 탭 인원 기준으로 카운터·매장을 자동 배치 (약사 1시간 로테이션 + 캐셔 팀)"
             >
               ⚡ 임의배치
@@ -384,7 +384,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                 type="button"
                 onClick={onConfirm}
                 disabled={confirming}
-                className="text-[13px] font-black px-2 py-0.5 rounded-full bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white cursor-pointer shadow-sm transition disabled:opacity-50"
+                className="text-[13px] font-bold px-2 py-0.5 rounded-full bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white cursor-pointer shadow-sm transition disabled:opacity-50"
                 title="현재 배치를 확정하고 날짜/요일 템플릿에 저장"
               >
                 {confirming ? "저장중…" : "✓ 확정"}
@@ -401,7 +401,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                 if (next.has(dow)) next.delete(dow); else next.add(dow);
                 return next;
               })}
-              className={`w-6 h-6 text-[12px] font-black rounded transition cursor-pointer ${
+              className={`w-6 h-6 text-[12px] font-bold rounded transition cursor-pointer ${
                 selectedDows.has(dow)
                   ? "bg-brand-deep text-white shadow-sm"
                   : dow === currentDow
@@ -442,7 +442,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
               {/* 피크타임 배경 밴드: 14:00~17:00 = 슬롯 인덱스 4~6 (10슬롯 기준 40%~70%) */}
               <div className="absolute top-0 bottom-0 bg-orange-100/70 rounded pointer-events-none flex items-start justify-center"
                 style={{ left: "40%", width: "30%" }}>
-                <span className="text-[11px] font-black text-orange-500 tracking-tight leading-none pt-0.5">피크타임</span>
+                <span className="text-[11px] font-bold text-orange-500 tracking-tight leading-none pt-0.5">피크타임</span>
               </div>
               <div className="flex relative">
                 {ZONE_SLOTS.map((slot, i) => {
@@ -465,7 +465,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
             return (
               <div key={zone} className="flex items-stretch mb-0.5">
                 <div className="w-14 shrink-0 flex items-center">
-                  <span className={`text-[15px] font-black tracking-wide ${isCounter ? "text-rose-600" : "text-sky-700"}`}>{zone}</span>
+                  <span className={`text-[15px] font-bold tracking-wide ${isCounter ? "text-rose-600" : "text-sky-700"}`}>{zone}</span>
                 </div>
                 {ZONE_SLOTS.map(slot => {
                   const assignedHere = (zoneMap[zone] ?? {})[slot] ?? [];
@@ -531,7 +531,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                             }}
                             title="드래그: 다른 구역으로 이동 | 클릭: 제거"
                             style={{ backgroundColor: c.chipBg, color: w.emp.position === "약사" ? "#2563eb" : c.chipText, borderColor: c.chipBorder, touchAction: "none" }}
-                            className={`relative px-1 py-px rounded text-[14px] border transition select-none cursor-grab hover:opacity-70 inline-flex items-center gap-0.5 whitespace-nowrap ${w.emp.position === "약사" ? "font-black" : "font-bold"}`}
+                            className={`relative px-1 py-px rounded text-[14px] border transition select-none cursor-grab hover:opacity-70 inline-flex items-center gap-0.5 whitespace-nowrap ${w.emp.position === "약사" ? "font-bold" : "font-bold"}`}
                           >
                             {w.emp.name}
                           </div>
@@ -564,7 +564,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
           <div className="flex items-stretch mb-0.5">
             <div className="w-14 shrink-0 flex flex-col justify-center gap-0.5">
               <div className="flex items-center gap-0.5">
-                <span className="text-[15px] font-black text-yellow-700">점심</span>
+                <span className="text-[15px] font-bold text-yellow-700">점심</span>
               </div>
               <div className="flex items-center gap-0.5">
                 <button type="button" onClick={() => onShiftLunchOffset(-30)} disabled={lunchOffset <= -60}
@@ -633,7 +633,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
           <div className="flex items-stretch">
             <div className="w-14 shrink-0 flex flex-col justify-center gap-0.5">
               <div className="flex items-center gap-0.5">
-                <span className="text-[15px] font-black text-violet-700">휴게</span>
+                <span className="text-[15px] font-bold text-violet-700">휴게</span>
               </div>
               <div className="flex items-center gap-0.5">
                 <button type="button" onClick={() => onShiftRestOffset(-30)} disabled={restOffset <= -60}
@@ -805,7 +805,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                 isLunch ? "bg-yellow-50 border-yellow-200" :
                 "bg-violet-50 border-violet-200"
               }`}>
-                <span className={`font-black text-base ${
+                <span className={`font-bold text-base ${
                   isZone && zone === "카운터" ? "text-rose-700" :
                   isZone ? "text-sky-700" :
                   isLunch ? "text-yellow-700" : "text-violet-700"
@@ -821,7 +821,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                 {/* 현재 배정된 인원 · 순서 변경 가능 (점심·휴게 슬롯) */}
                 {canReorder && assignedList.length > 0 && (
                   <div className="border-b border-zinc-200 bg-indigo-50/30">
-                    <div className="px-5 py-1.5 text-[13px] font-black uppercase tracking-wider text-indigo-700 border-b border-indigo-100 flex items-center justify-between">
+                    <div className="px-5 py-1.5 text-[13px] font-bold uppercase tracking-wider text-indigo-700 border-b border-indigo-100 flex items-center justify-between">
                       <span>배정된 인원 · 순서 조정</span>
                       <span className="text-[12px] font-bold text-indigo-500">↑↓ 로 순서 변경</span>
                     </div>
@@ -830,26 +830,26 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                       if (!w) return null;
                       return (
                         <div key={`ord-${empId}`} className="flex items-center gap-2 px-5 py-2 border-b border-zinc-100">
-                          <span className="text-[14px] font-black text-indigo-500 w-5">{i + 1}.</span>
+                          <span className="text-[14px] font-bold text-indigo-500 w-5">{i + 1}.</span>
                           <span className="font-bold text-[17px] text-zinc-800 flex-1 break-keep">{w.emp.name}</span>
                           <button
                             type="button"
                             onClick={() => moveAssigned(empId, -1)}
                             disabled={i === 0}
-                            className="w-9 h-9 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 disabled:opacity-30 disabled:cursor-not-allowed text-zinc-600 font-black text-base flex items-center justify-center cursor-pointer transition"
+                            className="w-9 h-9 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 disabled:opacity-30 disabled:cursor-not-allowed text-zinc-600 font-bold text-base flex items-center justify-center cursor-pointer transition"
                             title="위로 이동"
                           >↑</button>
                           <button
                             type="button"
                             onClick={() => moveAssigned(empId, 1)}
                             disabled={i === assignedList.length - 1}
-                            className="w-9 h-9 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 disabled:opacity-30 disabled:cursor-not-allowed text-zinc-600 font-black text-base flex items-center justify-center cursor-pointer transition"
+                            className="w-9 h-9 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 disabled:opacity-30 disabled:cursor-not-allowed text-zinc-600 font-bold text-base flex items-center justify-center cursor-pointer transition"
                             title="아래로 이동"
                           >↓</button>
                           <button
                             type="button"
                             onClick={() => toggle(empId)}
-                            className="w-9 h-9 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 font-black text-[17px] flex items-center justify-center cursor-pointer transition"
+                            className="w-9 h-9 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[17px] flex items-center justify-center cursor-pointer transition"
                             title="배정 제거"
                           >✕</button>
                         </div>
@@ -867,7 +867,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                     if (items.length === 0) return null;
                     return (
                       <React.Fragment key={label}>
-                        <div className={`px-5 py-1 text-[13px] font-black uppercase tracking-wider border-b ${headerCls}`}>{label}</div>
+                        <div className={`px-5 py-1 text-[13px] font-bold uppercase tracking-wider border-b ${headerCls}`}>{label}</div>
                         {items.map(({ emp, schedule }) => {
                           const assigned = isAssigned(emp.id);
                           const c = typeTones[schedule.type] ?? DEFAULT_TONE;
@@ -883,13 +883,13 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                               <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
                                 assigned ? "bg-brand-deep border-indigo-500" : "border-zinc-300"
                               }`}>
-                                {assigned && <span className="text-white text-[15px] font-black">✓</span>}
+                                {assigned && <span className="text-white text-[15px] font-bold">✓</span>}
                               </div>
                               {/* Name + type */}
                               <div className="flex flex-col items-start gap-0.5 min-w-0">
                                 <div className="flex items-center gap-1">
                                   {isPharm && <Pill size={11} className="text-purple-600 shrink-0" />}
-                                  <span className={`text-[17px] ${isPharm ? "text-purple-600 font-black" : "text-zinc-800 font-bold"}`}>{emp.name}</span>
+                                  <span className={`text-[17px] ${isPharm ? "text-purple-600 font-bold" : "text-zinc-800 font-bold"}`}>{emp.name}</span>
                                 </div>
                                 <span className="text-[15px] px-1.5 py-px rounded-full font-semibold"
                                   style={{ backgroundColor: c.chipBg, color: c.chipText }}>{schedule.type}</span>
@@ -1802,7 +1802,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                     <button
                       type="button"
                       onClick={() => setShowUnassigned(v => !v)}
-                      className="text-[13px] font-black px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 border border-orange-200 hover:bg-orange-200 cursor-pointer transition flex items-center gap-1"
+                      className="text-[13px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 border border-orange-200 hover:bg-orange-200 cursor-pointer transition flex items-center gap-1"
                       title="클릭하여 미배정 인원 명단 보기"
                     >
                       미배정 {unassignedList.length}명
@@ -1810,7 +1810,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                     </button>
                     {showUnassigned && (
                       <div className="absolute z-30 mt-1 left-0 bg-white border border-orange-200 rounded-lg shadow-lg p-2 min-w-[180px] max-w-[280px] max-h-64 overflow-y-auto">
-                        <div className="text-[12px] font-black text-orange-500 uppercase tracking-wider mb-1 px-1">미배정 인원</div>
+                        <div className="text-[12px] font-bold text-orange-500 uppercase tracking-wider mb-1 px-1">미배정 인원</div>
                         <div className="flex flex-wrap gap-1">
                           {unassignedList.map(w => (
                             <span key={w.emp.id}
@@ -1847,7 +1847,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                   <div className="h-7" />
                   {displayGroups.flatMap(g => [
                     <div key={`hdr-${g.label}`}
-                      className={`mb-1 h-5 px-1 flex items-end text-[12px] font-black uppercase tracking-wider border-b border-zinc-200 ${g.hdrCls}`}>
+                      className={`mb-1 h-5 px-1 flex items-end text-[12px] font-bold uppercase tracking-wider border-b border-zinc-200 ${g.hdrCls}`}>
                       {g.label} · {g.items.length}
                     </div>,
                     ...g.items.map(({ emp, schedule }) => {
@@ -1874,13 +1874,13 @@ export const DayTimelineModal: React.FC<Props> = ({
                             ? <Pill size={10} className="text-indigo-500 shrink-0" />
                             : <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: colors.dot }} />
                           }
-                          <span className={`text-[14px] whitespace-nowrap ${isPharmacist ? "text-purple-600 font-black" : "text-zinc-800 font-bold"}`}>{emp.name}</span>
+                          <span className={`text-[14px] whitespace-nowrap ${isPharmacist ? "text-purple-600 font-bold" : "text-zinc-800 font-bold"}`}>{emp.name}</span>
                           {/* 입사일/퇴사일 배지 — 오늘 보고 있는 날짜가 그날인 경우 표시 */}
                           {!!emp.hireDate && date === emp.hireDate && (
-                            <span className="text-[11px] font-black px-1 py-px rounded bg-emerald-500 text-white leading-none shrink-0" title={`입사일 (${emp.hireDate})`}>입사</span>
+                            <span className="text-[11px] font-bold px-1 py-px rounded bg-emerald-500 text-white leading-none shrink-0" title={`입사일 (${emp.hireDate})`}>입사</span>
                           )}
                           {!!emp.retireDate && date === emp.retireDate && (
-                            <span className="text-[11px] font-black px-1 py-px rounded bg-rose-500 text-white leading-none shrink-0" title={`퇴사일 (${emp.retireDate})`}>퇴사</span>
+                            <span className="text-[11px] font-bold px-1 py-px rounded bg-rose-500 text-white leading-none shrink-0" title={`퇴사일 (${emp.retireDate})`}>퇴사</span>
                           )}
                           {/* 오픈/마감 등 근무유형을 이름 옆에 배지로 인라인 표시 (기존 별도 줄 제거) */}
                           <span className="text-[12px] font-bold leading-none shrink-0" style={{ color: colors.text }}>{schedule.type}</span>
@@ -1963,7 +1963,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                     <div className="relative h-7 mb-0.5">
                       <div className="absolute top-0 bottom-0 bg-orange-100 rounded pointer-events-none flex items-end justify-center pb-0.5"
                         style={{ left: `${pct(14 * 60)}%`, width: `${widthPct(14 * 60, 17 * 60)}%` }}>
-                        <span className="text-[11px] font-black text-orange-500 tracking-tight">피크타임</span>
+                        <span className="text-[11px] font-bold text-orange-500 tracking-tight">피크타임</span>
                       </div>
                       {HOUR_SLOTS.map((slot, i) => (
                         <div key={slot} className="absolute top-0 flex flex-col items-center"

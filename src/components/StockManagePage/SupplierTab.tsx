@@ -570,7 +570,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                   </td>
                 </tr>
               ) : (
-              <tr className="bg-zinc-100 border-b-2 border-zinc-300 font-black text-zinc-800 text-[14px]">
+              <tr className="bg-zinc-100 border-b-2 border-zinc-300 font-bold text-zinc-800 text-[14px]">
                 <td className="text-center py-1.5">
                   <button
                     type="button"
@@ -580,18 +580,18 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                   >▴ Σ</button>
                 </td>
                 <td className="text-center py-1.5 text-zinc-500">-</td>
-                <td className="text-left px-3 py-1.5 text-zinc-800 font-black">합계 <span className="text-zinc-500 font-bold">({displayedXlsxSuppliers.length}개 사)</span></td>
+                <td className="text-left px-3 py-1.5 text-zinc-800 font-bold">합계 <span className="text-zinc-500 font-bold">({displayedXlsxSuppliers.length}개 사)</span></td>
                 {isSupplierGroupCollapsed("stock") ? <td className="bg-zinc-100" /> : (
                   <>
-                    <td className="text-right px-3 py-1.5 tabular-nums font-black text-zinc-800 bg-sky-100/60">{fmtWon(supListTotals.stock)}</td>
-                    <td className="text-right px-3 py-1.5 tabular-nums font-black text-zinc-800 bg-sky-100/40">{supListTotals.item.toLocaleString()}</td>
+                    <td className="text-right px-3 py-1.5 tabular-nums font-bold text-zinc-800 bg-sky-100/60">{fmtWon(supListTotals.stock)}</td>
+                    <td className="text-right px-3 py-1.5 tabular-nums font-bold text-zinc-800 bg-sky-100/40">{supListTotals.item.toLocaleString()}</td>
                   </>
                 )}
                 {isSupplierGroupCollapsed("purchase") ? <td className="bg-zinc-100" /> : (
                   <>
-                    <td className="text-right px-3 py-1.5 tabular-nums font-black text-amber-700 bg-amber-100/40">{supListTotals.purchase.toLocaleString()}</td>
+                    <td className="text-right px-3 py-1.5 tabular-nums font-bold text-amber-700 bg-amber-100/40">{supListTotals.purchase.toLocaleString()}</td>
                     {showExtraPurchaseColumns && (
-                      <td className="text-right px-3 py-1.5 tabular-nums font-black text-amber-800 bg-amber-100/60">{fmtWon(supListTotals.purchaseAmt)}</td>
+                      <td className="text-right px-3 py-1.5 tabular-nums font-bold text-amber-800 bg-amber-100/60">{fmtWon(supListTotals.purchaseAmt)}</td>
                     )}
                     {showCycleColumn && (
                       <td className="text-right px-3 py-1.5 text-amber-400 bg-amber-100/40" title="합계 없음 · 개별 공급사별 값">-</td>
@@ -601,8 +601,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                 {!hideSaleColumns && (
                   isSupplierGroupCollapsed("sale") ? <td className="bg-zinc-100" /> : (
                     <>
-                      <td className="text-right px-3 py-1.5 tabular-nums font-black text-rose-700 bg-rose-100/40">{supListTotals.saleQ.toLocaleString()}</td>
-                      <td className="text-right px-3 py-1.5 tabular-nums font-black text-rose-700 bg-rose-100/60">{fmtWon(supListTotals.saleA)}</td>
+                      <td className="text-right px-3 py-1.5 tabular-nums font-bold text-rose-700 bg-rose-100/40">{supListTotals.saleQ.toLocaleString()}</td>
+                      <td className="text-right px-3 py-1.5 tabular-nums font-bold text-rose-700 bg-rose-100/60">{fmtWon(supListTotals.saleA)}</td>
                     </>
                   )
                 )}
@@ -772,7 +772,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         <div onMouseDown={onSupplierResizeStart}
           className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-sky-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
           title="드래그하여 폭 조절">
-          <span className="text-[15px] text-zinc-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+          <span className="text-[15px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
         </div>
 
         {/* 우측: 공급사 상세 */}
@@ -785,7 +785,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                   <XIcon size={16} strokeWidth={2.4} />
                 </button>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[15px] font-black text-zinc-800 break-keep whitespace-normal leading-tight">{supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}</div>
+                  <div className="text-[15px] font-bold text-zinc-800 break-keep whitespace-normal leading-tight">{supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}</div>
                   <div className="text-[14px] tabular-nums text-zinc-500 break-words whitespace-normal leading-tight">
                     {supplierSelectedObj.supplier_code ? `#${supplierSelectedObj.supplier_code}` : ""} · 재고자산 {fmtWon(supplierSelectedObj.totalStockAmount)}
                   </div>
@@ -807,11 +807,11 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                   const nm = supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim() ?? "";
                   return <VendorCategoryBadge category={vendorCategoryMap[nm] ?? vendorCategoryMap[supplierSelectedObj.supplier ?? ""] ?? null} />;
                 })()}
-                <span className="text-base font-black text-zinc-800 break-keep">{supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}</span>
+                <span className="text-base font-bold text-zinc-800 break-keep">{supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}</span>
                 {supplierSelectedObj.supplier_code && <span className="text-[14px] tabular-nums text-zinc-500 bg-zinc-100 rounded px-1.5 py-0.5">#{supplierSelectedObj.supplier_code}</span>}
                 <button type="button"
                   onClick={() => openSupplierDetailModal(supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim() ?? "")}
-                  className="ml-auto inline-flex items-center gap-1 h-6 px-2 rounded-md text-[14px] font-black text-sky-700 bg-sky-50 border border-sky-300 hover:bg-sky-100 cursor-pointer transition"
+                  className="ml-auto inline-flex items-center gap-1 h-6 px-2 rounded-md text-[14px] font-bold text-sky-700 bg-sky-50 border border-sky-300 hover:bg-sky-100 cursor-pointer transition"
                   title="공급사 정보 조회·수정">
                   <Building2 size={11} /> 조회·수정
                 </button>
@@ -823,19 +823,19 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                   <div className="grid grid-cols-4 gap-2">
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 text-center" title={balInfo?.invoice_date ? `기준일 ${balInfo.invoice_date}` : "최신 잔고 없음"}>
                       <div className="text-[14px] text-amber-600 font-semibold">최신잔고</div>
-                      <div className="text-sm font-black text-amber-700 mt-0.5">{balInfo ? fmtWon(balInfo.balance) : "-"}</div>
+                      <div className="text-sm font-bold text-amber-700 mt-0.5">{balInfo ? fmtWon(balInfo.balance) : "-"}</div>
                     </div>
                     <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2 text-center">
                       <div className="text-[14px] text-emerald-600 font-semibold">재고자산</div>
-                      <div className="text-sm font-black text-emerald-700 mt-0.5">{fmtWon(supplierSelectedObj.totalStockAmount)}</div>
+                      <div className="text-sm font-bold text-emerald-700 mt-0.5">{fmtWon(supplierSelectedObj.totalStockAmount)}</div>
                     </div>
                     <div className="bg-sky-50 border border-sky-200 rounded-lg p-2 text-center">
                       <div className="text-[14px] text-sky-600 font-semibold">매입수량</div>
-                      <div className="text-sm font-black text-sky-700 mt-0.5">{fmt(supplierSelectedObj.purchaseQty)}</div>
+                      <div className="text-sm font-bold text-sky-700 mt-0.5">{fmt(supplierSelectedObj.purchaseQty)}</div>
                     </div>
                     <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-2 text-center">
                       <div className="text-[14px] text-zinc-500 font-semibold">취급상품</div>
-                      <div className="text-sm font-black text-zinc-700 mt-0.5">{fmt(supplierSelectedObj.itemCount)}종</div>
+                      <div className="text-sm font-bold text-zinc-700 mt-0.5">{fmt(supplierSelectedObj.itemCount)}종</div>
                     </div>
                   </div>
                 );
@@ -872,15 +872,15 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                       <thead className="sticky top-0 bg-white z-10 border-b border-zinc-100">
                         <tr className="text-[15px] text-zinc-400 uppercase tracking-wider">
                           <th className="text-left px-1 py-1.5 w-6">#</th>
-                          <th onClick={() => toggleSupDetailSort("name")} className={`text-left px-1 py-1.5 cursor-pointer select-none hover:bg-zinc-50 transition ${supDetailSort.key === "name" ? "text-zinc-800 font-black" : ""}`} title="상품명 정렬">상품명{supDetailArrow("name")}</th>
-                          <th onClick={() => toggleSupDetailSort("current")} className={`text-right px-1 py-1.5 w-12 cursor-pointer select-none hover:bg-amber-50/60 transition ${supDetailSort.key === "current" ? "text-amber-700 font-black" : "text-amber-500"}`} title="현재고 정렬">현재고{supDetailArrow("current")}</th>
-                          <th onClick={() => toggleSupDetailSort("cycle")} className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-zinc-50/60 transition ${supDetailSort.key === "cycle" ? "text-zinc-700 font-black" : "text-zinc-400"}`} title="매입주기 정렬">매입주기{supDetailArrow("cycle")}</th>
-                          <th onClick={() => toggleSupDetailSort("purchase_date")} className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-zinc-50/60 transition ${supDetailSort.key === "purchase_date" ? "text-zinc-700 font-black" : "text-zinc-400"}`} title="최근매입일 정렬">최근매입일{supDetailArrow("purchase_date")}</th>
-                          <th onClick={() => toggleSupDetailSort("purchase_qty")} className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-zinc-50 transition ${supDetailSort.key === "purchase_qty" ? "text-zinc-800 font-black" : ""}`} title="매입수량 정렬">매입수량{supDetailArrow("purchase_qty")}</th>
-                          <th onClick={() => toggleSupDetailSort("purchase_price")} className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-amber-50/60 transition ${supDetailSort.key === "purchase_price" ? "text-amber-700 font-black" : "text-amber-600"}`} title="매입단가 정렬">매입단가{supDetailArrow("purchase_price")}</th>
-                          <th onClick={() => toggleSupDetailSort("sale_qty")} className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-rose-50/60 transition ${supDetailSort.key === "sale_qty" ? "text-rose-700 font-black" : "text-rose-600"}`} title="판매량 정렬">판매량{supDetailArrow("sale_qty")}</th>
-                          <th onClick={() => toggleSupDetailSort("sale_amount")} className={`text-right px-1 py-1.5 w-16 cursor-pointer select-none hover:bg-rose-50/60 transition ${supDetailSort.key === "sale_amount" ? "text-rose-800 font-black" : "text-rose-700"}`} title="판매금액 정렬">판매금액{supDetailArrow("sale_amount")}</th>
-                          <th onClick={() => toggleSupDetailSort("total_amount")} className={`text-right px-1 py-1.5 w-16 cursor-pointer select-none hover:bg-zinc-100 transition ${supDetailSort.key === "total_amount" ? "text-emerald-700 font-black" : "text-emerald-500"}`} title="재고금액 정렬">재고금액{supDetailArrow("total_amount")}</th>
+                          <th onClick={() => toggleSupDetailSort("name")} className={`text-left px-1 py-1.5 cursor-pointer select-none hover:bg-zinc-50 transition ${supDetailSort.key === "name" ? "text-zinc-800 font-bold" : ""}`} title="상품명 정렬">상품명{supDetailArrow("name")}</th>
+                          <th onClick={() => toggleSupDetailSort("current")} className={`text-right px-1 py-1.5 w-12 cursor-pointer select-none hover:bg-amber-50/60 transition ${supDetailSort.key === "current" ? "text-amber-700 font-bold" : "text-amber-500"}`} title="현재고 정렬">현재고{supDetailArrow("current")}</th>
+                          <th onClick={() => toggleSupDetailSort("cycle")} className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-zinc-50/60 transition ${supDetailSort.key === "cycle" ? "text-zinc-700 font-bold" : "text-zinc-400"}`} title="매입주기 정렬">매입주기{supDetailArrow("cycle")}</th>
+                          <th onClick={() => toggleSupDetailSort("purchase_date")} className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-zinc-50/60 transition ${supDetailSort.key === "purchase_date" ? "text-zinc-700 font-bold" : "text-zinc-400"}`} title="최근매입일 정렬">최근매입일{supDetailArrow("purchase_date")}</th>
+                          <th onClick={() => toggleSupDetailSort("purchase_qty")} className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-zinc-50 transition ${supDetailSort.key === "purchase_qty" ? "text-zinc-800 font-bold" : ""}`} title="매입수량 정렬">매입수량{supDetailArrow("purchase_qty")}</th>
+                          <th onClick={() => toggleSupDetailSort("purchase_price")} className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-amber-50/60 transition ${supDetailSort.key === "purchase_price" ? "text-amber-700 font-bold" : "text-amber-600"}`} title="매입단가 정렬">매입단가{supDetailArrow("purchase_price")}</th>
+                          <th onClick={() => toggleSupDetailSort("sale_qty")} className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-rose-50/60 transition ${supDetailSort.key === "sale_qty" ? "text-rose-700 font-bold" : "text-rose-600"}`} title="판매량 정렬">판매량{supDetailArrow("sale_qty")}</th>
+                          <th onClick={() => toggleSupDetailSort("sale_amount")} className={`text-right px-1 py-1.5 w-16 cursor-pointer select-none hover:bg-rose-50/60 transition ${supDetailSort.key === "sale_amount" ? "text-rose-800 font-bold" : "text-rose-700"}`} title="판매금액 정렬">판매금액{supDetailArrow("sale_amount")}</th>
+                          <th onClick={() => toggleSupDetailSort("total_amount")} className={`text-right px-1 py-1.5 w-16 cursor-pointer select-none hover:bg-zinc-100 transition ${supDetailSort.key === "total_amount" ? "text-emerald-700 font-bold" : "text-emerald-500"}`} title="재고금액 정렬">재고금액{supDetailArrow("total_amount")}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-sky-100">

@@ -158,7 +158,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
             <Warning size={24} weight="fill" />
           </div>
           <div>
-            <h2 className="text-base font-black text-zinc-800 mb-1">권한 없음</h2>
+            <h2 className="text-base font-bold text-zinc-800 mb-1">권한 없음</h2>
             <p className="text-[12px] text-zinc-500 leading-snug">
               사직서 승인은 대표(level 8) 이상만 가능합니다.
             </p>
@@ -178,7 +178,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
               <FileText size={18} weight="fill" />
             </div>
             <div>
-              <h1 className="text-lg font-black text-zinc-800 leading-none">사직서 승인</h1>
+              <h1 className="text-lg font-bold text-zinc-800 leading-none">사직서 승인</h1>
               <p className="text-[11px] text-zinc-500 mt-1">
                 제출된 사직서를 검토하여 승인 또는 반려하세요.
               </p>
@@ -267,7 +267,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <User size={13} weight="fill" className="text-zinc-400 shrink-0" />
-                          <span className="text-sm font-black text-zinc-800">{r.employee_name}</span>
+                          <span className="text-sm font-bold text-zinc-800">{r.employee_name}</span>
                           {r.position && (
                             <span className="text-[11px] font-semibold text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded-md">
                               {r.position}
@@ -276,7 +276,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                         </div>
                         <div className="flex items-center gap-1 mt-1 text-[12px] text-zinc-600 font-semibold">
                           <Calendar size={11} className="text-rose-400 shrink-0" />
-                          <span>마지막 근무: <span className="font-black text-zinc-800">{fmtDate(r.last_work_date)}</span></span>
+                          <span>마지막 근무: <span className="font-bold text-zinc-800">{fmtDate(r.last_work_date)}</span></span>
                         </div>
                       </div>
                       <span className={`shrink-0 text-[10px] font-bold px-2 py-1 rounded-full border ${STATUS_COLOR[r.status]}`}>

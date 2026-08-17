@@ -79,7 +79,7 @@ export function SearchFilterChips<K extends string = string>({
   return (
     <div className="inline-flex items-center gap-1.5 flex-wrap">
       {label && (
-        <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 shrink-0">{label}</span>
+        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 shrink-0">{label}</span>
       )}
       <div className="inline-flex items-center rounded-lg border border-zinc-200 bg-white p-0.5 gap-0.5 flex-wrap">
         {showAll && (
@@ -94,7 +94,7 @@ export function SearchFilterChips<K extends string = string>({
               Array.from(selected).forEach(k => onToggle(k));
             }}
             className={[
-              "rounded-md font-black leading-none border transition-colors cursor-pointer whitespace-nowrap inline-flex items-center",
+              "rounded-md font-bold leading-none border transition-colors cursor-pointer whitespace-nowrap inline-flex items-center",
               sz,
               allActive ? COLOR_ACTIVE.slate : "bg-white text-zinc-500 border-transparent hover:text-zinc-800 hover:bg-zinc-50",
             ].join(" ")}
@@ -113,7 +113,7 @@ export function SearchFilterChips<K extends string = string>({
               aria-pressed={active}
               onClick={() => onToggle(opt.key)}
               className={[
-                "rounded-md font-black leading-none border transition-colors cursor-pointer whitespace-nowrap inline-flex items-center",
+                "rounded-md font-bold leading-none border transition-colors cursor-pointer whitespace-nowrap inline-flex items-center",
                 sz,
                 active ? COLOR_ACTIVE[color] : "bg-white text-zinc-500 border-transparent hover:text-zinc-800 hover:bg-zinc-50",
               ].join(" ")}
@@ -123,7 +123,7 @@ export function SearchFilterChips<K extends string = string>({
               {typeof opt.count === "number" && (
                 <span
                   className={[
-                    "tabular-nums font-black rounded px-1 text-[9px]",
+                    "tabular-nums font-bold rounded px-1 text-[9px]",
                     active ? "bg-white/60" : "bg-zinc-100 text-zinc-500",
                   ].join(" ")}
                 >{opt.count}</span>

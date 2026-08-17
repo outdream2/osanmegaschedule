@@ -162,7 +162,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
       >
         <Bell size={16} strokeWidth={hasUnread ? 2.4 : 2.2} className={hasUnread ? "animate-pulse" : ""} />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center leading-none shadow-md ring-1 ring-white">
+          <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center leading-none shadow-md ring-1 ring-white">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
@@ -189,7 +189,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
               <Bell size={13} className="text-zinc-500" />
               <span className="text-sm font-bold text-zinc-800">알림</span>
               {unreadCount > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-600 text-[10px] font-black">{unreadCount}</span>
+                <span className="px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-600 text-[10px] font-bold">{unreadCount}</span>
               )}
             </div>
             <div className="flex items-center gap-1">

@@ -34,7 +34,7 @@ function ZoneBtn({
           : "bg-white border-gray-300 text-gray-700 hover:border-teal-400 hover:bg-teal-50"
         }`}
     >
-      <span className={`text-[11px] font-black ${selected ? "text-white" : "text-gray-800"}`}>
+      <span className={`text-[11px] font-bold ${selected ? "text-white" : "text-gray-800"}`}>
         {z.num}
       </span>
       <span className={`text-[8px] font-semibold text-center leading-none mt-0.5 ${selected ? "text-teal-100" : "text-gray-400"}`}>
@@ -72,7 +72,7 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
         <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
           <div className="flex items-center gap-2">
             <MapPin size={15} className="text-teal-500" />
-            <p className="text-sm font-black text-gray-900">매장 지도에서 구역 선택</p>
+            <p className="text-sm font-bold text-gray-900">매장 지도에서 구역 선택</p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700 cursor-pointer p-1">
             <X size={18} />
@@ -96,7 +96,7 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
 
           {/* ─── ㄱ자 매장 평면도 ─── */}
           <div className="bg-white border-2 border-blue-200 rounded-2xl p-3 flex flex-col gap-2 shadow-sm">
-            <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest">ㄱ자 매장 레이아웃</p>
+            <p className="text-[9px] font-bold text-blue-500 uppercase tracking-widest">ㄱ자 매장 레이아웃</p>
 
             {/* 상단 벽면 (24-35) — 긴 가로줄 */}
             <div>
@@ -149,7 +149,7 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
                           : "bg-white border-gray-300 text-gray-700 hover:border-teal-400 hover:bg-teal-50"
                         }`}
                     >
-                      <span className={`text-[11px] font-black ${selected ? "text-white" : "text-gray-800"}`}>{z.num}</span>
+                      <span className={`text-[11px] font-bold ${selected ? "text-white" : "text-gray-800"}`}>{z.num}</span>
                       <span className={`text-[9px] font-semibold ${selected ? "text-teal-100" : "text-gray-500"}`}>{z.label}</span>
                     </button>
                   );

@@ -212,7 +212,7 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
         {/* 모달 헤더 */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-200 shrink-0">
           {mobileModalTitle != null && (
-            <div className="flex-1 min-w-0 text-[14px] font-black text-zinc-800 break-words whitespace-normal leading-tight">
+            <div className="flex-1 min-w-0 text-[14px] font-bold text-zinc-800 break-words whitespace-normal leading-tight">
               {mobileModalTitle}
             </div>
           )}
@@ -251,7 +251,7 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
           className={`split-divider group ${dividerHoverCls}`}
           title="드래그하여 좌측 폭 조절"
         >
-          <span className="text-[10px] text-zinc-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+          <span className="text-[10px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
         </div>
 
         {/* 우측: 상세 · 데스크탑만 표시 (모바일은 모달로) */}

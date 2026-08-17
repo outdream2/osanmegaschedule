@@ -415,7 +415,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-1.5">
                   <Clock size={14} className="text-amber-600" />
-                  <span className="text-sm font-black text-zinc-700">
+                  <span className="text-sm font-bold text-zinc-700">
                     {mgrTab === "pending" ? "승인 대기" : "전체 목록"}
                   </span>
                   <span className="text-[18px] font-mono text-zinc-400">
@@ -444,7 +444,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div>
                           <div className="flex items-center gap-2">
-                            <p className="text-sm font-black text-zinc-800">{r.employee_name}</p>
+                            <p className="text-sm font-bold text-zinc-800">{r.employee_name}</p>
                             <span className="text-xs font-semibold text-zinc-500">{r.leave_type}</span>
                           </div>
                           <p className="text-xs text-zinc-500 mt-0.5">{fmtDate(r.start_date)} ~ {fmtDate(r.end_date)}</p>

@@ -354,7 +354,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
             <FirstAid size={20} className="text-white" weight="fill" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-[15px] sm:text-[16px] font-black text-zinc-800 tracking-tight leading-tight">약사 전용</h1>
+            <h1 className="text-[15px] sm:text-[16px] font-bold text-zinc-800 tracking-tight leading-tight">약사 전용</h1>
             <p className="text-[15px] text-zinc-500 mt-0.5 truncate">교육자료 · 복약지도 · 동영상 강의 · 각종 문서</p>
           </div>
           <div className="flex-1" />
@@ -414,7 +414,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                 <div className="border-b border-zinc-100 bg-sky-50/60">
                   <div className="px-3 py-2 flex items-center gap-1.5">
                     <Plus size={13} className="text-sky-600" />
-                    <span className="text-[15px] font-black text-sky-700 uppercase tracking-wider">하위메뉴 설정</span>
+                    <span className="text-[15px] font-bold text-sky-700 uppercase tracking-wider">하위메뉴 설정</span>
                     <span className="ml-auto flex items-center gap-1">
                       {customCatsLoading && <Loader2 size={10} className="animate-spin text-zinc-400" />}
                       <button
@@ -493,7 +493,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                 {/* 트리 헤더 */}
                 <div className="px-3 py-2 border-b border-zinc-100 bg-zinc-50/60 flex items-center gap-1.5">
                   <GraduationCap size={14} className="text-zinc-500" weight="fill" />
-                  <span className="text-[15px] font-black text-zinc-500 uppercase tracking-wider">교육자료 · 카테고리</span>
+                  <span className="text-[15px] font-bold text-zinc-500 uppercase tracking-wider">교육자료 · 카테고리</span>
                   <span className="ml-auto text-[14px] font-bold text-zinc-400 tabular-nums">{categories.length}건</span>
                 </div>
 
@@ -622,7 +622,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                 <div className="bg-white rounded-xl border border-zinc-200 shadow-sm flex flex-col overflow-hidden">
                   <div className="px-3 py-2 border-b border-zinc-100 bg-zinc-50/60 flex items-center gap-1.5">
                     {activeTabDef.icon && <activeTabDef.icon size={14} className="text-zinc-500" weight="fill" />}
-                    <span className="text-[15px] font-black text-zinc-500 uppercase tracking-wider">{activeTabDef.label} · 카테고리</span>
+                    <span className="text-[15px] font-bold text-zinc-500 uppercase tracking-wider">{activeTabDef.label} · 카테고리</span>
                     <span className="ml-auto text-[14px] font-bold text-zinc-400 tabular-nums">{categories.length}건</span>
                   </div>
                   <ul className="divide-y divide-zinc-100 max-h-[38vh] overflow-y-auto">
@@ -654,7 +654,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                   <div className="bg-white rounded-xl border border-zinc-200 shadow-sm flex flex-col overflow-hidden">
                     <div className="px-3 py-2 border-b border-zinc-100 bg-sky-50/60 flex items-center gap-1.5">
                       <FileTextIcon size={13} className="text-sky-600" />
-                      <span className="text-[15px] font-black text-sky-700 uppercase tracking-wider break-words whitespace-normal">{selectedCatObj.title}</span>
+                      <span className="text-[15px] font-bold text-sky-700 uppercase tracking-wider break-words whitespace-normal">{selectedCatObj.title}</span>
                       <span className="ml-auto text-[14px] font-bold text-zinc-400 tabular-nums shrink-0">{menuItems.length}건</span>
                       {isAdmin && (
                         <button
@@ -744,7 +744,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                   <div className="px-4 py-2.5 border-b border-zinc-100 bg-zinc-50/60 flex items-center gap-2">
                     <FileTextIcon size={14} className="text-sky-600" />
                     <div className="min-w-0 flex-1">
-                      <div className="text-[15px] font-black text-zinc-800 break-words whitespace-normal leading-tight">{selectedItem.title}</div>
+                      <div className="text-[15px] font-bold text-zinc-800 break-words whitespace-normal leading-tight">{selectedItem.title}</div>
                       {selectedItem.file_name && (
                         <div className="text-[10.5px] text-zinc-400 font-semibold break-words whitespace-normal">
                           {selectedItem.file_name}{selectedItem.file_size ? ` · ${fmtBytes(selectedItem.file_size)}` : ""}
@@ -830,12 +830,12 @@ const SubMenuListPanel: React.FC<SubMenuListPanelProps> = ({
     <div className="bg-white rounded-xl border border-zinc-200 shadow-sm flex flex-col overflow-hidden">
       <div className="px-4 py-3 border-b border-zinc-100 bg-sky-50/60 flex items-center gap-2">
         <div className="min-w-0 flex-1">
-          <div className="text-[14px] font-black text-sky-600 uppercase tracking-wider">{tabLabel}</div>
-          <div className="text-[15px] font-black text-zinc-800 leading-tight truncate">{category.title}</div>
+          <div className="text-[14px] font-bold text-sky-600 uppercase tracking-wider">{tabLabel}</div>
+          <div className="text-[15px] font-bold text-zinc-800 leading-tight truncate">{category.title}</div>
           <div className="text-[15px] text-zinc-500 mt-0.5 truncate">{category.subtitle}</div>
         </div>
         <div className="shrink-0 flex items-center gap-1.5">
-          <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 text-[14px] font-black tabular-nums">
+          <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 text-[14px] font-bold tabular-nums">
             {items.length}건
           </span>
           {isAdmin && (
@@ -868,7 +868,7 @@ const SubMenuListPanel: React.FC<SubMenuListPanelProps> = ({
           <div className="w-14 h-14 rounded-2xl bg-sky-50 text-sky-500 flex items-center justify-center">
             <FirstAid size={26} weight="fill" />
           </div>
-          <div className="text-[14px] font-black text-zinc-800">등록된 하위메뉴 없음</div>
+          <div className="text-[14px] font-bold text-zinc-800">등록된 하위메뉴 없음</div>
           <div className="text-[14px] text-zinc-500 leading-snug max-w-md">
             {isAdmin ? (
               <>
@@ -901,7 +901,7 @@ const SubMenuListPanel: React.FC<SubMenuListPanelProps> = ({
                     <FileTextIcon size={16} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[15px] font-black text-zinc-800 truncate">{row.title}</div>
+                    <div className="text-[15px] font-bold text-zinc-800 truncate">{row.title}</div>
                     <div className="text-[15px] text-zinc-400 mt-0.5 truncate font-semibold">
                       {row.file_name
                         ? <>{row.file_name}{row.file_size ? ` · ${fmtBytes(row.file_size)}` : ""}</>
@@ -909,7 +909,7 @@ const SubMenuListPanel: React.FC<SubMenuListPanelProps> = ({
                     </div>
                   </div>
                   {hasFile && (
-                    <div className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-sky-50 text-sky-700 text-[15px] font-black">
+                    <div className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-sky-50 text-sky-700 text-[15px] font-bold">
                       <Eye size={11} />
                       열기
                     </div>

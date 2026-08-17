@@ -339,7 +339,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
             {duplicateNumbers.size > 0 && (
               <div className="mb-3 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-[14px] flex items-center gap-2">
                 <AlertCircle size={13} /> 번호가 중복된 항목이 있습니다:
-                <span className="font-black">
+                <span className="font-bold">
                   {Array.from(duplicateNumbers as Set<number>).sort((a, b) => a - b).join(", ")}
                 </span>
               </div>
@@ -365,7 +365,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
                       className={`w-full flex items-center gap-2 px-4 py-2.5 ${cs.headerBg} border-b border-zinc-100 hover:bg-opacity-80 transition cursor-pointer`}
                     >
                       <span className={`inline-block w-2 h-2 rounded-full ${cs.accentDot}`} />
-                      <span className={`text-[14px] font-black ${cs.headerText} tracking-tight`}>{cat.label}</span>
+                      <span className={`text-[14px] font-bold ${cs.headerText} tracking-tight`}>{cat.label}</span>
                       <span className="text-[15px] text-zinc-400 font-medium">· {cat.hint}</span>
                       <span className={`ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[15px] font-bold ${cs.badgeBg} ${cs.badgeText} border ${cs.badgeBorder}`}>
                         {rows.length}
@@ -397,7 +397,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
                             >
                               {/* 원본 zoneId 배지 */}
                               <div className="flex items-center gap-1.5">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-md bg-sky-50 border border-sky-200 text-sky-700 text-[14px] font-black`}>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-md bg-sky-50 border border-sky-200 text-sky-700 text-[14px] font-bold`}>
                                   {m.zoneId}
                                 </span>
                                 {isDirty && (

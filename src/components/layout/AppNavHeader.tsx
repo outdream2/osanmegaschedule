@@ -402,7 +402,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       const bizOnClick = () => onNavigate?.("business-manage");
       if (isActive) {
         return (
-          <span key="business" className={`${base} ${c.activeBg} ${c.activeText} shadow-sm font-black`}>
+          <span key="business" className={`${base} ${c.activeBg} ${c.activeText} shadow-sm font-bold`}>
             <Icon size={26} weight="fill" />
             <span className="leading-tight text-center whitespace-nowrap">경영</span>
           </span>
@@ -426,7 +426,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const onClick = tab.key === "landing" ? (onBack ?? (() => onNavigate?.("landing"))) : () => onNavigate?.(tab.key as AppNavPage);
     if (isActive) {
       return (
-        <span key={tab.key} className={`${base} ${c.activeBg} ${c.activeText} shadow-sm font-black`}>
+        <span key={tab.key} className={`${base} ${c.activeBg} ${c.activeText} shadow-sm font-bold`}>
           <Icon size={26} weight="fill" />
           <span className="leading-tight text-center">
             {(() => {
@@ -518,7 +518,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
               }}
             />
             {/* PC (md+) · 서비스명 · 흰 텍스트 톤 */}
-            <div className="hidden md:flex flex-col gap-0.5 font-black tracking-tight leading-none select-none">
+            <div className="hidden md:flex flex-col gap-0.5 font-bold tracking-tight leading-none select-none">
               <span className="text-white text-[17px] leading-none">OSAN</span>
               <span className="text-[#93B4D0] text-[13px] leading-none">MEGATOWN</span>
             </div>

@@ -55,7 +55,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               {isChunkError ? "🔄" : "⚠️"}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[16px] font-black text-zinc-900">
+              <div className="text-[16px] font-bold text-zinc-900">
                 {isChunkError ? "새 버전이 배포되었습니다" : "일시적인 오류가 발생했습니다"}
               </div>
               <div className="text-[12px] text-zinc-500 mt-0.5">
@@ -76,7 +76,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             <button
               type="button"
               onClick={this.hardReload}
-              className="flex-1 h-10 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[13px] font-black shadow-sm transition cursor-pointer active:scale-95"
+              className="flex-1 h-10 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[13px] font-bold shadow-sm transition cursor-pointer active:scale-95"
             >
               🔄 새로고침
             </button>
@@ -84,7 +84,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               <button
                 type="button"
                 onClick={this.reset}
-                className="flex-1 h-10 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-[13px] font-black transition cursor-pointer active:scale-95"
+                className="flex-1 h-10 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-[13px] font-bold transition cursor-pointer active:scale-95"
               >
                 다시 시도
               </button>

@@ -2007,10 +2007,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                               >
                                 {/* 입사일/퇴사일 배지 (우상단 오버레이) */}
                                 {isHireDay && (
-                                  <span className="absolute top-0 right-0 z-30 text-[8px] font-black px-1 py-px rounded-bl bg-emerald-500 text-white leading-none shadow-sm pointer-events-none">입사</span>
+                                  <span className="absolute top-0 right-0 z-30 text-[8px] font-bold px-1 py-px rounded-bl bg-emerald-500 text-white leading-none shadow-sm pointer-events-none">입사</span>
                                 )}
                                 {isRetireDay && (
-                                  <span className="absolute top-0 right-0 z-30 text-[8px] font-black px-1 py-px rounded-bl bg-rose-500 text-white leading-none shadow-sm pointer-events-none">퇴사</span>
+                                  <span className="absolute top-0 right-0 z-30 text-[8px] font-bold px-1 py-px rounded-bl bg-rose-500 text-white leading-none shadow-sm pointer-events-none">퇴사</span>
                                 )}
                                 {outOfEmployment ? (
                                   <div className="w-full h-full min-h-[24px] flex items-center justify-center text-[10px] text-zinc-400 font-medium select-none">
@@ -2320,7 +2320,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 <Layers size={18} />
               </div>
               <div>
-                <h3 className="text-base font-black text-zinc-800">전월 데이터 복사</h3>
+                <h3 className="text-base font-bold text-zinc-800">전월 데이터 복사</h3>
                 <p className="text-xs text-zinc-500 mt-0.5">
                   {currentMonth === 1 ? currentYear - 1 : currentYear}년 {currentMonth === 1 ? 12 : currentMonth - 1}월 → {currentYear}년 {currentMonth}월
                 </p>

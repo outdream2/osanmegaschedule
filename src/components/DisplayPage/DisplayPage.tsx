@@ -1282,7 +1282,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         onClick={() => hasStaff && handleQuickRequest(zone)}
         disabled={!hasStaff}
         title={hasStaff ? `${zone.num}번 ${zone.label} 진열 보충 요청` : "담당자 미배정 — 진열요청 불가"}
-        className={`w-full h-6 rounded text-[9px] font-black flex items-center justify-center gap-0.5 transition-all border ${
+        className={`w-full h-6 rounded text-[9px] font-bold flex items-center justify-center gap-0.5 transition-all border ${
           hasStaff
             ? "bg-rose-500 hover:bg-rose-600 active:scale-95 text-white border-rose-600 cursor-pointer shadow-sm"
             : "bg-zinc-100 text-zinc-300 border-zinc-200 cursor-not-allowed"
@@ -1326,7 +1326,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             title={`${num}번 · ${zd?.category ?? ""} → 진열상품 조회`}
             className="w-full h-[64px] bg-stone-50 hover:bg-amber-50 px-1 py-1 flex flex-col items-center gap-0.5 border-b border-stone-200 cursor-pointer transition"
           >
-            <span className="text-[10px] font-black text-white bg-amber-700 rounded px-1 py-0.5 leading-none shrink-0">{getZoneLabel(num)}</span>
+            <span className="text-[10px] font-bold text-white bg-amber-700 rounded px-1 py-0.5 leading-none shrink-0">{getZoneLabel(num)}</span>
             {(() => {
               // 2026-07-31 · 사용자 편집 라벨 우선
               const cat = getZoneSubLabel(num) || (zd?.category ?? "");
@@ -1593,12 +1593,12 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                     <ChevronLeft size={18} />
                   </button>
                   <div className="text-center min-w-[140px] sm:min-w-[160px]">
-                    <div className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight tracking-tight">
+                    <div className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight tracking-tight">
                       {selectedDateObj.getMonth() + 1}월 {selectedDateObj.getDate()}일
                     </div>
                     <div className="flex items-center justify-center gap-1.5 mt-0.5">
                       <span className="text-sm font-semibold text-gray-400">{dayNames[selectedDateObj.getDay()]}요일</span>
-                      {isToday && <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-600">오늘</span>}
+                      {isToday && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-600">오늘</span>}
                       {!isToday && (
                         <button
                           onClick={() => setSelectedDate(todayStr)}
@@ -1779,12 +1779,12 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   <div className="sm:hidden bg-white border border-zinc-200 rounded-xl overflow-hidden mb-2">
                     <div className="px-3 py-2 border-b border-zinc-100 bg-zinc-50 flex items-center gap-2">
                       <span className="text-lg">📋</span>
-                      <span className="text-[13px] font-black text-zinc-700">구역 리스트</span>
+                      <span className="text-[13px] font-bold text-zinc-700">구역 리스트</span>
                       <span className="text-[10px] font-mono text-zinc-400">({zones.length}개)</span>
                       <button
                         type="button"
                         onClick={() => setFullMapOpen(true)}
-                        className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[10px] font-black shadow-sm active:scale-95 transition"
+                        className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[10px] font-bold shadow-sm active:scale-95 transition"
                         title="매장 구역도 보기 (읽기 전용)"
                       >
                         🗺️ 매장 구역도 보기
@@ -1815,13 +1815,13 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                   setZoneProductsModal({ zoneId: z.id, zoneNum: z.num, zoneLabel: zoneLabel, category: z.category });
                                   setZoneProductsFilter("all"); setZoneProductsSearch("");
                                 }}
-                                className={`w-full h-[38px] rounded text-[13px] font-black flex items-center justify-center leading-none active:scale-95 transition ${pillCls}`}
+                                className={`w-full h-[38px] rounded text-[13px] font-bold flex items-center justify-center leading-none active:scale-95 transition ${pillCls}`}
                                 title={`${zoneLabel} 상품 조회`}
                               >
                                 {zoneLabel}
                               </button>
                               {/* 2. 카테고리 · 왼쪽 정렬 · 줄임말 없음 */}
-                              <span className="text-[12px] font-black text-zinc-800 break-keep whitespace-normal leading-tight">
+                              <span className="text-[12px] font-bold text-zinc-800 break-keep whitespace-normal leading-tight">
                                 {z.category || "-"}
                               </span>
                               {/* 3. 담당자 배지 · 클릭 → 담당자 변경 popover · 데스크탑 STAFF_COLORS 재사용 */}
@@ -1841,7 +1841,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                     const chip = STAFF_COLORS[colorIdx % STAFF_COLORS.length];
                                     const isPharm = emp ? (emp.position === "약사" || emp.position.startsWith("약사")) : false;
                                     return (
-                                      <span key={`${z.id}-${name}`} className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-black border ${chip} active:scale-95 transition ${isPharm ? "ring-2 ring-emerald-500 ring-offset-1" : ""}`}>
+                                      <span key={`${z.id}-${name}`} className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-bold border ${chip} active:scale-95 transition ${isPharm ? "ring-2 ring-emerald-500 ring-offset-1" : ""}`}>
                                         {name}
                                       </span>
                                     );
@@ -1870,8 +1870,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               {fullMapOpen && (
                 <div className="sm:hidden fixed inset-0 z-50 bg-zinc-900/70 backdrop-blur-sm flex flex-col" onClick={() => setFullMapOpen(false)}>
                   <div className="flex items-center justify-between px-3 py-2 bg-white border-b border-zinc-200 shadow-sm">
-                    <span className="text-sm font-black text-zinc-800">🗺️ 매장 구역도 (읽기 전용)</span>
-                    <button onClick={() => setFullMapOpen(false)} className="w-8 h-8 rounded-lg bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-zinc-600 text-lg font-black">×</button>
+                    <span className="text-sm font-bold text-zinc-800">🗺️ 매장 구역도 (읽기 전용)</span>
+                    <button onClick={() => setFullMapOpen(false)} className="w-8 h-8 rounded-lg bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-zinc-600 text-lg font-bold">×</button>
                   </div>
                   <div className="flex-1 overflow-auto" onClick={e => e.stopPropagation()}>
                     <div className="p-2 bg-zinc-100">
@@ -1905,7 +1905,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                 <button
                   type="button"
                   onClick={() => setMapCollapsed(v => !v)}
-                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-black shadow-sm transition cursor-pointer"
+                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-bold shadow-sm transition cursor-pointer"
                   title="매장 구역도 열기/접기"
                 >
                   🗺️ {mapCollapsed ? "매장 구역도 펼치기" : "매장 구역도 접기"}
@@ -1923,7 +1923,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                     const sortShift = (a: typeof todayStaff[0], b: typeof todayStaff[0]) => (ORDER[a.scheduleType] ?? 3) - (ORDER[b.scheduleType] ?? 3);
                     return (
                       <div className="bg-white/95 backdrop-blur rounded-lg border border-orange-200 px-2 py-1.5 shadow-sm inline-flex flex-wrap items-center gap-1 mb-1 w-fit max-w-full">
-                        <span className="text-[10px] font-black text-orange-700 mr-1">📦 물류 출근직원 ({물류.length})</span>
+                        <span className="text-[10px] font-bold text-orange-700 mr-1">📦 물류 출근직원 ({물류.length})</span>
                         {물류.sort(sortShift).map(({ employee, scheduleType, workingHours }) => {
                           const colorIdx = staffColorMap.get(employee.id) ?? 0;
                           const chipColor = STAFF_COLORS[colorIdx % STAFF_COLORS.length];
@@ -1945,7 +1945,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                               title={`${employee.name} · ${scheduleType}${workingHours ? ` · ${workingHours}` : ""} · 드래그하여 구역 배정`}
                             >
                               <span>{employee.name}</span>
-                              <span className={`text-[8px] font-black px-1 rounded ${SHIFT_BADGE[scheduleType] ?? "bg-zinc-100 text-zinc-700 border-zinc-200"}`}>
+                              <span className={`text-[8px] font-bold px-1 rounded ${SHIFT_BADGE[scheduleType] ?? "bg-zinc-100 text-zinc-700 border-zinc-200"}`}>
                                 {scheduleType}
                               </span>
                             </button>
@@ -1954,7 +1954,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                         <button
                           onClick={handleAutoAssign}
                           title="물류 출근직원 미리보기 배치 (확정 전엔 DB 저장·알림 없음)"
-                          className="ml-1 inline-flex items-center gap-1 px-2 py-0.5 bg-violet-600 hover:bg-violet-700 text-white text-[10px] font-black rounded-full shadow-sm transition cursor-pointer border border-violet-700"
+                          className="ml-1 inline-flex items-center gap-1 px-2 py-0.5 bg-violet-600 hover:bg-violet-700 text-white text-[10px] font-bold rounded-full shadow-sm transition cursor-pointer border border-violet-700"
                         >
                           🎲 임의배치
                         </button>
@@ -1963,7 +1963,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                             <button
                               onClick={handleConfirmAutoAssign}
                               title="DB 저장 + 각 담당자에게 날짜·배정구역 알림 전송"
-                              className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[10px] font-black rounded-full shadow-sm transition cursor-pointer border border-emerald-700 animate-pulse"
+                              className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[10px] font-bold rounded-full shadow-sm transition cursor-pointer border border-emerald-700 animate-pulse"
                             >
                               <Bell size={9} /> 배치확정 ({pendingAutoAssign.assignedList.length})
                             </button>
@@ -2010,7 +2010,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
                       {/* 상단 벽면: 21→9 좌→우 (13개) · 모바일 4열 wrap 순차 · 데스크탑 13열 한 줄 */}
                       <div className="w-full">
-                        <div className="text-[7px] font-black text-zinc-400 uppercase tracking-wider mb-0.5">상단 벽면 (21→9)</div>
+                        <div className="text-[7px] font-bold text-zinc-400 uppercase tracking-wider mb-0.5">상단 벽면 (21→9)</div>
                         <div className="grid grid-cols-4 md:grid-cols-[repeat(13,minmax(0,1fr))] gap-1 bg-zinc-100 p-1 rounded">
                           {STORE_TOP_WALL.map((num) => renderWallZoneCard(num, "top"))}
                         </div>
@@ -2018,7 +2018,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
                       {/* 중앙 진열대: 22 + 8B/8A/7B/7A/.../1B/1A (16개 세로 진열대 나란히) */}
                       <div className="my-3 w-full">
-                        <div className="text-[7px] font-black text-zinc-400 uppercase tracking-wider mb-1">중앙 진열대 (22 · 8B|8A → 1B|1A · 16구역)</div>
+                        <div className="text-[7px] font-bold text-zinc-400 uppercase tracking-wider mb-1">중앙 진열대 (22 · 8B|8A → 1B|1A · 16구역)</div>
                         {/* 반응형: 모바일 (sm 이하) 에서는 2 pair 씩 wrap · 데스크탑은 한 줄 유지 */}
                         <div className="flex flex-wrap md:flex-nowrap items-stretch justify-start md:pr-3 px-1.5 bg-zinc-50 border border-zinc-200 py-2 rounded-lg gap-1.5">
                           {/* 진열대 22 (좌측 첫 번째, 단독) · 왼쪽 벽에 붙임 · 좁은 고정 폭 */}
@@ -2031,7 +2031,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                 setZoneProductsFilter("all"); setZoneProductsSearch("");
                               }}
                               title="22 카테고리 클릭 → 상품 리스트 보기"
-                              className="w-full text-[10px] font-black text-zinc-700 bg-white border-2 border-zinc-300 rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex items-center justify-center overflow-hidden cursor-pointer hover:bg-zinc-50 transition">
+                              className="w-full text-[10px] font-bold text-zinc-700 bg-white border-2 border-zinc-300 rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex items-center justify-center overflow-hidden cursor-pointer hover:bg-zinc-50 transition">
                               <span className="line-clamp-4">{ZONE_DEFS.find(z => z.num === STORE_AISLE_CENTER)?.category ?? ""}</span>
                             </button>
                             <button
@@ -2042,7 +2042,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                 setZoneProductsFilter("all"); setZoneProductsSearch("");
                               }}
                               title="22 구역 상품 리스트 보기"
-                              className="w-full text-[9px] font-black text-white bg-zinc-600 rounded px-0.5 py-0.5 text-center leading-none cursor-pointer hover:brightness-110 transition"
+                              className="w-full text-[9px] font-bold text-white bg-zinc-600 rounded px-0.5 py-0.5 text-center leading-none cursor-pointer hover:brightness-110 transition"
                             >22</button>
                             {renderZoneCell(22, "w-full h-[80px] flex flex-col justify-between items-center py-1 px-0.5 text-[9px]")}
                             <div className="w-full h-[56px]" />
@@ -2068,8 +2068,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                       setZoneProductsFilter("all"); setZoneProductsSearch("");
                                     }}
                                     title={`${num}B 카테고리 → 상품 조회`}
-                                    className={`w-full text-[10px] font-black ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:brightness-95 transition`}>
-                                    <span className={`text-[10px] font-black text-white ${cb.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{getZoneLabel(`${num}B`)}</span>
+                                    className={`w-full text-[10px] font-bold ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:brightness-95 transition`}>
+                                    <span className={`text-[10px] font-bold text-white ${cb.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{getZoneLabel(`${num}B`)}</span>
                                     <span className="line-clamp-3 text-[10px]">{subB}</span>
                                   </button>
                                   {/* 드래그드롭 zone (B|A 나란히) */}
@@ -2091,8 +2091,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                       setZoneProductsFilter("all"); setZoneProductsSearch("");
                                     }}
                                     title={`${num}A 카테고리 → 상품 조회`}
-                                    className={`w-full text-[10px] font-black ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:brightness-95 transition`}>
-                                    <span className={`text-[10px] font-black text-white ${ca.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{getZoneLabel(`${num}A`)}</span>
+                                    className={`w-full text-[10px] font-bold ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:brightness-95 transition`}>
+                                    <span className={`text-[10px] font-bold text-white ${ca.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{getZoneLabel(`${num}A`)}</span>
                                     <span className="line-clamp-3 text-[10px]">{subA}</span>
                                   </button>
                                 </div>
@@ -2104,7 +2104,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
                       {/* 하단 벽면: 23→34 좌→우 (12개) · 모바일 4열 wrap · 데스크탑 12열 한 줄 */}
                       <div className="w-full">
-                        <div className="text-[7px] font-black text-zinc-400 uppercase tracking-wider mb-0.5">하단 벽면 (23→34)</div>
+                        <div className="text-[7px] font-bold text-zinc-400 uppercase tracking-wider mb-0.5">하단 벽면 (23→34)</div>
                         <div className="grid grid-cols-4 md:grid-cols-12 gap-1 bg-zinc-100 p-1 rounded">
                           {STORE_BOTTOM_WALL.map((num) => renderWallZoneCard(num, "bottom"))}
                         </div>
@@ -2127,7 +2127,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                           <span className="text-[10px]">🚪</span>
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-[10px] font-black text-zinc-900 leading-none">동측 윙</span>
+                          <span className="text-[10px] font-bold text-zinc-900 leading-none">동측 윙</span>
                           <span className="text-[8px] font-semibold text-zinc-400 leading-none mt-0.5 uppercase tracking-wider">Counter · Event · Front Display</span>
                         </div>
                       </div>
@@ -2145,7 +2145,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                     {/* 1단: 베스트존 (이벤트 3구역) — 35·36·37 */}
                     <div className="w-full bg-zinc-50/60 rounded-xl p-2.5 flex flex-col gap-1.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-black text-zinc-800 uppercase tracking-wide flex items-center gap-1">
+                        <span className="text-[9px] font-bold text-zinc-800 uppercase tracking-wide flex items-center gap-1">
                           <span className="w-1 h-3 bg-amber-500 rounded-full inline-block" />
                           베스트존
                         </span>
@@ -2164,7 +2164,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                     {/* 2단: 메인 카운터 (40 A/B/C) */}
                     <div className="w-full bg-zinc-50/60 rounded-xl p-2.5 flex flex-col gap-1.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-black text-zinc-800 uppercase tracking-wide flex items-center gap-1">
+                        <span className="text-[9px] font-bold text-zinc-800 uppercase tracking-wide flex items-center gap-1">
                           <span className="w-1 h-3 bg-zinc-900 rounded-full inline-block" />
                           메인 카운터
                         </span>
@@ -2174,7 +2174,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                         {(["A", "B", "C"] as const).map((side) => (
                           <div key={`counter-${side}`} className="flex-1 flex flex-col gap-0.5">
                             <span className="text-[8px] font-bold text-zinc-500 leading-none">카운터 {side === "A" ? "1" : side === "B" ? "2" : "3"}</span>
-                            {renderZoneCellById(`40${side}`, "w-full h-[70px] justify-between items-center text-[9px] p-1 bg-zinc-800 text-white", "", true)}
+                            {renderZoneCellById(`40${side}`, "w-full h-[70px] justify-between items-center text-[9px] p-1 bg-brand-deep text-white", "", true)}
                           </div>
                         ))}
                       </div>
@@ -2184,7 +2184,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                     <div className="w-full flex gap-2">
                       <div className="flex-[3] bg-zinc-50/60 rounded-xl p-2.5 flex flex-col gap-1.5">
                         <div className="flex items-center gap-2">
-                          <span className="text-[9px] font-black text-zinc-800 uppercase tracking-wide flex items-center gap-1">
+                          <span className="text-[9px] font-bold text-zinc-800 uppercase tracking-wide flex items-center gap-1">
                             <span className="w-1 h-3 bg-emerald-500 rounded-full inline-block" />
                             정면 약진열
                           </span>
@@ -2194,7 +2194,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                       </div>
                       <div className="flex-[2] bg-zinc-50/60 rounded-xl p-2.5 flex flex-col gap-1.5">
                         <div className="flex items-center gap-2">
-                          <span className="text-[9px] font-black text-zinc-800 uppercase tracking-wide flex items-center gap-1">
+                          <span className="text-[9px] font-bold text-zinc-800 uppercase tracking-wide flex items-center gap-1">
                             <span className="w-1 h-3 bg-zinc-400 rounded-full inline-block" />
                             시설
                           </span>
@@ -2270,7 +2270,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           <div className="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[92vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
             {/* Modal header */}
             <div className="px-5 py-4 border-b border-zinc-200 flex items-center gap-3 bg-zinc-50">
-              <div className={`w-10 h-10 rounded-xl border-2 flex items-center justify-center shrink-0 font-black text-lg ${statusCell(draftStatus)}`}>
+              <div className={`w-10 h-10 rounded-xl border-2 flex items-center justify-center shrink-0 font-bold text-lg ${statusCell(draftStatus)}`}>
                 {activeZone.num}
               </div>
               <div className="flex-1 min-w-0">
@@ -2299,7 +2299,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   const colorIdx = assignedStaff ? (staffColorMap.get(assignedStaff.id) ?? 0) : 0;
                   return assignedStaff ? (
                     <div className="flex items-center gap-3 px-3 py-3 rounded-xl border-2 border-indigo-200 bg-indigo-50">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-base font-black shrink-0 ${isLogistics ? STAFF_AVATAR_COLORS[colorIdx % STAFF_AVATAR_COLORS.length] : "bg-zinc-300 text-zinc-700"}`}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-base font-bold shrink-0 ${isLogistics ? STAFF_AVATAR_COLORS[colorIdx % STAFF_AVATAR_COLORS.length] : "bg-zinc-300 text-zinc-700"}`}>
                         {assignedStaff.name.slice(0, 1)}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -2458,11 +2458,11 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                 <div className={`px-5 py-5 ${isLogistics ? "bg-brand-deep" : "bg-zinc-700"}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-2xl font-black text-white shrink-0">
+                      <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold text-white shrink-0">
                         {activeStaffInfo.employee.name.slice(0, 1)}
                       </div>
                       <div>
-                        <div className="text-xl font-black text-white leading-tight">{activeStaffInfo.employee.name}</div>
+                        <div className="text-xl font-bold text-white leading-tight">{activeStaffInfo.employee.name}</div>
                         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                           <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/25 text-white">
                             {activeStaffInfo.employee.position || "약사"}
@@ -2493,7 +2493,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                     <MapPin size={12} className="text-indigo-500" />
                     구역 배정
                     {getAssignedZones(activeStaffInfo.employee.id).length > 0 && (
-                      <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-[10px] font-black">
+                      <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-[10px] font-bold">
                         {getAssignedZones(activeStaffInfo.employee.id).length}개
                       </span>
                     )}
@@ -2521,7 +2521,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   const sectionLabel: Record<string, string> = { top_wall: "상단 벽면", aisle: "중앙 진열대", left_wall: "좌측 벽면", bottom_wall: "하단 벽면", wing: "우측 윙", event: "이벤트존" };
                   return (
                     <div key={section} className="mb-3">
-                      <div className="text-[9px] font-black text-zinc-400 uppercase tracking-wider mb-1">{sectionLabel[section]}</div>
+                      <div className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-1">{sectionLabel[section]}</div>
                       <div className="grid grid-cols-5 gap-1">
                         {sectionZones.map((z) => {
                           const empId = activeStaffInfo.employee.id;
@@ -2550,7 +2550,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                             >
                               {/* 1-8 은 A/B 로 구분되므로 번호 유지 · 9+ 는 카테고리 라벨과 중복이므로 번호 숨김 */}
                               {z.num <= 8 && (
-                                <div className={`text-[10px] font-black leading-tight ${isAssigned ? "text-indigo-800" : otherName ? "text-amber-700" : "text-zinc-700"}`}>
+                                <div className={`text-[10px] font-bold leading-tight ${isAssigned ? "text-indigo-800" : otherName ? "text-amber-700" : "text-zinc-700"}`}>
                                   {z.num}
                                   {z.id.endsWith("A") && "A"}
                                   {z.id.endsWith("B") && "B"}
@@ -2696,19 +2696,19 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               <div className="px-5 py-4 border-b border-zinc-200 bg-emerald-50 flex items-center justify-between">
                 <div>
                   <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide">구역별 상품 리스트</div>
-                  <div className="text-lg font-black text-zinc-800 mt-0.5">{zoneProductsModal.zoneLabel}</div>
+                  <div className="text-lg font-bold text-zinc-800 mt-0.5">{zoneProductsModal.zoneLabel}</div>
                   {zoneProductsModal.category && (
                     <div className="text-[11px] text-zinc-500 mt-0.5 line-clamp-2">{zoneProductsModal.category}</div>
                   )}
                 </div>
-                <button onClick={() => setZoneProductsModal(null)} className="text-zinc-400 hover:text-zinc-700 text-2xl font-black w-8 h-8 rounded-lg hover:bg-white/70 cursor-pointer flex items-center justify-center">×</button>
+                <button onClick={() => setZoneProductsModal(null)} className="text-zinc-400 hover:text-zinc-700 text-2xl font-bold w-8 h-8 rounded-lg hover:bg-white/70 cursor-pointer flex items-center justify-center">×</button>
               </div>
               {/* Filters */}
               <div className="px-4 py-2 bg-zinc-50 border-b border-zinc-200 flex items-center gap-2 flex-wrap">
                 <input type="text" value={zoneProductsSearch} onChange={e => setZoneProductsSearch(e.target.value)} placeholder="상품명 검색"
                   className="flex-1 min-w-[120px] text-[11px] border border-zinc-300 rounded px-2 py-1 focus:outline-none focus:border-brand-deep" />
                 <div className="inline-flex bg-white border border-zinc-300 rounded p-0.5">
-                  <button onClick={() => setZoneProductsFilter("all")} className={`px-2 py-0.5 text-[10px] font-bold rounded cursor-pointer transition ${zoneProductsFilter === "all" ? "bg-zinc-800 text-white" : "text-zinc-500"}`}>전체</button>
+                  <button onClick={() => setZoneProductsFilter("all")} className={`px-2 py-0.5 text-[10px] font-bold rounded cursor-pointer transition ${zoneProductsFilter === "all" ? "bg-brand-deep text-white" : "text-zinc-500"}`}>전체</button>
                   <button onClick={() => setZoneProductsFilter("mismatch")} className={`px-2 py-0.5 text-[10px] font-bold rounded cursor-pointer transition ${zoneProductsFilter === "mismatch" ? "bg-rose-500 text-white" : "text-rose-500"}`}>⚠️ 불일치</button>
                 </div>
                 <span className="text-[10px] font-bold text-zinc-500 ml-auto">{filtered.length}/{matched.length}건</span>
@@ -2731,7 +2731,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                         <col className="w-[60px]" />
                       </colgroup>
                       <thead className="bg-zinc-50 border-b border-zinc-200 sticky top-0 z-10">
-                        <tr className="text-[10px] font-black text-zinc-600 uppercase tracking-wide">
+                        <tr className="text-[10px] font-bold text-zinc-600 uppercase tracking-wide">
                           <th className="text-left px-2 py-2">
                             <button type="button" onClick={() => toggleSort("name")} className="hover:text-zinc-900 cursor-pointer inline-flex items-center gap-1">
                               상품명 <span className="text-zinc-400 text-[8px]">{sortIcon("name")}</span>
@@ -2742,22 +2742,22 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                               ERP<span className="text-zinc-400 text-[8px]">{sortIcon("current_stock")}</span>
                             </button>
                           </th>
-                          <th className="text-right px-1 py-2 bg-cyan-50 text-cyan-600 font-black" title="실재고 · 창고">
+                          <th className="text-right px-1 py-2 bg-cyan-50 text-cyan-600 font-bold" title="실재고 · 창고">
                             <button type="button" onClick={() => toggleSort("warehouse_stock")} className="hover:text-cyan-800 cursor-pointer inline-flex items-center justify-end gap-0.5 w-full">
                               창고<span className="text-zinc-400 text-[8px]">{sortIcon("warehouse_stock")}</span>
                             </button>
                           </th>
-                          <th className="text-right px-1 py-2 bg-violet-50 text-violet-600 font-black" title="실재고 · 매장">
+                          <th className="text-right px-1 py-2 bg-violet-50 text-violet-600 font-bold" title="실재고 · 매장">
                             <button type="button" onClick={() => toggleSort("store_stock")} className="hover:text-violet-800 cursor-pointer inline-flex items-center justify-end gap-0.5 w-full">
                               매장<span className="text-zinc-400 text-[8px]">{sortIcon("store_stock")}</span>
                             </button>
                           </th>
-                          <th className="text-right px-1 py-2 text-emerald-600 font-black" title="실재고 합계 (창고+매장)">
+                          <th className="text-right px-1 py-2 text-emerald-600 font-bold" title="실재고 합계 (창고+매장)">
                             <button type="button" onClick={() => toggleSort("real_total")} className="hover:text-emerald-800 cursor-pointer inline-flex items-center justify-end gap-0.5 w-full">
                               실재고<span className="text-zinc-400 text-[8px]">{sortIcon("real_total")}</span>
                             </button>
                           </th>
-                          <th className="text-right px-1 py-2 text-rose-500 font-black" title="손실 (마감재고 - 현재고, 양수일수록 손실)">
+                          <th className="text-right px-1 py-2 text-rose-500 font-bold" title="손실 (마감재고 - 현재고, 양수일수록 손실)">
                             <button type="button" onClick={() => toggleSort("loss")} className="hover:text-rose-700 cursor-pointer inline-flex items-center justify-end gap-0.5 w-full">
                               손실<span className="text-zinc-400 text-[8px]">{sortIcon("loss")}</span>
                             </button>
@@ -2807,21 +2807,21 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                   </div>
                                 )}
                               </td>
-                              <td className={`text-right px-1 py-1.5 font-mono font-black text-[11px] ${!Number.isFinite(stockNum) ? "text-zinc-300" : stockNum <= 0 ? "text-red-600" : "text-amber-700"}`}>{Number.isFinite(stockNum) ? stockNum : "-"}</td>
-                              <td className={`text-right px-1 py-1.5 font-mono font-black text-[11px] bg-cyan-50/50 ${wh != null ? "text-cyan-700" : "text-zinc-300"}`}>{fmt(wh)}</td>
-                              <td className={`text-right px-1 py-1.5 font-mono font-black text-[11px] bg-violet-50/50 ${st != null ? "text-violet-700" : "text-zinc-300"}`}>{fmt(st)}</td>
-                              <td className={`text-right px-1 py-1.5 font-mono font-black text-[11px] ${realTotal == null ? "text-zinc-300" : mismatch ? "text-rose-600" : "text-emerald-700"}`} title={mismatch ? `실재고 ${realTotal} ≠ ERP ${stockNum} · 불일치` : "실재고 합계"}>{realTotal == null ? "-" : realTotal}</td>
+                              <td className={`text-right px-1 py-1.5 font-mono font-bold text-[11px] ${!Number.isFinite(stockNum) ? "text-zinc-300" : stockNum <= 0 ? "text-red-600" : "text-amber-700"}`}>{Number.isFinite(stockNum) ? stockNum : "-"}</td>
+                              <td className={`text-right px-1 py-1.5 font-mono font-bold text-[11px] bg-cyan-50/50 ${wh != null ? "text-cyan-700" : "text-zinc-300"}`}>{fmt(wh)}</td>
+                              <td className={`text-right px-1 py-1.5 font-mono font-bold text-[11px] bg-violet-50/50 ${st != null ? "text-violet-700" : "text-zinc-300"}`}>{fmt(st)}</td>
+                              <td className={`text-right px-1 py-1.5 font-mono font-bold text-[11px] ${realTotal == null ? "text-zinc-300" : mismatch ? "text-rose-600" : "text-emerald-700"}`} title={mismatch ? `실재고 ${realTotal} ≠ ERP ${stockNum} · 불일치` : "실재고 합계"}>{realTotal == null ? "-" : realTotal}</td>
                               {(() => {
                                 const closingRaw = (p as any).closing_stock;
                                 const closingNum = closingRaw != null && closingRaw !== "" ? Number(closingRaw) : NaN;
                                 const loss = (Number.isFinite(closingNum) && Number.isFinite(stockNum)) ? (closingNum - stockNum) : null;
                                 return (
-                                  <td className={`text-right px-1 py-1.5 font-mono font-black text-[11px] ${loss == null ? "text-zinc-300" : loss > 0 ? "text-rose-600" : loss < 0 ? "text-sky-600" : "text-zinc-500"}`} title={loss == null ? "마감재고 없음" : `마감재고 ${closingNum} - 현재고 ${stockNum} = ${loss}`}>{loss == null ? "-" : loss}</td>
+                                  <td className={`text-right px-1 py-1.5 font-mono font-bold text-[11px] ${loss == null ? "text-zinc-300" : loss > 0 ? "text-rose-600" : loss < 0 ? "text-sky-600" : "text-zinc-500"}`} title={loss == null ? "마감재고 없음" : `마감재고 ${closingNum} - 현재고 ${stockNum} = ${loss}`}>{loss == null ? "-" : loss}</td>
                                 );
                               })()}
-                              <td className={`text-right px-1 py-1.5 font-mono font-black text-[11px] ${Number.isFinite(optNum) ? "text-zinc-600" : "text-zinc-300"}`}>{Number.isFinite(optNum) ? optNum : "-"}</td>
+                              <td className={`text-right px-1 py-1.5 font-mono font-bold text-[11px] ${Number.isFinite(optNum) ? "text-zinc-600" : "text-zinc-300"}`}>{Number.isFinite(optNum) ? optNum : "-"}</td>
                               <td className="text-center px-1 py-1.5">
-                                <span className={`inline-block text-[9px] font-black border rounded-full px-1.5 py-0.5 ${statusClass}`}>{statusLabel}</span>
+                                <span className={`inline-block text-[9px] font-bold border rounded-full px-1.5 py-0.5 ${statusClass}`}>{statusLabel}</span>
                               </td>
                             </tr>
                           );
@@ -2849,11 +2849,11 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   <Package size={18} className="text-white" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-base font-black text-zinc-800 truncate">{productInfoModal.name ?? (productInfoModal as any).product_name}</div>
+                  <div className="text-base font-bold text-zinc-800 truncate">{productInfoModal.name ?? (productInfoModal as any).product_name}</div>
                   <div className="text-[11px] font-mono text-zinc-500 mt-0.5">#{productInfoModal.code ?? (productInfoModal as any).product_code}</div>
                 </div>
               </div>
-              <button onClick={() => setProductInfoModal(null)} className="text-zinc-400 hover:text-zinc-700 text-3xl leading-none font-black w-9 h-9 rounded-lg hover:bg-white/70 transition cursor-pointer flex items-center justify-center shrink-0">×</button>
+              <button onClick={() => setProductInfoModal(null)} className="text-zinc-400 hover:text-zinc-700 text-3xl leading-none font-bold w-9 h-9 rounded-lg hover:bg-white/70 transition cursor-pointer flex items-center justify-center shrink-0">×</button>
             </div>
             <div className="flex-1 overflow-y-auto p-2 sm:p-4 bg-zinc-50">
               <ProductInfoCard
@@ -2984,7 +2984,7 @@ const VendorManageSplit: React.FC = () => {
             <button
               key={cat}
               onClick={() => setCatFilter(cat)}
-              className={`h-8 px-3 rounded-md text-[12px] font-black transition cursor-pointer whitespace-nowrap shrink-0 ${
+              className={`h-8 px-3 rounded-md text-[12px] font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
                 catFilter === cat
                   ? cat === "전체"    ? "bg-zinc-700 text-white shadow-sm"
                   : cat === "위탁"    ? "bg-violet-500 text-white shadow-sm"
@@ -3000,7 +3000,7 @@ const VendorManageSplit: React.FC = () => {
           {/* 2026-08-10 · 사용자 요청 · 90회전 옆 · 신규 공급사 등록 버튼 */}
           <button
             onClick={() => setShowNewVendor(true)}
-            className="ml-auto h-8 px-3 rounded-md text-[12px] font-black text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] transition cursor-pointer whitespace-nowrap shrink-0"
+            className="ml-auto h-8 px-3 rounded-md text-[12px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] transition cursor-pointer whitespace-nowrap shrink-0"
             title="새 공급사 등록"
           >
             + 신규 등록
@@ -3022,9 +3022,9 @@ const VendorManageSplit: React.FC = () => {
             <tr>
               {/* 2026-08-10 · #20 · 분류 컬럼 제거 · 공급사 셀에 [분류][줄바꿈][공급사명] 통합 (사용자 요청) */}
               {/* 2026-08-10 · 사용자 요청 · 폰트 +1 · 공급사 이름 wrap · 왼쪽 한눈에 · whitespace-normal */}
-              <th className="text-left px-2 sm:px-3 py-2 text-[13px] sm:text-[14px] font-black min-w-[120px]"><SortTh label="공급사" sk="company_name" /></th>
-              <th className="text-left px-2 sm:px-3 py-2 text-[13px] sm:text-[14px] font-black w-20 sm:w-24"><SortTh label="담당자" sk="contact_name" /></th>
-              <th className="text-left px-2 sm:px-3 py-2 text-[13px] sm:text-[14px] font-black w-28 sm:w-36"><SortTh label="전화" sk="phone" /></th>
+              <th className="text-left px-2 sm:px-3 py-2 text-[13px] sm:text-[14px] font-bold min-w-[120px]"><SortTh label="공급사" sk="company_name" /></th>
+              <th className="text-left px-2 sm:px-3 py-2 text-[13px] sm:text-[14px] font-bold w-20 sm:w-24"><SortTh label="담당자" sk="contact_name" /></th>
+              <th className="text-left px-2 sm:px-3 py-2 text-[13px] sm:text-[14px] font-bold w-28 sm:w-36"><SortTh label="전화" sk="phone" /></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100">
@@ -3049,7 +3049,7 @@ const VendorManageSplit: React.FC = () => {
                 >
                   <td className="px-2 sm:px-3 py-2 align-top" title={String(v.company_name ?? "")}>
                     <div className="flex flex-col leading-tight">
-                      <span className={`text-[12px] sm:text-[13px] font-black ${catCls}`}>
+                      <span className={`text-[12px] sm:text-[13px] font-bold ${catCls}`}>
                         {v.category || <span className="text-zinc-300">-</span>}
                       </span>
                       {/* 공급사명 · 길면 wrap · 폰트 +1 */}

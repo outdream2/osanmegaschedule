@@ -454,7 +454,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                   >
                     <MapPin size={14} strokeWidth={2.2} /> 구역 배정
                     {logisticsZoneProps.assignedZoneNums.length > 0 && (
-                      <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+                      <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                         activeTab === "zone" ? "bg-white/20 text-white" : "bg-brand-tint text-brand-deep"
                       }`}>
                         {logisticsZoneProps.assignedZoneNums.length}
@@ -533,12 +533,12 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                         >
                           {/* 입사일/퇴사일 배지 (셀 우상단) */}
                           {isHireDay && (
-                            <span className="absolute -top-1.5 -right-1 text-[8px] font-black px-1 py-px rounded bg-emerald-500 text-white leading-none shadow-sm z-10">
+                            <span className="absolute -top-1.5 -right-1 text-[8px] font-bold px-1 py-px rounded bg-emerald-500 text-white leading-none shadow-sm z-10">
                               입사
                             </span>
                           )}
                           {isRetireDay && (
-                            <span className="absolute -top-1.5 -right-1 text-[8px] font-black px-1 py-px rounded bg-rose-500 text-white leading-none shadow-sm z-10">
+                            <span className="absolute -top-1.5 -right-1 text-[8px] font-bold px-1 py-px rounded bg-rose-500 text-white leading-none shadow-sm z-10">
                               퇴사
                             </span>
                           )}

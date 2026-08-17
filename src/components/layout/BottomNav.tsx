@@ -74,7 +74,7 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
                 <span className={`w-9 h-6 flex items-center justify-center rounded-full transition ${active ? "bg-orange-100" : ""}`}>
                   <Icon size={active ? 18 : 17} strokeWidth={active ? 2.6 : 2} />
                 </span>
-                <span className={`text-[10px] font-black leading-none tracking-tight ${active ? "text-orange-700" : ""}`}>{t.label}</span>
+                <span className={`text-[10px] font-bold leading-none tracking-tight ${active ? "text-orange-700" : ""}`}>{t.label}</span>
               </button>
             );
           })}
@@ -85,7 +85,7 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
         <div className="sm:hidden fixed inset-0 z-50 bg-zinc-900/50 backdrop-blur-sm flex items-end" onClick={() => setSheetOpen(false)}>
           <div className="w-full bg-white rounded-t-3xl shadow-2xl max-h-[80vh] overflow-y-auto animate-[slideUp_0.2s_ease-out]" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-white/95 backdrop-blur border-b border-zinc-100 px-4 py-3 flex items-center justify-between">
-              <h3 className="text-sm font-black text-zinc-800">더보기</h3>
+              <h3 className="text-sm font-bold text-zinc-800">더보기</h3>
               <button onClick={() => setSheetOpen(false)} className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-500"><X size={18} /></button>
             </div>
             <div className="p-3 grid grid-cols-3 gap-2">
@@ -150,7 +150,7 @@ function SheetTile({
       <span className={`w-10 h-10 rounded-xl ${c.iconBg} flex items-center justify-center`}>
         <Icon size={18} className={c.text} strokeWidth={2.4} />
       </span>
-      <span className={`text-[11px] font-black ${c.text}`}>{label}</span>
+      <span className={`text-[11px] font-bold ${c.text}`}>{label}</span>
     </button>
   );
 }

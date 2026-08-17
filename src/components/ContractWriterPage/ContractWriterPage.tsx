@@ -976,7 +976,7 @@ const FieldLabel: React.FC<{ icon?: React.ReactNode; children: React.ReactNode; 
 
 // 좌측 폼 · 섹션 헤더 (근로자·근무조건·시급·산정·옵션)
 const SectionHeader: React.FC<{ icon: React.ReactNode; children: React.ReactNode; sub?: React.ReactNode }> = ({ icon, children, sub }) => (
-  <div className="text-[15px] font-black text-zinc-700 flex items-center gap-1.5 border-b border-zinc-100 pb-1 mb-2">
+  <div className="text-[15px] font-bold text-zinc-700 flex items-center gap-1.5 border-b border-zinc-100 pb-1 mb-2">
     <span className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-zinc-100 text-zinc-600">{icon}</span>
     <span>{children}</span>
     {sub && <span className="ml-auto text-[10.5px] font-semibold text-zinc-400">{sub}</span>}
@@ -986,7 +986,7 @@ const SectionHeader: React.FC<{ icon: React.ReactNode; children: React.ReactNode
 // 사각형 체크박스 (PDF 안정 렌더)
 const SpanBox: React.FC<{ checked: boolean }> = ({ checked }) => (
   <span
-    className={`inline-flex items-center justify-center w-4 h-4 border-2 text-[14px] font-black ${checked ? "border-emerald-600 text-emerald-600" : "border-zinc-400 text-transparent"}`}
+    className={`inline-flex items-center justify-center w-4 h-4 border-2 text-[14px] font-bold ${checked ? "border-emerald-600 text-emerald-600" : "border-zinc-400 text-transparent"}`}
     style={{ lineHeight: "1" }}
   >
     {checked ? "V" : ""}
@@ -1127,7 +1127,7 @@ const SignatureModal: React.FC<SignatureModalProps> = ({ open, title, onClose, o
             <div className="w-7 h-7 rounded-lg bg-emerald-500 flex items-center justify-center shadow-sm">
               <Signature size={13} weight="fill" className="text-white" />
             </div>
-            <span className="text-sm font-black text-zinc-800">서명 · {title}</span>
+            <span className="text-sm font-bold text-zinc-800">서명 · {title}</span>
           </div>
           <button
             type="button"
@@ -1184,7 +1184,7 @@ const SignatureModal: React.FC<SignatureModalProps> = ({ open, title, onClose, o
               type="button"
               onClick={submit}
               disabled={empty}
-              className="text-[14px] font-black text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-md h-8 px-4 cursor-pointer disabled:bg-zinc-300 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-sm"
+              className="text-[14px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-md h-8 px-4 cursor-pointer disabled:bg-zinc-300 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-sm"
             >
               <Check size={12} weight="bold" />
               서명 저장
@@ -1218,7 +1218,7 @@ const WageComponentsTable: React.FC<{ wage: WageComponents }> = ({ wage }) => {
     <div className="border border-zinc-500 rounded-sm overflow-hidden text-[11.5px]">
       <table className="w-full border-collapse">
         <thead>
-          <tr className="bg-zinc-100 text-zinc-800 font-black text-[11.5px]">
+          <tr className="bg-zinc-100 text-zinc-800 font-bold text-[11.5px]">
             <th className="border-b border-r border-zinc-400 px-2 py-1 text-left w-[34%]">구성 항목</th>
             <th className="border-b border-r border-zinc-400 px-2 py-1 text-left w-[40%]">내용</th>
             <th className="border-b border-zinc-400 px-2 py-1 text-right w-[26%]">금액</th>
@@ -1255,9 +1255,9 @@ const WageComponentsTable: React.FC<{ wage: WageComponents }> = ({ wage }) => {
             );
           })}
           <tr className="bg-amber-50">
-            <td className="px-2 py-1.5 font-black text-zinc-800 border-r border-zinc-400">월급여총액 (세전)</td>
+            <td className="px-2 py-1.5 font-bold text-zinc-800 border-r border-zinc-400">월급여총액 (세전)</td>
             <td className="border-r border-zinc-400 px-2 py-1.5 text-[10.5px] text-zinc-600">(포괄임금)</td>
-            <td className="px-2 py-1.5 text-right tabular-nums font-black text-zinc-900">
+            <td className="px-2 py-1.5 text-right tabular-nums font-bold text-zinc-900">
               {fmtWon(total)} 원
             </td>
           </tr>
@@ -1351,7 +1351,7 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
   return (
     <div className="rounded-lg border border-indigo-200 bg-white flex flex-col overflow-hidden">
       {/* 상단 라벨 */}
-      <div className="text-[15px] font-black text-indigo-800 flex items-center gap-1 px-2 py-1 border-b border-indigo-100 bg-indigo-50/50">
+      <div className="text-[15px] font-bold text-indigo-800 flex items-center gap-1 px-2 py-1 border-b border-indigo-100 bg-indigo-50/50">
         <Money size={11} weight="fill" />
         임금 구성표 (편집 가능 · 이미지 레이아웃)
       </div>
@@ -1359,7 +1359,7 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
       {/* 이미지 형식 · 3열 테이블 · 구성 항목 · 내용 (월평균 시간) · 금액 (원) */}
       <table className="w-full border-collapse text-[15px]">
         <thead>
-          <tr className="bg-zinc-100 text-zinc-700 font-black text-[10.5px]">
+          <tr className="bg-zinc-100 text-zinc-700 font-bold text-[10.5px]">
             <th className="border-b border-zinc-300 px-1.5 py-1 text-left w-[42%]">구성 항목</th>
             <th className="border-b border-zinc-300 px-1.5 py-1 text-center w-[30%]">내용</th>
             <th className="border-b border-zinc-300 px-1.5 py-1 text-right w-[28%]">금액 (원)</th>
@@ -1447,7 +1447,7 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
                           <span className="text-[15px] text-zinc-400 ml-1 italic">({r.formulaHint})</span>
                         )}
                         {w > 0 && (
-                          <div className="text-[15px] text-emerald-600 font-black tabular-nums">
+                          <div className="text-[15px] text-emerald-600 font-bold tabular-nums">
                             = {fmtWon(Math.round(w * totalH * r.formulaMul))}원
                           </div>
                         )}
@@ -1464,7 +1464,7 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
                       value={entry.amount === 0 ? "" : String(entry.amount)}
                       onChange={(e) => updEntry(r.key, "amount", Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
                       disabled={dim}
-                      className={`w-full bg-white border rounded px-1 py-0.5 text-[15px] font-black text-right focus:outline-none focus:border-brand-deep transition ${
+                      className={`w-full bg-white border rounded px-1 py-0.5 text-[15px] font-bold text-right focus:outline-none focus:border-brand-deep transition ${
                         dim
                           ? "border-zinc-100 text-zinc-300 bg-zinc-50 cursor-not-allowed"
                           : isEmpty ? "border-zinc-100 text-zinc-300" : "border-zinc-200 text-zinc-800"
@@ -1517,7 +1517,7 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
                       updFlat("mealAllowance", n);
                     }}
                     disabled={!enabled}
-                    className={`w-full bg-white border rounded px-1 py-0.5 text-[15px] font-black text-right focus:outline-none focus:border-brand-deep transition ${
+                    className={`w-full bg-white border rounded px-1 py-0.5 text-[15px] font-bold text-right focus:outline-none focus:border-brand-deep transition ${
                       !enabled
                         ? "border-zinc-100 text-zinc-300 bg-zinc-50 cursor-not-allowed"
                         : "border-zinc-200 text-zinc-800"
@@ -1568,7 +1568,7 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
                       updFlat("vehicleAllowance", n);
                     }}
                     disabled={!enabled}
-                    className={`w-full bg-white border rounded px-1 py-0.5 text-[15px] font-black text-right focus:outline-none focus:border-brand-deep transition ${
+                    className={`w-full bg-white border rounded px-1 py-0.5 text-[15px] font-bold text-right focus:outline-none focus:border-brand-deep transition ${
                       !enabled
                         ? "border-zinc-100 text-zinc-300 bg-zinc-50 cursor-not-allowed"
                         : "border-zinc-200 text-zinc-800"
@@ -1582,13 +1582,13 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
 
           {/* 하단 · 월급여총액 (세전) · (포괄임금) · 강조 */}
           <tr className="bg-amber-50">
-            <td className="px-1.5 py-1.5 text-left text-[11.5px] font-black text-zinc-900">
+            <td className="px-1.5 py-1.5 text-left text-[11.5px] font-bold text-zinc-900">
               월급여총액 (세전)
             </td>
             <td className="px-1.5 py-1.5 text-center text-[10.5px] font-bold text-zinc-600">
               (포괄임금)
             </td>
-            <td className="px-1.5 py-1.5 text-right text-[14px] font-black text-zinc-900 tabular-nums">
+            <td className="px-1.5 py-1.5 text-right text-[14px] font-bold text-zinc-900 tabular-nums">
               {fmtWon(total)} 원
             </td>
           </tr>
@@ -1659,7 +1659,7 @@ const WageCalcModePanel: React.FC<WageCalcModePanelProps> = ({
     <div className="rounded-lg border border-emerald-200 bg-emerald-50/40 p-2 flex flex-col gap-2">
       <div className="flex items-center gap-1.5">
         <Calculator size={12} weight="fill" className="text-emerald-700" />
-        <span className="text-[15px] font-black text-emerald-800">역산 계산기 (3 모드)</span>
+        <span className="text-[15px] font-bold text-emerald-800">역산 계산기 (3 모드)</span>
       </div>
       <div className="flex items-center gap-1 flex-wrap">
         {(["forward", "target", "actual"] as const).map(m => {
@@ -1670,7 +1670,7 @@ const WageCalcModePanel: React.FC<WageCalcModePanelProps> = ({
               key={m}
               type="button"
               onClick={() => setMode(m)}
-              className={`px-2 py-1 rounded-md border text-[10.5px] font-black transition-colors cursor-pointer ${
+              className={`px-2 py-1 rounded-md border text-[10.5px] font-bold transition-colors cursor-pointer ${
                 on ? "bg-emerald-600 text-white border-emerald-700 shadow-sm" : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
               }`}
             >
@@ -1693,11 +1693,11 @@ const WageCalcModePanel: React.FC<WageCalcModePanelProps> = ({
             <div>· 야간수당 <b className="tabular-nums">{fmtWon(forwardCalc.nightAmount)}</b></div>
           )}
           <div>· 연차수당 <b className="tabular-nums">{fmtWon(forwardCalc.annualLeaveAmount)}</b></div>
-          <div className="mt-1 font-black text-emerald-800">세전 총액 <span className="tabular-nums">{fmtWon(forwardCalc.total)}</span> 원</div>
+          <div className="mt-1 font-bold text-emerald-800">세전 총액 <span className="tabular-nums">{fmtWon(forwardCalc.total)}</span> 원</div>
           <button
             type="button"
             onClick={applyForwardToWage}
-            className="mt-1 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-600 text-white text-[10.5px] font-black hover:bg-emerald-700 transition-colors cursor-pointer"
+            className="mt-1 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-600 text-white text-[10.5px] font-bold hover:bg-emerald-700 transition-colors cursor-pointer"
           >
             임금표에 반영
           </button>
@@ -1713,11 +1713,11 @@ const WageCalcModePanel: React.FC<WageCalcModePanelProps> = ({
               inputMode="numeric"
               value={targetTotal}
               onChange={(e) => setTargetTotal(e.target.value.replace(/[^0-9]/g, ""))}
-              className="flex-1 min-w-0 bg-white border border-zinc-200 rounded px-1.5 py-0.5 text-[14px] text-zinc-800 font-black text-right focus:outline-none focus:border-brand-deep transition"
+              className="flex-1 min-w-0 bg-white border border-zinc-200 rounded px-1.5 py-0.5 text-[14px] text-zinc-800 font-bold text-right focus:outline-none focus:border-brand-deep transition"
             />
             <span className="text-[14px] font-bold">원</span>
           </div>
-          <div className="mt-1 font-black text-emerald-800">
+          <div className="mt-1 font-bold text-emerald-800">
             필요 시급 <span className="tabular-nums">{fmtWon(targetHourly)}</span> 원
             <span className="text-[9.5px] text-zinc-500 font-semibold ml-1">
               (÷{WAGE_DIVISOR.toFixed(2)})
@@ -1726,7 +1726,7 @@ const WageCalcModePanel: React.FC<WageCalcModePanelProps> = ({
           <button
             type="button"
             onClick={applyTargetToHourly}
-            className="mt-1 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-600 text-white text-[10.5px] font-black hover:bg-emerald-700 transition-colors cursor-pointer"
+            className="mt-1 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-600 text-white text-[10.5px] font-bold hover:bg-emerald-700 transition-colors cursor-pointer"
           >
             시급에 반영 (주중/주말 동일)
           </button>
@@ -1739,7 +1739,7 @@ const WageCalcModePanel: React.FC<WageCalcModePanelProps> = ({
             <div>일 근무 <b className="tabular-nums">{actualCalc.dailyHours.toFixed(2)}h</b> · 주중 <b>{weeklyWeekdayDays}일</b> · 주말 <b>{weeklyWeekendDays}일</b></div>
             <div>월 주중근무 <b className="tabular-nums">{actualCalc.weekdayMonthlyHours.toFixed(1)}h</b> × <b className="tabular-nums">{fmtWon(form.weekdayHourly)}</b> = <b className="tabular-nums">{fmtWon(actualCalc.weekdayPay)}</b></div>
             <div>월 주말근무 <b className="tabular-nums">{actualCalc.weekendMonthlyHours.toFixed(1)}h</b> × <b className="tabular-nums">{fmtWon(form.weekendHourly)}</b> = <b className="tabular-nums">{fmtWon(actualCalc.weekendPay)}</b></div>
-            <div className="mt-1 font-black text-emerald-800">실 근무 총액 <span className="tabular-nums">{fmtWon(actualCalc.total)}</span> 원</div>
+            <div className="mt-1 font-bold text-emerald-800">실 근무 총액 <span className="tabular-nums">{fmtWon(actualCalc.total)}</span> 원</div>
             {/* T-J (2026-08-05) · 기본급에 반영 버튼 제거 · 참고용 계산기로 유지 */}
             <div className="mt-1 text-[9.5px] text-zinc-500 italic">
               * 계산 결과는 참고용입니다. 세후 목표 역산은 상단 "희망 월 세후 수령액" 을 사용하세요.
@@ -1784,7 +1784,7 @@ const WageSummaryDualPanel: React.FC<WageSummaryDualPanelProps> = ({
   const diffPct = rightNet.net > 0 ? Math.round((diff / rightNet.net) * 100) : 0;
 
   const row = (label: string, value: number, bold = false) => (
-    <div className={`flex items-center justify-between text-[15px] ${bold ? "font-black text-zinc-900" : "text-zinc-700"}`}>
+    <div className={`flex items-center justify-between text-[15px] ${bold ? "font-bold text-zinc-900" : "text-zinc-700"}`}>
       <span>{label}</span>
       <span className="tabular-nums">{fmtWon(value)} 원</span>
     </div>
@@ -1794,13 +1794,13 @@ const WageSummaryDualPanel: React.FC<WageSummaryDualPanelProps> = ({
     <div className="rounded-lg border border-zinc-200 bg-white p-2 flex flex-col gap-2">
       <div className="flex items-center gap-1.5">
         <Calculator size={12} weight="fill" className="text-indigo-700" />
-        <span className="text-[15px] font-black text-indigo-800">임금 산정 비교 · 포괄 vs 실 근무</span>
+        <span className="text-[15px] font-bold text-indigo-800">임금 산정 비교 · 포괄 vs 실 근무</span>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         {/* 좌측 · 포괄임금 */}
         <div className="rounded-md border border-emerald-200 bg-emerald-50/40 p-2 flex flex-col gap-0.5">
-          <div className="text-[14px] font-black text-emerald-800 uppercase tracking-wider mb-0.5">
+          <div className="text-[14px] font-bold text-emerald-800 uppercase tracking-wider mb-0.5">
             A. 포괄임금 (계약서 기준)
           </div>
           {row(`기본급 ${form.wageComponents.basicSalary.hours}h`,       form.wageComponents.basicSalary.amount)}
@@ -1819,7 +1819,7 @@ const WageSummaryDualPanel: React.FC<WageSummaryDualPanelProps> = ({
 
         {/* 우측 · 실 근무시간 */}
         <div className="rounded-md border border-indigo-200 bg-indigo-50/40 p-2 flex flex-col gap-0.5">
-          <div className="text-[14px] font-black text-indigo-800 uppercase tracking-wider mb-0.5">
+          <div className="text-[14px] font-bold text-indigo-800 uppercase tracking-wider mb-0.5">
             B. 실 근무시간 (약사 실무)
           </div>
           {actualCalc ? (
@@ -1949,7 +1949,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
       style={avoidBreak ? { pageBreakInside: "avoid", breakInside: "avoid" } : undefined}
     >
       <div className="border-l-[3px] border-zinc-700 pl-3">
-        <h3 className="text-[10.5px] font-black uppercase tracking-[0.22em] text-zinc-500 mb-1">
+        <h3 className="text-[10.5px] font-bold uppercase tracking-[0.22em] text-zinc-500 mb-1">
           {label}
         </h3>
         <div className="text-[11.5px] text-zinc-800 leading-snug">
@@ -1965,7 +1965,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
     children: React.ReactNode;
   }> = ({ partyLabel, children }) => (
     <div className="border border-zinc-400 rounded-sm p-3 flex flex-col gap-1.5 bg-white">
-      <div className="text-[10.5px] font-black uppercase tracking-[0.24em] text-zinc-500 pb-1 border-b border-zinc-200">
+      <div className="text-[10.5px] font-bold uppercase tracking-[0.24em] text-zinc-500 pb-1 border-b border-zinc-200">
         {partyLabel}
       </div>
       {children}
@@ -2003,10 +2003,10 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
         className="flex items-center justify-center pb-3 mb-3 relative"
         style={{ borderBottom: "2px solid #1e293b" }}
       >
-        <h2 className="text-[24px] font-black tracking-[0.32em] text-zinc-900 text-center">
+        <h2 className="text-[24px] font-bold tracking-[0.32em] text-zinc-900 text-center">
           근 로 계 약 서
         </h2>
-        <div className="absolute right-0 top-0 bottom-0 flex items-center text-[14px] font-black text-zinc-800">
+        <div className="absolute right-0 top-0 bottom-0 flex items-center text-[14px] font-bold text-zinc-800">
           ( <span className="mx-1 min-w-[80px] text-center border-b border-zinc-500 px-2">{form.employeeName || " "}</span> )
         </div>
       </header>
@@ -2124,7 +2124,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
             위의 임금 조항 전체 내용을 이해하고 동의함
           </span>
           <span className="ml-auto flex items-center gap-1">
-            <span className="text-[15px] font-black text-zinc-800 border-b border-zinc-500 px-2 min-w-[70px] text-center">
+            <span className="text-[15px] font-bold text-zinc-800 border-b border-zinc-500 px-2 min-w-[70px] text-center">
               {form.employeeName || " "}
             </span>
             <InlineSignSpot
@@ -2164,7 +2164,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
         <div className="text-[11.5px] font-bold mb-1">2. 기본 근로시간:</div>
         <table className="w-full border-collapse border border-zinc-400 text-[11.5px] mb-1 rounded-sm overflow-hidden">
           <thead>
-            <tr style={{ backgroundColor: HEX.slateHead }} className="font-black">
+            <tr style={{ backgroundColor: HEX.slateHead }} className="font-bold">
               <th className="border border-zinc-300 px-2 py-1 text-center w-[35%]">구분</th>
               <th className="border border-zinc-300 px-2 py-1 text-center w-[35%]">기본 근로시간</th>
               <th className="border border-zinc-300 px-2 py-1 text-center w-[30%]">휴게시간(무급)</th>
@@ -2219,7 +2219,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
             위의 근로시간·휴게 조항 전체 내용을 이해하고 동의함
           </span>
           <span className="ml-auto flex items-center gap-1">
-            <span className="text-[15px] font-black text-zinc-800 border-b border-zinc-500 px-2 min-w-[70px] text-center">
+            <span className="text-[15px] font-bold text-zinc-800 border-b border-zinc-500 px-2 min-w-[70px] text-center">
               {form.employeeName || " "}
             </span>
             <InlineSignSpot
@@ -2287,7 +2287,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
             위의 기타사항 전체 내용을 이해하고 동의함
           </span>
           <span className="ml-auto flex items-center gap-1">
-            <span className="text-[15px] font-black text-zinc-800 border-b border-zinc-500 px-2 min-w-[70px] text-center">
+            <span className="text-[15px] font-bold text-zinc-800 border-b border-zinc-500 px-2 min-w-[70px] text-center">
               {form.employeeName || " "}
             </span>
             <InlineSignSpot
@@ -2332,7 +2332,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
         </div>
         <div className="flex items-center gap-1">
           <span className="text-[15px] font-bold text-zinc-800">수령자 성명:</span>
-          <span className="text-[11.5px] font-black text-zinc-900 border-b border-zinc-500 px-2 min-w-[70px] text-center">
+          <span className="text-[11.5px] font-bold text-zinc-900 border-b border-zinc-500 px-2 min-w-[70px] text-center">
             {form.employeeName || " "}
           </span>
           <InlineSignSpot
@@ -2348,7 +2348,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
       </div>
 
       {/* 계약일 (년/월/일) */}
-      <div className="mt-4 flex items-center justify-center gap-3 text-[18px] font-black tracking-widest text-zinc-900">
+      <div className="mt-4 flex items-center justify-center gap-3 text-[18px] font-bold tracking-widest text-zinc-900">
         <span className="tabular-nums">{csY || "20__"}</span>
         <span>년</span>
         <span className="tabular-nums">{typeof csM === "number" ? csM : "__"}</span>
@@ -2421,7 +2421,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
         style={{ pageBreakInside: "avoid", breakInside: "avoid" }}
       >
         <div className="border-l-[3px] border-zinc-700 pl-3 mb-2">
-          <h3 className="text-[15px] font-black uppercase tracking-[0.22em] text-zinc-500">
+          <h3 className="text-[15px] font-bold uppercase tracking-[0.22em] text-zinc-500">
             개인정보 · CCTV 설치 동의
           </h3>
         </div>
@@ -2429,7 +2429,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
           <tbody>
             <tr>
               <td
-                className="border border-zinc-300 px-2 py-1 text-center font-black w-[22%]"
+                className="border border-zinc-300 px-2 py-1 text-center font-bold w-[22%]"
                 style={{ backgroundColor: HEX.slateHead }}
               >
                 정보의 수집·이용 목적<br /><span className="text-[14px] text-zinc-600">(CCTV 설치 목적)</span>
@@ -2438,7 +2438,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
                 당사의 인적자원관리, 방범 및 화재예방, 시설안전관리, 사업장내 사고예방 및 범죄예방
               </td>
               <td
-                className="border border-zinc-300 px-2 py-1 text-center font-black w-[18%]"
+                className="border border-zinc-300 px-2 py-1 text-center font-bold w-[18%]"
                 style={{ backgroundColor: HEX.slateHead }}
               >
                 정보 보유 및 이용기간
@@ -2449,7 +2449,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
             </tr>
             <tr>
               <td
-                className="border border-zinc-300 px-2 py-1 text-center font-black"
+                className="border border-zinc-300 px-2 py-1 text-center font-bold"
                 style={{ backgroundColor: HEX.slateHead }}
               >
                 개인정보의 항목
@@ -2462,7 +2462,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
             </tr>
             <tr>
               <td
-                className="border border-zinc-300 px-2 py-1 text-center font-black"
+                className="border border-zinc-300 px-2 py-1 text-center font-bold"
                 style={{ backgroundColor: HEX.slateHead }}
               >
                 CCTV 촬영시간 및 범위
@@ -2496,7 +2496,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
           </label>
           <div className="ml-auto flex items-center gap-1">
             <span className="text-[15px] text-zinc-700 font-bold">성명:</span>
-            <span className="text-[11.5px] font-black text-zinc-900 border-b border-zinc-500 px-2 min-w-[70px] text-center">
+            <span className="text-[11.5px] font-bold text-zinc-900 border-b border-zinc-500 px-2 min-w-[70px] text-center">
               {form.privacyConsent.recipientName || form.employeeName || " "}
             </span>
             <InlineSignSpot
@@ -2553,7 +2553,7 @@ const ExtendContractModal: React.FC<{
             <div className="w-7 h-7 rounded-lg bg-brand-deep flex items-center justify-center shadow-sm">
               <ClockCounterClockwise size={13} weight="fill" className="text-white" />
             </div>
-            <span className="text-sm font-black text-zinc-800">근로계약 연장</span>
+            <span className="text-sm font-bold text-zinc-800">근로계약 연장</span>
           </div>
           <button type="button" onClick={onClose} className="text-zinc-400 hover:text-zinc-700 w-7 h-7 rounded-md hover:bg-white/70 cursor-pointer flex items-center justify-center" title="닫기">
             <XIcon size={13} weight="bold" />
@@ -2570,7 +2570,7 @@ const ExtendContractModal: React.FC<{
                 const active = months === m;
                 return (
                   <button key={m} type="button" onClick={() => setMonths(m)}
-                    className={`px-3 py-1.5 rounded-lg border text-[15px] font-black transition-colors cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-lg border text-[15px] font-bold transition-colors cursor-pointer ${
                       active ? "bg-brand-deep text-white border-indigo-600 shadow-sm" : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
                     }`}
                   >
@@ -2580,18 +2580,18 @@ const ExtendContractModal: React.FC<{
               })}
               <div className="flex items-center gap-1 ml-1">
                 <input type="number" min={1} max={120} value={months} onChange={(e) => setMonths(e.target.value.replace(/[^0-9]/g, ""))}
-                  className="w-16 bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[15px] text-zinc-800 font-black text-right focus:outline-none focus:border-brand-deep focus:shadow-sm transition" placeholder="직접" />
+                  className="w-16 bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[15px] text-zinc-800 font-bold text-right focus:outline-none focus:border-brand-deep focus:shadow-sm transition" placeholder="직접" />
                 <span className="text-[15px] font-semibold text-zinc-500">개월</span>
               </div>
             </div>
           </div>
           <div className="rounded-lg border border-indigo-200 bg-indigo-50/40 px-3 py-2 text-[14px] flex flex-col gap-1">
-            <div className="font-black text-indigo-800 flex items-center gap-1">
+            <div className="font-bold text-indigo-800 flex items-center gap-1">
               <CalendarBlank size={12} weight="fill" />신규 계약 기간
             </div>
             {preview ? (
               <div className="text-zinc-800">
-                <b className="font-black">{preview.start}</b><span className="mx-1 text-zinc-400">~</span><b className="font-black">{preview.end}</b>
+                <b className="font-bold">{preview.start}</b><span className="mx-1 text-zinc-400">~</span><b className="font-bold">{preview.end}</b>
               </div>
             ) : <div className="text-rose-600 font-semibold">개월수를 입력하면 신규 기간이 계산됩니다.</div>}
             {hireDateReference && <div className="text-[15px] text-zinc-500 mt-0.5">· 입사일 <b className="text-zinc-700">{hireDateReference}</b> 은 변경되지 않고 유지됩니다 (근속 산정용).</div>}
@@ -2603,7 +2603,7 @@ const ExtendContractModal: React.FC<{
         <div className="px-4 py-3 border-t border-zinc-200 bg-zinc-50/70 flex items-center justify-end gap-2">
           <button type="button" onClick={onClose} className="text-[14px] font-bold text-zinc-600 bg-white border border-zinc-300 rounded-md h-8 px-3 hover:bg-zinc-50 cursor-pointer">취소</button>
           <button type="button" onClick={onConfirm} disabled={!preview}
-            className="text-[14px] font-black text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-md h-8 px-4 cursor-pointer disabled:bg-zinc-300 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-sm">
+            className="text-[14px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-md h-8 px-4 cursor-pointer disabled:bg-zinc-300 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-sm">
             <Check size={12} weight="bold" />연장 확정
           </button>
         </div>
@@ -3927,7 +3927,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const fldLabel = "block text-[10.5px] font-bold uppercase tracking-wider text-zinc-500 mb-1";
   const cardBase = "rounded-xl border border-zinc-200 bg-white p-3 flex flex-col gap-3 shadow-sm";
   const cardInner = "rounded-lg border border-zinc-100 bg-zinc-50/60 p-2.5 flex flex-col gap-2";
-  const cardGroupLabel = "text-[14px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1.5 mb-0.5";
+  const cardGroupLabel = "text-[14px] font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-1.5 mb-0.5";
 
   const leftFormNode = (
     <section className="bg-zinc-50 flex flex-col gap-3 h-full overflow-y-auto p-0.5">
@@ -3951,7 +3951,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     : "bg-white border-zinc-200 hover:bg-zinc-50"
                 }`}
               >
-                <span className={`text-[14px] font-black ${active ? "text-indigo-700" : "text-zinc-600"}`}>
+                <span className={`text-[14px] font-bold ${active ? "text-indigo-700" : "text-zinc-600"}`}>
                   {m.label}
                 </span>
                 <span className={`text-[14px] font-semibold ${active ? "text-zinc-600" : "text-zinc-400"}`}>
@@ -3970,7 +3970,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             <div className="w-6 h-6 rounded-md bg-indigo-100 flex items-center justify-center shrink-0">
               <DownloadSimple size={13} weight="fill" className="text-indigo-600" />
             </div>
-            <span className="text-[14px] font-black text-zinc-700">PDF 업로드 (Google Drive)</span>
+            <span className="text-[14px] font-bold text-zinc-700">PDF 업로드 (Google Drive)</span>
           </div>
 
           <div className="rounded-lg border border-indigo-100 bg-indigo-50/30 px-3 py-2 text-[15px] text-zinc-600 leading-relaxed">
@@ -4068,7 +4068,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               type="file"
               accept="application/pdf,.pdf"
               onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
-              className="w-full text-[14px] text-zinc-700 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[14px] file:font-black file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200 file:cursor-pointer cursor-pointer"
+              className="w-full text-[14px] text-zinc-700 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[14px] file:font-bold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200 file:cursor-pointer cursor-pointer"
             />
             {uploadFile && (
               <div className="mt-1 flex items-center gap-2 text-[15px] text-zinc-600 bg-white border border-zinc-200 rounded-lg px-2 py-1.5">
@@ -4097,7 +4097,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             type="button"
             onClick={handleUploadContract}
             disabled={!uploadFile || uploadBusy || !form.employeeName.trim()}
-            className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white text-[15px] font-black shadow-sm transition-all cursor-pointer disabled:cursor-not-allowed ${
+            className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white text-[15px] font-bold shadow-sm transition-all cursor-pointer disabled:cursor-not-allowed ${
               uploadFile && !uploadBusy && form.employeeName.trim()
                 ? "bg-brand-deep hover:brightness-110"
                 : "bg-zinc-300 text-zinc-500"
@@ -4128,7 +4128,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           <div className="w-6 h-6 rounded-md bg-violet-100 flex items-center justify-center shrink-0">
             <User size={13} weight="fill" className="text-violet-600" />
           </div>
-          <span className="text-[14px] font-black text-zinc-700">근로자 정보</span>
+          <span className="text-[14px] font-bold text-zinc-700">근로자 정보</span>
         </button>
 
         {!isCardCollapsed("employee") && (<>
@@ -4176,7 +4176,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           {/* 우선업무 */}
           {(form.employeeCategory === "매장" || form.employeeCategory === "창고") && (
             <div className="rounded-lg border border-indigo-100 bg-indigo-50/40 px-2.5 py-2 flex flex-wrap items-center gap-2">
-              <span className="text-[10.5px] font-black text-indigo-700 shrink-0">우선업무</span>
+              <span className="text-[10.5px] font-bold text-indigo-700 shrink-0">우선업무</span>
               <div className="flex items-center gap-1">
                 {(["매장", "창고"] as const).map(f => {
                   const active = form.primaryFocus === f;
@@ -4197,7 +4197,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     upd("primaryFocusPercent", Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 70);
                   }}
                   disabled={form.primaryFocus == null}
-                  className="w-14 bg-white border border-zinc-200 rounded-lg px-2 py-1 text-[14px] text-zinc-800 font-black text-right focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition disabled:bg-zinc-100 disabled:text-zinc-400"
+                  className="w-14 bg-white border border-zinc-200 rounded-lg px-2 py-1 text-[14px] text-zinc-800 font-bold text-right focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition disabled:bg-zinc-100 disabled:text-zinc-400"
                 />
                 <span className="text-[15px] text-indigo-700 font-bold">%</span>
               </div>
@@ -4269,7 +4269,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               <div className="shrink-0">
                 <label className={fldLabel}>통장사본</label>
                 <label
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg border font-black text-[11.5px] transition-colors cursor-pointer ${
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg border font-bold text-[11.5px] transition-colors cursor-pointer ${
                     form.bankbookImageUrl
                       ? "bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100"
                       : "bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50"
@@ -4346,7 +4346,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             <div className="w-6 h-6 rounded-md bg-indigo-100 flex items-center justify-center shrink-0">
               <ClipboardText size={13} weight="fill" className="text-indigo-600" />
             </div>
-            <span className="text-[14px] font-black text-zinc-700">근무조건 입력</span>
+            <span className="text-[14px] font-bold text-zinc-700">근무조건 입력</span>
           </button>
           {/* 2026-08-06 · 월 근로 173h 표시 제거 · 계산 오류 · 실제는 209h 기준 (사용자 요청) */}
         </div>
@@ -4409,7 +4409,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           {/* 근무 요일 */}
           <div>
             <label className={fldLabel}>
-              근무 요일 <span className="text-indigo-600 font-black">주{weeklyDays}일</span>
+              근무 요일 <span className="text-indigo-600 font-bold">주{weeklyDays}일</span>
               <span className="text-zinc-400 font-semibold normal-case tracking-normal ml-1">
                 (주중 {weeklyWeekdayDays}일 · 주말 {weeklyWeekendDays}일)
               </span>
@@ -4421,7 +4421,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 return (
                   <button key={d} type="button" onClick={() => toggleDay(d)}
                     className={[
-                      "w-7 h-7 rounded-md text-[11.5px] font-black transition-colors cursor-pointer border",
+                      "w-7 h-7 rounded-md text-[11.5px] font-bold transition-colors cursor-pointer border",
                       on
                         ? isWeekend
                           ? "bg-rose-500 text-white border-rose-600 shadow-sm"
@@ -4585,7 +4585,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 {/* 행0 · 주 시간 + 계약유형 배지 (항상 표시) */}
                 <div className="flex items-center flex-wrap gap-x-1.5">
                   <span className="font-bold text-indigo-900">주 {weeklyH.toFixed(1)}시간</span>
-                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[15px] font-black uppercase tracking-wide ${isMonthly ? "bg-indigo-200 text-indigo-800" : "bg-amber-200 text-amber-800"}`}>
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[15px] font-bold uppercase tracking-wide ${isMonthly ? "bg-indigo-200 text-indigo-800" : "bg-amber-200 text-amber-800"}`}>
                     {isMonthly ? "월급제" : "시급제"}
                   </span>
                   {!hasWage && (
@@ -4626,7 +4626,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                         <span className="text-zinc-400">×</span>
                         <span className="text-zinc-600">4.345</span>
                         <span className="text-zinc-400">=</span>
-                        <span className="tabular-nums font-black text-emerald-700">{fmtWon(buMonthlyNet)}원</span>
+                        <span className="tabular-nums font-bold text-emerald-700">{fmtWon(buMonthlyNet)}원</span>
                         <span className="text-[9.5px] text-zinc-400 bg-emerald-100 px-1 rounded">(희망 월 수령액)</span>
                       </div>
                     </div>
@@ -4666,7 +4666,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             <div className="w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center shrink-0">
               <Money size={13} weight="fill" className="text-emerald-600" />
             </div>
-            <span className="text-[14px] font-black text-zinc-700">임금구성표 산출</span>
+            <span className="text-[14px] font-bold text-zinc-700">임금구성표 산출</span>
           </button>
         </div>
 
@@ -4680,7 +4680,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           return (
             <div className="rounded-md bg-rose-50 border border-rose-300 px-2 py-1.5 flex items-center gap-1.5">
               <Warning size={12} weight="fill" className="text-rose-600 shrink-0" />
-              <span className="text-[10.5px] font-black text-rose-700">
+              <span className="text-[10.5px] font-bold text-rose-700">
                 최저임금 위반 위험 · 통상시급 <span className="tabular-nums">{fmtWon(wd)}</span> 원 &lt; 2026 최저 <span className="tabular-nums">{fmtWon(MIN_WAGE_2026)}</span> 원
               </span>
             </div>
@@ -4821,7 +4821,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
 
           const tdItem = "px-3 py-2 text-zinc-800 font-bold align-top";
           const tdMid  = "px-3 py-2 text-zinc-500 text-[15px] align-top";
-          const tdAmt  = "px-3 py-2 text-right tabular-nums font-black text-zinc-900 align-top whitespace-nowrap";
+          const tdAmt  = "px-3 py-2 text-right tabular-nums font-bold text-zinc-900 align-top whitespace-nowrap";
 
           const deductionRows = [
             { label: "국민연금",   rate: `${(INSURANCE_RATES.PENSION * 100).toFixed(2)}%`,        amount: pension, desc: "노후 소득 보장 · 사용자·근로자 각각 부담 (근로자 부담분)" },
@@ -4846,13 +4846,13 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     cat === "창고"  ? "bg-orange-500 text-white" :
                                       "bg-zinc-600 text-white";
                   return (
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9.5px] font-black ${cls}`}>
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9.5px] font-bold ${cls}`}>
                       {cat}
                     </span>
                   );
                 })()}
-                <span className="font-black text-indigo-900">주 {weeklyH.toFixed(1)}시간</span>
-                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[15px] font-black uppercase tracking-wide ${isMonthly ? "bg-indigo-200 text-indigo-800" : "bg-amber-200 text-amber-800"}`}>
+                <span className="font-bold text-indigo-900">주 {weeklyH.toFixed(1)}시간</span>
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[15px] font-bold uppercase tracking-wide ${isMonthly ? "bg-indigo-200 text-indigo-800" : "bg-amber-200 text-amber-800"}`}>
                   {isMonthly ? "월급제" : "시급제"}
                 </span>
                 {autoMonthlyNet > 0 && (
@@ -4880,7 +4880,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     <span className="text-zinc-400">×</span>
                     <span className="text-zinc-600">4.345</span>
                     <span className="text-zinc-400">=</span>
-                    <span className="tabular-nums font-black text-emerald-700">{fmtWon(autoMonthlyNet)}원</span>
+                    <span className="tabular-nums font-bold text-emerald-700">{fmtWon(autoMonthlyNet)}원</span>
                     <span className="text-[9.5px] text-zinc-400 bg-emerald-100 px-1 rounded">(희망 월 수령액)</span>
                   </>
                 )}
@@ -4888,7 +4888,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               {/* 헤더 · 통상시급 입력 + 기본급 실시간 · 세전 표시 */}
               <div className="px-4 py-2.5 bg-zinc-50/60 border-b border-zinc-200 flex flex-col gap-1">
                 <div className="flex items-baseline flex-wrap gap-x-2">
-                  <span className="text-[10.5px] font-black uppercase tracking-wider text-zinc-500">통상시급</span>
+                  <span className="text-[10.5px] font-bold uppercase tracking-wider text-zinc-500">통상시급</span>
                   <input
                     type="number"
                     step="0.1"
@@ -4898,14 +4898,14 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                       const v = Number(e.target.value);
                       setWageHourlyOverride(Number.isFinite(v) && v > 0 ? v : null);
                     }}
-                    className="w-24 tabular-nums bg-white border border-zinc-300 rounded px-1.5 py-0.5 text-[15px] font-black text-zinc-900 text-right focus:outline-none focus:border-brand-deep"
+                    className="w-24 tabular-nums bg-white border border-zinc-300 rounded px-1.5 py-0.5 text-[15px] font-bold text-zinc-900 text-right focus:outline-none focus:border-brand-deep"
                   />
                   <span className="text-zinc-500 text-[15px]">원</span>
                   {autoMonthlyNet > 0 && (
                     <button
                       type="button"
                       onClick={applyHopeMatch}
-                      className="text-[14px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-black cursor-pointer"
+                      className="text-[14px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-bold cursor-pointer"
                       title={`근무조건 희망월수령액 ${fmtWon(autoMonthlyNet)}원을 세후로 맞추는 통상시급으로 자동 조정`}
                     >
                       희망 맞춤
@@ -4922,15 +4922,15 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     </button>
                   )}
                   <span className="text-zinc-400 text-[10.5px]">→ 기본급</span>
-                  <span className="tabular-nums font-black text-zinc-700 text-[11.5px]">{fmtWon(basicAmt)}원</span>
+                  <span className="tabular-nums font-bold text-zinc-700 text-[11.5px]">{fmtWon(basicAmt)}원</span>
                   <span className="text-zinc-400 text-[14px]">(× {WAGE_HOURS.BASIC}h)</span>
                   <span className="ml-auto text-zinc-500 text-[10.5px]">
-                    세전 <span className="tabular-nums font-black text-zinc-800">{fmtWon(gross)}원</span>
+                    세전 <span className="tabular-nums font-bold text-zinc-800">{fmtWon(gross)}원</span>
                     <span className="text-zinc-400"> (× {WAGE_DIVISOR.toFixed(2)}h)</span>
                   </span>
                 </div>
                 <div className="flex items-baseline flex-wrap gap-x-3 gap-y-1 text-[14px] text-zinc-400 font-semibold">
-                  <span>참고 · 약사 주중 근무 시 통상시급 예시 <span className="tabular-nums font-black text-zinc-500">22,350.8</span>원 (기본급 4,671,298원 ÷ 209h)</span>
+                  <span>참고 · 약사 주중 근무 시 통상시급 예시 <span className="tabular-nums font-bold text-zinc-500">22,350.8</span>원 (기본급 4,671,298원 ÷ 209h)</span>
                   <span className="ml-auto flex items-baseline gap-x-1.5">
                     <span className="text-zinc-500">부양</span>
                     <input
@@ -4943,7 +4943,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                         const v = Number(e.target.value);
                         setDependentsCount(Number.isFinite(v) && v >= 1 ? Math.floor(v) : 1);
                       }}
-                      className="w-12 tabular-nums bg-white border border-zinc-300 rounded px-1.5 py-0.5 text-[15px] font-black text-zinc-800 text-right focus:outline-none focus:border-brand-deep"
+                      className="w-12 tabular-nums bg-white border border-zinc-300 rounded px-1.5 py-0.5 text-[15px] font-bold text-zinc-800 text-right focus:outline-none focus:border-brand-deep"
                     />
                     <span className="text-zinc-500">인</span>
                   </span>
@@ -4959,7 +4959,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                         const v = Number(e.target.value);
                         setChildrenCount(Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
                       }}
-                      className="w-12 tabular-nums bg-white border border-zinc-300 rounded px-1.5 py-0.5 text-[15px] font-black text-zinc-800 text-right focus:outline-none focus:border-brand-deep"
+                      className="w-12 tabular-nums bg-white border border-zinc-300 rounded px-1.5 py-0.5 text-[15px] font-bold text-zinc-800 text-right focus:outline-none focus:border-brand-deep"
                       title="자녀 세액공제 · 8~20세 자녀 (1인 25만/2인 55만/3인+ 55만+40만×(n-2))"
                     />
                     <span className="text-zinc-500">인</span>
@@ -4969,7 +4969,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     <select
                       value={withholdingRate}
                       onChange={(e) => setWithholdingRate(Number(e.target.value) as WithholdingRate)}
-                      className="tabular-nums bg-white border border-zinc-300 rounded px-1.5 py-0.5 text-[15px] font-black text-zinc-800 focus:outline-none focus:border-brand-deep cursor-pointer"
+                      className="tabular-nums bg-white border border-zinc-300 rounded px-1.5 py-0.5 text-[15px] font-bold text-zinc-800 focus:outline-none focus:border-brand-deep cursor-pointer"
                       title="근로자 선택 · 80%: 매달 적게(연말 추납) · 100%: 표준 · 120%: 매달 많이(연말 환급)"
                     >
                       {WITHHOLDING_RATES.map(r => (
@@ -4988,7 +4988,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                         setExtraDeduction(Math.max(0, v));
                       }}
                       placeholder="0"
-                      className="w-20 tabular-nums bg-white border border-zinc-300 rounded px-1.5 py-0.5 text-[15px] font-black text-zinc-800 text-right focus:outline-none focus:border-brand-deep"
+                      className="w-20 tabular-nums bg-white border border-zinc-300 rounded px-1.5 py-0.5 text-[15px] font-bold text-zinc-800 text-right focus:outline-none focus:border-brand-deep"
                       title="추가 공제항목 (비과세·특별공제 등) · 소득세 과세대상 M에서 차감"
                     />
                     <span className="text-zinc-500">원</span>
@@ -5000,9 +5000,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               <table className="w-full text-[11.5px]">
                 <thead className="bg-zinc-50 text-zinc-500">
                   <tr>
-                    <th className="px-3 py-1.5 text-left font-black w-[36%]">구성 항목</th>
-                    <th className="px-3 py-1.5 text-left font-black">내용</th>
-                    <th className="px-3 py-1.5 text-right font-black w-[22%]">금액</th>
+                    <th className="px-3 py-1.5 text-left font-bold w-[36%]">구성 항목</th>
+                    <th className="px-3 py-1.5 text-left font-bold">내용</th>
+                    <th className="px-3 py-1.5 text-right font-bold w-[22%]">금액</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -5100,14 +5100,14 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   </tr>
                   {/* 월급여총액 (세전) · 8항목 합계 */}
                   <tr className="border-t-2 border-zinc-300 bg-zinc-50">
-                    <td className="px-3 py-2 text-zinc-800 font-black text-[12.5px]">
+                    <td className="px-3 py-2 text-zinc-800 font-bold text-[12.5px]">
                       월급여총액 <span className="text-zinc-500 font-bold text-[10.5px]">(세전)</span>
                     </td>
                     <td className="px-3 py-2 text-[10.5px] text-zinc-500 font-semibold">
                       기본 4항목 {fmtWon(autoSum)}
                       {(holidayOtAmt + nightAmt + meal + vehicle) > 0 && ` + 선택 ${fmtWon(holidayOtAmt + nightAmt + meal + vehicle)}`}
                     </td>
-                    <td className="px-3 py-2 text-right tabular-nums font-black text-zinc-900 text-[15px] whitespace-nowrap">
+                    <td className="px-3 py-2 text-right tabular-nums font-bold text-zinc-900 text-[15px] whitespace-nowrap">
                       {fmtWon(grossTotal)}원
                     </td>
                   </tr>
@@ -5118,9 +5118,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               <details className="border-t border-zinc-200 bg-rose-50/30 group">
                 <summary className="px-3 py-2 flex items-baseline gap-x-2 cursor-pointer hover:bg-rose-50/60 list-none select-none">
                   <span className="text-zinc-400 text-[14px] transition-transform group-open:rotate-90 inline-block">▶</span>
-                  <span className="text-[10.5px] font-black uppercase tracking-wider text-rose-700">− 예상공제액</span>
+                  <span className="text-[10.5px] font-bold uppercase tracking-wider text-rose-700">− 예상공제액</span>
                   <span className="text-[10.5px] text-zinc-500">기본급 {fmtWon(basicAmt)}원 기준 · 실효 {deductionPct.toFixed(1)}%</span>
-                  <span className="tabular-nums font-black text-rose-700 ml-auto text-[14px]">−{fmtWon(deductionTotal)}원</span>
+                  <span className="tabular-nums font-bold text-rose-700 ml-auto text-[14px]">−{fmtWon(deductionTotal)}원</span>
                 </summary>
                 <div className="px-3 pb-2.5 flex flex-col gap-1">
                   <div className="pt-1.5 border-t border-rose-100/60 flex items-baseline gap-x-2 flex-wrap">
@@ -5164,16 +5164,16 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     <span className="tabular-nums text-zinc-600 text-[11.5px] ml-auto whitespace-nowrap">≈ {fmtWon(taxObj.localTax)}원</span>
                   </div>
                   <div className="flex items-baseline gap-x-2 pt-1.5 border-t border-rose-200">
-                    <span className="text-[10.5px] font-black uppercase tracking-wider text-rose-700">예상공제 합계</span>
+                    <span className="text-[10.5px] font-bold uppercase tracking-wider text-rose-700">예상공제 합계</span>
                     <span className="text-[10.5px] text-zinc-500">4대보험 {fmtWon(insSum)} + 소득세 {fmtWon(taxSum)}</span>
-                    <span className="tabular-nums font-black text-rose-700 ml-auto text-[14px]">−{fmtWon(deductionTotal)}원</span>
+                    <span className="tabular-nums font-bold text-rose-700 ml-auto text-[14px]">−{fmtWon(deductionTotal)}원</span>
                   </div>
                 </div>
               </details>
 
               {/* 예상 실수령 (세후) · 세전 총액 − 예상공제 파생 · 희망월수령액 대비 차이 표시 */}
               <div className="px-3 py-2 bg-emerald-50/60 border-t border-emerald-200 flex items-baseline flex-wrap gap-x-2 gap-y-1">
-                <span className="text-[10.5px] font-black uppercase tracking-wider text-emerald-700">예상 실수령 (세후)</span>
+                <span className="text-[10.5px] font-bold uppercase tracking-wider text-emerald-700">예상 실수령 (세후)</span>
                 <span className="text-[10.5px] text-emerald-600 font-semibold">세전 {fmtWon(grossTotal)} − 예상공제 {fmtWon(deductionTotal)}</span>
                 {autoMonthlyNet > 0 && (() => {
                   const diff = monthlyNet - autoMonthlyNet;
@@ -5181,12 +5181,12 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   const near = absDiff < 1000;
                   const cls = near ? "text-emerald-500" : (diff > 0 ? "text-indigo-500" : "text-amber-600");
                   return (
-                    <span className={`text-[14px] font-black ${cls}`} title={`희망월수령액 ${fmtWon(autoMonthlyNet)}원 대비`}>
+                    <span className={`text-[14px] font-bold ${cls}`} title={`희망월수령액 ${fmtWon(autoMonthlyNet)}원 대비`}>
                       희망 대비 {diff > 0 ? "+" : diff < 0 ? "−" : "="}{fmtWon(absDiff)}원 {near && "✓"}
                     </span>
                   );
                 })()}
-                <span className="tabular-nums font-black text-emerald-800 ml-auto text-[15px] whitespace-nowrap">{fmtWon(monthlyNet)}원</span>
+                <span className="tabular-nums font-bold text-emerald-800 ml-auto text-[15px] whitespace-nowrap">{fmtWon(monthlyNet)}원</span>
               </div>
             </div>
           );
@@ -5216,10 +5216,10 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     <section className="flex flex-col gap-3 h-full overflow-y-auto p-3 bg-zinc-100 rounded-xl">
       <div className="flex items-center gap-1.5 pb-1">
         <DownloadSimple size={16} weight="fill" className="text-indigo-600 rotate-180" />
-        <h2 className="text-sm font-black text-zinc-800">PDF 업로드 안내</h2>
+        <h2 className="text-sm font-bold text-zinc-800">PDF 업로드 안내</h2>
       </div>
       <div className="bg-white border border-zinc-200 rounded-xl p-4 flex flex-col gap-2 text-[14px] text-zinc-700 leading-relaxed">
-        <div className="text-[15px] font-black text-zinc-800">Google Drive · contract 폴더 저장</div>
+        <div className="text-[15px] font-bold text-zinc-800">Google Drive · contract 폴더 저장</div>
         <ol className="list-decimal pl-5 space-y-1">
           <li>왼쪽 폼에서 근로자 성명 · 계약 유형 · 기간을 입력합니다.</li>
           <li>PDF 파일 선택 후 [Google Drive 업로드] 클릭.</li>
@@ -5235,7 +5235,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     <section className="flex flex-col gap-2 h-full overflow-y-auto p-2 bg-zinc-100 rounded-xl">
       <div className="flex items-center gap-1.5 pb-1">
         <NotePencil size={16} weight="fill" className="text-emerald-600" />
-        <h2 className="text-sm font-black text-zinc-800">계약서 미리보기</h2>
+        <h2 className="text-sm font-bold text-zinc-800">계약서 미리보기</h2>
         <span className="text-[10.5px] text-zinc-400 font-semibold ml-1">(클릭하여 서명 · PDF 그대로 저장)</span>
       </div>
 
@@ -5245,7 +5245,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       }`}>
         <div className="flex items-center gap-1.5 shrink-0">
           {canApprove ? <Check size={13} weight="bold" className="text-emerald-600" /> : <Signature size={13} weight="fill" className="text-zinc-500" />}
-          <span className={`text-[11.5px] font-black ${canApprove ? "text-emerald-700" : "text-zinc-700"}`}>
+          <span className={`text-[11.5px] font-bold ${canApprove ? "text-emerald-700" : "text-zinc-700"}`}>
             서명 {signatureStatus.filled} / {signatureStatus.total}
           </span>
         </div>
@@ -5279,7 +5279,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       <div className="bg-white border border-zinc-200 rounded-xl shadow-sm p-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         <div className="flex-1 flex flex-col gap-1">
           <button type="button" onClick={handleApproveAndSave} disabled={generating || !canApprove}
-            className={`inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-white text-[14px] font-black shadow-md transition-all cursor-pointer disabled:cursor-not-allowed
+            className={`inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-white text-[14px] font-bold shadow-md transition-all cursor-pointer disabled:cursor-not-allowed
               ${canApprove && !generating
                 ? "bg-rose-500 hover:brightness-110 hover:shadow-lg"
                 : "bg-zinc-300 text-zinc-500"}`}
@@ -5295,7 +5295,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           )}
         </div>
         <button type="button" onClick={saveDraft}
-          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-300 bg-white hover:bg-zinc-50 text-zinc-700 text-[11.5px] font-black shadow-sm transition-colors cursor-pointer whitespace-nowrap"
+          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-300 bg-white hover:bg-zinc-50 text-zinc-700 text-[11.5px] font-bold shadow-sm transition-colors cursor-pointer whitespace-nowrap"
           title="현재 작성 내용을 브라우저에 저장"
         >
           임시저장
@@ -5349,7 +5349,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               <NotePencil size={16} weight="fill" />
             </div>
             <div>
-              <h1 className="text-sm sm:text-base font-black text-zinc-800 leading-none">근로계약서 작성</h1>
+              <h1 className="text-sm sm:text-base font-bold text-zinc-800 leading-none">근로계약서 작성</h1>
               <p className="text-[14px] text-zinc-500 mt-0.5">좌측 폼 · 우측 이미지 재현 · 프리뷰 내 서명 spot 클릭하여 서명 입력</p>
             </div>
           </div>
@@ -5381,12 +5381,12 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
 
         {existingContract && form.employeeId != null && (
           <div className="rounded-lg border border-indigo-200 bg-indigo-50/60 px-3 py-2 text-[14px] text-indigo-800 flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="inline-flex items-center gap-1 font-black">
+            <span className="inline-flex items-center gap-1 font-bold">
               <ClockCounterClockwise size={13} weight="fill" />
               기존 계약서
             </span>
             <span>
-              기간 <b className="font-black">{existingContract.start_date ?? "-"}</b> ~ <b className="font-black">{existingContract.end_date ?? "-"}</b>
+              기간 <b className="font-bold">{existingContract.start_date ?? "-"}</b> ~ <b className="font-bold">{existingContract.end_date ?? "-"}</b>
             </span>
             {existingContract.contract_type && (
               <span className="inline-flex items-center gap-1 rounded-md bg-white/70 border border-indigo-200 px-1.5 py-0.5 text-[15px] font-bold">

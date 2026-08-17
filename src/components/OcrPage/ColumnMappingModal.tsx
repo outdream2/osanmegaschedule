@@ -197,7 +197,7 @@ export const ColumnMappingModal: React.FC<Props> = ({
         {/* 헤더 */}
         <div className="px-5 py-3 border-b border-gray-200 flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-black text-zinc-800">🔧 공급사 컬럼 매핑</h3>
+            <h3 className="text-sm font-bold text-zinc-800">🔧 공급사 컬럼 매핑</h3>
             <p className="text-[11px] text-zinc-500 mt-0.5">
               <span className="font-bold text-indigo-600">{supplier || "(공급사 미지정)"}</span> — <span className="text-zinc-600">OCR 원본 컬럼</span>을 표준 필드에 연결. 저장하면 다음 스캔부터 자동 적용됩니다.
             </p>
@@ -233,7 +233,7 @@ export const ColumnMappingModal: React.FC<Props> = ({
           <div className="grid grid-cols-[1fr_120px_180px] gap-4 relative">
             {/* 좌측: raw 헤더 + 샘플 값 */}
             <div className="flex flex-col gap-2">
-              <div className="text-[10px] font-black text-zinc-500 uppercase mb-1">원본 컬럼</div>
+              <div className="text-[10px] font-bold text-zinc-500 uppercase mb-1">원본 컬럼</div>
               {rawHeaders.map((h, ci) => {
                 const isSelected = selectedRawIdx === ci;
                 const mappingVal = mapping[ci];
@@ -258,12 +258,12 @@ export const ColumnMappingModal: React.FC<Props> = ({
                       }`}
                     >
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <div className="text-[12px] font-black text-zinc-800 whitespace-nowrap overflow-hidden text-ellipsis">
+                        <div className="text-[12px] font-bold text-zinc-800 whitespace-nowrap overflow-hidden text-ellipsis">
                           {h || <span className="text-zinc-400 italic">(빈 헤더)</span>}
                         </div>
                         {isSplittable && (
                           <span
-                            className="text-[9px] font-black text-amber-700 bg-white border border-amber-300 rounded px-1 py-0.5 whitespace-nowrap"
+                            className="text-[9px] font-bold text-amber-700 bg-white border border-amber-300 rounded px-1 py-0.5 whitespace-nowrap"
                             title={`이 컬럼은 값이 ${tokenCount}개로 감지됨 · 클릭 후 오른쪽 필드 여러 개 선택하면 자동 분할`}
                           >
                             ✂️ 값 {tokenCount}개
@@ -304,12 +304,12 @@ export const ColumnMappingModal: React.FC<Props> = ({
             <div className="flex flex-col items-center justify-center gap-2 text-[10px] text-zinc-400 font-bold">
               {selectedRawIdx != null ? (
                 <div className="text-center text-indigo-600">
-                  <div className="text-[11px] font-black mb-1">→</div>
+                  <div className="text-[11px] font-bold mb-1">→</div>
                   <div className="text-[10px]">오른쪽 필드<br/>클릭</div>
                 </div>
               ) : (
                 <div className="text-center">
-                  <div className="text-[11px] font-black mb-1">↔</div>
+                  <div className="text-[11px] font-bold mb-1">↔</div>
                   <div className="text-[10px]">왼쪽 → 오른쪽<br/>순서로 클릭</div>
                 </div>
               )}
@@ -317,7 +317,7 @@ export const ColumnMappingModal: React.FC<Props> = ({
 
             {/* 우측: 표준 필드 */}
             <div className="flex flex-col gap-2">
-              <div className="text-[10px] font-black text-zinc-500 uppercase mb-1">표준 필드</div>
+              <div className="text-[10px] font-bold text-zinc-500 uppercase mb-1">표준 필드</div>
               {fieldOptions.filter(f => f !== "제외").map(field => {
                 const usageCount = fieldUsageCount.get(field) ?? 0;
                 const isTarget = selectedRawIdx != null;
@@ -336,14 +336,14 @@ export const ColumnMappingModal: React.FC<Props> = ({
                           : "bg-white border-zinc-300 hover:border-indigo-400 hover:bg-indigo-50 cursor-pointer"
                     } ${isTarget ? "ring-2 ring-indigo-200 ring-offset-1" : ""}`}
                   >
-                    <span className="text-[12px] font-black text-zinc-800">{field}</span>
+                    <span className="text-[12px] font-bold text-zinc-800">{field}</span>
                     {usageCount === 1 && (
                       <span className="ml-1.5 text-[9px] font-bold text-indigo-600 bg-white border border-indigo-300 rounded px-1 py-0.5">
                         연결됨
                       </span>
                     )}
                     {usageCount >= 2 && (
-                      <span className="ml-1.5 text-[9px] font-black text-emerald-700 bg-emerald-50 border border-emerald-300 rounded px-1 py-0.5">
+                      <span className="ml-1.5 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 rounded px-1 py-0.5">
                         🔗 {usageCount}개 병합
                       </span>
                     )}

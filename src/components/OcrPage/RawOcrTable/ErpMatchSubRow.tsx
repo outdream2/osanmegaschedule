@@ -124,7 +124,7 @@ export const ErpMatchSubRow: React.FC<Props> = ({
       {/* 왼쪽 체크박스 컬럼 자리 · ERP 라벨 + 취소 버튼 */}
       <td className="w-14 px-1 py-1 text-center align-middle">
         <div className="flex items-center justify-center gap-0.5">
-          <span className="text-[8px] font-black bg-violet-500 text-white rounded px-1 py-px">ERP</span>
+          <span className="text-[8px] font-bold bg-violet-500 text-white rounded px-1 py-px">ERP</span>
           {anyErpInfo && onCancel && (
             <button type="button" onClick={onCancel}
               className="text-[9px] text-zinc-400 hover:text-rose-500 cursor-pointer"

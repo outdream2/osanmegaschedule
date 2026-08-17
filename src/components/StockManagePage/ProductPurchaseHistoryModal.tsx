@@ -47,9 +47,9 @@ export const ProductPurchaseHistoryModal: React.FC<{
           <div className="flex items-center gap-2 min-w-0">
             <TrendingUp size={20} className="text-emerald-600 shrink-0" />
             <div className="min-w-0">
-              <div className="text-base sm:text-lg font-black text-zinc-800 break-words leading-tight">{productName}</div>
+              <div className="text-base sm:text-lg font-bold text-zinc-800 break-words leading-tight">{productName}</div>
               <div className="text-[12px] text-zinc-500 tabular-nums">
-                코드 <span className="font-black">{productCode}</span>
+                코드 <span className="font-bold">{productCode}</span>
                 <span className="ml-2 text-zinc-400">· 매입 이력 조회</span>
               </div>
             </div>
@@ -75,7 +75,7 @@ export const ProductPurchaseHistoryModal: React.FC<{
                 </div>
               </div>
               <div className="text-[12px] text-zinc-500 mb-1 flex items-center gap-2">
-                <span className="font-black">공급사 종류:</span>
+                <span className="font-bold">공급사 종류:</span>
                 <span className="tabular-nums text-zinc-700">{uniqueSuppliers}개 사</span>
               </div>
             </>
@@ -95,7 +95,7 @@ export const ProductPurchaseHistoryModal: React.FC<{
           </div>
           {!loading && !error && rows.length > 0 && (
             <div className="mt-2 text-[12px] text-zinc-400">
-              <span className="font-black text-zinc-500">데이터 소스:</span> purchase_details · 매입상세 xlsx 임포트에서 저장된 이력
+              <span className="font-bold text-zinc-500">데이터 소스:</span> purchase_details · 매입상세 xlsx 임포트에서 저장된 이력
             </div>
           )}
         </div>

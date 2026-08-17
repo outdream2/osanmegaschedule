@@ -234,7 +234,7 @@ export const StockReconciliationTab: React.FC<{
           <CheckCircle2 size={14} className="text-emerald-600" />
         </div>
         <span className={`${TEXT.body} text-zinc-700`}>실재고</span>
-        <span className="text-[15px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 tabular-nums">
+        <span className="text-[15px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 tabular-nums">
           차이 있는 상품 {diffCount}개
         </span>
         {diffCount > 0 && (
@@ -404,7 +404,7 @@ export const StockReconciliationTab: React.FC<{
                       <td className="px-2 py-1.5 text-right text-zinc-700 font-bold tabular-nums">{r.erp_qty}</td>
                       <td className="px-2 py-1.5 text-right text-teal-700 font-bold tabular-nums">{r.actual_qty}</td>
                       <td className="px-2 py-1.5 text-right">
-                        <span className={`inline-flex items-center justify-center min-w-[48px] px-2 py-0.5 rounded-full text-[15px] font-black border tabular-nums ${badgeCls}`}>
+                        <span className={`inline-flex items-center justify-center min-w-[48px] px-2 py-0.5 rounded-full text-[15px] font-bold border tabular-nums ${badgeCls}`}>
                           {r.diff > 0 ? `+${r.diff}` : r.diff}
                         </span>
                       </td>

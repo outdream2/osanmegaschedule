@@ -87,7 +87,7 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <MapPin size={14} className="text-indigo-600" />
-          <h3 className="text-sm font-black text-zinc-800">구역 그룹 설정</h3>
+          <h3 className="text-sm font-bold text-zinc-800">구역 그룹 설정</h3>
           <span className="text-[10px] text-zinc-500 font-semibold bg-zinc-100 px-2 py-0.5 rounded-full">
             {groups.length}개 그룹
           </span>
@@ -142,7 +142,7 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
                     value={g.name}
                     onClick={(e) => e.stopPropagation()}
                     onChange={(e) => updateGroup(g.id, { name: e.target.value })}
-                    className="flex-1 min-w-0 bg-transparent text-[12px] font-black text-zinc-800 focus:outline-none focus:bg-white px-1 rounded"
+                    className="flex-1 min-w-0 bg-transparent text-[12px] font-bold text-zinc-800 focus:outline-none focus:bg-white px-1 rounded"
                   />
                   <span className="text-[9px] font-bold text-zinc-500 bg-white border border-zinc-200 px-1.5 py-0.5 rounded-full shrink-0">
                     {g.areaIds.length}구역

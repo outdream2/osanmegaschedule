@@ -109,7 +109,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
             {/* 1행 · 아이콘 · 제목 · 화살표 */}
             <div className="flex items-center gap-1.5">
               <TrendingUp size={14} className="text-teal-600 shrink-0" />
-              <span className="text-[13px] font-black text-zinc-800">기간별 상품흐름</span>
+              <span className="text-[13px] font-bold text-zinc-800">기간별 상품흐름</span>
               {collapsed
                 ? <ChevronRight size={14} className="ml-auto text-zinc-400 shrink-0" />
                 : <ChevronDown size={14} className="ml-auto text-zinc-600 shrink-0" />}
@@ -125,12 +125,12 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
               <div className="flex items-center gap-3 flex-wrap pl-5 text-[11px] tabular-nums font-semibold text-zinc-600">
                 {totalSaleQty > 0 && (
                   <span title={`stock_history.sale_qty 합계 ${totalSaleQty.toLocaleString()} / ${monthSpan}개월 = 월평균 ${avgMonthlySale}개`}>
-                    월평균 판매 <span className="font-black text-rose-700 text-[12px]">{avgMonthlySale.toLocaleString()}</span>개
+                    월평균 판매 <span className="font-bold text-rose-700 text-[12px]">{avgMonthlySale.toLocaleString()}</span>개
                   </span>
                 )}
                 {last30Sale > 0 && (
                   <span title="최근 30일 판매량 (stock_history · snapshot_date >= 30일 전)">
-                    최근 한달 판매 <span className="font-black text-teal-700 text-[12px]">{last30Sale.toLocaleString()}</span>개
+                    최근 한달 판매 <span className="font-bold text-teal-700 text-[12px]">{last30Sale.toLocaleString()}</span>개
                   </span>
                 )}
               </div>
@@ -142,7 +142,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
         <>
           {/* 조회기간 행 · 개월 버튼 + 계절 버튼 · 넘칠 때 flex-wrap으로 다음 줄 */}
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span className="text-[12px] font-black text-teal-700 shrink-0">조회기간</span>
+            <span className="text-[12px] font-bold text-teal-700 shrink-0">조회기간</span>
             {/* 개월 버튼 그룹 · shrink-0 으로 버튼 뭉침 방지 */}
             <div className="inline-flex shrink-0 bg-zinc-100 border border-zinc-200 rounded-lg p-0.5">
               {([1, 2, 3, 4, 5, 6] as const).map(m => {
@@ -151,7 +151,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
                   <button
                     key={m}
                     onClick={() => { setSeason(null); setMonths(m); }}
-                    className={`min-w-[28px] min-h-[32px] px-2 py-0.5 text-[11px] font-black rounded-md transition cursor-pointer ${active
+                    className={`min-w-[28px] min-h-[32px] px-2 py-0.5 text-[11px] font-bold rounded-md transition cursor-pointer ${active
                       ? "bg-orange-500 text-white shadow-sm"
                       : "text-zinc-600 hover:text-zinc-900 hover:bg-white"
                     }`}
@@ -167,12 +167,12 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
           </div>
           {/* 단위 행 · 월중/10일 · 범례 좁을 때 자동 wrap */}
           <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <span className="text-[12px] font-black text-zinc-600 shrink-0">단위</span>
+            <span className="text-[12px] font-bold text-zinc-600 shrink-0">단위</span>
             <div className="inline-flex shrink-0 bg-zinc-100 border border-zinc-200 rounded-lg p-0.5">
               <button onClick={() => setXAxisMode("month")}
-                className={`min-h-[32px] px-2.5 py-0.5 text-[11px] font-black rounded-md transition cursor-pointer ${xAxisMode === "month" ? "bg-white text-teal-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-600 hover:text-zinc-900"}`}>월중</button>
+                className={`min-h-[32px] px-2.5 py-0.5 text-[11px] font-bold rounded-md transition cursor-pointer ${xAxisMode === "month" ? "bg-white text-teal-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-600 hover:text-zinc-900"}`}>월중</button>
               <button onClick={() => setXAxisMode("10day")}
-                className={`min-h-[32px] px-2.5 py-0.5 text-[11px] font-black rounded-md transition cursor-pointer ${xAxisMode === "10day" ? "bg-white text-teal-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-600 hover:text-zinc-900"}`}>10일 (초·중·하순)</button>
+                className={`min-h-[32px] px-2.5 py-0.5 text-[11px] font-bold rounded-md transition cursor-pointer ${xAxisMode === "10day" ? "bg-white text-teal-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-600 hover:text-zinc-900"}`}>10일 (초·중·하순)</button>
             </div>
             {/* 범례 · sm+ 에서 우측 정렬 · 좁으면 다음 줄 */}
             <span className="text-[11px] font-semibold text-zinc-400 sm:ml-auto">매입 · 판매 · 폐기 · 손실</span>
@@ -182,7 +182,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
       {collapsed ? null : loading ? (
         <div className="flex flex-col items-center justify-center py-10 text-zinc-400 gap-2">
           <div className="w-8 h-8 border-4 border-zinc-200 border-t-teal-500 rounded-full animate-spin" />
-          <div className="text-sm font-black">로딩 중...</div>
+          <div className="text-sm font-bold">로딩 중...</div>
         </div>
       ) : rows.length === 0 ? (
         <div className="text-center text-[12px] text-zinc-300 py-8">기간 데이터 없음</div>
@@ -283,7 +283,7 @@ export const ProductDetailMobileHeader: React.FC<{
         <X size={18} strokeWidth={2.4} />
       </button>
       <div className="flex-1 min-w-0">
-        <div className="text-[14px] font-black text-zinc-800 break-keep whitespace-normal leading-tight">{product.name}</div>
+        <div className="text-[14px] font-bold text-zinc-800 break-keep whitespace-normal leading-tight">{product.name}</div>
         <div className="text-[11px] tabular-nums text-zinc-500 break-words whitespace-normal leading-tight">
           #{product.code} · {product.supplier ?? "-"}
         </div>
@@ -344,7 +344,7 @@ const ProductHeaderCard: React.FC<{
   return (
     <div className="bg-white rounded-xl border border-zinc-200 shadow-sm px-3 py-2.5">
       {/* 상품명 · 큰 글씨 · 클릭 안됨 */}
-      <div className="text-[13px] font-black text-zinc-900 break-words whitespace-normal leading-snug">
+      <div className="text-[13px] font-bold text-zinc-900 break-words whitespace-normal leading-snug">
         {product.name || "-"}
       </div>
       {/* 공급사 + 조회 버튼 */}
@@ -357,7 +357,7 @@ const ProductHeaderCard: React.FC<{
           <button
             type="button"
             onClick={() => onSupplierInfoOpen!(supplier)}
-            className="ml-auto min-h-[32px] px-2.5 py-1 text-[11px] font-black rounded-md border border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100 active:bg-sky-200 transition cursor-pointer shrink-0"
+            className="ml-auto min-h-[32px] px-2.5 py-1 text-[11px] font-bold rounded-md border border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100 active:bg-sky-200 transition cursor-pointer shrink-0"
             title={`공급사 정보 조회 · ${supplier}`}
           >
             공급사조회
@@ -400,7 +400,7 @@ const ProductDetailChartMode: React.FC<{
             ? <ChevronRight size={14} className="text-zinc-400 shrink-0" />
             : <ChevronDown size={14} className="text-zinc-600 shrink-0" />}
           <Package size={16} className="text-zinc-500 shrink-0" />
-          <span className="text-[13px] font-black text-zinc-800 break-keep whitespace-normal leading-tight text-left">재고 · 매입판매가 · 발주 · 배정구역</span>
+          <span className="text-[13px] font-bold text-zinc-800 break-keep whitespace-normal leading-tight text-left">재고 · 매입판매가 · 발주 · 배정구역</span>
           {topCollapsed && <span className="text-[12px] font-bold text-zinc-400 ml-1 shrink-0">— 펼치기</span>}
         </button>
         {!topCollapsed && (
@@ -431,7 +431,7 @@ const ProductDetailChartMode: React.FC<{
             ? <ChevronRight size={14} className="text-zinc-400 shrink-0" />
             : <ChevronDown size={14} className="text-zinc-600 shrink-0" />}
           <Package size={16} className="text-zinc-500 shrink-0" />
-          <span className="text-[13px] font-black text-zinc-800 break-keep whitespace-normal leading-tight text-left">상품 정보 · 추가 정보</span>
+          <span className="text-[13px] font-bold text-zinc-800 break-keep whitespace-normal leading-tight text-left">상품 정보 · 추가 정보</span>
           {metaCollapsed && <span className="text-[12px] font-bold text-zinc-400 ml-1 shrink-0">— 펼치기</span>}
         </button>
         {!metaCollapsed && (
@@ -571,7 +571,7 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }>
           const cls = active ? activeColor : "text-zinc-500 border-transparent hover:text-zinc-700";
           return (
             <button key={k} type="button" onClick={() => setTab(k)}
-              className={`flex-1 min-h-[44px] py-2 px-2 text-[12px] font-black border-b-2 transition cursor-pointer flex items-center justify-center gap-1 ${cls}`}
+              className={`flex-1 min-h-[44px] py-2 px-2 text-[12px] font-bold border-b-2 transition cursor-pointer flex items-center justify-center gap-1 ${cls}`}
               title={label}>
               <Icon size={13} className="shrink-0" />
               <span className="truncate">{label}</span>

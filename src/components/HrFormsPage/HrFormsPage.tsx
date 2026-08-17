@@ -249,7 +249,7 @@ const CatChip: React.FC<{
     <span>{label}</span>
     <span
       className={[
-        "inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[14px] font-black leading-none",
+        "inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[14px] font-bold leading-none",
         active ? "bg-white/20 text-white" : "bg-white/60 text-zinc-600",
       ].join(" ")}
     >
@@ -353,7 +353,7 @@ const EmptyState: React.FC<{
       <FileText size={28} className="text-zinc-400" />
     </div>
     <div>
-      <p className="text-base font-black text-zinc-700">
+      <p className="text-base font-bold text-zinc-700">
         {isFiltered ? "검색 결과가 없습니다" : "등록된 양식이 없습니다"}
       </p>
       <p className="text-sm text-zinc-400 font-semibold mt-1">
@@ -564,7 +564,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
               <FileText size={20} />
             </div>
             <div>
-              <h1 className="text-lg sm:text-xl font-black text-zinc-800 leading-tight">각종 양식</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-zinc-800 leading-tight">각종 양식</h1>
               <p className="text-xs text-zinc-500 font-semibold mt-0.5">
                 근로계약서 · 사직서 · 서약서 · 기타 양식 다운로드 및 관리
               </p>
@@ -608,7 +608,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
             {/* 폼 헤더 */}
             <div className="flex items-center gap-2.5 px-5 py-3.5 bg-amber-50 border-b border-amber-100">
               <Upload size={16} className="text-amber-600 shrink-0" />
-              <p className="text-sm font-black text-amber-800">신규 양식 업로드</p>
+              <p className="text-sm font-bold text-amber-800">신규 양식 업로드</p>
               <span className="ml-auto text-xs text-amber-600 font-semibold">* 최대 10MB</span>
             </div>
 
@@ -616,7 +616,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
               {/* 양식명 + 카테고리 */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-black text-zinc-600 block mb-1.5">
+                  <label className="text-xs font-bold text-zinc-600 block mb-1.5">
                     양식명 <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -630,7 +630,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-black text-zinc-600 block mb-1.5">
+                  <label className="text-xs font-bold text-zinc-600 block mb-1.5">
                     카테고리 <span className="text-rose-500">*</span>
                   </label>
                   {/* Segmented control */}
@@ -656,7 +656,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
 
               {/* 드래그&드롭 업로드 존 */}
               <div>
-                <label className="text-xs font-black text-zinc-600 block mb-1.5">
+                <label className="text-xs font-bold text-zinc-600 block mb-1.5">
                   파일 <span className="text-rose-500">*</span>
                 </label>
                 <DropZone
@@ -730,7 +730,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
           {/* 카테고리 label */}
           <div className="flex items-center gap-1.5 shrink-0">
             <Filter size={12} className="text-zinc-400" />
-            <span className="text-xs font-black text-zinc-400 uppercase tracking-wide">분류</span>
+            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wide">분류</span>
           </div>
 
           {/* 카테고리 칩 그룹 */}
@@ -741,7 +741,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
               label="전체"
               count={forms.length}
               badgeClass="bg-zinc-100 text-zinc-600 border-zinc-200"
-              activeClass="bg-zinc-800 text-white border-zinc-800"
+              activeClass="bg-brand-deep text-white border-zinc-800"
             />
             {CATEGORIES.map(c => {
               const cnt = forms.filter(f => f.category === c.key).length;
@@ -951,7 +951,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
 
                       {/* 분류 배지 */}
                       <td className="px-3 py-2.5 align-middle">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[15px] font-black border ${cat.badge}`}>
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[15px] font-bold border ${cat.badge}`}>
                           {cat.label}
                         </span>
                       </td>
@@ -1036,9 +1036,9 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                       <FileIcon size={18} />
                     </span>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-black text-zinc-800 leading-snug break-all">{f.title}</div>
+                      <div className="text-sm font-bold text-zinc-800 leading-snug break-all">{f.title}</div>
                       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[14px] font-black border ${cat.badge}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[14px] font-bold border ${cat.badge}`}>
                           {cat.label}
                         </span>
                         <span className="text-[15px] text-zinc-400 font-semibold">{fmtDateTime(f.created_at)}</span>

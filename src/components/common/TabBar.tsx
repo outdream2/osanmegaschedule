@@ -188,7 +188,7 @@ export function TabBar<K extends string = string>({
                 <span>{t.label}</span>
                 {t.badge != null && t.badge > 0 && (
                   <span
-                    className={`ml-0.5 text-[11px] font-black tabular-nums leading-none whitespace-nowrap ${c.text}`}
+                    className={`ml-0.5 text-[11px] font-bold tabular-nums leading-none whitespace-nowrap ${c.text}`}
                     title={`${t.label} · ${t.badge}건`}
                   >
                     {t.badge}

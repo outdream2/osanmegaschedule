@@ -147,7 +147,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <FileWarning size={16} className="text-amber-400 shrink-0" />
           <div className="min-w-0">
-            <div className="text-[13px] font-black text-white truncate">{fileName || "PDF 뷰어"}</div>
+            <div className="text-[13px] font-bold text-white truncate">{fileName || "PDF 뷰어"}</div>
             <div className="text-[10px] text-zinc-400 font-semibold truncate">
               보안 뷰어 · 복사·인쇄·저장 · 스크린샷 금지 · {watermark} · {openedAt}
             </div>
@@ -179,7 +179,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
               <FileWarning size={28} />
             </div>
             <div>
-              <div className="text-lg font-black text-white">PDF 이외 파일</div>
+              <div className="text-lg font-bold text-white">PDF 이외 파일</div>
               <div className="text-sm text-zinc-300 font-semibold mt-1">
                 이 뷰어는 PDF 만 지원합니다.<br />
                 아래 버튼으로 새 창에서 열거나 다운로드하세요.
@@ -216,7 +216,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
           style={{ userSelect: "none" }}
         >
           <div
-            className="absolute inset-0 opacity-[0.11] text-white font-black tracking-widest"
+            className="absolute inset-0 opacity-[0.11] text-white font-bold tracking-widest"
             style={{
               transform: "rotate(-24deg) translate(-10%, -10%)",
               fontSize: 22,

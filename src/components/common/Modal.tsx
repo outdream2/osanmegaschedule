@@ -87,7 +87,7 @@ export const Modal: React.FC<ModalProps> = ({
         {(title != null || showClose) && (
           <div className="modal-header">
             {title != null && (
-              <div className="flex-1 min-w-0 text-[15px] font-black text-zinc-800 truncate">
+              <div className="flex-1 min-w-0 text-[15px] font-bold text-zinc-800 truncate">
                 {title}
               </div>
             )}

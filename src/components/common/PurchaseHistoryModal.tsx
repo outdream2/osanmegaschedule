@@ -79,7 +79,7 @@ export const PurchaseHistoryModal: React.FC<PurchaseHistoryModalProps> = ({
           <TrendingUp size={20} className="text-emerald-600 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-sm font-black text-zinc-800">매입 이력</span>
+              <span className="text-sm font-bold text-zinc-800">매입 이력</span>
               <span className="text-[11px] font-mono text-zinc-500">{productCode}</span>
             </div>
             {productName && (
@@ -89,10 +89,10 @@ export const PurchaseHistoryModal: React.FC<PurchaseHistoryModalProps> = ({
             )}
             {!loading && rows.length > 0 && (
               <div className="mt-1.5 flex items-center gap-2 flex-wrap text-[11px] font-mono text-zinc-500">
-                <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-black">{rows.length}건</span>
+                <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold">{rows.length}건</span>
                 <span>총 <b>{fmt(totalQty)}</b>개</span>
                 <span>·</span>
-                <span className="text-emerald-700 font-black">{fmtWon(totalAmt)}</span>
+                <span className="text-emerald-700 font-bold">{fmtWon(totalAmt)}</span>
                 <span>·</span>
                 <span title="건당 평균 매입액">평균 <b className="text-indigo-600">{fmtWon(avgAmt)}</b></span>
                 {avgCycleDays != null && (
@@ -125,7 +125,7 @@ export const PurchaseHistoryModal: React.FC<PurchaseHistoryModalProps> = ({
             showProduct={false}
             emptyText="매입 이력 없음"
             footerHint={rows.length > 0 ? (
-              <>최근순 · 최대 500건 · 클릭한 매입일은 <span className="text-amber-600 font-black">노랑 하이라이트</span></>
+              <>최근순 · 최대 500건 · 클릭한 매입일은 <span className="text-amber-600 font-bold">노랑 하이라이트</span></>
             ) : undefined}
           />
         </div>

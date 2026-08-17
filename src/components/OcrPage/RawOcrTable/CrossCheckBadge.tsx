@@ -54,7 +54,7 @@ export const CrossCheckBadge: React.FC<CrossCheckBadgeProps> = ({
           onClick={() => onChooseSubtotal!(pn, "computed")}
           className={`cursor-pointer transition ${
             chosen === "computed"
-              ? "font-black text-emerald-700 underline"
+              ? "font-bold text-emerald-700 underline"
               : "font-semibold text-zinc-500 hover:text-emerald-600 hover:underline"
           }`}
           title="행합을 이 페이지 소계로 채택"
@@ -67,7 +67,7 @@ export const CrossCheckBadge: React.FC<CrossCheckBadgeProps> = ({
           onClick={() => onChooseSubtotal!(pn, "stated")}
           className={`cursor-pointer transition ${
             chosen === "stated"
-              ? "font-black text-amber-700 underline"
+              ? "font-bold text-amber-700 underline"
               : "font-semibold text-zinc-500 hover:text-amber-600 hover:underline"
           }`}
           title="OCR 원본 소계를 이 페이지 소계로 채택"

@@ -499,7 +499,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         <div className="mb-4 flex items-center justify-between gap-2 flex-wrap">
           <div className="flex flex-wrap bg-zinc-200/70 border border-zinc-300 rounded-xl p-1 gap-0.5 w-fit shadow-inner">
           <button type="button" onClick={() => setTab("permissions")}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[18px] font-black transition-all cursor-pointer border ${tab === "permissions" ? "bg-white text-violet-700 shadow-md border-violet-300 ring-2 ring-violet-100" : "bg-transparent text-zinc-600 border-transparent hover:bg-white/60 hover:text-zinc-900"}`}>
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[18px] font-bold transition-all cursor-pointer border ${tab === "permissions" ? "bg-white text-violet-700 shadow-md border-violet-300 ring-2 ring-violet-100" : "bg-transparent text-zinc-600 border-transparent hover:bg-white/60 hover:text-zinc-900"}`}>
             <Shield size={18} />권한 조정
           </button>
           <button type="button" onClick={() => setTab("app-settings")}
@@ -507,11 +507,11 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
             <SettingsIcon size={18} />스케쥴 설정
           </button>
           <button type="button" onClick={() => setTab("positions")}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[18px] font-black transition-all cursor-pointer border ${tab === "positions" ? "bg-white text-emerald-700 shadow-md border-emerald-300 ring-2 ring-emerald-100" : "bg-transparent text-zinc-600 border-transparent hover:bg-white/60 hover:text-zinc-900"}`}>
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[18px] font-bold transition-all cursor-pointer border ${tab === "positions" ? "bg-white text-emerald-700 shadow-md border-emerald-300 ring-2 ring-emerald-100" : "bg-transparent text-zinc-600 border-transparent hover:bg-white/60 hover:text-zinc-900"}`}>
             <IdCard size={18} />직군 설정
           </button>
           <button type="button" onClick={() => setTab("construction")}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[18px] font-black transition-all cursor-pointer border ${tab === "construction" ? "bg-white text-amber-700 shadow-md border-amber-300 ring-2 ring-amber-100" : "bg-transparent text-zinc-600 border-transparent hover:bg-white/60 hover:text-zinc-900"}`}>
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[18px] font-bold transition-all cursor-pointer border ${tab === "construction" ? "bg-white text-amber-700 shadow-md border-amber-300 ring-2 ring-amber-100" : "bg-transparent text-zinc-600 border-transparent hover:bg-white/60 hover:text-zinc-900"}`}>
             <Construction size={18} />공사중
           </button>
           </div>
@@ -566,7 +566,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           <button
             type="button"
             onClick={() => setPermSubTab("page")}
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[16px] font-black transition cursor-pointer ${
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[16px] font-bold transition cursor-pointer ${
               permSubTab === "page" ? "bg-brand-deep text-white shadow-sm" : "text-ink-soft hover:text-ink"
             }`}
           >
@@ -575,7 +575,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           <button
             type="button"
             onClick={() => setPermSubTab("employee")}
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[16px] font-black transition cursor-pointer ${
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[16px] font-bold transition cursor-pointer ${
               permSubTab === "employee" ? "bg-white text-emerald-700 shadow-sm" : "text-zinc-500 hover:text-zinc-800"
             }`}
           >
@@ -588,7 +588,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         <div className="mb-2 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <Shield size={13} className="text-zinc-500" />
-            <h2 className="text-[17px] font-black text-zinc-700">페이지별 설정</h2>
+            <h2 className="text-[17px] font-bold text-zinc-700">페이지별 설정</h2>
           </div>
           <div className="flex items-center gap-2">
             {saveToast && (
@@ -657,7 +657,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                   {/* 그룹명 = 페이지명 (아이콘 + 라벨) */}
                   <div className="flex items-center gap-2 min-w-0">
                     {GroupIcon && <GroupIcon size={16} className={GROUP_COLOR_CLS[g.color] ?? "text-zinc-500"} />}
-                    <span className={`text-[17px] font-black truncate ${perm.hidden ? "text-zinc-400 line-through" : "text-zinc-700"}`}>{g.label}</span>
+                    <span className={`text-[17px] font-bold truncate ${perm.hidden ? "text-zinc-400 line-through" : "text-zinc-700"}`}>{g.label}</span>
                   </div>
                   {/* 읽기 */}
                   <div className="flex flex-col items-end gap-1 pr-3">
@@ -697,7 +697,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                       ? <CaretRight size={14} className="text-zinc-500" weight="bold" />
                       : <CaretDown  size={14} className="text-zinc-500" weight="bold" />}
                     {GroupIcon && <GroupIcon size={16} className={GROUP_COLOR_CLS[g.color] ?? "text-zinc-500"} />}
-                    <span className="text-[17px] font-black text-zinc-700">{g.label}</span>
+                    <span className="text-[17px] font-bold text-zinc-700">{g.label}</span>
                     <span className="text-[14px] font-semibold text-zinc-400">({g.rows.length})</span>
                   </div>
                   <div />
@@ -763,7 +763,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         <div className="mb-2 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <Users size={13} className="text-zinc-500" />
-            <h2 className="text-[17px] font-black text-zinc-700">직원별 레벨</h2>
+            <h2 className="text-[17px] font-bold text-zinc-700">직원별 레벨</h2>
             <span className="text-[11px] text-zinc-400 font-medium">
               ({filteredEmployees.length}명 · 약사 우선)
             </span>
@@ -856,7 +856,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           <div className="w-full min-w-0 space-y-4">
             <div className="flex items-center gap-2">
               <IdCard size={14} className="text-zinc-500" />
-              <h2 className="text-[13px] font-black text-zinc-700">직군 설정</h2>
+              <h2 className="text-[13px] font-bold text-zinc-700">직군 설정</h2>
             </div>
             <p className="text-[12px] text-zinc-500 font-semibold">
               직원 등록/수정 화면의 직군 드롭박스에 표시될 목록입니다. 이름 클릭 또는 <Pencil size={11} className="inline align-middle text-violet-500 mx-0.5" /> 아이콘으로 편집 · 드래그로 순서 변경 · <Trash2 size={11} className="inline align-middle text-rose-500 mx-0.5" /> 로 삭제 (사용중이면 재매핑 안내).
@@ -951,7 +951,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           <div className="w-full min-w-0 space-y-4 max-w-xl">
             <div className="flex items-center gap-2">
               <Construction size={14} className="text-amber-600" />
-              <h2 className="text-[13px] font-black text-zinc-700">공사중 (Under Construction)</h2>
+              <h2 className="text-[13px] font-bold text-zinc-700">공사중 (Under Construction)</h2>
             </div>
             <label className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 hover:border-amber-400 cursor-pointer">
               <input
@@ -961,12 +961,12 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                 className="w-4 h-4 accent-amber-500"
               />
               <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-black text-zinc-800 leading-tight">공사중 모드 활성화</div>
+                <div className="text-[13px] font-bold text-zinc-800 leading-tight">공사중 모드 활성화</div>
                 <div className="text-[11px] font-semibold text-zinc-500 leading-tight mt-0.5">
                   비로그인 랜딩페이지 · 재고 검색 숨김 · "곧 오픈 예정입니다" 표시
                 </div>
               </div>
-              <span className={`text-[10px] font-black px-2 py-0.5 rounded ${settingsUnderConstruction ? "bg-amber-500 text-white" : "bg-zinc-200 text-zinc-500"}`}>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${settingsUnderConstruction ? "bg-amber-500 text-white" : "bg-zinc-200 text-zinc-500"}`}>
                 {settingsUnderConstruction ? "ON" : "OFF"}
               </span>
             </label>

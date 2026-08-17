@@ -60,7 +60,7 @@ export const BreakTimeline: React.FC<Props> = React.memo(({
       <div className="flex items-center justify-between mb-2.5">
         <div className="flex items-center gap-1.5">
           <span className={`w-2 h-2 rounded-full ${theme.dot}`} />
-          <span className={`text-[14px] font-black ${theme.hdr}`}>{theme.label}</span>
+          <span className={`text-[14px] font-bold ${theme.hdr}`}>{theme.label}</span>
           <div className="flex items-center gap-0.5 ml-1">
             <button type="button" onClick={() => onShiftOffset(-30)} disabled={offset <= -60}
               className="w-5 h-5 flex items-center justify-center text-[14px] font-bold rounded bg-white border border-zinc-200 text-zinc-500 hover:border-zinc-400 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"

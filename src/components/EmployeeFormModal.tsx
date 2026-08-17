@@ -367,7 +367,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                 </label>
                 <div className="flex items-center gap-2">
                   {empZoneNums.length > 0 && (
-                    <span className="text-[10px] font-black text-violet-700 bg-violet-100 border border-violet-200 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] font-bold text-violet-700 bg-violet-100 border border-violet-200 px-2 py-0.5 rounded-full">
                       {empZoneNums.length}개 선택
                     </span>
                   )}
@@ -384,7 +384,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                   const zones = ZONE_DEFS.filter(z => z.section === section);
                   return (
                     <div key={section}>
-                      <div className="text-[9px] font-black text-zinc-400 uppercase tracking-wider mb-1">{SECTION_LABEL[section]}</div>
+                      <div className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-1">{SECTION_LABEL[section]}</div>
                       <div className="flex flex-wrap gap-1">
                         {zones.map(z => {
                           const isOn = empZoneNums.includes(z.num);
@@ -396,7 +396,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                               }`}
                               title={z.category}
                             >
-                              <span className={`text-[10px] font-black leading-none ${isOn ? "text-violet-800" : "text-zinc-600"}`}>{z.num}</span>
+                              <span className={`text-[10px] font-bold leading-none ${isOn ? "text-violet-800" : "text-zinc-600"}`}>{z.num}</span>
                               <span className={`text-[8px] ml-0.5 ${isOn ? "text-violet-600" : "text-zinc-400"}`}>{z.label}</span>
                             </button>
                           );

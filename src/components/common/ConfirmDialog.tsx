@@ -95,7 +95,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             {title && (
               <span
                 id="confirm-dialog-title"
-                className="text-[15px] font-black text-zinc-800"
+                className="text-[15px] font-bold text-zinc-800"
               >
                 {title}
               </span>

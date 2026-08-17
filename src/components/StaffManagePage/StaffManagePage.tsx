@@ -403,7 +403,7 @@ const Avatar: React.FC<{
   }
   return (
     <div
-      className={`${dim} rounded-full ${avatarGradient(name)} flex items-center justify-center text-white font-black shadow shrink-0 select-none`}
+      className={`${dim} rounded-full ${avatarGradient(name)} flex items-center justify-center text-white font-bold shadow shrink-0 select-none`}
     >
       {initials(name)}
     </div>
@@ -1487,7 +1487,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
           className="split-divider group"
           title="드래그하여 좌측 리스트 폭 조절"
         >
-          <span className="text-[14px] text-zinc-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+          <span className="text-[14px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
         </div>
 
         {/* ════ 우측: 인사카드 패널 · 공통 split-right · 모바일(<lg)에서는 숨기고 모달로 대체 ════ */}
@@ -1668,7 +1668,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                     {/* 근속 */}
                     <span className="inline-flex items-baseline gap-1.5">
                       <span className="inline-flex items-center gap-1 text-[14px] text-zinc-400 font-semibold"><Clock size={11} className="text-indigo-400" />근속</span>
-                      <span className="font-black text-zinc-800 tabular-nums">
+                      <span className="font-bold text-zinc-800 tabular-nums">
                         {tenure === "-" ? <span className="text-zinc-300 italic font-normal">미등록</span> : tenure}
                       </span>
                       {displayEmp.hire_date && (
@@ -1679,7 +1679,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                     {/* 연차 잔여 */}
                     <span className="inline-flex items-baseline gap-1.5">
                       <span className="inline-flex items-center gap-1 text-[14px] text-emerald-500 font-semibold"><CalendarDays size={11} />연차 잔여</span>
-                      <span className="font-black text-emerald-700 tabular-nums">
+                      <span className="font-bold text-emerald-700 tabular-nums">
                         {fmtD(remainDays)}<span className="text-[15px] font-semibold ml-0.5">일</span>
                       </span>
                       {editing ? (
@@ -1703,7 +1703,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                     <span className="inline-flex items-baseline gap-1.5">
                       <span className="inline-flex items-center gap-1 text-[14px] text-amber-500 font-semibold"><Star size={11} />평가</span>
                       {rating ? (
-                        <span className={`font-black px-1.5 py-0.5 rounded-md border ${performanceRatingColor(rating)}`}>{rating}</span>
+                        <span className={`font-bold px-1.5 py-0.5 rounded-md border ${performanceRatingColor(rating)}`}>{rating}</span>
                       ) : (
                         <span className="text-zinc-300 italic">미평가</span>
                       )}
@@ -1851,7 +1851,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                                   : "계약유형"}
                               >
                                 {badge.label}
-                                {showAutoOnly && <span className="ml-1 text-[15px] font-black opacity-70">AUTO</span>}
+                                {showAutoOnly && <span className="ml-1 text-[15px] font-bold opacity-70">AUTO</span>}
                               </span>
                             ) : (
                               <span className="text-[15px] font-semibold text-zinc-300 italic">(없음)</span>
@@ -2222,7 +2222,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                     {/* ─── 임금 (기존 §8 통합) ─── */}
                     <div className="col-span-2 flex items-center gap-2 mt-1.5 pt-2 border-t border-zinc-100 flex-wrap">
                       <Briefcase size={11} className="text-rose-400" />
-                      <span className="text-[14px] font-black uppercase tracking-wider text-zinc-500">임금</span>
+                      <span className="text-[14px] font-bold uppercase tracking-wider text-zinc-500">임금</span>
                       {latestContract && (
                         <>
                           <span className="text-[14px] text-emerald-700 font-bold">
@@ -2233,7 +2233,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                             <button
                               type="button"
                               onClick={() => window.open(latestContract.pdf_url!, "_blank", "noopener,noreferrer")}
-                              className="inline-flex items-center gap-1 h-6 px-2 rounded-md border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-[15px] font-black transition cursor-pointer"
+                              className="inline-flex items-center gap-1 h-6 px-2 rounded-md border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-[15px] font-bold transition cursor-pointer"
                               title="근로계약서 PDF 열기"
                             >
                               <ExternalLink size={10} /> 근로계약서 보기
@@ -2317,7 +2317,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                             {/* 잔여 (강조) */}
                             <div className="flex flex-col items-center px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 min-w-[56px]">
                               <span className="text-[14px] font-bold text-emerald-600 uppercase tracking-wider">잔여</span>
-                              <span className="text-[14px] font-black text-emerald-700 tabular-nums leading-tight">{fmtDays(remainDays)}<span className="text-[14px] font-semibold ml-0.5">일</span></span>
+                              <span className="text-[14px] font-bold text-emerald-700 tabular-nums leading-tight">{fmtDays(remainDays)}<span className="text-[14px] font-semibold ml-0.5">일</span></span>
                             </div>
                             {/* 총 · 편집 가능 */}
                             <div className="flex flex-col items-center px-2.5 py-1 rounded-lg bg-zinc-50 border border-zinc-200 min-w-[56px]">
@@ -2329,16 +2329,16 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                                   step={1}
                                   value={String(draft?.annual_leave_days ?? "")}
                                   onChange={(e) => setField("annual_leave_days", e.target.value === "" ? null : Number(e.target.value))}
-                                  className="w-12 text-center border border-indigo-300 rounded-md px-1 py-0.5 text-[15px] font-black text-zinc-800 tabular-nums bg-white focus:outline-none focus:border-brand-deep"
+                                  className="w-12 text-center border border-indigo-300 rounded-md px-1 py-0.5 text-[15px] font-bold text-zinc-800 tabular-nums bg-white focus:outline-none focus:border-brand-deep"
                                 />
                               ) : (
-                                <span className="text-[14px] font-black text-zinc-800 tabular-nums leading-tight">{fmtDays(totalDays)}<span className="text-[14px] font-semibold ml-0.5">일</span></span>
+                                <span className="text-[14px] font-bold text-zinc-800 tabular-nums leading-tight">{fmtDays(totalDays)}<span className="text-[14px] font-semibold ml-0.5">일</span></span>
                               )}
                             </div>
                             {/* 사용 */}
                             <div className="flex flex-col items-center px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 min-w-[56px]">
                               <span className="text-[14px] font-bold text-amber-600 uppercase tracking-wider">사용</span>
-                              <span className="text-[14px] font-black text-amber-700 tabular-nums leading-tight">{fmtDays(usedDays)}<span className="text-[14px] font-semibold ml-0.5">일</span></span>
+                              <span className="text-[14px] font-bold text-amber-700 tabular-nums leading-tight">{fmtDays(usedDays)}<span className="text-[14px] font-semibold ml-0.5">일</span></span>
                             </div>
                           </div>
                           {/* 연도 선택 */}

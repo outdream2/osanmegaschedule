@@ -68,7 +68,7 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-[10px] font-bold text-sky-600 uppercase tracking-wider">공급사</div>
-            <div className="text-[14px] font-black text-zinc-800">공급사 검색·등록</div>
+            <div className="text-[14px] font-bold text-zinc-800">공급사 검색·등록</div>
           </div>
           <button
             type="button"
@@ -99,7 +99,7 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
             <button
               type="button"
               onClick={() => setOpenDetailId(selectedId)}
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-black shadow-sm transition cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-bold shadow-sm transition cursor-pointer whitespace-nowrap"
               title="선택된 공급사 조회·수정"
             >
               <PencilLine size={12} strokeWidth={2.5} />
@@ -111,7 +111,7 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
             <button
               type="button"
               onClick={() => setOpenNew(true)}
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[12px] font-black shadow-sm transition cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[12px] font-bold shadow-sm transition cursor-pointer whitespace-nowrap"
               title="신규 공급사 등록"
             >
               <Plus size={12} strokeWidth={2.5} />
@@ -155,7 +155,7 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
                     }`}
                   >
                     <div className="flex-1 min-w-0">
-                      <div className={`text-[13px] font-black truncate ${active ? "text-sky-800" : "text-zinc-800"}`}>
+                      <div className={`text-[13px] font-bold truncate ${active ? "text-sky-800" : "text-zinc-800"}`}>
                         {v.company_name}
                       </div>
                       <div className="text-[10px] text-zinc-400 truncate">
@@ -163,7 +163,7 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
                       </div>
                     </div>
                     {active && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-black text-sky-700 shrink-0">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-sky-700 shrink-0">
                         선택됨
                       </span>
                     )}

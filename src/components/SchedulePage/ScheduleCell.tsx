@@ -183,7 +183,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
 
         {/* Row 3: Actual Notes (실근무/특이사항) · 폰트 +2 */}
         {displayActualHours && (
-          <div className={`text-[9px] sm:text-[11px] font-black leading-none truncate tracking-tighter mt-0.5 px-1 py-0.5 rounded text-center shrink-0 ${
+          <div className={`text-[9px] sm:text-[11px] font-bold leading-none truncate tracking-tighter mt-0.5 px-1 py-0.5 rounded text-center shrink-0 ${
             displayActualHours.includes("지각")
               ? "text-amber-700 bg-amber-50 border border-amber-200"
               : displayActualHours.includes("조퇴")
@@ -243,7 +243,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
           <form onSubmit={handleSave} className="space-y-3">
             {/* Quick One-click Attendance (⚡ 원클릭 근태 빠른 지정) - MOVED TO TOP */}
             <div className="p-2 border border-blue-200 bg-blue-50/50 rounded-xl space-y-1">
-              <label className="block text-[13px] font-black text-blue-850 uppercase tracking-wider flex items-center justify-between">
+              <label className="block text-[13px] font-bold text-blue-850 uppercase tracking-wider flex items-center justify-between">
                 <span>⚡ 원클릭 근태 빠른 권역 지정</span>
                 <span className="text-[11px] bg-blue-100/80 rounded px-1.5 py-0.2 text-blue-700 font-bold">빠른 연동</span>
               </label>

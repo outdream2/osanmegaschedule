@@ -178,7 +178,7 @@ export const ZoneCell: React.FC<ZoneCellProps> = ({
       {/* Row 1: 구역 번호 (1-8: A/B 로 구분 필요 · 9+: 카테고리와 중복이므로 번호 숨김) + 상태 dot */}
       <div className="flex items-center justify-between px-1 pt-0.5 shrink-0">
         {zone.num <= 8 ? (
-          <span className="text-[11px] font-black leading-none">
+          <span className="text-[11px] font-bold leading-none">
             {zone.num}
             {zone.id.endsWith("A") && <span>A</span>}
             {zone.id.endsWith("B") && <span>B</span>}
@@ -196,7 +196,7 @@ export const ZoneCell: React.FC<ZoneCellProps> = ({
       {/* Row 2: 담당자 이름 뱃지 */}
       <div className="flex-1 flex items-center justify-center w-full px-0.5 min-h-0 pb-0.5">
         {zone.assignedStaffName ? (
-          <span className={`text-[9px] font-black px-1 py-px rounded leading-tight text-center max-w-full break-all ${
+          <span className={`text-[9px] font-bold px-1 py-px rounded leading-tight text-center max-w-full break-all ${
             staffColorIndex !== null && staffColorIndex !== undefined
               ? STAFF_AVATAR_COLORS[staffColorIndex % STAFF_AVATAR_COLORS.length]
               : "bg-zinc-600 text-white"
@@ -216,7 +216,7 @@ export const ZoneCell: React.FC<ZoneCellProps> = ({
       {/* Group label badge */}
       {groupLabel && (
         <span
-          className="absolute bottom-0.5 right-0.5 text-[8px] font-black px-1 rounded leading-none text-white pointer-events-none shadow"
+          className="absolute bottom-0.5 right-0.5 text-[8px] font-bold px-1 rounded leading-none text-white pointer-events-none shadow"
           style={{ backgroundColor: groupColor ?? "#64748b" }}
         >
           {groupLabel}
@@ -226,7 +226,7 @@ export const ZoneCell: React.FC<ZoneCellProps> = ({
       {/* Config mode in-group checkmark */}
       {configMode && inSelectedGroup && (
         <span
-          className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center text-white text-[9px] font-black pointer-events-none shadow"
+          className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center text-white text-[9px] font-bold pointer-events-none shadow"
           style={{ backgroundColor: groupColor ?? "#6366f1" }}
         >
           ✓

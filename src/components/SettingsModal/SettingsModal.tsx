@@ -382,7 +382,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                 <ShieldCheck size={16} className="text-indigo-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-black text-zinc-800 leading-tight">직원권한 관리</div>
+                <div className="text-[13px] font-bold text-zinc-800 leading-tight">직원권한 관리</div>
                 <div className="text-[11px] font-semibold text-zinc-500 leading-tight mt-0.5">페이지별 · 직원별 접근 권한 (level 0~9) 설정</div>
               </div>
               <ChevronRight size={16} className="text-indigo-500 shrink-0 group-hover:translate-x-0.5 transition-transform" />
@@ -643,7 +643,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 text-xs font-black text-white bg-[#2563eb] hover:bg-blue-700 rounded-lg shadow-sm transition cursor-pointer"
+            className="px-5 py-2 text-xs font-bold text-white bg-[#2563eb] hover:bg-blue-700 rounded-lg shadow-sm transition cursor-pointer"
           >
             완료 및 닫기
           </button>

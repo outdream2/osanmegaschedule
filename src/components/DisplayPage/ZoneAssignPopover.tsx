@@ -91,7 +91,7 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
       {/* Popover Header */}
       <div className="flex items-start justify-between border-b border-zinc-100 pb-2">
         <div className="min-w-0">
-          <div className="text-xs font-black text-zinc-800 flex items-center gap-1.5">
+          <div className="text-xs font-bold text-zinc-800 flex items-center gap-1.5">
             <span className={`px-1.5 py-0.5 rounded-md border text-[10px] ${statusCell(zone.status)}`}>
               {zone.num}번
             </span>

@@ -419,17 +419,17 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
         {/* 상비약/일반약/전체 3-way 필터 (좌측 리스트 상단) */}
         <div className="flex items-center gap-1 border-b-2 border-zinc-200 bg-white px-2 pt-1">
           <button type="button" onClick={() => setClassFilter("stationery")}
-            className={`relative px-4 py-2 ${TEXT.body} font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-zinc-400 hover:text-zinc-600"}`}>
+            className={`relative px-4 py-2 ${TEXT.body} font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-zinc-400 hover:text-zinc-600"}`}>
             상비약 <span className={`${TEXT.caption} text-zinc-400 ml-1 tabular-nums`}>({essentialCount})</span>
             {classFilter === "stationery" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-violet-500" />}
           </button>
           <button type="button" onClick={() => setClassFilter("general")}
-            className={`relative px-4 py-2 ${TEXT.body} font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "general" ? "text-sky-700" : "text-zinc-400 hover:text-zinc-600"}`}>
+            className={`relative px-4 py-2 ${TEXT.body} font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "general" ? "text-sky-700" : "text-zinc-400 hover:text-zinc-600"}`}>
             일반약 <span className={`${TEXT.caption} text-zinc-400 ml-1 tabular-nums`}>({generalCount})</span>
             {classFilter === "general" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-sky-500" />}
           </button>
           <button type="button" onClick={() => setClassFilter("all")}
-            className={`relative px-4 py-2 ${TEXT.body} font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "all" ? "text-zinc-800" : "text-zinc-400 hover:text-zinc-600"}`}>
+            className={`relative px-4 py-2 ${TEXT.body} font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "all" ? "text-zinc-800" : "text-zinc-400 hover:text-zinc-600"}`}>
             전체 <span className={`${TEXT.caption} text-zinc-400 ml-1 tabular-nums`}>({allCount})</span>
             {classFilter === "all" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-zinc-500" />}
           </button>

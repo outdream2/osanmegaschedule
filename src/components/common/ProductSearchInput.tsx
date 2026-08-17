@@ -101,7 +101,7 @@ export function ProductSearchInput({
           type="button"
           onClick={handleConfirm}
           disabled={!canConfirm}
-          className={`h-9 px-3 rounded-lg text-white text-[12px] font-black shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer inline-flex items-center gap-1 shrink-0 ${cls.btn}`}
+          className={`h-9 px-3 rounded-lg text-white text-[12px] font-bold shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer inline-flex items-center gap-1 shrink-0 ${cls.btn}`}
           title={canConfirm ? "선택 상품 등록" : "리스트에서 상품 선택"}
         >
           <Check size={12} strokeWidth={3} />
@@ -151,7 +151,7 @@ export function ProductSearchInput({
                   >
                     <Package size={11} className="text-zinc-400 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className={`text-[12px] font-black truncate ${isActive ? "text-zinc-900" : "text-zinc-700"}`}>
+                      <div className={`text-[12px] font-bold truncate ${isActive ? "text-zinc-900" : "text-zinc-700"}`}>
                         {name}
                       </div>
                       <div className="text-[10px] text-zinc-400 truncate">

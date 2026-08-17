@@ -468,7 +468,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                 {staffAvailability.map(staff => (
                   <div
                     key={staff.employeeId}
-                    className={`flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-black border ${
+                    className={`flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-bold border ${
                       staff.isOff
                         ? "bg-gray-100 border-gray-200 text-gray-400"
                         : "bg-indigo-50 border-indigo-200 text-indigo-700"
@@ -613,7 +613,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                     <Clock size={11} /> {modalTime}
                   </span>
                   <span className="text-gray-300 text-xs">·</span>
-                  <span className="text-indigo-600 text-xs font-black">
+                  <span className="text-indigo-600 text-xs font-bold">
                     대상: {modalTarget}
                   </span>
                 </div>

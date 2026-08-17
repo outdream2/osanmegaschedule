@@ -105,7 +105,7 @@ const PeriodCoverageWidget: React.FC<{ endpoint: string; label: string; color: "
       <button type="button" onClick={() => setCollapsed(c => !c)}
         className={`w-full flex items-center justify-between px-3 py-2 bg-zinc-50 hover:bg-zinc-100 transition cursor-pointer`}>
         <div className="flex items-center gap-2 min-w-0">
-          <span className={`inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full border ${badgeCls}`}>
+          <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeCls}`}>
             {label}
           </span>
           {loading ? (
@@ -118,7 +118,7 @@ const PeriodCoverageWidget: React.FC<{ endpoint: string; label: string; color: "
                 {periods[0].ym} ~ {periods[periods.length - 1].ym}
               </span>
               {missingCount > 0 && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full border text-rose-700 bg-rose-50 border-rose-300">
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border text-rose-700 bg-rose-50 border-rose-300">
                   ⚠ 빈 기간 {missingCount}건
                 </span>
               )}
@@ -160,7 +160,7 @@ const PeriodCoverageWidget: React.FC<{ endpoint: string; label: string; color: "
                             </td>
                           );
                         })}
-                        <td className="px-1 py-1 text-right font-black text-zinc-600">{p.total}</td>
+                        <td className="px-1 py-1 text-right font-bold text-zinc-600">{p.total}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -186,12 +186,12 @@ const PeriodCoverageWidget: React.FC<{ endpoint: string; label: string; color: "
                   <div className="mt-2 text-[11px] bg-amber-50/60 border border-amber-200 rounded-lg px-3 py-2 flex flex-col gap-1.5">
                     <div className="flex items-center gap-1.5">
                       <span className="text-amber-500 text-sm">📅</span>
-                      <span className="font-black text-amber-700">데이터 없는 기간 {missingCount}개</span>
+                      <span className="font-bold text-amber-700">데이터 없는 기간 {missingCount}개</span>
                       <span className="text-[9px] text-amber-500 font-semibold">해당 기간 xlsx 업로드 필요</span>
                     </div>
                     {fullyEmptyMonths.length > 0 && (
                       <div className="flex items-start gap-1.5">
-                        <span className="text-[9px] font-black text-rose-600 rounded px-1.5 py-0.5 shrink-0 mt-0.5">완전공백</span>
+                        <span className="text-[9px] font-bold text-rose-600 rounded px-1.5 py-0.5 shrink-0 mt-0.5">완전공백</span>
                         <div className="text-[11px] text-rose-700 font-mono">
                           {fullyEmptyMonths.slice(0, 8).join(" · ")}
                           {fullyEmptyMonths.length > 8 && <span className="text-rose-400"> +{fullyEmptyMonths.length - 8}개월</span>}
@@ -202,7 +202,7 @@ const PeriodCoverageWidget: React.FC<{ endpoint: string; label: string; color: "
                       <div className="flex flex-col gap-0.5">
                         {partialMonths.slice(0, 6).map(({ ym, slots }) => (
                           <div key={ym} className="flex items-center gap-1.5 text-[10px]">
-                            <span className="font-mono font-black text-amber-800 w-16">{ym}</span>
+                            <span className="font-mono font-bold text-amber-800 w-16">{ym}</span>
                             <div className="flex gap-1">
                               {slots.map(s => (
                                 <span key={s} className={`px-1.5 py-0.5 rounded border text-[9px] font-bold ${s === "초순" ? "text-sky-700 bg-sky-50 border-sky-200" : s === "중순" ? "text-indigo-700 bg-indigo-50 border-indigo-200" : "text-purple-700 bg-purple-50 border-purple-200"}`}>{s}</span>
@@ -1002,7 +1002,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <MenuCard color="sky" icon={Briefcase} title="경영관리" description="직원관리 · 연차승인 · 점심불참 · 권한"
                   onClick={() => onNavigate("business-manage", authSession!)}
                   badge={leavePendingCount > 0 ? (
-                    <div className="absolute top-2.5 right-2.5 min-w-[24px] h-6 px-2 rounded-full flex items-center justify-center text-white text-[11px] font-black tabular-nums bg-brand-deep shadow-sm ring-2 ring-white z-10">
+                    <div className="absolute top-2.5 right-2.5 min-w-[24px] h-6 px-2 rounded-full flex items-center justify-center text-white text-[11px] font-bold tabular-nums bg-brand-deep shadow-sm ring-2 ring-white z-10">
                       {leavePendingCount}
                     </div>
                   ) : undefined} />
@@ -1014,7 +1014,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     const total = requestsCounts.display + requestsCounts.order + requestsCounts.mismatch + requestsCounts.lunch;
                     if (total === 0) return undefined;
                     return (
-                      <div className="absolute top-2.5 right-2.5 min-w-[24px] h-6 px-2 rounded-full flex items-center justify-center text-white text-[11px] font-black tabular-nums bg-brand-deep shadow-sm ring-2 ring-white z-10">
+                      <div className="absolute top-2.5 right-2.5 min-w-[24px] h-6 px-2 rounded-full flex items-center justify-center text-white text-[11px] font-bold tabular-nums bg-brand-deep shadow-sm ring-2 ring-white z-10">
                         {total}
                       </div>
                     );
@@ -1094,7 +1094,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     onClick={() => onNavigate("requests", authSession!)}
                     badge={myPendingCount > 0 ? (
                       <div className="absolute top-2 right-2 z-10">
-                        <span className="min-w-[24px] h-[24px] px-1.5 rounded-full flex items-center justify-center text-[11px] font-black text-white bg-rose-500 shadow-lg ring-2 ring-white animate-pulse">
+                        <span className="min-w-[24px] h-[24px] px-1.5 rounded-full flex items-center justify-center text-[11px] font-bold text-white bg-rose-500 shadow-lg ring-2 ring-white animate-pulse">
                           {myPendingCount > 99 ? "99+" : myPendingCount}
                         </span>
                       </div>
@@ -1114,9 +1114,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           {!isLoggedIn && (
             <div className="w-full mb-7 flex flex-col gap-3">
               {/* 브랜드 헤더 · 2026-08-13 · PC 공통헤더 (AppNavHeader) 와 · 글씨·색깔 완전 통일
-                    · OSAN = red-500 · MEGATOWN = gray-900 · font-black · tracking-tight · 2줄 배치 */}
+                    · OSAN = red-500 · MEGATOWN = gray-900 · font-bold · tracking-tight · 2줄 배치 */}
               <div className="w-full flex flex-col items-center pt-2 pb-1">
-                <div className="flex flex-col gap-0.5 font-black tracking-tight leading-none select-none items-center">
+                <div className="flex flex-col gap-0.5 font-bold tracking-tight leading-none select-none items-center">
                   {(() => {
                     const en = lpBrand.brandNameEn || "OSAN MEGATOWN";
                     const accent = lpBrand.brandAccentWord || "MEGATOWN";
@@ -1183,8 +1183,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               {!underConstruction && (
               <div className="w-full mt-3 rounded-2xl overflow-hidden shadow-md border border-[#F0D700]/70 bg-[#FEE500]">
                 <div className="px-4 pt-3 pb-2 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-md bg-zinc-900 text-[#FEE500] font-black text-[10px] flex items-center justify-center">talk</span>
-                  <span className="text-zinc-900 font-black text-[13px]">카카오톡 채널</span>
+                  <span className="w-6 h-6 rounded-md bg-zinc-900 text-[#FEE500] font-bold text-[10px] flex items-center justify-center">talk</span>
+                  <span className="text-zinc-900 font-bold text-[13px]">카카오톡 채널</span>
                   <span className="ml-auto text-zinc-800/70 font-semibold text-[11px]">새 소식 알림받기</span>
                 </div>
                 <div className="bg-white px-4 py-3 flex items-center gap-3">
@@ -1194,7 +1194,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     className="w-20 h-20 rounded-lg bg-white p-1 shrink-0 object-contain border border-zinc-200"
                   />
                   <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-                    <div className="text-zinc-900 font-black text-[13px] leading-tight whitespace-pre-line">{lpBrand.shortName || "오산\n메가타운약국"}</div>
+                    <div className="text-zinc-900 font-bold text-[13px] leading-tight whitespace-pre-line">{lpBrand.shortName || "오산\n메가타운약국"}</div>
                     <div className="text-zinc-500 text-[11px] leading-tight">QR 스캔 또는 아래 버튼 클릭</div>
                     <a
                       href={lpContact.kakaoChannelUrl || "https://pf.kakao.com/_XWuiX/friend"}
@@ -1202,7 +1202,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       rel="noopener noreferrer"
                       className="mt-1 inline-flex items-center justify-center rounded-lg px-3 py-2 bg-[#FEE500] hover:bg-[#FADA0A] active:scale-[0.99] transition-all shadow-sm border border-[#F0D700]/60 cursor-pointer"
                     >
-                      <span className="text-zinc-900 font-black text-[13px]">친구추가</span>
+                      <span className="text-zinc-900 font-bold text-[13px]">친구추가</span>
                     </a>
                   </div>
                 </div>
@@ -1311,31 +1311,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               <div className="flex bg-zinc-100/70 border border-zinc-200/60 rounded-2xl p-1 gap-0.5 overflow-x-auto scrollbar-none">
                 <button
                   onClick={() => setUploadTab("products")}
-                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-black rounded-lg transition-all duration-200 cursor-pointer leading-tight ${uploadTab === "products" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"
+                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer leading-tight ${uploadTab === "products" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"
                     }`}>
                   상품목록
                 </button>
                 <button
                   onClick={() => setUploadTab("stock")}
-                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-black rounded-lg transition-all duration-200 cursor-pointer leading-tight ${uploadTab === "stock" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"
+                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer leading-tight ${uploadTab === "stock" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"
                     }`}>
                   재고리스트
                 </button>
                 <button
                   onClick={() => { setUploadTab("vendors"); setVendorUploadResult(null); setVendorUploadFile(null); }}
-                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-black rounded-lg transition-all duration-200 cursor-pointer leading-tight ${uploadTab === "vendors" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"
+                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer leading-tight ${uploadTab === "vendors" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"
                     }`}>
                   공급사관리
                 </button>
                 <button
                   onClick={() => { setUploadTab("purchase"); setPurchaseUploadResult(null); setPurchaseUploadFile(null); fetchPurchaseImportLog(); }}
-                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-black rounded-lg transition-all duration-200 cursor-pointer leading-tight ${uploadTab === "purchase" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"
+                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer leading-tight ${uploadTab === "purchase" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"
                     }`}>
                   매입상세
                 </button>
                 <button
                   onClick={() => { setUploadTab("log"); fetchImportLog(); fetchStockImportLog(); fetchPurchaseImportLog(); }}
-                  className={`flex-1 min-w-0 flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] sm:text-xs font-black rounded-lg transition-all duration-200 cursor-pointer leading-tight ${uploadTab === "log" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"
+                  className={`flex-1 min-w-0 flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer leading-tight ${uploadTab === "log" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"
                     }`}>
                   임포트 목록
                   {(importLog.length + stockImportLog.length + purchaseImportBatches.length) > 0 && (
@@ -1430,7 +1430,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     <CheckCircle size={36} className="text-emerald-500" weight="fill" />
                     <p className="text-sm font-bold text-emerald-700">임포트 완료</p>
                     <p className="text-sm text-gray-700">
-                      <span className="font-black text-emerald-700">{(stockUploadResult.history ?? 0).toLocaleString()}</span>
+                      <span className="font-bold text-emerald-700">{(stockUploadResult.history ?? 0).toLocaleString()}</span>
                       <span className="text-gray-500 mx-1">/</span>
                       <span className="font-bold">{(stockUploadResult.total ?? 0).toLocaleString()}</span>
                       건 스냅샷 저장됨
@@ -1471,7 +1471,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       {/* 자동 판정 표시 */}
                       <div className="mt-2 flex items-center gap-2 flex-wrap text-[10px]">
                         {stockPeriodType ? (
-                          <span className={`font-black px-2 py-0.5 rounded-full border ${stockPeriodType === "early" ? "text-sky-700 bg-sky-50 border-sky-300" :
+                          <span className={`font-bold px-2 py-0.5 rounded-full border ${stockPeriodType === "early" ? "text-sky-700 bg-sky-50 border-sky-300" :
                             stockPeriodType === "mid" ? "text-indigo-700 bg-indigo-50 border-indigo-300" :
                               "text-purple-700 bg-purple-50 border-purple-300"
                             }`}>
@@ -1601,7 +1601,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                                 >{rangeLabel}</span>
                               )}
                               {periodLabel && (
-                                <span className={`text-[10px] font-black rounded-full px-1.5 py-0.5 border shrink-0 ${periodChipClass}`}>
+                                <span className={`text-[10px] font-bold rounded-full px-1.5 py-0.5 border shrink-0 ${periodChipClass}`}>
                                   {periodLabel}
                                 </span>
                               )}
@@ -1719,7 +1719,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       {/* 자동판정 배지 · 재고와 동일 규칙 (종료매입일 dd 로 초/중/하순) */}
                       <div className="mt-2 flex items-center gap-2 flex-wrap text-[10px]">
                         {purchasePeriodType ? (
-                          <span className={`font-black px-2 py-0.5 rounded-full border ${purchasePeriodType === "early" ? "text-sky-700 bg-sky-50 border-sky-300" :
+                          <span className={`font-bold px-2 py-0.5 rounded-full border ${purchasePeriodType === "early" ? "text-sky-700 bg-sky-50 border-sky-300" :
                             purchasePeriodType === "mid" ? "text-indigo-700 bg-indigo-50 border-indigo-300" :
                               "text-purple-700 bg-purple-50 border-purple-300"
                             }`}>
@@ -1828,10 +1828,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                                   <span className="text-gray-500 font-mono shrink-0">{ts}</span>
                                   <span className="text-emerald-700 font-mono font-bold shrink-0" title={`매입기간 ${b.periodStart ?? b.startDate} ~ ${b.endDate}`}>{rangeLabel}</span>
                                   {periodLabel && (
-                                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full border ${periodChipClass} shrink-0`}>{periodLabel}</span>
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${periodChipClass} shrink-0`}>{periodLabel}</span>
                                   )}
                                 </div>
-                                <span className="text-emerald-700 font-black font-mono shrink-0">{b.count.toLocaleString()}건</span>
+                                <span className="text-emerald-700 font-bold font-mono shrink-0">{b.count.toLocaleString()}건</span>
                               </div>
                             );
                           })}
@@ -1866,7 +1866,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                         key={t.k}
                         type="button"
                         onClick={() => setLogFilter(f => ({ ...f, type: t.k }))}
-                        className={`text-[10px] font-black rounded-full px-2 py-0.5 border transition cursor-pointer ${logFilter.type === t.k ? `${t.cls} bg-white shadow-sm` : "text-zinc-400 border-zinc-200 bg-white/60 hover:bg-white"
+                        className={`text-[10px] font-bold rounded-full px-2 py-0.5 border transition cursor-pointer ${logFilter.type === t.k ? `${t.cls} bg-white shadow-sm` : "text-zinc-400 border-zinc-200 bg-white/60 hover:bg-white"
                           }`}
                       >{t.label}</button>
                     ))}
@@ -1947,11 +1947,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                         <table className="w-full text-[11px]">
                           <thead>
                             <tr className="text-[10px] uppercase tracking-wider text-gray-400 border-b border-gray-200 bg-gray-50/70">
-                              <th className="text-left py-2 pl-4 pr-3 font-black w-14">유형</th>
-                              <th className="text-left py-2 pr-3 font-black">시작일</th>
-                              <th className="text-left py-2 pr-3 font-black">종료일</th>
-                              <th className="text-right py-2 pr-3 font-black">임포트 시간</th>
-                              <th className="text-right py-2 pr-4 font-black">갯수</th>
+                              <th className="text-left py-2 pl-4 pr-3 font-bold w-14">유형</th>
+                              <th className="text-left py-2 pr-3 font-bold">시작일</th>
+                              <th className="text-left py-2 pr-3 font-bold">종료일</th>
+                              <th className="text-right py-2 pr-3 font-bold">임포트 시간</th>
+                              <th className="text-right py-2 pr-4 font-bold">갯수</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-100">
@@ -1965,7 +1965,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                                 return (
                                   <tr key={`p-${i}`} className="hover:bg-orange-50/40 transition">
                                     <td className="py-1.5 pl-4 pr-3">
-                                      <span className="text-[10px] font-black rounded-full px-1.5 py-0.5 border text-orange-700 bg-white border-orange-300">상품</span>
+                                      <span className="text-[10px] font-bold rounded-full px-1.5 py-0.5 border text-orange-700 bg-white border-orange-300">상품</span>
                                     </td>
                                     <td className="py-1.5 pr-3 text-gray-300">—</td>
                                     <td className="py-1.5 pr-3 text-gray-300">—</td>
@@ -1981,7 +1981,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                                 return (
                                   <tr key={`s-${i}`} className="hover:bg-indigo-50/40 transition">
                                     <td className="py-1.5 pl-4 pr-3">
-                                      <span className="text-[10px] font-black rounded-full px-1.5 py-0.5 border text-indigo-700 bg-white border-indigo-300">재고</span>
+                                      <span className="text-[10px] font-bold rounded-full px-1.5 py-0.5 border text-indigo-700 bg-white border-indigo-300">재고</span>
                                     </td>
                                     <td className="py-1.5 pr-3 text-sky-700 font-mono font-bold" title={entry.start_date ?? "미입력"}>
                                       {entry.start_date ?? <span className="text-gray-300">—</span>}
@@ -2003,13 +2003,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                               return (
                                 <tr key={`pu-${i}`} className="hover:bg-sky-50/40 transition">
                                   <td className="py-1.5 pl-4 pr-3">
-                                    <span className="text-[10px] font-black rounded-full px-1.5 py-0.5 border text-sky-700 bg-white border-sky-300">매입</span>
+                                    <span className="text-[10px] font-bold rounded-full px-1.5 py-0.5 border text-sky-700 bg-white border-sky-300">매입</span>
                                   </td>
                                   <td className="py-1.5 pr-3 text-sky-700 font-mono font-bold" title={startDisp}>{startDisp || <span className="text-gray-300">—</span>}</td>
                                   <td className="py-1.5 pr-3 text-emerald-700 font-mono font-bold" title={entry.endDate}>
                                     {entry.endDate || <span className="text-gray-300">—</span>}
                                     {periodLabel && (
-                                      <span className="ml-1 text-[9px] font-black px-1 py-0.5 rounded-full border text-purple-700 bg-purple-50 border-purple-200">{periodLabel}</span>
+                                      <span className="ml-1 text-[9px] font-bold px-1 py-0.5 rounded-full border text-purple-700 bg-purple-50 border-purple-200">{periodLabel}</span>
                                     )}
                                   </td>
                                   <td className="py-1.5 pr-3 text-right text-gray-500 font-mono">{when}</td>
@@ -2074,7 +2074,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 </div>
                 <div>
                   <div className="text-white/70 text-[10px] font-semibold tracking-widest uppercase mb-0.5">Vendor Portal</div>
-                  <div className="text-white font-black text-2xl leading-tight tracking-tight">거래처 로그인</div>
+                  <div className="text-white font-bold text-2xl leading-tight tracking-tight">거래처 로그인</div>
                   <div className="text-emerald-100 text-[11px] font-medium tracking-wide mt-0.5">방문예약 이용</div>
                 </div>
               </div>
@@ -2193,7 +2193,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   className="w-14 h-14 object-cover rounded-2xl ring-1 ring-white/30 shadow-lg shrink-0 bg-white"
                 />
                 <div className="min-w-0">
-                  <div className="text-white font-black text-2xl leading-tight tracking-tight truncate">
+                  <div className="text-white font-bold text-2xl leading-tight tracking-tight truncate">
                     {(lpBrand.region ? lpBrand.region + " " : "오산 ") + (lpBrand.shortName || "메가타운약국")}
                   </div>
                 </div>

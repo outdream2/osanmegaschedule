@@ -160,8 +160,8 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
           </div>
           {/* 요약 */}
           <div className={`${TEXT.caption} text-zinc-500 pt-0.5`}>
-            상품 <span className="tabular-nums text-zinc-800 font-black">{sorted.length}</span> 종 · 총 재고
-            <span className="tabular-nums text-sky-700 font-black ml-1">{totalStock.toLocaleString()}</span>
+            상품 <span className="tabular-nums text-zinc-800 font-bold">{sorted.length}</span> 종 · 총 재고
+            <span className="tabular-nums text-sky-700 font-bold ml-1">{totalStock.toLocaleString()}</span>
             {(season || dateFrom || dateTo) && (
               <span className="ml-2 text-amber-600 text-[10px] font-bold">※ 기간·계절 필터 · 백엔드 시계열 API 확장 후 적용</span>
             )}
@@ -199,7 +199,7 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
                     <td className="text-center px-2 py-1.5 text-zinc-400 tabular-nums">{i + 1}</td>
                     <td className="px-3 py-1.5 font-mono text-[11px] text-zinc-500 tabular-nums">{p.code}</td>
                     <td className="px-3 py-1.5 font-semibold text-zinc-800 truncate max-w-[280px]">{p.name}</td>
-                    <td className="text-right px-3 py-1.5 font-mono font-black text-sky-700 tabular-nums">
+                    <td className="text-right px-3 py-1.5 font-mono font-bold text-sky-700 tabular-nums">
                       {p.current_stock ?? "-"}
                     </td>
                     <td className="text-right px-3 py-1.5 font-mono text-zinc-500 tabular-nums">

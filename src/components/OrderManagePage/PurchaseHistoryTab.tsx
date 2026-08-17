@@ -764,7 +764,7 @@ export const PurchaseHistoryTab: React.FC = () => {
           {viewMode === "by-vendor"
             ? <Building2 size={14} className="text-emerald-500 shrink-0" />
             : <Package size={14} className="text-sky-500 shrink-0" />}
-          <span className="text-[15px] font-black text-zinc-800">매입이력</span>
+          <span className="text-[15px] font-bold text-zinc-800">매입이력</span>
           {viewMode === "by-vendor" && selectedVendor && (
             <span className="text-[15px] font-semibold text-emerald-600 bg-emerald-50 rounded-full px-2 py-0.5 border border-emerald-200 tabular-nums">
               {ledgerRows.length}건
@@ -778,7 +778,7 @@ export const PurchaseHistoryTab: React.FC = () => {
           {/* 데이터 소스 배지 (2026-08-04) · 사용자가 매입이력 vs 거래명세서 소스 구분 · fallback 시 warning */}
           {summarySource && (
             <span
-              className={`text-[14px] font-black uppercase tracking-wider rounded-full px-2 py-0.5 border tabular-nums cursor-help ${
+              className={`text-[14px] font-bold uppercase tracking-wider rounded-full px-2 py-0.5 border tabular-nums cursor-help ${
                 summarySource === "purchase_details"
                   ? "text-emerald-700 bg-emerald-50 border-emerald-200"
                   : "text-amber-800 bg-amber-50 border-amber-300 animate-pulse"
@@ -807,7 +807,7 @@ export const PurchaseHistoryTab: React.FC = () => {
           {/* 선택 공급사 detail source · summary 와 다르면 표시 */}
           {selectedVendor && detailSource && detailSource !== summarySource && (
             <span
-              className={`text-[14px] font-black uppercase tracking-wider rounded-full px-2 py-0.5 border tabular-nums cursor-help ${
+              className={`text-[14px] font-bold uppercase tracking-wider rounded-full px-2 py-0.5 border tabular-nums cursor-help ${
                 detailSource === "purchase_details"
                   ? "text-emerald-700 bg-emerald-50 border-emerald-200"
                   : "text-amber-800 bg-amber-50 border-amber-300 animate-pulse"
@@ -824,7 +824,7 @@ export const PurchaseHistoryTab: React.FC = () => {
           <button
             type="button"
             onClick={() => setViewMode("by-vendor")}
-            className={`px-2.5 h-7 text-[15px] font-black rounded transition cursor-pointer inline-flex items-center gap-1.5 ${
+            className={`px-2.5 h-7 text-[15px] font-bold rounded transition cursor-pointer inline-flex items-center gap-1.5 ${
               viewMode === "by-vendor"
                 ? "bg-white text-emerald-700 shadow-sm border border-emerald-200"
                 : "text-zinc-500 hover:text-zinc-700"
@@ -837,7 +837,7 @@ export const PurchaseHistoryTab: React.FC = () => {
           <button
             type="button"
             onClick={() => setViewMode("by-product")}
-            className={`px-2.5 h-7 text-[15px] font-black rounded transition cursor-pointer inline-flex items-center gap-1.5 ${
+            className={`px-2.5 h-7 text-[15px] font-bold rounded transition cursor-pointer inline-flex items-center gap-1.5 ${
               viewMode === "by-product"
                 ? "bg-white text-sky-700 shadow-sm border border-sky-200"
                 : "text-zinc-500 hover:text-zinc-700"
@@ -1103,7 +1103,7 @@ export const PurchaseHistoryTab: React.FC = () => {
               {/* 상품 리스트 · 카드 2줄 · 상단 컬럼 헤더 */}
               {/* 2026-08-05 · max-h-[65vh] 좁아서 스크롤·데이터 안 보임 문제 · 90vh 로 확대 */}
               <div className="bg-white rounded-xl border border-zinc-200 shadow-sm flex-1 min-h-0 max-h-[calc(100vh-200px)] flex flex-col overflow-hidden">
-                <div className="px-3 py-1.5 border-b border-zinc-100 bg-zinc-50/60 shrink-0 grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center text-[15px] font-black text-zinc-500 uppercase tracking-wider">
+                <div className="px-3 py-1.5 border-b border-zinc-100 bg-zinc-50/60 shrink-0 grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center text-[15px] font-bold text-zinc-500 uppercase tracking-wider">
                   <span>상품</span>
                   <span className="text-right whitespace-nowrap text-amber-600">매입</span>
                   <span className="text-right whitespace-nowrap text-rose-600">판매</span>
@@ -1114,7 +1114,7 @@ export const PurchaseHistoryTab: React.FC = () => {
                   <ListLoading label="상품 매입이력 불러오는 중..." tone="sky" />
                 ) : allDetailsError ? (
                   <div className="p-4 text-[15px] text-rose-600 space-y-1">
-                    <div className="font-black">로드 실패</div>
+                    <div className="font-bold">로드 실패</div>
                     <div className="font-mono bg-rose-50 border border-rose-100 rounded px-2 py-1">{allDetailsError}</div>
                     <button
                       type="button"
@@ -1156,7 +1156,7 @@ export const PurchaseHistoryTab: React.FC = () => {
                   {/* 차트 헤더 */}
                   <div className="bg-white rounded-xl border border-zinc-200 shadow-sm px-4 py-2.5 flex items-center gap-2 shrink-0">
                     <Package size={14} className="text-sky-500 shrink-0" />
-                    <span className="text-[15px] font-black text-zinc-800">상품별 매입 분석</span>
+                    <span className="text-[15px] font-bold text-zinc-800">상품별 매입 분석</span>
                     <span className="text-[15px] text-zinc-400 font-semibold ml-1">
                       {filteredAllDetails.length > 0
                         ? `${filteredAllDetails.length}건 분석`

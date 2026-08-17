@@ -36,7 +36,7 @@ export const StockActionsCell: React.FC<StockActionsCellProps> = React.memo(({
         <History size={13} />
         {(row.historyCount ?? 0) > 0 && (
           <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-1
-            text-[9px] font-black text-white bg-teal-500 rounded-full
+            text-[9px] font-bold text-white bg-teal-500 rounded-full
             flex items-center justify-center leading-none tabular-nums">
             {row.historyCount}
           </span>

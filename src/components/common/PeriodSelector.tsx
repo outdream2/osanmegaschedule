@@ -70,7 +70,7 @@ export function PeriodSelector<T extends number | string>({
             type="button"
             onClick={() => onChange(opt.value)}
             title={opt.title}
-            className={`${s.btn} rounded font-black transition cursor-pointer whitespace-nowrap ${
+            className={`${s.btn} rounded font-bold transition cursor-pointer whitespace-nowrap ${
               active
                 ? activeCls
                 : "text-zinc-500 hover:text-zinc-700 hover:bg-white"

@@ -62,7 +62,7 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
       {/* 조회 기간 · 리로드 */}
       <div className="bg-white rounded-xl border border-zinc-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-3">
         <Calendar size={14} className="text-rose-500 shrink-0" />
-        <div className="text-[12px] font-black text-zinc-800">
+        <div className="text-[12px] font-bold text-zinc-800">
           월별 부가세 요약
           <span className="ml-2 text-[11px] font-bold text-zinc-500 tabular-nums">
             {fromDate} ~ {toDate}
@@ -123,7 +123,7 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
       <div className="bg-white rounded-xl border border-zinc-200 shadow-sm">
         <div className="px-4 py-3 border-b border-zinc-100 flex items-center gap-2">
           <TrendingUp size={14} className="text-rose-500" />
-          <div className="text-[13px] font-black text-zinc-800">월별 매출 · 매입 · 경비 · 예상 부가세</div>
+          <div className="text-[13px] font-bold text-zinc-800">월별 매출 · 매입 · 경비 · 예상 부가세</div>
           <div className="text-[10px] font-bold text-zinc-500 ml-auto">
             {monthly.rows.length}개월
           </div>
@@ -179,7 +179,7 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
                 ))}
               </tbody>
               <tfoot className="sticky bottom-0 bg-zinc-100 shadow-inner">
-                <tr className="text-zinc-800 font-black">
+                <tr className="text-zinc-800 font-bold">
                   <td className="px-3 py-3 text-[11px]">합계</td>
                   <td className="px-2 py-3 text-right tabular-nums text-[12px] border-l border-zinc-200">
                     {fmt(monthly.totals.salesTotal)}
@@ -206,7 +206,7 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
                     {fmt(monthly.totals.expenseVat)}
                   </td>
                   <td className="px-2 py-3 text-right border-l border-zinc-200">
-                    <div className={`tabular-nums text-[15px] font-black leading-tight ${
+                    <div className={`tabular-nums text-[15px] font-bold leading-tight ${
                       monthly.totals.expectedVat >= 0 ? "text-rose-700" : "text-emerald-700"
                     }`}>
                       {monthly.totals.expectedVat >= 0 ? "" : "−"}{fmt(Math.abs(monthly.totals.expectedVat))}
@@ -332,7 +332,7 @@ const MonthlyRow: React.FC<MonthlyRowProps> = ({ row, onExpenseChange, onTaxfree
         {fmt(row.taxableSales)}
       </td>
       {/* 매출세액 · 과세만 */}
-      <td className="px-2 py-2 text-right tabular-nums font-black text-rose-700 border-l border-zinc-100">
+      <td className="px-2 py-2 text-right tabular-nums font-bold text-rose-700 border-l border-zinc-100">
         {fmt(row.taxableSalesVat)}
       </td>
       {/* 매입 총액 */}
@@ -340,7 +340,7 @@ const MonthlyRow: React.FC<MonthlyRowProps> = ({ row, onExpenseChange, onTaxfree
         {fmt(row.purchaseGross)}
       </td>
       {/* 매입세액 공제 */}
-      <td className="px-2 py-2 text-right tabular-nums font-black text-emerald-700">
+      <td className="px-2 py-2 text-right tabular-nums font-bold text-emerald-700">
         {fmt(row.purchaseDeductibleVat)}
       </td>
       {/* 경비 (입력) */}
@@ -356,7 +356,7 @@ const MonthlyRow: React.FC<MonthlyRowProps> = ({ row, onExpenseChange, onTaxfree
         {fmt(row.expenseVat)}
       </td>
       {/* 예상 부가세 */}
-      <td className={`px-2 py-2 text-right tabular-nums font-black border-l border-zinc-100 ${expectedColor}`}>
+      <td className={`px-2 py-2 text-right tabular-nums font-bold border-l border-zinc-100 ${expectedColor}`}>
         {row.expectedVat >= 0 ? "" : "−"}{fmt(Math.abs(row.expectedVat))}
       </td>
     </tr>
@@ -387,7 +387,7 @@ const SummaryCard: React.FC<SummaryCardProps> = ({ label, value, icon, color, hi
         <div className={`w-8 h-8 rounded-lg ${c.icon} flex items-center justify-center shrink-0`}>{icon}</div>
         <div className="flex-1 min-w-0">
           <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wide leading-tight">{label}</div>
-          <div className={`text-[18px] font-black ${c.text} tabular-nums leading-tight mt-0.5`}>
+          <div className={`text-[18px] font-bold ${c.text} tabular-nums leading-tight mt-0.5`}>
             {fmt(value)}<span className="text-[12px] ml-1">원</span>
           </div>
           {hint && <div className="text-[10px] text-zinc-500 mt-0.5 leading-tight">{hint}</div>}

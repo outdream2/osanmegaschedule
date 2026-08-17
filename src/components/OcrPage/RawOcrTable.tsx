@@ -3037,7 +3037,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
         <div className="w-full bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-black text-white bg-sky-500 px-1.5 py-0.5 rounded shrink-0">1차보정</span>
+              <span className="text-[10px] font-bold text-white bg-sky-500 px-1.5 py-0.5 rounded shrink-0">1차보정</span>
               <span className="text-xs font-bold text-gray-800">거래명세서 품목</span>
               <span className="text-[11px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded font-bold">
                 {rawRows.length - permanentlyDeletedRawRows.size - hiddenRawRows.size}행 · {structuredPages.length}페이지
@@ -3057,7 +3057,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                 <button
                   type="button"
                   onClick={commitRawRowsDeletion}
-                  className="inline-flex items-center gap-1 text-[11px] font-black text-white bg-rose-500 hover:bg-rose-600 active:bg-rose-700 px-2 py-0.5 rounded shadow-sm transition cursor-pointer whitespace-nowrap"
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-rose-500 hover:bg-rose-600 active:bg-rose-700 px-2 py-0.5 rounded shadow-sm transition cursor-pointer whitespace-nowrap"
                   title={`선택된 ${hiddenRawRows.size}행 완전 삭제 + DB 서명 저장 (다음 스캔에도 자동 필터)`}
                 >
                   🗑 {hiddenRawRows.size}행 삭제
@@ -3103,7 +3103,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
             <div className="mx-3 my-2 px-3 py-2 rounded-lg bg-rose-50 border-2 border-rose-300 flex items-start gap-2 text-[12px] font-semibold text-rose-800">
               <AlertTriangle size={14} className="shrink-0 mt-0.5 text-rose-600" />
               <div className="flex-1">
-                <div className="font-black text-rose-900 mb-0.5">
+                <div className="font-bold text-rose-900 mb-0.5">
                   공급사 미입력 페이지 {missingSupplierPages.length}개 — 입력이 필요합니다
                 </div>
                 <div className="font-normal text-rose-700">
@@ -3522,7 +3522,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                           <td colSpan={rawColSpan} className="px-3 py-1.5">
                             <span className="flex items-center gap-2 text-xs font-bold text-amber-800">
                               <span className="bg-white border rounded px-1.5 py-0.5 border-amber-300 text-amber-700">{pn}번 명세서</span>
-                              {pageSupplierHeadRaw && <span className="text-amber-700 font-black">{pageSupplierHeadRaw}</span>}
+                              {pageSupplierHeadRaw && <span className="text-amber-700 font-bold">{pageSupplierHeadRaw}</span>}
                               {/* 공급사 정보 조회·수정 버튼 (2026-07-19 · 명세서 헤더 · 공급사관리 상세 페이지 재사용) */}
                               {pageSupplierHeadRaw && (
                                 <button
@@ -3543,13 +3543,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                               <button type="button"
                                 onClick={() => runColumnPipeline(pn)}
                                 disabled={!!runningPipeline[pn]}
-                                className="ml-1 text-[10px] font-black text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-zinc-300 disabled:cursor-not-allowed rounded px-2 py-0.5 cursor-pointer shadow-sm whitespace-nowrap"
+                                className="ml-1 text-[10px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-zinc-300 disabled:cursor-not-allowed rounded px-2 py-0.5 cursor-pointer shadow-sm whitespace-nowrap"
                                 title="상품명 매칭 → 빈 단가 DB 조회 → OCR vs DB 큰차이 스왑 · 페이지 로드 시 자동 실행됨 · 재실행용"
                               >{runningPipeline[pn] ? "⏳ 정리중..." : "🎯 자동정리"}</button>
                               {/* 2026-07-22 · 명세서마다 행추가 (사용자 요청) */}
                               <button type="button"
                                 onClick={() => addManualRow(pn)}
-                                className="ml-1 text-[10px] font-black text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded px-2 py-0.5 cursor-pointer shadow-sm whitespace-nowrap"
+                                className="ml-1 text-[10px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded px-2 py-0.5 cursor-pointer shadow-sm whitespace-nowrap"
                                 title={`${pn}번 명세서 하단에 빈 상품 행 추가 · 수동 입력`}
                               >➕ 행추가</button>
                             </span>
@@ -3660,7 +3660,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                   <button
                                     type="button"
                                     onMouseDown={e => { e.preventDefault(); e.stopPropagation(); const name = editingRawSuppVal.trim() || String(cell ?? "").trim(); if (name) openVendorEdit(name); }}
-                                    className="shrink-0 flex items-center gap-1 text-[11px] font-black text-sky-700 bg-white border border-sky-300 hover:bg-sky-50 rounded px-1.5 py-0.5 whitespace-nowrap cursor-pointer transition"
+                                    className="shrink-0 flex items-center gap-1 text-[11px] font-bold text-sky-700 bg-white border border-sky-300 hover:bg-sky-50 rounded px-1.5 py-0.5 whitespace-nowrap cursor-pointer transition"
                                     title="공급사 정보 조회·수정"
                                   >
                                     <Search size={10} /> 조회
@@ -3694,7 +3694,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                               >
                                 <span className="flex items-center gap-1">
                                   {isEmpty ? (
-                                    <span className="flex items-center gap-0.5 text-[11px] font-black whitespace-nowrap">
+                                    <span className="flex items-center gap-0.5 text-[11px] font-bold whitespace-nowrap">
                                       <AlertTriangle size={10} className="shrink-0" />
                                       공급사 필수
                                     </span>
@@ -3910,7 +3910,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                       );
                                     })()}
                                     {isCorrectedAmt && <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1 rounded font-bold">보정</span>}
-                                    {dbFilledCells.has(`${ri}-${ci}`) && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1 rounded font-black" title="products DB 에서 자동 채움">DB</span>}
+                                    {dbFilledCells.has(`${ri}-${ci}`) && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1 rounded font-bold" title="products DB 에서 자동 채움">DB</span>}
                                     <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
                                   </span>
                                   {/* 2026-07-28 · 사입가 표시 제거 (ERP sub-row 에 이미 표시 · 중복) */}
@@ -3955,7 +3955,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                               <td key={ci} className="px-3 py-2 max-w-[240px]">
                                 <div className="flex flex-col gap-0">
                                   <span className="flex items-center gap-1">
-                                    <span className="text-[10px] bg-emerald-100 text-emerald-700 font-black px-1 rounded shrink-0">BC</span>
+                                    <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-1 rounded shrink-0">BC</span>
                                     <span className="font-semibold text-emerald-700 break-words whitespace-normal">{renderTextWithBreaks(barcodeMatch.name)}</span>
                                     <button
                                       type="button"
@@ -4091,7 +4091,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                   <div className="flex flex-col gap-0">
                                     <span className="flex items-center gap-1">
                                       {/* 2026-07-23 · 사용자 요청 "db매칭 한 경우 품명에 db배지 표시해" */}
-                                      <span className="text-[9px] font-black bg-brand-deep text-white px-1 py-px rounded shrink-0" title="products DB 에서 자동 매칭">DB</span>
+                                      <span className="text-[9px] font-bold bg-brand-deep text-white px-1 py-px rounded shrink-0" title="products DB 에서 자동 매칭">DB</span>
                                       <BookOpen size={9} className="text-indigo-400 shrink-0" />
                                       <span className="font-semibold text-indigo-700 break-words whitespace-normal">{renderTextWithBreaks(autoMatch.name)}</span>
                                       <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
@@ -4447,7 +4447,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                             {pageSupplier ? (
                                               <button type="button"
                                                 onClick={e => { e.stopPropagation(); openVendorEdit(pageSupplier); }}
-                                                className="text-[14px] font-black text-amber-900 whitespace-nowrap hover:text-amber-600 cursor-pointer transition truncate max-w-[160px]"
+                                                className="text-[14px] font-bold text-amber-900 whitespace-nowrap hover:text-amber-600 cursor-pointer transition truncate max-w-[160px]"
                                                 title="클릭 · 공급사 정보 조회·수정"
                                               >{pageSupplier}</button>
                                             ) : (
@@ -4460,10 +4460,10 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                                   value={(() => { const raw = String(pageSubtotalCustom[pn] ?? ""); const n = parseNumber(raw); return n > 0 ? fmt(n) : raw; })()}
                                                   onChange={e => { const raw = e.target.value.replace(/[^\d-]/g, ""); setPageSubtotalCustom(prev => ({ ...prev, [pn]: parseNumber(raw) })); }}
                                                   placeholder="금액"
-                                                  className="w-[110px] text-[16px] font-black text-amber-900 bg-white border-2 border-amber-400 rounded px-1.5 py-0.5 focus:outline-none focus:border-amber-600 text-right"
+                                                  className="w-[110px] text-[16px] font-bold text-amber-900 bg-white border-2 border-amber-400 rounded px-1.5 py-0.5 focus:outline-none focus:border-amber-600 text-right"
                                                   autoFocus
                                                 />
-                                                <span className="text-[16px] font-black text-amber-900">원</span>
+                                                <span className="text-[16px] font-bold text-amber-900">원</span>
                                                 <button type="button" onClick={() => setPageSubtotalChoices(prev => { const n = { ...prev }; delete n[pn]; return n; })}
                                                   className="text-[10px] font-bold text-zinc-500 hover:text-zinc-700 underline"
                                                 >취소</button>
@@ -4499,10 +4499,10 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                                           setEditingSummary(null);
                                                         }}
                                                         onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setEditingSummary(null); }}
-                                                        className="w-[130px] text-[16px] font-black text-amber-900 bg-amber-50 border border-amber-300 hover:border-amber-500 focus:bg-white rounded px-2 py-0.5 focus:outline-none focus:border-amber-600 text-right tracking-tight"
+                                                        className="w-[130px] text-[16px] font-bold text-amber-900 bg-amber-50 border border-amber-300 hover:border-amber-500 focus:bg-white rounded px-2 py-0.5 focus:outline-none focus:border-amber-600 text-right tracking-tight"
                                                         title={vatOn ? `공급가액 ${fmt(shown)} + VAT ${fmt(vatAmount)} · 클릭하여 수정` : "금액 컬럼 합 · 클릭하여 수정"}
                                                       />
-                                                      <span className="text-[14px] font-black text-amber-900">원</span>
+                                                      <span className="text-[14px] font-bold text-amber-900">원</span>
                                                       {vatOn && (
                                                         <span className="text-[10px] font-bold text-amber-600 bg-amber-100 border border-amber-300 rounded px-1 py-px whitespace-nowrap">
                                                           +VAT {fmt(vatAmount)}
@@ -4549,7 +4549,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                                     setEditingSummary(null);
                                                   }}
                                                   onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setEditingSummary(null); }}
-                                                  className="w-[110px] text-[13px] font-black text-orange-800 bg-orange-50 border border-orange-300 hover:border-orange-500 focus:bg-white rounded px-1.5 py-0.5 focus:outline-none focus:border-orange-600 text-right"
+                                                  className="w-[110px] text-[13px] font-bold text-orange-800 bg-orange-50 border border-orange-300 hover:border-orange-500 focus:bg-white rounded px-1.5 py-0.5 focus:outline-none focus:border-orange-600 text-right"
                                                 />
                                               );
                                             })()}
@@ -4605,7 +4605,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                                 setEditingSummary(null);
                                               }}
                                               onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setEditingSummary(null); }}
-                                              className="w-[110px] text-[13px] font-black text-rose-800 bg-rose-50 border border-rose-300 hover:border-rose-500 focus:bg-white rounded px-1.5 py-0.5 focus:outline-none focus:border-rose-600 text-right"
+                                              className="w-[110px] text-[13px] font-bold text-rose-800 bg-rose-50 border border-rose-300 hover:border-rose-500 focus:bg-white rounded px-1.5 py-0.5 focus:outline-none focus:border-rose-600 text-right"
                                             />
                                             {/* 2026-07-24 · 사용자 요청 "확정 버튼 미수금 입력창 옆으로 이동" · 우측 배치 X · 인라인 */}
                                             {!hasMissingSupplier && (() => {
@@ -4621,7 +4621,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                                       await handleMatchPage(pn);
                                                     }}
                                                     disabled={!!matchingPage[pn]}
-                                                    className={`text-[13px] font-black text-white disabled:bg-zinc-300 disabled:cursor-not-allowed border-2 rounded-lg px-3 py-1 cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow-md ring-1 transition shrink-0 ${
+                                                    className={`text-[13px] font-bold text-white disabled:bg-zinc-300 disabled:cursor-not-allowed border-2 rounded-lg px-3 py-1 cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow-md ring-1 transition shrink-0 ${
                                                       hasErpSubRow
                                                         ? "bg-violet-500 hover:bg-violet-600 border-violet-700 ring-violet-200"
                                                         : "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] border-indigo-700 ring-indigo-200"
@@ -4646,7 +4646,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                                       setConfirmed(true);
                                                     }}
                                                     disabled={!!matchingPage[pn]}
-                                                    className={`text-[13px] font-black text-white disabled:bg-zinc-300 disabled:cursor-not-allowed border-2 rounded-lg px-3 py-1 cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow-md ring-1 transition shrink-0 ${
+                                                    className={`text-[13px] font-bold text-white disabled:bg-zinc-300 disabled:cursor-not-allowed border-2 rounded-lg px-3 py-1 cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow-md ring-1 transition shrink-0 ${
                                                       isConfirmed
                                                         ? "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] border-emerald-800 ring-emerald-200"
                                                         : "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] border-emerald-700 ring-emerald-200 animate-pulse"
@@ -4720,11 +4720,11 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                     {amtOrderIdx > 0 && (
                       <td
                         colSpan={Math.max(1, amtOrderIdx)}
-                        className="px-3 py-2.5 text-right font-black text-gray-700 cursor-help"
+                        className="px-3 py-2.5 text-right font-bold text-gray-700 cursor-help"
                         title={totalBreakdownTitle}
                       >합 계</td>
                     )}
-                    <td className="px-3 py-2.5 text-right font-black text-amber-700 text-sm whitespace-nowrap">
+                    <td className="px-3 py-2.5 text-right font-bold text-amber-700 text-sm whitespace-nowrap">
                       {/* 2026-07-27 · 사용자 요청 "1차보정 총소계금액도 편집가능하게" · 클릭 인라인 입력 */}
                       {editingGrandTotal !== null ? (
                         <input type="text" inputMode="numeric" autoFocus
@@ -4931,7 +4931,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                   >
                                     {confImageCollapsed ? (
                                       <button type="button" onClick={() => setConfImageCollapsed(false)}
-                                        className="w-full h-full flex items-center justify-center text-emerald-500 text-[11px] font-black hover:bg-emerald-50 cursor-pointer"
+                                        className="w-full h-full flex items-center justify-center text-emerald-500 text-[11px] font-bold hover:bg-emerald-50 cursor-pointer"
                                         title="이미지 펼치기">▶</button>
                                     ) : (() => {
                                       const imgSrc = pageImages[pn - 1];
@@ -4992,7 +4992,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                   {/* 2026-07-28 · 사용자 요청 순서: N번 명세서 → 공급사 → DB저장 버튼 → 총 소계 X원 · 간격 넉넉 · 폰트 up */}
                                   <span className="inline-flex items-center gap-4 text-[14px] font-bold text-emerald-800 flex-wrap justify-center">
                                     <span className="bg-white border border-emerald-300 rounded px-2 py-0.5 text-emerald-700 text-[14px]">{pn}번 명세서</span>
-                                    {pageSupplierHeadConf && <span className="text-emerald-700 font-black text-[15px]">{pageSupplierHeadConf}</span>}
+                                    {pageSupplierHeadConf && <span className="text-emerald-700 font-bold text-[15px]">{pageSupplierHeadConf}</span>}
                                     {/* 2026-07-28 · VAT 포함 여부 표시 (사용자 요청) */}
                                     <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${pageVatIncluded[pn] ? "text-amber-700 bg-amber-50 border-amber-300" : "text-zinc-500 bg-zinc-50 border-zinc-300"}`}>
                                       {pageVatIncluded[pn] ? "VAT 별도" : "VAT 포함"}
@@ -5024,7 +5024,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                           className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-white tracking-tight bg-rose-600 hover:bg-rose-500 border border-rose-800 rounded-md px-3.5 py-1.5 cursor-pointer whitespace-nowrap transition-all duration-150 ease-out shadow-sm hover:shadow-md hover:-translate-y-[1px] active:translate-y-0 active:shadow-inner active:bg-rose-700"
                                           title={`${pn}번 명세서 · 확정표 DB 저장`}
                                         >💾 거래명세서 DB저장</button>
-                                        <span className="text-[14px] font-black text-emerald-900">총 소계 <span className="text-emerald-700">{fmt(confPageTotals.get(pn) ?? 0)}</span>원</span>
+                                        <span className="text-[14px] font-bold text-emerald-900">총 소계 <span className="text-emerald-700">{fmt(confPageTotals.get(pn) ?? 0)}</span>원</span>
                                       </>
                                     )}
                                   </span>

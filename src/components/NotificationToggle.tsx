@@ -80,7 +80,7 @@ export const NotificationToggle: React.FC<Props> = ({ authSession }) => {
   return (
     <div className="flex items-center gap-1 shrink-0" title={title}>
       {/* 2026-08-12 · 사용자 지시 · "알림 " prefix 제거 · ON/OFF/차단 만 · 여백 반으로 (gap-1.5→gap-1) */}
-      <span className={`text-[11px] font-black tracking-tight hidden sm:inline ${
+      <span className={`text-[11px] font-bold tracking-tight hidden sm:inline ${
         isDenied ? "text-zinc-400" : isOn ? "text-emerald-600" : "text-zinc-500"
       }`}>
         {isDenied ? "차단" : isOn ? "ON" : "OFF"}

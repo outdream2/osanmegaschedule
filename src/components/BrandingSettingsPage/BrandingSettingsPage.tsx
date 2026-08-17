@@ -122,7 +122,7 @@ const BrandSection: React.FC = () => {
           <Buildings size={15} weight="fill" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[15px] font-black text-zinc-800 leading-tight">브랜드 정보</div>
+          <div className="text-[15px] font-bold text-zinc-800 leading-tight">브랜드 정보</div>
           <div className="text-[15px] text-zinc-500 mt-0.5">사이드바·헤더·랜딩·푸터에서 사용되는 브랜드 이름/로고</div>
         </div>
         <StatusBadge state={saveState as SaveState} />
@@ -196,7 +196,7 @@ export const ContactSection: React.FC = () => {
           <Phone size={15} weight="fill" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[15px] font-black text-zinc-800 leading-tight">연락처·저작권·카카오</div>
+          <div className="text-[15px] font-bold text-zinc-800 leading-tight">연락처·저작권·카카오</div>
           <div className="text-[15px] text-zinc-500 mt-0.5">푸터·랜딩·카카오 QR 등에서 사용되는 값</div>
         </div>
         <StatusBadge state={saveState as SaveState} />
@@ -305,7 +305,7 @@ export const StampsSection: React.FC = () => {
           <Stamp size={15} weight="fill" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[15px] font-black text-zinc-800 leading-tight">도장 매핑</div>
+          <div className="text-[15px] font-bold text-zinc-800 leading-tight">도장 매핑</div>
           <div className="text-[15px] text-zinc-500 mt-0.5">
             근로계약서 · 사업주/근로자 이름에 자동 매칭되는 도장 이미지
           </div>
@@ -440,7 +440,7 @@ export const StampsSection: React.FC = () => {
                 type="button"
                 onClick={handleAdd}
                 disabled={!draftName.trim()}
-                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 text-white text-[14px] font-black shadow-sm transition-colors cursor-pointer whitespace-nowrap sm:ml-auto"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 text-white text-[14px] font-bold shadow-sm transition-colors cursor-pointer whitespace-nowrap sm:ml-auto"
               >
                 <Plus size={13} weight="bold" /> 추가
               </button>
@@ -508,7 +508,7 @@ export const MobileVisibilitySection: React.FC = () => {
           <DeviceMobile size={15} weight="fill" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[15px] font-black text-zinc-800 leading-tight">페이지별 모바일 최소 레벨</div>
+          <div className="text-[15px] font-bold text-zinc-800 leading-tight">페이지별 모바일 최소 레벨</div>
           <div className="text-[15px] text-zinc-500 mt-0.5">
             모바일에서 접근 가능한 최소 레벨 · 기본값 0 (모두 허용) · 값 이상만 접근 · 미만 사용자는 PC 전용 안내 표시
           </div>
@@ -518,7 +518,7 @@ export const MobileVisibilitySection: React.FC = () => {
       <div className="p-4 flex flex-col gap-4">
         {groups.map((g) => (
           <div key={g.id} className="flex flex-col gap-2">
-            <div className="text-[15px] font-black text-zinc-500 uppercase tracking-wide">
+            <div className="text-[15px] font-bold text-zinc-500 uppercase tracking-wide">
               {g.label}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

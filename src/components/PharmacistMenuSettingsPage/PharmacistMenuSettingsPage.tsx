@@ -251,7 +251,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
 
   const title = useMemo(() => (
     <span className="flex items-center gap-2">
-      <span className="text-zinc-500 text-[12px] font-black uppercase tracking-wider">{tabLabel}</span>
+      <span className="text-zinc-500 text-[12px] font-bold uppercase tracking-wider">{tabLabel}</span>
       <span className="text-zinc-300">/</span>
       <span className="text-zinc-800 truncate">{categoryTitle}</span>
       <span className="text-zinc-400 text-[12px] font-bold">· 하위메뉴 설정</span>
@@ -274,7 +274,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
           >
             <div className="flex items-center gap-2">
               <Plus size={15} className="text-sky-600" />
-              <span className="text-[13px] font-black text-sky-800">신규 하위메뉴 추가</span>
+              <span className="text-[13px] font-bold text-sky-800">신규 하위메뉴 추가</span>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 items-stretch">
@@ -358,7 +358,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
         <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
           <div className="px-3 py-2 border-b border-zinc-100 bg-zinc-50 flex items-center gap-1.5">
             <FileText size={13} className="text-zinc-400" />
-            <span className="text-[11px] font-black text-zinc-500 uppercase tracking-wider">등록된 하위메뉴</span>
+            <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">등록된 하위메뉴</span>
             <span className="ml-auto text-[10px] font-bold text-zinc-400 tabular-nums">{items.length}건</span>
           </div>
 

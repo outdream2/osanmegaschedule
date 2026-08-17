@@ -239,7 +239,7 @@ const LedgerTab: React.FC<{
                       );
                       return g.date;
                     })()}
-                    {containsHighlight && <span className="ml-1 text-[10px] text-amber-600 font-black">◀</span>}
+                    {containsHighlight && <span className="ml-1 text-[10px] text-amber-600 font-bold">◀</span>}
                   </td>
                   <td className="px-3 py-2 text-zinc-700 break-words whitespace-normal leading-snug">
                     <span className="font-semibold">{g.repName}</span>
@@ -250,7 +250,7 @@ const LedgerTab: React.FC<{
                   <td className="text-right px-3 py-2 tabular-nums font-mono text-[11px] text-zinc-600 whitespace-nowrap">
                     {fmt(g.itemCount)}
                   </td>
-                  <td className="text-right px-3 py-2 tabular-nums font-mono font-black text-emerald-700 whitespace-nowrap">
+                  <td className="text-right px-3 py-2 tabular-nums font-mono font-bold text-emerald-700 whitespace-nowrap">
                     {g.totalAmount > 0 ? fmt(g.totalAmount) : "-"}
                   </td>
                 </tr>
@@ -293,7 +293,7 @@ const LedgerTab: React.FC<{
                                   <td className="text-right px-2 py-1 font-mono text-zinc-500 tabular-nums align-top">
                                     {Number(it.unit_price ?? 0) > 0 ? fmt(Number(it.unit_price ?? 0)) : "-"}
                                   </td>
-                                  <td className="text-right px-2 py-1 font-mono font-black text-emerald-700 tabular-nums align-top">
+                                  <td className="text-right px-2 py-1 font-mono font-bold text-emerald-700 tabular-nums align-top">
                                     {Number(it.amount ?? 0) > 0 ? fmt(Number(it.amount ?? 0)) : "-"}
                                   </td>
                                 </tr>
@@ -321,13 +321,13 @@ const LedgerTab: React.FC<{
                 {sumCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
               </button>
             </td>
-            <td colSpan={2} className="px-3 py-2 text-right text-[11px] font-black text-zinc-500">
+            <td colSpan={2} className="px-3 py-2 text-right text-[11px] font-bold text-zinc-500">
               합계 <span className="text-zinc-400 font-bold">({groups.length}일)</span>
             </td>
-            <td className={`px-3 py-2 text-right tabular-nums font-mono text-[12px] font-black text-zinc-700 ${sumCollapsed ? "opacity-30" : ""}`}>
+            <td className={`px-3 py-2 text-right tabular-nums font-mono text-[12px] font-bold text-zinc-700 ${sumCollapsed ? "opacity-30" : ""}`}>
               {sumCollapsed ? "···" : fmt(totalItems)}
             </td>
-            <td className={`px-3 py-2 text-right tabular-nums font-mono text-[13px] font-black text-emerald-700 ${sumCollapsed ? "opacity-30" : ""}`}>
+            <td className={`px-3 py-2 text-right tabular-nums font-mono text-[13px] font-bold text-emerald-700 ${sumCollapsed ? "opacity-30" : ""}`}>
               {sumCollapsed ? "···" : fmtWon(totalAmount)}
             </td>
           </tr>
@@ -530,8 +530,8 @@ const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> =
         </tbody>
         <tfoot className="sticky bottom-0 bg-white border-t-2 border-zinc-200">
           <tr>
-            <td colSpan={7} className="px-2 py-2 text-right text-[11px] font-black text-zinc-500">합계</td>
-            <td className="px-2 py-2 text-right tabular-nums text-[13px] font-black text-emerald-700">{fmtWon(totalAmount)}</td>
+            <td colSpan={7} className="px-2 py-2 text-right text-[11px] font-bold text-zinc-500">합계</td>
+            <td className="px-2 py-2 text-right tabular-nums text-[13px] font-bold text-emerald-700">{fmtWon(totalAmount)}</td>
           </tr>
         </tfoot>
       </table>
@@ -568,7 +568,7 @@ const ChartTooltip: React.FC<{
   return (
     <div className="bg-white border border-zinc-200 rounded-lg shadow-md px-3 py-2 text-[11px] min-w-[120px]">
       <div className="font-semibold text-zinc-700 mb-1 break-words whitespace-normal leading-snug">{name}</div>
-      <div className="tabular-nums text-emerald-700 font-black">{value.toLocaleString()}{unit}</div>
+      <div className="tabular-nums text-emerald-700 font-bold">{value.toLocaleString()}{unit}</div>
       <div className="tabular-nums text-zinc-500 mt-0.5">{pct}%</div>
     </div>
   );
@@ -649,7 +649,7 @@ export const CategoryPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows
 
   return (
     <div className={`${CARD_BASE} p-4 flex flex-col gap-3`}>
-      <div className="text-[11px] font-black text-zinc-600 uppercase tracking-wider">
+      <div className="text-[11px] font-bold text-zinc-600 uppercase tracking-wider">
         카테고리별 매입액 비중
       </div>
       <div className="flex items-center gap-4">
@@ -723,7 +723,7 @@ export const MonthlyPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows 
 
   return (
     <div className={`${CARD_BASE} p-4 flex flex-col gap-3`}>
-      <div className="text-[11px] font-black text-zinc-600 uppercase tracking-wider">
+      <div className="text-[11px] font-bold text-zinc-600 uppercase tracking-wider">
         월별 매입액 분포 (최근 6개월)
       </div>
       <div className="flex items-center gap-4">
@@ -794,7 +794,7 @@ export const TopProductsPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ r
 
   return (
     <div className={`${CARD_BASE} p-4 flex flex-col gap-3`}>
-      <div className="text-[11px] font-black text-zinc-600 uppercase tracking-wider">
+      <div className="text-[11px] font-bold text-zinc-600 uppercase tracking-wider">
         상품별 매입 Top 10
       </div>
       <div className="flex items-center gap-4">
@@ -848,13 +848,13 @@ const Top10Card: React.FC<{
   const max = Math.max(...items.map(i => i.value), 1);
   return (
     <div className={`${CARD_BASE} p-3 flex flex-col gap-2`}>
-      <div className="text-[11px] font-black text-zinc-600 uppercase tracking-wider">{title}</div>
+      <div className="text-[11px] font-bold text-zinc-600 uppercase tracking-wider">{title}</div>
       <div className="flex flex-col gap-1">
         {items.map(it => {
           const pct = (it.value / max) * 100;
           return (
             <div key={`${it.rank}-${it.name}`} className="flex items-center gap-2 text-[11px]">
-              <span className={`shrink-0 w-6 h-5 rounded-md flex items-center justify-center font-black tabular-nums ${
+              <span className={`shrink-0 w-6 h-5 rounded-md flex items-center justify-center font-bold tabular-nums ${
                 it.rank <= 3 ? "bg-amber-100 text-amber-700" : "bg-zinc-100 text-zinc-500"
               }`}>{it.rank}</span>
               <div className="flex-1 min-w-0 flex flex-col gap-0.5">
@@ -863,7 +863,7 @@ const Top10Card: React.FC<{
                   <div className={`h-full ${valueColor.replace("text-", "bg-")}`} style={{ width: `${pct}%` }} />
                 </div>
               </div>
-              <span className={`shrink-0 tabular-nums font-black ${valueColor}`}>{formatValue(it.value)}</span>
+              <span className={`shrink-0 tabular-nums font-bold ${valueColor}`}>{formatValue(it.value)}</span>
               {it.sub && <span className="shrink-0 text-[10px] text-zinc-400 tabular-nums">{it.sub}</span>}
             </div>
           );
@@ -1043,7 +1043,7 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
     <div className="flex-1 min-h-0 overflow-auto p-3 flex flex-col gap-3">
       {/* 제목 + 기간 */}
       <div className="flex items-baseline gap-2 px-1">
-        <span className="text-[12px] font-black text-zinc-700">매입추이 Top 10</span>
+        <span className="text-[12px] font-bold text-zinc-700">매입추이 Top 10</span>
         {dateRange && (
           <span className="text-[10.5px] text-zinc-400 font-semibold tabular-nums">({dateRange})</span>
         )}
@@ -1061,7 +1061,7 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
             <button key={t.k}
               type="button"
               onClick={() => setMetric(t.k)}
-              className={`inline-flex items-center gap-1 h-8 px-3 border-b-2 text-[12px] font-black cursor-pointer transition ${
+              className={`inline-flex items-center gap-1 h-8 px-3 border-b-2 text-[12px] font-bold cursor-pointer transition ${
                 active ? `${activeCls} bg-white` : "text-zinc-400 border-transparent hover:text-zinc-600"
               }`}
               title={t.hint}
@@ -1079,7 +1079,7 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
       {/* 하단 원형 차트 */}
       {pieData.total > 0 && (
         <div className={`${CARD_BASE} p-4 flex flex-col gap-3`}>
-          <div className="text-[11px] font-black text-zinc-600 uppercase tracking-wider">{pieTitle}</div>
+          <div className="text-[11px] font-bold text-zinc-600 uppercase tracking-wider">{pieTitle}</div>
           <div className="flex items-center gap-4 flex-wrap">
             <div className="w-[140px] h-[140px] shrink-0">
               <ResponsiveContainer width="100%" height="100%">
@@ -1179,7 +1179,7 @@ export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
               className={[
                 "relative flex items-center gap-2 sm:gap-2.5",
                 "px-4 sm:px-6 py-3.5 sm:py-4",
-                "text-[16px] sm:text-[18px] font-black leading-none whitespace-nowrap",
+                "text-[16px] sm:text-[18px] font-bold leading-none whitespace-nowrap",
                 "transition-colors duration-150 cursor-pointer outline-none",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-300",
                 "active:opacity-70",

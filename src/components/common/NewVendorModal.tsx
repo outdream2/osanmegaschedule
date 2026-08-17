@@ -73,7 +73,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-[10px] font-bold text-sky-600 uppercase tracking-wider">신규 공급사</div>
-            <div className="text-[14px] font-black text-zinc-800">공급사 등록</div>
+            <div className="text-[14px] font-bold text-zinc-800">공급사 등록</div>
           </div>
           <button
             type="button"
@@ -89,7 +89,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
         {/* 폼 */}
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
               회사명 <span className="text-rose-500">*</span>
             </span>
             <input
@@ -103,12 +103,12 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">카테고리</span>
+            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">카테고리</span>
             <div className="flex flex-wrap gap-1.5">
               <button
                 type="button"
                 onClick={() => setCategory("")}
-                className={`h-8 px-3 rounded-md text-[11px] font-black transition cursor-pointer ${
+                className={`h-8 px-3 rounded-md text-[11px] font-bold transition cursor-pointer ${
                   category === "" ? "bg-zinc-700 text-white shadow-sm" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
                 }`}
               >
@@ -119,7 +119,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
                   key={c}
                   type="button"
                   onClick={() => setCategory(c)}
-                  className={`h-8 px-3 rounded-md text-[11px] font-black transition cursor-pointer ${
+                  className={`h-8 px-3 rounded-md text-[11px] font-bold transition cursor-pointer ${
                     category === c
                       ? c === "위탁"    ? "bg-violet-500 text-white shadow-sm"
                       : c === "선결제"  ? "bg-rose-500 text-white shadow-sm"
@@ -137,7 +137,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
 
           <div className="grid grid-cols-2 gap-3">
             <label className="flex flex-col gap-1">
-              <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">담당자</span>
+              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">담당자</span>
               <input
                 type="text"
                 value={contactName}
@@ -147,7 +147,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
               />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">전화</span>
+              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">전화</span>
               <input
                 type="tel"
                 value={phone}
@@ -159,7 +159,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
           </div>
 
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">이메일</span>
+            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">이메일</span>
             <input
               type="email"
               value={email}
@@ -170,7 +170,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">사업자번호</span>
+            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">사업자번호</span>
             <input
               type="text"
               value={businessNumber}
@@ -181,7 +181,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">비고</span>
+            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">비고</span>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
@@ -211,7 +211,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
             type="button"
             onClick={handleSave}
             disabled={disabled}
-            className="ml-auto h-9 px-4 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[12px] font-black shadow-sm inline-flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+            className="ml-auto h-9 px-4 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[12px] font-bold shadow-sm inline-flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
           >
             {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} strokeWidth={2.5} />}
             {saving ? "저장 중..." : "등록"}

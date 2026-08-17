@@ -79,7 +79,7 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
-      <div className="px-4 py-2 border-b border-zinc-100 bg-emerald-50/60 text-[10px] font-black text-emerald-700 uppercase tracking-wider flex items-center justify-between gap-1.5">
+      <div className="px-4 py-2 border-b border-zinc-100 bg-emerald-50/60 text-[10px] font-bold text-emerald-700 uppercase tracking-wider flex items-center justify-between gap-1.5">
         <span className="flex items-center gap-1.5">
           <span>🌸☀️🍁❄️</span> 계절 정의 <span className="text-emerald-400 font-semibold normal-case">(관리자 전용)</span>
         </span>
@@ -88,7 +88,7 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
             type="button"
             onClick={resetToDefault}
             disabled={saving || loading}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-black text-zinc-500 bg-zinc-100 hover:bg-zinc-200 transition disabled:opacity-40"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold text-zinc-500 bg-zinc-100 hover:bg-zinc-200 transition disabled:opacity-40"
             title="기본값(3~5·6~8·9~11·12~2)으로 초기화"
           >
             <RotateCcw size={10} /> 기본값
@@ -97,7 +97,7 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
             type="button"
             onClick={handleSave}
             disabled={saving || loading || !dirty}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-black text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-sm transition disabled:opacity-40"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-sm transition disabled:opacity-40"
           >
             {saving ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />} 저장
           </button>
@@ -117,7 +117,7 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
               const col = SEASON_COLOR[season];
               return (
                 <div key={season} className={`rounded-lg border ${col.border} ${col.bg} p-2`}>
-                  <div className={`flex items-center justify-between mb-1.5 text-[12px] font-black ${col.text}`}>
+                  <div className={`flex items-center justify-between mb-1.5 text-[12px] font-bold ${col.text}`}>
                     <span className="inline-flex items-center gap-1">
                       <span aria-hidden>{SEASON_EMOJI[season]}</span>
                       <span>{SEASON_LABEL[season]}</span>
@@ -134,7 +134,7 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
                           key={m}
                           type="button"
                           onClick={() => toggleMonth(season, m)}
-                          className={`text-[10px] font-black rounded-md py-1 border transition cursor-pointer ${
+                          className={`text-[10px] font-bold rounded-md py-1 border transition cursor-pointer ${
                             active
                               ? `${col.active} text-white border-transparent shadow-sm`
                               : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-400"

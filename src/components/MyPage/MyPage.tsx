@@ -100,12 +100,12 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
         {/* 프로필 헤더 */}
         <div className="bg-white rounded-xl shadow-sm border border-zinc-200 p-4 sm:p-6">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-brand-deep flex items-center justify-center text-white font-black text-xl sm:text-2xl shadow-md shrink-0">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-brand-deep flex items-center justify-center text-white font-bold text-xl sm:text-2xl shadow-md shrink-0">
               {(me?.name ?? authSession?.employeeName ?? "?").slice(0, 1)}
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-[14px] font-bold text-indigo-500 uppercase tracking-wider">마이페이지</div>
-              <div className="text-lg sm:text-xl font-black text-zinc-800 mt-0.5 truncate">
+              <div className="text-lg sm:text-xl font-bold text-zinc-800 mt-0.5 truncate">
                 {me?.name ?? authSession?.employeeName ?? "-"}
                 {me?.rank && <span className="text-sm text-zinc-500 font-bold ml-1">{me.rank}</span>}
               </div>
@@ -118,7 +118,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
 
         {/* 정보 카드 (읽기 전용) */}
         <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
-          <div className="px-4 py-2 border-b border-zinc-100 bg-zinc-50/60 text-[14px] font-black text-zinc-500 uppercase tracking-wider">
+          <div className="px-4 py-2 border-b border-zinc-100 bg-zinc-50/60 text-[14px] font-bold text-zinc-500 uppercase tracking-wider">
             내 정보 (읽기 전용)
           </div>
           {loading ? (
@@ -146,7 +146,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
 
         {/* 주소 편집 카드 */}
         <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
-          <div className="px-4 py-2 border-b border-zinc-100 bg-indigo-50/60 text-[14px] font-black text-indigo-600 uppercase tracking-wider flex items-center gap-1.5">
+          <div className="px-4 py-2 border-b border-zinc-100 bg-indigo-50/60 text-[14px] font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-1.5">
             <MapPin size={12} /> 주소
           </div>
           <div className="p-4 flex flex-col gap-2">
@@ -171,7 +171,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
                 type="button"
                 onClick={saveAddress}
                 disabled={savingAddress || !addressChanged}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[14px] font-black shadow-sm active:scale-95 transition disabled:opacity-40"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[14px] font-bold shadow-sm active:scale-95 transition disabled:opacity-40"
               >
                 {savingAddress ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} 주소 저장
               </button>
@@ -186,7 +186,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
 
         {/* 비밀번호 변경 카드 */}
         <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
-          <div className="px-4 py-2 border-b border-zinc-100 bg-rose-50/60 text-[14px] font-black text-rose-600 uppercase tracking-wider flex items-center gap-1.5">
+          <div className="px-4 py-2 border-b border-zinc-100 bg-rose-50/60 text-[14px] font-bold text-rose-600 uppercase tracking-wider flex items-center gap-1.5">
             <Lock size={12} /> 비밀번호 변경
           </div>
           <div className="p-4 flex flex-col gap-2">
@@ -229,7 +229,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
                 type="button"
                 onClick={changePassword}
                 disabled={savingPw || !currentPw || !newPw || !confirmPw}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[14px] font-black shadow-sm active:scale-95 transition disabled:opacity-40"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[14px] font-bold shadow-sm active:scale-95 transition disabled:opacity-40"
               >
                 {savingPw ? <Loader2 size={12} className="animate-spin" /> : <Lock size={12} />} 비밀번호 변경
               </button>
@@ -257,7 +257,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
 
 const ReadRow: React.FC<{ icon: React.ReactNode; label: string; value: string; mono?: boolean; last?: boolean }> = ({ icon, label, value, mono, last }) => (
   <div className={`grid grid-cols-[110px_1fr] items-center gap-2 sm:gap-4 px-4 py-2.5 ${last ? "" : "border-b border-zinc-100"}`}>
-    <div className="flex items-center gap-1.5 text-[15px] font-black text-zinc-500 uppercase tracking-wider">
+    <div className="flex items-center gap-1.5 text-[15px] font-bold text-zinc-500 uppercase tracking-wider">
       <span className="text-zinc-400">{icon}</span> {label}
     </div>
     <div className={`text-[15px] font-bold text-zinc-800 truncate ${mono ? "font-mono" : ""}`}>{value || "-"}</div>

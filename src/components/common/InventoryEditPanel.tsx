@@ -75,7 +75,7 @@ const DeltaInput: React.FC<DeltaInputProps> = ({
         type="button"
         onClick={dec}
         disabled={disabled || cur <= 0}
-        className="w-7 shrink-0 text-zinc-500 hover:bg-zinc-100 hover:text-rose-600 active:bg-zinc-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-500 text-[16px] font-black leading-none flex items-center justify-center cursor-pointer border-r border-zinc-200"
+        className="w-7 shrink-0 text-zinc-500 hover:bg-zinc-100 hover:text-rose-600 active:bg-zinc-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-500 text-[16px] font-bold leading-none flex items-center justify-center cursor-pointer border-r border-zinc-200"
         title="감소"
         tabIndex={-1}
       >−</button>
@@ -90,13 +90,13 @@ const DeltaInput: React.FC<DeltaInputProps> = ({
           onChange(n);
         }}
         placeholder="0"
-        className={`flex-1 min-w-0 h-full text-center px-1 bg-transparent border-0 text-[13px] font-black tabular-nums focus:outline-none disabled:text-zinc-300 ${accent}`}
+        className={`flex-1 min-w-0 h-full text-center px-1 bg-transparent border-0 text-[13px] font-bold tabular-nums focus:outline-none disabled:text-zinc-300 ${accent}`}
       />
       <button
         type="button"
         onClick={inc}
         disabled={disabled}
-        className="w-7 shrink-0 text-zinc-500 hover:bg-zinc-100 hover:text-emerald-600 active:bg-zinc-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-500 text-[16px] font-black leading-none flex items-center justify-center cursor-pointer border-l border-zinc-200"
+        className="w-7 shrink-0 text-zinc-500 hover:bg-zinc-100 hover:text-emerald-600 active:bg-zinc-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-500 text-[16px] font-bold leading-none flex items-center justify-center cursor-pointer border-l border-zinc-200"
         title="증가"
         tabIndex={-1}
       >+</button>
@@ -142,7 +142,7 @@ const ZoneRow: React.FC<ZoneRowProps> = ({
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-1">
         <span className={`text-[10px] font-semibold ${accent} block`}>{label}</span>
-        <span className="text-[10px] text-zinc-400 tabular-nums">현재 <span className="font-black text-zinc-700">{current}</span></span>
+        <span className="text-[10px] text-zinc-400 tabular-nums">현재 <span className="font-bold text-zinc-700">{current}</span></span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="flex-1">
@@ -164,7 +164,7 @@ const ZoneRow: React.FC<ZoneRowProps> = ({
       </div>
       {d > 0 && (
         <div className="text-[10px] text-zinc-400 text-right tabular-nums">
-          저장 후: <span className="font-black text-violet-700">{current + d}</span>
+          저장 후: <span className="font-bold text-violet-700">{current + d}</span>
         </div>
       )}
     </div>
@@ -188,7 +188,7 @@ const StoreZoneRow: React.FC<StoreZoneRowProps> = ({
       <div className="flex items-center justify-between gap-2">
         <span className="text-[10px] font-bold text-emerald-700 shrink-0">{label}</span>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-zinc-400 tabular-nums">현재 <span className="font-black text-zinc-700">{current}</span></span>
+          <span className="text-[10px] text-zinc-400 tabular-nums">현재 <span className="font-bold text-zinc-700">{current}</span></span>
           <div className="max-w-[80px]">
             <ZoneInput
               value={zoneLabel}
@@ -219,7 +219,7 @@ const StoreZoneRow: React.FC<StoreZoneRowProps> = ({
       </div>
       {d > 0 && (
         <div className="text-[10px] text-zinc-400 text-right tabular-nums">
-          저장 후: <span className="font-black text-violet-700">{current + d}</span>
+          저장 후: <span className="font-bold text-violet-700">{current + d}</span>
         </div>
       )}
     </div>
@@ -379,7 +379,7 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
         <span className="text-[11px] font-bold text-violet-100">
           합계 (현재{totalDelta > 0 ? ` + 추가 ${totalDelta}` : ""})
         </span>
-        <span className="tabular-nums text-[15px] font-black text-white">
+        <span className="tabular-nums text-[15px] font-bold text-white">
           {totalCurrent}{totalDelta > 0 ? ` → ${totalCurrent + totalDelta}` : ""}
         </span>
       </div>

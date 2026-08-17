@@ -313,16 +313,16 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
               <div className="flex items-center gap-1.5">
                 <Stethoscope size={13} className="text-indigo-400" />
                 <span className="text-gray-500 font-medium">약사</span>
-                <span className="font-black text-indigo-700">{attendance.pharmacistCount}명</span>
+                <span className="font-bold text-indigo-700">{attendance.pharmacistCount}명</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <UserRound size={13} className="text-amber-400" />
                 <span className="text-gray-500 font-medium">직원</span>
-                <span className="font-black text-amber-700">{attendance.staffCount}명</span>
+                <span className="font-bold text-amber-700">{attendance.staffCount}명</span>
               </div>
               <div className="ml-auto flex items-center gap-1">
                 <span className="text-[12px] text-gray-400 font-medium">총</span>
-                <span className="font-black text-gray-800 text-base">{attendance.totalCount}명</span>
+                <span className="font-bold text-gray-800 text-base">{attendance.totalCount}명</span>
                 <span className="text-[12px] text-gray-400 font-medium">출근</span>
               </div>
             </div>

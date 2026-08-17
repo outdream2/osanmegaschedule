@@ -161,14 +161,14 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
 
         <div className="flex-1 min-w-0 flex flex-col gap-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-[16px] font-black text-zinc-800 leading-tight break-words">
+            <h2 className="text-[16px] font-bold text-zinc-800 leading-tight break-words">
               {vendor.company_name}
             </h2>
             <VendorCategoryBadge category={vendor.category} />
             {/* VAT 배지 */}
             {vendor.vat_included === true && (
               <span
-                className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200"
+                className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"
                 title="거래명세서 총액에 VAT 포함 · 부가세 신고 시 amount÷11 로 세액 산정"
               >
                 VAT 포함
@@ -176,14 +176,14 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
             )}
             {vendor.vat_included === false && (
               <span
-                className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-50 text-amber-700 border border-amber-200"
+                className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200"
                 title="거래명세서 총액은 공급가액 · 부가세 10% 별도 · 세액 = amount×0.1"
               >
                 VAT 별도
               </span>
             )}
             {vendor.active === false && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-zinc-100 text-zinc-500 border border-zinc-200">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 text-zinc-500 border border-zinc-200">
                 비활성
               </span>
             )}
@@ -196,7 +196,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
               title="클릭하여 복사"
               className="self-start inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-50 border border-zinc-200 hover:bg-sky-50 hover:border-sky-300 transition text-[11px] font-semibold text-zinc-600 tabular-nums cursor-pointer"
             >
-              <span className="text-zinc-400 text-[9px] font-black uppercase tracking-wider">사업자</span>
+              <span className="text-zinc-400 text-[9px] font-bold uppercase tracking-wider">사업자</span>
               {fmtBizNum(vendor.business_number)}
             </button>
           )}
@@ -261,22 +261,22 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
             <table className="w-full min-w-[480px] border-collapse text-[12px] tabular-nums">
               <thead className="sticky top-0 z-10 bg-zinc-50">
                 <tr className="border-b-2 border-zinc-200">
-                  <th className="text-left px-2 py-1.5 font-black text-zinc-600 text-[11px] uppercase tracking-wider">
+                  <th className="text-left px-2 py-1.5 font-bold text-zinc-600 text-[11px] uppercase tracking-wider">
                     월
                   </th>
-                  <th className="text-right px-2 py-1.5 font-black text-emerald-700 text-[11px] uppercase tracking-wider">
+                  <th className="text-right px-2 py-1.5 font-bold text-emerald-700 text-[11px] uppercase tracking-wider">
                     매입액
                   </th>
-                  <th className="text-right px-2 py-1.5 font-black text-zinc-500 text-[11px] uppercase tracking-wider">
+                  <th className="text-right px-2 py-1.5 font-bold text-zinc-500 text-[11px] uppercase tracking-wider">
                     건수
                   </th>
-                  <th className="text-right px-2 py-1.5 font-black text-sky-700 text-[11px] uppercase tracking-wider">
+                  <th className="text-right px-2 py-1.5 font-bold text-sky-700 text-[11px] uppercase tracking-wider">
                     결제액
                   </th>
-                  <th className="text-right px-2 py-1.5 font-black text-amber-700 text-[11px] uppercase tracking-wider">
+                  <th className="text-right px-2 py-1.5 font-bold text-amber-700 text-[11px] uppercase tracking-wider">
                     잔고
                   </th>
-                  <th className="text-right px-2 py-1.5 font-black text-zinc-600 text-[11px] uppercase tracking-wider">
+                  <th className="text-right px-2 py-1.5 font-bold text-zinc-600 text-[11px] uppercase tracking-wider">
                     평균단가
                   </th>
                 </tr>
@@ -320,19 +320,19 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-zinc-300 bg-zinc-100/60">
-                  <td className="px-2 py-2 font-black text-zinc-700 text-[11px] uppercase tracking-wider">
+                  <td className="px-2 py-2 font-bold text-zinc-700 text-[11px] uppercase tracking-wider">
                     누적
                   </td>
-                  <td className="text-right px-2 py-2 font-black text-emerald-800">
+                  <td className="text-right px-2 py-2 font-bold text-emerald-800">
                     {fmtWonFull(totals.purchase)}
                   </td>
-                  <td className="text-right px-2 py-2 font-black text-zinc-700">
+                  <td className="text-right px-2 py-2 font-bold text-zinc-700">
                     {totals.count > 0 ? totals.count : "-"}
                   </td>
-                  <td className="text-right px-2 py-2 font-black text-sky-800">
+                  <td className="text-right px-2 py-2 font-bold text-sky-800">
                     {fmtWonFull(totals.payment)}
                   </td>
-                  <td className={`text-right px-2 py-2 font-black ${
+                  <td className={`text-right px-2 py-2 font-bold ${
                     totals.latestBalance > 0 ? "text-amber-800" :
                     totals.latestBalance < 0 ? "text-rose-800" : "text-zinc-500"
                   }`}>
@@ -340,7 +340,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
                       ? "완납"
                       : `${fmtWonFull(Math.abs(totals.latestBalance))}${totals.latestBalance < 0 ? " 초과" : ""}`}
                   </td>
-                  <td className="text-right px-2 py-2 font-black text-zinc-700">
+                  <td className="text-right px-2 py-2 font-bold text-zinc-700">
                     {totals.avgUnit > 0 ? fmtWonFull(totals.avgUnit) : "-"}
                   </td>
                 </tr>
@@ -352,7 +352,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
           <div className="flex items-center gap-4 flex-wrap pl-1 pt-1 text-[12px] text-zinc-500">
             <span className="inline-flex items-baseline gap-1">
               <span className="text-zinc-400">평균 매입주기</span>
-              <span className="font-black text-zinc-700 tabular-nums">
+              <span className="font-bold text-zinc-700 tabular-nums">
                 {kpi.avgCycleDays != null ? kpi.avgCycleDays : "-"}
               </span>
               {kpi.avgCycleDays != null && (
@@ -362,7 +362,7 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({
             {kpi.activeProductCount != null && (
               <span className="inline-flex items-baseline gap-1">
                 <span className="text-zinc-400">1년간 취급 상품</span>
-                <span className="font-black text-zinc-700 tabular-nums">
+                <span className="font-bold text-zinc-700 tabular-nums">
                   {kpi.activeProductCount}
                 </span>
                 <span className="text-[11px] font-bold text-zinc-400">종</span>

@@ -373,7 +373,7 @@ export const SideNav: React.FC<SideNavProps> = ({
             {/* icon-only 모드에서 숨김 · 2026-08-17 · 흰색 텍스트 (deep teal bg 대비) */}
             <div className="flex flex-col gap-0 leading-none group-data-[collapsible=icon]:hidden min-w-0">
               {brand.region && (
-                <span className="text-[15px] font-black text-white tracking-tight leading-tight truncate">
+                <span className="text-[15px] font-bold text-white tracking-tight leading-tight truncate">
                   {brand.region}
                 </span>
               )}

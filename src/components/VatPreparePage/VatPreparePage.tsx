@@ -307,7 +307,7 @@ const VatPreparePage: React.FC = () => {
               <Calculator size={20} />
             </div>
             <div>
-              <div className="text-[15px] font-black text-zinc-800 leading-tight">부가세 준비</div>
+              <div className="text-[15px] font-bold text-zinc-800 leading-tight">부가세 준비</div>
               <div className="text-[11px] text-zinc-500 leading-tight">공급사별 매입세액 집계 · 신고 준비 체크리스트</div>
             </div>
           </div>
@@ -318,7 +318,7 @@ const VatPreparePage: React.FC = () => {
               <Calendar size={18} className={dCountColor.text} />
               <div>
                 <div className={`text-[10px] font-bold ${dCountColor.text} uppercase tracking-wide`}>{summary.next.type} · 다음 신고</div>
-                <div className={`text-[13px] font-black ${dCountColor.text} leading-tight`}>
+                <div className={`text-[13px] font-bold ${dCountColor.text} leading-tight`}>
                   {summary.next.label} · <span className="tabular-nums">D-{summary.next.daysLeft}</span>
                 </div>
                 <div className="text-[10px] text-zinc-500">신고 기한 · {summary.next.dueDate}</div>
@@ -442,7 +442,7 @@ const VatPreparePage: React.FC = () => {
             style={{ width: `${readiness}%` }}
           />
         </div>
-        <div className="text-[11px] font-black text-sky-700 tabular-nums shrink-0">{readiness}%</div>
+        <div className="text-[11px] font-bold text-sky-700 tabular-nums shrink-0">{readiness}%</div>
         <div className="text-[10px] text-zinc-500 shrink-0 hidden sm:block">
           체크리스트 {Object.values(checklist).filter(Boolean).length}/4 완료
         </div>
@@ -463,7 +463,7 @@ const VatPreparePage: React.FC = () => {
                 key={t.key}
                 type="button"
                 onClick={() => setMainTab(t.key)}
-                className={`relative flex items-center gap-2 px-5 py-3 text-[13px] font-black transition cursor-pointer ${
+                className={`relative flex items-center gap-2 px-5 py-3 text-[13px] font-bold transition cursor-pointer ${
                   active ? t.color : "text-zinc-500 hover:text-zinc-700"
                 }`}
               >
@@ -497,7 +497,7 @@ const VatPreparePage: React.FC = () => {
       {mainTab === "preview" && (
         <div className="bg-white rounded-xl border border-zinc-200 shadow-sm p-10 text-center">
           <FileCheck2 size={32} className="text-sky-400 mx-auto" />
-          <div className="mt-3 text-[13px] font-black text-zinc-700">신고서 미리보기 · Phase 3 예정</div>
+          <div className="mt-3 text-[13px] font-bold text-zinc-700">신고서 미리보기 · Phase 3 예정</div>
           <div className="mt-1 text-[11px] text-zinc-500 leading-relaxed max-w-lg mx-auto">
             홈택스 일반과세자 신고서 서식 · 매입처별 세금계산서 합계표 · 신용카드 매출전표 수령명세서 등
             <br />
@@ -526,7 +526,7 @@ const VatPreparePage: React.FC = () => {
           <div className="px-4 py-3 border-b border-zinc-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <FileText size={14} className="text-rose-500" />
-              <div className="text-[13px] font-black text-zinc-800">
+              <div className="text-[13px] font-bold text-zinc-800">
                 매입 명세{selectedVendor ? ` · ${selectedVendor}` : ""}
               </div>
             </div>
@@ -577,12 +577,12 @@ const VatPreparePage: React.FC = () => {
                       <td className="px-2 py-1.5 text-right tabular-nums text-zinc-700">{r.quantity}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums text-zinc-700">{fmt(r.amount)}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums text-rose-700 font-semibold">{fmt(r.vat)}</td>
-                      <td className="px-2 py-1.5 text-right tabular-nums font-black text-zinc-800">{fmt(r.total || r.amount + r.vat)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums font-bold text-zinc-800">{fmt(r.total || r.amount + r.vat)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot className="sticky bottom-0 bg-zinc-50 shadow-inner">
-                  <tr className="text-zinc-800 font-black">
+                  <tr className="text-zinc-800 font-bold">
                     <td className="px-3 py-2 text-[11px]" colSpan={3}>합계 · {detail.length}건</td>
                     <td className="px-2 py-2 text-right tabular-nums text-[11px]">
                       {fmt(detail.reduce((s, r) => s + r.amount, 0))}
@@ -606,9 +606,9 @@ const VatPreparePage: React.FC = () => {
         <div className="bg-emerald-50 rounded-xl border border-emerald-200 shadow-sm p-4">
           <div className="flex items-center gap-2 mb-2">
             <PackageCheck size={14} className="text-emerald-600" />
-            <div className="text-[13px] font-black text-emerald-800">예상 매입세액 공제</div>
+            <div className="text-[13px] font-bold text-emerald-800">예상 매입세액 공제</div>
           </div>
-          <div className="text-[22px] font-black text-emerald-700 tabular-nums leading-none mb-2">
+          <div className="text-[22px] font-bold text-emerald-700 tabular-nums leading-none mb-2">
             {fmt(expectedRefund)}<span className="text-[13px] font-bold ml-1">원</span>
           </div>
           <div className="text-[10px] text-zinc-500 leading-relaxed">
@@ -623,11 +623,11 @@ const VatPreparePage: React.FC = () => {
         <div className={`${netPayable >= 0 ? "bg-rose-50" : "bg-emerald-50"} rounded-xl border ${netPayable >= 0 ? "border-rose-200" : "border-emerald-200"} shadow-sm p-4`}>
           <div className="flex items-center gap-2 mb-2">
             <Calculator size={14} className={netPayable >= 0 ? "text-rose-600" : "text-emerald-600"} />
-            <div className={`text-[13px] font-black ${netPayable >= 0 ? "text-rose-800" : "text-emerald-800"}`}>
+            <div className={`text-[13px] font-bold ${netPayable >= 0 ? "text-rose-800" : "text-emerald-800"}`}>
               {netPayable >= 0 ? "예상 납부세액" : "예상 환급세액"}
             </div>
           </div>
-          <div className={`text-[22px] font-black ${netPayable >= 0 ? "text-rose-700" : "text-emerald-700"} tabular-nums leading-none mb-2`}>
+          <div className={`text-[22px] font-bold ${netPayable >= 0 ? "text-rose-700" : "text-emerald-700"} tabular-nums leading-none mb-2`}>
             {fmt(Math.abs(netPayable))}<span className="text-[13px] font-bold ml-1">원</span>
           </div>
           <div className="text-[10px] text-zinc-500 leading-relaxed">
@@ -650,7 +650,7 @@ const VatPreparePage: React.FC = () => {
       <div className="bg-white rounded-xl border border-zinc-200 shadow-sm p-4">
         <div className="flex items-center gap-2 mb-3">
           <CheckSquare size={14} className="text-sky-500" />
-          <div className="text-[13px] font-black text-zinc-800">신고 준비 체크리스트</div>
+          <div className="text-[13px] font-bold text-zinc-800">신고 준비 체크리스트</div>
           <div className="text-[10px] text-zinc-400 ml-auto">자동 저장 · 서버 공유 (모든 관리자)</div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -710,7 +710,7 @@ const KpiCard: React.FC<KpiCardProps> = ({ label, value, sub, icon, color, loadi
         <div className={`w-8 h-8 rounded-lg ${c.icon} flex items-center justify-center shrink-0`}>{icon}</div>
         <div className="flex-1 min-w-0">
           <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wide leading-tight">{label}</div>
-          <div className={`text-[16px] font-black ${c.text} tabular-nums leading-tight mt-0.5`}>
+          <div className={`text-[16px] font-bold ${c.text} tabular-nums leading-tight mt-0.5`}>
             {loading ? <Loader2 size={14} className="animate-spin inline" /> : value}
           </div>
           {sub && <div className="text-[10px] text-zinc-500 mt-0.5 leading-tight truncate">{sub}</div>}
@@ -746,7 +746,7 @@ const ChecklistItem: React.FC<ChecklistItemProps> = ({ label, hint, checked, onC
       : <Square size={16} className="text-zinc-400 shrink-0 mt-0.5" />
     }
     <div className="flex-1 min-w-0">
-      <div className={`text-[12px] font-black ${checked ? "text-emerald-800" : "text-zinc-700"}`}>{label}</div>
+      <div className={`text-[12px] font-bold ${checked ? "text-emerald-800" : "text-zinc-700"}`}>{label}</div>
       {hint && <div className="text-[10px] text-zinc-500 mt-0.5 leading-relaxed">{hint}</div>}
     </div>
   </button>

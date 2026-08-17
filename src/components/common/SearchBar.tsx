@@ -137,7 +137,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         {showResultBadge && (
           <span
             className={[
-              "absolute right-7 text-[10px] font-black tabular-nums px-1.5 py-0.5 rounded",
+              "absolute right-7 text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded",
               resultCount === 0
                 ? "bg-zinc-100 text-zinc-400"
                 : "bg-rose-50 text-rose-600",
@@ -164,7 +164,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       {/* 최근 검색어 dropdown */}
       {showHistory && historyList.length > 0 && (
         <div className="absolute top-8 left-0 right-0 bg-white rounded-md border border-zinc-200 shadow-lg z-30 py-1">
-          <div className="px-2.5 py-1 text-[9px] font-black text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+          <div className="px-2.5 py-1 text-[9px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
             <Clock size={9} />최근 검색
           </div>
           {historyList.map((h, i) => (

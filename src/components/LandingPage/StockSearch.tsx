@@ -78,7 +78,7 @@ export function StockSearch() {
           <Package size={18} className="text-white" weight="fill" />
         </div>
         <div className="text-left flex-1 min-w-0">
-          <div className="text-white font-black text-base sm:text-lg tracking-tight leading-tight">재고 확인</div>
+          <div className="text-white font-bold text-base sm:text-lg tracking-tight leading-tight">재고 확인</div>
           <div className="text-blue-100 text-[11px] mt-0.5">약품·제품명 입력 시 실시간 재고 확인</div>
         </div>
       </div>
@@ -124,7 +124,7 @@ export function StockSearch() {
                   </div>
                   <div className="shrink-0 flex items-center gap-1">
                     {badges.map((badge, bi) => (
-                      <div key={bi} className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${badge.bg} ${badge.text} text-[10px] font-black`}>
+                      <div key={bi} className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${badge.bg} ${badge.text} text-[10px] font-bold`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
                         {badge.label}
                       </div>

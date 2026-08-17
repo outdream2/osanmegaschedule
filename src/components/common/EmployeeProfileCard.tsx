@@ -112,7 +112,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="min-w-0">
           <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="text-[18px] font-black text-zinc-900 leading-tight">{localEmployee.name}</span>
+            <span className="text-[18px] font-bold text-zinc-900 leading-tight">{localEmployee.name}</span>
             {localEmployee.employee_number && (
               <span className="text-[11px] font-bold text-zinc-400 tabular-nums">사번 {localEmployee.employee_number}</span>
             )}
@@ -136,13 +136,13 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
       {/* 근로 조건 · 최신 계약서 · 2026-08-17 · #144 · 계약 없으면 "작성전입니다" 메시지 */}
       {!latestContract && (
         <div className="flex items-center gap-2 pt-2 border-t border-zinc-100 text-[14px]">
-          <span className="text-[11px] font-black text-amber-600 uppercase tracking-wide">근로 조건</span>
+          <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wide">근로 조건</span>
           <span className="text-zinc-500 font-semibold">근로계약서 작성전입니다</span>
         </div>
       )}
       {latestContract && (
         <div className="flex items-baseline gap-3 pt-2 border-t border-zinc-100 flex-wrap text-[16px]">
-          <span className="text-[14px] font-black text-emerald-600 uppercase tracking-wide">근로 조건</span>
+          <span className="text-[14px] font-bold text-emerald-600 uppercase tracking-wide">근로 조건</span>
           {latestContract.working_hours && (
             <span className="text-zinc-700"><span className="text-zinc-400 font-semibold">근무</span> <span className="font-bold tabular-nums">{latestContract.working_hours}</span></span>
           )}
@@ -183,7 +183,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
         </div>
         <div className="col-span-2 sm:col-span-4 flex flex-col">
           <span className="text-[15px] font-semibold text-blue-400">전화 (로그인 ID)</span>
-          <span className="text-[18px] font-black text-blue-700 tabular-nums">
+          <span className="text-[18px] font-bold text-blue-700 tabular-nums">
             {localEmployee.phone
               ? localEmployee.phone.replace(/^(\d{3})(\d{3,4})(\d{4})$/, "$1-$2-$3")
               : <span className="text-zinc-300 font-normal">미등록</span>}

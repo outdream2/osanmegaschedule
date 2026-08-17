@@ -923,7 +923,7 @@ export const PaymentInfoTab: React.FC = () => {
             {/* 기간 필터 · 공용 PeriodSelector (2026-08-09) · 매입·결제 집계 기간
                 · localStorage megatown_payment_period 유지 */}
             <div className="flex items-center gap-2 pt-1 border-t border-zinc-100">
-              <span className="text-[15px] font-black text-zinc-400 uppercase tracking-wider shrink-0" title="매입·결제 집계 기간">기간</span>
+              <span className="text-[15px] font-bold text-zinc-400 uppercase tracking-wider shrink-0" title="매입·결제 집계 기간">기간</span>
               <PeriodSelector
                 options={PERIOD_DAYS_PRESET}
                 value={periodDays}
@@ -959,19 +959,19 @@ export const PaymentInfoTab: React.FC = () => {
               <div className="flex items-center gap-3 px-1 py-0.5 text-[14px] shrink-0 flex-wrap">
                 <span className="flex items-center gap-1">
                   <span className="text-zinc-400 font-semibold">총 잔고</span>
-                  <span className={`font-black tabular-nums ${totalBalance > 0 ? "text-amber-700" : totalBalance < 0 ? "text-rose-700" : "text-zinc-400"}`}>
+                  <span className={`font-bold tabular-nums ${totalBalance > 0 ? "text-amber-700" : totalBalance < 0 ? "text-rose-700" : "text-zinc-400"}`}>
                     {totalBalance === 0 ? "-" : fmtWonShort(Math.abs(totalBalance))}
                   </span>
                 </span>
                 <span className="text-zinc-200 select-none">·</span>
                 <span className="flex items-center gap-1">
                   <span className="text-zinc-400 font-semibold">최근 결제일</span>
-                  <span className="font-black text-zinc-600 tabular-nums">{latestDateShort}</span>
+                  <span className="font-bold text-zinc-600 tabular-nums">{latestDateShort}</span>
                 </span>
                 <span className="text-zinc-200 select-none">·</span>
                 <span className="flex items-center gap-1">
                   <span className="text-zinc-400 font-semibold">최근 결제액</span>
-                  <span className={`font-black tabular-nums ${latestAmount > 0 ? "text-sky-700" : "text-zinc-400"}`}>
+                  <span className={`font-bold tabular-nums ${latestAmount > 0 ? "text-sky-700" : "text-zinc-400"}`}>
                     {latestAmount > 0 ? fmtWonShort(latestAmount) : "-"}
                   </span>
                 </span>
@@ -1036,22 +1036,22 @@ export const PaymentInfoTab: React.FC = () => {
                         {v.company_name}
                       </span>
                       {/* 2026-08-09 · 4컬럼 재구성 (사용자 요청) · 총재고자산·총판매액·총결제액·총잔고 */}
-                      <span className={`w-[62px] text-right text-[15px] font-black tabular-nums shrink-0 ${
+                      <span className={`w-[62px] text-right text-[15px] font-bold tabular-nums shrink-0 ${
                         stockAmt > 0 ? "text-teal-700" : "text-zinc-300"
                       }`} title={stockAmt > 0 ? `총재고자산 · 최근 3개월 ${stockAmt.toLocaleString()}원` : "재고 없음"}>
                         {stockAmt > 0 ? fmtWonShort(stockAmt) : "-"}
                       </span>
-                      <span className={`w-[58px] text-right text-[15px] font-black tabular-nums shrink-0 ${
+                      <span className={`w-[58px] text-right text-[15px] font-bold tabular-nums shrink-0 ${
                         salesAmt > 0 ? "text-indigo-700" : "text-zinc-300"
                       }`} title={salesAmt > 0 ? `최근 3개월 총판매 ${salesAmt.toLocaleString()}원` : "판매 없음"}>
                         {salesAmt > 0 ? fmtWonShort(salesAmt) : "-"}
                       </span>
-                      <span className={`w-[58px] text-right text-[15px] font-black tabular-nums shrink-0 ${
+                      <span className={`w-[58px] text-right text-[15px] font-bold tabular-nums shrink-0 ${
                         payAmt > 0 ? "text-sky-700" : "text-zinc-300"
                       }`} title={payAmt > 0 ? `최근 ${periodDays}일 총결제 ${payAmt.toLocaleString()}원` : "결제 없음"}>
                         {payAmt > 0 ? fmtWonShort(payAmt) : "-"}
                       </span>
-                      <span className={`w-[58px] text-right text-[15px] font-black tabular-nums shrink-0 ${
+                      <span className={`w-[58px] text-right text-[15px] font-bold tabular-nums shrink-0 ${
                         hasBal
                           ? bal > 0 ? "text-amber-700" : "text-rose-700"
                           : "text-zinc-300"
@@ -1106,7 +1106,7 @@ export const PaymentInfoTab: React.FC = () => {
                     <div className="overflow-hidden rounded-lg border border-zinc-200 shadow-xs">
                       {/* 상단 · 제목 + PeriodSelector */}
                       <div className="flex items-center gap-2 px-3 py-2 bg-zinc-50/80 border-b border-zinc-200">
-                        <span className="text-[15px] font-black text-zinc-700">월별 요약</span>
+                        <span className="text-[15px] font-bold text-zinc-700">월별 요약</span>
                         <PeriodSelector
                           options={PERIOD_MONTHS_PRESET}
                           value={breakdownMonths}
@@ -1120,7 +1120,7 @@ export const PaymentInfoTab: React.FC = () => {
                       </div>
                       <div className="overflow-x-auto">
                       <table className="w-full min-w-[520px] text-[14px] tabular-nums">
-                        <thead className="bg-zinc-50/80 text-[15px] font-black uppercase tracking-wider text-zinc-500">
+                        <thead className="bg-zinc-50/80 text-[15px] font-bold uppercase tracking-wider text-zinc-500">
                           <tr>
                             <th className="text-center px-2 py-1.5 w-[56px] border-r border-zinc-200">카테고리</th>
                             <th className="text-left px-2 py-1.5 w-[64px]">항목</th>
@@ -1140,45 +1140,45 @@ export const PaymentInfoTab: React.FC = () => {
                         <tbody className="divide-y divide-zinc-100">
                           {/* ── 공급사 카테고리 · 매입/결제/실잔고 (원복 · 사용자 요청) ── */}
                           <tr className="bg-white">
-                            <td rowSpan={3} className="text-center px-2 py-1.5 font-black text-zinc-600 bg-emerald-50/40 border-r border-zinc-200 align-middle">
+                            <td rowSpan={3} className="text-center px-2 py-1.5 font-bold text-zinc-600 bg-emerald-50/40 border-r border-zinc-200 align-middle">
                               공급사
                             </td>
-                            <td className="px-2 py-1.5 font-black text-emerald-700 whitespace-nowrap">
+                            <td className="px-2 py-1.5 font-bold text-emerald-700 whitespace-nowrap">
                               <span className="inline-flex items-center gap-1"><ReceiptText size={11} />매입</span>
                             </td>
                             {months.map(k => (
-                              <td key={k} className={`px-2 py-1.5 text-right font-black ${(purMap[k] ?? 0) === 0 ? "text-zinc-300" : "text-emerald-800"}`}>
+                              <td key={k} className={`px-2 py-1.5 text-right font-bold ${(purMap[k] ?? 0) === 0 ? "text-zinc-300" : "text-emerald-800"}`}>
                                 {fmt(purMap[k] ?? 0)}
                               </td>
                             ))}
-                            <td className="px-2 py-1.5 text-right font-black text-emerald-800 border-l border-zinc-200 bg-zinc-50/40">{fmt(totals.purchases)}</td>
+                            <td className="px-2 py-1.5 text-right font-bold text-emerald-800 border-l border-zinc-200 bg-zinc-50/40">{fmt(totals.purchases)}</td>
                           </tr>
                           <tr className="bg-zinc-50/40">
-                            <td className="px-2 py-1.5 font-black text-sky-700 whitespace-nowrap">
+                            <td className="px-2 py-1.5 font-bold text-sky-700 whitespace-nowrap">
                               <span className="inline-flex items-center gap-1"><Wallet size={11} />결제</span>
                             </td>
                             {months.map(k => (
-                              <td key={k} className={`px-2 py-1.5 text-right font-black ${(payMap[k] ?? 0) === 0 ? "text-zinc-300" : "text-sky-800"}`}>
+                              <td key={k} className={`px-2 py-1.5 text-right font-bold ${(payMap[k] ?? 0) === 0 ? "text-zinc-300" : "text-sky-800"}`}>
                                 {fmt(payMap[k] ?? 0)}
                               </td>
                             ))}
-                            <td className="px-2 py-1.5 text-right font-black text-sky-800 border-l border-zinc-200 bg-zinc-50/40">{fmt(totals.payments)}</td>
+                            <td className="px-2 py-1.5 text-right font-bold text-sky-800 border-l border-zinc-200 bg-zinc-50/40">{fmt(totals.payments)}</td>
                           </tr>
                           <tr className="bg-white">
-                            <td className="px-2 py-1.5 font-black text-amber-700 whitespace-nowrap">
+                            <td className="px-2 py-1.5 font-bold text-amber-700 whitespace-nowrap">
                               <span className="inline-flex items-center gap-1"><Coins size={11} />실잔고</span>
                             </td>
                             {months.map(k => {
                               const v = balMap[k] ?? 0;
                               return (
-                                <td key={k} className={`px-2 py-1.5 text-right font-black ${
+                                <td key={k} className={`px-2 py-1.5 text-right font-bold ${
                                   v === 0 ? "text-zinc-300" : v > 0 ? "text-amber-700" : "text-rose-700"
                                 }`}>
                                   {v === 0 ? "-" : (v > 0 ? "" : "-") + fmtWonShort(Math.abs(v))}
                                 </td>
                               );
                             })}
-                            <td className={`px-2 py-1.5 text-right font-black border-l border-zinc-200 bg-amber-50/60 ${
+                            <td className={`px-2 py-1.5 text-right font-bold border-l border-zinc-200 bg-amber-50/60 ${
                               totals.balance > 0 ? "text-amber-700" : totals.balance < 0 ? "text-rose-700" : "text-zinc-500"
                             }`}>
                               {totals.balance === 0 ? "0" : (totals.balance > 0 ? "" : "-") + fmtWonShort(Math.abs(totals.balance))}
@@ -1186,32 +1186,32 @@ export const PaymentInfoTab: React.FC = () => {
                           </tr>
                           {/* ── 판매 카테고리 · 매입/판매액/실재고액 · 구분선 (border-t 강조) ── */}
                           <tr className="bg-white border-t-2 border-zinc-300">
-                            <td rowSpan={3} className="text-center px-2 py-1.5 font-black text-zinc-600 bg-indigo-50/40 border-r border-zinc-200 align-middle">
+                            <td rowSpan={3} className="text-center px-2 py-1.5 font-bold text-zinc-600 bg-indigo-50/40 border-r border-zinc-200 align-middle">
                               판매
                             </td>
-                            <td className="px-2 py-1.5 font-black text-emerald-700 whitespace-nowrap">
+                            <td className="px-2 py-1.5 font-bold text-emerald-700 whitespace-nowrap">
                               <span className="inline-flex items-center gap-1"><ReceiptText size={11} />매입</span>
                             </td>
                             {months.map(k => (
-                              <td key={k} className={`px-2 py-1.5 text-right font-black ${(purMap[k] ?? 0) === 0 ? "text-zinc-300" : "text-emerald-800"}`}>
+                              <td key={k} className={`px-2 py-1.5 text-right font-bold ${(purMap[k] ?? 0) === 0 ? "text-zinc-300" : "text-emerald-800"}`}>
                                 {fmt(purMap[k] ?? 0)}
                               </td>
                             ))}
-                            <td className="px-2 py-1.5 text-right font-black text-emerald-800 border-l border-zinc-200 bg-zinc-50/40">{fmt(totals.purchases)}</td>
+                            <td className="px-2 py-1.5 text-right font-bold text-emerald-800 border-l border-zinc-200 bg-zinc-50/40">{fmt(totals.purchases)}</td>
                           </tr>
                           <tr className="bg-zinc-50/40">
-                            <td className="px-2 py-1.5 font-black text-indigo-700 whitespace-nowrap">
+                            <td className="px-2 py-1.5 font-bold text-indigo-700 whitespace-nowrap">
                               <span className="inline-flex items-center gap-1"><Package2 size={11} />판매액</span>
                             </td>
                             {months.map(k => (
-                              <td key={k} className={`px-2 py-1.5 text-right font-black ${(salesMap[k] ?? 0) === 0 ? "text-zinc-300" : "text-indigo-800"}`}>
+                              <td key={k} className={`px-2 py-1.5 text-right font-bold ${(salesMap[k] ?? 0) === 0 ? "text-zinc-300" : "text-indigo-800"}`}>
                                 {fmt(salesMap[k] ?? 0)}
                               </td>
                             ))}
-                            <td className="px-2 py-1.5 text-right font-black text-indigo-800 border-l border-zinc-200 bg-zinc-50/40">{fmt(totals.sales)}</td>
+                            <td className="px-2 py-1.5 text-right font-bold text-indigo-800 border-l border-zinc-200 bg-zinc-50/40">{fmt(totals.sales)}</td>
                           </tr>
                           <tr className="bg-white">
-                            <td className="px-2 py-1.5 font-black text-rose-700 whitespace-nowrap">
+                            <td className="px-2 py-1.5 font-bold text-rose-700 whitespace-nowrap">
                               <span className="inline-flex items-center gap-1"><Layers size={11} />실재고액</span>
                             </td>
                             {/* 2026-08-09 · 사용자 지시 · 실재고액 = 실재고 × 매입단가 합계 (현재값 · 붉은색 톤)
@@ -1219,7 +1219,7 @@ export const PaymentInfoTab: React.FC = () => {
                             {months.map(k => (
                               <td key={k} className="px-2 py-1.5 text-right text-zinc-300">-</td>
                             ))}
-                            <td className={`px-2 py-1.5 text-right font-black border-l border-zinc-200 bg-rose-50/60 ${
+                            <td className={`px-2 py-1.5 text-right font-bold border-l border-zinc-200 bg-rose-50/60 ${
                               totals.stockValue > 0 ? "text-rose-700" : "text-zinc-400"
                             }`}>
                               {totals.stockValue === 0 ? "-" : fmtWonShort(totals.stockValue)}
@@ -1245,7 +1245,7 @@ export const PaymentInfoTab: React.FC = () => {
                     <Plus size={14} className="text-emerald-700" strokeWidth={2.5} />
                   </div>
                   <div className="flex flex-col leading-tight">
-                    <span className="text-[15px] font-black text-zinc-800">결제 등록</span>
+                    <span className="text-[15px] font-bold text-zinc-800">결제 등록</span>
                     <span className="text-[14px] text-zinc-400">{selectedVendor?.company_name}</span>
                   </div>
                   {vatIncluded && (
@@ -1290,7 +1290,7 @@ export const PaymentInfoTab: React.FC = () => {
                               key={opt.key}
                               type="button"
                               onClick={() => setMethod(opt.key)}
-                              className={`flex-1 h-9 rounded-lg text-[15px] font-black border transition cursor-pointer ${
+                              className={`flex-1 h-9 rounded-lg text-[15px] font-bold border transition cursor-pointer ${
                                 method === opt.key
                                   ? opt.key === "card"
                                     ? "bg-brand-deep border-indigo-600 text-white shadow-sm"
@@ -1422,13 +1422,13 @@ export const PaymentInfoTab: React.FC = () => {
                       {amountNum > 0 && taxInvoiceIssued && (
                         <div className="flex items-center justify-between text-[15px] tabular-nums">
                           <span className="text-zinc-500">공급가액</span>
-                          <span className="font-black text-zinc-700">{supplyAmt.toLocaleString()}원</span>
+                          <span className="font-bold text-zinc-700">{supplyAmt.toLocaleString()}원</span>
                         </div>
                       )}
                       {amountNum > 0 && taxInvoiceIssued && (
                         <div className="flex items-center justify-between text-[15px] tabular-nums">
                           <span className="text-zinc-500">부가세 (10%)</span>
-                          <span className="font-black text-teal-700">{vatAmt.toLocaleString()}원</span>
+                          <span className="font-bold text-teal-700">{vatAmt.toLocaleString()}원</span>
                         </div>
                       )}
                       {amountNum > 0 && !taxInvoiceIssued && (
@@ -1458,7 +1458,7 @@ export const PaymentInfoTab: React.FC = () => {
                         <div className={`absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow-sm transition-transform ${taxInvoiceIssued ? "translate-x-4" : "translate-x-0.5"}`} />
                       </div>
                       <div className="flex flex-col leading-tight">
-                        <span className={`text-[14px] font-black transition ${taxInvoiceIssued ? "text-teal-700" : "text-zinc-600 group-hover:text-zinc-800"}`}>
+                        <span className={`text-[14px] font-bold transition ${taxInvoiceIssued ? "text-teal-700" : "text-zinc-600 group-hover:text-zinc-800"}`}>
                           세금계산서 발행
                         </span>
                         {!taxInvoiceIssued && (
@@ -1466,7 +1466,7 @@ export const PaymentInfoTab: React.FC = () => {
                         )}
                       </div>
                       {taxInvoiceIssued && amountNum > 0 && (
-                        <span className="ml-auto text-[14px] font-black text-teal-700 bg-teal-50 border border-teal-200 rounded-md px-2 py-0.5 tabular-nums shrink-0">
+                        <span className="ml-auto text-[14px] font-bold text-teal-700 bg-teal-50 border border-teal-200 rounded-md px-2 py-0.5 tabular-nums shrink-0">
                           VAT {vatAmt.toLocaleString()}원
                         </span>
                       )}
@@ -1503,7 +1503,7 @@ export const PaymentInfoTab: React.FC = () => {
                     type="button"
                     onClick={handleSubmit}
                     disabled={saving || amountNum <= 0}
-                    className="inline-flex items-center gap-1.5 h-9 px-6 rounded-xl bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] active:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[14px] font-black shadow-sm hover:shadow-md transition-all cursor-pointer"
+                    className="inline-flex items-center gap-1.5 h-9 px-6 rounded-xl bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] active:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[14px] font-bold shadow-sm hover:shadow-md transition-all cursor-pointer"
                   >
                     {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} strokeWidth={3} />}
                     {saving ? "등록 중..." : "결제 등록"}
@@ -1517,7 +1517,7 @@ export const PaymentInfoTab: React.FC = () => {
                   <div className="w-6 h-6 rounded-lg bg-sky-100 flex items-center justify-center">
                     <ReceiptText size={13} className="text-sky-700" strokeWidth={2.5} />
                   </div>
-                  <div className="text-[15px] font-black text-zinc-800">최근 결제 내역</div>
+                  <div className="text-[15px] font-bold text-zinc-800">최근 결제 내역</div>
                   <span className="ml-auto text-[15px] text-zinc-400 tabular-nums">
                     {recentLoading ? "로딩..." : `${recentPayments.length}건 (최근)`}
                   </span>
@@ -1548,12 +1548,12 @@ export const PaymentInfoTab: React.FC = () => {
                         null;
                       return (
                         <div key={p.id} className="py-2 flex items-center gap-3 hover:bg-zinc-50/60 -mx-2 px-2 rounded transition">
-                          <span className={`inline-flex items-center justify-center w-14 h-8 rounded-lg text-[14px] font-black ring-1 ${tone.bg} ${tone.text} ${tone.ring}`}>
+                          <span className={`inline-flex items-center justify-center w-14 h-8 rounded-lg text-[14px] font-bold ring-1 ${tone.bg} ${tone.text} ${tone.ring}`}>
                             {methodLabel(p.method)}
                           </span>
                           <div className="flex-1 min-w-0 flex flex-col leading-tight gap-0.5">
                             <div className="flex items-center gap-2 min-w-0">
-                              <span className="text-[15px] font-black text-zinc-700 tabular-nums shrink-0">
+                              <span className="text-[15px] font-bold text-zinc-700 tabular-nums shrink-0">
                                 {p.payment_date}
                               </span>
                               {subLabel && (
@@ -1562,7 +1562,7 @@ export const PaymentInfoTab: React.FC = () => {
                                 </span>
                               )}
                               {meta.tax_invoice_issued && (
-                                <span className="text-[15px] font-black text-teal-700 px-1 py-0.5 rounded bg-teal-50 border border-teal-200 shrink-0">
+                                <span className="text-[15px] font-bold text-teal-700 px-1 py-0.5 rounded bg-teal-50 border border-teal-200 shrink-0">
                                   세금계산서
                                 </span>
                               )}
@@ -1578,7 +1578,7 @@ export const PaymentInfoTab: React.FC = () => {
                               </div>
                             )}
                           </div>
-                          <span className="text-[15px] font-black text-emerald-700 tabular-nums shrink-0">
+                          <span className="text-[15px] font-bold text-emerald-700 tabular-nums shrink-0">
                             -{p.amount.toLocaleString()}
                           </span>
                           {/* 결제 후 잔고 · Task #104 (2026-08-04)
@@ -1586,7 +1586,7 @@ export const PaymentInfoTab: React.FC = () => {
                               · feedback_ui_principles B-2-2 · 12px · tabular-nums */}
                           {p.running_balance != null && (
                             <span
-                              className={`text-[14px] font-black tabular-nums shrink-0 min-w-[64px] text-right ${
+                              className={`text-[14px] font-bold tabular-nums shrink-0 min-w-[64px] text-right ${
                                 p.running_balance > 0
                                   ? "text-amber-700"
                                   : p.running_balance < 0
@@ -1619,7 +1619,7 @@ export const PaymentInfoTab: React.FC = () => {
                     <div className="w-6 h-6 rounded-lg bg-emerald-100 flex items-center justify-center">
                       <Layers size={13} className="text-emerald-700" strokeWidth={2.5} />
                     </div>
-                    <div className="text-[15px] font-black text-zinc-800">상품별 매입 요약</div>
+                    <div className="text-[15px] font-bold text-zinc-800">상품별 매입 요약</div>
                     <span className="text-[15px] font-semibold text-zinc-400 tabular-nums">
                       · {productSummary.length}개 상품 · 최근 1년
                     </span>
@@ -1628,7 +1628,7 @@ export const PaymentInfoTab: React.FC = () => {
                   {showProductGroup && (
                     <div className="p-2 overflow-x-auto">
                       <table className="w-full text-[14px] tabular-nums" style={{ tableLayout: "fixed" }}>
-                        <thead className="bg-zinc-50 text-[14px] font-black uppercase tracking-wider text-zinc-500">
+                        <thead className="bg-zinc-50 text-[14px] font-bold uppercase tracking-wider text-zinc-500">
                           <tr>
                             <th
                               onClick={() => toggleProdSort("product_name")}
@@ -1722,7 +1722,7 @@ export const PaymentInfoTab: React.FC = () => {
                               <td className="px-2 py-1.5 font-semibold text-zinc-700 truncate max-w-[220px]" title={p.product_name}>{p.product_name}</td>
                               <td className="px-2 py-1.5 text-zinc-400 font-mono text-[15px]">{p.product_code || "-"}</td>
                               <td className="px-2 py-1.5 text-right font-bold text-zinc-700">{p.totalQty.toLocaleString()}</td>
-                              <td className="px-2 py-1.5 text-right font-black text-emerald-700">{fmtWonShort(p.totalAmount)}</td>
+                              <td className="px-2 py-1.5 text-right font-bold text-emerald-700">{fmtWonShort(p.totalAmount)}</td>
                               <td className="px-2 py-1.5 text-center text-zinc-500">{p.invoiceCount}</td>
                               <td className="px-2 py-1.5 text-right text-zinc-500 whitespace-nowrap">{p.latestDate}</td>
                             </tr>
@@ -1766,20 +1766,20 @@ const AmountField: React.FC<{
 }> = ({ amount, setAmount, inputCls, overBalance, currentBalance }) => (
   <FieldLabel label="결제 금액" icon={<Wallet size={11} />} required>
     <div className="relative">
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[15px] font-black text-zinc-400 select-none">₩</span>
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[15px] font-bold text-zinc-400 select-none">₩</span>
       <input
         type="text"
         inputMode="numeric"
         value={amount ? Number(amount).toLocaleString() : ""}
         onChange={e => setAmount(e.target.value.replace(/[^0-9]/g, ""))}
         placeholder="0"
-        className={`${inputCls} pl-7 pr-[52px] text-right tabular-nums font-black text-[14px] ${overBalance ? "border-amber-400 focus:ring-amber-400 focus:border-amber-400" : ""}`}
+        className={`${inputCls} pl-7 pr-[52px] text-right tabular-nums font-bold text-[14px] ${overBalance ? "border-amber-400 focus:ring-amber-400 focus:border-amber-400" : ""}`}
       />
       {currentBalance > 0 && !amount && (
         <button
           type="button"
           onClick={() => setAmount(String(Math.round(currentBalance)))}
-          className="absolute right-1.5 top-1/2 -translate-y-1/2 h-6 px-2 text-[14px] font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition cursor-pointer"
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 h-6 px-2 text-[14px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition cursor-pointer"
           title="현재 잔고 전액"
         >
           전액
@@ -1832,7 +1832,7 @@ const VendorListHeader: React.FC<{
   count: number;
   loading?: boolean;
 }> = ({ sortKey, sortDir, onSort, count, loading = false }) => (
-  <div className="px-2 py-1.5 border-b border-zinc-200 bg-zinc-50/70 shrink-0 flex items-center gap-1.5 text-[15px] font-black uppercase tracking-wider">
+  <div className="px-2 py-1.5 border-b border-zinc-200 bg-zinc-50/70 shrink-0 flex items-center gap-1.5 text-[15px] font-bold uppercase tracking-wider">
     {/* 분류 · 정렬 X (badge column) */}
     <span className="w-[42px] shrink-0 text-zinc-400">분류</span>
     {/* VAT · 포함/불포함 · 2026-08-06 · 사용자 요청 */}
@@ -1841,7 +1841,7 @@ const VendorListHeader: React.FC<{
     <span className="flex-1 min-w-0 flex items-center gap-1.5">
       <SortHeaderBtn label={`공급사 (${count})`} columnKey="name" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="left" />
       {loading && (
-        <span className="inline-flex items-center gap-1 text-[14px] font-black text-sky-600 normal-case shrink-0">
+        <span className="inline-flex items-center gap-1 text-[14px] font-bold text-sky-600 normal-case shrink-0">
           <Loader2 size={10} className="animate-spin" />로딩중
         </span>
       )}
@@ -1872,7 +1872,7 @@ const FieldLabel: React.FC<{
   children: React.ReactNode;
 }> = ({ label, icon, required, children }) => (
   <label className="block space-y-1">
-    <span className="inline-flex items-center gap-1 text-[14px] font-black text-zinc-500 uppercase tracking-wider">
+    <span className="inline-flex items-center gap-1 text-[14px] font-bold text-zinc-500 uppercase tracking-wider">
       {icon && <span className="text-zinc-400">{icon}</span>}
       {label}
       {required && <span className="text-rose-500">*</span>}
@@ -1905,7 +1905,7 @@ const KpiMini: React.FC<{
             {icon}
           </span>
         )}
-        <span className="text-[15px] font-black text-zinc-400 uppercase tracking-wider leading-none">
+        <span className="text-[15px] font-bold text-zinc-400 uppercase tracking-wider leading-none">
           {label}
         </span>
       </div>
@@ -1913,7 +1913,7 @@ const KpiMini: React.FC<{
         {loading ? (
           <Loader2 size={12} className="animate-spin text-zinc-300" />
         ) : (
-          <span className={`text-[14px] font-black tabular-nums leading-none ${t.text}`}>{value}</span>
+          <span className={`text-[14px] font-bold tabular-nums leading-none ${t.text}`}>{value}</span>
         )}
       </div>
       {hint && <div className="text-[15px] font-semibold text-zinc-400 leading-none">{hint}</div>}
