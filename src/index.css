@@ -440,12 +440,21 @@ body:has(.fixed.inset-0[class*="bg-neutral-9"]) {
          px-1.5 py-0.5 rounded-md border leading-none shrink-0;
 }
 
-/* ── Modal 공통 (backdrop + card) ── */
+/* ── Modal 공통 (backdrop + card) · 2026-08-17 v2 · 세련 (frosted backdrop + 3-layer shadow) ── */
 .modal-backdrop {
-  @apply fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4;
+  @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+  /* Attio/Vercel · frosted backdrop + subtle brand tint */
+  background: rgba(10, 46, 74, 0.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 .modal-card {
-  @apply bg-white rounded-2xl shadow-2xl w-full max-h-[92vh] flex flex-col overflow-hidden;
+  @apply bg-white rounded-2xl w-full max-h-[92vh] flex flex-col overflow-hidden;
+  /* 3-layer shadow · GPU 가속 depth (Attio/Linear 톤) */
+  box-shadow:
+    0 1px 3px rgba(10, 46, 74, 0.12),
+    0 8px 32px -8px rgba(10, 46, 74, 0.24),
+    0 24px 64px -24px rgba(10, 46, 74, 0.28);
 }
 .modal-header {
   @apply flex items-center gap-2 px-5 py-3 border-b border-slate-200 shrink-0;
