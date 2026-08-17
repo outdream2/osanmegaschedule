@@ -555,22 +555,25 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         />
       )}
 
-      {/* ── Page header strip ── */}
-      <div className="bg-white border-b border-line/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      {/* ── Page header strip · 2026-08-17 · 최신 트렌드 · 좌측 accent bar + 딥네이비 통일 ── */}
+      <div className="bg-white border-b border-line shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-teal-600
+          <span className="w-[3px] h-[22px] rounded-full bg-brand-deep shrink-0" />
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand-deep
             flex items-center justify-center shadow-sm shrink-0">
-            <ScanLine size={16} className="text-white" />
+            <ScanLine size={17} className="text-white" />
           </div>
-          <div>
-            <h1 className="text-[15px] sm:text-[17px] font-bold text-zinc-900 leading-none">실재고 입력</h1>
-            <p className="text-[15px] sm:text-xs text-zinc-400 mt-0.5 leading-none">
+          <div className="min-w-0">
+            <h1 className="text-[17px] sm:text-[19px] font-bold text-ink leading-tight tracking-tight">실재고 입력</h1>
+            <p className="text-[13px] sm:text-[14px] text-ink-soft mt-0.5 leading-tight">
               바코드 스캔 후 창고1·2 · 매장1·2·3 수량 입력 · 전체 저장
             </p>
           </div>
           {rows.length > 0 && (
-            <div className="ml-auto flex items-center gap-2">
-              <span className="text-[15px] sm:text-xs font-bold text-zinc-400">{rows.length}건</span>
+            <div className="ml-auto flex items-center gap-2 shrink-0">
+              <span className="text-[14px] font-semibold text-brand-deep bg-brand-tint rounded-full px-2.5 py-0.5 border border-brand/15 tabular-nums">
+                {rows.length}건
+              </span>
             </div>
           )}
         </div>
