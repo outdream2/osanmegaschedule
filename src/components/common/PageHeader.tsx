@@ -49,7 +49,8 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   title,
   subtitle,
   icon: Icon,
-  iconColor = "text-indigo-500",
+  // 2026-08-17 v2 · 기본 아이콘 색 · indigo-500 → brand-deep (브랜드 통일)
+  iconColor = "text-brand-deep",
   actions,
   className = "",
 }) => {
