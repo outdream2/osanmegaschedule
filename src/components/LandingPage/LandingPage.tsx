@@ -61,6 +61,7 @@ import { SectionLabel } from "../common/SectionLabel";
 import { MiniCard } from "../common/MiniCard";
 import { Hero } from "../common/Hero";
 import { KpiCard, type KpiTone } from "../common/KpiCard";
+import { StatusPill } from "../common/StatusPill";
 // VendorListEditor 는 발주관리 공급사관리 에서만 사용 (LandingPage 데이터 업로드 에서 제거됨 · 2026-07-15)
 
 interface LandingPageProps {
@@ -119,9 +120,7 @@ const PeriodCoverageWidget: React.FC<{ endpoint: string; label: string; color: "
                 {periods[0].ym} ~ {periods[periods.length - 1].ym}
               </span>
               {missingCount > 0 && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border text-rose-700 bg-rose-50 border-rose-300">
-                  ⚠ 빈 기간 {missingCount}건
-                </span>
+                <StatusPill tone="rose" size="xs" dot pulse>빈 기간 {missingCount}건</StatusPill>
               )}
             </>
           )}
