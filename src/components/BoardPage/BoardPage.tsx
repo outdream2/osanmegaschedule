@@ -15,6 +15,7 @@ import {
 import type { AuthSession } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { CARD_BASE } from "../../styles/tokens";
+import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 import { uploadImagesToCloudinary, type UploadedImage } from "../../lib/cloudinaryUpload";
 import { fmtDateShort } from "../../lib/format";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -161,58 +162,41 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
           </button>
         </div>
 
-        {/* 2026-08-17 · 상태 필터 · 공용 프레임워크 톤 · 딥네이비 · 폰트 통일 */}
-        <div className="flex items-center gap-2 flex-wrap mb-2">
-          <span className="flex items-center gap-2 shrink-0">
-            <span className="w-[3px] h-[15px] rounded-full bg-brand-deep" />
-            <span className="text-[16px] font-bold text-ink tracking-tight">상태</span>
-          </span>
-          <div className="inline-flex p-1 bg-zinc-100 border border-line rounded-lg gap-0.5">
-            {(Object.keys(STATUS_META) as Status[]).map(s => {
-              const meta = STATUS_META[s];
-              const active = filterStatus === s;
-              return (
-                <button key={s} onClick={() => setFilterStatus(active ? "" : s)}
-                  className={`px-3 py-1 text-[15px] font-semibold rounded-md cursor-pointer transition-colors flex items-center gap-1.5 min-h-[32px] ${
-                    active ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"
-                  }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
-                  {meta.label}
-                </button>
-              );
-            })}
-          </div>
+        {/* 2026-08-17 · 상태 필터 · 공용 CategoryChips · 딥네이비 · Vercel status dot */}
+        <div className="mb-2">
+          <CategoryChips
+            label="상태"
+            value={filterStatus}
+            onChange={setFilterStatus}
+            size="md"
+            ariaLabel="이슈 상태 필터"
+            options={[
+              { value: "" as Status | "", label: "전체", tone: "zinc" },
+              { value: "open"        as Status | "", label: "미해결", tone: "rose"    },
+              { value: "in_progress" as Status | "", label: "진행중", tone: "amber"   },
+              { value: "resolved"    as Status | "", label: "해결",   tone: "emerald" },
+            ]}
+          />
         </div>
 
-        {/* 카테고리 필터 · 공용 프레임워크 톤 · 딥네이비 · 폰트 통일 */}
-        <div className="flex items-center gap-2 flex-wrap mb-3">
-          <span className="flex items-center gap-2 shrink-0">
-            <span className="w-[3px] h-[15px] rounded-full bg-brand-deep" />
-            <span className="text-[16px] font-bold text-ink tracking-tight">카테고리</span>
-          </span>
-          <div className="inline-flex p-1 bg-zinc-100 border border-line rounded-lg gap-0.5 flex-wrap">
-            <button
-              onClick={() => setFilterCategory("")}
-              className={`px-3 py-1 text-[15px] font-semibold rounded-md cursor-pointer transition-colors min-h-[30px] ${
-                filterCategory === "" ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"
-              }`}
-            >전체</button>
-            {CATEGORIES.map(c => (
-              <button
-                key={c}
-                onClick={() => setFilterCategory(prev => prev === c ? "" : c)}
-                className={`px-3 py-1 text-[15px] font-semibold rounded-md cursor-pointer transition-colors min-h-[30px] ${
-                  filterCategory === c ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"
-                }`}
-              >{c}</button>
-            ))}
-            <button
-              onClick={() => setFilterCategory(prev => prev === "__none__" ? "" : "__none__")}
-              className={`px-3 py-1 text-[15px] font-semibold rounded-md cursor-pointer transition-colors min-h-[30px] ${
-                filterCategory === "__none__" ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"
-              }`}
-            >미분류</button>
-          </div>
+        {/* 카테고리 필터 · 공용 CategoryChips · 딥네이비 통일 */}
+        <div className="mb-3">
+          <CategoryChips
+            label="카테고리"
+            value={filterCategory}
+            onChange={setFilterCategory}
+            size="md"
+            ariaLabel="이슈 카테고리 필터"
+            options={[
+              { value: "" as typeof filterCategory, label: "전체", tone: "zinc" },
+              ...CATEGORIES.map(c => ({
+                value: c as typeof filterCategory,
+                label: c,
+                tone: (c === "결제" ? "sky" : c === "상품" ? "emerald" : c === "주문" ? "violet" : c === "손님" ? "amber" : "zinc") as ChipTone,
+              })),
+              { value: "__none__" as typeof filterCategory, label: "미분류", tone: "zinc" },
+            ]}
+          />
         </div>
 
         {/* 목록 · 재고관리 스타일 통일 (2026-07-16) */}
