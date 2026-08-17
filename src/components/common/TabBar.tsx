@@ -27,7 +27,10 @@
 //     sortable={{ getTabProps: sortable.getTabProps, isDragging: sortable.isDragging }}
 //   />
 
-import React from "react";
+import React, { useState } from "react";
+import { ChevronDown, Check } from "lucide-react";
+import { useIsMobile } from "../../hooks/use-mobile";
+import { BottomSheet } from "./BottomSheet";
 import type { TabHandlerProps } from "../../hooks/useSortableTabs";
 
 // ── 색상 프리셋 (Tailwind JIT purge 안전 · 정적 클래스 맵) ──
@@ -211,89 +214,18 @@ export function TabBar<K extends string = string>({
     );
   }
 
-  // L3 · Filter Chip Row · Attio/Vercel 2026 · 탭 대신 필터 chip 스타일 (L2 tabs 와 완전히 다른 UX)
-  //   · 사용자 선택 · L3 제거 · filter chip row 로 흡수 (research-strategist 1순위)
-  //   · 탭처럼 콘텐츠 전환 · 시각은 filter chip · pill 스타일
+  // L3 · 반응형 · 모바일 = BottomSheet trigger (2026 iOS/Material 표준) · 태블릿+ = filter chip row
+  //   · L3TabBar 컴포넌트에서 처리 (아래 정의)
   if (level === 3) {
-    return (
-      <div className={`bg-white border-b border-line w-full shrink-0 ${className}`}>
-        <div
-          className="tab-bar-inner py-2.5"
-          style={typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth }}
-        >
-          <div className={`inline-flex items-center gap-1.5 flex-wrap ${sortable?.isDragging ? "select-none" : ""}`}>
-            {visibleTabs.map(t => {
-              const active = activeKey === t.key;
-              const Icon = t.icon;
-              const c = COLOR_MAP[t.color ?? "slate"] ?? COLOR_MAP.slate;
-              const dnd = sortable?.getTabProps(t.key);
-
-              const dragCls = dnd
-                ? [
-                    dnd.isBeingDragged ? "opacity-50" : "",
-                    dnd.isDropTarget ? "ring-2 ring-brand-deep ring-inset" : "",
-                    dnd.isArmed && !dnd.isBeingDragged ? "tab-shake cursor-grab" : "",
-                    dnd.isBeingDragged ? "cursor-grabbing" : "",
-                  ].filter(Boolean).join(" ")
-                : "";
-
-              return (
-                /* 2026-08-17 · L3 · Linear docs 텍스트 탭 + underline 2px · L2 pill 과 완전 구분 (컨테이너 없음) */
-                <button
-                  key={t.key}
-                  type="button"
-                  onClick={() => onSelect(t.key)}
-                  title={t.label}
-                  draggable={dnd?.draggable}
-                  onDragStart={dnd?.onDragStart}
-                  onDragOver={dnd?.onDragOver}
-                  onDragEnter={dnd?.onDragEnter}
-                  onDragLeave={dnd?.onDragLeave}
-                  onDrop={dnd?.onDrop}
-                  onDragEnd={dnd?.onDragEnd}
-                  onMouseDown={dnd?.onMouseDown}
-                  onMouseUp={dnd?.onMouseUp}
-                  onMouseLeave={dnd?.onMouseLeave}
-                  onTouchStart={dnd?.onTouchStart}
-                  onTouchEnd={dnd?.onTouchEnd}
-                  onTouchCancel={dnd?.onTouchCancel}
-                  className={[
-                    "group inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[14px] sm:text-[15px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight border",
-                    // Filter Chip · 활성 = brand-deep fill · 비활성 = zinc-50 ghost (Attio/Vercel filter chip 표준)
-                    active
-                      ? "bg-brand-deep text-white border-brand-deep shadow-[0_1px_2px_rgba(10,46,74,0.15)]"
-                      : "bg-zinc-50 text-ink-soft border-line hover:bg-white hover:text-ink hover:border-brand-deep/30",
-                    dragCls,
-                  ].join(" ")}
-                >
-                  {/* dot marker · 활성 시 · white · 비활성 · 카테고리 톤 */}
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${active ? "bg-white/80" : c.iconActive.replace("text-", "bg-")}`}
-                  />
-                  {Icon && (
-                    <Icon
-                      size={14}
-                      strokeWidth={active ? 2.4 : 2}
-                      weight={active ? "fill" : "duotone"}
-                      className={`shrink-0 transition-colors duration-200 ${active ? "text-white" : c.iconActive}`}
-                    />
-                  )}
-                  <span>{t.label}</span>
-                  {t.badge != null && t.badge > 0 && (
-                    <span
-                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold leading-none tabular-nums transition-colors ${active ? "bg-white/25 text-white" : `${badgeBg} text-white`}`}
-                      title={`${t.label} · ${t.badge}건`}
-                    >
-                      {t.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    );
+    return <L3TabBar<K>
+      tabs={visibleTabs}
+      activeKey={activeKey}
+      onSelect={onSelect}
+      badgeBg={badgeBg}
+      maxWidth={maxWidth}
+      className={className}
+      sortable={sortable}
+    />;
   }
 
   // L1 · underline + gradient bar (default · large primary)
@@ -374,3 +306,190 @@ export function TabBar<K extends string = string>({
 }
 
 export default TabBar;
+
+// ────────────────────────────────────────────────────────────────
+// L3TabBar · 반응형 · 모바일 = BottomSheet trigger · 태블릿+ = filter chip row
+// 2026 · iOS/Material Bottom Sheet 표준 · Baymard/NN-Group 검증
+// ────────────────────────────────────────────────────────────────
+
+interface L3TabBarProps<K extends string> {
+  tabs: TabDef<K>[];
+  activeKey: K;
+  onSelect: (key: K) => void;
+  badgeBg: string;
+  maxWidth: number | string;
+  className: string;
+  sortable?: TabBarProps<K>["sortable"];
+}
+
+function L3TabBar<K extends string>({
+  tabs, activeKey, onSelect, badgeBg, maxWidth, className, sortable,
+}: L3TabBarProps<K>) {
+  const isMobile = useIsMobile();
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const active = tabs.find(t => t.key === activeKey);
+
+  // 모바일 · Bottom Sheet trigger
+  if (isMobile) {
+    return (
+      <>
+        <div className={`bg-white border-b border-line w-full shrink-0 ${className}`}>
+          <div
+            className="tab-bar-inner py-2.5"
+            style={typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth }}
+          >
+            {/* Trigger · 현재 선택 · 클릭 → BottomSheet */}
+            <button
+              type="button"
+              onClick={() => setSheetOpen(true)}
+              className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-brand-deep text-white font-bold text-[15px] shadow-[0_1px_2px_rgba(10,46,74,0.15)] cursor-pointer active:scale-[0.98] transition-transform tracking-tight"
+              aria-haspopup="dialog"
+              aria-expanded={sheetOpen}
+            >
+              {active?.icon && (() => {
+                const AIcon = active.icon;
+                return <AIcon size={15} weight="fill" className="shrink-0 text-white" strokeWidth={2.4} />;
+              })()}
+              <span>{active?.label ?? "선택"}</span>
+              {active?.badge != null && active.badge > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold leading-none tabular-nums bg-white/25 text-white">
+                  {active.badge}
+                </span>
+              )}
+              <ChevronDown size={16} className="text-white/80 shrink-0" strokeWidth={2.4} />
+            </button>
+            <span className="ml-2 text-[13px] text-ink-soft font-medium">서브탭 · 탭하여 선택</span>
+          </div>
+        </div>
+
+        {/* Bottom Sheet · 전체 옵션 리스트 */}
+        <BottomSheet
+          open={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          title={`서브탭 · ${tabs.length}개`}
+          maxHeight="70vh"
+        >
+          <div className="flex flex-col divide-y divide-zinc-100 pb-4">
+            {tabs.map(t => {
+              const isActive = t.key === activeKey;
+              const Icon = t.icon;
+              const c = COLOR_MAP[t.color ?? "slate"] ?? COLOR_MAP.slate;
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => { onSelect(t.key); setSheetOpen(false); }}
+                  className={`w-full flex items-center gap-3 px-5 py-3.5 text-left transition-colors cursor-pointer ${
+                    isActive ? "bg-brand-tint/60" : "hover:bg-zinc-50 active:bg-zinc-100"
+                  }`}
+                >
+                  {/* dot marker · category identity */}
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${c.iconActive.replace("text-", "bg-")}`} />
+                  {Icon && (
+                    <Icon
+                      size={18}
+                      weight={isActive ? "fill" : "duotone"}
+                      className={`shrink-0 ${isActive ? c.iconActive : "text-ink-soft"}`}
+                      strokeWidth={isActive ? 2.4 : 2}
+                    />
+                  )}
+                  <span className={`flex-1 text-[15px] tracking-tight ${isActive ? "text-brand-deep font-bold" : "text-ink font-semibold"}`}>
+                    {t.label}
+                  </span>
+                  {t.badge != null && t.badge > 0 && (
+                    <span
+                      className={`inline-flex items-center justify-center min-w-[20px] h-[20px] px-1 rounded-full text-[11px] font-bold leading-none tabular-nums ${
+                        isActive ? `${badgeBg} text-white` : "bg-zinc-100 text-ink-soft"
+                      }`}
+                    >
+                      {t.badge}
+                    </span>
+                  )}
+                  {isActive && <Check size={16} className="text-brand-deep shrink-0" strokeWidth={2.5} />}
+                </button>
+              );
+            })}
+          </div>
+        </BottomSheet>
+      </>
+    );
+  }
+
+  // 태블릿+ · Filter Chip Row (기존)
+  return (
+    <div className={`bg-white border-b border-line w-full shrink-0 ${className}`}>
+      <div
+        className="tab-bar-inner py-2.5"
+        style={typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth }}
+      >
+        <div className={`inline-flex items-center gap-1.5 flex-wrap ${sortable?.isDragging ? "select-none" : ""}`}>
+          {tabs.map(t => {
+            const isActive = t.key === activeKey;
+            const Icon = t.icon;
+            const c = COLOR_MAP[t.color ?? "slate"] ?? COLOR_MAP.slate;
+            const dnd = sortable?.getTabProps(t.key);
+
+            const dragCls = dnd
+              ? [
+                  dnd.isBeingDragged ? "opacity-50" : "",
+                  dnd.isDropTarget ? "ring-2 ring-brand-deep ring-inset" : "",
+                  dnd.isArmed && !dnd.isBeingDragged ? "tab-shake cursor-grab" : "",
+                  dnd.isBeingDragged ? "cursor-grabbing" : "",
+                ].filter(Boolean).join(" ")
+              : "";
+
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => onSelect(t.key)}
+                title={t.label}
+                draggable={dnd?.draggable}
+                onDragStart={dnd?.onDragStart}
+                onDragOver={dnd?.onDragOver}
+                onDragEnter={dnd?.onDragEnter}
+                onDragLeave={dnd?.onDragLeave}
+                onDrop={dnd?.onDrop}
+                onDragEnd={dnd?.onDragEnd}
+                onMouseDown={dnd?.onMouseDown}
+                onMouseUp={dnd?.onMouseUp}
+                onMouseLeave={dnd?.onMouseLeave}
+                onTouchStart={dnd?.onTouchStart}
+                onTouchEnd={dnd?.onTouchEnd}
+                onTouchCancel={dnd?.onTouchCancel}
+                className={[
+                  "group inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[15px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight border",
+                  isActive
+                    ? "bg-brand-deep text-white border-brand-deep shadow-[0_1px_2px_rgba(10,46,74,0.15)]"
+                    : "bg-zinc-50 text-ink-soft border-line hover:bg-white hover:text-ink hover:border-brand-deep/30",
+                  dragCls,
+                ].join(" ")}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${isActive ? "bg-white/80" : c.iconActive.replace("text-", "bg-")}`}
+                />
+                {Icon && (
+                  <Icon
+                    size={14}
+                    strokeWidth={isActive ? 2.4 : 2}
+                    weight={isActive ? "fill" : "duotone"}
+                    className={`shrink-0 transition-colors duration-200 ${isActive ? "text-white" : c.iconActive}`}
+                  />
+                )}
+                <span>{t.label}</span>
+                {t.badge != null && t.badge > 0 && (
+                  <span
+                    className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold leading-none tabular-nums transition-colors ${isActive ? "bg-white/25 text-white" : `${badgeBg} text-white`}`}
+                    title={`${t.label} · ${t.badge}건`}
+                  >
+                    {t.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
