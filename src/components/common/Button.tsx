@@ -25,20 +25,20 @@ interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "pre
   children?: ReactNode;
 }
 
-// 2026-08-17 · latest SaaS trend
-//   · primary · deep navy brand · 흰 텍스트
-//   · secondary · white bg · border-line · ink text · brand hover
-//   · ghost · transparent · ink text · hover bg-neutral
-//   · danger · red-600 solid
+// 2026-08-17 v2 · latest SaaS trend · Attio/Linear 세련
+//   · primary · deep navy · 흰 텍스트 · inset light (top) + brand glow shadow
+//   · secondary · white bg · border-line · brand hover · subtle inset
+//   · ghost · transparent · hover neutral
+//   · danger · rose-600 · inset light + rose glow
 const VARIANT_STYLES: Record<ButtonVariant, string> = {
   primary:
-    "bg-brand-deep text-white shadow-sm hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-40 disabled:cursor-not-allowed border border-brand-deep",
+    "bg-brand-deep text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_1px_2px_rgba(10,46,74,0.15),0_4px_12px_-4px_rgba(10,46,74,0.35)] hover:bg-[#0d3a5c] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_2px_4px_rgba(10,46,74,0.20),0_8px_20px_-6px_rgba(10,46,74,0.40)] active:bg-[#08253a] disabled:opacity-40 disabled:cursor-not-allowed border border-brand-deep",
   secondary:
-    "bg-white text-ink border border-line hover:border-brand-deep hover:text-brand-deep active:bg-[#F4F7FA] disabled:opacity-40 disabled:cursor-not-allowed shadow-sm",
+    "bg-white text-ink border border-line shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(10,46,74,0.05)] hover:border-brand-deep hover:text-brand-deep hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_3px_rgba(10,46,74,0.10),0_4px_10px_-4px_rgba(10,46,74,0.15)] active:bg-[#F4F7FA] disabled:opacity-40 disabled:cursor-not-allowed",
   ghost:
     "bg-transparent text-ink-soft hover:bg-[#F4F7FA] hover:text-ink active:bg-[#E4EAF0] disabled:opacity-40 disabled:cursor-not-allowed border border-transparent",
   danger:
-    "bg-red-600 text-white shadow-sm hover:bg-red-700 active:bg-red-800 disabled:opacity-40 disabled:cursor-not-allowed border border-red-600",
+    "bg-rose-600 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_1px_2px_rgba(190,18,60,0.15),0_4px_12px_-4px_rgba(190,18,60,0.40)] hover:bg-rose-700 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_2px_4px_rgba(190,18,60,0.20),0_8px_20px_-6px_rgba(190,18,60,0.45)] active:bg-rose-800 disabled:opacity-40 disabled:cursor-not-allowed border border-rose-600",
 };
 
 // 2026-08-17 · 사용자 지시 · 버튼 글씨 +2 (13→15 · 15→17 · 16→18)
@@ -59,7 +59,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || loading}
       className={[
         "inline-flex items-center justify-center font-semibold tracking-tight",
-        "transition-colors duration-150 cursor-pointer select-none",
+        // 2026-08-17 v2 · 200ms ease-out (모든 인터랙션 통일) · shadow/bg 부드러운 전환
+        "transition-all duration-200 ease-out cursor-pointer select-none",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-brand",
         "whitespace-nowrap",
         VARIANT_STYLES[variant],
