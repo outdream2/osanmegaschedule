@@ -8,6 +8,7 @@ import {
 import type { AuthSession } from "../../types";
 import { fmtDateYMD, fmtDateMD } from "../../lib/format";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
+import { StatusPill, type PillTone } from "../common/StatusPill";
 
 interface LeaveRequest {
   id: string;
@@ -351,12 +352,14 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                             <span className="ml-2 text-[19px] text-gray-500 font-semibold">· {r.leave_type}</span>
                           </p>
                         </div>
-                        <span className={`shrink-0 text-[19px] font-bold ${
-                          r.status === "pending" ? "text-amber-600" :
-                          r.status === "approved" ? "text-emerald-600" : "text-rose-600"
-                        }`}>
-                          {STATUS_LABEL[r.status]}
-                        </span>
+                        {(() => {
+                          const tone: PillTone = r.status === "pending" ? "amber" : r.status === "approved" ? "emerald" : "rose";
+                          return (
+                            <StatusPill tone={tone} size="md" dot pulse={r.status === "pending"} className="shrink-0">
+                              {STATUS_LABEL[r.status]}
+                            </StatusPill>
+                          );
+                        })()}
                       </div>
                       <div className="flex items-center gap-3 text-[19px] text-gray-400 mt-1 mb-2">
                         <span>신청일: {fmtDateTime(r.created_at)}</span>
@@ -449,9 +452,14 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                           </div>
                           <p className="text-xs text-zinc-500 mt-0.5">{fmtDate(r.start_date)} ~ {fmtDate(r.end_date)}</p>
                         </div>
-                        <span className={`shrink-0 text-[18px] font-bold px-2 py-1 rounded-full border ${STATUS_COLOR[r.status]}`}>
-                          {STATUS_LABEL[r.status]}
-                        </span>
+                        {(() => {
+                          const tone: PillTone = r.status === "pending" ? "amber" : r.status === "approved" ? "emerald" : "rose";
+                          return (
+                            <StatusPill tone={tone} size="md" dot pulse={r.status === "pending"} className="shrink-0">
+                              {STATUS_LABEL[r.status]}
+                            </StatusPill>
+                          );
+                        })()}
                       </div>
                       {r.reason && <p className="text-xs text-zinc-500 mb-2 bg-zinc-50 px-2.5 py-1.5 rounded-md">{r.reason}</p>}
                       {r.reviewer_note && (
