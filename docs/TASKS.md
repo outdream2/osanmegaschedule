@@ -8,19 +8,17 @@
 ## 🔥 진행중 (2026-08-17 밤 세션)
 
 ### #160 · P0 · 파스텔 잔재 → StatusPill 프레임워크 확산 (2026-08-17 밤)
-- **정량 (초기)**: 121곳 pastel (30 파일) · 실제 StatusPill 후보는 ~20-30개 (나머지는 버튼/탭/매트릭스/TH · 부적합)
-- **완료 배치 (8건)**:
-  - ✅ HrFormsPage · CATEGORIES tone → StatusPill (609abb0)
-  - ✅ TrendingTab · PeriodBucketCard 헤더 · 뉴트럴 + accent bar (78ef118)
-  - ✅ Batch 1 · StockCheck·DisplayPage(2)·Permissions (e628c13)
-  - ✅ Batch 2 · StaffManage·Pharmacist·ProductArrival (6fa18b7)
-  - ✅ Batch 3 · DisplayRequestPanel·RequestsPage (61b237b)
-  - ✅ Batch 4 · StockReconciliationTab (5fe6b18)
-  - ✅ Batch 5 · common/ProductDetailPanel 발주status (c5ca042)
-  - ✅ Batch 6 · LeavePage rightSlot·ScanPage 카운트 (6104b91)
-  - ✅ Batch 7 · ReturnListPanel 반품 카운트 (5e33982)
-  - ✅ Batch 8 · EmployeeFormModal 담당구역 (77066c0)
-- **잔여 · 다음 세션**: ContractWriterPage(5,400 lines · 분리 필요) · common/EmployeeInfoForm · 각 페이지 status matrix · legacy StatusBadge deprecate
+- **정량 (초기)**: 121곳 pastel (30 파일) · 실제 StatusPill 후보는 ~25-30개
+- **완료 배치 (12건)**:
+  - ✅ HrFormsPage · CATEGORIES tone (609abb0)
+  - ✅ TrendingTab · PeriodBucketCard 헤더 (78ef118)
+  - ✅ Batch 1-8 · StockCheck·DisplayPage(2)·Permissions·StaffManage·Pharmacist·ProductArrival·DisplayRequestPanel·RequestsPage·StockReconciliation·ProductDetailPanel·LeavePage·ScanPage·ReturnListPanel·EmployeeFormModal (e628c13~77066c0)
+  - ✅ DayTimelineModal · 확정됨 (b694a15)
+  - ✅ StoreZoneMap · 대기 pending (363b8a7)
+  - ✅ LandingPage · 초/중/하순 자동판정 (0a07452)
+  - ✅ RequestsPage · 점심 식사/불참 (375980e)
+  - ✅ **legacy StatusBadge 삭제 + common/README.md 문서화** (356aa1d)
+- **잔여 · 다음 세션**: ContractWriterPage(5,400 lines · 분리 필요) · common/EmployeeInfoForm · 각 페이지 status matrix (부적합 판정)
 
 ### #161 · Nav 세련 · 2026 최신 트렌드 (2026-08-17 밤 · ✅ 완료)
 - AppNavHeader · aurora radial glow (sky+mint) · 3-layer shadow · 3-stop gradient · top hairline (2eec7e4)
@@ -225,10 +223,12 @@
 
 ## 📜 완료 로그
 
-### 2026-08-17 밤 세션 · P0 프레임워크 확산 + Nav 세련 (커밋 15+)
-- **P0 · StatusPill 확산 · 8배치** · HrForms · TrendingTab · StockCheck · DisplayPage(2) · Permissions · StaffManage · Pharmacist · ProductArrival · DisplayRequestPanel · RequestsPage · StockReconciliation · ProductDetailPanel · LeavePage · ScanPage · ReturnListPanel · EmployeeFormModal
+### 2026-08-17 밤 세션 · P0 프레임워크 확산 + Nav 세련 + 문서화 (커밋 20+)
+- **P0 · StatusPill 확산 · 12배치** · HrForms · TrendingTab · StockCheck · DisplayPage(2) · Permissions · StaffManage · Pharmacist · ProductArrival · DisplayRequestPanel · RequestsPage(2) · StockReconciliation · ProductDetailPanel · LeavePage · ScanPage · ReturnListPanel · EmployeeFormModal · DayTimelineModal · StoreZoneMap · LandingPage(초/중/하순 x2)
+- **legacy 정리** · common/StatusBadge.tsx 삭제 (미사용 확인) · tokens.ts 주석 갱신
+- **문서화** · src/components/common/README.md 신규 · 프레임워크 usage · tone/size · 원칙 10개 · primitives/features 분류
 - **Nav 세련 v2** · AppNavHeader (aurora glow · 3-layer shadow · 3-stop gradient · 로고 ring · OSAN MEGATOWN 타이포 · name chip glow · inactive translate-y · 모바일 frosted)
-- **Sidebar 세련 v2** · aurora + hairline · 그룹/아이템 frosted + translate-x · footer 성씨 initial 제거 (사용자 요청)
+- **Sidebar 세련 v2** · aurora + hairline · 그룹/아이템 frosted + translate-x · footer 성씨 initial 제거 (사용자 요청) · 종/알림 패딩 반
 - **Hero v2** · aurora + 3-layer shadow + top hairline
 - **UI 원칙 준수** · handler/state/API 절대 손대지 않음 · className/style만
 
