@@ -898,7 +898,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                     onBlur={() => setTimeout(() => setEmpSearchOpen(false), 200)}
                     placeholder={empLoading ? "직원 불러오는 중..." : "성명 입력 → 검색"}
                     autoComplete="off"
-                    className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-zinc-400 placeholder:text-[12px]"
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint focus:shadow-sm transition placeholder:text-zinc-400 placeholder:text-[12px]"
                   />
                   {empSearchOpen && form.employeeName.trim() && (() => {
                     const q = form.employeeName.trim().toLowerCase();
@@ -942,7 +942,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                   value={form.employeeNo}
                   onChange={(e) => upd("employeeNo", e.target.value)}
                   placeholder="사번 (자동)"
-                  className="bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-zinc-400 placeholder:text-[12px]"
+                  className="bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint focus:shadow-sm transition placeholder:text-zinc-400 placeholder:text-[12px]"
                 />
               </div>
               {/* 부서 + 직급 한 줄 */}
@@ -952,14 +952,14 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                   value={form.department}
                   onChange={(e) => upd("department", e.target.value)}
                   placeholder="부서 (예: 매장·창고)"
-                  className="bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-zinc-400 placeholder:text-[12px]"
+                  className="bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint focus:shadow-sm transition placeholder:text-zinc-400 placeholder:text-[12px]"
                 />
                 <input
                   type="text"
                   value={form.position}
                   onChange={(e) => upd("position", e.target.value)}
                   placeholder="직급 (예: 약사·사원)"
-                  className="bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-zinc-400 placeholder:text-[12px]"
+                  className="bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint focus:shadow-sm transition placeholder:text-zinc-400 placeholder:text-[12px]"
                 />
               </div>
               {/* 생년월일 + 입사일 한 줄 */}
@@ -972,7 +972,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                     type="date"
                     value={form.birthDate}
                     onChange={(e) => upd("birthDate", e.target.value)}
-                    className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition"
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint focus:shadow-sm transition"
                   />
                 </div>
                 <div>
@@ -981,7 +981,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                     type="date"
                     value={form.hireDate}
                     onChange={(e) => upd("hireDate", e.target.value)}
-                    className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition"
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint focus:shadow-sm transition"
                   />
                 </div>
               </div>
@@ -1004,7 +1004,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                 value={form.lastWorkDate}
                 min={minLastWorkDate}
                 onChange={(e) => upd("lastWorkDate", e.target.value)}
-                className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition"
+                className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint focus:shadow-sm transition"
               />
               <p className="text-[11px] text-zinc-400 leading-snug">
                 * 통상 최소 30일 전 통보 관례 · 회사와 협의하여 조정 가능
@@ -1021,7 +1021,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                   type="date"
                   value={form.submitDate}
                   onChange={(e) => upd("submitDate", e.target.value)}
-                  className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition"
+                  className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint focus:shadow-sm transition"
                 />
               </div>
               <div>
@@ -1033,7 +1033,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                   value={form.recipient}
                   onChange={(e) => upd("recipient", e.target.value)}
                   placeholder="예: 코스트팜(Costpharm) 대표"
-                  className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-zinc-400 placeholder:text-[12px]"
+                  className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint focus:shadow-sm transition placeholder:text-zinc-400 placeholder:text-[12px]"
                 />
               </div>
             </div>
@@ -1074,7 +1074,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                 placeholder={form.reason === "기타"
                   ? "기타 사유를 직접 입력하세요 (본문에 반영됨)"
                   : "사유에 대한 부연 설명이 필요하면 입력하세요"}
-                className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition resize-y placeholder:text-zinc-400 placeholder:text-[12px]"
+                className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint focus:shadow-sm transition resize-y placeholder:text-zinc-400 placeholder:text-[12px]"
               />
             </div>
 
@@ -1088,7 +1088,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                 onChange={(e) => upd("handoverNotes", e.target.value)}
                 rows={3}
                 placeholder="담당 업무 · 인수인계할 파일·연락처·주요 진행상황 등"
-                className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition resize-y placeholder:text-zinc-400 placeholder:text-[12px]"
+                className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint focus:shadow-sm transition resize-y placeholder:text-zinc-400 placeholder:text-[12px]"
               />
             </div>
 
@@ -1101,7 +1101,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                 type="date"
                 value={form.payoutDate}
                 onChange={(e) => upd("payoutDate", e.target.value)}
-                className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition"
+                className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint focus:shadow-sm transition"
               />
               <p className="text-[11px] text-zinc-400 leading-snug">
                 * 근로기준법 § 36 · 퇴직 후 14일 이내 지급 원칙 · 당사자 합의로 연장 가능
@@ -1132,14 +1132,14 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                   value={form.companyName}
                   onChange={(e) => upd("companyName", e.target.value)}
                   placeholder="회사명"
-                  className="bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-zinc-400 placeholder:text-[12px]"
+                  className="bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint focus:shadow-sm transition placeholder:text-zinc-400 placeholder:text-[12px]"
                 />
                 <input
                   type="text"
                   value={form.employerName}
                   onChange={(e) => upd("employerName", e.target.value)}
                   placeholder="대표자명"
-                  className="bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-rose-500 focus:shadow-sm transition placeholder:text-zinc-400 placeholder:text-[12px]"
+                  className="bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-[14px] text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint focus:shadow-sm transition placeholder:text-zinc-400 placeholder:text-[12px]"
                 />
               </div>
             </div>

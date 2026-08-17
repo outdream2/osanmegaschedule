@@ -268,38 +268,41 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
 
       <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 flex flex-col gap-5">
 
-        {/* 날짜 네비게이션 */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        {/* 날짜 네비게이션 · 2026-08-17 · 최신 트렌드 · 딥네이비 accent · 폰트 +2 */}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2.5">
             <button onClick={() => setSelectedDate(d => addDays(d, -1))}
-              className="p-1.5 rounded-md bg-white border border-zinc-200 text-zinc-400 hover:text-zinc-700 transition-all duration-150 cursor-pointer shadow-sm">
-              <ChevronLeft size={15} />
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-white border border-line text-ink-soft hover:text-brand-deep hover:border-brand-deep transition-colors cursor-pointer shadow-sm">
+              <ChevronLeft size={16} />
             </button>
-            <div>
-              <p className="text-[12px] text-zinc-400 font-semibold uppercase tracking-wide">점심 관리</p>
-              <h1 className="text-xl font-black text-zinc-900">{dateLabel(selectedDate)}</h1>
+            <div className="flex items-center gap-2.5">
+              <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+              <div className="flex flex-col leading-tight">
+                <span className="text-[13px] text-ink-soft font-semibold">점심 관리</span>
+                <h1 className="text-[19px] font-extrabold text-ink tracking-tight tabular-nums">{dateLabel(selectedDate)}</h1>
+              </div>
             </div>
             <button onClick={() => setSelectedDate(d => addDays(d, 1))} disabled={isToday}
-              className="p-1.5 rounded-lg bg-white border border-gray-200 text-gray-400 hover:text-gray-700 transition cursor-pointer shadow-sm disabled:opacity-30 disabled:cursor-default">
-              <ChevronRight size={15} />
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-white border border-line text-ink-soft hover:text-brand-deep hover:border-brand-deep transition-colors cursor-pointer shadow-sm disabled:opacity-40 disabled:cursor-default">
+              <ChevronRight size={16} />
             </button>
           </div>
           <div className="flex items-center gap-2">
             {!isToday && (
               <button onClick={() => setSelectedDate(today)}
-                className="text-[12px] text-indigo-600 font-semibold border border-indigo-200 rounded-md px-2.5 py-1 hover:bg-indigo-50 transition-all duration-150 cursor-pointer">
+                className="text-[14px] text-white font-semibold rounded-lg px-3.5 py-1.5 bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] transition-colors cursor-pointer shadow-sm">
                 오늘
               </button>
             )}
             <button onClick={() => { loadLunch(); loadBreakData(); }}
-              className="w-8 h-8 flex items-center justify-center rounded-md bg-white border border-zinc-200 text-zinc-400 hover:text-zinc-700 transition-all duration-150 cursor-pointer shadow-sm">
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-white border border-line text-ink-soft hover:text-brand-deep hover:border-brand-deep transition-colors cursor-pointer shadow-sm">
               <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
             </button>
           </div>
         </div>
 
         {error && (
-          <div className="bg-rose-50 border border-rose-200 rounded-xl px-4 py-2.5 text-rose-700 text-xs font-semibold">{error}</div>
+          <div className="bg-rose-50 border border-rose-200 rounded-xl px-4 py-2.5 text-rose-800 text-[14px] font-semibold">{error}</div>
         )}
 
         {/* 출근인원 현황 · 휴게시간 배정 섹션 제거 · 점심불참만 노출 */}
@@ -477,69 +480,70 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
         </div>
         )}
 
-        {/* ── 점심 불참 내 신청 ────────────────────────────── */}
+        {/* ── 점심 불참 내 신청 · 2026-08-17 · 최신 트렌드 · 폰트 +3 ── */}
         {!employeeId ? (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center text-amber-700 text-sm font-semibold">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center text-amber-800 text-[16px] font-semibold">
             로그인 후 이용할 수 있습니다.
           </div>
         ) : loading && myRequest === undefined ? (
-          <div className="bg-white border border-zinc-200 rounded-xl p-10 flex items-center justify-center">
-            <div className="w-6 h-6 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+          <div className="bg-white border border-line rounded-xl p-10 flex items-center justify-center">
+            <div className="w-6 h-6 border-2 border-brand-deep border-t-transparent rounded-full animate-spin" />
           </div>
         ) : isToday && myRequest && !myRequest.eating ? (
-          <div className="rounded-xl border-2 bg-zinc-50 border-zinc-200 p-4 flex flex-col gap-3 shadow-sm">
+          <div className="rounded-xl border border-line bg-white p-5 flex flex-col gap-3 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <UtensilsCrossed size={20} className="text-rose-400" />
-                <span className="font-black text-lg text-zinc-700">오늘 점심 불참</span>
+                <span className="w-[3px] h-[18px] rounded-full bg-brand-deep" />
+                <UtensilsCrossed size={20} className="text-rose-500" />
+                <span className="font-bold text-[19px] text-ink tracking-tight">오늘 점심 불참</span>
               </div>
               <button onClick={cancel} disabled={submitting}
-                className="text-[12px] text-zinc-400 hover:text-rose-500 font-semibold transition-all duration-150 cursor-pointer disabled:opacity-50">
+                className="text-[14px] text-ink-soft hover:text-rose-600 hover:bg-rose-50 font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer disabled:opacity-50">
                 신청취소
               </button>
             </div>
-            <p className="text-[12px] text-zinc-400 flex items-center gap-1">
-              <Clock size={10} />{fmtTime(myRequest.updated_at)} 신청
+            <p className="text-[14px] text-ink-soft flex items-center gap-1.5">
+              <Clock size={12} />{fmtTime(myRequest.updated_at)} 신청
             </p>
             {myRequest.memo && (
-              <p className="text-xs text-zinc-600 bg-white rounded-md px-3 py-2 border border-zinc-100">{myRequest.memo}</p>
+              <p className="text-[15px] text-ink bg-zinc-50 rounded-lg px-3 py-2.5 border border-line">{myRequest.memo}</p>
             )}
           </div>
         ) : isToday ? (
-          <div className="bg-white border border-zinc-200 rounded-xl p-4 flex flex-col gap-4 shadow-sm">
-            <p className="text-center text-base font-bold text-zinc-700">오늘 점심 드시나요?</p>
-            <p className="text-center text-[12px] text-zinc-400">식사하시면 그냥 두시면 됩니다. 불참일 때만 신청해주세요.</p>
+          <div className="bg-white border border-line rounded-xl p-5 flex flex-col gap-4 shadow-sm">
+            <p className="text-center text-[19px] font-bold text-ink tracking-tight">오늘 점심 드시나요?</p>
+            <p className="text-center text-[14px] text-ink-soft">식사하시면 그냥 두시면 됩니다. 불참일 때만 신청해주세요.</p>
             <textarea value={memo} onChange={e => setMemo(e.target.value)}
               placeholder="메모 (선택사항)" rows={2}
-              className="w-full text-xs border border-zinc-200 rounded-lg px-3 py-2 resize-none outline-none focus:border-indigo-300 text-zinc-600 placeholder-zinc-300" />
+              className="w-full text-[15px] border border-line rounded-lg px-3 py-2 resize-none outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint text-ink placeholder-ink-soft transition-colors" />
             <button onClick={() => submit(false)} disabled={submitting}
-              className="w-full flex items-center justify-center gap-2 py-4 rounded-xl text-base font-black bg-zinc-100 hover:bg-zinc-200 active:scale-[0.97] text-zinc-700 shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-50">
-              <UtensilsCrossed size={18} className="text-rose-400" /> 점심 불참 신청
+              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-lg text-[17px] font-semibold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white shadow-sm transition-colors cursor-pointer disabled:opacity-40">
+              <UtensilsCrossed size={18} /> 점심 불참 신청
             </button>
           </div>
         ) : null}
 
-        {/* ── 불참 현황 ────────────────────────────────────── */}
+        {/* ── 불참 현황 · 최신 트렌드 · accent bar · 폰트 +3 ── */}
         {isLoggedIn && (
-          <div className="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm">
+          <div className="bg-white rounded-xl border border-line p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-1.5">
-                <UtensilsCrossed size={14} className="text-rose-600" />
-                <span className="text-sm font-black text-zinc-700">점심 불참 현황</span>
-                <span className="text-[11px] font-mono text-zinc-400">({allRequests.length}명 응답)</span>
+              <div className="flex items-center gap-2.5">
+                <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+                <span className="text-[17px] font-bold text-ink tracking-tight">점심 불참 현황</span>
+                <span className="text-[14px] font-medium text-ink-soft tabular-nums">· {allRequests.length}명 응답</span>
               </div>
-              <span className="text-[12px] font-bold text-zinc-500">불참 {noEatCount}명</span>
+              <span className="text-[14px] font-semibold text-brand-deep tabular-nums">불참 {noEatCount}명</span>
             </div>
             {noEatCount === 0 ? (
-              <div className="text-center text-[12px] text-zinc-300 py-6">데이터 없음</div>
+              <div className="text-center text-[14px] text-ink-soft py-6">데이터 없음</div>
             ) : (
-              <div className="divide-y divide-zinc-50">
+              <div className="divide-y divide-line">
                 {allRequests.filter(r => !r.eating).map(r => (
                   <div key={r.id} className="flex items-center gap-3 px-1 py-2.5">
-                    <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-zinc-300" />
-                    <span className="text-sm font-semibold text-zinc-800 flex-1">{r.employee_name}</span>
-                    {r.memo && <span className="text-[11px] text-zinc-400 max-w-[130px] truncate">{r.memo}</span>}
-                    <span className="text-[11px] text-zinc-400 shrink-0">{fmtTime(r.updated_at)}</span>
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-rose-400" />
+                    <span className="text-[15px] font-semibold text-ink flex-1">{r.employee_name}</span>
+                    {r.memo && <span className="text-[13px] text-ink-soft max-w-[160px] truncate">{r.memo}</span>}
+                    <span className="text-[13px] text-ink-soft shrink-0 tabular-nums">{fmtTime(r.updated_at)}</span>
                   </div>
                 ))}
               </div>

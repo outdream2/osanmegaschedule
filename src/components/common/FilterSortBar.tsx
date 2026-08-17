@@ -15,8 +15,8 @@ export interface FilterSortLabelProps {
 export function FilterSortLabel({ children, className = "" }: FilterSortLabelProps) {
   return (
     <span className={`flex items-center gap-2 shrink-0 ${className}`}>
-      <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
-      <span className="text-[16px] font-bold text-ink tracking-tight">{children}</span>
+      <span className="w-[3px] h-[15px] rounded-full bg-brand-deep" />
+      <span className="text-[17px] font-bold text-ink tracking-tight">{children}</span>
     </span>
   );
 }
@@ -53,7 +53,7 @@ export function FilterSortGroup<T extends string>({
             key={opt.key}
             type="button"
             onClick={() => onSelect(opt.key)}
-            className={`px-2.5 sm:px-3 py-1 text-[14px] sm:text-[15px] font-semibold rounded-md cursor-pointer transition-colors flex items-center gap-1.5 min-h-[30px] sm:min-h-[32px] ${
+            className={`px-2.5 sm:px-3 py-1 text-[15px] sm:text-[16px] font-semibold rounded-md cursor-pointer transition-colors flex items-center gap-1.5 min-h-[32px] sm:min-h-[34px] ${
               isActive
                 ? "bg-brand-deep text-white shadow-sm"
                 : "text-ink hover:text-brand-deep hover:bg-white"
@@ -61,7 +61,7 @@ export function FilterSortGroup<T extends string>({
           >
             <span>{opt.label}</span>
             {opt.count !== undefined && (
-              <span className={`text-[13px] font-normal tabular-nums ${isActive ? "text-white/80" : "text-ink-soft"}`}>
+              <span className={`text-[14px] font-normal tabular-nums ${isActive ? "text-white/80" : "text-ink-soft"}`}>
                 ({opt.count})
               </span>
             )}

@@ -217,18 +217,18 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                   <div className="flex-1 bg-white border border-line rounded-lg px-3 py-2 shadow-sm flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <CalendarDays size={16} className="text-brand-deep" />
-                      <span className="text-[14px] font-semibold text-ink">남은 연차</span>
+                      <span className="text-[18px] font-semibold text-ink">남은 연차</span>
                     </div>
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-[19px] font-extrabold text-brand-deep tabular-nums">{balance.remaining}</span>
-                      <span className="text-[12px] text-ink-soft">일 / 총 {balance.total}일 · 사용 {balance.used}일</span>
+                      <span className="text-[18px] text-ink-soft">일 / 총 {balance.total}일 · 사용 {balance.used}일</span>
                     </div>
                   </div>
                 )}
                 {!showForm && (
                   <button
                     onClick={() => setShowForm(true)}
-                    className="shrink-0 flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white font-semibold text-[14px] shadow-sm transition-colors cursor-pointer"
+                    className="shrink-0 flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white font-semibold text-[18px] shadow-sm transition-colors cursor-pointer"
                   >
                     <Plus size={14} strokeWidth={2.2} />
                     연차 신청
@@ -247,7 +247,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                 <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                   {/* 휴가 종류 */}
                   <div>
-                    <label className="text-[11px] font-semibold text-zinc-600 block mb-1.5">휴가 종류</label>
+                    <label className="text-[19px] font-semibold text-zinc-600 block mb-1.5">휴가 종류</label>
                     <div className="relative">
                       <select
                         value={formType}
@@ -263,7 +263,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                   <div className="flex flex-col gap-1.5">
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[11px] font-semibold text-zinc-600 block mb-1.5">시작일</label>
+                        <label className="text-[19px] font-semibold text-zinc-600 block mb-1.5">시작일</label>
                         <input
                           type="date"
                           value={formStart}
@@ -277,7 +277,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                         />
                       </div>
                       <div>
-                        <label className="text-[11px] font-semibold text-zinc-600 block mb-1.5">종료일</label>
+                        <label className="text-[19px] font-semibold text-zinc-600 block mb-1.5">종료일</label>
                         <input
                           type="date"
                           value={formEnd}
@@ -289,14 +289,14 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                       </div>
                     </div>
                     {formStart && formEnd && (
-                      <p className="text-[13px] text-brand-deep font-semibold text-right tabular-nums">
+                      <p className="text-[19px] text-brand-deep font-semibold text-right tabular-nums">
                         총 {Math.round((new Date(formEnd).getTime() - new Date(formStart).getTime()) / 86400000) + 1}일
                       </p>
                     )}
                   </div>
                   {/* 사유 */}
                   <div>
-                    <label className="text-[11px] font-semibold text-zinc-600 block mb-1.5">사유 <span className="font-normal text-zinc-400">(선택)</span></label>
+                    <label className="text-[19px] font-semibold text-zinc-600 block mb-1.5">사유 <span className="font-normal text-zinc-400">(선택)</span></label>
                     <textarea
                       value={formReason}
                       onChange={e => setFormReason(e.target.value)}
@@ -305,11 +305,11 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                       className="w-full bg-white border border-zinc-200 rounded-lg px-3.5 py-2 text-zinc-800 text-xs focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition resize-none"
                     />
                   </div>
-                  {submitError && <p className="text-[11px] text-rose-500 font-semibold">{submitError}</p>}
+                  {submitError && <p className="text-[19px] text-rose-500 font-semibold">{submitError}</p>}
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full h-10 bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-40 text-white font-semibold rounded-lg transition-colors cursor-pointer text-[15px] flex items-center justify-center gap-2 shadow-sm"
+                    className="w-full h-10 bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-40 text-white font-semibold rounded-lg transition-colors cursor-pointer text-[19px] flex items-center justify-center gap-2 shadow-sm"
                   >
                     {submitting ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /><span>신청 중...</span></> : "신청 제출"}
                   </button>
@@ -322,8 +322,8 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2.5">
                   <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
-                  <span className="text-[15px] font-bold text-ink tracking-tight">내 신청 내역</span>
-                  <span className="text-[13px] font-medium text-ink-soft tabular-nums">· {myRequests.length}건</span>
+                  <span className="text-[19px] font-bold text-ink tracking-tight">내 신청 내역</span>
+                  <span className="text-[19px] font-medium text-ink-soft tabular-nums">· {myRequests.length}건</span>
                 </div>
                 <button onClick={loadMyRequests} disabled={myLoading} className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-all duration-150 cursor-pointer">
                   <RefreshCw size={11} className={myLoading ? "animate-spin" : ""} />
@@ -331,14 +331,14 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
               </div>
 
               {myLoading && myRequests.length > 0 && (
-                <div className="flex items-center justify-center gap-1.5 text-[9px] text-amber-600 font-bold py-1.5 mb-1 bg-amber-50 border border-amber-200 rounded-md sticky top-0 z-10">
+                <div className="flex items-center justify-center gap-1.5 text-[19px] text-amber-600 font-bold py-1.5 mb-1 bg-amber-50 border border-amber-200 rounded-md sticky top-0 z-10">
                   <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
                 </div>
               )}
               {myLoading && myRequests.length === 0 ? (
-                <div className="flex items-center justify-center py-8 text-zinc-400 text-[11px] font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+                <div className="flex items-center justify-center py-8 text-zinc-400 text-[19px] font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
               ) : !myLoading && myRequests.length === 0 ? (
-                <div className="text-center text-[10px] text-zinc-300 py-6">데이터 없음</div>
+                <div className="text-center text-[18px] text-zinc-300 py-6">데이터 없음</div>
               ) : (
                 <div className={`flex flex-col divide-y divide-zinc-50 ${myLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                   {myRequests.map(r => (
@@ -346,28 +346,28 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                       {/* 2026-08-12 · 사용자 지시 · 배치 재구성 · 희망연차일 + 종류 + 상태 (한 줄) · 신청일 · 검토일 · 아래 상세 */}
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="text-[15px] font-bold text-gray-900">
+                          <p className="text-[19px] font-bold text-gray-900">
                             {fmtDate(r.start_date)}{r.start_date !== r.end_date && ` ~ ${fmtDate(r.end_date)}`}
-                            <span className="ml-2 text-[13px] text-gray-500 font-semibold">· {r.leave_type}</span>
+                            <span className="ml-2 text-[19px] text-gray-500 font-semibold">· {r.leave_type}</span>
                           </p>
                         </div>
-                        <span className={`shrink-0 text-[15px] font-bold ${
+                        <span className={`shrink-0 text-[19px] font-bold ${
                           r.status === "pending" ? "text-amber-600" :
                           r.status === "approved" ? "text-emerald-600" : "text-rose-600"
                         }`}>
                           {STATUS_LABEL[r.status]}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 text-[11px] text-gray-400 mt-1 mb-2">
+                      <div className="flex items-center gap-3 text-[19px] text-gray-400 mt-1 mb-2">
                         <span>신청일: {fmtDateTime(r.created_at)}</span>
                         {r.reviewed_at && <span>검토일: {fmtDateTime(r.reviewed_at)}</span>}
                       </div>
                       {/* 아래 · 상세 내용 (사유 · 관리자 메모) */}
                       {(r.reason || r.reviewer_note) && (
                         <div className="border-t border-zinc-100 pt-2 flex flex-col gap-1.5">
-                          {r.reason && <p className="text-[15px] text-zinc-600 px-0.5">사유: {r.reason}</p>}
+                          {r.reason && <p className="text-[19px] text-zinc-600 px-0.5">사유: {r.reason}</p>}
                           {r.reviewer_note && (
-                            <p className="text-[15px] text-indigo-700 px-0.5">
+                            <p className="text-[19px] text-indigo-700 px-0.5">
                               <span className="font-bold">관리자 메모:</span> {r.reviewer_note}
                             </p>
                           )}
@@ -377,7 +377,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                         <button
                           onClick={() => handleCancel(r.id)}
                           disabled={cancellingId === r.id}
-                          className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[10px] font-semibold bg-zinc-50 border border-zinc-200 text-zinc-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all duration-150 cursor-pointer disabled:opacity-50"
+                          className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[18px] font-semibold bg-zinc-50 border border-zinc-200 text-zinc-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all duration-150 cursor-pointer disabled:opacity-50"
                         >
                           <Trash2 size={11} />
                           {cancellingId === r.id ? "취소 중..." : "신청 취소"}
@@ -418,7 +418,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                   <span className="text-sm font-black text-zinc-700">
                     {mgrTab === "pending" ? "승인 대기" : "전체 목록"}
                   </span>
-                  <span className="text-[10px] font-mono text-zinc-400">
+                  <span className="text-[18px] font-mono text-zinc-400">
                     ({(mgrTab === "pending" ? pending : reviewed).length}건)
                   </span>
                 </div>
@@ -428,7 +428,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
               </div>
 
             {allLoading && (mgrTab === "pending" ? pending : reviewed).length > 0 && (
-              <div className="flex items-center justify-center gap-1.5 text-[10px] text-indigo-600 font-bold py-1.5 mb-1 bg-indigo-50 border border-indigo-200 rounded-md sticky top-0 z-10">
+              <div className="flex items-center justify-center gap-1.5 text-[18px] text-indigo-600 font-bold py-1.5 mb-1 bg-indigo-50 border border-indigo-200 rounded-md sticky top-0 z-10">
                 <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
               </div>
             )}
@@ -437,7 +437,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
             ) : (
               <div className={`flex flex-col divide-y divide-zinc-50 ${allLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {(mgrTab === "pending" ? pending : reviewed).length === 0 ? (
-                  <div className="text-center text-[11px] text-zinc-300 py-6">데이터 없음</div>
+                  <div className="text-center text-[19px] text-zinc-300 py-6">데이터 없음</div>
                 ) : (
                   (mgrTab === "pending" ? pending : reviewed).map(r => (
                     <div key={r.id} className={`py-1.5 hover:bg-zinc-50/60 transition-all duration-150 rounded-lg ${r.status === "pending" ? "border-l-2 border-amber-300 pl-2" : r.status === "approved" ? "border-l-2 border-emerald-300 pl-2" : "border-l-2 border-rose-300 pl-2"}`}>
@@ -449,7 +449,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                           </div>
                           <p className="text-xs text-zinc-500 mt-0.5">{fmtDate(r.start_date)} ~ {fmtDate(r.end_date)}</p>
                         </div>
-                        <span className={`shrink-0 text-[10px] font-bold px-2 py-1 rounded-full border ${STATUS_COLOR[r.status]}`}>
+                        <span className={`shrink-0 text-[18px] font-bold px-2 py-1 rounded-full border ${STATUS_COLOR[r.status]}`}>
                           {STATUS_LABEL[r.status]}
                         </span>
                       </div>
@@ -459,7 +459,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                           <span className="font-bold">내 메모:</span> {r.reviewer_note}
                         </p>
                       )}
-                      <p className="text-[10px] text-zinc-400 mb-2">신청일: {fmtDateTime(r.created_at)}</p>
+                      <p className="text-[18px] text-zinc-400 mb-2">신청일: {fmtDateTime(r.created_at)}</p>
 
                       {/* 승인/반려 패널 */}
                       {r.status === "pending" && (
@@ -492,7 +492,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                             </div>
                             <button
                               onClick={() => { setReviewingId(null); setReviewNote(""); }}
-                              className="text-[11px] text-zinc-400 hover:text-zinc-600 text-center cursor-pointer"
+                              className="text-[19px] text-zinc-400 hover:text-zinc-600 text-center cursor-pointer"
                             >
                               취소
                             </button>
