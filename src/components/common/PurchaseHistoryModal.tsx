@@ -74,13 +74,14 @@ export const PurchaseHistoryModal: React.FC<PurchaseHistoryModalProps> = ({
         className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
-        {/* 헤더 */}
-        <div className="flex items-start gap-3 px-4 py-3 border-b border-line bg-emerald-50">
-          <TrendingUp size={20} className="text-emerald-600 shrink-0 mt-0.5" />
+        {/* 헤더 · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
+        <div className="flex items-start gap-3 px-4 py-3 border-b border-line bg-zinc-50/60">
+          <span className="w-[3px] h-[22px] rounded-full bg-brand-deep shrink-0 mt-0.5" />
+          <TrendingUp size={20} className="text-brand-deep shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-sm font-bold text-zinc-800">매입 이력</span>
-              <span className="text-[11px] font-mono text-zinc-500">{productCode}</span>
+              <span className="text-[17px] font-bold text-ink tracking-tight">매입 이력</span>
+              <span className="text-[12px] font-mono text-ink-soft">{productCode}</span>
             </div>
             {productName && (
               <div className="text-xs font-semibold text-zinc-700 truncate mt-0.5" title={productName}>

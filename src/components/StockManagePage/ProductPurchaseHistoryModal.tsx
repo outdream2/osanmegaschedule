@@ -43,18 +43,20 @@ export const ProductPurchaseHistoryModal: React.FC<{
         className="relative bg-white rounded-xl shadow-2xl w-full max-w-3xl h-[90vh] md:h-auto md:min-h-[70vh] md:max-h-[90vh] flex flex-col overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-line bg-emerald-50/50">
-          <div className="flex items-center gap-2 min-w-0">
-            <TrendingUp size={20} className="text-emerald-600 shrink-0" />
+        {/* 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
+        <div className="flex items-start justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-line bg-zinc-50/60">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="w-[3px] h-[24px] rounded-full bg-brand-deep shrink-0 mt-1" />
+            <TrendingUp size={20} className="text-brand-deep shrink-0 mt-1" />
             <div className="min-w-0">
-              <div className="text-base sm:text-lg font-bold text-zinc-800 break-words leading-tight">{productName}</div>
-              <div className="text-[12px] text-zinc-500 tabular-nums">
-                코드 <span className="font-bold">{productCode}</span>
-                <span className="ml-2 text-zinc-400">· 매입 이력 조회</span>
+              <div className="text-[17px] sm:text-[19px] font-bold text-ink break-words leading-tight tracking-tight">{productName}</div>
+              <div className="text-[13px] text-ink-soft tabular-nums mt-0.5">
+                코드 <span className="font-bold text-ink">{productCode}</span>
+                <span className="ml-2 text-ink-soft">· 매입 이력 조회</span>
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg bg-white hover:bg-zinc-100 border border-line flex items-center justify-center text-zinc-500 shrink-0 ml-2 transition"><XIcon size={16} /></button>
+          <button onClick={onClose} className="w-9 h-9 rounded-lg bg-white hover:bg-brand-tint hover:border-brand-deep border border-line text-ink-soft hover:text-brand-deep flex items-center justify-center shrink-0 ml-2 transition-colors" aria-label="닫기"><XIcon size={16} /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 sm:p-4">
