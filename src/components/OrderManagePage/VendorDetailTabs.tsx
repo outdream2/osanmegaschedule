@@ -12,6 +12,7 @@ import { VendorInfoHeader, type VendorBasic, type VendorKpi, type LedgerRowMinim
 import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
+import { StatusPill, type PillTone } from "../common/StatusPill";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
@@ -688,10 +689,10 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
                 vatMode === true  ? "VAT 포함" :
                 vatMode === false ? "VAT 별도" :
                                     "VAT 미설정";
-              const vatModeCls =
-                vatMode === true  ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-                vatMode === false ? "bg-amber-50 text-amber-700 border-amber-200" :
-                                    "bg-zinc-50 text-zinc-400 border-line";
+              const vatModeTone: PillTone =
+                vatMode === true  ? "emerald" :
+                vatMode === false ? "amber" :
+                                    "zinc";
               const items = [
                 {
                   label: "매입 금액",
@@ -721,14 +722,13 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
                   <div className="flex items-center justify-between px-4 pt-2.5 pb-1">
                     <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">기간 합계</span>
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${vatModeCls}`}
                       title={
                         vatMode === true  ? "거래명세서 총액에 VAT 포함 · amount÷11 로 세액 산정" :
                         vatMode === false ? "거래명세서 총액은 공급가액 · amount×0.1 별도 세액" :
                                             "공급사 관리에서 VAT 처리 방식을 설정하면 세액이 계산됩니다"
                       }
                     >
-                      {vatModeText}
+                      <StatusPill tone={vatModeTone} size="xs" dot={vatMode !== null}>{vatModeText}</StatusPill>
                     </span>
                   </div>
                   <div className="grid grid-cols-3 gap-0 border-b border-zinc-100 bg-zinc-50/40">
