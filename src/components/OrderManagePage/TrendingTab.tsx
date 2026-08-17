@@ -231,10 +231,12 @@ const PeriodTrendingSection: React.FC<{
 }> = ({ title, icon, buckets, onProductClick }) => {
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2 px-1">
-        <span className="text-indigo-500 shrink-0">{icon}</span>
-        <span className="text-[15px] font-bold text-zinc-700">{title}</span>
-        <div className="flex-1 h-px bg-indigo-100" />
+      {/* 2026-08-17 · accent bar + 딥네이비 통일 */}
+      <div className="flex items-center gap-2.5 px-1">
+        <span className="w-[3px] h-[16px] rounded-full bg-brand-deep shrink-0" />
+        <span className="text-brand-deep shrink-0">{icon}</span>
+        <span className="text-[16px] font-bold text-ink tracking-tight">{title}</span>
+        <div className="flex-1 h-px bg-line" />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {buckets.map((b, i) => (
