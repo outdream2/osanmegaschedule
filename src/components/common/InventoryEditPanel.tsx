@@ -157,7 +157,7 @@ const ZoneRow: React.FC<ZoneRowProps> = ({
           type="button"
           onClick={onSave}
           disabled={saving || d <= 0}
-          className="h-9 px-2.5 rounded-lg bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-[11px] font-bold transition-colors disabled:opacity-40 cursor-pointer shrink-0"
+          className="h-9 px-2.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[11px] font-bold transition-colors disabled:opacity-40 cursor-pointer shrink-0"
         >
           {saving ? "…" : "+저장"}
         </button>
@@ -212,7 +212,7 @@ const StoreZoneRow: React.FC<StoreZoneRowProps> = ({
           type="button"
           onClick={onSave}
           disabled={saving || d <= 0}
-          className="h-9 px-2.5 rounded-lg bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white text-[11px] font-bold transition-colors disabled:opacity-40 cursor-pointer shrink-0"
+          className="h-9 px-2.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[11px] font-bold transition-colors disabled:opacity-40 cursor-pointer shrink-0"
         >
           {saving ? "…" : "+저장"}
         </button>
@@ -294,7 +294,7 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
     <div className={pad}>
       {/* 상품 정보 헤더 */}
       <div className="flex items-start gap-2.5 pb-2 border-b border-zinc-100">
-        <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
+        <div className="w-7 h-7 rounded-lg bg-brand-tint flex items-center justify-center shrink-0">
           <Package size={13} className="text-violet-600" strokeWidth={2.2} />
         </div>
         <div className="min-w-0">
@@ -375,7 +375,7 @@ export const InventoryEditPanel: React.FC<InventoryEditPanelProps> = ({
       </div>
 
       {/* 합계 (현재 + 미저장 delta 합산 미리보기) */}
-      <div className="px-3 py-2.5 rounded-xl bg-violet-600 flex items-center justify-between">
+      <div className="px-3 py-2.5 rounded-xl bg-brand-deep flex items-center justify-between">
         <span className="text-[11px] font-bold text-violet-100">
           합계 (현재{totalDelta > 0 ? ` + 추가 ${totalDelta}` : ""})
         </span>
