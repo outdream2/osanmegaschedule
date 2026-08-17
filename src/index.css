@@ -373,15 +373,15 @@ body:has(.fixed.inset-0[class*="bg-neutral-9"]) {
   @apply flex items-center gap-2 px-4 h-10 border-b border-slate-100 shrink-0;
 }
 
-/* ── KPI 카드 (상단 요약 통계) ── */
+/* ── KPI 카드 (상단 요약 통계) · 2026-08-17 · 목업 톤 · brand utility ── */
 .kpi-card {
-  @apply bg-white border border-slate-200 rounded-xl p-3 flex flex-col gap-1 shadow-sm;
+  @apply bg-white border border-line rounded-[14px] p-4 flex flex-col gap-2 shadow-sm;
 }
 .kpi-card-value {
-  @apply text-lg font-black text-slate-900 tabular-nums;
+  @apply text-[25px] font-extrabold text-ink tabular-nums tracking-tight;
 }
 .kpi-card-label {
-  @apply text-[11px] font-semibold text-slate-500 uppercase tracking-wider;
+  @apply text-[14px] font-semibold text-ink-soft;
 }
 
 /* ── 필터바 (상단 검색/필터 컨테이너) ── */

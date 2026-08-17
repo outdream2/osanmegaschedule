@@ -51,10 +51,11 @@ import { VendorStockModal } from "./VendorStockModal";
 import { useVendors } from "../../hooks/useVendors";
 import { MenuCard } from "./MenuCard";
 import { StockSearch } from "./StockSearch";
-// 2026-08-17 · UI 프레임워크 · SectionLabel · MiniCard · Hero · HeroButton (목업 톤)
+// 2026-08-17 · UI 프레임워크 · SectionLabel · MiniCard · Hero · HeroButton · KpiCard (목업 톤)
 import { SectionLabel } from "../common/SectionLabel";
 import { MiniCard } from "../common/MiniCard";
 import { Hero, HeroButton } from "../common/Hero";
+import { KpiCard } from "../common/KpiCard";
 // VendorListEditor 는 발주관리 공급사관리 에서만 사용 (LandingPage 데이터 업로드 에서 제거됨 · 2026-07-15)
 
 interface LandingPageProps {
@@ -974,6 +975,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               />
             );
           })()}
+
+          {/* ── KPI 요약 · 2026-08-17 · 관리자 · 목업 톤 · 기존 state 재사용 ── */}
+          {isManagerOrAdmin && (
+            <div className="w-full mb-7">
+              <SectionLabel tone="teal">오늘의 현황</SectionLabel>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+                <KpiCard label="승인 대기" value={leavePendingCount} subtitle={leavePendingCount > 0 ? "건 · 대기중" : "건"} />
+                <KpiCard label="진열·발주 요청" value={requestsCounts.display + requestsCounts.order} subtitle="건" />
+                <KpiCard label="배치구역 불일치" value={requestsCounts.mismatch} subtitle="건" />
+                <KpiCard label="점심 신청" value={requestsCounts.lunch} subtitle="건" />
+              </div>
+            </div>
+          )}
 
           {/* ── 관리자 도구 (관리자 로그인 시에만 표시) · 2026-08-17 · SectionLabel + 반응형 grid ── */}
           {isManagerOrAdmin && (
