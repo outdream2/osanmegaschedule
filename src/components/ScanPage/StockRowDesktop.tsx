@@ -182,7 +182,7 @@ export const StockRowDesktop: React.FC<StockRowDesktopProps> = React.memo(({
           prev={row.prevWarehouse1Qty}
           addValue={row.warehouse1AddQty}
           onAddChange={v => onPatch(row.key, { warehouse1AddQty: v })}
-          accent="focus:border-orange-400"
+          accent="focus:border-brand-deep"
         />
       </td>
 
@@ -192,7 +192,7 @@ export const StockRowDesktop: React.FC<StockRowDesktopProps> = React.memo(({
           prev={row.prevWarehouse2Qty}
           addValue={row.warehouse2AddQty}
           onAddChange={v => onPatch(row.key, { warehouse2AddQty: v })}
-          accent="focus:border-amber-400"
+          accent="focus:border-brand-deep"
         />
       </td>
 

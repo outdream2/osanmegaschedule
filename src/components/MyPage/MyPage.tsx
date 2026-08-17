@@ -196,7 +196,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
                 value={currentPw}
                 onChange={e => setCurrentPw(e.target.value)}
                 placeholder="현재 비밀번호"
-                className="flex-1 px-3 py-2 text-[15px] border border-zinc-300 rounded-xl focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
+                className="flex-1 px-3 py-2 text-[15px] border border-zinc-300 rounded-xl focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
                 autoComplete="current-password"
               />
               <button
@@ -213,7 +213,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
               value={newPw}
               onChange={e => setNewPw(e.target.value)}
               placeholder="새 비밀번호 (4자 이상)"
-              className="w-full px-3 py-2 text-[15px] border border-zinc-300 rounded-xl focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
+              className="w-full px-3 py-2 text-[15px] border border-zinc-300 rounded-xl focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
               autoComplete="new-password"
             />
             <input
@@ -221,7 +221,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
               value={confirmPw}
               onChange={e => setConfirmPw(e.target.value)}
               placeholder="새 비밀번호 확인"
-              className="w-full px-3 py-2 text-[15px] border border-zinc-300 rounded-xl focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
+              className="w-full px-3 py-2 text-[15px] border border-zinc-300 rounded-xl focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
               autoComplete="new-password"
             />
             <div className="flex items-center justify-end gap-2 mt-1">

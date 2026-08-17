@@ -416,7 +416,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
                                   onChange={(e) => updateNumber(m.zoneId, Number(e.target.value))}
                                   className={`w-full px-2.5 py-1.5 rounded-lg border text-[14px] font-bold text-zinc-800 tabular-nums text-center transition focus:outline-none focus:ring-2 ${
                                     isDup || isBad
-                                      ? "border-rose-300 bg-rose-50 focus:ring-rose-200"
+                                      ? "border-rose-300 bg-rose-50 focus:ring-brand-tint"
                                       : "border-line bg-white focus:ring-brand-tint focus:border-brand-deep"
                                   }`}
                                 />

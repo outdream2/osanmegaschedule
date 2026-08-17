@@ -2093,7 +2093,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       onChange={(e) => { setVendorPhone(e.target.value); setVendorError(null); }}
                       placeholder="01012345678"
                       style={{ fontSize: "16px" }}
-                      className={`w-full rounded-2xl pl-10 pr-4 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${vendorError ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100" : "border-2 border-line bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"}`}
+                      className={`w-full rounded-2xl pl-10 pr-4 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${vendorError ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-brand-tint" : "border-2 border-line bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"}`}
                       autoComplete="username" disabled={vendorLoading}
                     />
                   </div>
@@ -2108,7 +2108,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       onChange={(e) => { setVendorPassword(e.target.value); setVendorError(null); }}
                       placeholder="비밀번호 입력"
                       style={{ fontSize: "16px" }}
-                      className={`w-full rounded-2xl pl-10 pr-12 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${vendorError ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100" : "border-2 border-line bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"}`}
+                      className={`w-full rounded-2xl pl-10 pr-12 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${vendorError ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-brand-tint" : "border-2 border-line bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"}`}
                       autoComplete="current-password" disabled={vendorLoading}
                     />
                     <button type="button" onClick={() => setShowVendorPassword((v) => !v)} className="absolute inset-y-0 right-4 flex items-center text-zinc-400 hover:text-zinc-600 transition cursor-pointer">
@@ -2224,7 +2224,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       placeholder="01012345678"
                       style={{ fontSize: "16px" }}
                       className={`w-full rounded-2xl pl-10 pr-4 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${empError
-                        ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100"
+                        ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-brand-tint"
                         : "border-2 border-line bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"
                         }`}
                       autoComplete="username"
@@ -2249,7 +2249,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       placeholder="비밀번호 입력"
                       style={{ fontSize: "16px" }}
                       className={`w-full rounded-2xl pl-10 pr-12 py-3.5 text-zinc-900 font-semibold placeholder:font-normal placeholder:text-zinc-300 focus:outline-none transition-all duration-150 ${empError
-                        ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100"
+                        ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-brand-tint"
                         : "border-2 border-line bg-zinc-50 focus:border-brand-deep focus:bg-white focus:ring-2 focus:ring-brand-tint"
                         }`}
                       autoComplete="current-password"

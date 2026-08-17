@@ -217,17 +217,17 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
           <div>
             <label className="text-zinc-500 font-bold block mb-1">반품 요청일</label>
             <input type="date" value={requestDate} onChange={e => setRequestDate(e.target.value)}
-              className="w-full border border-line rounded px-2 py-1 focus:outline-none focus:border-rose-400 font-mono"/>
+              className="w-full border border-line rounded px-2 py-1 focus:outline-none focus:border-brand-deep font-mono"/>
           </div>
           <div>
             <label className="text-zinc-500 font-bold block mb-1">반품 예정일</label>
             <input type="date" value={expectedDate} onChange={e => setExpectedDate(e.target.value)}
-              className="w-full border border-line rounded px-2 py-1 focus:outline-none focus:border-rose-400 font-mono"/>
+              className="w-full border border-line rounded px-2 py-1 focus:outline-none focus:border-brand-deep font-mono"/>
           </div>
           <div>
             <label className="text-zinc-500 font-bold block mb-1">반품 사유</label>
             <select value={reason} onChange={e => setReason(e.target.value as ReturnReasonKey)}
-              className="w-full border border-line rounded px-2 py-1 focus:outline-none focus:border-rose-400 font-semibold text-zinc-700 bg-white cursor-pointer">
+              className="w-full border border-line rounded px-2 py-1 focus:outline-none focus:border-brand-deep font-semibold text-zinc-700 bg-white cursor-pointer">
               <option value="재고 과다">재고 과다</option>
               <option value="유통기한 임박">유통기한 임박</option>
               <option value="저조 판매">저조 판매</option>
@@ -321,7 +321,7 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
                         <input
                           type="number" min={1} max={r.current_stock} value={r.return_qty}
                           onChange={e => updateLine(iIdx, { return_qty: Math.max(0, Number(e.target.value) || 0) })}
-                          className={`w-16 border rounded px-1.5 py-0.5 text-right font-mono font-bold focus:outline-none focus:border-rose-400 tabular-nums ${overStock ? "border-red-400 text-red-600 bg-red-50" : "border-line text-rose-600"}`}
+                          className={`w-16 border rounded px-1.5 py-0.5 text-right font-mono font-bold focus:outline-none focus:border-brand-deep tabular-nums ${overStock ? "border-red-400 text-red-600 bg-red-50" : "border-line text-rose-600"}`}
                           title={overStock ? "현재고를 초과합니다" : undefined}
                         />
                       </td>
@@ -330,7 +330,7 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
                           type="number" min={0} value={r.purchase_price || ""}
                           onChange={e => updateLine(iIdx, { purchase_price: e.target.value === "" ? 0 : Number(e.target.value) })}
                           placeholder="0"
-                          className="w-20 border border-line rounded px-1.5 py-0.5 text-right font-mono focus:outline-none focus:border-rose-400 tabular-nums"
+                          className="w-20 border border-line rounded px-1.5 py-0.5 text-right font-mono focus:outline-none focus:border-brand-deep tabular-nums"
                         />
                       </td>
                       <td className="p-2 text-right font-mono font-bold text-rose-700 tabular-nums">
@@ -341,7 +341,7 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
                           type="text" value={r.memo}
                           onChange={e => updateLine(iIdx, { memo: e.target.value })}
                           placeholder="(선택)"
-                          className="w-full border border-line rounded px-1.5 py-0.5 text-[14px] focus:outline-none focus:border-rose-400"
+                          className="w-full border border-line rounded px-1.5 py-0.5 text-[14px] focus:outline-none focus:border-brand-deep"
                         />
                       </td>
                       <td className="p-2 text-center">
@@ -376,7 +376,7 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
             value={memo} onChange={e => setMemo(e.target.value)}
             placeholder="공급사에 전달할 반품 사유·수거 요청 시간 등..."
             rows={2}
-            className="w-full border border-line rounded px-2 py-1.5 text-[15px] focus:outline-none focus:border-rose-400 resize-none"
+            className="w-full border border-line rounded px-2 py-1.5 text-[15px] focus:outline-none focus:border-brand-deep resize-none"
           />
           {sendError && (
             <div className="mt-2 text-[15px] font-bold text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1">
@@ -727,7 +727,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
               type="number"
               value={returnCycleMin}
               onChange={e => setReturnCycleMin(Math.max(0, Number(e.target.value) || 0))}
-              className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 tabular-nums text-right transition"
+              className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
             />
             <span className="text-zinc-500 whitespace-nowrap">일 ↑</span>
           </label>
@@ -737,7 +737,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
               type="number"
               value={returnSalesMax}
               onChange={e => setReturnSalesMax(Math.max(0, Number(e.target.value) || 0))}
-              className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 tabular-nums text-right transition"
+              className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
             />
             <span className="text-zinc-500 whitespace-nowrap">개 ↑</span>
           </label>
@@ -747,7 +747,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
               type="number"
               value={returnSalesQuarterMax}
               onChange={e => setReturnSalesQuarterMax(Math.max(0, Number(e.target.value) || 0))}
-              className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 tabular-nums text-right transition"
+              className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
             />
             <span className="text-zinc-500 whitespace-nowrap">개 ↑</span>
           </label>
@@ -776,7 +776,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
             value={returnSupplierSearch}
             onChange={e => setReturnSupplierSearch(e.target.value)}
             placeholder="공급사명 검색"
-            className="w-40 h-7 pl-7 pr-2 text-[15px] border border-line rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 transition"
+            className="w-40 h-7 pl-7 pr-2 text-[15px] border border-line rounded-md outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep transition"
           />
         </div>
         {/* 일괄 반품 신청 · 2026-08-03 · 선택 상품 있을 때만 활성 */}

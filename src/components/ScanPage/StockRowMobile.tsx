@@ -88,8 +88,8 @@ export const StockRowMobile: React.FC<StockRowMobileProps> = React.memo(({ row, 
     accent: string;
     color: string;
   }> = [
-    { addKey: "warehouse1AddQty", prev: row.prevWarehouse1Qty, label: "창1", accent: "focus:border-orange-400", color: "text-orange-600" },
-    { addKey: "warehouse2AddQty", prev: row.prevWarehouse2Qty, label: "창2", accent: "focus:border-amber-400",  color: "text-amber-600"  },
+    { addKey: "warehouse1AddQty", prev: row.prevWarehouse1Qty, label: "창1", accent: "focus:border-brand-deep", color: "text-orange-600" },
+    { addKey: "warehouse2AddQty", prev: row.prevWarehouse2Qty, label: "창2", accent: "focus:border-brand-deep",  color: "text-amber-600"  },
   ];
 
   const storeCols: Array<{

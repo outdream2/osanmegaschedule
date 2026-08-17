@@ -2748,7 +2748,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                                   setOrderQtyOverride(prev => { const n = new Map(prev); n.set(r.id, v); return n; });
                                 }}
                                 onClick={e => e.stopPropagation()}
-                                className="w-16 h-7 px-1 rounded border border-rose-200 bg-white text-right tabular-nums font-bold text-[15px] text-rose-700 focus:outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400"
+                                className="w-16 h-7 px-1 rounded border border-rose-200 bg-white text-right tabular-nums font-bold text-[15px] text-rose-700 focus:outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep"
                               />
                             </td>
                             <td className="text-right px-0.5 py-1.5 tabular-nums text-[14px] text-zinc-500 bg-rose-50/20 align-middle whitespace-nowrap">{prevPrice != null ? prevPrice.toLocaleString() : "-"}</td>
@@ -2852,12 +2852,12 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               <div>
                 <label className="text-zinc-500 font-bold block mb-1">발주일자</label>
                 <input type="date" value={orderModal.orderDate} onChange={e => setOrderModal(p => p && ({ ...p, orderDate: e.target.value }))}
-                  className="w-full border border-line rounded px-2 py-1 focus:outline-none focus:border-red-400 font-mono"/>
+                  className="w-full border border-line rounded px-2 py-1 focus:outline-none focus:border-brand-deep font-mono"/>
               </div>
               <div>
                 <label className="text-zinc-500 font-bold block mb-1">희망 입고일</label>
                 <input type="date" value={orderModal.desiredArrival} onChange={e => setOrderModal(p => p && ({ ...p, desiredArrival: e.target.value }))}
-                  className="w-full border border-line rounded px-2 py-1 focus:outline-none focus:border-red-400 font-mono"/>
+                  className="w-full border border-line rounded px-2 py-1 focus:outline-none focus:border-brand-deep font-mono"/>
               </div>
               <div className="col-span-2">
                 <label className="text-zinc-500 font-bold block mb-1">수신처</label>
@@ -2920,13 +2920,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                               <td className="p-2 text-right">
                                 <input type="number" min={1} value={it.order_qty}
                                   onChange={e => updateModalItem(sIdx, iIdx, { order_qty: Math.max(0, Number(e.target.value) || 0) })}
-                                  className="w-16 border border-line rounded px-1.5 py-0.5 text-right font-mono font-bold text-red-600 focus:outline-none focus:border-red-400"/>
+                                  className="w-16 border border-line rounded px-1.5 py-0.5 text-right font-mono font-bold text-red-600 focus:outline-none focus:border-brand-deep"/>
                               </td>
                               <td className="p-2 text-right">
                                 <input type="number" min={0} value={it.unit_price ?? ""}
                                   onChange={e => updateModalItem(sIdx, iIdx, { unit_price: e.target.value === "" ? null : Number(e.target.value) })}
                                   placeholder={it.prev_unit_price != null ? String(it.prev_unit_price) : "0"}
-                                  className="w-24 border border-line rounded px-1.5 py-0.5 text-right font-mono focus:outline-none focus:border-red-400"/>
+                                  className="w-24 border border-line rounded px-1.5 py-0.5 text-right font-mono focus:outline-none focus:border-brand-deep"/>
                               </td>
                               <td className="p-2 text-right font-mono font-bold text-emerald-700">
                                 {it.unit_price ? (it.order_qty * it.unit_price).toLocaleString() + "원" : "-"}
@@ -2935,7 +2935,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                                 <input type="text" value={it.memo ?? ""}
                                   onChange={e => updateModalItem(sIdx, iIdx, { memo: e.target.value })}
                                   placeholder="(선택)"
-                                  className="w-full border border-line rounded px-1.5 py-0.5 text-[14px] focus:outline-none focus:border-red-400"/>
+                                  className="w-full border border-line rounded px-1.5 py-0.5 text-[14px] focus:outline-none focus:border-brand-deep"/>
                               </td>
                             </tr>
                           ))}

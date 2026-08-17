@@ -39,10 +39,10 @@ export interface ToolbarProps {
 
 const ACCENT_RING: Record<NonNullable<ToolbarSearchProps["accent"]>, string> = {
   indigo:  "focus:ring-brand-tint/60 focus:border-brand-deep",
-  rose:    "focus:ring-rose-400/60   focus:border-rose-400",
+  rose:    "focus:ring-brand-tint/60   focus:border-brand-deep",
   sky:     "focus:ring-brand-tint/60    focus:border-brand-deep",
   emerald: "focus:ring-brand-tint/60 focus:border-brand-deep",
-  amber:   "focus:ring-amber-400/60  focus:border-amber-400",
+  amber:   "focus:ring-brand-tint/60  focus:border-brand-deep",
 };
 
 const ToolbarSearch: React.FC<ToolbarSearchProps> = ({

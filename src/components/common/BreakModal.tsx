@@ -60,14 +60,14 @@ export const BreakModal: React.FC<BreakModalProps> = ({ breakModal, setBreakModa
                 type="time"
                 value={breakModal.lunchStart}
                 onChange={e => setBreakModal(prev => prev ? { ...prev, lunchStart: e.target.value } : null)}
-                className="flex-1 text-sm font-semibold rounded-xl border border-gray-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 p-3 bg-white focus:outline-none text-gray-800 transition"
+                className="flex-1 text-sm font-semibold rounded-xl border border-gray-300 focus:border-brand-deep focus:ring-2 focus:ring-brand-tint/10 p-3 bg-white focus:outline-none text-gray-800 transition"
               />
               <span className="text-gray-400 font-bold text-sm">~</span>
               <input
                 type="time"
                 value={breakModal.lunchEnd}
                 onChange={e => setBreakModal(prev => prev ? { ...prev, lunchEnd: e.target.value } : null)}
-                className="flex-1 text-sm font-semibold rounded-xl border border-gray-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 p-3 bg-white focus:outline-none text-gray-800 transition"
+                className="flex-1 text-sm font-semibold rounded-xl border border-gray-300 focus:border-brand-deep focus:ring-2 focus:ring-brand-tint/10 p-3 bg-white focus:outline-none text-gray-800 transition"
               />
             </div>
             <button
@@ -86,14 +86,14 @@ export const BreakModal: React.FC<BreakModalProps> = ({ breakModal, setBreakModa
                 type="time"
                 value={breakModal.breakStart}
                 onChange={e => setBreakModal(prev => prev ? { ...prev, breakStart: e.target.value } : null)}
-                className="flex-1 text-sm font-semibold rounded-xl border border-gray-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 p-3 bg-white focus:outline-none text-gray-800 transition"
+                className="flex-1 text-sm font-semibold rounded-xl border border-gray-300 focus:border-brand-deep focus:ring-2 focus:ring-brand-tint/10 p-3 bg-white focus:outline-none text-gray-800 transition"
               />
               <span className="text-gray-400 font-bold text-sm">~</span>
               <input
                 type="time"
                 value={breakModal.breakEnd}
                 onChange={e => setBreakModal(prev => prev ? { ...prev, breakEnd: e.target.value } : null)}
-                className="flex-1 text-sm font-semibold rounded-xl border border-gray-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 p-3 bg-white focus:outline-none text-gray-800 transition"
+                className="flex-1 text-sm font-semibold rounded-xl border border-gray-300 focus:border-brand-deep focus:ring-2 focus:ring-brand-tint/10 p-3 bg-white focus:outline-none text-gray-800 transition"
               />
             </div>
             <button

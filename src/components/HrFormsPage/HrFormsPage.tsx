@@ -624,7 +624,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                     value={uploadTitle}
                     onChange={e => setUploadTitle(e.target.value)}
                     placeholder="예: 2026년 표준 근로계약서"
-                    className="w-full bg-white border border-line rounded-xl px-3.5 py-2.5 text-zinc-800 text-sm font-semibold focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition placeholder:text-zinc-400 placeholder:font-normal"
+                    className="w-full bg-white border border-line rounded-xl px-3.5 py-2.5 text-zinc-800 text-sm font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition placeholder:text-zinc-400 placeholder:font-normal"
                     maxLength={120}
                     required
                   />
@@ -765,7 +765,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
             value={searchQ}
             onChange={e => setSearchQ(e.target.value)}
             placeholder="양식명 · 파일명 · 업로더 검색"
-            className="ml-auto w-full sm:w-60 bg-white border border-line rounded-lg px-3 py-1.5 text-sm text-zinc-800 font-semibold focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100/60 transition placeholder:text-zinc-400 placeholder:font-normal"
+            className="ml-auto w-full sm:w-60 bg-white border border-line rounded-lg px-3 py-1.5 text-sm text-zinc-800 font-semibold focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint/60 transition placeholder:text-zinc-400 placeholder:font-normal"
           />
         </FilterBar>
 

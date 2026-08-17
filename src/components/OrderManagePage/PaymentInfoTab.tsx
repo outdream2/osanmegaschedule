@@ -1773,7 +1773,7 @@ const AmountField: React.FC<{
         value={amount ? Number(amount).toLocaleString() : ""}
         onChange={e => setAmount(e.target.value.replace(/[^0-9]/g, ""))}
         placeholder="0"
-        className={`${inputCls} pl-7 pr-[52px] text-right tabular-nums font-bold text-[14px] ${overBalance ? "border-amber-400 focus:ring-amber-400 focus:border-amber-400" : ""}`}
+        className={`${inputCls} pl-7 pr-[52px] text-right tabular-nums font-bold text-[14px] ${overBalance ? "border-amber-400 focus:ring-brand-tint focus:border-brand-deep" : ""}`}
       />
       {currentBalance > 0 && !amount && (
         <button

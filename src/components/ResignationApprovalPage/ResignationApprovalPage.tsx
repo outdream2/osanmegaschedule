@@ -357,7 +357,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                             value={rejectReason}
                             onChange={e => setRejectReason(e.target.value)}
                             placeholder="반려 사유 (반려 시 필수)"
-                            className="w-full bg-white border border-line rounded-lg px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-rose-500 transition"
+                            className="w-full bg-white border border-line rounded-lg px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-brand-deep transition"
                           />
                           <div className="grid grid-cols-2 gap-2">
                             <button

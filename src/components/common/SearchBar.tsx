@@ -44,11 +44,11 @@ export interface SearchBarProps {
 }
 
 const ACCENT_MAP = {
-  rose:    "focus:ring-rose-400 focus:border-rose-400",
+  rose:    "focus:ring-brand-tint focus:border-brand-deep",
   sky:     "focus:ring-brand-tint focus:border-brand-deep",
   indigo:  "focus:ring-brand-tint focus:border-brand-deep",
   emerald: "focus:ring-brand-tint focus:border-brand-deep",
-  amber:   "focus:ring-amber-400 focus:border-amber-400",
+  amber:   "focus:ring-brand-tint focus:border-brand-deep",
 };
 
 const HISTORY_MAX = 5;

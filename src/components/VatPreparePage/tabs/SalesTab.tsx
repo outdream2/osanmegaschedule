@@ -303,7 +303,7 @@ const MoneyCellInput: React.FC<MoneyCellInputProps> = ({ value, onCommit, placeh
       }}
       onKeyDown={e => { if (e.key === "Enter") { e.currentTarget.blur(); } }}
       placeholder={placeholder ?? "0"}
-      className={`w-full h-8 px-2 text-[11px] text-right tabular-nums border border-zinc-300 rounded outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 ${colorClass ?? ""}`}
+      className={`w-full h-8 px-2 text-[11px] text-right tabular-nums border border-zinc-300 rounded outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep ${colorClass ?? ""}`}
     />
   );
 };
@@ -324,7 +324,7 @@ const MonthlyRow: React.FC<MonthlyRowProps> = ({ row, onExpenseChange, onTaxfree
           value={row.taxfreeSales}
           onCommit={n => onTaxfreeChange(row.month, n)}
           placeholder="0"
-          colorClass="text-amber-700 focus:ring-amber-400 focus:border-amber-400"
+          colorClass="text-amber-700 focus:ring-brand-tint focus:border-brand-deep"
         />
       </td>
       {/* 과세 매출 · 자동 계산 */}

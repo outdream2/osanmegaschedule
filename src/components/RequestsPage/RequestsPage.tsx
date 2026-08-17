@@ -1236,7 +1236,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 type="number" min="0"
                 value={dupOrderModal.editStock}
                 onChange={e => setDupOrderModal(prev => prev ? { ...prev, editStock: e.target.value === "" ? "" : Number(e.target.value) } : null)}
-                className="w-full text-xl font-bold text-center bg-gray-50 border border-gray-300 rounded-xl px-3 py-2.5 outline-none focus:border-orange-400 transition"
+                className="w-full text-xl font-bold text-center bg-gray-50 border border-gray-300 rounded-xl px-3 py-2.5 outline-none focus:border-brand-deep transition"
                 placeholder="실재고 입력"
               />
             </div>

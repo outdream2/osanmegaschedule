@@ -1463,11 +1463,11 @@ export const StockFlowPanel: React.FC<{
           <span className="text-zinc-500 font-bold shrink-0">판매</span>
           <input type="number" min={0} value={saleMin}
             onChange={(e) => setSaleMin(e.target.value)} placeholder="최소"
-            className="flex-1 min-w-0 px-1.5 py-1 border border-line rounded text-[11px] tabular-nums text-right focus:outline-none focus:border-orange-400" />
+            className="flex-1 min-w-0 px-1.5 py-1 border border-line rounded text-[11px] tabular-nums text-right focus:outline-none focus:border-brand-deep" />
           <span className="text-zinc-400 shrink-0">~</span>
           <input type="number" min={0} value={saleMax}
             onChange={(e) => setSaleMax(e.target.value)} placeholder="최대"
-            className="flex-1 min-w-0 px-1.5 py-1 border border-line rounded text-[11px] tabular-nums text-right focus:outline-none focus:border-orange-400" />
+            className="flex-1 min-w-0 px-1.5 py-1 border border-line rounded text-[11px] tabular-nums text-right focus:outline-none focus:border-brand-deep" />
           {(saleMin || saleMax) && (
             <button onClick={() => { setSaleMin(""); setSaleMax(""); }}
               className="text-[10px] font-bold text-rose-500 hover:text-rose-700 px-1.5 py-1 rounded hover:bg-rose-50 transition cursor-pointer shrink-0">✕</button>
@@ -2236,11 +2236,11 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
         <input type="number" value={minLoss} onChange={e => setMinLoss(e.target.value)}
           placeholder="최소"
           title="음수 허용 (예: -5 → 재고 남는 상품도 표시)"
-          className="w-16 border border-line rounded-lg px-1.5 py-1 tabular-nums text-right focus:outline-none focus:border-rose-400" />
+          className="w-16 border border-line rounded-lg px-1.5 py-1 tabular-nums text-right focus:outline-none focus:border-brand-deep" />
         <span className="text-zinc-400">~</span>
         <input type="number" value={maxLoss} onChange={e => setMaxLoss(e.target.value)}
           placeholder="최대"
-          className="w-14 border border-line rounded-lg px-1.5 py-1 tabular-nums text-right focus:outline-none focus:border-rose-400" />
+          className="w-14 border border-line rounded-lg px-1.5 py-1 tabular-nums text-right focus:outline-none focus:border-brand-deep" />
         <span className="text-zinc-400">개</span>
       </div>
       {loading && filtered.length > 0 && (

@@ -34,7 +34,7 @@ const ACCENT_MAP = {
   teal:    { ring: "focus:ring-brand-tint focus:border-brand-deep", btn: "bg-teal-600 hover:bg-teal-700", active: "bg-teal-50 border-l-2 border-teal-500" },
   sky:     { ring: "focus:ring-brand-tint focus:border-brand-deep", btn: "bg-sky-600 hover:bg-sky-700", active: "bg-sky-50 border-l-2 border-sky-500" },
   emerald: { ring: "focus:ring-brand-tint focus:border-brand-deep", btn: "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a]", active: "bg-emerald-50 border-l-2 border-emerald-500" },
-  amber:   { ring: "focus:ring-amber-400 focus:border-amber-400", btn: "bg-amber-600 hover:bg-amber-700", active: "bg-amber-50 border-l-2 border-amber-500" },
+  amber:   { ring: "focus:ring-brand-tint focus:border-brand-deep", btn: "bg-amber-600 hover:bg-amber-700", active: "bg-amber-50 border-l-2 border-amber-500" },
   indigo:  { ring: "focus:ring-brand-tint focus:border-brand-deep", btn: "bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a]", active: "bg-indigo-50 border-l-2 border-indigo-500" },
 };
 

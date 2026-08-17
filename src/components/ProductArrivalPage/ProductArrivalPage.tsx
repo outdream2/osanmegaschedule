@@ -962,8 +962,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                     className="w-full px-3.5 py-2.5 rounded-xl text-[15px] resize-none
                       border-2 border-rose-200 bg-rose-50/30
                       placeholder:text-rose-300 text-zinc-800
-                      focus:outline-none focus:border-rose-400 focus:bg-white
-                      focus:ring-4 focus:ring-rose-100/60
+                      focus:outline-none focus:border-brand-deep focus:bg-white
+                      focus:ring-4 focus:ring-brand-tint/60
                       transition-colors duration-150"
                   />
                 </div>

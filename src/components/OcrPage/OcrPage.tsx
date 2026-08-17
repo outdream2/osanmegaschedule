@@ -227,7 +227,7 @@ const BalanceConfigTab: React.FC<BalanceConfigTabProps> = ({ pages, config, onCo
                   <td className="px-4 py-2 font-semibold text-gray-700">{vendor}</td>
                   <td className="px-4 py-2">
                     <select
-                      className="border border-line rounded px-2 py-1 text-xs outline-none focus:border-orange-400 bg-white"
+                      className="border border-line rounded px-2 py-1 text-xs outline-none focus:border-brand-deep bg-white"
                       value={config[vendor] ?? "(없음)"}
                       onChange={e => onConfigChange(vendor, e.target.value)}
                     >
@@ -469,7 +469,7 @@ const ConfirmedRecordsTab: React.FC = () => {
               type="date"
               value={dateFilter}
               onChange={e => setDateFilter(e.target.value)}
-              className="border border-line rounded px-2 py-1 text-xs outline-none focus:border-rose-400 bg-white"
+              className="border border-line rounded px-2 py-1 text-xs outline-none focus:border-brand-deep bg-white"
             />
           </label>
           {dateFilter && (
@@ -486,7 +486,7 @@ const ConfirmedRecordsTab: React.FC = () => {
               value={supplierFilter}
               onChange={e => setSupplierFilter(e.target.value)}
               placeholder="공급처명 검색"
-              className="border border-line rounded px-2 py-1 text-xs outline-none focus:border-rose-400 bg-white min-w-[160px]"
+              className="border border-line rounded px-2 py-1 text-xs outline-none focus:border-brand-deep bg-white min-w-[160px]"
             />
             <datalist id="ocr-conf-supplier-list">
               {supplierOptions.map(s => <option key={s} value={s} />)}
