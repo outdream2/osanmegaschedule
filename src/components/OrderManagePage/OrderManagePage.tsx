@@ -2409,23 +2409,22 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             selectedCount={selectedOrder.size}
             search={{ value: orderSearch, onChange: setOrderSearch, placeholder: "상품·코드·공급사" }}
             right={
-              <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
-                {(["all", ...dbVendorCategories] as string[]).map(cat => {
-                  const active = orderCategoryFilter === cat;
-                  const label = cat === "all" ? "전체" : cat;
-                  return (
-                    <button key={cat}
-                      type="button"
-                      onClick={() => setOrderCategoryFilter(cat)}
-                      className={`h-8 px-2.5 text-[14px] font-semibold rounded-md transition-colors cursor-pointer ${
-                        active
-                          ? "bg-brand-deep text-white shadow-sm"
-                          : "text-ink hover:text-brand-deep hover:bg-white"
-                      }`}
-                    >{label}</button>
-                  );
-                })}
-              </div>
+              <CategoryChips
+                value={orderCategoryFilter}
+                onChange={setOrderCategoryFilter}
+                size="sm"
+                ariaLabel="발주요청 공급사 카테고리"
+                options={(["all", ...dbVendorCategories] as string[]).map(cat => ({
+                  value: cat,
+                  label: cat === "all" ? "전체" : cat,
+                  tone: (cat === "all"    ? "zinc"
+                       : cat === "위탁"   ? "violet"
+                       : cat === "선결제" ? "rose"
+                       : cat === "60회전" ? "emerald"
+                       : cat === "90회전" ? "teal"
+                       : "zinc") as ChipTone,
+                }))}
+              />
             }
           />
 

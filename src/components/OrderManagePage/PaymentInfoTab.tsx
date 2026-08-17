@@ -32,6 +32,7 @@ import { useSortableTable, type Comparator } from "../../hooks/useSortableTable"
 import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
 import { PeriodSelector, PERIOD_DAYS_PRESET, PERIOD_MONTHS_PRESET } from "../common/PeriodSelector";
+import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { api, ApiError } from "../../lib/apiClient";
@@ -905,21 +906,22 @@ export const PaymentInfoTab: React.FC = () => {
               placeholder="공급사명 검색"
               className="w-full h-7 px-2.5 text-[15px] border border-line rounded-lg outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
             />
-            <div className="flex flex-wrap gap-0.5">
-              {(["전체", ...dbVendorCategories] as string[]).map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setVendorCategoryFilter(cat)}
-                  className={`h-6 px-2 text-[15px] font-semibold rounded-lg transition cursor-pointer ${
-                    vendorCategoryFilter === cat
-                      ? CATEGORY_COLORS[cat as keyof typeof CATEGORY_COLORS] ?? "bg-zinc-500 text-white shadow-sm"
-                      : "bg-zinc-50 text-zinc-500 border border-line hover:text-zinc-700"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
+            <CategoryChips
+              value={vendorCategoryFilter}
+              onChange={setVendorCategoryFilter}
+              size="sm"
+              ariaLabel="공급사 카테고리 필터"
+              options={(["전체", ...dbVendorCategories] as string[]).map(cat => ({
+                value: cat,
+                label: cat,
+                tone: (cat === "전체"   ? "zinc"
+                     : cat === "위탁"   ? "violet"
+                     : cat === "선결제" ? "rose"
+                     : cat === "60회전" ? "emerald"
+                     : cat === "90회전" ? "teal"
+                     : "zinc") as ChipTone,
+              }))}
+            />
             {/* 기간 필터 · 공용 PeriodSelector (2026-08-09) · 매입·결제 집계 기간
                 · localStorage megatown_payment_period 유지 */}
             <div className="flex items-center gap-2 pt-1 border-t border-zinc-100">
