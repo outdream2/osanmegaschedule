@@ -74,9 +74,10 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     if (e.target === e.currentTarget) onCancel();
   };
 
+  // 2026-08-17 · 최신 트렌드 · 폰트 +2 · rounded-lg 통일 · brand-deep primary · danger rose 유지 (semantic)
   const confirmCls = danger
-    ? "px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold transition-colors cursor-pointer"
-    : "px-4 py-2 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-sm font-semibold transition-colors cursor-pointer";
+    ? "h-10 px-4 rounded-lg bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white text-[15px] font-semibold transition-colors cursor-pointer shadow-sm"
+    : "h-10 px-4 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[15px] font-semibold transition-colors cursor-pointer shadow-sm";
 
   return (
     <div
@@ -87,15 +88,16 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       aria-labelledby={title ? "confirm-dialog-title" : undefined}
       aria-describedby="confirm-dialog-message"
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm flex flex-col overflow-hidden">
-        {/* 헤더 */}
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden border border-line">
+        {/* 헤더 · 2026-08-17 · 최신 트렌드 · 좌측 accent bar (danger=rose · 일반=brand-deep) · 폰트 +2 */}
         {(title || danger) && (
-          <div className="flex items-center gap-2 px-5 py-4 border-b border-line">
+          <div className="flex items-center gap-2.5 px-5 py-4 border-b border-line bg-zinc-50/60">
+            <span className={`w-[3px] h-[17px] rounded-full ${danger ? "bg-rose-500" : "bg-brand-deep"}`} />
             {danger && <AlertTriangle size={18} className="text-rose-500 shrink-0" />}
             {title && (
               <span
                 id="confirm-dialog-title"
-                className="text-[15px] font-bold text-zinc-800"
+                className="text-[17px] font-bold text-ink tracking-tight"
               >
                 {title}
               </span>
@@ -103,20 +105,20 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           </div>
         )}
 
-        {/* 메시지 본문 */}
+        {/* 메시지 본문 · 폰트 +2 · 색 통일 */}
         <div
           id="confirm-dialog-message"
-          className="px-5 py-5 text-sm text-zinc-700 whitespace-pre-wrap leading-relaxed"
+          className="px-5 py-5 text-[15px] text-ink whitespace-pre-wrap leading-relaxed"
         >
           {message}
         </div>
 
-        {/* 버튼 영역 */}
+        {/* 버튼 · 최신 트렌드 · h-10 · rounded-lg · 폰트 +2 */}
         <div className="px-5 pb-5 flex gap-2 justify-end">
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-sm font-semibold transition-colors cursor-pointer"
+            className="h-10 px-4 rounded-lg bg-white border border-line hover:border-ink-soft text-ink-soft hover:text-ink text-[15px] font-semibold transition-colors cursor-pointer"
           >
             {cancelLabel}
           </button>
