@@ -1198,28 +1198,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           {/* ── 입고 알림 · 2026-08-10 · #22 · 거래처 로그인 시 숨김 ── */}
           {!isVendor && (
           <div className="w-full mb-6 mt-2">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-5 h-5 rounded-md flex items-center justify-center">
-                <Package size={10} className="text-white" weight="fill" />
-              </div>
-              <span className="text-[11px] font-bold text-sky-600 uppercase tracking-widest">입고 알림</span>
-              <div className="flex-1 h-px" />
-              {!pushSubscribed && (
+            {/* 2026-08-17 · SectionLabel + right slot (알림 받기 / 구독 중) */}
+            <SectionLabel tone="sky" right={
+              !pushSubscribed ? (
                 <button
                   onClick={handleAnonSubscribe}
                   disabled={pushLoading}
-                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold text-sky-600 border border-sky-200 bg-sky-50 hover:bg-sky-100 transition disabled:opacity-50 cursor-pointer"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[13px] font-bold text-[#3E7CB1] border border-[#E8F1F9] bg-[#E8F1F9] hover:bg-sky-100 transition disabled:opacity-50 cursor-pointer"
                 >
-                  <Bell size={10} />
-                  알림 받기
+                  <Bell size={11} />알림 받기
                 </button>
-              )}
-              {pushSubscribed && (
-                <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-semibold">
-                  <Bell size={10} /> 구독 중
+              ) : (
+                <span className="inline-flex items-center gap-1 text-[13px] text-[#0E6B5C] font-bold">
+                  <Bell size={11} /> 구독 중
                 </span>
-              )}
-            </div>
+              )
+            }>입고 알림</SectionLabel>
             {arrivalsLoading && stockArrivals.length > 0 && (
               <div className="flex items-center justify-center gap-1.5 text-[10px] text-sky-600 font-bold py-1.5 mb-1 bg-sky-50 border border-sky-200 rounded-md sticky top-0 z-10">
                 <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
