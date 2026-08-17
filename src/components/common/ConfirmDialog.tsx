@@ -81,14 +81,20 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+      // 2026-08-17 v2 · frosted backdrop · 딥네이비 tint + blur (Modal 통일)
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      style={{ background: "rgba(10, 46, 74, 0.35)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
       onClick={handleBackdrop}
       role="alertdialog"
       aria-modal="true"
       aria-labelledby={title ? "confirm-dialog-title" : undefined}
       aria-describedby="confirm-dialog-message"
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden border border-line">
+      {/* 2026-08-17 v2 · 3-layer shadow · Attio/Linear 세련 */}
+      <div
+        className="bg-white rounded-2xl w-full max-w-md flex flex-col overflow-hidden border border-line"
+        style={{ boxShadow: "0 1px 3px rgba(10,46,74,0.12), 0 8px 32px -8px rgba(10,46,74,0.24), 0 24px 64px -24px rgba(10,46,74,0.28)" }}
+      >
         {/* 헤더 · 2026-08-17 · 최신 트렌드 · 좌측 accent bar (danger=rose · 일반=brand-deep) · 폰트 +2 */}
         {(title || danger) && (
           <div className="flex items-center gap-2.5 px-5 py-4 border-b border-line bg-zinc-50/60">
