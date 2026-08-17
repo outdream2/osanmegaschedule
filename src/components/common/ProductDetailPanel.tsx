@@ -252,39 +252,41 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
 
 // ── 빈 상태 (상품 미선택) ────────────────────────────────────────────────────
 
+// 2026-08-17 · 최신 트렌드 · 폰트 +2 · brand-tint 아이콘 컨테이너 · Linear/Vercel 톤
 export const ProductDetailEmpty: React.FC<{ message?: string; sub?: string }> = ({
   message = "리스트에서 상품을 클릭하세요",
   sub = "상세 정보 · 재고 현황 · 매입/판매가",
 }) => (
-  <div className="bg-white rounded-xl border border-line flex-1 flex flex-col items-center justify-center p-10 text-zinc-400 min-h-[400px]">
-    <Package size={40} className="mb-3 opacity-30" />
-    <div className="text-[11px] font-semibold">{message}</div>
-    {sub && <div className="text-[11px] mt-1">{sub}</div>}
+  <div className="bg-white rounded-xl border border-line flex-1 flex flex-col items-center justify-center p-10 min-h-[400px] gap-3 shadow-sm">
+    <div className="w-16 h-16 rounded-2xl bg-brand-tint flex items-center justify-center">
+      <Package size={30} className="text-brand-deep/70" />
+    </div>
+    <div className="text-[15px] font-semibold text-ink tracking-tight">{message}</div>
+    {sub && <div className="text-[13px] text-ink-soft">{sub}</div>}
   </div>
 );
 
-// ── 모바일 fullscreen 헤더 ────────────────────────────────────────────────────
-
+// ── 모바일 fullscreen 헤더 · 2026-08-17 · 최신 트렌드 · accent bar + 폰트 +2 ──
 export const ProductDetailMobileHeader: React.FC<{
   product: ProductInfo;
   onClose: () => void;
 }> = ({ product, onClose }) => (
-  /* lg+ 에서 숨김 · 모바일+태블릿 전용 sticky 헤더 */
   <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-line shadow-sm">
-    <div className="flex items-center gap-2 px-3 py-1.5">
-      {/* 터치 대상 최소 44×44px */}
+    <div className="flex items-center gap-2.5 px-4 py-2">
+      {/* 닫기 · 최소 44×44 접근성 · 딥네이비 톤 */}
       <button
         type="button"
         onClick={onClose}
-        className="min-w-[44px] min-h-[44px] rounded-xl bg-zinc-100 active:bg-zinc-200 hover:bg-zinc-200 flex items-center justify-center text-zinc-600 cursor-pointer shrink-0 transition-colors"
+        className="min-w-[44px] min-h-[44px] rounded-xl bg-white border border-line hover:border-brand-deep hover:bg-brand-tint flex items-center justify-center text-ink-soft hover:text-brand-deep cursor-pointer shrink-0 transition-colors"
         title="닫기"
         aria-label="닫기"
       >
         <X size={18} strokeWidth={2.4} />
       </button>
+      <span className="w-[3px] h-[24px] rounded-full bg-brand-deep shrink-0" />
       <div className="flex-1 min-w-0">
-        <div className="text-[14px] font-bold text-zinc-800 break-keep whitespace-normal leading-tight">{product.name}</div>
-        <div className="text-[11px] tabular-nums text-zinc-500 break-words whitespace-normal leading-tight">
+        <div className="text-[16px] font-bold text-ink break-keep whitespace-normal leading-tight tracking-tight">{product.name}</div>
+        <div className="text-[13px] tabular-nums text-ink-soft break-words whitespace-normal leading-tight mt-0.5">
           #{product.code} · {product.supplier ?? "-"}
         </div>
       </div>
