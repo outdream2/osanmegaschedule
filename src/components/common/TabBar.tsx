@@ -211,7 +211,7 @@ export function TabBar<K extends string = string>({
     );
   }
 
-  // L3 · Notion style · 딥네이비 tinted container + 활성 white pill (L2 zinc pill wrap 과 색으로 확실히 구분)
+  // L3 · Notion style · 딥네이비 tinted container (사용자: 아까 딥블루로 했던거 좋았어) + 활성 white pill (덜 진하게)
   if (level === 3) {
     return (
       <div className={`bg-brand-tint/40 border-y border-brand/10 w-full shrink-0 ${className}`}>
@@ -257,28 +257,29 @@ export function TabBar<K extends string = string>({
                   onTouchCancel={dnd?.onTouchCancel}
                   className={[
                     "group relative inline-flex items-center gap-1.5 h-9 px-3 sm:px-3.5 rounded-lg text-[14px] sm:text-[15px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight",
+                    // 2026 · Ghost Tinted (Linear/Attio/Vercel 표준 · deep solid 아님 · tint 10%)
                     active
-                      ? "bg-brand-deep text-white shadow-[0_1px_2px_rgba(10,46,74,0.25)]"
-                      : "text-brand-deep/70 hover:text-brand-deep hover:bg-white/70",
+                      ? "bg-brand-deep/10 text-brand-deep font-bold"
+                      : "text-brand-deep/60 hover:text-brand-deep hover:bg-brand-deep/[0.04]",
                     dragCls,
                   ].join(" ")}
                 >
-                  {/* dot marker · 활성 시 · 흰색 dot · 비활성 · 카테고리 톤 dot */}
+                  {/* dot marker · 활성 시 · 카테고리 색 · 비활성 · muted */}
                   <span
-                    className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${active ? "bg-white/80" : c.iconActive.replace("text-", "bg-")}`}
+                    className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${active ? c.iconActive.replace("text-", "bg-") : "bg-brand-deep/25 group-hover:bg-brand-deep/50"}`}
                   />
                   {Icon && (
                     <Icon
                       size={14}
                       strokeWidth={active ? 2.4 : 2}
                       weight={active ? "fill" : "duotone"}
-                      className={`shrink-0 transition-colors duration-200 ${active ? "text-white" : c.iconActive}`}
+                      className={`shrink-0 transition-colors duration-200 ${active ? c.iconActive : "text-brand-deep/40 group-hover:text-brand-deep/70"}`}
                     />
                   )}
                   <span>{t.label}</span>
                   {t.badge != null && t.badge > 0 && (
                     <span
-                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold leading-none tabular-nums transition-colors ${active ? "bg-white/25 text-white" : `${badgeBg} text-white`}`}
+                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold leading-none tabular-nums transition-colors ${active ? `${badgeBg} text-white shadow-sm` : "bg-brand-deep/10 text-brand-deep/70"}`}
                       title={`${t.label} · ${t.badge}건`}
                     >
                       {t.badge}
