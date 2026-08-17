@@ -20,6 +20,7 @@ import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
 import { PeriodSelector, PERIOD_MONTHS_PRESET } from "../common/PeriodSelector";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
+import { StatusPill } from "../common/StatusPill";
 import { fmtWonCompact } from "../../lib/format";
 // 2026-08-09 · 신규 공급사 등록 모달 (사용자 요청)
 import { NewVendorModal } from "../common/NewVendorModal";
@@ -1465,12 +1466,7 @@ export const VendorDetailModal: React.FC<{
                             {String(r.date).slice(2)}
                           </td>
                           <td className="px-3 py-1.5">
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                              isPay ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                    : "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                            }`}>
-                              {isPay ? "결제" : "매입"}
-                            </span>
+                            <StatusPill tone={isPay ? "emerald" : "indigo"} size="xs">{isPay ? "결제" : "매입"}</StatusPill>
                           </td>
                           <td className={`text-right px-3 py-1.5 font-mono font-bold whitespace-nowrap tabular-nums ${
                             isPay ? "text-emerald-700" : "text-indigo-700"
