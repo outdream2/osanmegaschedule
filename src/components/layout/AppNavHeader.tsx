@@ -340,10 +340,13 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       if (isActive) {
         return (
           <span key="business" className={activeClass}>
-            <Icon size={20} weight="fill" className={`shrink-0 ${iconAccent}`} />
+            <Icon size={20} weight="fill" className={`shrink-0 ${iconAccent}`} style={{ filter: `drop-shadow(0 0 6px ${accent.hex}80)` }} />
             <span>{tab.label}</span>
-            {/* 2026-08-17 · Linear/Vercel 표준 · 활성 = 얇은 solid 흰색 stripe (2px monochrome · gradient/glow 제거 · 세련) */}
-          <span className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-[80%] h-[2px] rounded-full pointer-events-none bg-white/85" />
+            {/* 2026-08-17 · 사용자 요청 · 색 accent 부활 · solid color stripe (3px · 그룹 톤 + subtle glow) */}
+          <span
+            className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-[85%] h-[3px] rounded-full pointer-events-none"
+            style={{ backgroundColor: accent.hex, boxShadow: `0 0 10px ${accent.hex}90` }}
+          />
           </span>
         );
       }
@@ -366,10 +369,13 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     if (isActive) {
       return (
         <span key={tab.key} className={activeClass}>
-          <Icon size={20} weight="fill" className={`shrink-0 ${iconAccent}`} />
+          <Icon size={20} weight="fill" className={`shrink-0 ${iconAccent}`} style={{ filter: `drop-shadow(0 0 6px ${accent.hex}80)` }} />
           <span>{tab.label}</span>
-          {/* 2026-08-17 · Linear/Vercel 표준 · 활성 = 얇은 solid 흰색 stripe (2px monochrome · gradient/glow 제거 · 세련) */}
-          <span className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-[80%] h-[2px] rounded-full pointer-events-none bg-white/85" />
+          {/* 2026-08-17 · 사용자 요청 · 색 accent 부활 · solid color stripe (3px · 그룹 톤 + subtle glow) */}
+          <span
+            className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-[85%] h-[3px] rounded-full pointer-events-none"
+            style={{ backgroundColor: accent.hex, boxShadow: `0 0 10px ${accent.hex}90` }}
+          />
         </span>
       );
     }
