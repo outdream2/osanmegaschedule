@@ -28,19 +28,21 @@ export interface PeriodSelectorProps<T extends number | string> {
   ariaLabel?: string;
 }
 
+// 2026-08-17 · 최신 트렌드 · mono neutral · 딥네이비 통일 (모든 accent → brand-deep)
 const ACCENT_CLS: Record<NonNullable<PeriodSelectorProps<never>["accent"]>, string> = {
-  teal:    "bg-teal-500 text-white shadow-sm",
+  teal:    "bg-brand-deep text-white shadow-sm",
   indigo:  "bg-brand-deep text-white shadow-sm",
-  emerald: "bg-emerald-500 text-white shadow-sm",
-  amber:   "bg-amber-500 text-white shadow-sm",
-  rose:    "bg-rose-500 text-white shadow-sm",
-  sky:     "bg-sky-500 text-white shadow-sm",
-  violet:  "bg-violet-500 text-white shadow-sm",
+  emerald: "bg-brand-deep text-white shadow-sm",
+  amber:   "bg-brand-deep text-white shadow-sm",
+  rose:    "bg-brand-deep text-white shadow-sm",
+  sky:     "bg-brand-deep text-white shadow-sm",
+  violet:  "bg-brand-deep text-white shadow-sm",
 };
 
+// 폰트 +2 · 접근성 (h-7 이상)
 const SIZE_CLS = {
-  sm: { wrap: "p-0.5", btn: "h-5 px-1.5 text-[10px]" },
-  md: { wrap: "p-1",   btn: "h-7 px-2.5 text-[12px]" },
+  sm: { wrap: "p-1",   btn: "h-7 px-2 text-[12px]" },
+  md: { wrap: "p-1",   btn: "h-8 px-3 text-[14px]" },
 };
 
 export function PeriodSelector<T extends number | string>({
@@ -59,7 +61,7 @@ export function PeriodSelector<T extends number | string>({
     <div
       role="group"
       aria-label={ariaLabel}
-      className={`inline-flex items-center gap-0.5 bg-zinc-100 rounded-md ${s.wrap} ${className}`}
+      className={`inline-flex items-center gap-0.5 bg-zinc-100 border border-line rounded-lg ${s.wrap} ${className}`}
       style={style}
     >
       {options.map(opt => {
@@ -70,10 +72,10 @@ export function PeriodSelector<T extends number | string>({
             type="button"
             onClick={() => onChange(opt.value)}
             title={opt.title}
-            className={`${s.btn} rounded font-bold transition cursor-pointer whitespace-nowrap ${
+            className={`${s.btn} rounded-md font-semibold transition-colors cursor-pointer whitespace-nowrap ${
               active
                 ? activeCls
-                : "text-zinc-500 hover:text-zinc-700 hover:bg-white"
+                : "text-ink hover:text-brand-deep hover:bg-white"
             }`}
           >
             {opt.label}
