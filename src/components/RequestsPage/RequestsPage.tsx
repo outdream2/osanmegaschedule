@@ -1176,14 +1176,15 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
             ) : (
               <div className={`${CARD_BASE} divide-y divide-zinc-50 ${lunchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+                {/* 2026-08-17 · StatusPill 프레임워크 통일 */}
                 {lunchRequests.map(r => (
                   <div key={r.id} className="flex items-center gap-3 px-0.5 py-1.5 hover:bg-zinc-50/60 transition-all duration-150">
                     <span className={`w-2 h-2 rounded-full shrink-0 ${r.eating ? "bg-emerald-500" : "bg-gray-300"}`} />
                     <span className="text-sm font-semibold text-gray-800 flex-1">{r.employee_name}</span>
                     {r.memo && <span className="text-[14px] text-gray-400 flex-1 min-w-0 break-keep">{r.memo}</span>}
-                    <span className={`text-[15px] font-bold px-2 py-0.5 rounded-full shrink-0 ${r.eating ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-gray-100 text-gray-500 border border-line"}`}>
+                    <StatusPill tone={r.eating ? "emerald" : "zinc"} size="md">
                       {r.eating ? "🍱 식사" : "불참"}
-                    </span>
+                    </StatusPill>
                     <span className="text-[14px] text-gray-300 shrink-0">
                       {new Date(r.updated_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
                     </span>
