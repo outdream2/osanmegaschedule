@@ -557,15 +557,16 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
 
       <main className="flex-1 max-w-[1200px] mx-auto w-full px-3 sm:px-5 py-5 flex flex-col gap-4">
 
-        {/* ── 헤더 영역 ──────────────────────────────────────────────────── */}
+        {/* ── 헤더 영역 · 2026-08-17 · 세련 · accent bar + gradient icon card ── */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-sm">
+            <span className="w-[3px] h-[40px] rounded-full bg-gradient-to-b from-brand-deep to-[#1E5C8E] shrink-0" />
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-tint to-white border border-brand/15 text-brand-deep flex items-center justify-center shadow-[0_1px_2px_rgba(10,46,74,0.04),0_2px_8px_rgba(10,46,74,0.06)]">
               <FileText size={20} />
             </div>
             <div>
-              <h1 className="text-lg sm:text-xl font-bold text-zinc-800 leading-tight">각종 양식</h1>
-              <p className="text-xs text-zinc-500 font-semibold mt-0.5">
+              <h1 className="text-[18px] sm:text-[20px] font-bold text-ink tracking-tight leading-tight">각종 양식</h1>
+              <p className="text-[13px] text-ink-soft font-medium mt-0.5">
                 근로계약서 · 사직서 · 서약서 · 기타 양식 다운로드 및 관리
               </p>
             </div>
