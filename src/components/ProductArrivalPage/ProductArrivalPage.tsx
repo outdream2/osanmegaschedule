@@ -482,22 +482,15 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 </div>
               )}
 
-              {/* 마지막 스캔 상품 정보 카드 */}
+              {/* 2026-08-17 · 세련 · 마지막 스캔 카드 · 뉴트럴 body + StatusPill 헤더 */}
               {lastScannedProduct && (
-                <div className="flex flex-col gap-3 px-3.5 py-3.5 rounded-xl
-                  bg-emerald-50
-                  border border-emerald-200/80
-                  shadow-sm">
+                <div className="flex flex-col gap-3 px-3.5 py-3.5 rounded-2xl bg-white border border-line shadow-[0_1px_2px_rgba(10,46,74,0.04),0_2px_8px_rgba(10,46,74,0.06)]">
 
-                  {/* 헤더 */}
+                  {/* 헤더 · StatusPill emerald + 상품코드 */}
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
-                      <CheckCircle2 size={11} className="text-white" />
-                    </div>
-                    <span className="text-[14px] font-bold text-emerald-700 uppercase tracking-wider">최근 스캔</span>
+                    <StatusPill tone="emerald" size="sm" dot>최근 스캔</StatusPill>
                     {lastScannedCode && (
-                      <span className="ml-auto text-[14px] font-mono tabular-nums text-emerald-500
-                        bg-emerald-100 px-1.5 py-0.5 rounded-md border border-emerald-200/60">
+                      <span className="ml-auto text-[13px] font-mono tabular-nums text-ink-soft bg-zinc-50 border border-line px-2 py-0.5 rounded-md">
                         #{lastScannedCode}
                       </span>
                     )}

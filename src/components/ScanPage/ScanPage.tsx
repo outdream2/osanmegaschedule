@@ -687,18 +687,14 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               )}
 
               {lastProduct && (
-                <div className="flex flex-col rounded-2xl overflow-hidden
-                  bg-white border border-teal-200/80
-                  shadow-[0_2px_8px_rgba(20,184,166,0.08)]">
+                /* 2026-08-17 · 세련 · 최근 스캔 카드 · 딥네이비 통일 · 뉴트럴 body · 헤더 accent */
+                <div className="flex flex-col rounded-2xl overflow-hidden bg-white border border-line shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_16px_rgba(10,46,74,0.08)]">
 
-                  {/* ── 헤더 · 라벨 + 상품코드 ── */}
-                  <div className="flex items-center gap-2 px-3.5 py-2 bg-teal-50/80 border-b border-teal-100">
-                    <div className="w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center shrink-0">
-                      <CheckCircle2 size={11} className="text-white" />
-                    </div>
-                    <span className="text-[14px] font-bold text-teal-700 uppercase tracking-wider">최근 스캔</span>
+                  {/* ── 헤더 · status pill + 상품코드 ── */}
+                  <div className="flex items-center gap-2 px-3.5 py-2.5 bg-zinc-50/60 border-b border-line">
+                    <StatusPill tone="emerald" size="sm" dot>최근 스캔</StatusPill>
                     {lastCode && (
-                      <span className="ml-auto text-[14px] font-mono tabular-nums text-zinc-500 truncate max-w-[140px]">
+                      <span className="ml-auto text-[13px] font-mono tabular-nums text-ink-soft truncate max-w-[160px]">
                         {lastCode}
                       </span>
                     )}
