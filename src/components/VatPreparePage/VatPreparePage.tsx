@@ -301,14 +301,15 @@ const VatPreparePage: React.FC = () => {
       {/* ── 상단: 다음 신고일 · Preset 선택 ── */}
       <div className="bg-white rounded-xl border border-line shadow-sm p-4">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-          {/* 로고·타이틀 */}
+          {/* 로고·타이틀 · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
           <div className="flex items-center gap-3 shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-rose-500 flex items-center justify-center text-white shrink-0">
+            <span className="w-[3px] h-[26px] rounded-full bg-brand-deep shrink-0" />
+            <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center text-white shrink-0 shadow-sm">
               <Calculator size={20} />
             </div>
             <div>
-              <div className="text-[15px] font-bold text-zinc-800 leading-tight">부가세 준비</div>
-              <div className="text-[11px] text-zinc-500 leading-tight">공급사별 매입세액 집계 · 신고 준비 체크리스트</div>
+              <div className="text-[18px] font-bold text-ink leading-tight tracking-tight">부가세 준비</div>
+              <div className="text-[13px] text-ink-soft leading-tight mt-0.5">공급사별 매입세액 집계 · 신고 준비 체크리스트</div>
             </div>
           </div>
 

@@ -5,7 +5,7 @@
 // 2026-08-03 · 반품 요청서 모달 · 발주서 스타일로 재설계 (#188)
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useVendors } from "../../hooks/useVendors";
-import { Loader2, Package, PackageCheck, Search, Truck, ChevronRight, ChevronDown, Mail, MessageSquare, Send, Trash2 } from "lucide-react";
+import { Loader2, Package, PackageCheck, Search, Truck, ChevronRight, ChevronDown, Mail, MessageSquare, Send, Trash2, X } from "lucide-react";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
@@ -188,28 +188,31 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
         className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl my-8 flex flex-col overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
-        {/* ── 헤더 · rose·pink 그라디언트 ── */}
-        <div className="px-5 py-4 border-b border-line bg-rose-50 flex items-center justify-between gap-3">
+        {/* ── 헤더 · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 (rose 는 반품 의미로 pill 만 유지) ── */}
+        <div className="px-5 py-4 border-b border-line bg-zinc-50/60 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-rose-500 flex items-center justify-center shadow-md shrink-0">
+            <span className="w-[3px] h-[24px] rounded-full bg-brand-deep shrink-0" />
+            <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shadow-sm shrink-0">
               <Truck size={18} className="text-white" />
             </div>
             <div className="min-w-0">
-              <div className="text-base font-bold text-zinc-900 flex items-center gap-2 flex-wrap">
+              <div className="text-[17px] font-bold text-ink tracking-tight flex items-center gap-2 flex-wrap">
                 반품 요청서
-                <span className="text-[14px] font-bold text-rose-700 bg-white border border-rose-300 rounded-full px-2 py-0.5 tabular-nums">
+                <span className="text-[13px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-full px-2.5 py-0.5 tabular-nums">
                   반품 예정 · {lines.length}건
                 </span>
               </div>
-              <div className="text-[15px] font-mono text-zinc-500 mt-0.5 truncate">#{returnNumber}</div>
+              <div className="text-[13px] font-mono text-ink-soft mt-0.5 truncate">#{returnNumber}</div>
             </div>
           </div>
           <button
             onClick={() => !sending && onClose()}
             disabled={sending}
-            className="text-zinc-400 hover:text-zinc-700 text-3xl font-bold w-9 h-9 rounded-lg hover:bg-white/70 cursor-pointer flex items-center justify-center disabled:opacity-40 shrink-0"
+            className="w-9 h-9 rounded-lg bg-white border border-line hover:border-brand-deep hover:bg-brand-tint text-ink-soft hover:text-brand-deep transition-colors cursor-pointer flex items-center justify-center disabled:opacity-40 shrink-0"
             title="닫기"
-          >×</button>
+          >
+            <X size={16} />
+          </button>
         </div>
 
         {/* ── 반품 기본 정보 (grid 4-col) ── */}
