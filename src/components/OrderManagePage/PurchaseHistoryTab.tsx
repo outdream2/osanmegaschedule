@@ -758,20 +758,21 @@ export const PurchaseHistoryTab: React.FC = () => {
   return (
     <>
     <div className="flex flex-col gap-2 h-full min-h-0">
-      {/* 2026-08-10 · 상단 필터바 · CARD_BASE 공통 토큰 (SupplierTab · PaymentInfoTab 등과 통일) */}
-      <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2 shrink-0`}>
-        <div className="flex items-center gap-2">
+      {/* 2026-08-17 · 상단 필터바 · 최신 트렌드 · 좌측 accent bar + 딥네이비 통일 */}
+      <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2 shrink-0`}>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
           {viewMode === "by-vendor"
-            ? <Building2 size={14} className="text-emerald-500 shrink-0" />
-            : <Package size={14} className="text-sky-500 shrink-0" />}
-          <span className="text-[15px] font-bold text-zinc-800">매입이력</span>
+            ? <Building2 size={16} className="text-brand-deep shrink-0" />
+            : <Package size={16} className="text-brand-deep shrink-0" />}
+          <span className="text-[17px] font-bold text-ink tracking-tight">매입이력</span>
           {viewMode === "by-vendor" && selectedVendor && (
-            <span className="text-[15px] font-semibold text-emerald-600 bg-emerald-50 rounded-full px-2 py-0.5 border border-emerald-200 tabular-nums">
+            <span className="text-[14px] font-semibold text-brand-deep bg-brand-tint rounded-full px-2.5 py-0.5 border border-brand/15 tabular-nums">
               {ledgerRows.length}건
             </span>
           )}
           {viewMode === "by-product" && (
-            <span className="text-[15px] font-semibold text-sky-600 bg-sky-50 rounded-full px-2 py-0.5 border border-sky-200 tabular-nums">
+            <span className="text-[14px] font-semibold text-brand-deep bg-brand-tint rounded-full px-2.5 py-0.5 border border-brand/15 tabular-nums">
               {productList.length}종
             </span>
           )}
@@ -819,32 +820,32 @@ export const PurchaseHistoryTab: React.FC = () => {
           )}
         </div>
 
-        {/* 뷰 모드 토글 (#191) · segmented control */}
-        <div className="inline-flex bg-zinc-100 border border-line rounded-md p-0.5">
+        {/* 뷰 모드 토글 · 최신 트렌드 · segmented pill · 딥네이비 통일 */}
+        <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
           <button
             type="button"
             onClick={() => setViewMode("by-vendor")}
-            className={`px-2.5 h-7 text-[15px] font-bold rounded transition cursor-pointer inline-flex items-center gap-1.5 ${
+            className={`px-3 h-8 text-[14px] font-semibold rounded-md transition-colors cursor-pointer inline-flex items-center gap-1.5 ${
               viewMode === "by-vendor"
-                ? "bg-white text-emerald-700 shadow-sm border border-emerald-200"
-                : "text-zinc-500 hover:text-zinc-700"
+                ? "bg-brand-deep text-white shadow-sm"
+                : "text-ink hover:text-brand-deep hover:bg-white"
             }`}
             title="공급사 단위로 매입이력 조회"
           >
-            <Building2 size={12} />
+            <Building2 size={13} />
             공급사별
           </button>
           <button
             type="button"
             onClick={() => setViewMode("by-product")}
-            className={`px-2.5 h-7 text-[15px] font-bold rounded transition cursor-pointer inline-flex items-center gap-1.5 ${
+            className={`px-3 h-8 text-[14px] font-semibold rounded-md transition-colors cursor-pointer inline-flex items-center gap-1.5 ${
               viewMode === "by-product"
-                ? "bg-white text-sky-700 shadow-sm border border-sky-200"
-                : "text-zinc-500 hover:text-zinc-700"
+                ? "bg-brand-deep text-white shadow-sm"
+                : "text-ink hover:text-brand-deep hover:bg-white"
             }`}
             title="상품 단위로 매입이력 조회 (최근 1년)"
           >
-            <Package size={12} />
+            <Package size={13} />
             상품별
           </button>
         </div>
