@@ -164,6 +164,14 @@ export default function App() {
     window.location.replace("/");
   };
 
+  // 2026-08-17 · 사용자 지시 · "재로그인 필요하면 로그아웃 후 로그인화면으로" · "토큰만료 이후 프로세스 강화 로그인화면으로 강제 이동"
+  //   · apiClient / main.tsx 인터셉터 · refresh 실패 시 SESSION_EXPIRED_EVENT dispatch · 이 리스너 → handleLogout (window.location.replace("/"))
+  useEffect(() => {
+    const onExpired = () => handleLogout();
+    window.addEventListener("api-session-expired", onExpired);
+    return () => window.removeEventListener("api-session-expired", onExpired);
+  }, []);
+
   const timeoutWarningOverlay = authSession && showTimeoutWarning ? (
     <SessionTimeoutWarning
       initialSeconds={secondsRemaining}

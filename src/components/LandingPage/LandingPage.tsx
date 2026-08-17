@@ -51,6 +51,8 @@ import { VendorStockModal } from "./VendorStockModal";
 import { useVendors } from "../../hooks/useVendors";
 import { MenuCard } from "./MenuCard";
 import { StockSearch } from "./StockSearch";
+// 2026-08-17 · 공용 Button (최신 트렌드 · Linear/Vercel 톤 · primary/secondary/ghost/danger)
+import { Button } from "../common/Button";
 // 2026-08-17 · UI 프레임워크 · SectionLabel · MiniCard · Hero (목업 톤)
 //   HeroButton · KpiCard · 오늘의 현황 한줄 텍스트화로 미사용 (2026-08-17 사용자 지시)
 import { SectionLabel } from "../common/SectionLabel";
@@ -1127,18 +1129,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 </div>
                 <div className="text-zinc-400 text-[11px] sm:text-xs mt-1 font-semibold tracking-wide whitespace-pre-line leading-tight">{lpBrand.shortName || "오산\n메가타운약국"}</div>
               </div>
-              {/* 2026-08-17 · #130 · 공사중 배너 개선 · gradient bg + 아이콘 pulse + 텍스트 위계 */}
+              {/* 2026-08-17 · 사용자 지시 · 공사중 배너 · 최신 트렌드 · 노랑 → 딥네이비 modern (Linear/Vercel 톤) */}
               {underConstruction ? (
-                <div className="w-full rounded-3xl overflow-hidden shadow-xl border border-amber-200"
-                  style={{ background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)" }}>
-                  <div className="px-6 py-12 flex flex-col items-center gap-4 text-center">
-                    <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-md"
-                      style={{ background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" }}>
-                      <Clock size={36} className="text-white animate-pulse" />
+                <div className="w-full rounded-[20px] overflow-hidden shadow-lg relative"
+                  style={{ background: "linear-gradient(120deg, #0A2E4A 0%, #1E5C8E 62%, #3E7CB1 100%)" }}>
+                  {/* subtle decorative blobs */}
+                  <div className="absolute rounded-full w-[180px] h-[180px] -right-[40px] -top-[70px] pointer-events-none" style={{ background: "rgba(255,255,255,0.08)" }} />
+                  <div className="absolute rounded-full w-[120px] h-[120px] right-[100px] -bottom-[60px] pointer-events-none" style={{ background: "rgba(255,255,255,0.06)" }} />
+                  <div className="relative px-6 py-12 flex flex-col items-center gap-4 text-center">
+                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-white/[0.12] ring-1 ring-white/20 backdrop-blur-sm">
+                      <Clock size={30} className="text-white animate-pulse" strokeWidth={2} />
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <div className="text-amber-900 font-black text-xl sm:text-2xl tracking-tight">곧 오픈 예정입니다</div>
-                      <div className="text-amber-700 text-sm font-semibold">서비스 준비 중 · 잠시만 기다려주세요</div>
+                    <div className="flex flex-col gap-1.5">
+                      <div className="text-[13px] font-bold uppercase tracking-[0.06em]" style={{ color: "#B9D6EA" }}>Coming Soon</div>
+                      <div className="text-white font-extrabold text-[22px] sm:text-[26px] tracking-tight leading-tight">곧 오픈 예정입니다</div>
+                      <div className="text-[14px] font-medium" style={{ color: "#DCE8F3" }}>서비스 준비 중 · 잠시만 기다려주세요</div>
                     </div>
                   </div>
                 </div>
@@ -1147,22 +1152,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <StockSearch />
               )}
 
-              {/* 직원·거래처 로그인 · 2026-08-17 · #130 · dead overlay 제거 · 실제 hover · bg 정리 */}
-              <div className="flex gap-2">
-                <button
+              {/* 직원·거래처 로그인 · 2026-08-17 · 최신 트렌드 · 공용 Button · primary/secondary */}
+              <div className="flex gap-2.5">
+                <Button
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  icon={<Lock size={16} strokeWidth={2.2} />}
                   onClick={() => setPendingPage("schedule")}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl px-4 py-3 bg-indigo-50/60 border border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300 transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer"
                 >
-                  <Lock size={14} className="text-indigo-600" />
-                  <span className="text-indigo-700 font-bold text-sm">직원로그인</span>
-                </button>
-                <button
+                  직원 로그인
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  fullWidth
+                  icon={<CalendarCheck size={16} weight="fill" />}
                   onClick={() => setVendorLoginOpen(true)}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl px-4 py-3 bg-emerald-50/60 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer"
                 >
-                  <CalendarCheck size={14} className="text-emerald-600" weight="fill" />
-                  <span className="text-emerald-700 font-bold text-sm">거래처 로그인</span>
-                </button>
+                  거래처 로그인
+                </Button>
               </div>
 
               {/* 2026-08-11 · 카카오톡 채널 친구추가 · 하단 · 세련된 카드 · 공사중 모드에선 숨김 */}

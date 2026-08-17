@@ -4,6 +4,8 @@ import axios from 'axios';
 import App from './App.tsx';
 import { ConfirmProvider } from './hooks/useConfirm';
 import { installErrorReporter } from './lib/errorReporter';
+// 2026-08-17 · 사용자 지시 · 토큰만료 이후 프로세스 강화 · refresh 실패 시 · 세션만료 이벤트 dispatch → App 강제 로그아웃 + 로그인 화면
+import { SESSION_EXPIRED_EVENT } from './lib/apiClient';
 import './index.css';
 
 // 2026-08-16 · 프레임워크 · 클라이언트 에러 리포터 (window.error + unhandledrejection → /api/client-errors)
@@ -41,6 +43,8 @@ axios.interceptors.response.use(
       config.__retried = true;
       const ok = await tryRefresh();
       if (ok) return axios(config); // 새 access 로 원 요청 재시도
+      // 2026-08-17 · refresh 실패 · 세션만료 이벤트 dispatch (App 리스너 → 로그아웃 + 로그인화면)
+      try { window.dispatchEvent(new CustomEvent<null>(SESSION_EXPIRED_EVENT)); } catch { /* silent */ }
     }
     return Promise.reject(error);
   },
