@@ -13,6 +13,7 @@ import { displayVendorName } from "../../utils/vendorNameNormalize";
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
+import { StatusPill } from "../common/StatusPill";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { useResizablePanel } from "../../hooks/useResizablePanel";
@@ -198,9 +199,7 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
             <div className="min-w-0">
               <div className="text-[17px] font-bold text-ink tracking-tight flex items-center gap-2 flex-wrap">
                 반품 요청서
-                <span className="text-[13px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-full px-2.5 py-0.5 tabular-nums">
-                  반품 예정 · {lines.length}건
-                </span>
+                <StatusPill tone="rose" size="sm" dot>반품 예정 · {lines.length}건</StatusPill>
               </div>
               <div className="text-[13px] font-mono text-ink-soft mt-0.5 truncate">#{returnNumber}</div>
             </div>
