@@ -465,14 +465,14 @@ export const FlowTab: React.FC = () => {
         <div className="flex items-center gap-2">
           <Boxes size={14} className="text-sky-500 shrink-0" />
           <span className={`${TEXT.body} text-zinc-800`}>상품현황리스트</span>
-          <span className="text-[11px] font-semibold text-sky-600 bg-sky-50 rounded-full px-2 py-0.5 border border-sky-200 tabular-nums">{filteredFlow.length}건</span>
+          <span className="text-[15px] font-semibold text-sky-600 bg-sky-50 rounded-full px-2 py-0.5 border border-sky-200 tabular-nums">{filteredFlow.length}건</span>
         </div>
 
         {/* 조회기간 */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">기간</span>
+          <span className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">기간</span>
           {flowMonths === 0 && !flowSeason && flowSnapshot && (
-            <span className="text-[11px] tabular-nums font-medium text-zinc-600 bg-zinc-50 border border-zinc-200 rounded-md px-2 py-0.5">
+            <span className="text-[15px] tabular-nums font-medium text-zinc-600 bg-zinc-50 border border-zinc-200 rounded-md px-2 py-0.5">
               {flowDateRange ?? flowSnapshot}
             </span>
           )}
@@ -481,14 +481,14 @@ export const FlowTab: React.FC = () => {
             const start = new Date(today.getFullYear(), today.getMonth() - flowMonths, 1);
             const s = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
             const e = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-            return <span className="text-[11px] tabular-nums font-medium text-zinc-600 bg-zinc-50 border border-zinc-200 rounded-md px-2 py-0.5">{s} ~ {e}</span>;
+            return <span className="text-[15px] tabular-nums font-medium text-zinc-600 bg-zinc-50 border border-zinc-200 rounded-md px-2 py-0.5">{s} ~ {e}</span>;
           })()}
           <div className="flex flex-wrap bg-zinc-50 border border-zinc-200 rounded-md p-0.5 gap-0.5">
             <button onClick={() => { setFlowSeason(null); setPendingFlowMonths(0); setFlowMonths(0); }}
-              className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!flowSeason && flowMonths === 0 ? "bg-teal-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>10일</button>
+              className={`px-2 h-6 text-[15px] font-semibold rounded transition cursor-pointer ${!flowSeason && flowMonths === 0 ? "bg-teal-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>10일</button>
             {([1, 2, 3, 4, 5, 6] as const).map(m => (
               <button key={m} onClick={() => { setFlowSeason(null); setPendingFlowMonths(m); setFlowMonths(m); }}
-                className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!flowSeason && flowMonths === m ? "bg-teal-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>{m}개월</button>
+                className={`px-2 h-6 text-[15px] font-semibold rounded transition cursor-pointer ${!flowSeason && flowMonths === m ? "bg-teal-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>{m}개월</button>
             ))}
           </div>
           <SeasonButtons value={flowSeason} onChange={(v) => { setFlowSeason(v); if (v) { setPendingFlowMonths(0); setFlowMonths(0); } }} size="sm" hideLabel />
@@ -496,11 +496,11 @@ export const FlowTab: React.FC = () => {
 
         {/* Top N */}
         <div className="flex items-center gap-1.5">
-          <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">Top N</span>
+          <span className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">Top N</span>
           <div className="inline-flex bg-zinc-50 border border-zinc-200 rounded-md p-0.5">
             {[{ v: 100, label: "100" }, { v: 300, label: "300" }, { v: 1000, label: "1k" }, { v: 2000, label: "2k" }, { v: 50000, label: "전체" }].map(o => (
               <button key={o.v} onClick={() => setFlowLimit(o.v)}
-                className={`text-[11px] font-semibold h-6 px-2 rounded transition whitespace-nowrap cursor-pointer ${flowLimit === o.v ? "bg-teal-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
+                className={`text-[15px] font-semibold h-6 px-2 rounded transition whitespace-nowrap cursor-pointer ${flowLimit === o.v ? "bg-teal-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
                 {o.label}
               </button>
             ))}
@@ -515,7 +515,7 @@ export const FlowTab: React.FC = () => {
             onChange={(e) => setInfoSearchQuery(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") runInfoSearch(); }}
             placeholder="전체 DB 검색 (정보확인)"
-            className="w-48 h-7 pl-7 pr-2 text-[11px] border border-zinc-200 rounded-md outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep bg-white transition"
+            className="w-48 h-7 pl-7 pr-2 text-[15px] border border-zinc-200 rounded-md outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep bg-white transition"
           />
           {infoSearchResults.length > 0 && (
             <div className="absolute left-0 top-full mt-1 max-h-64 overflow-y-auto border border-zinc-200 bg-white rounded-lg shadow-lg z-30 divide-y divide-zinc-100 min-w-full sm:min-w-[500px]">
@@ -524,10 +524,10 @@ export const FlowTab: React.FC = () => {
                   onClick={() => { setInfoSelected(p); setInfoSearchQuery(p.product_name); setInfoSearchResults([]); }}
                   className="w-full text-left px-2.5 py-1 hover:bg-sky-50 transition flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="text-[13px] font-semibold text-zinc-800 whitespace-nowrap">{p.product_name}</div>
-                    <div className="text-[11px] tabular-nums text-zinc-400 whitespace-nowrap">#{p.product_code} · {p.supplier ?? "-"}</div>
+                    <div className="text-[15px] font-semibold text-zinc-800 whitespace-nowrap">{p.product_name}</div>
+                    <div className="text-[15px] tabular-nums text-zinc-400 whitespace-nowrap">#{p.product_code} · {p.supplier ?? "-"}</div>
                   </div>
-                  <span className="text-[11px] text-zinc-400 shrink-0">재고 {p.current_stock ?? "-"}</span>
+                  <span className="text-[15px] text-zinc-400 shrink-0">재고 {p.current_stock ?? "-"}</span>
                 </button>
               ))}
             </div>
@@ -541,29 +541,29 @@ export const FlowTab: React.FC = () => {
             if (target) { loadFlowSelectedProduct(target); setInfoSearchResults([]); }
           }}
           disabled={!infoSelected && !infoSearchQuery.trim() && infoSearchResults.length === 0}
-          className="flex items-center gap-1.5 text-[11px] font-semibold text-white bg-zinc-700 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed rounded-md px-3 h-7 cursor-pointer transition shrink-0"
+          className="flex items-center gap-1.5 text-[15px] font-semibold text-white bg-zinc-700 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed rounded-md px-3 h-7 cursor-pointer transition shrink-0"
           title="검색 후 클릭 → 오른쪽 상세 패널에 상품 정보 표시">
           <Info size={12} /> 정보확인
         </button>
 
         {/* 판매출고계 범위 필터 */}
         <div className="flex items-center gap-1.5">
-          <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">판매출고계</span>
+          <span className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider shrink-0">판매출고계</span>
           <input type="number" min={0} value={salesQtyMin} onChange={e => setSalesQtyMin(e.target.value)} placeholder="최소"
-            className="w-14 h-7 px-2 text-[11px] border border-zinc-200 rounded-md outline-none focus:ring-1 focus:ring-brand-tint tabular-nums text-right transition" />
-          <span className="text-zinc-400 text-[11px]">~</span>
+            className="w-14 h-7 px-2 text-[15px] border border-zinc-200 rounded-md outline-none focus:ring-1 focus:ring-brand-tint tabular-nums text-right transition" />
+          <span className="text-zinc-400 text-[15px]">~</span>
           <input type="number" min={0} value={salesQtyMax} onChange={e => setSalesQtyMax(e.target.value)} placeholder="최대"
-            className="w-14 h-7 px-2 text-[11px] border border-zinc-200 rounded-md outline-none focus:ring-1 focus:ring-brand-tint tabular-nums text-right transition" />
-          <span className="text-zinc-400 text-[11px]">개</span>
+            className="w-14 h-7 px-2 text-[15px] border border-zinc-200 rounded-md outline-none focus:ring-1 focus:ring-brand-tint tabular-nums text-right transition" />
+          <span className="text-zinc-400 text-[15px]">개</span>
           {(salesQtyMin || salesQtyMax) && (
             <button onClick={() => { setSalesQtyMin(""); setSalesQtyMax(""); }}
-              className="text-[10px] font-semibold text-rose-500 hover:text-rose-700 px-1.5 py-1 rounded-md hover:bg-rose-50 transition cursor-pointer border border-rose-200">초기화</button>
+              className="text-[14px] font-semibold text-rose-500 hover:text-rose-700 px-1.5 py-1 rounded-md hover:bg-rose-50 transition cursor-pointer border border-rose-200">초기화</button>
           )}
         </div>
 
         {/* 숨김관리 */}
         <button onClick={() => openHiddenManagerModal()}
-          className="flex items-center gap-1 text-[11px] font-semibold text-zinc-500 bg-white border border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300 rounded-md px-2.5 h-7 cursor-pointer transition shrink-0"
+          className="flex items-center gap-1 text-[15px] font-semibold text-zinc-500 bg-white border border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300 rounded-md px-2.5 h-7 cursor-pointer transition shrink-0"
           title="숨김 처리된 상품을 확인/해제">
           <EyeOff size={12} /> 숨김관리
         </button>
@@ -572,7 +572,7 @@ export const FlowTab: React.FC = () => {
         <div className="flex flex-wrap bg-zinc-50 border border-zinc-200 rounded-md p-0.5 gap-0.5">
           {(["전체", "위탁", "선결제", "60회전", "90회전", "기타"] as const).map(cat => (
             <button key={cat} onClick={() => setFlowCategoryFilter(cat)}
-              className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${
+              className={`h-7 px-2.5 text-[15px] font-semibold rounded transition cursor-pointer ${
                 flowCategoryFilter === cat
                   ? cat === "전체"   ? "bg-zinc-700 text-white shadow-sm"
                   : cat === "위탁"   ? "bg-violet-500 text-white shadow-sm"
@@ -606,28 +606,28 @@ export const FlowTab: React.FC = () => {
               {/* 소제목 */}
               <div className="flex items-center gap-2 mb-2 shrink-0">
                 <span className="inline-block w-1 h-3.5 rounded-full bg-sky-400 shrink-0" />
-                <span className="text-[11px] font-semibold text-zinc-500">재고 · 매입 · 판매 현황</span>
-                <span className="text-[11px] text-zinc-400 font-normal tabular-nums">{filteredFlow.length}건</span>
+                <span className="text-[15px] font-semibold text-zinc-500">재고 · 매입 · 판매 현황</span>
+                <span className="text-[15px] text-zinc-400 font-normal tabular-nums">{filteredFlow.length}건</span>
                 {selectedFlowCodes.size > 0 && (
-                  <span className="text-[11px] text-rose-600 font-semibold tabular-nums ml-1">· {selectedFlowCodes.size}개 선택됨</span>
+                  <span className="text-[15px] text-rose-600 font-semibold tabular-nums ml-1">· {selectedFlowCodes.size}개 선택됨</span>
                 )}
               </div>
 
               {/* 상비약/일반약/전체 3-way 필터 */}
               <div className="flex items-center gap-1 border-b-2 border-zinc-200 bg-white px-1 pt-1 shrink-0">
                 <button type="button" onClick={() => setClassFilter("stationery")}
-                  className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-zinc-400 hover:text-zinc-600"}`}>
-                  상비약 <span className="text-[11px] font-semibold text-zinc-400 ml-1 tabular-nums">({essentialCount})</span>
+                  className={`relative px-4 py-2 text-[15px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-zinc-400 hover:text-zinc-600"}`}>
+                  상비약 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({essentialCount})</span>
                   {classFilter === "stationery" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-violet-500" />}
                 </button>
                 <button type="button" onClick={() => setClassFilter("general")}
-                  className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "general" ? "text-sky-700" : "text-zinc-400 hover:text-zinc-600"}`}>
-                  일반약 <span className="text-[11px] font-semibold text-zinc-400 ml-1 tabular-nums">({generalCount})</span>
+                  className={`relative px-4 py-2 text-[15px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "general" ? "text-sky-700" : "text-zinc-400 hover:text-zinc-600"}`}>
+                  일반약 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({generalCount})</span>
                   {classFilter === "general" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-sky-500" />}
                 </button>
                 <button type="button" onClick={() => setClassFilter("all")}
-                  className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "all" ? "text-zinc-800" : "text-zinc-400 hover:text-zinc-600"}`}>
-                  전체 <span className="text-[11px] font-semibold text-zinc-400 ml-1 tabular-nums">({allCount})</span>
+                  className={`relative px-4 py-2 text-[15px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "all" ? "text-zinc-800" : "text-zinc-400 hover:text-zinc-600"}`}>
+                  전체 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({allCount})</span>
                   {classFilter === "all" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-zinc-500" />}
                 </button>
               </div>
@@ -636,7 +636,7 @@ export const FlowTab: React.FC = () => {
                 {loading && filteredFlow.length > 0 && (
                   <div className="flex items-center justify-center gap-1.5 py-1.5 mx-1 mb-1 bg-sky-50 border border-sky-200 rounded-md shrink-0">
                     <LoaderIcon size={11} className="animate-spin text-sky-600" />
-                    <span className="text-[10px] font-bold text-sky-700">조건 변경 · 새로 불러오는 중...</span>
+                    <span className="text-[14px] font-bold text-sky-700">조건 변경 · 새로 불러오는 중...</span>
                   </div>
                 )}
 
@@ -653,12 +653,12 @@ export const FlowTab: React.FC = () => {
                   )
                 ) : (
                   <div className={`transition-opacity duration-200 ${loading ? "opacity-60" : "opacity-100"}`}>
-                    <table className="w-full text-[13px] sm:text-sm" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
+                    <table className="w-full text-[15px] sm:text-sm" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
                       <thead className="sticky top-0 bg-white z-20 shadow-sm">
                         {selectedFlowCodes.size > 0 && (
                           <tr className="bg-rose-50 border-b border-rose-200">
                             <td colSpan={10} className="px-2 py-1.5">
-                              <div className="flex items-center gap-2 text-[13px]">
+                              <div className="flex items-center gap-2 text-[15px]">
                                 <span className="font-black text-rose-700">{selectedFlowCodes.size}개 선택됨</span>
                                 <button onClick={bulkHideFlow} disabled={flowBulkHiding}
                                   className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-black shadow-sm disabled:opacity-50">
@@ -674,7 +674,7 @@ export const FlowTab: React.FC = () => {
                           </tr>
                         )}
                         {/* 그룹 헤더 */}
-                        <tr className="border-b border-zinc-200 text-[12px] font-black tracking-wider">
+                        <tr className="border-b border-zinc-200 text-[14px] font-black tracking-wider">
                           <th colSpan={2} className="bg-zinc-50" />
                           {(() => {
                             const GROUP_COLOR: Record<FlowGroup, { bg: string; text: string; hover: string }> = {
@@ -690,7 +690,7 @@ export const FlowTab: React.FC = () => {
                                   className={`text-center py-2 border-l border-r border-zinc-100 cursor-pointer select-none transition uppercase ${c.bg} ${c.text} ${c.hover}`}
                                   onClick={() => toggleFlowGroup(g)}
                                   title={collapsed ? `${label} 펼치기` : `${label} 접기`}>
-                                  <span className="inline-flex items-center gap-1 font-black text-[11px] whitespace-nowrap">
+                                  <span className="inline-flex items-center gap-1 font-black text-[15px] whitespace-nowrap">
                                     {collapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
                                     {label}
                                   </span>
@@ -701,7 +701,7 @@ export const FlowTab: React.FC = () => {
                           })()}
                         </tr>
                         {/* 서브헤더 */}
-                        <tr className="border-b border-zinc-100 text-[11px] font-bold text-zinc-500 uppercase tracking-wider bg-white">
+                        <tr className="border-b border-zinc-100 text-[15px] font-bold text-zinc-500 uppercase tracking-wider bg-white">
                           {(() => {
                             const arrowFor = (key: SortKey) => flowSort !== key ? "⇅" : flowDir === "desc" ? "▼" : "▲";
                             return (
@@ -725,7 +725,7 @@ export const FlowTab: React.FC = () => {
                                   style={{ width: getWidth("name"), minWidth: getWidth("name") }}>
                                   <span className="flex flex-col leading-tight items-start">
                                     <span>상품명</span>
-                                    <span className="text-[10px] opacity-70">{arrowFor("name")}</span>
+                                    <span className="text-[14px] opacity-70">{arrowFor("name")}</span>
                                   </span>
                                   <span {...resizerProps("name")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                 </th>
@@ -735,24 +735,24 @@ export const FlowTab: React.FC = () => {
                                   <th onClick={() => toggleFlowSort("sale")}
                                     className={`relative text-right px-0.5 py-1.5 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition ${flowSort === "sale" ? "text-sky-800 font-black" : "text-sky-600 font-black"}`}
                                     style={{ width: getWidth("stock_sale"), minWidth: getWidth("stock_sale") }}>
-                                    <span className="flex flex-col leading-tight items-end"><span>판매량</span><span className="text-[10px] opacity-70">{arrowFor("sale")}</span></span>
+                                    <span className="flex flex-col leading-tight items-end"><span>판매량</span><span className="text-[14px] opacity-70">{arrowFor("sale")}</span></span>
                                     <span {...resizerProps("stock_sale")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
                                   <th onClick={() => toggleFlowSort("current")}
                                     className={`relative text-right px-0.5 py-1.5 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition ${flowSort === "current" ? "text-sky-800 font-black" : "text-sky-600 font-black"}`}
                                     style={{ width: getWidth("stock_cur"), minWidth: getWidth("stock_cur") }}>
-                                    <span className="flex flex-col leading-tight items-end"><span>현재고</span><span className="text-[10px] opacity-70">{arrowFor("current")}</span></span>
+                                    <span className="flex flex-col leading-tight items-end"><span>현재고</span><span className="text-[14px] opacity-70">{arrowFor("current")}</span></span>
                                     <span {...resizerProps("stock_cur")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
                                   <th onClick={() => toggleFlowSort("optimal" as any)}
                                     className={`relative text-right px-0.5 py-1.5 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition text-sky-600 font-black`}
                                     style={{ width: getWidth("stock_opt"), minWidth: getWidth("stock_opt") }}>
-                                    <span className="flex flex-col leading-tight items-end"><span>추천적정재고</span><span className="text-[10px] opacity-70">{arrowFor("optimal" as any)}</span></span>
+                                    <span className="flex flex-col leading-tight items-end"><span>추천적정재고</span><span className="text-[14px] opacity-70">{arrowFor("optimal" as any)}</span></span>
                                     <span {...resizerProps("stock_opt")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
                                   <th className="relative text-right px-0.5 py-1.5 bg-sky-50/40 text-sky-600 font-black"
                                     style={{ width: getWidth("stock_month"), minWidth: getWidth("stock_month") }}>
-                                    <span className="flex flex-col leading-tight items-end"><span>최근30일</span><span className="text-[10px] opacity-70">판매</span></span>
+                                    <span className="flex flex-col leading-tight items-end"><span>최근30일</span><span className="text-[14px] opacity-70">판매</span></span>
                                     <span {...resizerProps("stock_month")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
                                   </th>
                                 </>}
@@ -760,32 +760,32 @@ export const FlowTab: React.FC = () => {
                                 {isFlowGroupCollapsed("purchase") && <th className="bg-amber-50/20" />}
                                 {!isFlowGroupCollapsed("purchase") && <>
                                   <th onClick={() => toggleFlowSort("cycle")}
-                                    className={`relative text-right px-0.5 py-1.5 text-[11px] font-black cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "cycle" ? "text-amber-800" : "text-amber-600"}`}
+                                    className={`relative text-right px-0.5 py-1.5 text-[15px] font-black cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "cycle" ? "text-amber-800" : "text-amber-600"}`}
                                     style={{ width: getWidth("pur_cycle"), minWidth: getWidth("pur_cycle") }}>
                                     <span className="flex flex-col leading-tight items-end">
-                                      <span className="text-[12px] font-semibold text-amber-500">평균</span>
+                                      <span className="text-[14px] font-semibold text-amber-500">평균</span>
                                       <span>매입주기</span>
-                                      <span className="text-[10px] opacity-70">{arrowFor("cycle")}</span>
+                                      <span className="text-[14px] opacity-70">{arrowFor("cycle")}</span>
                                     </span>
                                     <span {...resizerProps("pur_cycle")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
                                   <th onClick={() => toggleFlowSort("last_purchase")}
-                                    className={`relative text-right px-0.5 py-1.5 text-[11px] font-black cursor-pointer select-none bg-amber-50/40 hover:bg-amber-100 transition ${flowSort === "last_purchase" ? "text-amber-800" : "text-amber-600"}`}
+                                    className={`relative text-right px-0.5 py-1.5 text-[15px] font-black cursor-pointer select-none bg-amber-50/40 hover:bg-amber-100 transition ${flowSort === "last_purchase" ? "text-amber-800" : "text-amber-600"}`}
                                     style={{ width: getWidth("pur_last"), minWidth: getWidth("pur_last") }}>
                                     <span className="flex flex-col leading-tight items-end">
-                                      <span className="text-[12px] font-semibold text-amber-500">최근</span>
+                                      <span className="text-[14px] font-semibold text-amber-500">최근</span>
                                       <span>매입일</span>
-                                      <span className="text-[10px] opacity-70">{arrowFor("last_purchase")}</span>
+                                      <span className="text-[14px] opacity-70">{arrowFor("last_purchase")}</span>
                                     </span>
                                     <span {...resizerProps("pur_last")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
                                   <th onClick={() => toggleFlowSort("purchase")}
-                                    className={`relative text-right px-0.5 py-1.5 text-[11px] font-black cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "purchase" ? "text-amber-800" : "text-amber-600"}`}
+                                    className={`relative text-right px-0.5 py-1.5 text-[15px] font-black cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "purchase" ? "text-amber-800" : "text-amber-600"}`}
                                     style={{ width: getWidth("pur_qty"), minWidth: getWidth("pur_qty") }}>
                                     <span className="flex flex-col leading-tight items-end">
-                                      <span className="text-[12px] font-semibold text-amber-500">최근</span>
+                                      <span className="text-[14px] font-semibold text-amber-500">최근</span>
                                       <span>매입량</span>
-                                      <span className="text-[10px] opacity-70">{arrowFor("purchase")}</span>
+                                      <span className="text-[14px] opacity-70">{arrowFor("purchase")}</span>
                                     </span>
                                     <span {...resizerProps("pur_qty")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
@@ -794,37 +794,37 @@ export const FlowTab: React.FC = () => {
                                 {isFlowGroupCollapsed("sales") && <th className="bg-rose-50/20" />}
                                 {!isFlowGroupCollapsed("sales") && <>
                                   <th onClick={() => toggleFlowSort("sale")}
-                                    className={`relative text-right px-0.5 py-1.5 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale" ? "text-rose-800" : "text-rose-700"}`}
+                                    className={`relative text-right px-0.5 py-1.5 text-[15px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale" ? "text-rose-800" : "text-rose-700"}`}
                                     style={{ width: getWidth("sal_qty"), minWidth: getWidth("sal_qty") }}>
-                                    <span className="flex flex-col leading-tight items-end"><span>판매량</span><span className="text-[10px] opacity-70">{arrowFor("sale")}</span></span>
+                                    <span className="flex flex-col leading-tight items-end"><span>판매량</span><span className="text-[14px] opacity-70">{arrowFor("sale")}</span></span>
                                     <span {...resizerProps("sal_qty")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
                                   <th onClick={() => toggleFlowSort("amount")}
-                                    className={`relative text-right px-0.5 py-1.5 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "amount" ? "text-rose-800" : "text-rose-700"}`}
+                                    className={`relative text-right px-0.5 py-1.5 text-[15px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "amount" ? "text-rose-800" : "text-rose-700"}`}
                                     style={{ width: getWidth("sal_amount"), minWidth: getWidth("sal_amount") }}>
-                                    <span className="flex flex-col leading-tight items-end"><span>판매금액</span><span className="text-[10px] opacity-70">{arrowFor("amount")}</span></span>
+                                    <span className="flex flex-col leading-tight items-end"><span>판매금액</span><span className="text-[14px] opacity-70">{arrowFor("amount")}</span></span>
                                     <span {...resizerProps("sal_amount")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
                                   <th onClick={() => toggleFlowSort("last_purchase_price")}
-                                    className={`relative text-right px-0.5 py-1.5 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "last_purchase_price" ? "text-rose-800" : "text-rose-600"}`}
+                                    className={`relative text-right px-0.5 py-1.5 text-[15px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "last_purchase_price" ? "text-rose-800" : "text-rose-600"}`}
                                     style={{ width: getWidth("sal_unit"), minWidth: getWidth("sal_unit") }}>
                                     <span className="flex flex-col leading-tight items-end">
                                       <span className="font-semibold text-rose-500">ERP</span>
                                       <span>단가</span>
-                                      <span className="text-[10px] opacity-70">{arrowFor("last_purchase_price")}</span>
+                                      <span className="text-[14px] opacity-70">{arrowFor("last_purchase_price")}</span>
                                     </span>
                                     <span {...resizerProps("sal_unit")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
                                   <th onClick={() => toggleFlowSort("sale_price")}
-                                    className={`relative text-right px-0.5 py-1.5 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale_price" ? "text-rose-800" : "text-rose-600"}`}
+                                    className={`relative text-right px-0.5 py-1.5 text-[15px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale_price" ? "text-rose-800" : "text-rose-600"}`}
                                     style={{ width: getWidth("sal_price"), minWidth: getWidth("sal_price") }}>
-                                    <span className="flex flex-col leading-tight items-end"><span>판매가</span><span className="text-[10px] opacity-70">{arrowFor("sale_price")}</span></span>
+                                    <span className="flex flex-col leading-tight items-end"><span>판매가</span><span className="text-[14px] opacity-70">{arrowFor("sale_price")}</span></span>
                                     <span {...resizerProps("sal_price")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
                                   <th onClick={() => toggleFlowSort("profit_rate")}
-                                    className={`relative text-right px-0.5 py-1.5 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "profit_rate" ? "text-rose-800" : "text-rose-600"}`}
+                                    className={`relative text-right px-0.5 py-1.5 text-[15px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "profit_rate" ? "text-rose-800" : "text-rose-600"}`}
                                     style={{ width: getWidth("sal_profit"), minWidth: getWidth("sal_profit") }}>
-                                    <span className="flex flex-col leading-tight items-end"><span>이익률</span><span className="text-[10px] opacity-70">{arrowFor("profit_rate")}</span></span>
+                                    <span className="flex flex-col leading-tight items-end"><span>이익률</span><span className="text-[14px] opacity-70">{arrowFor("profit_rate")}</span></span>
                                     <span {...resizerProps("sal_profit")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                                   </th>
                                 </>}
@@ -835,7 +835,7 @@ export const FlowTab: React.FC = () => {
                       </thead>
                       <tbody className="divide-y divide-zinc-50">
                         {/* 합계 요약 행 · 필터/정렬된 visible rows 기준 */}
-                        <tr className="bg-zinc-100 border-b-2 border-zinc-300 font-black text-zinc-800 text-[12px]">
+                        <tr className="bg-zinc-100 border-b-2 border-zinc-300 font-black text-zinc-800 text-[14px]">
                           <td className="text-center px-1 py-1.5 align-middle" style={{ width: 48, minWidth: 48, maxWidth: 48 }}>Σ</td>
                           <td className="px-2 py-1.5 align-middle text-zinc-800 font-black">합계 <span className="text-zinc-500 font-bold">({filteredFlow.length}건)</span></td>
                           {!isFlowGroupCollapsed("stock") && <>
@@ -897,15 +897,15 @@ export const FlowTab: React.FC = () => {
                                       ? <CheckSquare size={13} className="text-zinc-500" />
                                       : <Square size={13} className="text-zinc-300 hover:text-zinc-500" />}
                                   </span>
-                                  <span className="text-[12px] font-semibold text-zinc-400 tabular-nums">{i + 1}</span>
+                                  <span className="text-[14px] font-semibold text-zinc-400 tabular-nums">{i + 1}</span>
                                 </div>
                               </td>
                               <td className="px-2 py-2.5 align-top">
                                 <button type="button" onClick={() => loadFlowSelectedProduct(p)}
-                                  className="text-left text-[13px] font-black text-zinc-700 hover:text-zinc-900 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition">
+                                  className="text-left text-[15px] font-black text-zinc-700 hover:text-zinc-900 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition">
                                   {p.product_name}
                                   {(p as any).min_order != null && (p as any).min_order > 0 && (
-                                    <span className="inline-flex items-center ml-1 px-1.5 py-0.5 rounded-sm text-[10px] font-black text-zinc-500 bg-zinc-100 border border-zinc-200 align-middle">
+                                    <span className="inline-flex items-center ml-1 px-1.5 py-0.5 rounded-sm text-[14px] font-black text-zinc-500 bg-zinc-100 border border-zinc-200 align-middle">
                                       최소{(p as any).min_order}
                                     </span>
                                   )}
@@ -913,7 +913,7 @@ export const FlowTab: React.FC = () => {
                                 {p.supplier && (
                                   <div className="flex items-center gap-1 flex-wrap mt-0.5">
                                     <VendorCategoryBadge category={vendorCategoryMap[p.supplier] ?? null} />
-                                    <span className="text-[11px] font-medium text-zinc-400 break-words whitespace-normal">{p.supplier}</span>
+                                    <span className="text-[15px] font-medium text-zinc-400 break-words whitespace-normal">{p.supplier}</span>
                                   </div>
                                 )}
                               </td>
@@ -926,7 +926,7 @@ export const FlowTab: React.FC = () => {
                                   const mismatch = close !== cur;
                                   const belowOptimal = opt > 0 && cur < opt;
                                   return (
-                                    <td className={`text-right px-1.5 py-2.5 font-black text-[12px] align-top tabular-nums ${cur <= 0 || mismatch || belowOptimal ? "text-rose-500" : "text-zinc-700"}`}
+                                    <td className={`text-right px-1.5 py-2.5 font-black text-[14px] align-top tabular-nums ${cur <= 0 || mismatch || belowOptimal ? "text-rose-500" : "text-zinc-700"}`}
                                       title={belowOptimal ? `현재고 부족 · ${cur} < 추천적정재고 ${opt}` : mismatch ? `현재고(${fmt(cur)}) ≠ 스냅샷 종료재고(${fmt(close)})` : "ERP 현재고"}>
                                       {fmt(cur)}
                                     </td>
@@ -936,38 +936,38 @@ export const FlowTab: React.FC = () => {
                                   const opt = Number((p as any).optimal_stock ?? 0);
                                   const below = opt > 0 && cur < opt;
                                   return (
-                                    <td className={`text-right px-1.5 py-2.5 font-black text-[12px] align-top tabular-nums ${opt <= 0 ? "text-zinc-300" : below ? "text-rose-400" : "text-zinc-500"}`}>
+                                    <td className={`text-right px-1.5 py-2.5 font-black text-[14px] align-top tabular-nums ${opt <= 0 ? "text-zinc-300" : below ? "text-rose-400" : "text-zinc-500"}`}>
                                       {opt > 0 ? fmt(opt) : "-"}
                                     </td>
                                   );
                                 })()}
-                                <td className="text-right px-1.5 py-2.5 font-black text-[12px] align-top tabular-nums text-sky-600 bg-sky-50/20">
+                                <td className="text-right px-1.5 py-2.5 font-black text-[14px] align-top tabular-nums text-sky-600 bg-sky-50/20">
                                   {fmt(Number((p as any).sale_qty_month ?? 0))}
                                 </td>
                               </>}
                               {isFlowGroupCollapsed("stock") && <td className="bg-zinc-50/20" />}
                               {/* 매입현황 그룹 */}
                               {!isFlowGroupCollapsed("purchase") && <>
-                                <td className={`text-right px-1.5 py-2.5 font-black text-[12px] align-top tabular-nums ${purchaseCycle != null ? "text-zinc-600" : purchaseCount === 1 ? "text-zinc-400" : "text-zinc-300"}`}
+                                <td className={`text-right px-1.5 py-2.5 font-black text-[14px] align-top tabular-nums ${purchaseCycle != null ? "text-zinc-600" : purchaseCount === 1 ? "text-zinc-400" : "text-zinc-300"}`}
                                   title={purchaseCycle != null ? `${purchaseCount}회 매입 · 평균 ${purchaseCycle}일 주기` : purchaseCount === 1 && lastPD ? `1회만 매입됨 (${lastPD})` : "매입 이력 없음"}>
                                   {purchaseCycle != null ? `${purchaseCycle}일` : purchaseCount === 1 ? "1회" : purchaseCount >= 2 && firstPD === lastPD ? "동일일" : "-"}
                                 </td>
-                                <td className="text-right px-1.5 py-2.5 text-zinc-500 font-black text-[12px] align-top tabular-nums">{lastPDShort}</td>
-                                <td className="text-right px-1.5 py-2.5 text-zinc-600 font-black text-[12px] align-top tabular-nums">{purchV > 0 ? fmt(purchV) : "-"}</td>
+                                <td className="text-right px-1.5 py-2.5 text-zinc-500 font-black text-[14px] align-top tabular-nums">{lastPDShort}</td>
+                                <td className="text-right px-1.5 py-2.5 text-zinc-600 font-black text-[14px] align-top tabular-nums">{purchV > 0 ? fmt(purchV) : "-"}</td>
                               </>}
                               {isFlowGroupCollapsed("purchase") && <td className="bg-zinc-50/20" />}
                               {/* 판매현황 그룹 */}
                               {!isFlowGroupCollapsed("sales") && <>
-                                <td className="text-right px-1.5 py-2.5 text-rose-700 font-black text-[12px] align-top tabular-nums">{saleV > 0 ? fmt(saleV) : "-"}</td>
+                                <td className="text-right px-1.5 py-2.5 text-rose-700 font-black text-[14px] align-top tabular-nums">{saleV > 0 ? fmt(saleV) : "-"}</td>
                                 {(() => {
                                   const saleAmount = Number((p as any).total_amount ?? 0);
                                   return (
-                                    <td className="text-right px-1.5 py-2.5 text-rose-600 font-black text-[12px] align-top tabular-nums">{fmtMan(saleAmount)}</td>
+                                    <td className="text-right px-1.5 py-2.5 text-rose-600 font-black text-[14px] align-top tabular-nums">{fmtMan(saleAmount)}</td>
                                   );
                                 })()}
-                                <td className="text-right px-1.5 py-2.5 text-zinc-500 font-black text-[12px] align-top tabular-nums">{purP > 0 ? fmtWon(purP) : "-"}</td>
-                                <td className="text-right px-1.5 py-2.5 text-zinc-600 font-black text-[12px] align-top tabular-nums">{saleP > 0 ? fmtWon(saleP) : "-"}</td>
-                                <td className={`text-right px-1.5 py-2.5 font-black text-[12px] align-top tabular-nums ${profitRate == null ? "text-zinc-300" : profitRate >= 30 ? "text-zinc-700" : profitRate >= 15 ? "text-zinc-600" : profitRate >= 0 ? "text-zinc-500" : "text-rose-500"}`}>
+                                <td className="text-right px-1.5 py-2.5 text-zinc-500 font-black text-[14px] align-top tabular-nums">{purP > 0 ? fmtWon(purP) : "-"}</td>
+                                <td className="text-right px-1.5 py-2.5 text-zinc-600 font-black text-[14px] align-top tabular-nums">{saleP > 0 ? fmtWon(saleP) : "-"}</td>
+                                <td className={`text-right px-1.5 py-2.5 font-black text-[14px] align-top tabular-nums ${profitRate == null ? "text-zinc-300" : profitRate >= 30 ? "text-zinc-700" : profitRate >= 15 ? "text-zinc-600" : profitRate >= 0 ? "text-zinc-500" : "text-rose-500"}`}>
                                   {profitRate != null ? `${profitRate}%` : "-"}
                                 </td>
                               </>}
@@ -988,7 +988,7 @@ export const FlowTab: React.FC = () => {
         <div onMouseDown={onFlowResizeStart}
           className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-teal-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
           title="드래그하여 폭 조절">
-          <span className="text-[9px] text-zinc-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+          <span className="text-[15px] text-zinc-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
         </div>
 
         {/* 우측: 제품 정보 패널 */}
@@ -1030,16 +1030,16 @@ export const FlowTab: React.FC = () => {
                 </div>
                 <div>
                   <div className="text-base font-black text-zinc-800">숨김 항목 관리</div>
-                  <div className="text-[11px] font-semibold text-zinc-500 mt-0.5">숨김 처리된 상품 · 검색·발주 리스트에서 노출되지 않음</div>
+                  <div className="text-[15px] font-semibold text-zinc-500 mt-0.5">숨김 처리된 상품 · 검색·발주 리스트에서 노출되지 않음</div>
                 </div>
               </div>
               <button onClick={() => setHiddenModalOpen(false)}
                 className="text-zinc-400 hover:text-zinc-700 text-3xl leading-none font-black w-9 h-9 rounded-lg hover:bg-white/70 transition cursor-pointer flex items-center justify-center shrink-0">×</button>
             </div>
             <div className="flex items-center justify-between px-5 py-2.5 border-b border-zinc-100 bg-white">
-              <span className="text-[11px] font-bold text-zinc-500">총 <span className="text-amber-700 font-black">{hiddenList.length}</span>개 숨김</span>
+              <span className="text-[15px] font-bold text-zinc-500">총 <span className="text-amber-700 font-black">{hiddenList.length}</span>개 숨김</span>
               <button onClick={loadHiddenList} disabled={hiddenLoading}
-                className="text-[10px] font-bold text-zinc-500 hover:text-zinc-800 border border-zinc-200 hover:border-zinc-400 rounded-lg px-2 py-1 cursor-pointer transition">
+                className="text-[14px] font-bold text-zinc-500 hover:text-zinc-800 border border-zinc-200 hover:border-zinc-400 rounded-lg px-2 py-1 cursor-pointer transition">
                 {hiddenLoading ? "..." : "새로고침"}
               </button>
             </div>
@@ -1053,7 +1053,7 @@ export const FlowTab: React.FC = () => {
                 <div className="flex flex-col items-center justify-center py-16 text-zinc-400 gap-2">
                   <EyeOff size={28} className="opacity-40" />
                   <div className="text-sm font-bold">숨김 처리된 상품이 없습니다</div>
-                  <div className="text-[11px]">정보확인 창에서 "숨기기"로 항목 추가 가능</div>
+                  <div className="text-[15px]">정보확인 창에서 "숨기기"로 항목 추가 가능</div>
                 </div>
               ) : (
                 <ul className="divide-y divide-zinc-100 bg-white">
@@ -1064,12 +1064,12 @@ export const FlowTab: React.FC = () => {
                       <li key={`hidden-${code}`} className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-amber-50/30 transition">
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-black text-zinc-800 break-words leading-tight">{p.product_name}</div>
-                          <div className="text-[10px] tabular-nums text-zinc-400 break-words whitespace-normal leading-tight">
+                          <div className="text-[14px] tabular-nums text-zinc-400 break-words whitespace-normal leading-tight">
                             #{code}{p.supplier ? ` · ${p.supplier}` : ""}{p.real_map ? ` · ${p.real_map}` : ""}{p.current_stock != null ? ` · 재고 ${p.current_stock}` : ""}
                           </div>
                         </div>
                         <button onClick={() => unhideProduct(code)} disabled={busy}
-                          className="shrink-0 flex items-center gap-1 text-[10px] font-black text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-wait rounded-lg px-2.5 py-1.5 cursor-pointer transition">
+                          className="shrink-0 flex items-center gap-1 text-[14px] font-black text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-wait rounded-lg px-2.5 py-1.5 cursor-pointer transition">
                           {busy ? <LoaderIcon size={11} className="animate-spin" /> : <EyeOff size={11} />}
                           다시 표시
                         </button>

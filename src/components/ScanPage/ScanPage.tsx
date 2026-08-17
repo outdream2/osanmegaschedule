@@ -564,13 +564,13 @@ export const ScanPage: React.FC<ScanPageProps> = ({
           </div>
           <div>
             <h1 className="text-[15px] sm:text-[17px] font-black text-zinc-900 leading-none">실재고 입력</h1>
-            <p className="text-[11px] sm:text-xs text-zinc-400 mt-0.5 leading-none">
+            <p className="text-[15px] sm:text-xs text-zinc-400 mt-0.5 leading-none">
               바코드 스캔 후 창고1·2 · 매장1·2·3 수량 입력 · 전체 저장
             </p>
           </div>
           {rows.length > 0 && (
             <div className="ml-auto flex items-center gap-2">
-              <span className="text-[11px] sm:text-xs font-bold text-zinc-400">{rows.length}건</span>
+              <span className="text-[15px] sm:text-xs font-bold text-zinc-400">{rows.length}건</span>
             </div>
           )}
         </div>
@@ -584,12 +584,12 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             <div className="w-6 h-6 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
               <RotateCcw size={13} className="text-amber-600" />
             </div>
-            <p className="flex-1 text-[12px] font-semibold text-amber-800 leading-snug">
+            <p className="flex-1 text-[14px] font-semibold text-amber-800 leading-snug">
               이전 세션의 임시저장 데이터가 있습니다. 복구하시겠습니까?
             </p>
             <button
               onClick={restoreDraft}
-              className="px-3 py-1.5 rounded-lg text-[12px] font-black text-white
+              className="px-3 py-1.5 rounded-lg text-[14px] font-black text-white
                 bg-amber-500 hover:bg-amber-600 active:bg-amber-700
                 transition-colors cursor-pointer shrink-0"
             >
@@ -634,7 +634,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               <ScanLine size={18} className="text-teal-600 shrink-0" />
               <div className="min-w-0">
                 <p className="text-[14px] font-black text-zinc-800 leading-tight">바코드 스캔</p>
-                <p className="text-[11px] text-zinc-400 leading-tight">스캔 시 우측 리스트에 자동 등록</p>
+                <p className="text-[15px] text-zinc-400 leading-tight">스캔 시 우측 리스트에 자동 등록</p>
               </div>
             </div>
 
@@ -659,7 +659,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               />
 
               {/* 2026-08-10 · G · A4 · 자동 +1 opt-in 토글 */}
-              <label className="flex items-center gap-2 text-[11px] text-zinc-600 font-semibold cursor-pointer select-none">
+              <label className="flex items-center gap-2 text-[15px] text-zinc-600 font-semibold cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={autoIncOn}
@@ -675,7 +675,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                   <AlertCircle size={15} className="text-amber-500 shrink-0 mt-0.5" />
                   <div className="min-w-0">
                     <p className="text-xs font-black text-amber-800 leading-none">미등록 상품 코드</p>
-                    <p className="text-[11px] font-mono tabular-nums text-amber-700 break-all mt-1.5
+                    <p className="text-[15px] font-mono tabular-nums text-amber-700 break-all mt-1.5
                       bg-amber-100/60 px-2 py-1 rounded-md">
                       {notFoundCode}
                     </p>
@@ -693,9 +693,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                     <div className="w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center shrink-0">
                       <CheckCircle2 size={11} className="text-white" />
                     </div>
-                    <span className="text-[10px] font-black text-teal-700 uppercase tracking-wider">최근 스캔</span>
+                    <span className="text-[14px] font-black text-teal-700 uppercase tracking-wider">최근 스캔</span>
                     {lastCode && (
-                      <span className="ml-auto text-[10px] font-mono tabular-nums text-zinc-500 truncate max-w-[140px]">
+                      <span className="ml-auto text-[14px] font-mono tabular-nums text-zinc-500 truncate max-w-[140px]">
                         {lastCode}
                       </span>
                     )}
@@ -711,13 +711,13 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                       </p>
                       {/* 구역 · 공급사 · 텍스트 · 상품명 옆 */}
                       {(lastProduct as any).spec && (
-                        <span className="inline-flex items-baseline gap-1 text-[12px]">
+                        <span className="inline-flex items-baseline gap-1 text-[14px]">
                           <span className="text-zinc-400 font-semibold">구역</span>
                           <span className="text-violet-700 font-black">{(lastProduct as any).spec}</span>
                         </span>
                       )}
                       {(lastProduct as any).supplier && (
-                        <span className="inline-flex items-baseline gap-1 text-[12px] min-w-0">
+                        <span className="inline-flex items-baseline gap-1 text-[14px] min-w-0">
                           <span className="text-zinc-400 font-semibold">공급사</span>
                           <span className="text-sky-700 font-black truncate">{(lastProduct as any).supplier}</span>
                         </span>
@@ -735,7 +735,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                     disabled={!lastCode || requestingKey === (rows.find(r => r.code === lastCode)?.key ?? "")}
                     className="w-full inline-flex items-center justify-center gap-2 min-h-[44px] py-2.5
                       bg-violet-500 hover:bg-violet-600 active:bg-violet-700
-                      text-white text-[13px] sm:text-[14px] font-black shadow-inner
+                      text-white text-[15px] sm:text-[14px] font-black shadow-inner
                       disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer
                       border-t border-violet-400"
                     title="이 상품 진열요청 · 구역 담당자·관리자 알림 · 요청 목록에 표시"
@@ -772,7 +772,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 </div>
                 <span className="text-sm font-black text-zinc-800">스캔한 상품 · 실재고 입력</span>
                 {rows.length > 0 && (
-                  <span className="text-[11px] font-black text-teal-700
+                  <span className="text-[15px] font-black text-teal-700
                     bg-teal-50 border border-teal-200 rounded-full px-2 py-0.5 tabular-nums">
                     {rows.length}건
                   </span>
@@ -792,7 +792,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               </div>
             ) : (
               <div className="flex-1 overflow-auto max-h-[56vh] lg:max-h-[62vh]">
-                <table className="w-full border-collapse text-[12px] sm:text-[13px]">
+                <table className="w-full border-collapse text-[14px] sm:text-[15px]">
                   <thead className="sticky top-0 z-10">
                     <tr className="bg-zinc-50/95 backdrop-blur-sm border-b border-zinc-200/60">
                       {/* 2026-08-10 · 사용자 요청 · 시각 컬럼 제거 */}
@@ -839,7 +839,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                       <th className="lg:hidden text-center px-2 py-2.5 font-bold text-zinc-400 whitespace-nowrap min-w-[240px]">
                         <span className="inline-flex items-center gap-1">
                           <Warehouse size={11} className="text-amber-500" /> 재고
-                          <span className="text-[10px] text-zinc-300 font-normal">(창고1·2 / 매장1·2·3)</span>
+                          <span className="text-[14px] text-zinc-300 font-normal">(창고1·2 / 매장1·2·3)</span>
                         </span>
                       </th>
                       {/* 합계 */}
@@ -889,13 +889,13 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                   </div>
                   <span className="text-sm font-black text-zinc-800">전체 등록</span>
                 </div>
-                <span className="text-[11px] font-bold text-zinc-400 tabular-nums">
+                <span className="text-[15px] font-bold text-zinc-400 tabular-nums">
                   {rows.length}건 · 총 {rows.reduce((acc, r) => acc + calcRowTotal(r), 0)}개
                 </span>
               </div>
 
               <div className="px-5 py-4 flex flex-col gap-3">
-                <p className="text-[12px] text-zinc-500 leading-relaxed">
+                <p className="text-[14px] text-zinc-500 leading-relaxed">
                   리스트의 모든 항목을 한 번에 저장합니다.
                   창고1·2 · 매장1·2·3 수량과 구역을 확인한 뒤 아래 버튼을 누르세요.
                 </p>
@@ -931,12 +931,12 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 </button>
 
                 {saveError && (
-                  <p className="text-[12px] text-rose-600 font-semibold px-1">{saveError}</p>
+                  <p className="text-[14px] text-rose-600 font-semibold px-1">{saveError}</p>
                 )}
 
                 {saveStatus === "done" && (
                   <div className="flex items-center gap-2">
-                    <p className="text-[12px] text-emerald-600 font-semibold flex-1">
+                    <p className="text-[14px] text-emerald-600 font-semibold flex-1">
                       저장 완료. 재고관리 · 실재고 탭에서 차이 있는 상품을 확인할 수 있습니다.
                     </p>
                     <button
@@ -946,7 +946,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                         setSaveStatus("idle");
                         setSaveError(null);
                       }}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-bold
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[15px] font-bold
                         text-zinc-500 bg-white border border-zinc-200 hover:bg-zinc-50
                         transition cursor-pointer shrink-0"
                     >
@@ -976,9 +976,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
           >
             <div className="px-5 py-3.5 border-b border-zinc-100 bg-zinc-50/60 flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <div className="text-[10px] font-bold text-teal-600 uppercase tracking-widest">실재고 저장 이력</div>
+                <div className="text-[14px] font-bold text-teal-600 uppercase tracking-widest">실재고 저장 이력</div>
                 <div className="text-sm font-black text-zinc-800 truncate">{historyModal.name}</div>
-                <div className="text-[10px] text-zinc-400 font-mono">{historyModal.code}</div>
+                <div className="text-[14px] text-zinc-400 font-mono">{historyModal.code}</div>
               </div>
               <button
                 onClick={() => setHistoryModal(null)}
@@ -999,8 +999,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                   저장 이력이 없습니다.
                 </div>
               ) : (
-                <table className="w-full text-[11px]">
-                  <thead className="bg-zinc-50 border-b border-zinc-200 text-[10px] uppercase tracking-widest text-zinc-500 font-bold">
+                <table className="w-full text-[15px]">
+                  <thead className="bg-zinc-50 border-b border-zinc-200 text-[14px] uppercase tracking-widest text-zinc-500 font-bold">
                     <tr>
                       <th className="px-3 py-2 text-left">일시</th>
                       <th className="px-2 py-2 text-center">창1</th>
@@ -1034,7 +1034,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 </table>
               )}
             </div>
-            <div className="px-5 py-2.5 border-t border-zinc-100 bg-zinc-50/60 text-[10px] text-zinc-400 font-semibold text-center">
+            <div className="px-5 py-2.5 border-t border-zinc-100 bg-zinc-50/60 text-[14px] text-zinc-400 font-semibold text-center">
               같은 날 저장은 덮어쓰고, 다른 날 저장은 이력으로 추가됩니다.
             </div>
           </div>
@@ -1052,7 +1052,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             <div className="px-5 py-3.5 border-b border-zinc-200 bg-teal-50 flex items-center justify-between">
               <div>
                 <div className="text-sm font-black text-zinc-900">등록 전 검토</div>
-                <div className="text-[11px] font-semibold text-zinc-500 mt-0.5">
+                <div className="text-[15px] font-semibold text-zinc-500 mt-0.5">
                   {rows.length}건 · 총 {rows.reduce((acc, r) => acc + calcRowTotal(r), 0)}개
                 </div>
               </div>
@@ -1075,16 +1075,16 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 return (
                   <div key={r.key} className="px-4 py-2.5 flex items-baseline justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <div className="text-[12px] font-bold text-zinc-800 truncate">{r.product.name}</div>
-                      <div className="text-[10px] text-zinc-400 font-mono tabular-nums truncate">{r.code}</div>
+                      <div className="text-[14px] font-bold text-zinc-800 truncate">{r.product.name}</div>
+                      <div className="text-[14px] text-zinc-400 font-mono tabular-nums truncate">{r.code}</div>
                     </div>
                     <div className="flex items-baseline gap-2 shrink-0">
                       {added > 0 ? (
-                        <span className="text-[11px] font-black text-emerald-700 tabular-nums">+{added}</span>
+                        <span className="text-[15px] font-black text-emerald-700 tabular-nums">+{added}</span>
                       ) : (
-                        <span className="text-[11px] text-zinc-300">변화 없음</span>
+                        <span className="text-[15px] text-zinc-300">변화 없음</span>
                       )}
-                      <span className="text-[12px] font-black text-zinc-800 tabular-nums">= {total}</span>
+                      <span className="text-[14px] font-black text-zinc-800 tabular-nums">= {total}</span>
                     </div>
                   </div>
                 );
@@ -1094,12 +1094,12 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             <div className="px-4 py-3 border-t border-zinc-200 bg-zinc-50 flex items-center gap-2">
               <button
                 onClick={() => setReviewOpen(false)}
-                className="flex-1 h-10 rounded-lg bg-white border border-zinc-300 text-zinc-600 text-[12px] font-bold hover:bg-zinc-100 transition cursor-pointer"
+                className="flex-1 h-10 rounded-lg bg-white border border-zinc-300 text-zinc-600 text-[14px] font-bold hover:bg-zinc-100 transition cursor-pointer"
               >취소</button>
               <button
                 onClick={() => { setReviewOpen(false); handleBulkSave(); }}
                 disabled={saveStatus === "saving" || rows.length === 0}
-                className="flex-[2] h-10 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-[13px] font-black shadow-sm disabled:opacity-60 disabled:cursor-not-allowed transition cursor-pointer"
+                className="flex-[2] h-10 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-[15px] font-black shadow-sm disabled:opacity-60 disabled:cursor-not-allowed transition cursor-pointer"
               >
                 확정 · {rows.length}건 저장
               </button>

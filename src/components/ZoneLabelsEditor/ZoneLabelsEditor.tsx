@@ -280,7 +280,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
           <button
             type="button"
             onClick={onBack}
-            className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-zinc-100 text-zinc-700 text-[12px] font-bold hover:bg-zinc-200 transition"
+            className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-zinc-100 text-zinc-700 text-[14px] font-bold hover:bg-zinc-200 transition"
           >
             돌아가기
           </button>
@@ -332,12 +332,12 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
         ) : (
           <>
             {saveError && (
-              <div className="mb-3 px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[12px] flex items-center gap-2">
+              <div className="mb-3 px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[14px] flex items-center gap-2">
                 <AlertCircle size={13} /> {saveError}
               </div>
             )}
             {duplicateNumbers.size > 0 && (
-              <div className="mb-3 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-[12px] flex items-center gap-2">
+              <div className="mb-3 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-[14px] flex items-center gap-2">
                 <AlertCircle size={13} /> 번호가 중복된 항목이 있습니다:
                 <span className="font-black">
                   {Array.from(duplicateNumbers as Set<number>).sort((a, b) => a - b).join(", ")}
@@ -345,7 +345,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
               </div>
             )}
             {invalidRows.size > 0 && (
-              <div className="mb-3 px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[12px] flex items-center gap-2">
+              <div className="mb-3 px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[14px] flex items-center gap-2">
                 <AlertCircle size={13} /> 유효하지 않은 번호 (1~60 범위 필요): {invalidRows.size}건
               </div>
             )}
@@ -365,9 +365,9 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
                       className={`w-full flex items-center gap-2 px-4 py-2.5 ${cs.headerBg} border-b border-zinc-100 hover:bg-opacity-80 transition cursor-pointer`}
                     >
                       <span className={`inline-block w-2 h-2 rounded-full ${cs.accentDot}`} />
-                      <span className={`text-[12px] font-black ${cs.headerText} tracking-tight`}>{cat.label}</span>
-                      <span className="text-[11px] text-zinc-400 font-medium">· {cat.hint}</span>
-                      <span className={`ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold ${cs.badgeBg} ${cs.badgeText} border ${cs.badgeBorder}`}>
+                      <span className={`text-[14px] font-black ${cs.headerText} tracking-tight`}>{cat.label}</span>
+                      <span className="text-[15px] text-zinc-400 font-medium">· {cat.hint}</span>
+                      <span className={`ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[15px] font-bold ${cs.badgeBg} ${cs.badgeText} border ${cs.badgeBorder}`}>
                         {rows.length}
                       </span>
                       {isCollapsed
@@ -379,7 +379,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
                     {!isCollapsed && (
                       <div>
                         {/* 컬럼 헤더 */}
-                        <div className="hidden sm:grid grid-cols-[80px_100px_1fr_36px] gap-3 px-4 py-2 bg-zinc-50/60 border-b border-zinc-100 text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+                        <div className="hidden sm:grid grid-cols-[80px_100px_1fr_36px] gap-3 px-4 py-2 bg-zinc-50/60 border-b border-zinc-100 text-[15px] font-bold text-zinc-400 uppercase tracking-wider">
                           <span>원본 ID</span>
                           <span>번호</span>
                           <span>부제 (선택)</span>
@@ -397,7 +397,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
                             >
                               {/* 원본 zoneId 배지 */}
                               <div className="flex items-center gap-1.5">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-md bg-sky-50 border border-sky-200 text-sky-700 text-[12px] font-black`}>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-md bg-sky-50 border border-sky-200 text-sky-700 text-[14px] font-black`}>
                                   {m.zoneId}
                                 </span>
                                 {isDirty && (
@@ -407,14 +407,14 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
 
                               {/* 번호 input */}
                               <div>
-                                <label className="sm:hidden block text-[10px] font-bold text-zinc-400 mb-0.5">번호</label>
+                                <label className="sm:hidden block text-[14px] font-bold text-zinc-400 mb-0.5">번호</label>
                                 <input
                                   type="number"
                                   min={1}
                                   max={60}
                                   value={m.number}
                                   onChange={(e) => updateNumber(m.zoneId, Number(e.target.value))}
-                                  className={`w-full px-2.5 py-1.5 rounded-lg border text-[12px] font-bold text-zinc-800 tabular-nums text-center transition focus:outline-none focus:ring-2 ${
+                                  className={`w-full px-2.5 py-1.5 rounded-lg border text-[14px] font-bold text-zinc-800 tabular-nums text-center transition focus:outline-none focus:ring-2 ${
                                     isDup || isBad
                                       ? "border-rose-300 bg-rose-50 focus:ring-rose-200"
                                       : "border-zinc-200 bg-white focus:ring-brand-tint focus:border-brand-deep"
@@ -424,14 +424,14 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
 
                               {/* subLabel input */}
                               <div>
-                                <label className="sm:hidden block text-[10px] font-bold text-zinc-400 mb-0.5">부제</label>
+                                <label className="sm:hidden block text-[14px] font-bold text-zinc-400 mb-0.5">부제</label>
                                 <input
                                   type="text"
                                   value={m.subLabel ?? ""}
                                   placeholder="(선택) 카테고리·이름 등"
                                   maxLength={40}
                                   onChange={(e) => updateSubLabel(m.zoneId, e.target.value)}
-                                  className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-200 bg-white text-[12px] text-zinc-700 transition focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep"
+                                  className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-200 bg-white text-[14px] text-zinc-700 transition focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep"
                                 />
                               </div>
 
@@ -482,7 +482,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-600 text-white text-[12px] font-bold shadow-lg">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-600 text-white text-[14px] font-bold shadow-lg">
           <Check size={13} /> {toast}
         </div>
       )}

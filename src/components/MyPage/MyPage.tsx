@@ -104,12 +104,12 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
               {(me?.name ?? authSession?.employeeName ?? "?").slice(0, 1)}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">마이페이지</div>
+              <div className="text-[14px] font-bold text-indigo-500 uppercase tracking-wider">마이페이지</div>
               <div className="text-lg sm:text-xl font-black text-zinc-800 mt-0.5 truncate">
                 {me?.name ?? authSession?.employeeName ?? "-"}
                 {me?.rank && <span className="text-sm text-zinc-500 font-bold ml-1">{me.rank}</span>}
               </div>
-              <div className="text-[11px] text-zinc-500 mt-0.5">
+              <div className="text-[15px] text-zinc-500 mt-0.5">
                 {me?.position ?? "-"} · {me?.employmentType ?? "-"} · Level {authSession?.level ?? "-"}
               </div>
             </div>
@@ -118,7 +118,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
 
         {/* 정보 카드 (읽기 전용) */}
         <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
-          <div className="px-4 py-2 border-b border-zinc-100 bg-zinc-50/60 text-[10px] font-black text-zinc-500 uppercase tracking-wider">
+          <div className="px-4 py-2 border-b border-zinc-100 bg-zinc-50/60 text-[14px] font-black text-zinc-500 uppercase tracking-wider">
             내 정보 (읽기 전용)
           </div>
           {loading ? (
@@ -146,7 +146,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
 
         {/* 주소 편집 카드 */}
         <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
-          <div className="px-4 py-2 border-b border-zinc-100 bg-indigo-50/60 text-[10px] font-black text-indigo-600 uppercase tracking-wider flex items-center gap-1.5">
+          <div className="px-4 py-2 border-b border-zinc-100 bg-indigo-50/60 text-[14px] font-black text-indigo-600 uppercase tracking-wider flex items-center gap-1.5">
             <MapPin size={12} /> 주소
           </div>
           <div className="p-4 flex flex-col gap-2">
@@ -156,12 +156,12 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
                 value={addressDraft}
                 onChange={e => setAddressDraft(e.target.value)}
                 placeholder="예: 경기도 오산시 …"
-                className="flex-1 min-w-0 px-3 py-2 text-[13px] border border-zinc-300 rounded-xl focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
+                className="flex-1 min-w-0 px-3 py-2 text-[15px] border border-zinc-300 rounded-xl focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
               />
               <button
                 type="button"
                 onClick={() => setAddrModalOpen(true)}
-                className="shrink-0 h-9 px-2.5 rounded-lg border border-indigo-400 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap"
+                className="shrink-0 h-9 px-2.5 rounded-lg border border-indigo-400 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[15px] font-bold transition-colors cursor-pointer whitespace-nowrap"
               >
                 주소 검색
               </button>
@@ -171,7 +171,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
                 type="button"
                 onClick={saveAddress}
                 disabled={savingAddress || !addressChanged}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-black shadow-sm active:scale-95 transition disabled:opacity-40"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[14px] font-black shadow-sm active:scale-95 transition disabled:opacity-40"
               >
                 {savingAddress ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} 주소 저장
               </button>
@@ -186,7 +186,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
 
         {/* 비밀번호 변경 카드 */}
         <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
-          <div className="px-4 py-2 border-b border-zinc-100 bg-rose-50/60 text-[10px] font-black text-rose-600 uppercase tracking-wider flex items-center gap-1.5">
+          <div className="px-4 py-2 border-b border-zinc-100 bg-rose-50/60 text-[14px] font-black text-rose-600 uppercase tracking-wider flex items-center gap-1.5">
             <Lock size={12} /> 비밀번호 변경
           </div>
           <div className="p-4 flex flex-col gap-2">
@@ -196,7 +196,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
                 value={currentPw}
                 onChange={e => setCurrentPw(e.target.value)}
                 placeholder="현재 비밀번호"
-                className="flex-1 px-3 py-2 text-[13px] border border-zinc-300 rounded-xl focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
+                className="flex-1 px-3 py-2 text-[15px] border border-zinc-300 rounded-xl focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
                 autoComplete="current-password"
               />
               <button
@@ -213,7 +213,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
               value={newPw}
               onChange={e => setNewPw(e.target.value)}
               placeholder="새 비밀번호 (4자 이상)"
-              className="w-full px-3 py-2 text-[13px] border border-zinc-300 rounded-xl focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
+              className="w-full px-3 py-2 text-[15px] border border-zinc-300 rounded-xl focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
               autoComplete="new-password"
             />
             <input
@@ -221,7 +221,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
               value={confirmPw}
               onChange={e => setConfirmPw(e.target.value)}
               placeholder="새 비밀번호 확인"
-              className="w-full px-3 py-2 text-[13px] border border-zinc-300 rounded-xl focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
+              className="w-full px-3 py-2 text-[15px] border border-zinc-300 rounded-xl focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
               autoComplete="new-password"
             />
             <div className="flex items-center justify-end gap-2 mt-1">
@@ -229,7 +229,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
                 type="button"
                 onClick={changePassword}
                 disabled={savingPw || !currentPw || !newPw || !confirmPw}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[12px] font-black shadow-sm active:scale-95 transition disabled:opacity-40"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[14px] font-black shadow-sm active:scale-95 transition disabled:opacity-40"
               >
                 {savingPw ? <Loader2 size={12} className="animate-spin" /> : <Lock size={12} />} 비밀번호 변경
               </button>
@@ -240,7 +240,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
         {/* 계절 정의 · 2026-08-12 · [설정] > 계절 정의 로 이동 · MyPage 에서 제거 */}
 
         {/* 안내 */}
-        <div className="px-3 py-2 bg-white/60 border border-zinc-200 rounded-xl text-[11px] text-zinc-500 flex items-start gap-2">
+        <div className="px-3 py-2 bg-white/60 border border-zinc-200 rounded-xl text-[15px] text-zinc-500 flex items-start gap-2">
           <Check size={12} className="mt-0.5 text-emerald-500 shrink-0" />
           <span>본인이 직접 수정할 수 있는 항목은 <b>비밀번호·주소</b>뿐입니다. 그 외 정보(이름·직급·연차 등) 는 관리자에게 문의하세요.</span>
         </div>
@@ -257,10 +257,10 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
 
 const ReadRow: React.FC<{ icon: React.ReactNode; label: string; value: string; mono?: boolean; last?: boolean }> = ({ icon, label, value, mono, last }) => (
   <div className={`grid grid-cols-[110px_1fr] items-center gap-2 sm:gap-4 px-4 py-2.5 ${last ? "" : "border-b border-zinc-100"}`}>
-    <div className="flex items-center gap-1.5 text-[11px] font-black text-zinc-500 uppercase tracking-wider">
+    <div className="flex items-center gap-1.5 text-[15px] font-black text-zinc-500 uppercase tracking-wider">
       <span className="text-zinc-400">{icon}</span> {label}
     </div>
-    <div className={`text-[13px] font-bold text-zinc-800 truncate ${mono ? "font-mono" : ""}`}>{value || "-"}</div>
+    <div className={`text-[15px] font-bold text-zinc-800 truncate ${mono ? "font-mono" : ""}`}>{value || "-"}</div>
   </div>
 );
 

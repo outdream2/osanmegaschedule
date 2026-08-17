@@ -151,7 +151,7 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
           </div>
 
           {!loaded && (
-            <p className="text-[11px] text-zinc-400 text-center">서버에서 최신 값을 불러오는 중...</p>
+            <p className="text-[15px] text-zinc-400 text-center">서버에서 최신 값을 불러오는 중...</p>
           )}
         </div>
       )}

@@ -197,7 +197,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
   const arrow = (k: ArrivalSortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
 
   const sortBtnCls = (k: ArrivalSortKey) =>
-    `px-2 py-0.5 rounded text-[11px] font-bold border cursor-pointer transition ${
+    `px-2 py-0.5 rounded text-[15px] font-bold border cursor-pointer transition ${
       sortKey === k
         ? "bg-sky-600 text-white border-sky-600"
         : "bg-white text-zinc-500 border-zinc-200 hover:border-sky-300 hover:text-sky-600"
@@ -210,13 +210,13 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
 
   // ── 버튼 공통 스타일 ─────────────────────────────────────────────────────
   const actionBtn = (color: string) =>
-    `flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border transition cursor-pointer shrink-0 ${color}`;
+    `flex items-center gap-1 px-2 py-1 rounded-lg text-[15px] font-bold border transition cursor-pointer shrink-0 ${color}`;
 
   const embeddedToolbar = (
     <div className="flex items-center gap-2 justify-end px-4 py-2 bg-white border-b border-zinc-200 h-12">
       <button
         onClick={handleSubscribe} disabled={pushLoading}
-        className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border transition cursor-pointer disabled:cursor-default"
+        className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[15px] font-bold border transition cursor-pointer disabled:cursor-default"
         style={pushSubscribed
           ? { background:"#f0fdf4", borderColor:"#86efac", color:"#166534" }
           : { background:"#eff6ff", borderColor:"#93c5fd", color:"#1e40af" }}
@@ -245,7 +245,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
           <div className="flex items-center gap-2">
             <button
               onClick={handleSubscribe} disabled={pushLoading}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border transition cursor-pointer disabled:cursor-default"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[15px] font-bold border transition cursor-pointer disabled:cursor-default"
               style={pushSubscribed
                 ? { background:"#f0fdf4", borderColor:"#86efac", color:"#166534" }
                 : { background:"#eff6ff", borderColor:"#93c5fd", color:"#1e40af" }}
@@ -342,7 +342,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
         {/* ── 정렬 툴바 ───────────────────────────────────────────────────── */}
         {arrivals.length > 0 && (
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[10px] text-zinc-400 font-bold shrink-0">정렬:</span>
+            <span className="text-[14px] text-zinc-400 font-bold shrink-0">정렬:</span>
             <button onClick={() => handleSort("created_at")} className={sortBtnCls("created_at")} title="등록일 정렬">등록일{arrow("created_at")}</button>
             <button onClick={() => handleSort("scheduled_at")} className={sortBtnCls("scheduled_at")} title="예약발송일 정렬">예약일{arrow("scheduled_at")}</button>
             <button onClick={() => handleSort("title")} className={sortBtnCls("title")} title="제목 정렬">제목{arrow("title")}</button>
@@ -353,7 +353,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
         {/* ── 리스트 ──────────────────────────────────────────────────────── */}
         <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden shadow-sm">
           {loading && arrivals.length > 0 && (
-            <div className="flex items-center justify-center gap-1.5 text-[10px] text-emerald-600 font-bold py-1.5 bg-emerald-50 border-b border-emerald-100 sticky top-0 z-10">
+            <div className="flex items-center justify-center gap-1.5 text-[14px] text-emerald-600 font-bold py-1.5 bg-emerald-50 border-b border-emerald-100 sticky top-0 z-10">
               <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
             </div>
           )}
@@ -361,7 +361,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
             <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
           )}
           {!loading && arrivals.length === 0 && (
-            <div className="text-center text-[11px] text-zinc-300 py-6">데이터 없음</div>
+            <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
           )}
 
           <div className={loading && arrivals.length > 0 ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}>
@@ -407,21 +407,21 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
                     <Package size={13} className="text-sky-400 shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[12px] font-semibold text-zinc-800 truncate">{a.title}</span>
+                        <span className="text-[14px] font-semibold text-zinc-800 truncate">{a.title}</span>
                         {pending && (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1 py-0.5 shrink-0">
+                          <span className="inline-flex items-center gap-0.5 text-[14px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1 py-0.5 shrink-0">
                             <Clock size={9} /> 예약
                           </span>
                         )}
                         {!a.scheduled_at && !a.broadcast_sent && (
-                          <span className="text-[10px] text-zinc-300 font-semibold shrink-0">미발송</span>
+                          <span className="text-[14px] text-zinc-300 font-semibold shrink-0">미발송</span>
                         )}
                         {a.broadcast_sent && (
-                          <span className="text-[10px] text-emerald-600 font-semibold shrink-0">발송됨</span>
+                          <span className="text-[14px] text-emerald-600 font-semibold shrink-0">발송됨</span>
                         )}
                       </div>
-                      {a.body && <p className="text-[11px] text-zinc-400 truncate leading-snug">{a.body}</p>}
-                      <p className="text-[10px] text-zinc-400 mt-0.5">
+                      {a.body && <p className="text-[15px] text-zinc-400 truncate leading-snug">{a.body}</p>}
+                      <p className="text-[14px] text-zinc-400 mt-0.5">
                         {fmtDT(a.created_at)}
                         {pending && a.scheduled_at && (
                           <span className="ml-1.5 text-amber-500">→ {fmtDT(a.scheduled_at)}</span>

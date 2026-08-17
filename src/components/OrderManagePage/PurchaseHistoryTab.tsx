@@ -764,21 +764,21 @@ export const PurchaseHistoryTab: React.FC = () => {
           {viewMode === "by-vendor"
             ? <Building2 size={14} className="text-emerald-500 shrink-0" />
             : <Package size={14} className="text-sky-500 shrink-0" />}
-          <span className="text-[13px] font-black text-zinc-800">매입이력</span>
+          <span className="text-[15px] font-black text-zinc-800">매입이력</span>
           {viewMode === "by-vendor" && selectedVendor && (
-            <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 rounded-full px-2 py-0.5 border border-emerald-200 tabular-nums">
+            <span className="text-[15px] font-semibold text-emerald-600 bg-emerald-50 rounded-full px-2 py-0.5 border border-emerald-200 tabular-nums">
               {ledgerRows.length}건
             </span>
           )}
           {viewMode === "by-product" && (
-            <span className="text-[11px] font-semibold text-sky-600 bg-sky-50 rounded-full px-2 py-0.5 border border-sky-200 tabular-nums">
+            <span className="text-[15px] font-semibold text-sky-600 bg-sky-50 rounded-full px-2 py-0.5 border border-sky-200 tabular-nums">
               {productList.length}종
             </span>
           )}
           {/* 데이터 소스 배지 (2026-08-04) · 사용자가 매입이력 vs 거래명세서 소스 구분 · fallback 시 warning */}
           {summarySource && (
             <span
-              className={`text-[10px] font-black uppercase tracking-wider rounded-full px-2 py-0.5 border tabular-nums cursor-help ${
+              className={`text-[14px] font-black uppercase tracking-wider rounded-full px-2 py-0.5 border tabular-nums cursor-help ${
                 summarySource === "purchase_details"
                   ? "text-emerald-700 bg-emerald-50 border-emerald-200"
                   : "text-amber-800 bg-amber-50 border-amber-300 animate-pulse"
@@ -807,7 +807,7 @@ export const PurchaseHistoryTab: React.FC = () => {
           {/* 선택 공급사 detail source · summary 와 다르면 표시 */}
           {selectedVendor && detailSource && detailSource !== summarySource && (
             <span
-              className={`text-[10px] font-black uppercase tracking-wider rounded-full px-2 py-0.5 border tabular-nums cursor-help ${
+              className={`text-[14px] font-black uppercase tracking-wider rounded-full px-2 py-0.5 border tabular-nums cursor-help ${
                 detailSource === "purchase_details"
                   ? "text-emerald-700 bg-emerald-50 border-emerald-200"
                   : "text-amber-800 bg-amber-50 border-amber-300 animate-pulse"
@@ -824,7 +824,7 @@ export const PurchaseHistoryTab: React.FC = () => {
           <button
             type="button"
             onClick={() => setViewMode("by-vendor")}
-            className={`px-2.5 h-7 text-[11px] font-black rounded transition cursor-pointer inline-flex items-center gap-1.5 ${
+            className={`px-2.5 h-7 text-[15px] font-black rounded transition cursor-pointer inline-flex items-center gap-1.5 ${
               viewMode === "by-vendor"
                 ? "bg-white text-emerald-700 shadow-sm border border-emerald-200"
                 : "text-zinc-500 hover:text-zinc-700"
@@ -837,7 +837,7 @@ export const PurchaseHistoryTab: React.FC = () => {
           <button
             type="button"
             onClick={() => setViewMode("by-product")}
-            className={`px-2.5 h-7 text-[11px] font-black rounded transition cursor-pointer inline-flex items-center gap-1.5 ${
+            className={`px-2.5 h-7 text-[15px] font-black rounded transition cursor-pointer inline-flex items-center gap-1.5 ${
               viewMode === "by-product"
                 ? "bg-white text-sky-700 shadow-sm border border-sky-200"
                 : "text-zinc-500 hover:text-zinc-700"
@@ -851,12 +851,12 @@ export const PurchaseHistoryTab: React.FC = () => {
 
         {/* 2026-08-10 · #19 · 기간 chip + 계절 chip · 상단 툴바로 이동 (사용자 요청 · split 안에서 이동) */}
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">기간</span>
+          <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">기간</span>
           <div className="flex flex-wrap bg-zinc-50 border border-zinc-200 rounded-md p-0.5 gap-0.5">
             <button
               type="button"
               onClick={() => { setPeriodMonths(0); setPeriodSeason(null); }}
-              className={`px-2 h-6 text-[10px] font-semibold rounded transition cursor-pointer ${
+              className={`px-2 h-6 text-[14px] font-semibold rounded transition cursor-pointer ${
                 !periodSeason && periodMonths === 0
                   ? "bg-sky-500 text-white shadow-sm"
                   : "text-zinc-500 hover:text-zinc-700"
@@ -867,7 +867,7 @@ export const PurchaseHistoryTab: React.FC = () => {
                 key={m}
                 type="button"
                 onClick={() => { setPeriodMonths(m as 0|1|2|3|4|5|6); setPeriodSeason(null); }}
-                className={`px-2 h-6 text-[10px] font-semibold rounded transition cursor-pointer ${
+                className={`px-2 h-6 text-[14px] font-semibold rounded transition cursor-pointer ${
                   !periodSeason && periodMonths === m
                     ? "bg-sky-500 text-white shadow-sm"
                     : "text-zinc-500 hover:text-zinc-700"
@@ -995,7 +995,7 @@ export const PurchaseHistoryTab: React.FC = () => {
               ) : ledgerError ? (
                 <div className="bg-white rounded-xl border border-rose-200 p-4 text-sm text-rose-700 space-y-2">
                   <div className="font-bold flex items-center gap-1.5">원장 조회 실패</div>
-                  <div className="text-[12px] font-mono bg-rose-50 border border-rose-100 rounded px-2 py-1">{ledgerError}</div>
+                  <div className="text-[14px] font-mono bg-rose-50 border border-rose-100 rounded px-2 py-1">{ledgerError}</div>
                   <button
                     type="button"
                     onClick={() => {
@@ -1004,11 +1004,11 @@ export const PurchaseHistoryTab: React.FC = () => {
                         loadVendorData(selectedVendor.company_name);
                       }
                     }}
-                    className="inline-flex items-center gap-1 h-8 px-3 rounded-md bg-rose-600 text-white text-[12px] font-bold hover:bg-rose-700 transition cursor-pointer"
+                    className="inline-flex items-center gap-1 h-8 px-3 rounded-md bg-rose-600 text-white text-[14px] font-bold hover:bg-rose-700 transition cursor-pointer"
                   >
                     <RefreshCw size={12} /> 다시 시도
                   </button>
-                  <div className="text-[11px] text-zinc-500 pt-1 border-t border-rose-100">
+                  <div className="text-[15px] text-zinc-500 pt-1 border-t border-rose-100">
                     원인 · 서버 API 미구성 · 네트워크 문제 · Supabase 테이블 미생성 (ocr_confirmed_items · supplier_payments) 등. 콘솔 로그 확인 필요.
                   </div>
                 </div>
@@ -1070,11 +1070,11 @@ export const PurchaseHistoryTab: React.FC = () => {
                   value={productSearch}
                   onChange={e => setProductSearch(e.target.value)}
                   placeholder="상품명 · 코드 검색"
-                  className="w-full h-7 px-2.5 text-[11px] border border-zinc-200 rounded-md outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep transition"
+                  className="w-full h-7 px-2.5 text-[15px] border border-zinc-200 rounded-md outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep transition"
                 />
                 {/* 2026-08-10 · #19 · 기간·계절 chip · 상단 툴바로 이동 · 여기서 제거 (사용자 요청) */}
                 <div className="flex items-center gap-1 pt-1 border-t border-zinc-100 flex-wrap">
-                  <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">정렬</span>
+                  <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">정렬</span>
                   {/* 2026-08-04 · 판매량·판매금액 정렬 추가 (사용자 요청 · 판매는 rose · 매입/기타는 sky) */}
                   {([
                     { k: "amount"   as const, label: "매입액",   color: "sky" as const },
@@ -1090,7 +1090,7 @@ export const PurchaseHistoryTab: React.FC = () => {
                         key={o.k}
                         type="button"
                         onClick={() => setProductSort(o.k)}
-                        className={`h-5 px-1.5 text-[10px] font-semibold rounded transition cursor-pointer ${
+                        className={`h-5 px-1.5 text-[14px] font-semibold rounded transition cursor-pointer ${
                           productSort === o.k
                             ? activeCls
                             : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
@@ -1103,7 +1103,7 @@ export const PurchaseHistoryTab: React.FC = () => {
               {/* 상품 리스트 · 카드 2줄 · 상단 컬럼 헤더 */}
               {/* 2026-08-05 · max-h-[65vh] 좁아서 스크롤·데이터 안 보임 문제 · 90vh 로 확대 */}
               <div className="bg-white rounded-xl border border-zinc-200 shadow-sm flex-1 min-h-0 max-h-[calc(100vh-200px)] flex flex-col overflow-hidden">
-                <div className="px-3 py-1.5 border-b border-zinc-100 bg-zinc-50/60 shrink-0 grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center text-[11px] font-black text-zinc-500 uppercase tracking-wider">
+                <div className="px-3 py-1.5 border-b border-zinc-100 bg-zinc-50/60 shrink-0 grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center text-[15px] font-black text-zinc-500 uppercase tracking-wider">
                   <span>상품</span>
                   <span className="text-right whitespace-nowrap text-amber-600">매입</span>
                   <span className="text-right whitespace-nowrap text-rose-600">판매</span>
@@ -1113,19 +1113,19 @@ export const PurchaseHistoryTab: React.FC = () => {
                 {allDetailsLoading ? (
                   <ListLoading label="상품 매입이력 불러오는 중..." tone="sky" />
                 ) : allDetailsError ? (
-                  <div className="p-4 text-[11px] text-rose-600 space-y-1">
+                  <div className="p-4 text-[15px] text-rose-600 space-y-1">
                     <div className="font-black">로드 실패</div>
                     <div className="font-mono bg-rose-50 border border-rose-100 rounded px-2 py-1">{allDetailsError}</div>
                     <button
                       type="button"
                       onClick={() => loadAllDetails(true)}
-                      className="mt-1 inline-flex items-center gap-1 h-6 px-2 rounded bg-rose-600 text-white text-[10px] font-bold hover:bg-rose-700 transition cursor-pointer"
+                      className="mt-1 inline-flex items-center gap-1 h-6 px-2 rounded bg-rose-600 text-white text-[14px] font-bold hover:bg-rose-700 transition cursor-pointer"
                     >
                       <RefreshCw size={10} /> 다시 시도
                     </button>
                   </div>
                 ) : filteredProducts.length === 0 ? (
-                  <div className="py-8 text-center text-[11px] text-zinc-300">
+                  <div className="py-8 text-center text-[15px] text-zinc-300">
                     {productSearch ? "검색 결과 없음" : "해당 기간 매입 상품 없음"}
                   </div>
                 ) : (
@@ -1156,17 +1156,17 @@ export const PurchaseHistoryTab: React.FC = () => {
                   {/* 차트 헤더 */}
                   <div className="bg-white rounded-xl border border-zinc-200 shadow-sm px-4 py-2.5 flex items-center gap-2 shrink-0">
                     <Package size={14} className="text-sky-500 shrink-0" />
-                    <span className="text-[13px] font-black text-zinc-800">상품별 매입 분석</span>
-                    <span className="text-[11px] text-zinc-400 font-semibold ml-1">
+                    <span className="text-[15px] font-black text-zinc-800">상품별 매입 분석</span>
+                    <span className="text-[15px] text-zinc-400 font-semibold ml-1">
                       {filteredAllDetails.length > 0
                         ? `${filteredAllDetails.length}건 분석`
                         : allDetailsLoading ? "로딩 중..." : "데이터 없음"}
                     </span>
-                    <span className="ml-auto text-[10px] text-zinc-400">좌측에서 상품을 선택하면 원장 표시</span>
+                    <span className="ml-auto text-[14px] text-zinc-400">좌측에서 상품을 선택하면 원장 표시</span>
                   </div>
                   {/* 3종 파이차트 · 반응형 그리드 */}
                   {allDetailsLoading ? (
-                    <div className="bg-white rounded-xl border border-zinc-200 flex-1 flex items-center justify-center text-zinc-400 text-[12px] gap-2 min-h-[300px]">
+                    <div className="bg-white rounded-xl border border-zinc-200 flex-1 flex items-center justify-center text-zinc-400 text-[14px] gap-2 min-h-[300px]">
                       <Loader2 size={14} className="animate-spin" />
                       <span>매입 데이터 로딩 중...</span>
                     </div>

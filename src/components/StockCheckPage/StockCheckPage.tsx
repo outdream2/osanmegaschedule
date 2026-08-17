@@ -125,7 +125,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
   const arrow = (k: StockSortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
 
   const sortBtnCls = (k: StockSortKey) =>
-    `px-2 py-0.5 rounded-md text-[11px] font-semibold border cursor-pointer transition-all duration-150 ${
+    `px-2 py-0.5 rounded-md text-[15px] font-semibold border cursor-pointer transition-all duration-150 ${
       sortKey === k
         ? "bg-brand-deep text-white border-indigo-600"
         : "bg-white text-zinc-500 border-zinc-200 hover:border-indigo-300 hover:text-indigo-600"
@@ -150,7 +150,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
         onNavigate={onNavigate}
         onLogout={onLogout}
         rightSlot={
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-[11px] font-bold">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-[15px] font-bold">
             <Package size={11} />
             <span className="hidden sm:inline">재고 확인</span>
           </div>
@@ -181,7 +181,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
         {/* Sort toolbar — 결과 있을 때만 표시 */}
         {results && results.length > 0 && (
           <div className="flex items-center gap-1.5 mb-2 flex-wrap">
-            <span className="text-[10px] text-zinc-400 font-bold shrink-0">정렬:</span>
+            <span className="text-[14px] text-zinc-400 font-bold shrink-0">정렬:</span>
             <button onClick={() => toggleSort("product_name")} className={sortBtnCls("product_name")} title="상품명 정렬">상품명{arrow("product_name")}</button>
             <button onClick={() => toggleSort("current_stock")} className={sortBtnCls("current_stock")} title="재고수량 정렬">재고{arrow("current_stock")}</button>
             {isLoggedIn && <>
@@ -196,7 +196,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
           {(Object.entries(STATE_META) as [StockState, typeof STATE_META[StockState]][])
             .filter(([state]) => isLoggedIn ? true : state !== "out")
             .map(([, m]) => (
-              <span key={m.label} className="flex items-center gap-1 text-[11px] font-bold text-zinc-500">
+              <span key={m.label} className="flex items-center gap-1 text-[15px] font-bold text-zinc-500">
                 <span className={`w-2 h-2 rounded-full ${m.dot}`} />
                 {m.label}
               </span>
@@ -205,7 +205,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
 
         {/* Loading · 배너+dim 패턴 */}
         {loading && sortedResults && sortedResults.length > 0 && (
-          <div className="flex items-center justify-center gap-1.5 text-[10px] text-indigo-600 font-bold py-1.5 mb-1 bg-indigo-50 border border-indigo-200 rounded-md sticky top-0 z-10">
+          <div className="flex items-center justify-center gap-1.5 text-[14px] text-indigo-600 font-bold py-1.5 mb-1 bg-indigo-50 border border-indigo-200 rounded-md sticky top-0 z-10">
             <div className="w-2.5 h-2.5 rounded-full border-2 border-indigo-200 border-t-indigo-500 animate-spin shrink-0" />
             검색 중...
           </div>
@@ -239,7 +239,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
             {/* 결과 수 표시: 직원(로그인)만 · 일반 사용자는 숨김 */}
             {isLoggedIn && (
               <div className="px-4 py-2.5 bg-zinc-50 border-b border-zinc-100 flex items-center justify-between">
-                <span className="text-[11px] font-bold text-zinc-500">검색 결과 {sortedResults.length}건</span>
+                <span className="text-[15px] font-bold text-zinc-500">검색 결과 {sortedResults.length}건</span>
               </div>
             )}
             <div className="divide-y divide-zinc-50">
@@ -261,14 +261,14 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
                       className="px-4 py-3 flex items-center gap-3 hover:bg-zinc-50/60 transition-all duration-150">
                       {/* Status badges — 재고 · 판매 두 축 나란히 (로그인 무관) */}
                       <div className="shrink-0 flex flex-col gap-0.5">
-                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap ${
+                        <span className={`text-[15px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap ${
                           stockAxis === "in-stock"
                             ? "bg-emerald-100 text-emerald-700"
                             : "bg-red-100 text-red-600"
                         }`}>
                           {stockAxis === "in-stock" ? "재고있음" : "재고없음"}
                         </span>
-                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap ${
+                        <span className={`text-[15px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap ${
                           sellingAxis === "selling"
                             ? "bg-sky-100 text-sky-700"
                             : "bg-zinc-200 text-zinc-500"
@@ -277,7 +277,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
                         </span>
                         {/* 3개 미만 재고 → 품절임박 (재고있음 상태일 때만) */}
                         {lowStock && (
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap bg-amber-100 text-amber-700 border border-amber-200 animate-pulse">
+                          <span className="text-[14px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap bg-amber-100 text-amber-700 border border-amber-200 animate-pulse">
                             품절임박
                           </span>
                         )}
@@ -287,23 +287,23 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-bold text-zinc-800 break-words">{item.product_name}</div>
                         {item.spec && (
-                          <div className="text-[11px] text-zinc-400 break-words mt-0.5" title="전산배치구역">{item.spec}</div>
+                          <div className="text-[15px] text-zinc-400 break-words mt-0.5" title="전산배치구역">{item.spec}</div>
                         )}
                         {/* 로그인 시: 구역(실제배치·진열·공급처) 표시 */}
                         {isLoggedIn && (item.real_map || item.display_location || item.supplier) && (
                           <div className="flex items-center gap-2 flex-wrap mt-1">
                             {item.real_map && (
-                              <span className="text-[10px] font-semibold text-emerald-700 whitespace-nowrap" title="실제배치구역">
+                              <span className="text-[14px] font-semibold text-emerald-700 whitespace-nowrap" title="실제배치구역">
                                 실제 {item.real_map}
                               </span>
                             )}
                             {item.display_location && (
-                              <span className="text-[10px] font-semibold text-amber-700 whitespace-nowrap" title="진열위치">
+                              <span className="text-[14px] font-semibold text-amber-700 whitespace-nowrap" title="진열위치">
                                 진열 {item.display_location}
                               </span>
                             )}
                             {item.supplier && (
-                              <span className="text-[10px] font-semibold text-sky-700 whitespace-nowrap">
+                              <span className="text-[14px] font-semibold text-sky-700 whitespace-nowrap">
                                 {item.supplier}
                               </span>
                             )}
@@ -314,7 +314,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
                   );
                 })}
             </div>
-            <div className="px-4 py-2 border-t border-zinc-50 text-[10px] text-zinc-300 text-center">
+            <div className="px-4 py-2 border-t border-zinc-50 text-[14px] text-zinc-300 text-center">
               재고 정보는 실시간이 아닐 수 있습니다 · 정확한 재고는 약국에 직접 문의해 주세요
             </div>
           </div>

@@ -197,11 +197,11 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
             <div className="min-w-0">
               <div className="text-base font-black text-zinc-900 flex items-center gap-2 flex-wrap">
                 반품 요청서
-                <span className="text-[10px] font-black text-rose-700 bg-white border border-rose-300 rounded-full px-2 py-0.5 tabular-nums">
+                <span className="text-[14px] font-black text-rose-700 bg-white border border-rose-300 rounded-full px-2 py-0.5 tabular-nums">
                   반품 예정 · {lines.length}건
                 </span>
               </div>
-              <div className="text-[11px] font-mono text-zinc-500 mt-0.5 truncate">#{returnNumber}</div>
+              <div className="text-[15px] font-mono text-zinc-500 mt-0.5 truncate">#{returnNumber}</div>
             </div>
           </div>
           <button
@@ -213,7 +213,7 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
         </div>
 
         {/* ── 반품 기본 정보 (grid 4-col) ── */}
-        <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50/50 grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
+        <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50/50 grid grid-cols-2 sm:grid-cols-4 gap-3 text-[15px]">
           <div>
             <label className="text-zinc-500 font-black block mb-1">반품 요청일</label>
             <input type="date" value={requestDate} onChange={e => setRequestDate(e.target.value)}
@@ -245,8 +245,8 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
         {/* ── 공급사 정보 + 상품 테이블 ── */}
         <div className="flex-1 overflow-y-auto max-h-[45vh] px-6 py-4 space-y-3 bg-zinc-50/30">
           {multipleSuppliers && (
-            <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 flex items-start gap-2">
-              <span className="text-[13px] leading-none">⚠️</span>
+            <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[15px] text-amber-800 flex items-start gap-2">
+              <span className="text-[15px] leading-none">⚠️</span>
               <div className="min-w-0">
                 <div className="font-black text-amber-900">
                   여러 공급사 · 대표 공급사({supplierName || uniqueSuppliers[0] || "-"})로 발송
@@ -261,12 +261,12 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
             {/* 공급사 정보 헤더 (sky·rose gradient) */}
             <div className="px-4 py-3 bg-rose-50/60 border-b border-zinc-200 flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-[10px] font-black text-rose-600 bg-white border border-rose-200 rounded-full px-2 py-0.5 shrink-0">반품 요청서</span>
+                <span className="text-[14px] font-black text-rose-600 bg-white border border-rose-200 rounded-full px-2 py-0.5 shrink-0">반품 요청서</span>
                 <span className="text-sm font-black text-zinc-900 truncate">{supplierName || "(공급사 미지정)"}</span>
                 {vendorCategory && <VendorCategoryBadge category={vendorCategory} />}
-                <span className="text-[10px] font-mono text-rose-600 bg-white border border-rose-200 rounded px-1.5 py-0.5 shrink-0">#{returnNumber}</span>
+                <span className="text-[14px] font-mono text-rose-600 bg-white border border-rose-200 rounded px-1.5 py-0.5 shrink-0">#{returnNumber}</span>
               </div>
-              <div className="flex items-center gap-3 text-[10px] font-semibold text-zinc-500 flex-wrap">
+              <div className="flex items-center gap-3 text-[14px] font-semibold text-zinc-500 flex-wrap">
                 {supplierInfo?.contact_name && <span>👤 {supplierInfo.contact_name}</span>}
                 {supplierInfo?.phone && <span className="flex items-center gap-1"><MessageSquare size={10}/>{supplierInfo.phone}</span>}
                 {supplierInfo?.email && <span className="flex items-center gap-1"><Mail size={10}/>{supplierInfo.email}</span>}
@@ -276,21 +276,21 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
             {/* 반품 예상 금액 카드 (rose 톤) */}
             <div className="px-4 py-3 bg-zinc-50/60 border-b border-zinc-200 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="bg-white rounded-lg border border-rose-200 p-2.5">
-                <div className="text-[9px] font-black text-rose-500 uppercase tracking-widest mb-1">이번 반품 예상 금액</div>
+                <div className="text-[15px] font-black text-rose-500 uppercase tracking-widest mb-1">이번 반품 예상 금액</div>
                 <div className="text-lg font-black text-rose-700 font-mono">{totalAmount > 0 ? totalAmount.toLocaleString() + "원" : "-"}</div>
-                <div className="text-[9px] text-zinc-400 mt-0.5">반품수량 × 매입가 합계</div>
+                <div className="text-[15px] text-zinc-400 mt-0.5">반품수량 × 매입가 합계</div>
               </div>
               <div className="bg-white rounded-lg border border-amber-200 p-2.5">
-                <div className="text-[9px] font-black text-amber-500 uppercase tracking-widest mb-1">총 반품 수량</div>
+                <div className="text-[15px] font-black text-amber-500 uppercase tracking-widest mb-1">총 반품 수량</div>
                 <div className="text-lg font-black text-amber-700 font-mono">{totalQty > 0 ? `${totalQty.toLocaleString()}개` : "-"}</div>
-                <div className="text-[9px] text-zinc-400 mt-0.5">라인 {lines.length}건</div>
+                <div className="text-[15px] text-zinc-400 mt-0.5">라인 {lines.length}건</div>
               </div>
             </div>
 
             {/* 상품 테이블 */}
-            <table className="w-full text-[11px]">
+            <table className="w-full text-[15px]">
               <thead>
-                <tr className="bg-zinc-100 text-zinc-500 font-black uppercase tracking-wide text-[9px] border-b border-zinc-200">
+                <tr className="bg-zinc-100 text-zinc-500 font-black uppercase tracking-wide text-[15px] border-b border-zinc-200">
                   <th className="text-center p-2 w-8">#</th>
                   <th className="text-left p-2 w-24">상품코드</th>
                   <th className="text-left p-2">상품명</th>
@@ -309,12 +309,12 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
                   return (
                     <tr key={`${r.product_code}-${iIdx}`} className="hover:bg-rose-50/40">
                       <td className="p-2 text-center text-zinc-400 font-black tabular-nums">{iIdx + 1}</td>
-                      <td className="p-2 font-mono text-[10px] text-zinc-400 tabular-nums">{r.product_code}</td>
+                      <td className="p-2 font-mono text-[14px] text-zinc-400 tabular-nums">{r.product_code}</td>
                       <td className="p-2 font-bold text-zinc-800 truncate max-w-[220px]">{r.product_name}</td>
                       <td className="p-2 text-right font-mono text-zinc-600 tabular-nums">
                         {r.current_stock.toLocaleString()}
                         {r.actual_stock != null && r.actual_stock !== r.current_stock && (
-                          <span className="block text-[9px] text-amber-600 font-normal leading-none mt-0.5">실 {r.actual_stock}</span>
+                          <span className="block text-[15px] text-amber-600 font-normal leading-none mt-0.5">실 {r.actual_stock}</span>
                         )}
                       </td>
                       <td className="p-2 text-right">
@@ -341,7 +341,7 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
                           type="text" value={r.memo}
                           onChange={e => updateLine(iIdx, { memo: e.target.value })}
                           placeholder="(선택)"
-                          className="w-full border border-zinc-200 rounded px-1.5 py-0.5 text-[10px] focus:outline-none focus:border-rose-400"
+                          className="w-full border border-zinc-200 rounded px-1.5 py-0.5 text-[14px] focus:outline-none focus:border-rose-400"
                         />
                       </td>
                       <td className="p-2 text-center">
@@ -357,7 +357,7 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
                 })}
               </tbody>
               <tfoot>
-                <tr className="bg-zinc-50 border-t-2 border-zinc-300 font-black text-[10px]">
+                <tr className="bg-zinc-50 border-t-2 border-zinc-300 font-black text-[14px]">
                   <td colSpan={4} className="p-2 text-right text-zinc-500 uppercase">소계</td>
                   <td className="p-2 text-right text-rose-600 font-mono tabular-nums">{totalQty}개</td>
                   <td colSpan={1}></td>
@@ -371,15 +371,15 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
 
         {/* 특이사항 메모 */}
         <div className="px-6 py-3 border-t border-zinc-100 bg-zinc-50/50">
-          <label className="text-[11px] text-zinc-500 font-black block mb-1">특이사항 · 요청 메모</label>
+          <label className="text-[15px] text-zinc-500 font-black block mb-1">특이사항 · 요청 메모</label>
           <textarea
             value={memo} onChange={e => setMemo(e.target.value)}
             placeholder="공급사에 전달할 반품 사유·수거 요청 시간 등..."
             rows={2}
-            className="w-full border border-zinc-200 rounded px-2 py-1.5 text-[11px] focus:outline-none focus:border-rose-400 resize-none"
+            className="w-full border border-zinc-200 rounded px-2 py-1.5 text-[15px] focus:outline-none focus:border-rose-400 resize-none"
           />
           {sendError && (
-            <div className="mt-2 text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1">
+            <div className="mt-2 text-[15px] font-bold text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1">
               {sendError}
             </div>
           )}
@@ -387,7 +387,7 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
 
         {/* 액션 버튼 */}
         <div className="px-6 py-4 border-t border-zinc-200 bg-white flex items-center justify-between gap-2 flex-wrap">
-          <div className="text-[11px] text-zinc-500">
+          <div className="text-[15px] text-zinc-500">
             총 <span className="font-black text-zinc-800">{lines.length}개 상품</span> ·
             {" "}<span className="font-black text-rose-700 tabular-nums">{totalQty}개</span> ·
             {" "}<span className="font-black text-rose-700 tabular-nums">{totalAmount > 0 ? `${totalAmount.toLocaleString()}원` : "-"}</span>
@@ -396,18 +396,18 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
             <button
               onClick={() => !sending && onClose()}
               disabled={sending}
-              className="text-[12px] font-bold text-zinc-600 bg-white border border-zinc-300 hover:bg-zinc-50 rounded-lg px-4 py-2 cursor-pointer disabled:opacity-40"
+              className="text-[14px] font-bold text-zinc-600 bg-white border border-zinc-300 hover:bg-zinc-50 rounded-lg px-4 py-2 cursor-pointer disabled:opacity-40"
             >취소</button>
             <button
               onClick={send} disabled={sending || sent}
-              className={`text-[12px] font-black rounded-lg px-5 py-2 cursor-pointer shadow-md flex items-center gap-2 disabled:opacity-60 border ${
+              className={`text-[14px] font-black rounded-lg px-5 py-2 cursor-pointer shadow-md flex items-center gap-2 disabled:opacity-60 border ${
                 sent
                   ? "bg-emerald-50 text-emerald-700 border-emerald-300"
                   : "text-white bg-rose-500 hover:bg-rose-600 border-rose-700"
               }`}
             >
               {sent
-                ? <><span className="inline-block w-3 h-3 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black">✓</span>전송 완료</>
+                ? <><span className="inline-block w-3 h-3 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[15px] font-black">✓</span>전송 완료</>
                 : sending
                   ? <><Loader2 size={13} className="animate-spin"/>전송 중...</>
                   : "반품 요청 전송"}
@@ -713,7 +713,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
             }).length;
             const isFiltered = !!q || returnCategoryFilter !== "전체";
             return (
-              <span className="text-[11px] font-semibold text-rose-600 bg-rose-50 rounded-full px-2 py-0.5 border border-rose-200 tabular-nums">
+              <span className="text-[15px] font-semibold text-rose-600 bg-rose-50 rounded-full px-2 py-0.5 border border-rose-200 tabular-nums">
                 {isFiltered ? `${filteredCount}/${returnList.length}` : returnList.length}건
               </span>
             );
@@ -721,33 +721,33 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
         </div>
         {/* 2026-08-06 · 반응형 · 3조건 한 줄 강제 · nowrap 그룹 · shrink-0 (사용자 요청) */}
         <div className="flex items-center gap-1.5 flex-nowrap shrink-0 basis-full sm:basis-auto">
-          <label className="inline-flex items-center gap-1 text-[11px] text-zinc-600 shrink-0">
+          <label className="inline-flex items-center gap-1 text-[15px] text-zinc-600 shrink-0">
             <span className="font-medium text-zinc-500">매입주기</span>
             <input
               type="number"
               value={returnCycleMin}
               onChange={e => setReturnCycleMin(Math.max(0, Number(e.target.value) || 0))}
-              className="w-11 h-7 px-1.5 text-[11px] border border-zinc-200 rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 tabular-nums text-right transition"
+              className="w-11 h-7 px-1.5 text-[15px] border border-zinc-200 rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 tabular-nums text-right transition"
             />
             <span className="text-zinc-500 whitespace-nowrap">일 ↑</span>
           </label>
-          <label className="inline-flex items-center gap-1 text-[11px] text-zinc-600 shrink-0">
+          <label className="inline-flex items-center gap-1 text-[15px] text-zinc-600 shrink-0">
             <span className="font-medium text-zinc-500">1M판매</span>
             <input
               type="number"
               value={returnSalesMax}
               onChange={e => setReturnSalesMax(Math.max(0, Number(e.target.value) || 0))}
-              className="w-11 h-7 px-1.5 text-[11px] border border-zinc-200 rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 tabular-nums text-right transition"
+              className="w-11 h-7 px-1.5 text-[15px] border border-zinc-200 rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 tabular-nums text-right transition"
             />
             <span className="text-zinc-500 whitespace-nowrap">개 ↑</span>
           </label>
-          <label className="inline-flex items-center gap-1 text-[11px] text-zinc-600 shrink-0">
+          <label className="inline-flex items-center gap-1 text-[15px] text-zinc-600 shrink-0">
             <span className="font-medium text-zinc-500">3M판매</span>
             <input
               type="number"
               value={returnSalesQuarterMax}
               onChange={e => setReturnSalesQuarterMax(Math.max(0, Number(e.target.value) || 0))}
-              className="w-11 h-7 px-1.5 text-[11px] border border-zinc-200 rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 tabular-nums text-right transition"
+              className="w-11 h-7 px-1.5 text-[15px] border border-zinc-200 rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 tabular-nums text-right transition"
             />
             <span className="text-zinc-500 whitespace-nowrap">개 ↑</span>
           </label>
@@ -756,7 +756,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
         <div className="flex flex-wrap bg-zinc-50 border border-zinc-200 rounded-md p-0.5 gap-0.5">
           {(["전체", ...dbVendorCategories] as string[]).map(cat => (
             <button key={cat} onClick={() => setReturnCategoryFilter(cat)}
-              className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${
+              className={`h-7 px-2.5 text-[15px] font-semibold rounded transition cursor-pointer ${
                 returnCategoryFilter === cat
                   ? cat === "전체"   ? "bg-zinc-700 text-white shadow-sm"
                   : cat === "위탁"   ? "bg-violet-500 text-white shadow-sm"
@@ -776,7 +776,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
             value={returnSupplierSearch}
             onChange={e => setReturnSupplierSearch(e.target.value)}
             placeholder="공급사명 검색"
-            className="w-40 h-7 pl-7 pr-2 text-[11px] border border-zinc-200 rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 transition"
+            className="w-40 h-7 pl-7 pr-2 text-[15px] border border-zinc-200 rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 transition"
           />
         </div>
         {/* 일괄 반품 신청 · 2026-08-03 · 선택 상품 있을 때만 활성 */}
@@ -784,7 +784,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
           type="button"
           onClick={openBulkReturnModal}
           disabled={returnSelected.size === 0}
-          className={`ml-auto inline-flex items-center gap-1.5 h-7 px-3 rounded-md text-[11px] font-black transition cursor-pointer border ${
+          className={`ml-auto inline-flex items-center gap-1.5 h-7 px-3 rounded-md text-[15px] font-black transition cursor-pointer border ${
             returnSelected.size > 0
               ? "text-white bg-rose-500 hover:bg-rose-600 border-rose-700 shadow-sm active:scale-95"
               : "text-zinc-400 bg-zinc-50 border-zinc-200 cursor-not-allowed"
@@ -812,7 +812,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                 <Loader2 size={14} className="animate-spin" />불러오는 중...
               </div>
             ) : returnList.length === 0 ? (
-              <div className="py-12 text-center text-[11px] text-zinc-300">
+              <div className="py-12 text-center text-[15px] text-zinc-300">
                 조건에 맞는 반품필요 상품 없음
               </div>
             ) : (
@@ -820,7 +820,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                 <table className="w-full text-xs" style={{ tableLayout: "fixed" }}>
                   <thead className="sticky top-0 bg-white z-10">
                     {/* 그룹 컬러 헤더 · 2026-08-03 · 재고 그룹 (현재고·실재고·재고금액) · 판매 그룹 (1/2/3달) */}
-                    <tr className="border-b border-zinc-200 text-[10px] font-black uppercase tracking-wider">
+                    <tr className="border-b border-zinc-200 text-[14px] font-black uppercase tracking-wider">
                       <th className="bg-zinc-50 w-7" />
                       {/* 상품정보 (sky) */}
                       <th colSpan={isReturnGroupCollapsed("info") ? 1 : 2}
@@ -862,7 +862,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                       <th className="text-center py-1.5 bg-zinc-100 text-zinc-600 border-l border-zinc-100">액션</th>
                     </tr>
                     {/* 서브 헤더 */}
-                    <tr className="border-b border-zinc-100 text-[11px] text-zinc-400 uppercase tracking-wider">
+                    <tr className="border-b border-zinc-100 text-[15px] text-zinc-400 uppercase tracking-wider">
                       <th className="relative text-center px-0.5 py-1.5 bg-zinc-50/60"
                         style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
                         #
@@ -905,7 +905,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                           style={{ width: getWidth("purchase_cycle"), minWidth: getWidth("purchase_cycle") }}>
                           <span className="flex flex-col items-end leading-none gap-0.5">
                             <span>매입주기{retArrow("purchase_cycle")}</span>
-                            <span className="text-[9px] text-zinc-400 font-normal">최근매입일·량</span>
+                            <span className="text-[15px] text-zinc-400 font-normal">최근매입일·량</span>
                           </span>
                           <span {...colResizerProps("purchase_cycle")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                         </th>
@@ -961,7 +961,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                           className={`transition cursor-pointer ${isSelected ? "bg-rose-50/60 ring-1 ring-inset ring-rose-200" : "hover:bg-orange-50/30"}`}
                           onClick={() => { setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("info"); }}
                         >
-                          <td className="px-0.5 py-1.5 text-center text-zinc-400 tabular-nums text-[11px] bg-zinc-50/60 align-top">{i + 1}</td>
+                          <td className="px-0.5 py-1.5 text-center text-zinc-400 tabular-nums text-[15px] bg-zinc-50/60 align-top">{i + 1}</td>
                           {isReturnGroupCollapsed("info") ? (
                             <td className="bg-sky-50/10 w-4"></td>
                           ) : (
@@ -970,11 +970,11 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                                 <div className="flex flex-col leading-tight">
                                   <button
                                     type="button"
-                                    className="text-[12px] font-semibold text-sky-700 hover:underline text-left break-words whitespace-normal cursor-pointer"
+                                    className="text-[14px] font-semibold text-sky-700 hover:underline text-left break-words whitespace-normal cursor-pointer"
                                     onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("info"); }}
                                     title="상품정보 보기"
                                   >{x.product_name}</button>
-                                  <span className="text-[10px] text-zinc-400 tabular-nums">{x.product_code}</span>
+                                  <span className="text-[14px] text-zinc-400 tabular-nums">{x.product_code}</span>
                                 </div>
                               </td>
                               <td className="px-0.5 py-1.5 align-top bg-sky-50/10">
@@ -983,12 +983,12 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                                   {onSupplierClick && x.supplier ? (
                                     <button
                                       type="button"
-                                      className="text-[12px] font-normal text-sky-700 hover:underline text-left whitespace-nowrap cursor-pointer"
+                                      className="text-[14px] font-normal text-sky-700 hover:underline text-left whitespace-nowrap cursor-pointer"
                                       onClick={(e) => { e.stopPropagation(); onSupplierClick(x.supplier!); }}
                                       title={`공급사 정보 조회·수정 (${x.supplier})`}
                                     >{displayVendorName(x.supplier)}</button>
                                   ) : (
-                                    <span className="text-[12px] font-normal text-sky-700 whitespace-nowrap">{x.supplier ? displayVendorName(x.supplier) : "-"}</span>
+                                    <span className="text-[14px] font-normal text-sky-700 whitespace-nowrap">{x.supplier ? displayVendorName(x.supplier) : "-"}</span>
                                   )}
                                 </div>
                               </td>
@@ -998,7 +998,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                           {isReturnGroupCollapsed("stock") ? (
                             <td className="bg-amber-50/20 w-4"></td>
                           ) : (
-                            <td className="text-right px-1 py-1.5 tabular-nums font-normal text-[12px] text-indigo-700 bg-amber-50/20 align-top">
+                            <td className="text-right px-1 py-1.5 tabular-nums font-normal text-[14px] text-indigo-700 bg-amber-50/20 align-top">
                               {x.current_stock > 0 && x.purchase_price > 0 ? `${(x.current_stock * x.purchase_price).toLocaleString()}` : "-"}
                             </td>
                           )}
@@ -1010,11 +1010,11 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                               onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("purchase"); }}
                               title="매입이력 보기"
                             >
-                              <span className="font-normal text-[12px] text-emerald-700 hover:underline tabular-nums">
+                              <span className="font-normal text-[14px] text-emerald-700 hover:underline tabular-nums">
                                 {x.purchase_cycle != null ? `${x.purchase_cycle}일` : "-"}
                               </span>
                               {/* 2026-08-06 · 최근 매입일 · M/D 짧은 포맷 · 최근 매입량 함께 */}
-                              <span className="block text-[10px] text-zinc-500 leading-snug mt-0.5 font-normal tabular-nums">
+                              <span className="block text-[14px] text-zinc-500 leading-snug mt-0.5 font-normal tabular-nums">
                                 {x.last_purchase_date ? (() => {
                                   const [_, m, d] = x.last_purchase_date.split("-");
                                   return `${Number(m)}/${Number(d)}`;
@@ -1034,7 +1034,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                               onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("sales"); }}
                               title="1달 / 2달 / 3달 판매량"
                             >
-                              <span className="font-normal text-[12px] text-rose-700 hover:underline tabular-nums">
+                              <span className="font-normal text-[14px] text-rose-700 hover:underline tabular-nums">
                                 {x.sale_qty_month != null ? x.sale_qty_month.toLocaleString() : "-"}
                                 <span className="text-zinc-300"> / </span>
                                 {x.sale_qty_60d != null ? x.sale_qty_60d.toLocaleString() : "-"}
@@ -1047,7 +1047,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); setReturnRequestItem({ ...x, vendorCategory: x.supplier ? (vendorCategoryMap[x.supplier.trim()] ?? null) : null }); }}
-                              className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[11px] font-semibold text-white bg-rose-500 hover:bg-rose-600 border border-rose-600 transition-colors cursor-pointer active:scale-95 whitespace-nowrap"
+                              className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[15px] font-semibold text-white bg-rose-500 hover:bg-rose-600 border border-rose-600 transition-colors cursor-pointer active:scale-95 whitespace-nowrap"
                               title="반품요청"
                             >
                               <Truck size={11} strokeWidth={2} />반품
@@ -1057,7 +1057,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                       );
                     })}
                     {returnList.length === 0 && (
-                      <tr><td colSpan={11} className="text-center text-[11px] text-zinc-300 py-6">검색 결과 없음</td></tr>
+                      <tr><td colSpan={11} className="text-center text-[15px] text-zinc-300 py-6">검색 결과 없음</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -1070,7 +1070,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
         <div onMouseDown={onReturnResizeStart}
           className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-rose-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
           title="드래그하여 폭 조절">
-          <span className="text-[9px] text-zinc-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+          <span className="text-[15px] text-zinc-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
         </div>
 
         {/* 우측: 상품 상세 패널 · 탭 전환 */}
@@ -1084,7 +1084,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
           <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0">
             <div className="bg-white rounded-xl border border-zinc-200 p-4 text-sm text-red-700">
               <div className="font-bold mb-1">조회 실패</div>
-              <div className="text-[11px] font-mono">{returnPanelError}</div>
+              <div className="text-[15px] font-mono">{returnPanelError}</div>
             </div>
           </div>
         ) : returnPanelFull ? (
@@ -1098,15 +1098,15 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                 ] as const).map(({ k, label, color }) => (
                   <button key={k} type="button"
                     onClick={() => setReturnDetailTab(k)}
-                    className={`flex-1 min-h-[40px] py-2 px-3 text-[13px] font-black border-b-2 transition cursor-pointer ${returnDetailTab === k ? color : "text-zinc-400 border-transparent hover:text-zinc-600"}`}>
+                    className={`flex-1 min-h-[40px] py-2 px-3 text-[15px] font-black border-b-2 transition cursor-pointer ${returnDetailTab === k ? color : "text-zinc-400 border-transparent hover:text-zinc-600"}`}>
                     {label}
                   </button>
                 ))}
               </div>
               <div className="px-3 py-1.5 flex items-center gap-2 border-b border-zinc-100">
-                <span className="text-[11px] font-bold text-zinc-500 truncate">{returnSelectedProduct?.name}</span>
+                <span className="text-[15px] font-bold text-zinc-500 truncate">{returnSelectedProduct?.name}</span>
                 <button type="button" onClick={() => { setReturnSelectedProduct(null); setReturnPanelFull(null); }}
-                  className="ml-auto text-[10px] text-zinc-400 hover:text-zinc-600 cursor-pointer shrink-0">닫기</button>
+                  className="ml-auto text-[14px] text-zinc-400 hover:text-zinc-600 cursor-pointer shrink-0">닫기</button>
               </div>
             </div>
 

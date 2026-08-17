@@ -57,21 +57,21 @@ type SaveState = "idle" | "saving" | "saved" | "error";
 function StatusBadge({ state, label }: { state: SaveState; label?: string }) {
   if (state === "saving") {
     return (
-      <span className="inline-flex items-center gap-1 text-[11px] text-zinc-500 font-bold">
+      <span className="inline-flex items-center gap-1 text-[15px] text-zinc-500 font-bold">
         저장 중…
       </span>
     );
   }
   if (state === "saved") {
     return (
-      <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 font-bold">
+      <span className="inline-flex items-center gap-1 text-[15px] text-emerald-600 font-bold">
         <Check size={11} weight="bold" /> {label ?? "저장됨"}
       </span>
     );
   }
   if (state === "error") {
     return (
-      <span className="inline-flex items-center gap-1 text-[11px] text-rose-500 font-bold">
+      <span className="inline-flex items-center gap-1 text-[15px] text-rose-500 font-bold">
         <Warning size={11} weight="fill" /> 저장 실패
       </span>
     );
@@ -122,8 +122,8 @@ const BrandSection: React.FC = () => {
           <Buildings size={15} weight="fill" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-black text-zinc-800 leading-tight">브랜드 정보</div>
-          <div className="text-[11px] text-zinc-500 mt-0.5">사이드바·헤더·랜딩·푸터에서 사용되는 브랜드 이름/로고</div>
+          <div className="text-[15px] font-black text-zinc-800 leading-tight">브랜드 정보</div>
+          <div className="text-[15px] text-zinc-500 mt-0.5">사이드바·헤더·랜딩·푸터에서 사용되는 브랜드 이름/로고</div>
         </div>
         <StatusBadge state={saveState as SaveState} />
       </div>
@@ -178,7 +178,7 @@ const BrandSection: React.FC = () => {
         />
       </div>
       {!loaded && (
-        <div className="px-4 pb-3 text-[11px] text-zinc-400">서버에서 설정을 불러오는 중…</div>
+        <div className="px-4 pb-3 text-[15px] text-zinc-400">서버에서 설정을 불러오는 중…</div>
       )}
     </section>
   );
@@ -196,8 +196,8 @@ export const ContactSection: React.FC = () => {
           <Phone size={15} weight="fill" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-black text-zinc-800 leading-tight">연락처·저작권·카카오</div>
-          <div className="text-[11px] text-zinc-500 mt-0.5">푸터·랜딩·카카오 QR 등에서 사용되는 값</div>
+          <div className="text-[15px] font-black text-zinc-800 leading-tight">연락처·저작권·카카오</div>
+          <div className="text-[15px] text-zinc-500 mt-0.5">푸터·랜딩·카카오 QR 등에서 사용되는 값</div>
         </div>
         <StatusBadge state={saveState as SaveState} />
       </div>
@@ -249,7 +249,7 @@ export const ContactSection: React.FC = () => {
         </div>
       </div>
       {!loaded && (
-        <div className="px-4 pb-3 text-[11px] text-zinc-400">서버에서 설정을 불러오는 중…</div>
+        <div className="px-4 pb-3 text-[15px] text-zinc-400">서버에서 설정을 불러오는 중…</div>
       )}
     </section>
   );
@@ -305,8 +305,8 @@ export const StampsSection: React.FC = () => {
           <Stamp size={15} weight="fill" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-black text-zinc-800 leading-tight">도장 매핑</div>
-          <div className="text-[11px] text-zinc-500 mt-0.5">
+          <div className="text-[15px] font-black text-zinc-800 leading-tight">도장 매핑</div>
+          <div className="text-[15px] text-zinc-500 mt-0.5">
             근로계약서 · 사업주/근로자 이름에 자동 매칭되는 도장 이미지
           </div>
         </div>
@@ -316,13 +316,13 @@ export const StampsSection: React.FC = () => {
       {/* 목록 테이블 */}
       <div className="p-4 flex flex-col gap-3">
         {stamps.length === 0 && (
-          <div className="text-[12px] text-zinc-400 flex items-center gap-1.5">
+          <div className="text-[14px] text-zinc-400 flex items-center gap-1.5">
             <Info size={12} /> 등록된 도장이 없습니다. 아래에서 추가하세요.
           </div>
         )}
         {stamps.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full text-[12px]">
+            <table className="w-full text-[14px]">
               <thead>
                 <tr className="text-left text-zinc-500 border-b border-zinc-200">
                   <th className="py-2 pr-2 font-semibold">이름</th>
@@ -399,7 +399,7 @@ export const StampsSection: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleRemove(idx)}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-rose-200 bg-white text-rose-600 hover:bg-rose-50 text-[11px] font-bold transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-rose-200 bg-white text-rose-600 hover:bg-rose-50 text-[15px] font-bold transition-colors cursor-pointer"
                           title="삭제"
                           aria-label={`${s.name} 도장 삭제`}
                         >
@@ -416,7 +416,7 @@ export const StampsSection: React.FC = () => {
 
         {/* 추가 폼 · 2026-08-12 · 도장 이미지 파일 업로드 지원 */}
         <div className="mt-2 border-t border-dashed border-zinc-200 pt-3">
-          <div className="text-[12px] font-bold text-zinc-600 mb-2">새 도장 추가</div>
+          <div className="text-[14px] font-bold text-zinc-600 mb-2">새 도장 추가</div>
           <div className="flex flex-col gap-2">
             <div className="flex flex-col sm:flex-row gap-2">
               <input
@@ -440,7 +440,7 @@ export const StampsSection: React.FC = () => {
                 type="button"
                 onClick={handleAdd}
                 disabled={!draftName.trim()}
-                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 text-white text-[12px] font-black shadow-sm transition-colors cursor-pointer whitespace-nowrap sm:ml-auto"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 text-white text-[14px] font-black shadow-sm transition-colors cursor-pointer whitespace-nowrap sm:ml-auto"
               >
                 <Plus size={13} weight="bold" /> 추가
               </button>
@@ -456,7 +456,7 @@ export const StampsSection: React.FC = () => {
         </div>
       </div>
       {!loaded && (
-        <div className="px-4 pb-3 text-[11px] text-zinc-400">서버에서 설정을 불러오는 중…</div>
+        <div className="px-4 pb-3 text-[15px] text-zinc-400">서버에서 설정을 불러오는 중…</div>
       )}
     </section>
   );
@@ -508,8 +508,8 @@ export const MobileVisibilitySection: React.FC = () => {
           <DeviceMobile size={15} weight="fill" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-black text-zinc-800 leading-tight">페이지별 모바일 최소 레벨</div>
-          <div className="text-[11px] text-zinc-500 mt-0.5">
+          <div className="text-[15px] font-black text-zinc-800 leading-tight">페이지별 모바일 최소 레벨</div>
+          <div className="text-[15px] text-zinc-500 mt-0.5">
             모바일에서 접근 가능한 최소 레벨 · 기본값 0 (모두 허용) · 값 이상만 접근 · 미만 사용자는 PC 전용 안내 표시
           </div>
         </div>
@@ -518,7 +518,7 @@ export const MobileVisibilitySection: React.FC = () => {
       <div className="p-4 flex flex-col gap-4">
         {groups.map((g) => (
           <div key={g.id} className="flex flex-col gap-2">
-            <div className="text-[11px] font-black text-zinc-500 uppercase tracking-wide">
+            <div className="text-[15px] font-black text-zinc-500 uppercase tracking-wide">
               {g.label}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -535,13 +535,13 @@ export const MobileVisibilitySection: React.FC = () => {
                         : "border-emerald-200 bg-emerald-50/40",
                     ].join(" ")}
                   >
-                    <span className="text-[13px] font-bold text-zinc-800 flex-1 min-w-0 truncate">
+                    <span className="text-[15px] font-bold text-zinc-800 flex-1 min-w-0 truncate">
                       {it.label}
                     </span>
                     <select
                       value={min}
                       onChange={(e) => setMinLevel(it.pageKey, Number(e.target.value))}
-                      className="bg-white border border-zinc-200 rounded-lg px-2 py-1 text-[12px] font-bold text-zinc-800 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint cursor-pointer"
+                      className="bg-white border border-zinc-200 rounded-lg px-2 py-1 text-[14px] font-bold text-zinc-800 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint cursor-pointer"
                       aria-label={`${it.label} 모바일 최소 레벨`}
                     >
                       {MIN_LEVEL_OPTIONS.map((opt) => (
@@ -558,7 +558,7 @@ export const MobileVisibilitySection: React.FC = () => {
         ))}
       </div>
       {!loaded && (
-        <div className="px-4 pb-3 text-[11px] text-zinc-400">서버에서 설정을 불러오는 중…</div>
+        <div className="px-4 pb-3 text-[15px] text-zinc-400">서버에서 설정을 불러오는 중…</div>
       )}
     </section>
   );
@@ -621,7 +621,7 @@ export const BrandingSettingsPage: React.FC<BrandingSettingsPageProps> = ({
       title="앱 브랜딩"
       description="연락처·카카오·도장 매핑·페이지별 모바일 최소 레벨. (브랜드 정보 · 로고/파비콘은 [회사정보] 페이지로 이동됨.) 관리자(lv 9) 전용."
       rightSlot={
-        <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-zinc-500 font-semibold">
+        <span className="hidden sm:inline-flex items-center gap-1 text-[15px] text-zinc-500 font-semibold">
           <FloppyDisk size={11} weight="fill" /> 변경 즉시 저장
         </span>
       }
