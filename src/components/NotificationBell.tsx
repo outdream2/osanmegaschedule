@@ -151,18 +151,19 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
   return (
     <div className="relative" ref={panelRef}>
       {/* Bell button — 미확인 알림 있으면 강조 · 신규 도착 시 흔들림 */}
+      {/* 2026-08-17 · 최신 트렌드 · 딥네이비 배경 대응 · 반투명 흰 · 접근성 h-9 · 폰트 +2 */}
       <button
         onClick={() => { setOpen((v) => !v); if (!open) fetchNotifications(); }}
-        className={`relative flex items-center justify-center w-7 h-7 rounded-lg border transition-all cursor-pointer shadow-sm hover:shadow-md active:scale-95 ${
+        className={`relative flex items-center justify-center w-9 h-9 rounded-lg border transition-colors cursor-pointer shadow-sm ${
           hasUnread
-            ? "bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-600"
-            : "bg-white hover:bg-zinc-50 border-line text-zinc-600 hover:text-indigo-600 hover:border-indigo-300"
+            ? "bg-rose-500/95 hover:bg-rose-600 border-rose-400 text-white"
+            : "bg-white/[0.10] hover:bg-white/[0.18] border-white/15 hover:border-white/30 text-white"
         } ${justArrived ? "notif-bell-shake" : ""}`}
         title={hasUnread ? `미확인 알림 ${unreadCount}건` : "알림"}
       >
         <Bell size={16} strokeWidth={hasUnread ? 2.4 : 2.2} className={hasUnread ? "animate-pulse" : ""} />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center leading-none shadow-md ring-1 ring-white">
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[11px] font-bold flex items-center justify-center leading-none shadow-sm ring-2 ring-white tabular-nums">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
@@ -183,29 +184,31 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
         <div
           className="fixed inset-x-2 top-14 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 mx-auto sm:mx-0 max-w-[420px] bg-white border border-line rounded-2xl shadow-2xl z-50 overflow-hidden"
           style={{ boxShadow: "0 8px 32px rgba(15,23,42,0.14), 0 2px 8px rgba(15,23,42,0.06)" }}>
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
-            <div className="flex items-center gap-2">
-              <Bell size={13} className="text-zinc-500" />
-              <span className="text-sm font-bold text-zinc-800">알림</span>
+          {/* Header · 2026-08-17 · 최신 트렌드 · accent bar + 폰트 +2 · 딥네이비 통일 */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-line bg-zinc-50/60">
+            <div className="flex items-center gap-2.5">
+              <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+              <Bell size={15} className="text-brand-deep" />
+              <span className="text-[16px] font-bold text-ink tracking-tight">알림</span>
               {unreadCount > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-600 text-[10px] font-bold">{unreadCount}</span>
+                <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white text-[12px] font-semibold tabular-nums shadow-sm">{unreadCount}</span>
               )}
             </div>
             <div className="flex items-center gap-1">
               {unreadCount > 0 && (
                 <button
                   onClick={markAllRead}
-                  className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-zinc-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition cursor-pointer"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-[13px] font-semibold text-ink-soft hover:text-brand-deep hover:bg-brand-tint rounded-lg transition-colors cursor-pointer"
                 >
-                  <CheckCheck size={11} /> 모두 읽음
+                  <CheckCheck size={13} /> 모두 읽음
                 </button>
               )}
               <button
                 onClick={() => setOpen(false)}
-                className="p-1 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition cursor-pointer"
+                className="p-1.5 text-ink-soft hover:text-ink hover:bg-zinc-100 rounded-lg transition-colors cursor-pointer"
+                aria-label="닫기"
               >
-                <X size={13} />
+                <X size={15} />
               </button>
             </div>
           </div>
