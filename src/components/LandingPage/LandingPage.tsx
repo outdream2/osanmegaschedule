@@ -917,9 +917,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       {/* ── Main content ── */}
       <div className="flex-1 flex flex-col items-center px-4 sm:px-6 relative overflow-hidden pt-8 pb-12">
 
-        {/* Ambient background blobs */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[360px] rounded-full pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(99,102,241,0.07) 0%, transparent 70%)" }} />
-        <div className="absolute bottom-1/3 left-1/4 w-[500px] h-[260px] rounded-full pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(16,185,129,0.05) 0%, transparent 70%)" }} />
+        {/* 2026-08-17 · Ambient background · 세련 · 3-layer aurora · 딥네이비 · sky · violet · 저채도 */}
+        <div className="absolute top-[-80px] left-1/2 -translate-x-1/2 w-[900px] h-[420px] rounded-full pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(10,46,74,0.09) 0%, transparent 70%)", filter: "blur(30px)" }} />
+        <div className="absolute top-[220px] right-[6%] w-[520px] h-[340px] rounded-full pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(62,124,177,0.08) 0%, transparent 70%)", filter: "blur(28px)" }} />
+        <div className="absolute bottom-1/4 left-[8%] w-[560px] h-[300px] rounded-full pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(139,92,246,0.05) 0%, transparent 70%)", filter: "blur(32px)" }} />
+        <div className="absolute bottom-[10%] right-[16%] w-[380px] h-[220px] rounded-full pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(16,185,129,0.04) 0%, transparent 70%)", filter: "blur(24px)" }} />
 
         <div className="relative z-10 flex flex-col items-center w-full max-w-3xl md:max-w-4xl xl:max-w-6xl">
 
