@@ -73,6 +73,8 @@ import { useSortableTabs } from "../../hooks/useSortableTabs";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { useContactInfo } from "../../hooks/useContactInfo";
+// 2026-08-17 · #131 · 사용자 지시 · 페이지 안보이기 · 내부 subtab tab bar 도 필터
+import { usePagePermissions } from "../../hooks/usePagePermissions";
 // 2026-08-03 · StaffManagePage · 매장관리 서브탭에서 제거 · 경영관리 통합 페이지(BusinessManagePage)로 이동
 import type { AuthSession } from "../../types";
 import { api, ApiError } from "../../lib/apiClient";
@@ -297,12 +299,35 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       authSession?.role === "manager" ? 2 : authSession?.role === "employee" ? 1 : 0);
   const dpCanSeeStockManage = dpUserLevel >= 9;
   const dpCanSeeStockArrivals = dpUserLevel >= 3;
+
+  // 2026-08-17 · #131 · 사용자 지시 · "메뉴에서 안보이기 처리하면 페이지도 안보여야지"
+  //   · 사이드바 hidden 처리한 서브탭은 페이지 내부 tab bar 에서도 숨김
+  //   · usePagePermissions · perms["display:{subTab}"].hidden 체크
+  const { perms: dpPerms } = usePagePermissions();
+  const dpHiddenSubs = React.useMemo(() => {
+    const set = new Set<DpSubTabKey>();
+    const subs: DpSubTabKey[] = ["purchase-order", "purchase", "payment", "statistics", "stock-arrivals", "store", "vendor-manage"];
+    for (const s of subs) {
+      const perm = (dpPerms as any)[`display:${s}`];
+      if (perm?.hidden === true && dpUserLevel < 9) set.add(s);
+    }
+    return set;
+  }, [dpPerms, dpUserLevel]);
   // 2026-08-11 · 사이드바 V2 · PC 는 사이드바가 서브탭 · TabBar 숨김 (모바일 유지)
   const isDpMobile = useIsMobile();
   const SIDEBAR_ENABLED = useSidebarEnabled(); // 2026-08-16 · 로컬 상수 유지 · body 로직 변경 최소
   const [dpSubTab, setDpSubTab] = useState<DpSubTabKey>(
     dpCanSeeStockManage ? "purchase-order" : "store"
   );
+
+  // 2026-08-17 · #131 · 사용자 지시 · 현재 subtab 이 hidden 이면 · 자동으로 첫번째 visible 로 이동
+  useEffect(() => {
+    if (dpHiddenSubs.has(dpSubTab)) {
+      const priority: DpSubTabKey[] = ["purchase-order", "purchase", "payment", "statistics", "store", "stock-arrivals", "vendor-manage"];
+      const next = priority.find(k => !dpHiddenSubs.has(k));
+      if (next) setDpSubTab(next);
+    }
+  }, [dpSubTab, dpHiddenSubs]);
   // 2026-08-10 · 매장구역도 · 기본 접기 (사용자 요청)
   const [mapCollapsed, setMapCollapsed] = useState(true);
   // 2026-08-09 · sessionStorage("dpInitialSubTab") 있으면 · 그 서브탭으로 진입 (LandingPage 공급사등록 카드용)
@@ -1408,14 +1433,15 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       {/* 2026-08-03 (#183) · 공통 TabBar (level 2) 로 리팩터 · duplicate 스타일 흡수 */}
       {/* 2026-08-05 · 관리자 long-press 드래그 재정렬 (useSortableTabs · localStorage 순서 저장) */}
       {(dpCanSeeStockManage || dpCanSeeStockArrivals) && !(SIDEBAR_ENABLED && !isDpMobile) && (() => {
+        // 2026-08-17 · #131 · 사용자 지시 · 안보이기 처리 subtab 은 내부 tab bar 에서도 숨김
         const visibilityMap: Record<DpSubTabKey, boolean> = {
-          "purchase-order": dpCanSeeStockManage,
-          "purchase":       dpCanSeeStockManage,
-          "payment":        dpCanSeeStockManage,
-          "statistics":     dpCanSeeStockManage,
-          "stock-arrivals": dpCanSeeStockArrivals,
-          "store":          true,
-          "vendor-manage":  dpCanSeeStockManage, // 2026-08-09 · 관리자만 (재고관리 권한과 동일)
+          "purchase-order": dpCanSeeStockManage && !dpHiddenSubs.has("purchase-order"),
+          "purchase":       dpCanSeeStockManage && !dpHiddenSubs.has("purchase"),
+          "payment":        dpCanSeeStockManage && !dpHiddenSubs.has("payment"),
+          "statistics":     dpCanSeeStockManage && !dpHiddenSubs.has("statistics"),
+          "stock-arrivals": dpCanSeeStockArrivals && !dpHiddenSubs.has("stock-arrivals"),
+          "store":          !dpHiddenSubs.has("store"),
+          "vendor-manage":  dpCanSeeStockManage && !dpHiddenSubs.has("vendor-manage"),
         };
         // sortable.tabs 는 localStorage 순서가 적용된 배열 · 여기서 visible 만 덮어씌움
         const tabs: CommonTabDef<DpSubTabKey>[] = dpTabSortable.tabs.map(t => ({ ...t, visible: visibilityMap[t.key] }));
