@@ -26,6 +26,7 @@ import { useSortableTable } from "../../hooks/useSortableTable";
 import { EmptyState } from "../common/EmptyState";
 import { LoadingState } from "../common/LoadingState";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
+import { StatusPill } from "../common/StatusPill";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -228,26 +229,17 @@ export const StockReconciliationTab: React.FC<{
   return (
     <div className="flex-1 flex flex-col min-h-0 gap-3">
 
-      {/* ── 헤더 카드 ── */}
+      {/* ── 헤더 카드 · 2026-08-17 · StatusPill 통일 · 딥네이비 accent + semantic status ── */}
       <div className={`${CARD_BASE} p-3 flex flex-wrap items-center gap-2`}>
-        <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
-          <CheckCircle2 size={14} className="text-emerald-600" />
-        </div>
-        <span className={`${TEXT.body} text-zinc-700`}>실재고</span>
-        <span className="text-[15px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 tabular-nums">
-          차이 있는 상품 {diffCount}개
-        </span>
+        <span className="w-[3px] h-[16px] rounded-full bg-brand-deep shrink-0" />
+        <CheckCircle2 size={16} className="text-brand-deep shrink-0" />
+        <span className="text-[15px] font-bold text-ink tracking-tight">실재고</span>
+        <StatusPill tone="emerald" size="md" dot>차이 있는 상품 {diffCount}개</StatusPill>
         {diffCount > 0 && (
           <>
-            <span className="text-[15px] font-bold text-rose-600 bg-rose-50 border border-rose-200 rounded-full px-2 py-0.5 tabular-nums">
-              부족 {underCount}개
-            </span>
-            <span className="text-[15px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 tabular-nums">
-              초과 {overCount}개
-            </span>
-            <span className="text-[15px] font-bold text-zinc-500 bg-zinc-50 border border-line rounded-full px-2 py-0.5 tabular-nums">
-              차이합 {totalDiffAbs}
-            </span>
+            <StatusPill tone="rose" size="md" dot>부족 {underCount}개</StatusPill>
+            <StatusPill tone="amber" size="md" dot>초과 {overCount}개</StatusPill>
+            <StatusPill tone="zinc" size="md">차이합 {totalDiffAbs}</StatusPill>
           </>
         )}
 
