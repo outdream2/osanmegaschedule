@@ -375,11 +375,10 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
               ⚡ 임의배치
             </button>
           )}
+          {/* 2026-08-17 · StatusPill 프레임워크 통일 */}
           {onConfirm && (
             isConfirmed ? (
-              <span className="flex items-center gap-0.5 text-[13px] font-bold text-emerald-700 px-2 py-0.5 rounded-full bg-emerald-100 border border-emerald-300">
-                ✓ 확정됨
-              </span>
+              <StatusPill tone="emerald" size="md">✓ 확정됨</StatusPill>
             ) : (
               <button
                 type="button"
