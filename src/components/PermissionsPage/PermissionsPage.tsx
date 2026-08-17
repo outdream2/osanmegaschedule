@@ -892,7 +892,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                         if (e.key === "Enter") { e.preventDefault(); commitEditPosition(); }
                         else if (e.key === "Escape") { setEditingPosIdx(null); }
                       }}
-                      className="flex-1 text-[13px] font-semibold text-zinc-800 bg-white border border-violet-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-brand-tint min-w-0"
+                      className="flex-1 text-[13px] font-semibold text-zinc-800 bg-white border border-violet-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-brand-tint min-w-0"
                     />
                   ) : (
                     <>

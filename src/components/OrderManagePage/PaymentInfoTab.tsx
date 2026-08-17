@@ -903,7 +903,7 @@ export const PaymentInfoTab: React.FC = () => {
               value={vendorSearch}
               onChange={e => setVendorSearch(e.target.value)}
               placeholder="공급사명 검색"
-              className="w-full h-7 px-2.5 text-[15px] border border-line rounded-lg outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep transition"
+              className="w-full h-7 px-2.5 text-[15px] border border-line rounded-lg outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
             />
             <div className="flex flex-wrap gap-0.5">
               {(["전체", ...dbVendorCategories] as string[]).map(cat => (

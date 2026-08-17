@@ -447,7 +447,7 @@ const InlineField: React.FC<{
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="border border-indigo-300 rounded-md px-2 py-0.5 text-[15px] focus:outline-none focus:border-brand-deep focus:ring-1 focus:ring-brand-tint bg-indigo-50/40 h-7"
+        className="border border-indigo-300 rounded-md px-2 py-0.5 text-[15px] focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint bg-indigo-50/40 h-7"
       />
     ) : (
       <span
@@ -585,7 +585,7 @@ const CreateModal: React.FC<{
                 value={String(draft[key] ?? "")}
                 onChange={(e) => set(key, e.target.value)}
                 placeholder={placeholder}
-                className="w-full border border-line rounded-md px-2.5 py-1.5 text-[14px] focus:outline-none focus:border-brand-deep focus:ring-1 focus:ring-brand-tint"
+                className="w-full border border-line rounded-md px-2.5 py-1.5 text-[14px] focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
               />
             </div>
           ))}
@@ -1312,7 +1312,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="이름 · 직책 · 연락처"
-            className="pl-8 pr-3 h-8 text-[14px] border border-line rounded-lg focus:outline-none focus:border-brand-deep focus:ring-1 focus:ring-brand-tint bg-zinc-50 placeholder:text-zinc-400 w-full sm:w-48"
+            className="pl-8 pr-3 h-8 text-[14px] border border-line rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint bg-zinc-50 placeholder:text-zinc-400 w-full sm:w-48"
           />
         </div>
 
@@ -2582,7 +2582,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                       onChange={(e) => setField("memo", e.target.value)}
                       placeholder="근무 특이사항 · 알러지 · 기타 참고 사항"
                       rows={3}
-                      className="w-full border border-indigo-300 rounded-md px-2.5 py-2 text-[14px] focus:outline-none focus:border-brand-deep focus:ring-1 focus:ring-brand-tint bg-indigo-50/40 resize-none"
+                      className="w-full border border-indigo-300 rounded-md px-2.5 py-2 text-[14px] focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint bg-indigo-50/40 resize-none"
                     />
                   ) : (
                     <p className={`text-[14px] whitespace-pre-wrap ${displayEmp.memo ? "text-zinc-700" : "text-zinc-300 italic"}`}>

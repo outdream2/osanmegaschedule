@@ -727,7 +727,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
               type="number"
               value={returnCycleMin}
               onChange={e => setReturnCycleMin(Math.max(0, Number(e.target.value) || 0))}
-              className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
+              className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
             />
             <span className="text-zinc-500 whitespace-nowrap">일 ↑</span>
           </label>
@@ -737,7 +737,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
               type="number"
               value={returnSalesMax}
               onChange={e => setReturnSalesMax(Math.max(0, Number(e.target.value) || 0))}
-              className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
+              className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
             />
             <span className="text-zinc-500 whitespace-nowrap">개 ↑</span>
           </label>
@@ -747,7 +747,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
               type="number"
               value={returnSalesQuarterMax}
               onChange={e => setReturnSalesQuarterMax(Math.max(0, Number(e.target.value) || 0))}
-              className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
+              className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
             />
             <span className="text-zinc-500 whitespace-nowrap">개 ↑</span>
           </label>
@@ -776,7 +776,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
             value={returnSupplierSearch}
             onChange={e => setReturnSupplierSearch(e.target.value)}
             placeholder="공급사명 검색"
-            className="w-40 h-7 pl-7 pr-2 text-[15px] border border-line rounded-md outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep transition"
+            className="w-40 h-7 pl-7 pr-2 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
           />
         </div>
         {/* 일괄 반품 신청 · 2026-08-03 · 선택 상품 있을 때만 활성 */}

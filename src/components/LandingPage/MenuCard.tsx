@@ -20,20 +20,23 @@ interface ColorTokens {
   hoverBorder: string;
 }
 
-// · 2026-08-17 · Tailwind @theme brand 유틸리티 사용 (bg-brand-tint 등 · index.css @theme 참조)
+// 2026-08-17 · 사용자 지시 · 랜딩 메뉴 · 최신 트렌드 · mono neutral 통일
+//   · 모든 색상 preset · brand-tint bg + brand-deep icon + brand-deep hover border
+//   · category identity · 아이콘 자체로 표현 (Phosphor duotone) · 색 통일
+//   · Linear/Vercel 2026 톤 · 파스텔 다색 지양 · 딥네이비 accent
 const COLOR_MAP: Record<MenuCardColor, ColorTokens> = {
-  teal:     { iconBg: "bg-brand-tint",       iconColor: "text-brand",           hoverBorder: "hover:border-brand" },
-  amber:    { iconBg: "bg-brand-amber-tint", iconColor: "text-brand-amber-ink", hoverBorder: "hover:border-brand-amber" },
-  coral:    { iconBg: "bg-brand-coral-tint", iconColor: "text-brand-coral",     hoverBorder: "hover:border-brand-coral" },
-  sky:      { iconBg: "bg-brand-sky-tint",   iconColor: "text-brand-sky",       hoverBorder: "hover:border-brand-sky" },
-  emerald:  { iconBg: "bg-emerald-50",  iconColor: "text-emerald-700", hoverBorder: "hover:border-emerald-500" },
-  indigo:   { iconBg: "bg-indigo-50",   iconColor: "text-indigo-700",  hoverBorder: "hover:border-indigo-500" },
-  violet:   { iconBg: "bg-violet-50",   iconColor: "text-violet-700",  hoverBorder: "hover:border-violet-500" },
-  fuchsia:  { iconBg: "bg-fuchsia-50",  iconColor: "text-fuchsia-700", hoverBorder: "hover:border-fuchsia-500" },
-  rose:     { iconBg: "bg-rose-50",     iconColor: "text-rose-700",    hoverBorder: "hover:border-rose-500" },
-  red:      { iconBg: "bg-red-50",      iconColor: "text-red-700",     hoverBorder: "hover:border-red-500" },
-  orange:   { iconBg: "bg-orange-50",   iconColor: "text-orange-700",  hoverBorder: "hover:border-orange-500" },
-  zinc:     { iconBg: "bg-zinc-100",    iconColor: "text-zinc-700",    hoverBorder: "hover:border-zinc-400" },
+  teal:     { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
+  amber:    { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
+  coral:    { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
+  sky:      { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
+  emerald:  { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
+  indigo:   { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
+  violet:   { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
+  fuchsia:  { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
+  rose:     { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
+  red:      { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
+  orange:   { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
+  zinc:     { iconBg: "bg-brand-tint", iconColor: "text-brand-deep", hoverBorder: "hover:border-brand-deep" },
 };
 
 /** stat chip · Landing 카드 하단 · 카운터 등 */

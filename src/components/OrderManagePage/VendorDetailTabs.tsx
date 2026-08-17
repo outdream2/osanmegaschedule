@@ -385,7 +385,7 @@ const HistoryContent: React.FC<{
           value={productSearch}
           onChange={e => setProductSearch(e.target.value)}
           placeholder="상품명·코드 검색"
-          className="h-7 px-2.5 text-[11px] border border-line rounded-lg outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep transition w-40"
+          className="h-7 px-2.5 text-[11px] border border-line rounded-lg outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition w-40"
         />
         {/* 건수 */}
         <span className="text-[10px] text-zinc-400 tabular-nums">

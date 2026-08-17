@@ -1628,7 +1628,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="약 · 증상 검색 (예: 감기약)"
-                      className="w-full pl-8 pr-8 py-1.5 border border-gray-300 rounded-lg shadow-3xs focus:outline-none focus:ring-1 focus:ring-brand-tint bg-white text-xs"
+                      className="w-full pl-8 pr-8 py-1.5 border border-gray-300 rounded-lg shadow-3xs focus:outline-none focus:ring-2 focus:ring-brand-tint bg-white text-xs"
                     />
                     <Search className="absolute left-2 top-2 text-gray-400" size={13} />
                     {searchQuery && (
@@ -2974,7 +2974,7 @@ const VendorManageSplit: React.FC = () => {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="회사명 · 담당자 · 전화"
-              className="w-full h-9 pl-8 pr-2 text-[14px] border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep transition"
+              className="w-full h-9 pl-8 pr-2 text-[14px] border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
             />
           </div>
           <span className="text-[13px] text-zinc-400 tabular-nums whitespace-nowrap shrink-0">

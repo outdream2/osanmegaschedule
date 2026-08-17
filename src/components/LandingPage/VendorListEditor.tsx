@@ -309,7 +309,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="회사명 · 담당자 · 전화"
-                className="h-7 pl-7 pr-2 text-[12px] border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep w-full transition"
+                className="h-7 pl-7 pr-2 text-[12px] border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep w-full transition"
               />
             </div>
             {/* 건수 */}
@@ -367,7 +367,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="회사명 · 사업자번호 · 담당자 · 전화 · 이메일"
-              className="h-8 pl-8 pr-3 text-[12px] border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep w-full sm:w-80 transition"
+              className="h-8 pl-8 pr-3 text-[12px] border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep w-full sm:w-80 transition"
             />
           </div>
           <div className="inline-flex items-center bg-zinc-100 border border-line rounded-lg p-0.5 gap-0.5 flex-wrap">
@@ -1895,7 +1895,7 @@ const PaymentRegisterModal: React.FC<{
                               value={v?.alloc ?? ""}
                               disabled={disabled || !v?.checked}
                               onChange={e => updateAlloc(inv.id, e.target.value.replace(/[^0-9]/g, ""))}
-                              className="w-full h-7 px-2 text-right text-[11px] font-mono tabular-nums border border-line rounded focus:outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep disabled:bg-zinc-50 disabled:text-zinc-400"
+                              className="w-full h-7 px-2 text-right text-[11px] font-mono tabular-nums border border-line rounded focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:bg-zinc-50 disabled:text-zinc-400"
                             />
                           </td>
                         </tr>

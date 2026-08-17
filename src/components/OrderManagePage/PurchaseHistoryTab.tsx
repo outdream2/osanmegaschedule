@@ -1070,7 +1070,7 @@ export const PurchaseHistoryTab: React.FC = () => {
                   value={productSearch}
                   onChange={e => setProductSearch(e.target.value)}
                   placeholder="상품명 · 코드 검색"
-                  className="w-full h-7 px-2.5 text-[15px] border border-line rounded-md outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep transition"
+                  className="w-full h-7 px-2.5 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
                 />
                 {/* 2026-08-10 · #19 · 기간·계절 chip · 상단 툴바로 이동 · 여기서 제거 (사용자 요청) */}
                 <div className="flex items-center gap-1 pt-1 border-t border-zinc-100 flex-wrap">

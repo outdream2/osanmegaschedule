@@ -515,7 +515,7 @@ export const FlowTab: React.FC = () => {
             onChange={(e) => setInfoSearchQuery(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") runInfoSearch(); }}
             placeholder="전체 DB 검색 (정보확인)"
-            className="w-48 h-7 pl-7 pr-2 text-[15px] border border-line rounded-md outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep bg-white transition"
+            className="w-48 h-7 pl-7 pr-2 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep bg-white transition"
           />
           {infoSearchResults.length > 0 && (
             <div className="absolute left-0 top-full mt-1 max-h-64 overflow-y-auto border border-line bg-white rounded-lg shadow-lg z-30 divide-y divide-zinc-100 min-w-full sm:min-w-[500px]">
@@ -550,10 +550,10 @@ export const FlowTab: React.FC = () => {
         <div className="flex items-center gap-1.5">
           <span className="text-[15px] font-bold text-ink tracking-tight shrink-0">판매출고계</span>
           <input type="number" min={0} value={salesQtyMin} onChange={e => setSalesQtyMin(e.target.value)} placeholder="최소"
-            className="w-14 h-7 px-2 text-[15px] border border-line rounded-md outline-none focus:ring-1 focus:ring-brand-tint tabular-nums text-right transition" />
+            className="w-14 h-7 px-2 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint tabular-nums text-right transition" />
           <span className="text-zinc-400 text-[15px]">~</span>
           <input type="number" min={0} value={salesQtyMax} onChange={e => setSalesQtyMax(e.target.value)} placeholder="최대"
-            className="w-14 h-7 px-2 text-[15px] border border-line rounded-md outline-none focus:ring-1 focus:ring-brand-tint tabular-nums text-right transition" />
+            className="w-14 h-7 px-2 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint tabular-nums text-right transition" />
           <span className="text-zinc-400 text-[15px]">개</span>
           {(salesQtyMin || salesQtyMax) && (
             <button onClick={() => { setSalesQtyMin(""); setSalesQtyMax(""); }}

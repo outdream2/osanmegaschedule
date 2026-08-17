@@ -303,7 +303,7 @@ const MoneyCellInput: React.FC<MoneyCellInputProps> = ({ value, onCommit, placeh
       }}
       onKeyDown={e => { if (e.key === "Enter") { e.currentTarget.blur(); } }}
       placeholder={placeholder ?? "0"}
-      className={`w-full h-8 px-2 text-[11px] text-right tabular-nums border border-zinc-300 rounded outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep ${colorClass ?? ""}`}
+      className={`w-full h-8 px-2 text-[11px] text-right tabular-nums border border-zinc-300 rounded outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep ${colorClass ?? ""}`}
     />
   );
 };

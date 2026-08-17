@@ -2748,7 +2748,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                                   setOrderQtyOverride(prev => { const n = new Map(prev); n.set(r.id, v); return n; });
                                 }}
                                 onClick={e => e.stopPropagation()}
-                                className="w-16 h-7 px-1 rounded border border-rose-200 bg-white text-right tabular-nums font-bold text-[15px] text-rose-700 focus:outline-none focus:ring-1 focus:ring-brand-tint focus:border-brand-deep"
+                                className="w-16 h-7 px-1 rounded border border-rose-200 bg-white text-right tabular-nums font-bold text-[15px] text-rose-700 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep"
                               />
                             </td>
                             <td className="text-right px-0.5 py-1.5 tabular-nums text-[14px] text-zinc-500 bg-rose-50/20 align-middle whitespace-nowrap">{prevPrice != null ? prevPrice.toLocaleString() : "-"}</td>

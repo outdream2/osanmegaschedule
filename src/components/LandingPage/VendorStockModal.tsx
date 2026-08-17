@@ -154,7 +154,7 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="상품명·코드 검색"
-                className="w-full pl-8 pr-3 py-1.5 text-[13px] border border-line rounded-md focus:outline-none focus:border-brand-deep focus:ring-1 focus:ring-brand-tint"
+                className="w-full pl-8 pr-3 py-1.5 text-[13px] border border-line rounded-md focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
               />
             </div>
           </div>

@@ -345,7 +345,7 @@ const VatPreparePage: React.FC = () => {
             <select
               value={period}
               onChange={e => { setPreset("custom"); setPeriod(e.target.value); }}
-              className="h-8 px-2 text-[11px] font-semibold border border-line rounded-lg outline-none focus:ring-1 focus:ring-brand-tint"
+              className="h-8 px-2 text-[11px] font-semibold border border-line rounded-lg outline-none focus:ring-2 focus:ring-brand-tint"
             >
               {[0, 1, 2].map(offset => {
                 const y = new Date().getFullYear() - offset;
