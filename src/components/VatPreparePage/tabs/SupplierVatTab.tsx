@@ -23,6 +23,7 @@
 
 import React, { useMemo } from "react";
 import { Building2, Loader2 } from "lucide-react";
+import { StatusPill, type PillTone } from "../../common/StatusPill";
 
 const fmt = (n: number): string => n.toLocaleString("ko-KR");
 
@@ -54,18 +55,18 @@ function fmtBusinessNumber(bn: string | null | undefined): string {
   return bn;
 }
 
-/** VAT 여부 라벨 · vendor.vat_included 우선 · 없으면 category=면세 · 기타 "미설정" */
-function vatFlagLabel(row: VendorBreakdownRow): { text: string; className: string; title: string } {
+/** VAT 여부 라벨 · vendor.vat_included 우선 · 없으면 category=면세 · 기타 "미설정" · 2026-08-17 · StatusPill tone */
+function vatFlagLabel(row: VendorBreakdownRow): { text: string; tone: PillTone; title: string } {
   if (row.category === "면세") {
-    return { text: "면세", className: "bg-zinc-200 text-zinc-700", title: "면세사업자 · 부가세 없음" };
+    return { text: "면세", tone: "zinc", title: "면세사업자 · 부가세 없음" };
   }
   if (row.vat_included === true) {
-    return { text: "포함", className: "bg-sky-100 text-sky-700", title: "매입가에 VAT 포함 · vat = amount / 11" };
+    return { text: "포함", tone: "sky", title: "매입가에 VAT 포함 · vat = amount / 11" };
   }
   if (row.vat_included === false) {
-    return { text: "별도", className: "bg-amber-100 text-amber-800", title: "VAT 별도 과세 · vat = amount × 10%" };
+    return { text: "별도", tone: "amber", title: "VAT 별도 과세 · vat = amount × 10%" };
   }
-  return { text: "미설정", className: "bg-zinc-100 text-zinc-500", title: "공급사관리에서 VAT 포함/별도 설정 필요" };
+  return { text: "미설정", tone: "zinc", title: "공급사관리에서 VAT 포함/별도 설정 필요" };
 }
 
 const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
@@ -182,11 +183,8 @@ const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
                       {fmt(v.vat)}
                     </td>
                     <td className="px-2 py-2 text-center">
-                      <span
-                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${flag.className}`}
-                        title={flag.title}
-                      >
-                        {flag.text}
+                      <span title={flag.title}>
+                        <StatusPill tone={flag.tone} size="xs">{flag.text}</StatusPill>
                       </span>
                     </td>
                   </tr>
