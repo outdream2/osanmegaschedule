@@ -127,8 +127,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           placeholder={placeholder}
           autoFocus={autoFocus}
           className={[
-            "text-[14px] border border-line rounded-lg pl-8 pr-16 h-9 w-full",
-            "focus:outline-none focus:ring-2 transition-colors bg-white text-ink placeholder-ink-soft",
+            // 2026-08-17 v2 · 폰트 +2 (14→15) · inset light + brand focus · Attio 톤
+            "text-[15px] border border-line rounded-lg pl-8 pr-16 h-9 w-full",
+            "shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(10,46,74,0.04)]",
+            "focus:outline-none focus:ring-2 transition-all duration-150 ease-out bg-white text-ink placeholder-ink-soft",
             ACCENT_MAP[accent],
           ].join(" ")}
           aria-label={placeholder}
@@ -161,9 +163,12 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         )}
       </div>
 
-      {/* 최근 검색어 dropdown · 최신 트렌드 · 폰트 +2 */}
+      {/* 최근 검색어 dropdown · 2026-08-17 v2 · 3-layer shadow · Attio 세련 */}
       {showHistory && historyList.length > 0 && (
-        <div className="absolute top-10 left-0 right-0 bg-white rounded-lg border border-line shadow-lg z-30 py-1">
+        <div
+          className="absolute top-10 left-0 right-0 bg-white rounded-lg border border-line z-30 py-1"
+          style={{ boxShadow: "0 1px 3px rgba(10,46,74,0.10), 0 8px 24px -8px rgba(10,46,74,0.20), 0 16px 40px -16px rgba(10,46,74,0.24)" }}
+        >
           <div className="px-3 py-1.5 text-[12px] font-semibold text-ink-soft tracking-tight flex items-center gap-1.5">
             <Clock size={12} />최근 검색
           </div>
