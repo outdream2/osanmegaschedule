@@ -34,7 +34,8 @@ import {
 import { useSidebarWidth } from "../../hooks/useSidebar";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { usePagePermissions } from "../../hooks/usePagePermissions";
-import logoImg from "../../images/logo.png";
+// 2026-08-17 · 사용자 지시 · 사이드바 · logo2 사용 (기본 로고와 별개)
+import logoImg from "../../images/logo2.png";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 interface SideNavProps {
@@ -124,8 +125,8 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                   "font-bold",
                 ].join(" ")
               : [
-                  // 비활성 · 목업 · #CFE6DF (light mint)
-                  "text-[#CFE6DF]",
+                  // 비활성 · 목업 · #C4DAEE (light mint)
+                  "text-[#C4DAEE]",
                   "hover:bg-white/[0.06] hover:text-white",
                   "font-semibold",
                 ].join(" "),
@@ -143,7 +144,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                   className={[
                     "shrink-0",
                     // 2026-08-17 · deep teal 배경 · 활성 = 그룹 톤 밝은 shade (300) · 비활성 = light mint
-                    hasActiveItem ? groupTone.iconActive : "text-[#CFE6DF]/80",
+                    hasActiveItem ? groupTone.iconActive : "text-[#C4DAEE]/80",
                     "transition-all duration-200 ease-out",
                   ].join(" ")}
                 />
@@ -218,8 +219,8 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                           "font-bold",
                         ].join(" ")
                       : [
-                          // 비활성 · 목업 톤 · #CFE6DF · 하위 살짝 opacity 낮춤
-                          "font-semibold text-[#CFE6DF]/85",
+                          // 비활성 · 목업 톤 · #C4DAEE · 하위 살짝 opacity 낮춤
+                          "font-semibold text-[#C4DAEE]/85",
                           "hover:bg-white/[0.06] hover:text-white",
                           // subtle slide on hover
                           "hover:translate-x-px",
@@ -236,7 +237,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                       // 2026-08-17 · deep teal · 활성 = 그룹 밝은 shade · 비활성 = mint 톤
                       active
                         ? [tone.iconActive, "scale-105"].join(" ")
-                        : "text-[#CFE6DF]/60",
+                        : "text-[#C4DAEE]/60",
                       "transition-transform duration-200 ease-out",
                     ].join(" ")}
                   />
@@ -285,7 +286,7 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, on
               "font-bold",
             ].join(" ")
           : [
-              "text-[#CFE6DF]",
+              "text-[#C4DAEE]",
               "hover:bg-white/[0.06] hover:text-white",
               "font-semibold",
             ].join(" "),
@@ -298,7 +299,7 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, on
         weight={active ? "fill" : "duotone"}
         className={[
           "shrink-0",
-          active ? tone.iconActive : "text-[#CFE6DF]/80",
+          active ? tone.iconActive : "text-[#C4DAEE]/80",
           "transition-all duration-200 ease-out",
         ].join(" ")}
       />
@@ -322,16 +323,16 @@ export const SideNav: React.FC<SideNavProps> = ({
   const { width, startResize } = useSidebarWidth();
   const { brand } = useBrandIdentity();
 
-  // 2026-08-17 · 사용자 지시 · 사이드바 deep teal (#0A4F44) 목업 톤 적용
+  // 2026-08-17 · 사용자 지시 · 사이드바 deep navy (#0A2E4A) · 최신 블루톤 전환
   //   · CSS var override · --sidebar-* · 모든 shadcn Sidebar 내부 텍스트/배경 자동 대응
   const teal = {
-    "--sidebar": "#0A4F44",                              // deep teal bg
-    "--sidebar-foreground": "#EAF3F0",                   // primary text (light green-white)
+    "--sidebar": "#0A2E4A",                              // deep navy bg
+    "--sidebar-foreground": "#DCE8F3",                   // primary text (light blue-white)
     "--sidebar-border": "rgba(255,255,255,0.08)",        // subtle border
     "--sidebar-accent": "rgba(255,255,255,0.12)",        // hover/active bg
     "--sidebar-accent-foreground": "#FFFFFF",            // hover/active text
-    "--sidebar-primary": "#43C6A0",                      // active accent (mint)
-    "--sidebar-primary-foreground": "#0A4F44",
+    "--sidebar-primary": "#5EA9E8",                      // active accent (bright blue)
+    "--sidebar-primary-foreground": "#0A2E4A",
     "--sidebar-ring": "rgba(255,255,255,0.35)",
   } as React.CSSProperties;
 
@@ -363,17 +364,12 @@ export const SideNav: React.FC<SideNavProps> = ({
               "cursor-pointer",
             ].join(" ")}
           >
-            {/* 2026-08-17 · 목업 .brand-mark 톤 · deep teal 배경에서 로고 시인성 확보
-                · 흰 배경 rounded 컨테이너 · 로고가 어두운 색이어도 또렷하게 표시 */}
-            <div
-              className="w-9 h-9 rounded-[10px] bg-white shadow-sm shrink-0 flex items-center justify-center overflow-hidden ring-1 ring-white/20"
-            >
-              <img
-                src={brand.logoUrl || logoImg}
-                alt={`${brand.region ? brand.region + " " : ""}${brand.shortName} 로고`}
-                className="w-7 h-7 object-contain"
-              />
-            </div>
+            {/* 2026-08-17 · 사용자 지시 · logo2 · 라운드 처리 · 사이드바 딥네이비 대비 명확 */}
+            <img
+              src={brand.logoUrl || logoImg}
+              alt={`${brand.region ? brand.region + " " : ""}${brand.shortName} 로고`}
+              className="w-7 h-7 rounded-full object-cover shrink-0 ring-1 ring-white/20"
+            />
             {/* icon-only 모드에서 숨김 · 2026-08-17 · 흰색 텍스트 (deep teal bg 대비) */}
             <div className="flex flex-col gap-0 leading-none group-data-[collapsible=icon]:hidden min-w-0">
               {brand.region && (
@@ -381,14 +377,14 @@ export const SideNav: React.FC<SideNavProps> = ({
                   {brand.region}
                 </span>
               )}
-              <span className="text-[11px] font-semibold text-[#9CC4BA] tracking-tight leading-tight truncate mt-0.5">
+              <span className="text-[11px] font-semibold text-[#93B4D0] tracking-tight leading-tight truncate mt-0.5">
                 {brand.shortName}
               </span>
             </div>
           </button>
           {/* 접기/펼치기 토글 · 사이드바 내부 · 약국이름 우측 */}
           <SidebarTrigger
-            className="h-7 w-7 rounded-md text-[#9CC4BA] hover:text-white hover:bg-white/8 transition shrink-0 group-data-[collapsible=icon]:hidden"
+            className="h-7 w-7 rounded-md text-[#93B4D0] hover:text-white hover:bg-white/8 transition shrink-0 group-data-[collapsible=icon]:hidden"
             aria-label="사이드바 접기"
           />
         </div>
@@ -442,8 +438,8 @@ export const SideNav: React.FC<SideNavProps> = ({
                 className={[
                   "h-7 rounded-md pl-2",
                   "text-[16px] font-semibold",
-                  // 2026-08-17 · deep teal · rose 대신 밝은 coral · 배경 반투명
-                  "text-[#FFB4AE] hover:bg-white/[0.06] hover:text-white",
+                  // 2026-08-17 · 사용자 지시 · 사이드바 로그아웃 · 흰색 텍스트
+                  "text-white hover:bg-white/[0.06]",
                   "transition-all duration-200 ease-out",
                 ].join(" ")}
               >

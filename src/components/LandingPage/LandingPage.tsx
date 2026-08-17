@@ -51,10 +51,11 @@ import { VendorStockModal } from "./VendorStockModal";
 import { useVendors } from "../../hooks/useVendors";
 import { MenuCard } from "./MenuCard";
 import { StockSearch } from "./StockSearch";
-// 2026-08-17 · UI 프레임워크 · SectionLabel · MiniCard · Hero · HeroButton · KpiCard (목업 톤)
+// 2026-08-17 · UI 프레임워크 · SectionLabel · MiniCard · Hero · KpiCard (목업 톤)
+//   HeroButton · 관리자 Hero CTA 제거로 미사용 (2026-08-17 사용자 지시)
 import { SectionLabel } from "../common/SectionLabel";
 import { MiniCard } from "../common/MiniCard";
-import { Hero, HeroButton } from "../common/Hero";
+import { Hero } from "../common/Hero";
 import { KpiCard } from "../common/KpiCard";
 // VendorListEditor 는 발주관리 공급사관리 에서만 사용 (LandingPage 데이터 업로드 에서 제거됨 · 2026-07-15)
 
@@ -961,17 +962,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             const desc = pendingParts.length > 0
               ? `오늘 처리할 ${pendingParts.join(", ")}이 있어요.`
               : "오늘 대기 중인 승인/요청이 없습니다.";
+            // 2026-08-17 · 사용자 지시 · Hero 상단카드 · 승인요청/데이터 업로드 CTA 제거
             return (
               <Hero
                 eyebrow={dateStr}
                 title={<>안녕하세요, {authSession.employeeName}{authSession.employeeRank ? ` ${authSession.employeeRank}` : ""}님 👋</>}
                 description={desc}
-                actions={<>
-                  <HeroButton icon={<CheckCircle size={14} weight="fill" />} onClick={() => onNavigate("requests", authSession!)}>승인요청 확인</HeroButton>
-                  {isSuperAdminLevel9 && (
-                    <HeroButton ghost icon={<Upload size={14} />} onClick={() => { setUploadOpen(true); setUploadTab("products"); setUploadResult(null); setUploadFile(null); setStockUploadResult(null); setStockUploadFile(null); fetchImportLog(); fetchStockImportLog(); }}>데이터 업로드</HeroButton>
-                  )}
-                </>}
               />
             );
           })()}

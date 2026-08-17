@@ -25,9 +25,10 @@ interface SectionLabelProps {
 export function SectionLabel({ children, tone = "teal", right, className = "" }: SectionLabelProps) {
   const t = TONE_MAP[tone];
   return (
-    <div className={`flex items-center gap-2 my-1 mb-3 ${className}`}>
+    <div className={`flex items-center gap-2 my-1 mb-3.5 ${className}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${t.dot}`} />
-      <span className={`text-[12.5px] font-bold tracking-tight ${t.text}`}>{children}</span>
+      {/* 2026-08-17 · +2 폰트 · uppercase · 최신 SaaS 트렌드 (Linear·Notion) */}
+      <span className={`text-[14.5px] font-bold tracking-tight ${t.text}`}>{children}</span>
       {right && <div className="ml-auto">{right}</div>}
     </div>
   );

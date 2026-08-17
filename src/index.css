@@ -44,24 +44,25 @@
   --font-sans: "Pretendard Variable", "Geist Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, "Cascadia Code", monospace;
 
-  /* 2026-08-17 · UI 목업 브랜드 토큰 · docs/UI_MOCKUP_PC_2026-08-17.html 매칭
+  /* 2026-08-17 · 사용자 지시 · 최신 트렌드 · 블루톤 전환 (teal → modern blue)
+   *   · Linear/Notion/Vercel 2026 · deep navy + electric sky + soft blue-gray neutrals
    *   · Tailwind 4 · @theme 에 정의 · bg-brand · text-brand-deep · border-line 등 유틸리티 자동 생성 */
-  --color-brand: #0E6B5C;                  /* 메인 teal */
-  --color-brand-deep: #0A4F44;             /* 사이드바 · Hero deep */
-  --color-brand-tint: #E7F3F0;             /* teal 배경 (아이콘 tint) */
+  --color-brand: #1E5C8E;                  /* 메인 mid blue */
+  --color-brand-deep: #0A2E4A;             /* 사이드바 · Hero deep navy */
+  --color-brand-tint: #E7F0F9;             /* blue 배경 (아이콘 tint) */
   --color-brand-amber: #E88A3D;
   --color-brand-amber-tint: #FDEEE0;
   --color-brand-amber-ink: #B4650F;
   --color-brand-coral: #D9584F;
   --color-brand-coral-tint: #FBE7E5;
-  --color-brand-sky: #3E7CB1;
+  --color-brand-sky: #3E7CB1;              /* accent bright blue */
   --color-brand-sky-tint: #E8F1F9;
-  /* Neutral · 목업 톤 */
-  --color-ink: #12201C;                    /* 주 텍스트 */
-  --color-ink-soft: #5B6B66;               /* 보조 텍스트 */
+  /* Neutral · blue-cool 톤 (2026 트렌드 · 살짝 blue 스민 회색) */
+  --color-ink: #0F1B2A;                    /* 주 텍스트 (blue-black) */
+  --color-ink-soft: #5A697A;               /* 보조 텍스트 (blue-gray) */
   --color-surface: #FFFFFF;                /* 카드/패널 */
-  --color-line: #E3E9E7;                   /* 경계 */
-  --color-app-bg: #F5F7F7;                 /* 페이지 배경 */
+  --color-line: #E4EAF0;                   /* 경계 (blue tinted) */
+  --color-app-bg: #F4F7FA;                 /* 페이지 배경 (blue-cool) */
 }
 
 /* 2026-08-16 · 글씨체 또렷·부드럽 · 최신 기술 통합 · macOS/iOS/Windows/Linux 균일 */
@@ -373,15 +374,15 @@ body:has(.fixed.inset-0[class*="bg-neutral-9"]) {
   @apply flex items-center gap-2 px-4 h-10 border-b border-slate-100 shrink-0;
 }
 
-/* ── KPI 카드 (상단 요약 통계) · 2026-08-17 · 목업 톤 · brand utility ── */
+/* ── KPI 카드 (상단 요약 통계) · 2026-08-17 · 최신 트렌드 · rounded-16 · soft shadow ── */
 .kpi-card {
-  @apply bg-white border border-line rounded-[14px] p-4 flex flex-col gap-2 shadow-sm;
+  @apply bg-white border border-line rounded-[16px] px-5 py-4 flex flex-col gap-2 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5;
 }
 .kpi-card-value {
-  @apply text-[25px] font-extrabold text-ink tabular-nums tracking-tight;
+  @apply text-[26px] font-extrabold text-ink tabular-nums tracking-[-0.02em];
 }
 .kpi-card-label {
-  @apply text-[14px] font-semibold text-ink-soft;
+  @apply text-[14.5px] font-semibold text-ink-soft;
 }
 
 /* ── 필터바 (상단 검색/필터 컨테이너) ── */

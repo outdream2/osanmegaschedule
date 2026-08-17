@@ -69,25 +69,26 @@ interface MenuCardProps {
 
 export function MenuCard({ color, icon: Icon, title, description, onClick, orderClass, badge, descClass, statChips }: MenuCardProps) {
   const c = COLOR_MAP[color];
-  const descSize = descClass ?? "text-[13px] leading-[1.5]";
+  // 2026-08-17 · 사용자 지시 · 랜딩 메뉴 폰트 확대 · +2 (기존 13 → 15)
+  const descSize = descClass ?? "text-[15px] leading-[1.5]";
   return (
     <button
       data-menu-card
       onClick={onClick}
-      className={`${orderClass ?? ""} group relative bg-white border border-line ${c.hoverBorder} rounded-[14px] p-[18px] text-left transition-all duration-150 hover:-translate-y-0.5 cursor-pointer overflow-hidden flex flex-col gap-2.5 shadow-sm hover:shadow-md`}
+      className={`${orderClass ?? ""} group relative bg-white border border-line ${c.hoverBorder} rounded-[16px] p-[20px] text-left transition-all duration-200 hover:-translate-y-0.5 cursor-pointer overflow-hidden flex flex-col gap-3 shadow-sm hover:shadow-lg`}
     >
-      {/* top · 아이콘 (좌측) + badge (우측) */}
+      {/* top · 아이콘 (좌측) + badge (우측) · 2026-08-17 · 최신 트렌드 · 44 icon tint · rounded-12 */}
       <div className="flex items-start justify-between">
-        <div className={`w-[38px] h-[38px] rounded-[11px] flex items-center justify-center ${c.iconBg}`}>
-          <Icon size={16} className={c.iconColor} weight="fill" />
+        <div className={`w-[44px] h-[44px] rounded-[12px] flex items-center justify-center ${c.iconBg}`}>
+          <Icon size={20} className={c.iconColor} weight="fill" />
         </div>
         {badge}
       </div>
-      {/* 제목 */}
-      <div className="text-[14.5px] font-bold text-ink tracking-[-0.1px] leading-tight">
+      {/* 제목 · 2026-08-17 · +2 폰트 (17px) · 살짝만 굵게 (font-bold · 700) */}
+      <div className="text-[17px] font-bold text-ink tracking-[-0.2px] leading-tight">
         {title}
       </div>
-      {/* 설명 */}
+      {/* 설명 · 2026-08-17 · +2 폰트 (15px) */}
       <div className={`text-ink-soft ${descSize}`}>
         {description}
       </div>
