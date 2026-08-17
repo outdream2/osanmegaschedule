@@ -227,14 +227,15 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
           <div className="text-center text-[15px] text-zinc-300 py-6">등록된 글 없음</div>
         ) : (
           <div className={`${CARD_BASE} ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-            {/* 이슈리스트 제목 */}
-            <div className="flex items-center justify-between px-4 py-3 gap-2 flex-wrap border-b border-zinc-100">
-              <div className="flex items-center gap-1.5">
-                <StickyNote size={14} className="text-orange-600" />
-                <span className="text-sm font-bold text-zinc-700">이슈리스트</span>
-                <span className="text-[14px] font-semibold text-zinc-400 tabular-nums">({filtered.length}건)</span>
+            {/* 이슈리스트 제목 · 2026-08-17 · 세련 · accent bar + 딥네이비 통일 */}
+            <div className="flex items-center justify-between px-4 py-3 gap-2 flex-wrap border-b border-line">
+              <div className="flex items-center gap-2.5">
+                <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+                <StickyNote size={16} className="text-brand-deep" />
+                <span className="text-[16px] font-bold text-ink tracking-tight">이슈리스트</span>
+                <span className="text-[14px] font-semibold text-brand-deep bg-brand-tint rounded-full px-2.5 py-0.5 border border-brand/15 tabular-nums">{filtered.length}건</span>
               </div>
-              <span className="text-[14px] text-zinc-400 font-semibold">항목 클릭 → 상세</span>
+              <span className="text-[13px] text-ink-soft font-medium">항목 클릭 → 상세</span>
             </div>
             <div className="divide-y divide-zinc-50">
             {filtered.map((p: BoardPost) => {
