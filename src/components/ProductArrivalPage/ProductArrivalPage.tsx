@@ -420,51 +420,43 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
           <div className="bg-white rounded-2xl border border-line/80
             shadow-[0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden">
 
-            {/* 상단 그라디언트 헤더 */}
-            <div className="relative px-5 pt-4 pb-3 bg-sky-50/50">
-              {/* 장식 링 */}
-              <div className="absolute top-3 right-3 w-12 h-12 rounded-full
-                bg-sky-100/60 border border-sky-200/50" />
-              <div className="absolute top-5.5 right-5.5 w-6 h-6 rounded-full
-                bg-sky-200/40 border border-sky-300/30" />
-
-              <div className="relative flex items-center gap-3 min-w-0">
-                {/* 카메라 프레임 아이콘 */}
-                <div className="relative w-9 h-9 rounded-xl bg-sky-500
-                  flex items-center justify-center shadow-md shrink-0">
-                  <ScanLine size={17} className="text-white" />
-                  {/* 코너 마커 */}
-                  <span className="absolute top-1 left-1 w-1.5 h-1.5 border-t-2 border-l-2 border-white/60 rounded-tl-sm" />
-                  <span className="absolute top-1 right-1 w-1.5 h-1.5 border-t-2 border-r-2 border-white/60 rounded-tr-sm" />
-                  <span className="absolute bottom-1 left-1 w-1.5 h-1.5 border-b-2 border-l-2 border-white/60 rounded-bl-sm" />
-                  <span className="absolute bottom-1 right-1 w-1.5 h-1.5 border-b-2 border-r-2 border-white/60 rounded-br-sm" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-zinc-800 leading-tight truncate">바코드 스캔</p>
-                  <p className="text-[15px] text-zinc-400 mt-0.5 leading-none truncate">
-                    스캔 시 자동 등록됩니다
-                  </p>
-                </div>
+            {/* 2026-08-17 · 최신 트렌드 · 좌측 accent bar + 딥네이비 통일 · 장식 링 제거 */}
+            <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-line bg-zinc-50/60">
+              <span className="w-[3px] h-[16px] rounded-full bg-brand-deep shrink-0" />
+              {/* 카메라 프레임 아이콘 · 딥네이비 통일 */}
+              <div className="relative w-9 h-9 rounded-xl bg-brand-deep
+                flex items-center justify-center shadow-sm shrink-0">
+                <ScanLine size={17} className="text-white" />
+                {/* 코너 마커 · 브랜드 톤 */}
+                <span className="absolute top-1 left-1 w-1.5 h-1.5 border-t-2 border-l-2 border-white/70 rounded-tl-sm" />
+                <span className="absolute top-1 right-1 w-1.5 h-1.5 border-t-2 border-r-2 border-white/70 rounded-tr-sm" />
+                <span className="absolute bottom-1 left-1 w-1.5 h-1.5 border-b-2 border-l-2 border-white/70 rounded-bl-sm" />
+                <span className="absolute bottom-1 right-1 w-1.5 h-1.5 border-b-2 border-r-2 border-white/70 rounded-br-sm" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[16px] font-bold text-ink leading-tight tracking-tight">바코드 스캔</p>
+                <p className="text-[13px] text-ink-soft mt-0.5 leading-tight">
+                  스캔 시 자동 등록됩니다
+                </p>
               </div>
             </div>
 
             <div className="px-4 pb-5 flex flex-col gap-3">
-              {/* CTA 스캔 버튼 · 상단 (2026-08-09 사용자 요청 · 검색은 아래) */}
+              {/* CTA 스캔 버튼 · 2026-08-17 · 딥네이비 통일 */}
               <button
                 onClick={() => setScannerOpen(true)}
                 disabled={mapLoading}
                 className="relative w-full min-h-[52px] flex items-center justify-center gap-2.5
                   py-3.5 rounded-xl font-bold text-[14px] sm:text-[15px] text-white
-                  bg-sky-500
-                  hover:bg-sky-600
-                  active:bg-sky-700
+                  bg-brand-deep
+                  hover:bg-[#0d3a5c]
+                  active:bg-[#08253a]
                   disabled:opacity-50 disabled:cursor-not-allowed
-                  shadow-md
-                  hover:shadow-lg
+                  shadow-sm hover:shadow-md
                   transition-colors duration-150 cursor-pointer overflow-hidden"
               >
                 {/* 광택 레이어 */}
-                <span className="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
+                <span className="absolute inset-0 bg-gradient-to-b from-white/12 to-transparent pointer-events-none" />
                 {mapLoading
                   ? <><Loader2 size={18} className="animate-spin" /> 상품 정보 로딩...</>
                   : <><ScanLine size={18} /> 바코드 스캔</>
