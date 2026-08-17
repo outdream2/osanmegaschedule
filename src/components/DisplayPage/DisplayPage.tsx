@@ -1598,7 +1598,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                     </div>
                     <div className="flex items-center justify-center gap-1.5 mt-0.5">
                       <span className="text-sm font-semibold text-gray-400">{dayNames[selectedDateObj.getDay()]}요일</span>
-                      {isToday && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-600">오늘</span>}
+                      {/* 2026-08-17 · StatusPill 프레임워크 통일 */}
+                      {isToday && <StatusPill tone="indigo" size="xs">오늘</StatusPill>}
                       {!isToday && (
                         <button
                           onClick={() => setSelectedDate(todayStr)}
@@ -2497,10 +2498,11 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-700">
                     <MapPin size={12} className="text-indigo-500" />
                     구역 배정
+                    {/* 2026-08-17 · StatusPill 프레임워크 통일 */}
                     {getAssignedZones(activeStaffInfo.employee.id).length > 0 && (
-                      <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-[10px] font-bold">
+                      <StatusPill tone="indigo" size="xs">
                         {getAssignedZones(activeStaffInfo.employee.id).length}개
-                      </span>
+                      </StatusPill>
                     )}
                   </div>
                   {getAssignedZones(activeStaffInfo.employee.id).length > 0 && (

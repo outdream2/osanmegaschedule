@@ -151,10 +151,9 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
         onNavigate={onNavigate}
         onLogout={onLogout}
         rightSlot={
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-[15px] font-bold">
-            <Package size={11} />
+          <StatusPill tone="indigo" size="md" icon={<Package size={11} />}>
             <span className="hidden sm:inline">재고 확인</span>
-          </div>
+          </StatusPill>
         }
       />
 

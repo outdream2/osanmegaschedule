@@ -797,9 +797,10 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                 >
                   <div className="text-sm font-semibold text-zinc-800 truncate">{emp.name}</div>
                   <div className="flex items-center">
-                    <span className={`inline-block text-[11px] font-bold px-2 py-0.5 rounded ${
-                      isPharma ? "bg-violet-100 text-violet-700" : "bg-zinc-100 text-zinc-600"
-                    }`}>{emp.position ?? "-"}</span>
+                    {/* 2026-08-17 · StatusPill 프레임워크 통일 */}
+                    <StatusPill tone={isPharma ? "violet" : "zinc"} size="xs">
+                      {emp.position ?? "-"}
+                    </StatusPill>
                   </div>
                   <div className="flex justify-center">
                     <LevelSelect
