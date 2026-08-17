@@ -22,13 +22,18 @@ interface HeroProps {
 export function Hero({ eyebrow, title, description, actions, aside, className = "" }: HeroProps) {
   return (
     <div
-      className={`relative overflow-hidden rounded-[20px] px-5 py-6 sm:px-7 sm:py-7 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-white ${className}`}
-      // 2026-08-17 · 블루톤 (navy → mid blue → sky) · 목업 --sky (#3E7CB1) 계열 확장
+      className={`relative overflow-hidden rounded-[20px] px-5 py-6 sm:px-7 sm:py-7 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-white shadow-[0_1px_3px_rgba(10,46,74,0.15),0_8px_28px_-8px_rgba(10,46,74,0.35),0_20px_60px_-24px_rgba(10,46,74,0.30)] ${className}`}
+      // 2026-08-17 v2 · Linear/Vercel 톤 · 3-stop blue gradient · 부드러운 depth
       style={{ background: "linear-gradient(120deg, #0A2E4A 0%, #1E5C8E 62%, #3E7CB1 100%)" }}
     >
-      {/* Decorative blobs */}
+      {/* 2026-08-17 v2 · aurora radial glow · 상단 좌우 (매우 저채도 · 브랜드 시그니처) */}
+      <div className="absolute -top-24 -right-20 w-[380px] h-[240px] rounded-full opacity-25 blur-3xl pointer-events-none" style={{ background: "radial-gradient(closest-side, #6FE3C2, transparent)" }} />
+      <div className="absolute -bottom-32 -left-24 w-[420px] h-[280px] rounded-full opacity-20 blur-3xl pointer-events-none" style={{ background: "radial-gradient(closest-side, #5EA9E8, transparent)" }} />
+      {/* Decorative soft blobs · 기존 유지 */}
       <div className="absolute rounded-full w-[220px] h-[220px] -right-[60px] -top-[90px] pointer-events-none" style={{ background: "rgba(255,255,255,0.08)" }} />
       <div className="absolute rounded-full w-[140px] h-[140px] right-[120px] -bottom-[80px] pointer-events-none" style={{ background: "rgba(255,255,255,0.06)" }} />
+      {/* top hairline · glass 세련 (Attio/Vercel) */}
+      <div className="absolute top-0 left-0 right-0 h-px pointer-events-none" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.20) 50%, transparent)" }} />
 
       <div className="relative z-[1] min-w-0 flex-1">
         {eyebrow && (
