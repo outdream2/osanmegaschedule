@@ -314,32 +314,46 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const Icon = tab.icon;
     const c = TAB_COLOR_MAP[tab.color ?? "slate"];
 
-    // 2026-08-17 · 사용자 지시 · 공통헤더 파란 배경 · 최신 트렌드 · 깔끔·고급·세련
-    //   · 딥네이비 배경 · 라이트 텍스트 · 활성 = 흰 pill (glass) + mint accent underline
-    //   · Linear/Vercel 톤 · flat + subtle · 색상 통일 (그룹별 accent 는 아이콘 색만 유지)
-    const ACCENT_BORDER: Record<string, string> = {
-      slate:   "border-b-white/70",
-      blue:    "border-b-[#7EB8E8]",
-      red:     "border-b-[#FFB4AE]",
-      sky:     "border-b-[#7EB8E8]",
-      indigo:  "border-b-[#A5B4FC]",
-      orange:  "border-b-[#FFB477]",
-      emerald: "border-b-[#6FE3C2]",
-      violet:  "border-b-[#C4B5FD]",
-      amber:   "border-b-[#FFC876]",
-      cyan:    "border-b-[#7EE8E8]",
+    // 2026-08-17 · 세련 · 공통헤더 · 그룹별 accent · 활성 아이콘 색 · 더 강한 시각 차별화
+    //   · 활성 · glass pill + 그룹 색 아이콘 (더 진한 색) + 하단 accent bar 강화 (2px→3px + gradient)
+    //   · 비활성 · dot 미표시 · 아이콘 muted
+    //   · Linear/Vercel/Attio 톤 + subtle glow
+    const ACCENT_BAR: Record<string, string> = {
+      slate:   "linear-gradient(90deg, transparent, #ffffff, transparent)",
+      blue:    "linear-gradient(90deg, transparent, #7EB8E8, transparent)",
+      red:     "linear-gradient(90deg, transparent, #FFB4AE, transparent)",
+      sky:     "linear-gradient(90deg, transparent, #7EB8E8, transparent)",
+      indigo:  "linear-gradient(90deg, transparent, #A5B4FC, transparent)",
+      orange:  "linear-gradient(90deg, transparent, #FFB477, transparent)",
+      emerald: "linear-gradient(90deg, transparent, #6FE3C2, transparent)",
+      violet:  "linear-gradient(90deg, transparent, #C4B5FD, transparent)",
+      amber:   "linear-gradient(90deg, transparent, #FFC876, transparent)",
+      cyan:    "linear-gradient(90deg, transparent, #7EE8E8, transparent)",
+    };
+    const ACCENT_ICON: Record<string, string> = {
+      slate:   "text-white",
+      blue:    "text-[#7EB8E8]",
+      red:     "text-[#FFB4AE]",
+      sky:     "text-[#7EB8E8]",
+      indigo:  "text-[#A5B4FC]",
+      orange:  "text-[#FFB477]",
+      emerald: "text-[#6FE3C2]",
+      violet:  "text-[#C4B5FD]",
+      amber:   "text-[#FFC876]",
+      cyan:    "text-[#7EE8E8]",
     };
 
     const colorKey = tab.color ?? "slate";
-    const accentBar = ACCENT_BORDER[colorKey] ?? "border-b-white/70";
+    const accentGradient = ACCENT_BAR[colorKey] ?? ACCENT_BAR.slate;
+    const iconAccent = ACCENT_ICON[colorKey] ?? "text-white";
 
     // 2026-08-17 · 딥네이비 배경 · 폰트 +2 유지
-    const baseCommon = "relative flex items-center gap-1.5 px-3 sm:px-3 md:px-3.5 lg:px-4 py-1.5 rounded-lg text-[17px] sm:text-[17px] md:text-[18px] lg:text-[19px] font-semibold whitespace-nowrap transition-colors duration-150";
+    const baseCommon = "relative flex items-center gap-1.5 px-3 sm:px-3 md:px-3.5 lg:px-4 py-1.5 rounded-lg text-[17px] sm:text-[17px] md:text-[18px] lg:text-[19px] font-semibold whitespace-nowrap transition-all duration-150";
 
-    // active · 흰 반투명 pill + 흰 텍스트 + subtle 하단 accent (그룹 톤)
-    const activeClass = `${baseCommon} bg-white/[0.14] text-white border-2 ${accentBar} border-x-transparent border-t-transparent font-bold shadow-sm`;
+    // active · 흰 반투명 pill + 흰 텍스트 + gradient accent bar (하단)
+    const activeClass = `${baseCommon} bg-white/[0.14] text-white ring-1 ring-white/20 font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_2px_8px_rgba(0,0,0,0.15)]`;
     // inactive · 라이트 블루 텍스트 + hover 반투명 흰 배경
-    const inactiveClass = `${baseCommon} text-[#C4DAEE] hover:bg-white/[0.06] hover:text-white border-2 border-transparent active:scale-95 cursor-pointer disabled:opacity-40`;
+    const inactiveClass = `${baseCommon} text-[#C4DAEE] hover:bg-white/[0.06] hover:text-white active:scale-95 cursor-pointer disabled:opacity-40`;
 
     // 경영관리 탭 · business-manage 통합 페이지로 단순 라우팅 (2026-08-03)
     if (tab.key === "business") {
@@ -348,8 +362,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       if (isActive) {
         return (
           <span key="business" className={activeClass}>
-            <Icon size={18} weight="fill" className="shrink-0 opacity-90" />
+            <Icon size={18} weight="fill" className={`shrink-0 ${iconAccent}`} />
             <span>{tab.label}</span>
+            <span className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-[70%] h-[3px] rounded-full pointer-events-none" style={{ background: accentGradient }} />
           </span>
         );
       }
@@ -372,8 +387,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     if (isActive) {
       return (
         <span key={tab.key} className={activeClass}>
-          <Icon size={18} weight="fill" className="shrink-0 opacity-90" />
+          <Icon size={18} weight="fill" className={`shrink-0 ${iconAccent}`} />
           <span>{tab.label}</span>
+          <span className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-[70%] h-[3px] rounded-full pointer-events-none" style={{ background: accentGradient }} />
         </span>
       );
     }
