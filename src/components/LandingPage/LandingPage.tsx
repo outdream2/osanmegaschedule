@@ -955,19 +955,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             </div>
           )}
 
-          {/* ── Hero · 2026-08-17 · 관리자 인사말 + pending 요약 · 목업 톤 · UI 만 ── */}
-          {isManagerOrAdmin && authSession && (() => {
+          {/* ── Hero · 2026-08-17 · 사용자 지시 · 로그인한 모든 사용자에게 웰컴카드 노출 ── */}
+          {isLoggedIn && authSession && (() => {
             const now = new Date();
             const w = ["일","월","화","수","목","금","토"][now.getDay()];
             const dateStr = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일 ${w}요일`;
+            // 관리자만 · pending 요약 노출 · 직원은 일반 인사말
             const pendingParts: string[] = [];
-            if (leavePendingCount > 0) pendingParts.push(`연차 승인 ${leavePendingCount}건`);
-            const displayTotal = requestsCounts.display + requestsCounts.order + requestsCounts.mismatch;
-            if (displayTotal > 0) pendingParts.push(`진열·발주 ${displayTotal}건`);
-            const desc = pendingParts.length > 0
-              ? `오늘 처리할 ${pendingParts.join(", ")}이 있어요.`
-              : "오늘 대기 중인 승인/요청이 없습니다.";
-            // 2026-08-17 · 사용자 지시 · Hero 상단카드 · 승인요청/데이터 업로드 CTA 제거
+            if (isManagerOrAdmin) {
+              if (leavePendingCount > 0) pendingParts.push(`연차 승인 ${leavePendingCount}건`);
+              const displayTotal = requestsCounts.display + requestsCounts.order + requestsCounts.mismatch;
+              if (displayTotal > 0) pendingParts.push(`진열·발주 ${displayTotal}건`);
+            }
+            const desc = isManagerOrAdmin
+              ? (pendingParts.length > 0
+                  ? `오늘 처리할 ${pendingParts.join(", ")}이 있어요.`
+                  : "오늘 대기 중인 승인/요청이 없습니다.")
+              : "오늘도 좋은 하루 되세요.";
             return (
               <Hero
                 eyebrow={dateStr}
