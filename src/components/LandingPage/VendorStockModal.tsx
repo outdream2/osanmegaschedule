@@ -112,23 +112,24 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
         className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl my-8 flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 헤더 */}
-        <div className="px-5 py-4 border-b border-line bg-sky-50 flex items-center justify-between gap-3">
+        {/* 헤더 · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
+        <div className="px-5 py-4 border-b border-line bg-zinc-50/60 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-sky-500 flex items-center justify-center shadow-md shrink-0">
+            <span className="w-[3px] h-[24px] rounded-full bg-brand-deep shrink-0" />
+            <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shadow-sm shrink-0">
               <Package size={18} className="text-white" />
             </div>
             <div className="min-w-0">
-              <div className={`${TEXT.title} text-zinc-900`}>공급사 재고확인</div>
-              <div className={`${TEXT.caption} text-zinc-500 truncate`}>{vendorName}</div>
+              <div className="text-[17px] font-bold text-ink tracking-tight">공급사 재고확인</div>
+              <div className="text-[13px] text-ink-soft truncate mt-0.5">{vendorName}</div>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-zinc-400 hover:text-zinc-700 w-9 h-9 rounded-lg hover:bg-white/70 cursor-pointer flex items-center justify-center shrink-0"
+            className="w-9 h-9 rounded-lg bg-white border border-line hover:border-brand-deep hover:bg-brand-tint text-ink-soft hover:text-brand-deep transition-colors cursor-pointer flex items-center justify-center shrink-0"
             aria-label="닫기"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
