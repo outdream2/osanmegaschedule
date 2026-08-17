@@ -48,20 +48,23 @@ export interface SearchFilterChipsProps<K extends string = string> {
   size?: "xs" | "sm";
 }
 
+// 2026-08-17 · 최신 트렌드 · mono neutral · 딥네이비 accent 통일
+//   · category identity 는 라벨로 표현 · 색은 통일
 const COLOR_ACTIVE: Record<ChipColor, string> = {
-  rose:    "bg-rose-50    text-rose-700    border-rose-300",
-  amber:   "bg-amber-50   text-amber-700   border-amber-300",
-  emerald: "bg-emerald-50 text-emerald-700 border-emerald-300",
-  sky:     "bg-sky-50     text-sky-700     border-sky-300",
-  violet:  "bg-violet-50  text-violet-700  border-violet-300",
-  indigo:  "bg-indigo-50  text-indigo-700  border-indigo-300",
-  teal:    "bg-teal-50    text-teal-700    border-teal-300",
-  slate:   "bg-zinc-100  text-zinc-800   border-zinc-300",
+  rose:    "bg-brand-deep text-white border-brand-deep shadow-sm",
+  amber:   "bg-brand-deep text-white border-brand-deep shadow-sm",
+  emerald: "bg-brand-deep text-white border-brand-deep shadow-sm",
+  sky:     "bg-brand-deep text-white border-brand-deep shadow-sm",
+  violet:  "bg-brand-deep text-white border-brand-deep shadow-sm",
+  indigo:  "bg-brand-deep text-white border-brand-deep shadow-sm",
+  teal:    "bg-brand-deep text-white border-brand-deep shadow-sm",
+  slate:   "bg-brand-deep text-white border-brand-deep shadow-sm",
 };
 
+// 폰트 +2 · Linear/Vercel 톤
 const SIZE_MAP = {
-  xs: "px-2   h-6  text-[10px] gap-1",
-  sm: "px-2.5 h-7  text-[11px] gap-1.5",
+  xs: "px-2.5 h-7 text-[12px] gap-1",
+  sm: "px-3   h-8 text-[13px] gap-1.5",
 };
 
 export function SearchFilterChips<K extends string = string>({
@@ -77,26 +80,25 @@ export function SearchFilterChips<K extends string = string>({
   const sz = SIZE_MAP[size];
 
   return (
-    <div className="inline-flex items-center gap-1.5 flex-wrap">
+    <div className="inline-flex items-center gap-2 flex-wrap">
       {label && (
-        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 shrink-0">{label}</span>
+        <span className="flex items-center gap-2 shrink-0">
+          <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
+          <span className="text-[14px] font-bold text-ink tracking-tight">{label}</span>
+        </span>
       )}
-      <div className="inline-flex items-center rounded-lg border border-line bg-white p-0.5 gap-0.5 flex-wrap">
+      <div className="inline-flex items-center bg-zinc-100 border border-line rounded-lg p-1 gap-0.5 flex-wrap">
         {showAll && (
           <button
             type="button"
             aria-pressed={allActive}
             onClick={() => {
-              // 전체 · 모든 선택 해제
-              // caller 는 별도 clear 없이 · 각 chip 을 다시 해제하는 대신
-              // showAll 클릭 시 아무 chip 도 선택되지 않은 상태로 · onToggle 반복 호출 대신
-              // 여기서는 각 선택된 항목을 순회 · onToggle 호출 (caller 가 clear 관리하지 않아도 됨)
               Array.from(selected).forEach(k => onToggle(k));
             }}
             className={[
-              "rounded-md font-bold leading-none border transition-colors cursor-pointer whitespace-nowrap inline-flex items-center",
+              "rounded-md font-semibold leading-none border transition-colors cursor-pointer whitespace-nowrap inline-flex items-center",
               sz,
-              allActive ? COLOR_ACTIVE.slate : "bg-white text-zinc-500 border-transparent hover:text-zinc-800 hover:bg-zinc-50",
+              allActive ? COLOR_ACTIVE.slate : "bg-transparent text-ink border-transparent hover:text-brand-deep hover:bg-white",
             ].join(" ")}
             title="모든 필터 해제"
           >
@@ -113,9 +115,9 @@ export function SearchFilterChips<K extends string = string>({
               aria-pressed={active}
               onClick={() => onToggle(opt.key)}
               className={[
-                "rounded-md font-bold leading-none border transition-colors cursor-pointer whitespace-nowrap inline-flex items-center",
+                "rounded-md font-semibold leading-none border transition-colors cursor-pointer whitespace-nowrap inline-flex items-center",
                 sz,
-                active ? COLOR_ACTIVE[color] : "bg-white text-zinc-500 border-transparent hover:text-zinc-800 hover:bg-zinc-50",
+                active ? COLOR_ACTIVE[color] : "bg-transparent text-ink border-transparent hover:text-brand-deep hover:bg-white",
               ].join(" ")}
               title={opt.hint ?? opt.label}
             >
@@ -123,8 +125,8 @@ export function SearchFilterChips<K extends string = string>({
               {typeof opt.count === "number" && (
                 <span
                   className={[
-                    "tabular-nums font-bold rounded px-1 text-[9px]",
-                    active ? "bg-white/60" : "bg-zinc-100 text-zinc-500",
+                    "tabular-nums font-semibold rounded-full px-1.5 text-[11px]",
+                    active ? "bg-white/20 text-white" : "bg-brand-tint text-brand-deep",
                   ].join(" ")}
                 >{opt.count}</span>
               )}
