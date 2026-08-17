@@ -553,20 +553,22 @@ const CreateModal: React.FC<{
         className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 모달 헤더 */}
-        <div className="px-4 py-3 border-b border-line bg-indigo-50 flex items-center justify-between">
+        {/* 모달 헤더 · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
+        <div className="px-4 py-3 border-b border-line bg-zinc-50/60 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-brand-deep flex items-center justify-center shadow-sm">
-              <UserPlus size={13} className="text-white" />
+            <span className="w-[3px] h-[20px] rounded-full bg-brand-deep shrink-0" />
+            <div className="w-9 h-9 rounded-lg bg-brand-deep flex items-center justify-center shadow-sm">
+              <UserPlus size={15} className="text-white" />
             </div>
-            <span className="text-sm font-semibold text-zinc-800">직원 신규 등록</span>
+            <span className="text-[16px] font-bold text-ink tracking-tight">직원 신규 등록</span>
           </div>
           <button
             onClick={() => !saving && onClose()}
             disabled={saving}
-            className="text-zinc-400 hover:text-zinc-700 w-7 h-7 rounded-md hover:bg-white/70 cursor-pointer flex items-center justify-center disabled:opacity-40"
+            className="w-9 h-9 rounded-lg bg-white border border-line hover:border-brand-deep hover:bg-brand-tint text-ink-soft hover:text-brand-deep transition-colors cursor-pointer flex items-center justify-center disabled:opacity-40"
+            aria-label="닫기"
           >
-            <X size={15} />
+            <X size={16} />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-3">

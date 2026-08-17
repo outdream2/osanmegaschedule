@@ -14,7 +14,7 @@ import {
   ScanLine, Loader2, AlertCircle, PackagePlus, CheckCircle2, XCircle, Clock,
   Trash2, Minus, Plus, RotateCcw, ClipboardCheck, ClipboardX,
   Barcode, Building2, Box, Hash, ArrowUpDown, ArrowUp, ArrowDown,
-  Sparkles, ShieldCheck, Package, RefreshCw,
+  Sparkles, ShieldCheck, Package, RefreshCw, X,
 } from "lucide-react";
 import { BarcodeScanner } from "../BarcodeScanner";
 import { loadZBar } from "../BarcodeScanner/zbar";
@@ -1160,14 +1160,15 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       {selectedArrivalId != null && (
         <div className="fixed inset-0 z-[100] bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setSelectedArrivalId(null)}>
           <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-            {/* 헤더 */}
-            <div className="flex items-center gap-2 px-5 py-3 border-b border-line bg-indigo-50 shrink-0">
-              <Package size={18} className="text-indigo-600" />
-              <h3 className="text-[16px] font-bold text-zinc-800">입고내역 상세</h3>
-              <span className="text-[14px] font-semibold text-zinc-500 tabular-nums">ID {selectedArrivalId}</span>
+            {/* 헤더 · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
+            <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-line bg-zinc-50/60 shrink-0">
+              <span className="w-[3px] h-[20px] rounded-full bg-brand-deep shrink-0" />
+              <Package size={18} className="text-brand-deep" />
+              <h3 className="text-[17px] font-bold text-ink tracking-tight">입고내역 상세</h3>
+              <span className="text-[13px] font-semibold text-ink-soft tabular-nums">ID {selectedArrivalId}</span>
               <button type="button" onClick={() => setSelectedArrivalId(null)}
-                className="ml-auto w-8 h-8 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-600 flex items-center justify-center cursor-pointer" title="닫기">
-                ✕
+                className="ml-auto w-9 h-9 rounded-lg bg-white border border-line hover:border-brand-deep hover:bg-brand-tint text-ink-soft hover:text-brand-deep flex items-center justify-center cursor-pointer transition-colors" title="닫기" aria-label="닫기">
+                <X size={16} />
               </button>
             </div>
             {/* 본문 */}
