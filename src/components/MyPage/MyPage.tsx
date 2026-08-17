@@ -97,14 +97,17 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
       <AppNavHeader activePage={"mypage" as AppNavPage} authSession={authSession} onBack={onBack} onNavigate={onNavigate} onLogout={onLogout} />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-3 sm:px-4 py-4 sm:py-6 space-y-3">
-        {/* 프로필 헤더 */}
+        {/* 2026-08-17 · 프로필 헤더 v2 · 성씨 initial 제거 (사용자 요청) · User 아이콘 + gradient · 세련 */}
         <div className="bg-white rounded-xl shadow-sm border border-line p-4 sm:p-6">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-brand-deep flex items-center justify-center text-white font-bold text-xl sm:text-2xl shadow-md shrink-0">
-              {(me?.name ?? authSession?.employeeName ?? "?").slice(0, 1)}
+            <div
+              className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center shrink-0 ring-1 ring-white/25 shadow-[0_4px_16px_rgba(10,46,74,0.25)]"
+              style={{ background: "linear-gradient(135deg, #0A2E4A 0%, #1E5C8E 100%)" }}
+            >
+              <User size={26} className="text-white" strokeWidth={2} />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[14px] font-bold text-indigo-500 uppercase tracking-wider">마이페이지</div>
+              <div className="text-[14px] font-bold text-brand-deep uppercase tracking-wider">마이페이지</div>
               <div className="text-lg sm:text-xl font-bold text-zinc-800 mt-0.5 truncate">
                 {me?.name ?? authSession?.employeeName ?? "-"}
                 {me?.rank && <span className="text-sm text-zinc-500 font-bold ml-1">{me.rank}</span>}
