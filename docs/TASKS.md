@@ -1,30 +1,58 @@
 # TASKS
 
-> 2026-08-17 저녁 · UI 최신 트렌드 · 전체 프레임워크화 진행중 · 사용자 병렬 테스트
+> 2026-08-17 밤 · UI 프레임워크화 확산 (P0 배치) + Nav 세련 (aurora glow · 타이포 · avatar) · 사용자 병렬 테스트
 > **원칙**: `feedback_framework_untouchable.md` (프레임워크 절대 유지) · `feedback_ui_latest_trend_framework.md` (최신 트렌드 · 파스텔 지양) · `feedback_font_plus2_default.md` (폰트 +2)
 
 ---
 
-## 🔥 진행중 (2026-08-17 저녁 세션 · 큰 UI 흐름)
+## 🔥 진행중 (2026-08-17 밤 세션)
 
-### #149 · 전체 UI · 최신 트렌드 (파스텔 → mono/accent) · 프레임워크화
+### #160 · P0 · 파스텔 잔재 → StatusPill 프레임워크 확산 (2026-08-17 밤)
+- **정량 (초기)**: 121곳 pastel (30 파일) · 실제 StatusPill 후보는 ~20-30개 (나머지는 버튼/탭/매트릭스/TH · 부적합)
+- **완료 배치 (8건)**:
+  - ✅ HrFormsPage · CATEGORIES tone → StatusPill (609abb0)
+  - ✅ TrendingTab · PeriodBucketCard 헤더 · 뉴트럴 + accent bar (78ef118)
+  - ✅ Batch 1 · StockCheck·DisplayPage(2)·Permissions (e628c13)
+  - ✅ Batch 2 · StaffManage·Pharmacist·ProductArrival (6fa18b7)
+  - ✅ Batch 3 · DisplayRequestPanel·RequestsPage (61b237b)
+  - ✅ Batch 4 · StockReconciliationTab (5fe6b18)
+  - ✅ Batch 5 · common/ProductDetailPanel 발주status (c5ca042)
+  - ✅ Batch 6 · LeavePage rightSlot·ScanPage 카운트 (6104b91)
+  - ✅ Batch 7 · ReturnListPanel 반품 카운트 (5e33982)
+  - ✅ Batch 8 · EmployeeFormModal 담당구역 (77066c0)
+- **잔여 · 다음 세션**: ContractWriterPage(5,400 lines · 분리 필요) · common/EmployeeInfoForm · 각 페이지 status matrix · legacy StatusBadge deprecate
+
+### #161 · Nav 세련 · 2026 최신 트렌드 (2026-08-17 밤 · ✅ 완료)
+- AppNavHeader · aurora radial glow (sky+mint) · 3-layer shadow · 3-stop gradient · top hairline (2eec7e4)
+- 로고 · ring-2 + brand glow · hover 강화 · OSAN MEGATOWN 타이포 (tracking) · vertical divider
+- 사용자 name chip · ring + glow hover
+- inactive 탭 · hover translate-y (-1px) · 200ms ease-out (dbe9565)
+- SideNav · aurora glow (상단 · sky) · 상하 hairline gradient · 그룹 헤더/아이템 · frosted + inset + translate-x hover
+- SidebarFooter · avatar circle (원본) → 성씨 initial 제거 (사용자 요청 · 03bee1c)
+- 종/알림 · PC · 여백 반 (px-2 py-1 → px-1 py-0.5 · 사용자 요청)
+- 모바일 탭 · frosted glass + inset light + backdrop-blur (928bb7f)
+- Hero · aurora + 3-layer shadow + top hairline (4d9c263)
+
+### #149 · 전체 UI · 최신 트렌드 (파스텔 → mono/accent) · 프레임워크화 (진행중)
 - **리서치 완료** · research-strategist · Option A (mono-neutral + brand accent) 채택
 - **완료 부분**:
   - ✅ 브랜드 팔레트 · teal → deep navy blue (index.css @theme)
   - ✅ 사이드바 · deep navy 톤 · DARK_COLOR_TONES 신규
-  - ✅ Hero · deep navy gradient
+  - ✅ Hero · deep navy gradient + aurora v2 (2026-08-17 밤 · 4d9c263)
   - ✅ 곧오픈 배너 · yellow → deep navy gradient
   - ✅ MenuCard · rounded-16 · 44 icon · +2 폰트 · 랜딩 완료
-  - ✅ KpiCard 목업 톤 (rounded-16 · 26px value)
-  - ✅ 공용 Button 컴포넌트 신설 (4 variant · 3 size · +2 폰트)
+  - ✅ KpiCard 목업 톤 (rounded-16 · 26px value) · Vercel Dashboard 뉴트럴 톤
+  - ✅ 공용 Button 컴포넌트 (4 variant · 3 size · +2 폰트)
   - ✅ 로그인 모달 hero gradient · submit 버튼 Button 적용
+  - ✅ StatusPill 10 tone (pine 포함) · CategoryChips · CollapseCard · BottomSheet · TabBar 3계층
+  - ✅ P0 잔재 정리 · 8배치 (#160 참조)
+  - ✅ Nav 세련 · aurora glow · 타이포 (#161)
 - **남은 작업**:
-  - 🔲 IconTile 공용 컴포넌트 · 파스텔 46곳 치환 (research reco · A안)
-  - 🔲 로그인 모달 input · indigo focus → brand navy focus
-  - 🔲 요청목록 조회 MenuCard badge · 4-color dots → mono
-  - 🔲 앱 전체 버튼 · Button 컴포넌트로 순차 이관 (각 페이지)
+  - 🔲 legacy StatusBadge deprecate + StatusPill 마이그레이션
+  - 🔲 common/README.md · usage 예시 · tone/size 문서
+  - 🔲 common/ 재분류 · framework/features
+  - 🔲 500+라인 파일 슬림화 (ProductDetailPanel · EmployeeInfoForm · InventoryEditPanel)
   - 🔲 목업 HTML 파일 · 최신 트렌드로 재생성 (PC + Mobile)
-  - 🔲 폰트 weight 정리 (bold → semibold 통일 · Hero H1만 extrabold)
 
 ### #150 · 반응형 헤더 · 사이드바 톤 통일 · ✅ 완료 (295b8d1)
 - AppNavHeader · deep navy · logo2.png rounded · 이름/로그아웃 흰 텍스트
@@ -196,6 +224,13 @@
 ---
 
 ## 📜 완료 로그
+
+### 2026-08-17 밤 세션 · P0 프레임워크 확산 + Nav 세련 (커밋 15+)
+- **P0 · StatusPill 확산 · 8배치** · HrForms · TrendingTab · StockCheck · DisplayPage(2) · Permissions · StaffManage · Pharmacist · ProductArrival · DisplayRequestPanel · RequestsPage · StockReconciliation · ProductDetailPanel · LeavePage · ScanPage · ReturnListPanel · EmployeeFormModal
+- **Nav 세련 v2** · AppNavHeader (aurora glow · 3-layer shadow · 3-stop gradient · 로고 ring · OSAN MEGATOWN 타이포 · name chip glow · inactive translate-y · 모바일 frosted)
+- **Sidebar 세련 v2** · aurora + hairline · 그룹/아이템 frosted + translate-x · footer 성씨 initial 제거 (사용자 요청)
+- **Hero v2** · aurora + 3-layer shadow + top hairline
+- **UI 원칙 준수** · handler/state/API 절대 손대지 않음 · className/style만
 
 ### 2026-08-17 저녁 세션 · UI 대전환 (커밋 10+ 이후 추가)
 - **UI 톤** · teal/파스텔 → deep navy blue 전환 (전체)
