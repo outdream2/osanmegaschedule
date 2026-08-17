@@ -45,6 +45,7 @@ const ACCENT_RING: Record<NonNullable<ToolbarSearchProps["accent"]>, string> = {
   amber:   "focus:ring-brand-tint/60  focus:border-brand-deep",
 };
 
+// 2026-08-17 · 최신 트렌드 · 폰트 +3 · h-7 → h-9 · rounded-lg 통일
 const ToolbarSearch: React.FC<ToolbarSearchProps> = ({
   value,
   onChange,
@@ -58,8 +59,8 @@ const ToolbarSearch: React.FC<ToolbarSearchProps> = ({
   return (
     <div className={`relative flex items-center ${widthClass}`}>
       <Search
-        size={12}
-        className="absolute left-2.5 text-zinc-400 pointer-events-none shrink-0"
+        size={14}
+        className="absolute left-2.5 text-ink-soft pointer-events-none shrink-0"
       />
       <input
         ref={inputRef}
@@ -70,8 +71,8 @@ const ToolbarSearch: React.FC<ToolbarSearchProps> = ({
         placeholder={placeholder}
         className={[
           "w-full bg-white border border-line rounded-lg",
-          "pl-7 pr-7 h-7 text-[11px] text-zinc-800",
-          "focus:outline-none focus:ring-2 transition",
+          "pl-8 pr-8 h-9 text-[14px] text-ink placeholder-ink-soft",
+          "focus:outline-none focus:ring-2 transition-colors",
           ACCENT_RING[accent],
         ].join(" ")}
         aria-label={placeholder}
@@ -80,11 +81,11 @@ const ToolbarSearch: React.FC<ToolbarSearchProps> = ({
         <button
           type="button"
           onClick={() => { onChange(""); inputRef.current?.focus(); }}
-          className="absolute right-1.5 w-5 h-5 flex items-center justify-center rounded hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700 cursor-pointer transition"
+          className="absolute right-2 w-6 h-6 flex items-center justify-center rounded-md hover:bg-brand-tint text-ink-soft hover:text-brand-deep cursor-pointer transition-colors"
           title="검색 초기화 (Esc)"
           aria-label="검색 초기화"
         >
-          <X size={10} />
+          <X size={13} />
         </button>
       )}
     </div>
