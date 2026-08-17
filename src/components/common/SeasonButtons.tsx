@@ -30,16 +30,20 @@ export const SeasonButtons: React.FC<SeasonButtonsProps> = ({
   className = "",
 }) => {
   const ranges = useSeasonRanges();
+  // 2026-08-17 · 최신 트렌드 · 폰트 +2 · 접근성 (h-7+) · 딥네이비 통일
   const sizeCls = size === "sm"
-    ? "px-1.5 py-0.5 text-[10px]"
-    : "px-2 py-1 text-[11px]";
-  const labelCls = size === "sm" ? "text-[9px]" : "text-[10px]";
+    ? "px-2 h-7 text-[12px] gap-1"
+    : "px-2.5 h-8 text-[13px] gap-1";
+  const labelCls = size === "sm" ? "text-[12px]" : "text-[13px]";
   return (
-    <div className={`inline-flex items-center gap-1 flex-wrap ${className}`}>
+    <div className={`inline-flex items-center gap-2 flex-wrap ${className}`}>
       {!hideLabel && label && (
-        <span className={`text-zinc-500 font-bold shrink-0 ${labelCls}`}>{label}</span>
+        <span className="flex items-center gap-2 shrink-0">
+          <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
+          <span className={`text-ink font-bold tracking-tight ${labelCls}`}>{label}</span>
+        </span>
       )}
-      <div className="inline-flex bg-zinc-100/80 border border-line/60 rounded-lg p-0.5 shadow-inner">
+      <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
         {SEASONS.map((s) => {
           const active = value === s;
           const months = ranges[s];
@@ -50,10 +54,10 @@ export const SeasonButtons: React.FC<SeasonButtonsProps> = ({
               type="button"
               onClick={() => onChange(active ? null : s)}
               title={title}
-              className={`${sizeCls} font-bold rounded transition cursor-pointer inline-flex items-center gap-0.5 ${
+              className={`${sizeCls} font-semibold rounded-md transition-colors cursor-pointer inline-flex items-center whitespace-nowrap ${
                 active
-                  ? "bg-white text-sky-700 shadow-sm ring-1 ring-zinc-200"
-                  : "text-zinc-500 hover:text-zinc-800"
+                  ? "bg-brand-deep text-white shadow-sm"
+                  : "text-ink hover:text-brand-deep hover:bg-white"
               }`}
             >
               <span aria-hidden>{SEASON_EMOJI[s]}</span>
