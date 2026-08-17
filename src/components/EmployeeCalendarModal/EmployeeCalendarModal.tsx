@@ -79,9 +79,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
 
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
-  const [activeTab, setActiveTab] = useState<"calendar" | "bulk" | "zone" | "info">(
-    isLogistics && logisticsZoneProps ? "zone" : "calendar"
-  );
+  // 2026-08-17 · 사용자 지시 · 기본 탭은 달력 (logistics 여부 무관 · 관리자·물류 모두 달력 우선)
+  const [activeTab, setActiveTab] = useState<"calendar" | "bulk" | "zone" | "info">("calendar");
 
   // Schedules for the currently displayed month (may differ from initialYear/initialMonth)
   const [monthSchedules, setMonthSchedules] = useState<Schedule[]>(employee.schedules);
@@ -344,11 +343,11 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
         className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[95vh]"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header · 2026-08-17 · 딥네이비 · 사용자 지시 · 이름 중복 제거 · "직원정보" 타이틀만 */}
+        {/* Header · 2026-08-17 · 사용자 지시 · "직원정보 / 월별 스케쥴" 타이틀 · 딥네이비 톤 */}
         <div className="bg-brand-deep text-white px-5 py-3.5 flex-shrink-0 flex items-center justify-between gap-3">
           <div className="min-w-0 flex items-center gap-2">
             <User size={18} strokeWidth={2.2} className="text-white/85 shrink-0" />
-            <span className="text-[18px] font-extrabold tracking-tight">직원정보</span>
+            <span className="text-[18px] font-extrabold tracking-tight">직원정보 / 월별 스케쥴</span>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-white/80 hover:text-white transition-colors shrink-0">
             <X size={18} />
@@ -359,15 +358,14 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
         <button
           type="button"
           onClick={() => setProfileCollapsedMobile(v => !v)}
-          className="md:hidden flex items-center justify-between gap-2 px-4 py-2 border-b border-zinc-100 bg-zinc-50 text-[13px] font-semibold text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer shrink-0"
+          className="md:hidden flex items-center gap-2 px-4 py-2.5 border-b-2 border-brand-deep/15 bg-brand-tint text-[16px] font-semibold text-brand-deep hover:brightness-95 transition-all cursor-pointer shrink-0"
         >
-          <span className="flex items-center gap-2">
-            <User size={14} strokeWidth={2.2} />
-            직원정보
-          </span>
-          <span className="flex items-center gap-1 text-[12px] text-zinc-500">
+          <User size={16} strokeWidth={2.2} className="shrink-0" />
+          <span>직원정보</span>
+          {/* 2026-08-17 · 사용자 지시 · 펼치기/접기 라벨 · 직원정보 옆으로 가깝게 */}
+          <span className="ml-1 flex items-center gap-0.5 text-[15px] text-brand">
             {profileCollapsedMobile ? "펼치기" : "접기"}
-            {profileCollapsedMobile ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+            {profileCollapsedMobile ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
           </span>
         </button>
 
@@ -426,7 +424,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                   <>
                     <button
                       onClick={() => setActiveTab("calendar")}
-                      className={`flex items-center gap-1.5 px-3.5 py-2 text-[14px] font-semibold rounded-lg transition-colors ${
+                      className={`flex items-center gap-1.5 px-3.5 py-2 text-[17px] font-semibold rounded-lg transition-colors ${
                         activeTab === "calendar"
                           ? "bg-brand-deep text-white shadow-sm"
                           : "text-ink-soft hover:bg-zinc-100 hover:text-ink cursor-pointer"
@@ -436,7 +434,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                     </button>
                     <button
                       onClick={() => setActiveTab("bulk")}
-                      className={`flex items-center gap-1.5 px-3.5 py-2 text-[14px] font-semibold rounded-lg transition-colors ${
+                      className={`flex items-center gap-1.5 px-3.5 py-2 text-[17px] font-semibold rounded-lg transition-colors ${
                         activeTab === "bulk"
                           ? "bg-brand-deep text-white shadow-sm"
                           : "text-ink-soft hover:bg-zinc-100 hover:text-ink cursor-pointer"
@@ -449,7 +447,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                 {isLogistics && logisticsZoneProps && (
                   <button
                     onClick={() => setActiveTab("zone")}
-                    className={`flex items-center gap-1.5 px-3.5 py-2 text-[14px] font-semibold rounded-lg transition-colors ${
+                    className={`flex items-center gap-1.5 px-3.5 py-2 text-[17px] font-semibold rounded-lg transition-colors ${
                       activeTab === "zone"
                         ? "bg-brand-deep text-white shadow-sm"
                         : "text-ink-soft hover:bg-zinc-100 hover:text-ink cursor-pointer"
@@ -481,21 +479,22 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
               </div>
             )}
 
-        {/* ── CALENDAR TAB ── */}
+        {/* ── CALENDAR TAB · 2026-08-17 · 사용자 지시 · 살짝 스크롤 허용 · 최신 트렌드 · 세련 ── */}
         {activeTab === "calendar" && (
           <>
-            <div className="flex-1 overflow-y-auto px-3 py-2">
-              <div className="grid grid-cols-7 mb-1">
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3">
+              <div className="grid grid-cols-7 mb-2">
                 {DAY_LABELS.map((d, i) => (
-                  <div key={d} className={`text-center text-[13px] font-bold py-1 ${i === 0 ? "text-rose-500" : i === 6 ? "text-sky-500" : "text-zinc-400"}`}>
+                  <div key={d} className={`text-center text-[14px] font-bold py-1.5 tracking-wide ${i === 0 ? "text-rose-500" : i === 6 ? "text-sky-500" : "text-ink-soft"}`}>
                     {d}
                   </div>
                 ))}
               </div>
 
-              <div className="space-y-1">
+              {/* weeks · 자연 높이 · 스크롤 허용 */}
+              <div className="flex flex-col gap-1.5">
                 {weeks.map((week, wi) => (
-                  <div key={wi} className="grid grid-cols-7 gap-1">
+                  <div key={wi} className="grid grid-cols-7 gap-1.5">
                     {week.map((day, di) => {
                       if (!day) return <div key={di} />;
                       const sc = schedMap[day];
@@ -525,7 +524,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                             isRetireDay ? `퇴사일 (${employee.retireDate})` :
                             outOfEmployment ? (beforeHire ? "입사일 이전 — 근무 불가" : "퇴사일 이후 — 근무 불가") : undefined
                           }
-                          className={`relative rounded-lg p-1 flex flex-col items-center min-h-[48px] sm:min-h-[60px] border transition-all ${
+                          className={`relative rounded-xl p-1.5 flex flex-col items-center min-h-[64px] border transition-all overflow-hidden ${
                             outOfEmployment ? "bg-zinc-100 border-zinc-200 cursor-not-allowed opacity-70" :
                             (dayBgHex ? "border-transparent" : "bg-white border-zinc-100")
                           } ${isHireDay ? "ring-2 ring-emerald-500" : ""} ${isRetireDay ? "ring-2 ring-rose-500" : ""} ${isToday ? "ring-2 ring-indigo-400 ring-offset-1" : ""} ${
@@ -553,16 +552,12 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                             <span className="text-[11px] text-zinc-400 font-medium">─</span>
                           ) : sc?.type ? (
                             <>
-                              <span className={`text-[12px] font-extrabold leading-tight ${dayIsLight ? "text-zinc-900" : "text-white"}`}>
+                              {/* 2026-08-17 · 사용자 지시 · 셀에는 type 글씨만 · 시간은 아래 범례 · 폰트 +2 (12→14) */}
+                              <span className={`text-[14px] font-extrabold leading-tight ${dayIsLight ? "text-zinc-900" : "text-white"}`}>
                                 {sc.type}
                               </span>
-                              {sc.workingHours && (
-                                <span className="text-[11px] text-zinc-500 leading-tight mt-0.5 font-mono">
-                                  {sc.workingHours}
-                                </span>
-                              )}
                               {sc.actualHours && (
-                                <span className="text-[11px] text-indigo-600 leading-tight font-semibold">
+                                <span className="text-[12px] text-indigo-600 leading-tight font-semibold mt-0.5">
                                   {sc.actualHours}
                                 </span>
                               )}
@@ -576,21 +571,45 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                   </div>
                 ))}
               </div>
+
+              {/* 2026-08-17 · 사용자 지시 · 달력 아래 · 근무형태별 시간 범례 (오픈/미들/마감 등) */}
+              {typeHoursMap && Object.keys(typeHoursMap).length > 0 && (
+                <div className="mt-4 pt-3 border-t border-line">
+                  <div className="text-[13px] font-semibold text-ink-soft mb-2">근무 시간표</div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                    {activeTypes
+                      .filter(t => typeHoursMap[t.value])
+                      .map(t => {
+                        const hex = getTypeHex(t.value, scheduleTypeEntries);
+                        return (
+                          <div key={t.value} className="flex items-center gap-2 text-[14px]">
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: hex }} />
+                            <span className="font-bold text-ink">{t.label}</span>
+                            <span className="font-mono text-ink-soft tabular-nums">{typeHoursMap[t.value]}</span>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Inline Edit Panel */}
+            {/* Inline Edit Panel · 2026-08-17 · 최신 트렌드 · 깔끔·세련 · 배지 지양 · 폰트 +2~4 */}
             {isAdmin && onUpdate && editingDay !== null && (
-              <div className="flex-shrink-0 border-t-2 border-blue-200 bg-blue-50/40 px-4 py-3 space-y-2.5">
+              <div className="flex-shrink-0 border-t border-line bg-white px-5 py-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-black text-blue-700">
-                    {month}월 {editingDay}일 스케줄 편집
-                  </span>
-                  <button onClick={() => setEditingDay(null)} className="p-1 text-zinc-400 hover:text-zinc-600 rounded transition cursor-pointer">
-                    <X size={13} />
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+                    <span className="text-[15px] font-bold text-ink">
+                      {month}월 {editingDay}일 스케줄 편집
+                    </span>
+                  </div>
+                  <button onClick={() => setEditingDay(null)} className="p-1.5 text-ink-soft hover:text-ink hover:bg-zinc-100 rounded-lg transition-colors cursor-pointer">
+                    <X size={14} />
                   </button>
                 </div>
 
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1.5">
                   {activeTypes.map((t) => {
                     const btnHex = getTypeHex(t.value, scheduleTypeEntries);
                     const btnLight = isLightHex(btnHex);
@@ -601,10 +620,10 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                         type="button"
                         disabled={isSaving}
                         onClick={() => quickApplyType(t.value)}
-                        className={`px-2.5 py-1.5 text-[10px] font-extrabold rounded-lg border transition cursor-pointer disabled:opacity-50 ${
+                        className={`px-3 py-1.5 text-[14px] font-semibold rounded-lg border transition-colors cursor-pointer disabled:opacity-40 ${
                           isActive
-                            ? `${btnLight ? "text-zinc-900" : "text-white"} border-blue-400 ring-2 ring-blue-400/30 shadow-sm`
-                            : "bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-100"
+                            ? `${btnLight ? "text-zinc-900" : "text-white"} border-brand-deep shadow-sm`
+                            : "bg-white text-ink border-line hover:border-brand-deep hover:bg-brand-tint"
                         }`}
                         style={isActive ? { backgroundColor: btnHex } : undefined}
                       >
@@ -616,59 +635,59 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                     type="button"
                     disabled={isSaving}
                     onClick={() => quickApplyType("결근")}
-                    className="px-2.5 py-1.5 text-[10px] font-extrabold rounded-lg border bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 transition cursor-pointer disabled:opacity-50"
+                    className="px-3 py-1.5 text-[14px] font-semibold text-rose-800 border border-rose-200 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer disabled:opacity-40"
                   >
-                    🚨 결근
+                    결근
                   </button>
                 </div>
 
-                <p className="text-[9px] text-blue-500 font-semibold -mt-1">
-                  ▲ 변경사항은 임시 반영됩니다. 하단 <b>[변경사항 저장]</b> 버튼을 눌러야 실제 반영됩니다.
+                <p className="text-[13px] text-ink-soft font-medium">
+                  변경사항은 임시 반영됩니다. 하단 <b className="text-brand-deep font-bold">[변경사항 저장]</b> 버튼을 눌러야 실제 반영됩니다.
                 </p>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2.5">
                   <div className="flex-1">
-                    <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5 flex items-center gap-0.5">
-                      <Clock size={9} /> 근무 시간
+                    <label className="text-[13px] font-semibold text-ink-soft mb-1 flex items-center gap-1.5">
+                      <Clock size={12} strokeWidth={2.2} /> 근무 시간
                     </label>
                     <input
                       type="text"
                       value={editWorkingHours}
                       onChange={e => setEditWorkingHours(e.target.value)}
                       placeholder="09:30-18:30"
-                      className="w-full text-[11px] rounded border border-zinc-200 focus:border-blue-400 p-1.5 bg-white focus:outline-none"
+                      className="w-full text-[14px] rounded-lg border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-2.5 py-1.5 bg-white focus:outline-none transition-colors"
                     />
                   </div>
                   <div className="flex-1">
-                    <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5 flex items-center gap-0.5">
-                      <MessageSquare size={9} /> 실근무/기타
+                    <label className="text-[13px] font-semibold text-ink-soft mb-1 flex items-center gap-1.5">
+                      <MessageSquare size={12} strokeWidth={2.2} /> 실근무·기타
                     </label>
                     <input
                       type="text"
                       value={editActualHours}
                       onChange={e => setEditActualHours(e.target.value)}
                       placeholder="지각, 조퇴..."
-                      className="w-full text-[11px] rounded border border-zinc-200 focus:border-blue-400 p-1.5 bg-white focus:outline-none"
+                      className="w-full text-[14px] rounded-lg border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-2.5 py-1.5 bg-white focus:outline-none transition-colors"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">메모</label>
+                  <label className="text-[13px] font-semibold text-ink-soft mb-1 block">메모</label>
                   <input
                     type="text"
                     value={editMemo}
                     onChange={e => setEditMemo(e.target.value)}
                     placeholder="메모 (마우스 오버 시 표시)"
-                    className="w-full text-[11px] rounded border border-zinc-200 focus:border-blue-400 p-1.5 bg-white focus:outline-none"
+                    className="w-full text-[14px] rounded-lg border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-2.5 py-1.5 bg-white focus:outline-none transition-colors"
                   />
                 </div>
 
-                <div className="flex justify-end gap-2 pt-0.5">
+                <div className="flex justify-end gap-2 pt-1">
                   <button
                     type="button"
                     onClick={() => setEditingDay(null)}
-                    className="px-3 py-1.5 text-[11px] font-semibold bg-white border border-zinc-200 rounded text-zinc-600 hover:bg-zinc-50 transition cursor-pointer"
+                    className="h-9 px-3.5 text-[14px] font-semibold bg-white border border-line hover:border-ink-soft text-ink-soft hover:text-ink rounded-lg transition-colors cursor-pointer"
                   >
                     닫기
                   </button>
@@ -676,39 +695,37 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                     type="button"
                     onClick={() => { saveWith(); setEditingDay(null); }}
                     disabled={isSaving}
-                    className="px-3 py-1.5 text-[11px] font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded inline-flex items-center gap-1 transition cursor-pointer disabled:opacity-60"
+                    className="h-9 px-4 text-[14px] font-semibold bg-brand-deep hover:bg-[#0d3a5c] text-white rounded-lg inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40"
                   >
-                    <Save size={11} />
+                    <Save size={13} strokeWidth={2.2} />
                     임시 반영
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Stats footer + Batch save */}
-            <div className="px-4 py-2.5 bg-zinc-50 border-t border-zinc-100 flex-shrink-0 flex items-center gap-3 flex-wrap">
-              <span className="text-[10px] font-bold text-zinc-500">이달 근무 {workDays}일</span>
+            {/* Stats footer + Batch save · 2026-08-17 · 최신 트렌드 · 배지 지양 · 텍스트 chip · 폰트 +3 */}
+            <div className="px-4 py-3 bg-zinc-50/60 border-t border-line flex-shrink-0 flex items-center gap-3 flex-wrap">
+              <span className="text-[14px] font-bold text-ink">이달 근무 <span className="tabular-nums">{workDays}</span>일</span>
+              <span className="w-px h-4 bg-line" />
               {Object.entries(stats).map(([type, count]) => {
                 const statHex = getTypeHex(type, scheduleTypeEntries);
-                const statLight = isLightHex(statHex);
                 return (
-                  <div
-                    key={type}
-                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${statLight ? "text-zinc-900" : "text-white"}`}
-                    style={{ backgroundColor: statHex }}
-                  >
-                    {type} {count}
+                  <div key={type} className="flex items-center gap-1.5 text-[14px] font-semibold text-ink">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: statHex }} />
+                    <span>{type}</span>
+                    <span className="tabular-nums text-ink-soft">{count}</span>
                   </div>
                 );
               })}
-              {/* 변경사항 저장 · pending 있을 때만 */}
+              {/* 변경사항 저장 · pending 있을 때만 · 2026-08-17 · 최신 트렌드 · 딥네이비 primary · 폰트 +3 */}
               {isAdmin && onUpdate && Object.keys(pendingChanges).length > 0 && (
-                <div className="ml-auto flex items-center gap-1.5">
+                <div className="ml-auto flex items-center gap-2">
                   <button
                     type="button"
                     onClick={handleDiscardPending}
                     disabled={isBatchSaving}
-                    className="px-2 py-1 text-[10px] font-bold bg-white border border-zinc-300 text-zinc-600 rounded hover:bg-zinc-100 transition cursor-pointer disabled:opacity-50"
+                    className="h-9 px-3.5 text-[14px] font-semibold bg-white border border-line hover:border-ink-soft text-ink-soft hover:text-ink rounded-lg transition-colors cursor-pointer disabled:opacity-40"
                   >
                     변경 취소
                   </button>
@@ -716,10 +733,10 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                     type="button"
                     onClick={handleBatchSave}
                     disabled={isBatchSaving}
-                    className="px-3 py-1 text-[11px] font-black bg-amber-500 hover:bg-amber-600 text-white rounded inline-flex items-center gap-1 shadow-sm transition cursor-pointer disabled:opacity-60"
+                    className="h-9 px-4 text-[14px] font-semibold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg inline-flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer disabled:opacity-40"
                   >
-                    <Save size={11} strokeWidth={3} />
-                    {isBatchSaving ? "저장 중..." : `변경사항 저장 (${Object.keys(pendingChanges).length}건)`}
+                    <Save size={14} strokeWidth={2.2} />
+                    {isBatchSaving ? "저장 중..." : `변경사항 저장 · ${Object.keys(pendingChanges).length}건`}
                   </button>
                 </div>
               )}
@@ -738,73 +755,71 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
           />
         )}
 
-        {/* ── BULK TAB ── */}
+        {/* ── BULK TAB · 2026-08-17 · 사용자 지시 · 최신 트렌드 · 깔끔 · 배지 지양 · 폰트 +4 ── */}
         {activeTab === "bulk" && (
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 text-zinc-800 text-xs">
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5 text-ink">
 
             {isLocked && (
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-amber-50 border border-amber-300 rounded-lg">
-                <Lock size={13} className="text-amber-500 shrink-0" />
-                <span className="text-xs font-semibold text-amber-700">이달 스케줄이 확정된 상태입니다. 메인 화면에서 확정해제 후 사용하세요.</span>
+              <div className="flex items-center gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg">
+                <Lock size={14} className="text-amber-500 shrink-0" />
+                <span className="text-[14px] font-semibold text-amber-800">이달 스케줄이 확정된 상태입니다. 메인에서 확정해제 후 사용하세요.</span>
               </div>
             )}
 
             {employee.description && (
-              <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
-                <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider shrink-0">비고</span>
-                <span className="text-xs text-amber-800">{employee.description}</span>
+              <div className="px-3 py-2 bg-amber-50/70 border border-amber-100 rounded-lg text-[14px] text-amber-800">
+                <span className="font-bold mr-1.5">비고</span>{employee.description}
               </div>
             )}
 
-            {/* Step 1: Date selection */}
-            <div className="space-y-2">
+            {/* Section 1 · 날짜 선택 · 배지 없음 · accent bar · 폰트 +4 */}
+            <section className="space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <span className="text-xs font-bold text-zinc-700 flex items-center gap-1.5">
-                  <span className="bg-blue-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[9px]">1</span>
-                  날짜 선택 ({bulkSelectedDates.length}일 선택됨)
-                </span>
-                <div className="flex flex-wrap gap-1">
-                  <button type="button" onClick={selectAll} className="px-2 py-1 text-[10px] font-bold bg-zinc-100 hover:bg-zinc-200 rounded text-zinc-700 cursor-pointer transition">전체선택</button>
-                  <button type="button" onClick={deselectAll} className="px-2 py-1 text-[10px] font-bold bg-zinc-100 hover:bg-zinc-200 rounded text-zinc-700 cursor-pointer transition">선택해제</button>
-                  <button type="button" onClick={selectWeekdays} className="px-2 py-1 text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-100 hover:bg-emerald-100 rounded cursor-pointer transition">평일(월-금)</button>
-                  <button type="button" onClick={selectWeekends} className="px-2 py-1 text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-100 hover:bg-rose-100 rounded cursor-pointer transition">주말(토-일)</button>
+                <div className="flex items-center gap-2.5">
+                  <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+                  <h3 className="text-[16px] font-bold tracking-tight text-ink">날짜 선택</h3>
+                  <span className="text-[14px] font-medium text-ink-soft tabular-nums">· {bulkSelectedDates.length}일</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <button type="button" onClick={selectAll} className="px-2.5 py-1.5 text-[14px] font-semibold text-ink-soft hover:text-ink hover:bg-zinc-100 rounded-lg cursor-pointer transition-colors">전체</button>
+                  <button type="button" onClick={deselectAll} className="px-2.5 py-1.5 text-[14px] font-semibold text-ink-soft hover:text-ink hover:bg-zinc-100 rounded-lg cursor-pointer transition-colors">해제</button>
+                  <button type="button" onClick={selectWeekdays} className="px-2.5 py-1.5 text-[14px] font-semibold text-ink-soft hover:text-ink hover:bg-zinc-100 rounded-lg cursor-pointer transition-colors">평일</button>
+                  <button type="button" onClick={selectWeekends} className="px-2.5 py-1.5 text-[14px] font-semibold text-ink-soft hover:text-ink hover:bg-zinc-100 rounded-lg cursor-pointer transition-colors">주말</button>
                 </div>
               </div>
 
-              {/* Weekday toggle buttons */}
-              <div className="bg-zinc-50 border border-zinc-100 rounded-xl p-2 flex flex-wrap items-center gap-2">
-                <span className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-wide shrink-0">요일 단위:</span>
-                <div className="flex flex-wrap gap-1">
-                  {[
-                    { label: "월", val: 1 }, { label: "화", val: 2 }, { label: "수", val: 3 },
-                    { label: "목", val: 4 }, { label: "금", val: 5 },
-                    { label: "토", val: 6, extra: "text-blue-700 border-blue-200 hover:bg-blue-100 bg-blue-50/40" },
-                    { label: "일", val: 0, extra: "text-rose-700 border-rose-200 hover:bg-rose-100 bg-rose-50/40" },
-                  ].map((w) => (
-                    <button
-                      key={w.val}
-                      type="button"
-                      onClick={() => toggleWeekday(w.val)}
-                      className={`px-2 py-1 text-[10px] font-semibold border rounded-lg cursor-pointer transition ${w.extra ?? "text-zinc-700 border-zinc-200 hover:bg-zinc-100"}`}
-                    >
-                      {w.label}요일
-                    </button>
-                  ))}
-                </div>
+              {/* 요일 단위 · 배지 대신 flat pill · 폰트 +4 */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[14px] font-semibold text-ink-soft shrink-0">요일:</span>
+                {[
+                  { label: "월", val: 1 }, { label: "화", val: 2 }, { label: "수", val: 3 },
+                  { label: "목", val: 4 }, { label: "금", val: 5 },
+                  { label: "토", val: 6 },
+                  { label: "일", val: 0 },
+                ].map((w) => (
+                  <button
+                    key={w.val}
+                    type="button"
+                    onClick={() => toggleWeekday(w.val)}
+                    className="min-w-[36px] px-2.5 py-1.5 text-[14px] font-semibold text-ink border border-line rounded-lg hover:border-brand-deep hover:bg-brand-tint transition-colors cursor-pointer"
+                  >
+                    {w.label}
+                  </button>
+                ))}
               </div>
 
-              {/* Day grid */}
-              <div className="grid grid-cols-7 gap-1 p-2 bg-[#f8fafc] border border-[#e2e8f0] rounded-xl">
+              {/* Day grid · 선택시 딥네이비 fill · 폰트 +4 */}
+              <div className="grid grid-cols-7 gap-1.5 p-2 bg-zinc-50/60 border border-line rounded-xl">
                 {daysList.map((dayNum) => {
                   const { dayWord, dayIndex, fullDate } = getDayDetails(dayNum);
                   const isChecked = bulkSelectedDates.includes(fullDate);
                   return (
                     <label
                       key={dayNum}
-                      className={`flex flex-col items-center justify-center py-1.5 border rounded-lg cursor-pointer text-center select-none transition ${
+                      className={`flex flex-col items-center justify-center py-1.5 border rounded-lg cursor-pointer text-center select-none transition-colors ${
                         isChecked
-                          ? "bg-blue-50 border-blue-400 text-blue-700 font-extrabold"
-                          : "bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50"
+                          ? "bg-brand-deep border-brand-deep text-white"
+                          : "bg-white border-line hover:border-brand hover:bg-brand-tint"
                       }`}
                     >
                       <input
@@ -816,37 +831,37 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                         }}
                         className="sr-only"
                       />
-                      <span className={`text-[11px] ${isChecked ? "text-blue-600" : dayIndex === 6 ? "text-blue-500" : dayIndex === 0 ? "text-rose-500" : "text-zinc-400"}`}>
+                      <span className={`text-[13px] font-medium ${isChecked ? "text-white/80" : dayIndex === 6 ? "text-sky-500" : dayIndex === 0 ? "text-rose-500" : "text-ink-soft"}`}>
                         {dayWord}
                       </span>
-                      <span className="text-[14px] font-bold">{dayNum}</span>
+                      <span className="text-[16px] font-bold tabular-nums">{dayNum}</span>
                     </label>
                   );
                 })}
               </div>
-            </div>
+            </section>
 
-            {/* Step 2: Schedule settings */}
-            <div className="space-y-3">
-              <span className="text-xs font-bold text-zinc-700 flex items-center gap-1.5">
-                <span className="bg-blue-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[9px]">2</span>
-                근무 조건 설정
-              </span>
+            {/* Section 2 · 근무 조건 · 배지 없음 · accent bar · 폰트 +4 */}
+            <section className="space-y-3">
+              <div className="flex items-center gap-2.5">
+                <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+                <h3 className="text-[16px] font-bold tracking-tight text-ink">근무 조건</h3>
+              </div>
 
-              {/* Quick attendance */}
-              <div className="p-2 border border-blue-200 bg-blue-50/50 rounded-xl space-y-1">
-                <label className="block text-[10px] font-black text-blue-800">⚡ 일괄 근태 빠른 지정</label>
+              {/* 근태 빠른 지정 · 이모지 제거 · 통일 톤 */}
+              <div className="space-y-2">
+                <label className="block text-[14px] font-semibold text-ink-soft">근태 빠른 지정</label>
                 <div className="flex flex-wrap gap-1.5">
-                  <button type="button" onClick={() => setBulkActualHours("")} className="px-2 py-1 text-[10px] font-extrabold bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200 rounded cursor-pointer transition">초기화</button>
-                  <button type="button" onClick={() => { setBulkActualHours("지각"); setBulkWorkingHours(typeHoursMap?.["오픈"] ?? ""); }} className="px-2 py-1 text-[10px] font-extrabold bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-200 rounded cursor-pointer transition">⚠️ 지각</button>
-                  <button type="button" onClick={() => setBulkActualHours("조퇴")} className="px-2 py-1 text-[10px] font-extrabold bg-purple-100 hover:bg-purple-200 text-purple-900 border border-purple-200 rounded cursor-pointer transition">🏃 조퇴</button>
-                  <button type="button" onClick={() => { setBulkActualHours("결근"); setBulkType("결근"); setBulkWorkingHours(""); }} className="px-2 py-1 text-[10px] font-extrabold bg-rose-100 hover:bg-rose-200 text-rose-900 border border-rose-200 rounded cursor-pointer transition">🚨 결근</button>
+                  <button type="button" onClick={() => setBulkActualHours("")} className="px-3 py-1.5 text-[14px] font-semibold text-ink-soft hover:text-ink border border-line hover:border-ink-soft rounded-lg cursor-pointer transition-colors">초기화</button>
+                  <button type="button" onClick={() => { setBulkActualHours("지각"); setBulkWorkingHours(typeHoursMap?.["오픈"] ?? ""); }} className="px-3 py-1.5 text-[14px] font-semibold text-amber-800 border border-amber-200 hover:bg-amber-50 rounded-lg cursor-pointer transition-colors">지각</button>
+                  <button type="button" onClick={() => setBulkActualHours("조퇴")} className="px-3 py-1.5 text-[14px] font-semibold text-violet-800 border border-violet-200 hover:bg-violet-50 rounded-lg cursor-pointer transition-colors">조퇴</button>
+                  <button type="button" onClick={() => { setBulkActualHours("결근"); setBulkType("결근"); setBulkWorkingHours(""); }} className="px-3 py-1.5 text-[14px] font-semibold text-rose-800 border border-rose-200 hover:bg-rose-50 rounded-lg cursor-pointer transition-colors">결근</button>
                 </div>
               </div>
 
-              {/* Shift presets */}
-              <div className="p-2 border border-zinc-100 bg-zinc-50/50 rounded-xl space-y-1.5">
-                <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider">근무 패턴 템플릿:</label>
+              {/* Shift presets · 딥네이비 active */}
+              <div className="space-y-2">
+                <label className="block text-[14px] font-semibold text-ink-soft">근무 패턴</label>
                 <div className="flex flex-wrap gap-1.5">
                   {activeTypes.map((t) => {
                     const hours = typeHoursMap?.[t.value];
@@ -855,66 +870,66 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                         key={t.value}
                         type="button"
                         onClick={() => handleBulkTypeChange(t.value)}
-                        className={`px-2.5 py-1 text-[10px] rounded border transition cursor-pointer font-semibold ${
+                        className={`px-3 py-1.5 text-[14px] font-semibold rounded-lg border transition-colors cursor-pointer ${
                           bulkType === t.value
-                            ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                            : "bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-50"
+                            ? "bg-brand-deep text-white border-brand-deep"
+                            : "bg-white text-ink border-line hover:border-brand-deep hover:bg-brand-tint"
                         }`}
                       >
-                        {hours ? `${t.label} (${hours})` : t.label}
+                        {hours ? `${t.label} · ${hours}` : t.label}
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Fields */}
+              {/* Fields · 폰트 +4 · rounded-lg · 딥 focus */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-semibold text-zinc-600 uppercase mb-1 flex items-center gap-1">
-                    <Clock size={11} className="text-zinc-400" /> 근무 시간
+                  <label className="text-[14px] font-semibold text-ink-soft mb-1.5 flex items-center gap-1.5">
+                    <Clock size={13} strokeWidth={2.2} /> 근무 시간
                   </label>
                   <input
                     type="text"
                     value={bulkWorkingHours}
                     onChange={e => setBulkWorkingHours(e.target.value)}
                     placeholder="예: 09:30-18:30"
-                    className="w-full text-xs rounded-xl border border-[#e2e8f0] focus:border-blue-400 p-2 bg-white focus:outline-none"
+                    className="w-full text-[15px] rounded-lg border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2 bg-white focus:outline-none transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-semibold text-zinc-600 uppercase mb-1 flex items-center gap-1">
-                    <MessageSquare size={11} className="text-zinc-400" /> 특이사항
+                  <label className="text-[14px] font-semibold text-ink-soft mb-1.5 flex items-center gap-1.5">
+                    <MessageSquare size={13} strokeWidth={2.2} /> 특이사항
                   </label>
                   <input
                     type="text"
                     value={bulkActualHours}
                     onChange={e => setBulkActualHours(e.target.value)}
                     placeholder="예: 2시간 연장, 지각, 조퇴"
-                    className="w-full text-xs rounded-xl border border-[#e2e8f0] focus:border-blue-400 p-2 bg-white focus:outline-none"
+                    className="w-full text-[15px] rounded-lg border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2 bg-white focus:outline-none transition-colors"
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-[10px] font-semibold text-zinc-600 uppercase mb-1 flex items-center gap-1">
-                    <MessageSquare size={11} className="text-blue-500" /> 메모
+                  <label className="text-[14px] font-semibold text-ink-soft mb-1.5 flex items-center gap-1.5">
+                    <MessageSquare size={13} strokeWidth={2.2} /> 메모
                   </label>
                   <input
                     type="text"
                     value={bulkMemo}
                     onChange={e => setBulkMemo(e.target.value)}
                     placeholder="마우스 오버 시 표시될 메모"
-                    className="w-full text-xs rounded-xl border border-[#e2e8f0] focus:border-blue-400 p-2 bg-white focus:outline-none"
+                    className="w-full text-[15px] rounded-lg border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-3 py-2 bg-white focus:outline-none transition-colors"
                   />
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* Bulk save button */}
-            <div className="flex justify-end gap-2 pt-1 pb-2">
+            {/* Save · 공용 Button 통일 · 딥네이비 primary */}
+            <div className="flex justify-end gap-2 pt-2 pb-1">
               <button
                 type="button"
                 onClick={() => setActiveTab("calendar")}
-                className="px-4 py-2 text-xs font-bold bg-zinc-50 hover:bg-zinc-100 rounded border border-[#e2e8f0] text-zinc-600 transition cursor-pointer"
+                className="h-10 px-4 text-[15px] font-semibold bg-white hover:bg-zinc-50 border border-line hover:border-brand-deep hover:text-brand-deep text-ink rounded-lg transition-colors cursor-pointer"
                 disabled={isBulkSaving}
               >
                 취소
@@ -923,17 +938,17 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                 type="button"
                 onClick={handleBulkSave}
                 disabled={isBulkSaving || bulkSelectedDates.length === 0 || isLocked}
-                className="px-5 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="h-10 px-5 text-[15px] font-semibold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
               >
                 {isBulkSaving ? (
                   <>
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
                     <span>반영 중...</span>
                   </>
                 ) : (
                   <>
-                    <CheckCircle size={13} />
-                    <span>선택한 {bulkSelectedDates.length}일 일괄 등록</span>
+                    <CheckCircle size={15} strokeWidth={2.2} />
+                    <span>{bulkSelectedDates.length}일 일괄 등록</span>
                   </>
                 )}
               </button>
