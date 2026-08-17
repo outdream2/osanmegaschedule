@@ -434,12 +434,13 @@ body:has(.fixed.inset-0[class*="bg-neutral-9"]) {
          flex flex-wrap items-center gap-x-4 gap-y-2;
 }
 
-/* ── 폼 요소 (input · label 통일) ── */
+/* ── 폼 요소 · 2026-08-17 v2 · Attio/Linear 세련 · 브랜드 focus · 폰트 +2 ── */
 .input-field {
-  @apply w-full bg-white border border-slate-200 rounded-lg
-         px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold
-         focus:outline-none focus:border-indigo-500 focus:shadow-sm transition
-         placeholder:text-slate-400 placeholder:text-[12px];
+  @apply w-full bg-white border border-line rounded-lg
+         px-3 py-2 text-[15px] text-ink font-semibold
+         focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint
+         transition-all duration-150 ease-out
+         placeholder:text-ink-soft placeholder:text-[13px] placeholder:font-medium;
 }
 .label-field {
   @apply text-[12px] font-bold text-slate-600 flex items-center gap-1.5 mb-1;
