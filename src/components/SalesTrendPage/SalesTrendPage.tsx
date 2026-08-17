@@ -13,6 +13,7 @@ import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 // 2026-08-03 · 매장구역도 공용 컴포넌트 · DisplayPage 와 통합
 import { StoreZoneMap } from "../common/StoreZoneMap";
+import { StatusPill } from "../common/StatusPill";
 import { getZoneLabel } from "../../constants/zoneLabels";
 import { fmtWon } from "../../lib/format";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
@@ -1967,11 +1968,12 @@ const ZoneCategoryContent: React.FC = () => {
       {/* ── 상단 필터바 (full-width · 통일 규격) ── */}
       <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
         {/* 아이콘 + 제목 + 카운트배지 + 부제 */}
-        <div className="flex items-center gap-2">
-          <PieChart size={14} className="text-amber-500 shrink-0" />
-          <span className={`${TEXT.body} text-zinc-800`}>카테고리별현황</span>
-          <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 rounded-full px-2 py-0.5 border border-amber-200 tabular-nums">{grouped.length}개 구역</span>
-          <span className="text-[11px] text-zinc-400 hidden sm:inline">real_map 기반 · 구역 클릭 → 상품 상세</span>
+        <div className="flex items-center gap-2.5">
+          <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+          <PieChart size={16} className="text-brand-deep shrink-0" />
+          <span className="text-[16px] font-bold text-ink tracking-tight">카테고리별현황</span>
+          <StatusPill tone="amber" size="sm">{grouped.length}개 구역</StatusPill>
+          <span className="text-[12px] text-ink-soft hidden sm:inline">real_map 기반 · 구역 클릭 → 상품 상세</span>
         </div>
         {/* 조회기간 */}
         <div className="flex items-center gap-1.5 flex-wrap">
