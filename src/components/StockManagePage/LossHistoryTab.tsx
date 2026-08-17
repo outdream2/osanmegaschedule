@@ -235,28 +235,28 @@ export const LossHistoryTab: React.FC = () => {
         </div>
       ) : (
         <>
-          {/* ── KPI 카드 3개 ── */}
+          {/* ── KPI 카드 3개 · 2026-08-17 · Vercel Dashboard 톤 · tone/hint 프레임워크 ── */}
           <div className="grid grid-cols-3 gap-2">
             <KpiCard
-              icon={TrendingDown}
+              icon={<TrendingDown size={16} />}
               label="총 손실액"
-              value={<span className="text-rose-700">{fmtWon(total.loss_value)}</span>}
-              subtitle={`${fmt(total.loss)}개 · ${total.count}건`}
-              color="rose"
+              value={fmtWon(total.loss_value)}
+              hint={`${fmt(total.loss)}개 · ${total.count}건`}
+              tone="rose"
             />
             <KpiCard
-              icon={Building2}
+              icon={<Building2 size={16} />}
               label="공급사 수"
               value={supplierTop10.length}
-              subtitle="집계 대상"
-              color="violet"
+              hint="집계 대상"
+              tone="violet"
             />
             <KpiCard
-              icon={Package}
+              icon={<Package size={16} />}
               label="상품 수"
               value={productTop10.length > 0 ? (productSummary?.rows.length ?? 0) : 0}
-              subtitle="이력 있는"
-              color="sky"
+              hint="이력 있는"
+              tone="sky"
             />
           </div>
 
