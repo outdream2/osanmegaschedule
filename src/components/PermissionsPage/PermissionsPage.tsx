@@ -10,6 +10,7 @@ import type { AuthSession, PagePermissions } from "../../types";
 import { DEFAULT_PERMISSIONS } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { SettingsPageShell } from "../common/SettingsPageShell";
+import { StatusPill } from "../common/StatusPill";
 import { Lock } from "@phosphor-icons/react";
 import { SettingsModal } from "../SettingsModal";
 import { useSettings } from "../../hooks/useSettings";
@@ -519,11 +520,9 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           {tab !== "permissions" && (
             <div className="flex items-center gap-2">
               {saveToast && (
-                <span className={`text-[11px] font-bold px-2 py-1 rounded-full border ${
-                  saveToast.includes("실패")
-                    ? "text-rose-600 bg-rose-50 border-rose-200"
-                    : "text-emerald-600 bg-emerald-50 border-emerald-200"
-                }`}>{saveToast}</span>
+                <StatusPill tone={saveToast.includes("실패") ? "rose" : "emerald"} size="sm" dot>
+                  {saveToast}
+                </StatusPill>
               )}
               <button
                 type="button"
@@ -593,11 +592,9 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           </div>
           <div className="flex items-center gap-2">
             {saveToast && (
-              <span className={`text-[11px] font-bold px-2 py-1 rounded-full border ${
-                saveToast.includes("실패")
-                  ? "text-rose-600 bg-rose-50 border-rose-200"
-                  : "text-emerald-600 bg-emerald-50 border-emerald-200"
-              }`}>{saveToast}</span>
+              <StatusPill tone={saveToast.includes("실패") ? "rose" : "emerald"} size="sm" dot>
+                {saveToast}
+              </StatusPill>
             )}
             <button
               type="button"
