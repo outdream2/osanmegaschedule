@@ -22,6 +22,7 @@ import {
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { FilterBar } from "../common/FilterBar";
 import { AccentBar } from "../common/AccentBar";
+import { IconTile } from "../common/IconTile";
 import { StatusPill, type PillTone } from "../common/StatusPill";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import type { AuthSession } from "../../types";
@@ -356,9 +357,9 @@ const EmptyState: React.FC<{
   onUpload: () => void;
 }> = ({ isFiltered, isManager, onUpload }) => (
   <div className="py-16 flex flex-col items-center gap-4 text-center px-6">
-    <div className="w-16 h-16 rounded-2xl bg-zinc-100 flex items-center justify-center">
-      <FileText size={28} className="text-zinc-400" />
-    </div>
+    {/* 2026-08-18 · IconTile 확산 · 2xl · Empty state */}
+    <IconTile icon={<FileText size={28} />} tone="zinc" size="2xl" shape="rounded-2xl" />
+
     <div>
       <p className="text-base font-bold text-zinc-700">
         {isFiltered ? "검색 결과가 없습니다" : "등록된 양식이 없습니다"}

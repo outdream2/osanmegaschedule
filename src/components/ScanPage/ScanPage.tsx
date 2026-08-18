@@ -878,10 +878,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
 
             {rows.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-3 py-16 sm:py-24 select-none">
-                <div className="w-16 h-16 rounded-2xl bg-zinc-100 flex items-center justify-center
-                  shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(10,46,74,0.04)]">
-                  <Package size={28} className="text-zinc-300" />
-                </div>
+                {/* 2026-08-18 · IconTile 확산 · 2xl · Empty state */}
+                <IconTile icon={<Package size={28} className="text-zinc-300" />} tone="zinc" size="2xl" shape="rounded-2xl" />
+
                 <div className="text-center">
                   <p className="text-[15px] font-bold text-ink-soft">스캔한 상품이 여기에 표시됩니다</p>
                   <p className="text-[13px] text-zinc-400 mt-1">좌측 바코드 스캔 후 자동 등록</p>

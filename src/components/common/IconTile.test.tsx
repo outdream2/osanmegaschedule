@@ -30,6 +30,9 @@ describe("IconTile · 기본 렌더", () => {
     const { container: xl } = render(<IconTile icon={<svg />} size="xl" />);
     expect(xl.querySelector("span")!.className).toContain("w-11");
     expect(xl.querySelector("span")!.className).toContain("h-11");
+    const { container: xxl } = render(<IconTile icon={<svg />} size="2xl" />);
+    expect(xxl.querySelector("span")!.className).toContain("w-16");
+    expect(xxl.querySelector("span")!.className).toContain("h-16");
   });
 
   it("shape=full · rounded-full", () => {
@@ -40,6 +43,11 @@ describe("IconTile · 기본 렌더", () => {
   it("shape=rounded-xl · rounded-xl", () => {
     const { container } = render(<IconTile icon={<svg />} shape="rounded-xl" />);
     expect(container.querySelector("span")!.className).toContain("rounded-xl");
+  });
+
+  it("shape=rounded-2xl · rounded-2xl", () => {
+    const { container } = render(<IconTile icon={<svg />} shape="rounded-2xl" />);
+    expect(container.querySelector("span")!.className).toContain("rounded-2xl");
   });
 
   it("tone 매핑 · emerald · violet · rose · pine · orange", () => {

@@ -36,25 +36,27 @@ export interface IconTileProps {
   icon: ReactNode;
   /** 색 tone · 기본 brand */
   tone?: IconTileTone;
-  /** 사이즈 · sm(24) · md(28) · lg(36) · xl(44) · 기본 md */
-  size?: "sm" | "md" | "lg" | "xl";
-  /** 모양 · rounded (md/lg) · rounded-xl (모달 강조) · full (원형) · 기본 rounded */
-  shape?: "rounded" | "rounded-xl" | "full";
+  /** 사이즈 · sm(24) · md(28) · lg(36) · xl(44) · 2xl(64) · 기본 md */
+  size?: "sm" | "md" | "lg" | "xl" | "2xl";
+  /** 모양 · rounded (md/lg) · rounded-xl (모달 강조) · rounded-2xl (Empty state) · full (원형) · 기본 rounded */
+  shape?: "rounded" | "rounded-xl" | "rounded-2xl" | "full";
   /** 추가 className */
   className?: string;
 }
 
 const SIZE_CLS: Record<NonNullable<IconTileProps["size"]>, string> = {
-  sm: "w-6 h-6",    // 24
-  md: "w-7 h-7",    // 28 (사이드바/헤더 아이콘 표준)
-  lg: "w-9 h-9",    // 36
-  xl: "w-11 h-11",  // 44 (모달 헤더·강조)
+  sm:    "w-6 h-6",     // 24
+  md:    "w-7 h-7",     // 28 (사이드바/헤더 아이콘 표준)
+  lg:    "w-9 h-9",     // 36
+  xl:    "w-11 h-11",   // 44 (모달 헤더·강조)
+  "2xl": "w-16 h-16",   // 64 (Empty state · 큰 hero 아이콘)
 };
 
 const SHAPE_CLS: Record<NonNullable<IconTileProps["shape"]>, string> = {
-  rounded:      "rounded-lg",
-  "rounded-xl": "rounded-xl",
-  full:         "rounded-full",
+  rounded:       "rounded-lg",
+  "rounded-xl":  "rounded-xl",
+  "rounded-2xl": "rounded-2xl",
+  full:          "rounded-full",
 };
 
 /**
