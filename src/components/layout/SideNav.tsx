@@ -285,40 +285,40 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, on
       onClick={() => onNavigate(item.key)}
       aria-current={active ? "page" : undefined}
       aria-label={group.label}
+      style={active ? {
+        background: `linear-gradient(90deg, ${NAV_ACCENT[group.color].hex}22 0%, ${NAV_ACCENT[group.color].hex}0A 40%, transparent 90%)`,
+      } : undefined}
       className={[
         "flex w-full items-center gap-2",
-        // 2026-08-12 · CollapsibleGroup 헤더와 동일 · 사용자 지시 · 글씨 크기 완전 통일
         "px-2.5 py-1.5 mt-1.5 mb-0",
         "rounded-lg",
         "text-[19px] leading-none",
-        "transition-colors duration-150 ease-out",
+        "transition-all duration-200 ease-out",
         "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
-        // 2026-08-17 v2 · deep teal · 활성 · frosted pill + inner light (Attio 세련)
+        // 2026-08-18 · 활성 · 그룹 톤 gradient (밋밋함 해소 · CollapsibleGroup 통일)
         active
           ? [
-              tone.activeBg,   // bg-white/[0.12]
               tone.activeText, // text-white
               "font-bold",
-              "shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
+              "shadow-[inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-1px_0_rgba(0,0,0,0.08)]",
             ].join(" ")
           : [
               "text-[#C4DAEE]",
               "hover:bg-white/[0.06] hover:text-white hover:translate-x-[1px]",
               "font-semibold",
-              "transition-all duration-200 ease-out",
             ].join(" "),
         "group-data-[collapsible=icon]:justify-center",
       ].join(" ")}
     >
-      {/* 2026-08-17 · deep teal · 활성 = 그룹 밝은 shade (300) · 비활성 = mint */}
+      {/* 2026-08-18 · 활성 아이콘 · 브랜드 accent + double glow */}
       <Icon
         size={18}
         weight={active ? "fill" : "duotone"}
         className={[
-          "shrink-0",
-          active ? tone.iconActive : "text-[#C4DAEE]/80",
-          "transition-colors duration-150 ease-out",
+          "shrink-0 transition-all duration-200 ease-out",
+          active ? `${NAV_ACCENT[group.color].iconText} scale-110` : "text-[#C4DAEE]/80 group-hover:text-[#C4DAEE] group-hover:scale-[1.05]",
         ].join(" ")}
+        style={active ? { filter: `drop-shadow(0 0 6px ${NAV_ACCENT[group.color].hex}90) drop-shadow(0 0 14px ${NAV_ACCENT[group.color].hex}40)` } : undefined}
       />
       <span className="group-data-[collapsible=icon]:hidden tracking-wide">{group.label}</span>
     </button>
