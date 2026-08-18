@@ -18,6 +18,7 @@ import { CARD_BASE } from "../../styles/tokens";
 import { StatusPill, type PillTone } from "../common/StatusPill";
 import { IconTile } from "../common/IconTile";
 import { AccentBar } from "../common/AccentBar";
+import { Spinner } from "../common/Spinner";
 // 2026-08-12 · 연차승인 탭 · LeavePage mode="approval" 로 임베드 (관리자용 승인 UI)
 import { LeavePage } from "../LeavePage/LeavePage";
 
@@ -640,7 +641,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               </div>
             )}
             {displayLoading && displayReqs.length === 0 ? (
-              <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+              <div className="flex items-center justify-center py-8"><Spinner tone="zinc" size={14} label="로딩 중..." labelSize={12} /></div>
             ) : !displayLoading && displayReqs.length === 0 ? (
               <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
             ) : (
@@ -841,7 +842,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 </div>
               )}
               {orderLoading && orderReqs.length === 0 ? (
-                <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+                <div className="flex items-center justify-center py-8"><Spinner tone="zinc" size={14} label="로딩 중..." labelSize={12} /></div>
               ) : !orderLoading && orderReqs.length === 0 && !orderError ? (
                 <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
               ) : (
@@ -892,7 +893,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 </div>
               )}
               {productsLoading && lowStock.length === 0 ? (
-                <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+                <div className="flex items-center justify-center py-8"><Spinner tone="zinc" size={14} label="로딩 중..." labelSize={12} /></div>
               ) : !productsLoading && lowStock.length === 0 ? (
                 <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
               ) : (
@@ -956,7 +957,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               </div>
             )}
             {mismatchLoading && mismatches.length === 0 ? (
-              <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+              <div className="flex items-center justify-center py-8"><Spinner tone="zinc" size={14} label="로딩 중..." labelSize={12} /></div>
             ) : mismatchError ? (
 
               <div className="flex flex-col items-center justify-center py-10 gap-2">
@@ -1033,7 +1034,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               </div>
             )}
             {inventoryLoading && inventoryChecks.length === 0 ? (
-              <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+              <div className="flex items-center justify-center py-8"><Spinner tone="zinc" size={14} label="로딩 중..." labelSize={12} /></div>
             ) : !inventoryLoading && inventoryChecks.length === 0 ? (
               <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
             ) : (
@@ -1194,7 +1195,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               </div>
             )}
             {lunchLoading && lunchRequests.length === 0 ? (
-              <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+              <div className="flex items-center justify-center py-8"><Spinner tone="zinc" size={14} label="로딩 중..." labelSize={12} /></div>
             ) : !lunchLoading && lunchRequests.length === 0 ? (
               <div className="text-center text-[15px] text-zinc-300 py-6">데이터 없음</div>
             ) : (
