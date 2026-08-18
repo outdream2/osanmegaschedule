@@ -46,14 +46,22 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 
   // 2026-08-19 · 카메라 에러 진단 · onError + 인앱브라우저·PWA 감지 (리서치 결과 반영)
   const [camError, setCamError] = useState<string>("");
-  const [envInfo] = useState<{ inApp: boolean; standalone: boolean; ua: string }>(() => {
+  const [envInfo] = useState<{ inApp: boolean; standalone: boolean; ios: boolean; safari: boolean; ua: string }>(() => {
     const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    const ios = /iPhone|iPad|iPod/i.test(ua);
+    // Safari 앱 · main browser · WebView 는 "Safari" 만 있고 "Version/" 있음
+    const isSafariMain = /Safari\//.test(ua) && /Version\//.test(ua) && !/CriOS|FxiOS|OPiOS|EdgiOS/.test(ua);
     return {
-      inApp: /KAKAOTALK|NAVER|FBAN|FBAV|Instagram|Line\/|Twitter|Snapchat|WhatsApp|Gmail|EdgeiOS/i.test(ua),
+      inApp: /KAKAOTALK|NAVER|FBAN|FBAV|Instagram|Line\/|Twitter|Snapchat|WhatsApp|Gmail|EdgiOS/i.test(ua),
+      // standalone · PWA · 홈화면 웹앱 감지 · 여러 방식
       standalone: typeof window !== "undefined" && (
         !!(window.navigator as any).standalone ||
-        (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches)
+        (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+        // iOS · Safari 도 아니고 인앱브라우저도 아니면 · WebView 또는 홈화면 앱 (경험적)
+        (ios && !isSafariMain && !/KAKAOTALK|NAVER|FBAN|FBAV|Instagram|Line\/|CriOS|FxiOS/i.test(ua))
       ),
+      ios,
+      safari: isSafariMain,
       ua,
     };
   });
@@ -298,11 +306,17 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
                     카톡·네이버 등 인앱브라우저에서는 카메라가 안 됩니다.<br/>
                     <span className="text-white/70">우측 상단 [···] → Safari 또는 Chrome 에서 열기</span>
                   </p>
-                ) : envInfo.standalone ? (
-                  <p className="text-amber-300 text-[12px] mt-1.5 leading-relaxed font-semibold">
-                    홈화면에 저장한 앱에서는 iOS 카메라 이슈가 있을 수 있습니다.<br/>
-                    <span className="text-white/70">Safari 브라우저에서 직접 열어주세요</span>
-                  </p>
+                ) : envInfo.standalone || (envInfo.ios && !envInfo.safari) ? (
+                  <div className="text-amber-300 text-[12px] mt-1.5 leading-relaxed font-semibold">
+                    <div>웹앱·홈화면 아이콘에서 카메라 안 됨 (iOS 정책)</div>
+                    <div className="text-white/80 mt-2 space-y-1 text-left px-1">
+                      <div>✅ <b className="text-white">해결 (권장)</b></div>
+                      <div className="pl-3 text-white/70">1. Safari 앱 (파란 나침반) 직접 열기</div>
+                      <div className="pl-3 text-white/70">2. 주소창 · osanmega.onrender.com 입력</div>
+                      <div className="pl-3 text-white/70">3. 바코드 스캔 · 정상 작동</div>
+                      <div className="pt-1 text-white/50 text-[11px]">홈화면 웹앱 이용 시 · 바코드 스캔은 Safari 로 이동 필요</div>
+                    </div>
+                  </div>
                 ) : camError.startsWith("NotAllowedError") ? (
                   <p className="text-white/70 text-[12px] mt-1.5 leading-relaxed">
                     <b className="text-white">주소창 자물쇠</b> 또는 <b className="text-white">AA</b> 아이콘 →<br/>
