@@ -118,13 +118,13 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
             // 2026-08-17 v2 · 200ms ease-out · 모든 인터랙션 통일 · 세련
             "transition-all duration-200 ease-out",
             "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
-            // 2026-08-17 v2 · deep teal · 활성 · frosted pill + inner light (Attio 세련)
+            // 2026-08-17 v3 · 초고해상도 세련 · 3-layer inset shadow (Attio/Linear 톤)
             hasActiveItem
               ? [
-                  groupTone.activeBg,      // bg-white/[0.12]
+                  "bg-white/[0.14]",
                   groupTone.activeText,    // text-white
                   "font-bold",
-                  "shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
+                  "shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(0,0,0,0.06),0_2px_8px_-2px_rgba(255,255,255,0.06)]",
                 ].join(" ")
               : [
                   // 비활성 · light mint · 부드러운 hover
@@ -136,13 +136,13 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
           ].join(" ")}
         >
           <span className="flex items-center gap-2 relative">
-            {/* 2026-08-17 · 사용자 요청 · 색 accent 부활 · solid color stripe (3px · 그룹 톤 · glow) */}
+            {/* 2026-08-17 v3 · 최신 트렌드 · gradient stripe + double glow · Linear/Attio */}
             {hasActiveItem && (
               <span
-                className="absolute -left-2 top-1/2 -translate-y-1/2 w-[3px] h-[75%] rounded-r-full pointer-events-none group-data-[collapsible=icon]:hidden"
+                className="absolute -left-2 top-1/2 -translate-y-1/2 w-[3px] h-[80%] rounded-r-full pointer-events-none group-data-[collapsible=icon]:hidden"
                 style={{
-                  backgroundColor: NAV_ACCENT[group.color].hex,
-                  boxShadow: `0 0 8px ${NAV_ACCENT[group.color].hex}80`,
+                  background: `linear-gradient(180deg, transparent, ${NAV_ACCENT[group.color].hex} 20%, ${NAV_ACCENT[group.color].hex} 80%, transparent)`,
+                  boxShadow: `0 0 10px ${NAV_ACCENT[group.color].hex}90, 0 0 20px ${NAV_ACCENT[group.color].hex}40`,
                 }}
               />
             )}
@@ -207,13 +207,13 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
 
             return (
               <SidebarMenuItem key={`${item.key}-${item.subTab ?? "_"}-${itemIdx}`} className="relative">
-                {/* 2026-08-17 · 사용자 요청 · 색 accent 부활 · solid color stripe (3px · 그룹 톤 · glow) */}
+                {/* 2026-08-17 v3 · 최신 트렌드 · gradient stripe (top→bottom fade) + double glow · Linear/Attio 세련 */}
                 {active && (
                   <span
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[75%] rounded-r-full pointer-events-none z-[1] group-data-[collapsible=icon]:hidden"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[80%] rounded-r-full pointer-events-none z-[1] group-data-[collapsible=icon]:hidden"
                     style={{
-                      backgroundColor: NAV_ACCENT[item.color].hex,
-                      boxShadow: `0 0 8px ${NAV_ACCENT[item.color].hex}80`,
+                      background: `linear-gradient(180deg, transparent, ${NAV_ACCENT[item.color].hex} 20%, ${NAV_ACCENT[item.color].hex} 80%, transparent)`,
+                      boxShadow: `0 0 10px ${NAV_ACCENT[item.color].hex}90, 0 0 20px ${NAV_ACCENT[item.color].hex}40`,
                     }}
                   />
                 )}
@@ -231,13 +231,13 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                     "h-7 rounded-lg",
                     // 하위 항목 텍스트 크기 · 2026-08-12 · 사용자 지시 +2
                     "text-[18px]",
-                    // 2026-08-17 · Attio/Linear · frosted pill · ring 제거 (세련 · 노이즈 감소)
+                    // 2026-08-17 v3 · 초고해상도 세련 · 3-layer inset shadow (Attio/Linear 톤)
                     active
                       ? [
-                          tone.activeBg,   // bg-white/[0.12]
+                          "bg-white/[0.14]",
                           tone.activeText, // text-white
                           "font-bold",
-                          "shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
+                          "shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(0,0,0,0.06),0_2px_8px_-2px_rgba(255,255,255,0.06)]",
                         ].join(" ")
                       : [
                           // 비활성 · 목업 톤 · #C4DAEE · 하위 살짝 opacity 낮춤
