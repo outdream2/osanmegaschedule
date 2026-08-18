@@ -18,11 +18,14 @@
 - 🔲 목업 HTML 파일 · 최신 트렌드로 재생성 (문서 · 위험 낮음)
 
 ### #151 · 프레임워크 프리미티브 확산 (진행중)
-- ✅ **IconTile v3** · 11 tone · 5 size (sm/md/lg/xl/2xl) · 4 shape (rounded/rounded-xl/rounded-2xl/full) · 9 tests · 27+곳 확산
-- ✅ **AccentBar** · 5 size + brand-soft + h={n} 커스텀 · 13 tests · 77곳 100% 확산
-- ✅ **StepperInput** · 3 size · brand-deep focus glow · 13 tests · Scan/Arrival 2곳 통합
-- ✅ **NotificationToast** · 5 tone · dark frosted · 7 tests · Scan/Arrival 2곳 통합
-- 🔲 잔여 후보: Loader2 wrapper (55+ 반복) · 카드 헤더 SectionHeader · 대형 Modal 30+
+- ✅ **IconTile v3** · 11 tone · 5 size · 4 shape · 9 tests · 27+곳 확산
+- ✅ **AccentBar** · 5 size + brand-soft + h={n} · 13 tests · 77곳 100% 확산
+- ✅ **StepperInput** · 3 size · brand-deep focus · 13 tests · Scan/Arrival 2곳
+- ✅ **NotificationToast** · 5 tone · dark frosted · 7 tests · Scan/Arrival 2곳
+- ✅ **InlineLabel** · 3 size · AccentBar + label · 6 tests · 12곳 통합
+- ✅ **Spinner** · 7 tone · label + size · 8 tests · 12곳 통합 (55+ 후보 중)
+- ✅ **Modal migration** · BreakModal · HiddenManager · PurchaseHistory · ProductPurchaseHistory · OcrPage balance · SupplierChange · DeleteSynonym (7개)
+- 🔲 잔여: Spinner 확산 40+ · Card primitive · 대형 Modal migration
 
 ### 배포 확인 대기 (2026-08-18 · `013920a`)
 - 🔲 헤더 hidden 필터 · admin 도 정상 동작 (다른 태블릿/모바일 확인)
