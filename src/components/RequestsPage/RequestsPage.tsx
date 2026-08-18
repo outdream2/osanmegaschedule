@@ -233,6 +233,8 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               prepared_by: authSession?.employeeId ?? null,
               prepared_by_name: authSession?.employeeName ?? "" }
         : r));
+      // 2026-08-18 · 진열 준비 상태 변경 시 배지 갱신
+      dispatchApprovalChange("display");
     } catch (e: any) {
       alert(`창고 준비 토글 실패: ${e?.message ?? "오류"}`);
     } finally {
@@ -260,6 +262,8 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               completed_by: authSession?.employeeId ?? null,
               completed_by_name: authSession?.employeeName ?? "" }
         : r));
+      // 2026-08-18 · 진열 완료 상태 변경 시 배지 갱신
+      dispatchApprovalChange("display");
     } catch (e: any) {
       alert(`진열완료 토글 실패: ${e?.message ?? "오류"}`);
     } finally {
@@ -427,25 +431,28 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   // ── 단건 삭제 헬퍼 ──
   async function deleteOne(url: string) { await api.del(url); }
 
-  // ── 진열 삭제 ──
+  // ── 진열 삭제 ── 2026-08-18 · 배지 갱신 dispatch
   const deleteDisplay = async (ids: string[]) => {
     await Promise.all(ids.map(id => deleteOne(`/api/display-requests/${id}`)));
     setDisplayReqs(prev => prev.filter(r => !ids.includes(r.id)));
     setSelectedDisplay(new Set());
+    dispatchApprovalChange("display");
   };
 
-  // ── 발주 삭제 ──
+  // ── 발주 삭제 ── 2026-08-18 · 배지 갱신 dispatch
   const deleteOrder = async (ids: string[]) => {
     await Promise.all(ids.map(id => deleteOne(`/api/order-requests/${id}`)));
     setOrderReqs(prev => prev.filter(r => !ids.includes(r.id)));
     setSelectedOrder(new Set());
+    dispatchApprovalChange("order");
   };
 
-  // ── 불일치 삭제 ──
+  // ── 불일치 삭제 ── 2026-08-18 · 배지 갱신 dispatch
   const deleteMismatch = async (ids: string[]) => {
     await Promise.all(ids.map(id => deleteOne(`/api/zone-mismatches/${id}`)));
     setMismatches(prev => prev.filter(r => !ids.includes(r.id)));
     setSelectedMismatch(new Set());
+    dispatchApprovalChange("mismatch");
   };
 
   // ── 실재고 삭제 ──

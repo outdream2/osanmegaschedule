@@ -889,6 +889,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     await Promise.all(ids.map(id => api.del(`/api/order-requests/${id}`).catch(() => {})));
     setSelectedOrder(new Set());
     loadOrderReqs();
+    // 2026-08-18 · 발주 요청 삭제 시 배지 갱신
+    dispatchApprovalChange("order");
   };
 
   const [sendingBulk, setSendingBulk] = useState(false);
