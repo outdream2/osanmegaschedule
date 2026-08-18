@@ -51,14 +51,14 @@ export interface SearchFilterChipsProps<K extends string = string> {
 // 2026-08-17 · 최신 트렌드 · mono neutral · 딥네이비 accent 통일
 //   · category identity 는 라벨로 표현 · 색은 통일
 const COLOR_ACTIVE: Record<ChipColor, string> = {
-  rose:    "bg-brand-deep text-white border-brand-deep shadow-sm",
-  amber:   "bg-brand-deep text-white border-brand-deep shadow-sm",
-  emerald: "bg-brand-deep text-white border-brand-deep shadow-sm",
-  sky:     "bg-brand-deep text-white border-brand-deep shadow-sm",
-  violet:  "bg-brand-deep text-white border-brand-deep shadow-sm",
-  indigo:  "bg-brand-deep text-white border-brand-deep shadow-sm",
-  teal:    "bg-brand-deep text-white border-brand-deep shadow-sm",
-  slate:   "bg-brand-deep text-white border-brand-deep shadow-sm",
+  rose:    "bg-brand-deep text-white border-brand-deep shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_1px_2px_rgba(10,46,74,0.15),0_2px_6px_-2px_rgba(10,46,74,0.30)]",
+  amber:   "bg-brand-deep text-white border-brand-deep shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_1px_2px_rgba(10,46,74,0.15),0_2px_6px_-2px_rgba(10,46,74,0.30)]",
+  emerald: "bg-brand-deep text-white border-brand-deep shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_1px_2px_rgba(10,46,74,0.15),0_2px_6px_-2px_rgba(10,46,74,0.30)]",
+  sky:     "bg-brand-deep text-white border-brand-deep shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_1px_2px_rgba(10,46,74,0.15),0_2px_6px_-2px_rgba(10,46,74,0.30)]",
+  violet:  "bg-brand-deep text-white border-brand-deep shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_1px_2px_rgba(10,46,74,0.15),0_2px_6px_-2px_rgba(10,46,74,0.30)]",
+  indigo:  "bg-brand-deep text-white border-brand-deep shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_1px_2px_rgba(10,46,74,0.15),0_2px_6px_-2px_rgba(10,46,74,0.30)]",
+  teal:    "bg-brand-deep text-white border-brand-deep shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_1px_2px_rgba(10,46,74,0.15),0_2px_6px_-2px_rgba(10,46,74,0.30)]",
+  slate:   "bg-brand-deep text-white border-brand-deep shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_1px_2px_rgba(10,46,74,0.15),0_2px_6px_-2px_rgba(10,46,74,0.30)]",
 };
 
 // 폰트 +2 · Linear/Vercel 톤
@@ -96,7 +96,7 @@ export function SearchFilterChips<K extends string = string>({
               Array.from(selected).forEach(k => onToggle(k));
             }}
             className={[
-              "rounded-md font-semibold leading-none border transition-colors cursor-pointer whitespace-nowrap inline-flex items-center",
+              "rounded-md font-semibold leading-none border transition-all duration-200 ease-out cursor-pointer whitespace-nowrap inline-flex items-center",
               sz,
               allActive ? COLOR_ACTIVE.slate : "bg-transparent text-ink border-transparent hover:text-brand-deep hover:bg-white",
             ].join(" ")}
@@ -115,7 +115,7 @@ export function SearchFilterChips<K extends string = string>({
               aria-pressed={active}
               onClick={() => onToggle(opt.key)}
               className={[
-                "rounded-md font-semibold leading-none border transition-colors cursor-pointer whitespace-nowrap inline-flex items-center",
+                "rounded-md font-semibold leading-none border transition-all duration-200 ease-out cursor-pointer whitespace-nowrap inline-flex items-center",
                 sz,
                 active ? COLOR_ACTIVE[color] : "bg-transparent text-ink border-transparent hover:text-brand-deep hover:bg-white",
               ].join(" ")}

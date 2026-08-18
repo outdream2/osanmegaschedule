@@ -54,9 +54,9 @@ export const SeasonButtons: React.FC<SeasonButtonsProps> = ({
               type="button"
               onClick={() => onChange(active ? null : s)}
               title={title}
-              className={`${sizeCls} font-semibold rounded-md transition-colors cursor-pointer inline-flex items-center whitespace-nowrap ${
+              className={`${sizeCls} font-semibold rounded-md transition-all duration-200 ease-out cursor-pointer inline-flex items-center whitespace-nowrap ${
                 active
-                  ? "bg-brand-deep text-white shadow-sm"
+                  ? "bg-brand-deep text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_1px_2px_rgba(10,46,74,0.15),0_2px_6px_-2px_rgba(10,46,74,0.30)]"
                   : "text-ink hover:text-brand-deep hover:bg-white"
               }`}
             >
