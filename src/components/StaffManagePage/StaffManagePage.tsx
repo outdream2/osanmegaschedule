@@ -57,6 +57,7 @@ import { EmployeeInfoForm } from "../common/EmployeeInfoForm";
 import { AddressSearchModal } from "../common/AddressSearchModal";
 import { StatusPill } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
+import { InlineLabel } from "../common/InlineLabel";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 interface Employee {
@@ -1320,10 +1321,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
 
         {/* 2026-08-17 · 재직 상태 필터 · 최신 트렌드 · segmented pill · 딥네이비 통일 */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="flex items-center gap-2 shrink-0">
-            <AccentBar h={15} />
-            <span className="text-[15px] font-bold text-ink tracking-tight">상태</span>
-          </span>
+          <InlineLabel>상태</InlineLabel>
           <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
             {[
               { key: "active",  label: "재직" },
@@ -1345,10 +1343,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
 
         {/* 직책 필터 · 최신 트렌드 · 통일 */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="flex items-center gap-2 shrink-0">
-            <AccentBar h={15} />
-            <span className="text-[15px] font-bold text-ink tracking-tight">직책</span>
-          </span>
+          <InlineLabel>직책</InlineLabel>
           <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 flex-wrap gap-0.5">
             <button
               onClick={() => setFilterPosition("")}

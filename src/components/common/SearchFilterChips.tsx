@@ -21,6 +21,7 @@
 
 import React from "react";
 import { AccentBar } from "./AccentBar";
+import { InlineLabel } from "./InlineLabel";
 
 export type ChipColor = "rose" | "amber" | "emerald" | "sky" | "violet" | "indigo" | "teal" | "slate";
 
@@ -82,12 +83,7 @@ export function SearchFilterChips<K extends string = string>({
 
   return (
     <div className="inline-flex items-center gap-2 flex-wrap">
-      {label && (
-        <span className="flex items-center gap-2 shrink-0">
-          <AccentBar size="sm" />
-          <span className="text-[14px] font-bold text-ink tracking-tight">{label}</span>
-        </span>
-      )}
+      {label && <InlineLabel size="sm">{label}</InlineLabel>}
       <div className="inline-flex items-center bg-zinc-100 border border-line rounded-lg p-1 gap-0.5 flex-wrap">
         {showAll && (
           <button
