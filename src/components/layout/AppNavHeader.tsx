@@ -508,11 +508,18 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       className="relative border-b border-white/[0.08] shrink-0 shadow-[0_1px_3px_rgba(10,46,74,0.15),0_4px_20px_-4px_rgba(10,46,74,0.20),0_12px_40px_-16px_rgba(10,46,74,0.25)]"
       style={{ background: "linear-gradient(180deg, #0A2E4A 0%, #0D3350 50%, #0F3855 100%)" }}
     >
-      {/* 2026-08-17 · aurora radial glow · 좌상단 sky (#5EA9E8) · 우상단 mint (#6FE3C2) · 매우 저채도 · 브랜드 signature */}
+      {/* 2026-08-17 v3 · aurora radial glow · 좌상+우상+중앙하 (3-point · 브랜드 signature 강화) */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-24 -left-16 w-[420px] h-[240px] rounded-full opacity-[0.16] blur-3xl" style={{ background: "radial-gradient(closest-side, #5EA9E8, transparent)" }} />
-        <div className="absolute -top-24 -right-20 w-[380px] h-[220px] rounded-full opacity-[0.10] blur-3xl" style={{ background: "radial-gradient(closest-side, #6FE3C2, transparent)" }} />
+        <div className="absolute -top-24 -left-16 w-[420px] h-[240px] rounded-full opacity-[0.18] blur-3xl" style={{ background: "radial-gradient(closest-side, #5EA9E8, transparent)" }} />
+        <div className="absolute -top-24 -right-20 w-[380px] h-[220px] rounded-full opacity-[0.12] blur-3xl" style={{ background: "radial-gradient(closest-side, #6FE3C2, transparent)" }} />
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[500px] h-[160px] rounded-full opacity-[0.08] blur-3xl" style={{ background: "radial-gradient(closest-side, #A5B4FC, transparent)" }} />
       </div>
+      {/* 2026-08-17 v3 · 미세 noise 패턴 · 프리미엄 종이 질감 (Vercel/Linear signature · 매우 저채도) */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay"
+        style={{ backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")` }}
+        aria-hidden
+      />
       {/* top hairline · inner light · glass 효과 시작점 · 세련 */}
       <div className="absolute top-0 left-0 right-0 h-px pointer-events-none" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.10) 30%, rgba(255,255,255,0.14) 50%, rgba(255,255,255,0.10) 70%, transparent 100%)" }} />
       {/* bottom hairline · mint accent · 은은한 브랜드 시그니처 */}
