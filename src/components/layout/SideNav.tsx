@@ -146,7 +146,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                 }}
               />
             )}
-            {/* 2026-08-17 · 사용자 요청 · 색 accent 부활 · 아이콘 그룹 색 + subtle glow */}
+            {/* 2026-08-17 v3 · 아이콘 · 브랜드 glow + hover scale (부드러운 인터랙션) */}
             {group.icon && (() => {
               const GroupIcon = group.icon;
               return (
@@ -154,10 +154,10 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                   size={20}
                   weight={hasActiveItem ? "fill" : "duotone"}
                   className={[
-                    "shrink-0 transition-all duration-150 ease-out",
-                    hasActiveItem ? `${NAV_ACCENT[group.color].iconText} scale-110` : "text-[#C4DAEE]/80",
+                    "shrink-0 transition-all duration-200 ease-out",
+                    hasActiveItem ? `${NAV_ACCENT[group.color].iconText} scale-110` : "text-[#C4DAEE]/80 group-hover:text-[#C4DAEE] group-hover:scale-[1.05]",
                   ].join(" ")}
-                  style={hasActiveItem ? { filter: `drop-shadow(0 0 6px ${NAV_ACCENT[group.color].hex}90)` } : undefined}
+                  style={hasActiveItem ? { filter: `drop-shadow(0 0 8px ${NAV_ACCENT[group.color].hex}90) drop-shadow(0 0 16px ${NAV_ACCENT[group.color].hex}40)` } : undefined}
                 />
               );
             })()}
@@ -250,15 +250,15 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                     "transition-colors duration-150 ease-out",
                   ].join(" ")}
                 >
-                  {/* 2026-08-12 · 사용자 지시 · 하위 메뉴 아이콘 = 그룹 아이콘 (공통헤더 탭과 통일) */}
+                  {/* 2026-08-17 v3 · 하위 메뉴 아이콘 · double glow + hover scale */}
                   <Icon
                     size={15}
                     weight={active ? "fill" : "duotone"}
                     className={[
-                      "shrink-0 transition-all duration-150 ease-out",
-                      active ? `${NAV_ACCENT[item.color].iconText} scale-110` : "text-[#C4DAEE]/60",
+                      "shrink-0 transition-all duration-200 ease-out",
+                      active ? `${NAV_ACCENT[item.color].iconText} scale-110` : "text-[#C4DAEE]/60 group-hover:text-[#C4DAEE]/90 group-hover:scale-[1.05]",
                     ].join(" ")}
-                    style={active ? { filter: `drop-shadow(0 0 5px ${NAV_ACCENT[item.color].hex}80)` } : undefined}
+                    style={active ? { filter: `drop-shadow(0 0 6px ${NAV_ACCENT[item.color].hex}90) drop-shadow(0 0 14px ${NAV_ACCENT[item.color].hex}40)` } : undefined}
                   />
                   <span>{item.label}</span>
                 </SidebarMenuButton>
