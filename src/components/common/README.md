@@ -153,7 +153,7 @@ iOS/Material 2026 · frosted backdrop + slide-up
 <a name="icontile"></a>
 ## IconTile
 
-아이콘 컨테이너 tile · 카드/헤더의 아이콘 표시용 · 10 tone · 3 size
+아이콘 컨테이너 tile · 카드/헤더의 아이콘 표시용 · 11 tone · 5 size · 4 shape
 
 ```tsx
 import { IconTile } from "@/components/common/IconTile";
@@ -161,13 +161,104 @@ import { IconTile } from "@/components/common/IconTile";
 <IconTile icon={<Package size={14} />} tone="brand" size="md" />
 <IconTile icon={<Bell size={12} />} tone="amber" size="sm" />
 <IconTile icon={<Users size={16} />} tone="emerald" size="lg" shape="full" />
+<IconTile icon={<Upload size={20} />} tone="amber" size="xl" shape="rounded-xl" />
+<IconTile icon={<Package size={28} />} tone="zinc" size="2xl" shape="rounded-2xl" /> {/* Empty state */}
 ```
 
-**Tone**: brand · sky · emerald · amber · rose · violet · teal · indigo · zinc · pine
-**Size**: `sm`(24) · `md`(28 · 표준) · `lg`(36)
-**Shape**: `rounded`(기본) · `full`
+**Tone**: brand · sky · emerald · amber · rose · violet · teal · indigo · zinc · pine · orange
+**Size**: `sm`(24) · `md`(28 표준) · `lg`(36) · `xl`(44) · `2xl`(64 · empty state)
+**Shape**: `rounded`(기본) · `rounded-xl` · `rounded-2xl` · `full`
 
-**대체 대상**: 인라인 `<div className="w-7 h-7 rounded-lg bg-{color}-100 flex items-center justify-center">` 반복 패턴 (20+ 곳)
+**대체 대상**: 인라인 `<div className="w-N h-N rounded-N bg-{color}-100 flex items-center justify-center">` 반복 (30+ 곳 통합)
+
+---
+
+<a name="accentbar"></a>
+## AccentBar
+
+브랜드 좌측 세로 accent bar · 3px width · 카드·툴바·라벨 앞에 배치 · 77곳 100% 통합
+
+```tsx
+import { AccentBar } from "@/components/common/AccentBar";
+
+<AccentBar />                              // md (16px) · 기본
+<AccentBar size="sm" />                    // 14
+<AccentBar size="lg" />                    // 18
+<AccentBar size="xl" className="shrink-0"/>// 24
+<AccentBar size="hero" />                  // 40 gradient (Hero 카드)
+<AccentBar h={22} />                       // 픽셀 커스텀
+<AccentBar tone="brand-soft" />            // brand-deep/70
+```
+
+---
+
+<a name="inlinelabel"></a>
+## InlineLabel
+
+AccentBar + 라벨 (inline) · 필터·툴바 앞 · 반복 패턴 통합
+
+```tsx
+import { InlineLabel } from "@/components/common/InlineLabel";
+
+<InlineLabel>기간</InlineLabel>          // md · 15px + bar 16
+<InlineLabel size="sm">비교 기간</InlineLabel>  // 14px + bar 14
+<InlineLabel size="lg">분류</InlineLabel>       // 16px + bar 18
+```
+
+---
+
+<a name="stepperinput"></a>
+## StepperInput
+
+수량 스테퍼 (− input +) · Linear/Fluent2 · brand-deep focus glow
+
+```tsx
+import { StepperInput } from "@/components/common/StepperInput";
+
+<StepperInput value={qty} onChange={setQty} />
+<StepperInput value={qty} onChange={setQty} min={0} max={100} size="lg" />
+<StepperInput value={qty} onChange={setQty} disabled placeholder="0" />
+```
+
+**Size**: sm(h-9) · md(h-10 기본) · lg(h-11)
+
+---
+
+<a name="spinner"></a>
+## Spinner
+
+Loader2 wrapper + 라벨 · 인라인 로딩 인디케이터 (30+ 곳 통합)
+
+```tsx
+import { Spinner } from "@/components/common/Spinner";
+
+<Spinner />                                  // 14px · brand-deep
+<Spinner size={16} tone="emerald" />
+<Spinner label="저장 중..." />               // 아이콘 + 텍스트
+<Spinner label="로딩 중..." size={13} labelSize={12} tone="zinc" />
+```
+
+**Tone**: brand · emerald · amber · rose · sky · zinc · white
+
+**대체 대상**: `<Loader2 className="animate-spin" /> 로딩중...` 55+ 반복 패턴
+
+---
+
+<a name="notificationtoast"></a>
+## NotificationToast
+
+우측 상단 프리미엄 dark toast · frosted + status dot · Scan/Arrival 등
+
+```tsx
+import { NotificationToast } from "@/components/common/NotificationToast";
+
+{toast && <NotificationToast message={toast} />}
+{toast && <NotificationToast message={toast} tone="teal" />}
+<NotificationToast message="저장됨" position="bottom-center" />
+```
+
+**Tone**: emerald(기본) · teal · sky · amber · rose
+**Position**: top-right(기본) · bottom-center
 
 ---
 
