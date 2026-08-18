@@ -2811,8 +2811,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
       {/* 발주서 (Purchase Order) 모달 — 표준 발주 포맷 */}
       {orderModal && (
+        // 2026-08-17 v2 · Modal 통일
         <div
-          className="fixed inset-0 z-50 bg-zinc-900/50 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto"
+          className="fixed inset-0 z-50 backdrop-brand flex items-start justify-center p-4 overflow-y-auto"
           onClick={() => !sendingBulk && setOrderModal(null)}
         >
           <div
@@ -3034,8 +3035,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
       {/* 상품 상세정보 모달 (상품명 클릭 시) */}
       {detailProduct && (
+        // 2026-08-17 v2 · Modal 통일
         <div
-          className="fixed inset-0 z-50 bg-zinc-900/50 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 backdrop-brand flex items-center justify-center p-4"
           onClick={() => { setDetailProduct(null); reloadAllProductsMap(); loadInvMap(); loadOrderReqs(); }}
         >
           <div
@@ -3149,8 +3151,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
       {/* 2026-07-30 · 사용자 요청 · 공급사 정보 모달 (발주요청/발주필요 리스트 공급사 클릭 시) */}
       {supplierInfoModal && (
-        <div className="fixed inset-0 z-[100] bg-zinc-900/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setSupplierInfoModal(null)}>
-          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
+        // 2026-08-17 v2 · Modal 통일
+        <div className="fixed inset-0 z-[100] backdrop-brand flex items-center justify-center p-2 sm:p-4" onClick={() => setSupplierInfoModal(null)}>
+          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-2xl shadow-brand-modal" onClick={e => e.stopPropagation()}>
             <VendorDetailModal
               vendor={supplierInfoModal}
               onClose={() => setSupplierInfoModal(null)}
