@@ -20,6 +20,17 @@
   - ✅ **legacy StatusBadge 삭제 + common/README.md 문서화** (356aa1d)
 - **잔여 · 다음 세션**: ContractWriterPage(5,400 lines · 분리 필요) · common/EmployeeInfoForm · 각 페이지 status matrix (부적합 판정)
 
+### #163 · Nav v4 · 그룹 톤 gradient 활성 배경 · 밋밋함 해소 (2026-08-18 · ✅ 완료)
+- 사용자 요청: "공통헤더메뉴와 사이드바메뉴 밋밋한거 개선" · "최신트렌드반영"
+- **핵심 변화**: 활성 pill 배경 · 흰 반투명 → **그룹 톤 gradient** (hex22~30 → hex0A~15 → transparent)
+- 헤더 데스크탑 탭 · 활성 · 그룹 accent color tinted (홈=흰/스케줄=amber/승인=red/스캔=sky/…)
+- 헤더 모바일 탭 · 동일 톤 gradient + accent 아이콘 + drop-shadow
+- 사이드바 CollapsibleGroup · 활성 그룹 · 톤 gradient
+- 사이드바 아이템 · 활성 · 톤 gradient (hex28 → hex10)
+- 사이드바 SingleItemGroup · 홈·스케줄 등 · 동일 톤 gradient
+- 드롭다운 · shadow-brand-modal (Modal 통일)
+- 결과: 각 카테고리가 자기 identity 색으로 은은하게 물듦 · 시각 분류 명확화
+
 ### #162 · Nav 세련 v3 · 초고해상도 · 최신 트렌드 (2026-08-18 · ✅ 완료)
 - 헤더 활성 pill · 3-layer shadow (inset top + inset bottom + outer glow) · 세련
 - 헤더 활성 bar · solid 3px → gradient fade (90% width · Attio 톤) + double glow (12+8)
