@@ -40,6 +40,7 @@ import { useConfirm } from "../../hooks/useConfirm";
 // 2026-08-09 · 사용자 요청 · 상품 검색·확인 · 리스트 등록 (공통)
 import { ProductSearchInput } from "../common/ProductSearchInput";
 import { IconTile } from "../common/IconTile";
+import { Modal } from "../common/Modal";
 // ── 분리된 Row 컴포넌트 ──────────────────────────────────────
 import { StockRowDesktop } from "./StockRowDesktop";
 import { StockRowCard } from "./StockRowCard";
@@ -1085,73 +1086,86 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         </div>
       )}
 
-      {/* 2026-08-10 · G · B1 · 검토 시트 (오입력 방지 · [전체 등록] → 요약 확인 → [확정]) */}
-      {reviewOpen && (
-        // 2026-08-17 v2 · Modal 통일
-        <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center backdrop-brand p-0 sm:p-4"
-          onClick={() => setReviewOpen(false)}
-        >
-          <div className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-brand-modal overflow-hidden flex flex-col max-h-[85vh]"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="px-5 py-3.5 border-b border-line bg-teal-50 flex items-center justify-between">
-              <div>
-                <div className="text-sm font-bold text-zinc-900">등록 전 검토</div>
-                <div className="text-[15px] font-semibold text-zinc-500 mt-0.5">
-                  {rows.length}건 · 총 {rows.reduce((acc, r) => acc + calcRowTotal(r), 0)}개
-                </div>
-              </div>
-              <button
-                onClick={() => setReviewOpen(false)}
-                className="p-1.5 rounded-lg text-zinc-400 hover:bg-white/70 hover:text-zinc-700 cursor-pointer"
-                title="닫기"
-              >×</button>
-            </div>
+      {/* 2026-08-18 · #95 · 검토 시트 · 프레임워크 Modal + 리스트 UI 통일 */}
+      <Modal
+        open={reviewOpen}
+        onClose={() => setReviewOpen(false)}
+        titleAccent
+        icon={<SaveAll size={18} />}
+        title="등록 전 검토"
+        headerRight={
+          <StatusPill tone="brand" size="md">
+            {rows.length}건 · {rows.reduce((acc, r) => acc + calcRowTotal(r), 0)}개
+          </StatusPill>
+        }
+        size="md"
+        footer={
+          <>
+            <button
+              onClick={() => setReviewOpen(false)}
+              className="h-10 px-4 rounded-lg bg-white border border-line hover:border-brand-deep hover:bg-brand-tint
+                text-ink text-[14px] font-bold transition cursor-pointer"
+            >
+              취소
+            </button>
+            <button
+              onClick={() => { setReviewOpen(false); handleBulkSave(); }}
+              disabled={saveStatus === "saving" || rows.length === 0}
+              className="h-10 px-6 rounded-lg bg-brand-deep hover:bg-brand-deep/90
+                shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_2px_6px_-1px_rgba(10,46,74,0.25)]
+                text-white text-[15px] font-bold disabled:opacity-60 disabled:cursor-not-allowed transition cursor-pointer"
+            >
+              확정 · {rows.length}건 저장
+            </button>
+          </>
+        }
+      >
+        <ul className="flex flex-col divide-y divide-line/60">
+          {rows.map((r, idx) => {
+            const total = calcRowTotal(r);
+            const added =
+              (Number(r.warehouse1AddQty) || 0) +
+              (Number(r.warehouse2AddQty) || 0) +
+              (Number(r.store1AddQty) || 0) +
+              (Number(r.store2AddQty) || 0) +
+              (Number(r.store3AddQty) || 0);
+            return (
+              <li key={r.key} className="px-1 py-3 flex items-center gap-3 hover:bg-zinc-50/50 transition-colors rounded-lg">
+                {/* index tile */}
+                <span className="w-7 h-7 shrink-0 rounded-lg bg-brand-tint text-brand-deep
+                  inline-flex items-center justify-center text-[12px] font-bold tabular-nums
+                  shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(10,46,74,0.05)]">
+                  {idx + 1}
+                </span>
 
-            <div className="flex-1 overflow-y-auto divide-y divide-zinc-100">
-              {rows.map(r => {
-                const total = calcRowTotal(r);
-                const added =
-                  (Number(r.warehouse1AddQty) || 0) +
-                  (Number(r.warehouse2AddQty) || 0) +
-                  (Number(r.store1AddQty) || 0) +
-                  (Number(r.store2AddQty) || 0) +
-                  (Number(r.store3AddQty) || 0);
-                return (
-                  <div key={r.key} className="px-4 py-2.5 flex items-baseline justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[14px] font-bold text-zinc-800 truncate">{r.product.name}</div>
-                      <div className="text-[14px] text-zinc-400 font-mono tabular-nums truncate">{r.code}</div>
-                    </div>
-                    <div className="flex items-baseline gap-2 shrink-0">
-                      {added > 0 ? (
-                        <span className="text-[15px] font-bold text-emerald-700 tabular-nums">+{added}</span>
-                      ) : (
-                        <span className="text-[15px] text-zinc-300">변화 없음</span>
-                      )}
-                      <span className="text-[14px] font-bold text-zinc-800 tabular-nums">= {total}</span>
-                    </div>
+                {/* 상품 정보 */}
+                <div className="min-w-0 flex-1">
+                  <div className="text-[15px] font-bold text-ink tracking-tight truncate">
+                    {r.product.name}
                   </div>
-                );
-              })}
-            </div>
+                  <div className="text-[12px] text-ink-soft font-mono tabular-nums truncate mt-0.5">
+                    #{r.code}
+                  </div>
+                </div>
 
-            <div className="px-4 py-3 border-t border-line bg-zinc-50 flex items-center gap-2">
-              <button
-                onClick={() => setReviewOpen(false)}
-                className="flex-1 h-10 rounded-lg bg-white border border-zinc-300 text-zinc-600 text-[14px] font-bold hover:bg-zinc-100 transition cursor-pointer"
-              >취소</button>
-              <button
-                onClick={() => { setReviewOpen(false); handleBulkSave(); }}
-                disabled={saveStatus === "saving" || rows.length === 0}
-                className="flex-[2] h-10 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-[15px] font-bold shadow-sm disabled:opacity-60 disabled:cursor-not-allowed transition cursor-pointer"
-              >
-                확정 · {rows.length}건 저장
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                {/* 변경량 + 합계 */}
+                <div className="flex items-center gap-2 shrink-0">
+                  {added > 0 ? (
+                    <StatusPill tone="emerald" size="sm">+{added}</StatusPill>
+                  ) : (
+                    <span className="text-[12px] font-semibold text-zinc-300">변화 없음</span>
+                  )}
+                  <span className={`text-[18px] font-bold tabular-nums tracking-tight ${
+                    total > 0 ? "text-brand-deep" : "text-zinc-300"
+                  }`}>
+                    {total}
+                  </span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </Modal>
     </div>
   );
 };
