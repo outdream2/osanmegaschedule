@@ -12,6 +12,7 @@ import { useSortableTable, type Comparator } from "../../hooks/useSortableTable"
 import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { StatusPill } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
+import { InlineLabel } from "../common/InlineLabel";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
@@ -389,10 +390,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
         {/* 2026-08-17 · 컨트롤 · 공용 FilterSortBar 톤 · accent bar + segmented pill · 딥네이비 */}
         <div className="flex items-center gap-3 px-4 py-2.5 flex-wrap border-b border-line bg-white">
           {/* 비교기간 */}
-          <span className="flex items-center gap-2 shrink-0">
-            <AccentBar h={15} />
-            <span className="text-[15px] font-bold text-ink tracking-tight">비교 기간</span>
-          </span>
+          <InlineLabel>비교 기간</InlineLabel>
           <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
             {([10, 30, 90, 180] as const).map(w => (
               <button key={w} onClick={() => setWindowDays(w)}
@@ -401,10 +399,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
               </button>
             ))}
           </div>
-          <span className="flex items-center gap-2 shrink-0">
-            <AccentBar h={15} />
-            <span className="text-[15px] font-bold text-ink tracking-tight">정렬</span>
-          </span>
+          <InlineLabel>정렬</InlineLabel>
           <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
             {([
               { k: "recent" as const, label: "최근판매" },

@@ -16,6 +16,8 @@ import { CARD_BASE } from "../../styles/tokens";
 import { fmtWonCompact } from "../../lib/format";
 import { EmptyState } from "../common/EmptyState";
 import { StatusPill } from "../common/StatusPill";
+import { AccentBar } from "../common/AccentBar";
+import { InlineLabel } from "../common/InlineLabel";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { API_LIMITS } from "../../constants/apiLimits";
 import { useResizablePanel } from "../../hooks/useResizablePanel";
@@ -430,10 +432,7 @@ const ZoneCategoryContent: React.FC = () => {
         </div>
         {/* 기간 필터 · 통일 톤 · segmented pill */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="flex items-center gap-2 shrink-0">
-            <AccentBar h={15} />
-            <span className="text-[15px] font-bold text-ink tracking-tight">기간</span>
-          </span>
+          <InlineLabel>기간</InlineLabel>
           <div className="inline-flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
             <button type="button" onClick={() => { setSeason(null); setMonths(0); }}
               className={`px-2.5 h-7 text-[14px] font-semibold rounded-md transition-colors cursor-pointer ${!season && months === 0 ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>
