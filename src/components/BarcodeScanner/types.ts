@@ -12,13 +12,12 @@ export const FORMATS = [
 ] as const;
 
 // ── Camera constraints ────────────────────────────────────────────────────────
-// focusMode / exposureMode must NOT be here — they are non-standard top-level
-// getUserMedia constraints. On Android Chrome they cause OverconstrainedError
-// which silently kills the stream (iOS ignores them, so only Android breaks).
-// These are applied via applyConstraints() in useCameraControls instead.
+// 2026-08-18 · B안 최소 constraints · iOS OverconstrainedError 방지
+//   · focusMode/exposureMode/aspectRatio 모두 top-level 제거 (Android OverconstrainedError 유발)
+//   · width/height 는 ideal 만 (min/max 없음 · 기기별 실패 방지)
+//   · applyConstraints() 는 useCameraControls 에서 별도 처리
 export const VIDEO_CONSTRAINTS: MediaTrackConstraints = {
   facingMode: "environment",
   width:  { ideal: 1920 },
   height: { ideal: 1080 },
-  aspectRatio: { ideal: 16 / 9 },
 };
