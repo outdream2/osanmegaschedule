@@ -102,11 +102,11 @@ const ZoneInput: React.FC<{
     value={value ?? ""}
     onChange={e => onChange(e.target.value.trim() === "" ? null : e.target.value)}
     placeholder="구역"
-    className="w-full h-8 text-center px-2 rounded-md bg-zinc-50 border border-dashed border-line
-      text-[12px] font-semibold tabular-nums text-ink outline-none transition
-      placeholder:text-zinc-300
-      focus:bg-white focus:border-solid focus:border-brand-deep
-      focus:shadow-[0_0_0_3px_rgba(10,46,74,0.08)]"
+    className="w-full h-8 text-center px-2 rounded-md bg-white border-2 border-zinc-300
+      text-[13px] font-bold tabular-nums text-brand-deep outline-none transition
+      placeholder:text-zinc-400 placeholder:font-semibold
+      focus:border-brand-deep
+      focus:shadow-[0_0_0_3px_rgba(10,46,74,0.10)]"
     title="구역 편집"
   />
 );
