@@ -165,21 +165,22 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
           </span>
 
           {/* CaretDown · 닫힘 = -90도 (좌) · 열림 = 0도 (아래) · 부드러운 화살표 · 2026-08-17 · deep teal 톤 */}
+          {/* 2026-08-17 v3 · chevron · 더 세련 · 부드러운 회전 + subtle hover */}
           <span
             className={[
               "flex items-center justify-center",
               "w-7 h-7 rounded-md",
-              "transition-colors duration-200 ease-out",
-              hasActiveItem ? "bg-transparent" : "hover:bg-white/[0.06]",
+              "transition-all duration-200 ease-out",
+              hasActiveItem ? "bg-transparent" : "hover:bg-white/[0.08] hover:scale-110",
             ].join(" ")}
             aria-hidden="true"
           >
             <CaretDown
-              size={18}
+              size={16}
               weight="bold"
               className={[
-                "shrink-0 transition-transform duration-200 ease-out",
-                hasActiveItem ? "text-white" : "text-white/60",
+                "shrink-0 transition-transform duration-300 ease-out",
+                hasActiveItem ? "text-white" : "text-white/70",
                 open ? "rotate-0" : "-rotate-90",
               ].join(" ")}
             />
@@ -391,11 +392,11 @@ export const SideNav: React.FC<SideNavProps> = ({
               "cursor-pointer",
             ].join(" ")}
           >
-            {/* 2026-08-17 · 사용자 지시 · logo2 · 라운드 처리 · 사이드바 딥네이비 대비 명확 */}
+            {/* 2026-08-17 v3 · 로고 · ring-2 + brand glow · 세련 (헤더와 통일) */}
             <img
               src={brand.logoUrl || logoImg}
               alt={`${brand.region ? brand.region + " " : ""}${brand.shortName} 로고`}
-              className="w-7 h-7 rounded-full object-cover shrink-0 ring-1 ring-white/20"
+              className="w-7 h-7 rounded-full object-cover shrink-0 ring-2 ring-white/25 shadow-[0_0_16px_rgba(94,169,232,0.30)] transition-all duration-200 hover:ring-white/40"
             />
             {/* icon-only 모드에서 숨김 · 2026-08-17 · 흰색 텍스트 (deep teal bg 대비) */}
             <div className="flex flex-col gap-0 leading-none group-data-[collapsible=icon]:hidden min-w-0">
