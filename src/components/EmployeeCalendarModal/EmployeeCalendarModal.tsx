@@ -333,8 +333,9 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
   };
 
   return (
+    // 2026-08-17 v2 · Modal 통일
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center backdrop-brand p-4"
       onClick={onClose}
     >
       {/* 2026-08-17 · 사용자 지시 · PC 너무 넓음 · max-w-5xl → max-w-4xl · 최신 트렌드 · 보기 좋은 폭 */}

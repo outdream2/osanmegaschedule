@@ -1116,9 +1116,10 @@ export const VendorDetailModal: React.FC<{
   };
 
   // ── 래퍼: panel 모드는 인라인 · 기본은 backdrop 모달 ──
+  // 2026-08-17 v2 · Modal 통일 (panel 모드 아닌 경우 backdrop-brand)
   const backdropCls = panel
     ? "relative bg-white rounded-xl border border-line shadow-sm flex flex-col overflow-hidden min-h-0 flex-1"
-    : "fixed inset-0 z-50 bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4";
+    : "fixed inset-0 z-50 backdrop-brand flex items-center justify-center p-2 sm:p-4";
 
   const innerCls = panel
     ? "relative flex flex-col flex-1 min-h-0 overflow-hidden"

@@ -2270,8 +2270,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
       {/* ─── Zone Detail Modal ────────────────────────────────────────────────── */}
       {activeZone && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-gray-900/60 backdrop-blur-sm" onClick={() => setActiveZoneId(null)}>
-          <div className="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[92vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        // 2026-08-17 v2 · Modal 통일
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center backdrop-brand" onClick={() => setActiveZoneId(null)}>
+          <div className="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-brand-modal max-h-[92vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
             {/* Modal header */}
             <div className="px-5 py-4 border-b border-line flex items-center gap-3 bg-zinc-50">
               <div className={`w-10 h-10 rounded-xl border-2 flex items-center justify-center shrink-0 font-bold text-lg ${statusCell(draftStatus)}`}>
@@ -2450,7 +2451,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
       {/* ─── Employee Info Modal ──────────────────────────────────────────────── */}
       {activeStaffInfo && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-gray-900/60 backdrop-blur-sm"
+        // 2026-08-17 v2 · Modal 통일
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center backdrop-brand"
           onClick={() => setActiveStaffInfo(null)}>
           <div className="w-full sm:max-w-sm bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}>
@@ -2697,8 +2699,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         const sortIcon = (key: typeof zoneProductsSort.key) =>
           zoneProductsSort.key !== key ? "↕" : zoneProductsSort.dir === "asc" ? "▲" : "▼";
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 backdrop-blur-sm p-2 sm:p-4" onClick={() => setZoneProductsModal(null)}>
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+          // 2026-08-17 v2 · Modal 통일
+          <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-brand p-2 sm:p-4" onClick={() => setZoneProductsModal(null)}>
+            <div className="bg-white rounded-2xl shadow-brand-modal w-full max-w-3xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
               {/* Header */}
               <div className="px-5 py-4 border-b border-line bg-emerald-50 flex items-center justify-between">
                 <div>
@@ -2849,8 +2852,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
       {/* ── 상품정보 모달 ── */}
       {productInfoModal && (
-        <div className="fixed inset-0 z-50 bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-1 sm:p-4" onClick={() => setProductInfoModal(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[98vh] sm:max-h-[92vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+        // 2026-08-17 v2 · Modal 통일
+        <div className="fixed inset-0 z-50 backdrop-brand flex items-center justify-center p-1 sm:p-4" onClick={() => setProductInfoModal(null)}>
+          <div className="bg-white rounded-2xl shadow-brand-modal w-full max-w-2xl max-h-[98vh] sm:max-h-[92vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-line bg-sky-50">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0 shadow-md">

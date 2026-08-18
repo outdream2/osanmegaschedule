@@ -1114,8 +1114,9 @@ const SignatureModal: React.FC<SignatureModalProps> = ({ open, title, onClose, o
   };
 
   return (
+    // 2026-08-17 v2 · Modal 통일
     <div
-      className="fixed inset-0 z-[60] bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-[60] backdrop-brand flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
@@ -2546,8 +2547,9 @@ const ExtendContractModal: React.FC<{
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+    // 2026-08-17 v2 · Modal 통일
+    <div className="fixed inset-0 z-50 backdrop-brand flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-brand-modal w-full max-w-md overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="px-4 py-3 border-b border-line bg-indigo-50 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-brand-deep flex items-center justify-center shadow-sm">

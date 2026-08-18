@@ -764,8 +764,9 @@ const ProductTrendTab: React.FC<{
 
       {/* 정보확인 모달 (재고관리 · 적정재고이하 상품 클릭과 동일) */}
       {scanProductModal && (
+        // 2026-08-17 v2 · Modal 통일
         <div
-          className="fixed inset-0 z-50 bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 backdrop-brand flex items-center justify-center p-4"
           onClick={() => setScanProductModal(null)}
         >
           <div
@@ -2556,8 +2557,9 @@ export const SalesTrendPage: React.FC = () => {
 
       {/* 정보확인 모달 (판매리스트 상품명 클릭과 동일 · ProductInfoCard) */}
       {scanProductModal && (
-        <div className="fixed inset-0 z-50 bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-1 sm:p-4" onClick={() => setScanProductModal(null)}>
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[98vh] sm:max-h-[92vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+        // 2026-08-17 v2 · Modal 통일
+        <div className="fixed inset-0 z-50 backdrop-brand flex items-center justify-center p-1 sm:p-4" onClick={() => setScanProductModal(null)}>
+          <div className="bg-white rounded-xl shadow-brand-modal w-full max-w-2xl max-h-[98vh] sm:max-h-[92vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
             {/* 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-line bg-zinc-50/60">
               <div className="flex items-center gap-3 min-w-0">
@@ -2592,8 +2594,9 @@ export const SalesTrendPage: React.FC = () => {
 
       {/* 숨김 항목 관리 모달 · 재고관리와 동일 */}
       {hiddenModalOpen && (
-        <div className="fixed inset-0 z-50 bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-1 sm:p-4" onClick={() => setHiddenModalOpen(false)}>
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[98vh] sm:max-h-[85vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+        // 2026-08-17 v2 · Modal 통일
+        <div className="fixed inset-0 z-50 backdrop-brand flex items-center justify-center p-1 sm:p-4" onClick={() => setHiddenModalOpen(false)}>
+          <div className="bg-white rounded-xl shadow-brand-modal w-full max-w-2xl max-h-[98vh] sm:max-h-[85vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
             {/* 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-line bg-zinc-50/60">
               <div className="flex items-center gap-3 min-w-0">

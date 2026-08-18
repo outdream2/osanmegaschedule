@@ -699,7 +699,8 @@ const ConfirmedRecordsTab: React.FC = () => {
 
       {/* 2026-07-28 · 이미지 모달 · Cloudinary 저장된 거래명세서 이미지 */}
       {imageModalUrl && (
-        <div className="fixed inset-0 z-[100] bg-black/70 flex items-center justify-center p-4" onClick={() => setImageModalUrl(null)}>
+        // 2026-08-17 v2 · Modal 통일 (이미지 뷰어 · 강조 backdrop)
+        <div className="fixed inset-0 z-[100] backdrop-brand-strong flex items-center justify-center p-4" onClick={() => setImageModalUrl(null)}>
           <div className="relative max-w-[95vw] max-h-[95vh]" onClick={e => e.stopPropagation()}>
             <button
               type="button"
@@ -715,8 +716,9 @@ const ConfirmedRecordsTab: React.FC = () => {
 
       {/* ── 공급처 잔고 히스토리 모달 ── */}
       {balanceHistory && (
+        // 2026-08-17 v2 · Modal 통일
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center backdrop-brand p-4"
           onClick={() => setBalanceHistory(null)}
         >
           <div

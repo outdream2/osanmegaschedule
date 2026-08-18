@@ -2167,8 +2167,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
       {/* 4. Admin Login Dialog Modal */}
       {isLoginModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-line p-6 flex flex-col justify-between overflow-hidden animate-in zoom-in-95 duration-200">
+        // 2026-08-17 v2 · Modal 통일
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-brand animate-in fade-in duration-200">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-brand-modal border border-line p-6 flex flex-col justify-between overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
               <div className="flex items-center gap-2">
@@ -2312,7 +2313,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
       {/* 전월복사 항목 선택 모달 */}
       {copyModal.open && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-4"
+        // 2026-08-17 v2 · Modal 통일
+        <div className="fixed inset-0 z-[60] flex items-center justify-center backdrop-brand px-4"
           onClick={() => setCopyModal(prev => ({ ...prev, open: false }))}>
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-start gap-3 mb-4">
