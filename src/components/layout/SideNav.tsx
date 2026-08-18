@@ -363,7 +363,8 @@ export const SideNav: React.FC<SideNavProps> = ({
     <Sidebar
       collapsible="icon"
       data-sb-v2=""
-      className="border-r border-white/8"
+      // 2026-08-17 v3 · 세련 · border 강화 (white/8 → white/[0.10]) + shadow (헤더 통일)
+      className="border-r border-white/[0.10] shadow-[4px_0_20px_-8px_rgba(10,46,74,0.20),12px_0_40px_-16px_rgba(10,46,74,0.25)]"
       style={!isMobile
         ? { ...teal, "--sidebar-width": `${width}px` } as React.CSSProperties
         : teal}
