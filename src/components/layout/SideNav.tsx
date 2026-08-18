@@ -105,14 +105,11 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
   return (
     <Collapsible.Root open={open} onOpenChange={handleOpenChange}>
 
-      {/* ── 그룹 헤더 · 2026-08-18 · 그룹 톤 gradient 활성 배경 (밋밋함 해소) ── */}
+      {/* ── 그룹 헤더 · 2026-08-18 v5 · 컬러 dot + 심플 배경 (사용자 피드백 반영) ── */}
       <Collapsible.Trigger asChild>
         <button
           type="button"
           aria-label={`${group.label} 그룹 ${open ? "접기" : "펼치기"}`}
-          style={hasActiveItem ? {
-            background: `linear-gradient(90deg, ${NAV_ACCENT[group.color].hex}22 0%, ${NAV_ACCENT[group.color].hex}0A 40%, transparent 90%)`,
-          } : undefined}
           className={[
             "flex w-full items-center justify-between",
             "px-2.5 py-1.5 mt-1.5 mb-0",
@@ -122,9 +119,10 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
             "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
             hasActiveItem
               ? [
+                  "bg-white/[0.10]",
                   groupTone.activeText,    // text-white
                   "font-bold",
-                  "shadow-[inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-1px_0_rgba(0,0,0,0.08)]",
+                  "shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]",
                 ].join(" ")
               : [
                   "text-[#C4DAEE]",
@@ -135,17 +133,17 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
           ].join(" ")}
         >
           <span className="flex items-center gap-2 relative">
-            {/* 2026-08-17 v3 · 최신 트렌드 · gradient stripe + double glow · Linear/Attio */}
+            {/* 2026-08-18 v5 · 활성 stripe · 두께 4px + 강력한 glow (사용자 피드백 · 컬러 액센트 강화) */}
             {hasActiveItem && (
               <span
-                className="absolute -left-2 top-1/2 -translate-y-1/2 w-[3px] h-[80%] rounded-r-full pointer-events-none group-data-[collapsible=icon]:hidden"
+                className="absolute -left-2 top-1/2 -translate-y-1/2 w-[4px] h-[85%] rounded-r-full pointer-events-none group-data-[collapsible=icon]:hidden"
                 style={{
-                  background: `linear-gradient(180deg, transparent, ${NAV_ACCENT[group.color].hex} 20%, ${NAV_ACCENT[group.color].hex} 80%, transparent)`,
-                  boxShadow: `0 0 10px ${NAV_ACCENT[group.color].hex}90, 0 0 20px ${NAV_ACCENT[group.color].hex}40`,
+                  background: NAV_ACCENT[group.color].hex,
+                  boxShadow: `0 0 12px ${NAV_ACCENT[group.color].hex}, 0 0 24px ${NAV_ACCENT[group.color].hex}80`,
                 }}
               />
             )}
-            {/* 2026-08-17 v3 · 아이콘 · 브랜드 glow + hover scale (부드러운 인터랙션) */}
+            {/* 2026-08-18 v5 · 아이콘 · 활성/비활성 모두 그룹 accent color (사용자 피드백 · 항상 컬러 유지) */}
             {group.icon && (() => {
               const GroupIcon = group.icon;
               return (
@@ -154,7 +152,8 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                   weight={hasActiveItem ? "fill" : "duotone"}
                   className={[
                     "shrink-0 transition-all duration-200 ease-out",
-                    hasActiveItem ? `${NAV_ACCENT[group.color].iconText} scale-110` : "text-[#C4DAEE]/80 group-hover:text-[#C4DAEE] group-hover:scale-[1.05]",
+                    NAV_ACCENT[group.color].iconText,   // 항상 그룹 accent color (액센트 유지)
+                    hasActiveItem ? "scale-110" : "opacity-80 group-hover:opacity-100 group-hover:scale-[1.05]",
                   ].join(" ")}
                   style={hasActiveItem ? { filter: `drop-shadow(0 0 8px ${NAV_ACCENT[group.color].hex}90) drop-shadow(0 0 16px ${NAV_ACCENT[group.color].hex}40)` } : undefined}
                 />
@@ -207,13 +206,13 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
 
             return (
               <SidebarMenuItem key={`${item.key}-${item.subTab ?? "_"}-${itemIdx}`} className="relative">
-                {/* 2026-08-17 v3 · 최신 트렌드 · gradient stripe (top→bottom fade) + double glow · Linear/Attio 세련 */}
+                {/* 2026-08-18 v5 · 활성 stripe · 두께 4px + 강력한 glow */}
                 {active && (
                   <span
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[80%] rounded-r-full pointer-events-none z-[1] group-data-[collapsible=icon]:hidden"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[4px] h-[85%] rounded-r-full pointer-events-none z-[1] group-data-[collapsible=icon]:hidden"
                     style={{
-                      background: `linear-gradient(180deg, transparent, ${NAV_ACCENT[item.color].hex} 20%, ${NAV_ACCENT[item.color].hex} 80%, transparent)`,
-                      boxShadow: `0 0 10px ${NAV_ACCENT[item.color].hex}90, 0 0 20px ${NAV_ACCENT[item.color].hex}40`,
+                      background: NAV_ACCENT[item.color].hex,
+                      boxShadow: `0 0 12px ${NAV_ACCENT[item.color].hex}, 0 0 24px ${NAV_ACCENT[item.color].hex}80`,
                     }}
                   />
                 )}
@@ -224,19 +223,17 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                   tooltip={item.label}
                   aria-current={active ? "page" : undefined}
                   aria-label={item.label}
-                  style={active ? {
-                    background: `linear-gradient(90deg, ${NAV_ACCENT[item.color].hex}28 0%, ${NAV_ACCENT[item.color].hex}10 45%, transparent 95%)`,
-                  } : undefined}
                   className={[
                     "group-data-[collapsible=icon]:pl-2 pl-4",
                     "h-7 rounded-lg",
                     "text-[18px]",
-                    // 2026-08-18 · 활성 · 그룹 톤 gradient 배경 (밋밋함 해소)
+                    // 2026-08-18 v5 · 심플 배경 (gradient 제거 · 사용자 피드백)
                     active
                       ? [
+                          "bg-white/[0.10]",
                           tone.activeText, // text-white
                           "font-bold",
-                          "shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(0,0,0,0.06)]",
+                          "shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]",
                         ].join(" ")
                       : [
                           "font-semibold text-[#C4DAEE]/85",
@@ -246,13 +243,14 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                     "transition-all duration-200 ease-out",
                   ].join(" ")}
                 >
-                  {/* 2026-08-17 v3 · 하위 메뉴 아이콘 · double glow + hover scale */}
+                  {/* 2026-08-18 v5 · 하위 아이콘 · 항상 그룹 accent color (액센트 유지) */}
                   <Icon
                     size={15}
                     weight={active ? "fill" : "duotone"}
                     className={[
                       "shrink-0 transition-all duration-200 ease-out",
-                      active ? `${NAV_ACCENT[item.color].iconText} scale-110` : "text-[#C4DAEE]/60 group-hover:text-[#C4DAEE]/90 group-hover:scale-[1.05]",
+                      NAV_ACCENT[item.color].iconText,   // 항상 그룹 accent color
+                      active ? "scale-110" : "opacity-70 group-hover:opacity-100 group-hover:scale-[1.05]",
                     ].join(" ")}
                     style={active ? { filter: `drop-shadow(0 0 6px ${NAV_ACCENT[item.color].hex}90) drop-shadow(0 0 14px ${NAV_ACCENT[item.color].hex}40)` } : undefined}
                   />
@@ -285,9 +283,6 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, on
       onClick={() => onNavigate(item.key)}
       aria-current={active ? "page" : undefined}
       aria-label={group.label}
-      style={active ? {
-        background: `linear-gradient(90deg, ${NAV_ACCENT[group.color].hex}22 0%, ${NAV_ACCENT[group.color].hex}0A 40%, transparent 90%)`,
-      } : undefined}
       className={[
         "flex w-full items-center gap-2",
         "px-2.5 py-1.5 mt-1.5 mb-0",
@@ -295,12 +290,13 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, on
         "text-[19px] leading-none",
         "transition-all duration-200 ease-out",
         "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
-        // 2026-08-18 · 활성 · 그룹 톤 gradient (밋밋함 해소 · CollapsibleGroup 통일)
+        // 2026-08-18 v5 · 심플 배경 (gradient 제거)
         active
           ? [
+              "bg-white/[0.10]",
               tone.activeText, // text-white
               "font-bold",
-              "shadow-[inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-1px_0_rgba(0,0,0,0.08)]",
+              "shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]",
             ].join(" ")
           : [
               "text-[#C4DAEE]",
@@ -310,13 +306,14 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, on
         "group-data-[collapsible=icon]:justify-center",
       ].join(" ")}
     >
-      {/* 2026-08-18 · 활성 아이콘 · 브랜드 accent + double glow */}
+      {/* 2026-08-18 v5 · 아이콘 · 항상 그룹 accent color (액센트 유지) */}
       <Icon
         size={18}
         weight={active ? "fill" : "duotone"}
         className={[
           "shrink-0 transition-all duration-200 ease-out",
-          active ? `${NAV_ACCENT[group.color].iconText} scale-110` : "text-[#C4DAEE]/80 group-hover:text-[#C4DAEE] group-hover:scale-[1.05]",
+          NAV_ACCENT[group.color].iconText,   // 항상 그룹 accent color
+          active ? "scale-110" : "opacity-80 group-hover:opacity-100 group-hover:scale-[1.05]",
         ].join(" ")}
         style={active ? { filter: `drop-shadow(0 0 6px ${NAV_ACCENT[group.color].hex}90) drop-shadow(0 0 14px ${NAV_ACCENT[group.color].hex}40)` } : undefined}
       />
