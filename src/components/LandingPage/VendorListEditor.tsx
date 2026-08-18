@@ -24,6 +24,7 @@ import { StatusPill } from "../common/StatusPill";
 import { fmtWonCompact } from "../../lib/format";
 // 2026-08-09 · 신규 공급사 등록 모달 (사용자 요청)
 import { NewVendorModal } from "../common/NewVendorModal";
+import { IconTile } from "../common/IconTile";
 
 interface VendorListEditorProps {
   // 기존 API 호환용 · 무시됨 (모달 방식으로 통일)
@@ -1741,9 +1742,9 @@ const PaymentRegisterModal: React.FC<{
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-line bg-emerald-50 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
-              <Wallet size={18} className="text-emerald-700" />
-            </div>
+            {/* 2026-08-18 · IconTile 확산 */}
+            <IconTile icon={<Wallet size={18} />} tone="emerald" size="lg" />
+
             <div className="min-w-0">
               <div className="text-[15px] font-bold text-zinc-800 truncate leading-tight">결제 등록</div>
               <div className="text-[11px] text-zinc-500 truncate">{supplierName}</div>
