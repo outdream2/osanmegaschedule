@@ -533,7 +533,8 @@ const InlineDetail: React.FC<{
       )}
       {/* 사진 원본 미리보기 모달 (닫기 버튼 · 배경 클릭 · × 버튼) */}
       {previewImg && (
-        <div className="fixed inset-0 z-[60] bg-black/85 flex items-center justify-center p-4" onClick={() => setPreviewImg(null)}>
+        // 2026-08-17 v2 · 이미지 뷰어 · 강조 backdrop
+        <div className="fixed inset-0 z-[60] backdrop-brand-strong flex items-center justify-center p-4" onClick={() => setPreviewImg(null)}>
           <button
             type="button"
             onClick={() => setPreviewImg(null)}
@@ -606,8 +607,9 @@ function ComposerModal({
   const toggleMention = (id: number) => setMentionIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-zinc-900/50 backdrop-blur-sm flex items-center justify-center" onClick={onClose}>
-      <div className="bg-white w-full sm:w-[560px] sm:rounded-xl sm:max-h-[86vh] max-h-[92vh] overflow-y-auto rounded-t-2xl shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
+    // 2026-08-17 v2 · Modal 통일
+    <div className="fixed inset-0 z-50 backdrop-brand flex items-center justify-center" onClick={onClose}>
+      <div className="bg-white w-full sm:w-[560px] sm:rounded-xl sm:max-h-[86vh] max-h-[92vh] overflow-y-auto rounded-t-2xl shadow-brand-modal flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="sticky top-0 bg-white/95 backdrop-blur border-b border-line px-4 py-3 flex items-center justify-between">
           <h2 className="text-base font-bold text-zinc-900">새 글 작성</h2>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-500"><XIcon size={18} /></button>
@@ -875,8 +877,9 @@ function DetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center" onClick={onClose}>
-      <div className="bg-white w-full sm:w-[640px] sm:rounded-xl sm:max-h-[92vh] max-h-[95vh] overflow-y-auto rounded-t-2xl shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
+    // 2026-08-17 v2 · Modal 통일
+    <div className="fixed inset-0 z-50 backdrop-brand flex items-center justify-center" onClick={onClose}>
+      <div className="bg-white w-full sm:w-[640px] sm:rounded-xl sm:max-h-[92vh] max-h-[95vh] overflow-y-auto rounded-t-2xl shadow-brand-modal flex flex-col" onClick={e => e.stopPropagation()}>
         {/* 헤더 */}
         <div className="sticky top-0 bg-white/95 backdrop-blur border-b border-line px-3 sm:px-4 py-3 flex items-center gap-2">
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-500"><ChevronLeft size={18} /></button>
@@ -1142,7 +1145,8 @@ function DetailModal({
 
         {/* 이미지 프리뷰 */}
         {previewImg && (
-          <div className="fixed inset-0 z-[60] bg-black/85 flex items-center justify-center p-4" onClick={() => setPreviewImg(null)}>
+          // 2026-08-17 v2 · 이미지 뷰어 · 강조 backdrop
+          <div className="fixed inset-0 z-[60] backdrop-brand-strong flex items-center justify-center p-4" onClick={() => setPreviewImg(null)}>
             <img src={previewImg} alt="" className="max-w-full max-h-full object-contain rounded-xl" onClick={e => e.stopPropagation()} />
             <button
               type="button"

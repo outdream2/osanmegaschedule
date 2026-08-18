@@ -594,12 +594,13 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
 
       {/* ====== MODAL: Reservation Info Form ====== */}
       {modalTime && (
+        // 2026-08-17 v2 · Modal 통일
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center backdrop-brand animate-in fade-in duration-200"
           onClick={closeModal}
         >
           <div
-            className="bg-white border-t sm:border border-line w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl shadow-2xl max-h-[92vh] flex flex-col"
+            className="bg-white border-t sm:border border-line w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl shadow-brand-modal max-h-[92vh] flex flex-col"
             onClick={e => e.stopPropagation()}
           >
             {/* Modal header */}

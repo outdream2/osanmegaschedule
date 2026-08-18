@@ -263,11 +263,12 @@ const SignatureModal: React.FC<{
   };
 
   return (
+    // 2026-08-17 v2 · Modal 통일
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/50 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center backdrop-brand p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl border border-line flex flex-col">
+      <div className="bg-white rounded-2xl shadow-brand-modal w-full max-w-2xl border border-line flex flex-col">
         {/* 헤더 */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-line">
           <div className="flex items-center gap-2.5">

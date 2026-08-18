@@ -1315,8 +1315,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
       {/* ── 데이터 업로드 통합 모달 (상품목록 · 재고리스트 서브탭) ── */}
       {uploadOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-2 sm:p-4" onClick={() => setUploadOpen(false)}>
-          <div className="bg-white border border-line rounded-2xl p-4 sm:p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+        // 2026-08-17 v2 · Modal 통일
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-brand p-2 sm:p-4" onClick={() => setUploadOpen(false)}>
+          <div className="bg-white border border-line rounded-2xl p-4 sm:p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-brand-modal" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
