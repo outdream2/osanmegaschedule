@@ -369,11 +369,18 @@ export const SideNav: React.FC<SideNavProps> = ({
         : teal}
     >
 
-      {/* ── 로고 영역 · 2026-08-17 v2 · aurora glow + top hairline + deep teal · 세련 ── */}
-      {/* aurora radial glow · 사이드바 상단 · brand identity signature (subtle) */}
+      {/* ── 로고 영역 · 2026-08-17 v3 · aurora + noise + hairline · 초고해상도 세련 ── */}
+      {/* aurora radial glow · 사이드바 상단 · brand identity signature */}
       <div className="absolute inset-x-0 top-0 h-40 pointer-events-none overflow-hidden">
-        <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-[340px] h-[220px] rounded-full opacity-[0.14] blur-3xl" style={{ background: "radial-gradient(closest-side, #5EA9E8, transparent)" }} />
+        <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-[340px] h-[220px] rounded-full opacity-[0.16] blur-3xl" style={{ background: "radial-gradient(closest-side, #5EA9E8, transparent)" }} />
+        <div className="absolute -bottom-20 -left-16 w-[280px] h-[240px] rounded-full opacity-[0.08] blur-3xl" style={{ background: "radial-gradient(closest-side, #6FE3C2, transparent)" }} />
       </div>
+      {/* 미세 noise 패턴 · 프리미엄 종이 질감 (Vercel/Linear signature) */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.025] mix-blend-overlay"
+        style={{ backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")` }}
+        aria-hidden
+      />
       {/* top hairline · inner light · glass 세련 */}
       <div className="absolute top-0 left-0 right-0 h-px pointer-events-none z-10" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.14) 50%, transparent)" }} />
 
