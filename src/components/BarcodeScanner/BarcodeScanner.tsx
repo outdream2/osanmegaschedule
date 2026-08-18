@@ -215,63 +215,139 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     return () => document.removeEventListener("keydown", h);
   }, [onClose]);
 
+  // 2026-08-18 · 카메라 권한 · 모바일에서 자동 시작 안 될 때 fallback 감지
+  //   · 3초 후 · srcObject 없거나 video paused → 권한/장치 오류로 판단
+  //   · 재시도 버튼 · getUserMedia 명시 호출 → 브라우저 권한 프롬프트 재발생
+  //   · iOS 특수 코드 경로는 건드리지 않음 (일반 감지만)
+  const [cameraError, setCameraError] = useState<null | "denied" | "notfound" | "timeout" | "other">(null);
+  const [retrying, setRetrying] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (cancelled) return;
+      const v = videoRef.current as HTMLVideoElement | null;
+      const stream = v?.srcObject as MediaStream | null | undefined;
+      if (!stream) {
+        // srcObject 아직 미할당 · 권한 프롬프트 대기 or 거부
+        setCameraError("timeout");
+      } else if (stream.getVideoTracks().length === 0) {
+        setCameraError("notfound");
+      }
+    }, 3000);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [videoRef]);
+
+  const retryCamera = useCallback(async () => {
+    setRetrying(true);
+    setCameraError(null);
+    try {
+      // 브라우저 권한 프롬프트 재발생 · getUserMedia 명시 호출
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: isDesktop ? true : { facingMode: "environment" }
+      });
+      // 즉시 stop · useZxing 이 다시 setup 하도록 scanKey bump
+      stream.getTracks().forEach(t => t.stop());
+      state.setScanKey(k => k + 1);
+      setCameraError(null);
+    } catch (err: any) {
+      const name = String(err?.name || "");
+      if (name === "NotAllowedError" || name === "SecurityError") {
+        setCameraError("denied");
+      } else if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+        setCameraError("notfound");
+      } else {
+        setCameraError("other");
+      }
+    } finally {
+      setRetrying(false);
+    }
+  }, [state.setScanKey]);
+
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+      // 2026-08-18 · UI 재설계 · 프리미엄 dark · frosted backdrop · 초고해상도 shadow
+      className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-6
+        bg-[rgba(3,7,18,0.72)] backdrop-blur-md"
       onClick={onClose}
     >
       <div
-        className="bg-gray-950 rounded-2xl overflow-hidden shadow-2xl w-full max-w-sm border border-gray-800"
+        className="relative w-full max-w-md rounded-3xl overflow-hidden
+          bg-[#0B0F17] border border-white/[0.08]
+          shadow-[0_20px_60px_-12px_rgba(0,0,0,0.55),0_8px_24px_-8px_rgba(0,0,0,0.40),inset_0_1px_0_rgba(255,255,255,0.06)]"
         onClick={(e) => e.stopPropagation()}
+        style={{ WebkitFontSmoothing: "antialiased", MozOsxFontSmoothing: "grayscale" }}
       >
-        {/* Header · 2026-08-05 · 제목 세로 표시 fix · whitespace-nowrap + 배지 flex-wrap */}
-        <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-800 gap-2">
-          <div className="flex items-center gap-2 text-white shrink-0">
-            <ScanLine size={15} className="text-emerald-400" />
-            <span className="text-sm font-bold whitespace-nowrap">{title}</span>
+        {/* 상단 액센트 stripe · brand identity · 프리미엄 톤 */}
+        <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-emerald-400/0 via-emerald-400/60 to-emerald-400/0 pointer-events-none" />
+
+        {/* Header · 2026 · frosted + tight typography */}
+        <div className="flex items-center justify-between px-4 py-3 gap-2
+          bg-[rgba(255,255,255,0.02)] border-b border-white/[0.06] backdrop-blur-sm">
+          <div className="flex items-center gap-2 text-white shrink-0 min-w-0">
+            <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg
+              bg-emerald-500/[0.14] border border-emerald-400/25
+              shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+              <ScanLine size={14} className="text-emerald-300" />
+            </span>
+            <span className="text-[14px] font-bold whitespace-nowrap tracking-tight truncate">{title}</span>
           </div>
-          <div className="flex items-center gap-2 flex-wrap justify-end min-w-0">
-            {/* Engine indicators */}
-            <div className="flex items-center gap-1.5">
-              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-900/60 border border-emerald-700 text-emerald-400 text-[10px] font-bold">
-                <Zap size={9} />ZXing
-              </div>
+          <div className="flex items-center gap-1.5 flex-wrap justify-end min-w-0">
+            {/* Engine indicators · 세련된 pill · 미묘한 border-glow */}
+            <div className="flex items-center gap-1">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md
+                bg-emerald-500/[0.14] border border-emerald-400/25 text-emerald-300 text-[10px] font-bold tracking-tight">
+                <span className="w-1 h-1 rounded-full bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.6)]" />ZX
+              </span>
               {state.zbarReady && (
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-900/60 border border-blue-700 text-blue-400 text-[10px] font-bold">
-                  <Zap size={9} />ZBar
-                </div>
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md
+                  bg-sky-500/[0.14] border border-sky-400/25 text-sky-300 text-[10px] font-bold tracking-tight">
+                  <span className="w-1 h-1 rounded-full bg-sky-400" />ZB
+                </span>
               )}
               {state.quaggaReady && (
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-900/60 border border-amber-700 text-amber-400 text-[10px] font-bold">
-                  <Zap size={9} />Q2
-                </div>
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md
+                  bg-amber-500/[0.14] border border-amber-400/25 text-amber-300 text-[10px] font-bold tracking-tight">
+                  <span className="w-1 h-1 rounded-full bg-amber-400" />Q
+                </span>
               )}
               {state.ocrReady && (
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-900/60 border border-purple-700 text-purple-400 text-[10px] font-bold">
-                  <Zap size={9} />OCR
-                </div>
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md
+                  bg-violet-500/[0.14] border border-violet-400/25 text-violet-300 text-[10px] font-bold tracking-tight">
+                  <span className="w-1 h-1 rounded-full bg-violet-400" />OCR
+                </span>
               )}
             </div>
             <button
               onClick={() => state.imageInputRef.current?.click()}
               title="갤러리에서 이미지 선택"
-              className="p-1 rounded-md text-gray-500 hover:text-white transition cursor-pointer"
+              className="w-7 h-7 flex items-center justify-center rounded-lg
+                text-white/50 hover:text-white hover:bg-white/[0.08] active:bg-white/[0.12]
+                transition-colors cursor-pointer"
+              aria-label="이미지 열기"
             >
-              <ImageIcon size={16} />
+              <ImageIcon size={14} />
             </button>
             <button
               onClick={() => state.setTorchOn((v) => !v)}
               title={state.torchOn ? "손전등 끄기" : "손전등 켜기"}
-              className={`p-1 rounded-md transition cursor-pointer ${
+              className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
                 state.torchOn
-                  ? "text-yellow-400 bg-yellow-400/10 hover:text-yellow-300"
-                  : "text-gray-500 hover:text-white"
+                  ? "text-amber-300 bg-amber-400/[0.15] hover:text-amber-200 hover:bg-amber-400/[0.20] shadow-[0_0_10px_rgba(251,191,36,0.20)]"
+                  : "text-white/50 hover:text-white hover:bg-white/[0.08]"
               }`}
+              aria-label="손전등"
             >
-              <Zap size={16} />
+              <Zap size={14} />
             </button>
-            <button onClick={onClose} className="text-gray-500 hover:text-white transition cursor-pointer">
-              <X size={18} />
+            <button
+              onClick={onClose}
+              className="w-7 h-7 flex items-center justify-center rounded-lg
+                text-white/50 hover:text-white hover:bg-white/[0.08] active:bg-white/[0.12]
+                transition-colors cursor-pointer"
+              aria-label="닫기"
+            >
+              <X size={15} />
             </button>
           </div>
         </div>
@@ -374,6 +450,51 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
                   {z}×
                 </button>
               ))}
+            </div>
+          )}
+
+          {/* 2026-08-18 · 카메라 권한/오류 오버레이 · 모바일 fallback */}
+          {cameraError && !state.frozenFrame && (
+            <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center gap-3 px-5 py-6 z-20">
+              <div className="w-12 h-12 rounded-full bg-amber-500/[0.15] border border-amber-400/40 flex items-center justify-center">
+                <Zap size={22} className="text-amber-300" />
+              </div>
+              <div className="text-center max-w-[260px]">
+                <p className="text-white text-[14px] font-bold tracking-tight">
+                  {cameraError === "denied"   && "카메라 접근이 거부되었습니다"}
+                  {cameraError === "notfound" && "카메라를 찾을 수 없습니다"}
+                  {cameraError === "timeout"  && "카메라 응답이 없습니다"}
+                  {cameraError === "other"    && "카메라 오류가 발생했습니다"}
+                </p>
+                <p className="text-white/60 text-[12px] mt-1.5 leading-relaxed">
+                  {cameraError === "denied"
+                    ? "브라우저 주소창의 자물쇠 → 카메라 · 허용으로 변경 후 다시 시도"
+                    : "다시 시도 버튼을 눌러 권한 요청을 재시도해보세요"}
+                </p>
+              </div>
+              <button
+                onClick={retryCamera}
+                disabled={retrying}
+                className="mt-1 px-5 h-11 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700
+                  text-white text-[14px] font-bold shadow-[0_2px_10px_-2px_rgba(52,211,153,0.5),inset_0_1px_0_rgba(255,255,255,0.15)]
+                  disabled:opacity-60 disabled:cursor-not-allowed transition-colors cursor-pointer
+                  inline-flex items-center gap-2"
+              >
+                {retrying ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    권한 요청 중...
+                  </>
+                ) : (
+                  <>다시 허용 요청</>
+                )}
+              </button>
+              <button
+                onClick={onClose}
+                className="text-white/40 hover:text-white/70 text-[12px] font-semibold underline underline-offset-2 transition-colors cursor-pointer"
+              >
+                닫기
+              </button>
             </div>
           )}
 
