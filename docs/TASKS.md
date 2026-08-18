@@ -17,16 +17,12 @@
 - 🔲 접근성 audit (aria-* · keyboard nav)
 - 🔲 목업 HTML 파일 · 최신 트렌드로 재생성 (문서 · 위험 낮음)
 
-### #151 · IconTile 공용 컴포넌트 · 확산 진행중
-- ✅ 컴포넌트 v2 · 11 tone · 4 size · 3 shape (rounded/rounded-xl/full) · README + 8 unit tests
-- ✅ 24곳 확산
-  - md: BrandingSettings 4 · Contract 3 · Display/ProductArrival/Scan 3 · PaymentInfoTab sm 2
-  - sm: ContractWriter 4 · ScanPage 1
-  - lg: VendorListEditor 1 · Vendor Modal 2 · LandingPage orange 1
-  - xl + rounded-xl: OcrPage 2
-  - lg + rounded-xl: RequestsPage orange 1
-- 🔲 잔여: ring 변형 (PaymentInfoTab 1246 · VendorInfoHeader 159) · bg-50 soft tone · 이모지 컨테이너 등
-- 위험도: 낮음 (className 만 · 회귀 없음)
+### #151 · 프레임워크 프리미티브 확산 (진행중)
+- ✅ **IconTile v3** · 11 tone · 5 size (sm/md/lg/xl/2xl) · 4 shape (rounded/rounded-xl/rounded-2xl/full) · 9 tests · 27+곳 확산
+- ✅ **AccentBar** · 5 size + brand-soft + h={n} 커스텀 · 13 tests · 77곳 100% 확산
+- ✅ **StepperInput** · 3 size · brand-deep focus glow · 13 tests · Scan/Arrival 2곳 통합
+- ✅ **NotificationToast** · 5 tone · dark frosted · 7 tests · Scan/Arrival 2곳 통합
+- 🔲 잔여 후보: Loader2 wrapper (55+ 반복) · 카드 헤더 SectionHeader · 대형 Modal 30+
 
 ### 배포 확인 대기 (2026-08-18 · `013920a`)
 - 🔲 헤더 hidden 필터 · admin 도 정상 동작 (다른 태블릿/모바일 확인)
