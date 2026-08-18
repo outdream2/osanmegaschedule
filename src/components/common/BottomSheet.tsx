@@ -17,6 +17,7 @@
 
 import React, { useEffect, useCallback, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { AccentBar } from "./AccentBar";
 
 export interface BottomSheetProps {
   /** 열림 상태 · 외부 제어 */
@@ -114,7 +115,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         {/* 헤더 · 제목 + 우측 슬롯 + 닫기 */}
         {(title || right) && (
           <div className="flex items-center gap-2.5 px-5 py-3 border-b border-line shrink-0">
-            <span className="w-[3px] h-[18px] rounded-full bg-brand-deep" />
+            <AccentBar size="lg" />
             {title && (
               <div className="flex-1 min-w-0 text-[16px] font-bold text-ink tracking-tight truncate">
                 {title}

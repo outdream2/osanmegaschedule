@@ -19,6 +19,7 @@
 //   />
 
 import type { ReactNode } from "react";
+import { AccentBar } from "./AccentBar";
 
 export type ChipTone = "sky" | "emerald" | "amber" | "rose" | "violet" | "teal" | "indigo" | "zinc" | "brand" | "pine";
 
@@ -89,9 +90,7 @@ export function CategoryChips<V extends string | number = string>({
     <div className={`inline-flex items-center gap-2 flex-wrap ${className}`}>
       {label != null && (
         <span className="flex items-center gap-1.5 shrink-0">
-          {showAccentBar && (
-            <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
-          )}
+          {showAccentBar && <AccentBar />}
           <span className="text-[15px] font-bold text-ink tracking-tight">{label}</span>
         </span>
       )}

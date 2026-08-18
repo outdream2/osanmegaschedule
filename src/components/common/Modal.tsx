@@ -29,6 +29,7 @@
 
 import React, { useEffect } from "react";
 import { X } from "lucide-react";
+import { AccentBar } from "./AccentBar";
 
 type ModalSize = "sm" | "md" | "lg" | "xl" | "full";
 
@@ -132,9 +133,7 @@ export const Modal: React.FC<ModalProps> = ({
       <div className={`modal-card ${sizeCls} ${className}`}>
         {hasHeader && (
           <div className={headerCls}>
-            {titleAccent && (
-              <span className="w-[3px] h-[18px] rounded-full bg-brand-deep shrink-0" />
-            )}
+            {titleAccent && <AccentBar size="lg" className="shrink-0" />}
             {icon != null && (
               <span className="text-brand-deep shrink-0 inline-flex">{icon}</span>
             )}

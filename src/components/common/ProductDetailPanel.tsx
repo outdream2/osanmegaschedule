@@ -12,6 +12,7 @@ import { StatusPill } from "./StatusPill";
 import { ProductInfoCard, PurchaseHistorySection } from "../ScanPage/ProductInfoCard";
 import { type ProductInfo } from "../../lib/productsCache";
 import { SeasonButtons } from "./SeasonButtons";
+import { AccentBar } from "./AccentBar";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import {
   MultiLineChart,
@@ -110,7 +111,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
           >
             {/* 1행 · 아이콘 · 제목 · 화살표 · 2026-08-17 · 딥네이비 통일 */}
             <div className="flex items-center gap-2">
-              <span className="w-[3px] h-[16px] rounded-full bg-brand-deep shrink-0" />
+              <AccentBar className="shrink-0" />
               <TrendingUp size={17} className="text-brand-deep shrink-0" />
               <span className="text-[16px] font-bold text-ink tracking-tight">기간별 상품흐름</span>
               {collapsed
@@ -146,7 +147,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
           {/* 조회기간 행 · 2026-08-17 · 딥네이비 통일 · segmented pill */}
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <span className="flex items-center gap-1.5 shrink-0">
-              <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
+              <AccentBar size="sm" />
               <span className="text-[14px] font-bold text-ink tracking-tight">조회기간</span>
             </span>
             <div className="inline-flex shrink-0 bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
@@ -172,7 +173,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
           {/* 단위 행 · 2026-08-17 · 폰트 +2 */}
           <div className="flex items-center gap-2 mb-2.5 flex-wrap">
             <span className="flex items-center gap-1.5 shrink-0">
-              <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
+              <AccentBar size="sm" />
               <span className="text-[14px] font-bold text-ink tracking-tight">단위</span>
             </span>
             <div className="inline-flex shrink-0 bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
@@ -289,7 +290,7 @@ export const ProductDetailMobileHeader: React.FC<{
       >
         <X size={18} strokeWidth={2.4} />
       </button>
-      <span className="w-[3px] h-[24px] rounded-full bg-brand-deep shrink-0" />
+      <AccentBar size="xl" className="shrink-0" />
       <div className="flex-1 min-w-0">
         <div className="text-[16px] font-bold text-ink break-keep whitespace-normal leading-tight tracking-tight">{product.name}</div>
         <div className="text-[13px] tabular-nums text-ink-soft break-words whitespace-normal leading-tight mt-0.5">

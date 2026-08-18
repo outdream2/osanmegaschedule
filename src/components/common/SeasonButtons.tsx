@@ -7,6 +7,7 @@
 //   재고관리 스타일 (rounded-lg · zinc-100 bg · sky-700 active)
 import React from "react";
 import { useSeasonRanges, SEASON_LABEL, SEASON_EMOJI, formatMonths, type SeasonKey } from "../../hooks/useSeasonRanges";
+import { AccentBar } from "./AccentBar";
 
 interface SeasonButtonsProps {
   value: SeasonKey | null;
@@ -39,7 +40,7 @@ export const SeasonButtons: React.FC<SeasonButtonsProps> = ({
     <div className={`inline-flex items-center gap-2 flex-wrap ${className}`}>
       {!hideLabel && label && (
         <span className="flex items-center gap-2 shrink-0">
-          <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
+          <AccentBar size="sm" />
           <span className={`text-ink font-bold tracking-tight ${labelCls}`}>{label}</span>
         </span>
       )}

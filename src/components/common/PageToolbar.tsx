@@ -14,6 +14,7 @@
 //   />
 import type { ReactNode } from "react";
 import { StatusPill } from "./StatusPill";
+import { AccentBar } from "./AccentBar";
 
 export interface PageToolbarSearch {
   value: string;
@@ -55,7 +56,7 @@ export function PageToolbar({
     >
       {/* 좌측 · accent bar + icon + title + count + selected */}
       <div className="flex items-center gap-2.5 shrink-0">
-        <span className="w-[3px] h-[18px] rounded-full bg-brand-deep" />
+        <AccentBar size="lg" />
         {icon && <span className="text-brand-deep shrink-0 inline-flex">{icon}</span>}
         <span className="text-[18px] font-bold text-ink tracking-tight">{title}</span>
         {count !== undefined && (

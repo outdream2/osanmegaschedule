@@ -30,6 +30,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { AccentBar } from "./AccentBar";
 
 const STORAGE_PREFIX = "megatown_"; // 앱 관례 (useAuth · settings 와 동일)
 
@@ -218,7 +219,7 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
       >
         {/* 모달 헤더 · 2026-08-17 · 최신 트렌드 · accent bar + 폰트 +2 */}
         <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-line bg-zinc-50/60 shrink-0">
-          <span className="w-[3px] h-[16px] rounded-full bg-brand-deep shrink-0" />
+          <AccentBar className="shrink-0" />
           {mobileModalTitle != null && (
             <div className="flex-1 min-w-0 text-[16px] font-bold text-ink break-words whitespace-normal leading-tight tracking-tight">
               {mobileModalTitle}
