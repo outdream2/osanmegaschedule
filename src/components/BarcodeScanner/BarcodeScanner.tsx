@@ -361,8 +361,8 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 
           {/* 2026-08-18 · 카메라 켜지지 않을 때 fallback UI · 명시 재시도 · useZxing 성공 시 자동 숨김 */}
           {showRetry && !cameraReady && !state.frozenFrame && (
-            <div className="absolute inset-0 bg-black/92 flex flex-col items-center justify-center gap-3 px-5 py-6 z-20">
-              <div className="w-12 h-12 rounded-full bg-amber-500/[0.15] border border-amber-400/40 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/92 flex flex-col items-center justify-center gap-3 px-5 py-6 z-20 overflow-y-auto">
+              <div className="w-12 h-12 rounded-full bg-amber-500/[0.15] border border-amber-400/40 flex items-center justify-center shrink-0">
                 <Zap size={22} className="text-amber-300" />
               </div>
               <div className="text-center max-w-[280px]">
@@ -370,7 +370,9 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
                 <p className="text-white/60 text-[12px] mt-1.5 leading-relaxed">
                   {cameraError?.name === "NotAllowedError" || cameraError?.name === "SecurityError"
                     ? "주소창 자물쇠 → 카메라 → 허용 후 다시 시도"
-                    : "다시 시도 버튼을 눌러주세요"}
+                    : cameraError?.msg?.includes("MediaDevicesUnavailable") || cameraError?.msg?.includes("secure context")
+                      ? "이 브라우저에서는 카메라 접근이 불가합니다"
+                      : "다시 시도 버튼을 눌러주세요"}
                 </p>
                 {cameraError && (
                   <p className="text-white/40 text-[10px] mt-2 font-mono break-all">{cameraError.name}: {cameraError.msg}</p>
@@ -386,6 +388,18 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
                 onClick={() => state.imageInputRef.current?.click()}
                 className="text-white/50 hover:text-white/80 text-[12px] font-semibold underline underline-offset-2 transition-colors cursor-pointer"
               >또는 · 이미지 파일로 스캔</button>
+              {/* 2026-08-19 · 디버그 정보 (원인 파악용) · 사용자 화면 캡처 요청 시 유용 */}
+              <details className="text-white/40 text-[10px] font-mono max-w-[280px] w-full text-left">
+                <summary className="cursor-pointer text-white/50 hover:text-white/70 text-center pb-1">진단 정보 (탭)</summary>
+                <div className="mt-2 space-y-0.5 leading-relaxed break-all bg-white/[0.03] rounded-md px-2 py-1.5 border border-white/[0.08]">
+                  <div>URL: {typeof window !== "undefined" ? window.location.protocol + "//" + window.location.host : "?"}</div>
+                  <div>secure: {typeof window !== "undefined" && "isSecureContext" in window ? String((window as any).isSecureContext) : "?"}</div>
+                  <div>mediaDevices: {typeof navigator !== "undefined" && (navigator as any).mediaDevices ? "yes" : "NO"}</div>
+                  <div>getUserMedia: {typeof navigator !== "undefined" && (navigator as any).mediaDevices?.getUserMedia ? "yes" : "NO"}</div>
+                  <div>legacy gUM: {typeof navigator !== "undefined" && ((navigator as any).getUserMedia || (navigator as any).webkitGetUserMedia) ? "yes" : "NO"}</div>
+                  <div>UA: {typeof navigator !== "undefined" ? navigator.userAgent.substring(0, 80) : "?"}</div>
+                </div>
+              </details>
             </div>
           )}
 

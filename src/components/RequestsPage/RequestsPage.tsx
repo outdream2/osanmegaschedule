@@ -636,9 +636,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             />
 
             {displayLoading && displayReqs.length > 0 && (
-              <div className="flex items-center justify-center gap-1.5 text-[14px] text-blue-600 font-bold py-1.5 mb-1 bg-blue-50 border border-blue-200 rounded-md sticky top-0 z-10">
-                <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
-              </div>
+              <div className="flex items-center justify-center py-1.5 mb-1 bg-sky-50 border border-sky-200 rounded-md sticky top-0 z-10"><Spinner tone="sky" size={11} label="새로 불러오는 중..." labelSize={14} /></div>
             )}
             {displayLoading && displayReqs.length === 0 ? (
               <div className="flex items-center justify-center py-8"><Spinner tone="zinc" size={14} label="로딩 중..." labelSize={12} /></div>
@@ -1190,9 +1188,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             </div>
 
             {lunchLoading && lunchRequests.length > 0 && (
-              <div className="flex items-center justify-center gap-1.5 text-[14px] text-zinc-600 font-bold py-1.5 mb-1 bg-zinc-100 border border-line rounded-md sticky top-0 z-10">
-                <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
-              </div>
+              <div className="flex items-center justify-center py-1.5 mb-1 bg-zinc-100 border border-line rounded-md sticky top-0 z-10"><Spinner tone="zinc" size={11} label="새로 불러오는 중..." labelSize={14} /></div>
             )}
             {lunchLoading && lunchRequests.length === 0 ? (
               <div className="flex items-center justify-center py-8"><Spinner tone="zinc" size={14} label="로딩 중..." labelSize={12} /></div>
