@@ -1930,7 +1930,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                                     if (e.key === "Escape") setEditingWork(null);
                                   }}
                                   placeholder="09:00-18:00"
-                                  className="text-[12px] font-mono border border-indigo-300 rounded px-1 py-0 w-[70px] bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                                  className="text-[12px] font-mono border border-line rounded px-1 py-0 w-[70px] bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors"
                                 />
                                 <button className="text-[11px] text-indigo-500 hover:text-indigo-700 cursor-pointer font-bold"
                                   onClick={async e => { e.stopPropagation(); await onUpdateSchedule?.({ employeeId: emp.id, date, type: schedule.type, workingHours: editingWork.value, actualHours: schedule.actualHours || "", memo: schedule.memo || "" }); setEditingWork(null); }}>✓</button>

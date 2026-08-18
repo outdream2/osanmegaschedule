@@ -161,7 +161,7 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
                     value={g.employeeId ?? ""}
                     onClick={(e) => e.stopPropagation()}
                     onChange={(e) => handleEmployeeChange(g.id, e.target.value)}
-                    className="flex-1 text-[10px] font-semibold bg-white border border-line rounded px-1 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400 cursor-pointer"
+                    className="flex-1 text-[10px] font-semibold bg-white border border-line rounded px-1 py-1 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep cursor-pointer transition-colors"
                   >
                     <option value="">담당자 선택...</option>
                     {employees.map((e) => (
