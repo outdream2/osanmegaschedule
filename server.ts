@@ -147,6 +147,11 @@ async function startServer() {
   app.use(settingsRouter);        // GET /api/permissions·settings (브랜드·연락처) · POST 는 내부 authorize(9)
   app.use(systemConfigRouter);    // GET /api/system-config · 내부 authorize(9)
   app.use(referenceValuesRouter); // GET /api/reference-values · 포지션/직급/근무지 (로그인 전에도 사용)
+  // 2026-08-18 · #131 fix · 입고알림 목록 · 랜딩 로그인 화면에서도 표시 (비로그인 유저 대상)
+  //   · GET /api/stock-arrivals · 알림 목록 (민감 데이터 아님 · 공개 안전)
+  //   · GET /api/vapid-public-key · 웹푸시 공개키
+  //   · POST 는 내부 level >= 3 자체 검증 · 인증 없이도 안전
+  app.use(stockArrivalsRouter);
 
   // ── 2026-08-16 · #112-G · requireAuth 재활성화 · 아래 모든 /api/* 는 로그인 필수 ──
   //   · SPA 정적 자원 (/, /assets/*, /sw.js) · 미들웨어 내부 skip (path !startsWith("/api/"))
@@ -188,7 +193,7 @@ async function startServer() {
   // 재고·상품
   app.use(stockManageRouter);
   app.use(lossTrackingRouter);       // T-LOSS-HISTORY · 손실추적 이력
-  app.use(stockArrivalsRouter);
+  // 2026-08-18 · stockArrivalsRouter · public 섹션으로 이동 (line 155)
   app.use(productArrivalsRouter);
   app.use(returnRequestsRouter);
   app.use(zoneLabelsRouter);

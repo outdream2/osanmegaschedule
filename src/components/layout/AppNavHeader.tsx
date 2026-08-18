@@ -144,28 +144,35 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
 
   // 2026-08-10 · #22 · 거래처 로그인 (role='vendor') · [홈] 만 노출 · 스케줄·이슈·요청·기타 숨김
   const isVendor = authSession?.role === "vendor";
-  // 2026-08-16 · 페이지 hidden · 공통헤더에서도 반영 (lv 9 관리자는 예외 · 설정 접근용)
+  // 2026-08-16 · 페이지 hidden · 공통헤더에서도 반영
+  // 2026-08-18 · #131 fix · admin(lv9) 도 hidden 적용 (sideNavGroups.canAccessItem 과 동일 로직)
+  //   · admin 예외 · ADMIN_ESSENTIAL (permissions/business-manage/account) 만 · 나머지 다 filter
+  //   · 이전 버그: userLevel < 9 조건으로 · admin 은 hidden 필터 건너뜀 → 헤더에 여전히 표시 → 클릭 시 페이지 잠깐 뜸 → 리다이렉트 (flicker)
   const { perms } = usePagePermissions();
+  const ADMIN_ESSENTIAL_KEYS = React.useMemo(() => new Set<string>(["permissions", "business-manage", "account"]), []);
   const visibleTabs = useMemo(() => TABS.filter((t) => {
     if (t.key === "landing") return true;
     if (!authSession) return false;
     if (isVendor) return false;  // 거래처 로그인 시 홈 외 모든 탭 숨김
     if (t.managerOnly) return isPrivileged;
     if (t.pharmacistOnly) return isPharmacist;
-    // 2026-08-16 · 그룹 내 · perms 기반 hidden 필터 · 모든 item hidden 이면 top tab 숨김
-    if (userLevel < 9 && perms) {
+    // 2026-08-18 · admin 포함 · hidden 필터 · admin 예외는 ADMIN_ESSENTIAL 만
+    if (perms) {
       const group = SIDE_NAV_GROUPS.find(g => (g.topTab?.key ?? g.items[0]?.key) === t.key);
       if (group) {
         const allHidden = group.items.length > 0 && group.items.every(it => {
           const compositeKey = it.subTab ? `${it.key}:${it.subTab}` : it.key;
           const perm = (perms as any)[compositeKey] ?? (perms as any)[it.key];
-          return perm?.hidden === true;
+          if (perm?.hidden !== true) return false;
+          // admin 예외: essential 페이지는 admin 에게 계속 노출 (lockout 방지)
+          if (userLevel >= 9 && ADMIN_ESSENTIAL_KEYS.has(it.key)) return false;
+          return true;
         });
         if (allHidden) return false;
       }
     }
     return true;
-  }), [authSession, isPrivileged, isPharmacist, isVendor, perms, userLevel]);
+  }), [authSession, isPrivileged, isPharmacist, isVendor, perms, userLevel, ADMIN_ESSENTIAL_KEYS]);
 
   // 경영관리 하위 페이지 활성 여부 (연차승인·점심불참·권한관리)
   const isBizPage = BUSINESS_PAGES.has(activePage);
