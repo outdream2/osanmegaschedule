@@ -150,6 +150,27 @@ iOS/Material 2026 · frosted backdrop + slide-up
 
 ---
 
+<a name="icontile"></a>
+## IconTile
+
+아이콘 컨테이너 tile · 카드/헤더의 아이콘 표시용 · 10 tone · 3 size
+
+```tsx
+import { IconTile } from "@/components/common/IconTile";
+
+<IconTile icon={<Package size={14} />} tone="brand" size="md" />
+<IconTile icon={<Bell size={12} />} tone="amber" size="sm" />
+<IconTile icon={<Users size={16} />} tone="emerald" size="lg" shape="full" />
+```
+
+**Tone**: brand · sky · emerald · amber · rose · violet · teal · indigo · zinc · pine
+**Size**: `sm`(24) · `md`(28 · 표준) · `lg`(36)
+**Shape**: `rounded`(기본) · `full`
+
+**대체 대상**: 인라인 `<div className="w-7 h-7 rounded-lg bg-{color}-100 flex items-center justify-center">` 반복 패턴 (20+ 곳)
+
+---
+
 <a name="iconbutton"></a>
 ## IconButton
 
