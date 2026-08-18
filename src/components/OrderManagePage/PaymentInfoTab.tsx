@@ -33,6 +33,7 @@ import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
 import { PeriodSelector, PERIOD_DAYS_PRESET, PERIOD_MONTHS_PRESET } from "../common/PeriodSelector";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
+import { IconTile } from "../common/IconTile";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { api, ApiError } from "../../lib/apiClient";
@@ -1516,9 +1517,9 @@ export const PaymentInfoTab: React.FC = () => {
               {/* ── 최근 결제 내역 ───────────────────────────── */}
               <div className="bg-white rounded-2xl border border-line shadow-sm p-4 flex flex-col gap-2">
                 <div className="flex items-center gap-2 pb-1 border-b border-zinc-100">
-                  <div className="w-6 h-6 rounded-lg bg-sky-100 flex items-center justify-center">
-                    <ReceiptText size={13} className="text-sky-700" strokeWidth={2.5} />
-                  </div>
+                  {/* 2026-08-18 · IconTile 확산 */}
+                  <IconTile icon={<ReceiptText size={13} strokeWidth={2.5} />} tone="sky" size="sm" />
+
                   <div className="text-[15px] font-bold text-zinc-800">최근 결제 내역</div>
                   <span className="ml-auto text-[15px] text-zinc-400 tabular-nums">
                     {recentLoading ? "로딩..." : `${recentPayments.length}건 (최근)`}
@@ -1618,9 +1619,9 @@ export const PaymentInfoTab: React.FC = () => {
                     onClick={() => setShowProductGroup(v => !v)}
                     className="w-full flex items-center gap-2 p-4 pb-2 border-b border-zinc-100 hover:bg-zinc-50/50 transition cursor-pointer"
                   >
-                    <div className="w-6 h-6 rounded-lg bg-emerald-100 flex items-center justify-center">
-                      <Layers size={13} className="text-emerald-700" strokeWidth={2.5} />
-                    </div>
+                    {/* 2026-08-18 · IconTile 확산 */}
+                    <IconTile icon={<Layers size={13} strokeWidth={2.5} />} tone="emerald" size="sm" />
+
                     <div className="text-[15px] font-bold text-zinc-800">상품별 매입 요약</div>
                     <span className="text-[15px] font-semibold text-zinc-400 tabular-nums">
                       · {productSummary.length}개 상품 · 최근 1년
