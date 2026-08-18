@@ -42,6 +42,7 @@ import { ProductSearchInput } from "../common/ProductSearchInput";
 import { IconTile } from "../common/IconTile";
 // ── 분리된 Row 컴포넌트 ──────────────────────────────────────
 import { StockRowDesktop } from "./StockRowDesktop";
+import { StockRowCard } from "./StockRowCard";
 import type { StockRow } from "./stockRowTypes";
 import { calcRowTotal, calcSlotTotal, calcTotalAdded } from "./stockRowTypes";
 import { useToast } from "../../hooks/useToast";
@@ -875,91 +876,40 @@ export const ScanPage: React.FC<ScanPageProps> = ({
 
             {rows.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-3 py-16 sm:py-24 select-none">
-                <div className="w-16 h-16 rounded-xl bg-zinc-100 flex items-center justify-center">
+                <div className="w-16 h-16 rounded-2xl bg-zinc-100 flex items-center justify-center
+                  shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(10,46,74,0.04)]">
                   <Package size={28} className="text-zinc-300" />
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-bold text-zinc-400">스캔한 상품이 여기에 표시됩니다</p>
-                  <p className="text-xs text-zinc-300 mt-1">좌측 바코드 스캔 후 자동 등록</p>
+                  <p className="text-[15px] font-bold text-ink-soft">스캔한 상품이 여기에 표시됩니다</p>
+                  <p className="text-[13px] text-zinc-400 mt-1">좌측 바코드 스캔 후 자동 등록</p>
                 </div>
               </div>
+            ) : filteredRows.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center gap-3 py-16 select-none">
+                <p className="text-[14px] font-semibold text-ink-soft">필터 결과 없음</p>
+                <button
+                  type="button"
+                  onClick={() => setScanFilter("all")}
+                  className="text-[13px] font-semibold text-brand-deep hover:underline cursor-pointer"
+                >전체 보기</button>
+              </div>
             ) : (
-              <div className="flex-1 overflow-auto max-h-[56vh] lg:max-h-[62vh]">
-                <table className="w-full border-collapse text-[14px] sm:text-[15px]">
-                  <thead className="sticky top-0 z-10">
-                    <tr className="bg-zinc-50/95 backdrop-blur-sm border-b border-line/60">
-                      {/* 2026-08-10 · 사용자 요청 · 시각 컬럼 제거 */}
-                      {/* 상품명 */}
-                      <th
-                        className="text-left px-2 py-2.5 font-bold text-zinc-400 min-w-[140px]
-                          cursor-pointer select-none hover:text-zinc-600 hover:bg-zinc-100/60 transition-colors"
-                        onClick={() => handleSort("name")}
-                      >
-                        상품명 <SortIcon active={sortKey === "name"} dir={sortDir} />
-                      </th>
-                      {/* 2026-08-10 · 구역 (real_map) 컬럼 제거 · 사용자 요청 */}
-                      {/* 창고1 · 데스크탑만 · lg 이상 개별 표시 */}
-                      <th className="hidden lg:table-cell text-center px-1.5 py-2.5 w-[80px] font-bold text-zinc-400 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1">
-                          <Warehouse size={11} className="text-orange-400" /> 창고1
-                        </span>
-                      </th>
-                      {/* 창고2 */}
-                      <th className="hidden lg:table-cell text-center px-1.5 py-2.5 w-[80px] font-bold text-zinc-400 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1">
-                          <Warehouse size={11} className="text-amber-400" /> 창고2
-                        </span>
-                      </th>
-                      {/* 매장1 */}
-                      <th className="hidden lg:table-cell text-center px-1.5 py-2.5 w-[84px] font-bold text-zinc-400 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1">
-                          <Store size={11} className="text-emerald-500" /> 매장1
-                        </span>
-                      </th>
-                      {/* 매장2 */}
-                      <th className="hidden lg:table-cell text-center px-1.5 py-2.5 w-[84px] font-bold text-zinc-400 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1">
-                          <Store size={11} className="text-sky-500" /> 매장2
-                        </span>
-                      </th>
-                      {/* 매장3 */}
-                      <th className="hidden lg:table-cell text-center px-1.5 py-2.5 w-[84px] font-bold text-zinc-400 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1">
-                          <Store size={11} className="text-violet-500" /> 매장3
-                        </span>
-                      </th>
-                      {/* 모바일·태블릿 통합 재고 헤더 · lg 미만 (2026-08-05 · 사용자 요청 반응형 wrap) */}
-                      <th className="lg:hidden text-center px-2 py-2.5 font-bold text-zinc-400 whitespace-nowrap min-w-[240px]">
-                        <span className="inline-flex items-center gap-1">
-                          <Warehouse size={11} className="text-amber-500" /> 재고
-                          <span className="text-[14px] text-zinc-300 font-normal">(창고1·2 / 매장1·2·3)</span>
-                        </span>
-                      </th>
-                      {/* 합계 */}
-                      <th className="text-center px-2 py-2.5 w-[54px] font-bold text-zinc-400 whitespace-nowrap">
-                        합계
-                      </th>
-                      {/* 삭제 */}
-                      <th className="px-2 py-2.5 w-9" />
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {filteredRows.map((row, idx) => (
-                      <StockRowDesktop
-                        key={row.key}
-                        row={row}
-                        idx={idx}
-                        isRecent={row.key === lastAddedKey}
-                        requestingKey={requestingKey}
-                        onPatch={patchRow}
-                        onRemove={removeRow}
-                        onHistory={openHistory}
-                        onRequestDisplay={requestDisplay}
-                      />
-                    ))}
-                  </tbody>
-                </table>
+              // 2026-08-18 · #95 재설계 · 카드형 리스트 · 모바일/PC 통일
+              <div className="flex-1 overflow-auto max-h-[56vh] lg:max-h-[62vh]
+                px-3 sm:px-4 py-3 flex flex-col gap-2 bg-zinc-50/30">
+                {filteredRows.map((row) => (
+                  <StockRowCard
+                    key={row.key}
+                    row={row}
+                    isRecent={row.key === lastAddedKey}
+                    requestingKey={requestingKey}
+                    onPatch={patchRow}
+                    onRemove={removeRow}
+                    onHistory={openHistory}
+                    onRequestDisplay={requestDisplay}
+                  />
+                ))}
               </div>
             )}
           </div>
