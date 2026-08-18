@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useZxing } from "react-zxing";
-import { X, ScanLine, Zap, ImageIcon } from "lucide-react";
+import { X, ScanLine, Zap, ImageIcon, Camera } from "lucide-react";
 
 const isAndroid = /android/i.test(navigator.userAgent);
 const isDesktop = !/android|iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -46,6 +46,8 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 
   // 2026-08-19 · 카메라 에러 진단 · onError + 인앱브라우저·PWA 감지 (리서치 결과 반영)
   const [camError, setCamError] = useState<string>("");
+  // 2026-08-19 · 네이티브 카메라 fallback · <input capture="environment"> · 웹앱·PWA·WebView 모두 작동
+  const nativeCameraRef = useRef<HTMLInputElement>(null);
   const [envInfo] = useState<{ inApp: boolean; standalone: boolean; ios: boolean; safari: boolean; ua: string }>(() => {
     const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
     const ios = /iPhone|iPad|iPod/i.test(ua);
@@ -254,6 +256,13 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
               )}
             </div>
             <button
+              onClick={() => nativeCameraRef.current?.click()}
+              title="네이티브 카메라로 촬영 (웹앱·모바일 지원)"
+              className="p-1 rounded-md text-emerald-400 hover:text-emerald-300 transition cursor-pointer"
+            >
+              <Camera size={16} />
+            </button>
+            <button
               onClick={() => state.imageInputRef.current?.click()}
               title="갤러리에서 이미지 선택"
               className="p-1 rounded-md text-gray-500 hover:text-white transition cursor-pointer"
@@ -303,36 +312,36 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
                 <p className="text-white text-[14px] font-bold tracking-tight">카메라 접근 실패</p>
                 {envInfo.inApp ? (
                   <p className="text-amber-300 text-[12px] mt-1.5 leading-relaxed font-semibold">
-                    카톡·네이버 등 인앱브라우저에서는 카메라가 안 됩니다.<br/>
-                    <span className="text-white/70">우측 상단 [···] → Safari 또는 Chrome 에서 열기</span>
+                    카톡·네이버 등 인앱브라우저에서는 라이브 스캔이 안 됩니다.<br/>
+                    <span className="text-white/70">아래 <b className="text-white">📸 카메라로 촬영</b> 버튼 사용</span>
                   </p>
                 ) : envInfo.standalone || (envInfo.ios && !envInfo.safari) ? (
-                  <div className="text-amber-300 text-[12px] mt-1.5 leading-relaxed font-semibold">
-                    <div>웹앱·홈화면 아이콘에서 카메라 안 됨 (iOS 정책)</div>
-                    <div className="text-white/80 mt-2 space-y-1 text-left px-1">
-                      <div>✅ <b className="text-white">해결 (권장)</b></div>
-                      <div className="pl-3 text-white/70">1. Safari 앱 (파란 나침반) 직접 열기</div>
-                      <div className="pl-3 text-white/70">2. 주소창 · osanmega.onrender.com 입력</div>
-                      <div className="pl-3 text-white/70">3. 바코드 스캔 · 정상 작동</div>
-                      <div className="pt-1 text-white/50 text-[11px]">홈화면 웹앱 이용 시 · 바코드 스캔은 Safari 로 이동 필요</div>
-                    </div>
-                  </div>
+                  <p className="text-amber-300 text-[12px] mt-1.5 leading-relaxed font-semibold">
+                    웹앱·홈화면 아이콘에서는 라이브 스캔 불가 (iOS 정책)<br/>
+                    <span className="text-white/70">아래 <b className="text-white">📸 카메라로 촬영</b> 버튼 사용</span>
+                  </p>
                 ) : camError.startsWith("NotAllowedError") ? (
                   <p className="text-white/70 text-[12px] mt-1.5 leading-relaxed">
-                    <b className="text-white">주소창 자물쇠</b> 또는 <b className="text-white">AA</b> 아이콘 →<br/>
-                    웹사이트 설정 → 카메라 → 허용
+                    카메라 권한 거부됨 · 브라우저 설정에서 허용하거나<br/>
+                    아래 <b className="text-white">📸 카메라로 촬영</b> 버튼 사용
                   </p>
                 ) : (
                   <p className="text-white/60 text-[12px] mt-1.5 leading-relaxed">
-                    브라우저 캐시 지우고 다시 시도해주세요
+                    라이브 스캔 불가 · 아래 <b className="text-white">📸 카메라로 촬영</b> 사용
                   </p>
                 )}
                 <p className="text-white/40 text-[10px] mt-2 font-mono break-all">{camError}</p>
               </div>
               <button
+                onClick={() => nativeCameraRef.current?.click()}
+                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition text-white text-[14px] font-bold px-5 py-3 rounded-xl shadow-lg cursor-pointer"
+              >
+                <Camera size={18} /> 카메라로 촬영
+              </button>
+              <button
                 onClick={() => state.imageInputRef.current?.click()}
-                className="text-white/70 hover:text-white text-[13px] font-bold underline underline-offset-2 transition-colors cursor-pointer"
-              >이미지 파일로 스캔</button>
+                className="text-white/70 hover:text-white text-[12px] font-semibold underline underline-offset-2 transition-colors cursor-pointer"
+              >또는 갤러리 이미지 선택</button>
               <details className="text-white/40 text-[10px] font-mono max-w-[280px] w-full text-left">
                 <summary className="cursor-pointer text-white/50 hover:text-white/70 text-center pb-1">진단 정보 (탭)</summary>
                 <div className="mt-2 space-y-0.5 leading-relaxed break-all bg-white/[0.03] rounded-md px-2 py-1.5 border border-white/[0.08]">
@@ -455,6 +464,22 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) handleImageDecode(file);
+            }}
+          />
+          {/* 2026-08-19 · 네이티브 카메라 (capture="environment") · 후면 카메라 앱 호출 · 웹앱·PWA·인앱브라우저 모두 지원 */}
+          <input
+            ref={nativeCameraRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                setCamError("");
+                handleImageDecode(file);
+              }
+              if (nativeCameraRef.current) nativeCameraRef.current.value = "";
             }}
           />
         </div>
