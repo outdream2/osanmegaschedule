@@ -73,11 +73,17 @@ describe("useToast · 실 렌더", () => {
   });
 });
 
-describe("toastClass", () => {
-  it("tone 별 · 색상 매핑", () => {
+describe("toastClass · 2026-08-17 v2 · 브랜드 통일", () => {
+  it("tone 별 · 색상 매핑 (info 는 brand-deep 로 변경됨)", () => {
     expect(toastClass("success")).toContain("emerald");
     expect(toastClass("error")).toContain("rose");
     expect(toastClass("warn")).toContain("amber");
-    expect(toastClass("info")).toContain("indigo");
+    expect(toastClass("info")).toContain("brand-deep"); // v2 · indigo → brand-deep 통일
+  });
+  it("공통 base · 폰트 +2 · rounded-xl · 2-layer shadow", () => {
+    const cls = toastClass("info");
+    expect(cls).toContain("text-[13px]"); // 폰트 +2 (11→13)
+    expect(cls).toContain("rounded-xl");  // rounded-full → rounded-xl (Linear 톤)
+    expect(cls).toContain("shadow-");     // 2-layer shadow
   });
 });
