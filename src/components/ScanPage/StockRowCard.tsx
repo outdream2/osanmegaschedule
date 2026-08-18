@@ -14,8 +14,8 @@
 //   · StockRow 타입 그대로 사용
 //   · StockActionsCell 재사용 (기존 3버튼 그대로)
 
-import React, { useState, useMemo } from "react";
-import { Box, Hash, ChevronDown, ChevronUp } from "lucide-react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
+import { Box, Hash, ChevronDown, ChevronUp, MapPin, Check } from "lucide-react";
 import type { StockRow } from "./stockRowTypes";
 import { calcRowTotal, calcSlotTotal, calcTotalAdded } from "./stockRowTypes";
 import { StatusPill } from "../common/StatusPill";
@@ -92,24 +92,76 @@ const StepperInput: React.FC<{
   );
 };
 
-// ─── 구역 입력 (매장 전용) ───────────────────────────────────────
-const ZoneInput: React.FC<{
+// ─── 구역 편집 · 매장 전용 · 2026 트렌드 (Linear/Notion inline chip · pin icon + autosave 표시)
+const ZoneInline: React.FC<{
   value: string | null;
   onChange: (v: string | null) => void;
-}> = ({ value, onChange }) => (
-  <input
-    type="text"
-    value={value ?? ""}
-    onChange={e => onChange(e.target.value.trim() === "" ? null : e.target.value)}
-    placeholder="구역"
-    className="w-full h-8 text-center px-2 rounded-md bg-white border-2 border-zinc-300
-      text-[13px] font-bold tabular-nums text-brand-deep outline-none transition
-      placeholder:text-zinc-400 placeholder:font-semibold
-      focus:border-brand-deep
-      focus:shadow-[0_0_0_3px_rgba(10,46,74,0.10)]"
-    title="구역 편집"
-  />
-);
+  erpSpec?: string;
+}> = ({ value, onChange, erpSpec }) => {
+  const filled = value != null && value.trim().length > 0;
+  const [savedFlash, setSavedFlash] = useState(false);
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+  }, []);
+
+  const handleChange = (raw: string) => {
+    const next = raw.trim() === "" ? null : raw;
+    onChange(next);
+    setSavedFlash(true);
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    flashTimerRef.current = setTimeout(() => setSavedFlash(false), 1600);
+  };
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      {/* pin icon + input pill */}
+      <div className={[
+        "inline-flex items-center gap-1.5 h-9 rounded-full pl-3 pr-1 border-2 transition-all duration-150",
+        filled
+          ? "bg-brand-tint border-brand-deep/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.60)]"
+          : "bg-white border-dashed border-zinc-300 hover:border-brand-deep/50",
+        "focus-within:border-brand-deep focus-within:shadow-[0_0_0_3px_rgba(10,46,74,0.12)] focus-within:bg-white",
+      ].join(" ")}>
+        <MapPin size={13} fill={filled ? "currentColor" : "none"} className={filled ? "text-brand-deep" : "text-zinc-400"} />
+        <input
+          type="text"
+          value={value ?? ""}
+          onChange={e => handleChange(e.target.value)}
+          placeholder="매장구역 지정"
+          className={[
+            "min-w-0 flex-1 h-full bg-transparent outline-none border-0",
+            "text-[14px] font-bold tabular-nums tracking-tight",
+            filled ? "text-brand-deep" : "text-ink",
+            "placeholder:text-zinc-400 placeholder:font-semibold",
+            "px-1",
+          ].join(" ")}
+          style={{ width: filled ? `${Math.max(String(value).length, 6) * 9 + 12}px` : "112px" }}
+          title="매장구역 · 입력 시 자동 저장"
+        />
+      </div>
+
+      {/* autosave flash · Notion-style · brief "저장됨" */}
+      {savedFlash && (
+        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 animate-in fade-in duration-200">
+          <Check size={11} strokeWidth={3} />
+          저장됨
+        </span>
+      )}
+
+      {/* ERP 지정 위치 (있으면 · helper text) */}
+      {erpSpec && !savedFlash && (
+        <span className="inline-flex items-center gap-0.5 text-[11px] text-ink-soft tabular-nums font-medium" title={`ERP 지정 위치 · ${erpSpec}`}>
+          <span className="text-zinc-300">·</span> ERP {erpSpec}
+        </span>
+      )}
+    </div>
+  );
+};
+
+// 기존 ZoneInput 유지 (다른 곳 참조 방지)
+const ZoneInput = ZoneInline;
 
 // ─── 카드 컴포넌트 ───────────────────────────────────────────────
 interface StockRowCardProps {
@@ -244,45 +296,42 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
             const hasAddVal = add !== "" && Number(add) !== 0;
             const spec = s.zoneKey ? (specParts[i - 2] ?? "") : "";
             return (
-              <div
-                key={s.key}
-                className="grid grid-cols-[64px_1fr_auto] gap-2 items-center"
-              >
-                {/* label + dot */}
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className={`w-1 h-6 rounded-full ${s.dot}`} />
-                  <span className={`text-[13px] font-bold ${s.text}`}>{s.full}</span>
+              <div key={s.key} className="flex flex-col gap-1.5">
+                <div className="grid grid-cols-[64px_1fr_auto] gap-2 items-center">
+                  {/* label + dot */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className={`w-1 h-6 rounded-full ${s.dot}`} />
+                    <span className={`text-[13px] font-bold ${s.text}`}>{s.full}</span>
+                  </div>
+
+                  {/* 현재값 (좌) + 스테퍼 (우) */}
+                  <div className="grid grid-cols-[auto_1fr] gap-2 items-center">
+                    <span className="text-[12px] font-semibold text-ink-soft tabular-nums shrink-0 min-w-[52px]">
+                      {prev != null ? `현재 ${prev}` : <span className="text-zinc-300">현재 -</span>}
+                    </span>
+                    <StepperInput
+                      value={add}
+                      onChange={v => onPatch(row.key, { [s.addKey]: v } as Partial<StockRow>)}
+                      placeholder="+0"
+                    />
+                  </div>
+
+                  {/* 합계 (우) */}
+                  <span className={`text-[15px] font-bold tabular-nums text-right min-w-[48px] tracking-tight ${
+                    hasAddVal ? "text-emerald-700" : tot > 0 ? "text-ink" : "text-zinc-300"
+                  }`}>
+                    = {tot}
+                  </span>
                 </div>
 
-                {/* 현재값 (좌) + 스테퍼 (우) + (매장) 구역 */}
-                <div className={`grid ${s.zoneKey ? "grid-cols-[auto_1fr_88px]" : "grid-cols-[auto_1fr]"} gap-2 items-center`}>
-                  <span className="text-[12px] font-semibold text-ink-soft tabular-nums shrink-0 min-w-[52px]">
-                    {prev != null ? `현재 ${prev}` : <span className="text-zinc-300">현재 -</span>}
-                  </span>
-                  <StepperInput
-                    value={add}
-                    onChange={v => onPatch(row.key, { [s.addKey]: v } as Partial<StockRow>)}
-                    placeholder="+0"
-                  />
-                  {s.zoneKey && (
-                    <ZoneInput
+                {/* 매장구역 · 별도 행 · 2026 트렌드 · 입력 시 자동 저장 flash */}
+                {s.zoneKey && (
+                  <div className="pl-[72px]">
+                    <ZoneInline
                       value={row[s.zoneKey] as string | null}
                       onChange={v => onPatch(row.key, { [s.zoneKey!]: v } as Partial<StockRow>)}
+                      erpSpec={spec || undefined}
                     />
-                  )}
-                </div>
-
-                {/* 합계 (우) */}
-                <span className={`text-[15px] font-bold tabular-nums text-right min-w-[48px] tracking-tight ${
-                  hasAddVal ? "text-emerald-700" : tot > 0 ? "text-ink" : "text-zinc-300"
-                }`}>
-                  = {tot}
-                </span>
-
-                {/* ERP 지정 위치 (매장 spec) */}
-                {s.zoneKey && spec && (
-                  <div className="col-span-3 pl-[72px] -mt-1 text-[11px] text-ink-soft tabular-nums" title={`ERP 지정 위치 · ${spec}`}>
-                    ERP {spec}
                   </div>
                 )}
               </div>
