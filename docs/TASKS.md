@@ -20,6 +20,20 @@
   - ✅ **legacy StatusBadge 삭제 + common/README.md 문서화** (356aa1d)
 - **잔여 · 다음 세션**: ContractWriterPage(5,400 lines · 분리 필요) · common/EmployeeInfoForm · 각 페이지 status matrix (부적합 판정)
 
+### #162 · Nav 세련 v3 · 초고해상도 · 최신 트렌드 (2026-08-18 · ✅ 완료)
+- 헤더 활성 pill · 3-layer shadow (inset top + inset bottom + outer glow) · 세련
+- 헤더 활성 bar · solid 3px → gradient fade (90% width · Attio 톤) + double glow (12+8)
+- 헤더 inactive · hover underline reveal (0→50% · 300ms · Vercel/Linear 시그니처)
+- 헤더 배경 · aurora 2-point → 3-point (좌상+우상+하단중앙 indigo)
+- 헤더/사이드바 · SVG noise texture (fractalNoise · opacity 0.03 · 프리미엄 종이 질감)
+- 사이드바 stripe · solid → gradient (top→bottom fade) + double glow (10+20)
+- 사이드바 활성 pill · 3-layer shadow (inset top + inset bottom + outer subtle)
+- 사이드바 아이콘 · single glow → double glow (8+16 / 6+14) + hover scale
+- 사이드바 chevron · hover scale-110 · 크기 18→16 · 회전 300ms (더 부드러움)
+- 사이드바 로고 · ring-1 → ring-2 + brand glow (헤더 통일)
+- 사이드바 오른쪽 · shadow 2-layer 추가 (컨텐츠와 시각 구분)
+- 사이드바 border · white/8 → white/[0.10]
+
 ### #161 · Nav 세련 · 2026 최신 트렌드 (2026-08-17 밤 · ✅ 완료)
 - AppNavHeader · aurora radial glow (sky+mint) · 3-layer shadow · 3-stop gradient · top hairline (2eec7e4)
 - 로고 · ring-2 + brand glow · hover 강화 · OSAN MEGATOWN 타이포 (tracking) · vertical divider
