@@ -178,6 +178,97 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     return () => document.removeEventListener("keydown", h);
   }, [onClose]);
 
+  // 2026-08-18 · 카메라 켜지게 하는 기능 보강 · useZxing 방해 X · additive only
+  //   [1] loadedmetadata · video.play() 명시 호출 (iOS Safari autoplay 정책 우회)
+  //   [2] cameraReady state · playing 이벤트 감지 → UI 로딩·오류 상태 노출
+  //   [3] 5초 timeout · 재생 실패 시 명시 재시도 버튼 표시
+  //   [4] 명시 재시도 · getUserMedia + srcObject attach (useZxing 우회 · 사용자 gesture)
+  //   [5] 실패 원인 · errorDetail 표시 (디버깅)
+  const [cameraReady, setCameraReady] = useState(false);
+  const [cameraError, setCameraError] = useState<{ name: string; msg: string } | null>(null);
+  const manualStreamRef = useRef<MediaStream | null>(null);
+
+  useEffect(() => {
+    const v = videoRef.current as HTMLVideoElement | null;
+    if (!v) return;
+    const onPlaying = () => setCameraReady(true);
+    const onMeta = () => {
+      // iOS Safari · srcObject 후 play() 안 되는 경우 · 명시 호출
+      try { v.play().catch(() => { /* playing 이벤트 대기 */ }); } catch {}
+    };
+    v.addEventListener("playing", onPlaying);
+    v.addEventListener("loadedmetadata", onMeta);
+    return () => {
+      v.removeEventListener("playing", onPlaying);
+      v.removeEventListener("loadedmetadata", onMeta);
+    };
+  }, [videoRef]);
+
+  // 5초 timeout · srcObject 존재 확인 (useZxing 성공 시 없음 · 실패 시 표시)
+  const [showRetry, setShowRetry] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (cameraReady) return;
+      const v = videoRef.current as HTMLVideoElement | null;
+      const stream = v?.srcObject as MediaStream | null;
+      const hasLiveTrack = !!stream && stream.getVideoTracks().some(t => t.readyState === "live");
+      if (!hasLiveTrack) setShowRetry(true);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [cameraReady, videoRef]);
+
+  // 명시 재시도 · 사용자 클릭 · getUserMedia + srcObject attach
+  const retryCamera = useCallback(async () => {
+    setShowRetry(false);
+    setCameraError(null);
+    try {
+      // 명시 gesture · getUserMedia · iOS 프롬프트 재발생
+      const constraints: MediaStreamConstraints = {
+        video: isDesktop ? true : { facingMode: "environment" },
+      };
+      // 보안 컨텍스트 확인
+      if (typeof window !== "undefined" && "isSecureContext" in window && !window.isSecureContext) {
+        throw new Error("SecureContextRequired: HTTPS 필수");
+      }
+      // 모던 API + 레거시 fallback
+      const md: any = (navigator as any).mediaDevices;
+      let stream: MediaStream;
+      if (md?.getUserMedia) {
+        stream = await md.getUserMedia(constraints);
+      } else {
+        const legacy = (navigator as any).getUserMedia
+          || (navigator as any).webkitGetUserMedia
+          || (navigator as any).mozGetUserMedia;
+        if (!legacy) throw new Error("MediaDevicesUnavailable: getUserMedia 미지원");
+        stream = await new Promise<MediaStream>((res, rej) => legacy.call(navigator, constraints, res, rej));
+      }
+      // 이전 수동 stream 정리
+      if (manualStreamRef.current) {
+        manualStreamRef.current.getTracks().forEach(t => { try { t.stop(); } catch {} });
+      }
+      manualStreamRef.current = stream;
+      // srcObject 수동 attach + play
+      const v = videoRef.current as HTMLVideoElement | null;
+      if (v) {
+        v.srcObject = stream;
+        try { await v.play(); } catch { /* playing 이벤트 대기 */ }
+      }
+      // 스캔 loops 재시작
+      state.setScanKey(k => k + 1);
+    } catch (err: any) {
+      setCameraError({ name: String(err?.name || ""), msg: String(err?.message || "") });
+      setShowRetry(true);
+    }
+  }, [videoRef, state.setScanKey]);
+
+  // unmount · 수동 stream 정리
+  useEffect(() => () => {
+    if (manualStreamRef.current) {
+      manualStreamRef.current.getTracks().forEach(t => { try { t.stop(); } catch {} });
+      manualStreamRef.current = null;
+    }
+  }, []);
+
   return (
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
@@ -250,8 +341,42 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           <video
             ref={videoRef}
             className={`w-full h-full object-cover ${state.frozenFrame ? "invisible" : ""}`}
-            autoPlay muted playsInline
+            autoPlay
+            muted
+            playsInline
+            // @ts-ignore · 구형 iOS Safari 인라인 재생 호환
+            webkit-playsinline="true"
           />
+
+          {/* 2026-08-18 · 카메라 켜지지 않을 때 fallback UI · 명시 재시도 · useZxing 성공 시 자동 숨김 */}
+          {showRetry && !cameraReady && !state.frozenFrame && (
+            <div className="absolute inset-0 bg-black/92 flex flex-col items-center justify-center gap-3 px-5 py-6 z-20">
+              <div className="w-12 h-12 rounded-full bg-amber-500/[0.15] border border-amber-400/40 flex items-center justify-center">
+                <Zap size={22} className="text-amber-300" />
+              </div>
+              <div className="text-center max-w-[280px]">
+                <p className="text-white text-[14px] font-bold tracking-tight">카메라가 켜지지 않습니다</p>
+                <p className="text-white/60 text-[12px] mt-1.5 leading-relaxed">
+                  {cameraError?.name === "NotAllowedError" || cameraError?.name === "SecurityError"
+                    ? "주소창 자물쇠 → 카메라 → 허용 후 다시 시도"
+                    : "다시 시도 버튼을 눌러주세요"}
+                </p>
+                {cameraError && (
+                  <p className="text-white/40 text-[10px] mt-2 font-mono break-all">{cameraError.name}: {cameraError.msg}</p>
+                )}
+              </div>
+              <button
+                onClick={retryCamera}
+                className="px-5 h-11 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-[14px] font-bold
+                  shadow-[0_2px_10px_-2px_rgba(52,211,153,0.5),inset_0_1px_0_rgba(255,255,255,0.15)]
+                  transition-colors cursor-pointer inline-flex items-center gap-2"
+              >카메라 다시 시도</button>
+              <button
+                onClick={() => state.imageInputRef.current?.click()}
+                className="text-white/50 hover:text-white/80 text-[12px] font-semibold underline underline-offset-2 transition-colors cursor-pointer"
+              >또는 · 이미지 파일로 스캔</button>
+            </div>
+          )}
 
           {/* Snapshot confirmation overlay */}
           {state.frozenFrame && (
