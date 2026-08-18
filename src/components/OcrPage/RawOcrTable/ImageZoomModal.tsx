@@ -35,7 +35,7 @@ export const ImageZoomModal: React.FC<ImageZoomModalProps> = ({
         if (e.key === "Escape" || e.key === "Esc") { e.stopPropagation(); closeModal(); }
       }}
     >
-      <div className="relative w-full bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+      <div className="relative w-full bg-white rounded-2xl overflow-hidden shadow-brand-modal flex flex-col"
         style={{ maxWidth: "min(900px, 95vw)", height: "90vh" }}
         onClick={e => e.stopPropagation()}>
 

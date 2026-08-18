@@ -340,7 +340,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
     >
       {/* 2026-08-17 · 사용자 지시 · PC 너무 넓음 · max-w-5xl → max-w-4xl · 최신 트렌드 · 보기 좋은 폭 */}
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl lg:max-w-4xl overflow-hidden flex flex-col max-h-[95vh]"
+        className="bg-white rounded-2xl shadow-brand-modal w-full max-w-3xl lg:max-w-4xl overflow-hidden flex flex-col max-h-[95vh]"
         onClick={e => e.stopPropagation()}
       >
         {/* Header · 2026-08-17 · 사용자 지시 · "직원정보 / 월별 스케쥴" 타이틀 · 딥네이비 톤 */}

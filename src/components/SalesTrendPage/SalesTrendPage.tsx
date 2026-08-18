@@ -770,7 +770,7 @@ const ProductTrendTab: React.FC<{
           onClick={() => setScanProductModal(null)}
         >
           <div
-            className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden"
+            className="bg-white rounded-xl shadow-brand-modal w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}

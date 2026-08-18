@@ -1120,7 +1120,7 @@ const SignatureModal: React.FC<SignatureModalProps> = ({ open, title, onClose, o
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col"
+        className="bg-white rounded-2xl shadow-brand-modal w-full max-w-lg overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-4 py-3 border-b border-line bg-emerald-50 flex items-center justify-between">

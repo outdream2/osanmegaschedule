@@ -1123,7 +1123,7 @@ export const VendorDetailModal: React.FC<{
 
   const innerCls = panel
     ? "relative flex flex-col flex-1 min-h-0 overflow-hidden"
-    : "relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[95vh] md:h-auto md:min-h-[85vh] md:max-h-[92vh] flex flex-col overflow-hidden";
+    : "relative bg-white rounded-2xl shadow-brand-modal w-full max-w-5xl h-[95vh] md:h-auto md:min-h-[85vh] md:max-h-[92vh] flex flex-col overflow-hidden";
 
   return (
     <div className={backdropCls} onClick={panel ? undefined : onClose}>
@@ -1736,7 +1736,7 @@ const PaymentRegisterModal: React.FC<{
     >
       <div
         onClick={e => e.stopPropagation()}
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl h-[92vh] md:h-auto md:max-h-[88vh] flex flex-col overflow-hidden"
+        className="relative bg-white rounded-2xl shadow-brand-modal w-full max-w-3xl h-[92vh] md:h-auto md:max-h-[88vh] flex flex-col overflow-hidden"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-line bg-emerald-50 shrink-0">

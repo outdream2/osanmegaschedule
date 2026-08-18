@@ -970,7 +970,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         >
           <div
             onClick={e => e.stopPropagation()}
-            className="w-full sm:max-w-2xl max-h-[85vh] bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl border border-line overflow-hidden flex flex-col"
+            className="w-full sm:max-w-2xl max-h-[85vh] bg-white sm:rounded-2xl rounded-t-2xl shadow-brand-modal border border-line overflow-hidden flex flex-col"
           >
             <div className="px-5 py-3.5 border-b border-zinc-100 bg-zinc-50/60 flex items-center justify-between gap-2">
               <div className="min-w-0">

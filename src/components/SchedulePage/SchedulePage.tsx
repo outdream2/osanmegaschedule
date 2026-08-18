@@ -2316,7 +2316,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         // 2026-08-17 v2 · Modal 통일
         <div className="fixed inset-0 z-[60] flex items-center justify-center backdrop-brand px-4"
           onClick={() => setCopyModal(prev => ({ ...prev, open: false }))}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-brand-modal max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-start gap-3 mb-4">
               <div className="p-2 bg-violet-100 text-violet-600 rounded-lg shrink-0">
                 <Layers size={18} />

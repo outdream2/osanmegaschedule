@@ -722,7 +722,7 @@ const ConfirmedRecordsTab: React.FC = () => {
           onClick={() => setBalanceHistory(null)}
         >
           <div
-            className="bg-white rounded-xl shadow-2xl border border-line w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden"
+            className="bg-white rounded-xl shadow-brand-modal border border-line w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
             <div className="px-4 py-3 border-b border-gray-100 bg-orange-50 flex items-center justify-between shrink-0">

@@ -2454,7 +2454,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         // 2026-08-17 v2 · Modal 통일
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center backdrop-brand"
           onClick={() => setActiveStaffInfo(null)}>
-          <div className="w-full sm:max-w-sm bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden"
+          <div className="w-full sm:max-w-sm bg-white rounded-t-2xl sm:rounded-2xl shadow-brand-modal overflow-hidden"
             onClick={(e) => e.stopPropagation()}>
 
             {/* Header */}

@@ -552,7 +552,7 @@ const CreateModal: React.FC<{
       onClick={() => !saving && onClose()}
     >
       <div
-        className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-hidden flex flex-col"
+        className="bg-white rounded-xl shadow-brand-modal w-full max-w-lg max-h-[92vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 모달 헤더 · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
@@ -2607,7 +2607,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
           onClick={() => setMobileDetail(false)}
         >
           <div
-            className="bg-white w-full max-w-[95vw] rounded-2xl shadow-2xl max-h-[92vh] overflow-hidden flex flex-col"
+            className="bg-white w-full max-w-[95vw] rounded-2xl shadow-brand-modal max-h-[92vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-100 bg-indigo-50/80 shrink-0">
