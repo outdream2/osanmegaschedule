@@ -80,7 +80,7 @@
 
 - #89 · DayTimelineModal · settings.positions 자동 파생 (하드코딩 3 그룹 → settings 순회)
 - #92 · 회사·브랜드 페이지 · 완전 통합 (5탭 → 1페이지)
-- #95 · 실재고입력 페이지 UI 재설계 · defer (2-3h)
+- ✅ #95 · 실재고입력 페이지 UI 재설계 완료 (2026-08-18 · 5f182e2) · StockRowCard 카드형 · 필터 KPI 그리드 · 모바일/PC 통일
 
 ---
 
