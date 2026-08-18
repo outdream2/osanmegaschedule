@@ -594,10 +594,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
             {items.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-3 py-16 sm:py-24 select-none">
                 <div className="relative">
-                  <div className="w-16 h-16 rounded-2xl bg-zinc-100 flex items-center justify-center
-                    shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(10,46,74,0.04)]">
-                    <Barcode size={28} className="text-zinc-300" />
-                  </div>
+                  {/* 2026-08-19 · IconTile 2xl 확산 · Empty state */}
+                  <IconTile icon={<Barcode size={28} className="text-zinc-300" />} tone="zinc" size="2xl" shape="rounded-2xl" />
                   <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full
                     bg-sky-100 border-2 border-white flex items-center justify-center">
                     <Plus size={10} className="text-sky-500" />
