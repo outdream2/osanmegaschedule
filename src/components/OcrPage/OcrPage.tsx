@@ -9,6 +9,8 @@ import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { useConfirm } from "../../hooks/useConfirm";
 import { IconTile } from "../common/IconTile";
+import { Modal } from "../common/Modal";
+import { StatusPill } from "../common/StatusPill";
 
 pdfjsLib.GlobalWorkerOptions.workerPort = new Worker(
   new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url),
@@ -715,72 +717,59 @@ const ConfirmedRecordsTab: React.FC = () => {
         </div>
       )}
 
-      {/* ── 공급처 잔고 히스토리 모달 ── */}
-      {balanceHistory && (
-        // 2026-08-17 v2 · Modal 통일
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center backdrop-brand p-4"
-          onClick={() => setBalanceHistory(null)}
-        >
-          <div
-            className="bg-white rounded-xl shadow-brand-modal border border-line w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="px-4 py-3 border-b border-gray-100 bg-orange-50 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2 min-w-0">
-                <FileText size={13} className="text-orange-600 shrink-0" />
-                <span className="text-xs font-bold text-orange-800 break-keep">
-                  {balanceHistory.supplier} 잔고 히스토리
-                </span>
-                <span className="text-[14px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded font-bold shrink-0">
-                  {balanceHistory.items.length}건
-                </span>
-              </div>
-              <button
-                onClick={() => setBalanceHistory(null)}
-                className="p-1 rounded-lg hover:bg-orange-100 cursor-pointer shrink-0"
-                title="닫기"
-              >
-                <X size={14} className="text-gray-500" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              {balanceHistoryLoading ? (
-                <div className="px-4 py-8 flex items-center justify-center text-gray-400 text-xs gap-2">
-                  <Loader2 size={13} className="animate-spin" />불러오는 중...
-                </div>
-              ) : balanceHistory.items.length === 0 ? (
-                <div className="px-4 py-8 text-center text-gray-400 text-xs">
-                  잔고가 기록된 항목이 없습니다.
-                </div>
-              ) : (
-                <table className="w-full text-xs border-collapse">
-                  <thead className="sticky top-0 bg-white">
-                    <tr className="bg-orange-50/60 border-b border-orange-100">
-                      <th className="px-3 py-2 text-left font-bold text-orange-900 whitespace-nowrap">저장일</th>
-                      <th className="px-3 py-2 text-left font-bold text-orange-900">품명</th>
-                      <th className="px-3 py-2 text-right font-bold text-orange-900 whitespace-nowrap">잔고</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {balanceHistory.items.map(it => (
-                      <tr key={it.id} className="border-t border-gray-50 hover:bg-orange-50/30">
-                        <td className="px-3 py-1.5 text-gray-500 whitespace-nowrap text-[15px]">{it.saved_at}</td>
-                        <td className="px-3 py-1.5 font-semibold text-gray-700 text-[15px]">
-                          <span className="break-words">{it.product_name}</span>
-                        </td>
-                        <td className="px-3 py-1.5 text-right font-bold text-orange-600 whitespace-nowrap tabular-nums text-[15px]">
-                          {fmtNum(it.balance)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+      {/* ── 공급처 잔고 히스토리 모달 · 2026-08-18 · <Modal> 프레임워크 통합 */}
+      <Modal
+        open={!!balanceHistory}
+        onClose={() => setBalanceHistory(null)}
+        size="sm"
+        titleAccent
+        icon={<IconTile icon={<FileText size={14} />} tone="orange" size="md" />}
+        title={
+          <div className="min-w-0 flex items-baseline gap-2 flex-wrap">
+            <span className="text-[16px] font-bold text-ink tracking-tight truncate">
+              {balanceHistory?.supplier} 잔고 히스토리
+            </span>
           </div>
-        </div>
-      )}
+        }
+        headerRight={
+          balanceHistory ? (
+            <StatusPill tone="orange" size="md">{balanceHistory.items.length}건</StatusPill>
+          ) : undefined
+        }
+      >
+        {balanceHistoryLoading ? (
+          <div className="py-8 flex items-center justify-center text-ink-soft text-[13px] gap-2">
+            <Loader2 size={14} className="animate-spin" />불러오는 중...
+          </div>
+        ) : !balanceHistory || balanceHistory.items.length === 0 ? (
+          <div className="py-8 text-center text-ink-soft text-[13px]">
+            잔고가 기록된 항목이 없습니다.
+          </div>
+        ) : (
+          <table className="w-full text-[13px] border-collapse">
+            <thead className="sticky top-0 bg-white">
+              <tr className="bg-orange-50/60 border-b border-orange-100">
+                <th className="px-3 py-2 text-left font-bold text-orange-800 whitespace-nowrap">저장일</th>
+                <th className="px-3 py-2 text-left font-bold text-orange-800">품명</th>
+                <th className="px-3 py-2 text-right font-bold text-orange-800 whitespace-nowrap">잔고</th>
+              </tr>
+            </thead>
+            <tbody>
+              {balanceHistory.items.map(it => (
+                <tr key={it.id} className="border-t border-line/50 hover:bg-orange-50/30">
+                  <td className="px-3 py-2 text-ink-soft whitespace-nowrap">{it.saved_at}</td>
+                  <td className="px-3 py-2 font-semibold text-ink">
+                    <span className="break-words">{it.product_name}</span>
+                  </td>
+                  <td className="px-3 py-2 text-right font-bold text-orange-700 whitespace-nowrap tabular-nums">
+                    {fmtNum(it.balance)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Modal>
     </div>
   );
 };
