@@ -25,7 +25,7 @@
 - ✅ **InlineLabel** · 3 size · AccentBar + label · 6 tests · 12곳
 - ✅ **Spinner** · 7 tone · label + size · 8 tests · **30곳 통합** (55+ 후보 중)
 - ✅ **Modal migration** · 7 파일 (Break/Hidden/PurchaseHistory/ProductPurchase/Ocr balance/SupplierChange/DeleteSynonym)
-- ✅ **BarcodeScanner B안 재작성** · react-zxing 폐기 · Native BarcodeDetector · requestStream() 3-단계 fallback
+- ✅ **BarcodeScanner** · 1달전 (4895e5c · 2026-07-15) 복원 · 카메라 fix (aspectRatio 제거 · 1280x720 · onError) · safety (loadedmetadata play · 5초 timeout retry · webkit-playsinline)
 - ✅ **TS strict errors fix (11 파일)** · CategoryChips onChange · Phosphor Icon style · ZONE_DEFS import · SortableHeader JSX 등
 - 🔲 잔여: Spinner 확산 30+ · Card primitive · 대형 Modal migration
 
