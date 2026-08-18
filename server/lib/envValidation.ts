@@ -21,7 +21,10 @@ const ENV_SPECS: EnvSpec[] = [
   //   · 2026-08-17 · SUPABASE_KEY (서버 코드가 사용하는 실제 키명) · 이전 오탐 SUPABASE_ANON_KEY 수정
   { key: "SUPABASE_URL",       severity: "required",    purpose: "Supabase 접속 URL" },
   { key: "SUPABASE_KEY",       severity: "required",    purpose: "Supabase 서비스 키 (서버 · client.ts:12)" },
-  { key: "JWT_SECRET",         severity: "required",    purpose: "JWT 서명 (인증 시스템)" },
+  // 2026-08-18 · JWT_SECRET · required → recommended
+  //   requireAuth.ts 에서 미설정 시 SUPABASE_KEY 로 자동 파생 (HMAC-SHA256 · deterministic)
+  //   명시적 설정 시 그 값 우선 (rotate 가능)
+  { key: "JWT_SECRET",         severity: "recommended", purpose: "JWT 서명 (미설정 시 SUPABASE_KEY 자동 파생)" },
   // ── recommended · 미설정 시 기능 부분 비활성 ──
   { key: "VAPID_PUBLIC_KEY",   severity: "recommended", purpose: "웹푸시 알림 (공개키)" },
   { key: "VAPID_PRIVATE_KEY",  severity: "recommended", purpose: "웹푸시 알림 (비공개키)" },

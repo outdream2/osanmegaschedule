@@ -15,8 +15,33 @@
 
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 
-const JWT_SECRET = process.env.JWT_SECRET || "";
+/**
+ * 2026-08-18 · JWT_SECRET 자동 파생 (프로젝트 내 해결)
+ *   1순위 · process.env.JWT_SECRET (명시적 설정 · 우선)
+ *   2순위 · SUPABASE_KEY 로부터 HMAC-SHA256 파생 (deterministic · 재배포 유지)
+ *   3순위 · 모두 없으면 빈 문자열 (부팅 warn · 인증 비활성)
+ *
+ * 파생 이유:
+ *   · Render 대시보드에 JWT_SECRET 추가 없이 배포 성공
+ *   · SUPABASE_KEY 는 이미 필수 env (동일 보안 수준)
+ *   · deterministic → 재배포·재시작 시 토큰 유효성 유지
+ *   · HMAC-SHA256 · 32바이트 · 강력한 secret
+ *   · 명시적으로 JWT_SECRET 설정 시 · 그 값 우선 (rotate 가능)
+ */
+function deriveJwtSecret(): string {
+  const explicit = process.env.JWT_SECRET;
+  if (explicit && explicit.trim().length >= 16) return explicit;
+  const supabaseKey = process.env.SUPABASE_KEY;
+  if (supabaseKey && supabaseKey.trim().length >= 16) {
+    // HMAC-SHA256(SUPABASE_KEY, "mt-jwt-v1") · 32바이트 hex (64자)
+    return crypto.createHmac("sha256", supabaseKey).update("mt-jwt-v1").digest("hex");
+  }
+  return "";
+}
+
+const JWT_SECRET = deriveJwtSecret();
 const COOKIE_NAME = "mt_auth";               // Access token (짧게 · API 호출용)
 const REFRESH_COOKIE_NAME = "mt_refresh";    // 2026-08-16 · #112-S10 · Refresh token (길게 · access 갱신용)
 // 2026-08-16 · #112-S10 · Access + Refresh 분리
@@ -30,8 +55,13 @@ const REMEMBER_MAX_AGE = REFRESH_MAX_AGE;
 
 if (!JWT_SECRET) {
   console.warn(
-    "[requireAuth] WARNING: JWT_SECRET 환경변수가 설정되지 않았습니다. " +
-    ".env 에 JWT_SECRET 를 추가하세요."
+    "[requireAuth] WARNING: JWT_SECRET 없음 + SUPABASE_KEY 도 없음 · 인증 비활성. " +
+    "SUPABASE_KEY 설정 시 자동 파생 됩니다."
+  );
+} else if (!process.env.JWT_SECRET) {
+  console.log(
+    "[requireAuth] JWT_SECRET · SUPABASE_KEY 로부터 자동 파생 (HMAC-SHA256). " +
+    "명시적 설정 원하면 process.env.JWT_SECRET 에 값 지정."
   );
 }
 
