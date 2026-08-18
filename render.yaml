@@ -17,10 +17,11 @@ services:
         sync: false
       - key: SUPABASE_KEY
         sync: false
-      # 2026-08-18 · 필수 · JWT 서명 (인증 시스템) · envValidation.ts required
-      # Render Dashboard 에서 32자 이상 랜덤 문자열 설정 필요
-      - key: JWT_SECRET
-        sync: false
+      # 2026-08-18 · JWT_SECRET · 미설정 시 SUPABASE_KEY 로 자동 파생 (HMAC-SHA256)
+      # · requireAuth.ts:deriveJwtSecret() · Render Dashboard 설정 불필요
+      # · 명시적 rotate 원하면 · 아래 주석 해제하고 Dashboard 에서 값 지정
+      # - key: JWT_SECRET
+      #   sync: false
       - key: VAPID_PUBLIC_KEY
         sync: false
       - key: VAPID_PRIVATE_KEY
