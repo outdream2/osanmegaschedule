@@ -487,6 +487,24 @@ body:has(.fixed.inset-0[class*="bg-neutral-9"]) {
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
+/* 2026-08-17 v2 · 공용 브랜드 backdrop 유틸 · 인라인 모달에서 bg-black/50 대체용 */
+.backdrop-brand {
+  background: rgba(10, 46, 74, 0.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.backdrop-brand-strong {
+  background: rgba(10, 46, 74, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+/* 2026-08-17 v2 · 공용 브랜드 shadow · 3-layer · Attio 톤 (인라인 카드용) */
+.shadow-brand-modal {
+  box-shadow:
+    0 1px 3px rgba(10, 46, 74, 0.12),
+    0 8px 32px -8px rgba(10, 46, 74, 0.24),
+    0 24px 64px -24px rgba(10, 46, 74, 0.28);
+}
 .modal-card {
   @apply bg-white rounded-2xl w-full max-h-[92vh] flex flex-col overflow-hidden;
   /* 3-layer shadow · GPU 가속 depth (Attio/Linear 톤) */
