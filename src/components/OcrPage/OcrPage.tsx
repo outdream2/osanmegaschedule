@@ -732,7 +732,7 @@ const ConfirmedRecordsTab: React.FC = () => {
         }
         headerRight={
           balanceHistory ? (
-            <StatusPill tone="orange" size="md">{balanceHistory.items.length}건</StatusPill>
+            <StatusPill tone="amber" size="md">{balanceHistory.items.length}건</StatusPill>
           ) : undefined
         }
       >

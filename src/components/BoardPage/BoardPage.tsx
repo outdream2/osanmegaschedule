@@ -170,7 +170,7 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
           <CategoryChips
             label="상태"
             value={filterStatus}
-            onChange={setFilterStatus}
+            onChange={(v) => setFilterStatus(v as Status | "")}
             size="md"
             ariaLabel="이슈 상태 필터"
             options={[
@@ -187,7 +187,7 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
           <CategoryChips
             label="카테고리"
             value={filterCategory}
-            onChange={setFilterCategory}
+            onChange={(v) => setFilterCategory(v as typeof filterCategory)}
             size="md"
             ariaLabel="이슈 카테고리 필터"
             options={[

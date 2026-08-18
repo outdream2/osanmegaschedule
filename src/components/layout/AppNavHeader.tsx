@@ -49,7 +49,8 @@ export type AppNavPage =
   | "branding"             // 2026-08-12 · Phase 5 · 브랜딩/연락처/도장/모바일 가시성 통합 설정 페이지
   | "company-info"         // 2026-08-12 · 회사정보 설정 페이지 (약국명·대표·사업자·주소·전화)
   | "season-settings"      // 2026-08-12 · 계절 정의 설정 페이지 (MyPage 에서 이동)
-  | "system-settings";     // 2026-08-12 · 시스템 설정 페이지 (env 편집 · 재시작 반영)
+  | "system-settings"      // 2026-08-12 · 시스템 설정 페이지 (env 편집 · 재시작 반영)
+  | "zone-settings";       // 2026-08-17 · 매장 구역 설정 (label · category · admin lv≥9)
 
 // 헤더 내부 탭 렌더용 확장 키 (경영관리 · business-manage 로 라우팅)
 type TabKey = AppNavPage | "business";
@@ -346,7 +347,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       if (isActive) {
         return (
           <span key="business" className={activeClass}>
-            <Icon size={20} weight="fill" className={`shrink-0 ${iconAccent} scale-110 transition-transform`} style={{ filter: `drop-shadow(0 0 8px ${accent.hex}) drop-shadow(0 0 16px ${accent.hex}40)` }} />
+            <span className="inline-flex" style={{ filter: `drop-shadow(0 0 8px ${accent.hex}) drop-shadow(0 0 16px ${accent.hex}40)` }}>
+              <Icon size={20} weight="fill" className={`shrink-0 ${iconAccent} scale-110 transition-transform`} />
+            </span>
             <span>{tab.label}</span>
             {/* 2026-08-18 v5 · 강력한 gradient bar + double glow */}
             <span
@@ -382,7 +385,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     if (isActive) {
       return (
         <span key={tab.key} className={activeClass}>
-          <Icon size={20} weight="fill" className={`shrink-0 ${iconAccent} scale-110 transition-transform`} style={{ filter: `drop-shadow(0 0 8px ${accent.hex}) drop-shadow(0 0 16px ${accent.hex}40)` }} />
+          <span className="inline-flex" style={{ filter: `drop-shadow(0 0 8px ${accent.hex}) drop-shadow(0 0 16px ${accent.hex}40)` }}>
+            <Icon size={20} weight="fill" className={`shrink-0 ${iconAccent} scale-110 transition-transform`} />
+          </span>
           <span>{tab.label}</span>
           {/* 2026-08-18 v5 · 강력한 gradient bar + double glow */}
           <span
@@ -433,7 +438,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       if (isActive) {
         return (
           <span key="business" className={`${base} bg-white/[0.10] ${c.activeText} ${activeInset} font-bold`}>
-            <Icon size={26} weight="fill" className={`${mobileAccent.iconText} scale-110 transition-transform`} style={{ filter: `drop-shadow(0 0 6px ${mobileAccent.hex}) drop-shadow(0 0 12px ${mobileAccent.hex}60)` }} />
+            <span className="inline-flex" style={{ filter: `drop-shadow(0 0 6px ${mobileAccent.hex}) drop-shadow(0 0 12px ${mobileAccent.hex}60)` }}>
+              <Icon size={26} weight="fill" className={`${mobileAccent.iconText} scale-110 transition-transform`} />
+            </span>
             <span className="leading-tight text-center whitespace-nowrap">경영</span>
           </span>
         );
@@ -458,7 +465,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     if (isActive) {
       return (
         <span key={tab.key} className={`${base} bg-white/[0.10] ${c.activeText} ${activeInset} font-bold`}>
-          <Icon size={26} weight="fill" className={`${mobileAccent.iconText} scale-110 transition-transform`} style={{ filter: `drop-shadow(0 0 6px ${mobileAccent.hex}) drop-shadow(0 0 12px ${mobileAccent.hex}60)` }} />
+          <span className="inline-flex" style={{ filter: `drop-shadow(0 0 6px ${mobileAccent.hex}) drop-shadow(0 0 12px ${mobileAccent.hex}60)` }}>
+            <Icon size={26} weight="fill" className={`${mobileAccent.iconText} scale-110 transition-transform`} />
+          </span>
           <span className="leading-tight text-center">
             {(() => {
               const L = tab.label;

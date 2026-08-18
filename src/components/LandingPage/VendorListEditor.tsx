@@ -371,7 +371,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
           {/* 2026-08-17 · CategoryChips 프레임워크 통일 · status dot per identity */}
           <CategoryChips
             value={categoryFilter}
-            onChange={setCategoryFilter}
+            onChange={(v) => setCategoryFilter(String(v))}
             size="sm"
             ariaLabel="공급사 카테고리 필터"
             options={(["전체", "위탁", "선결제", "60회전", "90회전", "기타"] as const).map(cat => ({

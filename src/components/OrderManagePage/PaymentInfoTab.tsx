@@ -910,7 +910,7 @@ export const PaymentInfoTab: React.FC = () => {
             />
             <CategoryChips
               value={vendorCategoryFilter}
-              onChange={setVendorCategoryFilter}
+              onChange={(v) => setVendorCategoryFilter(String(v))}
               size="sm"
               ariaLabel="공급사 카테고리 필터"
               options={(["전체", ...dbVendorCategories] as string[]).map(cat => ({

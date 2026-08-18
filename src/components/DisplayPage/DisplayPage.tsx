@@ -2,7 +2,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 // 2026-08-17 · 프레임워크 · useZoneDefs 훅 사용 · 설정 편집 시 자동 반영
-import { ZONES_STORAGE_KEY } from "../../constants/displayZones";
+import { ZONES_STORAGE_KEY, ZONE_DEFS } from "../../constants/displayZones";
 import { useZoneDefs } from "../../hooks/useZoneDefs";
 import {
   type ZoneStatus, type DowMap, type DisplayZone,

@@ -73,6 +73,29 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     });
   handleResultRef.current = handleResult;
 
+  // ── 안전한 getUserMedia · 모던 API + 레거시 fallback + 보안 컨텍스트 확인 ──
+  const requestStream = useCallback(async (constraints: MediaStreamConstraints): Promise<MediaStream> => {
+    // [1] 보안 컨텍스트 (HTTPS · localhost · file:) 확인
+    if (typeof window !== "undefined" && "isSecureContext" in window && !window.isSecureContext) {
+      throw new Error("SecureContextRequired: HTTPS 필수 (HTTP 에서는 카메라 접근 불가)");
+    }
+    // [2] 모던 API 우선
+    if (navigator.mediaDevices?.getUserMedia) {
+      return navigator.mediaDevices.getUserMedia(constraints);
+    }
+    // [3] 레거시 API fallback (구형 Safari · Android 4.x)
+    const legacy = (navigator as any).getUserMedia
+      || (navigator as any).webkitGetUserMedia
+      || (navigator as any).mozGetUserMedia
+      || (navigator as any).msGetUserMedia;
+    if (legacy) {
+      return new Promise<MediaStream>((resolve, reject) => {
+        legacy.call(navigator, constraints, resolve, reject);
+      });
+    }
+    throw new Error("MediaDevicesUnavailable: navigator.mediaDevices.getUserMedia 미지원 브라우저");
+  }, []);
+
   // ── 카메라 시작 · 직접 getUserMedia · 마운트 즉시 (gesture 스코프 안) ────────
   useEffect(() => {
     let mounted = true;
@@ -85,7 +108,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
               ? { ...VIDEO_CONSTRAINTS, deviceId: { ideal: localStorage.getItem("android_best_camera_id")! } }
               : VIDEO_CONSTRAINTS,
         };
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        const stream = await requestStream(constraints);
         if (!mounted) { stream.getTracks().forEach(t => t.stop()); return; }
         streamRef.current = stream;
         const v = videoRef.current;
@@ -100,6 +123,23 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
         const name = String(err?.name || "");
         const msg = String(err?.message || "");
         setErrorDetail(`${name}: ${msg}`);
+        // 첫 constraints 실패 시 · 최소 constraints (facingMode 만) 로 자동 재시도
+        if (name === "OverconstrainedError" || name === "NotReadableError" || name === "TypeError") {
+          try {
+            const stream = await requestStream({ video: true });
+            if (!mounted) { stream.getTracks().forEach(t => t.stop()); return; }
+            streamRef.current = stream;
+            const v = videoRef.current;
+            if (v) {
+              v.srcObject = stream;
+              try { await v.play(); } catch {}
+            }
+            if (mounted) { setCameraStatus("playing"); setErrorDetail(""); }
+            return;
+          } catch (err2: any) {
+            setErrorDetail(`retry-fallback: ${err2?.name || ""} ${err2?.message || ""}`);
+          }
+        }
         if (name === "NotAllowedError" || name === "SecurityError") setCameraStatus("denied");
         else if (name === "NotFoundError" || name === "DevicesNotFoundError") setCameraStatus("notfound");
         else setCameraStatus("failed");
@@ -297,7 +337,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     setCameraStatus("init");
     setErrorDetail("");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      const stream = await requestStream({
         video: isDesktop ? true : { facingMode: "environment" },
       });
       const old = streamRef.current;
@@ -318,7 +358,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
       else if (name === "NotFoundError" || name === "DevicesNotFoundError") setCameraStatus("notfound");
       else setCameraStatus("failed");
     }
-  }, [state.setScanKey]);
+  }, [state.setScanKey, requestStream]);
 
   return (
     <div

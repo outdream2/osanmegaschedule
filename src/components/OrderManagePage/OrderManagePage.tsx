@@ -1479,7 +1479,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               <CategoryChips
                 label="분류"
                 value={needCategoryFilter}
-                onChange={setNeedCategoryFilter}
+                onChange={(v) => setNeedCategoryFilter(String(v))}
                 size="sm"
                 ariaLabel="공급사 카테고리 필터"
                 options={(["all", ...dbVendorCategories] as string[]).map(cat => ({
@@ -2413,7 +2413,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             right={
               <CategoryChips
                 value={orderCategoryFilter}
-                onChange={setOrderCategoryFilter}
+                onChange={(v) => setOrderCategoryFilter(String(v))}
                 size="sm"
                 ariaLabel="발주요청 공급사 카테고리"
                 options={(["all", ...dbVendorCategories] as string[]).map(cat => ({

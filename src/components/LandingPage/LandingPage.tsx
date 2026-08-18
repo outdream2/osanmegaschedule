@@ -1283,11 +1283,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   disabled={pushLoading}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[14px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-sm transition-colors disabled:opacity-40 cursor-pointer"
                 >
-                  <Bell size={13} weight="fill" />알림 받기
+                  <Bell size={13} fill="currentColor" />알림 받기
                 </button>
               ) : (
                 <span className="inline-flex items-center gap-1.5 text-[14px] text-brand-deep font-semibold bg-brand-tint border border-brand/15 rounded-full px-3 py-1.5">
-                  <Bell size={13} weight="fill" /> 구독 중
+                  <Bell size={13} fill="currentColor" /> 구독 중
                 </span>
               )
             }>입고 알림</SectionLabel>

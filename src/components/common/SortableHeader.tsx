@@ -69,8 +69,8 @@ export function SortableHeader<K extends string = string>({
     onSort(col.key, nextDir);
   };
 
+  // 2026-08-17 · 공용 표 헤더 · 최신 트렌드 · font-semibold · text-ink-soft · tracking-tight · 폰트 +2
   return (
-    {/* 2026-08-17 · 공용 표 헤더 · 최신 트렌드 · font-semibold · text-ink-soft · tracking-tight · 폰트 +2 */}
     <tr className={`border-b border-line text-[13px] font-semibold text-ink-soft tracking-tight ${rowClassName}`}>
       {columns.map(col => {
         const isActive = col.key === activeKey;

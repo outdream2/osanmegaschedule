@@ -15,6 +15,7 @@ import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
 import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
+import { AccentBar } from "../common/AccentBar";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { useResizablePanel } from "../../hooks/useResizablePanel";
