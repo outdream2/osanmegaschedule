@@ -795,8 +795,9 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
 
         return (
           <>
-            <div className="fixed inset-0 z-[60] bg-black/40" onClick={() => setCellPicker(null)} />
-            <div className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-2xl shadow-2xl flex flex-col"
+            {/* 2026-08-17 v2 · Modal 통일 */}
+            <div className="fixed inset-0 z-[60] backdrop-brand" onClick={() => setCellPicker(null)} />
+            <div className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-2xl shadow-brand-modal flex flex-col"
               style={{ maxHeight: "65vh" }}>
               {/* Header */}
               <div className={`flex items-center justify-between px-4 py-3 border-b ${

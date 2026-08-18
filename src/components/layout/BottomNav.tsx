@@ -82,8 +82,9 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
       </nav>
 
       {sheetOpen && (
-        <div className="sm:hidden fixed inset-0 z-50 bg-zinc-900/50 backdrop-blur-sm flex items-end" onClick={() => setSheetOpen(false)}>
-          <div className="w-full bg-white rounded-t-3xl shadow-2xl max-h-[80vh] overflow-y-auto animate-[slideUp_0.2s_ease-out]" onClick={e => e.stopPropagation()}>
+        // 2026-08-17 v2 · Modal 통일
+        <div className="sm:hidden fixed inset-0 z-50 backdrop-brand flex items-end" onClick={() => setSheetOpen(false)}>
+          <div className="w-full bg-white rounded-t-3xl shadow-brand-modal max-h-[80vh] overflow-y-auto animate-[slideUp_0.2s_ease-out]" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-white/95 backdrop-blur border-b border-zinc-100 px-4 py-3 flex items-center justify-between">
               <h3 className="text-sm font-bold text-zinc-800">더보기</h3>
               <button onClick={() => setSheetOpen(false)} className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-500"><X size={18} /></button>
