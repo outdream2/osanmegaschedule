@@ -1,6 +1,6 @@
 # TASKS
 
-> 2026-08-18 · UI 프레임워크 v5 완성 · 실시간 배지 · JWT 자동 파생 · 무한 리로드 fix
+> 2026-08-18 · UI 프레임워크 v5 완성 · 실시간 배지 · JWT 자동 파생 · #131 헤더/입고알림 fix
 >
 > **원칙**: [`feedback_framework_untouchable.md`](../.claude/agents) · [`feedback_ui_top_principle.md`](../.claude/agents) · [`feedback_remote_push_strict.md`](../.claude/agents) · 폰트 +2 규칙
 >
@@ -9,11 +9,6 @@
 ---
 
 ## 🔥 활성 (진행중 / 대기)
-
-### #131 · 페이지 안보이기 (uncheck) 재발 · 🐛 심층 진단 대기
-- 사용자 재보고 · 이전 fix 후에도 미해결
-- 확인 필요: PermissionsPage 저장 · usePagePermissions 캐시 · filterGroupsForSession 복합키 · App.tsx isHiddenPage useEffect
-- **다음 세션 최우선**
 
 ### #149 · UI 프레임워크화 남은 작업
 - 🔲 common/ 재분류 · `common/primitives/` vs `common/features/` (구조 리팩터 · 위험 중)
@@ -26,9 +21,10 @@
 - 파스텔 46곳 icon container (w-7 h-7 bg-{c}-100) → common/IconTile · variant/size prop
 - 위험도: 낮음 (신규 프레임워크)
 
-### #131 관련 · #111 페이지 권한 시스템
-- ✅ SIDE_NAV_GROUPS 기반 · 그룹 접기/펼치기 · 트리 · 체크박스
-- 🔲 실제 uncheck → hide 반영 안 됨 · #131 심층 진단과 연관
+### 배포 확인 대기 (2026-08-18 · `013920a`)
+- 🔲 헤더 hidden 필터 · admin 도 정상 동작 (다른 태블릿/모바일 확인)
+- 🔲 로그인 화면 · 입고알림 리스트 데이터 표시 확인
+- 🔲 무한 리로드 완전 해소 확인
 
 ---
 
@@ -66,7 +62,7 @@
 
 1. `/api/auth/set-password` 인증 없음 · `authorize(9)` 추가 · **최우선**
 2. Vendor 로그인 · bcrypt 전환 · 또는 사용자 정책 재확정
-3. requireAuth 재활성화 · 이전 주석 사유 확인 후 안전 복원
+3. requireAuth 재활성화 · 이전 주석 사유 확인 후 안전 복원 (2026-08-16 완료 · 재검증 필요)
 4. tsconfig.json exclude · `["dist","node_modules","coverage","uploads","logs"]`
 5. Supabase 부팅 크래시 · `throw` → try/catch null fallback
 6. 100MB JSON limit · multer multipart 전환
@@ -96,35 +92,17 @@
 
 ---
 
-## 📜 완료 로그 (최근 세션 · 2026-08-18)
+## 📜 완료 로그 (2026-08-18)
 
-### v5 프레임워크 최종 완성 (2026-08-17 밤 ~ 2026-08-18 · 커밋 370+ · push 4회)
+### #131 · 페이지 안보이기 fix + 입고알림 public (2026-08-18 · ✅ 완료 · `013920a`)
+- 헤더 hidden 필터 admin 적용 (AppNavHeader.tsx)
+  - 이전 버그: `userLevel < 9` 조건 · admin은 hidden 필터 스킵 → 헤더에 여전히 표시 · 클릭 시 flicker
+  - fix: admin 포함 hidden 적용 · ADMIN_ESSENTIAL (permissions/business-manage/account) 만 예외
+- /api/stock-arrivals · public 이동 (server.ts)
+  - 이전 버그: requireAuth 뒤 마운트 → 로그인 화면 401 → 빈 배열
+  - fix: public 섹션 이동 · GET 안전 · POST 내부 level ≥ 3 자체 검증
 
-**Nav 세련 v3~v5:**
-- Aurora radial glow (sky+mint+indigo) · SVG noise texture · Vercel/Linear 시그니처
-- Stripe · 4px + solid + double glow (12+24) · gradient bar 하단
-- 아이콘 · 활성/비활성 모두 그룹 accent color 유지 (사용자 요청 · v5)
-- Hover · underline reveal · translate-y/x · 200ms ease-out
-- 로고 · ring-2 + brand glow · OSAN MEGATOWN tracking
-- 성씨 initial 제거 · 종/알림 패딩 반
-- 3-layer inset shadow (모든 활성 UI)
-
-**Framework CSS 세련 v2** (30+ 컴포넌트 자동 반영):
-- CSS 유틸: `.backdrop-brand` · `.backdrop-brand-strong` · `.shadow-brand-modal` (신규)
-- Modal · ConfirmDialog · Toast · Button · KpiCard · Input · Card · Panel · Popover · IconButton · MiniCard · CollapseCard · Scrollbar · PageToolbar · PeriodSelector · CategoryChips · SearchBar · EmptyState · LoadingState · ListLoading · FieldLabel · Toolbar · FilterBar · FilterSortBar · SearchFilterChips · SeasonButtons · SettingsPageShell · ProductClassFilter · SplitPanel · BreakModal · PurchaseHistoryModal · EmployeeProfileCard · NewVendorModal · VendorInfoModal · VendorSearchModal · ErrorBoundary · Hero
-- 30+ 인라인 모달 · frosted backdrop + shadow-brand-modal 통일
-
-**StatusPill 확산** (12+ 배치):
-- HrForms · TrendingTab · StockCheck · DisplayPage · Permissions · StaffManage · Pharmacist · ProductArrival · DisplayRequestPanel · RequestsPage · StockReconciliation · ProductDetailPanel · LeavePage · ScanPage · ReturnListPanel · EmployeeFormModal · DayTimelineModal · StoreZoneMap · LandingPage · ...
-- Legacy StatusBadge 삭제 · common/README.md 신규
-- Pine Green (Hermès #01796F) tone 추가
-
-**실시간 배지 시스템** (#166):
-- 신규 `src/lib/approvalEvents.ts` · CustomEvent + window focus
-- Dispatch 12곳 · Listener 3곳 (Landing · NotificationBell · RequestsPage)
-- 연차/점심/진열/발주/반품/불일치 · 제출/승인/취소/삭제
-
-**JWT + 배포 안정성** (#167 · v2 완결):
+### #167 · JWT 자동 파생 + 무한 리로드 fix v2 (2026-08-18 · ✅ 완료)
 - JWT_SECRET · SUPABASE_KEY HMAC-SHA256 자동 파생 · Render Dashboard 설정 불필요
 - CRITICAL v1 · handleLogout · fetch POST /api/auth/logout · 서버 쿠키 clear (36bd2ad)
 - CRITICAL v2 · SESSION_EXPIRED 리스너 guard 2개 · 미로그인 no-op + 1초 debounce · 무한 리로드 loop 완전 차단 (03e85a8)
@@ -132,14 +110,26 @@
 - shadow-3xs (미정의 클래스) → shadow-sm · 5곳 fix
 - 보안 영향 0 (UI redirect 만 제어 · 서버 인증 flow 완전 그대로)
 
-**리모트 push (총 5회 · 사용자 승인만):**
-- `71880c5` (프레임워크 P0 + 문서) · `58846d9` (JWT envVar) · `f90c16f` (JWT auto-derive) · `36bd2ad..ea58e89` (로그아웃 fix + approval events) · `03e85a8` (SESSION_EXPIRED guard v2)
+### #166 · 승인 요청 실시간 배지 갱신 (2026-08-18 · ✅ 완료)
+- 신규 `src/lib/approvalEvents.ts` · CustomEvent + window focus
+- Dispatch 12곳 · Listener 3곳 (Landing · NotificationBell · RequestsPage)
+- 연차/점심/진열/발주/반품/불일치 · 제출/승인/취소/삭제
+
+### #160·#164 · 프레임워크 v3~v5 완성 (2026-08-17 밤 ~ 2026-08-18 · 커밋 370+)
+- **Nav 세련 v3~v5**: Aurora glow · SVG noise · gradient stripe · 그룹 accent color · underline reveal · 3-layer inset shadow
+- **Framework CSS v2**: 30+ 컴포넌트 (Modal/Button/Input/KpiCard/Toast/Scrollbar 등) · CSS 유틸 (.backdrop-brand · .shadow-brand-modal)
+- **StatusPill 확산**: 12+ 배치 · 30+ 파일
+- **Legacy StatusBadge 삭제** · common/README.md 신규 (527 lines)
+
+### 리모트 push (총 6회 · 사용자 승인만)
+- `71880c5` (프레임워크 P0) · `58846d9` (JWT envVar) · `f90c16f` (JWT auto-derive) · `ea58e89` (approval events) · `03e85a8` (SESSION_EXPIRED v2) · `013920a` (#131 헤더 + 입고알림 public)
+- 2026-08-18 최종 · "이후 리모트 푸시 금지" · 재승인 대기
 
 ---
 
 ## 세션 관리
 
-- **프레임워크 원칙**: `src/components/common/README.md` (v5 확장)
+- **프레임워크 원칙**: `src/components/common/README.md` (v5 확장 · 527 lines)
 - **원칙 규칙**: `docs/AGENT_PRINCIPLES.md`
 - **임금 계산**: `docs/PAYROLL_ALGORITHM.md`
 - **contract-master**: `.claude/agents/contract-master.md`
