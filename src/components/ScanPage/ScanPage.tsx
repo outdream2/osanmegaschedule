@@ -41,6 +41,7 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { ProductSearchInput } from "../common/ProductSearchInput";
 import { IconTile } from "../common/IconTile";
 import { Modal } from "../common/Modal";
+import { AccentBar } from "../common/AccentBar";
 // ── 분리된 Row 컴포넌트 ──────────────────────────────────────
 import { StockRowDesktop } from "./StockRowDesktop";
 import { StockRowCard } from "./StockRowCard";
@@ -606,7 +607,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       {/* ── Page header strip · 2026-08-17 · 최신 트렌드 · 좌측 accent bar + 딥네이비 통일 ── */}
       <div className="bg-white border-b border-line shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3">
-          <span className="w-[3px] h-[22px] rounded-full bg-brand-deep shrink-0" />
+          <AccentBar h={22} className="shrink-0" />
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand-deep
             flex items-center justify-center shadow-sm shrink-0">
             <ScanLine size={17} className="text-white" />
@@ -680,7 +681,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
           <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
             {/* 헤더 · accent bar + 아이콘 + 제목 */}
             <div className="flex items-center gap-2.5 px-4 py-3 border-b border-line bg-zinc-50/60">
-              <span className="w-[3px] h-[16px] rounded-full bg-brand-deep shrink-0" />
+              <AccentBar className="shrink-0" />
               <ScanLine size={18} className="text-brand-deep shrink-0" />
               <div className="min-w-0">
                 <p className="text-[16px] font-bold text-ink leading-tight tracking-tight">바코드 스캔</p>

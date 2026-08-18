@@ -97,25 +97,25 @@ async function startServer() {
   }
 
   // 2026-08-16 · #112-A · Helmet · HTTP 보안 헤더 (XSS · Clickjacking · MIME sniff 방어)
-  //   · contentSecurityPolicy · false (SPA 동적 스크립트 · Vite HMR 호환 · 별도 CSP 정책은 다음 세션)
-  //   · crossOriginEmbedderPolicy · false (Cloudinary/Supabase Storage 이미지 CORS 이슈 방지)
-  //   · crossOriginOpenerPolicy · false (모바일 카메라 getUserMedia 호환 · 2026-08-18)
-  //   · crossOriginResourcePolicy · false (모바일 미디어 파일 로드 호환 · 2026-08-18)
+  // 2026-08-18 · 아이폰 바코드 카메라 · 모바일 getUserMedia 호환 (2주전 잘 작동하던 상태 복원)
+  //   · contentSecurityPolicy · false (SPA 동적 스크립트 · Vite HMR)
+  //   · crossOriginEmbedderPolicy · false (Cloudinary/Supabase Storage 이미지)
+  //   · crossOriginOpenerPolicy · false (iOS Safari · getUserMedia 호환)
+  //   · crossOriginResourcePolicy · false (iOS Safari · 미디어 스트림)
+  //   · originAgentCluster · false (iOS Safari · 격리 정책 완화)
+  //   · Permissions-Policy 는 명시 X (브라우저 기본 · same-origin 카메라 자동 허용)
   app.use(helmet({
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
     crossOriginOpenerPolicy: false,
     crossOriginResourcePolicy: false,
+    originAgentCluster: false,
   }));
 
-  // 2026-08-18 · 바코드 스캐너 · 모바일 카메라 허용 (Permissions-Policy)
-  //   · 기본 브라우저는 camera 를 명시적으로 허용해야 mobile 에서 getUserMedia 정상 동작
-  //   · self · same-origin 전체 허용 · 3rd-party iframe 은 차단
+  // 2026-08-18 · 명시적 카메라 허용 · 모든 origin (iOS 포함) · 브라우저 기본은 다르게 해석될 수 있어 명시
+  //   · camera=* · microphone=* · 3rd-party iframe 은 브라우저가 자동 차단
   app.use((_req, res, next) => {
-    res.setHeader(
-      "Permissions-Policy",
-      "camera=(self), microphone=(), geolocation=(self), fullscreen=(self)"
-    );
+    res.setHeader("Permissions-Policy", "camera=*, microphone=*, geolocation=*, fullscreen=*");
     next();
   });
 

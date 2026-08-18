@@ -12,6 +12,7 @@ import React, { useEffect, useState } from "react";
 import { X, TrendingUp, Package } from "lucide-react";
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "./PurchaseHistoryList";
 import { StatusPill } from "./StatusPill";
+import { AccentBar } from "./AccentBar";
 
 interface PurchaseHistoryModalProps {
   productCode: string;
@@ -80,7 +81,7 @@ export const PurchaseHistoryModal: React.FC<PurchaseHistoryModalProps> = ({
       >
         {/* 헤더 · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
         <div className="flex items-start gap-3 px-4 py-3 border-b border-line bg-zinc-50/60">
-          <span className="w-[3px] h-[22px] rounded-full bg-brand-deep shrink-0 mt-0.5" />
+          <AccentBar h={22} className="shrink-0 mt-0.5" />
           <TrendingUp size={20} className="text-brand-deep shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-2 flex-wrap">

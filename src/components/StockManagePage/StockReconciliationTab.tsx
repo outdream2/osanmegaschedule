@@ -24,6 +24,7 @@ import {
 import type { AuthSession } from "../../types";
 import { useSortableTable } from "../../hooks/useSortableTable";
 import { EmptyState } from "../common/EmptyState";
+import { AccentBar } from "../common/AccentBar";
 import { LoadingState } from "../common/LoadingState";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { StatusPill } from "../common/StatusPill";
@@ -231,7 +232,7 @@ export const StockReconciliationTab: React.FC<{
 
       {/* ── 헤더 카드 · 2026-08-17 · StatusPill 통일 · 딥네이비 accent + semantic status ── */}
       <div className={`${CARD_BASE} p-3 flex flex-wrap items-center gap-2`}>
-        <span className="w-[3px] h-[16px] rounded-full bg-brand-deep shrink-0" />
+        <AccentBar className="shrink-0" />
         <CheckCircle2 size={16} className="text-brand-deep shrink-0" />
         <span className="text-[15px] font-bold text-ink tracking-tight">실재고</span>
         <StatusPill tone="emerald" size="md" dot>차이 있는 상품 {diffCount}개</StatusPill>

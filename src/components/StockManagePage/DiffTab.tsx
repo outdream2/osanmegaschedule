@@ -7,6 +7,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { api } from "../../lib/apiClient";
 import { Layers, Loader2 as LoaderIcon, ChevronRight, ChevronDown, ListChecks, History } from "lucide-react";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
+import { AccentBar } from "../common/AccentBar";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { matchClassFilter, type ClassFilter } from "../../utils/productClassify";
@@ -189,7 +190,7 @@ export const DiffTab: React.FC = () => {
       {/* ── 상단 필터바 · 2026-08-17 · accent bar + StatusPill 통일 ── */}
       <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2`}>
         <div className="flex items-center gap-2.5">
-          <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+          <AccentBar />
           <Layers size={16} className="text-brand-deep shrink-0" />
           <span className="text-[17px] font-bold text-ink tracking-tight">손실추적</span>
           <StatusPill tone="violet" size="md">{diffList.length}건</StatusPill>

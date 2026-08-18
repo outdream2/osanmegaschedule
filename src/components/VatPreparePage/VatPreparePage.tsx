@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import SalesTab from "./tabs/SalesTab";
 import SupplierVatTab from "./tabs/SupplierVatTab";
+import { AccentBar } from "../common/AccentBar";
 import { useKvSetting } from "../../hooks/useKvSetting";
 
 // ─── 타입 ────────────────────────────────────────────────────────
@@ -303,7 +304,7 @@ const VatPreparePage: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center gap-3">
           {/* 로고·타이틀 · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
           <div className="flex items-center gap-3 shrink-0">
-            <span className="w-[3px] h-[26px] rounded-full bg-brand-deep shrink-0" />
+            <AccentBar h={26} className="shrink-0" />
             <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center text-white shrink-0 shadow-sm">
               <Calculator size={20} />
             </div>
@@ -650,7 +651,7 @@ const VatPreparePage: React.FC = () => {
       {/* ── 공통 하단: 준비 체크리스트 · 2026-08-17 · accent bar + brand-deep 통일 ── */}
       <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.04),0_2px_8px_rgba(10,46,74,0.06)] p-4">
         <div className="flex items-center gap-2.5 mb-3">
-          <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+          <AccentBar />
           <CheckSquare size={16} className="text-brand-deep" />
           <div className="text-[16px] font-bold text-ink tracking-tight">신고 준비 체크리스트</div>
           <div className="text-[12px] text-ink-soft ml-auto font-medium">자동 저장 · 서버 공유</div>

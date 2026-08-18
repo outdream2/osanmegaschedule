@@ -7,6 +7,7 @@ import React, { useEffect, useState } from "react";
 import { API_LIMITS } from "../../constants/apiLimits";
 import { TrendingUp, X as XIcon } from "lucide-react";
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
+import { AccentBar } from "../common/AccentBar";
 
 export const ProductPurchaseHistoryModal: React.FC<{
   productCode: string;
@@ -47,7 +48,7 @@ export const ProductPurchaseHistoryModal: React.FC<{
         {/* 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
         <div className="flex items-start justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-line bg-zinc-50/60">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="w-[3px] h-[24px] rounded-full bg-brand-deep shrink-0 mt-1" />
+            <AccentBar size="xl" className="shrink-0 mt-1" />
             <TrendingUp size={20} className="text-brand-deep shrink-0 mt-1" />
             <div className="min-w-0">
               <div className="text-[17px] sm:text-[19px] font-bold text-ink break-words leading-tight tracking-tight">{productName}</div>

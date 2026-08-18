@@ -215,10 +215,10 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     return () => document.removeEventListener("keydown", h);
   }, [onClose]);
 
-  // 2026-08-18 · 카메라 권한 · 모바일에서 자동 시작 안 될 때 fallback 감지
-  //   · 3초 후 · srcObject 없거나 video paused → 권한/장치 오류로 판단
+  // 2026-08-18 · 카메라 권한 · 완전 실패 시 재시도 UI (2주전 잘 작동하던 기능 · iOS 포함 안전 유지)
+  //   · 6초 후 · srcObject 없거나 video 재생 실패 시에만 표시 (권한 프롬프트·slow 초기화 여유)
   //   · 재시도 버튼 · getUserMedia 명시 호출 → 브라우저 권한 프롬프트 재발생
-  //   · iOS 특수 코드 경로는 건드리지 않음 (일반 감지만)
+  //   · iOS/Android 특수 코드 경로는 건드리지 않음 (일반 감지만)
   const [cameraError, setCameraError] = useState<null | "denied" | "notfound" | "timeout" | "other">(null);
   const [retrying, setRetrying] = useState(false);
 
@@ -228,13 +228,17 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
       if (cancelled) return;
       const v = videoRef.current as HTMLVideoElement | null;
       const stream = v?.srcObject as MediaStream | null | undefined;
+      // 관대한 조건 · srcObject 없거나 · video 가 완전히 재생 불가 상태 (readyState 0 + paused)
       if (!stream) {
-        // srcObject 아직 미할당 · 권한 프롬프트 대기 or 거부
         setCameraError("timeout");
       } else if (stream.getVideoTracks().length === 0) {
         setCameraError("notfound");
+      } else if (v && v.readyState === 0 && v.paused) {
+        // 스트림은 있으나 video 재생 실패 · iOS 자동재생 정책 등 · timeout 처리
+        setCameraError("timeout");
       }
-    }, 3000);
+      // 정상 재생 중이면 오버레이 표시 X
+    }, 6000);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [videoRef]);
 
