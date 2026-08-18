@@ -408,10 +408,16 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   const renderMobileTab = (tab: TabDef) => {
     const Icon = tab.icon;
     const c = TAB_COLOR_MAP[tab.color ?? "slate"];
-    // 2026-08-17 v2 · 하단 모바일 탭 · 폰트 +2 · 200ms ease-out · 세련
+    // 2026-08-18 · 모바일 탭 · 그룹 톤 gradient (데스크탑과 통일)
     const base = "flex-1 min-w-[52px] flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 rounded-lg text-[12px] font-bold transition-all duration-200 ease-out active:scale-95";
-    // 2026-08-17 v2 · 활성 · frosted pill + inset light (Attio 세련 · 데스크탑과 통일)
-    const activeInset = "shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]";
+    const activeInset = "shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(0,0,0,0.08)]";
+    // 그룹 톤 gradient · 활성 pill 배경
+    const mobileColorKey = (tab.color ?? "slate") as SideNavColor;
+    const mobileValidColor: SideNavColor = (["slate","amber","red","sky","indigo","emerald","violet","cyan"] as SideNavColor[]).includes(mobileColorKey) ? mobileColorKey : "slate";
+    const mobileAccent = NAV_ACCENT[mobileValidColor];
+    const mobileActiveStyle: React.CSSProperties = {
+      background: `linear-gradient(135deg, ${mobileAccent.hex}30 0%, ${mobileAccent.hex}15 50%, ${mobileAccent.hex}05 100%)`,
+    };
 
     // 경영관리 탭 (모바일) · business-manage 단순 라우팅 (2026-08-03)
     if (tab.key === "business") {
@@ -419,8 +425,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       const bizOnClick = () => onNavigate?.("business-manage");
       if (isActive) {
         return (
-          <span key="business" className={`${base} ${c.activeBg} ${c.activeText} ${activeInset} font-bold`}>
-            <Icon size={26} weight="fill" />
+          <span key="business" className={`${base} ${c.activeText} ${activeInset} font-bold`} style={mobileActiveStyle}>
+            <Icon size={26} weight="fill" className={mobileAccent.iconText} style={{ filter: `drop-shadow(0 0 4px ${mobileAccent.hex}80)` }} />
             <span className="leading-tight text-center whitespace-nowrap">경영</span>
           </span>
         );
@@ -443,8 +449,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const onClick = tab.key === "landing" ? (onBack ?? (() => onNavigate?.("landing"))) : () => onNavigate?.(tab.key as AppNavPage);
     if (isActive) {
       return (
-        <span key={tab.key} className={`${base} ${c.activeBg} ${c.activeText} ${activeInset} font-bold`}>
-          <Icon size={26} weight="fill" />
+        <span key={tab.key} className={`${base} ${c.activeText} ${activeInset} font-bold`} style={mobileActiveStyle}>
+          <Icon size={26} weight="fill" className={mobileAccent.iconText} style={{ filter: `drop-shadow(0 0 4px ${mobileAccent.hex}80)` }} />
           <span className="leading-tight text-center">
             {(() => {
               const L = tab.label;
