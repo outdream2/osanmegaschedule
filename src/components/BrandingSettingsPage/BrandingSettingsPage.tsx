@@ -32,6 +32,7 @@ import { useMobilePageLevel } from "../../hooks/useMobilePageLevel";
 import { SIDE_NAV_GROUPS } from "../layout/sideNavGroups";
 import { TabBar, type TabDef } from "../common/TabBar";
 import { ImageUploadField } from "../common/ImageUploadField";
+import { IconTile } from "../common/IconTile";
 
 // ─── 공통 카드 스타일 (ContractSettingsPage 톤과 통일) ───────────────────────
 const CARD_BASE =
@@ -118,9 +119,9 @@ const BrandSection: React.FC = () => {
   return (
     <section className={CARD_BASE}>
       <div className={SECTION_HEADER}>
-        <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
-          <Buildings size={15} weight="fill" />
-        </div>
+        {/* 2026-08-18 · IconTile 프레임워크 확산 */}
+        <IconTile icon={<Buildings size={15} weight="fill" />} tone="indigo" size="md" />
+
         <div className="flex-1 min-w-0">
           <div className="text-[15px] font-bold text-zinc-800 leading-tight">브랜드 정보</div>
           <div className="text-[15px] text-zinc-500 mt-0.5">사이드바·헤더·랜딩·푸터에서 사용되는 브랜드 이름/로고</div>
@@ -192,9 +193,9 @@ export const ContactSection: React.FC = () => {
   return (
     <section className={CARD_BASE}>
       <div className={SECTION_HEADER}>
-        <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-          <Phone size={15} weight="fill" />
-        </div>
+        {/* 2026-08-18 · IconTile 프레임워크 확산 */}
+        <IconTile icon={<Phone size={15} weight="fill" />} tone="emerald" size="md" />
+
         <div className="flex-1 min-w-0">
           <div className="text-[15px] font-bold text-zinc-800 leading-tight">연락처·저작권·카카오</div>
           <div className="text-[15px] text-zinc-500 mt-0.5">푸터·랜딩·카카오 QR 등에서 사용되는 값</div>
@@ -301,9 +302,9 @@ export const StampsSection: React.FC = () => {
   return (
     <section className={CARD_BASE}>
       <div className={SECTION_HEADER}>
-        <div className="w-7 h-7 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
-          <Stamp size={15} weight="fill" />
-        </div>
+        {/* 2026-08-18 · IconTile 프레임워크 확산 */}
+        <IconTile icon={<Stamp size={15} weight="fill" />} tone="rose" size="md" />
+
         <div className="flex-1 min-w-0">
           <div className="text-[15px] font-bold text-zinc-800 leading-tight">도장 매핑</div>
           <div className="text-[15px] text-zinc-500 mt-0.5">
@@ -504,9 +505,9 @@ export const MobileVisibilitySection: React.FC = () => {
   return (
     <section className={CARD_BASE}>
       <div className={SECTION_HEADER}>
-        <div className="w-7 h-7 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center shrink-0">
-          <DeviceMobile size={15} weight="fill" />
-        </div>
+        {/* 2026-08-18 · IconTile 프레임워크 확산 */}
+        <IconTile icon={<DeviceMobile size={15} weight="fill" />} tone="violet" size="md" />
+
         <div className="flex-1 min-w-0">
           <div className="text-[15px] font-bold text-zinc-800 leading-tight">페이지별 모바일 최소 레벨</div>
           <div className="text-[15px] text-zinc-500 mt-0.5">
