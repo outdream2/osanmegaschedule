@@ -105,29 +105,28 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
   return (
     <Collapsible.Root open={open} onOpenChange={handleOpenChange}>
 
-      {/* ── 그룹 헤더 · Collapsible trigger · 공통헤더 TAB 톤 ── */}
+      {/* ── 그룹 헤더 · 2026-08-18 · 그룹 톤 gradient 활성 배경 (밋밋함 해소) ── */}
       <Collapsible.Trigger asChild>
         <button
           type="button"
           aria-label={`${group.label} 그룹 ${open ? "접기" : "펼치기"}`}
+          style={hasActiveItem ? {
+            background: `linear-gradient(90deg, ${NAV_ACCENT[group.color].hex}22 0%, ${NAV_ACCENT[group.color].hex}0A 40%, transparent 90%)`,
+          } : undefined}
           className={[
             "flex w-full items-center justify-between",
             "px-2.5 py-1.5 mt-1.5 mb-0",
             "rounded-lg",
-            "text-[19px] leading-none", // 2026-08-12 · 사용자 지시 · 사이드바 폰트 +2
-            // 2026-08-17 v2 · 200ms ease-out · 모든 인터랙션 통일 · 세련
+            "text-[19px] leading-none",
             "transition-all duration-200 ease-out",
             "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
-            // 2026-08-17 v3 · 초고해상도 세련 · 3-layer inset shadow (Attio/Linear 톤)
             hasActiveItem
               ? [
-                  "bg-white/[0.14]",
                   groupTone.activeText,    // text-white
                   "font-bold",
-                  "shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(0,0,0,0.06),0_2px_8px_-2px_rgba(255,255,255,0.06)]",
+                  "shadow-[inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-1px_0_rgba(0,0,0,0.08)]",
                 ].join(" ")
               : [
-                  // 비활성 · light mint · 부드러운 hover
                   "text-[#C4DAEE]",
                   "hover:bg-white/[0.06] hover:text-white hover:translate-x-[1px]",
                   "font-semibold",
@@ -225,29 +224,26 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                   tooltip={item.label}
                   aria-current={active ? "page" : undefined}
                   aria-label={item.label}
+                  style={active ? {
+                    background: `linear-gradient(90deg, ${NAV_ACCENT[item.color].hex}28 0%, ${NAV_ACCENT[item.color].hex}10 45%, transparent 95%)`,
+                  } : undefined}
                   className={[
-                    // indent · 텍스트 모드: pl-4 · icon-only: pl-2
                     "group-data-[collapsible=icon]:pl-2 pl-4",
-                    // 높이 · 항목 간격
                     "h-7 rounded-lg",
-                    // 하위 항목 텍스트 크기 · 2026-08-12 · 사용자 지시 +2
                     "text-[18px]",
-                    // 2026-08-17 v3 · 초고해상도 세련 · 3-layer inset shadow (Attio/Linear 톤)
+                    // 2026-08-18 · 활성 · 그룹 톤 gradient 배경 (밋밋함 해소)
                     active
                       ? [
-                          "bg-white/[0.14]",
                           tone.activeText, // text-white
                           "font-bold",
-                          "shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(0,0,0,0.06),0_2px_8px_-2px_rgba(255,255,255,0.06)]",
+                          "shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(0,0,0,0.06)]",
                         ].join(" ")
                       : [
-                          // 비활성 · 목업 톤 · #C4DAEE · 하위 살짝 opacity 낮춤
                           "font-semibold text-[#C4DAEE]/85",
                           "hover:bg-white/[0.06] hover:text-white",
-                          // subtle slide on hover
                           "hover:translate-x-px",
                         ].join(" "),
-                    "transition-colors duration-150 ease-out",
+                    "transition-all duration-200 ease-out",
                   ].join(" ")}
                 >
                   {/* 2026-08-17 v3 · 하위 메뉴 아이콘 · double glow + hover scale */}
