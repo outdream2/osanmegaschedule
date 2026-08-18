@@ -1699,9 +1699,10 @@ export const DayTimelineModal: React.FC<Props> = ({
   ], [workers, staffWorkers, pharmacistWorkers, otherWorkers]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4 pt-4 sm:pt-0" onClick={onClose}>
+    // 2026-08-17 v2 · Modal 통일
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center backdrop-brand-strong p-0 sm:p-4 pt-4 sm:pt-0" onClick={onClose}>
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-3xl lg:max-w-4xl xl:max-w-[1100px] overflow-hidden flex flex-col"
+        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-brand-modal w-full sm:max-w-3xl lg:max-w-4xl xl:max-w-[1100px] overflow-hidden flex flex-col"
         style={{ maxHeight: "92vh" }}
         onClick={e => e.stopPropagation()}
       >

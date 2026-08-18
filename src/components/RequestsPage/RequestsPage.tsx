@@ -1213,8 +1213,9 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
 
       {/* 발주요청 중복 확인 모달 */}
       {dupOrderModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="bg-white rounded-xl shadow-xl p-5 max-w-sm w-full flex flex-col gap-4">
+        // 2026-08-17 v2 · Modal 통일
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-brand px-4">
+          <div className="bg-white rounded-xl shadow-brand-modal p-5 max-w-sm w-full flex flex-col gap-4">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
                 <ShoppingCart size={18} className="text-orange-600" />

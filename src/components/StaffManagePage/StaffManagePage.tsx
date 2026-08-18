@@ -546,8 +546,9 @@ const CreateModal: React.FC<{
   const set = (k: keyof Employee, v: unknown) => setDraft((p) => ({ ...p, [k]: v }));
 
   return (
+    // 2026-08-17 v2 · Modal 통일
     <div
-      className="fixed inset-0 z-50 bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 backdrop-brand flex items-center justify-center p-4"
       onClick={() => !saving && onClose()}
     >
       <div
@@ -2600,8 +2601,9 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
 
       {/* ── 모바일 상세 모달 · 가운데 위치 (2026-08-03 사용자 요청) ── */}
       {mobileDetail && selectedEmp && (
+        // 2026-08-17 v2 · Modal 통일
         <div
-          className="lg:hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-[2.5vw]"
+          className="lg:hidden fixed inset-0 z-50 backdrop-brand flex items-center justify-center p-[2.5vw]"
           onClick={() => setMobileDetail(false)}
         >
           <div

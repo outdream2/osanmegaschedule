@@ -1139,8 +1139,9 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
       {/* 입고내역 상세 모달 · 2026-08-03 · OrderManagePage 에서 이동 */}
       {selectedArrivalId != null && (
-        <div className="fixed inset-0 z-[100] bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setSelectedArrivalId(null)}>
-          <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+        // 2026-08-17 v2 · Modal 통일
+        <div className="fixed inset-0 z-[100] backdrop-brand flex items-center justify-center p-2 sm:p-4" onClick={() => setSelectedArrivalId(null)}>
+          <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-brand-modal overflow-hidden" onClick={e => e.stopPropagation()}>
             {/* 헤더 · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
             <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-line bg-zinc-50/60 shrink-0">
               <span className="w-[3px] h-[20px] rounded-full bg-brand-deep shrink-0" />

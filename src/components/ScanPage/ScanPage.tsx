@@ -964,7 +964,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[9998] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-zinc-900/50 backdrop-blur-sm"
+          // 2026-08-17 v2 · Modal 통일
+          className="fixed inset-0 z-[9998] flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-brand"
           onClick={() => setHistoryModal(null)}
         >
           <div
@@ -1040,10 +1041,11 @@ export const ScanPage: React.FC<ScanPageProps> = ({
 
       {/* 2026-08-10 · G · B1 · 검토 시트 (오입력 방지 · [전체 등록] → 요약 확인 → [확정]) */}
       {reviewOpen && (
-        <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
+        // 2026-08-17 v2 · Modal 통일
+        <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center backdrop-brand p-0 sm:p-4"
           onClick={() => setReviewOpen(false)}
         >
-          <div className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+          <div className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-brand-modal overflow-hidden flex flex-col max-h-[85vh]"
             onClick={e => e.stopPropagation()}
           >
             <div className="px-5 py-3.5 border-b border-line bg-teal-50 flex items-center justify-between">
