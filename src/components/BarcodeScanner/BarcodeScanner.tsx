@@ -215,23 +215,70 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     return () => document.removeEventListener("keydown", h);
   }, [onClose]);
 
-  // 2026-08-18 · 카메라 권한 프롬프트 · 마운트 즉시 명시 트리거 (iOS/Android 공통)
-  //   · useZxing 이 내부에서 getUserMedia 호출하지만 · iOS Safari 는 첫 호출 타이밍 이슈 있음
-  //   · 사용자 gesture (버튼 클릭) 로 모달이 열리자마자 · 즉시 명시 getUserMedia 호출
-  //   · 성공 시 즉시 track stop (useZxing 이 실제 스트림 관리)
-  //   · 실패 시 silent (useZxing 이 자체 에러 처리) · 회귀 없음
+  // 2026-08-18 · 카메라 안정성 강화 · 모든 실패 경우 대비 (iOS · Android · Desktop)
+  //   [원칙] useZxing 의 getUserMedia 를 방해하지 않음 (double-call race condition 방지)
+  //   [1] video.play() 명시 호출 · iOS Safari autoplay 정책 대응 (playing 이벤트 대기)
+  //   [2] 5초 timeout · srcObject 없거나 재생 실패 시 permissionState 감지
+  //   [3] permissionState="denied" → 명확한 안내 + 브라우저 설정 링크
+  //   [4] permissionState="prompt"/"granted" 인데 실패 → useZxing 라이브러리 이슈 · 재시도
+  const [cameraStatus, setCameraStatus] = useState<"init" | "playing" | "denied" | "notfound" | "failed">("init");
+
+  // [A] video 재생 감지 · playing 이벤트로 상태 업데이트
   useEffect(() => {
+    const v = videoRef.current as HTMLVideoElement | null;
+    if (!v) return;
+    const onPlaying = () => setCameraStatus("playing");
+    const onPlay = () => { try { v.play().catch(() => { /* autoplay blocked · playing 이벤트 대기 */ }); } catch {} };
+    v.addEventListener("playing", onPlaying);
+    v.addEventListener("loadedmetadata", onPlay);
+    return () => {
+      v.removeEventListener("playing", onPlaying);
+      v.removeEventListener("loadedmetadata", onPlay);
+    };
+  }, [videoRef]);
+
+  // [B] 5초 fallback · 재생 안 되면 권한 상태 조회
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (cameraStatus !== "init") return;
+      const v = videoRef.current as HTMLVideoElement | null;
+      const stream = v?.srcObject as MediaStream | null | undefined;
+      // 스트림 이미 있고 track 활성 · 이벤트 놓침 · 정상 처리
+      if (stream && stream.getVideoTracks().some(t => t.readyState === "live")) {
+        setCameraStatus("playing");
+        return;
+      }
+      // Permissions API 로 상태 조회 (지원 브라우저만)
+      try {
+        const perms = (navigator as any).permissions;
+        if (perms?.query) {
+          const p = await perms.query({ name: "camera" as PermissionName });
+          if (p.state === "denied") { setCameraStatus("denied"); return; }
+        }
+      } catch { /* iOS Safari · permissions.query 없음 · pass */ }
+      // 스트림 자체가 없거나 track 없음
+      if (!stream) setCameraStatus("failed");
+      else if (stream.getVideoTracks().length === 0) setCameraStatus("notfound");
+      else setCameraStatus("failed");
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [cameraStatus, videoRef]);
+
+  // [C] 재시도 · 스캔 루프 재시작 (권한 프롬프트 자동 재발생)
+  const retryCamera = useCallback(async () => {
+    setCameraStatus("init");
     try {
-      const md = (navigator as any).mediaDevices;
-      if (!md || typeof md.getUserMedia !== "function") return;
-      md.getUserMedia({ video: { facingMode: "environment" } })
-        .then((stream: MediaStream) => {
-          // 즉시 stop · useZxing 이 자체 스트림 열도록 양보
-          stream.getTracks().forEach(t => { try { t.stop(); } catch { /* ignore */ } });
-        })
-        .catch(() => { /* useZxing 이 실제 에러 처리 · silent */ });
-    } catch { /* ignore */ }
-  }, []);
+      // 명시 getUserMedia · 프롬프트 재발생 유도 (사용자 gesture · 재시도 버튼 클릭)
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      stream.getTracks().forEach(t => { try { t.stop(); } catch {} });
+      state.setScanKey(k => k + 1);
+    } catch (err: any) {
+      const name = String(err?.name || "");
+      if (name === "NotAllowedError" || name === "SecurityError") setCameraStatus("denied");
+      else if (name === "NotFoundError" || name === "DevicesNotFoundError") setCameraStatus("notfound");
+      else setCameraStatus("failed");
+    }
+  }, [state.setScanKey]);
 
   return (
     <div
@@ -400,6 +447,58 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-3 pointer-events-none">
               <div className="w-9 h-9 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
               <p className="text-white text-xs font-medium tracking-wide">이미지 인식 중...</p>
+            </div>
+          )}
+
+          {/* 2026-08-18 · 카메라 초기화 대기 (5초 미만) · 미묘한 로딩 표시 */}
+          {cameraStatus === "init" && !state.frozenFrame && (
+            <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 py-3 pointer-events-none bg-gradient-to-t from-black/60 to-transparent">
+              <div className="w-3 h-3 border-2 border-white/70 border-t-transparent rounded-full animate-spin" />
+              <span className="text-white/80 text-[11px] font-semibold">카메라 초기화...</span>
+            </div>
+          )}
+
+          {/* 2026-08-18 · 카메라 실패 오버레이 · denied/notfound/failed 별 안내 + 재시도 */}
+          {(cameraStatus === "denied" || cameraStatus === "notfound" || cameraStatus === "failed") && !state.frozenFrame && (
+            <div className="absolute inset-0 bg-black/92 flex flex-col items-center justify-center gap-3 px-5 py-6 z-20">
+              <div className="w-12 h-12 rounded-full bg-amber-500/[0.15] border border-amber-400/40 flex items-center justify-center">
+                <Zap size={22} className="text-amber-300" />
+              </div>
+              <div className="text-center max-w-[280px]">
+                <p className="text-white text-[14px] font-bold tracking-tight">
+                  {cameraStatus === "denied"   && "카메라 접근이 거부되었습니다"}
+                  {cameraStatus === "notfound" && "카메라를 찾을 수 없습니다"}
+                  {cameraStatus === "failed"   && "카메라가 응답하지 않습니다"}
+                </p>
+                <p className="text-white/60 text-[12px] mt-1.5 leading-relaxed">
+                  {cameraStatus === "denied"
+                    ? "주소창 자물쇠 → 카메라 → 허용 · 그 후 아래 다시 시도"
+                    : cameraStatus === "notfound"
+                      ? "PC라면 웹캠 연결 · 모바일이면 다른 앱이 카메라 사용중일 수 있어요"
+                      : "다른 탭이 카메라 사용중이거나 · 잠시 후 다시 시도해주세요"}
+                </p>
+              </div>
+              <button
+                onClick={retryCamera}
+                className="mt-1 px-5 h-11 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700
+                  text-white text-[14px] font-bold
+                  shadow-[0_2px_10px_-2px_rgba(52,211,153,0.5),inset_0_1px_0_rgba(255,255,255,0.15)]
+                  transition-colors cursor-pointer inline-flex items-center gap-2"
+              >
+                다시 시도
+              </button>
+              <button
+                onClick={() => state.imageInputRef.current?.click()}
+                className="text-white/50 hover:text-white/80 text-[12px] font-semibold underline underline-offset-2 transition-colors cursor-pointer"
+              >
+                또는 · 이미지 파일로 스캔
+              </button>
+              <button
+                onClick={onClose}
+                className="text-white/30 hover:text-white/60 text-[11px] font-medium transition-colors cursor-pointer mt-1"
+              >
+                닫기
+              </button>
             </div>
           )}
 
