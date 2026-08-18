@@ -62,21 +62,10 @@ const STATUS_META: Record<ItemStatus, { label: string; color: string; bg: string
 };
 
 // ─────────────────────────────────────────────────────────────
-// Toast · 우측 상단 · 프리미엄 pill
-// ─────────────────────────────────────────────────────────────
-interface ToastProps { message: string }
-const Toast: React.FC<ToastProps> = ({ message }) => (
-  <div
-    role="status"
-    aria-live="polite"
-    className="fixed top-4 right-4 z-[9999] flex items-center gap-2.5 px-4 py-3 rounded-xl
-      bg-zinc-900/95 backdrop-blur-sm text-white text-xs font-bold
-      shadow-[0_8px_32px_rgba(0,0,0,0.32)] border border-white/10
-      animate-in slide-in-from-top-2 fade-in duration-200"
-  >
-    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-    {message}
-  </div>
+// 2026-08-18 · 공용 NotificationToast 사용 (common/NotificationToast) · 중복 제거
+import { NotificationToast } from "../common/NotificationToast";
+const Toast: React.FC<{ message: string }> = ({ message }) => (
+  <NotificationToast message={message} tone="emerald" />
 );
 
 // ─────────────────────────────────────────────────────────────
