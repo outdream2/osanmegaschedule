@@ -9,6 +9,7 @@ import type { ScheduleTypeEntry } from "../../constants";
 import { ZoneAssignTab, type LogisticsZoneProps } from "./ZoneAssignTab";
 import { EmployeeInfoForm, type EmployeeInfoValues } from "../common/EmployeeInfoForm";
 import { EmployeeProfileCard } from "../common/EmployeeProfileCard";
+import { AccentBar } from "../common/AccentBar";
 
 export type { LogisticsZoneProps };
 
@@ -599,7 +600,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
               <div className="flex-shrink-0 border-t border-line bg-white px-5 py-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+                    <AccentBar />
                     <span className="text-[15px] font-bold text-ink">
                       {month}월 {editingDay}일 스케줄 편집
                     </span>
@@ -776,7 +777,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
             <section className="space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+                  <AccentBar />
                   <h3 className="text-[16px] font-bold tracking-tight text-ink">날짜 선택</h3>
                   <span className="text-[14px] font-medium text-ink-soft tabular-nums">· {bulkSelectedDates.length}일</span>
                 </div>
@@ -844,7 +845,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
             {/* Section 2 · 근무 조건 · 배지 없음 · accent bar · 폰트 +4 */}
             <section className="space-y-3">
               <div className="flex items-center gap-2.5">
-                <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+                <AccentBar />
                 <h3 className="text-[16px] font-bold tracking-tight text-ink">근무 조건</h3>
               </div>
 

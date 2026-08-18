@@ -72,3 +72,18 @@ describe("AccentBar · className 통과", () => {
     expect(cls).toContain("mt-0.5");
   });
 });
+
+describe("AccentBar · h prop (커스텀 픽셀)", () => {
+  it("h={17} · inline style height 적용 · preset 클래스 없음", () => {
+    const { container } = render(<AccentBar h={17} />);
+    const span = container.querySelector("span")! as HTMLSpanElement;
+    expect(span.style.height).toBe("17px");
+    expect(span.className).not.toContain("h-[16px]");
+    expect(span.className).not.toContain("h-[14px]");
+  });
+
+  it("h={22} · 22px", () => {
+    const { container } = render(<AccentBar h={22} />);
+    expect((container.querySelector("span")! as HTMLSpanElement).style.height).toBe("22px");
+  });
+});

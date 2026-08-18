@@ -14,6 +14,7 @@ import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/produ
 import { SeasonButtons } from "../common/SeasonButtons";
 import { PeriodSelector } from "../common/PeriodSelector";
 import { StatusPill } from "../common/StatusPill";
+import { AccentBar } from "../common/AccentBar";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { ProductPurchaseHistoryModal } from "./ProductPurchaseHistoryModal";
 import { LoadingState } from "../common/LoadingState";
@@ -726,7 +727,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
       {/* ── 상단 필터바 · 2026-08-17 · 최신 트렌드 · 좌측 accent bar + 딥네이비 통일 ── */}
       <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2`}>
         <div className="flex items-center gap-2.5 shrink-0">
-          <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+          <AccentBar />
           <Building2 size={16} className="text-brand-deep shrink-0" />
           <span className="text-[17px] font-bold text-ink tracking-tight">공급사현황</span>
           <StatusPill tone="brand" size="md">{displayedXlsxSuppliers.length}개 사</StatusPill>
@@ -735,7 +736,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         {/* 조회기간 · 2026-08-17 · PeriodSelector 공통 프레임워크 통일 */}
         <div className="flex items-center gap-2">
           <span className="flex items-center gap-1.5 shrink-0">
-            <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
+            <AccentBar size="sm" />
             <span className="text-[13px] font-bold text-ink tracking-tight">기간</span>
           </span>
           <PeriodSelector
@@ -758,7 +759,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         {/* Top N · segmented pill */}
         <div className="flex items-center gap-2">
           <span className="flex items-center gap-1.5 shrink-0">
-            <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
+            <AccentBar size="sm" />
             <span className="text-[13px] font-bold text-ink tracking-tight">Top N</span>
           </span>
           <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">

@@ -11,6 +11,7 @@ import { useSortableTable, type Comparator } from "../../hooks/useSortableTable"
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { StatusPill } from "../common/StatusPill";
+import { AccentBar } from "../common/AccentBar";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
@@ -152,7 +153,7 @@ const PeriodBucketCard: React.FC<{
       <div className="px-4 py-3 bg-zinc-50/60 border-b border-line flex items-start justify-between gap-2">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="w-[3px] h-[16px] rounded-full bg-brand-deep shrink-0" />
+            <AccentBar className="shrink-0" />
             <span className="text-[16px] font-bold text-ink tracking-tight">{bucket.label}</span>
             <span className="text-[13px] text-ink-soft">({bucket.sublabel})</span>
             {!bucket.loading && !bucket.error && (
@@ -235,7 +236,7 @@ const PeriodTrendingSection: React.FC<{
     <div className="flex flex-col gap-3">
       {/* 2026-08-17 · accent bar + 딥네이비 통일 */}
       <div className="flex items-center gap-2.5 px-1">
-        <span className="w-[3px] h-[16px] rounded-full bg-brand-deep shrink-0" />
+        <AccentBar className="shrink-0" />
         <span className="text-brand-deep shrink-0">{icon}</span>
         <span className="text-[16px] font-bold text-ink tracking-tight">{title}</span>
         <div className="flex-1 h-px bg-line" />
@@ -389,7 +390,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
         <div className="flex items-center gap-3 px-4 py-2.5 flex-wrap border-b border-line bg-white">
           {/* 비교기간 */}
           <span className="flex items-center gap-2 shrink-0">
-            <span className="w-[3px] h-[15px] rounded-full bg-brand-deep" />
+            <AccentBar h={15} />
             <span className="text-[15px] font-bold text-ink tracking-tight">비교 기간</span>
           </span>
           <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
@@ -401,7 +402,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
             ))}
           </div>
           <span className="flex items-center gap-2 shrink-0">
-            <span className="w-[3px] h-[15px] rounded-full bg-brand-deep" />
+            <AccentBar h={15} />
             <span className="text-[15px] font-bold text-ink tracking-tight">정렬</span>
           </span>
           <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">

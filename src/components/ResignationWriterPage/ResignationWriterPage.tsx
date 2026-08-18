@@ -32,6 +32,7 @@ import {
 import SignaturePad from "react-signature-canvas";
 // 2026-08-12 · 공통 SplitPanel · 좌우 폭 드래그 조절
 import SplitPanel from "../common/SplitPanel";
+import { AccentBar } from "../common/AccentBar";
 import html2canvas from "html2canvas-pro"; // 2026-08-04 · Tailwind v4 oklch 지원 · drop-in 교체
 import jsPDF from "jspdf";
 
@@ -272,7 +273,7 @@ const SignatureModal: React.FC<{
         {/* 헤더 */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-line">
           <div className="flex items-center gap-2.5">
-            <span className="w-[3px] h-[18px] rounded-full bg-brand-deep" />
+            <AccentBar size="lg" />
             <Signature size={17} weight="fill" className="text-brand-deep" />
             <h3 className="text-[17px] font-bold tracking-tight text-ink">
               {slot ? SIGN_LABELS[slot] : "서명"}
@@ -409,7 +410,7 @@ const ResignationPreview = React.forwardRef<HTMLDivElement, {
       {/* [1] 사직서 정보 */}
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-3">
-          <span className="w-[3px] h-[15px] rounded-full bg-brand-deep" />
+          <AccentBar h={15} />
           <span className="text-[18px] font-bold tracking-tight text-brand-deep">사직서 정보</span>
         </div>
         <table className="w-full text-[18px] border-collapse">
@@ -469,7 +470,7 @@ const ResignationPreview = React.forwardRef<HTMLDivElement, {
       {/* [2] 임금·퇴직금 등 금품 지급기일 동의 */}
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-3">
-          <span className="w-[3px] h-[15px] rounded-full bg-brand-deep" />
+          <AccentBar h={15} />
           <span className="text-[18px] font-bold tracking-tight text-brand-deep">임금, 퇴직금 등 금품 지급기일 동의</span>
         </div>
         <div className="text-[17px] text-ink leading-7 px-2 py-2">
@@ -487,7 +488,7 @@ const ResignationPreview = React.forwardRef<HTMLDivElement, {
       {/* [3] 기타 사항 동의 */}
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-3">
-          <span className="w-[3px] h-[15px] rounded-full bg-brand-deep" />
+          <AccentBar h={15} />
           <span className="text-[18px] font-bold tracking-tight text-brand-deep">기타 사항 동의</span>
         </div>
         <ol className="list-decimal pl-6 text-[17px] text-ink leading-7 space-y-2">
@@ -878,7 +879,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
           <section className="bg-white border border-line rounded-xl shadow-sm p-4 sm:p-5 flex flex-col gap-4 order-2 lg:order-1">
             {/* 섹션 헤더 */}
             <div className="flex items-center gap-2.5 pb-3 border-b border-line">
-              <span className="w-[3px] h-[17px] rounded-full bg-brand-deep" />
+              <AccentBar h={17} />
               <ClipboardText size={15} weight="fill" className="text-brand-deep" />
               <h2 className="text-[17px] font-bold tracking-tight text-ink">사직서 조건 입력</h2>
             </div>
@@ -1183,7 +1184,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
           right={
           <section className="order-1 lg:order-2 flex flex-col gap-3">
             <div className="flex items-center gap-2.5 pb-1">
-              <span className="w-[3px] h-[17px] rounded-full bg-brand-deep" />
+              <AccentBar h={17} />
               <SignOut size={16} weight="fill" className="text-brand-deep" />
               <h2 className="text-[17px] font-bold tracking-tight text-ink">사직서 미리보기</h2>
               <span className="text-[17px] text-ink-soft ml-1">

@@ -29,6 +29,7 @@ import { useSortableTable, type Comparator, type SortDir } from "../../hooks/use
 // 2026-08-09 · 사용자 요청 · 상품 검색·확인 · 리스트 등록 (공통)
 import { ProductSearchInput } from "../common/ProductSearchInput";
 import { IconTile } from "../common/IconTile";
+import { AccentBar } from "../common/AccentBar";
 import { useToast } from "../../hooks/useToast";
 
 interface ProductArrivalPageProps {
@@ -344,7 +345,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       {/* ── Page header strip · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 ── */}
       <div className="bg-white border-b border-line shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3">
-          <span className="w-[3px] h-[22px] rounded-full bg-brand-deep shrink-0" />
+          <AccentBar h={22} className="shrink-0" />
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand-deep
             flex items-center justify-center shadow-sm shrink-0">
             <PackagePlus size={17} className="text-white" />
@@ -420,7 +421,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
             {/* 2026-08-17 · 최신 트렌드 · 좌측 accent bar + 딥네이비 통일 · 장식 링 제거 */}
             <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-line bg-zinc-50/60">
-              <span className="w-[3px] h-[16px] rounded-full bg-brand-deep shrink-0" />
+              <AccentBar className="shrink-0" />
               {/* 카메라 프레임 아이콘 · 딥네이비 통일 */}
               <div className="relative w-9 h-9 rounded-xl bg-brand-deep
                 flex items-center justify-center shadow-sm shrink-0">
@@ -1043,7 +1044,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
         <main className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-5 flex flex-col gap-3 min-h-0">
           {/* 헤더 카드 · 2026-08-17 · accent bar + StatusPill 통일 */}
           <div className="bg-white border border-line rounded-xl shadow-sm p-3 h-12 flex items-center gap-2.5">
-            <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+            <AccentBar />
             <Package size={16} className="text-brand-deep shrink-0" />
             <span className="text-[16px] font-bold text-ink tracking-tight">입고내역</span>
             <StatusPill tone="brand" size="md">{arrivals.length}건</StatusPill>
@@ -1145,7 +1146,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
           <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-brand-modal overflow-hidden" onClick={e => e.stopPropagation()}>
             {/* 헤더 · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
             <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-line bg-zinc-50/60 shrink-0">
-              <span className="w-[3px] h-[20px] rounded-full bg-brand-deep shrink-0" />
+              <AccentBar h={20} className="shrink-0" />
               <Package size={18} className="text-brand-deep" />
               <h3 className="text-[17px] font-bold text-ink tracking-tight">입고내역 상세</h3>
               <span className="text-[13px] font-semibold text-ink-soft tabular-nums">ID {selectedArrivalId}</span>
