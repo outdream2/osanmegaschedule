@@ -11,6 +11,7 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { IconTile } from "../common/IconTile";
 import { Modal } from "../common/Modal";
 import { StatusPill } from "../common/StatusPill";
+import { Spinner } from "../common/Spinner";
 
 pdfjsLib.GlobalWorkerOptions.workerPort = new Worker(
   new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url),
@@ -539,9 +540,7 @@ const ConfirmedRecordsTab: React.FC = () => {
           </div>
         )}
         {loading && items.length === 0 ? (
-          <div className="px-4 py-10 flex items-center justify-center text-gray-400 text-xs gap-2">
-            <Loader2 size={14} className="animate-spin" />불러오는 중...
-          </div>
+          <div className="px-4 py-10 flex items-center justify-center"><Spinner tone="zinc" label="불러오는 중..." labelSize={12} /></div>
         ) : !loading && items.length === 0 ? (
           <div className="px-4 py-10 text-center text-gray-400 text-xs">
             저장된 항목이 없습니다.
@@ -738,9 +737,7 @@ const ConfirmedRecordsTab: React.FC = () => {
         }
       >
         {balanceHistoryLoading ? (
-          <div className="py-8 flex items-center justify-center text-ink-soft text-[13px] gap-2">
-            <Loader2 size={14} className="animate-spin" />불러오는 중...
-          </div>
+          <div className="py-8 flex items-center justify-center"><Spinner tone="zinc" label="불러오는 중..." labelSize={13} /></div>
         ) : !balanceHistory || balanceHistory.items.length === 0 ? (
           <div className="py-8 text-center text-ink-soft text-[13px]">
             잔고가 기록된 항목이 없습니다.

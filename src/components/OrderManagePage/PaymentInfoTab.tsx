@@ -34,6 +34,7 @@ import { EmptyState } from "../common/EmptyState";
 import { PeriodSelector, PERIOD_DAYS_PRESET, PERIOD_MONTHS_PRESET } from "../common/PeriodSelector";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 import { IconTile } from "../common/IconTile";
+import { Spinner } from "../common/Spinner";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { api, ApiError } from "../../lib/apiClient";
@@ -995,9 +996,7 @@ export const PaymentInfoTab: React.FC = () => {
             />
             <div className="flex-1 min-h-0 overflow-y-auto">
             {vendorsLoading ? (
-              <div className="flex items-center justify-center py-10 text-zinc-400 gap-2 text-[14px]">
-                <Loader2 size={13} className="animate-spin" />불러오는 중...
-              </div>
+              <div className="flex items-center justify-center py-10"><Spinner tone="zinc" size={13} label="불러오는 중..." labelSize={14} /></div>
             ) : filteredVendors.length === 0 ? (
               <div className="py-10 text-center text-[15px] text-zinc-300">공급사 없음</div>
             ) : (
@@ -1535,9 +1534,7 @@ export const PaymentInfoTab: React.FC = () => {
                 </div>
 
                 {recentLoading ? (
-                  <div className="flex items-center justify-center py-8 text-zinc-400 gap-2 text-[14px]">
-                    <Loader2 size={13} className="animate-spin" />불러오는 중...
-                  </div>
+                  <div className="flex items-center justify-center py-8"><Spinner tone="zinc" size={13} label="불러오는 중..." labelSize={14} /></div>
                 ) : recentPayments.length === 0 ? (
                   <div className="py-8 text-center text-[15px] text-zinc-300">결제 이력 없음</div>
                 ) : (
