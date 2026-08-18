@@ -104,12 +104,13 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
   const headerCls = "px-3 py-2 cursor-pointer hover:bg-zinc-100 transition select-none";
 
   return (
+    // 2026-08-17 v2 · Modal 통일
     <div
-      className="fixed inset-0 z-50 bg-zinc-900/50 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 backdrop-brand flex items-start justify-center p-4 overflow-y-auto"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl my-8 flex flex-col overflow-hidden"
+        className="bg-white rounded-2xl shadow-brand-modal w-full max-w-3xl my-8 flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 헤더 · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}

@@ -60,12 +60,13 @@ export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSel
   const event      = ZONE_DEFS.filter((z) => z.section === "event");       // 42
 
   return (
+    // 2026-08-17 v2 · Modal 통일
     <div
-      className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex flex-col"
+      className="fixed inset-0 z-[70] backdrop-brand flex flex-col"
       onClick={onClose}
     >
       <div
-        className="bg-gray-50 flex-1 flex flex-col mt-12 rounded-t-2xl overflow-hidden shadow-2xl"
+        className="bg-gray-50 flex-1 flex flex-col mt-12 rounded-t-2xl overflow-hidden shadow-brand-modal"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
