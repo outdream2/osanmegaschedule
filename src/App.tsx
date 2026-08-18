@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import SchedulePage from "./components/SchedulePage";
 import { LandingPage } from "./components/LandingPage";
 import { ReservationPage } from "./components/ReservationPage";
@@ -175,8 +175,25 @@ export default function App() {
 
   // 2026-08-17 · 사용자 지시 · "재로그인 필요하면 로그아웃 후 로그인화면으로" · "토큰만료 이후 프로세스 강화 로그인화면으로 강제 이동"
   //   · apiClient / main.tsx 인터셉터 · refresh 실패 시 SESSION_EXPIRED_EVENT dispatch · 이 리스너 → handleLogout (window.location.replace("/"))
+  // 2026-08-18 · CRITICAL fix · 배포 후 무한 리로드 원인 · 로그아웃 상태에서 SESSION_EXPIRED 발화 시 handleLogout 재귀 loop
+  //   · 미로그인 (localStorage 세션 없음) 상태에서 401 발생 → handleLogout → reload → 다시 401 → LOOP
+  //   · 해결 1: localStorage 세션 없으면 no-op (이미 로그아웃 상태 · 할 일 없음)
+  //   · 해결 2: 1초 내 중복 발화 무시 (belt-and-suspenders)
+  const lastExpiredAtRef = useRef<number>(0);
   useEffect(() => {
-    const onExpired = () => handleLogout();
+    const onExpired = () => {
+      // Guard 1 · 미로그인 상태면 no-op (loop 방지)
+      const stored = localStorage.getItem("megatown_auth_session");
+      if (!stored) {
+        console.log("[SESSION_EXPIRED] 미로그인 상태 · 무시 (loop 방지)");
+        return;
+      }
+      // Guard 2 · 1초 이내 중복 발화 무시
+      const now = Date.now();
+      if (now - lastExpiredAtRef.current < 1000) return;
+      lastExpiredAtRef.current = now;
+      handleLogout();
+    };
     window.addEventListener("api-session-expired", onExpired);
     return () => window.removeEventListener("api-session-expired", onExpired);
   }, []);
