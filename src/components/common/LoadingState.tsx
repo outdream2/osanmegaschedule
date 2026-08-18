@@ -28,11 +28,12 @@ export interface LoadingStateProps {
   className?: string;
 }
 
+// 2026-08-17 v2 · 딥네이비 통일 (모든 tone → brand-deep · 브랜드 통일)
 const TONE_CLS: Record<NonNullable<LoadingStateProps["tone"]>, string> = {
-  slate:   "text-zinc-400",
-  indigo:  "text-indigo-400",
-  emerald: "text-emerald-400",
-  sky:     "text-sky-400",
+  slate:   "text-ink-soft",
+  indigo:  "text-brand-deep",
+  emerald: "text-brand-deep",
+  sky:     "text-brand-deep",
 };
 
 const SIZE_PAD: Record<NonNullable<LoadingStateProps["size"]>, string> = {
@@ -106,7 +107,8 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
         className={`${toneCls} animate-spin`}
         strokeWidth={2}
       />
-      <span className={`text-[12px] font-semibold ${toneCls}`}>
+      {/* 2026-08-17 v2 · 폰트 +2 (12→14) · 세련 */}
+      <span className={`text-[14px] font-semibold ${toneCls} tracking-tight`}>
         {label}
       </span>
     </div>

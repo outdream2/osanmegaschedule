@@ -63,16 +63,19 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       role="status"
       aria-live="polite"
     >
-      <Icon
-        size={28}
-        className="text-zinc-300 mb-1"
-        strokeWidth={1.5}
-      />
-      <p className={`${TEXT.body} text-zinc-500 font-semibold`}>
+      {/* 2026-08-17 v2 · 아이콘 · brand-tint 배경 원 + brand-deep icon · 세련 */}
+      <div className="w-14 h-14 rounded-full bg-brand-tint flex items-center justify-center mb-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(10,46,74,0.05)]">
+        <Icon
+          size={26}
+          className="text-brand-deep opacity-50"
+          strokeWidth={1.8}
+        />
+      </div>
+      <p className={`${TEXT.body} text-ink font-bold tracking-tight`}>
         {title}
       </p>
       {hint != null && (
-        <p className={`${TEXT.caption} text-zinc-400`}>
+        <p className={`${TEXT.caption} text-ink-soft`}>
           {hint}
         </p>
       )}

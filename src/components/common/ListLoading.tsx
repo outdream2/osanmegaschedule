@@ -18,11 +18,12 @@ export interface ListLoadingProps {
   className?: string;
 }
 
+// 2026-08-17 v2 · 딥네이비 통일 · semantic tone (rose) 유지
 const TONE_MAP: Record<NonNullable<ListLoadingProps["tone"]>, string> = {
-  slate:   "text-zinc-400",
-  emerald: "text-emerald-500",
-  sky:     "text-sky-500",
-  indigo:  "text-indigo-500",
+  slate:   "text-ink-soft",
+  emerald: "text-brand-deep",
+  sky:     "text-brand-deep",
+  indigo:  "text-brand-deep",
   rose:    "text-rose-500",
 };
 
@@ -42,8 +43,9 @@ export const ListLoading: React.FC<ListLoadingProps> = ({
 }) => {
   const toneCls = TONE_MAP[tone];
   return (
+    // 2026-08-17 v2 · 폰트 +2 (12→14) · tracking-tight · 세련
     <div
-      className={`flex items-center justify-center gap-2 text-[12px] font-semibold ${toneCls} ${
+      className={`flex items-center justify-center gap-2 text-[14px] font-semibold tracking-tight ${toneCls} ${
         fullHeight ? "flex-1 min-h-0 h-full py-8" : "py-8"
       } ${className}`}
       role="status"
