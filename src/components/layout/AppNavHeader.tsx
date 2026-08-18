@@ -324,17 +324,13 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const iconAccent = accent.iconText;
     const activeGlow = accent.glow;
 
-    // 2026-08-18 · 활성 · 그룹 톤 gradient (밋밋함 해소 · 사이드바 통일)
+    // 2026-08-18 v5 · 심플 배경 (gradient 제거 · 사용자 피드백)
     const baseCommon = "relative flex items-center gap-1.5 px-3 sm:px-3 md:px-3.5 lg:px-4 py-1.5 rounded-lg text-[19px] sm:text-[19px] md:text-[20px] lg:text-[21px] font-semibold whitespace-nowrap transition-all duration-200 ease-out";
 
-    // active · 그룹 tone tinted gradient + inset highlight (Attio 최신 트렌드)
-    const activeClass = `${baseCommon} text-white font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-1px_0_rgba(0,0,0,0.08)]`;
-    // inactive · 부드러운 hover · 세련 minimal
-    const inactiveClass = `${baseCommon} text-[#C4DAEE] hover:bg-white/[0.08] hover:text-white hover:-translate-y-[1px] active:scale-95 cursor-pointer disabled:opacity-40 group/tab`;
-    // 2026-08-18 · 활성 pill 배경 · 그룹 톤 gradient (좌→우 fade)
-    const activeStyle: React.CSSProperties = {
-      background: `linear-gradient(135deg, ${accent.hex}30 0%, ${accent.hex}15 50%, ${accent.hex}05 100%)`,
-    };
+    // active · 흰 반투명 pill + inset highlight (Attio)
+    const activeClass = `${baseCommon} bg-white/[0.10] text-white font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]`;
+    // inactive · 부드러운 hover
+    const inactiveClass = `${baseCommon} text-[#C4DAEE] hover:bg-white/[0.06] hover:text-white hover:-translate-y-[1px] active:scale-95 cursor-pointer disabled:opacity-40 group/tab`;
 
     // 경영관리 탭 · business-manage 통합 페이지로 단순 라우팅 (2026-08-03)
     if (tab.key === "business") {
@@ -342,13 +338,13 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       const bizOnClick = () => onNavigate?.("business-manage");
       if (isActive) {
         return (
-          <span key="business" className={activeClass} style={activeStyle}>
-            <Icon size={20} weight="fill" className={`shrink-0 ${iconAccent}`} style={{ filter: `drop-shadow(0 0 6px ${accent.hex}80)` }} />
+          <span key="business" className={activeClass}>
+            <Icon size={20} weight="fill" className={`shrink-0 ${iconAccent} scale-110 transition-transform`} style={{ filter: `drop-shadow(0 0 8px ${accent.hex}) drop-shadow(0 0 16px ${accent.hex}40)` }} />
             <span>{tab.label}</span>
-            {/* 2026-08-17 v3 · gradient bar (fade edges) + double glow */}
+            {/* 2026-08-18 v5 · 강력한 gradient bar + double glow */}
             <span
               className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-[90%] h-[3px] rounded-full pointer-events-none"
-              style={{ background: `linear-gradient(90deg, transparent, ${accent.hex} 30%, ${accent.hex} 70%, transparent)`, boxShadow: `0 0 12px ${accent.hex}70, 0 2px 8px ${accent.hex}40` }}
+              style={{ background: `linear-gradient(90deg, transparent, ${accent.hex} 30%, ${accent.hex} 70%, transparent)`, boxShadow: `0 0 12px ${accent.hex}, 0 2px 10px ${accent.hex}80` }}
             />
           </span>
         );
@@ -361,11 +357,13 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           disabled={!onNavigate}
           className={inactiveClass}
         >
-          <Icon size={20} weight="duotone" className="shrink-0 opacity-70 group-hover/tab:opacity-100 transition-opacity" />
+          {/* 2026-08-18 v5 · 아이콘 · 항상 그룹 accent color (액센트 유지) */}
+          <Icon size={20} weight="duotone" className={`shrink-0 opacity-75 group-hover/tab:opacity-100 transition-all ${iconAccent}`} />
           <span>{tab.label}</span>
-          {/* 2026-08-17 v3 · hover underline reveal */}
+          {/* hover underline reveal */}
           <span
-            className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-0 h-[2px] rounded-full bg-white/40 pointer-events-none transition-all duration-300 ease-out group-hover/tab:w-[50%]"
+            className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-0 h-[2px] rounded-full pointer-events-none transition-all duration-300 ease-out group-hover/tab:w-[50%]"
+            style={{ backgroundColor: `${accent.hex}80` }}
             aria-hidden
           />
         </button>
@@ -376,13 +374,13 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const onClick = tab.key === "landing" ? (onBack ?? (() => onNavigate?.("landing"))) : () => onNavigate?.(tab.key as AppNavPage);
     if (isActive) {
       return (
-        <span key={tab.key} className={activeClass} style={activeStyle}>
-          <Icon size={20} weight="fill" className={`shrink-0 ${iconAccent}`} style={{ filter: `drop-shadow(0 0 6px ${accent.hex}80)` }} />
+        <span key={tab.key} className={activeClass}>
+          <Icon size={20} weight="fill" className={`shrink-0 ${iconAccent} scale-110 transition-transform`} style={{ filter: `drop-shadow(0 0 8px ${accent.hex}) drop-shadow(0 0 16px ${accent.hex}40)` }} />
           <span>{tab.label}</span>
-          {/* 2026-08-17 v3 · gradient bar (fade edges) + double glow */}
+          {/* 2026-08-18 v5 · 강력한 gradient bar + double glow */}
           <span
             className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-[90%] h-[3px] rounded-full pointer-events-none"
-            style={{ background: `linear-gradient(90deg, transparent, ${accent.hex} 30%, ${accent.hex} 70%, transparent)`, boxShadow: `0 0 12px ${accent.hex}70, 0 2px 8px ${accent.hex}40` }}
+            style={{ background: `linear-gradient(90deg, transparent, ${accent.hex} 30%, ${accent.hex} 70%, transparent)`, boxShadow: `0 0 12px ${accent.hex}, 0 2px 10px ${accent.hex}80` }}
           />
         </span>
       );
@@ -394,11 +392,13 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         disabled={!onNavigate && !onBack}
         className={inactiveClass}
       >
-        <Icon size={20} weight="duotone" className="shrink-0 opacity-70 group-hover/tab:opacity-100 transition-opacity" />
+        {/* 2026-08-18 v5 · 아이콘 · 항상 그룹 accent color (액센트 유지) */}
+        <Icon size={20} weight="duotone" className={`shrink-0 opacity-75 group-hover/tab:opacity-100 transition-all ${iconAccent}`} />
         <span>{tab.label}</span>
-        {/* 2026-08-17 v3 · Vercel/Linear · hover underline reveal (subtle) */}
+        {/* hover underline reveal · 그룹 색 반영 */}
         <span
-          className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-0 h-[2px] rounded-full bg-white/40 pointer-events-none transition-all duration-300 ease-out group-hover/tab:w-[50%]"
+          className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-0 h-[2px] rounded-full pointer-events-none transition-all duration-300 ease-out group-hover/tab:w-[50%]"
+          style={{ backgroundColor: `${accent.hex}80` }}
           aria-hidden
         />
       </button>
@@ -425,8 +425,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       const bizOnClick = () => onNavigate?.("business-manage");
       if (isActive) {
         return (
-          <span key="business" className={`${base} ${c.activeText} ${activeInset} font-bold`} style={mobileActiveStyle}>
-            <Icon size={26} weight="fill" className={mobileAccent.iconText} style={{ filter: `drop-shadow(0 0 4px ${mobileAccent.hex}80)` }} />
+          <span key="business" className={`${base} bg-white/[0.10] ${c.activeText} ${activeInset} font-bold`}>
+            <Icon size={26} weight="fill" className={`${mobileAccent.iconText} scale-110 transition-transform`} style={{ filter: `drop-shadow(0 0 6px ${mobileAccent.hex}) drop-shadow(0 0 12px ${mobileAccent.hex}60)` }} />
             <span className="leading-tight text-center whitespace-nowrap">경영</span>
           </span>
         );
@@ -439,7 +439,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           disabled={!onNavigate}
           className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white/[0.10] cursor-pointer disabled:opacity-40`}
         >
-          <Icon size={26} weight="fill" />
+          {/* 2026-08-18 v5 · 아이콘 · 항상 그룹 accent color (액센트 유지) */}
+          <Icon size={26} weight="fill" className={`${mobileAccent.iconText} opacity-75`} />
           <span className="leading-tight text-center">경영</span>
         </button>
       );
@@ -449,8 +450,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const onClick = tab.key === "landing" ? (onBack ?? (() => onNavigate?.("landing"))) : () => onNavigate?.(tab.key as AppNavPage);
     if (isActive) {
       return (
-        <span key={tab.key} className={`${base} ${c.activeText} ${activeInset} font-bold`} style={mobileActiveStyle}>
-          <Icon size={26} weight="fill" className={mobileAccent.iconText} style={{ filter: `drop-shadow(0 0 4px ${mobileAccent.hex}80)` }} />
+        <span key={tab.key} className={`${base} bg-white/[0.10] ${c.activeText} ${activeInset} font-bold`}>
+          <Icon size={26} weight="fill" className={`${mobileAccent.iconText} scale-110 transition-transform`} style={{ filter: `drop-shadow(0 0 6px ${mobileAccent.hex}) drop-shadow(0 0 12px ${mobileAccent.hex}60)` }} />
           <span className="leading-tight text-center">
             {(() => {
               const L = tab.label;
@@ -477,9 +478,10 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         disabled={!onNavigate && !onBack}
         className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white/[0.10] cursor-pointer disabled:opacity-40`}
       >
-        <Icon size={26} weight="fill" />
+        {/* 2026-08-18 v5 · 아이콘 · 항상 그룹 accent color (액센트 유지) */}
+        <Icon size={26} weight="fill" className={`${mobileAccent.iconText} opacity-75`} />
         <span className="leading-tight text-center whitespace-nowrap">
-          {/* 2026-08-04 · 3자 이하는 한줄 · 4자 이상만 wrap (스케줄 등 3자 줄바꿈 방지) */}
+          {/* 3자 이하는 한줄 · 4자 이상만 wrap */}
           {tab.label.length > 3 ? (
             <>
               <div>{tab.label.slice(0, tab.label.length - 2)}</div>
