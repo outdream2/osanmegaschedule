@@ -264,13 +264,18 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     return () => clearTimeout(timer);
   }, [cameraStatus, videoRef]);
 
-  // [C] 재시도 · 스캔 루프 재시작 (권한 프롬프트 자동 재발생)
+  // [C] 재시도 · 명시 getUserMedia + video.srcObject 수동 attach · useZxing 우회
   const retryCamera = useCallback(async () => {
     setCameraStatus("init");
     try {
-      // 명시 getUserMedia · 프롬프트 재발생 유도 (사용자 gesture · 재시도 버튼 클릭)
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-      stream.getTracks().forEach(t => { try { t.stop(); } catch {} });
+      const v = videoRef.current as HTMLVideoElement | null;
+      if (v) {
+        v.srcObject = stream;
+        try { await v.play(); } catch { /* autoplay blocked · playing 이벤트 대기 */ }
+      } else {
+        stream.getTracks().forEach(t => { try { t.stop(); } catch {} });
+      }
       state.setScanKey(k => k + 1);
     } catch (err: any) {
       const name = String(err?.name || "");
@@ -278,7 +283,38 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
       else if (name === "NotFoundError" || name === "DevicesNotFoundError") setCameraStatus("notfound");
       else setCameraStatus("failed");
     }
-  }, [state.setScanKey]);
+  }, [state.setScanKey, videoRef]);
+
+  // [D] 2초 fallback · useZxing 실패 시 · 직접 getUserMedia + srcObject 수동 attach
+  //   · iOS Safari · react-zxing 라이브러리 호환성 이슈 우회
+  //   · useZxing 이 성공했으면 · srcObject 존재 → skip (충돌 없음)
+  useEffect(() => {
+    let mounted = true;
+    const timer = setTimeout(async () => {
+      if (!mounted) return;
+      if (cameraStatus !== "init") return;
+      const v = videoRef.current as HTMLVideoElement | null;
+      if (!v) return;
+      const existing = v.srcObject as MediaStream | null;
+      if (existing && existing.getVideoTracks().some(t => t.readyState === "live")) return;
+      // useZxing 이 아직 스트림 attach 안 함 · 직접 시도
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: isDesktop ? true : { facingMode: "environment" }
+        });
+        if (!mounted) { stream.getTracks().forEach(t => t.stop()); return; }
+        v.srcObject = stream;
+        try { await v.play(); } catch { /* autoplay blocked · playing 이벤트 대기 */ }
+      } catch (err: any) {
+        // 명시 실패 · 권한 관련 즉시 상태 업데이트 (5초 타임아웃 기다리지 않음)
+        const name = String(err?.name || "");
+        if (name === "NotAllowedError" || name === "SecurityError") setCameraStatus("denied");
+        else if (name === "NotFoundError" || name === "DevicesNotFoundError") setCameraStatus("notfound");
+        // 그 외 · 5초 타임아웃 [B] 이 처리
+      }
+    }, 2000);
+    return () => { mounted = false; clearTimeout(timer); };
+  }, [cameraStatus, videoRef]);
 
   return (
     <div
