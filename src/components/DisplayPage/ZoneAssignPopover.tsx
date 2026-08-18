@@ -86,7 +86,8 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
       ref={popoverRef}
       style={style}
       onClick={(e) => e.stopPropagation()}
-      className="w-[240px] bg-white rounded-2xl border border-line shadow-2xl p-3 flex flex-col gap-2.5 animate-in fade-in zoom-in-95 duration-100"
+      // 2026-08-18 · shadow-brand-modal · Attio 3-layer 통일
+      className="w-[240px] bg-white rounded-2xl border border-line shadow-brand-modal p-3 flex flex-col gap-2.5 animate-in fade-in zoom-in-95 duration-100"
     >
       {/* Popover Header */}
       <div className="flex items-start justify-between border-b border-zinc-100 pb-2">
