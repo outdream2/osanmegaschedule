@@ -124,15 +124,16 @@
 - Dispatch 12곳 · Listener 3곳 (Landing · NotificationBell · RequestsPage)
 - 연차/점심/진열/발주/반품/불일치 · 제출/승인/취소/삭제
 
-**JWT + 배포 안정성** (#167):
+**JWT + 배포 안정성** (#167 · v2 완결):
 - JWT_SECRET · SUPABASE_KEY HMAC-SHA256 자동 파생 · Render Dashboard 설정 불필요
-- CRITICAL fix · handleLogout · fetch POST /api/auth/logout · 무한 리로드 루프 방지
+- CRITICAL v1 · handleLogout · fetch POST /api/auth/logout · 서버 쿠키 clear (36bd2ad)
+- CRITICAL v2 · SESSION_EXPIRED 리스너 guard 2개 · 미로그인 no-op + 1초 debounce · 무한 리로드 loop 완전 차단 (03e85a8)
 - envValidation.ts · JWT_SECRET · required → recommended
 - shadow-3xs (미정의 클래스) → shadow-sm · 5곳 fix
+- 보안 영향 0 (UI redirect 만 제어 · 서버 인증 flow 완전 그대로)
 
-**리모트 push:**
-- 4회 push (사용자 승인만) · `71880c5` · `58846d9` · `f90c16f` · `36bd2ad..ea58e89`
-- 2026-08-18 후반 · "이제 리모트푸시 금지" · 재승인 대기 (feedback_remote_push_strict.md 갱신)
+**리모트 push (총 5회 · 사용자 승인만):**
+- `71880c5` (프레임워크 P0 + 문서) · `58846d9` (JWT envVar) · `f90c16f` (JWT auto-derive) · `36bd2ad..ea58e89` (로그아웃 fix + approval events) · `03e85a8` (SESSION_EXPIRED guard v2)
 
 ---
 
