@@ -44,9 +44,39 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   // onDecodeResult reads .current at call-time, so we get the latest closure.
   const handleResultRef = useRef<(raw: string) => void>(() => {});
 
+  // 2026-08-19 · 카메라 에러 진단 · onError + 인앱브라우저·PWA 감지 (리서치 결과 반영)
+  const [camError, setCamError] = useState<string>("");
+  const [envInfo] = useState<{ inApp: boolean; standalone: boolean; ua: string }>(() => {
+    const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    return {
+      inApp: /KAKAOTALK|NAVER|FBAN|FBAV|Instagram|Line\/|Twitter|Snapchat|WhatsApp|Gmail|EdgeiOS/i.test(ua),
+      standalone: typeof window !== "undefined" && (
+        !!(window.navigator as any).standalone ||
+        (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches)
+      ),
+      ua,
+    };
+  });
+
   const { ref: videoRef } = useZxing({
     onDecodeResult: useCallback((result: any) => {
       handleResultRef.current(result.rawValue);
+    }, []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    onError: useCallback((e: unknown) => {
+      const err = e as Error;
+      const name = (e as any)?.name || "";
+      const msg = err?.message || String(e);
+      // eslint-disable-next-line no-console
+      console.error("[BarcodeScanner] useZxing error:", name, msg, {
+        ua: typeof navigator !== "undefined" ? navigator.userAgent : "?",
+        secureContext: typeof window !== "undefined" ? (window as any).isSecureContext : "?",
+        hasMediaDevices: typeof navigator !== "undefined" && !!(navigator as any).mediaDevices,
+        hasGUM: typeof navigator !== "undefined" && !!(navigator as any).mediaDevices?.getUserMedia,
+        standalone: typeof navigator !== "undefined" ? (navigator as any).standalone : "?",
+        displayModeStandalone: typeof window !== "undefined" && window.matchMedia?.("(display-mode: standalone)").matches,
+      });
+      setCamError(`${name || "Error"}: ${msg}`);
     }, []),
     constraints: { video: videoConstraints },
     formats: FORMATS as unknown as Parameters<typeof useZxing>[0]["formats"],
@@ -251,7 +281,58 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             ref={videoRef}
             className={`w-full h-full object-cover ${state.frozenFrame ? "invisible" : ""}`}
             autoPlay muted playsInline
+            // @ts-ignore · 구형 iOS Safari 인라인 재생
+            webkit-playsinline="true"
           />
+
+          {/* 2026-08-19 · 카메라 에러 오버레이 · 실제 에러 텍스트 · 인앱브라우저 감지 */}
+          {camError && !state.frozenFrame && (
+            <div className="absolute inset-0 bg-black/92 flex flex-col items-center justify-center gap-3 px-5 py-6 z-20 overflow-y-auto">
+              <div className="w-12 h-12 rounded-full bg-amber-500/[0.15] border border-amber-400/40 flex items-center justify-center">
+                <Zap size={22} className="text-amber-300" />
+              </div>
+              <div className="text-center max-w-[280px]">
+                <p className="text-white text-[14px] font-bold tracking-tight">카메라 접근 실패</p>
+                {envInfo.inApp ? (
+                  <p className="text-amber-300 text-[12px] mt-1.5 leading-relaxed font-semibold">
+                    카톡·네이버 등 인앱브라우저에서는 카메라가 안 됩니다.<br/>
+                    <span className="text-white/70">우측 상단 [···] → Safari 또는 Chrome 에서 열기</span>
+                  </p>
+                ) : envInfo.standalone ? (
+                  <p className="text-amber-300 text-[12px] mt-1.5 leading-relaxed font-semibold">
+                    홈화면에 저장한 앱에서는 iOS 카메라 이슈가 있을 수 있습니다.<br/>
+                    <span className="text-white/70">Safari 브라우저에서 직접 열어주세요</span>
+                  </p>
+                ) : camError.startsWith("NotAllowedError") ? (
+                  <p className="text-white/70 text-[12px] mt-1.5 leading-relaxed">
+                    <b className="text-white">주소창 자물쇠</b> 또는 <b className="text-white">AA</b> 아이콘 →<br/>
+                    웹사이트 설정 → 카메라 → 허용
+                  </p>
+                ) : (
+                  <p className="text-white/60 text-[12px] mt-1.5 leading-relaxed">
+                    브라우저 캐시 지우고 다시 시도해주세요
+                  </p>
+                )}
+                <p className="text-white/40 text-[10px] mt-2 font-mono break-all">{camError}</p>
+              </div>
+              <button
+                onClick={() => state.imageInputRef.current?.click()}
+                className="text-white/70 hover:text-white text-[13px] font-bold underline underline-offset-2 transition-colors cursor-pointer"
+              >이미지 파일로 스캔</button>
+              <details className="text-white/40 text-[10px] font-mono max-w-[280px] w-full text-left">
+                <summary className="cursor-pointer text-white/50 hover:text-white/70 text-center pb-1">진단 정보 (탭)</summary>
+                <div className="mt-2 space-y-0.5 leading-relaxed break-all bg-white/[0.03] rounded-md px-2 py-1.5 border border-white/[0.08]">
+                  <div>URL: {typeof window !== "undefined" ? window.location.protocol + "//" + window.location.host : "?"}</div>
+                  <div>secure: {typeof window !== "undefined" && "isSecureContext" in window ? String((window as any).isSecureContext) : "?"}</div>
+                  <div>mediaDevices: {typeof navigator !== "undefined" && (navigator as any).mediaDevices ? "yes" : "NO"}</div>
+                  <div>getUserMedia: {typeof navigator !== "undefined" && (navigator as any).mediaDevices?.getUserMedia ? "yes" : "NO"}</div>
+                  <div>inApp: {String(envInfo.inApp)}</div>
+                  <div>standalone: {String(envInfo.standalone)}</div>
+                  <div>UA: {envInfo.ua.substring(0, 80)}</div>
+                </div>
+              </details>
+            </div>
+          )}
 
           {/* Snapshot confirmation overlay */}
           {state.frozenFrame && (
