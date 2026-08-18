@@ -43,22 +43,6 @@ export const StockActionsCell: React.FC<StockActionsCellProps> = React.memo(({
         )}
       </button>
 
-      {/* 진열요청 */}
-      <button
-        onClick={() => onRequestDisplay(row)}
-        disabled={requestingKey === row.key}
-        className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
-          storeEmpty
-            ? "text-amber-500 bg-amber-50 hover:text-amber-700 hover:bg-amber-100 animate-pulse"
-            : "text-zinc-300 hover:text-violet-600 hover:bg-violet-50"
-        }`}
-        title="진열요청 전송 · 매장 재고 부족 시 강조"
-      >
-        {requestingKey === row.key
-          ? <Loader2 size={13} className="animate-spin" />
-          : <Megaphone size={13} />}
-      </button>
-
       {/* 삭제 */}
       <button
         onClick={() => onRemove(row.key)}
@@ -68,6 +52,22 @@ export const StockActionsCell: React.FC<StockActionsCellProps> = React.memo(({
         title="삭제"
       >
         <Trash2 size={13} />
+      </button>
+
+      {/* 2026-08-18 · 사용자 지시 · 진열요청 · 우측 배치 · 붉은색계열 (red-600) */}
+      <button
+        onClick={() => onRequestDisplay(row)}
+        disabled={requestingKey === row.key}
+        className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-150 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
+          storeEmpty
+            ? "text-red-600 bg-red-50 hover:text-red-700 hover:bg-red-100 animate-pulse"
+            : "text-red-500 hover:text-red-700 hover:bg-red-50"
+        }`}
+        title="진열요청 전송 · 매장 재고 부족 시 강조"
+      >
+        {requestingKey === row.key
+          ? <Loader2 size={13} className="animate-spin" />
+          : <Megaphone size={13} />}
       </button>
     </div>
   );
