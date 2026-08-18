@@ -201,15 +201,21 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
 
   // ── 모바일 모달 렌더링 (mobileRightAsModal=true · 비데스크탑) ──────────────
   const mobileModal = mobileRightAsModal && !isDesktop && mobileOpen ? (
+    // 2026-08-17 v2 · frosted backdrop + brand tint + blur (Modal 통일)
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-[2.5vw] bg-black/40"
+      className="fixed inset-0 z-50 flex items-center justify-center p-[2.5vw]"
+      style={{ background: "rgba(10, 46, 74, 0.35)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
       onClick={(e) => {
         if (e.target === e.currentTarget) closeMobileModal();
       }}
       role="dialog"
       aria-modal="true"
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] max-h-[92vh] flex flex-col overflow-hidden border border-line">
+      {/* 2026-08-17 v2 · 3-layer shadow · Attio/Linear */}
+      <div
+        className="bg-white rounded-2xl w-full max-w-[95vw] max-h-[92vh] flex flex-col overflow-hidden border border-line"
+        style={{ boxShadow: "0 1px 3px rgba(10,46,74,0.12), 0 8px 32px -8px rgba(10,46,74,0.24), 0 24px 64px -24px rgba(10,46,74,0.28)" }}
+      >
         {/* 모달 헤더 · 2026-08-17 · 최신 트렌드 · accent bar + 폰트 +2 */}
         <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-line bg-zinc-50/60 shrink-0">
           <span className="w-[3px] h-[16px] rounded-full bg-brand-deep shrink-0" />
