@@ -10,6 +10,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { StatusPill } from "../common/StatusPill";
+import { IconTile } from "../common/IconTile";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -237,9 +238,9 @@ export const DisplayRequestPanel: React.FC<DisplayRequestPanelProps> = ({
       <div className="px-3 pt-3 pb-2.5 border-b border-zinc-100 flex items-center justify-between flex-wrap gap-2">
         {/* 좌: 아이콘 + 제목 + 카운트 pills */}
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
-            <ClipboardList size={14} className="text-violet-600" />
-          </div>
+          {/* 2026-08-18 · IconTile 확산 */}
+          <IconTile icon={<ClipboardList size={14} />} tone="violet" size="md" />
+
           <span className="text-[13px] font-bold text-zinc-900 whitespace-nowrap">
             진열 보충 요청
           </span>

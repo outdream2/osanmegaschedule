@@ -28,6 +28,7 @@ import type { AuthSession } from "../../types";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
 // 2026-08-09 · 사용자 요청 · 상품 검색·확인 · 리스트 등록 (공통)
 import { ProductSearchInput } from "../common/ProductSearchInput";
+import { IconTile } from "../common/IconTile";
 import { useToast } from "../../hooks/useToast";
 
 interface ProductArrivalPageProps {
@@ -584,9 +585,9 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
               rounded-t-2xl sticky top-0 z-10
               shadow-[0_1px_0_rgba(0,0,0,0.04)]">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-sky-100 flex items-center justify-center">
-                  <ClipboardCheck size={14} className="text-sky-600" />
-                </div>
+                {/* 2026-08-18 · IconTile 확산 */}
+                <IconTile icon={<ClipboardCheck size={14} />} tone="sky" size="md" />
+
                 <span className="text-sm font-bold text-zinc-800">등록된 입고 상품</span>
                 {items.length > 0 && (
                   <StatusPill tone="sky" size="md">{items.length}건</StatusPill>

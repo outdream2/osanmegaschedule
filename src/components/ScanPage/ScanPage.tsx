@@ -39,6 +39,7 @@ import type { AuthSession } from "../../types";
 import { useConfirm } from "../../hooks/useConfirm";
 // 2026-08-09 · 사용자 요청 · 상품 검색·확인 · 리스트 등록 (공통)
 import { ProductSearchInput } from "../common/ProductSearchInput";
+import { IconTile } from "../common/IconTile";
 // ── 분리된 Row 컴포넌트 ──────────────────────────────────────
 import { StockRowDesktop } from "./StockRowDesktop";
 import type { StockRow } from "./stockRowTypes";
@@ -769,9 +770,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               px-4 sm:px-5 py-3 sm:py-3.5 border-b border-line/80
               bg-zinc-50/80 rounded-t-2xl sticky top-0 z-10 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-teal-100 flex items-center justify-center">
-                  <Package size={14} className="text-teal-600" />
-                </div>
+                {/* 2026-08-18 · IconTile 확산 */}
+                <IconTile icon={<Package size={14} />} tone="teal" size="md" />
+
                 <span className="text-sm font-bold text-zinc-800">스캔한 상품 · 실재고 입력</span>
                 {/* 2026-08-17 · StatusPill 프레임워크 통일 */}
                 {rows.length > 0 && (
