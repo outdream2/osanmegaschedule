@@ -639,7 +639,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                 <span className="text-[14px]">{desktopOverflowTabs.length}</span>
               </button>
               {desktopOverflowOpen && (
-                <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl shadow-[0_8px_32px_-4px_rgba(0,0,0,0.12),0_2px_8px_-2px_rgba(0,0,0,0.06)] border border-zinc-100 py-1.5 min-w-[160px] z-50 max-h-[70vh] overflow-y-auto">
+                // 2026-08-18 · 드롭다운 · 3-layer shadow (Modal 통일)
+                <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl shadow-brand-modal border border-zinc-100 py-1.5 min-w-[160px] z-50 max-h-[70vh] overflow-y-auto">
                   {desktopOverflowTabs.map(tab => {
                     const Icon = tab.icon;
                     const c = TAB_COLOR_MAP[tab.color ?? "slate"];
