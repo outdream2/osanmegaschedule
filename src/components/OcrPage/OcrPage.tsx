@@ -8,6 +8,7 @@ import type { OcrPageResult } from "./types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { useConfirm } from "../../hooks/useConfirm";
+import { IconTile } from "../common/IconTile";
 
 pdfjsLib.GlobalWorkerOptions.workerPort = new Worker(
   new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url),
@@ -1557,9 +1558,9 @@ return (
                 onClick={() => pdfInputRef.current?.click()}
                 className="flex-1 flex flex-col items-center gap-2.5 py-6 px-3 border-2 border-dashed border-gray-300 hover:border-amber-400 hover:bg-amber-50/40 rounded-xl cursor-pointer transition-colors"
               >
-                <div className="w-11 h-11 rounded-xl bg-amber-100 flex items-center justify-center">
-                  <Upload size={20} className="text-amber-600" />
-                </div>
+                {/* 2026-08-18 · IconTile 확산 · xl · rounded-xl */}
+                <IconTile icon={<Upload size={20} />} tone="amber" size="xl" shape="rounded-xl" />
+
                 <div className="text-center">
                   <p className="font-bold text-gray-800 text-sm">PDF 업로드</p>
                   <p className="text-gray-400 text-[15px] mt-0.5">1개 파일</p>
@@ -1570,9 +1571,9 @@ return (
                 onClick={() => imageInputRef.current?.click()}
                 className="flex-1 flex flex-col items-center gap-2.5 py-6 px-3 border-2 border-dashed border-gray-300 hover:border-emerald-400 hover:bg-emerald-50/40 rounded-xl cursor-pointer transition-colors"
               >
-                <div className="w-11 h-11 rounded-xl bg-emerald-100 flex items-center justify-center">
-                  <Images size={20} className="text-emerald-600" />
-                </div>
+                {/* 2026-08-18 · IconTile 확산 · xl · rounded-xl */}
+                <IconTile icon={<Images size={20} />} tone="emerald" size="xl" shape="rounded-xl" />
+
                 <div className="text-center">
                   <p className="font-bold text-gray-800 text-sm">이미지 업로드</p>
                   <p className="text-gray-400 text-[15px] mt-0.5">여러 장 선택 가능</p>

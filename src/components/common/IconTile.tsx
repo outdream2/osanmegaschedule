@@ -10,7 +10,7 @@
 
 import type { ReactNode } from "react";
 
-export type IconTileTone = "brand" | "sky" | "emerald" | "amber" | "rose" | "violet" | "teal" | "indigo" | "zinc" | "pine";
+export type IconTileTone = "brand" | "sky" | "emerald" | "amber" | "rose" | "violet" | "teal" | "indigo" | "zinc" | "pine" | "orange";
 
 interface ToneCls {
   bg: string;
@@ -28,6 +28,7 @@ const TONE_MAP: Record<IconTileTone, ToneCls> = {
   indigo:  { bg: "bg-indigo-100",  text: "text-indigo-700" },
   zinc:    { bg: "bg-zinc-100",    text: "text-zinc-700" },
   pine:    { bg: "bg-[#01796F]/10", text: "text-[#01796F]" },
+  orange:  { bg: "bg-orange-100", text: "text-orange-700" },
 };
 
 export interface IconTileProps {
@@ -35,23 +36,25 @@ export interface IconTileProps {
   icon: ReactNode;
   /** 색 tone · 기본 brand */
   tone?: IconTileTone;
-  /** 사이즈 · sm(24) · md(28) · lg(36) · 기본 md */
-  size?: "sm" | "md" | "lg";
-  /** 모양 · rounded (md/lg) or full · 기본 rounded */
-  shape?: "rounded" | "full";
+  /** 사이즈 · sm(24) · md(28) · lg(36) · xl(44) · 기본 md */
+  size?: "sm" | "md" | "lg" | "xl";
+  /** 모양 · rounded (md/lg) · rounded-xl (모달 강조) · full (원형) · 기본 rounded */
+  shape?: "rounded" | "rounded-xl" | "full";
   /** 추가 className */
   className?: string;
 }
 
 const SIZE_CLS: Record<NonNullable<IconTileProps["size"]>, string> = {
-  sm: "w-6 h-6",   // 24
-  md: "w-7 h-7",   // 28 (사이드바/헤더 아이콘 표준)
-  lg: "w-9 h-9",   // 36
+  sm: "w-6 h-6",    // 24
+  md: "w-7 h-7",    // 28 (사이드바/헤더 아이콘 표준)
+  lg: "w-9 h-9",    // 36
+  xl: "w-11 h-11",  // 44 (모달 헤더·강조)
 };
 
 const SHAPE_CLS: Record<NonNullable<IconTileProps["shape"]>, string> = {
-  rounded: "rounded-lg",
-  full:    "rounded-full",
+  rounded:      "rounded-lg",
+  "rounded-xl": "rounded-xl",
+  full:         "rounded-full",
 };
 
 /**

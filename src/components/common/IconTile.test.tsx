@@ -20,13 +20,16 @@ describe("IconTile · 기본 렌더", () => {
     expect(span.className).toContain("rounded-lg");
   });
 
-  it("size 변형 · sm=24 · lg=36", () => {
+  it("size 변형 · sm=24 · lg=36 · xl=44", () => {
     const { container: sm } = render(<IconTile icon={<svg />} size="sm" />);
     expect(sm.querySelector("span")!.className).toContain("w-6");
     expect(sm.querySelector("span")!.className).toContain("h-6");
     const { container: lg } = render(<IconTile icon={<svg />} size="lg" />);
     expect(lg.querySelector("span")!.className).toContain("w-9");
     expect(lg.querySelector("span")!.className).toContain("h-9");
+    const { container: xl } = render(<IconTile icon={<svg />} size="xl" />);
+    expect(xl.querySelector("span")!.className).toContain("w-11");
+    expect(xl.querySelector("span")!.className).toContain("h-11");
   });
 
   it("shape=full · rounded-full", () => {
@@ -34,12 +37,18 @@ describe("IconTile · 기본 렌더", () => {
     expect(container.querySelector("span")!.className).toContain("rounded-full");
   });
 
-  it("tone 매핑 · emerald · violet · rose · pine", () => {
+  it("shape=rounded-xl · rounded-xl", () => {
+    const { container } = render(<IconTile icon={<svg />} shape="rounded-xl" />);
+    expect(container.querySelector("span")!.className).toContain("rounded-xl");
+  });
+
+  it("tone 매핑 · emerald · violet · rose · pine · orange", () => {
     const cases: Array<[string, string, string]> = [
       ["emerald", "bg-emerald-100", "text-emerald-700"],
       ["violet",  "bg-violet-100",  "text-violet-700"],
       ["rose",    "bg-rose-100",    "text-rose-700"],
       ["pine",    "bg-[#01796F]/10", "text-[#01796F]"],
+      ["orange",  "bg-orange-100",  "text-orange-700"],
     ];
     cases.forEach(([tone, bg, text]) => {
       const { container } = render(<IconTile icon={<svg />} tone={tone as any} />);

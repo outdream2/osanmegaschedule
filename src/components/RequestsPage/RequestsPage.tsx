@@ -16,6 +16,7 @@ import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useConfirm } from "../../hooks/useConfirm";
 import { CARD_BASE } from "../../styles/tokens";
 import { StatusPill, type PillTone } from "../common/StatusPill";
+import { IconTile } from "../common/IconTile";
 // 2026-08-12 · 연차승인 탭 · LeavePage mode="approval" 로 임베드 (관리자용 승인 UI)
 import { LeavePage } from "../LeavePage/LeavePage";
 
@@ -1238,9 +1239,9 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-brand px-4">
           <div className="bg-white rounded-xl shadow-brand-modal p-5 max-w-sm w-full flex flex-col gap-4">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
-                <ShoppingCart size={18} className="text-orange-600" />
-              </div>
+              {/* 2026-08-18 · IconTile 확산 · lg + orange · rounded-xl */}
+              <IconTile icon={<ShoppingCart size={18} />} tone="orange" size="lg" shape="rounded-xl" />
+
               <div>
                 <p className="font-bold text-gray-900 text-sm">이미 발주요청이 있습니다</p>
                 <p className="text-[15px] text-gray-500 mt-0.5">실재고를 확인 후 업데이트하세요.</p>

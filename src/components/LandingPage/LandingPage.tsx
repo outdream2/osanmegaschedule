@@ -62,6 +62,7 @@ import { SectionLabel } from "../common/SectionLabel";
 import { MiniCard } from "../common/MiniCard";
 import { Hero } from "../common/Hero";
 import { KpiCard, type KpiTone } from "../common/KpiCard";
+import { IconTile } from "../common/IconTile";
 import { StatusPill } from "../common/StatusPill";
 // VendorListEditor 는 발주관리 공급사관리 에서만 사용 (LandingPage 데이터 업로드 에서 제거됨 · 2026-07-15)
 
@@ -1326,9 +1327,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           <div className="bg-white border border-line rounded-2xl p-4 sm:p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-brand-modal" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
-                  <Table size={15} className="text-orange-600" weight="fill" />
-                </div>
+                {/* 2026-08-18 · IconTile 확산 · lg + orange */}
+                <IconTile icon={<Table size={15} weight="fill" />} tone="orange" size="lg" />
+
                 <span className="text-gray-900 font-bold text-sm">데이터 업로드</span>
               </div>
               <button onClick={() => setUploadOpen(false)} className="text-gray-400 hover:text-gray-700 transition cursor-pointer"><X size={18} /></button>
