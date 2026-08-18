@@ -12,13 +12,13 @@ export const FORMATS = [
 ] as const;
 
 // ── Camera constraints ────────────────────────────────────────────────────────
-// focusMode / exposureMode must NOT be here — they are non-standard top-level
-// getUserMedia constraints. On Android Chrome they cause OverconstrainedError
-// which silently kills the stream (iOS ignores them, so only Android breaks).
-// These are applied via applyConstraints() in useCameraControls instead.
+// 2026-08-19 · iOS 17+ 침묵 실패 fix (html5-qrcode #846 · WebKit 179363)
+//   · aspectRatio 제거 · iOS17+ 에서 stream negotiation 침묵 실패 유발
+//   · 해상도 1280x720 로 축소 · 모바일에서 1920x1080 은 decode 비용 증가 · black video 유발
+//   · facingMode ideal (exact 금지)
+//   · focusMode/exposureMode top-level 금지 (Android OverconstrainedError)
 export const VIDEO_CONSTRAINTS: MediaTrackConstraints = {
-  facingMode: "environment",
-  width:  { ideal: 1920 },
-  height: { ideal: 1080 },
-  aspectRatio: { ideal: 16 / 9 },
+  facingMode: { ideal: "environment" },
+  width:  { ideal: 1280 },
+  height: { ideal: 720 },
 };

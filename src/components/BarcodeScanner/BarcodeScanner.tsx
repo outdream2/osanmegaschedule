@@ -39,6 +39,12 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     return VIDEO_CONSTRAINTS;
   });
 
+  // 2026-08-19 · 카메라 상태 · TDZ 방지 · useZxing 전에 선언
+  const [cameraReady, setCameraReady] = useState(false);
+  const [cameraError, setCameraError] = useState<{ name: string; msg: string } | null>(null);
+  const [showRetry, setShowRetry] = useState(false);
+  const manualStreamRef = useRef<MediaStream | null>(null);
+
   // handleResultRef: resolves circular dep between useZxing() (needs callback)
   // and handleResult (needs videoRef from useZxing return). useZxing's
   // onDecodeResult reads .current at call-time, so we get the latest closure.
@@ -48,10 +54,20 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     onDecodeResult: useCallback((result: any) => {
       handleResultRef.current(result.rawValue);
     }, []),
-    constraints: { video: videoConstraints },
+    // 2026-08-19 · onError · 침묵 실패 방지 · errorDetail 로 UI 표시
+    onError: useCallback((err: any) => {
+      const name = String(err?.name || "");
+      const msg = String(err?.message || err || "");
+      // 콘솔 · 디버깅용 (remote debugging)
+      // eslint-disable-next-line no-console
+      console.error("[BarcodeScanner] useZxing onError:", name, msg);
+      setCameraError({ name, msg });
+      setShowRetry(true);
+    }, []),
+    constraints: { video: videoConstraints, audio: false },
     formats: FORMATS as unknown as Parameters<typeof useZxing>[0]["formats"],
     trySkew: true,
-    timeBetweenDecodingAttempts: 150,
+    timeBetweenDecodingAttempts: 300,
   });
 
   const { handleResult, handleConfirm, handleRetry, handleImageDecode } =
@@ -184,10 +200,6 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   //   [3] 5초 timeout · 재생 실패 시 명시 재시도 버튼 표시
   //   [4] 명시 재시도 · getUserMedia + srcObject attach (useZxing 우회 · 사용자 gesture)
   //   [5] 실패 원인 · errorDetail 표시 (디버깅)
-  const [cameraReady, setCameraReady] = useState(false);
-  const [cameraError, setCameraError] = useState<{ name: string; msg: string } | null>(null);
-  const manualStreamRef = useRef<MediaStream | null>(null);
-
   useEffect(() => {
     const v = videoRef.current as HTMLVideoElement | null;
     if (!v) return;
@@ -205,7 +217,6 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   }, [videoRef]);
 
   // 5초 timeout · srcObject 존재 확인 (useZxing 성공 시 없음 · 실패 시 표시)
-  const [showRetry, setShowRetry] = useState(false);
   useEffect(() => {
     const timer = setTimeout(() => {
       if (cameraReady) return;
