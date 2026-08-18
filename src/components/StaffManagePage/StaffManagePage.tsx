@@ -58,6 +58,7 @@ import { AddressSearchModal } from "../common/AddressSearchModal";
 import { StatusPill } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
 import { InlineLabel } from "../common/InlineLabel";
+import { Spinner } from "../common/Spinner";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 interface Employee {
@@ -1420,9 +1421,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
           {/* 직원 목록 · 표 형식 · 한 줄 · 컬럼: 이름·직책·계약유형·근속·평가·계약서·상태 */}
           <div className="flex-1 overflow-auto min-h-0">
             {loading && filtered.length === 0 ? (
-              <div className="flex items-center justify-center py-8 text-zinc-400 text-[15px] font-semibold gap-1.5">
-                <Loader2 size={13} className="animate-spin" />로딩 중...
-              </div>
+              <div className="flex items-center justify-center py-8"><Spinner tone="zinc" size={13} label="로딩 중..." labelSize={15} /></div>
             ) : error ? (
               <div className="m-2.5 p-2.5 text-[15px] text-red-600 font-semibold bg-red-50 rounded-lg border border-red-200">
                 {error}

@@ -57,6 +57,7 @@ import { StockSearch } from "./StockSearch";
 // 2026-08-17 · 공용 Button (최신 트렌드 · Linear/Vercel 톤 · primary/secondary/ghost/danger)
 import { Button } from "../common/Button";
 import { AccentBar } from "../common/AccentBar";
+import { Spinner } from "../common/Spinner";
 // 2026-08-17 · UI 프레임워크 · SectionLabel · MiniCard · Hero (목업 톤)
 //   HeroButton · KpiCard · 오늘의 현황 한줄 텍스트화로 미사용 (2026-08-17 사용자 지시)
 import { SectionLabel } from "../common/SectionLabel";
@@ -1297,7 +1298,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               </div>
             )}
             {arrivalsLoading && stockArrivals.length === 0 ? (
-              <div className="flex items-center justify-center py-10 text-ink-soft text-[14px] font-medium gap-2"><Loader2 size={16} className="animate-spin" />로딩 중...</div>
+              <div className="flex items-center justify-center py-10"><Spinner tone="zinc" size={16} label="로딩 중..." labelSize={14} /></div>
             ) : !arrivalsLoading && stockArrivals.length === 0 ? (
               <div className="text-center text-[14px] text-ink-soft py-8 bg-white border border-line rounded-xl">데이터 없음</div>
             ) : (
