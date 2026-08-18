@@ -14,6 +14,7 @@ import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
 import { StatusPill } from "../common/StatusPill";
+import { Spinner } from "../common/Spinner";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { useResizablePanel } from "../../hooks/useResizablePanel";
@@ -815,9 +816,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
           <section className={`${CARD_BASE} overflow-hidden flex flex-col min-h-0`}>
             {/* 로딩 / 빈 상태 */}
             {returnLoading && returnList.length === 0 ? (
-              <div className="flex items-center justify-center py-12 text-zinc-400 text-xs font-bold gap-2">
-                <Loader2 size={14} className="animate-spin" />불러오는 중...
-              </div>
+              <div className="flex items-center justify-center py-12"><Spinner tone="zinc" label="불러오는 중..." labelSize={12} /></div>
             ) : returnList.length === 0 ? (
               <div className="py-12 text-center text-[15px] text-zinc-300">
                 조건에 맞는 반품필요 상품 없음

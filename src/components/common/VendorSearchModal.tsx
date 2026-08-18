@@ -19,6 +19,7 @@ import { X, Search, Loader2, Building2, Plus, PencilLine } from "lucide-react";
 import { useVendors } from "../../hooks/useVendors";
 import { NewVendorModal } from "./NewVendorModal";
 import { IconTile } from "./IconTile";
+import { Spinner } from "./Spinner";
 import { VendorDetailModal, type Vendor as VendorFull } from "../LandingPage/VendorListEditor";
 
 interface VendorSearchModalProps {
@@ -127,9 +128,7 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
         {/* 결과 리스트 */}
         <div className="flex-1 overflow-y-auto px-4 pb-3">
           {loading ? (
-            <div className="flex items-center justify-center gap-2 py-8 text-zinc-400 text-[12px]">
-              <Loader2 size={13} className="animate-spin" />불러오는 중...
-            </div>
+            <div className="flex items-center justify-center py-8"><Spinner tone="zinc" size={13} label="불러오는 중..." labelSize={12} /></div>
           ) : filtered.length === 0 ? (
             <div className="py-8 text-center">
               {q.length === 0 ? (
