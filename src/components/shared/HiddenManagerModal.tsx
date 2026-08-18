@@ -33,12 +33,13 @@ export const HiddenManagerModal: React.FC<Props> = ({
 }) => {
   if (!open) return null;
   return (
+    // 2026-08-17 v2 · backdrop-brand + shadow-brand-modal · Modal 통일
     <div
-      className="fixed inset-0 z-50 bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-1 sm:p-4"
+      className="fixed inset-0 z-50 backdrop-brand flex items-center justify-center p-1 sm:p-4"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[98vh] sm:max-h-[85vh] flex flex-col overflow-hidden"
+        className="bg-white rounded-2xl shadow-brand-modal w-full max-w-2xl max-h-[98vh] sm:max-h-[85vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}

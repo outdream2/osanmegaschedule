@@ -322,12 +322,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
 
   // ── render ────────────────────────────────────────────────────────────────
 
+  // 2026-08-17 v2 · backdrop-brand + shadow-brand-modal · Modal 통일
   const outerCls = embedded
     ? "w-full"
-    : "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto";
+    : "fixed inset-0 z-50 flex items-center justify-center backdrop-brand p-4 overflow-y-auto";
   const innerCls = embedded
     ? "relative w-full bg-white rounded-2xl border border-line flex flex-col"
-    : "relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-zinc-100 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150";
+    : "relative w-full max-w-2xl bg-white rounded-2xl shadow-brand-modal border border-zinc-100 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150";
   return (
     <div className={outerCls}>
       <div className={innerCls}>
@@ -653,8 +654,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
 
       {/* Edit mode confirm dialog */}
       {showEditConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl border border-zinc-100 p-6 w-full max-w-xs animate-in zoom-in-95 duration-150 space-y-4">
+        // 2026-08-17 v2 · Modal 통일
+        <div className="fixed inset-0 z-[60] flex items-center justify-center backdrop-brand">
+          <div className="bg-white rounded-2xl shadow-brand-modal border border-zinc-100 p-6 w-full max-w-xs animate-in zoom-in-95 duration-150 space-y-4">
             <p className="text-sm font-bold text-zinc-800 text-center">편집 모드를 켜겠습니까?</p>
             <p className="text-xs text-zinc-500 text-center">켜면 전체 스케줄에 수정사항이 반영되고, 이후 편집 모드가 유지됩니다.</p>
             <div className="flex gap-2 pt-1">

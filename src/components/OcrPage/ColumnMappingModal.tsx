@@ -190,9 +190,10 @@ export const ColumnMappingModal: React.FC<Props> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-[110] bg-black/50 flex items-center justify-center p-4"
+    // 2026-08-17 v2 · backdrop-brand + shadow-brand-modal · Modal 통일
+    <div className="fixed inset-0 z-[110] backdrop-brand flex items-center justify-center p-4"
       onClick={onCancel}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col"
+      <div className="bg-white rounded-2xl shadow-brand-modal w-full max-w-5xl max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}>
         {/* 헤더 */}
         <div className="px-5 py-3 border-b border-line flex items-center justify-between">
