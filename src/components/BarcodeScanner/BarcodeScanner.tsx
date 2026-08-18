@@ -215,6 +215,24 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     return () => document.removeEventListener("keydown", h);
   }, [onClose]);
 
+  // 2026-08-18 · 카메라 권한 프롬프트 · 마운트 즉시 명시 트리거 (iOS/Android 공통)
+  //   · useZxing 이 내부에서 getUserMedia 호출하지만 · iOS Safari 는 첫 호출 타이밍 이슈 있음
+  //   · 사용자 gesture (버튼 클릭) 로 모달이 열리자마자 · 즉시 명시 getUserMedia 호출
+  //   · 성공 시 즉시 track stop (useZxing 이 실제 스트림 관리)
+  //   · 실패 시 silent (useZxing 이 자체 에러 처리) · 회귀 없음
+  useEffect(() => {
+    try {
+      const md = (navigator as any).mediaDevices;
+      if (!md || typeof md.getUserMedia !== "function") return;
+      md.getUserMedia({ video: { facingMode: "environment" } })
+        .then((stream: MediaStream) => {
+          // 즉시 stop · useZxing 이 자체 스트림 열도록 양보
+          stream.getTracks().forEach(t => { try { t.stop(); } catch { /* ignore */ } });
+        })
+        .catch(() => { /* useZxing 이 실제 에러 처리 · silent */ });
+    } catch { /* ignore */ }
+  }, []);
+
   return (
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
