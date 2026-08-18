@@ -23,7 +23,7 @@
 - ✅ **StepperInput** · 3 size · brand-deep focus · 13 tests · 2곳
 - ✅ **NotificationToast** · 5 tone · dark frosted · 7 tests · 2곳
 - ✅ **InlineLabel** · 3 size · AccentBar + label · 6 tests · 12곳
-- ✅ **Spinner** · 7 tone · label + size · 8 tests · **21곳 통합** (55+ 후보 중)
+- ✅ **Spinner** · 7 tone · label + size · 8 tests · **30곳 통합** (55+ 후보 중)
 - ✅ **Modal migration** · 7 파일 (Break/Hidden/PurchaseHistory/ProductPurchase/Ocr balance/SupplierChange/DeleteSynonym)
 - ✅ **BarcodeScanner B안 재작성** · react-zxing 폐기 · Native BarcodeDetector · requestStream() 3-단계 fallback
 - ✅ **TS strict errors fix (11 파일)** · CategoryChips onChange · Phosphor Icon style · ZONE_DEFS import · SortableHeader JSX 등
