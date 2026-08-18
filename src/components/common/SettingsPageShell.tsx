@@ -59,7 +59,8 @@ export const SettingsPageShell: React.FC<Props> = ({
         {/* 페이지 타이틀 · 2026-08-17 · 세련 · accent bar + brand-tint 아이콘 카드 · 폰트 +2 */}
         <div className="flex items-start gap-3 mb-1">
           <span className="w-[3px] h-[40px] rounded-full bg-gradient-to-b from-brand-deep to-[#1E5C8E] shrink-0 mt-0.5" />
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-tint to-white border border-brand/15 shadow-[0_1px_2px_rgba(10,46,74,0.04),0_2px_8px_rgba(10,46,74,0.06)] flex items-center justify-center shrink-0">
+          {/* 2026-08-17 v2 · Attio 세련 · inset light 추가 (3-layer) */}
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-tint to-white border border-brand/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(10,46,74,0.05),0_2px_8px_-2px_rgba(10,46,74,0.08)] flex items-center justify-center shrink-0">
             <Icon size={22} weight="duotone" className={iconColor} />
           </div>
           <div className="flex-1 min-w-0">
