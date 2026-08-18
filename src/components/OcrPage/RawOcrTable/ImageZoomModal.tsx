@@ -25,7 +25,8 @@ export const ImageZoomModal: React.FC<ImageZoomModalProps> = ({
 }) => {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 outline-none"
+      // 2026-08-17 v2 · Modal 통일 (강조 backdrop · 이미지 뷰어)
+      className="fixed inset-0 z-50 flex items-center justify-center backdrop-brand-strong p-4 outline-none"
       onClick={closeModal}
       tabIndex={-1}
       autoFocus

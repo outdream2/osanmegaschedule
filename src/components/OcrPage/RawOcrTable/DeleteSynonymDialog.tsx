@@ -13,8 +13,9 @@ export const DeleteSynonymDialog: React.FC<DeleteSynonymDialogProps> = ({
   deleteSynConfirm, setDeleteSynConfirm, deleteSynonymByName, setAutoSynonymMatches,
 }) => {
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-zinc-100 space-y-4">
+    // 2026-08-17 v2 · Modal 통일
+    <div className="fixed inset-0 z-[70] flex items-center justify-center backdrop-brand">
+      <div className="bg-white rounded-2xl shadow-brand-modal p-6 w-full max-w-sm border border-zinc-100 space-y-4">
         <p className="text-sm font-bold text-zinc-800">동의어를 삭제하시겠습니까?</p>
         <p className="text-xs text-zinc-500 leading-relaxed">
           <span className="line-through text-gray-400">{deleteSynConfirm.origName}</span>의 동의어 매핑을 삭제합니다.

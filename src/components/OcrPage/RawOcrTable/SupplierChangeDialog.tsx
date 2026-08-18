@@ -26,9 +26,10 @@ export const SupplierChangeDialog: React.FC<SupplierChangeDialogProps> = ({
   setReparseStatus, setReparseSupplier,
 }) => {
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
+    // 2026-08-17 v2 · Modal 통일
+    <div className="fixed inset-0 z-[60] flex items-center justify-center backdrop-brand p-4"
       onClick={() => setSupplierConfirm(null)}>
-      <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-5 max-w-sm w-full flex flex-col gap-4"
+      <div className="bg-white rounded-2xl shadow-brand-modal border border-gray-100 p-5 max-w-sm w-full flex flex-col gap-4"
         onClick={e => e.stopPropagation()}>
         <div>
           <p className="text-sm font-bold text-gray-800 mb-1">공급처 변경</p>
