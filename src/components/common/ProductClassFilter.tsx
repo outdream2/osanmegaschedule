@@ -21,14 +21,15 @@ interface Props {
   counts?: Partial<Record<ClassFilter, number>>;
 }
 
+// 2026-08-17 v2 · 활성 pill · inset light + 카테고리 semantic tone shadow (Attio)
 const OPTIONS: Array<{
   key: ClassFilter;
   icon: React.ComponentType<{ size?: number; className?: string }>;
   activeCls: string;
 }> = [
-  { key: "all", icon: Layers, activeCls: "bg-zinc-100 text-zinc-800 border-zinc-300 shadow-sm" },
-  { key: "stationery", icon: Pill, activeCls: "bg-violet-100 text-violet-800 border-violet-300 shadow-sm" },
-  { key: "general", icon: Stethoscope, activeCls: "bg-sky-100 text-sky-800 border-sky-300 shadow-sm" },
+  { key: "all", icon: Layers, activeCls: "bg-white text-brand-deep border-line shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(10,46,74,0.06),0_2px_6px_-2px_rgba(10,46,74,0.10)]" },
+  { key: "stationery", icon: Pill, activeCls: "bg-white text-violet-700 border-violet-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(139,92,246,0.10),0_2px_6px_-2px_rgba(139,92,246,0.18)]" },
+  { key: "general", icon: Stethoscope, activeCls: "bg-white text-sky-700 border-sky-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(14,165,233,0.10),0_2px_6px_-2px_rgba(14,165,233,0.18)]" },
 ];
 
 export const ProductClassFilter: React.FC<Props> = ({
@@ -55,8 +56,8 @@ export const ProductClassFilter: React.FC<Props> = ({
               key={opt.key}
               type="button"
               onClick={() => onChange(opt.key)}
-              className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer inline-flex items-center gap-1 border ${
-                active ? opt.activeCls : "border-transparent text-zinc-500 hover:text-zinc-700"
+              className={`h-8 px-2.5 text-[13px] font-semibold rounded-md transition-all duration-200 ease-out cursor-pointer inline-flex items-center gap-1 border ${
+                active ? opt.activeCls : "border-transparent text-ink-soft hover:text-brand-deep hover:bg-white"
               }`}
               title={labelText}
               aria-pressed={active}
