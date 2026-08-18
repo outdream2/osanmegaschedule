@@ -23,6 +23,7 @@ import type { AuthSession } from "../../types";
 // 2026-08-12 · UI 통일 · 공통 SettingsPageShell + 하단 sticky 액션바 + 타이포
 import { SettingsPageShell } from "../common/SettingsPageShell";
 import { StatusPill } from "../common/StatusPill";
+import { Spinner } from "../common/Spinner";
 import { useToast } from "../../hooks/useToast";
 import { SET_ACTION_BAR, SET_BTN_PRIMARY, SET_BTN_SECONDARY, SET_INFO_BADGE } from "../common/settingsTypography";
 import type { AppNavPage } from "../layout/AppNavHeader";
@@ -327,9 +328,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
       {/* 본문 */}
       <div className="flex-1">
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-zinc-400 text-sm gap-2">
-            <Loader2 size={16} className="animate-spin" /> 불러오는 중...
-          </div>
+          <div className="flex items-center justify-center py-16"><Spinner tone="zinc" size={16} label="불러오는 중..." labelSize={14} /></div>
         ) : (
           <>
             {saveError && (

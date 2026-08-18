@@ -34,6 +34,7 @@ import {
 import SalesTab from "./tabs/SalesTab";
 import SupplierVatTab from "./tabs/SupplierVatTab";
 import { AccentBar } from "../common/AccentBar";
+import { Spinner } from "../common/Spinner";
 import { useKvSetting } from "../../hooks/useKvSetting";
 
 // ─── 타입 ────────────────────────────────────────────────────────
@@ -551,9 +552,7 @@ const VatPreparePage: React.FC = () => {
                 <div className="text-[10px]">매입일 · 상품 · 수량 · 매입가 · 부가세 명세</div>
               </div>
             ) : detailLoading ? (
-              <div className="flex items-center justify-center py-10 text-zinc-400 gap-2 text-[12px]">
-                <Loader2 size={13} className="animate-spin" />불러오는 중...
-              </div>
+              <div className="flex items-center justify-center py-10"><Spinner tone="zinc" size={13} label="불러오는 중..." labelSize={12} /></div>
             ) : detail.length === 0 ? (
               <div className="py-10 text-center text-[11px] text-zinc-300">해당 기간 매입 없음</div>
             ) : (

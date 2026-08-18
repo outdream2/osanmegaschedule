@@ -16,6 +16,7 @@ import {
   TrendingUp, PackageCheck, Wallet, Calculator,
 } from "lucide-react";
 import { useMonthlyVat, type MonthlyVatRow } from "../hooks/useMonthlyVat";
+import { Spinner } from "../../common/Spinner";
 
 const fmt = (n: number) => Math.round(n).toLocaleString("ko-KR");
 
@@ -131,9 +132,7 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
 
         <div className="overflow-x-auto max-h-[65vh] overflow-y-auto">
           {monthly.loading && monthly.rows.length === 0 ? (
-            <div className="flex items-center justify-center py-10 text-zinc-400 gap-2 text-[12px]">
-              <Loader2 size={14} className="animate-spin" />불러오는 중...
-            </div>
+            <div className="flex items-center justify-center py-10"><Spinner tone="zinc" label="불러오는 중..." labelSize={12} /></div>
           ) : monthly.rows.length === 0 ? (
             <div className="py-10 text-center text-[11px] text-zinc-300">해당 기간 데이터 없음</div>
           ) : (

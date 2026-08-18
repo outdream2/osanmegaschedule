@@ -24,6 +24,7 @@
 import React, { useMemo } from "react";
 import { Building2, Loader2 } from "lucide-react";
 import { StatusPill, type PillTone } from "../../common/StatusPill";
+import { Spinner } from "../../common/Spinner";
 
 const fmt = (n: number): string => n.toLocaleString("ko-KR");
 
@@ -116,9 +117,7 @@ const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
       {/* 리스트 */}
       <div className="overflow-y-auto flex-1 min-h-0 max-h-[60vh]">
         {loading ? (
-          <div className="flex items-center justify-center py-10 text-zinc-400 gap-2 text-[12px]">
-            <Loader2 size={13} className="animate-spin" />불러오는 중...
-          </div>
+          <div className="flex items-center justify-center py-10"><Spinner tone="zinc" size={13} label="불러오는 중..." labelSize={12} /></div>
         ) : rows.length === 0 ? (
           <div className="py-10 text-center text-[11px] text-zinc-300">매입 데이터 없음</div>
         ) : (
