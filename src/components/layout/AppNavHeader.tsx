@@ -357,8 +357,13 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           disabled={!onNavigate}
           className={inactiveClass}
         >
-          <Icon size={20} weight="duotone" className="shrink-0 opacity-70" />
+          <Icon size={20} weight="duotone" className="shrink-0 opacity-70 group-hover/tab:opacity-100 transition-opacity" />
           <span>{tab.label}</span>
+          {/* 2026-08-17 v3 · hover underline reveal */}
+          <span
+            className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-0 h-[2px] rounded-full bg-white/40 pointer-events-none transition-all duration-300 ease-out group-hover/tab:w-[50%]"
+            aria-hidden
+          />
         </button>
       );
     }
@@ -385,8 +390,13 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         disabled={!onNavigate && !onBack}
         className={inactiveClass}
       >
-        <Icon size={20} weight="duotone" className="shrink-0 opacity-70" />
+        <Icon size={20} weight="duotone" className="shrink-0 opacity-70 group-hover/tab:opacity-100 transition-opacity" />
         <span>{tab.label}</span>
+        {/* 2026-08-17 v3 · Vercel/Linear · hover underline reveal (subtle) */}
+        <span
+          className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-0 h-[2px] rounded-full bg-white/40 pointer-events-none transition-all duration-300 ease-out group-hover/tab:w-[50%]"
+          aria-hidden
+        />
       </button>
     );
   };
