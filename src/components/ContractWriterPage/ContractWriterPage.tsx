@@ -3970,9 +3970,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       {writeMode === "upload" && (
         <div className={cardBase}>
           <div className="flex items-center gap-2 pb-2 border-b border-zinc-100">
-            <div className="w-6 h-6 rounded-md bg-indigo-100 flex items-center justify-center shrink-0">
-              <DownloadSimple size={13} weight="fill" className="text-indigo-600" />
-            </div>
+            {/* 2026-08-18 · IconTile 확산 */}
+            <IconTile icon={<DownloadSimple size={13} weight="fill" />} tone="indigo" size="sm" />
+
             <span className="text-[14px] font-bold text-zinc-700">PDF 업로드 (Google Drive)</span>
           </div>
 
@@ -4128,9 +4128,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           aria-expanded={!isCardCollapsed("employee")}
         >
           <CaretDown size={11} weight="bold" className={`text-zinc-400 transition-transform shrink-0 ${isCardCollapsed("employee") ? "-rotate-90" : ""}`} />
-          <div className="w-6 h-6 rounded-md bg-violet-100 flex items-center justify-center shrink-0">
-            <User size={13} weight="fill" className="text-violet-600" />
-          </div>
+          {/* 2026-08-18 · IconTile 확산 */}
+          <IconTile icon={<User size={13} weight="fill" />} tone="violet" size="sm" />
+
           <span className="text-[14px] font-bold text-zinc-700">근로자 정보</span>
         </button>
 
@@ -4346,9 +4346,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             aria-expanded={!isCardCollapsed("workCondition")}
           >
             <CaretDown size={11} weight="bold" className={`text-zinc-400 transition-transform shrink-0 ${isCardCollapsed("workCondition") ? "-rotate-90" : ""}`} />
-            <div className="w-6 h-6 rounded-md bg-indigo-100 flex items-center justify-center shrink-0">
-              <ClipboardText size={13} weight="fill" className="text-indigo-600" />
-            </div>
+            {/* 2026-08-18 · IconTile 확산 */}
+            <IconTile icon={<ClipboardText size={13} weight="fill" />} tone="indigo" size="sm" />
+
             <span className="text-[14px] font-bold text-zinc-700">근무조건 입력</span>
           </button>
           {/* 2026-08-06 · 월 근로 173h 표시 제거 · 계산 오류 · 실제는 209h 기준 (사용자 요청) */}
@@ -4666,9 +4666,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             aria-expanded={!isCardCollapsed("wage")}
           >
             <CaretDown size={11} weight="bold" className={`text-zinc-400 transition-transform shrink-0 ${isCardCollapsed("wage") ? "-rotate-90" : ""}`} />
-            <div className="w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center shrink-0">
-              <Money size={13} weight="fill" className="text-emerald-600" />
-            </div>
+            {/* 2026-08-18 · IconTile 확산 */}
+            <IconTile icon={<Money size={13} weight="fill" />} tone="emerald" size="sm" />
+
             <span className="text-[14px] font-bold text-zinc-700">임금구성표 산출</span>
           </button>
         </div>

@@ -10,6 +10,7 @@
 import { useState } from "react";
 import { api } from "../../lib/apiClient";
 import { X, Loader2, Building2, Save } from "lucide-react";
+import { IconTile } from "./IconTile";
 
 interface NewVendorModalProps {
   onClose: () => void;
@@ -71,9 +72,9 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
       >
         {/* 헤더 */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-100 bg-sky-50/60">
-          <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center">
-            <Building2 size={15} className="text-sky-600" />
-          </div>
+          {/* 2026-08-18 · IconTile 확산 */}
+          <IconTile icon={<Building2 size={15} />} tone="sky" size="lg" />
+
           <div className="flex-1 min-w-0">
             <div className="text-[10px] font-bold text-sky-600 uppercase tracking-wider">신규 공급사</div>
             <div className="text-[14px] font-bold text-zinc-800">공급사 등록</div>

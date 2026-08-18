@@ -18,6 +18,7 @@ import { useMemo, useState } from "react";
 import { X, Search, Loader2, Building2, Plus, PencilLine } from "lucide-react";
 import { useVendors } from "../../hooks/useVendors";
 import { NewVendorModal } from "./NewVendorModal";
+import { IconTile } from "./IconTile";
 import { VendorDetailModal, type Vendor as VendorFull } from "../LandingPage/VendorListEditor";
 
 interface VendorSearchModalProps {
@@ -66,9 +67,9 @@ export function VendorSearchModal({ onClose }: VendorSearchModalProps) {
       >
         {/* 헤더 */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-100 bg-sky-50/60 shrink-0">
-          <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center">
-            <Building2 size={15} className="text-sky-600" />
-          </div>
+          {/* 2026-08-18 · IconTile 확산 */}
+          <IconTile icon={<Building2 size={15} />} tone="sky" size="lg" />
+
           <div className="flex-1 min-w-0">
             <div className="text-[10px] font-bold text-sky-600 uppercase tracking-wider">공급사</div>
             <div className="text-[14px] font-bold text-zinc-800">공급사 검색·등록</div>

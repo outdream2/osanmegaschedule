@@ -587,9 +587,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-6 pt-3">
           <div className="flex items-center gap-3 px-4 py-3 rounded-xl
             bg-amber-50 border border-amber-200/80 shadow-sm">
-            <div className="w-6 h-6 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
-              <RotateCcw size={13} className="text-amber-600" />
-            </div>
+            {/* 2026-08-18 · IconTile 확산 */}
+            <IconTile icon={<RotateCcw size={13} />} tone="amber" size="sm" />
+
             <p className="flex-1 text-[14px] font-semibold text-amber-800 leading-snug">
               이전 세션의 임시저장 데이터가 있습니다. 복구하시겠습니까?
             </p>
