@@ -437,11 +437,12 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
                 disabled={disabled}
                 className={`${inputCls} flex-1 min-w-0`}
               />
+              {/* 2026-08-18 · indigo → brand-deep 통일 */}
               <button
                 type="button"
                 onClick={onAddressSearch}
                 disabled={disabled}
-                className="shrink-0 h-7 px-2.5 rounded-md border border-indigo-400 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-bold transition-colors disabled:opacity-50 cursor-pointer whitespace-nowrap"
+                className="shrink-0 h-7 px-2.5 rounded-md border border-brand/30 bg-brand-tint hover:bg-brand-tint/70 text-brand-deep text-[11px] font-bold transition-all duration-150 ease-out disabled:opacity-50 cursor-pointer whitespace-nowrap"
               >
                 주소 검색
               </button>
