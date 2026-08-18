@@ -38,9 +38,10 @@ export const ProductPurchaseHistoryModal: React.FC<{
   const uniqueSuppliers = new Set(rows.map(r => r.supplier_name).filter(Boolean)).size;
 
   return (
-    <div className="fixed inset-0 z-50 bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={onClose}>
+    // 2026-08-17 v2 · Modal 통일
+    <div className="fixed inset-0 z-50 backdrop-brand flex items-center justify-center p-2 sm:p-4" onClick={onClose}>
       <div
-        className="relative bg-white rounded-xl shadow-2xl w-full max-w-3xl h-[90vh] md:h-auto md:min-h-[70vh] md:max-h-[90vh] flex flex-col overflow-hidden"
+        className="relative bg-white rounded-xl shadow-brand-modal w-full max-w-3xl h-[90vh] md:h-auto md:min-h-[70vh] md:max-h-[90vh] flex flex-col overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}

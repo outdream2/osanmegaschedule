@@ -1010,8 +1010,9 @@ export const FlowTab: React.FC = () => {
 
       {/* 공급사 상세 모달 */}
       {supplierDetailModal && (
-        <div className="fixed inset-0 z-[100] bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setSupplierDetailModal(null)}>
-          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-xl shadow-2xl" onClick={e => e.stopPropagation()}>
+        // 2026-08-17 v2 · Modal 통일
+        <div className="fixed inset-0 z-[100] backdrop-brand flex items-center justify-center p-2 sm:p-4" onClick={() => setSupplierDetailModal(null)}>
+          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-xl shadow-brand-modal" onClick={e => e.stopPropagation()}>
             <VendorDetailModal
               vendor={supplierDetailModal}
               onClose={() => setSupplierDetailModal(null)}
@@ -1023,8 +1024,9 @@ export const FlowTab: React.FC = () => {
 
       {/* 숨김 항목 관리 모달 */}
       {hiddenModalOpen && (
-        <div className="fixed inset-0 z-50 bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-1 sm:p-4" onClick={() => setHiddenModalOpen(false)}>
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[98vh] sm:max-h-[85vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+        // 2026-08-17 v2 · Modal 통일
+        <div className="fixed inset-0 z-50 backdrop-brand flex items-center justify-center p-1 sm:p-4" onClick={() => setHiddenModalOpen(false)}>
+          <div className="bg-white rounded-xl shadow-brand-modal w-full max-w-2xl max-h-[98vh] sm:max-h-[85vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
             {/* 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-line bg-zinc-50/60">
               <div className="flex items-center gap-3 min-w-0">

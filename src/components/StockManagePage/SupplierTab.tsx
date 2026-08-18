@@ -710,8 +710,9 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         </div>
         {/* 공급사 상세 모달 (embedded 에서도 사용 가능하도록 유지) */}
         {supplierDetailModal && (
-          <div className="fixed inset-0 z-[100] bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setSupplierDetailModal(null)}>
-            <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-xl shadow-2xl" onClick={e => e.stopPropagation()}>
+          // 2026-08-17 v2 · Modal 통일
+          <div className="fixed inset-0 z-[100] backdrop-brand flex items-center justify-center p-2 sm:p-4" onClick={() => setSupplierDetailModal(null)}>
+            <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-xl shadow-brand-modal" onClick={e => e.stopPropagation()}>
               <VendorDetailModal vendor={supplierDetailModal} onClose={() => setSupplierDetailModal(null)} onSaved={() => setSupplierDetailModal(null)} />
             </div>
           </div>
@@ -973,8 +974,9 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
 
       {/* 공급사 상세 모달 */}
       {supplierDetailModal && (
-        <div className="fixed inset-0 z-[100] bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setSupplierDetailModal(null)}>
-          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-xl shadow-2xl" onClick={e => e.stopPropagation()}>
+        // 2026-08-17 v2 · Modal 통일
+        <div className="fixed inset-0 z-[100] backdrop-brand flex items-center justify-center p-2 sm:p-4" onClick={() => setSupplierDetailModal(null)}>
+          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-xl shadow-brand-modal" onClick={e => e.stopPropagation()}>
             <VendorDetailModal vendor={supplierDetailModal} onClose={() => setSupplierDetailModal(null)} onSaved={() => setSupplierDetailModal(null)} />
           </div>
         </div>
