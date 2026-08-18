@@ -5,8 +5,9 @@
 //   · 상태별 좌측 accent stripe · 최근 sky ring · 부드러운 shadow
 
 import React from "react";
-import { Box, Hash, Building2, Minus, Plus, CheckCircle2, XCircle, Clock, Trash2 } from "lucide-react";
+import { Box, Hash, Building2, CheckCircle2, XCircle, Clock, Trash2 } from "lucide-react";
 import type { ProductInfo } from "../../lib/productsCache";
+import { StepperInput } from "../common/StepperInput";
 
 export type ItemStatus = "pending" | "match" | "mismatch";
 
@@ -108,39 +109,15 @@ export const ArrivalRowCard: React.FC<ArrivalRowCardProps> = React.memo(({
 
         {/* 액션 영역 · 수량 stepper + 3-state pill + 삭제 */}
         <div className="flex items-center gap-2 flex-wrap pt-1">
-          {/* 수량 Stepper · 2026 톤 */}
-          <div className="inline-flex items-stretch h-11 rounded-xl border-2 border-line bg-white overflow-hidden
-            focus-within:border-brand-deep focus-within:shadow-[0_0_0_3px_rgba(10,46,74,0.10)] transition-all">
-            <button
-              onClick={() => onUpdateQty(item.key, -1)}
-              className="w-10 flex items-center justify-center text-zinc-400
-                hover:text-rose-600 hover:bg-rose-50/60 active:bg-rose-100/50
-                text-[18px] font-bold border-r border-line transition-colors cursor-pointer"
-              aria-label="수량 감소"
-              tabIndex={-1}
-            >
-              <Minus size={14} strokeWidth={3} />
-            </button>
-            <input
-              type="number"
-              inputMode="numeric"
+          {/* 수량 Stepper · 2026-08-18 · 공용 StepperInput 프레임워크 */}
+          <div className="w-[132px]">
+            <StepperInput
               value={item.qty}
-              onChange={(e) => onSetQty(item.key, Number(e.target.value) || 0)}
-              className="w-14 text-center bg-transparent
-                text-[17px] font-bold tabular-nums text-ink
-                focus:outline-none"
-              aria-label="수량"
+              onChange={(v) => onSetQty(item.key, v === "" ? 0 : v)}
+              size="lg"
+              decLabel="수량 감소"
+              incLabel="수량 증가"
             />
-            <button
-              onClick={() => onUpdateQty(item.key, 1)}
-              className="w-10 flex items-center justify-center text-zinc-400
-                hover:text-emerald-600 hover:bg-emerald-50/60 active:bg-emerald-100/50
-                text-[18px] font-bold border-l border-line transition-colors cursor-pointer"
-              aria-label="수량 증가"
-              tabIndex={-1}
-            >
-              <Plus size={14} strokeWidth={3} />
-            </button>
           </div>
 
           {/* 3-state pill · 일치·불일치·유통기한 · segmented (h-11 통일) */}

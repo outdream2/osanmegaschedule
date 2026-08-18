@@ -19,6 +19,7 @@ import { Box, Hash, ChevronDown, ChevronUp, MapPin, Check } from "lucide-react";
 import type { StockRow } from "./stockRowTypes";
 import { calcRowTotal, calcSlotTotal, calcTotalAdded } from "./stockRowTypes";
 import { StatusPill } from "../common/StatusPill";
+import { StepperInput as CommonStepperInput } from "../common/StepperInput";
 import { StockActionsCell } from "./StockActionsCell";
 
 // ─── 5-slot 정의 (창고2 · 매장3) ─────────────────────────────────
@@ -44,53 +45,8 @@ const SLOTS: readonly SlotDef[] = [
 
 const WARN_THRESHOLD = 100;
 
-// ─── 수량 스테퍼 · Linear/Fluent2 톤 · 스타일 통일 ───────────────
-const StepperInput: React.FC<{
-  value: number | "";
-  onChange: (v: number | "") => void;
-  placeholder?: string;
-}> = ({ value, onChange, placeholder = "0" }) => {
-  const cur = value === "" ? 0 : Number(value) || 0;
-  const dec = () => { const n = Math.max(0, cur - 1); onChange(n === 0 && value === "" ? "" : n); };
-  const inc = () => onChange(cur + 1);
-  return (
-    <div className="inline-flex items-stretch w-full h-10 bg-white border-2 border-line rounded-xl overflow-hidden
-      transition-all duration-150
-      focus-within:border-brand-deep
-      focus-within:shadow-[0_0_0_3px_rgba(10,46,74,0.10)]">
-      <button
-        type="button"
-        onClick={dec}
-        disabled={cur <= 0}
-        tabIndex={-1}
-        className="w-9 shrink-0 text-zinc-400 hover:text-rose-600 hover:bg-rose-50/60
-          active:bg-rose-100/50 disabled:opacity-25 disabled:hover:bg-transparent
-          disabled:hover:text-zinc-400 text-[18px] font-bold leading-none flex items-center justify-center
-          cursor-pointer border-r border-line transition-colors"
-        aria-label="감소"
-      >−</button>
-      <input
-        type="number"
-        inputMode="numeric"
-        value={value}
-        onChange={e => onChange(e.target.value === "" ? "" : Number(e.target.value))}
-        placeholder={placeholder}
-        className="flex-1 min-w-0 h-full text-center bg-transparent border-0
-          text-[16px] font-bold tabular-nums text-ink
-          focus:outline-none placeholder:text-zinc-300"
-      />
-      <button
-        type="button"
-        onClick={inc}
-        tabIndex={-1}
-        className="w-9 shrink-0 text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50/60
-          active:bg-emerald-100/50 text-[18px] font-bold leading-none flex items-center justify-center
-          cursor-pointer border-l border-line transition-colors"
-        aria-label="증가"
-      >+</button>
-    </div>
-  );
-};
+// 2026-08-18 · 공용 StepperInput 프리미티브 사용 (common/StepperInput) · 중복 코드 제거
+const StepperInput = CommonStepperInput;
 
 // ─── 구역 편집 · 매장 전용 · 2026 트렌드 (Linear/Notion inline chip · pin icon + autosave 표시)
 const ZoneInline: React.FC<{
