@@ -18,14 +18,16 @@
 - 🔲 목업 HTML 파일 · 최신 트렌드로 재생성 (문서 · 위험 낮음)
 
 ### #151 · 프레임워크 프리미티브 확산 (진행중)
-- ✅ **IconTile v3** · 11 tone · 5 size · 4 shape · 9 tests · 27+곳 확산
-- ✅ **AccentBar** · 5 size + brand-soft + h={n} · 13 tests · 77곳 100% 확산
-- ✅ **StepperInput** · 3 size · brand-deep focus · 13 tests · Scan/Arrival 2곳
-- ✅ **NotificationToast** · 5 tone · dark frosted · 7 tests · Scan/Arrival 2곳
-- ✅ **InlineLabel** · 3 size · AccentBar + label · 6 tests · 12곳 통합
-- ✅ **Spinner** · 7 tone · label + size · 8 tests · 12곳 통합 (55+ 후보 중)
-- ✅ **Modal migration** · BreakModal · HiddenManager · PurchaseHistory · ProductPurchaseHistory · OcrPage balance · SupplierChange · DeleteSynonym (7개)
-- 🔲 잔여: Spinner 확산 40+ · Card primitive · 대형 Modal migration
+- ✅ **IconTile v3** · 11 tone · 5 size · 4 shape · 9 tests · 27+곳
+- ✅ **AccentBar** · 5 size + brand-soft + h={n} · 13 tests · 77곳 100%
+- ✅ **StepperInput** · 3 size · brand-deep focus · 13 tests · 2곳
+- ✅ **NotificationToast** · 5 tone · dark frosted · 7 tests · 2곳
+- ✅ **InlineLabel** · 3 size · AccentBar + label · 6 tests · 12곳
+- ✅ **Spinner** · 7 tone · label + size · 8 tests · **21곳 통합** (55+ 후보 중)
+- ✅ **Modal migration** · 7 파일 (Break/Hidden/PurchaseHistory/ProductPurchase/Ocr balance/SupplierChange/DeleteSynonym)
+- ✅ **BarcodeScanner B안 재작성** · react-zxing 폐기 · Native BarcodeDetector · requestStream() 3-단계 fallback
+- ✅ **TS strict errors fix (11 파일)** · CategoryChips onChange · Phosphor Icon style · ZONE_DEFS import · SortableHeader JSX 등
+- 🔲 잔여: Spinner 확산 30+ · Card primitive · 대형 Modal migration
 
 ### 배포 확인 대기 (2026-08-18 · `013920a`)
 - 🔲 헤더 hidden 필터 · admin 도 정상 동작 (다른 태블릿/모바일 확인)
