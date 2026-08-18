@@ -96,28 +96,23 @@ async function startServer() {
     );
   }
 
-  // 2026-08-16 · #112-A · Helmet · HTTP 보안 헤더 (XSS · Clickjacking · MIME sniff 방어)
-  // 2026-08-18 · 아이폰 바코드 카메라 · 모바일 getUserMedia 호환 (2주전 잘 작동하던 상태 복원)
-  //   · contentSecurityPolicy · false (SPA 동적 스크립트 · Vite HMR)
-  //   · crossOriginEmbedderPolicy · false (Cloudinary/Supabase Storage 이미지)
-  //   · crossOriginOpenerPolicy · false (iOS Safari · getUserMedia 호환)
-  //   · crossOriginResourcePolicy · false (iOS Safari · 미디어 스트림)
-  //   · originAgentCluster · false (iOS Safari · 격리 정책 완화)
-  //   · Permissions-Policy 는 명시 X (브라우저 기본 · same-origin 카메라 자동 허용)
-  app.use(helmet({
-    contentSecurityPolicy: false,
-    crossOriginEmbedderPolicy: false,
-    crossOriginOpenerPolicy: false,
-    crossOriginResourcePolicy: false,
-    originAgentCluster: false,
-  }));
-
-  // 2026-08-18 · 명시적 카메라 허용 · 모든 origin (iOS 포함) · 브라우저 기본은 다르게 해석될 수 있어 명시
-  //   · camera=* · microphone=* · 3rd-party iframe 은 브라우저가 자동 차단
-  app.use((_req, res, next) => {
-    res.setHeader("Permissions-Policy", "camera=*, microphone=*, geolocation=*, fullscreen=*");
-    next();
-  });
+  // 2026-08-18 · 사용자 지시 · 아이폰 바코드 카메라 안 됨 · helmet + Permissions-Policy 완전 비활성화
+  //   · 2주 전 (2026-08-05 이전) 잘 작동하던 상태로 복원
+  //   · helmet 은 iOS Safari 에서 getUserMedia 를 조용히 차단하는 것으로 확인
+  //   · 재도입 시 iOS 실기 테스트 필수 (직접 아이폰에서 카메라 프롬프트 확인)
+  //
+  // app.use(helmet({
+  //   contentSecurityPolicy: false,
+  //   crossOriginEmbedderPolicy: false,
+  //   crossOriginOpenerPolicy: false,
+  //   crossOriginResourcePolicy: false,
+  //   originAgentCluster: false,
+  // }));
+  //
+  // app.use((_req, res, next) => {
+  //   res.setHeader("Permissions-Policy", "camera=*, microphone=*, geolocation=*, fullscreen=*");
+  //   next();
+  // });
 
   // 2026-08-16 · #112-C · 로그인 route · 무차별 대입 방어 (1분 10회)
   //   · vendor-login · change-password · set-password 도 함께 보호

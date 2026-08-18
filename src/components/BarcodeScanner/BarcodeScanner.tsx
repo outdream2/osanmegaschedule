@@ -215,143 +215,63 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     return () => document.removeEventListener("keydown", h);
   }, [onClose]);
 
-  // 2026-08-18 · 카메라 권한 · 완전 실패 시 재시도 UI (2주전 잘 작동하던 기능 · iOS 포함 안전 유지)
-  //   · 6초 후 · srcObject 없거나 video 재생 실패 시에만 표시 (권한 프롬프트·slow 초기화 여유)
-  //   · 재시도 버튼 · getUserMedia 명시 호출 → 브라우저 권한 프롬프트 재발생
-  //   · iOS/Android 특수 코드 경로는 건드리지 않음 (일반 감지만)
-  const [cameraError, setCameraError] = useState<null | "denied" | "notfound" | "timeout" | "other">(null);
-  const [retrying, setRetrying] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    const timer = setTimeout(() => {
-      if (cancelled) return;
-      const v = videoRef.current as HTMLVideoElement | null;
-      const stream = v?.srcObject as MediaStream | null | undefined;
-      // 관대한 조건 · srcObject 없거나 · video 가 완전히 재생 불가 상태 (readyState 0 + paused)
-      if (!stream) {
-        setCameraError("timeout");
-      } else if (stream.getVideoTracks().length === 0) {
-        setCameraError("notfound");
-      } else if (v && v.readyState === 0 && v.paused) {
-        // 스트림은 있으나 video 재생 실패 · iOS 자동재생 정책 등 · timeout 처리
-        setCameraError("timeout");
-      }
-      // 정상 재생 중이면 오버레이 표시 X
-    }, 6000);
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, [videoRef]);
-
-  const retryCamera = useCallback(async () => {
-    setRetrying(true);
-    setCameraError(null);
-    try {
-      // 브라우저 권한 프롬프트 재발생 · getUserMedia 명시 호출
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: isDesktop ? true : { facingMode: "environment" }
-      });
-      // 즉시 stop · useZxing 이 다시 setup 하도록 scanKey bump
-      stream.getTracks().forEach(t => t.stop());
-      state.setScanKey(k => k + 1);
-      setCameraError(null);
-    } catch (err: any) {
-      const name = String(err?.name || "");
-      if (name === "NotAllowedError" || name === "SecurityError") {
-        setCameraError("denied");
-      } else if (name === "NotFoundError" || name === "DevicesNotFoundError") {
-        setCameraError("notfound");
-      } else {
-        setCameraError("other");
-      }
-    } finally {
-      setRetrying(false);
-    }
-  }, [state.setScanKey]);
-
   return (
     <div
-      // 2026-08-18 · UI 재설계 · 프리미엄 dark · frosted backdrop · 초고해상도 shadow
-      className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-6
-        bg-[rgba(3,7,18,0.72)] backdrop-blur-md"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md rounded-3xl overflow-hidden
-          bg-[#0B0F17] border border-white/[0.08]
-          shadow-[0_20px_60px_-12px_rgba(0,0,0,0.55),0_8px_24px_-8px_rgba(0,0,0,0.40),inset_0_1px_0_rgba(255,255,255,0.06)]"
+        className="bg-gray-950 rounded-2xl overflow-hidden shadow-2xl w-full max-w-sm border border-gray-800"
         onClick={(e) => e.stopPropagation()}
-        style={{ WebkitFontSmoothing: "antialiased", MozOsxFontSmoothing: "grayscale" }}
       >
-        {/* 상단 액센트 stripe · brand identity · 프리미엄 톤 */}
-        <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-emerald-400/0 via-emerald-400/60 to-emerald-400/0 pointer-events-none" />
-
-        {/* Header · 2026 · frosted + tight typography */}
-        <div className="flex items-center justify-between px-4 py-3 gap-2
-          bg-[rgba(255,255,255,0.02)] border-b border-white/[0.06] backdrop-blur-sm">
-          <div className="flex items-center gap-2 text-white shrink-0 min-w-0">
-            <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg
-              bg-emerald-500/[0.14] border border-emerald-400/25
-              shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-              <ScanLine size={14} className="text-emerald-300" />
-            </span>
-            <span className="text-[14px] font-bold whitespace-nowrap tracking-tight truncate">{title}</span>
+        {/* Header · 2026-08-05 · 제목 세로 표시 fix · whitespace-nowrap + 배지 flex-wrap */}
+        <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-800 gap-2">
+          <div className="flex items-center gap-2 text-white shrink-0">
+            <ScanLine size={15} className="text-emerald-400" />
+            <span className="text-sm font-bold whitespace-nowrap">{title}</span>
           </div>
-          <div className="flex items-center gap-1.5 flex-wrap justify-end min-w-0">
-            {/* Engine indicators · 세련된 pill · 미묘한 border-glow */}
-            <div className="flex items-center gap-1">
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md
-                bg-emerald-500/[0.14] border border-emerald-400/25 text-emerald-300 text-[10px] font-bold tracking-tight">
-                <span className="w-1 h-1 rounded-full bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.6)]" />ZX
-              </span>
+          <div className="flex items-center gap-2 flex-wrap justify-end min-w-0">
+            {/* Engine indicators */}
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-900/60 border border-emerald-700 text-emerald-400 text-[10px] font-bold">
+                <Zap size={9} />ZXing
+              </div>
               {state.zbarReady && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md
-                  bg-sky-500/[0.14] border border-sky-400/25 text-sky-300 text-[10px] font-bold tracking-tight">
-                  <span className="w-1 h-1 rounded-full bg-sky-400" />ZB
-                </span>
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-900/60 border border-blue-700 text-blue-400 text-[10px] font-bold">
+                  <Zap size={9} />ZBar
+                </div>
               )}
               {state.quaggaReady && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md
-                  bg-amber-500/[0.14] border border-amber-400/25 text-amber-300 text-[10px] font-bold tracking-tight">
-                  <span className="w-1 h-1 rounded-full bg-amber-400" />Q
-                </span>
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-900/60 border border-amber-700 text-amber-400 text-[10px] font-bold">
+                  <Zap size={9} />Q2
+                </div>
               )}
               {state.ocrReady && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md
-                  bg-violet-500/[0.14] border border-violet-400/25 text-violet-300 text-[10px] font-bold tracking-tight">
-                  <span className="w-1 h-1 rounded-full bg-violet-400" />OCR
-                </span>
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-900/60 border border-purple-700 text-purple-400 text-[10px] font-bold">
+                  <Zap size={9} />OCR
+                </div>
               )}
             </div>
             <button
               onClick={() => state.imageInputRef.current?.click()}
               title="갤러리에서 이미지 선택"
-              className="w-7 h-7 flex items-center justify-center rounded-lg
-                text-white/50 hover:text-white hover:bg-white/[0.08] active:bg-white/[0.12]
-                transition-colors cursor-pointer"
-              aria-label="이미지 열기"
+              className="p-1 rounded-md text-gray-500 hover:text-white transition cursor-pointer"
             >
-              <ImageIcon size={14} />
+              <ImageIcon size={16} />
             </button>
             <button
               onClick={() => state.setTorchOn((v) => !v)}
               title={state.torchOn ? "손전등 끄기" : "손전등 켜기"}
-              className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
+              className={`p-1 rounded-md transition cursor-pointer ${
                 state.torchOn
-                  ? "text-amber-300 bg-amber-400/[0.15] hover:text-amber-200 hover:bg-amber-400/[0.20] shadow-[0_0_10px_rgba(251,191,36,0.20)]"
-                  : "text-white/50 hover:text-white hover:bg-white/[0.08]"
+                  ? "text-yellow-400 bg-yellow-400/10 hover:text-yellow-300"
+                  : "text-gray-500 hover:text-white"
               }`}
-              aria-label="손전등"
             >
-              <Zap size={14} />
+              <Zap size={16} />
             </button>
-            <button
-              onClick={onClose}
-              className="w-7 h-7 flex items-center justify-center rounded-lg
-                text-white/50 hover:text-white hover:bg-white/[0.08] active:bg-white/[0.12]
-                transition-colors cursor-pointer"
-              aria-label="닫기"
-            >
-              <X size={15} />
+            <button onClick={onClose} className="text-gray-500 hover:text-white transition cursor-pointer">
+              <X size={18} />
             </button>
           </div>
         </div>
@@ -370,57 +290,31 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             autoPlay muted playsInline
           />
 
-          {/* Snapshot confirmation overlay · 2026 UI 재설계 · 프리미엄 gradient + 큰 터치 타겟 */}
+          {/* Snapshot confirmation overlay */}
           {state.frozenFrame && (
             <div className="absolute inset-0">
               <img src={state.frozenFrame} alt="snap" className="w-full h-full object-cover" />
-              <div className="absolute bottom-0 inset-x-0
-                bg-gradient-to-t from-black via-black/85 to-transparent
-                px-4 pt-12 pb-4 flex flex-col gap-3">
-                {/* 인식된 코드 · Mono chip · frosted */}
-                <div className="mx-auto inline-flex items-center gap-2 px-3 py-1.5 rounded-full
-                  bg-white/[0.10] border border-white/[0.20] backdrop-blur-md
-                  shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]" />
-                  <p className="text-white font-mono text-[13px] font-bold tracking-wider">
-                    {state.scannedCode}
-                  </p>
-                </div>
-                {/* 액션 3 버튼 · 큰 터치 타겟 · 통일 톤 */}
+              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/75 to-transparent px-4 pt-10 pb-3 flex flex-col gap-2.5">
+                <p className="text-white font-mono text-sm font-bold tracking-widest text-center drop-shadow-lg">{state.scannedCode}</p>
                 <div className="flex gap-2">
                   <button
                     onClick={(e) => { e.stopPropagation(); onClose(); }}
-                    className="h-12 px-4 rounded-2xl text-[14px] font-bold text-white/90
-                      bg-white/[0.08] border border-white/[0.15] backdrop-blur-sm
-                      hover:bg-white/[0.14] hover:border-white/[0.25]
-                      active:scale-[0.98] transition-all cursor-pointer
-                      inline-flex items-center gap-1.5"
+                    className="px-3 py-2.5 rounded-xl text-sm font-bold text-white bg-rose-600/80 border border-rose-500 active:scale-95 transition-transform cursor-pointer backdrop-blur-sm"
                     title="스캔 취소 · 창 닫기"
                   >
-                    <X size={14} strokeWidth={2.5} />
-                    취소
+                    ✕ 취소
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleRetry(); }}
-                    className="flex-1 h-12 rounded-2xl text-[14px] font-bold text-white
-                      bg-white/[0.10] border border-white/[0.20] backdrop-blur-sm
-                      hover:bg-white/[0.18] hover:border-white/[0.30]
-                      active:scale-[0.98] transition-all cursor-pointer
-                      inline-flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-white/15 border border-white/30 active:scale-95 transition-transform cursor-pointer backdrop-blur-sm"
                   >
-                    <ScanLine size={14} strokeWidth={2.5} />
                     다시 스캔
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleConfirm(); }}
-                    className="flex-[1.4] h-12 rounded-2xl text-[15px] font-bold text-white
-                      bg-emerald-500 border border-emerald-400
-                      hover:bg-emerald-600 hover:border-emerald-500
-                      shadow-[0_4px_16px_-4px_rgba(52,211,153,0.55),inset_0_1px_0_rgba(255,255,255,0.15)]
-                      active:scale-[0.98] transition-all cursor-pointer
-                      inline-flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-600 border border-emerald-500 active:scale-95 transition-transform shadow-lg cursor-pointer"
                   >
-                    확인
+                    ✓ 확인
                   </button>
                 </div>
               </div>
@@ -461,74 +355,25 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             </div>
           )}
 
-          {/* Android 전용 줌 버튼 · 2026 · frosted pill 그룹 · iOS 코드 경로 완전 분리 */}
+          {/* Android 전용 줌 버튼 — iOS 코드 경로 완전 분리 */}
           {isAndroid && !state.frozenFrame && (
             <div
-              className="absolute bottom-3 inset-x-0 flex justify-center items-center z-10"
+              className="absolute bottom-2.5 inset-x-0 flex justify-center items-center gap-2 z-10"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="inline-flex items-center gap-0.5 p-1 rounded-full
-                bg-black/60 border border-white/[0.15] backdrop-blur-md
-                shadow-[0_4px_16px_-4px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.08)]">
-                {[1, 2, 3].map((z) => (
-                  <button
-                    key={z}
-                    onClick={() => setZoomLevel(z)}
-                    className={`w-10 h-9 rounded-full text-[12px] font-bold transition-all cursor-pointer ${
-                      zoomLevel === z
-                        ? "bg-amber-400 text-black shadow-[0_2px_6px_-2px_rgba(251,191,36,0.55),inset_0_1px_0_rgba(255,255,255,0.30)]"
-                        : "text-white/70 hover:text-white hover:bg-white/[0.08]"
-                    }`}
-                  >
-                    {z}×
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 2026-08-18 · 카메라 권한/오류 오버레이 · 모바일 fallback */}
-          {cameraError && !state.frozenFrame && (
-            <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center gap-3 px-5 py-6 z-20">
-              <div className="w-12 h-12 rounded-full bg-amber-500/[0.15] border border-amber-400/40 flex items-center justify-center">
-                <Zap size={22} className="text-amber-300" />
-              </div>
-              <div className="text-center max-w-[260px]">
-                <p className="text-white text-[14px] font-bold tracking-tight">
-                  {cameraError === "denied"   && "카메라 접근이 거부되었습니다"}
-                  {cameraError === "notfound" && "카메라를 찾을 수 없습니다"}
-                  {cameraError === "timeout"  && "카메라 응답이 없습니다"}
-                  {cameraError === "other"    && "카메라 오류가 발생했습니다"}
-                </p>
-                <p className="text-white/60 text-[12px] mt-1.5 leading-relaxed">
-                  {cameraError === "denied"
-                    ? "브라우저 주소창의 자물쇠 → 카메라 · 허용으로 변경 후 다시 시도"
-                    : "다시 시도 버튼을 눌러 권한 요청을 재시도해보세요"}
-                </p>
-              </div>
-              <button
-                onClick={retryCamera}
-                disabled={retrying}
-                className="mt-1 px-5 h-11 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700
-                  text-white text-[14px] font-bold shadow-[0_2px_10px_-2px_rgba(52,211,153,0.5),inset_0_1px_0_rgba(255,255,255,0.15)]
-                  disabled:opacity-60 disabled:cursor-not-allowed transition-colors cursor-pointer
-                  inline-flex items-center gap-2"
-              >
-                {retrying ? (
-                  <>
-                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    권한 요청 중...
-                  </>
-                ) : (
-                  <>다시 허용 요청</>
-                )}
-              </button>
-              <button
-                onClick={onClose}
-                className="text-white/40 hover:text-white/70 text-[12px] font-semibold underline underline-offset-2 transition-colors cursor-pointer"
-              >
-                닫기
-              </button>
+              {[1, 2, 3].map((z) => (
+                <button
+                  key={z}
+                  onClick={() => setZoomLevel(z)}
+                  className={`w-9 h-9 rounded-full text-[11px] font-bold border transition-all active:scale-90 cursor-pointer ${
+                    zoomLevel === z
+                      ? "bg-yellow-400/90 text-black border-yellow-300 shadow-lg"
+                      : "bg-black/50 text-white border-white/30 backdrop-blur-sm"
+                  }`}
+                >
+                  {z}×
+                </button>
+              ))}
             </div>
           )}
 
@@ -556,28 +401,19 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           />
         </div>
 
-        {/* Hint · 2026 · 부드러운 정보 계층 */}
-        <div className="px-4 py-3.5 text-center flex flex-col items-center gap-2">
+        {/* Hint */}
+        <div className="px-4 py-3 text-center flex flex-col items-center gap-1.5">
           {state.darkHint && !state.torchOn ? (
             <button
               onClick={() => state.setTorchOn(true)}
-              className="inline-flex items-center gap-1.5 text-[12px] text-amber-200 font-bold
-                bg-amber-400/[0.12] border border-amber-400/40
-                px-3 py-1.5 rounded-full animate-pulse
-                shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]
-                active:scale-[0.98] hover:bg-amber-400/[0.18] transition-all cursor-pointer"
+              className="flex items-center gap-1.5 text-xs text-yellow-300 font-bold bg-yellow-400/15 border border-yellow-400/40 px-3 py-1.5 rounded-lg animate-pulse active:scale-95 transition-transform cursor-pointer"
             >
-              <Zap size={12} strokeWidth={2.5} />
-              어둡습니다 · 손전등 켜기
+              <Zap size={12} /> 어둡습니다 — 여기를 눌러 손전등 켜기
             </button>
           ) : (
-            <p className="text-[13px] text-white/70 font-semibold tracking-tight">
-              바코드를 <span className="text-emerald-300">사각형 안</span>에 맞춰주세요
-            </p>
+            <p className="text-xs text-gray-400 font-medium">바코드를 사각형 안에 맞춰주세요</p>
           )}
-          <p className="text-[11px] text-white/40 font-medium">
-            화면을 탭하면 초점 조정 · 종이 바코드는 5~10cm 거리
-          </p>
+          <p className="text-[10px] text-gray-500">화면을 탭하면 초점 조정 · 종이 바코드는 5~10cm 거리</p>
         </div>
       </div>
 
