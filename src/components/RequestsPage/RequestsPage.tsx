@@ -1,6 +1,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { api } from "../../lib/apiClient";
+import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { TIMING } from "../../constants/timing";
 import {
   Bell, Package, MapPin,
@@ -465,6 +466,8 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         optimal_stock: p.optimal_stock != null ? Number(p.optimal_stock) : null, note: "",
       });
       await loadOrderReqs();
+      // 2026-08-18 · 발주 요청 배지 즉시 갱신
+      dispatchApprovalChange("order");
     } catch (e: any) { setOrderRequestError(e?.message ?? "네트워크 오류 — 다시 시도해주세요"); }
     finally { setRequestingOrder(prev => { const s = new Set(prev); s.delete(p.code); return s; }); }
   };
@@ -489,6 +492,8 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     try {
       await api.post("/api/order-requests", { product_code: r.product_code, product_name: r.product_name, current_stock: r.system_stock, optimal_stock: r.optimal_stock, note: "" });
       await loadOrderReqs();
+      // 2026-08-18 · 발주 요청 배지 즉시 갱신
+      dispatchApprovalChange("order");
     } finally {
       setRequestingInvOrder(prev => { const s = new Set(prev); s.delete(r.product_code); return s; });
     }

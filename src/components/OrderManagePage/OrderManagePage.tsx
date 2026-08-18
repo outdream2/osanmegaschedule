@@ -64,6 +64,7 @@ import type { InventoryEditModalInitialValues } from "../common/InventoryEditMod
 import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { api, ApiError } from "../../lib/apiClient";
+import { dispatchApprovalChange } from "../../lib/approvalEvents";
 
 interface OrderRequest {
   id: string;
@@ -876,6 +877,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         requested_at: new Date().toISOString(),
       });
       await loadOrderReqs();
+      // 2026-08-18 · 발주 요청 배지 즉시 갱신
+      dispatchApprovalChange("order");
     } catch { /* silent */ }
     finally {
       setRequestingOrder(prev => { const n = new Set(prev); n.delete(code); return n; });

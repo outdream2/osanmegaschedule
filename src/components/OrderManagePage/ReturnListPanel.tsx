@@ -18,6 +18,7 @@ import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { api, ApiError } from "../../lib/apiClient";
+import { dispatchApprovalChange } from "../../lib/approvalEvents";
 
 // ── 반품 요청서 모달 (발주서 포맷) · 2026-08-03 ─────────────────────────
 type ReturnReasonKey = "재고 과다" | "유통기한 임박" | "저조 판매" | "기타";
@@ -168,6 +169,8 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
         total_amount: totalAmount,
       };
       await api.post("/api/return-requests", payload);
+      // 2026-08-18 · 반품 요청 배지 즉시 갱신
+      dispatchApprovalChange("return");
       setSent(true);
       setTimeout(onClose, 1400);
     } catch (e: any) {

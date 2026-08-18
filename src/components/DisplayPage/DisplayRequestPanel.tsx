@@ -10,6 +10,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { StatusPill } from "../common/StatusPill";
+import { dispatchApprovalChange } from "../../lib/approvalEvents";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -219,12 +220,13 @@ export const DisplayRequestPanel: React.FC<DisplayRequestPanelProps> = ({
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "done" }),
-    }).catch(() => {});
+    }).then(() => dispatchApprovalChange("display")).catch(() => {});
   };
 
   const handleDelete = (req: DisplayRequest) => {
     setRequests((prev) => prev.filter((r) => r.id !== req.id));
-    fetch(`/api/display-requests/${req.id}`, { method: "DELETE" }).catch(() => {});
+    fetch(`/api/display-requests/${req.id}`, { method: "DELETE" })
+      .then(() => dispatchApprovalChange("display")).catch(() => {});
   };
 
   return (

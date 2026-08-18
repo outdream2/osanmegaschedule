@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { api } from "../lib/apiClient";
 import { TIMING } from "../constants/timing";
+import { useApprovalRefreshListener } from "../lib/approvalEvents";
 import { Bell, BellOff, CheckCheck, X, Info, AlertTriangle, CheckCircle, AlertCircle } from "lucide-react";
 import type { AuthSession } from "../types";
 import { StatusPill } from "./common/StatusPill";
@@ -124,6 +125,9 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
     const id = setInterval(fetchNotifications, 20_000);
     return () => clearInterval(id);
   }, [fetchNotifications]);
+
+  // 2026-08-18 · 요청/승인 상태 변경 시 즉시 알림 재로드 (approvalEvents)
+  useApprovalRefreshListener(fetchNotifications);
 
   // Close on outside click
   useEffect(() => {

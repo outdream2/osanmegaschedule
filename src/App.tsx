@@ -158,12 +158,19 @@ export default function App() {
   const goBack = () => navigate("landing");
 
   const handleLogout = () => {
+    // 2026-08-18 · CRITICAL FIX · 무한 리로드 루프 방지
+    //   문제: httpOnly JWT 쿠키가 invalid (e.g. secret 변경 · 만료) 상태에서
+    //   handleLogout 이 서버 쿠키 clear 없이 window.location.replace("/") 만 하면
+    //   reload 후에도 같은 무효 쿠키 → 401 → refresh 실패 → SESSION_EXPIRED → handleLogout 재귀 → LOOP
+    //   해결: /api/auth/logout 먼저 호출 (Set-Cookie: mt_auth=; Max-Age=0) → 확실히 쿠키 제거 → reload
     clearAuthSession();
-    // clearAuthSession already removes all megatown_* keys, but belt-and-suspenders:
     Object.keys(localStorage)
       .filter(k => k.startsWith("megatown_"))
       .forEach(k => localStorage.removeItem(k));
-    window.location.replace("/");
+    // 서버 쿠키 clear · fire-and-forget · 실패해도 reload 진행 (best effort)
+    fetch("/api/auth/logout", { method: "POST", credentials: "include" })
+      .catch(() => { /* silent · 어차피 reload */ })
+      .finally(() => { window.location.replace("/"); });
   };
 
   // 2026-08-17 · 사용자 지시 · "재로그인 필요하면 로그아웃 후 로그인화면으로" · "토큰만료 이후 프로세스 강화 로그인화면으로 강제 이동"

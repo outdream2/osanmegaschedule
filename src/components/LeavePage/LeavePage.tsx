@@ -9,6 +9,7 @@ import type { AuthSession } from "../../types";
 import { fmtDateYMD, fmtDateMD } from "../../lib/format";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { StatusPill, type PillTone } from "../common/StatusPill";
+import { dispatchApprovalChange } from "../../lib/approvalEvents";
 
 interface LeaveRequest {
   id: string;
@@ -150,6 +151,8 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
       setFormEnd(today());
       setFormReason("");
       await loadMyRequests();
+      // 2026-08-18 · 승인 대기 배지 즉시 갱신 (관리자 화면 · 알림)
+      dispatchApprovalChange("leave");
     } catch (err: unknown) {
       setSubmitError(err instanceof ApiError ? err.message : (err as any)?.message ?? "오류 발생");
     } finally { setSubmitting(false); }
@@ -161,6 +164,8 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
     try {
       await api.del(`/api/leave-requests/${id}`);
       setMyRequests(prev => prev.filter(r => r.id !== id));
+      // 2026-08-18 · 취소 시 승인 대기 배지 즉시 갱신
+      dispatchApprovalChange("leave");
     } catch { /* silent · UI 이미 유지 */ }
     finally { setCancellingId(null); }
   };
@@ -175,6 +180,8 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
       ));
       setReviewingId(null);
       setReviewNote("");
+      // 2026-08-18 · 승인/반려 시 배지 즉시 갱신
+      dispatchApprovalChange("leave");
     } catch { /* silent · UI 이미 유지 */ }
     finally { setProcessingId(null); }
   };

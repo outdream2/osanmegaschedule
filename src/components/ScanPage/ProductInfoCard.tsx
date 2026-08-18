@@ -1,6 +1,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useState, useEffect } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { useConfirm } from "../../hooks/useConfirm";
 import { Pencil, Loader2, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2, Warehouse, Store, ClipboardCheck, ScanLine, Check, X, DollarSign, Package, Info, EyeOff, Eye, TrendingUp, ChevronRight, ChevronDown } from "lucide-react";
 import { type ProductInfo } from "../../lib/productsCache";
@@ -255,6 +256,8 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
         optimal_stock: product.optimal_stock != null ? Number(product.optimal_stock) : null,
         note: "",
       });
+      // 2026-08-18 · 발주 요청 배지 즉시 갱신
+      dispatchApprovalChange("order");
       setOrderStatus("done");
       setExistingOrder({ current_stock: product.current_stock != null ? Number(product.current_stock) : null, requested_at: new Date().toISOString() });
     } catch {
@@ -281,9 +284,10 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
           product_name: product.name,
           spec_zone: specZone,
           real_zone: zoneLabel,
-        }).catch(() => {});
+        }).then(() => dispatchApprovalChange("mismatch")).catch(() => {});
       } else {
-        api.del(`/api/zone-mismatches/by-code/${encodeURIComponent(product.code)}`).catch(() => {});
+        api.del(`/api/zone-mismatches/by-code/${encodeURIComponent(product.code)}`)
+          .then(() => dispatchApprovalChange("mismatch")).catch(() => {});
       }
     } catch (e: any) {
       const msg: string = e instanceof ApiError ? e.message : (e?.message ?? "네트워크 오류");

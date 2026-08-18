@@ -18,6 +18,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
 import { SplitPanel } from "../common/SplitPanel";
 import { StatusPill } from "../common/StatusPill";
@@ -302,6 +303,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         note: autoNote,
         requested_at: new Date().toISOString(),
       });
+      // 2026-08-18 · 진열 요청 배지 즉시 갱신
+      dispatchApprovalChange("display");
       showToast(`[${row.product.name}] ${targetZone || "배정구역"} 진열요청 전송 완료`, 3000);
     } catch (e: unknown) {
       const msg = e instanceof ApiError ? e.message : (e instanceof Error ? e.message : "요청 실패");

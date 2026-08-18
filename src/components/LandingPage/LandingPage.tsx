@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 // 2026-08-16 · apiClient 마이그레이션
 import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useApprovalRefreshListener } from "../../lib/approvalEvents";
 import { useSettings } from "../../hooks/useSettings";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { useContactInfo } from "../../hooks/useContactInfo";
@@ -773,8 +774,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const isManagerOrAdmin = !isVendor && userLevel >= 2;
   const isSuperAdminLevel9 = !isVendor && userLevel >= 9;
 
-  // Load pending counts for managers
-  useEffect(() => {
+  // Load pending counts for managers · 2026-08-18 · 즉시 갱신 지원 (useApprovalRefreshListener)
+  const reloadPendingCounts = React.useCallback(() => {
     if (!isManagerOrAdmin) return;
     fetch("/api/requests/pending-counts")
       .then(r => r.ok ? r.json() : {})
@@ -789,9 +790,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       })
       .catch(() => { });
   }, [isManagerOrAdmin]);
+  useEffect(() => { reloadPendingCounts(); }, [reloadPendingCounts]);
+  // 2026-08-18 · 승인 요청/승인/반려/취소 시 즉시 재로드 (leave/display/order/return/lunch/mismatch)
+  useApprovalRefreshListener(reloadPendingCounts);
 
   // 직원 로그인 시: 나에게 배정된 진열 보충 요청 중 pending 개수 로드 (완료 시 자동 0)
-  useEffect(() => {
+  const reloadMyPending = React.useCallback(() => {
     if (!isEmployee || !authSession?.employeeId) { setMyPendingCount(0); return; }
     const empId = authSession.employeeId;
     fetch(`/api/display-requests?scope=mine&employeeId=${empId}`)
@@ -802,6 +806,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       })
       .catch(() => setMyPendingCount(0));
   }, [isEmployee, authSession?.employeeId]);
+  useEffect(() => { reloadMyPending(); }, [reloadMyPending]);
+  useApprovalRefreshListener(reloadMyPending);
 
   const handleAnonSubscribe = async () => {
     if (!("Notification" in window) || !("serviceWorker" in navigator)) {

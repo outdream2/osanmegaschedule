@@ -1,6 +1,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { UtensilsCrossed, Clock, RefreshCw, Users, ChevronLeft, ChevronRight, Stethoscope, UserRound, Coffee } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
@@ -194,6 +195,8 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
       });
       await loadLunch();
       setMemo("");
+      // 2026-08-18 · 점심 신청 배지 즉시 갱신
+      dispatchApprovalChange("lunch");
     } catch (e: unknown) {
       setError(e instanceof ApiError ? e.message : (e as any)?.message ?? "신청 실패");
     } finally { setSubmitting(false); }
@@ -205,6 +208,8 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
     try {
       await api.del(`/api/lunch-requests?employee_id=${employeeId}&date=${selectedDate}`);
       await loadLunch();
+      // 2026-08-18 · 점심 취소 시 배지 즉시 갱신
+      dispatchApprovalChange("lunch");
     } catch (e: unknown) {
       setError(e instanceof ApiError ? e.message : (e as any)?.message ?? "취소 실패");
     } finally { setSubmitting(false); }
