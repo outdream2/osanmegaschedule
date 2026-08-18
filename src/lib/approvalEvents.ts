@@ -29,21 +29,26 @@ export function dispatchApprovalChange(scope: ApprovalScope = "all"): void {
 
 /**
  * 승인/요청 변경 리스너 훅
- *   · 이벤트 발생 시 callback 실행 (해당 scope 또는 "all")
+ *   · 기본 (scopes 미지정) · 모든 scope 이벤트에 반응 (catch-all · Landing badge · NotificationBell 등)
+ *   · scopes 지정 · 해당 scope 또는 "all" 이벤트에만 반응 (특화 리스너)
  *   · window focus 시에도 callback 실행 (다른 탭에서의 변경 대응)
+ *
+ * 2026-08-18 · 버그 fix · 기본 scopes=["all"] → undefined (catch-all)
+ *   · 이전: 기본 listener 가 "leave" · "order" 등 specific dispatch 를 무시 (bug)
+ *   · 이후: scopes 미지정 = catch-all · 실제 사용 케이스 일치
  */
 export function useApprovalRefreshListener(
   callback: () => void,
-  scopes: readonly ApprovalScope[] = ["all"],
+  scopes?: readonly ApprovalScope[],
 ): void {
   useEffect(() => {
-    const scopeSet = new Set<string>(scopes);
-    scopeSet.add("all"); // "all" 은 항상 반응
+    const scopeSet = scopes && scopes.length > 0 ? new Set<string>([...scopes, "all"]) : null;
 
     const onEvent = (e: Event) => {
       const detail = (e as CustomEvent<{ scope?: ApprovalScope }>).detail;
       const s = detail?.scope ?? "all";
-      if (scopeSet.has(s)) callback();
+      // scopeSet null = catch-all (기본) · 아니면 해당 scope 만
+      if (!scopeSet || scopeSet.has(s)) callback();
     };
     const onFocus = () => { callback(); };
 
