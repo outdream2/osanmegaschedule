@@ -271,8 +271,15 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
 
       {/* 근로계약서 뷰어 모달 · 자체 관리 */}
       {contractModalOpen && localEmployee.contract_file_url && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/75 p-4">
-          <div className="relative w-full max-w-3xl bg-white rounded-2xl overflow-hidden flex flex-col shadow-2xl" style={{ height: "85vh" }}>
+        // 2026-08-17 v2 · frosted backdrop + 3-layer shadow · Modal 통일
+        <div
+          className="fixed inset-0 z-[400] flex items-center justify-center p-4"
+          style={{ background: "rgba(10, 46, 74, 0.45)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
+        >
+          <div
+            className="relative w-full max-w-3xl bg-white rounded-2xl overflow-hidden flex flex-col"
+            style={{ height: "85vh", boxShadow: "0 1px 3px rgba(10,46,74,0.15), 0 8px 32px -8px rgba(10,46,74,0.28), 0 24px 64px -24px rgba(10,46,74,0.32)" }}
+          >
             <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-100 shrink-0">
               <span className="text-sm font-bold text-zinc-900 flex items-center gap-2">
                 <FileText size={15} className="text-emerald-600" /> 근로계약서 — {localEmployee.name}

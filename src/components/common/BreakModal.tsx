@@ -30,9 +30,16 @@ export const BreakModal: React.FC<BreakModalProps> = ({ breakModal, setBreakModa
     return () => document.removeEventListener("keydown", onKey);
   }, [setBreakModal]);
 
+  // 2026-08-17 v2 · frosted backdrop + 3-layer shadow · Modal 통일
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-line p-6 flex flex-col gap-4 animate-in zoom-in-95 duration-200">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+      style={{ background: "rgba(10, 46, 74, 0.35)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
+    >
+      <div
+        className="w-full max-w-sm bg-white rounded-2xl border border-line p-6 flex flex-col gap-4 animate-in zoom-in-95 duration-200"
+        style={{ boxShadow: "0 1px 3px rgba(10,46,74,0.12), 0 8px 32px -8px rgba(10,46,74,0.24), 0 24px 64px -24px rgba(10,46,74,0.28)" }}
+      >
         <div className="flex items-center justify-between pb-3 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <div className="p-1.5 bg-amber-500 text-white rounded-lg">

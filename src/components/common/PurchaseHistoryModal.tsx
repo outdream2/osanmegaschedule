@@ -67,12 +67,15 @@ export const PurchaseHistoryModal: React.FC<PurchaseHistoryModalProps> = ({
   })();
 
   return (
+    // 2026-08-17 v2 · frosted backdrop + 3-layer shadow · Modal 통일
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      style={{ background: "rgba(10, 46, 74, 0.35)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col"
+        className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col"
+        style={{ boxShadow: "0 1px 3px rgba(10,46,74,0.12), 0 8px 32px -8px rgba(10,46,74,0.24), 0 24px 64px -24px rgba(10,46,74,0.28)" }}
         onClick={e => e.stopPropagation()}
       >
         {/* 헤더 · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
