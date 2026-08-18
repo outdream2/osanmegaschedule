@@ -1318,7 +1318,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       <div key={`wall-${num}`} className="flex flex-col gap-0.5">
         {position === "top" && renderRequestButton(num)}
         {/* 통합 카드 (카테고리 헤더 + 배정 셀) */}
-        <div className="rounded-lg overflow-hidden border-2 border-stone-300 bg-white shadow-3xs hover:border-amber-400 transition">
+        <div className="rounded-lg overflow-hidden border-2 border-stone-300 bg-white shadow-sm hover:border-amber-400 transition">
           {/* 카테고리 헤더 (번호 → 카테고리 · 카테고리가 2개(콤마 · 슬래시 등)면 2줄로 균일 높이) */}
           <button
             type="button"
@@ -1629,7 +1629,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="약 · 증상 검색 (예: 감기약)"
-                      className="w-full pl-8 pr-8 py-1.5 border border-gray-300 rounded-lg shadow-3xs focus:outline-none focus:ring-2 focus:ring-brand-tint bg-white text-xs"
+                      className="w-full pl-8 pr-8 py-1.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-tint bg-white text-xs"
                     />
                     <Search className="absolute left-2 top-2 text-gray-400" size={13} />
                     {searchQuery && (
@@ -1698,7 +1698,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   <button
                     onClick={() => setScannerMode("search")}
                     title="바코드 스캔으로 검색"
-                    className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-emerald-50 hover:border-emerald-400 text-gray-500 hover:text-emerald-600 transition cursor-pointer shadow-3xs"
+                    className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-emerald-50 hover:border-emerald-400 text-gray-500 hover:text-emerald-600 transition cursor-pointer shadow-sm"
                   >
                     <ScanLine size={14} />
                   </button>
@@ -2115,7 +2115,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                       </div>
 
                       {/* Expiring Products Zone Marker at far right of top wing */}
-                      <div className="absolute top-1 right-2 bg-rose-50 text-rose-700 text-[10px] border border-rose-300 font-extrabold px-1.5 rounded-full uppercase tracking-wider shadow-3xs">
+                      <div className="absolute top-1 right-2 bg-rose-50 text-rose-700 text-[10px] border border-rose-300 font-extrabold px-1.5 rounded-full uppercase tracking-wider shadow-sm">
                         유통기한 임박존
                       </div>
                     </div>

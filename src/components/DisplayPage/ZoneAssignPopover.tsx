@@ -131,7 +131,7 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
                   }}
                   className={`px-2 py-1.5 rounded-lg border text-left text-[11px] font-bold truncate transition cursor-pointer flex items-center gap-1.5 ${
                     isAssigned
-                      ? `${STAFF_COLORS[colorIdx % STAFF_COLORS.length]} border-indigo-400 shadow-3xs`
+                      ? `${STAFF_COLORS[colorIdx % STAFF_COLORS.length]} border-indigo-400 shadow-sm`
                       : "bg-white border-line hover:bg-zinc-50 hover:border-zinc-300 text-zinc-700"
                   }`}
                 >
