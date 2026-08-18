@@ -20,6 +20,28 @@
   - ✅ **legacy StatusBadge 삭제 + common/README.md 문서화** (356aa1d)
 - **잔여 · 다음 세션**: ContractWriterPage(5,400 lines · 분리 필요) · common/EmployeeInfoForm · 각 페이지 status matrix (부적합 판정)
 
+### #166 · 승인/요청 실시간 배지 갱신 (2026-08-18 · ✅ 완료)
+- 사용자 요청: "연차등 승인신청하면 바로 알림배지에 반영"
+- **신규**: `src/lib/approvalEvents.ts` · CustomEvent 브로드캐스트
+  - `dispatchApprovalChange(scope)` · 제출/승인/취소 후 발신
+  - `useApprovalRefreshListener(cb)` · 리스너 훅 (event + window focus)
+- **리스너**: LandingPage (pending counts) · NotificationBell (알림 목록)
+- **디스패치 위치** (11곳):
+  - LeavePage: submit/cancel/review (leave)
+  - LunchPage: submit/cancel (lunch)
+  - ScanPage: display 요청 (display)
+  - OrderManagePage: submit/delete (order)
+  - ReturnListPanel: return 요청 (return)
+  - ProductInfoCard: order/mismatch 요청
+  - RequestsPage: prepare/complete/delete (display/order/mismatch)
+  - DisplayRequestPanel: complete/delete (display)
+
+### #167 · JWT_SECRET 자동 파생 + 무한 리로드 fix (2026-08-18 · ✅ 완료)
+- **JWT_SECRET 자동 파생** · SUPABASE_KEY HMAC-SHA256 · Render Dashboard 설정 불필요
+- **CRITICAL 무한 리로드 fix** · handleLogout · fetch POST /api/auth/logout (서버 쿠키 clear) · 배포 후 사용자 리포트 (loading flashing) 해결
+- envValidation.ts · JWT_SECRET · required → recommended
+- render.yaml · JWT_SECRET envVar 제거 (주석)
+
 ### #165 · 프레임워크 잔재 정리 (2026-08-18 · ✅ 완료)
 - shadow-3xs (미정의 Tailwind 클래스) → shadow-sm · 5곳 fix
 - indigo focus → brand-deep · 마지막 2곳 (DayTimelineModal · ZoneGroupPanel)
