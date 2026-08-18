@@ -15,6 +15,7 @@ import { SeasonButtons } from "../common/SeasonButtons";
 import { PeriodSelector } from "../common/PeriodSelector";
 import { StatusPill } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
+import { InlineLabel } from "../common/InlineLabel";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { ProductPurchaseHistoryModal } from "./ProductPurchaseHistoryModal";
 import { LoadingState } from "../common/LoadingState";
@@ -735,10 +736,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         </div>
         {/* 조회기간 · 2026-08-17 · PeriodSelector 공통 프레임워크 통일 */}
         <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 shrink-0">
-            <AccentBar size="sm" />
-            <span className="text-[13px] font-bold text-ink tracking-tight">기간</span>
-          </span>
+          <InlineLabel size="sm">기간</InlineLabel>
           <PeriodSelector
             options={[
               { value: 0, label: "10일", title: "최근 10일" },
@@ -758,10 +756,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         <SeasonButtons value={supplierSeason} onChange={(v) => { setSupplierSeason(v); if (v) setSupplierMonths(0); }} size="sm" hideLabel />
         {/* Top N · segmented pill */}
         <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 shrink-0">
-            <AccentBar size="sm" />
-            <span className="text-[13px] font-bold text-ink tracking-tight">Top N</span>
-          </span>
+          <InlineLabel size="sm">Top N</InlineLabel>
           <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
             {[{ v: 100, label: "100" }, { v: 300, label: "300" }, { v: 1000, label: "1k" }, { v: 2000, label: "2k" }, { v: 999999, label: "전체" }].map(o => (
               <button key={o.v} onClick={() => setSupListLimit(o.v)}

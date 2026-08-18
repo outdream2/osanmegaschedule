@@ -8,6 +8,7 @@ import { Package, Loader2, ChevronDown, ChevronRight, Mail, Phone, User, Calenda
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { PageToolbar } from "../common/PageToolbar";
 import { AccentBar } from "../common/AccentBar";
+import { InlineLabel } from "../common/InlineLabel";
 import { PeriodSelector, PERIOD_DAYS_PRESET } from "../common/PeriodSelector";
 import { StatusPill } from "../common/StatusPill";
 
@@ -89,10 +90,7 @@ export const OrderHistoryTab: React.FC = () => {
         }
         right={
           <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1.5 shrink-0">
-              <AccentBar size="sm" />
-              <span className="text-[13px] font-bold text-ink tracking-tight">기간</span>
-            </span>
+            <InlineLabel size="sm">기간</InlineLabel>
             <PeriodSelector
               options={[
                 { value: 7,   label: "7일",   title: "최근 7일" },

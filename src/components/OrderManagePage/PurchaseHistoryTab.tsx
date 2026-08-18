@@ -16,6 +16,7 @@ import { Building2, Loader2, Package, RefreshCw } from "lucide-react";
 import { SplitPanel } from "../common/SplitPanel";
 import { ListLoading } from "../common/ListLoading";
 import { AccentBar } from "../common/AccentBar";
+import { InlineLabel } from "../common/InlineLabel";
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
@@ -846,10 +847,7 @@ export const PurchaseHistoryTab: React.FC = () => {
 
         {/* 2026-08-17 · 기간 UI 프레임워크 통일 · PeriodSelector 공통 · 딥네이비 */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="flex items-center gap-1.5 shrink-0">
-            <AccentBar size="sm" />
-            <span className="text-[13px] font-bold text-ink tracking-tight">기간</span>
-          </span>
+          <InlineLabel size="sm">기간</InlineLabel>
           <PeriodSelector
             options={[
               { value: 0, label: "10일", title: "최근 10일" },

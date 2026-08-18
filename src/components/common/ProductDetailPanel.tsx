@@ -13,6 +13,7 @@ import { ProductInfoCard, PurchaseHistorySection } from "../ScanPage/ProductInfo
 import { type ProductInfo } from "../../lib/productsCache";
 import { SeasonButtons } from "./SeasonButtons";
 import { AccentBar } from "./AccentBar";
+import { InlineLabel } from "./InlineLabel";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import {
   MultiLineChart,
@@ -146,10 +147,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
         <>
           {/* 조회기간 행 · 2026-08-17 · 딥네이비 통일 · segmented pill */}
           <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <span className="flex items-center gap-1.5 shrink-0">
-              <AccentBar size="sm" />
-              <span className="text-[14px] font-bold text-ink tracking-tight">조회기간</span>
-            </span>
+            <InlineLabel size="sm">조회기간</InlineLabel>
             <div className="inline-flex shrink-0 bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
               {([1, 2, 3, 4, 5, 6] as const).map(m => {
                 const active = !season && months === m;
@@ -172,10 +170,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
           </div>
           {/* 단위 행 · 2026-08-17 · 폰트 +2 */}
           <div className="flex items-center gap-2 mb-2.5 flex-wrap">
-            <span className="flex items-center gap-1.5 shrink-0">
-              <AccentBar size="sm" />
-              <span className="text-[14px] font-bold text-ink tracking-tight">단위</span>
-            </span>
+            <InlineLabel size="sm">단위</InlineLabel>
             <div className="inline-flex shrink-0 bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
               <button onClick={() => setXAxisMode("month")}
                 className={`min-h-[34px] px-3 py-0.5 text-[14px] font-semibold rounded-md transition-colors cursor-pointer ${xAxisMode === "month" ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>월중</button>
