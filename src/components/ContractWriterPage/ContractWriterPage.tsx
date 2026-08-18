@@ -45,6 +45,7 @@ import SplitPanel from "../common/SplitPanel";
 import { EmployeeInfoForm } from "../common/EmployeeInfoForm";
 import { AddressSearchModal } from "../common/AddressSearchModal";
 import { matchHangul } from "../common/hangulSearch";
+import { IconTile } from "../common/IconTile";
 import sungstampUrl from "../../images/sungstamp.png";
 import { useSettings, defaultWageForPosition, type WageRate } from "../../hooks/useSettings";
 import { useKvSetting } from "../../hooks/useKvSetting";
@@ -5347,9 +5348,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         {/* 페이지 헤더 · T-CTR-11 · 컴팩트 축소 */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
-              <NotePencil size={16} weight="fill" />
-            </div>
+            {/* 2026-08-18 · IconTile 확산 */}
+            <IconTile icon={<NotePencil size={16} weight="fill" />} tone="emerald" size="md" />
+
             <div>
               <h1 className="text-sm sm:text-base font-bold text-zinc-800 leading-none">근로계약서 작성</h1>
               <p className="text-[14px] text-zinc-500 mt-0.5">좌측 폼 · 우측 이미지 재현 · 프리뷰 내 서명 spot 클릭하여 서명 입력</p>

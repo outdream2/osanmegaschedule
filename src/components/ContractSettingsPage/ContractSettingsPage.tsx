@@ -32,6 +32,7 @@ import {
 } from "@phosphor-icons/react";
 
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
+import { IconTile } from "../common/IconTile";
 import type { AuthSession } from "../../types";
 import { useSettings, defaultWageForPosition, type WageRate } from "../../hooks/useSettings";
 import { useKvSetting } from "../../hooks/useKvSetting";
@@ -470,9 +471,9 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
         {/* ── 상단 sticky · 전체 저장 배너 ──────────────────────────────── */}
         <div className="sticky top-0 z-20 -mx-3 sm:-mx-5 px-3 sm:px-5 py-2 bg-white/95 backdrop-blur-sm border-b border-line shadow-sm flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
-              <Gear size={15} weight="fill" />
-            </div>
+            {/* 2026-08-18 · IconTile 확산 */}
+            <IconTile icon={<Gear size={15} weight="fill" />} tone="indigo" size="md" />
+
             <span className="text-[13px] font-bold text-zinc-800 leading-none hidden sm:block">근로계약서 설정</span>
             {overallSaveState === "saved" && (
               <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 font-bold">
@@ -779,9 +780,9 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
         {/* ── 각 호 CMS 섹션 헤더 ───────────────────────────────────────── */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-zinc-100 text-zinc-600 flex items-center justify-center shrink-0">
-              <ListChecks size={14} weight="fill" />
-            </div>
+            {/* 2026-08-18 · IconTile 확산 */}
+            <IconTile icon={<ListChecks size={14} weight="fill" />} tone="zinc" size="md" />
+
             <div>
               <h2 className="text-[13px] font-bold text-zinc-800 leading-none">각 호 내용 편집</h2>
               <p className="text-[11px] text-zinc-500 font-semibold mt-0.5">근로계약서에 삽입되는 조항 · 그룹 클릭해서 펼치기</p>
