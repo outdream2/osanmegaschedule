@@ -56,6 +56,7 @@ import {
 import { EmployeeInfoForm } from "../common/EmployeeInfoForm";
 import { AddressSearchModal } from "../common/AddressSearchModal";
 import { StatusPill } from "../common/StatusPill";
+import { AccentBar } from "../common/AccentBar";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 interface Employee {
@@ -558,7 +559,7 @@ const CreateModal: React.FC<{
         {/* 모달 헤더 · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
         <div className="px-4 py-3 border-b border-line bg-zinc-50/60 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <span className="w-[3px] h-[20px] rounded-full bg-brand-deep shrink-0" />
+            <AccentBar h={20} className="shrink-0" />
             <div className="w-9 h-9 rounded-lg bg-brand-deep flex items-center justify-center shadow-sm">
               <UserPlus size={15} className="text-white" />
             </div>
@@ -1320,7 +1321,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
         {/* 2026-08-17 · 재직 상태 필터 · 최신 트렌드 · segmented pill · 딥네이비 통일 */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="flex items-center gap-2 shrink-0">
-            <span className="w-[3px] h-[15px] rounded-full bg-brand-deep" />
+            <AccentBar h={15} />
             <span className="text-[15px] font-bold text-ink tracking-tight">상태</span>
           </span>
           <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
@@ -1345,7 +1346,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
         {/* 직책 필터 · 최신 트렌드 · 통일 */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="flex items-center gap-2 shrink-0">
-            <span className="w-[3px] h-[15px] rounded-full bg-brand-deep" />
+            <AccentBar h={15} />
             <span className="text-[15px] font-bold text-ink tracking-tight">직책</span>
           </span>
           <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 flex-wrap gap-0.5">

@@ -4,6 +4,7 @@ import { api, ApiError } from "../../lib/apiClient";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { UtensilsCrossed, Clock, RefreshCw, Users, ChevronLeft, ChevronRight, Stethoscope, UserRound, Coffee } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
+import { AccentBar } from "../common/AccentBar";
 import type { AuthSession } from "../../types";
 
 interface LunchRequest {
@@ -281,7 +282,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
               <ChevronLeft size={16} />
             </button>
             <div className="flex items-center gap-2.5">
-              <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+              <AccentBar />
               <div className="flex flex-col leading-tight">
                 <span className="text-[13px] text-ink-soft font-semibold">점심 관리</span>
                 <h1 className="text-[19px] font-extrabold text-ink tracking-tight tabular-nums">{dateLabel(selectedDate)}</h1>
@@ -498,7 +499,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
           <div className="rounded-xl border border-line bg-white p-5 flex flex-col gap-3 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <span className="w-[3px] h-[18px] rounded-full bg-brand-deep" />
+                <AccentBar size="lg" />
                 <UtensilsCrossed size={20} className="text-rose-500" />
                 <span className="font-bold text-[19px] text-ink tracking-tight">오늘 점심 불참</span>
               </div>
@@ -533,7 +534,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
           <div className="bg-white rounded-xl border border-line p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2.5">
-                <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+                <AccentBar />
                 <span className="text-[17px] font-bold text-ink tracking-tight">점심 불참 현황</span>
                 <span className="text-[14px] font-medium text-ink-soft tabular-nums">· {allRequests.length}명 응답</span>
               </div>

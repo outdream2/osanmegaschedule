@@ -422,7 +422,7 @@ const ZoneCategoryContent: React.FC = () => {
       <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2`}>
         {/* 좌측 · accent bar + 아이콘 + 제목 + count */}
         <div className="flex items-center gap-2.5 shrink-0">
-          <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+          <AccentBar />
           <PieChart size={16} className="text-brand-deep shrink-0" />
           <span className="text-[17px] font-bold text-ink tracking-tight">구역현황</span>
           <StatusPill tone="brand" size="md">{grouped.length}개 구역</StatusPill>
@@ -431,7 +431,7 @@ const ZoneCategoryContent: React.FC = () => {
         {/* 기간 필터 · 통일 톤 · segmented pill */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="flex items-center gap-2 shrink-0">
-            <span className="w-[3px] h-[15px] rounded-full bg-brand-deep" />
+            <AccentBar h={15} />
             <span className="text-[15px] font-bold text-ink tracking-tight">기간</span>
           </span>
           <div className="inline-flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
