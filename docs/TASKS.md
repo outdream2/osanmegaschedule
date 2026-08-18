@@ -17,9 +17,11 @@
 - 🔲 접근성 audit (aria-* · keyboard nav)
 - 🔲 목업 HTML 파일 · 최신 트렌드로 재생성 (문서 · 위험 낮음)
 
-### #151 · IconTile 공용 컴포넌트 신규 (선택)
-- 파스텔 46곳 icon container (w-7 h-7 bg-{c}-100) → common/IconTile · variant/size prop
-- 위험도: 낮음 (신규 프레임워크)
+### #151 · IconTile 공용 컴포넌트 · 확산 진행중
+- ✅ 컴포넌트 완성 · 10 tone · 3 size · README + 7 unit tests
+- ✅ 18곳 확산 (BrandingSettings 4 · Contract 3 · Display/ProductArrival/Scan 3 · ContractWriter sm 4 · ScanPage sm 1 · VendorModal 2 · VendorListEditor 1)
+- 🔲 잔여 후보 조사 (rounded-full · rounded-xl variant 확장 · 색조 밖 orange 등)
+- 위험도: 낮음 (className 만 · 회귀 없음)
 
 ### 배포 확인 대기 (2026-08-18 · `013920a`)
 - 🔲 헤더 hidden 필터 · admin 도 정상 동작 (다른 태블릿/모바일 확인)
