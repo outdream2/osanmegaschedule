@@ -1293,9 +1293,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               )
             }>입고 알림</SectionLabel>
             {arrivalsLoading && stockArrivals.length > 0 && (
-              <div className="flex items-center justify-center gap-1.5 text-[13px] text-brand-deep font-semibold py-1.5 mb-1 bg-brand-tint border border-brand/15 rounded-lg sticky top-0 z-10">
-                <Loader2 size={13} className="animate-spin" /> 새로 불러오는 중...
-              </div>
+              <div className="flex items-center justify-center py-1.5 mb-1 bg-brand-tint border border-brand/15 rounded-lg sticky top-0 z-10"><Spinner tone="brand" size={13} label="새로 불러오는 중..." labelSize={13} /></div>
             )}
             {arrivalsLoading && stockArrivals.length === 0 ? (
               <div className="flex items-center justify-center py-10"><Spinner tone="zinc" size={16} label="로딩 중..." labelSize={14} /></div>

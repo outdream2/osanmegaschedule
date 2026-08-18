@@ -31,6 +31,7 @@ import { ProductSearchInput } from "../common/ProductSearchInput";
 import { IconTile } from "../common/IconTile";
 import { AccentBar } from "../common/AccentBar";
 import { ArrivalRowCard } from "./ArrivalRowCard";
+import { Spinner } from "../common/Spinner";
 import { useToast } from "../../hooks/useToast";
 
 interface ProductArrivalPageProps {
@@ -1037,9 +1038,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
           {/* 리스트 카드 */}
           <div className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
             {arrivalsLoading && arrivals.length === 0 ? (
-              <div className="py-12 flex items-center justify-center gap-2 text-zinc-400 text-[15px] font-semibold">
-                <Loader2 size={16} className="animate-spin" /> 불러오는 중...
-              </div>
+              <div className="py-12 flex items-center justify-center"><Spinner tone="zinc" size={16} label="불러오는 중..." labelSize={15} /></div>
             ) : arrivals.length === 0 ? (
               <div className="py-12 text-center text-zinc-400 text-[15px] font-semibold">최근 {arrivalDays}일 입고내역 없음</div>
             ) : (
@@ -1128,9 +1127,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
             {/* 본문 */}
             <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
               {arrivalDetailLoading || !arrivalDetail ? (
-                <div className="py-12 flex items-center justify-center gap-2 text-zinc-400 text-[15px] font-semibold">
-                  <Loader2 size={16} className="animate-spin" /> 상세 로딩 중...
-                </div>
+                <div className="py-12 flex items-center justify-center"><Spinner tone="zinc" size={16} label="상세 로딩 중..." labelSize={15} /></div>
               ) : (
                 <>
                   {/* 헤더 요약 4카드 · 2026-08-17 · Vercel Dashboard 톤 · white body + status dot */}

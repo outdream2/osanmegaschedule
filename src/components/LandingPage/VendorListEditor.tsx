@@ -25,6 +25,7 @@ import { fmtWonCompact } from "../../lib/format";
 // 2026-08-09 · 신규 공급사 등록 모달 (사용자 요청)
 import { NewVendorModal } from "../common/NewVendorModal";
 import { IconTile } from "../common/IconTile";
+import { Spinner } from "../common/Spinner";
 
 interface VendorListEditorProps {
   // 기존 API 호환용 · 무시됨 (모달 방식으로 통일)
@@ -1440,9 +1441,7 @@ export const VendorDetailModal: React.FC<{
             {/* 원장 테이블 · 시간순 desc */}
             <div className="rounded-lg border border-line overflow-auto max-h-[420px] bg-white">
               {paymentLoading ? (
-                <div className="flex items-center justify-center gap-1.5 py-8 text-zinc-400 text-[12px]">
-                  <Loader2 size={14} className="animate-spin" />로딩중...
-                </div>
+                <div className="flex items-center justify-center py-8"><Spinner tone="zinc" label="로딩중..." labelSize={12} /></div>
               ) : ledgerRows.length === 0 ? (
                 <div className="py-8 text-center text-zinc-400 text-[12px]">거래 내역 없음</div>
               ) : (
@@ -1829,9 +1828,7 @@ const PaymentRegisterModal: React.FC<{
 
             <div className="rounded-lg border border-line overflow-auto max-h-[300px] bg-white">
               {loading ? (
-                <div className="flex items-center justify-center gap-1.5 py-8 text-zinc-400 text-[12px]">
-                  <Loader2 size={14} className="animate-spin" />로딩중...
-                </div>
+                <div className="flex items-center justify-center py-8"><Spinner tone="zinc" label="로딩중..." labelSize={12} /></div>
               ) : invoices.length === 0 ? (
                 <div className="py-8 text-center text-zinc-400 text-[12px]">
                   매입건 없음 · 결제만 등록 (unallocated payment)
