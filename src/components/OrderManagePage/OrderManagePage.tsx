@@ -14,6 +14,7 @@ import { PageToolbar } from "../common/PageToolbar";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 import { StatusPill } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
+import { Spinner } from "../common/Spinner";
 import { matchHangul } from "../common/hangulSearch";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
 import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp, ScanLine, PackagePlus, RotateCcw, X, Search, Info, MapPin } from "lucide-react";
@@ -1819,7 +1820,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           </div>
         )}
         {productsLoading && lowStock.length === 0 ? (
-          <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+          <div className="flex items-center justify-center py-8"><Spinner tone="zinc" label="로딩 중..." labelSize={12} /></div>
         ) : lowStock.length === 0 ? (
           <div className="text-center text-[15px] text-zinc-300 py-6">발주 필요 상품 없음</div>
         ) : (
@@ -2450,7 +2451,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           </div>
         )}
         {orderLoading && orderReqs.length === 0 ? (
-          <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+          <div className="flex items-center justify-center py-8"><Spinner tone="zinc" label="로딩 중..." labelSize={12} /></div>
         ) : orderReqs.length === 0 && !orderError ? (
           <div className="text-center text-[15px] text-zinc-300 py-6">발주 요청 내역 없음</div>
         ) : (

@@ -10,6 +10,7 @@ import { fmtDateYMD, fmtDateMD } from "../../lib/format";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { StatusPill, type PillTone } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
+import { Spinner } from "../common/Spinner";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 
 interface LeaveRequest {
@@ -441,7 +442,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
               </div>
             )}
             {allLoading && (mgrTab === "pending" ? pending : reviewed).length === 0 ? (
-              <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+              <div className="flex items-center justify-center py-8"><Spinner tone="zinc" label="로딩 중..." labelSize={12} /></div>
             ) : (
               <div className={`flex flex-col divide-y divide-zinc-50 ${allLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {(mgrTab === "pending" ? pending : reviewed).length === 0 ? (

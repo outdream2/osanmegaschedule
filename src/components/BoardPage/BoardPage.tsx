@@ -17,6 +17,7 @@ import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { CARD_BASE } from "../../styles/tokens";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 import { AccentBar } from "../common/AccentBar";
+import { Spinner } from "../common/Spinner";
 import { StatusPill } from "../common/StatusPill";
 import { uploadImagesToCloudinary, type UploadedImage } from "../../lib/cloudinaryUpload";
 import { fmtDateShort } from "../../lib/format";
@@ -208,7 +209,7 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
           </div>
         )}
         {loading && filtered.length === 0 ? (
-          <div className="flex items-center justify-center py-8 text-zinc-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+          <div className="flex items-center justify-center py-8"><Spinner tone="zinc" label="로딩 중..." labelSize={12} /></div>
         ) : !loading && filtered.length === 0 ? (
           <div className="text-center text-[15px] text-zinc-300 py-6">등록된 글 없음</div>
         ) : (
