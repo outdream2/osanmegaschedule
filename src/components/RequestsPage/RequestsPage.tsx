@@ -1,7 +1,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { api } from "../../lib/apiClient";
-import { dispatchApprovalChange } from "../../lib/approvalEvents";
+import { dispatchApprovalChange, useApprovalRefreshListener } from "../../lib/approvalEvents";
 import { TIMING } from "../../constants/timing";
 import {
   Bell, Package, MapPin,
@@ -390,6 +390,15 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   }, []);
 
   useEffect(() => { loadTabCounts(); loadDisplayReqs(); loadOrderReqs(); loadMismatches(); loadLunch(); loadInventoryChecks(); loadLeavePendingCount(); }, []);
+  // 2026-08-18 · 승인 요청 상태 변경 시 · 탭 카운트 + 리스트 즉시 재로드
+  useApprovalRefreshListener(() => {
+    loadTabCounts();
+    loadLeavePendingCount();
+    loadDisplayReqs();
+    loadOrderReqs();
+    loadMismatches();
+    loadLunch();
+  });
   useEffect(() => {
     if (tab === "order") { loadOrderReqs(); loadProducts(); }
   }, [tab]);
