@@ -20,6 +20,11 @@
   - ✅ **legacy StatusBadge 삭제 + common/README.md 문서화** (356aa1d)
 - **잔여 · 다음 세션**: ContractWriterPage(5,400 lines · 분리 필요) · common/EmployeeInfoForm · 각 페이지 status matrix (부적합 판정)
 
+### #165 · 프레임워크 잔재 정리 (2026-08-18 · ✅ 완료)
+- shadow-3xs (미정의 Tailwind 클래스) → shadow-sm · 5곳 fix
+- indigo focus → brand-deep · 마지막 2곳 (DayTimelineModal · ZoneGroupPanel)
+- EmployeeInfoForm 주소검색 · indigo → brand-tint 통일
+
 ### #164 · Nav v5 · 컬러 액센트 강화 (사용자 피드백) · shadow 통일 (2026-08-18 · ✅ 완료)
 - 사용자 피드백: "gradient 별로 · 사이드바 컬러 액센트 없어"
 - **핵심 변화 1**: gradient 배경 revert (심플 bg-white/[0.10])
