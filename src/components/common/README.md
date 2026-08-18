@@ -188,21 +188,43 @@ import { IconTile } from "@/components/common/IconTile";
 ---
 
 <a name="modal"></a>
-## Modal · ConfirmDialog
+## Modal · ConfirmDialog · v2 확장 (2026-08-18)
 
 frosted backdrop (딥네이비 + blur 6px) · 3-layer shadow (Attio)
 
+**기본**:
 ```tsx
 <Modal open={open} onClose={() => setOpen(false)} title="상세" size="md" footer={<Button>확인</Button>}>
   {children}
 </Modal>
+```
 
-// Promise 기반 confirm (useConfirm 훅)
+**v2 확장 (인라인 모달 대체용)**:
+```tsx
+<Modal
+  open={open}
+  onClose={onClose}
+  icon={<Package size={18} />}
+  title="상품 상세"
+  titleAccent          // 좌측 3px accent bar
+  headerRight={<StatusPill tone="emerald">완료</StatusPill>}
+  size="lg"
+  backdropIntensity="brand"  // "brand" (기본) or "brand-strong" (이미지 뷰어)
+  headerTint            // 헤더 zinc-50/60 배경 (기본 true)
+>
+  {children}
+</Modal>
+```
+
+**Size**: `sm`(md) · `md`(2xl) · `lg`(4xl) · `xl`(6xl) · `full`(95vw)
+
+**Promise 기반 confirm (useConfirm 훅)**:
+```tsx
 const confirm = useConfirm();
 if (await confirm({ message: "삭제할까요?", danger: true })) doDelete();
 ```
 
-**Size**: `sm`(md) · `md`(2xl) · `lg`(4xl) · `xl`(6xl) · `full`(95vw)
+**마이그레이션 대상**: 30+ 인라인 모달 (`backdrop-brand` + inline 헤더 반복) → `<Modal>` v2 props 로 통합
 
 ---
 
