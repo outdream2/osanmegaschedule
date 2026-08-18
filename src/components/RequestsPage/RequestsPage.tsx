@@ -17,6 +17,7 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { CARD_BASE } from "../../styles/tokens";
 import { StatusPill, type PillTone } from "../common/StatusPill";
 import { IconTile } from "../common/IconTile";
+import { AccentBar } from "../common/AccentBar";
 // 2026-08-12 · 연차승인 탭 · LeavePage mode="approval" 로 임베드 (관리자용 승인 UI)
 import { LeavePage } from "../LeavePage/LeavePage";
 
@@ -78,7 +79,7 @@ function ListToolbar({
 }) {
   return (
     <div className="flex items-center gap-2.5 mb-2 bg-white border border-line rounded-xl px-3.5 h-10 shadow-sm">
-      <span className="w-[3px] h-[16px] rounded-full bg-brand-deep shrink-0" />
+      <AccentBar className="shrink-0" />
       <button onClick={onToggleAll} className="shrink-0 cursor-pointer text-ink-soft hover:text-brand-deep transition-colors">
         {allChecked && total > 0
           ? <CheckSquare size={16} className="text-brand-deep" />

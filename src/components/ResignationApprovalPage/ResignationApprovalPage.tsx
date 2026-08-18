@@ -1,6 +1,7 @@
 // src/components/ResignationApprovalPage/ResignationApprovalPage.tsx
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useState } from "react";
+import { AccentBar } from "../common/AccentBar";
 import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import {
@@ -174,7 +175,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
         {/* 페이지 헤더 · 2026-08-17 · 세련 · accent bar + gradient icon card */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-3">
-            <span className="w-[3px] h-[40px] rounded-full bg-gradient-to-b from-brand-deep to-[#1E5C8E] shrink-0" />
+            <AccentBar size="hero" className="shrink-0" />
             <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-tint to-white border border-brand/15 text-brand-deep flex items-center justify-center shadow-[0_1px_2px_rgba(10,46,74,0.04),0_2px_8px_rgba(10,46,74,0.06)]">
               <FileText size={20} weight="fill" />
             </div>

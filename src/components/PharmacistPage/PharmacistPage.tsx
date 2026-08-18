@@ -7,6 +7,7 @@ import { FirstAid, BookOpen, Video, FileText, GraduationCap, Folder, FolderOpen,
 import { Settings2, Plus, Eye, FileText as FileTextIcon, Loader2, ChevronRight, ChevronDown, CloudUpload, Trash2, X as XIcon } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
+import { AccentBar } from "../common/AccentBar";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
 import { SplitPanel } from "../common/SplitPanel";
 import { StatusPill } from "../common/StatusPill";
@@ -351,7 +352,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
       <main className="flex-1 max-w-[1360px] mx-auto w-full px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-3">
         {/* 정보 헤더 · 2026-08-17 · 세련 · accent bar + gradient icon card + 폰트 +2 */}
         <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_16px_rgba(10,46,74,0.06)] px-4 py-3.5 flex items-center gap-3">
-          <span className="w-[3px] h-[40px] rounded-full bg-gradient-to-b from-brand-deep to-[#1E5C8E] shrink-0" />
+          <AccentBar size="hero" className="shrink-0" />
           <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-gradient-to-br from-brand-deep to-[#1E5C8E] shadow-[0_2px_8px_rgba(10,46,74,0.25)] ring-1 ring-brand/10 shrink-0">
             <FirstAid size={20} className="text-white" weight="fill" />
           </div>

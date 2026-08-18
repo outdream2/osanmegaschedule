@@ -6,6 +6,7 @@
 import React from "react";
 import { MapPin } from "@phosphor-icons/react";
 import { SettingsPageShell } from "../common/SettingsPageShell";
+import { AccentBar } from "../common/AccentBar";
 import { useZoneDefs, SECTION_LABEL, type ZoneSection } from "../../hooks/useZoneDefs";
 // 2026-08-17 · 사용자 지시 · 매장구역도와 매핑 · StoreZoneMap 미리보기
 import { StoreZoneMap } from "../common/StoreZoneMap";
@@ -62,7 +63,7 @@ const ZoneSettingsPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
         {/* 매장구역도 미리보기 · 실시간 반영 · useZoneDefs 훅으로 자동 sync */}
         <section className="bg-white border border-line rounded-2xl overflow-hidden shadow-sm">
           <div className="flex items-center gap-2.5 px-5 py-3 border-b border-line bg-zinc-50/60">
-            <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+            <AccentBar />
             <h2 className="text-[17px] font-bold text-ink tracking-tight">매장 구역도 미리보기</h2>
             <span className="text-[13px] font-medium text-ink-soft">· 편집 즉시 반영</span>
           </div>
@@ -75,7 +76,7 @@ const ZoneSettingsPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
           <section key={section} className="bg-white border border-line rounded-2xl overflow-hidden shadow-sm">
             {/* Section 헤더 · 딥네이비 accent bar */}
             <div className="flex items-center gap-2.5 px-5 py-3 border-b border-line bg-zinc-50/60">
-              <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+              <AccentBar />
               <h2 className="text-[17px] font-bold text-ink tracking-tight">{label}</h2>
               <span className="text-[14px] font-medium text-ink-soft tabular-nums">· {sectionZones.length}개</span>
             </div>

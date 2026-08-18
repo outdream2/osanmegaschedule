@@ -16,6 +16,7 @@
 
 import React from "react";
 import { EyeOff, Eye, Loader2, X } from "lucide-react";
+import { AccentBar } from "../common/AccentBar";
 import type { HiddenProduct } from "../../hooks/useHiddenManager";
 
 interface Props {
@@ -45,7 +46,7 @@ export const HiddenManagerModal: React.FC<Props> = ({
         {/* 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-line bg-zinc-50/60">
           <div className="flex items-center gap-3 min-w-0">
-            <span className="w-[3px] h-[24px] rounded-full bg-brand-deep shrink-0" />
+            <AccentBar size="xl" className="shrink-0" />
             <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shadow-sm shrink-0">
               <EyeOff size={18} className="text-white" />
             </div>

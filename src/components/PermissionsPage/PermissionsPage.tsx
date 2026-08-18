@@ -10,6 +10,7 @@ import type { AuthSession, PagePermissions } from "../../types";
 import { DEFAULT_PERMISSIONS } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { SettingsPageShell } from "../common/SettingsPageShell";
+import { AccentBar } from "../common/AccentBar";
 import { StatusPill } from "../common/StatusPill";
 import { Lock } from "@phosphor-icons/react";
 import { SettingsModal } from "../SettingsModal";
@@ -586,7 +587,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         {/* 섹션 1 · 페이지별 최소 권한 · 2026-08-17 · accent bar + 딥네이비 */}
         <div className="mb-2 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
-            <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+            <AccentBar />
             <Shield size={16} className="text-brand-deep" />
             <h2 className="text-[17px] font-bold text-ink tracking-tight">페이지별 설정</h2>
           </div>

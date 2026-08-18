@@ -10,6 +10,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { X, Package, Search, Loader2 } from "lucide-react";
 import { TEXT } from "../../styles/tokens";
 import { SeasonButtons } from "../common/SeasonButtons";
+import { AccentBar } from "../common/AccentBar";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { api, ApiError } from "../../lib/apiClient";
@@ -116,7 +117,7 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
         {/* 헤더 · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
         <div className="px-5 py-4 border-b border-line bg-zinc-50/60 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <span className="w-[3px] h-[24px] rounded-full bg-brand-deep shrink-0" />
+            <AccentBar size="xl" className="shrink-0" />
             <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shadow-sm shrink-0">
               <Package size={18} className="text-white" />
             </div>

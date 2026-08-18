@@ -7,6 +7,7 @@ import React, { useEffect, useState } from "react";
 import { Package, Loader2, ChevronDown, ChevronRight, Mail, Phone, User, Calendar, CalendarCheck } from "lucide-react";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { PageToolbar } from "../common/PageToolbar";
+import { AccentBar } from "../common/AccentBar";
 import { PeriodSelector, PERIOD_DAYS_PRESET } from "../common/PeriodSelector";
 import { StatusPill } from "../common/StatusPill";
 
@@ -89,7 +90,7 @@ export const OrderHistoryTab: React.FC = () => {
         right={
           <div className="flex items-center gap-2">
             <span className="flex items-center gap-1.5 shrink-0">
-              <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
+              <AccentBar size="sm" />
               <span className="text-[13px] font-bold text-ink tracking-tight">기간</span>
             </span>
             <PeriodSelector

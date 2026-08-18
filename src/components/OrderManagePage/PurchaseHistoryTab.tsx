@@ -15,6 +15,7 @@ import { useVendors } from "../../hooks/useVendors";
 import { Building2, Loader2, Package, RefreshCw } from "lucide-react";
 import { SplitPanel } from "../common/SplitPanel";
 import { ListLoading } from "../common/ListLoading";
+import { AccentBar } from "../common/AccentBar";
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
@@ -763,7 +764,7 @@ export const PurchaseHistoryTab: React.FC = () => {
       {/* 2026-08-17 · 상단 필터바 · 최신 트렌드 · 좌측 accent bar + 딥네이비 통일 */}
       <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2 shrink-0`}>
         <div className="flex items-center gap-2.5 shrink-0">
-          <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+          <AccentBar />
           {viewMode === "by-vendor"
             ? <Building2 size={16} className="text-brand-deep shrink-0" />
             : <Package size={16} className="text-brand-deep shrink-0" />}
@@ -846,7 +847,7 @@ export const PurchaseHistoryTab: React.FC = () => {
         {/* 2026-08-17 · 기간 UI 프레임워크 통일 · PeriodSelector 공통 · 딥네이비 */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="flex items-center gap-1.5 shrink-0">
-            <span className="w-[3px] h-[14px] rounded-full bg-brand-deep" />
+            <AccentBar size="sm" />
             <span className="text-[13px] font-bold text-ink tracking-tight">기간</span>
           </span>
           <PeriodSelector

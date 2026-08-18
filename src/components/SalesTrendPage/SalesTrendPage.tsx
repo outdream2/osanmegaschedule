@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Search, TrendingUp, Building2, LineChart, Package, X, Info, Eye, EyeOff, CheckSquare, Square, Loader2, Award, Activity, Layers, PieChart, AlertOctagon } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
+import { AccentBar } from "../common/AccentBar";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { useHiddenManager } from "../../hooks/useHiddenManager";
@@ -776,7 +777,7 @@ const ProductTrendTab: React.FC<{
             {/* 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-line bg-zinc-50/60">
               <div className="flex items-center gap-3 min-w-0">
-                <span className="w-[3px] h-[24px] rounded-full bg-brand-deep shrink-0" />
+                <AccentBar size="xl" className="shrink-0" />
                 <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shrink-0 shadow-sm">
                   <Package size={18} className="text-white" />
                 </div>
@@ -1970,7 +1971,7 @@ const ZoneCategoryContent: React.FC = () => {
       <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
         {/* 아이콘 + 제목 + 카운트배지 + 부제 */}
         <div className="flex items-center gap-2.5">
-          <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+          <AccentBar />
           <PieChart size={16} className="text-brand-deep shrink-0" />
           <span className="text-[16px] font-bold text-ink tracking-tight">카테고리별현황</span>
           <StatusPill tone="amber" size="sm">{grouped.length}개 구역</StatusPill>
@@ -2563,7 +2564,7 @@ export const SalesTrendPage: React.FC = () => {
             {/* 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-line bg-zinc-50/60">
               <div className="flex items-center gap-3 min-w-0">
-                <span className="w-[3px] h-[24px] rounded-full bg-brand-deep shrink-0" />
+                <AccentBar size="xl" className="shrink-0" />
                 <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shrink-0 shadow-sm">
                   <Package size={18} className="text-white" />
                 </div>
@@ -2600,7 +2601,7 @@ export const SalesTrendPage: React.FC = () => {
             {/* 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-line bg-zinc-50/60">
               <div className="flex items-center gap-3 min-w-0">
-                <span className="w-[3px] h-[24px] rounded-full bg-brand-deep shrink-0" />
+                <AccentBar size="xl" className="shrink-0" />
                 <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center shadow-sm shrink-0">
                   <EyeOff size={18} className="text-white" />
                 </div>
