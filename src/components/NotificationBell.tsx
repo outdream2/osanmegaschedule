@@ -7,6 +7,7 @@ import { useApprovalRefreshListener } from "../lib/approvalEvents";
 import { Bell, BellOff, CheckCheck, X, Info, AlertTriangle, CheckCircle, AlertCircle } from "lucide-react";
 import type { AuthSession } from "../types";
 import { StatusPill } from "./common/StatusPill";
+import { AccentBar } from "./common/AccentBar";
 
 interface Notification {
   id: number;
@@ -192,7 +193,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
           {/* Header · 2026-08-17 · 최신 트렌드 · accent bar + 폰트 +2 · 딥네이비 통일 */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-line bg-zinc-50/60">
             <div className="flex items-center gap-2.5">
-              <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+              <AccentBar />
               <Bell size={15} className="text-brand-deep" />
               <span className="text-[16px] font-bold text-ink tracking-tight">알림</span>
               {unreadCount > 0 && (

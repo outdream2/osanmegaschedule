@@ -56,6 +56,7 @@ import { MenuCard } from "./MenuCard";
 import { StockSearch } from "./StockSearch";
 // 2026-08-17 · 공용 Button (최신 트렌드 · Linear/Vercel 톤 · primary/secondary/ghost/danger)
 import { Button } from "../common/Button";
+import { AccentBar } from "../common/AccentBar";
 // 2026-08-17 · UI 프레임워크 · SectionLabel · MiniCard · Hero (목업 톤)
 //   HeroButton · KpiCard · 오늘의 현황 한줄 텍스트화로 미사용 (2026-08-17 사용자 지시)
 import { SectionLabel } from "../common/SectionLabel";
@@ -992,7 +993,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           {isManagerOrAdmin && (
             <div className="w-full mb-6">
               <div className="flex items-center gap-2.5 mb-2">
-                <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+                <AccentBar />
                 <div className="text-ink font-bold tracking-tight text-[16px]">오늘의 현황</div>
               </div>
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[17px] text-ink-soft pl-[13px]">

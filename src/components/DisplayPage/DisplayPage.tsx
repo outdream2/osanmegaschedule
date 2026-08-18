@@ -16,6 +16,7 @@ import {
 import { getZoneLabel, getZoneSubLabel } from "../../constants/zoneLabels";
 // 2026-08-03 · 사용자 요청 · 공용 매장 구역도 · SalesTrendPage 와 동일 · 모바일 fullscreen 모달에서 사용
 import { StoreZoneMap } from "../common/StoreZoneMap";
+import { AccentBar } from "../common/AccentBar";
 import { getProductsMap, type ProductInfo } from "../../lib/productsCache";
 import {
   Bell,
@@ -2980,7 +2981,7 @@ const VendorManageSplit: React.FC = () => {
       <div className={`${CARD_BASE} px-4 py-3 flex flex-col gap-2.5 shrink-0`}>
         {/* 헤더 · 좌 accent bar + 제목 + count */}
         <div className="flex items-center gap-2.5">
-          <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+          <AccentBar />
           <span className="text-[17px] font-bold text-ink tracking-tight">공급사관리</span>
           <StatusPill tone="brand" size="md">
             {loading ? <Loader2 size={12} className="animate-spin inline" /> : `${filtered.length}건`}

@@ -4,6 +4,7 @@
 //   · 어디서든 재사용 · 스케쥴/직원/거래처/발주 등 모든 필터·정렬 통일
 //   · 참조 · feedback_ui_top_principle.md · feedback_ui_latest_trend_framework.md
 import type { ReactNode } from "react";
+import { AccentBar } from "./AccentBar";
 
 // ─── FilterSortLabel ─────────────────────────────────────────────────────────
 export interface FilterSortLabelProps {
@@ -15,7 +16,7 @@ export interface FilterSortLabelProps {
 export function FilterSortLabel({ children, className = "" }: FilterSortLabelProps) {
   return (
     <span className={`flex items-center gap-2 shrink-0 ${className}`}>
-      <span className="w-[3px] h-[15px] rounded-full bg-brand-deep" />
+      <AccentBar h={15} />
       <span className="text-[17px] font-bold text-ink tracking-tight">{children}</span>
     </span>
   );

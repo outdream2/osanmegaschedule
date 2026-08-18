@@ -9,6 +9,7 @@ import type { AuthSession } from "../../types";
 import { fmtDateYMD, fmtDateMD } from "../../lib/format";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { StatusPill, type PillTone } from "../common/StatusPill";
+import { AccentBar } from "../common/AccentBar";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 
 interface LeaveRequest {
@@ -326,7 +327,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
             <div className="bg-white rounded-xl border border-line p-4 shadow-sm">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+                  <AccentBar />
                   <span className="text-[19px] font-bold text-ink tracking-tight">내 신청 내역</span>
                   <span className="text-[19px] font-medium text-ink-soft tabular-nums">· {myRequests.length}건</span>
                 </div>

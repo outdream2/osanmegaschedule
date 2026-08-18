@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import { MapPin, Save, X } from "lucide-react";
 import { Employee } from "../../types";
 import { useZoneDefs, SECTION_LABEL, type ZoneSection } from "../../hooks/useZoneDefs";
+import { AccentBar } from "../common/AccentBar";
 
 export interface LogisticsZoneProps {
   assignedZoneNums: number[];
@@ -84,7 +85,7 @@ export const ZoneAssignTab: React.FC<{
       {onSaveToDow && (
         <div className="border border-line rounded-xl px-4 py-3 space-y-2.5 bg-white">
           <div className="flex items-center gap-2.5">
-            <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+            <AccentBar />
             <span className="text-[15px] font-bold text-ink tracking-tight">요일 템플릿 저장</span>
             <span className="text-[13px] font-medium text-ink-soft">— 현재 배정을 선택 요일 기본값으로 저장</span>
           </div>
@@ -135,7 +136,7 @@ export const ZoneAssignTab: React.FC<{
       {grouped.map(({ section, label, zones }) => (
         <section key={section} className="space-y-2">
           <div className="flex items-center gap-2.5">
-            <span className="w-[3px] h-[14px] rounded-full bg-brand-deep/70" />
+            <AccentBar size="sm" tone="brand-soft" />
             <div className="text-[14px] font-bold text-ink tracking-tight">{label}</div>
             <span className="text-[13px] font-medium text-ink-soft tabular-nums">· {zones.length}개</span>
           </div>

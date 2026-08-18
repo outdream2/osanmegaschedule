@@ -16,6 +16,7 @@ import type { AuthSession } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { CARD_BASE } from "../../styles/tokens";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
+import { AccentBar } from "../common/AccentBar";
 import { StatusPill } from "../common/StatusPill";
 import { uploadImagesToCloudinary, type UploadedImage } from "../../lib/cloudinaryUpload";
 import { fmtDateShort } from "../../lib/format";
@@ -215,7 +216,7 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
             {/* 이슈리스트 제목 · 2026-08-17 · 세련 · accent bar + 딥네이비 통일 */}
             <div className="flex items-center justify-between px-4 py-3 gap-2 flex-wrap border-b border-line">
               <div className="flex items-center gap-2.5">
-                <span className="w-[3px] h-[16px] rounded-full bg-brand-deep" />
+                <AccentBar />
                 <StickyNote size={16} className="text-brand-deep" />
                 <span className="text-[16px] font-bold text-ink tracking-tight">이슈리스트</span>
                 <StatusPill tone="brand" size="md">{filtered.length}건</StatusPill>
