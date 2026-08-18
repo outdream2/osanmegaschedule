@@ -70,9 +70,11 @@ const ToolbarSearch: React.FC<ToolbarSearchProps> = ({
         onKeyDown={e => e.key === "Escape" && onChange("")}
         placeholder={placeholder}
         className={[
+          // 2026-08-17 v2 · 폰트 +2 (14→15) + inset light + Attio 톤
           "w-full bg-white border border-line rounded-lg",
-          "pl-8 pr-8 h-9 text-[14px] text-ink placeholder-ink-soft",
-          "focus:outline-none focus:ring-2 transition-colors",
+          "pl-8 pr-8 h-9 text-[15px] text-ink placeholder-ink-soft",
+          "shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(10,46,74,0.04)]",
+          "focus:outline-none focus:ring-2 transition-all duration-150 ease-out",
           ACCENT_RING[accent],
         ].join(" ")}
         aria-label={placeholder}

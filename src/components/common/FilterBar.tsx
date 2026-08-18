@@ -31,7 +31,11 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   gap = "medium",
 }) => {
   return (
-    <div className={`bg-white rounded-xl border border-line shadow-sm px-4 py-3 flex flex-wrap items-center ${GAP_MAP[gap]} ${className}`}>
+    // 2026-08-17 v2 · Attio 세련 · inset light + 2-layer shadow · 딥네이비 tint
+    <div
+      className={`bg-white rounded-xl border border-line px-4 py-3 flex flex-wrap items-center ${GAP_MAP[gap]} ${className}`}
+      style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.60), 0 1px 2px rgba(10,46,74,0.05), 0 2px 8px -2px rgba(10,46,74,0.06)" }}
+    >
       {children}
     </div>
   );

@@ -23,7 +23,8 @@ export interface FieldLabelProps {
  *     이 컴포넌트의 htmlFor prop 추가를 원하면 확장 가능 (현재 사용처는 <label> 을 감싼 형태로만 씀)
  */
 export const FieldLabel: React.FC<FieldLabelProps> = ({ icon, children, required, className = "" }) => (
-  <label className={`text-[12px] font-bold text-zinc-600 flex items-center gap-1.5 mb-1.5 ${className}`}>
+  // 2026-08-17 v2 · 폰트 +2 (12→14) · ink-soft (딥네이비 톤) · tracking-tight
+  <label className={`text-[14px] font-bold text-ink-soft flex items-center gap-1.5 mb-1.5 tracking-tight ${className}`}>
     {icon}
     <span>
       {children}
