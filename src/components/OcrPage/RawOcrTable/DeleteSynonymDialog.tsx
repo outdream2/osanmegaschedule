@@ -1,4 +1,8 @@
+// 2026-08-18 · <Modal> 프레임워크 통합 · 동의어 삭제 확인 다이얼로그
 import React from "react";
+import { Trash2 } from "lucide-react";
+import { Modal } from "../../common/Modal";
+import { IconTile } from "../../common/IconTile";
 
 export type DeleteSynConfirmState = { ri: number; origName: string };
 
@@ -12,27 +16,45 @@ interface DeleteSynonymDialogProps {
 export const DeleteSynonymDialog: React.FC<DeleteSynonymDialogProps> = ({
   deleteSynConfirm, setDeleteSynConfirm, deleteSynonymByName, setAutoSynonymMatches,
 }) => {
+  const confirmDelete = async () => {
+    const { ri, origName } = deleteSynConfirm;
+    setDeleteSynConfirm(null);
+    await deleteSynonymByName(origName);
+    setAutoSynonymMatches(prev => { const s = { ...prev }; delete s[ri]; return s; });
+  };
+
   return (
-    // 2026-08-17 v2 · Modal 통일
-    <div className="fixed inset-0 z-[70] flex items-center justify-center backdrop-brand">
-      <div className="bg-white rounded-2xl shadow-brand-modal p-6 w-full max-w-sm border border-zinc-100 space-y-4">
-        <p className="text-sm font-bold text-zinc-800">동의어를 삭제하시겠습니까?</p>
-        <p className="text-xs text-zinc-500 leading-relaxed">
-          <span className="line-through text-gray-400">{deleteSynConfirm.origName}</span>의 동의어 매핑을 삭제합니다.
-        </p>
-        <div className="flex gap-2 pt-1">
-          <button type="button" onClick={() => setDeleteSynConfirm(null)}
-            className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-50 hover:bg-zinc-100 border border-line rounded-lg text-zinc-600 cursor-pointer">아니오</button>
-          <button type="button"
-            onClick={async () => {
-              const { ri, origName } = deleteSynConfirm;
-              setDeleteSynConfirm(null);
-              await deleteSynonymByName(origName);
-              setAutoSynonymMatches(prev => { const s = { ...prev }; delete s[ri]; return s; });
-            }}
-            className="flex-1 px-3 py-2 text-xs font-bold bg-rose-500 hover:bg-rose-600 text-white rounded-lg cursor-pointer">예, 삭제</button>
-        </div>
-      </div>
-    </div>
+    <Modal
+      open={true}
+      onClose={() => setDeleteSynConfirm(null)}
+      size="sm"
+      titleAccent
+      icon={<IconTile icon={<Trash2 size={14} />} tone="rose" size="md" />}
+      title="동의어 삭제"
+      footer={
+        <>
+          <button
+            type="button"
+            onClick={() => setDeleteSynConfirm(null)}
+            className="h-10 px-4 text-[14px] font-bold bg-white hover:bg-brand-tint border border-line hover:border-brand-deep rounded-lg text-ink transition cursor-pointer"
+          >
+            아니오
+          </button>
+          <button
+            type="button"
+            onClick={confirmDelete}
+            className="h-10 px-6 text-[15px] font-bold text-white bg-rose-500 hover:bg-rose-600 rounded-lg
+              shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_2px_6px_-1px_rgba(244,63,94,0.25)]
+              transition cursor-pointer"
+          >
+            예, 삭제
+          </button>
+        </>
+      }
+    >
+      <p className="text-[13px] text-ink-soft leading-relaxed">
+        <span className="line-through text-zinc-400">{deleteSynConfirm.origName}</span>의 동의어 매핑을 삭제합니다.
+      </p>
+    </Modal>
   );
 };

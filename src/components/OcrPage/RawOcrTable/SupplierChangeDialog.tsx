@@ -1,5 +1,9 @@
+// 2026-08-18 · <Modal> 프레임워크 통합 · 공급처 변경 확인 다이얼로그
 import React from "react";
+import { Building2 } from "lucide-react";
 import type { RawPage } from "./types";
+import { Modal } from "../../common/Modal";
+import { IconTile } from "../../common/IconTile";
 
 export type SupplierConfirmState = {
   pageNum: number;
@@ -25,75 +29,83 @@ export const SupplierChangeDialog: React.FC<SupplierChangeDialogProps> = ({
   setRawSupplierByPage, handleSynonymBulkAdd, onReparsePage,
   setReparseStatus, setReparseSupplier,
 }) => {
+  const apply = async () => {
+    const { pageNum, newVal, addSynonyms } = supplierConfirm;
+    // 이전 OCR 인식 공급사 → 보정 공급사를 DB에 저장 (자동보정)
+    const oldOcrSupplier = structuredPages.find(p => p.page === pageNum)?.meta.supplier;
+    if (oldOcrSupplier && oldOcrSupplier.trim() !== newVal.trim()) {
+      fetch("/api/ocr-supplier-aliases", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alias: oldOcrSupplier.trim(), supplier_name: newVal.trim() }),
+      }).catch(() => {});
+    }
+    setRawSupplierByPage(prev => ({ ...prev, [pageNum]: newVal }));
+    setSupplierConfirm(null);
+    if (addSynonyms) await handleSynonymBulkAdd(pageNum, newVal);
+    if (onReparsePage) {
+      setReparseStatus(prev => ({ ...prev, [pageNum]: 'loading' }));
+      setReparseSupplier(prev => ({ ...prev, [pageNum]: newVal }));
+      try {
+        await onReparsePage(pageNum, newVal);
+        setReparseStatus(prev => ({ ...prev, [pageNum]: 'done' }));
+      } catch {
+        setReparseStatus(prev => ({ ...prev, [pageNum]: 'error' }));
+      }
+    }
+  };
+
   return (
-    // 2026-08-17 v2 · Modal 통일
-    <div className="fixed inset-0 z-[60] flex items-center justify-center backdrop-brand p-4"
-      onClick={() => setSupplierConfirm(null)}>
-      <div className="bg-white rounded-2xl shadow-brand-modal border border-gray-100 p-5 max-w-sm w-full flex flex-col gap-4"
-        onClick={e => e.stopPropagation()}>
-        <div>
-          <p className="text-sm font-bold text-gray-800 mb-1">공급처 변경</p>
-          <p className="text-xs text-gray-500 leading-relaxed">
-            <span className="font-bold text-sky-700">"{supplierConfirm.newVal}"</span>으로 변경합니다.{" "}
-            해당 페이지의 <span className="font-bold text-gray-700">{supplierConfirm.rowCount}개</span> 항목과
-            이후 모든 프로세스(보정 결과, 확정 표)에 즉시 반영됩니다.
-          </p>
-        </div>
-        {/* 동의어 일괄 추가 옵션 */}
-        {nameIdx >= 0 && (
-          <label className="flex items-start gap-2.5 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={supplierConfirm.addSynonyms}
-              onChange={e => setSupplierConfirm(prev => prev ? { ...prev, addSynonyms: e.target.checked } : null)}
-              className="mt-0.5 accent-indigo-500"
-            />
-            <span className="text-xs text-gray-600 leading-snug">
-              <span className="font-bold text-indigo-700">동의어 일괄 추가</span> — 이 페이지 상품명을{" "}
-              <span className="font-semibold text-sky-700">"{supplierConfirm.newVal}"</span> 공급사로 동의어 사전에 등록
-              <span className="block text-[11px] text-gray-400 mt-0.5">(DB 매칭 후 상품코드 포함 자동 등록)</span>
-            </span>
-          </label>
-        )}
-        <div className="flex gap-2">
+    <Modal
+      open={true}
+      onClose={() => setSupplierConfirm(null)}
+      size="sm"
+      titleAccent
+      icon={<IconTile icon={<Building2 size={14} />} tone="sky" size="md" />}
+      title="공급처 변경"
+      footer={
+        <>
           <button
+            type="button"
             onClick={() => setSupplierConfirm(null)}
-            className="flex-1 py-2 text-xs font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-xl transition cursor-pointer"
+            className="h-10 px-4 text-[14px] font-bold bg-white hover:bg-brand-tint border border-line hover:border-brand-deep rounded-lg text-ink transition cursor-pointer"
           >
             취소
           </button>
           <button
-            onClick={async () => {
-              const { pageNum, newVal, addSynonyms } = supplierConfirm;
-              // 이전 OCR 인식 공급사 → 보정 공급사를 DB에 저장 (자동보정)
-              const oldOcrSupplier = structuredPages.find(p => p.page === pageNum)?.meta.supplier;
-              if (oldOcrSupplier && oldOcrSupplier.trim() !== newVal.trim()) {
-                fetch("/api/ocr-supplier-aliases", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ alias: oldOcrSupplier.trim(), supplier_name: newVal.trim() }),
-                }).catch(() => {});
-              }
-              setRawSupplierByPage(prev => ({ ...prev, [pageNum]: newVal }));
-              setSupplierConfirm(null);
-              if (addSynonyms) await handleSynonymBulkAdd(pageNum, newVal);
-              if (onReparsePage) {
-                setReparseStatus(prev => ({ ...prev, [pageNum]: 'loading' }));
-                setReparseSupplier(prev => ({ ...prev, [pageNum]: newVal }));
-                try {
-                  await onReparsePage(pageNum, newVal);
-                  setReparseStatus(prev => ({ ...prev, [pageNum]: 'done' }));
-                } catch {
-                  setReparseStatus(prev => ({ ...prev, [pageNum]: 'error' }));
-                }
-              }
-            }}
-            className="flex-1 py-2 text-xs font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-xl transition cursor-pointer"
+            type="button"
+            onClick={apply}
+            className="h-10 px-6 text-[15px] font-bold text-white bg-brand-deep hover:bg-brand-deep/90 rounded-lg
+              shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_2px_6px_-1px_rgba(10,46,74,0.25)]
+              transition cursor-pointer"
           >
             변경 적용
           </button>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <p className="text-[13px] text-ink-soft leading-relaxed">
+        <span className="font-bold text-sky-700">"{supplierConfirm.newVal}"</span>으로 변경합니다.{" "}
+        해당 페이지의 <span className="font-bold text-ink">{supplierConfirm.rowCount}개</span> 항목과
+        이후 모든 프로세스(보정 결과 · 확정 표)에 즉시 반영됩니다.
+      </p>
+
+      {/* 동의어 일괄 추가 옵션 */}
+      {nameIdx >= 0 && (
+        <label className="mt-3 flex items-start gap-2.5 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={supplierConfirm.addSynonyms}
+            onChange={e => setSupplierConfirm(prev => prev ? { ...prev, addSynonyms: e.target.checked } : null)}
+            className="mt-0.5 accent-brand-deep"
+          />
+          <span className="text-[13px] text-ink-soft leading-snug">
+            <span className="font-bold text-brand-deep">동의어 일괄 추가</span> — 이 페이지 상품명을{" "}
+            <span className="font-semibold text-sky-700">"{supplierConfirm.newVal}"</span> 공급사로 동의어 사전에 등록
+            <span className="block text-[11px] text-ink-soft mt-0.5">(DB 매칭 후 상품코드 포함 자동 등록)</span>
+          </span>
+        </label>
+      )}
+    </Modal>
   );
 };
