@@ -56,15 +56,18 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
   };
 
   return (
+    // 2026-08-17 v2 · frosted backdrop + 3-layer shadow · Modal 통일
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[9998] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-zinc-900/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[9998] flex items-end sm:items-center justify-center p-0 sm:p-4"
+      style={{ background: "rgba(10, 46, 74, 0.35)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full sm:max-w-md max-h-[90vh] bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl border border-line overflow-hidden flex flex-col"
+        className="w-full sm:max-w-md max-h-[90vh] bg-white sm:rounded-2xl rounded-t-2xl border border-line overflow-hidden flex flex-col"
+        style={{ boxShadow: "0 1px 3px rgba(10,46,74,0.12), 0 8px 32px -8px rgba(10,46,74,0.24), 0 24px 64px -24px rgba(10,46,74,0.28)" }}
       >
         {/* 헤더 */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-100 bg-sky-50/60">
