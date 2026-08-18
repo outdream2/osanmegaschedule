@@ -20,7 +20,18 @@
   - ✅ **legacy StatusBadge 삭제 + common/README.md 문서화** (356aa1d)
 - **잔여 · 다음 세션**: ContractWriterPage(5,400 lines · 분리 필요) · common/EmployeeInfoForm · 각 페이지 status matrix (부적합 판정)
 
-### #163 · Nav v4 · 그룹 톤 gradient 활성 배경 · 밋밋함 해소 (2026-08-18 · ✅ 완료)
+### #164 · Nav v5 · 컬러 액센트 강화 (사용자 피드백) · shadow 통일 (2026-08-18 · ✅ 완료)
+- 사용자 피드백: "gradient 별로 · 사이드바 컬러 액센트 없어"
+- **핵심 변화 1**: gradient 배경 revert (심플 bg-white/[0.10])
+- **핵심 변화 2**: 아이콘 · 활성/비활성 모두 그룹 accent color 유지 (사용자 요청)
+- 사이드바 stripe · 3px→4px + solid + double glow (12+24)
+- 헤더 데스크탑/모바일 · 활성 · 아이콘 double glow (6+16) + scale-110
+- 헤더 inactive · hover underline reveal · 그룹 accent color 반영
+- 12개 모달 카드 · shadow-2xl → shadow-brand-modal (전 앱 통일)
+- 팝오버 (NotificationBell · ZoneAssignPopover) · shadow-brand-modal
+- 오버플로 dropdown · shadow-brand-modal
+
+### #163 · Nav v4 · 그룹 톤 gradient 활성 배경 · 밋밋함 해소 (2026-08-18 · ~~revert~~)
 - 사용자 요청: "공통헤더메뉴와 사이드바메뉴 밋밋한거 개선" · "최신트렌드반영"
 - **핵심 변화**: 활성 pill 배경 · 흰 반투명 → **그룹 톤 gradient** (hex22~30 → hex0A~15 → transparent)
 - 헤더 데스크탑 탭 · 활성 · 그룹 accent color tinted (홈=흰/스케줄=amber/승인=red/스캔=sky/…)
