@@ -370,31 +370,57 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             autoPlay muted playsInline
           />
 
-          {/* Snapshot confirmation overlay */}
+          {/* Snapshot confirmation overlay · 2026 UI 재설계 · 프리미엄 gradient + 큰 터치 타겟 */}
           {state.frozenFrame && (
             <div className="absolute inset-0">
               <img src={state.frozenFrame} alt="snap" className="w-full h-full object-cover" />
-              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/75 to-transparent px-4 pt-10 pb-3 flex flex-col gap-2.5">
-                <p className="text-white font-mono text-sm font-bold tracking-widest text-center drop-shadow-lg">{state.scannedCode}</p>
+              <div className="absolute bottom-0 inset-x-0
+                bg-gradient-to-t from-black via-black/85 to-transparent
+                px-4 pt-12 pb-4 flex flex-col gap-3">
+                {/* 인식된 코드 · Mono chip · frosted */}
+                <div className="mx-auto inline-flex items-center gap-2 px-3 py-1.5 rounded-full
+                  bg-white/[0.10] border border-white/[0.20] backdrop-blur-md
+                  shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]" />
+                  <p className="text-white font-mono text-[13px] font-bold tracking-wider">
+                    {state.scannedCode}
+                  </p>
+                </div>
+                {/* 액션 3 버튼 · 큰 터치 타겟 · 통일 톤 */}
                 <div className="flex gap-2">
                   <button
                     onClick={(e) => { e.stopPropagation(); onClose(); }}
-                    className="px-3 py-2.5 rounded-xl text-sm font-bold text-white bg-rose-600/80 border border-rose-500 active:scale-95 transition-transform cursor-pointer backdrop-blur-sm"
+                    className="h-12 px-4 rounded-2xl text-[14px] font-bold text-white/90
+                      bg-white/[0.08] border border-white/[0.15] backdrop-blur-sm
+                      hover:bg-white/[0.14] hover:border-white/[0.25]
+                      active:scale-[0.98] transition-all cursor-pointer
+                      inline-flex items-center gap-1.5"
                     title="스캔 취소 · 창 닫기"
                   >
-                    ✕ 취소
+                    <X size={14} strokeWidth={2.5} />
+                    취소
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleRetry(); }}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-white/15 border border-white/30 active:scale-95 transition-transform cursor-pointer backdrop-blur-sm"
+                    className="flex-1 h-12 rounded-2xl text-[14px] font-bold text-white
+                      bg-white/[0.10] border border-white/[0.20] backdrop-blur-sm
+                      hover:bg-white/[0.18] hover:border-white/[0.30]
+                      active:scale-[0.98] transition-all cursor-pointer
+                      inline-flex items-center justify-center gap-1.5"
                   >
+                    <ScanLine size={14} strokeWidth={2.5} />
                     다시 스캔
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleConfirm(); }}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-600 border border-emerald-500 active:scale-95 transition-transform shadow-lg cursor-pointer"
+                    className="flex-[1.4] h-12 rounded-2xl text-[15px] font-bold text-white
+                      bg-emerald-500 border border-emerald-400
+                      hover:bg-emerald-600 hover:border-emerald-500
+                      shadow-[0_4px_16px_-4px_rgba(52,211,153,0.55),inset_0_1px_0_rgba(255,255,255,0.15)]
+                      active:scale-[0.98] transition-all cursor-pointer
+                      inline-flex items-center justify-center gap-1.5"
                   >
-                    ✓ 확인
+                    확인
                   </button>
                 </div>
               </div>
@@ -435,25 +461,29 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             </div>
           )}
 
-          {/* Android 전용 줌 버튼 — iOS 코드 경로 완전 분리 */}
+          {/* Android 전용 줌 버튼 · 2026 · frosted pill 그룹 · iOS 코드 경로 완전 분리 */}
           {isAndroid && !state.frozenFrame && (
             <div
-              className="absolute bottom-2.5 inset-x-0 flex justify-center items-center gap-2 z-10"
+              className="absolute bottom-3 inset-x-0 flex justify-center items-center z-10"
               onClick={(e) => e.stopPropagation()}
             >
-              {[1, 2, 3].map((z) => (
-                <button
-                  key={z}
-                  onClick={() => setZoomLevel(z)}
-                  className={`w-9 h-9 rounded-full text-[11px] font-bold border transition-all active:scale-90 cursor-pointer ${
-                    zoomLevel === z
-                      ? "bg-yellow-400/90 text-black border-yellow-300 shadow-lg"
-                      : "bg-black/50 text-white border-white/30 backdrop-blur-sm"
-                  }`}
-                >
-                  {z}×
-                </button>
-              ))}
+              <div className="inline-flex items-center gap-0.5 p-1 rounded-full
+                bg-black/60 border border-white/[0.15] backdrop-blur-md
+                shadow-[0_4px_16px_-4px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.08)]">
+                {[1, 2, 3].map((z) => (
+                  <button
+                    key={z}
+                    onClick={() => setZoomLevel(z)}
+                    className={`w-10 h-9 rounded-full text-[12px] font-bold transition-all cursor-pointer ${
+                      zoomLevel === z
+                        ? "bg-amber-400 text-black shadow-[0_2px_6px_-2px_rgba(251,191,36,0.55),inset_0_1px_0_rgba(255,255,255,0.30)]"
+                        : "text-white/70 hover:text-white hover:bg-white/[0.08]"
+                    }`}
+                  >
+                    {z}×
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -526,19 +556,28 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           />
         </div>
 
-        {/* Hint */}
-        <div className="px-4 py-3 text-center flex flex-col items-center gap-1.5">
+        {/* Hint · 2026 · 부드러운 정보 계층 */}
+        <div className="px-4 py-3.5 text-center flex flex-col items-center gap-2">
           {state.darkHint && !state.torchOn ? (
             <button
               onClick={() => state.setTorchOn(true)}
-              className="flex items-center gap-1.5 text-xs text-yellow-300 font-bold bg-yellow-400/15 border border-yellow-400/40 px-3 py-1.5 rounded-lg animate-pulse active:scale-95 transition-transform cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-[12px] text-amber-200 font-bold
+                bg-amber-400/[0.12] border border-amber-400/40
+                px-3 py-1.5 rounded-full animate-pulse
+                shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]
+                active:scale-[0.98] hover:bg-amber-400/[0.18] transition-all cursor-pointer"
             >
-              <Zap size={12} /> 어둡습니다 — 여기를 눌러 손전등 켜기
+              <Zap size={12} strokeWidth={2.5} />
+              어둡습니다 · 손전등 켜기
             </button>
           ) : (
-            <p className="text-xs text-gray-400 font-medium">바코드를 사각형 안에 맞춰주세요</p>
+            <p className="text-[13px] text-white/70 font-semibold tracking-tight">
+              바코드를 <span className="text-emerald-300">사각형 안</span>에 맞춰주세요
+            </p>
           )}
-          <p className="text-[10px] text-gray-500">화면을 탭하면 초점 조정 · 종이 바코드는 5~10cm 거리</p>
+          <p className="text-[11px] text-white/40 font-medium">
+            화면을 탭하면 초점 조정 · 종이 바코드는 5~10cm 거리
+          </p>
         </div>
       </div>
 
