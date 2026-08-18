@@ -1,18 +1,17 @@
 // src/components/common/PurchaseHistoryModal.tsx
 // 2026-07-22 · 상품 매입 이력 모달 · 리스트에서 매입일 클릭 시 표시
-// 2026-08-04 · 내부 표 UI → 공통 PurchaseHistoryList 컴포넌트로 교체 (사용자 요청 · 통일)
+// 2026-08-04 · 내부 표 UI → 공통 PurchaseHistoryList 로 교체 (사용자 요청)
+// 2026-08-18 · <Modal> + <IconTile> + <StatusPill> 프레임워크 통합
 //
-// 데이터 소스: /api/purchase-details?product_code=X (기존 API 재사용)
 // 사용:
-//   const [open, setOpen] = useState<{code:string; name?:string} | null>(null);
-//   <button onClick={() => setOpen({code: p.product_code, name: p.product_name})}>...</button>
 //   {open && <PurchaseHistoryModal productCode={open.code} productName={open.name} onClose={() => setOpen(null)} />}
 
 import React, { useEffect, useState } from "react";
-import { X, TrendingUp, Package } from "lucide-react";
+import { TrendingUp, Package } from "lucide-react";
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "./PurchaseHistoryList";
+import { Modal } from "./Modal";
+import { IconTile } from "./IconTile";
 import { StatusPill } from "./StatusPill";
-import { AccentBar } from "./AccentBar";
 
 interface PurchaseHistoryModalProps {
   productCode: string;
@@ -68,74 +67,62 @@ export const PurchaseHistoryModal: React.FC<PurchaseHistoryModalProps> = ({
   })();
 
   return (
-    // 2026-08-17 v2 · frosted backdrop + 3-layer shadow · Modal 통일
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-      style={{ background: "rgba(10, 46, 74, 0.35)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col"
-        style={{ boxShadow: "0 1px 3px rgba(10,46,74,0.12), 0 8px 32px -8px rgba(10,46,74,0.24), 0 24px 64px -24px rgba(10,46,74,0.28)" }}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* 헤더 · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
-        <div className="flex items-start gap-3 px-4 py-3 border-b border-line bg-zinc-50/60">
-          <AccentBar h={22} className="shrink-0 mt-0.5" />
-          <TrendingUp size={20} className="text-brand-deep shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-[17px] font-bold text-ink tracking-tight">매입 이력</span>
-              <span className="text-[12px] font-mono text-ink-soft">{productCode}</span>
-            </div>
-            {productName && (
-              <div className="text-xs font-semibold text-zinc-700 truncate mt-0.5" title={productName}>
-                <Package size={11} className="inline mr-1 text-zinc-400" />{productName}
-              </div>
-            )}
-            {!loading && rows.length > 0 && (
-              <div className="mt-1.5 flex items-center gap-2 flex-wrap text-[11px] font-mono text-zinc-500">
-                <StatusPill tone="emerald" size="xs">{rows.length}건</StatusPill>
-                <span>총 <b>{fmt(totalQty)}</b>개</span>
-                <span>·</span>
-                <span className="text-emerald-700 font-bold">{fmtWon(totalAmt)}</span>
-                <span>·</span>
-                <span title="건당 평균 매입액">평균 <b className="text-indigo-600">{fmtWon(avgAmt)}</b></span>
-                {avgCycleDays != null && (
-                  <>
-                    <span>·</span>
-                    <span title="평균 매입주기 (연속 매입일 간격 평균)">주기 <b className="text-sky-600">{avgCycleDays}일</b></span>
-                  </>
-                )}
-              </div>
-            )}
+    <Modal
+      open={true}
+      onClose={onClose}
+      size="md"
+      titleAccent
+      icon={<IconTile icon={<TrendingUp size={16} />} tone="brand" size="lg" shape="rounded-xl" />}
+      title={
+        <div className="min-w-0">
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span className="text-[17px] font-bold text-ink tracking-tight">매입 이력</span>
+            <span className="text-[12px] font-mono text-ink-soft">{productCode}</span>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg p-1 transition"
-            aria-label="닫기"
-          >
-            <X size={18} />
-          </button>
+          {productName && (
+            <div className="text-[13px] font-semibold text-ink-soft truncate mt-0.5" title={productName}>
+              <Package size={12} className="inline mr-1 text-ink-soft" />
+              {productName}
+            </div>
+          )}
         </div>
+      }
+      headerRight={
+        !loading && rows.length > 0 ? (
+          <StatusPill tone="emerald" size="md">{rows.length}건</StatusPill>
+        ) : undefined
+      }
+    >
+      {!loading && rows.length > 0 && (
+        <div className="mb-3 flex items-center gap-2 flex-wrap text-[12px] font-medium text-ink-soft">
+          <span>총 <b className="text-ink tabular-nums">{fmt(totalQty)}</b>개</span>
+          <span className="text-zinc-300">·</span>
+          <span className="text-emerald-700 font-bold tabular-nums">{fmtWon(totalAmt)}</span>
+          <span className="text-zinc-300">·</span>
+          <span title="건당 평균 매입액">평균 <b className="text-brand-deep tabular-nums">{fmtWon(avgAmt)}</b></span>
+          {avgCycleDays != null && (
+            <>
+              <span className="text-zinc-300">·</span>
+              <span title="평균 매입주기 (연속 매입일 간격 평균)">주기 <b className="text-sky-700 tabular-nums">{avgCycleDays}일</b></span>
+            </>
+          )}
+        </div>
+      )}
 
-        {/* 본문 · 공통 PurchaseHistoryList 사용 */}
-        <div className="flex-1 overflow-hidden flex flex-col">
-          <PurchaseHistoryList
-            rows={rows}
-            loading={loading}
-            error={error}
-            highlightDate={highlightDate}
-            showSupplier
-            showProduct={false}
-            emptyText="매입 이력 없음"
-            footerHint={rows.length > 0 ? (
-              <>최근순 · 최대 500건 · 클릭한 매입일은 <span className="text-amber-600 font-bold">노랑 하이라이트</span></>
-            ) : undefined}
-          />
-        </div>
+      <div className="flex flex-col">
+        <PurchaseHistoryList
+          rows={rows}
+          loading={loading}
+          error={error}
+          highlightDate={highlightDate}
+          showSupplier
+          showProduct={false}
+          emptyText="매입 이력 없음"
+          footerHint={rows.length > 0 ? (
+            <>최근순 · 최대 500건 · 클릭한 매입일은 <span className="text-amber-600 font-bold">노랑 하이라이트</span></>
+          ) : undefined}
+        />
       </div>
-    </div>
+    </Modal>
   );
 };
