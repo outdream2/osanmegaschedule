@@ -250,6 +250,35 @@
   - PeriodSelector · 활성 pill brand glow shadow
   - CategoryChips · 활성 chip brand glow shadow
   - SearchBar · 폰트 +2 + inset light + dropdown 3-layer shadow
+  - EmptyState · brand-tint icon 원 · ink font
+  - LoadingState/ListLoading · brand-deep tone + 폰트 +2
+  - FieldLabel · 폰트 +2 + ink-soft tracking
+  - Toolbar · 검색 input inset light + 폰트 +2
+  - FilterBar 컴포넌트 · Attio inset light
+  - SearchFilterChips + SeasonButtons · 활성 pill brand glow
+  - FilterSortBar · 활성 pill brand glow
+  - SettingsPageShell · 아이콘 카드 3-layer shadow
+  - ProductClassFilter · 활성 pill semantic tone shadow
+  - SplitPanel 모바일 모달 · Modal 통일
+  - BreakModal + PurchaseHistoryModal + EmployeeProfileCard 뷰어 · Modal 통일
+  - NewVendorModal + VendorInfoModal + VendorSearchModal · Modal 통일
+
+- **CSS 유틸리티 신규**:
+  - .backdrop-brand · rgba(10,46,74,0.35) + blur 6px (표준 backdrop)
+  - .backdrop-brand-strong · rgba 0.45 + blur 8px (이미지 뷰어용)
+  - .shadow-brand-modal · 3-layer 딥네이비 tint
+
+- **인라인 모달 통일 (backdrop-brand + shadow-brand-modal 유틸 사용)**:
+  - SettingsModal + HiddenManagerModal + ColumnMappingModal
+  - DeleteSynonymDialog + SupplierChangeDialog + ImageZoomModal (강조)
+  - RealMapSelector + VendorStockModal + EmployeeFormModal
+  - LandingPage upload + BoardPage(4곳) + Resignation + Reservation
+  - SupplierTab(2) + DiffTab + FlowTab(2) + ProductPurchaseHistoryModal
+  - OrderManagePage(3) + ReturnListPanel
+  - DisplayPage(4곳) + SalesTrendPage(3) + SchedulePage(2)
+  - OcrPage(2) + ContractWriterPage(2) + EmployeeCalendarModal
+  - VendorListEditor + RequestsPage · ScanPage(2) · ProductArrivalPage
+  - StaffManagePage(2) · DayTimelineModal(2) · BottomNav
 - **Hero v2** · aurora + 3-layer shadow + top hairline
 - **UI 원칙 준수** · handler/state/API 절대 손대지 않음 · className/style/CSS만
 
