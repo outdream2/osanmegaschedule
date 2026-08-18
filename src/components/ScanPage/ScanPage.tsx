@@ -43,7 +43,6 @@ import { IconTile } from "../common/IconTile";
 import { Modal } from "../common/Modal";
 import { AccentBar } from "../common/AccentBar";
 // ── 분리된 Row 컴포넌트 ──────────────────────────────────────
-import { StockRowDesktop } from "./StockRowDesktop";
 import { StockRowCard } from "./StockRowCard";
 import type { StockRow } from "./stockRowTypes";
 import { calcRowTotal, calcSlotTotal, calcTotalAdded } from "./stockRowTypes";
