@@ -30,6 +30,7 @@ import { useSortableTable, type Comparator, type SortDir } from "../../hooks/use
 import { ProductSearchInput } from "../common/ProductSearchInput";
 import { IconTile } from "../common/IconTile";
 import { AccentBar } from "../common/AccentBar";
+import { ArrivalRowCard } from "./ArrivalRowCard";
 import { useToast } from "../../hooks/useToast";
 
 interface ProductArrivalPageProps {
@@ -603,7 +604,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
             {items.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-3 py-16 sm:py-24 select-none">
                 <div className="relative">
-                  <div className="w-16 h-16 rounded-2xl bg-zinc-100 flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-2xl bg-zinc-100 flex items-center justify-center
+                    shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(10,46,74,0.04)]">
                     <Barcode size={28} className="text-zinc-300" />
                   </div>
                   <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full
@@ -612,53 +614,32 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                   </div>
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-bold text-zinc-400">스캔한 상품이 여기에 표시됩니다</p>
-                  <p className="text-xs text-zinc-300 mt-1">바코드 스캔 후 자동 등록</p>
+                  <p className="text-[15px] font-bold text-ink-soft">스캔한 상품이 여기에 표시됩니다</p>
+                  <p className="text-[13px] text-zinc-400 mt-1">바코드 스캔 후 자동 등록</p>
                 </div>
               </div>
             ) : (
-              /* 테이블 */
-              <div className="flex-1 overflow-auto max-h-[58vh] lg:max-h-[64vh]">
-                <table className="w-full border-collapse text-[14px] sm:text-[15px]">
-                  <thead className="sticky top-0 z-10">
-                    <tr className="bg-zinc-50/95 backdrop-blur-sm border-b border-line/60">
-                      {/* 입고일 */}
-                      <th
-                        className="text-left px-3 py-2.5 w-[68px] sm:w-20 font-bold text-zinc-400
-                          cursor-pointer select-none hover:text-zinc-600 hover:bg-zinc-100/60 transition-colors"
-                        onClick={() => handleSort("addedAt")}
-                      >
-                        입고일 <SortIcon active={sortKey === "addedAt"} dir={sortDir} />
-                      </th>
-                      {/* 공급사 */}
-                      <th
-                        className="text-left px-2 py-2.5 w-20 sm:w-28 font-bold text-zinc-400
-                          cursor-pointer select-none hover:text-zinc-600 hover:bg-zinc-100/60 transition-colors"
-                        onClick={() => handleSort("supplier")}
-                      >
-                        공급사 <SortIcon active={sortKey === "supplier"} dir={sortDir} />
-                      </th>
-                      {/* 상품명 */}
-                      <th
-                        className="text-left px-2 py-2.5 font-bold text-zinc-400
-                          cursor-pointer select-none hover:text-zinc-600 hover:bg-zinc-100/60 transition-colors"
-                        onClick={() => handleSort("name")}
-                      >
-                        상품명 <SortIcon active={sortKey === "name"} dir={sortDir} />
-                      </th>
-                      {/* 갯수/상태 · 반응형 폭 확대 · 한 화면에 3상태 (일치/불일치/유통기한) 나란히 */}
-                      <th
-                        className="text-center px-2 py-2.5 w-[220px] sm:w-[260px] font-bold text-zinc-400
-                          cursor-pointer select-none hover:text-zinc-600 hover:bg-zinc-100/60 transition-colors"
-                        onClick={() => handleSort("qty")}
-                      >
-                        갯수 / 상태 <SortIcon active={sortKey === "qty"} dir={sortDir} />
-                      </th>
-                      {/* 삭제 */}
-                      <th className="px-2 py-2.5 w-9" />
-                    </tr>
-                  </thead>
-
+              /* 2026-08-18 · #상품입고 재설계 · 카드형 리스트 · 모바일/PC 통일 */
+              <div className="flex-1 overflow-auto max-h-[58vh] lg:max-h-[64vh]
+                px-3 sm:px-4 py-3 flex flex-col gap-2 bg-zinc-50/30">
+                {sortedItems.map((it) => (
+                  <ArrivalRowCard
+                    key={it.key}
+                    item={it}
+                    isRecent={it.key === lastAddedKey}
+                    onUpdateQty={updateQty}
+                    onSetQty={setQtyDirect}
+                    onSetStatus={setStatus}
+                    onToggleExpiring={toggleExpiring}
+                    onRemove={removeItem}
+                  />
+                ))}
+              </div>
+            )}
+            {/* 원본 테이블 · 2026-08-18 · 카드 재설계로 대체 (참고용 dead block) */}
+            {false && (
+              <div className="hidden">
+                <table>
                   <tbody>
                     {sortedItems.map((it, idx) => {
                       const isRecent = it.key === lastAddedKey;
