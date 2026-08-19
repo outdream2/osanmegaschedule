@@ -33,6 +33,7 @@ import {
 
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { IconTile } from "../common/IconTile";
+import { Card } from "../common/Card";
 import type { AuthSession } from "../../types";
 import { useSettings, defaultWageForPosition, type WageRate } from "../../hooks/useSettings";
 import { useKvSetting } from "../../hooks/useKvSetting";
@@ -559,7 +560,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
 
           {/* 섹션 0 · 회사 정보 · 2026-08-07 · 기본 접힘 (사용자 요청) */}
-          <section className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
+          <Card as="section" clip padding="none">
             <button
               type="button"
               onClick={() => setCompanyInfoOpen(o => !o)}
@@ -684,10 +685,10 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
               </div>
             </div>
             )}
-          </section>
+          </Card>
 
           {/* 섹션 1 · 직군별 시급 */}
-          <section className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
+          <Card as="section" clip padding="none">
             <header className="flex items-center gap-2 px-3 py-2.5 border-b border-zinc-100 bg-zinc-50/60">
               <div className="w-7 h-7 rounded-md bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
                 <CurrencyKrw size={14} weight="fill" />
@@ -774,7 +775,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                 </button>
               </div>
             </div>
-          </section>
+          </Card>
         </div>
 
         {/* ── 각 호 CMS 섹션 헤더 ───────────────────────────────────────── */}
