@@ -64,6 +64,7 @@ import { SectionLabel } from "../common/SectionLabel";
 import { MiniCard } from "../common/MiniCard";
 import { Hero } from "../common/Hero";
 import { KpiCard, type KpiTone } from "../common/KpiCard";
+import { Card } from "../common/Card";
 import { IconTile } from "../common/IconTile";
 import { StatusPill } from "../common/StatusPill";
 // VendorListEditor 는 발주관리 공급사관리 에서만 사용 (LandingPage 데이터 업로드 에서 제거됨 · 2026-07-15)
@@ -1298,7 +1299,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             {arrivalsLoading && stockArrivals.length === 0 ? (
               <div className="flex items-center justify-center py-10"><Spinner tone="zinc" size={16} label="로딩 중..." labelSize={14} /></div>
             ) : !arrivalsLoading && stockArrivals.length === 0 ? (
-              <div className="text-center text-[14px] text-ink-soft py-8 bg-white border border-line rounded-xl">데이터 없음</div>
+              <Card variant="flat" padding="none" className="text-center text-[14px] text-ink-soft py-8">데이터 없음</Card>
             ) : (
               <div className={`bg-white border border-line rounded-xl overflow-hidden divide-y divide-line/70 shadow-sm ${arrivalsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {stockArrivals.slice(0, 5).map(a => (

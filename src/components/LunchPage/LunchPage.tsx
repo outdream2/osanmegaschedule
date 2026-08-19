@@ -5,6 +5,7 @@ import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { UtensilsCrossed, Clock, RefreshCw, Users, ChevronLeft, ChevronRight, Stethoscope, UserRound, Coffee } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { AccentBar } from "../common/AccentBar";
+import { Card } from "../common/Card";
 import type { AuthSession } from "../../types";
 
 interface LunchRequest {
@@ -492,9 +493,9 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
             로그인 후 이용할 수 있습니다.
           </div>
         ) : loading && myRequest === undefined ? (
-          <div className="bg-white border border-line rounded-xl p-10 flex items-center justify-center">
+          <Card padding="none" className="p-10 flex items-center justify-center">
             <div className="w-6 h-6 border-2 border-brand-deep border-t-transparent rounded-full animate-spin" />
-          </div>
+          </Card>
         ) : isToday && myRequest && !myRequest.eating ? (
           <div className="rounded-xl border border-line bg-white p-5 flex flex-col gap-3 shadow-sm">
             <div className="flex items-center justify-between">
