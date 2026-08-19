@@ -421,26 +421,34 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             <div className="absolute inset-0 pointer-events-none" style={{ animation: "shutterFlash 0.35s ease-out forwards" }} />
           )}
 
-          {/* Scan guide overlay (live only) · 2026 refined · thinner corners · softer glow */}
+          {/* Scan guide overlay (live only) · 2026 최신 트렌드 · 확대 (Apple Wallet/Google Lens 참고)
+              · inset-x 8% → 4% (거의 화면 전체 폭 · 90% 넓이)
+              · top 18% → 8% · bottom 18% → 12% (수직 확대 · 80%)
+              · corners w-7/h-7 → w-10/h-10 · thickness 2px → 3px (선명 강조)
+              · 최신 스캐너 (Amazon/PayPal/Apple Wallet) · full-width edge-to-edge 트렌드 반영 */}
           {!state.frozenFrame && (
             <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute inset-x-[8%] top-[18%] bottom-[18%]">
-                <div className="absolute inset-0 bg-transparent" style={{ boxShadow: "0 0 0 9999px rgba(0,0,0,0.62)" }} />
+              <div className="absolute inset-x-[4%] top-[8%] bottom-[12%]">
+                <div className="absolute inset-0 bg-transparent" style={{ boxShadow: "0 0 0 9999px rgba(0,0,0,0.55)" }} />
                 {[
-                  "top-0 left-0 border-t-2 border-l-2 rounded-tl-lg",
-                  "top-0 right-0 border-t-2 border-r-2 rounded-tr-lg",
-                  "bottom-0 left-0 border-b-2 border-l-2 rounded-bl-lg",
-                  "bottom-0 right-0 border-b-2 border-r-2 rounded-br-lg",
+                  "top-0 left-0 border-t-[3px] border-l-[3px] rounded-tl-xl",
+                  "top-0 right-0 border-t-[3px] border-r-[3px] rounded-tr-xl",
+                  "bottom-0 left-0 border-b-[3px] border-l-[3px] rounded-bl-xl",
+                  "bottom-0 right-0 border-b-[3px] border-r-[3px] rounded-br-xl",
                 ].map((cls, i) => (
-                  <div key={i} className={`absolute w-7 h-7 border-emerald-400 ${cls}`} style={{ boxShadow: "0 0 8px rgba(52,211,153,0.5)" }} />
+                  <div key={i} className={`absolute w-10 h-10 border-emerald-400 ${cls}`} style={{ boxShadow: "0 0 10px rgba(52,211,153,0.6)" }} />
                 ))}
-                <div className="absolute inset-x-0 h-0.5 bg-emerald-400" style={{ animation: "scanline 2s ease-in-out infinite", boxShadow: "0 0 8px 1px rgba(52,211,153,0.9)" }} />
-                {/* QR / 2D support indicator */}
-                <div className="absolute bottom-1.5 right-2 flex flex-col gap-[2px] opacity-70">
+                <div className="absolute inset-x-0 h-0.5 bg-emerald-400" style={{ animation: "scanline 2s ease-in-out infinite", boxShadow: "0 0 10px 1.5px rgba(52,211,153,0.95)" }} />
+                {/* 중앙 focus dot · Google Lens 톤 · 얇은 원 */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full border border-emerald-400/60 pointer-events-none" style={{ boxShadow: "0 0 8px rgba(52,211,153,0.4)" }}>
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-emerald-400" />
+                </div>
+                {/* QR / 2D support indicator · 우측 하단 (그대로 유지 · 크기 up) */}
+                <div className="absolute bottom-2 right-2.5 flex flex-col gap-[2px] opacity-70">
                   {[0,1,2].map(r => (
                     <div key={r} className="flex gap-[2px]">
                       {[0,1,2].map(c => (
-                        <div key={c} className={`w-[4px] h-[4px] ${(r===0&&c===0)||(r===0&&c===2)||(r===2&&c===0)||(r===1&&c===1) ? "bg-emerald-400" : "bg-transparent"}`} />
+                        <div key={c} className={`w-[5px] h-[5px] ${(r===0&&c===0)||(r===0&&c===2)||(r===2&&c===0)||(r===1&&c===1) ? "bg-emerald-400" : "bg-transparent"}`} />
                       ))}
                     </div>
                   ))}
