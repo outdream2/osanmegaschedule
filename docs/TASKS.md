@@ -13,7 +13,7 @@
 ### #149 · UI 프레임워크화 남은 작업
 - 🔲 common/ 재분류 · `common/primitives/` vs `common/features/` (구조 리팩터 · 위험 중)
 - 🔲 500+라인 파일 슬림화 · ProductDetailPanel(647) · EmployeeInfoForm(482) · InventoryEditPanel(390) · ContractWriterPage(5,400 · 대형)
-- ✅ **Unit test 대량 확산 v2** · 537 tests · 30 files (2026-08-19 세션 · 387 tests 신규 · 21 test files 신규)
+- ✅ **Unit test 대량 확산 v3** · **1038 tests · 78 files** (2026-08-19 세션 · 888 신규 · 69 test files 신규 · **1000 돌파 🎉**)
 - 🔲 접근성 audit (aria-* · keyboard nav)
 - 🔲 목업 HTML 파일 · 최신 트렌드로 재생성 (문서 · 위험 낮음)
 
