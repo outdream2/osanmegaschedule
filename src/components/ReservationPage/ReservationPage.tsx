@@ -16,6 +16,9 @@ import {
   X,
   Building2,
   Loader2,
+} from "lucide-react";
+import { Spinner } from "../common/Spinner";
+import {
   Ban,
   Lock,
   LockOpen,
@@ -448,8 +451,8 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
               <div>
                 <h2 className="text-gray-900 font-bold text-sm">{formatKoreanDate(selectedDate)}</h2>
                 {isLoading ? (
-                  <p className="text-gray-500 text-xs mt-0.5 flex items-center gap-1">
-                    <Loader2 size={11} className="animate-spin" /> 불러오는 중...
+                  <p className="text-xs mt-0.5">
+                    <Spinner size={11} tone="zinc" label="불러오는 중..." labelSize={12} />
                   </p>
                 ) : (
                   <p className="text-gray-500 text-xs mt-0.5 flex items-center gap-1">
@@ -489,9 +492,8 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
           {/* Time slot rows */}
           <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-3 flex flex-col gap-1">
             {isLoading ? (
-              <div className="flex items-center justify-center py-16 gap-2 text-gray-400 text-sm">
-                <Loader2 size={18} className="animate-spin" />
-                <span>예약 현황 불러오는 중...</span>
+              <div className="flex items-center justify-center py-16">
+                <Spinner size={18} tone="zinc" label="예약 현황 불러오는 중..." labelSize={14} />
               </div>
             ) : (
               TIME_SLOTS.map(t => {

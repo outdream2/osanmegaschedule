@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { api } from "../../lib/apiClient";
 import { User, Phone, Briefcase, Calendar, Award, Save, Loader2, Lock, MapPin, Eye, EyeOff, Check, Mail, IdCard, CreditCard } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession, Employee } from "../../types";
 import { updateEmployee } from "../../lib/employeeApi";
@@ -125,7 +126,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
             내 정보 (읽기 전용)
           </div>
           {loading ? (
-            <div className="flex justify-center py-16"><Loader2 size={24} className="text-indigo-400 animate-spin" /></div>
+            <div className="flex justify-center py-16"><Spinner size={24} tone="brand" /></div>
           ) : !me ? (
             <div className="p-6 text-center text-sm text-zinc-500">직원 정보를 불러올 수 없습니다.</div>
           ) : (

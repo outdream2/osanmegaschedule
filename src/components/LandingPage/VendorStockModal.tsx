@@ -7,7 +7,8 @@
 
 // 2026-08-16 · 프레임워크 적용 · apiClient + useToast
 import React, { useEffect, useState, useMemo } from "react";
-import { X, Package, Search, Loader2 } from "lucide-react";
+import { X, Package, Search } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { TEXT } from "../../styles/tokens";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { AccentBar } from "../common/AccentBar";
@@ -174,9 +175,8 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
         {/* 상품 리스트 */}
         <div className="flex-1 overflow-y-auto max-h-[60vh]">
           {loading ? (
-            <div className="flex items-center justify-center py-16 text-zinc-400 text-sm font-bold gap-2">
-              <Loader2 size={16} className="animate-spin" />
-              불러오는 중...
+            <div className="flex items-center justify-center py-16">
+              <Spinner size={16} tone="zinc" label="불러오는 중..." labelSize={14} />
             </div>
           ) : error ? (
             <div className="p-8 text-center text-rose-600 text-sm font-bold">⚠ {error}</div>
