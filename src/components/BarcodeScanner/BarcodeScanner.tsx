@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useZxing } from "react-zxing";
-import { X, ScanLine, Zap, ImageIcon } from "lucide-react";
+import { X, ScanLine, Zap, ImageIcon, Info, ChevronDown, ChevronUp } from "lucide-react";
 
 const isAndroid = /android/i.test(navigator.userAgent);
 const isDesktop = !/android|iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -39,6 +39,11 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     return VIDEO_CONSTRAINTS;
   });
 
+  // 2026-08-19 · 진단로그 · UI 전용 · 카메라 로직 무관 (관찰만)
+  const [camError, setCamError] = useState<string>("");
+  const [diagOpen, setDiagOpen] = useState<boolean>(false);
+  const [videoState, setVideoState] = useState<string>("init");
+
   // handleResultRef: resolves circular dep between useZxing() (needs callback)
   // and handleResult (needs videoRef from useZxing return). useZxing's
   // onDecodeResult reads .current at call-time, so we get the latest closure.
@@ -47,6 +52,15 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   const { ref: videoRef } = useZxing({
     onDecodeResult: useCallback((result: any) => {
       handleResultRef.current(result.rawValue);
+    }, []),
+    // 2026-08-19 · 진단 · onError · 카메라 로직 불변 · 관찰용 (additive)
+    onError: useCallback((e: unknown) => {
+      const err = e as any;
+      const name = err?.name || "Error";
+      const msg = err?.message || String(e);
+      // eslint-disable-next-line no-console
+      console.error("[BarcodeScanner] useZxing error:", name, msg);
+      setCamError(`${name}: ${msg}`);
     }, []),
     constraints: { video: videoConstraints },
     formats: FORMATS as unknown as Parameters<typeof useZxing>[0]["formats"],
@@ -208,6 +222,33 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     return () => { video.removeEventListener("playing", trySelect); clearTimeout(t); };
   }, [videoRef, state.setScanKey]);
 
+  // 2026-08-19 · 진단로그 · video 이벤트 관찰 (카메라 로직 무관 · 상태 표시만)
+  useEffect(() => {
+    const v = videoRef.current as HTMLVideoElement | null;
+    if (!v) return;
+    const upd = (label: string) => () => setVideoState(label);
+    const onLoad = upd("loadedmetadata");
+    const onPlay = upd("playing");
+    const onPause = upd("paused");
+    const onWait = upd("waiting");
+    const onStall = upd("stalled");
+    const onError = () => setVideoState("error");
+    v.addEventListener("loadedmetadata", onLoad);
+    v.addEventListener("playing", onPlay);
+    v.addEventListener("pause", onPause);
+    v.addEventListener("waiting", onWait);
+    v.addEventListener("stalled", onStall);
+    v.addEventListener("error", onError);
+    return () => {
+      v.removeEventListener("loadedmetadata", onLoad);
+      v.removeEventListener("playing", onPlay);
+      v.removeEventListener("pause", onPause);
+      v.removeEventListener("waiting", onWait);
+      v.removeEventListener("stalled", onStall);
+      v.removeEventListener("error", onError);
+    };
+  }, [videoRef]);
+
   // Esc key
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -215,62 +256,67 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     return () => document.removeEventListener("keydown", h);
   }, [onClose]);
 
+  // 2026-08-19 · 진단 정보 · 실시간 계산 (관찰만)
+  const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+  const ios = /iPhone|iPad|iPod/i.test(ua);
+  const isSafariMain = /Safari\//.test(ua) && /Version\//.test(ua) && !/CriOS|FxiOS|OPiOS|EdgiOS/.test(ua);
+  const inApp = /KAKAOTALK|NAVER|FBAN|FBAV|Instagram|Line\/|Twitter|Snapchat|WhatsApp|Gmail|EdgiOS/i.test(ua);
+  const standaloneFlag = typeof window !== "undefined" && (
+    !!(window.navigator as any).standalone ||
+    (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches)
+  );
+  const secure = typeof window !== "undefined" && (window as any).isSecureContext;
+  const hasMD = typeof navigator !== "undefined" && !!(navigator as any).mediaDevices;
+  const hasGUM = hasMD && !!(navigator as any).mediaDevices.getUserMedia;
+
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 backdrop-blur-md p-4"
       onClick={onClose}
     >
       <div
-        className="bg-gray-950 rounded-2xl overflow-hidden shadow-2xl w-full max-w-sm border border-gray-800"
+        className="bg-zinc-950 rounded-3xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.65)] w-full max-w-sm ring-1 ring-white/10"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header · 2026-08-05 · 제목 세로 표시 fix · whitespace-nowrap + 배지 flex-wrap */}
-        <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-800 gap-2">
+        {/* Header · 2026 Linear/Vercel · minimal glass · engine dots refined */}
+        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-b from-zinc-900 to-zinc-950 border-b border-white/5 gap-2">
           <div className="flex items-center gap-2 text-white shrink-0">
-            <ScanLine size={15} className="text-emerald-400" />
-            <span className="text-sm font-bold whitespace-nowrap">{title}</span>
+            <div className="w-7 h-7 rounded-lg bg-emerald-500/15 ring-1 ring-emerald-400/40 flex items-center justify-center">
+              <ScanLine size={14} className="text-emerald-400" />
+            </div>
+            <span className="text-[15px] font-semibold tracking-tight whitespace-nowrap">{title}</span>
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end min-w-0">
-            {/* Engine indicators */}
-            <div className="flex items-center gap-1.5">
-              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-900/60 border border-emerald-700 text-emerald-400 text-[10px] font-bold">
-                <Zap size={9} />ZXing
-              </div>
-              {state.zbarReady && (
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-900/60 border border-blue-700 text-blue-400 text-[10px] font-bold">
-                  <Zap size={9} />ZBar
-                </div>
-              )}
-              {state.quaggaReady && (
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-900/60 border border-amber-700 text-amber-400 text-[10px] font-bold">
-                  <Zap size={9} />Q2
-                </div>
-              )}
-              {state.ocrReady && (
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-900/60 border border-purple-700 text-purple-400 text-[10px] font-bold">
-                  <Zap size={9} />OCR
-                </div>
-              )}
+            {/* Engine dots · minimal refined */}
+            <div className="flex items-center gap-1.5" title="활성 엔진">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]" />
+              {state.zbarReady && <div className="w-1.5 h-1.5 rounded-full bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.7)]" />}
+              {state.quaggaReady && <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.7)]" />}
+              {state.ocrReady && <div className="w-1.5 h-1.5 rounded-full bg-fuchsia-400 shadow-[0_0_6px_rgba(232,121,249,0.7)]" />}
             </div>
             <button
               onClick={() => state.imageInputRef.current?.click()}
               title="갤러리에서 이미지 선택"
-              className="p-1 rounded-md text-gray-500 hover:text-white transition cursor-pointer"
+              className="w-8 h-8 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition flex items-center justify-center cursor-pointer"
             >
               <ImageIcon size={16} />
             </button>
             <button
               onClick={() => state.setTorchOn((v) => !v)}
               title={state.torchOn ? "손전등 끄기" : "손전등 켜기"}
-              className={`p-1 rounded-md transition cursor-pointer ${
+              className={`w-8 h-8 rounded-lg transition flex items-center justify-center cursor-pointer ${
                 state.torchOn
-                  ? "text-yellow-400 bg-yellow-400/10 hover:text-yellow-300"
-                  : "text-gray-500 hover:text-white"
+                  ? "text-amber-300 bg-amber-400/15 ring-1 ring-amber-400/40 shadow-[0_0_12px_rgba(251,191,36,0.35)]"
+                  : "text-zinc-400 hover:text-white hover:bg-white/5"
               }`}
             >
               <Zap size={16} />
             </button>
-            <button onClick={onClose} className="text-gray-500 hover:text-white transition cursor-pointer">
+            <button
+              onClick={onClose}
+              title="닫기"
+              className="w-8 h-8 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition flex items-center justify-center cursor-pointer"
+            >
               <X size={18} />
             </button>
           </div>
@@ -290,31 +336,80 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             autoPlay muted playsInline
           />
 
+          {/* 2026-08-19 · 진단 오버레이 · 실시간 · 상단 우측 · 항상 접근 가능 */}
+          {!state.frozenFrame && (
+            <div className="absolute top-2 left-2 z-30" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={() => setDiagOpen((v) => !v)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-mono font-semibold backdrop-blur-md transition cursor-pointer ${
+                  camError
+                    ? "bg-rose-500/25 text-rose-100 ring-1 ring-rose-400/50"
+                    : videoState === "playing"
+                      ? "bg-emerald-500/20 text-emerald-100 ring-1 ring-emerald-400/40"
+                      : "bg-white/10 text-white/80 ring-1 ring-white/20"
+                }`}
+                title="진단 로그 · 탭하여 열기/닫기"
+              >
+                <Info size={12} />
+                <span>{camError ? "ERROR" : videoState}</span>
+                {diagOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+              </button>
+              {diagOpen && (
+                <div className="mt-1.5 w-[280px] p-3 rounded-xl bg-black/85 backdrop-blur-xl ring-1 ring-white/15 shadow-2xl">
+                  <div className="text-[10px] font-mono text-white/90 space-y-1 leading-relaxed break-all">
+                    <div className="text-white/50 uppercase tracking-wider mb-1 text-[9px]">진단 정보</div>
+                    <div><span className="text-white/50">URL:</span> {typeof window !== "undefined" ? window.location.host : "?"}</div>
+                    <div><span className="text-white/50">secure:</span> <span className={secure ? "text-emerald-300" : "text-rose-300"}>{String(secure)}</span></div>
+                    <div><span className="text-white/50">mediaDevices:</span> <span className={hasMD ? "text-emerald-300" : "text-rose-300"}>{hasMD ? "yes" : "NO"}</span></div>
+                    <div><span className="text-white/50">getUserMedia:</span> <span className={hasGUM ? "text-emerald-300" : "text-rose-300"}>{hasGUM ? "yes" : "NO"}</span></div>
+                    <div><span className="text-white/50">videoState:</span> <span className="text-amber-200">{videoState}</span></div>
+                    <div><span className="text-white/50">ios:</span> {String(ios)} <span className="text-white/50">safari:</span> {String(isSafariMain)}</div>
+                    <div><span className="text-white/50">standalone:</span> {String(standaloneFlag)} <span className="text-white/50">inApp:</span> {String(inApp)}</div>
+                    <div><span className="text-white/50">UA:</span> {ua.substring(0, 90)}</div>
+                    {camError && (
+                      <div className="mt-2 pt-2 border-t border-rose-400/30 text-rose-200">
+                        <div className="text-rose-300/70 uppercase tracking-wider mb-0.5 text-[9px]">에러</div>
+                        <div>{camError}</div>
+                      </div>
+                    )}
+                    {ios && !isSafariMain && (
+                      <div className="mt-2 pt-2 border-t border-amber-400/30 text-amber-200">
+                        <div className="text-amber-300/70 uppercase tracking-wider mb-0.5 text-[9px]">iOS 웹앱 감지</div>
+                        <div>홈화면 웹앱 · Apple 정책상 카메라 제한 (WebKit Bug 185448)</div>
+                        <div className="text-white/70 mt-1">→ Safari 앱에서 직접 열기</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Snapshot confirmation overlay */}
           {state.frozenFrame && (
             <div className="absolute inset-0">
               <img src={state.frozenFrame} alt="snap" className="w-full h-full object-cover" />
-              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/75 to-transparent px-4 pt-10 pb-3 flex flex-col gap-2.5">
-                <p className="text-white font-mono text-sm font-bold tracking-widest text-center drop-shadow-lg">{state.scannedCode}</p>
+              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/80 to-transparent px-4 pt-12 pb-4 flex flex-col gap-3">
+                <p className="text-white font-mono text-[15px] font-bold tracking-widest text-center drop-shadow-lg">{state.scannedCode}</p>
                 <div className="flex gap-2">
                   <button
                     onClick={(e) => { e.stopPropagation(); onClose(); }}
-                    className="px-3 py-2.5 rounded-xl text-sm font-bold text-white bg-rose-600/80 border border-rose-500 active:scale-95 transition-transform cursor-pointer backdrop-blur-sm"
+                    className="px-3.5 py-3 rounded-xl text-[13px] font-semibold text-white bg-rose-500/85 hover:bg-rose-500 ring-1 ring-rose-400/70 active:scale-[0.97] transition backdrop-blur-md cursor-pointer"
                     title="스캔 취소 · 창 닫기"
                   >
-                    ✕ 취소
+                    취소
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleRetry(); }}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-white/15 border border-white/30 active:scale-95 transition-transform cursor-pointer backdrop-blur-sm"
+                    className="flex-1 py-3 rounded-xl text-[13px] font-semibold text-white bg-white/10 hover:bg-white/15 ring-1 ring-white/25 active:scale-[0.97] transition backdrop-blur-md cursor-pointer"
                   >
                     다시 스캔
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleConfirm(); }}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-600 border border-emerald-500 active:scale-95 transition-transform shadow-lg cursor-pointer"
+                    className="flex-1 py-3 rounded-xl text-[13px] font-semibold text-white bg-emerald-500 hover:bg-emerald-400 ring-1 ring-emerald-400 active:scale-[0.97] transition shadow-[0_8px_24px_rgba(16,185,129,0.35)] cursor-pointer"
                   >
-                    ✓ 확인
+                    확인
                   </button>
                 </div>
               </div>
@@ -326,27 +421,26 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             <div className="absolute inset-0 pointer-events-none" style={{ animation: "shutterFlash 0.35s ease-out forwards" }} />
           )}
 
-          {/* Scan guide overlay (live only) */}
+          {/* Scan guide overlay (live only) · 2026 refined · thinner corners · softer glow */}
           {!state.frozenFrame && (
             <div className="absolute inset-0 pointer-events-none">
-              {/* No base overlay — scan area shows at full brightness. boxShadow darkens surrounds only. */}
               <div className="absolute inset-x-[8%] top-[18%] bottom-[18%]">
-                <div className="absolute inset-0 bg-transparent" style={{ boxShadow: "0 0 0 9999px rgba(0,0,0,0.65)" }} />
+                <div className="absolute inset-0 bg-transparent" style={{ boxShadow: "0 0 0 9999px rgba(0,0,0,0.62)" }} />
                 {[
-                  "top-0 left-0 border-t-[3px] border-l-[3px] rounded-tl-md",
-                  "top-0 right-0 border-t-[3px] border-r-[3px] rounded-tr-md",
-                  "bottom-0 left-0 border-b-[3px] border-l-[3px] rounded-bl-md",
-                  "bottom-0 right-0 border-b-[3px] border-r-[3px] rounded-br-md",
+                  "top-0 left-0 border-t-2 border-l-2 rounded-tl-lg",
+                  "top-0 right-0 border-t-2 border-r-2 rounded-tr-lg",
+                  "bottom-0 left-0 border-b-2 border-l-2 rounded-bl-lg",
+                  "bottom-0 right-0 border-b-2 border-r-2 rounded-br-lg",
                 ].map((cls, i) => (
-                  <div key={i} className={`absolute w-6 h-6 border-emerald-400 ${cls}`} />
+                  <div key={i} className={`absolute w-7 h-7 border-emerald-400 ${cls}`} style={{ boxShadow: "0 0 8px rgba(52,211,153,0.5)" }} />
                 ))}
-                <div className="absolute inset-x-0 h-0.5 bg-red-500" style={{ animation: "scanline 2s ease-in-out infinite", boxShadow: "0 0 6px 1px rgba(239,68,68,0.8)" }} />
+                <div className="absolute inset-x-0 h-0.5 bg-emerald-400" style={{ animation: "scanline 2s ease-in-out infinite", boxShadow: "0 0 8px 1px rgba(52,211,153,0.9)" }} />
                 {/* QR / 2D support indicator */}
-                <div className="absolute bottom-1.5 right-2 flex flex-col gap-[2px]">
+                <div className="absolute bottom-1.5 right-2 flex flex-col gap-[2px] opacity-70">
                   {[0,1,2].map(r => (
                     <div key={r} className="flex gap-[2px]">
                       {[0,1,2].map(c => (
-                        <div key={c} className={`w-[4px] h-[4px] ${(r===0&&c===0)||(r===0&&c===2)||(r===2&&c===0)||(r===1&&c===1) ? "bg-emerald-400/70" : "bg-transparent"}`} />
+                        <div key={c} className={`w-[4px] h-[4px] ${(r===0&&c===0)||(r===0&&c===2)||(r===2&&c===0)||(r===1&&c===1) ? "bg-emerald-400" : "bg-transparent"}`} />
                       ))}
                     </div>
                   ))}
@@ -355,20 +449,20 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             </div>
           )}
 
-          {/* Android 전용 줌 버튼 — iOS 코드 경로 완전 분리 */}
+          {/* Android 전용 줌 버튼 — iOS 코드 경로 완전 분리 · 2026 refined */}
           {isAndroid && !state.frozenFrame && (
             <div
-              className="absolute bottom-2.5 inset-x-0 flex justify-center items-center gap-2 z-10"
+              className="absolute bottom-3 inset-x-0 flex justify-center items-center gap-2 z-10"
               onClick={(e) => e.stopPropagation()}
             >
               {[1, 2, 3].map((z) => (
                 <button
                   key={z}
                   onClick={() => setZoomLevel(z)}
-                  className={`w-9 h-9 rounded-full text-[11px] font-bold border transition-all active:scale-90 cursor-pointer ${
+                  className={`w-10 h-10 rounded-full text-[12px] font-bold transition-all active:scale-90 cursor-pointer backdrop-blur-md ${
                     zoomLevel === z
-                      ? "bg-yellow-400/90 text-black border-yellow-300 shadow-lg"
-                      : "bg-black/50 text-white border-white/30 backdrop-blur-sm"
+                      ? "bg-white text-black ring-2 ring-white shadow-[0_4px_16px_rgba(255,255,255,0.4)]"
+                      : "bg-black/40 text-white ring-1 ring-white/25"
                   }`}
                 >
                   {z}×
@@ -377,11 +471,11 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             </div>
           )}
 
-          {/* Image decoding spinner */}
+          {/* Image decoding spinner · 2026 refined */}
           {state.isDecoding && (
-            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-3 pointer-events-none">
-              <div className="w-9 h-9 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-              <p className="text-white text-xs font-medium tracking-wide">이미지 인식 중...</p>
+            <div className="absolute inset-0 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center gap-3 pointer-events-none">
+              <div className="w-10 h-10 border-[3px] border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
+              <p className="text-white text-[13px] font-medium tracking-wide">이미지 인식 중</p>
             </div>
           )}
 
@@ -401,19 +495,19 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           />
         </div>
 
-        {/* Hint */}
-        <div className="px-4 py-3 text-center flex flex-col items-center gap-1.5">
+        {/* Hint · 2026 refined typography */}
+        <div className="px-4 py-4 text-center flex flex-col items-center gap-2 bg-gradient-to-b from-zinc-950 to-black">
           {state.darkHint && !state.torchOn ? (
             <button
               onClick={() => state.setTorchOn(true)}
-              className="flex items-center gap-1.5 text-xs text-yellow-300 font-bold bg-yellow-400/15 border border-yellow-400/40 px-3 py-1.5 rounded-lg animate-pulse active:scale-95 transition-transform cursor-pointer"
+              className="flex items-center gap-2 text-[13px] text-amber-200 font-semibold bg-amber-400/12 ring-1 ring-amber-400/40 px-4 py-2 rounded-xl animate-pulse active:scale-95 transition cursor-pointer"
             >
-              <Zap size={12} /> 어둡습니다 — 여기를 눌러 손전등 켜기
+              <Zap size={14} /> 어둡습니다 · 여기를 눌러 손전등 켜기
             </button>
           ) : (
-            <p className="text-xs text-gray-400 font-medium">바코드를 사각형 안에 맞춰주세요</p>
+            <p className="text-[13px] text-zinc-300 font-medium">바코드를 사각형 안에 맞춰주세요</p>
           )}
-          <p className="text-[10px] text-gray-500">화면을 탭하면 초점 조정 · 종이 바코드는 5~10cm 거리</p>
+          <p className="text-[11px] text-zinc-500">화면을 탭하면 초점 조정 · 종이 바코드는 5~10cm 거리</p>
         </div>
       </div>
 
