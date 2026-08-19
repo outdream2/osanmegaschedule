@@ -14,6 +14,8 @@ export default defineConfig({
       "src/components/common/**/*.test.tsx",
       "src/components/common/**/*.test.ts",
       "src/lib/**/*.test.tsx",
+      // 2026-08-19 · pure util 함수 · node env · 순수 로직 검증
+      "src/utils/**/*.test.ts",
     ],
     globals: false,
     environment: "node", // 기본 · jsdom 은 파일별 지시자 opt-in
