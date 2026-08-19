@@ -9,6 +9,7 @@ import {
 import type { AuthSession } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { Spinner } from "../common/Spinner";
+import { Card } from "../common/Card";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 
 interface StockArrivalPageProps {
@@ -352,7 +353,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
         )}
 
         {/* ── 리스트 ──────────────────────────────────────────────────────── */}
-        <div className="bg-white border border-line rounded-xl overflow-hidden shadow-sm">
+        <Card clip padding="none">
           {loading && arrivals.length > 0 && (
             <div className="flex items-center justify-center gap-1.5 py-1.5 bg-emerald-50 border-b border-emerald-100 sticky top-0 z-10">
               <Spinner size={11} tone="emerald" label="새로 불러오는 중..." labelSize={14} />
@@ -487,7 +488,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
             );
           })}
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );
