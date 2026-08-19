@@ -13,6 +13,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { api, ApiError } from "../../lib/apiClient";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
 import { useConfirm } from "../../hooks/useConfirm";
+import { Spinner } from "../common/Spinner";
 import {
   FileText, Download, Upload, Trash2, Plus, X, RefreshCw, Loader2,
   Filter, FileEdit, FileSignature, FilePlus, FileArchive,
@@ -923,7 +924,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   <tr>
                     <td colSpan={8} className="py-14 text-center">
                       <div className="inline-flex flex-col items-center gap-2">
-                        <Loader2 size={20} className="animate-spin text-amber-500" />
+                        <Spinner size={20} tone="amber" />
                         <span className="text-sm text-zinc-400 font-bold">불러오는 중...</span>
                       </div>
                     </td>
@@ -1020,7 +1021,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
           <div className="md:hidden divide-y divide-zinc-100">
             {loading && (
               <div className="py-14 flex flex-col items-center gap-2">
-                <Loader2 size={20} className="animate-spin text-amber-500" />
+                <Spinner size={20} tone="amber" />
                 <span className="text-sm text-zinc-400 font-bold">불러오는 중...</span>
               </div>
             )}
