@@ -14,6 +14,7 @@
 
 import React, { useState, useRef, useLayoutEffect, useEffect } from "react";
 import { X, Save, Loader2 } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 
 interface Props {
   supplier: string;
@@ -369,7 +370,7 @@ export const ColumnMappingModal: React.FC<Props> = ({
               disabled={saving || !supplier}
               className="text-[11px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-40 rounded-lg px-3 py-1.5 cursor-pointer flex items-center gap-1"
             >
-              {saving ? <><Loader2 size={12} className="animate-spin" />저장 중</> : <><Save size={12} />공급사에 저장</>}
+              {saving ? <><Spinner size={12} tone="white" />저장 중</> : <><Save size={12} />공급사에 저장</>}
             </button>
           </div>
         </div>
