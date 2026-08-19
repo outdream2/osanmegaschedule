@@ -338,8 +338,8 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
               </div>
 
               {myLoading && myRequests.length > 0 && (
-                <div className="flex items-center justify-center gap-1.5 text-[19px] text-amber-600 font-bold py-1.5 mb-1 bg-amber-50 border border-amber-200 rounded-md sticky top-0 z-10">
-                  <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
+                <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-amber-50 border border-amber-200 rounded-md sticky top-0 z-10">
+                  <Spinner size={11} tone="amber" label="새로 불러오는 중..." labelSize={19} />
                 </div>
               )}
               {myLoading && myRequests.length === 0 ? (
@@ -437,8 +437,8 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
               </div>
 
             {allLoading && (mgrTab === "pending" ? pending : reviewed).length > 0 && (
-              <div className="flex items-center justify-center gap-1.5 text-[18px] text-indigo-600 font-bold py-1.5 mb-1 bg-indigo-50 border border-indigo-200 rounded-md sticky top-0 z-10">
-                <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
+              <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-indigo-50 border border-indigo-200 rounded-md sticky top-0 z-10">
+                <Spinner size={11} tone="brand" label="새로 불러오는 중..." labelSize={18} />
               </div>
             )}
             {allLoading && (mgrTab === "pending" ? pending : reviewed).length === 0 ? (
