@@ -535,8 +535,8 @@ const ConfirmedRecordsTab: React.FC = () => {
         )}
 
         {loading && items.length > 0 && (
-          <div className="flex items-center justify-center gap-1.5 text-[14px] text-rose-600 font-bold py-1.5 bg-rose-50 border-b border-rose-200 sticky top-0 z-10">
-            <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
+          <div className="flex items-center justify-center gap-1.5 py-1.5 bg-rose-50 border-b border-rose-200 sticky top-0 z-10">
+            <Spinner size={11} tone="rose" label="새로 불러오는 중..." labelSize={14} />
           </div>
         )}
         {loading && items.length === 0 ? (
@@ -1578,8 +1578,8 @@ return (
                 </span>
               )}
               {detectingOrient && (
-                <span className="text-[14px] text-sky-500 font-bold flex items-center gap-1">
-                  <Loader2 size={10} className="animate-spin" />방향 감지 중...
+                <span className="flex items-center gap-1">
+                  <Spinner size={10} tone="sky" label="방향 감지 중..." labelSize={14} />
                 </span>
               )}
               {!loading && !detectingOrient && pageCount > 1 && (
@@ -1594,7 +1594,7 @@ return (
 
         {loading && pageImages.length === 0 && (
           <div className="p-6 flex flex-col items-center gap-4">
-            <Loader2 size={28} className="text-amber-500 animate-spin" />
+            <Spinner size={28} tone="amber" />
             <p className="text-sm font-bold text-gray-700">
               {pageCount > 0 ? `${pageImages.length} / ${pageCount} 로딩 중...` : "파일 읽는 중..."}
             </p>
