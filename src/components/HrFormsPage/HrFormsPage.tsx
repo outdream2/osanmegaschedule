@@ -25,6 +25,7 @@ import { FilterBar } from "../common/FilterBar";
 import { AccentBar } from "../common/AccentBar";
 import { IconTile } from "../common/IconTile";
 import { StatusPill, type PillTone } from "../common/StatusPill";
+import { Card } from "../common/Card";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import type { AuthSession } from "../../types";
 
@@ -780,7 +781,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
         </FilterBar>
 
         {/* ── 리스트 ─────────────────────────────────────────────────────── */}
-        <div className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
+        <Card clip padding="none">
           {/* 에러 배너 */}
           {loadError && (
             <div className="flex items-center gap-2 p-3.5 text-sm text-rose-700 font-semibold bg-rose-50 border-b border-rose-200">
@@ -1090,7 +1091,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
               );
             })}
           </div>
-        </div>
+        </Card>
 
         {/* ── 관리자 안내 ────────────────────────────────────────────────── */}
         {isManager && (
