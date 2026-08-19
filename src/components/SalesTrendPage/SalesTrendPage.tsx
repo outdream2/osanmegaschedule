@@ -1,6 +1,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Search, TrendingUp, Building2, LineChart, Package, X, Info, Eye, EyeOff, CheckSquare, Square, Loader2, Award, Activity, Layers, PieChart, AlertOctagon } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { AccentBar } from "../common/AccentBar";
@@ -1032,8 +1033,8 @@ const SupplierTrendTab: React.FC<{
         </p>
         {/* 공급사 리스트 (판매액 내림차순) · 2026-07-16 · loading 시 상단 배너 + dim 오버레이 */}
         {loading && suppliers.length > 0 && (
-          <div className="flex items-center justify-center gap-1.5 text-[10px] text-sky-600 font-bold py-1.5 mb-1 bg-sky-50 border border-sky-200 rounded-md">
-            <Loader2 size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
+          <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-sky-50 border border-sky-200 rounded-md">
+            <Spinner size={11} tone="sky" label="조건 변경 · 새로 불러오는 중..." labelSize={10} />
           </div>
         )}
         <div className="max-h-[50vh] overflow-y-auto pr-2 relative">
@@ -2036,8 +2037,8 @@ const ZoneCategoryContent: React.FC = () => {
         style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? categoryPanelWidth : undefined }}
       >
         {loading && grouped.length > 0 && (
-          <div className="flex items-center justify-center gap-1.5 text-[10px] text-violet-600 font-bold py-1.5 mb-1 bg-violet-50 border border-violet-200 rounded-md sticky top-0 z-10">
-            <Loader2 size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
+          <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-violet-50 border border-violet-200 rounded-md sticky top-0 z-10">
+            <Spinner size={11} tone="violet" label="조건 변경 · 새로 불러오는 중..." labelSize={10} />
           </div>
         )}
         {loading && grouped.length === 0 ? (
@@ -2253,8 +2254,8 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
         <span className="text-zinc-400">개</span>
       </div>
       {loading && filtered.length > 0 && (
-        <div className="flex items-center justify-center gap-1.5 text-[10px] text-rose-600 font-bold py-1.5 mb-1 bg-rose-50 border border-rose-200 rounded-md sticky top-0 z-10">
-          <Loader2 size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
+        <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-rose-50 border border-rose-200 rounded-md sticky top-0 z-10">
+          <Spinner size={11} tone="rose" label="조건 변경 · 새로 불러오는 중..." labelSize={10} />
         </div>
       )}
       {loading && filtered.length === 0 ? (
@@ -2628,7 +2629,7 @@ export const SalesTrendPage: React.FC = () => {
             </div>
             <div className="flex-1 overflow-y-auto bg-zinc-50">
               {hiddenLoading ? (
-                <div className="flex items-center justify-center py-12 text-zinc-400 text-sm"><Loader2 size={14} className="animate-spin mr-2" />불러오는 중...</div>
+                <div className="flex items-center justify-center py-12"><Spinner size={14} tone="zinc" label="불러오는 중..." labelSize={14} /></div>
               ) : hiddenList.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-zinc-400 gap-2">
                   <EyeOff size={28} className="opacity-40" />
