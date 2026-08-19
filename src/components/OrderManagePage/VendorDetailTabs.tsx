@@ -6,8 +6,9 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Loader2, RefreshCw, Filter, X, Package2, ReceiptText,
+  RefreshCw, Filter, X, Package2, ReceiptText,
 } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { VendorInfoHeader, type VendorBasic, type VendorKpi, type LedgerRowMinimal } from "./VendorInfoHeader";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
@@ -144,9 +145,8 @@ const LedgerContent: React.FC<{
   });
 
   if (loading) return (
-    <div className="flex-1 flex items-center justify-center py-16 text-zinc-400 gap-2">
-      <Loader2 size={18} className="animate-spin" />
-      <span className="text-[12px]">원장 로딩 중...</span>
+    <div className="flex-1 flex items-center justify-center py-16">
+      <Spinner size={18} tone="zinc" label="원장 로딩 중..." labelSize={12} />
     </div>
   );
   if (error) return (
@@ -349,9 +349,8 @@ const HistoryContent: React.FC<{
   }, [detailRows, productSearch, selectedCode]);
 
   if (loading) return (
-    <div className="flex-1 flex items-center justify-center py-16 text-zinc-400 gap-2">
-      <Loader2 size={18} className="animate-spin" />
-      <span className="text-[12px]">매입이력 로딩 중...</span>
+    <div className="flex-1 flex items-center justify-center py-16">
+      <Spinner size={18} tone="zinc" label="매입이력 로딩 중..." labelSize={12} />
     </div>
   );
   if (detailRows.length === 0) return (

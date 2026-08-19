@@ -8,8 +8,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpDown, BarChart3, ChevronDown, ChevronRight,
-  ListOrdered, Loader2, Package2,
+  ListOrdered, Package2,
 } from "lucide-react";
+import { Spinner } from "../../common/Spinner";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -173,9 +174,8 @@ const LedgerTab: React.FC<{
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center py-12 text-zinc-400 text-[12px] gap-2">
-        <Loader2 size={14} className="animate-spin" />
-        <span>매입 이력 로딩 중...</span>
+      <div className="flex-1 flex items-center justify-center py-12">
+        <Spinner size={14} tone="zinc" label="매입 이력 로딩 중..." labelSize={12} />
       </div>
     );
   }

@@ -4,7 +4,8 @@
 // 2026-08-12 · UI 리디자인 · 폰트 +2 · 굵기 완화 · 발주일·희망입고일 · 헤더 · 상품수 옆
 
 import React, { useEffect, useState } from "react";
-import { Package, Loader2, ChevronDown, ChevronRight, Mail, Phone, User, Calendar, CalendarCheck } from "lucide-react";
+import { Package, ChevronDown, ChevronRight, Mail, Phone, User, Calendar, CalendarCheck } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { PageToolbar } from "../common/PageToolbar";
 import { AccentBar } from "../common/AccentBar";
@@ -120,9 +121,8 @@ export const OrderHistoryTab: React.FC = () => {
       {/* 리스트 */}
       <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-zinc-400 text-[15px] gap-2">
-            <Loader2 size={16} className="animate-spin" />
-            불러오는 중...
+          <div className="flex items-center justify-center py-16">
+            <Spinner size={16} tone="zinc" label="불러오는 중..." labelSize={15} />
           </div>
         ) : error ? (
           <div className="p-8 text-center text-rose-600 text-[15px] font-bold">⚠ {error}</div>
