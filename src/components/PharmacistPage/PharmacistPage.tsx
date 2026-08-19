@@ -5,6 +5,7 @@ import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import { FirstAid, BookOpen, Video, FileText, GraduationCap, Folder, FolderOpen, File as FileIcon } from "@phosphor-icons/react";
 import { Settings2, Plus, Eye, FileText as FileTextIcon, Loader2, ChevronRight, ChevronDown, CloudUpload, Trash2, X as XIcon } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 import { AccentBar } from "../common/AccentBar";
@@ -567,9 +568,8 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                         {isExpanded && isCatActive && (
                           <div className="border-l-2 border-sky-100 ml-6">
                             {showLoading && (
-                              <div className="pl-4 py-2 flex items-center gap-1.5 text-zinc-400">
-                                <Loader2 size={11} className="animate-spin" />
-                                <span className="text-[10.5px] font-bold">불러오는 중...</span>
+                              <div className="pl-4 py-2">
+                                <Spinner size={11} tone="zinc" label="불러오는 중..." labelSize={11} />
                               </div>
                             )}
                             {menuError && (
@@ -681,9 +681,8 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                       </div>
                     )}
                     {menuLoading ? (
-                      <div className="p-6 flex items-center justify-center gap-2 text-zinc-400">
-                        <Loader2 size={13} className="animate-spin" />
-                        <span className="text-[15px] font-bold">불러오는 중...</span>
+                      <div className="p-6 flex items-center justify-center">
+                        <Spinner size={13} tone="zinc" label="불러오는 중..." labelSize={15} />
                       </div>
                     ) : menuItems.length === 0 ? (
                       <div className="p-6 text-center text-[15px] text-zinc-400">
