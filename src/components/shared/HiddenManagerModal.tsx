@@ -15,6 +15,7 @@
 
 import React from "react";
 import { EyeOff, Eye, Loader2 } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { Modal } from "../common/Modal";
 import { IconTile } from "../common/IconTile";
 import { StatusPill } from "../common/StatusPill";
@@ -64,9 +65,8 @@ export const HiddenManagerModal: React.FC<Props> = ({
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-12 text-ink-soft text-[14px]">
-          <Loader2 size={16} className="animate-spin mr-2" />
-          불러오는 중...
+        <div className="flex items-center justify-center py-12">
+          <Spinner size={16} tone="brand" label="불러오는 중..." labelSize={14} />
         </div>
       ) : list.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-14 text-ink-soft gap-2">
