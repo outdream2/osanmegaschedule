@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useZxing } from "react-zxing";
-import { X, ScanLine, Zap, ImageIcon, Camera } from "lucide-react";
+import { X, ScanLine, Zap, ImageIcon } from "lucide-react";
 
 const isAndroid = /android/i.test(navigator.userAgent);
 const isDesktop = !/android|iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -44,81 +44,9 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   // onDecodeResult reads .current at call-time, so we get the latest closure.
   const handleResultRef = useRef<(raw: string) => void>(() => {});
 
-  // 2026-08-19 · 카메라 에러 진단 · onError + 인앱브라우저·PWA 감지 (리서치 결과 반영)
-  const [camError, setCamError] = useState<string>("");
-  // 2026-08-19 · 네이티브 카메라 fallback · <input capture="environment"> · 웹앱·PWA·WebView 모두 작동
-  const nativeCameraRef = useRef<HTMLInputElement>(null);
-
-  // 2026-08-19 · 네이티브 카메라 사진 · 12MP → 1600px 다운스케일
-  // 근거: WebKit Bug 172533 (input capture camera 크래시) · zbar-wasm 커뮤니티 권장 JPG ~1700px
-  // handleImageDecode 내부 2x 업스케일 = 1600*2 = 3200 (iOS canvas 4096 한계 이하)
-  const downscaleForDecode = useCallback(async (file: File): Promise<File> => {
-    const MAX = 1600;
-    try {
-      const url = URL.createObjectURL(file);
-      const img = await new Promise<HTMLImageElement>((res, rej) => {
-        const i = new Image();
-        i.onload = () => res(i);
-        i.onerror = rej;
-        i.src = url;
-      });
-      URL.revokeObjectURL(url);
-      const w = img.naturalWidth, h = img.naturalHeight;
-      const long = Math.max(w, h);
-      if (long <= MAX) return file; // 이미 작음
-      const scale = MAX / long;
-      const nw = Math.round(w * scale), nh = Math.round(h * scale);
-      const c = document.createElement("canvas");
-      c.width = nw; c.height = nh;
-      const ctx = c.getContext("2d");
-      if (!ctx) return file;
-      ctx.drawImage(img, 0, 0, nw, nh);
-      const blob: Blob | null = await new Promise((r) => c.toBlob((b) => r(b), "image/jpeg", 0.85));
-      if (!blob) return file;
-      return new File([blob], file.name || "capture.jpg", { type: "image/jpeg" });
-    } catch {
-      return file;
-    }
-  }, []);
-  const [envInfo] = useState<{ inApp: boolean; standalone: boolean; ios: boolean; safari: boolean; ua: string }>(() => {
-    const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
-    const ios = /iPhone|iPad|iPod/i.test(ua);
-    // Safari 앱 · main browser · WebView 는 "Safari" 만 있고 "Version/" 있음
-    const isSafariMain = /Safari\//.test(ua) && /Version\//.test(ua) && !/CriOS|FxiOS|OPiOS|EdgiOS/.test(ua);
-    return {
-      inApp: /KAKAOTALK|NAVER|FBAN|FBAV|Instagram|Line\/|Twitter|Snapchat|WhatsApp|Gmail|EdgiOS/i.test(ua),
-      // standalone · PWA · 홈화면 웹앱 감지 · 여러 방식
-      standalone: typeof window !== "undefined" && (
-        !!(window.navigator as any).standalone ||
-        (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
-        // iOS · Safari 도 아니고 인앱브라우저도 아니면 · WebView 또는 홈화면 앱 (경험적)
-        (ios && !isSafariMain && !/KAKAOTALK|NAVER|FBAN|FBAV|Instagram|Line\/|CriOS|FxiOS/i.test(ua))
-      ),
-      ios,
-      safari: isSafariMain,
-      ua,
-    };
-  });
-
   const { ref: videoRef } = useZxing({
     onDecodeResult: useCallback((result: any) => {
       handleResultRef.current(result.rawValue);
-    }, []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    onError: useCallback((e: unknown) => {
-      const err = e as Error;
-      const name = (e as any)?.name || "";
-      const msg = err?.message || String(e);
-      // eslint-disable-next-line no-console
-      console.error("[BarcodeScanner] useZxing error:", name, msg, {
-        ua: typeof navigator !== "undefined" ? navigator.userAgent : "?",
-        secureContext: typeof window !== "undefined" ? (window as any).isSecureContext : "?",
-        hasMediaDevices: typeof navigator !== "undefined" && !!(navigator as any).mediaDevices,
-        hasGUM: typeof navigator !== "undefined" && !!(navigator as any).mediaDevices?.getUserMedia,
-        standalone: typeof navigator !== "undefined" ? (navigator as any).standalone : "?",
-        displayModeStandalone: typeof window !== "undefined" && window.matchMedia?.("(display-mode: standalone)").matches,
-      });
-      setCamError(`${name || "Error"}: ${msg}`);
     }, []),
     constraints: { video: videoConstraints },
     formats: FORMATS as unknown as Parameters<typeof useZxing>[0]["formats"],
@@ -192,6 +120,43 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     ocrCanvasRef: state.ocrCanvasRef,
   });
 
+  // 2026-07-30 · 사용자 요청 · 바코드 스캔 삑 소리 · iOS Audio unlock
+  //   iOS 는 user gesture 후 · silent audio 재생하여 AudioContext 활성화 필요
+  //   스캐너 오픈 (user gesture) 시점 · 무음 오디오 재생 후 즉시 stop · unlock 유지
+  // 2026-07-30 (3rd) · beep 프리로드 · 첫 인식 즉시 재생 · 지연·실패 방지
+  useEffect(() => {
+    // 1) Web Audio unlock (silent) · shared ctx 전역 저장 · handleResult 에서 재사용
+    try {
+      const AC: any = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (AC) {
+        let ctx: AudioContext = (window as any).__beepAudioCtx;
+        if (!ctx || (ctx as any).state === "closed") {
+          ctx = new AC();
+          (window as any).__beepAudioCtx = ctx;
+        }
+        if (ctx.state === "suspended") { try { ctx.resume(); } catch {} }
+        const buf = ctx.createBuffer(1, 1, 22050);
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(ctx.destination);
+        src.start(0);
+        // ⚠ ctx.close() 하지 말 것 · handlers.ts 에서 재사용 (unlock 상태 유지)
+      }
+    } catch { /* silent */ }
+    // 2) beep.wav 프리로드 · 무음 재생 → unlock 유지 · handleResult 즉시 재생 가능
+    try {
+      const audio = new Audio("/beep.wav");
+      audio.volume = 0;   // 무음 재생 (unlock only)
+      audio.play().then(() => {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.volume = 1.0;
+        // window 에 전역 캐시 · handleResult 에서 재사용
+        (window as any).__beepAudio = audio;
+      }).catch(() => { /* silent */ });
+    } catch { /* silent */ }
+  }, []);
+
   // Android: playing 이벤트 시점에 최적 카메라 자동 선택.
   // 캐시된 deviceId가 현재 스트림과 일치하면 enumerateDevices 생략 — 불필요한 async 비용 제거.
   // facingMode:"environment"는 초광각 렌즈를 선택할 수 있어 1D 바코드 초점이 안 잡힘.
@@ -259,13 +224,13 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
         className="bg-gray-950 rounded-2xl overflow-hidden shadow-2xl w-full max-w-sm border border-gray-800"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-800">
-          <div className="flex items-center gap-2 text-white">
+        {/* Header · 2026-08-05 · 제목 세로 표시 fix · whitespace-nowrap + 배지 flex-wrap */}
+        <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-800 gap-2">
+          <div className="flex items-center gap-2 text-white shrink-0">
             <ScanLine size={15} className="text-emerald-400" />
-            <span className="text-sm font-bold">{title}</span>
+            <span className="text-sm font-bold whitespace-nowrap">{title}</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap justify-end min-w-0">
             {/* Engine indicators */}
             <div className="flex items-center gap-1.5">
               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-900/60 border border-emerald-700 text-emerald-400 text-[10px] font-bold">
@@ -287,13 +252,6 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
                 </div>
               )}
             </div>
-            <button
-              onClick={() => nativeCameraRef.current?.click()}
-              title="네이티브 카메라로 촬영 (웹앱·모바일 지원)"
-              className="p-1 rounded-md text-emerald-400 hover:text-emerald-300 transition cursor-pointer"
-            >
-              <Camera size={16} />
-            </button>
             <button
               onClick={() => state.imageInputRef.current?.click()}
               title="갤러리에서 이미지 선택"
@@ -330,64 +288,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             ref={videoRef}
             className={`w-full h-full object-cover ${state.frozenFrame ? "invisible" : ""}`}
             autoPlay muted playsInline
-            // @ts-ignore · 구형 iOS Safari 인라인 재생
-            webkit-playsinline="true"
           />
-
-          {/* 2026-08-19 · 카메라 에러 오버레이 · 실제 에러 텍스트 · 인앱브라우저 감지 */}
-          {camError && !state.frozenFrame && (
-            <div className="absolute inset-0 bg-black/92 flex flex-col items-center justify-center gap-3 px-5 py-6 z-20 overflow-y-auto">
-              <div className="w-12 h-12 rounded-full bg-amber-500/[0.15] border border-amber-400/40 flex items-center justify-center">
-                <Zap size={22} className="text-amber-300" />
-              </div>
-              <div className="text-center max-w-[280px]">
-                <p className="text-white text-[14px] font-bold tracking-tight">카메라 접근 실패</p>
-                {envInfo.inApp ? (
-                  <p className="text-amber-300 text-[12px] mt-1.5 leading-relaxed font-semibold">
-                    카톡·네이버 등 인앱브라우저에서는 라이브 스캔이 안 됩니다.<br/>
-                    <span className="text-white/70">아래 <b className="text-white">📸 카메라로 촬영</b> 버튼 사용</span>
-                  </p>
-                ) : envInfo.standalone || (envInfo.ios && !envInfo.safari) ? (
-                  <p className="text-amber-300 text-[12px] mt-1.5 leading-relaxed font-semibold">
-                    웹앱·홈화면 아이콘에서는 라이브 스캔 불가 (iOS 정책)<br/>
-                    <span className="text-white/70">아래 <b className="text-white">📸 카메라로 촬영</b> 버튼 사용</span>
-                  </p>
-                ) : camError.startsWith("NotAllowedError") ? (
-                  <p className="text-white/70 text-[12px] mt-1.5 leading-relaxed">
-                    카메라 권한 거부됨 · 브라우저 설정에서 허용하거나<br/>
-                    아래 <b className="text-white">📸 카메라로 촬영</b> 버튼 사용
-                  </p>
-                ) : (
-                  <p className="text-white/60 text-[12px] mt-1.5 leading-relaxed">
-                    라이브 스캔 불가 · 아래 <b className="text-white">📸 카메라로 촬영</b> 사용
-                  </p>
-                )}
-                <p className="text-white/40 text-[10px] mt-2 font-mono break-all">{camError}</p>
-              </div>
-              <button
-                onClick={() => nativeCameraRef.current?.click()}
-                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition text-white text-[14px] font-bold px-5 py-3 rounded-xl shadow-lg cursor-pointer"
-              >
-                <Camera size={18} /> 카메라로 촬영
-              </button>
-              <button
-                onClick={() => state.imageInputRef.current?.click()}
-                className="text-white/70 hover:text-white text-[12px] font-semibold underline underline-offset-2 transition-colors cursor-pointer"
-              >또는 갤러리 이미지 선택</button>
-              <details className="text-white/40 text-[10px] font-mono max-w-[280px] w-full text-left">
-                <summary className="cursor-pointer text-white/50 hover:text-white/70 text-center pb-1">진단 정보 (탭)</summary>
-                <div className="mt-2 space-y-0.5 leading-relaxed break-all bg-white/[0.03] rounded-md px-2 py-1.5 border border-white/[0.08]">
-                  <div>URL: {typeof window !== "undefined" ? window.location.protocol + "//" + window.location.host : "?"}</div>
-                  <div>secure: {typeof window !== "undefined" && "isSecureContext" in window ? String((window as any).isSecureContext) : "?"}</div>
-                  <div>mediaDevices: {typeof navigator !== "undefined" && (navigator as any).mediaDevices ? "yes" : "NO"}</div>
-                  <div>getUserMedia: {typeof navigator !== "undefined" && (navigator as any).mediaDevices?.getUserMedia ? "yes" : "NO"}</div>
-                  <div>inApp: {String(envInfo.inApp)}</div>
-                  <div>standalone: {String(envInfo.standalone)}</div>
-                  <div>UA: {envInfo.ua.substring(0, 80)}</div>
-                </div>
-              </details>
-            </div>
-          )}
 
           {/* Snapshot confirmation overlay */}
           {state.frozenFrame && (
@@ -496,29 +397,6 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) handleImageDecode(file);
-            }}
-          />
-          {/* 2026-08-19 · 네이티브 카메라 (capture="environment") · 후면 카메라 앱 호출 · 웹앱·PWA·인앱브라우저 모두 지원 */}
-          {/* 12MP 사진 → 2000px 다운스케일 후 디코드 (iOS canvas 4096 한계 · WASM OOM 방지) */}
-          <input
-            ref={nativeCameraRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="hidden"
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              if (nativeCameraRef.current) nativeCameraRef.current.value = "";
-              if (!file) return;
-              setCamError("");
-              try {
-                const small = await downscaleForDecode(file);
-                await handleImageDecode(small);
-              } catch (err) {
-                // eslint-disable-next-line no-console
-                console.error("[BarcodeScanner] native camera decode failed:", err);
-                setCamError(`디코드 실패: ${(err as Error)?.message || String(err)}`);
-              }
             }}
           />
         </div>
