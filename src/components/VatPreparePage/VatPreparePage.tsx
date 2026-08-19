@@ -491,7 +491,7 @@ const VatPreparePage: React.FC = () => {
       )}
       {mainTab === "sales" && !summary?.range && (
         <div className="bg-white rounded-xl border border-line shadow-sm p-8 text-center">
-          <Loader2 size={20} className="animate-spin inline text-zinc-400" />
+          <Spinner size={20} tone="zinc" />
           <div className="text-[11px] text-zinc-400 mt-2">기간 정보를 불러오는 중…</div>
         </div>
       )}
@@ -717,7 +717,7 @@ const KpiCard: React.FC<KpiCardProps> = ({ label, value, sub, icon, color, loadi
             <div className="text-[12px] font-semibold text-ink-soft tracking-tight">{label}</div>
           </div>
           <div className={`text-[18px] font-extrabold ${c.text} tabular-nums leading-tight mt-1`}>
-            {loading ? <Loader2 size={14} className="animate-spin inline" /> : value}
+            {loading ? <Spinner size={14} tone="zinc" className="inline" /> : value}
           </div>
           {sub && <div className="text-[11px] text-ink-soft mt-0.5 leading-tight truncate font-medium">{sub}</div>}
         </div>
