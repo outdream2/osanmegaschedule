@@ -937,7 +937,7 @@ export const PaymentInfoTab: React.FC = () => {
                 ariaLabel="매입·결제 집계 기간"
               />
               {aggregatesLoading && (
-                <Loader2 size={11} className="animate-spin text-sky-400 shrink-0" />
+                <Spinner size={11} tone="sky" className="shrink-0" />
               )}
             </div>
           </div>
@@ -1118,7 +1118,7 @@ export const PaymentInfoTab: React.FC = () => {
                           className="ml-auto"
                           ariaLabel="월별 요약 기간 선택"
                         />
-                        {showLoading && <Loader2 size={11} className="animate-spin text-zinc-400" />}
+                        {showLoading && <Spinner size={11} tone="zinc" />}
                       </div>
                       <div className="overflow-x-auto">
                       <table className="w-full min-w-[520px] text-[14px] tabular-nums">
@@ -1841,8 +1841,8 @@ const VendorListHeader: React.FC<{
     <span className="flex-1 min-w-0 flex items-center gap-1.5">
       <SortHeaderBtn label={`공급사 (${count})`} columnKey="name" activeKey={sortKey} activeDir={sortDir} onSort={onSort} align="left" />
       {loading && (
-        <span className="inline-flex items-center gap-1 text-[14px] font-bold text-sky-600 normal-case shrink-0">
-          <Loader2 size={10} className="animate-spin" />로딩중
+        <span className="inline-flex items-center gap-1 shrink-0">
+          <Spinner size={10} tone="sky" label="로딩중" labelSize={14} />
         </span>
       )}
     </span>
@@ -1911,7 +1911,7 @@ const KpiMini: React.FC<{
       </div>
       <div className="flex items-baseline gap-1">
         {loading ? (
-          <Loader2 size={12} className="animate-spin text-zinc-300" />
+          <Spinner size={12} tone="zinc" />
         ) : (
           <span className={`text-[14px] font-bold tabular-nums leading-none ${t.text}`}>{value}</span>
         )}
