@@ -48,6 +48,38 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   const [camError, setCamError] = useState<string>("");
   // 2026-08-19 · 네이티브 카메라 fallback · <input capture="environment"> · 웹앱·PWA·WebView 모두 작동
   const nativeCameraRef = useRef<HTMLInputElement>(null);
+
+  // 2026-08-19 · 네이티브 카메라 사진 · 12MP → 1600px 다운스케일
+  // 근거: WebKit Bug 172533 (input capture camera 크래시) · zbar-wasm 커뮤니티 권장 JPG ~1700px
+  // handleImageDecode 내부 2x 업스케일 = 1600*2 = 3200 (iOS canvas 4096 한계 이하)
+  const downscaleForDecode = useCallback(async (file: File): Promise<File> => {
+    const MAX = 1600;
+    try {
+      const url = URL.createObjectURL(file);
+      const img = await new Promise<HTMLImageElement>((res, rej) => {
+        const i = new Image();
+        i.onload = () => res(i);
+        i.onerror = rej;
+        i.src = url;
+      });
+      URL.revokeObjectURL(url);
+      const w = img.naturalWidth, h = img.naturalHeight;
+      const long = Math.max(w, h);
+      if (long <= MAX) return file; // 이미 작음
+      const scale = MAX / long;
+      const nw = Math.round(w * scale), nh = Math.round(h * scale);
+      const c = document.createElement("canvas");
+      c.width = nw; c.height = nh;
+      const ctx = c.getContext("2d");
+      if (!ctx) return file;
+      ctx.drawImage(img, 0, 0, nw, nh);
+      const blob: Blob | null = await new Promise((r) => c.toBlob((b) => r(b), "image/jpeg", 0.85));
+      if (!blob) return file;
+      return new File([blob], file.name || "capture.jpg", { type: "image/jpeg" });
+    } catch {
+      return file;
+    }
+  }, []);
   const [envInfo] = useState<{ inApp: boolean; standalone: boolean; ios: boolean; safari: boolean; ua: string }>(() => {
     const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
     const ios = /iPhone|iPad|iPod/i.test(ua);
@@ -467,19 +499,26 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             }}
           />
           {/* 2026-08-19 · 네이티브 카메라 (capture="environment") · 후면 카메라 앱 호출 · 웹앱·PWA·인앱브라우저 모두 지원 */}
+          {/* 12MP 사진 → 2000px 다운스케일 후 디코드 (iOS canvas 4096 한계 · WASM OOM 방지) */}
           <input
             ref={nativeCameraRef}
             type="file"
             accept="image/*"
             capture="environment"
             className="hidden"
-            onChange={(e) => {
+            onChange={async (e) => {
               const file = e.target.files?.[0];
-              if (file) {
-                setCamError("");
-                handleImageDecode(file);
-              }
               if (nativeCameraRef.current) nativeCameraRef.current.value = "";
+              if (!file) return;
+              setCamError("");
+              try {
+                const small = await downscaleForDecode(file);
+                await handleImageDecode(small);
+              } catch (err) {
+                // eslint-disable-next-line no-console
+                console.error("[BarcodeScanner] native camera decode failed:", err);
+                setCamError(`디코드 실패: ${(err as Error)?.message || String(err)}`);
+              }
             }}
           />
         </div>
