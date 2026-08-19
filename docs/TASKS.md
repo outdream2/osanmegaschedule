@@ -1,6 +1,6 @@
 # TASKS
 
-> 2026-08-18 · UI 프레임워크 v5 완성 · 실시간 배지 · JWT 자동 파생 · #131 헤더/입고알림 fix
+> 2026-08-19 · Unit test 대량 확산 (150→424) · Spinner 30곳 · 정식 PWA 설정 · BarcodeScanner 로직 복원 + UI 재디자인
 >
 > **원칙**: [`feedback_framework_untouchable.md`](../.claude/agents) · [`feedback_ui_top_principle.md`](../.claude/agents) · [`feedback_remote_push_strict.md`](../.claude/agents) · 폰트 +2 규칙
 >
@@ -13,7 +13,7 @@
 ### #149 · UI 프레임워크화 남은 작업
 - 🔲 common/ 재분류 · `common/primitives/` vs `common/features/` (구조 리팩터 · 위험 중)
 - 🔲 500+라인 파일 슬림화 · ProductDetailPanel(647) · EmployeeInfoForm(482) · InventoryEditPanel(390) · ContractWriterPage(5,400 · 대형)
-- 🔲 unit test 도입 (Vitest 세팅됨 · StatusPill · Button · Modal 우선)
+- ✅ **Unit test 대량 확산** · 424 tests · 35 files (2026-08-19 세션 · 274 tests 신규 · 13 test files 신규)
 - 🔲 접근성 audit (aria-* · keyboard nav)
 - 🔲 목업 HTML 파일 · 최신 트렌드로 재생성 (문서 · 위험 낮음)
 
@@ -23,16 +23,17 @@
 - ✅ **StepperInput** · 3 size · brand-deep focus · 13 tests · 2곳
 - ✅ **NotificationToast** · 5 tone · dark frosted · 7 tests · 2곳
 - ✅ **InlineLabel** · 3 size · AccentBar + label · 6 tests · 12곳
-- ✅ **Spinner** · 7 tone · label + size · 8 tests · **30곳 통합** (55+ 후보 중)
+- ✅ **Spinner** · 11 tone (2026-08-19 · orange/violet/red 추가) · label + size · 8 tests · **60+곳 통합** (누적)
 - ✅ **Modal migration** · 7 파일 (Break/Hidden/PurchaseHistory/ProductPurchase/Ocr balance/SupplierChange/DeleteSynonym)
-- ✅ **BarcodeScanner** · 1달전 (4895e5c · 2026-07-15) 복원 · 카메라 fix (aspectRatio 제거 · 1280x720 · onError) · safety (loadedmetadata play · 5초 timeout retry · webkit-playsinline)
+- ✅ **BarcodeScanner** · 어제 수정 시작 전 (e1fd6a7 · 2026-08-05) 복원 · UI 재디자인 (Linear/Vercel 톤 · 실시간 진단 오버레이 좌상단 · 로직 완전 유지) · 진단 툴 (URL/mediaDevices/getUserMedia/videoState/UA/에러 실시간 표시)
+- ✅ **정식 PWA 설정 (2026-08-19)** · public/manifest.json + apple-mobile-web-app-capable + apple-touch-icon · iOS 웹앱 카메라 활성화 (WebKit Bug 185448 우회)
 - ✅ **TS strict errors fix (11 파일)** · CategoryChips onChange · Phosphor Icon style · ZONE_DEFS import · SortableHeader JSX 등
-- 🔲 잔여: Spinner 확산 30+ · Card primitive · 대형 Modal migration
+- 🔲 잔여: Card primitive · 대형 Modal migration · Spinner 확산 (button 내부 조건부 60+개)
 
-### 배포 확인 대기 (2026-08-18 · `013920a`)
-- 🔲 헤더 hidden 필터 · admin 도 정상 동작 (다른 태블릿/모바일 확인)
-- 🔲 로그인 화면 · 입고알림 리스트 데이터 표시 확인
-- 🔲 무한 리로드 완전 해소 확인
+### 배포 확인 대기 (2026-08-19 · `77530ac`)
+- 🔲 iPhone · 홈화면 아이콘 삭제 → Safari → osanmega.onrender.com → 홈 화면에 추가 → 웹앱 카메라 정상 (iOS 17.4+)
+- 🔲 Android · Chrome → osanmega.onrender.com → 앱 설치 → 웹앱 카메라 정상
+- 🔲 iOS 버전 18.1.1 이상 확인 (18.0.x 는 회귀 · 업데이트 필수)
 
 ---
 
@@ -99,6 +100,30 @@
 - #42 · 발주 PDF + 카카오톡 · 사업자등록증 발급 대기 (SolAPI)
 
 ---
+
+## 📜 완료 로그 (2026-08-19)
+
+### #170 · 정식 PWA 설정 + 웹앱 카메라 활성화 (2026-08-19 · ✅ · `77530ac`)
+- public/manifest.json 신규 · display=standalone · icons (logo.png · 512/192/180)
+- index.html · apple-mobile-web-app-capable=yes + apple-touch-icon + theme-color
+- 근거 · WebKit Bug 185448 (getUserMedia standalone) · iOS 17.4+ 카메라 지원 복원
+- 사용자 재설치 1회 필수 · Safari → 홈화면 추가
+
+### #169 · BarcodeScanner 로직 복원 + UI 재디자인 (2026-08-19 · ✅ · `ee79a27`)
+- 카메라 개폐 로직 · 어제 수정 전 (e1fd6a7 · Aug 5) 완전 복원
+- UI · 2026 Linear/Vercel 톤 · Zinc 뉴트럴 + rounded-3xl + ring-1 + dot indicator
+- 진단 오버레이 · 좌상단 · 실시간 URL/mediaDevices/getUserMedia/videoState/UA/에러 표시
+- 로직 시그니처 완전 유지 · additive 만 (onError · video 이벤트 관찰용)
+
+### #168 · Unit test 대량 확산 (2026-08-19 · ✅ · 다중 커밋)
+- 신규 test files 13개 · 신규 tests 274개 · 총 424 tests · 100% pass
+- Panel/PageHeader/CollapseCard/ConfirmDialog/Toolbar/PeriodSelector/MiniCard/LoadingState/TabBar/FieldLabel/ListLoading/Hero/SearchBar/SearchFilterChips/SortableHeader/BottomSheet/FilterBar/PageToolbar/VendorCategoryBadge/ProductClassFilter/SplitPanel
+- 회귀 방지 · Tailwind class 잠금 · A11y 속성 · 이벤트 시그니처 검증
+
+### #167 · Spinner 대량 확산 (2026-08-19 · ✅ · 다중 커밋)
+- Spinner tone 확장 · orange/violet/red 추가 (11 tone 총)
+- 30곳 신규 통합 · 15+ 파일 (GeminiParse/SeasonRanges/ProductSearch/NewVendor/OrderManage/OrderHistory/VendorDetail/PurchaseSubTabs/Supplier/StaffManage/Board/MyPage/VendorStock/Reservation/Pharmacist/RequestsPage/StockArrival)
+- 반복 패턴 (Loader2 + span + text-*-600 font-bold) → Spinner label/tone 통일
 
 ## 📜 완료 로그 (2026-08-18)
 
