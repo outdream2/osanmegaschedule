@@ -47,6 +47,7 @@ import {
   Wallet,
   Building2,
 } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { BarcodeScanner } from "../BarcodeScanner";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ZoneCell } from "./ZoneCell";
@@ -2984,7 +2985,7 @@ const VendorManageSplit: React.FC = () => {
           <AccentBar />
           <span className="text-[17px] font-bold text-ink tracking-tight">공급사관리</span>
           <StatusPill tone="brand" size="md">
-            {loading ? <Loader2 size={12} className="animate-spin inline" /> : `${filtered.length}건`}
+            {loading ? <Spinner size={12} tone="brand" className="inline" /> : `${filtered.length}건`}
           </StatusPill>
         </div>
         <div className="flex items-center gap-2">
