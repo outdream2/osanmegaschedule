@@ -7,7 +7,8 @@
 // 왜 분리: 재-OCR 없이 이미 있는 rawText 만 Gemini 로 넘기는 로직은 순수 · 재사용 가능한 단위
 
 import { useState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import axios from "axios";
 import type { OcrPageResult } from "./types";
 
@@ -78,7 +79,7 @@ export function GeminiParseOnlyButton({
       className={`inline-flex items-center justify-center font-bold text-white bg-violet-500 hover:bg-violet-600 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer shadow-sm whitespace-nowrap ${cls}`}
     >
       {loading
-        ? <><Loader2 size={iconSize} className="animate-spin" />Gemini 파싱 중...</>
+        ? <><Spinner size={iconSize} tone="white" />Gemini 파싱 중...</>
         : <><Sparkles size={iconSize} />🪄 Gemini 로 파싱만</>}
     </button>
   );

@@ -16,7 +16,8 @@
 //   - 결과 리스트 · 최대 20건 표시 (스크롤)
 
 import { useEffect, useRef, useState } from "react";
-import { Search, Check, Loader2, Package } from "lucide-react";
+import { Search, Check, Package } from "lucide-react";
+import { Spinner } from "./Spinner";
 import { useProductInfoSearch } from "../../hooks/useProductInfoSearch";
 
 interface ProductSearchInputProps {
@@ -94,7 +95,7 @@ export function ProductSearchInput({
             className={`w-full h-9 pl-8 pr-3 text-[13px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 ${cls.ring} transition placeholder:text-zinc-300`}
           />
           {loading && (
-            <Loader2 size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin text-zinc-400" />
+            <Spinner size={11} tone="zinc" className="absolute right-2.5 top-1/2 -translate-y-1/2" />
           )}
         </div>
         <button

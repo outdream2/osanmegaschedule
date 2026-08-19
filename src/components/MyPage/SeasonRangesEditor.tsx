@@ -3,7 +3,8 @@
 // 봄/여름/가을/겨울 · 각 계절에 해당하는 월(들) 을 체크박스로 편집
 // 저장 시 POST /api/settings/season-ranges (서버측 level>=9 재검증)
 import React, { useEffect, useState } from "react";
-import { Save, Loader2, RotateCcw } from "lucide-react";
+import { Save, RotateCcw } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import {
   DEFAULT_SEASON_RANGES,
   SEASON_EMOJI,
@@ -99,7 +100,7 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
             disabled={saving || loading || !dirty}
             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-sm transition disabled:opacity-40"
           >
-            {saving ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />} 저장
+            {saving ? <Spinner size={10} tone="white" /> : <Save size={10} />} 저장
           </button>
         </div>
       </div>
@@ -110,7 +111,7 @@ export const SeasonRangesEditor: React.FC<Props> = ({ employeeId, onToast }) => 
         </p>
 
         {loading ? (
-          <div className="flex items-center justify-center py-8 text-zinc-400"><Loader2 size={14} className="animate-spin mr-2" />로딩...</div>
+          <div className="flex items-center justify-center py-8"><Spinner size={14} tone="zinc" label="로딩..." /></div>
         ) : (
           <div className="flex flex-col gap-2">
             {SEASONS.map(season => {

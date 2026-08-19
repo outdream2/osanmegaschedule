@@ -9,7 +9,8 @@
 // 2026-08-17 · apiClient 마이그레이션
 import { useState } from "react";
 import { api } from "../../lib/apiClient";
-import { X, Loader2, Building2, Save } from "lucide-react";
+import { X, Building2, Save } from "lucide-react";
+import { Spinner } from "./Spinner";
 import { IconTile } from "./IconTile";
 
 interface NewVendorModalProps {
@@ -217,7 +218,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
             disabled={disabled}
             className="ml-auto h-9 px-4 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-bold shadow-sm inline-flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
           >
-            {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} strokeWidth={2.5} />}
+            {saving ? <Spinner size={13} tone="white" /> : <Save size={13} strokeWidth={2.5} />}
             {saving ? "저장 중..." : "등록"}
           </button>
         </div>
