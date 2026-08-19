@@ -4,6 +4,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { X, Loader2, Layers, PieChart } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { getProductsMap } from "../../lib/productsCache";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
@@ -489,8 +490,8 @@ const ZoneCategoryContent: React.FC = () => {
           style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? categoryPanelWidth : undefined }}
         >
           {loading && grouped.length > 0 && (
-            <div className="flex items-center justify-center gap-1.5 text-[14px] text-violet-600 font-bold py-1.5 mb-1 bg-violet-50 border border-violet-200 rounded-md sticky top-0 z-10">
-              <Loader2 size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
+            <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-violet-50 border border-violet-200 rounded-md sticky top-0 z-10">
+              <Spinner size={11} tone="violet" label="조건 변경 · 새로 불러오는 중..." labelSize={14} />
             </div>
           )}
           {loading && grouped.length === 0 ? (
