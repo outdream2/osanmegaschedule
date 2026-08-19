@@ -204,8 +204,8 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
 
         {/* 목록 · 재고관리 스타일 통일 (2026-07-16) */}
         {loading && filtered.length > 0 && (
-          <div className="flex items-center justify-center gap-1.5 text-[14px] text-brand-deep font-bold py-1.5 mb-1 bg-brand-tint border border-brand/15 rounded-md sticky top-0 z-10">
-            <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
+          <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-brand-tint border border-brand/15 rounded-md sticky top-0 z-10">
+            <Spinner size={11} tone="brand" label="새로 불러오는 중..." labelSize={14} />
           </div>
         )}
         {loading && filtered.length === 0 ? (
@@ -677,7 +677,7 @@ function ComposerModal({
               <span className="text-[15px] text-zinc-400">{images.length}/8</span>
               {uploading && uploadProgress && (
                 <span className="text-[15px] font-bold text-orange-500 flex items-center gap-1">
-                  <Loader2 size={11} className="animate-spin" /> {uploadProgress.done}/{uploadProgress.total} 업로드 중
+                  <Spinner size={11} tone="amber" /> {uploadProgress.done}/{uploadProgress.total} 업로드 중
                 </span>
               )}
               <input ref={fileRef} type="file" accept="image/*" multiple capture="environment" className="hidden"

@@ -2093,8 +2093,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                     · 2026-08-05 · 사용자 요청 · 활성 계약 강조 · PDF 링크 · 계약기간·유형 배지 */}
                 <SectionCard title="계약 이력" icon={<FileText size={11} />} group="work" defaultOpen>
                   {contractHistoryLoading ? (
-                    <div className="flex items-center justify-center py-4 text-zinc-400 text-[15px] font-semibold gap-1.5">
-                      <Loader2 size={12} className="animate-spin" />불러오는 중...
+                    <div className="flex items-center justify-center py-4">
+                      <Spinner size={12} tone="zinc" label="불러오는 중..." labelSize={15} />
                     </div>
                   ) : contractHistoryError ? (
                     <div className="text-[15px] text-rose-600 font-semibold bg-rose-50 border border-rose-200 rounded-md px-2 py-1.5">
@@ -2397,8 +2397,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                               {leaveError}
                             </div>
                           ) : leaveLoading ? (
-                            <div className="flex items-center gap-1.5 text-[15px] text-zinc-400 py-2">
-                              <Loader2 size={11} className="animate-spin" /> 불러오는 중...
+                            <div className="flex items-center py-2">
+                              <Spinner size={11} tone="zinc" label="불러오는 중..." labelSize={15} />
                             </div>
                           ) : usedLeaves.length === 0 ? (
                             <EmptyRow label={`${leaveYear}년 사용한 연차가 없습니다`} />
