@@ -17,6 +17,7 @@ import {
   Sparkles, ShieldCheck, Package, RefreshCw, X,
 } from "lucide-react";
 import { StatusPill } from "../common/StatusPill";
+import { Card } from "../common/Card";
 import { BarcodeScanner } from "../BarcodeScanner";
 import { loadZBar } from "../BarcodeScanner/zbar";
 import {
@@ -850,7 +851,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
           </div>
 
           {/* 리스트 카드 */}
-          <div className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
+          <Card clip padding="none">
             {arrivalsLoading && arrivals.length === 0 ? (
               <div className="py-12 flex items-center justify-center"><Spinner tone="zinc" size={16} label="불러오는 중..." labelSize={15} /></div>
             ) : arrivals.length === 0 ? (
@@ -918,7 +919,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 </table>
               </div>
             )}
-          </div>
+          </Card>
         </main>
       )}
 
