@@ -33,6 +33,7 @@ import SignaturePad from "react-signature-canvas";
 // 2026-08-12 · 공통 SplitPanel · 좌우 폭 드래그 조절
 import SplitPanel from "../common/SplitPanel";
 import { AccentBar } from "../common/AccentBar";
+import { Card } from "../common/Card";
 import html2canvas from "html2canvas-pro"; // 2026-08-04 · Tailwind v4 oklch 지원 · drop-in 교체
 import jsPDF from "jspdf";
 
@@ -876,7 +877,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
           wrapLeft={false}
           wrapRight={false}
           left={
-          <section className="bg-white border border-line rounded-xl shadow-sm p-4 sm:p-5 flex flex-col gap-4 order-2 lg:order-1">
+          <Card as="section" padding="none" className="p-4 sm:p-5 flex flex-col gap-4 order-2 lg:order-1">
             {/* 섹션 헤더 */}
             <div className="flex items-center gap-2.5 pb-3 border-b border-line">
               <AccentBar h={17} />
@@ -1179,7 +1180,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
                 제출 시 관리자에게 알림이 전송되며, 승인 시 자동으로 퇴사일이 반영됩니다.
               </p>
             </div>
-          </section>
+          </Card>
           }
           right={
           <section className="order-1 lg:order-2 flex flex-col gap-3">
