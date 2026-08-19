@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useZxing } from "react-zxing";
-import { X, ScanLine, Zap, ImageIcon, Info, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
-import { IosInstallGuide } from "../common/IosInstallGuide";
+import { X, ScanLine, Zap, ImageIcon, Info, ChevronDown, ChevronUp } from "lucide-react";
 
 const isAndroid = /android/i.test(navigator.userAgent);
 const isDesktop = !/android|iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -44,8 +43,6 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   const [camError, setCamError] = useState<string>("");
   const [diagOpen, setDiagOpen] = useState<boolean>(false);
   const [videoState, setVideoState] = useState<string>("init");
-  // 2026-08-19 · iOS 웹앱 · 정식 PWA 아닌 홈화면 바로가기 감지 시 · 자동 재설치 안내
-  const [showInstallGuide, setShowInstallGuide] = useState<boolean>(false);
 
   // handleResultRef: resolves circular dep between useZxing() (needs callback)
   // and handleResult (needs videoRef from useZxing return). useZxing's
@@ -272,36 +269,11 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   const hasMD = typeof navigator !== "undefined" && !!(navigator as any).mediaDevices;
   const hasGUM = hasMD && !!(navigator as any).mediaDevices.getUserMedia;
 
-  // 2026-08-19 · iOS 웹앱 정식 PWA 아닌 SFSafariViewController 컨텍스트 자동 감지
-  //   · ios + !safari + !standalone + !inApp + !mediaDevices = 홈화면 바로가기 (WebKit Bug 185448)
-  //   · 마운트 즉시 감지 · 카메라 시도 전에 재설치 안내 표시
-  useEffect(() => {
-    if (ios && !isSafariMain && !standaloneFlag && !inApp && !hasMD) {
-      setShowInstallGuide(true);
-    }
-  }, [ios, isSafariMain, standaloneFlag, inApp, hasMD]);
-
   return (
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 backdrop-blur-md p-4"
       onClick={onClose}
     >
-      {/* 2026-08-19 · iOS 웹앱 SFSafariViewController 자동 감지 · 정식 PWA 재설치 안내 · z-70 (스캐너 위) */}
-      {showInstallGuide && (
-        <div onClick={(e) => e.stopPropagation()}>
-          <IosInstallGuide
-            onClose={() => setShowInstallGuide(false)}
-            diagnostic={{
-              url: typeof window !== "undefined" ? window.location.host : "?",
-              mediaDevices: hasMD,
-              getUserMedia: hasGUM,
-              standalone: standaloneFlag,
-              inApp,
-              ua,
-            }}
-          />
-        </div>
-      )}
       <div
         className="bg-zinc-950 rounded-3xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.65)] w-full max-w-sm ring-1 ring-white/10"
         onClick={(e) => e.stopPropagation()}
@@ -322,16 +294,6 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
               {state.quaggaReady && <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.7)]" />}
               {state.ocrReady && <div className="w-1.5 h-1.5 rounded-full bg-fuchsia-400 shadow-[0_0_6px_rgba(232,121,249,0.7)]" />}
             </div>
-            {/* iOS 웹앱 · 정식 PWA 아닌 경우 · 재설치 안내 열기 */}
-            {ios && !isSafariMain && !standaloneFlag && !inApp && (
-              <button
-                onClick={() => setShowInstallGuide(true)}
-                title="iOS 정식 웹앱 재설치 안내 · 카메라 활성화"
-                className="w-8 h-8 rounded-lg text-amber-300 hover:text-amber-200 hover:bg-amber-500/10 ring-1 ring-amber-400/40 transition flex items-center justify-center cursor-pointer animate-pulse"
-              >
-                <AlertTriangle size={16} />
-              </button>
-            )}
             <button
               onClick={() => state.imageInputRef.current?.click()}
               title="갤러리에서 이미지 선택"
