@@ -835,8 +835,8 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 </div>
               )}
               {orderLoading && orderReqs.length > 0 && (
-                <div className="flex items-center justify-center gap-1.5 text-[14px] text-red-600 font-bold py-1.5 mb-1 bg-red-50 border border-red-200 rounded-md sticky top-0 z-10">
-                  <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
+                <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-red-50 border border-red-200 rounded-md sticky top-0 z-10">
+                  <Spinner size={11} tone="red" label="새로 불러오는 중..." labelSize={14} />
                 </div>
               )}
               {orderLoading && orderReqs.length === 0 ? (
@@ -886,8 +886,8 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 </div>
               )}
               {productsLoading && lowStock.length > 0 && (
-                <div className="flex items-center justify-center gap-1.5 text-[14px] text-red-600 font-bold py-1.5 mb-1 bg-red-50 border border-red-200 rounded-md sticky top-0 z-10">
-                  <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
+                <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-red-50 border border-red-200 rounded-md sticky top-0 z-10">
+                  <Spinner size={11} tone="red" label="새로 불러오는 중..." labelSize={14} />
                 </div>
               )}
               {productsLoading && lowStock.length === 0 ? (
@@ -950,8 +950,8 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               onRefresh={loadMismatches} loading={mismatchLoading} accentColor="text-orange-600"
             />
             {mismatchLoading && mismatches.length > 0 && (
-              <div className="flex items-center justify-center gap-1.5 text-[14px] text-orange-600 font-bold py-1.5 mb-1 bg-orange-50 border border-orange-200 rounded-md sticky top-0 z-10">
-                <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
+              <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-orange-50 border border-orange-200 rounded-md sticky top-0 z-10">
+                <Spinner size={11} tone="orange" label="새로 불러오는 중..." labelSize={14} />
               </div>
             )}
             {mismatchLoading && mismatches.length === 0 ? (
@@ -1027,8 +1027,8 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               onRefresh={loadInventoryChecks} loading={inventoryLoading} accentColor="text-purple-600"
             />
             {inventoryLoading && inventoryChecks.length > 0 && (
-              <div className="flex items-center justify-center gap-1.5 text-[14px] text-purple-600 font-bold py-1.5 mb-1 bg-purple-50 border border-purple-200 rounded-md sticky top-0 z-10">
-                <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
+              <div className="flex items-center justify-center gap-1.5 py-1.5 mb-1 bg-purple-50 border border-purple-200 rounded-md sticky top-0 z-10">
+                <Spinner size={11} tone="violet" label="새로 불러오는 중..." labelSize={14} />
               </div>
             )}
             {inventoryLoading && inventoryChecks.length === 0 ? (

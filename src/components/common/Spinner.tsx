@@ -11,7 +11,7 @@
 
 import { Loader2 } from "lucide-react";
 
-export type SpinnerTone = "brand" | "emerald" | "amber" | "rose" | "sky" | "zinc" | "white";
+export type SpinnerTone = "brand" | "emerald" | "amber" | "rose" | "sky" | "zinc" | "white" | "orange" | "violet" | "red";
 
 const TONE_CLS: Record<SpinnerTone, string> = {
   brand:   "text-brand-deep",
@@ -21,6 +21,9 @@ const TONE_CLS: Record<SpinnerTone, string> = {
   sky:     "text-sky-600",
   zinc:    "text-zinc-400",
   white:   "text-white",
+  orange:  "text-orange-600",
+  violet:  "text-violet-600",
+  red:     "text-red-600",
 };
 
 export interface SpinnerProps {
