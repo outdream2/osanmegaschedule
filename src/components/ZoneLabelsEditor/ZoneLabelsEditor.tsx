@@ -473,7 +473,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
           disabled={!canSave}
           className={SET_BTN_PRIMARY}
         >
-          {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+          {saving ? <Spinner size={13} tone="white" /> : <Save size={13} />}
           {saving ? "저장 중..." : "저장"}
         </button>
       </div>
