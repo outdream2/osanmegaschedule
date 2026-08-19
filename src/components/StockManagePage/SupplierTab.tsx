@@ -7,6 +7,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { api } from "../../lib/apiClient";
 import { useVendors } from "../../hooks/useVendors";
 import { Building2, Loader2 as LoaderIcon, ChevronRight, ChevronDown, X as XIcon } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";
@@ -449,8 +450,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
       {/* 테이블 영역 */}
       <div className="relative flex-1 overflow-auto">
         {loading && xlsxSuppliers.length > 0 && (
-          <div className="flex items-center justify-center gap-1.5 text-[14px] text-sky-700 font-semibold py-1.5 mx-3 mt-2 bg-sky-50 border border-sky-200 rounded-md">
-            <LoaderIcon size={12} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
+          <div className="flex items-center justify-center gap-1.5 py-1.5 mx-3 mt-2 bg-sky-50 border border-sky-200 rounded-md">
+            <Spinner size={12} tone="sky" label="조건 변경 · 새로 불러오는 중..." labelSize={14} />
           </div>
         )}
         {xlsxSuppliers.length === 0 ? (
@@ -870,7 +871,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
                 const key = `${supplierSelectedObj.supplier_code ?? "-"}::${supplierSelectedObj.supplier}`;
                 const rows = supplierRowsMap[key];
                 const isLoading = supplierRowsLoading.has(key);
-                if (isLoading) return <div className="flex items-center gap-2 text-[15px] text-zinc-400 py-4"><LoaderIcon size={12} className="animate-spin" />상품 로드 중...</div>;
+                if (isLoading) return <div className="flex items-center gap-2 py-4"><Spinner size={12} tone="zinc" label="상품 로드 중..." labelSize={15} /></div>;
                 if (!rows) return <div className="text-[15px] text-zinc-400 py-4">공급사를 클릭하면 상품 리스트가 로드됩니다</div>;
                 if (rows.length === 0) return <div className="text-[15px] text-zinc-400 py-4">상품 데이터 없음</div>;
                 const supDetailArrow = (k: SupDetailSortKey) => supDetailSort.key === k ? (supDetailSort.dir === "desc" ? " ▼" : " ▲") : " ⇅";

@@ -29,8 +29,8 @@ const ScanPage = React.lazy(() => import("../ScanPage/ScanPage").then(m => ({ de
 const ProductArrivalPage = React.lazy(() => import("../ProductArrivalPage/ProductArrivalPage").then(m => ({ default: m.ProductArrivalPage })));
 
 const SubTabFallback = () => (
-  <div className="flex-1 flex items-center justify-center text-zinc-400 text-xs py-16">
-    <Loader2 className="animate-spin mr-2" size={14} />로딩 중...
+  <div className="flex-1 flex items-center justify-center py-16">
+    <Spinner size={14} tone="zinc" label="로딩 중..." labelSize={12} />
   </div>
 );
 import type { AuthSession } from "../../types";
@@ -1816,7 +1816,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         {!lowStockCollapsed && (<>
         {productsLoading && lowStock.length > 0 && (
           <div className="flex items-center justify-center gap-1.5 py-1.5 mx-3 mb-1 bg-sky-50 border border-sky-200 rounded-md shrink-0">
-            <Loader2 size={11} className="animate-spin text-sky-600" /><span className="text-[14px] font-bold text-sky-700">조건 변경 · 새로 불러오는 중...</span>
+            <Spinner size={11} tone="sky" label="조건 변경 · 새로 불러오는 중..." labelSize={14} />
           </div>
         )}
         {productsLoading && lowStock.length === 0 ? (
@@ -2447,7 +2447,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         )}
         {orderLoading && orderReqs.length > 0 && (
           <div className="flex items-center justify-center gap-1.5 py-1.5 mx-3 mb-1 bg-sky-50 border border-sky-200 rounded-md shrink-0">
-            <Loader2 size={11} className="animate-spin text-sky-600" /><span className="text-[14px] font-bold text-sky-700">조건 변경 · 새로 불러오는 중...</span>
+            <Spinner size={11} tone="sky" label="조건 변경 · 새로 불러오는 중..." labelSize={14} />
           </div>
         )}
         {orderLoading && orderReqs.length === 0 ? (
@@ -3072,7 +3072,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             </div>
             <div className="flex-1 overflow-y-auto p-4 bg-zinc-50">
               {detailLoading ? (
-                <div className="flex justify-center py-8"><Loader2 size={20} className="animate-spin text-zinc-400" /></div>
+                <div className="flex justify-center py-8"><Spinner size={20} tone="zinc" /></div>
               ) : detailError ? (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
                   <div className="font-bold mb-1">❌ 조회 실패</div>
