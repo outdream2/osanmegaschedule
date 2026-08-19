@@ -319,7 +319,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
             {/* 건수 */}
             <span className="text-[11px] text-zinc-400 tabular-nums whitespace-nowrap shrink-0">
               {loading
-                ? <span className="inline-flex items-center gap-1"><Loader2 size={10} className="animate-spin" /></span>
+                ? <Spinner size={10} tone="zinc" />
                 : `${filtered.length}건`}
             </span>
             <button
@@ -389,7 +389,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
           {/* 2026-08-09 · 사업자번호 미등록 필터 · 사용자 요청 · 제거 */}
           <span className="text-[12px] text-zinc-400 tabular-nums">
             {loading
-              ? <span className="inline-flex items-center gap-1"><Loader2 size={11} className="animate-spin" />로딩...</span>
+              ? <Spinner size={11} tone="zinc" label="로딩..." labelSize={12} />
               : `${filtered.length} / ${vendors.length}건`}
           </span>
           {/* 2026-08-09 · 신규 공급사 등록 · 사용자 요청 · dashboard/일반 모드 */}
