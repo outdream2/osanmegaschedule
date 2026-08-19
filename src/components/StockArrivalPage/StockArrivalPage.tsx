@@ -354,8 +354,8 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
         {/* ── 리스트 ──────────────────────────────────────────────────────── */}
         <div className="bg-white border border-line rounded-xl overflow-hidden shadow-sm">
           {loading && arrivals.length > 0 && (
-            <div className="flex items-center justify-center gap-1.5 text-[14px] text-emerald-600 font-bold py-1.5 bg-emerald-50 border-b border-emerald-100 sticky top-0 z-10">
-              <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
+            <div className="flex items-center justify-center gap-1.5 py-1.5 bg-emerald-50 border-b border-emerald-100 sticky top-0 z-10">
+              <Spinner size={11} tone="emerald" label="새로 불러오는 중..." labelSize={14} />
             </div>
           )}
           {loading && arrivals.length === 0 && (
