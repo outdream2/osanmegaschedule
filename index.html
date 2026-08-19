@@ -5,6 +5,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>오산메가타운 관리시스템</title>
+
+  <!-- PWA · 웹앱 안에서 카메라 사용 위한 정식 PWA 등록 (WebKit Bug 185448 우회) -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#10b981" />
+
+  <!-- iOS · 홈화면 웹앱 · standalone 모드 (iOS 17.4+ 카메라 지원) -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="오산메가" />
+  <link rel="apple-touch-icon" href="/logo.png" />
+  <link rel="icon" type="image/png" href="/logo.png" />
 </head>
 
 <body>
