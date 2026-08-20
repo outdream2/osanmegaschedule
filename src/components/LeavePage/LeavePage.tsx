@@ -11,6 +11,7 @@ import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { StatusPill, type PillTone } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
 import { Spinner } from "../common/Spinner";
+import { Card } from "../common/Card";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 
 interface LeaveRequest {
@@ -246,7 +247,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
 
             {/* 신청 폼 */}
             {showForm && (
-              <div className="bg-white border border-line rounded-xl p-4 shadow-sm">
+              <Card>
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-xs font-bold text-zinc-800">신규 휴가 신청</p>
                   <button onClick={() => { setShowForm(false); setSubmitError(null); }} className="text-zinc-400 hover:text-zinc-700 cursor-pointer"><X size={17} /></button>
@@ -321,7 +322,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                     {submitting ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /><span>신청 중...</span></> : "신청 제출"}
                   </button>
                 </form>
-              </div>
+              </Card>
             )}
 
             {/* 내 신청 내역 · 최신 트렌드 · accent bar + brand-deep */}
