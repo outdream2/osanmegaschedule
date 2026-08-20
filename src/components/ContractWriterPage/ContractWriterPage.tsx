@@ -5266,7 +5266,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         </button>
       </div>
 
-      <div className="bg-white border border-line rounded-xl p-2 sm:p-3">
+      <Card variant="flat" padding="none" className="p-2 sm:p-3">
         <ContractPreview
           ref={previewRef}
           form={form}
@@ -5277,10 +5277,10 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           onClearSign={clearSign}
           paymentDayText={paymentDayText}
         />
-      </div>
+      </Card>
 
       {/* 완료 버튼 (하단 유지 · 서명 pad 섹션 제거) */}
-      <div className="bg-white border border-line rounded-xl shadow-sm p-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+      <Card padding="sm" className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         <div className="flex-1 flex flex-col gap-1">
           <button type="button" onClick={handleApproveAndSave} disabled={generating || !canApprove}
             className={`inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-white text-[14px] font-bold shadow-md transition-all cursor-pointer disabled:cursor-not-allowed
@@ -5325,7 +5325,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             </button>
           );
         })()}
-      </div>
+      </Card>
     </section>
   );
 
