@@ -1,6 +1,6 @@
 # TASKS
 
-> 2026-08-20 (밤) · Unit test **2274 tests · 163 files** · #177 상품등록 페이지 대기 (매장>매입) · payroll/contract/stock 테스트 197개 확산
+> 2026-08-20 (밤) · Unit test **2274 tests · 163 files** · #177 상품등록 페이지 대기 (매장>매입) · payroll/contract/stock 테스트 197개 확산 · MENU_STRUCTURE 10차 업데이트 완료 (Card 36곳+ · #177/#178 계획 등록)
 > 2026-08-20 (저녁) · Unit test **2077 tests · 155 files** · **2000 돌파 🎉🎉🎉** · #175 완료 (퇴사예정 3-state 파생·사이드바 gate) · #174 완료 (종 아이콘 compact) · 병렬 3-에이전트 (sideNav gate + common 재분류 리서치 + server routes 순수 테스트 124개)
 > 2026-08-20 · Unit test **1775 tests · 137 files** (2026-08-19 424 → 20일 1775 · **1350+ 신규**) · 모바일 가시성 탭 이관 (회사·브랜드 → 메뉴 설정)
 > 2026-08-19 · Unit test 대량 확산 (150→424) · Spinner 30곳 · 정식 PWA 설정 · BarcodeScanner 로직 복원 + UI 재디자인

@@ -434,6 +434,17 @@ import { TEXT, BUTTON_PRIMARY, CARD_BASE } from "@/styles/tokens";
 |---------|-----|
 | `NotificationBell` | `compact` prop 추가 (하위호환) · SideNav 에서 compact=true → w-7 h-7 · rounded-md · shadow 제거 (`31f5d29` · #174) |
 
+### 10-8. Card 프리미티브 (2026-08-19 신규 · 2026-08-20 밤 확산)
+
+| 항목 | 내용 |
+|-----|-----|
+| 파일 | `src/components/common/Card.tsx` |
+| Props | `variant` · `padding` · `rounded` · `clip` · `as` · `onClick` |
+| 테스트 | 29 tests |
+| 누적 확산 | **36곳+** (2026-08-20 밤 기준) |
+| 확산 대상 | Stock / Landing / Lunch / ContractSettings / HrForms / Resignation / ProductArrival / OrderManage / Display / ContractWriter / Requests / PharmacistMenu / ReturnList / ScanInfo (초기 20곳 · 2026-08-19) + OcrPage 8곳 · BrandingSettingsPage 4곳 · ContractWriterPage 2곳 · EmployeeProfileCard 1곳 · ProductArrivalPage 1곳 (2026-08-20 밤 · 16곳 추가) |
+| 스킵 케이스 | dropdown popover · input 래퍼 · 적합하지 않은 케이스 문서화 |
+
 ### 10-5. 사용 원칙
 
 1. **먼저 검색**: 새 UI 만들기 전 · `src/components/common/` 부터 확인
@@ -1318,6 +1329,36 @@ npm run test        # vitest (필요 시)
 ---
 
 ## CHANGELOG · 변경 이력
+
+### 2026-08-20 밤 (10차 · Card 확산 16곳 · LandingPage 색상 통일 · #177/#178 신규 · 2274 tests)
+
+**요약**: Card 프리미티브 OcrPage·BrandingSettingsPage·ContractWriterPage·EmployeeProfileCard·ProductArrivalPage 에 16곳 추가 (누적 36곳+) · LandingPage 오늘 현황 카드 색상 blue 단일 통일 · 공급사 스키마 확장 #178 및 상품등록 페이지 #177 계획 등록 · unit test 2274 tests · 163 files 달성.
+
+#### Card 프리미티브 확산 (총 36곳+)
+- `OcrPage` 8곳 (`10a0947`) · `BrandingSettingsPage` 4곳 (`5009cef`) · `ContractWriterPage` 2곳 (`43bd7c0`) · `EmployeeProfileCard` 1곳 (`dcdfc46`) · `ProductArrivalPage` 1곳 (`744d9b4`)
+- 이번 세션 16곳 추가 · 이전 20곳 + 이번 16곳 = **36곳+** 누적
+- 스킵 케이스 문서화 · dropdown popover · input · 적합하지 않은 래퍼는 Card 미적용
+
+#### LandingPage · 오늘 현황 카드 색상 통일 (`c3d7e9d`)
+- 오늘 현황 카드 점(dot) 색상 · amber/sky/rose/emerald 다색 → **blue 단일** 통일
+- 구조 변경 없음 · className 만 변경
+
+#### #178 · 공급사 스키마 확장 계획 (신규 등록 · 2026-08-20 · 구현 대기)
+- 원본: `src/sample/메가타운약국공급사관리정보.xlsx` · 57 시트 · 52 vendor
+- DB 신규 컬럼 계획 · `vendors` 테이블 ALTER: `order_method` · `region` · `invoice_method` · `login_credentials` · `special_notes`
+- DB 신규 테이블 계획 · `vendor_order_templates` (기본 주문 템플릿)
+- Phase A~E 계획만 · 구현 미착수 · 사용자 결정 대기
+
+#### #177 · 상품 등록 페이지 계획 (신규 등록 · 2026-08-20 · 스펙 확정 대기)
+- 매장 > 매입 서브탭에 "상품등록" 서브탭 추가 예정
+- `products` 테이블 INSERT · 기존 컬럼 재사용 · 파생컬럼 X
+- 스펙 (필드셋·최소권한·중복검사·스캔연동) 확정 후 구현 착수
+
+#### Unit test 2274 달성 (2026-08-20 밤 · 다중 커밋)
+- payroll (5 파일 · 113 tests) · contract lib · stock utils · server routes 확산
+- 163 파일 · 100% pass
+
+---
 
 ### 2026-08-20 (9차 · 고용상태 3-state · 사이드바 gate · 모바일가시성 이관 · #172/#174/#175)
 
