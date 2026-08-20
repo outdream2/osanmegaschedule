@@ -48,6 +48,7 @@ import {
   Building2,
 } from "lucide-react";
 import { Spinner } from "../common/Spinner";
+import { Card } from "../common/Card";
 import { BarcodeScanner } from "../BarcodeScanner";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ZoneCell } from "./ZoneCell";
@@ -1782,7 +1783,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   return "bg-amber-800 text-white";
                 };
                 return (
-                  <div className="sm:hidden bg-white border border-line rounded-xl overflow-hidden mb-2">
+                  <Card clip padding="none" className="sm:hidden mb-2">
                     <div className="px-3 py-2 border-b border-zinc-100 bg-zinc-50 flex items-center gap-2">
                       <span className="text-lg">📋</span>
                       <span className="text-[13px] font-bold text-zinc-700">구역 리스트</span>
@@ -1866,7 +1867,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                           );
                         })}
                     </ul>
-                  </div>
+                  </Card>
                 );
               })()}
 
