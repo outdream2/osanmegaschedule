@@ -23,6 +23,11 @@ export default defineConfig({
       // 2026-08-20 · layout · pure helpers (sideNavGroups) + tsx (BottomNav)
       "src/components/layout/**/*.test.ts",
       "src/components/layout/**/*.test.tsx",
+      // 2026-08-20 · 페이지 · 로컬 pure helpers (utils / handlers)
+      "src/components/DayTimelineModal/**/*.test.ts",
+      "src/components/DayTimelineModal/**/*.test.tsx",
+      "src/components/OcrPage/**/*.test.ts",
+      "src/components/OcrPage/**/*.test.tsx",
     ],
     globals: false,
     environment: "node", // 기본 · jsdom 은 파일별 지시자 opt-in
