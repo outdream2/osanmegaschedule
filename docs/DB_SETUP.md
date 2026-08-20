@@ -2,6 +2,7 @@
 
 > **목적**: 신규 Supabase 프로젝트 · DB 스키마 셋업 안내
 > **범위**: 40개 테이블 · 49개 SQL 마이그레이션 · 실행 순서
+> **최종 업데이트**: 2026-08-20 · #178 계획 컬럼 추가 반영
 
 ---
 
@@ -66,7 +67,7 @@
 | stock_reconciliation_sessions/items | migrations/audit-fix.sql |
 | supplier_balance_configs | supabase/migrations/20260705_schema_sync.sql |
 | supplier_balances | migrations/audit-fix.sql (또는 20260706_missing_schema.sql) |
-| vendors | migrations/create_vendors.sql (또는 20260705_schema_sync.sql) |
+| vendors | migrations/create_vendors.sql (또는 20260705_schema_sync.sql) · **#178 계획**: ALTER 5컬럼 (order_method·region·invoice_method·login_credentials·special_notes) + vendor_order_templates 신규 (미착수 · 사용자 결정 대기) |
 | zone_dow_templates | supabase/migrations/20260705_schema_sync.sql |
 | zone_day_assignments | supabase/migrations/20260706_missing_schema.sql |
 | zone_labels | migrations/create_zone_labels_2026-08-05.sql |

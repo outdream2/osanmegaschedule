@@ -18,7 +18,7 @@
 ## 목차
 
 - [Primitives](#primitives) · Pure framework · tone/size prop
-  - [StatusPill](#statuspill) · [CategoryChips](#categorychips) · [KpiCard](#kpicard) · [CollapseCard](#collapsecard) · [BottomSheet](#bottomsheet) · [Button](#button) · [IconButton](#iconbutton) · [Modal · ConfirmDialog](#modal) · [Panel](#panel)
+  - [Card](#card) · [StatusPill](#statuspill) · [CategoryChips](#categorychips) · [KpiCard](#kpicard) · [CollapseCard](#collapsecard) · [BottomSheet](#bottomsheet) · [Button](#button) · [IconButton](#iconbutton) · [Modal · ConfirmDialog](#modal) · [Panel](#panel)
 - [Layout & Shell](#layout)
   - [Hero](#hero) · [PageToolbar](#pagetoolbar) · [PageHeader](#pageheader) · [TabBar](#tabbar) · [SectionLabel](#sectionlabel) · [MiniCard](#minicard) · [SplitPanel](#splitpanel) · [SettingsPageShell](#settingspageshell)
 - [Form & Filter](#form-filter)
@@ -37,6 +37,27 @@
 
 <a name="primitives"></a>
 # Primitives
+
+<a name="card"></a>
+## Card
+
+범용 카드 컨테이너 프리미티브 · **36곳+ 확산** (2026-08-19~20 신규 · 29 tests)
+
+```tsx
+import { Card } from "@/components/common/Card";
+
+<Card>기본 카드</Card>
+<Card variant="outlined" padding="lg">테두리 카드</Card>
+<Card as="article" clip rounded="xl" onClick={onSelect}>클릭 가능 카드</Card>
+```
+
+**Props**: `variant` (default·outlined·ghost) · `padding` (none·sm·md·lg) · `rounded` (sm·md·lg·xl) · `clip` · `as` · `onClick` · `className`
+
+**확산**: OcrPage 8곳 · BrandingSettingsPage 4곳 · ContractWriterPage 2곳 · EmployeeProfileCard · ProductArrivalPage · Stock/Landing/Lunch/ContractSettings/HrForms/Resignation/OrderManage/Display/Requests/PharmacistMenu/ReturnList/ScanInfo
+
+**교체 대상**: `<div className="bg-white rounded-xl border border-zinc-200 shadow-sm">` 반복 패턴
+
+---
 
 <a name="statuspill"></a>
 ## StatusPill
@@ -227,7 +248,7 @@ import { StepperInput } from "@/components/common/StepperInput";
 <a name="spinner"></a>
 ## Spinner
 
-Loader2 wrapper + 라벨 · 인라인 로딩 인디케이터 (30+ 곳 통합)
+Loader2 wrapper + 라벨 · 인라인 로딩 인디케이터 · **60+곳 통합** (2026-08-19 30곳 + 2026-08-20 22곳)
 
 ```tsx
 import { Spinner } from "@/components/common/Spinner";
@@ -238,9 +259,9 @@ import { Spinner } from "@/components/common/Spinner";
 <Spinner label="로딩 중..." size={13} labelSize={12} tone="zinc" />
 ```
 
-**Tone**: brand · emerald · amber · rose · sky · zinc · white
+**Tone**: brand · emerald · amber · rose · sky · zinc · white · orange · violet · red · teal (11 tone)
 
-**대체 대상**: `<Loader2 className="animate-spin" /> 로딩중...` 55+ 반복 패턴
+**대체 대상**: `<Loader2 className="animate-spin" /> 로딩중...` 60+ 반복 패턴 (완전 제거 목표)
 
 ---
 

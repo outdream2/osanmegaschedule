@@ -23,6 +23,7 @@
    - 3.5 [ErrorBoundary](#35-errorboundary)
    - 3.6 [MenuCard](#36-menucard)
    - 3.7 [employeeCategory + employeeApi + contract lib](#37-도메인-lib)
+   - 3.8 [Card · Spinner 프리미티브](#38-card--spinner-프리미티브)
 4. [마이그레이션 레시피](#4-마이그레이션-레시피)
 5. [안티패턴 · 금지 목록](#5-안티패턴--금지-목록)
 6. [파일 구조 규칙](#6-파일-구조-규칙)
@@ -765,6 +766,77 @@ uploadResignationFile(id: number, file: File): Promise<{ url?: string }>;
 
 **주의** · `updateEmployee` 은 `base` 필수 (전체 필드 병합 후 PUT 서버 계약 맞춤).
 
+---
+
+### 3.8 Card · Spinner 프리미티브
+
+#### Card
+**파일** · `src/components/common/Card.tsx`
+**목적** · 범용 카드 컨테이너 · `div` 를 wrapping 하는 순수 UI 프리미티브.
+
+**Props**
+```ts
+interface CardProps {
+  variant?: "default" | "outlined" | "ghost";
+  padding?: "none" | "sm" | "md" | "lg";
+  rounded?: "sm" | "md" | "lg" | "xl";
+  clip?: boolean;           // overflow-hidden
+  as?: ElementType;         // 기본 "div" · "article" · "section" 등
+  onClick?: () => void;     // 있으면 cursor-pointer + hover 인터랙션
+  className?: string;
+  children: ReactNode;
+}
+```
+
+**사용**
+```tsx
+import { Card } from "@/components/common/Card";
+
+<Card>기본 카드</Card>
+<Card variant="outlined" padding="lg">테두리 카드</Card>
+<Card as="article" clip rounded="xl" onClick={onSelect}>클릭 가능 카드</Card>
+```
+
+**확산 현황** · 36곳+ (2026-08-19~20) · OcrPage(8) · BrandingSettingsPage(4) · ContractWriterPage(2) · Stock/Landing/Lunch/ContractSettings/HrForms/Resignation/ProductArrival/OrderManage/Display/Requests/PharmacistMenu/ReturnList/ScanInfo 등
+**29 tests** · variant × padding × rounded × clip × as × onClick 조합
+
+**교체 대상**: `<div className="bg-white rounded-xl border border-zinc-200 shadow-sm ...">` 반복 패턴 (36곳 통합 완료)
+
+---
+
+#### Spinner
+**파일** · `src/components/common/Spinner.tsx`
+**목적** · Loader2 래퍼 · 인라인 로딩 인디케이터.
+
+**Props**
+```ts
+interface SpinnerProps {
+  size?: number;            // px (기본 14)
+  tone?: SpinnerTone;       // 11 tone (기본 "brand")
+  label?: string;           // 아이콘 + 텍스트
+  labelSize?: number;       // label 폰트 px (기본 12)
+  className?: string;
+}
+type SpinnerTone = "brand" | "emerald" | "amber" | "rose" | "sky" | "zinc"
+                 | "white" | "orange" | "violet" | "red" | "teal";
+```
+
+**사용**
+```tsx
+import { Spinner } from "@/components/common/Spinner";
+
+<Spinner />                                    // 14px · brand-deep
+<Spinner size={16} tone="emerald" />
+<Spinner label="저장 중..." tone="sky" />
+<Spinner label="로딩 중..." size={13} labelSize={12} tone="zinc" />
+```
+
+**확산 현황** · 60+곳 (2026-08-19 30곳 + 2026-08-20 22곳)
+**8 tests**
+**교체 대상**: `<Loader2 className="animate-spin text-*-600" /> <span>로딩중...</span>` 60+ 반복 (완전 제거)
+
+---
+
 #### contract lib
 **파일** · `src/lib/contract/index.ts`
 - `loadContractSettings`, `fetchContractWriterSettings`, `loadContractClauses` 등 순수 로직 300+ 라인 추출
@@ -978,6 +1050,7 @@ src/
   lib/              ← 순수 라이브러리 (employeeApi, employeeCategory, contract, wageGrossUp)
   components/
     common/         ← 공용 컴포넌트 (ErrorBoundary, SettingsPageShell, SplitPanel, EmployeeProfileCard, ProductSearchInput)
+    common/features/← 도메인 특화 공용 컴포넌트 (PurchaseHistoryModal, VendorSearchModal) · Phase A 이동 완료 (2026-08-20)
     LandingPage/    ← 랜딩 (LandingPage, MenuCard, VendorListEditor, VendorStockModal)
     <Page>/         ← 페이지별 폴더 · <Page>.tsx + 하위 컴포넌트
   styles/           ← 디자인 토큰 (tokens.ts)
