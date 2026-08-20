@@ -7,7 +7,7 @@ import React, { useState } from "react";
 import {
   Buildings, User, IdentificationBadge, MapPin, Phone,
   Palette, TextT,
-  AddressBook, Stamp, DeviceMobile,
+  AddressBook, Stamp,
 } from "@phosphor-icons/react";
 import type { AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
@@ -16,8 +16,9 @@ import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { ImageUploadField } from "../common/ImageUploadField";
 import { SettingsPageShell } from "../common/SettingsPageShell";
 import { StatusPill } from "../common/StatusPill";
-// 2026-08-12 · 연락처·도장·모바일 가시성 개별 섹션 (개별 export · 5탭 배치용)
-import { ContactSection, StampsSection, MobileVisibilitySection } from "../BrandingSettingsPage/BrandingSettingsPage";
+// 2026-08-12 · 연락처·도장 개별 섹션 (개별 export · 4탭 배치용)
+// 2026-08-20 · 모바일 가시성 · 메뉴 설정(PermissionsPage) 으로 이관
+import { ContactSection, StampsSection } from "../BrandingSettingsPage/BrandingSettingsPage";
 import {
   SET_SECTION_TITLE, SET_SECTION_DESC,
   SET_LABEL, SET_INPUT, SET_BADGE,
@@ -34,13 +35,12 @@ interface Props {
 const LABEL_CLS = SET_LABEL;
 const INPUT_CLS = SET_INPUT;
 
-type TabKey = "company" | "brand" | "contact" | "stamps" | "mobile";
+type TabKey = "company" | "brand" | "contact" | "stamps";
 const TABS: Array<{ key: TabKey; label: string; Icon: React.ComponentType<any>; color: string }> = [
   { key: "company", label: "회사정보",      Icon: Buildings,    color: "text-indigo-500"  },
   { key: "brand",   label: "브랜드",        Icon: Palette,      color: "text-violet-500"  },
   { key: "contact", label: "연락처·카카오", Icon: AddressBook,  color: "text-sky-500"     },
   { key: "stamps",  label: "도장 매핑",     Icon: Stamp,        color: "text-rose-500"    },
-  { key: "mobile",  label: "모바일 가시성", Icon: DeviceMobile, color: "text-emerald-500" },
 ];
 
 const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, onLogout }) => {
@@ -78,7 +78,7 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
       icon={Buildings}
       iconColor="text-indigo-500"
       title="회사·브랜드"
-      description="근로계약서·사직서·PDF·랜딩·푸터 등에 표시되는 사업장 정보 · 앱 브랜딩 · 연락처 · 도장 · 모바일 가시성을 한 곳에서 관리합니다. 관리자(lv 9) 전용."
+      description="근로계약서·사직서·PDF·랜딩·푸터 등에 표시되는 사업장 정보 · 앱 브랜딩 · 연락처 · 도장을 한 곳에서 관리합니다. 관리자(lv 9) 전용. (모바일 가시성은 '메뉴 설정' 페이지로 이동됨)"
       rightSlot={badgeText && badgeTone ? (
         <StatusPill tone={badgeTone} size="sm" dot pulse={saveState === "saving"}>
           {badgeText}
@@ -219,9 +219,6 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
 
       {/* ── 탭 4 · 도장 매핑 ── */}
       {tab === "stamps"  && <StampsSection  />}
-
-      {/* ── 탭 5 · 모바일 가시성 ── */}
-      {tab === "mobile"  && <MobileVisibilitySection />}
     </SettingsPageShell>
   );
 };

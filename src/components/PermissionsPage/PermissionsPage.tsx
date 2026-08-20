@@ -13,8 +13,9 @@ import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { SettingsPageShell } from "../common/SettingsPageShell";
 import { AccentBar } from "../common/AccentBar";
 import { StatusPill } from "../common/StatusPill";
-import { Lock } from "@phosphor-icons/react";
+import { Lock, DeviceMobile } from "@phosphor-icons/react";
 import { SettingsModal } from "../SettingsModal";
+import { MobileVisibilitySection } from "../BrandingSettingsPage/BrandingSettingsPage";
 import { useSettings } from "../../hooks/useSettings";
 import type { Employee } from "../../types";
 // 2026-08-12 · #99 · 사이드바 그룹 트리 구조 · 페이지 → 그룹 매핑 재사용
@@ -77,8 +78,9 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
   const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());
   const [loadError, setLoadError] = useState<string | null>(null);
   const [tab, setTab] = useState<"permissions" | "app-settings" | "positions" | "construction">("permissions");
-  // 2026-08-16 · 권한 조정 탭 내부 · 서브 탭 (페이지별 설정 vs 직원별 레벨)
-  const [permSubTab, setPermSubTab] = useState<"page" | "employee">("page");
+  // 2026-08-16 · 권한 조정 탭 내부 · 서브 탭 (페이지별 설정 · 직원별 레벨 · 모바일 가시성)
+  // 2026-08-20 · "mobile" 추가 · 회사·브랜드 → 메뉴 설정으로 이관 (페이지별 설정 옆 배치)
+  const [permSubTab, setPermSubTab] = useState<"page" | "employee" | "mobile">("page");
   // 2026-08-11 · 직군 편집 로컬 draft (SettingsModal 이관)
   const [newPositionInput, setNewPositionInput] = useState("");
   const [posDragIdx, setPosDragIdx] = useState<number | null>(null);
@@ -582,6 +584,15 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           >
             <Users size={15} /> 직원별 레벨
           </button>
+          <button
+            type="button"
+            onClick={() => setPermSubTab("mobile")}
+            className={`inline-flex items-center gap-1.5 px-3 h-9 rounded-lg text-[14px] font-semibold transition-colors cursor-pointer ${
+              permSubTab === "mobile" ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"
+            }`}
+          >
+            <DeviceMobile size={15} /> 모바일 가시성
+          </button>
         </div>
 
         {permSubTab === "page" && (<>
@@ -828,6 +839,10 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
           변경 즉시 서버에 저장됩니다. 실패 시 이전 값으로 되돌립니다.
         </p>
         </>)}
+
+        {permSubTab === "mobile" && (
+          <MobileVisibilitySection />
+        )}
         </>)}
 
         {tab === "app-settings" && (
