@@ -18,6 +18,8 @@ export default defineConfig({
       "src/utils/**/*.test.ts",
       // 2026-08-20 · constants (side-effect free lookup) · label/zone maps
       "src/constants/**/*.test.ts",
+      // 2026-08-20 · types · pure defaults + formatters
+      "src/types.test.ts",
     ],
     globals: false,
     environment: "node", // 기본 · jsdom 은 파일별 지시자 opt-in
