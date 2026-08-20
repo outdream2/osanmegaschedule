@@ -42,6 +42,7 @@ import {
   fetchContractWriterSettings,
 } from "../../lib/contract";
 import SplitPanel from "../common/SplitPanel";
+import { Card } from "../common/Card";
 import { EmployeeInfoForm } from "../common/EmployeeInfoForm";
 import { AddressSearchModal } from "../common/AddressSearchModal";
 import { matchHangul } from "../common/hangulSearch";
@@ -5221,7 +5222,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         <DownloadSimple size={16} weight="fill" className="text-indigo-600 rotate-180" />
         <h2 className="text-sm font-bold text-zinc-800">PDF 업로드 안내</h2>
       </div>
-      <div className="bg-white border border-line rounded-xl p-4 flex flex-col gap-2 text-[14px] text-zinc-700 leading-relaxed">
+      <Card variant="flat" className="flex flex-col gap-2 text-[14px] text-zinc-700 leading-relaxed">
         <div className="text-[15px] font-bold text-zinc-800">Google Drive · contract 폴더 저장</div>
         <ol className="list-decimal pl-5 space-y-1">
           <li>왼쪽 폼에서 근로자 성명 · 계약 유형 · 기간을 입력합니다.</li>
@@ -5232,7 +5233,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         <div className="mt-2 rounded-lg bg-indigo-50 border border-indigo-200 px-3 py-2 text-[15px] font-semibold text-indigo-700">
           팁 · [여기서 작성] 으로 전환하면 폼 입력 → 미리보기 → PDF 자동생성 방식으로 계약서를 만듭니다.
         </div>
-      </div>
+      </Card>
     </section>
   ) : (
     <section className="flex flex-col gap-2 h-full overflow-y-auto p-2 bg-zinc-100 rounded-xl">
