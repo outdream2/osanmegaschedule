@@ -517,7 +517,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
             )}
           </div>
         ) : isToday ? (
-          <div className="bg-white border border-line rounded-xl p-5 flex flex-col gap-4 shadow-sm">
+          <Card padding="lg" className="flex flex-col gap-4">
             <p className="text-center text-[19px] font-bold text-ink tracking-tight">오늘 점심 드시나요?</p>
             <p className="text-center text-[14px] text-ink-soft">식사하시면 그냥 두시면 됩니다. 불참일 때만 신청해주세요.</p>
             <textarea value={memo} onChange={e => setMemo(e.target.value)}
@@ -527,7 +527,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
               className="w-full flex items-center justify-center gap-2 py-3.5 rounded-lg text-[17px] font-semibold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white shadow-sm transition-colors cursor-pointer disabled:opacity-40">
               <UtensilsCrossed size={18} /> 점심 불참 신청
             </button>
-          </div>
+          </Card>
         ) : null}
 
         {/* ── 불참 현황 · 최신 트렌드 · accent bar · 폰트 +3 ── */}
