@@ -361,7 +361,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
       {/* ── 내부 서브탭 (2026-08-03 · 상품입고 / 입고내역) ── */}
       <div className="max-w-6xl mx-auto w-full px-3 sm:px-4 lg:px-6 pt-3">
-        <div className="inline-flex bg-white border border-line rounded-xl p-1 shadow-sm">
+        <Card padding="none" className="inline-flex p-1">
           {([
             { k: "input"   as const, label: "상품입고", icon: PackagePlus, color: "sky"    },
             { k: "history" as const, label: "입고내역", icon: Package,     color: "indigo" },
@@ -384,7 +384,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
               </button>
             );
           })}
-        </div>
+        </Card>
       </div>
 
       {/* ── Main layout (arrivalTab === "input") ── */}
