@@ -1,5 +1,6 @@
 # TASKS
 
+> 2026-08-20 (밤 최신) · Unit test **2514 tests · 176 files** · Spinner 22곳 추가 확산 · common/features Phase A (PurchaseHistoryModal·VendorSearchModal 이동) · LandingPage dots revert (대원칙 위반 재확인) · MENU_STRUCTURE 11차 업데이트 완료
 > 2026-08-20 (밤) · Unit test **2274 tests · 163 files** · #177 상품등록 페이지 대기 (매장>매입) · payroll/contract/stock 테스트 197개 확산 · MENU_STRUCTURE 10차 업데이트 완료 (Card 36곳+ · #177/#178 계획 등록)
 > 2026-08-20 (저녁) · Unit test **2077 tests · 155 files** · **2000 돌파 🎉🎉🎉** · #175 완료 (퇴사예정 3-state 파생·사이드바 gate) · #174 완료 (종 아이콘 compact) · 병렬 3-에이전트 (sideNav gate + common 재분류 리서치 + server routes 순수 테스트 124개)
 > 2026-08-20 · Unit test **1775 tests · 137 files** (2026-08-19 424 → 20일 1775 · **1350+ 신규**) · 모바일 가시성 탭 이관 (회사·브랜드 → 메뉴 설정)
@@ -79,7 +80,7 @@
 ### #149 · UI 프레임워크화 남은 작업
 - 🔲 common/ 재분류 · `common/primitives/` vs `common/features/` (구조 리팩터 · 위험 중)
 - 🔲 500+라인 파일 슬림화 · ProductDetailPanel(647) · EmployeeInfoForm(482) · InventoryEditPanel(390) · ContractWriterPage(5,400 · 대형)
-- ✅ **Unit test 대량 확산 v5** · **1775 tests · 137 files** (2026-08-20 세션 · **1625 신규 · 128 test files 신규** · **1700 돌파 🎉🎉** · 모든 Zod schemas + constants + 대부분 hooks + server middleware/routes 테스트 완료)
+- ✅ **Unit test 대량 확산 v5~v7** · **2514 tests · 176 files** (2026-08-20 밤 최신 · 1775→2077→2274→2514 · payroll 5파일 113tests · ocr server routes 대량 확산)
 - 🔲 접근성 audit (aria-* · keyboard nav)
 - 🔲 목업 HTML 파일 · 최신 트렌드로 재생성 (문서 · 위험 낮음)
 
@@ -89,7 +90,7 @@
 - ✅ **StepperInput** · 3 size · brand-deep focus · 13 tests · 2곳
 - ✅ **NotificationToast** · 5 tone · dark frosted · 7 tests · 2곳
 - ✅ **InlineLabel** · 3 size · AccentBar + label · 6 tests · 12곳
-- ✅ **Spinner** · 11 tone (2026-08-19 · orange/violet/red 추가) · label + size · 8 tests · **60+곳 통합** (누적)
+- ✅ **Spinner** · 11 tone (2026-08-19 · orange/violet/red 추가) · label + size · 8 tests · **60+곳 통합** (누적) · 2026-08-20 밤 12 파일 22곳 추가 (`933faf8`~`6cbd628`)
 - ✅ **Modal migration** · 7 파일 (Break/Hidden/PurchaseHistory/ProductPurchase/Ocr balance/SupplierChange/DeleteSynonym)
 - ✅ **BarcodeScanner** · 어제 수정 시작 전 (e1fd6a7 · 2026-08-05) 복원 · UI 재디자인 (Linear/Vercel 톤 · 실시간 진단 오버레이 좌상단 · 로직 완전 유지) · 진단 툴 (URL/mediaDevices/getUserMedia/videoState/UA/에러 실시간 표시)
 - ✅ **정식 PWA 설정 (2026-08-19)** · public/manifest.json + apple-mobile-web-app-capable + apple-touch-icon · iOS 웹앱 카메라 활성화 (WebKit Bug 185448 우회)
@@ -162,6 +163,14 @@
 - #42 · 발주 PDF + 카카오톡 · 사업자등록증 발급 대기 (SolAPI)
 
 ---
+
+## 📜 완료 로그 (2026-08-20 밤)
+
+### #151 Spinner 확산 2차 · common/features Phase A · Revert 교훈 (2026-08-20 밤)
+- Spinner · 12 파일 22곳 추가 (`933faf8`~`6cbd628`) · MyPage/HiddenManagerModal/RequestsPage/VendorListEditor/SalesTrendPage/ReturnListPanel/PurchaseHistoryTab/PaymentInfoTab/StockActionsCell/LossHistoryTab/PurchaseHistoryList/StaffManagePage
+- common/features 신설 · PurchaseHistoryModal 이동 (`9a15774`) · VendorSearchModal 이동 (`933faf8`) · Phase A 완료
+- LandingPage dots 색상 통일 revert · `c3d7e9d` 지시 없는 UI → `b2634ee` 즉시 복원 · feedback_only_instructed 원칙 재확인
+- Unit test 2514 tests · 176 files 달성 (payroll 113 + ocr routes 130+ 확산)
 
 ## 📜 완료 로그 (2026-08-20)
 
