@@ -59,6 +59,8 @@ import { StatusPill } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
 import { InlineLabel } from "../common/InlineLabel";
 import { Spinner } from "../common/Spinner";
+// 2026-08-20 · #175 · 3-state 파생
+import { getEmploymentStatus } from "../../lib/employmentStatus";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 interface Employee {
@@ -671,7 +673,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
   const [error, setError]       = useState<string | null>(null);
   const [search, setSearch]     = useState("");
   const [filterPosition, setFilterPosition] = useState<string>("");
-  const [filterStatus, setFilterStatus] = useState<"active" | "retired" | "all">("active");
+  // 2026-08-20 · #175 · 3-state · 퇴사예정 필터 추가
+  const [filterStatus, setFilterStatus] = useState<"active" | "pending_resignation" | "retired" | "all">("active");
 
   // 좌측 리스트 폭 (px) · useResizablePanel 훅 (god-phase1)
   const { width: listWidth, startResize: startResizeList, isDesktop } = useResizablePanel({
@@ -854,12 +857,11 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
 
   // deleteUsedLeave → useLeaveManager 훅 (god-phase1)
 
-  // ── 필터링 ──
+  // ── 필터링 ── 2026-08-20 · #175 · 3-state 반영 (active/pending_resignation/retired/all)
   const filteredRaw = useMemo(() => {
     return employees.filter((e) => {
-      const isRetired = !!(e as any).retire_date;
-      if (filterStatus === "active"  && isRetired)   return false;
-      if (filterStatus === "retired" && !isRetired)  return false;
+      const status = getEmploymentStatus((e as any).retire_date ?? null);
+      if (filterStatus !== "all" && status !== filterStatus) return false;
       if (filterPosition && !(e.position ?? "").includes(filterPosition)) return false;
       if (search.trim()) {
         const q = search.trim().toLowerCase();
@@ -1056,7 +1058,9 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
     const hasBankbook        = !!emp.bankbook_image_url;
     const hasResignationFile = !!emp.resignation_file_url;
     const rating   = emp.performance_rating ? emp.performance_rating.toUpperCase() : null;
-    const isRetired = !!(emp as any).retire_date;
+    // 2026-08-20 · #175 · 3-state · retire_date 파생 · isRetired = 재직X 판정 편의
+    const empStatus = getEmploymentStatus((emp as any).retire_date ?? null);
+    const isRetired = empStatus !== "active";
     const openContract = (e: React.MouseEvent) => {
       e.stopPropagation();
       if (emp.contract_file_url) {
@@ -1279,9 +1283,16 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
             <span className="text-[15px] text-zinc-200">-</span>
           )}
         </td>
-        {/* 상태 배지 · 퇴사·퇴사예정 · 2026-08-17 · StatusPill 통일 */}
-        <td className="px-1 py-2 text-center">
-          {isRetired && (
+        {/* 상태 배지 · 재직/퇴사예정/퇴사 · 2026-08-20 · #175 · 3-state 반영 */}
+        <td className="px-1 py-2 text-center" title={
+          empStatus === "pending_resignation" ? `퇴사예정일 ${(emp as any).retire_date}`
+          : empStatus === "retired" ? `퇴사일 ${(emp as any).retire_date}`
+          : undefined
+        }>
+          {empStatus === "pending_resignation" && (
+            <StatusPill tone="amber" size="xs" dot>퇴사예정</StatusPill>
+          )}
+          {empStatus === "retired" && (
             <StatusPill tone="rose" size="xs" dot>퇴사</StatusPill>
           )}
         </td>
@@ -1323,11 +1334,13 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
         {/* 2026-08-17 · 재직 상태 필터 · 최신 트렌드 · segmented pill · 딥네이비 통일 */}
         <div className="flex items-center gap-2 flex-wrap">
           <InlineLabel>상태</InlineLabel>
+          {/* 2026-08-20 · #175 · 3-state · 퇴사예정 탭 추가 */}
           <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
             {[
-              { key: "active",  label: "재직" },
-              { key: "retired", label: "퇴사" },
-              { key: "all",     label: "전체" },
+              { key: "active",              label: "재직" },
+              { key: "pending_resignation", label: "퇴사예정" },
+              { key: "retired",             label: "퇴사" },
+              { key: "all",                 label: "전체" },
             ].map(s => (
               <button
                 key={s.key}
