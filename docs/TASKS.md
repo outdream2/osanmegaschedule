@@ -10,6 +10,14 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
+### #171 · 랜딩페이지 · 오늘 현황 숫자 클릭 · 상세+이동 (신규 · 2026-08-20)
+- 🔲 오늘 현황 · "N건" 숫자 아래 링크 추가 · 클릭 시 상세 현황 노출
+- 🔲 상세 현황 아래 · "해당 페이지로 이동" 버튼 추가 · 클릭 시 관련 페이지로 이동
+- 🔲 대상 · 발주요청·저재고·진열불일치·재고체크·연차·점심 등 각 현황
+- 🔲 UX · 인라인 확장 (accordion) 또는 popover 중 결정
+- 🔲 접근성 · Enter/Space 키 지원 · aria-expanded
+- 💡 프레임워크와 무관 · 신규 UX 기능
+
 ### #149 · UI 프레임워크화 남은 작업
 - 🔲 common/ 재분류 · `common/primitives/` vs `common/features/` (구조 리팩터 · 위험 중)
 - 🔲 500+라인 파일 슬림화 · ProductDetailPanel(647) · EmployeeInfoForm(482) · InventoryEditPanel(390) · ContractWriterPage(5,400 · 대형)
