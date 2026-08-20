@@ -9,6 +9,7 @@ import {
   ArrowUp, ArrowDown, CheckCircle2, FileText, CloudUpload,
 } from "lucide-react";
 import Modal from "../common/Modal";
+import { Card } from "../common/Card";
 import type { AuthSession } from "../../types";
 
 export type PharmTabKey = "education" | "reference" | "video" | "docs";
@@ -355,7 +356,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
         )}
 
         {/* ── 목록 ─────────────────────────────── */}
-        <div className="bg-white border border-line rounded-xl overflow-hidden">
+        <Card variant="flat" clip padding="none">
           <div className="px-3 py-2 border-b border-zinc-100 bg-zinc-50 flex items-center gap-1.5">
             <FileText size={13} className="text-zinc-400" />
             <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">등록된 하위메뉴</span>
@@ -490,7 +491,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
               })}
             </ul>
           )}
-        </div>
+        </Card>
 
         {!isAdmin && (
           <div className="flex items-start gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-700">
