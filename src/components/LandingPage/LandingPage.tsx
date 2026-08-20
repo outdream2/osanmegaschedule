@@ -991,7 +991,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             );
           })()}
 
-          {/* ── 오늘의 현황 · 2026-08-20 · 4-color dots (amber/sky/rose/emerald) → mono blue 단일 통일 · Linear/Vercel 톤 · 시각 노이즈 감소 ── */}
+          {/* ── 오늘의 현황 · 2026-08-17 · 사용자 지시 · 텍스트 형식 · dot 색 accent ── */}
           {isManagerOrAdmin && (
             <div className="w-full mb-6">
               <div className="flex items-center gap-2.5 mb-2">
@@ -1000,20 +1000,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               </div>
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[17px] text-ink-soft pl-[13px]">
                 <span className="inline-flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${leavePendingCount > 0 ? "bg-blue-500" : "bg-zinc-300"}`} />
-                  승인 대기 <b className={`font-bold tabular-nums ${leavePendingCount > 0 ? "text-blue-700" : "text-ink"}`}>{leavePendingCount}</b>건
+                  <span className={`w-2 h-2 rounded-full ${leavePendingCount > 0 ? "bg-amber-500" : "bg-zinc-300"}`} />
+                  승인 대기 <b className={`font-bold tabular-nums ${leavePendingCount > 0 ? "text-amber-700" : "text-ink"}`}>{leavePendingCount}</b>건
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${(requestsCounts.display + requestsCounts.order) > 0 ? "bg-blue-500" : "bg-zinc-300"}`} />
-                  진열·발주 요청 <b className={`font-bold tabular-nums ${(requestsCounts.display + requestsCounts.order) > 0 ? "text-blue-700" : "text-ink"}`}>{requestsCounts.display + requestsCounts.order}</b>건
+                  <span className={`w-2 h-2 rounded-full ${(requestsCounts.display + requestsCounts.order) > 0 ? "bg-sky-500" : "bg-zinc-300"}`} />
+                  진열·발주 요청 <b className={`font-bold tabular-nums ${(requestsCounts.display + requestsCounts.order) > 0 ? "text-sky-700" : "text-ink"}`}>{requestsCounts.display + requestsCounts.order}</b>건
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${requestsCounts.mismatch > 0 ? "bg-blue-500" : "bg-zinc-300"}`} />
-                  배치구역 불일치 <b className={`font-bold tabular-nums ${requestsCounts.mismatch > 0 ? "text-blue-700" : "text-ink"}`}>{requestsCounts.mismatch}</b>건
+                  <span className={`w-2 h-2 rounded-full ${requestsCounts.mismatch > 0 ? "bg-rose-500" : "bg-zinc-300"}`} />
+                  배치구역 불일치 <b className={`font-bold tabular-nums ${requestsCounts.mismatch > 0 ? "text-rose-700" : "text-ink"}`}>{requestsCounts.mismatch}</b>건
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${requestsCounts.lunch > 0 ? "bg-blue-500" : "bg-zinc-300"}`} />
-                  점심 신청 <b className={`font-bold tabular-nums ${requestsCounts.lunch > 0 ? "text-blue-700" : "text-ink"}`}>{requestsCounts.lunch}</b>건
+                  <span className={`w-2 h-2 rounded-full ${requestsCounts.lunch > 0 ? "bg-emerald-500" : "bg-zinc-300"}`} />
+                  점심 신청 <b className={`font-bold tabular-nums ${requestsCounts.lunch > 0 ? "text-emerald-700" : "text-ink"}`}>{requestsCounts.lunch}</b>건
                 </span>
               </div>
             </div>
