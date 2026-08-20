@@ -1,5 +1,6 @@
 # TASKS
 
+> 2026-08-20 (밤) · Unit test **2274 tests · 163 files** · #177 상품등록 페이지 대기 (매장>매입) · payroll/contract/stock 테스트 197개 확산
 > 2026-08-20 (저녁) · Unit test **2077 tests · 155 files** · **2000 돌파 🎉🎉🎉** · #175 완료 (퇴사예정 3-state 파생·사이드바 gate) · #174 완료 (종 아이콘 compact) · 병렬 3-에이전트 (sideNav gate + common 재분류 리서치 + server routes 순수 테스트 124개)
 > 2026-08-20 · Unit test **1775 tests · 137 files** (2026-08-19 424 → 20일 1775 · **1350+ 신규**) · 모바일 가시성 탭 이관 (회사·브랜드 → 메뉴 설정)
 > 2026-08-19 · Unit test 대량 확산 (150→424) · Spinner 30곳 · 정식 PWA 설정 · BarcodeScanner 로직 복원 + UI 재디자인
@@ -11,6 +12,21 @@
 ---
 
 ## 🔥 활성 (진행중 / 대기)
+
+### #177 · 상품 등록 페이지 · 매장 > 매입 메뉴 (신규 · 2026-08-20)
+- 🔲 신규 페이지 · 매장 > 매입 서브탭에 추가 · **상품 등록 UI**
+- 🔲 기능 · `products` 테이블에 신규 row INSERT (기존 컬럼 재사용 · 파생컬럼 X)
+- 🔲 서버 · POST `/api/products` 또는 `/api/products/register` · asyncHandler + HttpError + Zod
+- 🔲 Zod 스키마 · `src/shared/schemas/products.ts` 확장 or 신규 CreateProductSchema
+- 🔲 프론트 · apiClient · useToast · 프레임워크 원칙 준수
+- 🔲 UI · 사이드바 · `{ key: "display", label: "상품등록", subTab: "product-register", minLevel: ?, managerOnly? }` (leve 확정 필요)
+- 🔲 DisplayPage · dpSubTab "product-register" 케이스 추가 · 새 페이지 컴포넌트 렌더
+- 💡 스펙 확정 필요:
+  - 필드 세트 (product_code · product_name · supplier · category · unit · barcode · ...)
+  - 최소권한 (관리자 lv9 or manager lv2?)
+  - 배치 위치 · 매입 > 상품등록 서브탭 or 매입 서브탭 내부 하위 탭?
+  - 중복 검사 (product_code unique)
+  - 스캔 연동 (바코드 스캐너 자동 채움?)
 
 ### #175 · 직원정보 · 퇴사예정 분류 + 사직서 조건부 노출 (✅ 완료 · 2026-08-20 · `2bc6ef8`)
 - ✅ 3-state 파생 · retire_date null=재직 · 미래=**퇴사예정** · 오늘이하=퇴사 (`d2cc2a6`)
