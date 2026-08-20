@@ -11,7 +11,7 @@
 >  - 다른 참조 문서 만들지 말고 이 파일 하나에 통합 (사용자 명시 요구 · 2026-08-06)
 
 **프로젝트**: megatown-staff-scheduler
-**최종 업데이트**: 2026-08-20
+**최종 업데이트**: 2026-08-20 (밤 · 11차)
 **생성**: 2026-08-05 (초판) · **확장**: 2026-08-06 (공통 자산 통합 · 백엔드/DB/RPC 심화)
 **출처**: 코드 실측 (LandingPage · 각 페이지 컴포넌트 · TAB 정의 · src/styles · src/components/common · src/hooks · migrations · server/routes)
 **용도**: 새 페이지·기능 추가 시 · 새 세션 진입 시 · 다른 에이전트 위임 시 · **먼저 참고**해야 할 단일 소스
@@ -370,7 +370,7 @@ import { TEXT, BUTTON_PRIMARY, CARD_BASE } from "@/styles/tokens";
 
 ## 10. 공통 컴포넌트 (`src/components/common/`)
 
-**실측 목록** (`src/components/common/` · 31개 · 2026-08-06 갱신):
+**실측 목록** (`src/components/common/` · 34개 · 2026-08-20 갱신):
 
 ### 10-1. 레이아웃 · 페이지 골격
 
@@ -417,6 +417,9 @@ import { TEXT, BUTTON_PRIMARY, CARD_BASE } from "@/styles/tokens";
 | `VendorInfoHeader` | 공급사 정보 헤더 공통 (2026-08-06 신규) |
 | `VendorInfoModal` | 공급사 상세 모달 공통 (2026-08-06 신규 · useVendorInfoModal 훅 동봉) |
 | `InventoryEditModal` | 실재고 입력 공통 · 누적 UX · zone별 저장 (2026-08-06 신규 · fabd95f) |
+| `Card` | 범용 카드 컨테이너 프리미티브 · variant/padding/rounded/clip/as/onClick · **36곳+ 확산** (2026-08-19~20 신규) |
+| `Spinner` | Loader2 래퍼 · 11 tone · label + size · **60+곳 통합** (2026-08-19~20 신규) |
+| `IosInstallGuide` | iOS Safari → 홈화면 추가 가이드 · 3단계 위저드 · BarcodeScanner 통합 (2026-08-19 신규) |
 | `InventoryEditPanel` | 실재고 입력 패널 (2026-08-06 신규) |
 | `hangulSearch.ts` | 한글 초성·자모 검색 유틸 (컴포넌트 X · 유틸이지만 common 폴더 안) |
 
@@ -1329,6 +1332,34 @@ npm run test        # vitest (필요 시)
 ---
 
 ## CHANGELOG · 변경 이력
+
+### 2026-08-20 밤 (11차 · Spinner 22곳 확산 · common/features Phase A · Revert 교훈 · 2514 tests)
+
+**요약**: Spinner 프리미티브를 12 파일 22곳에 추가 확산 (`933faf8`~`6cbd628`) · common/features 디렉터리 신설 후 PurchaseHistoryModal 이동 (Phase A · `9a15774`) · LandingPage dots 파란 통일 revert (`b2634ee` · 지시 없는 UI 변경 금지 원칙 재확인) · payroll/contract/stock/ocr server routes 대량 테스트 확산으로 **2514 tests · 176 files** 달성.
+
+#### Spinner 확산 (22곳 · 12 파일 · 2026-08-20 밤)
+- `MyPage` (`933faf8`) · `HiddenManagerModal` (`38b2acd`) · `RequestsPage` (`db9f907`) · `VendorListEditor` (`034a98a`) · `SalesTrendPage` (`cd70cf9`) · `ReturnListPanel` (`51a8883`) · `PurchaseHistoryTab` (`7f970cf`) · `PaymentInfoTab` (`70475f7`) · `StockActionsCell` (`19a330b`) · `LossHistoryTab` (`cc04051`) · `PurchaseHistoryList` (`0f54785`) · `StaffManagePage` (`6cbd628`)
+- 반복 패턴 (`<Loader2 className="animate-spin" /> 로딩중...`) 완전 제거
+- 누적 60+곳 통합 (2026-08-19 30곳 + 2026-08-20 22곳+)
+
+#### common/features 디렉터리 신설 (Phase A · 2026-08-20)
+- `src/components/common/features/` 신설
+- `PurchaseHistoryModal` → `common/features/` 이동 · usage=0 확인 후 안전 이동 (`9a15774`)
+- `VendorSearchModal` → `common/features/` 이동 (`933faf8`)
+- barrel `common/index.ts` 유지 · import 사이트 무변경 원칙
+- Phase B~D (중위·헬퍼·프리미티브) 실제 마이그레이션은 사용자 결정 후 착수
+
+#### LandingPage 색상 통일 revert (대원칙 위반 · 2026-08-20)
+- `c3d7e9d` · dots 4색 → blue 단일 통일 (지시 없는 UI 변경)
+- `b2634ee` · 즉시 revert · 원래 색상 복원
+- 재발 방지 · 명시적 지시 없이 UI 변경 절대 금지 (feedback_only_instructed 원칙)
+
+#### Unit test 2514 달성 (2026-08-20 밤 · 다중 커밋)
+- payroll 5 파일 (113 tests) · contract lib · stock utils 커버리지 확산
+- server ocr routes (parseExtractors · mergeAdjacent · pipeline runner 등) 대량 추가
+- 176 파일 · 100% pass
+
+---
 
 ### 2026-08-20 밤 (10차 · Card 확산 16곳 · LandingPage 색상 통일 · #177/#178 신규 · 2274 tests)
 
