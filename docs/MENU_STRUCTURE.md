@@ -11,7 +11,7 @@
 >  - 다른 참조 문서 만들지 말고 이 파일 하나에 통합 (사용자 명시 요구 · 2026-08-06)
 
 **프로젝트**: megatown-staff-scheduler
-**최종 업데이트**: 2026-08-06
+**최종 업데이트**: 2026-08-20
 **생성**: 2026-08-05 (초판) · **확장**: 2026-08-06 (공통 자산 통합 · 백엔드/DB/RPC 심화)
 **출처**: 코드 실측 (LandingPage · 각 페이지 컴포넌트 · TAB 정의 · src/styles · src/components/common · src/hooks · migrations · server/routes)
 **용도**: 새 페이지·기능 추가 시 · 새 세션 진입 시 · 다른 에이전트 위임 시 · **먼저 참고**해야 할 단일 소스
@@ -132,7 +132,7 @@
 
 | # | 서브탭 | 컴포넌트 | 주 기능 |
 |---|--------|---------|--------|
-| 1 | **직원관리** | `StaffManagePage.tsx` | 직원 CRUD · 계약 · 근속 · 인사평가 · 근로계약서 연동 |
+| 1 | **직원관리** | `StaffManagePage.tsx` | 직원 CRUD · 계약 · 근속 · 인사평가 · 근로계약서 연동 · **4-state 필터** (재직/퇴사예정/퇴사/전체) |
 | 2 | **승인대기** | `ApprovalCenterPage.tsx` | 연차·사직서 승인 통합 (내부 2탭) |
 | 3 | **점심불참** | `LunchPage/LunchPage.tsx` (embedded) | 오늘 점심 불참자 관리 |
 | 4 | **각종양식** | `HrFormsPage.tsx` (embedded) | HR 양식 (근로계약서·사직서·급여명세서 등) 템플릿 CRUD |
@@ -144,8 +144,16 @@
 
 **서류작성 서브 (3탭)**:
 - **근로계약서 작성** (contract) · `ContractWriterPage` · 세전월급 자동 · 서명 · PDF 저장
-- **사직서 작성** (resignation) · `ResignationWriterPage` · 서명 · 승인 흐름
+- **사직서 작성** (resignation) · `ResignationWriterPage` · 서명 · 승인 흐름 · **ResignationGate** · 퇴사예정 직원만 접근 (admin lv9 예외)
 - **설정** (settings) · `ContractSettingsPage` · 각 호 CMS (임금단서·근로시간·휴일·징계·기타·개인정보 · 서버 저장 · T-C)
+
+**직원 고용 상태 3-state** (2026-08-20 · `d2cc2a6` · #175):
+- `retire_date IS NULL` → **재직** (재직 중)
+- `retire_date > today` → **퇴사예정** (amber 배지)
+- `retire_date <= today` → **퇴사** (rose 배지)
+- 파생 로직: `src/lib/employmentStatus.ts` (`getEmploymentStatus` · `canWriteResignation` · `EMPLOYMENT_STATUS_LABEL`)
+- 훅: `src/hooks/useEmploymentStatus.ts` · 사이드바 사직서 subTab 조건부 숨김 연동
+- DB 컬럼: `employees.retire_date DATE` 재사용 · 신규 컬럼 추가 없음 (feedback_no_derived_columns 준수)
 
 ---
 
@@ -215,6 +223,24 @@
   - `useSortableTabs` 훅 · 적용 페이지: DisplayPage · BusinessManagePage · DocumentWriter · ApprovalCenter · PharmacistPage
 - **강제 완료** (진열요청 등) · pending 에서도 완료 처리 가능
 - **삭제** · vendor · post · comment 등
+
+### 메뉴 설정 (PermissionsPage) 서브탭 (2026-08-20 · `47104f7` · #172)
+
+| # | 서브탭 | 주 기능 |
+|---|--------|--------|
+| 1 | **페이지별 설정** | 페이지별 접근 최소 level 설정 |
+| 2 | **직원별 레벨** | 직원별 레벨 개별 조정 |
+| 3 | **모바일 가시성** | 모바일에서 보일 메뉴 항목 on/off (기존 회사·브랜드 탭에서 이동) |
+
+**회사·브랜드 (`CompanyInfoSettingsPage`)**: 5탭 → **4탭** · 모바일 가시성 탭 제거 (`47104f7`)
+
+### 사이드바 사직서 subTab 조건부 숨김 (2026-08-20 · `2bc6ef8` · #175)
+
+- `useEmploymentStatus` hook 사용 · `GET /api/employees/:id` (self-only or lv9) 조회
+- `retire_date IS NULL` (재직) + admin 아님 → 사직서 항목 **숨김**
+- `retire_date > today` (퇴사예정) → **노출**
+- admin (lv9) → **항상 노출** (fetch 스킵)
+- 로딩·에러 · 안전측 숨김 (admin bypass 유지)
 
 ---
 
@@ -402,6 +428,12 @@ import { TEXT, BUTTON_PRIMARY, CARD_BASE } from "@/styles/tokens";
 | `BreakModal` | 휴게시간 입력 모달 (기존) |
 | `SessionTimeoutWarning` | 세션 만료 경고 (기존 · useAuth 연동) |
 
+### 10-7. 알림 · 네비게이션 UI (2026-08-20)
+
+| 컴포넌트 | 변경 |
+|---------|-----|
+| `NotificationBell` | `compact` prop 추가 (하위호환) · SideNav 에서 compact=true → w-7 h-7 · rounded-md · shadow 제거 (`31f5d29` · #174) |
+
 ### 10-5. 사용 원칙
 
 1. **먼저 검색**: 새 UI 만들기 전 · `src/components/common/` 부터 확인
@@ -420,6 +452,7 @@ import { TEXT, BUTTON_PRIMARY, CARD_BASE } from "@/styles/tokens";
 | 훅 | 용도 · 반환 |
 |----|-----------|
 | `useAuth` | 로그인 세션 관리 · idle 8h · absolute 24h · rememberMe 예외 · `{ session, login, logout, ... }` · 매 30초 tick · warning 3분전 |
+| `useEmploymentStatus` | 직원 고용 상태 3-state 조회 (`재직/퇴사예정/퇴사`) · `GET /api/employees/:id` self-only or lv9 · 사이드바 사직서 subTab 숨김 연동 (2026-08-20 · `2bc6ef8` · #175) |
 
 **세션 스토리지 키**: `megatown_auth_session` · localStorage.
 
@@ -672,6 +705,9 @@ server/routes/
 **신규 엔드포인트** (2026-08-06):
 - `GET /api/supplier-payments/latest-per-supplier` · 최근결제일·결제액 (`a6c8e8d`)
 - `GET /api/vapid-public-key` · 웹푸시 구독용 (T-VAPID-Route · `f9ba80e`)
+
+**신규 엔드포인트** (2026-08-20 · #175):
+- `GET /api/employees/:id` · 직원 단일 조회 · self-only (본인) or lv9 · asyncHandler·HttpError 준수 (`d2cc2a6`)
 
 ### 16-2. 응답 형식 표준
 
@@ -1058,6 +1094,7 @@ megatown-staff-scheduler/
 │   ├── lib/                      # 유틸
 │   │   ├── format.ts             # fmtWon · fmtDate 통합
 │   │   ├── productsCache.ts      # 상품 맵 캐시
+│   │   ├── employmentStatus.ts   # 고용 상태 3-state 파생 (getEmploymentStatus · canWriteResignation · EMPLOYMENT_STATUS_LABEL) (2026-08-20 · #175)
 │   │   ├── cloudinaryUpload.ts · ocrRowFilter.ts · stockPeriodUtils.tsx
 │   │   └── payroll/              # 인건비 계산 6파일 + index.ts barrel
 │   ├── services/                 # 직접 Supabase 호출 (예외 2건)
@@ -1281,6 +1318,35 @@ npm run test        # vitest (필요 시)
 ---
 
 ## CHANGELOG · 변경 이력
+
+### 2026-08-20 (9차 · 고용상태 3-state · 사이드바 gate · 모바일가시성 이관 · #172/#174/#175)
+
+**요약**: employees.retire_date 재사용으로 3-state 고용 상태 파생 · 사직서 subTab 조건부 숨김 · PermissionsPage 모바일 가시성 서브탭 신설 · 종 아이콘 compact · 2077 unit tests 달성.
+
+#### #172 · 모바일 가시성 탭 이관 (`47104f7`)
+- 회사·브랜드 (`CompanyInfoSettingsPage`) 5탭 → **4탭** · 모바일 가시성 탭 제거
+- 메뉴 설정 (`PermissionsPage`) 권한 조정 탭 · 서브탭 3번째 "**모바일 가시성**" 추가
+- `MobileVisibilitySection` 컴포넌트 이동 없이 import 만 변경 · TS+build 통과
+
+#### #175 · 직원 고용 상태 3-state · 사직서 gate (`d2cc2a6` · `db27f33` · `2bc6ef8`)
+- `employees.retire_date DATE` 재사용 · 컬럼 추가 없음 (feedback_no_derived_columns 준수)
+- 신규 `src/lib/employmentStatus.ts` · `getEmploymentStatus` · `canWriteResignation` · `EMPLOYMENT_STATUS_LABEL`
+- 신규 `src/hooks/useEmploymentStatus.ts` · `GET /api/employees/:id` self-only or lv9
+- `StaffManagePage` · 4-state 필터 (재직/퇴사예정/퇴사/전체) · 퇴사예정 amber 배지 · 퇴사 rose 배지 (`db27f33`)
+- `ApprovalRequestPage` · `ResignationGate` · 퇴사예정 만 사직서 접근 · admin(lv9) 예외
+- 사이드바 · document-writer subTab 조건부 숨김 · 퇴사예정+admin 만 노출 (`2bc6ef8`)
+- 신규 `GET /api/employees/:id` · asyncHandler·HttpError 준수
+- 22 신규 tests (hook 9 + sideNavGroups filter matrix 13)
+
+#### #174 · 종 아이콘 compact (`31f5d29`)
+- `NotificationBell` · `compact` prop 추가 (하위호환)
+- SideNav · compact=true → w-7 h-7 · rounded-md · shadow 제거
+- AppNavHeader 상단은 compact 미전달 · 기존 크기 유지
+
+#### Unit test 2077 달성 (#173 · 2026-08-20 · 다중 커밋)
+- 2000 돌파 · 155 파일 · 모든 Zod schemas·constants·hooks·server middleware/routes 포함
+
+---
 
 ### 2026-08-09 (8차 · 매입이력 원칙·결제탭 재구성·공급사관리 이동 · 16 커밋)
 
