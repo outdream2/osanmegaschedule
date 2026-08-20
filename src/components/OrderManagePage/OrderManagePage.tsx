@@ -15,6 +15,7 @@ import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 import { StatusPill } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
 import { Spinner } from "../common/Spinner";
+import { Card } from "../common/Card";
 import { matchHangul } from "../common/hangulSearch";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
 import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp, ScanLine, PackagePlus, RotateCcw, X, Search, Info, MapPin } from "lucide-react";
@@ -2870,7 +2871,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
             {/* 2026-08-12 · 사용자 지시 · 일괄 발주 · 여러 카드 → 하나의 리스트 · 공급사 그룹 헤더 + 소계 rows */}
             <div className="flex-1 overflow-y-auto max-h-[45vh] px-6 py-4 bg-zinc-50/30">
-              <div className="bg-white border border-line rounded-xl overflow-hidden shadow-sm">
+              <Card clip padding="none">
                 <table className="w-full text-[17px]">
                   <thead>
                     <tr className="bg-zinc-100 text-zinc-500 font-bold uppercase tracking-wide text-[15px] border-b border-line sticky top-0 z-10">
@@ -2954,7 +2955,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     })}
                   </tbody>
                 </table>
-              </div>
+              </Card>
             </div>
 
             {/* 발송 채널 (전역) · 특이사항 memo 제거 (비고 컬럼 사용) */}
