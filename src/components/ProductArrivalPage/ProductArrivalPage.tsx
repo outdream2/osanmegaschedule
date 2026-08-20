@@ -28,7 +28,7 @@ import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
 // 2026-08-09 · 사용자 요청 · 상품 검색·확인 · 리스트 등록 (공통)
-import { ProductSearchInput } from "../common/ProductSearchInput";
+import { ProductSearchInput } from "../common/features/ProductSearchInput";
 import { IconTile } from "../common/IconTile";
 import { AccentBar } from "../common/AccentBar";
 import { ArrivalRowCard } from "./ArrivalRowCard";

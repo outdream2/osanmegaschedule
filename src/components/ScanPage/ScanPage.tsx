@@ -38,7 +38,7 @@ import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { useConfirm } from "../../hooks/useConfirm";
 // 2026-08-09 · 사용자 요청 · 상품 검색·확인 · 리스트 등록 (공통)
-import { ProductSearchInput } from "../common/ProductSearchInput";
+import { ProductSearchInput } from "../common/features/ProductSearchInput";
 import { IconTile } from "../common/IconTile";
 import { Modal } from "../common/Modal";
 import { AccentBar } from "../common/AccentBar";

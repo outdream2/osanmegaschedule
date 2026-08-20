@@ -1,4 +1,4 @@
-// src/components/common/ProductSearchInput.tsx
+// src/components/common/features/ProductSearchInput.tsx
 // 2026-08-09 · 사용자 요청 · 상품 검색 · 리스트 · 확인 → 상품정보 등록
 //
 // 사용처:
@@ -17,8 +17,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Search, Check, Package } from "lucide-react";
-import { Spinner } from "./Spinner";
-import { useProductInfoSearch } from "../../hooks/useProductInfoSearch";
+import { Spinner } from "../Spinner";
+import { useProductInfoSearch } from "../../../hooks/useProductInfoSearch";
 
 interface ProductSearchInputProps {
   /** 확인 시 콜백 · product_code 전달 (없으면 product_name) */
