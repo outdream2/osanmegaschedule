@@ -2,7 +2,7 @@
 // 2026-08-16 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useState } from "react";
 import { api } from "../../lib/apiClient";
-import { User, Phone, Briefcase, Calendar, Award, Save, Loader2, Lock, MapPin, Eye, EyeOff, Check, Mail, IdCard, CreditCard } from "lucide-react";
+import { User, Phone, Briefcase, Calendar, Award, Save, Lock, MapPin, Eye, EyeOff, Check, Mail, IdCard, CreditCard } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession, Employee } from "../../types";
@@ -177,7 +177,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
                 disabled={savingAddress || !addressChanged}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[14px] font-bold shadow-sm active:scale-95 transition disabled:opacity-40"
               >
-                {savingAddress ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} 주소 저장
+                {savingAddress ? <Spinner size={12} tone="white" /> : <Save size={12} />} 주소 저장
               </button>
             </div>
           </div>
@@ -235,7 +235,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
                 disabled={savingPw || !currentPw || !newPw || !confirmPw}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[14px] font-bold shadow-sm active:scale-95 transition disabled:opacity-40"
               >
-                {savingPw ? <Loader2 size={12} className="animate-spin" /> : <Lock size={12} />} 비밀번호 변경
+                {savingPw ? <Spinner size={12} tone="white" /> : <Lock size={12} />} 비밀번호 변경
               </button>
             </div>
           </div>

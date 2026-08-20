@@ -1,4 +1,4 @@
-// src/components/common/VendorSearchModal.tsx
+// src/components/common/features/VendorSearchModal.tsx
 // 2026-08-09 · 사용자 요청 · 공급사 검색 후 조회수정 or 신규등록 진입 모달
 //
 // 흐름:
@@ -16,11 +16,11 @@
 
 import { useMemo, useState } from "react";
 import { X, Search, Loader2, Building2, Plus, PencilLine } from "lucide-react";
-import { useVendors } from "../../hooks/useVendors";
-import { NewVendorModal } from "./NewVendorModal";
-import { IconTile } from "./IconTile";
-import { Spinner } from "./Spinner";
-import { VendorDetailModal, type Vendor as VendorFull } from "../LandingPage/VendorListEditor";
+import { useVendors } from "../../../hooks/useVendors";
+import { NewVendorModal } from "../NewVendorModal";
+import { IconTile } from "../IconTile";
+import { Spinner } from "../Spinner";
+import { VendorDetailModal, type Vendor as VendorFull } from "../../LandingPage/VendorListEditor";
 
 interface VendorSearchModalProps {
   onClose: () => void;
