@@ -92,7 +92,6 @@
 
 ## 🐛 사용자 리포트 · 확인 대기
 
-- 요청목록 조회 카드 · 4-color dots 지저분 (blue/red/orange/emerald → mono blue or 숫자)
 - 로그인화면 · 1주일 전 정보 중 빠진 것 (구체 지목 대기)
 
 ---
