@@ -142,7 +142,7 @@ export function TabBar<K extends string = string>({
           className="tab-bar-inner py-2.5"
           style={typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth }}
         >
-          <div className={`inline-flex items-center bg-zinc-100/80 backdrop-blur-sm border border-line rounded-2xl p-1 gap-0.5 flex-wrap shadow-[inset_0_1px_2px_rgba(10,46,74,0.04)] ${sortable?.isDragging ? "select-none" : ""}`}>
+          <div role="tablist" className={`inline-flex items-center bg-zinc-100/80 backdrop-blur-sm border border-line rounded-2xl p-1 gap-0.5 flex-wrap shadow-[inset_0_1px_2px_rgba(10,46,74,0.04)] ${sortable?.isDragging ? "select-none" : ""}`}>
             {visibleTabs.map(t => {
               const active = activeKey === t.key;
               const Icon = t.icon;
@@ -162,6 +162,8 @@ export function TabBar<K extends string = string>({
                 <button
                   key={t.key}
                   type="button"
+                  role="tab"
+                  aria-selected={active}
                   onClick={() => onSelect(t.key)}
                   title={t.label}
                   draggable={dnd?.draggable}
@@ -221,7 +223,7 @@ export function TabBar<K extends string = string>({
           className="tab-bar-inner py-2.5"
           style={typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth }}
         >
-          <div className={`inline-flex items-center gap-1.5 flex-wrap ${sortable?.isDragging ? "select-none" : ""}`}>
+          <div role="tablist" className={`inline-flex items-center gap-1.5 flex-wrap ${sortable?.isDragging ? "select-none" : ""}`}>
             {visibleTabs.map(t => {
               const active = activeKey === t.key;
               const Icon = t.icon;
@@ -242,6 +244,8 @@ export function TabBar<K extends string = string>({
                 <button
                   key={t.key}
                   type="button"
+                  role="tab"
+                  aria-selected={active}
                   onClick={() => onSelect(t.key)}
                   title={t.label}
                   draggable={dnd?.draggable}
@@ -303,7 +307,7 @@ export function TabBar<K extends string = string>({
         className="tab-bar-inner"
         style={typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth }}
       >
-        <div className={`tab-bar-row ${sortable?.isDragging ? "select-none" : ""}`}>
+        <div role="tablist" className={`tab-bar-row ${sortable?.isDragging ? "select-none" : ""}`}>
           {visibleTabs.map(t => {
             const active = activeKey === t.key;
             const Icon = t.icon;
@@ -323,6 +327,8 @@ export function TabBar<K extends string = string>({
               <button
                 key={t.key}
                 type="button"
+                role="tab"
+                aria-selected={active}
                 onClick={() => onSelect(t.key)}
                 title={t.label}
                 draggable={dnd?.draggable}
