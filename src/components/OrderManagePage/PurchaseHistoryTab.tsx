@@ -12,7 +12,8 @@
 
 import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useVendors } from "../../hooks/useVendors";
-import { Building2, Loader2, Package, RefreshCw } from "lucide-react";
+import { Building2, Package, RefreshCw } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { SplitPanel } from "../common/SplitPanel";
 import { ListLoading } from "../common/ListLoading";
 import { AccentBar } from "../common/AccentBar";
@@ -1155,7 +1156,7 @@ export const PurchaseHistoryTab: React.FC = () => {
                   {/* 3종 파이차트 · 반응형 그리드 */}
                   {allDetailsLoading ? (
                     <div className="bg-white rounded-xl border border-line flex-1 flex items-center justify-center text-zinc-400 text-[14px] gap-2 min-h-[300px]">
-                      <Loader2 size={14} className="animate-spin" />
+                      <Spinner size={14} />
                       <span>매입 데이터 로딩 중...</span>
                     </div>
                   ) : (
