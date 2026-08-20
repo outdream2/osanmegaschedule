@@ -1,4 +1,4 @@
-// src/components/common/PurchaseHistoryModal.tsx
+// src/components/common/features/PurchaseHistoryModal.tsx
 // 2026-07-22 · 상품 매입 이력 모달 · 리스트에서 매입일 클릭 시 표시
 // 2026-08-04 · 내부 표 UI → 공통 PurchaseHistoryList 로 교체 (사용자 요청)
 // 2026-08-18 · <Modal> + <IconTile> + <StatusPill> 프레임워크 통합
@@ -8,10 +8,10 @@
 
 import React, { useEffect, useState } from "react";
 import { TrendingUp, Package } from "lucide-react";
-import { PurchaseHistoryList, type PurchaseHistoryRow } from "./PurchaseHistoryList";
-import { Modal } from "./Modal";
-import { IconTile } from "./IconTile";
-import { StatusPill } from "./StatusPill";
+import { PurchaseHistoryList, type PurchaseHistoryRow } from "../PurchaseHistoryList";
+import { Modal } from "../Modal";
+import { IconTile } from "../IconTile";
+import { StatusPill } from "../StatusPill";
 
 interface PurchaseHistoryModalProps {
   productCode: string;
