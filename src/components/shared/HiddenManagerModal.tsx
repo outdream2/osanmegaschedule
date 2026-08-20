@@ -14,7 +14,7 @@
 //   />
 
 import React from "react";
-import { EyeOff, Eye, Loader2 } from "lucide-react";
+import { EyeOff, Eye } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { Modal } from "../common/Modal";
 import { IconTile } from "../common/IconTile";
@@ -96,7 +96,7 @@ export const HiddenManagerModal: React.FC<Props> = ({
                   className="shrink-0 inline-flex items-center gap-1 text-[12px] font-bold text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-wait rounded-lg px-3 py-1.5 cursor-pointer transition"
                   title="숨김 해제 · 다시 검색·발주 리스트에 표시"
                 >
-                  {busy ? <Loader2 size={12} className="animate-spin" /> : <Eye size={12} />}
+                  {busy ? <Spinner size={12} tone="emerald" /> : <Eye size={12} />}
                   다시 표시
                 </button>
               </li>
