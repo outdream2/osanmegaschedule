@@ -20,7 +20,7 @@ import { EmployeeCalendarModal, type LogisticsZoneProps } from "../EmployeeCalen
 import { SettingsModal } from "../SettingsModal";
 import { EmployeeFormModal } from "../EmployeeFormModal";
 import { ScheduleFilterBar } from "./ScheduleFilterBar";
-import { BreakModal } from "../common/BreakModal";
+import { BreakModal } from "../common/features/BreakModal";
 import { useSettings } from "../../hooks/useSettings";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useContactInfo } from "../../hooks/useContactInfo";

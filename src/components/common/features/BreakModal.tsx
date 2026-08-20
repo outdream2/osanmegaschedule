@@ -1,9 +1,9 @@
-// src/components/BreakModal.tsx
+// src/components/common/features/BreakModal.tsx
 // 2026-08-18 · 프레임워크 통합 · <Modal> + <IconTile> + 폰트 +2
 import React from "react";
 import { Clock } from "lucide-react";
-import { Modal } from "./Modal";
-import { IconTile } from "./IconTile";
+import { Modal } from "../Modal";
+import { IconTile } from "../IconTile";
 
 export interface BreakModalState {
   employeeId: number;
