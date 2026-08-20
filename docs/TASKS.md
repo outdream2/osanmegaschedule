@@ -1,5 +1,6 @@
 # TASKS
 
+> 2026-08-20 (저녁) · Unit test **2077 tests · 155 files** · **2000 돌파 🎉🎉🎉** · #175 완료 (퇴사예정 3-state 파생·사이드바 gate) · #174 완료 (종 아이콘 compact) · 병렬 3-에이전트 (sideNav gate + common 재분류 리서치 + server routes 순수 테스트 124개)
 > 2026-08-20 · Unit test **1775 tests · 137 files** (2026-08-19 424 → 20일 1775 · **1350+ 신규**) · 모바일 가시성 탭 이관 (회사·브랜드 → 메뉴 설정)
 > 2026-08-19 · Unit test 대량 확산 (150→424) · Spinner 30곳 · 정식 PWA 설정 · BarcodeScanner 로직 복원 + UI 재디자인
 >
@@ -11,7 +12,7 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
-### #175 · 직원정보 · 퇴사예정 분류 + 사직서 조건부 노출 (진행중 · 2026-08-20)
+### #175 · 직원정보 · 퇴사예정 분류 + 사직서 조건부 노출 (✅ 완료 · 2026-08-20 · `2bc6ef8`)
 - ✅ 3-state 파생 · retire_date null=재직 · 미래=**퇴사예정** · 오늘이하=퇴사 (`d2cc2a6`)
 - ✅ DB · employees.retire_date DATE 재사용 · 컬럼 추가 없음 (feedback_no_derived_columns 준수)
 - ✅ lib/employmentStatus.ts · getEmploymentStatus·canWriteResignation·EMPLOYMENT_STATUS_LABEL
@@ -21,8 +22,12 @@
 - ✅ StaffManagePage · 상태 필터 3-state (재직/퇴사예정/퇴사/전체 · `db27f33`)
 - ✅ StaffManagePage · 퇴사예정 배지 amber · 퇴사 rose · title 툴팁 날짜
 - ✅ 퇴사자 목록 (필터 "퇴사" 탭) · 사직서 보기/업로드 · 기존 UI 재사용
-- ✅ 9 신규 tests
-- 🔲 잔여 · 사이드바 · 재직 상태에서 "사직서" 서브탭 자체 숨김 (현재는 클릭 시 안내)
+- ✅ **사이드바 gate** · `useEmploymentStatus` hook · document-writer subTab 조건부 숨김 (`2bc6ef8`)
+  - retire_date null (재직) · admin 아님 → 사직서 항목 숨김
+  - pending_resignation → 노출 · admin (lv9) → 항상 노출 (fetch 스킵)
+  - 로딩/에러 · 안전측 숨김 (admin bypass 유지)
+- ✅ 서버 · GET /api/employees/:id 추가 · self-only or lv9 · asyncHandler·HttpError
+- ✅ 22 신규 tests (hook 9 + sideNavGroups filter matrix 13)
 
 ### #174 · 사이드메뉴 종 아이콘 · 테두리·여백 반으로 (✅ 완료 · 2026-08-20 · `31f5d29`)
 - ✅ NotificationBell · compact prop 추가 (하위호환)
@@ -135,21 +140,34 @@
 
 ## 📜 완료 로그 (2026-08-20)
 
+### #176 · common/ 재분류 리서치 완료 (2026-08-20 · 리서치만 · 마이그레이션 대기)
+- 총 62 소스 · 51 테스트 (113 파일)
+- Primitives 36 (58%) · Features 15 (24%) · Ambiguous 9 · Helpers 2
+- 4단계 마이그레이션 계획 (Phase A~D · 저위험 → 고위험)
+- Phase A · 0-3 usage feature (InventoryEditPanel · PurchaseHistoryModal · VendorSearchModal 등 9개) · 근-제로 위험
+- Phase B · 중위 usage feature (StoreZoneMap · PurchaseHistoryList · ProductDetailPanel 등)
+- Phase C · helpers (`hangulSearch.ts` · `settingsTypography.ts` → `src/lib/`)
+- Phase D · primitives 이동 · `common/index.ts` barrel 유지 시 import 사이트 무변경
+- **결정 대기** · 실제 마이그레이션 착수 여부
+
 ### #172 · 모바일 가시성 탭 이관 (2026-08-20 · ✅ · `47104f7`)
 - 회사·브랜드 (CompanyInfoSettingsPage) 5탭 → 4탭
 - 메뉴 설정 (PermissionsPage) · 권한 조정 탭 · 서브탭 3번째 "모바일 가시성" 추가
 - 프레임워크 원칙 준수 · MobileVisibilitySection 컴포넌트 이동 없이 import 만 변경
 - TS + build 통과
 
-### #173 · Unit test v5 확산 · 1200 → 1775 (2026-08-20 · 진행중)
+### #173 · Unit test v5 확산 · 1200 → 2077 (2026-08-20 · ✅ · 다중 커밋)
 - constants (7 파일 · 89 tests) · displayZones/storeMapLayout/jobCategories/timing/apiLimits/vendorCategories/index
-- hooks (9 파일 · 89 tests) · useSortableTabs/useSidebar/useKvSetting/useMobilePageLevel/useMobileVisibility/useContactInfo/useBrandIdentity/useCompanyInfo/useStampsMap/useVendors/useSettings/useLeaveManager
-- lib (3 파일 · 33 tests) · cellReextract/employeeApi/errorReporter
-- server (5 파일 · 82 tests) · envValidation/tenantConfig/systemConfig/requireAuth/supabaseFetchAll/invoice-vocab/excludedSuppliers/ocrConfig
-- layout (1 파일 · 23 tests) · sideNavGroups (deriveUserLevel·canAccessItem·filterGroupsForSession)
-- common (2 파일 · 40 tests) · VendorInfoHeader/SeasonButtons
-- types (1 파일 · 18 tests) · DEFAULT_* 상수·formatBrandDisplay
-- 91 unpushed commits · 로컬만 (리모트 push 대기)
+- hooks (10 파일 · 98 tests) · useSortableTabs/useSidebar/useKvSetting/useMobilePageLevel/useMobileVisibility/useContactInfo/useBrandIdentity/useCompanyInfo/useStampsMap/useVendors/useSettings/useLeaveManager/useAuth/useEmploymentStatus
+- lib (4 파일 · 42 tests) · cellReextract/employeeApi/errorReporter/employmentStatus
+- server middleware/lib (4 파일 · 53 tests) · envValidation/tenantConfig/requireAuth/ownershipCheck/supabaseFetchAll
+- server ocr (3 파일 · 59 tests) · invoice-vocab/excludedSuppliers/schema
+- server config (1 파일 · 17 tests) · ocrConfig
+- server routes (6 파일 · 145 tests) · systemConfig/clientErrors/lossTracking/supplierPayments/ocrDeletedRows/contractClauses/pharmacistMenuItems
+- layout (3 파일 · 42 tests) · sideNavGroups/BottomNav/AppFooter
+- common (5 파일 · 82 tests) · VendorInfoHeader/SeasonButtons/PurchaseHistoryList/PurchaseHistoryModal/hangulSearch/settingsTypography
+- constants schedules (12 tests) · types (18 tests)
+- **114 unpushed 로컬 커밋** · remote push 대기
 
 ---
 
