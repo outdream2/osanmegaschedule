@@ -11,6 +11,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Calendar, Loader2, TrendingDown, Package, Building2, Camera } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
 import { LoadingState } from "../common/LoadingState";
@@ -203,7 +204,7 @@ export const LossHistoryTab: React.FC = () => {
           title="지금 손실 스냅샷 저장 (실재고 저장 시 자동으로도 저장됨)"
           className="ml-auto sm:ml-0 flex items-center gap-1 px-2 py-1 text-[11px] font-bold rounded-md border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 transition disabled:opacity-40 cursor-pointer"
         >
-          {snapshotting ? <Loader2 size={11} className="animate-spin" /> : <Camera size={11} />}
+          {snapshotting ? <Spinner size={11} tone="violet" /> : <Camera size={11} />}
           스냅샷
         </button>
         <button
