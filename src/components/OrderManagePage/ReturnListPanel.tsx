@@ -5,7 +5,7 @@
 // 2026-08-03 · 반품 요청서 모달 · 발주서 스타일로 재설계 (#188)
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useVendors } from "../../hooks/useVendors";
-import { Loader2, Package, PackageCheck, Search, Truck, ChevronRight, ChevronDown, Mail, MessageSquare, Send, Trash2, X } from "lucide-react";
+import { Package, PackageCheck, Search, Truck, ChevronRight, ChevronDown, Mail, MessageSquare, Send, Trash2, X } from "lucide-react";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
@@ -418,7 +418,7 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
               {sent
                 ? <><span className="inline-block w-3 h-3 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[15px] font-bold">✓</span>전송 완료</>
                 : sending
-                  ? <><Loader2 size={13} className="animate-spin"/>전송 중...</>
+                  ? <><Spinner size={13} tone="white"/>전송 중...</>
                   : "반품 요청 전송"}
             </button>
           </div>

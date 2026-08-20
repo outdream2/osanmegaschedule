@@ -1541,7 +1541,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               {/* 2026-08-06 · 실시간 배지 제거 · 조회중일 때만 표시 (사용자 요청) */}
               {inlineFiltering && (
                 <StatusPill tone="emerald" size="md" dot pulse>
-                  <Loader2 size={12} className="animate-spin inline mr-1" />조회중
+                  <Spinner size={12} tone="emerald" className="inline mr-1" />조회중
                 </StatusPill>
               )}
 
