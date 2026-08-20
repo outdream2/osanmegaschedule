@@ -9,6 +9,7 @@ import { RealMapSelector } from "./RealMapSelector";
 // 2026-08-05 · 재고세기(YOLO) 기능 제거 · StockCounterModal import 삭제
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
 import { StatusPill } from "../common/StatusPill";
+import { Card } from "../common/Card";
 import { fmtWonCompact } from "../../lib/format";
 
 // 인라인 편집 가능 필드 종류
@@ -377,7 +378,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
 
   return (
     <>
-      <div className="bg-white border border-line rounded-xl p-3.5 shadow-sm">
+      <Card padding="none" className="p-3.5">
         {/* 상품명 */}
         {S.header && (<>
           {/* 상품명 + 숨기기 버튼 · 좁은 화면에서 버튼이 아래로 내려가도록 flex-wrap */}
@@ -868,7 +869,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
           </>)}
         </div>
         )}
-      </div>
+      </Card>
 
       {/* ─── 매입 이력 (2026-07-15) · purchase_details 조회 · 이 상품의 최근 매입 20건 · 2026-07-16 section flag ─── */}
       {S.purchaseHistory && <PurchaseHistorySection productCode={product.code} productName={product.name} />}
