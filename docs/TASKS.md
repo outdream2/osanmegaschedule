@@ -1,5 +1,6 @@
 # TASKS
 
+> 2026-08-20 · Unit test **1775 tests · 137 files** (2026-08-19 424 → 20일 1775 · **1350+ 신규**) · 모바일 가시성 탭 이관 (회사·브랜드 → 메뉴 설정)
 > 2026-08-19 · Unit test 대량 확산 (150→424) · Spinner 30곳 · 정식 PWA 설정 · BarcodeScanner 로직 복원 + UI 재디자인
 >
 > **원칙**: [`feedback_framework_untouchable.md`](../.claude/agents) · [`feedback_ui_top_principle.md`](../.claude/agents) · [`feedback_remote_push_strict.md`](../.claude/agents) · 폰트 +2 규칙
@@ -24,7 +25,7 @@
 ### #149 · UI 프레임워크화 남은 작업
 - 🔲 common/ 재분류 · `common/primitives/` vs `common/features/` (구조 리팩터 · 위험 중)
 - 🔲 500+라인 파일 슬림화 · ProductDetailPanel(647) · EmployeeInfoForm(482) · InventoryEditPanel(390) · ContractWriterPage(5,400 · 대형)
-- ✅ **Unit test 대량 확산 v4** · **1247 tests · 95 files** (2026-08-19~20 세션 · 1097 신규 · 86 test files 신규 · **1200 돌파 🎉** · 모든 Zod schemas 테스트 완료)
+- ✅ **Unit test 대량 확산 v5** · **1775 tests · 137 files** (2026-08-20 세션 · **1625 신규 · 128 test files 신규** · **1700 돌파 🎉🎉** · 모든 Zod schemas + constants + 대부분 hooks + server middleware/routes 테스트 완료)
 - 🔲 접근성 audit (aria-* · keyboard nav)
 - 🔲 목업 HTML 파일 · 최신 트렌드로 재생성 (문서 · 위험 낮음)
 
@@ -111,6 +112,26 @@
 ## ⏸ 외부 대기
 
 - #42 · 발주 PDF + 카카오톡 · 사업자등록증 발급 대기 (SolAPI)
+
+---
+
+## 📜 완료 로그 (2026-08-20)
+
+### #172 · 모바일 가시성 탭 이관 (2026-08-20 · ✅ · `47104f7`)
+- 회사·브랜드 (CompanyInfoSettingsPage) 5탭 → 4탭
+- 메뉴 설정 (PermissionsPage) · 권한 조정 탭 · 서브탭 3번째 "모바일 가시성" 추가
+- 프레임워크 원칙 준수 · MobileVisibilitySection 컴포넌트 이동 없이 import 만 변경
+- TS + build 통과
+
+### #173 · Unit test v5 확산 · 1200 → 1775 (2026-08-20 · 진행중)
+- constants (7 파일 · 89 tests) · displayZones/storeMapLayout/jobCategories/timing/apiLimits/vendorCategories/index
+- hooks (9 파일 · 89 tests) · useSortableTabs/useSidebar/useKvSetting/useMobilePageLevel/useMobileVisibility/useContactInfo/useBrandIdentity/useCompanyInfo/useStampsMap/useVendors/useSettings/useLeaveManager
+- lib (3 파일 · 33 tests) · cellReextract/employeeApi/errorReporter
+- server (5 파일 · 82 tests) · envValidation/tenantConfig/systemConfig/requireAuth/supabaseFetchAll/invoice-vocab/excludedSuppliers/ocrConfig
+- layout (1 파일 · 23 tests) · sideNavGroups (deriveUserLevel·canAccessItem·filterGroupsForSession)
+- common (2 파일 · 40 tests) · VendorInfoHeader/SeasonButtons
+- types (1 파일 · 18 tests) · DEFAULT_* 상수·formatBrandDisplay
+- 91 unpushed commits · 로컬만 (리모트 push 대기)
 
 ---
 
