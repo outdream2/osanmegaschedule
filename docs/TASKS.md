@@ -13,6 +13,21 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
+### #178 · 공급사 정보 스키마 확장 · xlsx 원본 반영 (신규 · 2026-08-20)
+- 📄 원본 · `src/sample/메가타운약국공급사관리정보.xlsx` · 57 시트 · 52 vendor
+- 마스터 헤더 · 제약사·주문방식(사이트)·지역·거래명세서·담당자·연락처·주문현황·계정/비밀번호·특이사항
+- 각 제약사 시트 · `no.·제품명·주문수량·비고` · 기본 주문 템플릿
+- 🔲 Phase A · DB 마이그레이션 · vendors ALTER (`order_method`·`region`·`invoice_method`·`login_credentials`·`special_notes`) + `vendor_order_templates` CREATE
+- 🔲 Phase B · Zod VendorSchema 확장 (optional 필드)
+- 🔲 Phase C · 서버 라우터 GET/PUT vendors + vendor_order_templates CRUD (asyncHandler·HttpError·Zod)
+- 🔲 Phase D · VendorListEditor / VendorDetailModal UI 필드 확장
+- 🔲 Phase E · xlsx → DB import 스크립트 (일회성 · 52 vendor + templates)
+- 💡 결정 필요:
+  - `login_credentials` 암호화 여부 (평문 위험)
+  - `note`(기존) vs `special_notes`(신규) 통합/분리
+  - `vendor_order_templates` 별도 페이지 or 조회 전용
+  - xlsx import 즉시 vs 수동 트리거
+
 ### #177 · 상품 등록 페이지 · 매장 > 매입 메뉴 (신규 · 2026-08-20)
 - 🔲 신규 페이지 · 매장 > 매입 서브탭에 추가 · **상품 등록 UI**
 - 🔲 기능 · `products` 테이블에 신규 row INSERT (기존 컬럼 재사용 · 파생컬럼 X)
