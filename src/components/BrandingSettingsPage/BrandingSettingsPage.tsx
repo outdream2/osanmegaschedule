@@ -33,10 +33,10 @@ import { SIDE_NAV_GROUPS } from "../layout/sideNavGroups";
 import { TabBar, type TabDef } from "../common/TabBar";
 import { ImageUploadField } from "../common/ImageUploadField";
 import { IconTile } from "../common/IconTile";
+import { Card } from "../common/Card";
 
 // ─── 공통 카드 스타일 (ContractSettingsPage 톤과 통일) ───────────────────────
-const CARD_BASE =
-  "bg-white border border-line rounded-xl shadow-sm overflow-hidden";
+// 2026-08-20 · Card 프리미티브 확산 · <Card as="section" clip padding="none">
 const SECTION_HEADER =
   "flex items-center gap-2 px-4 py-3 border-b border-line bg-zinc-50/60";
 // 2026-08-12 · 공통 CSS 로 통일 (settingsTypography.ts)
@@ -117,7 +117,7 @@ function TextField({
 const BrandSection: React.FC = () => {
   const { brand, setBrand, loaded, saveState } = useBrandIdentity();
   return (
-    <section className={CARD_BASE}>
+    <Card as="section" clip padding="none">
       <div className={SECTION_HEADER}>
         {/* 2026-08-18 · IconTile 프레임워크 확산 */}
         <IconTile icon={<Buildings size={15} weight="fill" />} tone="indigo" size="md" />
@@ -181,7 +181,7 @@ const BrandSection: React.FC = () => {
       {!loaded && (
         <div className="px-4 pb-3 text-[15px] text-zinc-400">서버에서 설정을 불러오는 중…</div>
       )}
-    </section>
+    </Card>
   );
 };
 
@@ -191,7 +191,7 @@ const BrandSection: React.FC = () => {
 export const ContactSection: React.FC = () => {
   const { contact, setContact, loaded, saveState } = useContactInfo();
   return (
-    <section className={CARD_BASE}>
+    <Card as="section" clip padding="none">
       <div className={SECTION_HEADER}>
         {/* 2026-08-18 · IconTile 프레임워크 확산 */}
         <IconTile icon={<Phone size={15} weight="fill" />} tone="emerald" size="md" />
@@ -252,7 +252,7 @@ export const ContactSection: React.FC = () => {
       {!loaded && (
         <div className="px-4 pb-3 text-[15px] text-zinc-400">서버에서 설정을 불러오는 중…</div>
       )}
-    </section>
+    </Card>
   );
 };
 
@@ -300,7 +300,7 @@ export const StampsSection: React.FC = () => {
   );
 
   return (
-    <section className={CARD_BASE}>
+    <Card as="section" clip padding="none">
       <div className={SECTION_HEADER}>
         {/* 2026-08-18 · IconTile 프레임워크 확산 */}
         <IconTile icon={<Stamp size={15} weight="fill" />} tone="rose" size="md" />
@@ -459,7 +459,7 @@ export const StampsSection: React.FC = () => {
       {!loaded && (
         <div className="px-4 pb-3 text-[15px] text-zinc-400">서버에서 설정을 불러오는 중…</div>
       )}
-    </section>
+    </Card>
   );
 };
 
@@ -503,7 +503,7 @@ export const MobileVisibilitySection: React.FC = () => {
   }, []);
 
   return (
-    <section className={CARD_BASE}>
+    <Card as="section" clip padding="none">
       <div className={SECTION_HEADER}>
         {/* 2026-08-18 · IconTile 프레임워크 확산 */}
         <IconTile icon={<DeviceMobile size={15} weight="fill" />} tone="violet" size="md" />
@@ -561,7 +561,7 @@ export const MobileVisibilitySection: React.FC = () => {
       {!loaded && (
         <div className="px-4 pb-3 text-[15px] text-zinc-400">서버에서 설정을 불러오는 중…</div>
       )}
-    </section>
+    </Card>
   );
 };
 
