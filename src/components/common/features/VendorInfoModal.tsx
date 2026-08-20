@@ -1,4 +1,4 @@
-// src/components/common/VendorInfoModal.tsx
+// src/components/common/features/VendorInfoModal.tsx
 // T-COMMON-VendorInfoModal · 공급사 상세 모달 공통 wrapper + 훅 (2026-08-06)
 //
 // VendorInfoModal  · backdrop-blur + max-w-3xl · click-outside close · VendorDetailModal 포함
@@ -10,9 +10,9 @@
 //   PurchaseHistoryTab / PaymentInfoTab / ReturnListPanel / OrderManagePage
 
 import React, { useCallback, useState } from "react";
-import { VendorDetailModal } from "../LandingPage/VendorListEditor";
-import type { Vendor } from "../LandingPage/VendorListEditor";
-import { useVendors } from "../../hooks/useVendors";
+import { VendorDetailModal } from "../../LandingPage/VendorListEditor";
+import type { Vendor } from "../../LandingPage/VendorListEditor";
+import { useVendors } from "../../../hooks/useVendors";
 
 // ─── VendorInfoModal ──────────────────────────────────────────────────────────
 

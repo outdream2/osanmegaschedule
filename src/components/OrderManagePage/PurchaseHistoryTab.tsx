@@ -41,7 +41,7 @@ import ProductPurchaseDetailPanel, {
   type ProductPurchaseRow,
 } from "./PurchaseHistoryTab/ProductPurchaseDetailPanel";
 import { useLedgerHighlight } from "../../hooks/useLedgerHighlight";
-import { useVendorInfoModal } from "../common/VendorInfoModal";
+import { useVendorInfoModal } from "../common/features/VendorInfoModal";
 // 2026-08-04 · by-vendor 좌측 리스트 · SupplierTab embedded 모드 재사용 (사용자 요청)
 //   · 기존 VendorRowCard 리스트 → SupplierTab 좌측 (재고자산·상품수·매입·판매량·판매액 컬럼)
 //   · 우측 상세 (VendorHeaderPanel + PurchaseSubTabs) 는 100% 유지

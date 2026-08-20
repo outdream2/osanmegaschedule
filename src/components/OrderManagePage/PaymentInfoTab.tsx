@@ -25,7 +25,7 @@ import {
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 // T-COMMON-VendorInfo · 공급사 헤더 공통 컴포넌트 (2026-08-06)
 import { VendorInfoHeader } from "../common/VendorInfoHeader";
-import { useVendorInfoModal } from "../common/VendorInfoModal";
+import { useVendorInfoModal } from "../common/features/VendorInfoModal";
 import { SplitPanel } from "../common/SplitPanel";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 // T-CSS Phase 2 · 2026-08-06
