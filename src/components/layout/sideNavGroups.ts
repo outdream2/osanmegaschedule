@@ -233,11 +233,15 @@ export function deriveUserLevel(session: AuthSession | null): number {
 }
 
 /** authSession 기반 접근 판정 · AppNavHeader.tsx 의 필터 로직 재사용 (약사 판정 · level ≥ 3)
- *  2026-08-16 · perms 파라미터 추가 · PagePermission.hidden 체크 (lv 9 은 예외 · 설정 접근용) */
+ *  2026-08-16 · perms 파라미터 추가 · PagePermission.hidden 체크 (lv 9 은 예외 · 설정 접근용)
+ *  2026-08-20 · #175 · employmentStatus 파라미터 추가 · document-writer 서브탭 gate
+ *      · pending_resignation 또는 admin(level≥9) 만 사직서 작성 항목 노출
+ *      · retired · active · admin 아니면 · 사이드바에서 숨김 */
 export function canAccessItem(
   item: SideNavItem,
   session: AuthSession | null,
   perms?: import("../../types").PagePermissions | null,
+  employmentStatus?: import("../../lib/employmentStatus").EmploymentStatus | null,
 ): boolean {
   if (item.key === "landing") return true;
   if (!session) return false;
@@ -250,6 +254,19 @@ export function canAccessItem(
   if (item.minLevel != null && level < item.minLevel) return false;
   if (item.managerOnly && !isPrivileged) return false;
   if (item.pharmacistOnly && !isPharmacist) return false;
+
+  // 2026-08-20 · #175 · 사직서 작성 (document-writer) · 퇴사예정 또는 admin 만 노출
+  //   · employmentStatus 미제공 시 (로딩 중 · 훅 미사용) · 안전측 · admin 만 노출
+  //   · admin (lv 9) 은 항상 노출 (사직서 관리자 대리 작성용)
+  if (item.subTab === "document-writer" && item.key === "approval-request") {
+    if (level >= 9) {
+      // admin · 항상 허용
+    } else if (employmentStatus === "pending_resignation") {
+      // 퇴사예정 · 허용
+    } else {
+      return false;
+    }
+  }
   // 2026-08-17 · #131 · 페이지 숨김 · admin(lv9) 도 hidden 적용
   //   · 이전 버그: admin 은 hidden 무시 → uncheck 해도 사이드바에서 안 사라짐 → 사용자 리포트
   //   · fix: admin 도 hidden 적용 · 단 · admin 잠금 방지 (permissions/business-manage/account 는 admin 예외)
@@ -271,13 +288,15 @@ export function canAccessItem(
 }
 
 /** 그룹 안에서 접근 가능 항목만 필터 · 빈 그룹은 제외
- *  2026-08-16 · perms 옵션 · 숨김 페이지 반영 */
+ *  2026-08-16 · perms 옵션 · 숨김 페이지 반영
+ *  2026-08-20 · #175 · employmentStatus 옵션 · 사직서 작성 항목 gate */
 export function filterGroupsForSession(
   session: AuthSession | null,
   perms?: import("../../types").PagePermissions | null,
+  employmentStatus?: import("../../lib/employmentStatus").EmploymentStatus | null,
 ): SideNavGroup[] {
   return SIDE_NAV_GROUPS
-    .map(g => ({ ...g, items: g.items.filter(it => canAccessItem(it, session, perms)) }))
+    .map(g => ({ ...g, items: g.items.filter(it => canAccessItem(it, session, perms, employmentStatus)) }))
     .filter(g => g.items.length > 0);
 }
 

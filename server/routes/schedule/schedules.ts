@@ -30,6 +30,26 @@ router.get("/api/employees/next-number", asyncHandler(async (_req, res) => {
 router.put("/api/employees/:id", (req, res) => scheduleController.updateEmployee(req, res));
 router.delete("/api/employees/:id", authorize(9), (req, res) => scheduleController.deleteEmployee(req, res));
 
+// 2026-08-20 · #175 · 단건 조회 · 본인 or 관리자(level ≥ 9) 만 허용
+//   · ApprovalRequestPage / useEmploymentStatus · retire_date 파생 · 사직서 gate
+//   · payload · Employee DTO subset · retireDate 필수
+router.get("/api/employees/:id", asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id) || id <= 0) throw badRequest("잘못된 직원 ID");
+  const auth = (req as any).authUser as { sub?: number; level?: number } | undefined;
+  const level = auth?.level ?? 0;
+  const isSelf = auth?.sub === id;
+  if (!isSelf && level < 9) throw new HttpError(403, "본인 또는 관리자만 조회 가능합니다", "FORBIDDEN");
+  const { data, error } = await supabase
+    .from("employees")
+    .select("id, name, retireDate, level, position, rank, employmentType, hireDate, workplace, phone")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new HttpError(500, error.message);
+  if (!data) throw notFound("직원을 찾을 수 없습니다");
+  res.json(data);
+}));
+
 const contractsDir = path.join(process.cwd(), "uploads", "contracts");
 if (!fs.existsSync(contractsDir)) fs.mkdirSync(contractsDir, { recursive: true });
 const contractUpload = multer({

@@ -139,6 +139,122 @@ describe("filterGroupsForSession", () => {
     const groups = filterGroupsForSession(admin);
     expect(groups.length).toBeGreaterThan(0);
   });
+
+  // 2026-08-20 · #175 · document-writer 서브탭 gate · employmentStatus 파라미터
+  it("일반 직원 · employmentStatus=active · 사직서 작성 항목 없음", () => {
+    const emp = { level: 1, role: "employee" } as AuthSession;
+    const groups = filterGroupsForSession(emp, null, "active");
+    const approvals = groups.find((g) => g.id === "approvals");
+    const hasDocWriter = approvals?.items.some(
+      (it) => it.subTab === "document-writer",
+    );
+    expect(hasDocWriter).toBe(false);
+  });
+
+  it("일반 직원 · employmentStatus=pending_resignation · 사직서 작성 노출", () => {
+    const emp = { level: 1, role: "employee" } as AuthSession;
+    const groups = filterGroupsForSession(emp, null, "pending_resignation");
+    const approvals = groups.find((g) => g.id === "approvals");
+    const hasDocWriter = approvals?.items.some(
+      (it) => it.subTab === "document-writer",
+    );
+    expect(hasDocWriter).toBe(true);
+  });
+
+  it("일반 직원 · employmentStatus=retired · 사직서 작성 없음", () => {
+    const emp = { level: 1, role: "employee" } as AuthSession;
+    const groups = filterGroupsForSession(emp, null, "retired");
+    const approvals = groups.find((g) => g.id === "approvals");
+    const hasDocWriter = approvals?.items.some(
+      (it) => it.subTab === "document-writer",
+    );
+    expect(hasDocWriter).toBe(false);
+  });
+
+  it("admin (level ≥ 9) · employmentStatus 무관 · 사직서 작성 항상 노출", () => {
+    const admin = { level: 9, role: "admin" } as AuthSession;
+    // active
+    let groups = filterGroupsForSession(admin, null, "active");
+    let approvals = groups.find((g) => g.id === "approvals");
+    expect(approvals?.items.some((it) => it.subTab === "document-writer")).toBe(true);
+    // null (hook 로딩 중)
+    groups = filterGroupsForSession(admin, null, null);
+    approvals = groups.find((g) => g.id === "approvals");
+    expect(approvals?.items.some((it) => it.subTab === "document-writer")).toBe(true);
+    // pending_resignation
+    groups = filterGroupsForSession(admin, null, "pending_resignation");
+    approvals = groups.find((g) => g.id === "approvals");
+    expect(approvals?.items.some((it) => it.subTab === "document-writer")).toBe(true);
+  });
+
+  it("employmentStatus 미제공 (undefined) · 일반 직원 · 사직서 작성 없음 (안전측)", () => {
+    const emp = { level: 1, role: "employee" } as AuthSession;
+    const groups = filterGroupsForSession(emp, null);
+    const approvals = groups.find((g) => g.id === "approvals");
+    const hasDocWriter = approvals?.items.some(
+      (it) => it.subTab === "document-writer",
+    );
+    expect(hasDocWriter).toBe(false);
+  });
+});
+
+// 2026-08-20 · #175 · canAccessItem · document-writer subTab gate
+describe("canAccessItem · document-writer gate (#175)", () => {
+  const docItem = {
+    key: "approval-request",
+    label: "서류작성",
+    icon: (() => null) as any,
+    subTab: "document-writer",
+  };
+
+  it("일반 직원 · active · false", () => {
+    const emp = { level: 1, role: "employee" } as AuthSession;
+    expect(canAccessItem(docItem as any, emp, null, "active")).toBe(false);
+  });
+
+  it("일반 직원 · pending_resignation · true", () => {
+    const emp = { level: 1, role: "employee" } as AuthSession;
+    expect(canAccessItem(docItem as any, emp, null, "pending_resignation")).toBe(true);
+  });
+
+  it("일반 직원 · retired · false", () => {
+    const emp = { level: 1, role: "employee" } as AuthSession;
+    expect(canAccessItem(docItem as any, emp, null, "retired")).toBe(false);
+  });
+
+  it("admin (level 9) · status 무관 · true", () => {
+    const admin = { level: 9, role: "admin" } as AuthSession;
+    expect(canAccessItem(docItem as any, admin, null, "active")).toBe(true);
+    expect(canAccessItem(docItem as any, admin, null, "retired")).toBe(true);
+    expect(canAccessItem(docItem as any, admin, null, null)).toBe(true);
+    expect(canAccessItem(docItem as any, admin, null)).toBe(true);
+  });
+
+  it("status undefined · 일반 직원 · false (안전측)", () => {
+    const emp = { level: 1, role: "employee" } as AuthSession;
+    expect(canAccessItem(docItem as any, emp, null)).toBe(false);
+  });
+
+  it("다른 서브탭 (leave·lunch) · gate 영향 없음", () => {
+    const emp = { level: 1, role: "employee" } as AuthSession;
+    const leave = { ...docItem, subTab: "leave" };
+    const lunch = { ...docItem, subTab: "lunch" };
+    expect(canAccessItem(leave as any, emp, null, "active")).toBe(true);
+    expect(canAccessItem(lunch as any, emp, null, "active")).toBe(true);
+  });
+
+  it("business-manage document-writer:contract · gate 영향 없음 (다른 key)", () => {
+    // business-manage 서브탭 document-writer:contract 는 managerOnly=true 로만 제어 · #175 gate 미적용
+    const bmContract = {
+      key: "business-manage",
+      label: "근로계약서 작성",
+      icon: (() => null) as any,
+      subTab: "document-writer:contract",
+      managerOnly: true,
+    };
+    const mgr = { level: 2, role: "manager" } as AuthSession;
+    expect(canAccessItem(bmContract as any, mgr, null, "active")).toBe(true);
+  });
 });
 
 describe("isItemActive", () => {

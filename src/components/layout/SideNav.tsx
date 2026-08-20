@@ -35,6 +35,8 @@ import {
 import { useSidebarWidth } from "../../hooks/useSidebar";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { usePagePermissions } from "../../hooks/usePagePermissions";
+// 2026-08-20 · #175 · 본인 재직 상태 · 사직서 작성 서브탭 gate
+import { useEmploymentStatus } from "../../hooks/useEmploymentStatus";
 // 2026-08-17 · 사용자 지시 · 사이드바 · logo2 사용 (기본 로고와 별개)
 import logoImg from "../../images/logo2.png";
 
@@ -333,7 +335,9 @@ export const SideNav: React.FC<SideNavProps> = ({
   // 2026-08-12 · hideOnMobile 그룹은 반응형(모바일)에서 숨김 (거래처 그룹 등 · PC 관리자 전용)
   // 2026-08-16 · 페이지 숨김 반영 · 서버 perms 참조
   const { perms } = usePagePermissions();
-  const groups = filterGroupsForSession(authSession, perms).filter(g => !(isMobile && g.hideOnMobile));
+  // 2026-08-20 · #175 · 본인 재직 상태 · document-writer 서브탭 filter · admin·pending_resignation 만 노출
+  const { status: employmentStatus } = useEmploymentStatus(authSession);
+  const groups = filterGroupsForSession(authSession, perms, employmentStatus).filter(g => !(isMobile && g.hideOnMobile));
   const { width, startResize } = useSidebarWidth();
   const { brand } = useBrandIdentity();
 
