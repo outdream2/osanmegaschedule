@@ -129,16 +129,17 @@ export const Modal: React.FC<ModalProps> = ({
       onClick={handleBackdrop}
       role="dialog"
       aria-modal="true"
+      aria-labelledby={title != null ? "modal-title" : undefined}
     >
       <div className={`modal-card ${sizeCls} ${className}`}>
         {hasHeader && (
           <div className={headerCls}>
             {titleAccent && <AccentBar size="lg" className="shrink-0" />}
             {icon != null && (
-              <span className="text-brand-deep shrink-0 inline-flex">{icon}</span>
+              <span className="text-brand-deep shrink-0 inline-flex" aria-hidden="true">{icon}</span>
             )}
             {title != null && (
-              <div className="flex-1 min-w-0 text-[16px] font-bold text-ink tracking-tight truncate">
+              <div id="modal-title" className="flex-1 min-w-0 text-[16px] font-bold text-ink tracking-tight truncate">
                 {title}
               </div>
             )}

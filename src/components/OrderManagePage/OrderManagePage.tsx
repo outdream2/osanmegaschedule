@@ -62,8 +62,8 @@ import { CARD_BASE, MODAL_BACKDROP } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
 import { LoadingState } from "../common/LoadingState";
 // T-COMMON-InventoryEditModal · 2026-08-06 · 실재고 입력·편집 공통 모달
-import { InventoryEditModal } from "../common/InventoryEditModal";
-import type { InventoryEditModalInitialValues } from "../common/InventoryEditModal";
+import { InventoryEditModal } from "../common/features/InventoryEditModal";
+import type { InventoryEditModalInitialValues } from "../common/features/InventoryEditModal";
 import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { api, ApiError } from "../../lib/apiClient";

@@ -77,6 +77,7 @@ export function PageToolbar({
           value={search.value}
           onChange={e => search.onChange(e.target.value)}
           placeholder={search.placeholder ?? "검색"}
+          aria-label={search.placeholder ?? "검색"}
           className={search.className ?? "text-[15px] border border-line rounded-lg px-3 h-10 flex-1 min-w-[160px] max-w-[260px] focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors bg-white text-ink placeholder-ink-soft"}
         />
       )}

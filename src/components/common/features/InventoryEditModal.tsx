@@ -1,14 +1,14 @@
-// src/components/common/InventoryEditModal.tsx
+// src/components/common/features/InventoryEditModal.tsx
 // 실재고 입력 모달 · InventoryEditPanel 을 Modal 로 감쌈 · 누적(add) 방식
 // zone별 저장: POST /api/inventory-checks (모든 필드 포함 · 해당 zone 만 newTotal)
 // 저장 완료 후: CustomEvent "inventory-checks-updated" dispatch
 
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useState } from "react";
-import { api } from "../../lib/apiClient";
-import { Modal } from "./Modal";
-import { InventoryEditPanel, type ZoneKey } from "./InventoryEditPanel";
-import type { CurrentValues } from "./InventoryEditPanel";
+import { api } from "../../../lib/apiClient";
+import { Modal } from "../Modal";
+import { InventoryEditPanel, type ZoneKey } from "../InventoryEditPanel";
+import type { CurrentValues } from "../InventoryEditPanel";
 
 // ─────────────────────────────────────────────────────────────
 // Types

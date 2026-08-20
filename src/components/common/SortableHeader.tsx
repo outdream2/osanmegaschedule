@@ -76,6 +76,8 @@ export function SortableHeader<K extends string = string>({
         const isActive = col.key === activeKey;
         const alignCls = col.align === "right" ? "text-right" : col.align === "center" ? "text-center" : "text-left";
         const clickable = col.sortable !== false;
+        const ariaSort: "ascending" | "descending" | "none" | undefined =
+          !clickable ? undefined : isActive ? (activeDir === "asc" ? "ascending" : "descending") : "none";
         return (
           <th
             key={col.key}
@@ -88,6 +90,7 @@ export function SortableHeader<K extends string = string>({
             style={col.width != null ? { width: typeof col.width === "number" ? `${col.width}px` : col.width } : undefined}
             onClick={() => handleClick(col)}
             title={clickable ? `${col.label} · 클릭하여 정렬` : col.label}
+            aria-sort={ariaSort}
           >
             <span className={`inline-flex items-center gap-1 ${col.align === "right" ? "justify-end w-full" : col.align === "center" ? "justify-center w-full" : ""}`}>
               <span className={isActive ? "text-brand-deep font-bold" : ""}>{col.label}</span>
