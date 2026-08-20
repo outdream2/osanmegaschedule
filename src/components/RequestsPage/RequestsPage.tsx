@@ -1170,7 +1170,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         {tab === "lunch" && (
           <div className="flex flex-col gap-3">
             {/* 요약 뱃지 */}
-            <div className="flex items-center justify-between bg-white border border-line rounded-xl px-4 py-3 shadow-sm">
+            <Card padding="none" className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-2">
                 <Utensils size={14} className="text-emerald-500" />
                 <span className="text-xs font-bold text-gray-700">오늘의 점심 불참 현황</span>
@@ -1186,7 +1186,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                   <RefreshCw size={12} className={lunchLoading ? "animate-spin" : ""} />
                 </button>
               </div>
-            </div>
+            </Card>
 
             {lunchLoading && lunchRequests.length > 0 && (
               <div className="flex items-center justify-center py-1.5 mb-1 bg-zinc-100 border border-line rounded-md sticky top-0 z-10"><Spinner tone="zinc" size={11} label="새로 불러오는 중..." labelSize={14} /></div>
