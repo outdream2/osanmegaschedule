@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { api } from "../../lib/apiClient";
 import { Shield, Check, Loader2, AlertCircle, Settings as SettingsIcon, Users, IdCard, Construction, Plus, Trash2, GripVertical, Save, Pencil, Eye, EyeOff } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { invalidatePagePermissions } from "../../hooks/usePagePermissions";
 import { useSidebarEnabled, invalidateSidebarEnabled } from "../../hooks/useSidebar";
 import { useToast, toastClass } from "../../hooks/useToast";
@@ -553,7 +554,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
               활성 시 · PC 화면에 사이드바 표시 (모바일은 항상 공통헤더 유지) · 비활성 시 · 기존 PC 공통헤더로 전환 · 서버 저장 · 즉시 반영
             </div>
           </label>
-          {sidebarSaving && <Loader2 size={16} className="text-indigo-400 animate-spin" />}
+          {sidebarSaving && <Spinner size={16} tone="brand" />}
         </div>
         {loadError && (
           <div className="mb-4 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-sm flex items-center gap-2">
@@ -813,7 +814,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
                   </div>
                   <div className="flex justify-center">
                     {empSavingId === emp.id ? (
-                      <Loader2 size={12} className="text-indigo-400 animate-spin" />
+                      <Spinner size={12} tone="brand" />
                     ) : empSavedIds.has(emp.id) ? (
                       <Check size={12} className="text-emerald-500" />
                     ) : null}
@@ -997,7 +998,7 @@ const LevelSelect: React.FC<LevelSelectProps> = ({ value, onChange, saving, save
     </select>
     <div className="absolute right-2 pointer-events-none">
       {saving ? (
-        <Loader2 size={10} className="text-indigo-400 animate-spin" />
+        <Spinner size={10} tone="brand" />
       ) : saved ? (
         <Check size={10} className="text-emerald-500" />
       ) : null}
