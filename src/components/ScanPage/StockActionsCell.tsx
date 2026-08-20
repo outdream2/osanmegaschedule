@@ -2,7 +2,8 @@
 // ScanPage.tsx tbody > tr > td (마지막 td) 를 여기서 렌더
 
 import React from "react";
-import { Loader2, History, Megaphone, Trash2 } from "lucide-react";
+import { History, Megaphone, Trash2 } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import type { StockRow } from "./stockRowTypes";
 import { calcSlotTotal } from "./stockRowTypes";
 
@@ -66,7 +67,7 @@ export const StockActionsCell: React.FC<StockActionsCellProps> = React.memo(({
         title="진열요청 전송 · 매장 재고 부족 시 강조"
       >
         {requestingKey === row.key
-          ? <Loader2 size={13} className="animate-spin" />
+          ? <Spinner size={13} tone="red" />
           : <Megaphone size={13} />}
       </button>
     </div>
