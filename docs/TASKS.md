@@ -11,15 +11,17 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
-### #175 · 직원정보 · 퇴사예정 분류 + 사직서 조건부 노출 (✅ 완료 · 2026-08-20 · `d2cc2a6`)
-- ✅ 3-state 파생 · retire_date null=재직 · 미래=**퇴사예정** · 오늘이하=퇴사
+### #175 · 직원정보 · 퇴사예정 분류 + 사직서 조건부 노출 (진행중 · 2026-08-20)
+- ✅ 3-state 파생 · retire_date null=재직 · 미래=**퇴사예정** · 오늘이하=퇴사 (`d2cc2a6`)
 - ✅ DB · employees.retire_date DATE 재사용 · 컬럼 추가 없음 (feedback_no_derived_columns 준수)
 - ✅ lib/employmentStatus.ts · getEmploymentStatus·canWriteResignation·EMPLOYMENT_STATUS_LABEL
 - ✅ EmployeeProfileCard · 이름 옆 상태 배지 (퇴사예정 amber·퇴사 zinc)
 - ✅ ApprovalRequestPage · ResignationGate · 퇴사예정 만 사직서 접근·admin 예외
 - ✅ 재직/퇴사 · 안내 UI (관리자에게 요청 안내)
+- ✅ StaffManagePage · 상태 필터 3-state (재직/퇴사예정/퇴사/전체 · `db27f33`)
+- ✅ StaffManagePage · 퇴사예정 배지 amber · 퇴사 rose · title 툴팁 날짜
+- ✅ 퇴사자 목록 (필터 "퇴사" 탭) · 사직서 보기/업로드 · 기존 UI 재사용
 - ✅ 9 신규 tests
-- 🔲 잔여 · 직원 편집 UI (StaffManagePage) 에서 retire_date 세팅 UX 개선 (미래 날짜 = 퇴사예정 안내)
 - 🔲 잔여 · 사이드바 · 재직 상태에서 "사직서" 서브탭 자체 숨김 (현재는 클릭 시 안내)
 
 ### #174 · 사이드메뉴 종 아이콘 · 테두리·여백 반으로 (✅ 완료 · 2026-08-20 · `31f5d29`)
