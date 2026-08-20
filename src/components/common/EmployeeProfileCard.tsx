@@ -15,6 +15,7 @@ import { FileText, Edit2, Upload, X } from "lucide-react";
 import type { Employee } from "../../types";
 import { uploadResume, uploadContract, uploadBankbook } from "../../lib/employeeApi";
 import { getEmploymentStatus, EMPLOYMENT_STATUS_LABEL } from "../../lib/employmentStatus";
+import { Card } from "./Card";
 
 interface Props {
   employee: Employee;
@@ -108,7 +109,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
   const emptyCls = "px-2 py-1.5 text-[12px] font-semibold bg-zinc-50 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 rounded-lg inline-flex items-center justify-center gap-1 border border-dashed border-zinc-300 cursor-pointer transition disabled:opacity-60 disabled:cursor-wait";
 
   return (
-    <div className="bg-white border border-line rounded-xl px-4 py-3 space-y-3 shadow-sm">
+    <Card padding="none" className="px-4 py-3 space-y-3">
       {/* 이름 헤더 + [수정] 버튼 */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="min-w-0">
@@ -338,7 +339,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 };
 
