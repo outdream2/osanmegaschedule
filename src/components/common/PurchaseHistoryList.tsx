@@ -25,7 +25,7 @@
 //   minRows?       · limit 없이 전부 보이기 (default 999999)
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Spinner } from "./Spinner";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
 
@@ -201,7 +201,7 @@ export const PurchaseHistoryList: React.FC<PurchaseHistoryListProps> = ({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8 text-zinc-400 text-[12px] gap-2">
-        <Loader2 size={14} className="animate-spin" />
+        <Spinner size={14} />
         <span>매입 이력 로딩 중...</span>
       </div>
     );
