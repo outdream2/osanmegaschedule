@@ -454,10 +454,11 @@ export const SideNav: React.FC<SideNavProps> = ({
           </div>
         )}
         {/* 2026-08-17 v3 · 종 아이콘 테두리 여백 반 (PC · 사용자 요청) · px-2 py-1 → px-1 py-0.5 */}
+        {/* 2026-08-20 · #174 · NotificationBell compact · 크기·테두리·그림자 축소 · 시각 균형 */}
         {authSession && (
-          <div className="flex items-center gap-1 px-1 py-0.5 rounded-lg group-data-[collapsible=icon]:justify-center">
+          <div className="flex items-center gap-0.5 px-0.5 py-0 rounded-md group-data-[collapsible=icon]:justify-center">
             <NotificationToggle authSession={authSession} />
-            <NotificationBell authSession={authSession} onNavigate={onNavigate as unknown as (page: string) => void} />
+            <NotificationBell authSession={authSession} onNavigate={onNavigate as unknown as (page: string) => void} compact />
           </div>
         )}
         {authSession && onLogout && (

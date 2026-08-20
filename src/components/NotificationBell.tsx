@@ -23,6 +23,8 @@ interface NotificationBellProps {
   authSession: AuthSession | null;
   /** 알림 클릭 시 페이지 이동 · 없으면 이동 안 함 (2026-08-05 · 사용자 요청) */
   onNavigate?: (page: string) => void;
+  /** compact · 사이드바 하단용 · 크기·테두리·그림자 축소 (2026-08-20 · #174) */
+  compact?: boolean;
 }
 
 /**
@@ -65,7 +67,7 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
 }
 
-export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession, onNavigate }) => {
+export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession, onNavigate, compact = false }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -160,14 +162,16 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
       {/* 2026-08-17 · 최신 트렌드 · 딥네이비 배경 대응 · 반투명 흰 · 접근성 h-9 · 폰트 +2 */}
       <button
         onClick={() => { setOpen((v) => !v); if (!open) fetchNotifications(); }}
-        className={`relative flex items-center justify-center w-9 h-9 rounded-lg border transition-colors cursor-pointer shadow-sm ${
+        className={`relative flex items-center justify-center rounded-md border transition-colors cursor-pointer ${
+          compact ? "w-7 h-7" : "w-9 h-9 rounded-lg shadow-sm"
+        } ${
           hasUnread
             ? "bg-rose-500/95 hover:bg-rose-600 border-rose-400 text-white"
             : "bg-white/[0.10] hover:bg-white/[0.18] border-white/15 hover:border-white/30 text-white"
         } ${justArrived ? "notif-bell-shake" : ""}`}
         title={hasUnread ? `미확인 알림 ${unreadCount}건` : "알림"}
       >
-        <Bell size={16} strokeWidth={hasUnread ? 2.4 : 2.2} className={hasUnread ? "animate-pulse" : ""} />
+        <Bell size={compact ? 13 : 16} strokeWidth={hasUnread ? 2.4 : 2.2} className={hasUnread ? "animate-pulse" : ""} />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[11px] font-bold flex items-center justify-center leading-none shadow-sm ring-2 ring-white tabular-nums">
             {unreadCount > 99 ? "99+" : unreadCount}
