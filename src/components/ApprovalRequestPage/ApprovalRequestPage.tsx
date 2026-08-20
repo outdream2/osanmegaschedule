@@ -16,6 +16,9 @@ import { TabBar, type TabDef } from "../common/TabBar";
 import { LeavePage } from "../LeavePage/LeavePage";
 import { LunchPage } from "../LunchPage/LunchPage";
 import type { AuthSession } from "../../types";
+// 2026-08-20 · #175 · 퇴사예정 자만 사직서 작성 가능 · retire_date 파생
+import { api } from "../../lib/apiClient";
+import { getEmploymentStatus, canWriteResignation } from "../../lib/employmentStatus";
 
 // DocumentWriterPage · lazy (초기 진입 시 필요할 때만)
 const DocumentWriterPage = React.lazy(() => import("../DocumentWriterPage/DocumentWriterPage"));
@@ -138,11 +141,72 @@ const ApprovalRequestPage: React.FC<ApprovalRequestPageProps> = ({
           <LunchPage {...commonSubPageProps} />
         )}
         {subTab === "document-writer" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-zinc-400 py-16">사직서 로딩 중...</div>}>
-            <DocumentWriterPage {...commonSubPageProps} allowedTabs={["resignation"]} />
-          </Suspense>
+          <ResignationGate authSession={authSession}>
+            <Suspense fallback={<div className="flex-1 flex items-center justify-center text-zinc-400 py-16">사직서 로딩 중...</div>}>
+              <DocumentWriterPage {...commonSubPageProps} allowedTabs={["resignation"]} />
+            </Suspense>
+          </ResignationGate>
         )}
       </main>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────
+// #175 · ResignationGate · 사직서 작성 접근 제어
+//   · 본인 employee.retire_date 조회 · 퇴사예정 (미래 날짜) 만 허용
+//   · 재직·퇴사 · 안내 화면 표시 (관리자에게 요청)
+//   · 관리자 (level >= 9) · 예외 · 항상 접근 허용
+// ─────────────────────────────────────────────────────────────
+interface ResignationGateProps {
+  authSession: AuthSession | null;
+  children: React.ReactNode;
+}
+
+const ResignationGate: React.FC<ResignationGateProps> = ({ authSession, children }) => {
+  const [retireDate, setRetireDate] = useState<string | null | undefined>(undefined); // undefined = loading
+  const level = authSession?.level ?? 0;
+  const isAdmin = level >= 9;
+
+  useEffect(() => {
+    if (isAdmin) { setRetireDate(null); return; } // admin · 조회 스킵
+    const id = authSession?.employeeId;
+    if (!id) { setRetireDate(null); return; }
+    let alive = true;
+    api.get<{ retireDate?: string | null }>(`/api/employees/${id}`)
+      .then((r) => { if (alive) setRetireDate(r.data?.retireDate ?? null); })
+      .catch(() => { if (alive) setRetireDate(null); });
+    return () => { alive = false; };
+  }, [authSession?.employeeId, isAdmin]);
+
+  // 로딩
+  if (retireDate === undefined) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-zinc-400 py-16 text-[14px]">
+        상태 확인 중…
+      </div>
+    );
+  }
+
+  // admin · 항상 접근
+  if (isAdmin) return <>{children}</>;
+
+  // 퇴사예정 · 허용
+  if (canWriteResignation(retireDate)) return <>{children}</>;
+
+  // 그 외 · 안내
+  const status = getEmploymentStatus(retireDate);
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center py-16 px-4 text-center gap-2">
+      <PencilLine size={32} weight="duotone" className="text-zinc-400" />
+      <div className="text-[15px] font-bold text-zinc-700">
+        {status === "retired" ? "이미 퇴사 처리되었습니다" : "사직서는 퇴사예정자만 작성할 수 있습니다"}
+      </div>
+      <div className="text-[13px] text-zinc-500 leading-relaxed max-w-md">
+        {status === "retired"
+          ? "퇴사일 이후에는 사직서를 작성할 수 없습니다. 관리자에게 문의하세요."
+          : "먼저 관리자에게 퇴사일을 등록해 달라고 요청하세요. 등록 후 이 화면에서 사직서 작성이 가능합니다."}
+      </div>
     </div>
   );
 };

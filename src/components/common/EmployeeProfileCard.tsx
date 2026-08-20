@@ -14,6 +14,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { FileText, Edit2, Upload, X } from "lucide-react";
 import type { Employee } from "../../types";
 import { uploadResume, uploadContract, uploadBankbook } from "../../lib/employeeApi";
+import { getEmploymentStatus, EMPLOYMENT_STATUS_LABEL } from "../../lib/employmentStatus";
 
 interface Props {
   employee: Employee;
@@ -116,6 +117,23 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
             {localEmployee.employee_number && (
               <span className="text-[11px] font-bold text-zinc-400 tabular-nums">사번 {localEmployee.employee_number}</span>
             )}
+            {/* 2026-08-20 · #175 · 재직상태 배지 · retire_date 파생 (재직/퇴사예정/퇴사) */}
+            {(() => {
+              const status = getEmploymentStatus(localEmployee.retireDate);
+              if (status === "active") return null;
+              const tone = status === "pending_resignation"
+                ? "bg-amber-50 text-amber-700 border-amber-200"
+                : "bg-zinc-100 text-zinc-500 border-zinc-200";
+              return (
+                <span
+                  className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${tone} tabular-nums`}
+                  title={localEmployee.retireDate ? `퇴사(예정)일 ${localEmployee.retireDate}` : undefined}
+                >
+                  {EMPLOYMENT_STATUS_LABEL[status]}
+                  {status === "pending_resignation" && localEmployee.retireDate ? ` · ${localEmployee.retireDate}` : ""}
+                </span>
+              );
+            })()}
           </div>
           {/* 2026-08-17 · 사용자 지시 · 이름 아래 · 직군 · 근무형태 2개만 (rank 제외) · 폰트 +4 */}
           <div className="text-[16px] text-zinc-500 font-semibold mt-0.5">
