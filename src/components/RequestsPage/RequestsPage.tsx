@@ -19,6 +19,7 @@ import { StatusPill, type PillTone } from "../common/StatusPill";
 import { IconTile } from "../common/IconTile";
 import { AccentBar } from "../common/AccentBar";
 import { Spinner } from "../common/Spinner";
+import { Card } from "../common/Card";
 // 2026-08-12 · 연차승인 탭 · LeavePage mode="approval" 로 임베드 (관리자용 승인 UI)
 import { LeavePage } from "../LeavePage/LeavePage";
 
@@ -79,7 +80,7 @@ function ListToolbar({
   hideDeleteAll?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-2.5 mb-2 bg-white border border-line rounded-xl px-3.5 h-10 shadow-sm">
+    <Card padding="none" className="flex items-center gap-2.5 mb-2 px-3.5 h-10">
       <AccentBar className="shrink-0" />
       <button onClick={onToggleAll} className="shrink-0 cursor-pointer text-ink-soft hover:text-brand-deep transition-colors">
         {allChecked && total > 0
@@ -111,7 +112,7 @@ function ListToolbar({
       <button onClick={onRefresh} className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-soft hover:text-brand-deep hover:bg-brand-tint transition-colors cursor-pointer">
         <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
       </button>
-    </div>
+    </Card>
   );
 }
 
