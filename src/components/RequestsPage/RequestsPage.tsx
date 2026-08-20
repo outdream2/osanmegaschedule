@@ -629,7 +629,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                     disabled={notifying || displayReqs.filter(r => r.status === "pending").length === 0}
                     className="flex items-center gap-1.5 text-[15px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] border border-blue-400 px-2.5 h-6 rounded-md transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                   >
-                    {notifying ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
+                    {notifying ? <Spinner size={11} tone="white" /> : <Send size={11} />}
                     알림전송
                   </button>
                 ) : null
