@@ -13,6 +13,7 @@ import { displayVendorName } from "../../utils/vendorNameNormalize";
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
+import { Card } from "../common/Card";
 import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
 import { AccentBar } from "../common/AccentBar";
@@ -265,7 +266,7 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
               </div>
             </div>
           )}
-          <div className="bg-white border border-line rounded-xl overflow-hidden shadow-sm">
+          <Card clip padding="none">
             {/* 공급사 정보 헤더 (sky·rose gradient) */}
             <div className="px-4 py-3 bg-rose-50/60 border-b border-line flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2 min-w-0">
@@ -374,7 +375,7 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, su
                 </tr>
               </tfoot>
             </table>
-          </div>
+          </Card>
         </div>
 
         {/* 특이사항 메모 */}
