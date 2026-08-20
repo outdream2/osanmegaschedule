@@ -1514,7 +1514,7 @@ export const StockFlowPanel: React.FC<{
                       <span className="font-bold text-rose-700">{selectedCodes.size}개 선택됨</span>
                       <button onClick={bulkHide} disabled={bulkHiding}
                         className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-bold shadow-sm disabled:opacity-50">
-                        {bulkHiding ? <Loader2 size={11} className="animate-spin" /> : <EyeOff size={11} />}
+                        {bulkHiding ? <Spinner size={11} tone="white" /> : <EyeOff size={11} />}
                         선택 숨김
                       </button>
                       <button onClick={() => setSelectedCodes(new Set())}
@@ -2655,7 +2655,7 @@ export const SalesTrendPage: React.FC = () => {
                         <button onClick={() => unhideProduct(code)} disabled={busy}
                           className="shrink-0 flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-wait rounded-lg px-2.5 py-1.5 cursor-pointer transition"
                           title="숨김 해제 · 다시 검색·발주 리스트에 표시">
-                          {busy ? <Loader2 size={11} className="animate-spin" /> : <Eye size={11} />}
+                          {busy ? <Spinner size={11} tone="emerald" /> : <Eye size={11} />}
                           다시 표시
                         </button>
                       </li>
