@@ -9,7 +9,7 @@ import { api } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useVendors } from "../../hooks/useVendors";
 import {
-  Search, Check, X, Loader2, Building2, Package, Calendar,
+  Search, Check, X, Building2, Package, Calendar,
   DollarSign, TrendingUp, RefreshCw, ChevronRight, ChevronDown, ChevronUp,
   Wallet, Plus, Trash2, CircleDollarSign, User2, Phone,
 } from "lucide-react";
@@ -1556,7 +1556,7 @@ export const VendorDetailModal: React.FC<{
             disabled={!isDirty || saving}
             className="inline-flex items-center gap-1.5 h-8 px-5 text-[12px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg transition shadow-sm cursor-pointer"
           >
-            {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} strokeWidth={2.5} />}
+            {saving ? <Spinner size={12} tone="white" /> : <Check size={12} strokeWidth={2.5} />}
             저장
           </button>
         </div>
@@ -1950,7 +1950,7 @@ const PaymentRegisterModal: React.FC<{
             disabled={saving || amountNum <= 0}
             className="inline-flex items-center gap-1.5 h-8 px-5 text-[12px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg transition shadow-sm cursor-pointer"
           >
-            {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} strokeWidth={2.5} />}
+            {saving ? <Spinner size={12} tone="white" /> : <Check size={12} strokeWidth={2.5} />}
             결제 등록
           </button>
         </div>
