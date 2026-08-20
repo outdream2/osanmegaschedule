@@ -829,7 +829,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       {arrivalTab === "history" && (
         <main className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-5 flex flex-col gap-3 min-h-0">
           {/* 헤더 카드 · 2026-08-17 · accent bar + StatusPill 통일 */}
-          <div className="bg-white border border-line rounded-xl shadow-sm p-3 h-12 flex items-center gap-2.5">
+          <Card padding="sm" className="h-12 flex items-center gap-2.5">
             <AccentBar />
             <Package size={16} className="text-brand-deep shrink-0" />
             <span className="text-[16px] font-bold text-ink tracking-tight">입고내역</span>
@@ -848,7 +848,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
               title="새로고침">
               <RefreshCw size={13} className={arrivalsLoading ? "animate-spin" : ""} />
             </button>
-          </div>
+          </Card>
 
           {/* 리스트 카드 */}
           <Card clip padding="none">
