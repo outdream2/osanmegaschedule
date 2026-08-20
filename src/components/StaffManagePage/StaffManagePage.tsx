@@ -34,7 +34,6 @@ import {
   ExternalLink,
   FileText,
   GraduationCap,
-  Loader2,
   Mail,
   MapPin,
   Paperclip,
@@ -633,7 +632,7 @@ const CreateModal: React.FC<{
             disabled={saving}
             className="text-[15px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-md h-7 px-3.5 cursor-pointer disabled:opacity-40 flex items-center gap-1.5 shadow-sm"
           >
-            {saving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+            {saving ? <Spinner size={11} tone="white" /> : <Save size={11} />}
             {saving ? "저장 중..." : "저장"}
           </button>
         </div>
@@ -1655,7 +1654,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                           disabled={saving}
                           className="h-7 px-2.5 text-[15px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded-lg cursor-pointer flex items-center gap-1.5 shadow-sm disabled:opacity-40 transition-colors"
                         >
-                          {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                          {saving ? <Spinner size={12} tone="white" /> : <Save size={12} />}
                           {saving ? "저장 중..." : "저장"}
                         </button>
                       </>
@@ -2463,7 +2462,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                                               className="w-6 h-6 rounded-md text-zinc-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer disabled:opacity-40 flex items-center justify-center"
                                               title="이 연차 삭제 (스케줄표에도 반영)"
                                             >
-                                              {isDeleting ? <Loader2 size={11} className="animate-spin" /> : <X size={12} />}
+                                              {isDeleting ? <Spinner size={11} /> : <X size={12} />}
                                             </button>
                                           </td>
                                         )}
