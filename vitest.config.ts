@@ -20,8 +20,9 @@ export default defineConfig({
       "src/constants/**/*.test.ts",
       // 2026-08-20 · types · pure defaults + formatters
       "src/types.test.ts",
-      // 2026-08-20 · layout · pure helpers (sideNavGroups)
+      // 2026-08-20 · layout · pure helpers (sideNavGroups) + tsx (BottomNav)
       "src/components/layout/**/*.test.ts",
+      "src/components/layout/**/*.test.tsx",
     ],
     globals: false,
     environment: "node", // 기본 · jsdom 은 파일별 지시자 opt-in
