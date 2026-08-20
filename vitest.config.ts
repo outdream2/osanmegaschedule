@@ -20,6 +20,8 @@ export default defineConfig({
       "src/constants/**/*.test.ts",
       // 2026-08-20 · types · pure defaults + formatters
       "src/types.test.ts",
+      // 2026-08-20 · layout · pure helpers (sideNavGroups)
+      "src/components/layout/**/*.test.ts",
     ],
     globals: false,
     environment: "node", // 기본 · jsdom 은 파일별 지시자 opt-in
