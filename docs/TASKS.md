@@ -11,24 +11,21 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
-### #175 · 직원정보 · 퇴사예정 분류 + 사직서 조건부 노출 (신규 · 2026-08-20)
-- 🔲 직원 상태 분류 · "재직" · "**퇴사예정**" · "퇴사" (3-state)
-- 🔲 사직서 작성 페이지 (ResignationWriterPage) · **퇴사예정자에게만** 노출 (본인+관리자)
-- 🔲 재직자 · 사직서 작성 버튼·메뉴 숨김 (또는 disabled 안내)
-- 🔲 관리자 · 직원 편집에서 "퇴사예정" 체크·해제 · 상태 변경
-- 🔲 DB · employees 테이블 · 필드 추가 검토 (파생컬럼 X · 있는 컬럼 재사용 우선)
-  - 후보 A · pending_resignation_date DATE · 미래 퇴사일 세팅 · 시나리오: 예정일 도래 시 retire_date 로 승격
-  - 후보 B · status enum ("active" | "pending_resignation" | "retired")
-  - 후보 C · 기존 retire_date + 미래 날짜 = 퇴사예정 (컬럼 추가 없음)
-- 🔲 사이드바 노출 조건 · SIDE_NAV_GROUPS · resignation 항목 · canAccessItem 확장
-- 🔲 프레임워크 원칙 준수 · asyncHandler·HttpError·Zod·apiClient·useToast
-- 💡 스펙 확정 필요 · DB 컬럼 방식 · UI 위치 · 자동 승격 여부
+### #175 · 직원정보 · 퇴사예정 분류 + 사직서 조건부 노출 (✅ 완료 · 2026-08-20 · `d2cc2a6`)
+- ✅ 3-state 파생 · retire_date null=재직 · 미래=**퇴사예정** · 오늘이하=퇴사
+- ✅ DB · employees.retire_date DATE 재사용 · 컬럼 추가 없음 (feedback_no_derived_columns 준수)
+- ✅ lib/employmentStatus.ts · getEmploymentStatus·canWriteResignation·EMPLOYMENT_STATUS_LABEL
+- ✅ EmployeeProfileCard · 이름 옆 상태 배지 (퇴사예정 amber·퇴사 zinc)
+- ✅ ApprovalRequestPage · ResignationGate · 퇴사예정 만 사직서 접근·admin 예외
+- ✅ 재직/퇴사 · 안내 UI (관리자에게 요청 안내)
+- ✅ 9 신규 tests
+- 🔲 잔여 · 직원 편집 UI (StaffManagePage) 에서 retire_date 세팅 UX 개선 (미래 날짜 = 퇴사예정 안내)
+- 🔲 잔여 · 사이드바 · 재직 상태에서 "사직서" 서브탭 자체 숨김 (현재는 클릭 시 안내)
 
-### #174 · 사이드메뉴 종 아이콘 · 테두리·여백 반으로 (신규 · 2026-08-20)
-- 🔲 SideNav 하단 NotificationBell · 테두리·여백 반 · 시각 균형
-- 🔲 AppNavHeader 상단은 그대로 유지 (헤더 크기 유지)
-- 💡 접근 방법 · NotificationBell 에 `compact` prop 추가 · SideNav 에서만 true
-- 💡 현재 · w-9 h-9 rounded-lg border shadow-sm · compact → w-7 h-7 rounded-md border 유지 · shadow-none
+### #174 · 사이드메뉴 종 아이콘 · 테두리·여백 반으로 (✅ 완료 · 2026-08-20 · `31f5d29`)
+- ✅ NotificationBell · compact prop 추가 (하위호환)
+- ✅ SideNav compact=true · w-9 h-9 → w-7 h-7 · rounded-md · shadow 제거
+- ✅ AppNavHeader 상단은 그대로 유지 (compact 미전달)
 
 ### #171 · 랜딩페이지 · 오늘 현황 숫자 클릭 · 상세+이동 (신규 · 2026-08-20)
 - 🔲 오늘 현황 · "N건" 숫자 아래 링크 추가 · 클릭 시 상세 현황 노출
