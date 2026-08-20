@@ -1301,7 +1301,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             ) : !arrivalsLoading && stockArrivals.length === 0 ? (
               <Card variant="flat" padding="none" className="text-center text-[14px] text-ink-soft py-8">데이터 없음</Card>
             ) : (
-              <div className={`bg-white border border-line rounded-xl overflow-hidden divide-y divide-line/70 shadow-sm ${arrivalsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+              <Card clip padding="none" className={`divide-y divide-line/70 ${arrivalsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {stockArrivals.slice(0, 5).map(a => (
                   <div key={a.id} className="flex items-center gap-3 px-4 py-3 hover:bg-brand-tint/40 transition-colors">
                     <div className="w-8 h-8 rounded-lg bg-brand-tint flex items-center justify-center shrink-0">
@@ -1313,7 +1313,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     </span>
                   </div>
                 ))}
-              </div>
+              </Card>
             )}
           </div>
           )}
