@@ -12,6 +12,8 @@ import { IconTile } from "../common/IconTile";
 import { Modal } from "../common/Modal";
 import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
+// 2026-08-20 · #149 · Card 프리미티브 확산 · bg-white border border-line rounded-xl shadow-sm overflow-hidden 반복 통합
+import { Card } from "../common/Card";
 
 pdfjsLib.GlobalWorkerOptions.workerPort = new Worker(
   new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url),
@@ -208,7 +210,7 @@ const BalanceConfigTab: React.FC<BalanceConfigTabProps> = ({ pages, config, onCo
 
   return (
     <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-4 flex flex-col gap-4">
-      <div className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
+      <Card clip padding="none">
         <div className="px-4 py-3 border-b border-zinc-100 bg-orange-50 flex items-center gap-2">
           <span className="text-xs font-bold text-orange-800">잔고항목 지정</span>
           <span className="text-[15px] text-orange-500">공급처별로 잔고로 표시할 항목을 지정하세요. 확정표에 주황색으로 표시됩니다.</span>
@@ -245,7 +247,7 @@ const BalanceConfigTab: React.FC<BalanceConfigTabProps> = ({ pages, config, onCo
             </tbody>
           </table>
         )}
-      </div>
+      </Card>
     </div>
   );
 };
@@ -451,7 +453,7 @@ const ConfirmedRecordsTab: React.FC = () => {
 
   return (
     <div className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 py-4 flex flex-col gap-3">
-      <div className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
+      <Card clip padding="none">
         <div className="px-4 py-3 border-b border-zinc-100 bg-rose-50 flex items-center gap-2 flex-wrap">
           <FileText size={13} className="text-rose-600" />
           <span className="text-xs font-bold text-rose-800">거래명세서 조회</span>
@@ -697,7 +699,7 @@ const ConfirmedRecordsTab: React.FC = () => {
             </table>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* 2026-07-28 · 이미지 모달 · Cloudinary 저장된 거래명세서 이미지 */}
       {imageModalUrl && (
@@ -1329,7 +1331,7 @@ return (
       /* ── 동의어 관리 탭 ── */
       <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-4 flex flex-col gap-4">
         {/* 동의어 서브 탭 */}
-        <div className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
+        <Card clip padding="none">
           <div className="flex items-center gap-1 px-4 py-2 border-b border-zinc-100/80">
             <div className="flex flex-wrap bg-zinc-100/70 border border-line/60 rounded-2xl p-1 gap-0.5">
             <button onClick={() => setSynTab("product")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors duration-150 cursor-pointer ${synTab === "product" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}>
@@ -1367,11 +1369,11 @@ return (
               <button onClick={addSupplierAlias} disabled={!addSuppAlias.trim() || !addSuppName.trim() || synSaving} className="self-end px-4 py-1.5 text-xs font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white rounded-lg transition disabled:opacity-40 cursor-pointer">추가</button>
             </div>
           )}
-        </div>
+        </Card>
 
         {/* 리스트 테이블 */}
         {synTab === "product" ? (
-          <div className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
+          <Card clip padding="none">
             {/* 상품명 / 공급사명 뷰 토글 */}
             <div className="flex items-center gap-1 px-3 py-2 border-b border-zinc-100 bg-zinc-50">
               <button
@@ -1470,9 +1472,9 @@ return (
                 })}
               </tbody>
             </table>
-          </div>
+          </Card>
         ) : (
-          <div className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
+          <Card clip padding="none">
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-sky-50 border-b border-sky-100">
@@ -1518,7 +1520,7 @@ return (
                 })}
               </tbody>
             </table>
-          </div>
+          </Card>
         )}
       </div>
     ) : (
@@ -1526,7 +1528,7 @@ return (
     <div className="flex-1 flex flex-col px-4 py-6 gap-5 w-full max-w-[1500px] mx-auto">
 
       {/* 파일 업로드 + 이미지 뷰어 */}
-      <div className="w-full bg-white border border-line rounded-xl shadow-sm overflow-hidden">
+      <Card clip padding="none" className="w-full">
 
         {pageImages.length === 0 ? (
           <div
@@ -1616,7 +1618,7 @@ return (
           rotation={rotation}
           onRotate={setRotation}
         />
-      </div>
+      </Card>
 
       {/* Hidden inputs */}
       <input ref={pdfInputRef} type="file" accept="application/pdf" className="hidden"
@@ -1643,7 +1645,7 @@ return (
           )}
 
           {/* OCR 엔진 선택 · 2-way (AI 모델 · Gemini) */}
-          <div className="w-full bg-white border border-line rounded-xl px-3 py-2 flex flex-col gap-1.5 shadow-sm">
+          <Card padding="sm" className="w-full flex flex-col gap-1.5">
             <div className="flex items-center gap-1.5 text-[15px] font-bold text-zinc-600">
               <span>OCR 엔진</span>
               <span className="text-[14px] font-mono text-zinc-400">
@@ -1683,7 +1685,7 @@ return (
                 ⚡ Gemini · 표 구조 인식 최상 · 다중 키 로테이션 (GEMINI_API_KEY_1/2/3...) · quota 시 자동 전환
               </p>
             )}
-          </div>
+          </Card>
 
           {/* 2026-07-28 · 사용자 요청 "ONNX → Gemini 파싱 기능 제거" · 로컬 파싱만 유지 */}
           {ocrEngine === "onnx" ? (
@@ -1712,12 +1714,12 @@ return (
       )}
 
       {extracting && pageCount > 0 && (
-        <div className="w-full bg-white border border-line rounded-xl px-4 py-3 shadow-sm">
+        <Card className="w-full py-3">
           <div className="w-full bg-zinc-100 rounded-full h-1.5">
             <div className="h-1.5 rounded-full transition-all bg-amber-500"
               style={{ width: `${(processed / pageCount) * 100}%` }} />
           </div>
-        </div>
+        </Card>
       )}
 
       {error && (
