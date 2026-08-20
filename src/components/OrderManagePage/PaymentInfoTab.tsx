@@ -17,7 +17,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useVendors } from "../../hooks/useVendors";
 import {
-  Building2, Loader2, Wallet, CalendarDays, CreditCard, Banknote,
+  Building2, Wallet, CalendarDays, CreditCard, Banknote,
   FileText, Check, X, RefreshCw, Landmark, Coins, ScrollText, Layers,
   ReceiptText, ArrowRight, Plus, Calendar, Package2,
   ChevronUp, ChevronDown, ChevronsUpDown,
@@ -1507,7 +1507,7 @@ export const PaymentInfoTab: React.FC = () => {
                     disabled={saving || amountNum <= 0}
                     className="inline-flex items-center gap-1.5 h-9 px-6 rounded-xl bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] active:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[14px] font-bold shadow-sm hover:shadow-md transition-all cursor-pointer"
                   >
-                    {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} strokeWidth={3} />}
+                    {saving ? <Spinner size={13} tone="white" /> : <Check size={13} strokeWidth={3} />}
                     {saving ? "등록 중..." : "결제 등록"}
                   </button>
                 </div>
