@@ -75,6 +75,8 @@ import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 // 2026-08-05 · 관리자(level>=8) long-press 드래그 재정렬 · localStorage 순서 저장
 import { useSortableTabs } from "../../hooks/useSortableTabs";
 import { useConfirm } from "../../hooks/useConfirm";
+// 2026-08-21 · Framework Phase 3 · alert → useToast
+import { useToast, toastClass } from "../../hooks/useToast";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { useContactInfo } from "../../hooks/useContactInfo";
 // 2026-08-17 · #131 · 사용자 지시 · 페이지 안보이기 · 내부 subtab tab bar 도 필터
@@ -294,6 +296,8 @@ const MULTI_ASSIGN_ZONE_NUMS = new Set([36, 42]);
 // ─── Main component ────────────────────────────────────────────────────────────
 export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployeeEdit, authSession, onNavigate, onLogout }) => {
   const confirm = useConfirm();
+  // 2026-08-21 · Framework Phase 3 · alert → useToast
+  const { toast, showError, showSuccess } = useToast();
   // 2026-08-12 · 프레임워크 · brand·contact 반영 · 값 없으면 하드코딩 fallback 유지
   const { brand: dpBrand } = useBrandIdentity();
   const { contact: dpContact } = useContactInfo();
@@ -468,14 +472,14 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
   const handleSubscribePush = async (employeeId: number, employeeName: string) => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      alert("이 브라우저는 푸시 알림을 지원하지 않습니다.");
+      showError("이 브라우저는 푸시 알림을 지원하지 않습니다.");
       return;
     }
     setSubscribingId(employeeId);
     try {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
-        alert("알림 권한이 필요합니다. 브라우저 설정에서 허용해 주세요.");
+        showError("알림 권한이 필요합니다. 브라우저 설정에서 허용해 주세요.");
         return;
       }
       const reg = await navigator.serviceWorker.ready;
@@ -491,7 +495,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       setTimeout(() => setQuickReqToast(null), 3500);
     } catch (err) {
       console.error(err);
-      alert("알림 등록 중 오류가 발생했습니다.");
+      showError("알림 등록 중 오류가 발생했습니다.");
     } finally {
       setSubscribingId(null);
     }
@@ -596,20 +600,20 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       });
     } catch (err: any) {
       const msg = err instanceof ApiError ? err.message : (err?.message ?? String(err));
-      alert(`❌ DB 저장 실패\n${msg}\n(로컬 캐시만 저장됨)`);
+      showError(`❌ DB 저장 실패\n${msg}\n(로컬 캐시만 저장됨)`);
       return;
     }
 
     setSaveAllToast(true);
     setTimeout(() => setSaveAllToast(false), 3000);
-    setTimeout(() => alert(`✅ 매주 ${dowLabel} 적용 완료 · DB 저장 (${nextZones.length}개 구역)`), 100);
-  }, [zones, requests, selectedDate]);
+    setTimeout(() => showSuccess(`✅ 매주 ${dowLabel} 적용 완료 · DB 저장 (${nextZones.length}개 구역)`), 100);
+  }, [zones, requests, selectedDate, showError, showSuccess]);
 
   // ── 자동 구역 배치 (기본배정 우선 + 미배정자 임의배치) ─────────────────────
   const handleAutoAssign = useCallback(async () => {
     const logistics = todayStaff.filter(s => s.employee.position.includes("물류"));
     if (logistics.length === 0) {
-      alert("오늘 출근한 물류직원이 없습니다.");
+      showError("오늘 출근한 물류직원이 없습니다.");
       return;
     }
     // 간단 확인 — 미리보기만 적용 (DB 저장·알림 전송은 하지 않음)
@@ -749,7 +753,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       });
     } catch (err: any) {
       const msg = err instanceof ApiError ? err.message : (err?.message ?? String(err));
-      alert(`❌ 배치확정 DB 저장 실패\n${msg}\n로컬 캐시만 저장됨 · 알림은 발송하지 않습니다.`);
+      showError(`❌ 배치확정 DB 저장 실패\n${msg}\n로컬 캐시만 저장됨 · 알림은 발송하지 않습니다.`);
       return;
     }
 
@@ -803,8 +807,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     setPendingAutoAssign(null);
     setSaveAllToast(true);
     setTimeout(() => setSaveAllToast(false), 2500);
-    setTimeout(() => alert(`확정 완료 (${dateLabel})\n${grouped.size}명 · ${assignedList.length}곳 배정 · ${sent}건 알림 전송`), 100);
-  }, [pendingAutoAssign, zones, selectedDate]);
+    setTimeout(() => showSuccess(`확정 완료 (${dateLabel})\n${grouped.size}명 · ${assignedList.length}곳 배정 · ${sent}건 알림 전송`), 100);
+  }, [pendingAutoAssign, zones, selectedDate, showError, showSuccess]);
 
   // 임의배치 취소 → 이전 상태 복원
   const handleCancelAutoAssign = useCallback(() => {
@@ -2896,6 +2900,12 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         </div>
       )}
 
+      {/* 2026-08-21 · Framework Phase 3 · toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
+      )}
     </div>
   );
 };
