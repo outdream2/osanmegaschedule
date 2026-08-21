@@ -3,7 +3,8 @@ import React, { useState, useEffect } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { useConfirm } from "../../hooks/useConfirm";
-import { Pencil, Loader2, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2, Warehouse, Store, ClipboardCheck, ScanLine, Check, X, DollarSign, Package, Info, EyeOff, Eye, TrendingUp, ChevronRight, ChevronDown } from "lucide-react";
+import { Pencil, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2, Warehouse, Store, ClipboardCheck, ScanLine, Check, X, DollarSign, Package, Info, EyeOff, Eye, TrendingUp, ChevronRight, ChevronDown } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { type ProductInfo } from "../../lib/productsCache";
 import { RealMapSelector } from "./RealMapSelector";
 // 2026-08-05 · 재고세기(YOLO) 기능 제거 · StockCounterModal import 삭제
@@ -349,7 +350,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               className="flex-1 min-w-0 text-[13px] font-bold border-2 border-indigo-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-brand-tint"
             />
             <button onClick={commitEdit} disabled={editSaving} className="shrink-0 w-6 h-6 rounded bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 disabled:opacity-40 cursor-pointer">
-              {editSaving ? <Loader2 size={11} className="animate-spin" /> : <Check size={12} />}
+              {editSaving ? <Spinner size={11} /> : <Check size={12} />}
             </button>
             <button onClick={cancelEdit} disabled={editSaving} className="shrink-0 w-6 h-6 rounded bg-zinc-200 text-zinc-600 flex items-center justify-center hover:bg-zinc-300 disabled:opacity-40 cursor-pointer">
               <X size={12} />
@@ -397,7 +398,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                   : "bg-white border-line text-zinc-400 hover:bg-zinc-50 hover:border-zinc-300 hover:text-zinc-600"
               } ${hideSaving ? "opacity-60 cursor-wait" : ""}`}
             >
-              {hideSaving ? <Loader2 size={11} className="animate-spin" /> : (isHidden ? <Eye size={11} /> : <EyeOff size={11} />)}
+              {hideSaving ? <Spinner size={11} /> : (isHidden ? <Eye size={11} /> : <EyeOff size={11} />)}
               {isHidden ? "숨김 해제" : "숨기기"}
             </button>
           </div>
@@ -448,7 +449,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                   : "bg-teal-500 border-teal-600 text-white hover:bg-teal-600"
               }`}
             >
-              {saving ? <Loader2 size={11} className="animate-spin" /> : <Pencil size={11} />}
+              {saving ? <Spinner size={11} /> : <Pencil size={11} />}
               {saving ? "" : realMap ? "변경" : "등록"}
             </button>
           </div>
@@ -540,7 +541,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                         className="w-10 text-[12px] font-bold text-center border border-amber-500 rounded px-0.5 py-0 focus:outline-none"
                       />
                       <button onClick={commitEdit} disabled={editSaving} className="w-4 h-4 rounded bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 disabled:opacity-40 cursor-pointer">
-                        {editSaving ? <Loader2 size={8} className="animate-spin" /> : <Check size={9} />}
+                        {editSaving ? <Spinner size={8} /> : <Check size={9} />}
                       </button>
                       <button onClick={cancelEdit} disabled={editSaving} className="w-4 h-4 rounded bg-zinc-200 text-zinc-600 flex items-center justify-center hover:bg-zinc-300 disabled:opacity-40 cursor-pointer">
                         <X size={9} />
@@ -581,7 +582,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                         disabled={w1Status === "loading" || warehouse1Stock === ""}
                         className="mt-0.5 w-full text-[11px] font-bold rounded transition cursor-pointer disabled:opacity-40 bg-cyan-500 hover:bg-cyan-600 text-white py-0.5 flex items-center justify-center gap-0.5"
                       >
-                        {w1Status === "loading" ? <Loader2 size={9} className="animate-spin" /> : <ClipboardCheck size={9} />}
+                        {w1Status === "loading" ? <Spinner size={9} /> : <ClipboardCheck size={9} />}
                         {w1Status === "loading" ? "저장중" : w1Status === "error" ? "재시도" : "저장"}
                       </button>
                     )}
@@ -604,7 +605,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                         disabled={w2Status === "loading" || warehouse2Stock === ""}
                         className="mt-0.5 w-full text-[11px] font-bold rounded transition cursor-pointer disabled:opacity-40 bg-cyan-600 hover:bg-cyan-700 text-white py-0.5 flex items-center justify-center gap-0.5"
                       >
-                        {w2Status === "loading" ? <Loader2 size={9} className="animate-spin" /> : <ClipboardCheck size={9} />}
+                        {w2Status === "loading" ? <Spinner size={9} /> : <ClipboardCheck size={9} />}
                         {w2Status === "loading" ? "저장중" : w2Status === "error" ? "재시도" : "저장"}
                       </button>
                     )}
@@ -628,7 +629,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                         disabled={s1Status === "loading" || store1Stock === ""}
                         className="mt-0.5 w-full text-[11px] font-bold rounded transition cursor-pointer disabled:opacity-40 bg-violet-500 hover:bg-violet-600 text-white py-0.5 flex items-center justify-center gap-0.5"
                       >
-                        {s1Status === "loading" ? <Loader2 size={9} className="animate-spin" /> : <ClipboardCheck size={9} />}
+                        {s1Status === "loading" ? <Spinner size={9} /> : <ClipboardCheck size={9} />}
                         {s1Status === "loading" ? "저장중" : s1Status === "error" ? "재시도" : "저장"}
                       </button>
                     )}
@@ -653,7 +654,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                         disabled={s2Status === "loading" || store2Stock === ""}
                         className="mt-0.5 w-full text-[11px] font-bold rounded transition cursor-pointer disabled:opacity-40 bg-violet-600 hover:bg-violet-700 text-white py-0.5 flex items-center justify-center gap-0.5"
                       >
-                        {s2Status === "loading" ? <Loader2 size={9} className="animate-spin" /> : <ClipboardCheck size={9} />}
+                        {s2Status === "loading" ? <Spinner size={9} /> : <ClipboardCheck size={9} />}
                         {s2Status === "loading" ? "저장중" : s2Status === "error" ? "재시도" : "저장"}
                       </button>
                     )}
@@ -678,7 +679,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                         disabled={s3Status === "loading" || store3Stock === ""}
                         className="mt-0.5 w-full text-[11px] font-bold rounded transition cursor-pointer disabled:opacity-40 bg-purple-600 hover:bg-purple-700 text-white py-0.5 flex items-center justify-center gap-0.5"
                       >
-                        {s3Status === "loading" ? <Loader2 size={9} className="animate-spin" /> : <ClipboardCheck size={9} />}
+                        {s3Status === "loading" ? <Spinner size={9} /> : <ClipboardCheck size={9} />}
                         {s3Status === "loading" ? "저장중" : s3Status === "error" ? "재시도" : "저장"}
                       </button>
                     )}
@@ -781,7 +782,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               }`}
             >
               {orderStatus === "loading"
-                ? <Loader2 size={14} className="animate-spin" />
+                ? <Spinner size={14} />
                 : <ShoppingCart size={14} />}
               {orderStatus === "loading" ? "요청 중..." : orderStatus === "error" ? "재시도" : existingOrder ? "발주요청 리스트 업데이트" : "발주요청 리스트에 추가"}
             </button>
@@ -841,7 +842,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                   />
                   <div className="flex items-center gap-1 justify-end">
                     <button onClick={commitEdit} disabled={editSaving} className="text-[11px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] rounded px-2 py-1 flex items-center gap-1 disabled:opacity-40 cursor-pointer">
-                      {editSaving ? <Loader2 size={11} className="animate-spin"/> : <Check size={11}/>}저장
+                      {editSaving ? <Spinner size={11} /> : <Check size={11}/>}저장
                     </button>
                     <button onClick={cancelEdit} disabled={editSaving} className="text-[11px] font-bold text-zinc-600 bg-zinc-200 hover:bg-zinc-300 rounded px-2 py-1 flex items-center gap-1 disabled:opacity-40 cursor-pointer">
                       <X size={11}/>취소
@@ -960,7 +961,7 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
         </div>
         {/* 2행 · 통계 (건수 · 총량 · 총액 · 평균 · 주기) */}
         {loading ? (
-          <span className="text-[11px] text-zinc-400"><Loader2 size={10} className="inline animate-spin mr-1"/>로딩...</span>
+          <span className="text-[11px] text-zinc-400"><Spinner size={10} tone="zinc" className="mr-1" />로딩...</span>
         ) : rows.length === 0 ? (
           <span className="text-[11px] text-zinc-400 italic">이력 없음</span>
         ) : (
