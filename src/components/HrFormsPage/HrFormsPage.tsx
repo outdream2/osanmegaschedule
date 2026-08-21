@@ -13,6 +13,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { api, ApiError } from "../../lib/apiClient";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
 import { useConfirm } from "../../hooks/useConfirm";
+// 2026-08-21 · Framework Phase 3 · alert → useToast
+import { useToast, toastClass } from "../../hooks/useToast";
 import { Spinner } from "../common/Spinner";
 import {
   FileText, Download, Upload, Trash2, Plus, X, RefreshCw,
@@ -393,6 +395,8 @@ const EmptyState: React.FC<{
 
 const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNavigate, onLogout, embedded = false }) => {
   const confirm = useConfirm();
+  // 2026-08-21 · Framework Phase 3 · alert → useToast
+  const { toast, showError } = useToast();
 
   const isManager = (authSession?.level ?? 0) >= 2;
 
@@ -546,7 +550,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
       await api.del(`/api/hr-forms/${row.id}?editor_level=${editorLevel}`);
       setForms(prev => prev.filter(f => f.id !== row.id));
     } catch (err: any) {
-      window.alert(err instanceof ApiError ? err.message : (err?.message ?? "삭제 실패"));
+      showError(err instanceof ApiError ? err.message : (err?.message ?? "삭제 실패"));
     } finally {
       setDeletingId(null);
     }
@@ -1109,6 +1113,8 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
           </div>
         )}
       </main>
+      {/* 2026-08-21 · Framework Phase 3 · toast · alert 대체 */}
+      {toast && <div className={toastClass(toast.tone)}>{toast.message}</div>}
     </div>
   );
 };
