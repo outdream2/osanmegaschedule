@@ -7,6 +7,7 @@ import React from "react";
 import { MapPin } from "@phosphor-icons/react";
 import { SettingsPageShell } from "../common/SettingsPageShell";
 import { AccentBar } from "../common/AccentBar";
+import { Card } from "../common/Card";
 import { useZoneDefs, SECTION_LABEL, type ZoneSection } from "../../hooks/useZoneDefs";
 // 2026-08-17 · 사용자 지시 · 매장구역도와 매핑 · StoreZoneMap 미리보기
 import { StoreZoneMap } from "../common/StoreZoneMap";
@@ -61,7 +62,7 @@ const ZoneSettingsPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
     >
       <div className="space-y-5">
         {/* 매장구역도 미리보기 · 실시간 반영 · useZoneDefs 훅으로 자동 sync */}
-        <section className="bg-white border border-line rounded-2xl overflow-hidden shadow-sm">
+        <Card as="section" rounded="2xl" padding="none" clip>
           <div className="flex items-center gap-2.5 px-5 py-3 border-b border-line bg-zinc-50/60">
             <AccentBar />
             <h2 className="text-[17px] font-bold text-ink tracking-tight">매장 구역도 미리보기</h2>
@@ -70,10 +71,10 @@ const ZoneSettingsPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
           <div className="p-3 overflow-x-auto">
             <StoreZoneMap compact />
           </div>
-        </section>
+        </Card>
 
         {grouped.map(({ section, label, zones: sectionZones }) => (
-          <section key={section} className="bg-white border border-line rounded-2xl overflow-hidden shadow-sm">
+          <Card key={section} as="section" rounded="2xl" padding="none" clip>
             {/* Section 헤더 · 딥네이비 accent bar */}
             <div className="flex items-center gap-2.5 px-5 py-3 border-b border-line bg-zinc-50/60">
               <AccentBar />
@@ -113,7 +114,7 @@ const ZoneSettingsPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
                 </div>
               ))}
             </div>
-          </section>
+          </Card>
         ))}
 
         {/* 안내 */}
