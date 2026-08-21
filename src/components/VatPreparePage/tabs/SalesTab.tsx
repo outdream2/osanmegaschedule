@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useMonthlyVat, type MonthlyVatRow } from "../hooks/useMonthlyVat";
 import { Spinner } from "../../common/Spinner";
+import { Card } from "../../common/Card";
 
 const fmt = (n: number) => Math.round(n).toLocaleString("ko-KR");
 
@@ -61,7 +62,7 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
     <div className="flex flex-col gap-3 min-h-0">
 
       {/* 조회 기간 · 리로드 */}
-      <div className="bg-white rounded-xl border border-line shadow-sm px-4 py-3 flex flex-wrap items-center gap-3">
+      <Card padding="none" className="px-4 py-3 flex flex-wrap items-center gap-3">
         <Calendar size={14} className="text-rose-500 shrink-0" />
         <div className="text-[12px] font-bold text-zinc-800">
           월별 부가세 요약
@@ -82,7 +83,7 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
           <RefreshCw size={12} className={monthly.loading ? "animate-spin" : ""} />
           <span className="hidden sm:inline">새로고침</span>
         </button>
-      </div>
+      </Card>
 
       {/* 에러 · 경고 */}
       {monthly.error && (
@@ -121,7 +122,7 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
       </div>
 
       {/* 월별 통합 표 */}
-      <div className="bg-white rounded-xl border border-line shadow-sm">
+      <Card padding="none">
         <div className="px-4 py-3 border-b border-zinc-100 flex items-center gap-2">
           <TrendingUp size={14} className="text-rose-500" />
           <div className="text-[13px] font-bold text-zinc-800">월별 매출 · 매입 · 경비 · 예상 부가세</div>
@@ -221,7 +222,7 @@ const SalesTab: React.FC<SalesTabProps> = ({ fromDate, toDate, onAggregateChange
             </table>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* 면세 매출 안내 */}
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2 text-[11px] text-amber-800">
