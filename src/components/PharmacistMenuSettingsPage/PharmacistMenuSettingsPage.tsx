@@ -5,11 +5,12 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import {
-  Plus, Trash2, Loader2, AlertCircle, X, Save, Pencil,
+  Plus, Trash2, AlertCircle, X, Save, Pencil,
   ArrowUp, ArrowDown, CheckCircle2, FileText, CloudUpload,
 } from "lucide-react";
 import Modal from "../common/Modal";
 import { Card } from "../common/Card";
+import { Spinner } from "../common/Spinner";
 import type { AuthSession } from "../../types";
 
 export type PharmTabKey = "education" | "reference" | "video" | "docs";
@@ -311,7 +312,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
                 disabled={uploading || !newTitle.trim()}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-sky-200 disabled:text-sky-400 text-white text-sm font-bold shadow-sm cursor-pointer transition"
               >
-                {uploading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                {uploading ? <Spinner size={14} /> : <Plus size={14} />}
                 {uploading ? "등록 중..." : "등록"}
               </button>
             </div>
@@ -372,7 +373,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
 
           {loading ? (
             <div className="py-10 flex flex-col items-center gap-2">
-              <Loader2 size={18} className="animate-spin text-sky-500" />
+              <Spinner size={18} tone="sky" />
               <span className="text-xs text-zinc-400 font-bold">불러오는 중...</span>
             </div>
           ) : items.length === 0 ? (
@@ -452,7 +453,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
                               className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-50 text-white text-xs font-bold cursor-pointer"
                               title="저장 (Enter)"
                             >
-                              {savingId === row.id ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+                              {savingId === row.id ? <Spinner size={11} /> : <Save size={11} />}
                             </button>
                             <button
                               type="button"
@@ -480,7 +481,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
                               className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-rose-50 hover:bg-rose-100 disabled:opacity-50 text-rose-600 border border-rose-200 text-xs font-semibold cursor-pointer"
                               title="삭제"
                             >
-                              {deletingId === row.id ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />}
+                              {deletingId === row.id ? <Spinner size={11} /> : <Trash2 size={11} />}
                             </button>
                           </>
                         )}
