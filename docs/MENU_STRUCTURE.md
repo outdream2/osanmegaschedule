@@ -1101,7 +1101,7 @@ megatown-staff-scheduler/
 │   │   ├── SchedulePage/ · DisplayPage/ · OrderManagePage/ (3224 lines)
 │   │   ├── OcrPage/RawOcrTable/  # 5268 lines · God Component · 훅 20+ 분리
 │   │   ├── ContractWriterPage/   # 2680+ lines · God Component
-│   │   ├── StaffManagePage/      # 2773 lines
+│   │   ├── StaffManagePage/      # 2303 lines (types.ts 200 · helpers.ts 148 · CreateModal.tsx 110 분리 · 2026-08-21)
 │   │   ├── ScanPage/ · ScanPage.tsx (1392 lines)
 │   │   └── AppNavHeader.tsx · AppFooter.tsx · BottomNav.tsx
 │   ├── hooks/                    # 10 훅 (섹션 11 참조)
@@ -1365,6 +1365,16 @@ npm run test        # vitest (필요 시)
 | `ProductInfoCard` (1015→894) | PurchaseHistorySection | `513db750` |
 | `BoardPage` (1177→231) | types+constants+utils+PostCard+InlineDetail+ComposerModal+DetailModal | `e5136ee6`~`c65b2f76` |
 | `ResignationWriter` (1241→768) | types + utils + SignatureModal + ResignationPreview | `12299f03`~`d94d10d7` |
+
+#### StaffManagePage 분리 (2026-08-21 · `2d9ec295`·`75e4dcd0`)
+
+| 신설 파일 | 내용 | 라인 |
+|---------|-----|-----|
+| `StaffManagePage/types.ts` | Employee·CareerItem·EducationItem·CertItem·EditDraft 인터페이스 + POSITIONS·SCHEDULE_TYPES·GENDERS·CONTRACT_TYPES·PERFORMANCE_RATINGS 상수 + AVATAR_COLORS·GROUP_HEADER·GROUP_ICON·SectionGroup + Supabase ALTER TABLE 스키마 코멘트 | 200 |
+| `StaffManagePage/helpers.ts` | positionColor·scheduleTypeColor·contractTypeMeta·performanceRatingColor·isSeveranceEligible·contractPeriodMonths·autoContractBadge·calcTenure·avatarGradient·initials | 148 |
+| `StaffManagePage/CreateModal.tsx` | 직원 신규 등록 모달 · Partial<Employee> · POSITIONS 사용 | 110 |
+
+- `StaffManagePage.tsx` 2728 → **2303 라인** (-425) · TS + Vite build 통과 · 회귀 없음
 
 #### 부분 분리 파일 (warn/critical 유지 · 추가 작업 필요)
 

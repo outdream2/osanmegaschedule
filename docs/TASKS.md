@@ -30,6 +30,7 @@
 | `ProductInfoCard` | 1015 | 894 | PurchaseHistorySection |
 | `BoardPage` | 1177 | 231 | types + constants + utils + PostCard + InlineDetail + ComposerModal + DetailModal |
 | `ResignationWriter` | 1241 | 768 | types + utils + SignatureModal + ResignationPreview |
+| `StaffManagePage` | 2728 | 2303 | types.ts (200) + helpers.ts (148) + CreateModal.tsx (110) · `2d9ec295`·`75e4dcd0` |
 
 ### 부분 분리 (warn/critical 유지)
 
