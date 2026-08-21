@@ -8,6 +8,8 @@ import type { OcrPageResult } from "./types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { useConfirm } from "../../hooks/useConfirm";
+// 2026-08-21 · Framework Phase 3 · alert → useToast
+import { useToast, toastClass } from "../../hooks/useToast";
 import { IconTile } from "../common/IconTile";
 import { Modal } from "../common/Modal";
 import { StatusPill } from "../common/StatusPill";
@@ -285,6 +287,8 @@ const toNum = (v: number | string | null | undefined): number => {
 
 const ConfirmedRecordsTab: React.FC = () => {
   const confirm = useConfirm();
+  // 2026-08-21 · Framework Phase 3 · alert → useToast
+  const { toast, showError } = useToast();
   const [dateFilter, setDateFilter] = React.useState<string>("");
   const [supplierFilter, setSupplierFilter] = React.useState<string>("");
   const [showBalanceOnly, setShowBalanceOnly] = React.useState<boolean>(false);
@@ -359,7 +363,7 @@ const ConfirmedRecordsTab: React.FC = () => {
       setItems(prev => prev.filter(x => x.id !== id));
       setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
     } catch (e: any) {
-      alert(e?.response?.data?.error ?? e?.message ?? "삭제 실패");
+      showError(e?.response?.data?.error ?? e?.message ?? "삭제 실패");
     } finally {
       setDeletingId(null);
     }
@@ -381,7 +385,7 @@ const ConfirmedRecordsTab: React.FC = () => {
     setItems(prev => prev.filter(x => !selectedIds.has(x.id)));
     setSelectedIds(new Set());
     setBulkDeleting(false);
-    if (fail > 0) alert(`${ok}건 삭제 · ${fail}건 실패`);
+    if (fail > 0) showError(`${ok}건 삭제 · ${fail}건 실패`);
   };
 
   const toggleSelectId = (id: number) => {
@@ -769,6 +773,12 @@ const ConfirmedRecordsTab: React.FC = () => {
           </table>
         )}
       </Modal>
+      {/* 2026-08-21 · Framework Phase 3 · toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
+      )}
     </div>
   );
 };

@@ -13,6 +13,8 @@ import React, { useCallback, useState } from "react";
 import { VendorDetailModal } from "../../LandingPage/VendorListEditor";
 import type { Vendor } from "../../LandingPage/VendorListEditor";
 import { useVendors } from "../../../hooks/useVendors";
+// 2026-08-21 · Framework Phase 3 · alert → useToast
+import { useToast, toastClass } from "../../../hooks/useToast";
 
 // ─── VendorInfoModal ──────────────────────────────────────────────────────────
 
@@ -54,6 +56,8 @@ export type VendorRef = string | number | Vendor;
 export function useVendorInfoModal(opts?: { onSaved?: () => void }) {
   const { vendors, findVendorByName } = useVendors();
   const [openVendor, setOpenVendor] = useState<Vendor | null>(null);
+  // 2026-08-21 · Framework Phase 3 · alert → useToast
+  const { toast, showError } = useToast();
 
   /** 이름(string) · id(number) · Vendor 객체 로 열기 */
   const openVendorInfo = useCallback(
@@ -71,7 +75,7 @@ export function useVendorInfoModal(opts?: { onSaved?: () => void }) {
         const found = vendors.find((v) => v.id === ref);
         // useVendors.Vendor has an index signature; cast to VendorListEditor.Vendor
         if (found) { setOpenVendor(found as unknown as Vendor); return; }
-        alert(`공급사 정보 없음 (id: ${ref})`);
+        showError(`공급사 정보 없음 (id: ${ref})`);
         return;
       }
 
@@ -81,20 +85,29 @@ export function useVendorInfoModal(opts?: { onSaved?: () => void }) {
       const found = findVendorByName(name);
       // useVendors.Vendor has an index signature; cast to VendorListEditor.Vendor
       if (found) { setOpenVendor(found as unknown as Vendor); return; }
-      alert(`공급사 정보 없음: ${ref}`);
+      showError(`공급사 정보 없음: ${ref}`);
     },
-    [vendors, findVendorByName],
+    [vendors, findVendorByName, showError],
   );
 
   const handleClose = useCallback(() => setOpenVendor(null), []);
 
-  const modalElement: React.ReactNode = openVendor ? (
-    <VendorInfoModal
-      vendor={openVendor}
-      onClose={handleClose}
-      onSaved={opts?.onSaved}
-    />
-  ) : null;
+  const modalElement: React.ReactNode = (
+    <>
+      {openVendor && (
+        <VendorInfoModal
+          vendor={openVendor}
+          onClose={handleClose}
+          onSaved={opts?.onSaved}
+        />
+      )}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
+      )}
+    </>
+  );
 
   return { openVendorInfo, modalElement };
 }

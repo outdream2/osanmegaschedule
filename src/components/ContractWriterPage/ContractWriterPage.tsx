@@ -21,6 +21,8 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useConfirm } from "../../hooks/useConfirm";
+// 2026-08-21 · Framework Phase 3 · alert → useToast
+import { useToast, toastClass } from "../../hooks/useToast";
 import {
   NotePencil, User, ClipboardText, CalendarBlank, ClockClockwise, Money,
   Coffee, Notepad, Eraser, DownloadSimple, Warning, Check,
@@ -1078,6 +1080,8 @@ const SignatureModal: React.FC<SignatureModalProps> = ({ open, title, onClose, o
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState<{ w: number; h: number }>({ w: 400, h: 180 });
   const [empty, setEmpty] = useState(true);
+  // 2026-08-21 · Framework Phase 3 · alert → useToast
+  const { toast, showError } = useToast();
 
   useEffect(() => {
     if (!open) return;
@@ -1108,7 +1112,7 @@ const SignatureModal: React.FC<SignatureModalProps> = ({ open, title, onClose, o
   };
   const submit = () => {
     if (!padRef.current || padRef.current.isEmpty()) {
-      alert("서명이 비어있습니다.");
+      showError("서명이 비어있습니다.");
       return;
     }
     const url = padRef.current.toDataURL("image/png");
@@ -1195,6 +1199,12 @@ const SignatureModal: React.FC<SignatureModalProps> = ({ open, title, onClose, o
           </div>
         </div>
       </div>
+      {/* 2026-08-21 · Framework Phase 3 · toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
+      )}
     </div>
   );
 };
@@ -2646,6 +2656,8 @@ function saveCardCollapsedMap(map: CardCollapsedMap): void {
 
 const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, onBack, onNavigate, onLogout, embedded = false }) => {
   const confirm = useConfirm();
+  // 2026-08-21 · Framework Phase 3 · alert → useToast
+  const { toast, showError } = useToast();
 
   // ── T14/Phase B · 직급별 기본 시급 로드 (useSettings) · 사용자 편집 가능 유지
   const settings = useSettings();
@@ -2748,9 +2760,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       localStorage.setItem(DRAFT_TIMESTAMP_KEY, ts);
       setDraftSavedAt(ts);
     } catch {
-      alert("임시저장 실패 · 브라우저 저장공간 부족");
+      showError("임시저장 실패 · 브라우저 저장공간 부족");
     }
-  }, [form]);
+  }, [form, showError]);
   useEffect(() => {
     const t = window.setTimeout(() => {
       try {
@@ -5457,6 +5469,12 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         onClose={closeSign}
         onSubmit={submitSign}
       />
+      {/* 2026-08-21 · Framework Phase 3 · toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
+      )}
     </div>
   );
 };

@@ -5,6 +5,8 @@ import { AccentBar } from "../common/AccentBar";
 import { Card } from "../common/Card";
 import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
+// 2026-08-21 · Framework Phase 3 · alert → useToast
+import { useToast, toastClass } from "../../hooks/useToast";
 import {
   Clock, CheckCircle, XCircle, ArrowsClockwise,
   Warning, FileText, User, Calendar, ChatCenteredText,
@@ -56,6 +58,8 @@ const fmtDateTime = fmtDateMD;
 
 const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authSession }) => {
   const confirm = useConfirm();
+  // 2026-08-21 · Framework Phase 3 · alert → useToast
+  const { toast, showError } = useToast();
 
   const canApprove = (authSession?.level ?? 0) >= 8;
   const approverName = authSession?.employeeName ?? "관리자";
@@ -109,11 +113,11 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
     status: "approved" | "rejected",
   ) => {
     if (!canApprove) {
-      alert("승인 권한이 없습니다 (level 8 이상 필요).");
+      showError("승인 권한이 없습니다 (level 8 이상 필요).");
       return;
     }
     if (status === "rejected" && !rejectReason.trim()) {
-      alert("반려 사유를 입력하세요.");
+      showError("반려 사유를 입력하세요.");
       return;
     }
     if (status === "approved" && !await confirm({
@@ -146,7 +150,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
       // 배지 즉시 갱신
       window.dispatchEvent(new CustomEvent("approval-count-updated"));
     } catch (err: any) {
-      alert(err?.message ?? "처리 실패");
+      showError(err?.message ?? "처리 실패");
     } finally {
       setProcessingId(null);
     }
@@ -403,6 +407,12 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
           )}
         </Card>
       </main>
+      {/* 2026-08-21 · Framework Phase 3 · toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
+      )}
     </div>
   );
 };

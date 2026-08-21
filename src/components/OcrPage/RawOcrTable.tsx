@@ -1,6 +1,8 @@
 ﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TIMING } from "../../constants/timing";
 import { useConfirm } from "../../hooks/useConfirm";
+// 2026-08-21 · Framework Phase 3 · alert → useToast
+import { useToast, toastClass } from "../../hooks/useToast";
 import * as XLSX from "xlsx";
 import { Wand2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, BookmarkPlus, BookOpen, Check, Save } from "lucide-react";
 import { Spinner } from "../common/Spinner";
@@ -68,6 +70,8 @@ export type { ConfirmedItem };
 
 export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps, pageImages, rotation = -90, onReparsePage, barcodeMatches, balanceConfig: balanceConfigProp, onSaveConfirmed, onUserEdit }) => {
   const confirm = useConfirm();
+  // 2026-08-21 · Framework Phase 3 · alert → useToast
+  const { toast, showError } = useToast();
 
   // 공급사 목록 · 자동완성·조회 공용 (inline fetch 제거)
   const { vendors: _ocrVendors, refresh: refreshVendors } = useVendors();
@@ -104,11 +108,11 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
           setVendorEditModal(newV);
           refreshVendors(); // 캐시 갱신
         } else {
-          alert("공급사 신규 등록 실패");
+          showError("공급사 신규 등록 실패");
         }
       } catch (e) {
         console.error("[공급사조회] 실패:", e);
-        alert("공급사 정보 조회 실패");
+        showError("공급사 정보 조회 실패");
       }
     }
   }, [_ocrVendors, refreshVendors]);
@@ -2212,7 +2216,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     //   supplier 힌트 없이 2차보정을 실행하면 잘못된 매칭 · 동의어 오학습 위험
     if (missingSupplierPages.length > 0) {
       const pagesLabel = missingSupplierPages.join(", ");
-      window.alert(`공급사가 지정되지 않은 페이지가 있습니다: ${pagesLabel}번\n\n1차보정 표의 "공급처" 셀을 클릭하여 공급사명을 먼저 입력하세요.\n(공급사 정보 없이 상품명 매칭 시 잘못된 결과가 저장될 수 있습니다)`);
+      showError(`공급사가 지정되지 않은 페이지가 있습니다: ${pagesLabel}번\n\n1차보정 표의 "공급처" 셀을 클릭하여 공급사명을 먼저 입력하세요.\n(공급사 정보 없이 상품명 매칭 시 잘못된 결과가 저장될 수 있습니다)`);
       return;
     }
     // 2026-07-09: 강화된 필터
@@ -2397,7 +2401,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
       .sort((a, b) => b.s - a.s)
       .map(x => x.t);
     if (tokens.length === 0) {
-      alert("한글 토큰을 찾을 수 없습니다. 수동으로 편집하세요.");
+      showError("한글 토큰을 찾을 수 없습니다. 수동으로 편집하세요.");
       return;
     }
     setReextractingName(prev => new Set([...prev, ri]));
@@ -5006,7 +5010,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                             if (!onSaveConfirmed) return;
                                             const invDate = pageDateOverride[pn] ?? structuredPages.find(p => p.page === pn)?.meta?.date ?? "";
                                             const supp = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta?.supplier ?? "";
-                                            if (!supp) { alert(`${pn}번 명세서 · 공급사 없음 · 저장 불가`); return; }
+                                            if (!supp) { showError(`${pn}번 명세서 · 공급사 없음 · 저장 불가`); return; }
                                             if (!await confirm({ message: `${pn}번 · "${supp}" · ${invDate || "날짜미상"}\n· DB 저장하시겠습니까?` })) return;
                                             try {
                                               const q = new URLSearchParams();
@@ -5268,6 +5272,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
       })}
       </div>{/* end 콘텐츠 래퍼 */}
     </div>{/* end 명세서별 2컬럼 그리드 래퍼 */}
+    {/* 2026-08-21 · Framework Phase 3 · toast */}
+    {toast && (
+      <div className="fixed bottom-6 right-6 z-[9999]">
+        <div className={toastClass(toast.tone)}>{toast.message}</div>
+      </div>
+    )}
     </>
   );
 };

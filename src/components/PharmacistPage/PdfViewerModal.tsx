@@ -17,6 +17,8 @@
 
 import React, { useEffect, useMemo } from "react";
 import { X, Download, ExternalLink, FileWarning } from "lucide-react";
+// 2026-08-21 · Framework Phase 3 · alert → useToast
+import { useToast, toastClass } from "../../hooks/useToast";
 
 interface PdfViewerModalProps {
   open: boolean;
@@ -39,6 +41,8 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   open, onClose, fileUrl, fileName, mimeType, watermarkText,
 }) => {
   const pdf = useMemo(() => isPdf(fileUrl, mimeType), [fileUrl, mimeType]);
+  // 2026-08-21 · Framework Phase 3 · alert → useToast
+  const { toast, showWarn } = useToast();
 
   // 접근 시각 (모달 열림 시점 · 워터마크 표시)
   const openedAt = useMemo(() => {
@@ -65,7 +69,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
       if (now - last < 1500) return;
       (warn as any)._last = now;
       try {
-        alert("보안 정책 · 복사·인쇄·저장·스크린샷 · 금지\n(유출 시 워터마크로 추적됩니다)");
+        showWarn("보안 정책 · 복사·인쇄·저장·스크린샷 · 금지\n(유출 시 워터마크로 추적됩니다)");
       } catch { /* noop */ }
     };
 
@@ -233,6 +237,12 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
           </div>
         </div>
       </div>
+      {/* 2026-08-21 · Framework Phase 3 · toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
+      )}
     </div>
   );
 };

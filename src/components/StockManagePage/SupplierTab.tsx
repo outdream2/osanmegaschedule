@@ -25,6 +25,8 @@ import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { fmtWonCompact } from "../../lib/format";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { API_LIMITS } from "../../constants/apiLimits";
+// 2026-08-21 · Framework Phase 3 · alert → useToast
+import { useToast, toastClass } from "../../hooks/useToast";
 
 function fmt(n: number): string {
   if (!Number.isFinite(n)) return "0";
@@ -88,6 +90,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   showExtraPurchaseColumns = false,
   showCycleColumn = false,
 }) => {
+  // 2026-08-21 · Framework Phase 3 · alert → useToast
+  const { toast, showError } = useToast();
   const { getWidth, resizerProps } = useColumnResize("supplierTab", {
     toggle:      { default: 28,  min: 24, max: 50  },
     num:         { default: 36,  min: 24, max: 60  },
@@ -298,8 +302,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
     if (!supplierName) return;
     const found = findVendorByName(supplierName);
     if (found) { setSupplierDetailModal(found); return; }
-    alert(`공급사 정보 없음: ${supplierName}`);
-  }, [findVendorByName]);
+    showError(`공급사 정보 없음: ${supplierName}`);
+  }, [findVendorByName, showError]);
 
   // 우측 패널 상세 정렬 helper
   const sortSupDetailRows = (rows: any[]): any[] => {
@@ -986,6 +990,12 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
           productName={productPurchaseModal.product_name}
           onClose={() => setProductPurchaseModal(null)}
         />
+      )}
+      {/* 2026-08-21 · Framework Phase 3 · toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
       )}
     </div>
   );

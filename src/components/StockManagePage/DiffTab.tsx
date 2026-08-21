@@ -17,6 +17,8 @@ import { EmptyState } from "../common/EmptyState";
 import { LoadingState } from "../common/LoadingState";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
+// 2026-08-21 · Framework Phase 3 · alert → useToast
+import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-08-06 · T-LOSS-HISTORY · 서브탭 (현황/이력) · TabBar 공용
 import { TabBar, type TabDef } from "../common/TabBar";
 import { StatusPill } from "../common/StatusPill";
@@ -46,6 +48,8 @@ interface ProductLite {
 }
 
 export const DiffTab: React.FC = () => {
+  // 2026-08-21 · Framework Phase 3 · alert → useToast
+  const { toast, showError } = useToast();
   // 2026-08-06 · T-LOSS-HISTORY · 상단 서브탭 (현황/이력) · localStorage 저장
   const [subTab, setSubTab] = useState<SubTabKey>(() => {
     try {
@@ -124,8 +128,8 @@ export const DiffTab: React.FC = () => {
     if (!supplierName) return;
     const found = findVendorByName(supplierName);
     if (found) { setSupplierDetailModal(found); return; }
-    alert(`공급사 정보 없음: ${supplierName}`);
-  }, [findVendorByName]);
+    showError(`공급사 정보 없음: ${supplierName}`);
+  }, [findVendorByName, showError]);
 
   // 데이터 fetch
   const fetchData = useCallback(async () => {
@@ -401,6 +405,12 @@ export const DiffTab: React.FC = () => {
         </div>
       )}
       </>
+      )}
+      {/* 2026-08-21 · Framework Phase 3 · toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
       )}
     </div>
   );
