@@ -14,6 +14,19 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
+### #185 · 통계 메뉴 상단 세션 · UI 프레임워크 통일 (신규 · 2026-08-21)
+- 📄 대상 · 발주관리 > 통계 서브탭 상단 (CategoryTab · TrendingTab · SupplierTab · PurchaseSubTabs 등)
+- 🔲 현재 · 각 서브탭 상단 세션 (제목·필터·기간선택 등) · 스타일·간격·색상 통일 안 됨
+- 🔲 개선 · 프레임워크 프리미티브 적용 · PageToolbar · AccentBar · SeasonButtons · PeriodSelector · CategoryChips 일관 사용
+- 🔲 각 탭 · 동일한 상단 레이아웃 (좌 accent+제목 · 중앙 필터 · 우 액션)
+- 💡 프레임워크 원칙 · common/PageToolbar · common/AccentBar 재사용 · className 만 조정 · 기능 무영향
+
+### #184 · 통계 구역현황 · 순위 옆 구역 표시 강조 (신규 · 2026-08-21)
+- 📄 대상 · 발주관리 > 통계 > 카테고리별 판매현황 (`CategoryTab.tsx`)
+- 🔲 현재 · 순위 리스트에서 순위 옆에 있는 구역(zone) 표시가 잘 안 보임 · 흐릿함
+- 🔲 개선 · zone 배지 폰트 크기 up · 색상 뚜렷하게 · StatusPill/CategoryChips 프레임워크 활용
+- 💡 프레임워크 원칙 · Card/StatusPill/AccentBar 재사용 · className 만 조정
+
 ### #183 · 발주요청 페이지 · 안내 문구 변경 (신규 · 2026-08-21)
 - 🔲 기존 문구 · "손실 확정이 되었는지 확인하세요 (ERP재고 vs 실재고 차이 · 손실추적 탭 참조)"
 - 🔲 변경 후 · "공급사를 클릭하면 최신 발주이력을 확인할 수 있습니다"
