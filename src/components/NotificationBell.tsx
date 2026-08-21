@@ -8,6 +8,8 @@ import { Bell, BellOff, CheckCheck, X, Info, AlertTriangle, CheckCircle, AlertCi
 import type { AuthSession } from "../types";
 import { StatusPill } from "./common/StatusPill";
 import { AccentBar } from "./common/AccentBar";
+// 2026-08-21 · Framework Phase 3 · Card 프리미티브
+import { Card } from "./common/Card";
 
 interface Notification {
   id: number;
@@ -191,9 +193,12 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
 
       {/* Dropdown panel · 반응형 · 모바일은 fixed 로 화면 폭에 맞춤 (2026-08-05 · 왼쪽 치우침 fix) */}
       {open && (
-        <div
-          // 2026-08-18 · shadow-brand-modal · Attio 3-layer 통일
-          className="fixed inset-x-2 top-14 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 mx-auto sm:mx-0 max-w-[420px] bg-white border border-line rounded-2xl shadow-brand-modal z-50 overflow-hidden">
+        <Card
+          variant="brand-modal"
+          rounded="2xl"
+          padding="none"
+          clip
+          className="fixed inset-x-2 top-14 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 mx-auto sm:mx-0 max-w-[420px] z-50">
           {/* Header · 2026-08-17 · 최신 트렌드 · accent bar + 폰트 +2 · 딥네이비 통일 */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-line bg-zinc-50/60">
             <div className="flex items-center gap-2.5">
@@ -276,7 +281,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
               <span className="text-[10px] text-zinc-400">최근 30개 알림</span>
             </div>
           )}
-        </div>
+        </Card>
       )}
     </div>
   );

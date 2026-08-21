@@ -15,8 +15,9 @@ import type { CSSProperties, ReactNode } from "react";
 //   · raw-sm  · tailwind shadow-sm
 //   · raw-md  · tailwind shadow-md
 //   · raw-lg  · tailwind shadow-lg
+//   · raw-xl  · tailwind shadow-xl
 //   · brand-modal · shadow-brand-modal (모달 · 이미 프로젝트 정의 토큰)
-export type CardVariant = "flat" | "raw-sm" | "raw-md" | "raw-lg" | "brand-modal" | "sm" | "md" | "lg";
+export type CardVariant = "flat" | "raw-sm" | "raw-md" | "raw-lg" | "raw-xl" | "brand-modal" | "sm" | "md" | "lg";
 export type CardPadding = "none" | "sm" | "md" | "lg";
 export type CardRounded = "md" | "lg" | "xl" | "2xl";
 
@@ -25,6 +26,7 @@ const VARIANT_SHADOW: Record<CardVariant, string> = {
   "raw-sm": "shadow-sm",
   "raw-md": "shadow-md",
   "raw-lg": "shadow-lg",
+  "raw-xl": "shadow-xl",
   "brand-modal": "shadow-brand-modal",
   sm: "shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(10,46,74,0.05),0_2px_8px_-2px_rgba(10,46,74,0.06)]",
   md: "shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_3px_rgba(10,46,74,0.08),0_4px_16px_-4px_rgba(10,46,74,0.10)]",
@@ -56,8 +58,9 @@ export interface CardProps {
   clip?: boolean;
   /** semantic 태그 · 기본 div */
   as?: "div" | "button" | "section" | "article" | "aside";
-  /** onClick · button 스타일 자동 (cursor-pointer + hover) */
-  onClick?: () => void;
+  // 2026-08-21 · MouseEventHandler 확장 · e.stopPropagation() 등 이벤트 접근 필요 케이스 지원
+  /** onClick · button 스타일 자동 (cursor-pointer + hover) · e 인자 optional */
+  onClick?: (e: React.MouseEvent<HTMLElement>) => void;
   /** 추가 className */
   className?: string;
   /** inline style */

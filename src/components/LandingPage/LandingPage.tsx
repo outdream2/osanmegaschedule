@@ -1450,8 +1450,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       {uploadOpen && (
         // 2026-08-17 v2 · Modal 통일
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-brand p-2 sm:p-4" onClick={() => setUploadOpen(false)}>
-          {/* 2026-08-21 · Card 프리미티브 미이관 · stopPropagation MouseEvent 시그니처 필요 (Card onClick = () => void) */}
-          <div className="bg-white border border-line rounded-2xl p-4 sm:p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-brand-modal" onClick={e => e.stopPropagation()}>
+          <Card variant="brand-modal" rounded="2xl" padding="none" className="p-4 sm:p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 {/* 2026-08-18 · IconTile 확산 · lg + orange */}
@@ -2178,7 +2177,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 })()}
               </>
             )}
-          </div>
+          </Card>
         </div>
       )}
 

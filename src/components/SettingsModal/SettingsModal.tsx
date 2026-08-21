@@ -5,6 +5,8 @@ import { api, ApiError } from "../../lib/apiClient";
 import { X, Plus, Trash2, GripVertical, Check, MapPin, ShieldCheck, ChevronRight } from "lucide-react";
 import { AppSettings, WageRate, ScheduleTypeEntry, defaultWageForPosition } from "../../hooks/useSettings";
 import { COLOR_PRESETS, findPresetByBg } from "../../constants";
+// 2026-08-21 · Framework Phase 3 · Card 프리미티브
+import { Card } from "../common/Card";
 
 interface SettingsModalProps {
   settings: AppSettings;
@@ -74,8 +76,11 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => {
         aria-label="색상 선택"
       />
       {open && (
-        <div
-          className="absolute z-20 bottom-full right-0 mb-1 bg-white border border-line rounded-lg shadow-xl p-2 w-[196px] animate-in fade-in zoom-in-95 duration-100"
+        <Card
+          variant="raw-xl"
+          rounded="lg"
+          padding="none"
+          className="absolute z-20 bottom-full right-0 mb-1 p-2 w-[196px] animate-in fade-in zoom-in-95 duration-100"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="grid grid-cols-6 gap-1.5 mb-2">
@@ -112,7 +117,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => {
             />
             <span className="text-[10px] font-mono text-zinc-400 uppercase">{value}</span>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );
