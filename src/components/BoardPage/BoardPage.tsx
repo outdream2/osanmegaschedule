@@ -9,7 +9,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { api } from "../../lib/apiClient";
 import {
   HelpCircle, AlertTriangle, StickyNote, Search, Plus, Send, X as XIcon, Image as ImageIcon,
-  ChevronLeft, Pin, MessageCircle, Trash2, Loader2,
+  ChevronLeft, Pin, MessageCircle, Trash2,
   Camera, AtSign, Pencil, Check,
 } from "lucide-react";
 import type { AuthSession } from "../../types";
@@ -446,7 +446,7 @@ const InlineDetail: React.FC<{
   return (
     <div className="bg-zinc-50/60 border-t border-line px-3 py-2.5">
       {loading || !post ? (
-        <div className="flex justify-center py-3 text-zinc-400"><Loader2 size={16} className="animate-spin" /></div>
+        <div className="flex justify-center py-3 text-zinc-400"><Spinner size={16} tone="zinc" /></div>
       ) : (
         <div className="flex flex-col gap-2">
           {/* 본문 요약 */}
@@ -527,7 +527,7 @@ const InlineDetail: React.FC<{
               />
               <button onClick={submit} disabled={posting || !commentBody.trim()}
                 className="p-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white disabled:opacity-40 shrink-0">
-                {posting ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                {posting ? <Spinner size={12} /> : <Send size={12} />}
               </button>
             </div>
           )}
@@ -706,7 +706,7 @@ function ComposerModal({
           <button onClick={onClose} className="px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-[15px] font-bold">취소</button>
           <button onClick={submit} disabled={saving || uploading || !title.trim()}
             className="px-4 py-2 rounded-xl bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[15px] font-bold shadow-sm disabled:opacity-40 flex items-center gap-1">
-            {saving ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+            {saving ? <Spinner size={13} /> : <Send size={13} />}
             등록
           </button>
         </div>
@@ -902,7 +902,7 @@ function DetailModal({
         </div>
 
         {loading || !post ? (
-          <div className="flex justify-center py-20"><Loader2 className="animate-spin text-orange-400" size={24} /></div>
+          <div className="flex justify-center py-20"><Spinner size={24} tone="orange" /></div>
         ) : (
           <>
             {/* 본문 */}
@@ -975,7 +975,7 @@ function DetailModal({
                       <span className="text-[15px] text-zinc-400">{editImages.length}/8</span>
                       {editUploading && editUploadProgress && (
                         <span className="text-[14px] text-indigo-500 font-bold inline-flex items-center gap-1">
-                          <Loader2 size={10} className="animate-spin" />
+                          <Spinner size={10} />
                           업로드 {editUploadProgress.done}/{editUploadProgress.total}
                         </span>
                       )}
@@ -999,7 +999,7 @@ function DetailModal({
                       className="px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-600 text-[14px] font-bold disabled:opacity-40">취소</button>
                     <button type="button" onClick={saveEditPost} disabled={savingEdit || editUploading || !editDraft.title.trim()}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[14px] font-bold disabled:opacity-40">
-                      {savingEdit ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />} 저장
+                      {savingEdit ? <Spinner size={12} /> : <Send size={12} />} 저장
                     </button>
                   </div>
                 </>
@@ -1123,7 +1123,7 @@ function DetailModal({
                 <div className="flex items-center gap-2">
                   <button onClick={() => cmtFileRef.current?.click()} disabled={uploadingCmt}
                     className="p-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-600 shrink-0 disabled:opacity-40" title="사진 첨부">
-                    {uploadingCmt ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+                    {uploadingCmt ? <Spinner size={14} /> : <Camera size={14} />}
                   </button>
                   <input ref={cmtFileRef} type="file" accept="image/*" multiple capture="environment" className="hidden"
                     onChange={(e) => { handleCmtFiles(e.target.files); e.target.value = ""; }} />
@@ -1137,7 +1137,7 @@ function DetailModal({
                   />
                   <button onClick={submitComment} disabled={posting || !commentBody.trim()}
                     className="p-2 rounded-lg bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white shrink-0 disabled:opacity-40">
-                    {posting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                    {posting ? <Spinner size={14} /> : <Send size={14} />}
                   </button>
                 </div>
               </div>
