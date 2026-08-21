@@ -16,6 +16,9 @@ import type { Employee } from "../../types";
 import { uploadResume, uploadContract, uploadBankbook } from "../../lib/employeeApi";
 import { getEmploymentStatus, EMPLOYMENT_STATUS_LABEL } from "../../lib/employmentStatus";
 import { Card } from "./Card";
+// 2026-08-21 · Framework Phase 3 · fetch → apiClient · alert → useToast
+import { api } from "../../lib/apiClient";
+import { useToast, toastClass } from "../../hooks/useToast";
 
 interface Props {
   employee: Employee;
@@ -42,6 +45,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
   useEffect(() => { setLocalEmployee(employee); }, [employee]);
 
   // 2026-08-10 · B Step 4 · 사번(우선) or employeeId 로 최신 계약서 근로정보 fetch
+  // 2026-08-21 · Framework Phase 3 · fetch → apiClient
   const [latestContract, setLatestContract] = useState<LatestContract | null>(null);
   useEffect(() => {
     let alive = true;
@@ -51,12 +55,14 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
     const qs = number
       ? `employee_number=${encodeURIComponent(number)}`
       : `employeeId=${id}`;
-    fetch(`/api/employees/latest-contract?${qs}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (alive) setLatestContract(data ?? null); })
+    api.get<LatestContract | null>(`/api/employees/latest-contract?${qs}`)
+      .then(({ data }) => { if (alive) setLatestContract(data ?? null); })
       .catch(() => { if (alive) setLatestContract(null); });
     return () => { alive = false; };
   }, [localEmployee.id, localEmployee.employee_number]);
+
+  // 2026-08-21 · useToast · alert 대체
+  const { toast, showError } = useToast();
 
   const applyLocal = (updater: (prev: Employee) => Employee) => {
     setLocalEmployee(prev => {
@@ -79,7 +85,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
       const { url } = await uploadResume(localEmployee.id, file);
       applyLocal(prev => ({ ...prev, resume_url: url }));
     } catch (err: any) {
-      alert(`이력서 업로드 실패 · ${err?.message ?? err}`);
+      showError(`이력서 업로드 실패 · ${err?.message ?? err}`);
     } finally { setUploadingKind(null); }
   };
   const handleContractUpload = async (file: File) => {
@@ -88,7 +94,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
       const { url } = await uploadContract(localEmployee.id, file);
       if (url) applyLocal(prev => ({ ...prev, contract_file_url: url }));
     } catch (err: any) {
-      alert(`근로계약서 업로드 실패 · ${err?.message ?? err}`);
+      showError(`근로계약서 업로드 실패 · ${err?.message ?? err}`);
     } finally { setUploadingKind(null); }
   };
   const handleBankbookUpload = async (file: File) => {
@@ -97,7 +103,7 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
       const { dataUrl } = await uploadBankbook(localEmployee, file);
       applyLocal(prev => ({ ...prev, bankbook_image_url: dataUrl }));
     } catch (err: any) {
-      alert(`통장사본 업로드 실패 · ${err?.message ?? err}`);
+      showError(`통장사본 업로드 실패 · ${err?.message ?? err}`);
     } finally { setUploadingKind(null); }
   };
 
@@ -339,6 +345,8 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
           </div>
         </div>
       )}
+      {/* 2026-08-21 · Framework Phase 3 · useToast 표시 · alert 대체 */}
+      {toast && <div className={toastClass(toast.tone)}>{toast.message}</div>}
     </Card>
   );
 };
