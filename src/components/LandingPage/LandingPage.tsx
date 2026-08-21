@@ -263,7 +263,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
   const [pendingPage, setPendingPage] = useState<"schedule" | "display" | "scan" | "requests" | "ocr" | "upload" | "leave" | null>(null);
   const [leavePendingCount, setLeavePendingCount] = useState(0);
-  const [requestsCounts, setRequestsCounts] = useState({ display: 0, order: 0, mismatch: 0, lunch: 0 });
+  // 2026-08-21 · #171 Phase 2 · 관리자 오늘 현황 · 모든 알림/요청 노출 · inventory·return·resignation 추가
+  const [requestsCounts, setRequestsCounts] = useState({
+    display: 0, order: 0, mismatch: 0, lunch: 0,
+    inventory: 0, return: 0, resignation: 0,
+  });
   // 직원용: 나에게 배정된 진열 보충 요청 중 pending 개수
   const [myPendingCount, setMyPendingCount] = useState(0);
 
@@ -783,13 +787,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     if (!isManagerOrAdmin) return;
     fetch("/api/requests/pending-counts")
       .then(r => r.ok ? r.json() : {})
-      .then((d: { leave?: number; display?: number; order?: number; mismatch?: number; lunch?: number }) => {
+      .then((d: { leave?: number; display?: number; order?: number; mismatch?: number; lunch?: number; inventory?: number; return?: number; resignation?: number }) => {
         setLeavePendingCount(d.leave ?? 0);
         setRequestsCounts({
           display: d.display ?? 0,
           order: d.order ?? 0,
           mismatch: d.mismatch ?? 0,
           lunch: d.lunch ?? 0,
+          inventory: d.inventory ?? 0,
+          return: d.return ?? 0,
+          resignation: d.resignation ?? 0,
         });
       })
       .catch(() => { });
@@ -998,7 +1005,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <AccentBar />
                 <div className="text-ink font-bold tracking-tight text-[16px]">오늘의 현황</div>
               </div>
-              {/* 2026-08-21 · #171 · 각 항목 클릭 → 해당 페이지 이동 · 색상 4종 유지 · 대원칙 13/14 준수 */}
+              {/* 2026-08-21 · #171 Phase 2 · 관리자 · 모든 알림/요청 노출 · 7항목 (연차·진열발주·불일치·점심·재고점검·반품·사직서) · 각 클릭 → 페이지 이동 */}
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[17px] text-ink-soft pl-[13px]">
                 <button
                   type="button"
@@ -1007,7 +1014,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   title="연차 승인 페이지로 이동"
                 >
                   <span className={`w-2 h-2 rounded-full ${leavePendingCount > 0 ? "bg-amber-500" : "bg-zinc-300"}`} />
-                  승인 대기 <b className={`font-bold tabular-nums ${leavePendingCount > 0 ? "text-amber-700" : "text-ink"}`}>{leavePendingCount}</b>건
+                  연차 승인 <b className={`font-bold tabular-nums ${leavePendingCount > 0 ? "text-amber-700" : "text-ink"}`}>{leavePendingCount}</b>건
                 </button>
                 <button
                   type="button"
@@ -1035,6 +1042,33 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 >
                   <span className={`w-2 h-2 rounded-full ${requestsCounts.lunch > 0 ? "bg-emerald-500" : "bg-zinc-300"}`} />
                   점심 신청 <b className={`font-bold tabular-nums ${requestsCounts.lunch > 0 ? "text-emerald-700" : "text-ink"}`}>{requestsCounts.lunch}</b>건
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigate("stockcheck", authSession!)}
+                  className="inline-flex items-center gap-1.5 hover:text-violet-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
+                  title="재고 점검 페이지로 이동"
+                >
+                  <span className={`w-2 h-2 rounded-full ${requestsCounts.inventory > 0 ? "bg-violet-500" : "bg-zinc-300"}`} />
+                  재고 점검 <b className={`font-bold tabular-nums ${requestsCounts.inventory > 0 ? "text-violet-700" : "text-ink"}`}>{requestsCounts.inventory}</b>건
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigate("requests", authSession!)}
+                  className="inline-flex items-center gap-1.5 hover:text-orange-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
+                  title="반품 요청 · 요청 목록으로 이동"
+                >
+                  <span className={`w-2 h-2 rounded-full ${requestsCounts.return > 0 ? "bg-orange-500" : "bg-zinc-300"}`} />
+                  반품 요청 <b className={`font-bold tabular-nums ${requestsCounts.return > 0 ? "text-orange-700" : "text-ink"}`}>{requestsCounts.return}</b>건
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigate("business-manage", authSession!)}
+                  className="inline-flex items-center gap-1.5 hover:text-red-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
+                  title="사직서 승인 · 경영관리로 이동"
+                >
+                  <span className={`w-2 h-2 rounded-full ${requestsCounts.resignation > 0 ? "bg-red-500" : "bg-zinc-300"}`} />
+                  사직서 승인 <b className={`font-bold tabular-nums ${requestsCounts.resignation > 0 ? "text-red-700" : "text-ink"}`}>{requestsCounts.resignation}</b>건
                 </button>
               </div>
             </div>
