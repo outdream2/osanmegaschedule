@@ -3,6 +3,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
+// 2026-08-21 · Framework Phase 3 · alert → useToast
+import { useToast, toastClass } from "../../hooks/useToast";
 import { FirstAid, BookOpen, Video, FileText, GraduationCap, Folder, FolderOpen, File as FileIcon } from "@phosphor-icons/react";
 import { Settings2, Plus, Eye, FileText as FileTextIcon, ChevronRight, ChevronDown, CloudUpload, Trash2, X as XIcon } from "lucide-react";
 import { Spinner } from "../common/Spinner";
@@ -106,6 +108,8 @@ function buildEducationCategories(): CategoryItem[] {
 
 export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onBack, onNavigate, onLogout }) => {
   const confirm = useConfirm();
+  // 2026-08-21 · Framework Phase 3 · alert → useToast
+  const { toast, showError } = useToast();
 
   const isAdmin = (authSession?.level ?? 0) >= 8;
 
@@ -309,7 +313,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
       if (selectedCat === key) { setSelectedCat(null); setSelectedItem(null); }
       setExpandedCats(prev => { const n = new Set(prev); n.delete(key); return n; });
     } catch (err: any) {
-      alert(err?.message ?? "삭제 실패");
+      showError(err?.message ?? "삭제 실패");
     }
   };
 
@@ -804,6 +808,12 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
           mimeType={viewerItem.mime_type}
           watermarkText={watermarkText}
         />
+      )}
+      {/* 2026-08-21 · Framework Phase 3 · toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
       )}
     </div>
   );

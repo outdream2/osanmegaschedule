@@ -26,6 +26,8 @@ import { fmtWonCompact } from "../../lib/format";
 import { LoadingState } from "../common/LoadingState";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
+// 2026-08-21 · Framework Phase 3 · alert → useToast
+import { useToast, toastClass } from "../../hooks/useToast";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -71,6 +73,8 @@ const FLOW_CACHE_TTL = 5 * 60 * 1000;
 // ─── FlowTab ─────────────────────────────────────────────────────────────────
 
 export const FlowTab: React.FC = () => {
+  // 2026-08-21 · Framework Phase 3 · alert → useToast
+  const { toast, showError } = useToast();
   const { getWidth, resizerProps } = useColumnResize("flowTab", {
     sel:             { default: 48,  min: 40,  max: 80  },
     name:            { default: 260, min: 120, max: 500 },
@@ -219,8 +223,8 @@ export const FlowTab: React.FC = () => {
     if (!supplierName) return;
     const found = findVendorByName(supplierName);
     if (found) { setSupplierDetailModal(found); return; }
-    alert(`공급사 정보 없음: ${supplierName}`);
-  }, [findVendorByName]);
+    showError(`공급사 정보 없음: ${supplierName}`);
+  }, [findVendorByName, showError]);
 
   // 숨김 관리 훅
   const fetchStockFlowRef = useRef<() => void>(() => {});
@@ -1091,6 +1095,12 @@ export const FlowTab: React.FC = () => {
               )}
             </div>
           </div>
+        </div>
+      )}
+      {/* 2026-08-21 · Framework Phase 3 · toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
         </div>
       )}
     </div>

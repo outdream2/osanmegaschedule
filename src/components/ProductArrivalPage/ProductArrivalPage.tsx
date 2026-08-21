@@ -122,7 +122,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
   const [saveError, setSaveError]               = useState<string | null>(null);
   const [savedId, setSavedId]                   = useState<number | null>(null);
   // 2026-08-16 · useToast 프레임워크 · setTimeout 자동 관리
-  const { toast: _toastObj, show: _showToast } = useToast(2200);
+  const { toast: _toastObj, show: _showToast, showError } = useToast(2200);
   const toast = _toastObj?.message ?? null;
   const [lastScannedProduct, setLastScannedProduct] = useState<ProductInfo | null>(null);
   const [lastScannedCode, setLastScannedCode]   = useState<string | null>(null);
@@ -175,7 +175,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       if (selectedArrivalId === id) setSelectedArrivalId(null);
     } catch (e: unknown) {
       const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "네트워크 오류";
-      alert(`삭제 실패: ${msg}`);
+      showError(`삭제 실패: ${msg}`);
     }
   };
 

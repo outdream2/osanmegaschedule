@@ -14,6 +14,8 @@ import type { AuthSession } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useConfirm } from "../../hooks/useConfirm";
+// 2026-08-21 · Framework Phase 3 · alert → useToast
+import { useToast, toastClass } from "../../hooks/useToast";
 import { CARD_BASE } from "../../styles/tokens";
 import { StatusPill, type PillTone } from "../common/StatusPill";
 import { IconTile } from "../common/IconTile";
@@ -118,6 +120,8 @@ function ListToolbar({
 
 export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
   const confirm = useConfirm();
+  // 2026-08-21 · Framework Phase 3 · alert → useToast
+  const { toast, showError } = useToast();
   const [tab, setTab] = useState<Tab>(() => {
     // 2026-08-11 · 사이드바 V2 · localStorage("sidebar.subtab.requests") 있으면 초기값 사용
     // 2026-08-12 · StrictMode 이중 마운트 대비 · 읽기만 · 삭제는 useEffect 로
@@ -240,11 +244,11 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
       // 2026-08-18 · 진열 준비 상태 변경 시 배지 갱신
       dispatchApprovalChange("display");
     } catch (e: any) {
-      alert(`창고 준비 토글 실패: ${e?.message ?? "오류"}`);
+      showError(`창고 준비 토글 실패: ${e?.message ?? "오류"}`);
     } finally {
       setCompletingDisplay(prev => { const s = new Set(prev); s.delete(req.id); return s; });
     }
-  }, [authSession?.employeeId, authSession?.employeeName]);
+  }, [authSession?.employeeId, authSession?.employeeName, showError]);
 
   // 2026-08-05 · T-SCAN-1 · [진열완료] 토글 · PATCH /complete
   //   · pending·prepared → done (완료 · 관리자 알림)
@@ -269,11 +273,11 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
       // 2026-08-18 · 진열 완료 상태 변경 시 배지 갱신
       dispatchApprovalChange("display");
     } catch (e: any) {
-      alert(`진열완료 토글 실패: ${e?.message ?? "오류"}`);
+      showError(`진열완료 토글 실패: ${e?.message ?? "오류"}`);
     } finally {
       setCompletingDisplay(prev => { const s = new Set(prev); s.delete(req.id); return s; });
     }
-  }, [authSession?.employeeId, authSession?.employeeName]);
+  }, [authSession?.employeeId, authSession?.employeeName, showError]);
 
   const handleNotifyAll = useCallback(async () => {
     const pending = displayReqs.filter(r => r.status === "pending" && r.assigned_staff_id);
@@ -1289,6 +1293,12 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               </button>
             </div>
           </div>
+        </div>
+      )}
+      {/* 2026-08-21 · Framework Phase 3 · toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
         </div>
       )}
     </div>
