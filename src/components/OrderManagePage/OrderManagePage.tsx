@@ -5,6 +5,8 @@
 // 거래명세서 서브탭에서는 거래명세서 OCR(OcrPage) 노출
 import React, { Suspense, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useConfirm } from "../../hooks/useConfirm";
+// 2026-08-21 · Framework Phase 3 · alert → useToast
+import { useToast, toastClass } from "../../hooks/useToast";
 import { useVendors } from "../../hooks/useVendors";
 // 2026-08-03 (#201) · 발주필요 검색 · 공통 SearchBar · SearchFilterChips · 한글 초성
 import { SearchBar } from "../common/SearchBar";
@@ -207,6 +209,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // DB + 하드코딩 병합 reference 값
   const { vendorCategories: dbVendorCategories } = useReferenceValues();
   const confirm = useConfirm();
+  // 2026-08-21 · Framework Phase 3 · alert → useToast
+  const { toast, showError, showSuccess } = useToast();
 
   // Level-1 탭 (발주 / 매입 / 결제 / 통계) — 2026-08-03 재구성
   // initialTopTab 이 있으면 해당 탭으로 초기화 · props 변경 시 useEffect 로 감지 (재mount 없이)
@@ -277,7 +281,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     if (!name) return;
     const found = findVendorByName(name);
     if (found) { setSupplierInfoModal(found as unknown as Vendor); return; }
-    alert(`공급사 정보 없음: ${supplierName}`);
+    showError(`공급사 정보 없음: ${supplierName}`);
   };
   // 공급사 클릭 → 캐시에서 id 조회 후 우측 패널 표시 (inline fetch 제거)
   const handleVendorEditRequest = useCallback((vendorId: number) => {
@@ -741,11 +745,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         received_at: new Date().toISOString(),
         received_qty_map: receivedQtyMap ?? null,
       });
-      alert(`✅ 입고 확정 완료\n#${receipt.order_number}`);
+      showSuccess(`✅ 입고 확정 완료\n#${receipt.order_number}`);
       loadReceipts();
     } catch (err: any) {
       const msg = err instanceof ApiError ? err.message : (err?.message ?? String(err));
-      alert(`입고 확정 실패\n${msg}\n※ 서버 API (/api/goods-receipts) 미구성일 수 있습니다.\n\nSupabase 마이그레이션 SQL:\nCREATE TABLE goods_receipts (id UUID PRIMARY KEY, dispatch_id UUID, order_number TEXT, supplier TEXT, status TEXT, received_at TIMESTAMPTZ, ...);\nCREATE TABLE goods_receipt_items (...);`);
+      showError(`입고 확정 실패\n${msg}\n※ 서버 API (/api/goods-receipts) 미구성일 수 있습니다.`);
     }
   };
 
@@ -1076,7 +1080,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // 발주 확정 발송
   const submitOrderModal = async () => {
     if (!orderModal) return;
-    if (!orderModal.channels.email && !orderModal.channels.sms && !orderModal.channels.kakao) { alert("이메일·문자·카카오톡 중 하나 이상 선택해주세요."); return; }
+    if (!orderModal.channels.email && !orderModal.channels.sms && !orderModal.channels.kakao) { showError("이메일·문자·카카오톡 중 하나 이상 선택해주세요."); return; }
     const totalItems = orderModal.suppliers.reduce((n, s) => n + s.items.length, 0);
     const proceed = await confirm({
       message: `${orderModal.suppliers.length}개 공급사 · ${totalItems}개 상품에 발주서 ${orderModal.suppliers.length}건을 각각 발송합니다.\n\n계속하시겠습니까?`,
@@ -1154,7 +1158,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           return `  · ${r.supplier} (#${r.order_number})${reason}${outc}`;
         })] : []),
       ].join("\n");
-      alert(`발주서 ${orderModal.suppliers.length}건 발송 결과\n\n${summaryLines}`);
+      showSuccess(`발주서 ${orderModal.suppliers.length}건 발송 결과\n\n${summaryLines}`);
       // 실패 · no_recipient 있는 공급사가 있으면 · 순차 confirm → 공급사 정보 수정 modal 이동
       const needsEdit = failed.filter(r => missingByReason(r).length > 0);
       for (const r of needsEdit) {
@@ -1172,7 +1176,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       setSelectedOrder(new Set());
       loadOrderReqs();
     } catch (err: any) {
-      alert(`❌ 발주 발송 오류: ${err?.message ?? err}`);
+      showError(`❌ 발주 발송 오류: ${err?.message ?? err}`);
     } finally {
       setSendingBulk(false);
     }
@@ -1185,7 +1189,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // 일괄 발주 — 선택 상품으로 발주 모달 열기
   const handleBulkOrder = () => {
     const selected = orderReqs.filter(r => selectedOrder.has(r.id));
-    if (selected.length === 0) { alert("발주할 상품을 선택해주세요."); return; }
+    if (selected.length === 0) { showError("발주할 상품을 선택해주세요."); return; }
     openOrderModal(selected);
   };
 
@@ -3187,6 +3191,12 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
       {/* 입고내역 상세 모달 · 2026-08-03 · ProductArrivalPage 내부 탭으로 이동 */}
 
+      {/* 2026-08-21 · Framework Phase 3 · toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
+      )}
     </main>
   );
 };
