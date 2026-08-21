@@ -24,6 +24,10 @@ import type { Employee } from "../../types";
 // 2026-08-12 · #99 · 사이드바 그룹 트리 구조 · 페이지 → 그룹 매핑 재사용
 import { SIDE_NAV_GROUPS } from "../layout/sideNavGroups";
 import { CaretDown, CaretRight } from "@phosphor-icons/react";
+// 2026-08-21 · Framework Phase 4 · large-file 분리
+import { PAGE_LABELS, LEVELS, GROUP_COLOR_CLS } from "./constants";
+import { LevelSelect } from "./LevelSelect";
+import { PositionsField } from "./PositionsField";
 
 interface PermissionsPageProps {
   authSession: AuthSession | null;
@@ -33,47 +37,6 @@ interface PermissionsPageProps {
   /** true 시 자체 AppNavHeader skip (BusinessManagePage 임베드용 · 2026-08-03) */
   embedded?: boolean;
 }
-
-// 2026-08-12 · sideNavGroups 확장 · 신규 페이지 반영 (승인요청·경영·설정 등)
-const PAGE_LABELS: { key: keyof PagePermissions; label: string; desc: string }[] = [
-  { key: "schedule",    label: "스케줄",          desc: "직원 월간 근무 스케줄" },
-  { key: "display",     label: "매장(진열·발주·매입·통계)", desc: "발주·매입·결제·통계·매장구역·공급사 통합" },
-  { key: "scan",        label: "상품 스캔",       desc: "바코드 스캔으로 요청" },
-  { key: "productarrival", label: "상품 도착",    desc: "상품 입고 처리" },
-  { key: "requests",    label: "요청목록",        desc: "진열·발주·연차승인 등 승인 처리" },
-  { key: "leave",       label: "연차 신청/승인",  desc: "휴가·연차 신청 및 승인" },
-  { key: "approval-request", label: "승인요청",   desc: "연차·점심불참·사직서 신청" },
-  { key: "ocr",         label: "거래명세서 OCR",  desc: "PDF 거래명세서 자동 추출" },
-  { key: "upload",      label: "상품 목록 관리",  desc: "xlsx 파일 업로드" },
-  { key: "reservation", label: "방문예약",        desc: "상담 및 방문 일정 예약" },
-  { key: "lunch",       label: "점심 불참",       desc: "오늘의 점심 불참 신청" },
-  { key: "stockcheck",  label: "재고 점검",       desc: "매장 내 의약품 재고 점검" },
-  { key: "stockarrivals", label: "입고알림",      desc: "입고 알림 수신·조회" },
-  { key: "pharmacist",  label: "약사 전용",       desc: "교육자료 · 복약지도 · 문서 · 관리자 업로드" },
-  { key: "board",       label: "이슈 게시판",     desc: "공지·이슈 등 게시판" },
-  { key: "business-manage", label: "경영관리",    desc: "직원관리·근로계약서·각종양식" },
-  { key: "hr-forms",    label: "각종 양식",       desc: "HR 서식" },
-  { key: "mypage",      label: "마이페이지",      desc: "본인 정보·비밀번호·계정" },
-  { key: "zone-labels", label: "구역 라벨",       desc: "매장 진열구역 라벨" },
-  { key: "permissions", label: "직원권한 설정",   desc: "페이지·직원별 레벨 관리" },
-  { key: "branding",    label: "앱 브랜딩 설정",  desc: "연락처·도장·모바일 가시성" },
-  { key: "company-info", label: "회사정보 설정",  desc: "약국명·대표·사업자·주소·로고" },
-  { key: "season-settings", label: "계절 정의",   desc: "봄·여름·가을·겨울 월 매핑" },
-];
-
-const LEVELS = [0,1,2,3,4,5,6,7,8,9];
-
-// 2026-08-12 · #99 · 그룹 아이콘 색상 · Tailwind JIT 스캔 대상 (dynamic class 회피)
-const GROUP_COLOR_CLS: Record<string, string> = {
-  slate:   "text-zinc-500",
-  amber:   "text-amber-500",
-  red:     "text-red-500",
-  sky:     "text-sky-500",
-  indigo:  "text-indigo-500",
-  emerald: "text-emerald-500",
-  violet:  "text-violet-500",
-  cyan:    "text-cyan-500",
-};
 
 export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, onBack, onLogout, onNavigate, embedded = false }) => {
   // 2026-08-21 · Framework Phase 3 · window.confirm → useConfirm
@@ -998,96 +961,4 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
   }
 };
 
-interface LevelSelectProps {
-  value: number;
-  onChange: (v: number) => void;
-  saving: boolean;
-  saved: boolean;
-}
-
-const LevelSelect: React.FC<LevelSelectProps> = ({ value, onChange, saving, saved }) => (
-  <div className="relative flex items-center gap-1.5">
-    <select
-      value={value}
-      onChange={e => onChange(Number(e.target.value))}
-      disabled={saving}
-      className="appearance-none bg-zinc-50 border border-line rounded-lg px-3 py-1.5 text-[13px] font-bold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep cursor-pointer disabled:opacity-60 pr-7 min-w-[120px]"
-    >
-      {LEVELS.map(l => (
-        <option key={l} value={l}>Lv.{l}{l === 1 ? " (직원)" : l === 9 ? " (최고관리자)" : ""}</option>
-      ))}
-    </select>
-    <div className="absolute right-2 pointer-events-none">
-      {saving ? (
-        <Spinner size={10} tone="brand" />
-      ) : saved ? (
-        <Check size={10} className="text-emerald-500" />
-      ) : null}
-    </div>
-  </div>
-);
-
-// 2026-08-13 · #100 · 직군 팝오버 · 각 페이지 · 레벨 OR 직군 조건 (직군 지정 시 · 레벨 무관 접근)
-interface PositionsFieldProps {
-  page: string;
-  field: "read" | "write";
-  selected: string[];
-  allPositions: string[];
-  isOpen: boolean;
-  onToggleOpen: (open: boolean) => void;
-  onToggle: (position: string) => void;
-}
-const PositionsField: React.FC<PositionsFieldProps> = ({ selected, allPositions, isOpen, onToggleOpen, onToggle }) => {
-  const ref = React.useRef<HTMLDivElement>(null);
-  React.useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onToggleOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [isOpen, onToggleOpen]);
-  return (
-    <div className="relative flex items-center gap-1 flex-wrap justify-end max-w-full" ref={ref}>
-      {selected.map(p => (
-        <button
-          key={p}
-          type="button"
-          onClick={() => onToggle(p)}
-          className="inline-flex items-center gap-0.5 px-1.5 h-5 text-[10px] font-bold text-brand-deep bg-brand-tint border border-brand/15 rounded hover:brightness-95 cursor-pointer"
-          title={`${p} 직군 · 클릭 시 해제`}
-        >
-          {p}<span className="text-brand-deep/60">×</span>
-        </button>
-      ))}
-      <button
-        type="button"
-        onClick={() => onToggleOpen(!isOpen)}
-        className={`h-5 px-1.5 text-[10px] font-bold rounded border transition-colors cursor-pointer ${
-          isOpen
-            ? "bg-brand-deep text-white border-brand-deep"
-            : "bg-white text-ink-soft border-line hover:border-brand-deep hover:text-brand-deep"
-        }`}
-        title="직군 지정 · 레벨과 함께 OR 조건"
-      >+ 직군</button>
-      {isOpen && (
-        <Card variant="raw-lg" rounded="lg" padding="none" className="absolute right-0 top-full mt-1 z-30 w-40 p-2 flex flex-col gap-1">
-          <div className="text-[10px] font-bold text-zinc-400 uppercase mb-1 px-1">직군 (OR 조건)</div>
-          {allPositions.length === 0 ? (
-            <div className="text-[11px] text-zinc-400 px-1 py-2 text-center">직군 없음</div>
-          ) : allPositions.map(p => (
-            <label key={p} className="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-zinc-50 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selected.includes(p)}
-                onChange={() => onToggle(p)}
-                className="w-3 h-3 accent-[#1E5C8E] cursor-pointer"
-              />
-              <span className="text-[12px] font-semibold text-zinc-700">{p}</span>
-            </label>
-          ))}
-        </Card>
-      )}
-    </div>
-  );
-};
+// 2026-08-21 · LevelSelect · PositionsField 는 별도 파일로 분리 (./LevelSelect · ./PositionsField)
