@@ -44,7 +44,7 @@ import {
 import SplitPanel from "../common/SplitPanel";
 import { Card } from "../common/Card";
 import { EmployeeInfoForm } from "../common/EmployeeInfoForm";
-import { AddressSearchModal } from "../common/AddressSearchModal";
+import { AddressSearchModal } from "../common/features/AddressSearchModal";
 import { matchHangul } from "../../lib/hangulSearch";
 import { IconTile } from "../common/IconTile";
 import sungstampUrl from "../../images/sungstamp.png";

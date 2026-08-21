@@ -53,7 +53,7 @@ import {
   ArrowUpDown,
 } from "lucide-react";
 import { EmployeeInfoForm } from "../common/EmployeeInfoForm";
-import { AddressSearchModal } from "../common/AddressSearchModal";
+import { AddressSearchModal } from "../common/features/AddressSearchModal";
 import { StatusPill } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
 import { InlineLabel } from "../common/InlineLabel";

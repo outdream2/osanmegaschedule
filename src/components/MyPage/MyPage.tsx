@@ -7,7 +7,7 @@ import { Spinner } from "../common/Spinner";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession, Employee } from "../../types";
 import { updateEmployee } from "../../lib/employeeApi";
-import { AddressSearchModal } from "../common/AddressSearchModal";
+import { AddressSearchModal } from "../common/features/AddressSearchModal";
 import { useToast, toastClass } from "../../hooks/useToast";
 
 interface MyPageProps {

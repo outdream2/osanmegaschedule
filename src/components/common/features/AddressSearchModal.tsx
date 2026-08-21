@@ -1,4 +1,4 @@
-// src/components/common/AddressSearchModal.tsx
+// src/components/common/features/AddressSearchModal.tsx
 // 다음(카카오) 우편번호 검색 공용 모달 · T-Address-Impl (2026-08-07)
 //
 // 사용 예:
@@ -15,7 +15,7 @@
 
 import React from "react";
 import DaumPostcodeEmbed, { Address } from "react-daum-postcode";
-import { Modal } from "./Modal";
+import { Modal } from "../Modal";
 
 // ─── 반환 타입 ────────────────────────────────────────────────────────────────
 
