@@ -20,6 +20,8 @@ import { WorkerChips } from "./WorkerChips";
 import { BreakTimeline } from "./BreakTimeline";
 import { api, ApiError } from "../../lib/apiClient";
 import { StatusPill } from "../common/StatusPill";
+// 2026-08-21 · Framework Phase 3 · alert → useToast
+import { useToast, toastClass } from "../../hooks/useToast";
 
 
 // ─── Sub-component: ZoneSection ──────────────────────────────────────────────
@@ -99,6 +101,8 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
   tabWorkerIds, isTabAll, onUserInteract, onAutoSuggest,
   isConfirmed, confirming, onConfirm,
 }) => {
+  // 2026-08-21 · Framework Phase 3 · alert → useToast
+  const { toast, showError } = useToast();
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [touchDraggingId, setTouchDraggingId] = useState<number | null>(null);
   const [selectedDows, setSelectedDows] = useState<Set<number>>(new Set());
@@ -124,7 +128,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
     const slotEnd = slotStart + 60;
     const range = workRanges[empId];
     if (range && (slotEnd <= range.start || slotStart >= range.end)) {
-      alert("출근 시간이 아니어서 배정할 수 없습니다.");
+      showError("출근 시간이 아니어서 배정할 수 없습니다.");
       return;
     }
     const otherZone: ZoneRow = zone === "카운터" ? "매장" : "카운터";
@@ -132,7 +136,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
     if (((zoneMap[otherZone] ?? {})[slot] ?? []).includes(empId)) {
       const isMovingFromOtherZone = source?.type === "zone" && source.zone === otherZone && source.slot === slot;
       if (!isMovingFromOtherZone) {
-        alert(`중복배치입니다. 다시 배정하세요.\n(같은 시간대에 이미 ${otherZone}에 배정되어 있습니다)`);
+        showError(`중복배치입니다. 다시 배정하세요.\n(같은 시간대에 이미 ${otherZone}에 배정되어 있습니다)`);
         return;
       }
     }
@@ -143,7 +147,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
       const ls0 = lh * 60 + lm;
       return ls0 < slotEnd && ls0 + 30 > slotStart;
     });
-    if (lunchConflict) { alert("중복배치입니다. 다시 배정하세요.\n(같은 시간대에 이미 점심시간이 배정되어 있습니다)"); return; }
+    if (lunchConflict) { showError("중복배치입니다. 다시 배정하세요.\n(같은 시간대에 이미 점심시간이 배정되어 있습니다)"); return; }
     const restConflict = Object.entries(restSlotMap).some(([rs, ids]) => {
       if (!(ids as number[]).includes(empId)) return false;
       if (source?.type === "rest" && source.slot === rs) return false;
@@ -151,10 +155,10 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
       const rs0 = rh * 60 + rm;
       return rs0 < slotEnd && rs0 + 30 > slotStart;
     });
-    if (restConflict) { alert("중복배치입니다. 다시 배정하세요.\n(같은 시간대에 이미 휴게시간이 배정되어 있습니다)"); return; }
+    if (restConflict) { showError("중복배치입니다. 다시 배정하세요.\n(같은 시간대에 이미 휴게시간이 배정되어 있습니다)"); return; }
     // dropToZone은 source 파라미터를 받아 atomic 이동 처리 (any 캐스팅으로 확장 시그니처 전달)
     (onDropToZone as any)(zone, slot, empId, source);
-  }, [workRanges, zoneMap, lunchSlotMap, restSlotMap, onDropToZone]);
+  }, [workRanges, zoneMap, lunchSlotMap, restSlotMap, onDropToZone, showError]);
 
   const assignedIds = useMemo(() => {
     const ids = new Set<number>();
@@ -783,12 +787,12 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
             else if (isLunch)    {
               const s = findFirstEmptySlot(shiftedLunchSlots, lunchSlotMap, lunchCount);
               if (s) onDropToLunch(s, empId);
-              else alert("점심 슬롯이 모두 찼습니다. 인원수/오프셋을 조정하세요.");
+              else showError("점심 슬롯이 모두 찼습니다. 인원수/오프셋을 조정하세요.");
             }
             else                 {
               const s = findFirstEmptySlot(shiftedRestSlots, restSlotMap, restCount);
               if (s) onDropToRest(s, empId);
-              else alert("휴게 슬롯이 모두 찼습니다. 인원수/오프셋을 조정하세요.");
+              else showError("휴게 슬롯이 모두 찼습니다. 인원수/오프셋을 조정하세요.");
             }
           }
         };
@@ -917,6 +921,12 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
           </>
         );
       })()}
+      {/* 2026-08-21 · Framework Phase 3 · toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
+      )}
     </div>
   );
 });
@@ -947,6 +957,8 @@ export const DayTimelineModal: React.FC<Props> = ({
 }) => {
   // Build per-type tone map from user settings (hex-based). Rebuilds only when settings change.
   const typeTones = useMemo(() => buildTypeTones(scheduleTypeEntries), [scheduleTypeEntries]);
+  // 2026-08-21 · Framework Phase 3 · alert → useToast
+  const { toast: mainToast, showError: mainShowError } = useToast();
   const [editingWork, setEditingWork] = useState<{ empId: number; value: string } | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("전체");
 
@@ -1401,13 +1413,13 @@ export const DayTimelineModal: React.FC<Props> = ({
       const oEnd = oStart + 30;
       return oStart < lEnd && oEnd > lStart;
     });
-    if (lunchDup) { alert("이미 배정되었습니다.\n같은 시간대에 이미 점심이 배정되어 있습니다."); return; }
+    if (lunchDup) { mainShowError("이미 배정되었습니다.\n같은 시간대에 이미 점심이 배정되어 있습니다."); return; }
     // 2026-08-11 · 같은 30분 슬롯에 약사 2명 이상 배치 금지 (매장에 최소 1명 약사 유지)
     const targetEmp = employees.find(e => e.id === empId);
     if (targetEmp?.position === "약사") {
       const existingIds = (lunchSlots[slot] ?? []).filter(id => id !== empId);
       const hasOtherPharm = existingIds.some(id => employees.find(e => e.id === id)?.position === "약사");
-      if (hasOtherPharm) { alert("한 시간대에 약사는 1명만 점심 배정할 수 있습니다.\n(매장에 최소 1명 약사가 남아있어야 합니다)"); return; }
+      if (hasOtherPharm) { mainShowError("한 시간대에 약사는 1명만 점심 배정할 수 있습니다.\n(매장에 최소 1명 약사가 남아있어야 합니다)"); return; }
     }
     // 출발지가 zone이고 그 slot이 이 lunch 시간대와 겹치면 zone 충돌 검사 스킵
     const zoneConflict = ZONE_ROWS.some(zone =>
@@ -1418,7 +1430,7 @@ export const DayTimelineModal: React.FC<Props> = ({
         return zh < lEnd && zh + 60 > lStart;
       })
     );
-    if (zoneConflict) { alert("중복배치입니다. 다시 배정하세요.\n(같은 시간대에 이미 카운터/매장 구역이 배정되어 있습니다)"); return; }
+    if (zoneConflict) { mainShowError("중복배치입니다. 다시 배정하세요.\n(같은 시간대에 이미 카운터/매장 구역이 배정되어 있습니다)"); return; }
     const restConflict = Object.entries(restSlots).some(([rs, ids]) => {
       if (!(ids as number[]).includes(empId)) return false;
       if (source?.type === "rest" && source.slot === rs) return false;
@@ -1426,7 +1438,7 @@ export const DayTimelineModal: React.FC<Props> = ({
       const rStart = rh * 60 + rm;
       return rStart < lEnd && rStart + 30 > lStart;
     });
-    if (restConflict) { alert("중복배치입니다. 다시 배정하세요.\n(같은 시간대에 이미 휴게시간이 배정되어 있습니다)"); return; }
+    if (restConflict) { mainShowError("중복배치입니다. 다시 배정하세요.\n(같은 시간대에 이미 휴게시간이 배정되어 있습니다)"); return; }
     // 출발지 lunch/rest/zone에서 자동 제거 (atomic 이동)
     if (source?.type === "lunch" && source.slot !== slot) {
       setLunchSlots(prev => ({ ...prev, [source.slot]: (prev[source.slot] ?? []).filter(id => id !== empId) }));
@@ -1471,7 +1483,7 @@ export const DayTimelineModal: React.FC<Props> = ({
         return zh < rEnd && zh + 60 > rStart;
       })
     );
-    if (zoneConflict) { alert("중복배치입니다. 다시 배정하세요.\n(같은 시간대에 이미 카운터/매장 구역이 배정되어 있습니다)"); return; }
+    if (zoneConflict) { mainShowError("중복배치입니다. 다시 배정하세요.\n(같은 시간대에 이미 카운터/매장 구역이 배정되어 있습니다)"); return; }
     const lunchConflict = Object.entries(lunchSlots).some(([ls, ids]) => {
       if (!(ids as number[]).includes(empId)) return false;
       if (source?.type === "lunch" && source.slot === ls) return false;
@@ -1479,7 +1491,7 @@ export const DayTimelineModal: React.FC<Props> = ({
       const lStart = lh * 60 + lm;
       return lStart < rEnd && lStart + 30 > rStart;
     });
-    if (lunchConflict) { alert("중복배치입니다. 다시 배정하세요.\n(같은 시간대에 이미 점심시간이 배정되어 있습니다)"); return; }
+    if (lunchConflict) { mainShowError("중복배치입니다. 다시 배정하세요.\n(같은 시간대에 이미 점심시간이 배정되어 있습니다)"); return; }
     // 출발지에서 자동 제거 (atomic 이동)
     if (source?.type === "rest" && source.slot !== slot) {
       setRestSlots(prev => ({ ...prev, [source.slot]: (prev[source.slot] ?? []).filter(id => id !== empId) }));
@@ -1599,12 +1611,12 @@ export const DayTimelineModal: React.FC<Props> = ({
       const failed = responses.filter(r => !r.ok);
       if (failed.length > 0) {
         const details = await Promise.all(failed.map(async r => `${r.url}: ${r.status} ${await r.text().catch(() => "")}`));
-        alert("일부 저장 실패:\n" + details.join("\n"));
+        mainShowError("일부 저장 실패:\n" + details.join("\n"));
       }
     } catch (e) {
-      alert("저장 실패: " + (e as Error).message);
+      mainShowError("저장 실패: " + (e as Error).message);
     }
-  }, [zoneSlots, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount]);
+  }, [zoneSlots, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount, mainShowError]);
 
   // 확정 저장 (날짜별 + 요일 템플릿 동시 저장)
   // saveTemplateToDow 뒤에 정의하여 의존성 순서 보장
@@ -1623,11 +1635,11 @@ export const DayTimelineModal: React.FC<Props> = ({
       // 확정 시 요일 템플릿도 동시 저장 → 다음번 같은 요일 열면 자동 로드
       await saveTemplateToDow(dow).catch(() => {});
     } catch (e) {
-      alert("확정 저장 오류: " + (e instanceof ApiError ? e.message : (e as Error).message));
+      mainShowError("확정 저장 오류: " + (e instanceof ApiError ? e.message : (e as Error).message));
     } finally {
       setConfirming(false);
     }
-  }, [date, dow, zoneSlots, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount, saveTemplateToDow]);
+  }, [date, dow, zoneSlots, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount, saveTemplateToDow, mainShowError]);
 
   const handleLunchShiftOffset = useCallback((delta: number) => {
     setLunchOffset(prev => {
@@ -2222,6 +2234,12 @@ export const DayTimelineModal: React.FC<Props> = ({
 
         </div>
       </div>
+      {/* 2026-08-21 · Framework Phase 3 · toast */}
+      {mainToast && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <div className={toastClass(mainToast.tone)}>{mainToast.message}</div>
+        </div>
+      )}
     </div>
   );
 };
