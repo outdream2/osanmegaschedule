@@ -8,17 +8,17 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 469 |
-| 위반 파일 | 27 |
-| 클린 파일 | 442 (94%) |
-| 총 위반 개수 | 27 |
+| 스캔 파일 | 470 |
+| 위반 파일 | 26 |
+| 클린 파일 | 444 (94%) |
+| 총 위반 개수 | 26 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
 | `large-file-critical` | 10 | 10 | high | 2000+라인 · 시급 · 서브 컴포넌트/훅 분리 필수 |
-| `large-file-warn` | 17 | 17 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
+| `large-file-warn` | 16 | 16 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
@@ -50,9 +50,8 @@
 | 24 | `src/components/ContractSettingsPage/ContractSettingsPage.tsx` | 887 | 3 | large-file-warn(1) |
 | 25 | `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx` | 962 | 3 | large-file-warn(1) |
 | 26 | `src/components/PermissionsPage/PermissionsPage.tsx` | 965 | 3 | large-file-warn(1) |
-| 27 | `src/components/PharmacistPage/PharmacistPage.tsx` | 874 | 3 | large-file-warn(1) |
 
-## 📝 모든 위반 파일 (27개)
+## 📝 모든 위반 파일 (26개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
@@ -84,7 +83,6 @@
 | `src/components/ContractSettingsPage/ContractSettingsPage.tsx` | 887 | 3 |
 | `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx` | 962 | 3 |
 | `src/components/PermissionsPage/PermissionsPage.tsx` | 965 | 3 |
-| `src/components/PharmacistPage/PharmacistPage.tsx` | 874 | 3 |
 
 </details>
 

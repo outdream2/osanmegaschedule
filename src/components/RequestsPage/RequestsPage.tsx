@@ -24,6 +24,9 @@ import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
 // 2026-08-12 · 연차승인 탭 · LeavePage mode="approval" 로 임베드 (관리자용 승인 UI)
 import { LeavePage } from "../LeavePage/LeavePage";
+// 2026-08-21 · Framework Phase 4 · large-file 분리 · types + ListToolbar
+import type { DisplayRequest, OrderRequest, ZoneMismatch, LunchRequest, InventoryCheck, Tab } from "./types";
+import { ListToolbar } from "./ListToolbar";
 
 interface RequestsPageProps {
   onBack: () => void;
@@ -32,91 +35,7 @@ interface RequestsPageProps {
   onLogout?: () => void;
 }
 
-// 2026-08-05 · T-SCAN-1 · 3단계 워크플로우 필드 통합 (pending → prepared → done)
-interface DisplayRequest {
-  id: string; zone_id: string; zone_label: string; category: string;
-  requested_at: string; assigned_staff_id: number | null;
-  assigned_staff_name: string; status: "pending" | "prepared" | "done" | string; note: string;
-  product_code?: string | null;
-  prepared_at?: string | null;
-  prepared_by?: number | null;
-  prepared_by_name?: string | null;
-  completed_at?: string | null;
-  completed_by?: number | null;
-  completed_by_name?: string | null;
-}
-interface OrderRequest {
-  id: string; product_code: string; product_name: string;
-  current_stock: number | null; optimal_stock: number | null;
-  note: string; requested_at: string;
-}
-interface ZoneMismatch {
-  id: string; product_code: string; product_name: string;
-  spec_zone: string; real_zone: string; registered_at: string;
-}
-interface LunchRequest {
-  id: number; employee_id: number; employee_name: string;
-  date: string; eating: boolean; memo: string | null; updated_at: string;
-}
-interface InventoryCheck {
-  id: string; product_code: string; product_name: string;
-  warehouse_stock: number | null; store_stock: number | null;
-  system_stock: number | null; optimal_stock: number | null;
-  checked_by: string; note: string; status: string;
-  checked_at: string;
-}
-type Tab = "display" | "order" | "mismatch" | "lunch" | "inventory" | "leave";
-
 const fmtDate = fmtDateMD;
-
-/* ── 공통 툴바 ── */
-// 2026-08-17 · 최신 트렌드 · accent bar + 폰트 +2 · 딥네이비 CTA · 컴팩트 pill 통일
-function ListToolbar({
-  total, selected, allChecked, onToggleAll, onDeleteSelected, onDeleteAll, onRefresh, loading, extraActions, hideDeleteAll,
-}: {
-  total: number; selected: number; allChecked: boolean;
-  onToggleAll: () => void; onDeleteSelected: () => void;
-  onDeleteAll: () => void; onRefresh: () => void;
-  loading: boolean; accentColor: string;
-  extraActions?: React.ReactNode;
-  hideDeleteAll?: boolean;
-}) {
-  return (
-    <Card padding="none" className="flex items-center gap-2.5 mb-2 px-3.5 h-10">
-      <AccentBar className="shrink-0" />
-      <button onClick={onToggleAll} className="shrink-0 cursor-pointer text-ink-soft hover:text-brand-deep transition-colors">
-        {allChecked && total > 0
-          ? <CheckSquare size={16} className="text-brand-deep" />
-          : <Square size={16} />}
-      </button>
-      <span className="text-[15px] text-ink flex-1 select-none font-medium tabular-nums">
-        {selected > 0 ? <><strong className="text-brand-deep font-bold">{selected}개</strong> 선택됨</> : `전체 ${total}건`}
-      </span>
-      {selected > 0 && (
-        <button
-          onClick={onDeleteSelected}
-          className="text-[14px] font-semibold text-rose-700 bg-white border border-rose-200 hover:bg-rose-50 px-3 h-8 rounded-lg transition-colors cursor-pointer shadow-sm"
-        >
-          선택삭제
-        </button>
-      )}
-      {extraActions}
-      {!hideDeleteAll && (
-        <button
-          onClick={onDeleteAll}
-          disabled={total === 0}
-          className="text-[14px] font-semibold text-ink-soft bg-white border border-line hover:border-ink-soft hover:text-ink px-3 h-8 rounded-lg transition-colors cursor-pointer disabled:opacity-40 shadow-sm"
-        >
-          전체삭제
-        </button>
-      )}
-      <div className="h-5 w-px bg-line shrink-0" />
-      <button onClick={onRefresh} className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-soft hover:text-brand-deep hover:bg-brand-tint transition-colors cursor-pointer">
-        <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-      </button>
-    </Card>
-  );
-}
 
 export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
   const confirm = useConfirm();
