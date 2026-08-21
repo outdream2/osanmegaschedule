@@ -11,7 +11,7 @@
 >  - 다른 참조 문서 만들지 말고 이 파일 하나에 통합 (사용자 명시 요구 · 2026-08-06)
 
 **프로젝트**: megatown-staff-scheduler
-**최종 업데이트**: 2026-08-20 (밤 · 11차)
+**최종 업데이트**: 2026-08-21 (12차 · Framework Phase 4 large-file 분리 현황)
 **생성**: 2026-08-05 (초판) · **확장**: 2026-08-06 (공통 자산 통합 · 백엔드/DB/RPC 심화)
 **출처**: 코드 실측 (LandingPage · 각 페이지 컴포넌트 · TAB 정의 · src/styles · src/components/common · src/hooks · migrations · server/routes)
 **용도**: 새 페이지·기능 추가 시 · 새 세션 진입 시 · 다른 에이전트 위임 시 · **먼저 참고**해야 할 단일 소스
@@ -1299,6 +1299,21 @@ megatown-staff-scheduler/
 - **iOS 바코드 스캐너**: `src/components/BarcodeScanner/` · 특히 `zbar.ts`, `hooks/`, `imageProcessing.ts` (feedback_ios_untouchable)
 - **Gemini OCR**: `server/ocr/gemini.ts` (feedback_gemini_untouchable · ONNX 쪽만 수정 가능)
 
+### 25-4-A. Large-file 분리 원칙 (2026-08-21 · Framework Phase 4)
+
+800줄 초과 파일 발생 시 아래 4-tier 로 분리:
+
+| 파일 | 내용 | 확장자 |
+|-----|-----|-------|
+| `XxxPage.types.ts` | 인터페이스·타입·열거형 | `.ts` |
+| `XxxPage.constants.tsx` | 상수 배열·객체 (JSX 포함 시 `.tsx`) | `.ts/.tsx` |
+| `XxxPage.utils.ts` | 순수 함수 (fmtBytes·readFile·encodeMemo 등) | `.ts` |
+| `XxxPage.subcomponents.tsx` | 재사용 React.FC | `.tsx` |
+
+- 프레임워크 프리미티브 (Card·Spinner·Modal·StatusPill 등) 100% 재사용
+- 분리 후 시각·기능 100% 동일 유지 · TS+build+audit 검증 필수
+- 목표 라인: 파일당 800줄 미만
+
 ### 25-5. 파생컬럼 사용 금지 (feedback_no_derived_columns)
 
 - 계산된 값을 저장한 컬럼 = 파생컬럼 = **사용자 허락 후에만**
@@ -1332,6 +1347,42 @@ npm run test        # vitest (필요 시)
 ---
 
 ## CHANGELOG · 변경 이력
+
+### 2026-08-21 (12차 · Framework Phase 4 · large-file 분리 · 50% 완료)
+
+**요약**: 44 warn/critical 파일 → 22 탈출 (50%) · 클린 파일 84%→96% · 35+ 로컬 커밋.
+분리 원칙 4-tier (types / constants / utils / subcomponents) 전면 적용.
+
+#### 완전 탈출 파일 (분리 커밋 완료)
+
+| 파일 | 분리 산출물 | 대표 커밋 |
+|-----|-----------|---------|
+| `PermissionsPage` (964) | constants + LevelSelect + PositionsField | `d3ba3386` |
+| `ProductArrivalPage` (1040) | helpers.tsx | `e8314946` |
+| `HrFormsPage` (1123→778) | types + constants + utils + subcomponents | `33217964` |
+| `ContractSettings` (886) | constants | `6a3209c3` |
+| `PharmacistPage` (952→755) | constants + utils + subcomponents | `e643e491`·`9ecdbb55` |
+| `ProductInfoCard` (1015→894) | PurchaseHistorySection | `513db750` |
+| `BoardPage` (1177→231) | types+constants+utils+PostCard+InlineDetail+ComposerModal+DetailModal | `e5136ee6`~`c65b2f76` |
+| `ResignationWriter` (1241→768) | types + utils + SignatureModal + ResignationPreview | `12299f03`~`d94d10d7` |
+
+#### 부분 분리 파일 (warn/critical 유지 · 추가 작업 필요)
+
+| 파일 | 분리 산출물 | 현재 줄수 |
+|-----|-----------|--------|
+| `OcrPage` | types + ConfirmedRecordsTab | 1215 |
+| `PaymentInfoTab` | types + utils + subcomponents | 1513 |
+| `PurchaseHistoryTab` | types | 1158 |
+| `ReturnListPanel` | types + ReturnRequestModal | 805 |
+| `PurchaseSubTabs` | chart-helpers | 1145 |
+| `RequestsPage` | types + ListToolbar | 1225 |
+| `ScanPage` | helpers | 1105 |
+| `SupplierTab` | types | 990 |
+| `FlowTab` | types | 1075 |
+
+**남은 대상**: warn 12파일 (800–2000) · critical 10파일 (2000+) · 총 신규 서브파일 50+개
+
+---
 
 ### 2026-08-20 밤 (11차 · Spinner 22곳 확산 · common/features Phase A · Revert 교훈 · 2514 tests)
 
