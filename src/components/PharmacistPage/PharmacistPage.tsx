@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import { FirstAid, BookOpen, Video, FileText, GraduationCap, Folder, FolderOpen, File as FileIcon } from "@phosphor-icons/react";
-import { Settings2, Plus, Eye, FileText as FileTextIcon, Loader2, ChevronRight, ChevronDown, CloudUpload, Trash2, X as XIcon } from "lucide-react";
+import { Settings2, Plus, Eye, FileText as FileTextIcon, ChevronRight, ChevronDown, CloudUpload, Trash2, X as XIcon } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
@@ -425,7 +425,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                     <Plus size={13} className="text-sky-600" />
                     <span className="text-[15px] font-bold text-sky-700 uppercase tracking-wider">하위메뉴 설정</span>
                     <span className="ml-auto flex items-center gap-1">
-                      {customCatsLoading && <Loader2 size={10} className="animate-spin text-zinc-400" />}
+                      {customCatsLoading && <Spinner size={10} tone="zinc" />}
                       <button
                         type="button"
                         onClick={() => { setAddCatOpen(v => !v); if (!addCatOpen) resetNewCatForm(); }}
@@ -480,7 +480,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                           disabled={newCatSaving || !newCatTitle.trim()}
                           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-zinc-200 disabled:text-zinc-400 text-white text-[15px] font-bold cursor-pointer transition shadow-sm"
                         >
-                          {newCatSaving ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}
+                          {newCatSaving ? <Spinner size={11} /> : <Plus size={11} />}
                           {newCatSaving ? "저장 중..." : "저장"}
                         </button>
                         <button
@@ -865,7 +865,7 @@ const SubMenuListPanel: React.FC<SubMenuListPanelProps> = ({
 
       {loading ? (
         <div className="p-10 flex flex-col items-center gap-2">
-          <Loader2 size={18} className="animate-spin text-sky-500" />
+          <Spinner size={18} tone="sky" />
           <span className="text-xs text-zinc-400 font-bold">불러오는 중...</span>
         </div>
       ) : items.length === 0 ? (
