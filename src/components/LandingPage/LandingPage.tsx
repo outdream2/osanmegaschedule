@@ -3,6 +3,8 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 // 2026-08-16 · apiClient 마이그레이션
 import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
+// 2026-08-21 · Framework Phase 3 · alert → useToast
+import { useToast, toastClass } from "../../hooks/useToast";
 import { useApprovalRefreshListener } from "../../lib/approvalEvents";
 import { useSettings } from "../../hooks/useSettings";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
@@ -234,6 +236,8 @@ const PeriodCoverageWidget: React.FC<{ endpoint: string; label: string; color: "
 
 export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigate, onLogout, onAuthOnly }) => {
   const confirm = useConfirm();
+  // 2026-08-21 · Framework Phase 3 · alert → useToast
+  const { toast, showError } = useToast();
   // 2026-08-12 · 프레임워크 · brand·contact 반영 · 값 없으면 하드코딩 fallback 유지
   const { brand: lpBrand } = useBrandIdentity();
   const { contact: lpContact } = useContactInfo();
@@ -824,18 +828,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
   const handleAnonSubscribe = async () => {
     if (!("Notification" in window) || !("serviceWorker" in navigator)) {
-      alert("이 브라우저는 알림을 지원하지 않습니다.");
+      showError("이 브라우저는 알림을 지원하지 않습니다.");
       return;
     }
     if (!import.meta.env.VITE_VAPID_PUBLIC_KEY) {
-      alert("서버 설정 오류: VAPID 공개키가 없습니다. 관리자에게 문의하세요.");
+      showError("서버 설정 오류: VAPID 공개키가 없습니다. 관리자에게 문의하세요.");
       return;
     }
     setPushLoading(true);
     try {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
-        alert("알림 권한이 거부되었습니다. 브라우저 설정에서 알림을 허용해 주세요.");
+        showError("알림 권한이 거부되었습니다. 브라우저 설정에서 알림을 허용해 주세요.");
         return;
       }
       const reg = await navigator.serviceWorker.ready;
@@ -849,7 +853,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     } catch (err: unknown) {
       console.error("Push subscribe error:", err);
       const msg = err instanceof ApiError ? err.message : (err as any)?.message ?? String(err);
-      alert("알림 구독 실패: " + msg);
+      showError("알림 구독 실패: " + msg);
     } finally {
       setPushLoading(false);
     }
@@ -871,7 +875,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       setShowCreateArrival(false);
     } catch (err: unknown) {
       const msg = err instanceof ApiError ? err.message : (err as any)?.message ?? "오류";
-      alert("입고 알림 작성 실패: " + msg);
+      showError("입고 알림 작성 실패: " + msg);
     } finally {
       setCreateLoading(false);
     }
@@ -1517,7 +1521,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       const ext = file.name.split(".").pop()?.toLowerCase();
                       const validMime = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "application/octet-stream"];
                       if ((ext !== "xlsx" && ext !== "xls") || (!!file.type && !validMime.includes(file.type))) {
-                        alert("형식이 다른 파일입니다. 상품리스트를 업로드해주세요.");
+                        showError("형식이 다른 파일입니다. 상품리스트를 업로드해주세요.");
                         e.target.value = ""; return;
                       }
                       setUploadResult(null);
@@ -1638,7 +1642,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       if (!file) { setStockUploadFile(null); return; }
                       const ext = file.name.split(".").pop()?.toLowerCase();
                       if (ext !== "xlsx" && ext !== "xls") {
-                        alert("xlsx 또는 xls 파일만 가능합니다.");
+                        showError("xlsx 또는 xls 파일만 가능합니다.");
                         e.target.value = ""; return;
                       }
                       setStockUploadResult(null);
@@ -1788,7 +1792,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       if (!file) { setVendorUploadFile(null); return; }
                       const ext = file.name.split(".").pop()?.toLowerCase();
                       if (ext !== "xlsx" && ext !== "xls") {
-                        alert("형식이 다른 파일입니다. 공급사관리 xlsx를 업로드해주세요.");
+                        showError("형식이 다른 파일입니다. 공급사관리 xlsx를 업로드해주세요.");
                         e.target.value = ""; return;
                       }
                       setVendorUploadResult(null);
@@ -1884,7 +1888,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       if (!file) { setPurchaseUploadFile(null); return; }
                       const ext = file.name.split(".").pop()?.toLowerCase();
                       if (ext !== "xlsx" && ext !== "xls") {
-                        alert("xlsx 또는 xls 파일만 가능합니다.");
+                        showError("xlsx 또는 xls 파일만 가능합니다.");
                         e.target.value = ""; return;
                       }
                       setPurchaseUploadResult(null);
@@ -2447,6 +2451,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               </form>
             </div>
           </div>
+        </div>
+      )}
+      {/* 2026-08-21 · Framework Phase 3 · toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
         </div>
       )}
     </div>
