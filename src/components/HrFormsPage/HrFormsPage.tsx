@@ -15,7 +15,7 @@ import { useSortableTable, type Comparator, type SortDir } from "../../hooks/use
 import { useConfirm } from "../../hooks/useConfirm";
 import { Spinner } from "../common/Spinner";
 import {
-  FileText, Download, Upload, Trash2, Plus, X, RefreshCw, Loader2,
+  FileText, Download, Upload, Trash2, Plus, X, RefreshCw,
   Filter, FileEdit, FileSignature, FilePlus, FileArchive,
   FileSpreadsheet, FileImage, File, AlertCircle, CloudUpload,
   CheckCircle2,
@@ -726,7 +726,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-amber-200 disabled:text-amber-400 text-white text-sm font-bold shadow-sm transition-all duration-150 cursor-pointer"
                 >
                   {uploading ? (
-                    <><Loader2 size={14} className="animate-spin" /><span>업로드 중...</span></>
+                    <><Spinner size={14} /><span>업로드 중...</span></>
                   ) : (
                     <><Upload size={14} /><span>업로드</span></>
                   )}
@@ -1006,7 +1006,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-600 border border-rose-200 text-xs font-bold disabled:opacity-50 transition-all duration-100 cursor-pointer shadow-sm"
                               title="삭제"
                             >
-                              {deletingId === f.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                              {deletingId === f.id ? <Spinner size={12} /> : <Trash2 size={12} />}
                             </button>
                           )}
                         </div>
@@ -1082,7 +1082,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                         disabled={deletingId === f.id}
                         className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-600 border border-rose-200 text-xs font-bold disabled:opacity-50 transition-colors cursor-pointer"
                       >
-                        {deletingId === f.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                        {deletingId === f.id ? <Spinner size={13} /> : <Trash2 size={13} />}
                         삭제
                       </button>
                     )}
