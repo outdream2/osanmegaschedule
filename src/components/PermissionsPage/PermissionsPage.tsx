@@ -143,7 +143,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
   } = useSettings();
 
   // 2026-08-12 · 저장 토스트 · 2026-08-16 · useToast 프레임워크 (message.includes("실패") 자동 tone)
-  const { toast, show, clear } = useToast(2500);
+  const { toast, show, clear, showError } = useToast(2500);
   const setSaveToast = React.useCallback((msg: string | null) => {
     if (!msg) { clear(); return; }
     const isErr = msg.includes("실패");
@@ -175,7 +175,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
       return;
     }
     if (others.length === 0) {
-      alert(`❌ 직군 "${removing}" 삭제 불가\n사용중인 직원 ${using.length}명 · 다른 직군을 먼저 추가하세요.`);
+      showError(`❌ 직군 "${removing}" 삭제 불가\n사용중인 직원 ${using.length}명 · 다른 직군을 먼저 추가하세요.`);
       return;
     }
     const newPos = window.prompt(
@@ -184,7 +184,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     );
     const target = (newPos ?? "").trim();
     if (!target || !others.includes(target)) {
-      if (newPos !== null) alert(`❌ 취소 · "${newPos}" 는 유효한 직군이 아닙니다.`);
+      if (newPos !== null) showError(`❌ 취소 · "${newPos}" 는 유효한 직군이 아닙니다.`);
       return;
     }
     try {
@@ -195,7 +195,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
       updateSettings({ positions: others });
       setSaveToast(`직원 ${using.length}명 · "${removing}" → "${target}" 재매핑 후 삭제 완료`);
     } catch (err) {
-      alert(`재매핑 실패 · 삭제 취소: ${(err as any)?.message ?? err}`);
+      showError(`재매핑 실패 · 삭제 취소: ${(err as any)?.message ?? err}`);
     }
   };
   const reorderPosition = (fromIdx: number, toIdx: number) => {
@@ -227,7 +227,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         }
         setEmployees(prev => prev.map(e => (e.position === original) ? { ...e, position: trimmed } : e));
       } catch (err) {
-        alert(`직원 재매핑 실패 · 변경 취소: ${(err as any)?.message ?? err}`);
+        showError(`직원 재매핑 실패 · 변경 취소: ${(err as any)?.message ?? err}`);
         setEditingPosIdx(null);
         return;
       }
@@ -247,8 +247,8 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
   }, []);
   const applyShiftHoursToAll = useCallback(async () => {
     // 스케쥴표에서 "지금 월 전체 적용" 이 필요 · 여기선 기본 안내만
-    alert("근무시간 일괄 적용은 스케쥴 관리 페이지에서 진행하세요.");
-  }, []);
+    showError("근무시간 일괄 적용은 스케쥴 관리 페이지에서 진행하세요.");
+  }, [showError]);
 
   const userLevel = authSession?.level ??
     (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9
@@ -376,11 +376,11 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
       console.error("Failed to update employee level:", err);
       // 실패 시 이전 값 복원
       setEmployees(prev => prev.map(e => e.id === empId ? { ...e, level: prevLevel } : e));
-      alert(`레벨 저장 실패: ${target.name}`);
+      showError(`레벨 저장 실패: ${target.name}`);
     } finally {
       setEmpSavingId(null);
     }
-  }, [employees]);
+  }, [employees, showError]);
 
   // 활성 직원 리스트: 퇴사자 제외 · 약사 우선 → 이름순
   const activeEmployees = useMemo(() => {
