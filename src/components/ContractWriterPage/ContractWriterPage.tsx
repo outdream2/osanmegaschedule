@@ -3937,7 +3937,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     <section className="bg-zinc-50 flex flex-col gap-3 h-full overflow-y-auto p-0.5">
 
       {/* ── T-R (2026-08-05) · 작성 방식 토글 ── */}
-      <div className="bg-white rounded-xl border border-line shadow-sm p-2">
+      <Card padding="none" className="p-2">
         <div className="grid grid-cols-2 gap-1">
           {([
             { key: "form" as const,   label: "여기서 작성", desc: "폼 입력 → 미리보기 → PDF 생성" },
@@ -3965,7 +3965,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             );
           })}
         </div>
-      </div>
+      </Card>
 
       {/* ── T-R · PDF 업로드 모드 ── */}
       {writeMode === "upload" && (
