@@ -8,9 +8,9 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 470 |
+| 스캔 파일 | 475 |
 | 위반 파일 | 26 |
-| 클린 파일 | 444 (94%) |
+| 클린 파일 | 449 (95%) |
 | 총 위반 개수 | 26 |
 
 ## 🚨 규칙별 위반 현황
@@ -41,15 +41,15 @@
 | 15 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 1192 | 6 | large-file-warn(1) |
 | 16 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 1205 | 6 | large-file-warn(1) |
 | 17 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 1041 | 6 | large-file-warn(1) |
-| 18 | `src/components/RequestsPage/RequestsPage.tsx` | 1307 | 6 | large-file-warn(1) |
+| 18 | `src/components/RequestsPage/RequestsPage.tsx` | 1226 | 6 | large-file-warn(1) |
 | 19 | `src/components/ResignationWriterPage/ResignationWriterPage.tsx` | 1241 | 6 | large-file-warn(1) |
-| 20 | `src/components/ScanPage/ProductInfoCard.tsx` | 1015 | 6 | large-file-warn(1) |
-| 21 | `src/components/ScanPage/ScanPage.tsx` | 1165 | 6 | large-file-warn(1) |
-| 22 | `src/components/StockManagePage/FlowTab.tsx` | 1111 | 6 | large-file-warn(1) |
-| 23 | `src/components/StockManagePage/SupplierTab.tsx` | 1005 | 6 | large-file-warn(1) |
-| 24 | `src/components/ContractSettingsPage/ContractSettingsPage.tsx` | 887 | 3 | large-file-warn(1) |
-| 25 | `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx` | 962 | 3 | large-file-warn(1) |
-| 26 | `src/components/PermissionsPage/PermissionsPage.tsx` | 965 | 3 | large-file-warn(1) |
+| 20 | `src/components/ScanPage/ScanPage.tsx` | 1165 | 6 | large-file-warn(1) |
+| 21 | `src/components/StockManagePage/FlowTab.tsx` | 1076 | 6 | large-file-warn(1) |
+| 22 | `src/components/ContractSettingsPage/ContractSettingsPage.tsx` | 887 | 3 | large-file-warn(1) |
+| 23 | `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx` | 962 | 3 | large-file-warn(1) |
+| 24 | `src/components/PermissionsPage/PermissionsPage.tsx` | 965 | 3 | large-file-warn(1) |
+| 25 | `src/components/ScanPage/ProductInfoCard.tsx` | 895 | 3 | large-file-warn(1) |
+| 26 | `src/components/StockManagePage/SupplierTab.tsx` | 991 | 3 | large-file-warn(1) |
 
 ## 📝 모든 위반 파일 (26개)
 
@@ -74,15 +74,15 @@
 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 1192 | 6 |
 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 1205 | 6 |
 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 1041 | 6 |
-| `src/components/RequestsPage/RequestsPage.tsx` | 1307 | 6 |
+| `src/components/RequestsPage/RequestsPage.tsx` | 1226 | 6 |
 | `src/components/ResignationWriterPage/ResignationWriterPage.tsx` | 1241 | 6 |
-| `src/components/ScanPage/ProductInfoCard.tsx` | 1015 | 6 |
 | `src/components/ScanPage/ScanPage.tsx` | 1165 | 6 |
-| `src/components/StockManagePage/FlowTab.tsx` | 1111 | 6 |
-| `src/components/StockManagePage/SupplierTab.tsx` | 1005 | 6 |
+| `src/components/StockManagePage/FlowTab.tsx` | 1076 | 6 |
 | `src/components/ContractSettingsPage/ContractSettingsPage.tsx` | 887 | 3 |
 | `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx` | 962 | 3 |
 | `src/components/PermissionsPage/PermissionsPage.tsx` | 965 | 3 |
+| `src/components/ScanPage/ProductInfoCard.tsx` | 895 | 3 |
+| `src/components/StockManagePage/SupplierTab.tsx` | 991 | 3 |
 
 </details>
 

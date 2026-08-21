@@ -24,73 +24,16 @@ import { uploadImagesToCloudinary, type UploadedImage } from "../../lib/cloudina
 import { useToast, toastClass } from "../../hooks/useToast";
 import { fmtDateShort } from "../../lib/format";
 import { useConfirm } from "../../hooks/useConfirm";
+// 2026-08-21 · Framework Phase 4 · large-file 분리
+import type { PostType, Status, BoardImage, BoardComment, BoardReaction, BoardPost, Employee } from "./types";
+import { TYPE_META, STATUS_META, CATEGORIES } from "./constants";
+import { timeAgo, AuthorBadge } from "./utils";
 
 interface Props {
   authSession: AuthSession | null;
   onBack: () => void;
   onNavigate?: (page: AppNavPage) => void;
   onLogout?: () => void;
-}
-
-type PostType = "question" | "issue" | "memo";
-type Status = "open" | "in_progress" | "resolved";
-
-interface BoardImage { id?: number; image_url: string; public_id?: string; width?: number; height?: number; }
-
-interface BoardComment {
-  id: number; post_id: number; author_id: number; author_name: string; author_rank?: string;
-  parent_id: number | null; body: string; is_answer: boolean; mentions: number[]; created_at: string;
-  images?: BoardImage[];
-}
-
-interface BoardReaction { post_id: number; employee_id: number; reaction: string; }
-
-interface BoardPost {
-  id: number; author_id: number; author_name: string; author_rank?: string;
-  post_type: PostType; title: string; body: string; status: Status;
-  category?: string; pinned: boolean; resolved_at?: string; resolved_by?: number;
-  mentions: number[]; created_at: string; updated_at: string;
-  images?: BoardImage[]; comment_count?: number; comments?: BoardComment[]; reactions?: BoardReaction[];
-}
-
-interface Employee { id: number; name: string; rank?: string; level?: number; }
-
-const TYPE_META: Record<PostType, { label: string; icon: any; bg: string; text: string; border: string; }> = {
-  question: { label: "질문", icon: HelpCircle,    bg: "bg-blue-50",   text: "text-blue-700",   border: "border-blue-200" },
-  issue:    { label: "이슈", icon: AlertTriangle, bg: "bg-amber-50",  text: "text-amber-700",  border: "border-amber-200" },
-  memo:     { label: "메모", icon: StickyNote,    bg: "bg-zinc-50",  text: "text-zinc-700",  border: "border-line" },
-};
-
-const STATUS_META: Record<Status, { label: string; dot: string; text: string; }> = {
-  open:        { label: "미해결", dot: "bg-rose-500",    text: "text-rose-600" },
-  in_progress: { label: "진행중", dot: "bg-amber-500",   text: "text-amber-600" },
-  resolved:    { label: "해결",   dot: "bg-emerald-500", text: "text-emerald-600" },
-};
-
-const CATEGORIES = ["결제", "상품", "주문", "손님", "기타"] as const;
-
-function timeAgo(iso: string): string {
-  const t = new Date(iso).getTime();
-  const diff = Date.now() - t;
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return "방금";
-  if (m < 60) return `${m}분 전`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}시간 전`;
-  const d = Math.floor(h / 24);
-  if (d < 30) return `${d}일 전`;
-  return new Date(iso).toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
-}
-
-function AuthorBadge({ name, rank }: { name: string; rank?: string }) {
-  return (
-    <span className="inline-flex items-center gap-1 text-[15px] font-bold text-zinc-500 tracking-tight">
-      <span className="text-zinc-300 font-normal">[</span>
-      <span className="text-zinc-800">{name}</span>
-      {rank && <span className="text-zinc-600 text-[14px]">{rank}</span>}
-      <span className="text-zinc-300 font-normal">]</span>
-    </span>
-  );
 }
 
 export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, onLogout }) => {
