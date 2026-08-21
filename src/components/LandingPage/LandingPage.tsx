@@ -998,23 +998,44 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <AccentBar />
                 <div className="text-ink font-bold tracking-tight text-[16px]">오늘의 현황</div>
               </div>
+              {/* 2026-08-21 · #171 · 각 항목 클릭 → 해당 페이지 이동 · 색상 4종 유지 · 대원칙 13/14 준수 */}
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[17px] text-ink-soft pl-[13px]">
-                <span className="inline-flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => onNavigate("leave", authSession!)}
+                  className="inline-flex items-center gap-1.5 hover:text-amber-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
+                  title="연차 승인 페이지로 이동"
+                >
                   <span className={`w-2 h-2 rounded-full ${leavePendingCount > 0 ? "bg-amber-500" : "bg-zinc-300"}`} />
                   승인 대기 <b className={`font-bold tabular-nums ${leavePendingCount > 0 ? "text-amber-700" : "text-ink"}`}>{leavePendingCount}</b>건
-                </span>
-                <span className="inline-flex items-center gap-1.5">
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigate("requests", authSession!)}
+                  className="inline-flex items-center gap-1.5 hover:text-sky-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
+                  title="요청 목록 페이지로 이동"
+                >
                   <span className={`w-2 h-2 rounded-full ${(requestsCounts.display + requestsCounts.order) > 0 ? "bg-sky-500" : "bg-zinc-300"}`} />
                   진열·발주 요청 <b className={`font-bold tabular-nums ${(requestsCounts.display + requestsCounts.order) > 0 ? "text-sky-700" : "text-ink"}`}>{requestsCounts.display + requestsCounts.order}</b>건
-                </span>
-                <span className="inline-flex items-center gap-1.5">
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigate("requests", authSession!)}
+                  className="inline-flex items-center gap-1.5 hover:text-rose-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
+                  title="배치구역 불일치 · 요청 목록으로 이동"
+                >
                   <span className={`w-2 h-2 rounded-full ${requestsCounts.mismatch > 0 ? "bg-rose-500" : "bg-zinc-300"}`} />
                   배치구역 불일치 <b className={`font-bold tabular-nums ${requestsCounts.mismatch > 0 ? "text-rose-700" : "text-ink"}`}>{requestsCounts.mismatch}</b>건
-                </span>
-                <span className="inline-flex items-center gap-1.5">
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigate("lunch", authSession!)}
+                  className="inline-flex items-center gap-1.5 hover:text-emerald-800 hover:underline underline-offset-2 cursor-pointer transition-colors"
+                  title="점심 신청 페이지로 이동"
+                >
                   <span className={`w-2 h-2 rounded-full ${requestsCounts.lunch > 0 ? "bg-emerald-500" : "bg-zinc-300"}`} />
                   점심 신청 <b className={`font-bold tabular-nums ${requestsCounts.lunch > 0 ? "text-emerald-700" : "text-ink"}`}>{requestsCounts.lunch}</b>건
-                </span>
+                </button>
               </div>
             </div>
           )}
