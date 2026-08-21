@@ -7,6 +7,8 @@ import { CARD_BASE } from "../../styles/tokens";
 import { useSortableTable } from "../../hooks/useSortableTable";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useConfirm } from "../../hooks/useConfirm";
+// 2026-08-21 · Framework Phase 3 · alert → useToast
+import { useToast, toastClass } from "../../hooks/useToast";
 import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { useLeaveManager } from "../../hooks/useLeaveManager";
 import {
@@ -666,6 +668,8 @@ interface StaffManagePageProps {
 
 const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, initialSelectedId, onBackToSchedule }) => {
   const confirm = useConfirm();
+  // 2026-08-21 · Framework Phase 3 · alert → useToast
+  const { toast, showError, showSuccess } = useToast();
   // ── 상태 ──
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading]   = useState(false);
@@ -964,7 +968,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
   // ── 저장 ──
   const saveEdit = async () => {
     if (!selectedEmp || !draft) return;
-    if (!draft.name?.trim()) { alert("이름을 입력해주세요."); return; }
+    if (!draft.name?.trim()) { showError("이름을 입력해주세요."); return; }
     setSaving(true);
     try {
       await updateEmployee(selectedEmp as any, draft as any);
@@ -972,7 +976,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
       setDraft(null);
       setEmployees((prev) => prev.map((e) => e.id === selectedEmp.id ? { ...e, ...draft } : e));
     } catch (err: unknown) {
-      alert(`저장 오류: ${err instanceof Error ? err.message : String(err)}`);
+      showError(`저장 오류: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setSaving(false);
     }
@@ -986,13 +990,13 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
       if (selectedId === emp.id) setSelectedId(null);
       loadEmployees();
     } catch (err: unknown) {
-      alert(`삭제 오류: ${err instanceof Error ? err.message : String(err)}`);
+      showError(`삭제 오류: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
 
   // ── 신규 등록 ──
   const createEmployee = async (data: Partial<Employee>) => {
-    if (!data.name?.trim()) { alert("이름을 입력해주세요."); return; }
+    if (!data.name?.trim()) { showError("이름을 입력해주세요."); return; }
     setCreateSaving(true);
     try {
       const created = await apiCreateEmployee(data as any);
@@ -1000,7 +1004,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
       await loadEmployees();
       setSelectedId(created?.id ?? null);
     } catch (err: unknown) {
-      alert(`저장 오류: ${err instanceof Error ? err.message : String(err)}`);
+      showError(`저장 오류: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setCreateSaving(false);
     }
@@ -1020,32 +1024,32 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
     try {
       const { url } = await apiUploadResume(emp.id, file);
       setEmployees((prev) => prev.map((e) => e.id === emp.id ? { ...e, resume_url: url } : e));
-      alert(`이력서 업로드 완료 · ${emp.name}`);
+      showSuccess(`이력서 업로드 완료 · ${emp.name}`);
     } catch (err: any) {
-      alert(`이력서 업로드 실패 · ${err?.message ?? err}`);
+      showError(`이력서 업로드 실패 · ${err?.message ?? err}`);
     }
-  }, []);
+  }, [showSuccess, showError]);
 
   const uploadBankbookForRow = useCallback(async (emp: Employee, file: File) => {
     try {
       const { dataUrl } = await apiUploadBankbook(emp as any, file);
       setEmployees((prev) => prev.map((e) => e.id === emp.id ? { ...e, bankbook_image_url: dataUrl } : e));
-      alert(`통장사본 업로드 완료 · ${emp.name}`);
+      showSuccess(`통장사본 업로드 완료 · ${emp.name}`);
     } catch (err: any) {
-      alert(`통장사본 업로드 실패 · ${err?.message ?? err}`);
+      showError(`통장사본 업로드 실패 · ${err?.message ?? err}`);
     }
-  }, []);
+  }, [showSuccess, showError]);
 
   // T-Staff-ResignationColumn · 사직서 파일 업로드 (퇴사자 전용 · POST /api/employees/:id/resignation-file)
   const uploadResignationFileForRow = useCallback(async (emp: Employee, file: File) => {
     try {
       const { url } = await apiUploadResignation(emp.id, file);
       setEmployees((prev) => prev.map((e) => e.id === emp.id ? { ...e, resignation_file_url: url ?? "" } : e));
-      alert(`사직서 업로드 완료 · ${emp.name}`);
+      showSuccess(`사직서 업로드 완료 · ${emp.name}`);
     } catch (err: any) {
-      alert(`사직서 업로드 실패 · ${err?.message ?? err}`);
+      showError(`사직서 업로드 실패 · ${err?.message ?? err}`);
     }
-  }, []);
+  }, [showSuccess, showError]);
 
   // ── 좌측 리스트 아이템 · 표 형식 · 한 줄 (2026-08-03) ────────────────────────
   const ListRow: React.FC<{ emp: Employee }> = ({ emp }) => {
@@ -1065,7 +1069,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
       if (emp.contract_file_url) {
         window.open(emp.contract_file_url, "_blank", "noopener,noreferrer");
       } else {
-        alert(`${emp.name}님의 근로계약서가 등록되어 있지 않습니다.\n편집 모드에서 계약서 URL을 입력해 주세요.`);
+        showError(`${emp.name}님의 근로계약서가 등록되어 있지 않습니다.\n편집 모드에서 계약서 URL을 입력해 주세요.`);
       }
     };
     const openResume = (e: React.MouseEvent) => {
@@ -2009,8 +2013,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                                       try {
                                         const { url } = await apiUploadResume(selectedEmp.id, file);
                                         setField("resume_url", url);
-                                        alert(`업로드 완료: ${file.name}`);
-                                      } catch (err: any) { alert(`업로드 실패: ${err.message}`); }
+                                        showSuccess(`업로드 완료: ${file.name}`);
+                                      } catch (err: any) { showError(`업로드 실패: ${err.message}`); }
                                     }}
                                   />
                                 </label>
@@ -2022,7 +2026,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                                     try {
                                       await apiDeleteResume(selectedEmp.id);
                                       setField("resume_url", "");
-                                    } catch (err: any) { alert(`삭제 실패: ${err.message}`); }
+                                    } catch (err: any) { showError(`삭제 실패: ${err.message}`); }
                                   }}
                                   className="inline-flex items-center gap-1 h-7 px-2 text-[15px] font-semibold text-rose-600 bg-white border border-rose-200 rounded-md hover:bg-rose-50 cursor-pointer"
                                 >
@@ -2044,8 +2048,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                                 try {
                                   const { url } = await apiUploadResume(selectedEmp.id, file);
                                   setField("resume_url", url);
-                                  alert(`업로드 완료: ${file.name}`);
-                                } catch (err: any) { alert(`업로드 실패: ${err.message}`); }
+                                  showSuccess(`업로드 완료: ${file.name}`);
+                                } catch (err: any) { showError(`업로드 실패: ${err.message}`); }
                               }}
                             />
                           </label>
@@ -2087,7 +2091,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                             <>
                               <button
                                 type="button"
-                                onClick={() => alert("등록된 근로계약서가 없습니다.\n편집 모드에서 계약서 URL 을 입력해 주세요.")}
+                                onClick={() => showError("등록된 근로계약서가 없습니다.\n편집 모드에서 계약서 URL 을 입력해 주세요.")}
                                 className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[15px] font-semibold text-zinc-400 bg-zinc-100 border border-line rounded-md cursor-pointer hover:bg-zinc-200/60 transition-colors"
                               >
                                 <Paperclip size={11} /> 보기
@@ -2709,6 +2713,12 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
         onClose={() => setAddrModalOpen(false)}
         onSelect={(data) => setField("address", data.formatted)}
       />
+      {/* 2026-08-21 · Framework Phase 3 · toast (fixed bottom-right) */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
+      )}
     </main>
   );
 };
