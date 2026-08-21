@@ -14,6 +14,19 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
+### #180 · 발주이력 페이지 · 공급사·상품 검색 기능 (신규 · 2026-08-21)
+- 📄 대상 · `src/components/OrderManagePage/OrderHistoryTab.tsx` (매장 > 매입 > 발주이력 서브탭)
+- 🔲 상단 검색바 · 공급사 검색 (부분일치 · 한글 초성 검색 지원)
+- 🔲 상품명 검색 (부분일치)
+- 🔲 SearchBar 프리미티브 재사용 (`src/components/common/SearchBar.tsx`)
+- 🔲 기간 필터 (기존) 와 결합 · AND 조건
+- 🔲 검색 결과 · 실시간 필터 (client-side · 서버 재요청 X · 로컬 debounce 200ms)
+- 🔲 결과 없음 안내 · EmptyState 프리미티브
+- 💡 스펙 결정 필요:
+  - 공급사·상품 · 각각 별도 검색 vs 통합 검색 (하나로)
+  - 서버 API 확장 필요 여부 (현재 client-side filter 가능 · limit 초과 시 서버 filter 필요)
+- 💡 프레임워크 원칙 준수 · SearchBar·EmptyState·useSortableTable 재사용
+
 ### #179 · 바코드 스캔 · 미등록 상품 즉시 등록 UX (신규 · 2026-08-21)
 - 🔲 BarcodeScanner · 스캔 결과 · products 테이블에 없으면 · **"상품 추가" 자동 유도**
 - 🔲 미등록 감지 시 · 상품 등록 모달 (#177 페이지의 모달 버전) 오픈
