@@ -42,6 +42,7 @@ import { ProductSearchInput } from "../common/features/ProductSearchInput";
 import { IconTile } from "../common/IconTile";
 import { Modal } from "../common/Modal";
 import { AccentBar } from "../common/AccentBar";
+import { Card } from "../common/Card";
 // ── 분리된 Row 컴포넌트 ──────────────────────────────────────
 import { StockRowCard } from "./StockRowCard";
 import type { StockRow } from "./stockRowTypes";
@@ -667,7 +668,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         ══════════════════════════════════════════════════════ */}
 
           {/* 2026-08-17 · 최신 트렌드 · 좌측 accent bar + 딥네이비 통일 */}
-          <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
+          <Card clip padding="none">
             {/* 헤더 · accent bar + 아이콘 + 제목 */}
             <div className="flex items-center gap-2.5 px-4 py-3 border-b border-line bg-zinc-50/60">
               <AccentBar className="shrink-0" />
@@ -782,7 +783,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 </div>
               )}
             </div>
-          </div>
+          </Card>
 
           {/* 2026-08-10 · 사용자 요청 · 전체 합계 카드 제거 · 상품별 집계는 아래 리스트 위쪽으로 이동 */}
             </>
