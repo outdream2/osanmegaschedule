@@ -238,6 +238,35 @@ function calcMonthlyHours(dailyH: number, workDays: number = 5, weekendDays: num
 
 ---
 
+## 14. 프레임워크·기능 무영향 · 매 단계 테스트/버그 (2026-08-21 · 사용자 원칙 추가)
+
+**원칙 (3단 강화)**:
+1. **프레임워크에 절대 영향 주지 않음** · props/state/hooks/API 시그니처 · 공용 컴포넌트 구조 · 그대로 유지
+2. **기능에 문제 생기지 않게** · 사용자 flow · 모든 handler·비즈니스 로직 · 회귀 X
+3. **매 단계마다 테스트 · 버그 잡기** · 단순 커밋도 · `npx tsc --noEmit` + `npx vitest run` + 필요시 `npx vite build`
+
+**적용 · 모든 작업 (특히 리팩터·이동·확산)**:
+- Card·Spinner 확산 · className/element 만 변경 · handler/state/API/props X
+- 파일 이동 (Phase A/B/C/D) · import 경로만 · 로직 X
+- 테스트 추가 · 기존 소스 변경 X (버그 발견 시 별도 커밋)
+
+**확인 절차 (각 단계)**:
+1. 변경 전 · `git status` clean 확인
+2. 변경 후 · `npx tsc --noEmit` · 에러 0 확인
+3. 필요시 · `npx vite build` · 에러 0 확인
+4. `npx vitest run` · **개수 유지** or 증가 · 감소 시 원인 조사·복구
+5. 문제 없으면 커밋
+
+**금지**:
+- 여러 파일 뭉쳐 검증 없이 커밋
+- 병렬 에이전트 완료 후 · 검증 없이 다음 지시
+- 테스트 실패·감소를 "무관"으로 넘기기
+
+**과거 사례**: 
+- 병렬 3-에이전트 · common/features/ProductSearchInput 이동 · ScanPage import 미갱신 → vite build 실패 (별도 세션에서 발견) → 매 단계 검증 원칙 준수 필요
+
+---
+
 ## 사용자 자주 반복하는 원칙 (2026-08-04~05)
 
 - 리모트푸시금지
