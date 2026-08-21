@@ -497,7 +497,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
             <div className="w-6 h-6 border-2 border-brand-deep border-t-transparent rounded-full animate-spin" />
           </Card>
         ) : isToday && myRequest && !myRequest.eating ? (
-          <div className="rounded-xl border border-line bg-white p-5 flex flex-col gap-3 shadow-sm">
+          <Card padding="lg" className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <AccentBar size="lg" />
@@ -515,7 +515,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
             {myRequest.memo && (
               <p className="text-[15px] text-ink bg-zinc-50 rounded-lg px-3 py-2.5 border border-line">{myRequest.memo}</p>
             )}
-          </div>
+          </Card>
         ) : isToday ? (
           <Card padding="lg" className="flex flex-col gap-4">
             <p className="text-center text-[19px] font-bold text-ink tracking-tight">오늘 점심 드시나요?</p>
@@ -532,7 +532,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
 
         {/* ── 불참 현황 · 최신 트렌드 · accent bar · 폰트 +3 ── */}
         {isLoggedIn && (
-          <div className="bg-white rounded-xl border border-line p-5 shadow-sm">
+          <Card padding="lg">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2.5">
                 <AccentBar />
@@ -555,7 +555,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
                 ))}
               </div>
             )}
-          </div>
+          </Card>
         )}
       </main>
     </div>
