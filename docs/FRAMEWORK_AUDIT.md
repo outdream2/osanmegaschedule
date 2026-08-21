@@ -8,9 +8,9 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 487 |
+| 스캔 파일 | 488 |
 | 위반 파일 | 26 |
-| 클린 파일 | 461 (95%) |
+| 클린 파일 | 462 (95%) |
 | 총 위반 개수 | 26 |
 
 ## 🚨 규칙별 위반 현황
@@ -35,7 +35,7 @@
 | 9 | `src/components/SchedulePage/SchedulePage.tsx` | 2379 | 24 | large-file-critical(1) |
 | 10 | `src/components/StaffManagePage/StaffManagePage.tsx` | 2729 | 24 | large-file-critical(1) |
 | 11 | `src/components/BoardPage/BoardPage.tsx` | 1120 | 6 | large-file-warn(1) |
-| 12 | `src/components/OcrPage/OcrPage.tsx` | 1712 | 6 | large-file-warn(1) |
+| 12 | `src/components/OcrPage/OcrPage.tsx` | 1216 | 6 | large-file-warn(1) |
 | 13 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 1681 | 6 | large-file-warn(1) |
 | 14 | `src/components/OrderManagePage/PurchaseHistoryTab/PurchaseSubTabs.tsx` | 1146 | 6 | large-file-warn(1) |
 | 15 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 1159 | 6 | large-file-warn(1) |
@@ -68,7 +68,7 @@
 | `src/components/SchedulePage/SchedulePage.tsx` | 2379 | 24 |
 | `src/components/StaffManagePage/StaffManagePage.tsx` | 2729 | 24 |
 | `src/components/BoardPage/BoardPage.tsx` | 1120 | 6 |
-| `src/components/OcrPage/OcrPage.tsx` | 1712 | 6 |
+| `src/components/OcrPage/OcrPage.tsx` | 1216 | 6 |
 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 1681 | 6 |
 | `src/components/OrderManagePage/PurchaseHistoryTab/PurchaseSubTabs.tsx` | 1146 | 6 |
 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 1159 | 6 |
