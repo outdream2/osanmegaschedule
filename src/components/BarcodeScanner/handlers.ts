@@ -29,6 +29,8 @@ interface UseBarcodeScannerHandlersParams {
   onScan: (result: string) => void;
   onClose: () => void;
   scannedCode: string | null;
+  // 2026-08-21 · Framework Phase 3 · alert 제거 · 부모 onError 콜백 · 부모에서 useToast 처리
+  onError?: (msg: string) => void;
 }
 
 export function useBarcodeScannerHandlers({
@@ -48,6 +50,7 @@ export function useBarcodeScannerHandlers({
   onScan,
   onClose,
   scannedCode,
+  onError,
 }: UseBarcodeScannerHandlersParams) {
   const handleResult = useCallback((raw: string) => {
     if (scannedRef.current || !mountedRef.current) return;
@@ -307,14 +310,15 @@ export function useBarcodeScannerHandlers({
           setScannedCode(code!.trim());
         }, 220);
       } else if (mountedRef.current) {
-        alert("바코드를 인식하지 못했습니다.\n더 선명하거나 가까이 찍은 이미지를 사용해주세요.");
+        // 2026-08-21 · Framework Phase 3 · alert → onError 콜백
+        onError?.("바코드를 인식하지 못했습니다.\n더 선명하거나 가까이 찍은 이미지를 사용해주세요.");
       }
     } catch {
-      if (mountedRef.current) alert("이미지를 불러오지 못했습니다.");
+      if (mountedRef.current) onError?.("이미지를 불러오지 못했습니다.");
     } finally {
       if (mountedRef.current) setIsDecoding(false);
     }
-  }, []);
+  }, [onError]);
 
   return { handleResult, handleConfirm, handleRetry, handleImageDecode };
 }

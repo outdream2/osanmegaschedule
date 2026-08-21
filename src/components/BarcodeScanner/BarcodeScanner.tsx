@@ -18,10 +18,14 @@ import { useZBarLoop } from "./hooks/useZBarLoop";
 import { useQuaggaLoop } from "./hooks/useQuaggaLoop";
 import { useOcrLoop } from "./hooks/useOcrLoop";
 import { useBarcodeScannerHandlers } from "./handlers";
+// 2026-08-21 · Framework Phase 3 · alert → useToast · handlers onError 콜백
+import { useToast, toastClass } from "../../hooks/useToast";
 
 export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   onScan, onClose, title = "바코드 스캔",
 }) => {
+  // 2026-08-21 · Framework Phase 3 · handlers onError → toast
+  const { toast, showError } = useToast();
   const state = useEngineState();
   // Android 기본 2x — 스캔 시작 즉시 줌 적용. iOS는 1x (변경 없음)
   const [zoomLevel, setZoomLevel] = useState(isAndroid ? 2 : 1);
@@ -86,6 +90,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
       onScan,
       onClose,
       scannedCode: state.scannedCode,
+      onError: showError,
     });
 
   // Sync handleResultRef on every render — guarantees scan loops + useZxing
@@ -532,6 +537,12 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           100% { background: rgba(255,255,255,0); }
         }
       `}</style>
+      {/* 2026-08-21 · Framework Phase 3 · toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999]">
+          <div className={toastClass(toast.tone)}>{toast.message}</div>
+        </div>
+      )}
     </div>
   );
 };
