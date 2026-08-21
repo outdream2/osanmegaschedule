@@ -28,6 +28,12 @@ export default defineConfig({
       "src/components/DayTimelineModal/**/*.test.tsx",
       "src/components/OcrPage/**/*.test.ts",
       "src/components/OcrPage/**/*.test.tsx",
+      // 2026-08-21 · styles 토큰 · pure 상수/className
+      "src/styles/**/*.test.ts",
+      // 2026-08-21 · ScanPage · pure helpers (calcSlotTotal · calcRowTotal 등)
+      "src/components/ScanPage/**/*.test.ts",
+      // 2026-08-21 · BarcodeScanner · pure helpers (extractBarcodeDigits · 이미지 처리)
+      "src/components/BarcodeScanner/**/*.test.ts",
     ],
     globals: false,
     environment: "node", // 기본 · jsdom 은 파일별 지시자 opt-in
