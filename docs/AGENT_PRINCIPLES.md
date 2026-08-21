@@ -327,6 +327,41 @@ function calcMonthlyHours(dailyH: number, workDays: number = 5, weekendDays: num
 
 ---
 
+## 17. 프레임워크 우선 · 신규 작업 시 프레임워크 재사용·확장 (2026-08-21 · 사용자 원칙 추가)
+
+**원칙 (3항)**:
+1. **프레임워크 완료 이후 · 모든 신규 작업 · 프레임워크 기능 우선 사용**
+2. **추가가 필요할 시 · 프레임워크 관점에서 확장** · 개별 페이지에 원-오프 코드 X
+3. **재사용 가능한 구조로 · 3곳 반복 시 · 프리미티브/훅/lib 추출**
+
+**프레임워크 재사용 대상**:
+- 프리미티브 · `src/components/common/*` (Card·Spinner·StatusPill·Modal·PageHeader·PageToolbar 등 · 43+)
+- 훅 · `src/hooks/*` (useKvSetting·useApiQuery·useSortableTable·useToast·useEmploymentStatus 등)
+- 유틸 · `src/lib/*` (apiClient·employmentStatus·format·hangulSearch·settingsTypography 등)
+- 스키마 · `src/shared/schemas/*` (Zod 도메인 스키마)
+- 서버 미들웨어 · `server/middleware/*` (asyncHandler·zodValidate·requireAuth·errorHandler)
+
+**적용 (신규 페이지/기능)**:
+- Card 로 wrap · not raw `bg-white border...` div
+- Spinner 로 로딩 · not raw `Loader2 animate-spin`
+- SearchBar/EmptyState/StatusPill 사용
+- 서버 · asyncHandler + HttpError + validateBody(Zod) · not raw try/catch + res.status
+- API · apiClient (api.get/post) · not raw fetch
+- toast · useToast · not raw alert
+
+**확장 필요 시**:
+- 프리미티브에 새 prop 추가 (하위호환 · default value)
+- 새 프리미티브 신설 (common/ 에 추가 + index.ts barrel export)
+- 신규 훅 · hooks/ 에 추가 · 3곳+ 재사용성 확보
+- 개별 페이지에 로직 몰아넣기 금지 · 반드시 프레임워크로
+
+**금지**:
+- 프리미티브 있는데도 raw HTML/CSS 로 새로 만듬
+- 페이지 내부에만 있는 헬퍼 · 3곳+ 재사용 가능하면 · lib/hooks 로 추출 없이 방치
+- 프레임워크 원칙 위배 · asyncHandler/Zod/apiClient 미사용
+
+---
+
 ## 사용자 자주 반복하는 원칙 (2026-08-04~05)
 
 - 리모트푸시금지
