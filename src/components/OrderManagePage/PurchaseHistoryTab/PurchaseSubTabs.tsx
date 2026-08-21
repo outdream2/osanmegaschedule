@@ -542,78 +542,8 @@ const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> =
 };
 
 // ─── Tab 3 · 매입 추이 · recharts 3종 파이차트 (2026-08-05) ──────────────────
-
-// 공통 팔레트 · 6색 + 기타 회색
-const CHART_COLORS = [
-  "#10b981", // emerald-500
-  "#3b82f6", // blue-500
-  "#f59e0b", // amber-500
-  "#8b5cf6", // violet-500
-  "#ec4899", // pink-500
-  "#06b6d4", // cyan-500
-  "#f97316", // orange-500
-  "#84cc16", // lime-500
-  "#64748b", // zinc-500 (기타/초과)
-  "#a78bfa", // violet-400
-];
-
-// 공통 커스텀 툴팁
-const ChartTooltip: React.FC<{
-  active?: boolean;
-  payload?: Array<{ name: string; value: number; payload: { fill?: string } }>;
-  total: number;
-  unit?: string;
-}> = ({ active, payload, total, unit = "원" }) => {
-  if (!active || !payload?.length) return null;
-  const { name, value } = payload[0];
-  const pct = total > 0 ? ((value / total) * 100).toFixed(1) : "0.0";
-  return (
-    <Card variant="raw-md" rounded="lg" padding="none" className="px-3 py-2 text-[11px] min-w-[120px]">
-      <div className="font-semibold text-zinc-700 mb-1 break-words whitespace-normal leading-snug">{name}</div>
-      <div className="tabular-nums text-emerald-700 font-bold">{value.toLocaleString()}{unit}</div>
-      <div className="tabular-nums text-zinc-500 mt-0.5">{pct}%</div>
-    </Card>
-  );
-};
-
-// 공통 범례 · 색깔 · 이름 · 퍼센트 세로 리스트
-const ChartLegendList: React.FC<{
-  items: Array<{ name: string; value: number; color: string }>;
-  total: number;
-}> = ({ items, total }) => (
-  <div className="flex flex-col gap-1 min-w-0">
-    {items.map((it, i) => (
-      <div key={i} className="flex items-center gap-1.5 min-w-0 text-[11px]">
-        <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: it.color }} />
-        <span className="flex-1 min-w-0 text-zinc-700 font-semibold break-words whitespace-normal leading-snug">{it.name}</span>
-        <span className="tabular-nums text-zinc-500 shrink-0">
-          {total > 0 ? ((it.value / total) * 100).toFixed(0) : 0}%
-        </span>
-      </div>
-    ))}
-  </div>
-);
-
-// ── 차트 1 · 카테고리별 매입액 비중 (top 5 + 기타) ─────────────────────────
-// product_name 에 카테고리 정보가 없으므로 · 상품명 앞 2~4글자 키워드를 카테고리로 추정
-// 실제로는 카테고리 필드가 있어야 하지만 · 현재 detailRows 는 카테고리 없음
-// → 공급사 기반(supplier 없음)이므로 · 상품명 첫 글자 분류 (의약품·건기식·위생·기타)
-// 단순 prefix 추출은 의미 없으므로 · keyword 기반 분류 사용
-const CATEGORY_KEYWORDS: Array<{ label: string; pattern: RegExp }> = [
-  { label: "의약품",  pattern: /정|캡슐|시럽|주사|연고|좌약|앰플|밀리/ },
-  { label: "건강기능식품", pattern: /비타민|오메가|유산균|프로바이|콜라겐|루테인|홍삼/ },
-  { label: "위생용품", pattern: /마스크|장갑|소독|밴드|패드|면봉/ },
-  { label: "의료기기", pattern: /혈압|체온|혈당|측정|검사/ },
-  { label: "화장품",  pattern: /크림|로션|선크림|세럼|토너/ },
-];
-
-function classifyProduct(name: string): string {
-  const n = name.toLowerCase();
-  for (const c of CATEGORY_KEYWORDS) {
-    if (c.pattern.test(n)) return c.label;
-  }
-  return "기타";
-}
+// 2026-08-21 · Framework Phase 4 · chart 헬퍼는 ./chart-helpers 로 분리
+import { CHART_COLORS, ChartTooltip, ChartLegendList, classifyProduct } from "./chart-helpers";
 
 export const CategoryPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
   const { data, total } = useMemo(() => {
