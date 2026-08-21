@@ -12,6 +12,8 @@ import {
 import { StatusPill } from "../common/StatusPill";
 import { IconTile } from "../common/IconTile";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
+// 2026-08-21 · Framework Phase 3 · fetch → apiClient
+import { api } from "../../lib/apiClient";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -217,16 +219,14 @@ export const DisplayRequestPanel: React.FC<DisplayRequestPanelProps> = ({
 
   const handleComplete = (req: DisplayRequest) => {
     setRequests((prev) => prev.map((r) => r.id === req.id ? { ...r, status: "done" as const } : r));
-    fetch(`/api/display-requests/${req.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "done" }),
-    }).then(() => dispatchApprovalChange("display")).catch(() => {});
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient · fire-and-forget
+    api.patch(`/api/display-requests/${req.id}`, { status: "done" })
+      .then(() => dispatchApprovalChange("display")).catch(() => {});
   };
 
   const handleDelete = (req: DisplayRequest) => {
     setRequests((prev) => prev.filter((r) => r.id !== req.id));
-    fetch(`/api/display-requests/${req.id}`, { method: "DELETE" })
+    api.del(`/api/display-requests/${req.id}`)
       .then(() => dispatchApprovalChange("display")).catch(() => {});
   };
 

@@ -13,6 +13,8 @@ import { InlineLabel } from "../common/InlineLabel";
 import { PeriodSelector, PERIOD_DAYS_PRESET } from "../common/PeriodSelector";
 import { StatusPill } from "../common/StatusPill";
 import { Card } from "../common/Card";
+// 2026-08-21 · Framework Phase 3 · fetch → apiClient
+import { api, ApiError } from "../../lib/apiClient";
 
 interface OrderHistoryItem {
   id: string | number;
@@ -52,13 +54,16 @@ export const OrderHistoryTab: React.FC = () => {
     setLoading(true);
     setError(null);
     setNotice(null);
-    fetch(`/api/order-history?days=${days}`)
-      .then((r) => r.json())
-      .then((d) => {
-        setOrders(Array.isArray(d?.orders) ? d.orders : []);
-        if (d?.notice) setNotice(String(d.notice));
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+    api.get<{ orders?: OrderHistoryOrder[]; notice?: string }>(`/api/order-history?days=${days}`)
+      .then(({ data }) => {
+        setOrders(Array.isArray(data?.orders) ? data.orders : []);
+        if (data?.notice) setNotice(String(data.notice));
       })
-      .catch((e: Error) => setError(e?.message ?? "조회 실패"))
+      .catch((e: unknown) => {
+        const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "조회 실패";
+        setError(msg);
+      })
       .finally(() => setLoading(false));
   }, [days]);
 

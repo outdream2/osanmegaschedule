@@ -10,6 +10,8 @@ import { TrendingUp } from "lucide-react";
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
 import { Modal } from "../common/Modal";
 import { IconTile } from "../common/IconTile";
+// 2026-08-21 · Framework Phase 3 · fetch → apiClient
+import { api, ApiError } from "../../lib/apiClient";
 
 export const ProductPurchaseHistoryModal: React.FC<{
   productCode: string;
@@ -23,10 +25,13 @@ export const ProductPurchaseHistoryModal: React.FC<{
   useEffect(() => {
     setLoading(true); setError(null);
     const params = new URLSearchParams({ product_code: productCode, limit: String(API_LIMITS.MEDIUM) });
-    fetch(`/api/purchase-details?${params}`)
-      .then(r => r.ok ? r.json() : { rows: [] })
-      .then(j => setRows(Array.isArray(j.rows) ? j.rows : []))
-      .catch(e => setError(e?.message ?? "조회 실패"))
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+    api.get<{ rows?: PurchaseHistoryRow[] }>(`/api/purchase-details?${params}`)
+      .then(({ data }) => setRows(Array.isArray(data.rows) ? data.rows : []))
+      .catch((e: unknown) => {
+        const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "조회 실패";
+        setError(msg);
+      })
       .finally(() => setLoading(false));
   }, [productCode]);
 

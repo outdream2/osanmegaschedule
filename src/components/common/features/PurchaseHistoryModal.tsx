@@ -12,6 +12,8 @@ import { PurchaseHistoryList, type PurchaseHistoryRow } from "../PurchaseHistory
 import { Modal } from "../Modal";
 import { IconTile } from "../IconTile";
 import { StatusPill } from "../StatusPill";
+// 2026-08-21 · Framework Phase 3 · fetch → apiClient
+import { api, ApiError } from "../../../lib/apiClient";
 
 interface PurchaseHistoryModalProps {
   productCode: string;
@@ -43,10 +45,13 @@ export const PurchaseHistoryModal: React.FC<PurchaseHistoryModalProps> = ({
     if (!productCode) return;
     setLoading(true);
     setError(null);
-    fetch(`/api/purchase-details?product_code=${encodeURIComponent(productCode)}&limit=500`)
-      .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
-      .then(j => setRows(Array.isArray(j.rows) ? j.rows : []))
-      .catch(e => setError(e?.message ?? "로드 실패"))
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+    api.get<{ rows?: PurchaseHistoryRow[] }>(`/api/purchase-details?product_code=${encodeURIComponent(productCode)}&limit=500`)
+      .then(({ data }) => setRows(Array.isArray(data.rows) ? data.rows : []))
+      .catch((e: unknown) => {
+        const msg = e instanceof ApiError ? e.message : (e as any)?.message ?? "로드 실패";
+        setError(msg);
+      })
       .finally(() => setLoading(false));
   }, [productCode]);
 

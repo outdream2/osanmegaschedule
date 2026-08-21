@@ -28,6 +28,8 @@ import { AccentBar } from "../common/AccentBar";
 import { LoadingState } from "../common/LoadingState";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { StatusPill } from "../common/StatusPill";
+// 2026-08-21 · Framework Phase 3 · fetch → apiClient
+import { api, ApiError } from "../../lib/apiClient";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -130,14 +132,14 @@ export const StockReconciliationTab: React.FC<{
     setLoading(true);
     setError(null);
     try {
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
       // 병렬 · 실재고 최신 + 상품 마스터 (current_stock 포함 → /api/products-map)
-      const [invRes, prodRes] = await Promise.all([
-        fetch("/api/inventory-checks"),
-        fetch("/api/products-map"),
+      const [invR, prodR] = await Promise.all([
+        api.get<InventoryCheckRow[]>("/api/inventory-checks"),
+        api.get<Record<string, any>>("/api/products-map").catch(() => ({ data: {} as Record<string, any> })),
       ]);
-      if (!invRes.ok) throw new Error(`실재고 로드 실패 (${invRes.status})`);
-      const invRaw: InventoryCheckRow[] = await invRes.json().catch(() => []);
-      const prodMap: Record<string, any> = prodRes.ok ? await prodRes.json().catch(() => ({})) : {};
+      const invRaw: InventoryCheckRow[] = Array.isArray(invR.data) ? invR.data : [];
+      const prodMap: Record<string, any> = prodR.data ?? {};
 
       // product_code 별 최신 row 만 유지 (checked_at desc 로 이미 정렬돼있음)
       const latestByCode = new Map<string, InventoryCheckRow>();

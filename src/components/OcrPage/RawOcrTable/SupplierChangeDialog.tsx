@@ -4,6 +4,8 @@ import { Building2 } from "lucide-react";
 import type { RawPage } from "./types";
 import { Modal } from "../../common/Modal";
 import { IconTile } from "../../common/IconTile";
+// 2026-08-21 · Framework Phase 3 · fetch → apiClient
+import { api } from "../../../lib/apiClient";
 
 export type SupplierConfirmState = {
   pageNum: number;
@@ -34,11 +36,9 @@ export const SupplierChangeDialog: React.FC<SupplierChangeDialogProps> = ({
     // 이전 OCR 인식 공급사 → 보정 공급사를 DB에 저장 (자동보정)
     const oldOcrSupplier = structuredPages.find(p => p.page === pageNum)?.meta.supplier;
     if (oldOcrSupplier && oldOcrSupplier.trim() !== newVal.trim()) {
-      fetch("/api/ocr-supplier-aliases", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ alias: oldOcrSupplier.trim(), supplier_name: newVal.trim() }),
-      }).catch(() => {});
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient · fire-and-forget
+      api.post("/api/ocr-supplier-aliases", { alias: oldOcrSupplier.trim(), supplier_name: newVal.trim() })
+        .catch(() => {});
     }
     setRawSupplierByPage(prev => ({ ...prev, [pageNum]: newVal }));
     setSupplierConfirm(null);

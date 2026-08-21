@@ -15,6 +15,8 @@ import { useSortableTabs } from "../../hooks/useSortableTabs";
 import type { AuthSession } from "../../types";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 import { TEXT } from "../../styles/tokens";
+// 2026-08-21 · Framework Phase 3 · fetch → apiClient
+import { api } from "../../lib/apiClient";
 
 // StaffManagePage · props 없음 · lazy 로드 (초기 진입 시에만 필요)
 const StaffManagePage = React.lazy(() => import("../StaffManagePage/StaffManagePage"));
@@ -141,13 +143,12 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
   const loadApprovalCount = useCallback(async () => {
     if (!showApprovalBadge) return;
     try {
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
       const [lRes, rRes] = await Promise.all([
-        fetch("/api/leave-requests/pending-count").catch(() => null),
-        fetch("/api/resignations/pending-count").catch(() => null),
+        api.get<{ count?: number }>("/api/leave-requests/pending-count").catch(() => null),
+        api.get<{ count?: number }>("/api/resignations/pending-count").catch(() => null),
       ]);
-      const lJson = lRes && lRes.ok ? await lRes.json().catch(() => null) : null;
-      const rJson = rRes && rRes.ok ? await rRes.json().catch(() => null) : null;
-      setApprovalPending(Number(lJson?.count ?? 0) + Number(rJson?.count ?? 0));
+      setApprovalPending(Number(lRes?.data?.count ?? 0) + Number(rRes?.data?.count ?? 0));
     } catch {
       // no-op
     }

@@ -14,6 +14,8 @@ import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../layout/AppNavHeader";
 import { TabBar, type TabDef } from "../common/TabBar";
 import { useSortableTabs } from "../../hooks/useSortableTabs";
+// 2026-08-21 · Framework Phase 3 · fetch → apiClient
+import { api } from "../../lib/apiClient";
 
 const ResignationApprovalPage = React.lazy(() => import("../ResignationApprovalPage/ResignationApprovalPage"));
 
@@ -37,14 +39,13 @@ const ApprovalCenterPage: React.FC<ApprovalCenterPageProps> = (props) => {
 
   const loadCounts = useCallback(async () => {
     try {
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient · 개별 error 흡수 유지
       const [lRes, rRes] = await Promise.all([
-        fetch("/api/leave-requests/pending-count").catch(() => null),
-        fetch("/api/resignations/pending-count").catch(() => null),
+        api.get<{ count?: number }>("/api/leave-requests/pending-count").catch(() => null),
+        api.get<{ count?: number }>("/api/resignations/pending-count").catch(() => null),
       ]);
-      const lJson = lRes && lRes.ok ? await lRes.json().catch(() => null) : null;
-      const rJson = rRes && rRes.ok ? await rRes.json().catch(() => null) : null;
-      const lc = Number(lJson?.count ?? 0);
-      const rc = Number(rJson?.count ?? 0);
+      const lc = Number(lRes?.data?.count ?? 0);
+      const rc = Number(rRes?.data?.count ?? 0);
       setLeaveCount(lc);
       setResignCount(rc);
       onCountsChange?.({ leave: lc, resignation: rc });
