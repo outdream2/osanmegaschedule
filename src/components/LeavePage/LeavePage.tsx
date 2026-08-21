@@ -326,7 +326,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
             )}
 
             {/* 내 신청 내역 · 최신 트렌드 · accent bar + brand-deep */}
-            <div className="bg-white rounded-xl border border-line p-4 shadow-sm">
+            <Card>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2.5">
                   <AccentBar />
@@ -397,7 +397,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                   ))}
                 </div>
               )}
-            </div>
+            </Card>
           </div>
         )}
 
@@ -421,7 +421,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
               ))}
             </div>
 
-            <div className="bg-white rounded-xl border border-line p-4 shadow-sm">
+            <Card>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-1.5">
                   <Clock size={14} className="text-amber-600" />
@@ -526,7 +526,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                 )}
               </div>
             )}
-            </div>
+            </Card>
           </div>
         )}
       </main>
