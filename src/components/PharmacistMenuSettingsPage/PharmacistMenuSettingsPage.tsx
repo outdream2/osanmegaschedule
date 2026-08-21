@@ -4,6 +4,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
+// 2026-08-21 · Framework Phase 3 · alert → useToast
+import { useToast, toastClass } from "../../hooks/useToast";
 import {
   Plus, Trash2, AlertCircle, X, Save, Pencil,
   ArrowUp, ArrowDown, CheckCircle2, FileText, CloudUpload,
@@ -76,6 +78,8 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
   onChanged,
 }) => {
   const confirm = useConfirm();
+  // 2026-08-21 · Framework Phase 3 · alert → useToast · error 톤 자동
+  const { toast, showError } = useToast();
 
   const editorLevel = authSession?.level ?? 0;
   const isAdmin = editorLevel >= 8;
@@ -198,7 +202,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
   };
   const saveEdit = async (row: PharmMenuItem) => {
     const t = editingTitle.trim();
-    if (!t) { alert("이름을 입력하세요."); return; }
+    if (!t) { showError("이름을 입력하세요."); return; }
     setSavingId(row.id);
     try {
       await api.patch(`/api/pharmacist-menu-items/${row.id}`, { editor_level: editorLevel, title: t });
@@ -206,7 +210,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
       await load();
       onChanged?.();
     } catch (err: any) {
-      alert(err?.message ?? "저장 실패");
+      showError(err?.message ?? "저장 실패");
     } finally {
       setSavingId(null);
     }
@@ -229,7 +233,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
       await load();
       onChanged?.();
     } catch (err: any) {
-      alert(err?.message ?? "순서 변경 실패");
+      showError(err?.message ?? "순서 변경 실패");
     } finally {
       setSavingId(null);
     }
@@ -245,7 +249,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
       await load();
       onChanged?.();
     } catch (err: any) {
-      alert(err?.message ?? "삭제 실패");
+      showError(err?.message ?? "삭제 실패");
     } finally {
       setDeletingId(null);
     }
@@ -501,6 +505,8 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
           </div>
         )}
       </div>
+      {/* 2026-08-21 · Framework Phase 3 · toast · alert 대체 */}
+      {toast && <div className={toastClass(toast.tone)}>{toast.message}</div>}
     </Modal>
   );
 };
