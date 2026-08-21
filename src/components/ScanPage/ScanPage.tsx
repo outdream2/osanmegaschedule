@@ -23,11 +23,12 @@ import { useSortableTable, type Comparator, type SortDir } from "../../hooks/use
 import { SplitPanel } from "../common/SplitPanel";
 import { StatusPill } from "../common/StatusPill";
 import {
-  ScanLine, Loader2, AlertCircle, Package,
+  ScanLine, AlertCircle, Package,
   CheckCircle2, RotateCcw, Warehouse, Store,
   MapPin, ArrowUpDown, ArrowUp, ArrowDown,
   SaveAll, Sparkles, History, X, Megaphone,
 } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { BarcodeScanner } from "../BarcodeScanner";
 import { loadZBar } from "../BarcodeScanner/zbar";
 import {
@@ -687,7 +688,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 className="w-full h-11 flex items-center justify-center gap-2 rounded-md font-bold text-[14px] text-white bg-teal-600 hover:bg-teal-700 active:bg-teal-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
               >
                 {mapLoading
-                  ? <><Loader2 size={16} className="animate-spin" /> 상품 정보 로딩...</>
+                  ? <><Spinner size={16} /> 상품 정보 로딩...</>
                   : <><ScanLine size={16} /> 바코드 스캔</>
                 }
               </button>
@@ -953,7 +954,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 >
                   <span className="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
                   <span className="relative flex items-center justify-center gap-2.5">
-                    {saveStatus === "saving" && <Loader2 size={17} className="animate-spin" />}
+                    {saveStatus === "saving" && <Spinner size={17} />}
                     {saveStatus === "done"    && <Sparkles size={17} />}
                     {saveStatus === "error"   && <AlertCircle size={17} />}
                     {saveStatus === "idle"    && <SaveAll size={17} />}
@@ -1026,7 +1027,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             <div className="flex-1 overflow-auto">
               {historyLoading ? (
                 <div className="flex items-center justify-center py-12 text-zinc-400 text-xs font-semibold">
-                  <Loader2 size={16} className="animate-spin mr-2" /> 이력 조회 중...
+                  <Spinner size={16} className="mr-2" /> 이력 조회 중...
                 </div>
               ) : historyRows.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-zinc-400 text-xs font-semibold">
