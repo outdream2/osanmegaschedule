@@ -14,7 +14,7 @@ import {
   SET_SECTION_TITLE, SET_INPUT, SET_TEXTAREA, SET_LABEL,
   SET_ACTION_BAR, SET_BTN_PRIMARY, SET_BTN_SECONDARY,
   SET_NOTICE_AMBER, SET_NOTICE_ROSE, SET_NOTICE_EMERALD,
-} from "../common/settingsTypography";
+} from "../../lib/settingsTypography";
 import { CARD_BASE } from "../../styles/tokens";
 
 interface Props {

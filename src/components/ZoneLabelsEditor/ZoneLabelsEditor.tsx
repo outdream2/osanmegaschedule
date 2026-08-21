@@ -25,7 +25,7 @@ import { SettingsPageShell } from "../common/SettingsPageShell";
 import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
 import { useToast } from "../../hooks/useToast";
-import { SET_ACTION_BAR, SET_BTN_PRIMARY, SET_BTN_SECONDARY, SET_INFO_BADGE } from "../common/settingsTypography";
+import { SET_ACTION_BAR, SET_BTN_PRIMARY, SET_BTN_SECONDARY, SET_INFO_BADGE } from "../../lib/settingsTypography";
 import type { AppNavPage } from "../layout/AppNavHeader";
 import {
   DEFAULT_MAPPINGS,

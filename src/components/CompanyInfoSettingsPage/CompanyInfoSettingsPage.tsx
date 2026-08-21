@@ -22,7 +22,7 @@ import { ContactSection, StampsSection } from "../BrandingSettingsPage/BrandingS
 import {
   SET_SECTION_TITLE, SET_SECTION_DESC,
   SET_LABEL, SET_INPUT, SET_BADGE,
-} from "../common/settingsTypography";
+} from "../../lib/settingsTypography";
 import { CARD_BASE } from "../../styles/tokens";
 
 interface Props {

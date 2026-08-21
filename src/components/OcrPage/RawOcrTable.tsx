@@ -2,7 +2,8 @@
 import { TIMING } from "../../constants/timing";
 import { useConfirm } from "../../hooks/useConfirm";
 import * as XLSX from "xlsx";
-import { Wand2, Loader2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, BookmarkPlus, BookOpen, Check, Save } from "lucide-react";
+import { Wand2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, BookmarkPlus, BookOpen, Check, Save } from "lucide-react";
+import { Spinner } from "../common/Spinner";
 import { isNonProductText, isValidSupplierHint, isValidProductName, scoreProductRow, cleanProductName } from "../../lib/ocrRowFilter";
 import { reextractCellCandidates } from "../../lib/cellReextract";
 import { VendorDetailModal, type Vendor } from "../LandingPage/VendorListEditor";
@@ -3068,7 +3069,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
               {/* Feature 3: 동의어 자동보정 뱃지 */}
               {autoSynonymLoading && (
                 <span className="text-[11px] text-indigo-500 font-bold flex items-center gap-1">
-                  <Loader2 size={10} className="animate-spin" />동의어 검색 중...
+                  <Spinner size={10} />동의어 검색 중...
                 </span>
               )}
               {!autoSynonymLoading && autoSynonymCount > 0 && (
@@ -3079,7 +3080,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
               {/* Feature 2: 동의어 추가 완료 상태 */}
               {synonymAddStatus?.status === 'loading' && (
                 <span className="text-[11px] text-sky-500 font-bold flex items-center gap-1">
-                  <Loader2 size={10} className="animate-spin" />동의어 추가 중...
+                  <Spinner size={10} />동의어 추가 중...
                 </span>
               )}
               {synonymAddStatus?.status === 'done' && (
@@ -3122,7 +3123,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
             if (!supplier) return null;
             if (status === 'loading') return (
               <div key={pn} className="px-4 py-2 bg-indigo-50 border-b border-indigo-200 flex items-center gap-2 text-[12px] font-semibold text-indigo-700">
-                <Loader2 size={12} className="animate-spin shrink-0" />
+                <Spinner size={12} className="shrink-0" />
                 {pn}번 명세서 "{supplier}" 공급처 템플릿으로 재파싱 중...
               </div>
             );
@@ -4629,7 +4630,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                                     title={hasErpSubRow ? `${pn}번 · ERP 재매칭` : `${pn}번 · ERP 매칭 실행 · 각 행 아래 ERP 정보 표시`}
                                                   >
                                                     {matchingPage[pn]
-                                                      ? (<><Loader2 size={12} className="animate-spin" /> 매칭중...</>)
+                                                      ? (<><Spinner size={12} /> 매칭중...</>)
                                                       : (<><Wand2 size={12} /> ERP 매칭</>)}
                                                   </button>
                                                   {/* 확정 · 확정표 반영 */}
@@ -5213,7 +5214,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                       title={hasMissingSupplier ? `공급사 미입력 페이지 (${missingSupplierPages.join(", ")}번) 를 먼저 채워주세요` : "현재 표시된 항목들을 확정표(DB)에 저장합니다"}
                     >
                       {savingConfirmed
-                        ? <><Loader2 size={12} className="animate-spin" />저장 중</>
+                        ? <><Spinner size={12} />저장 중</>
                         : <><Save size={12} />확정표 저장</>}
                     </button>
                   </div>
@@ -5246,7 +5247,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                 className="ml-auto inline-flex items-center gap-1 text-[11px] font-bold text-white bg-violet-500 hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed rounded px-1.5 py-0.5 whitespace-nowrap"
                 title={`${p.page}번 명세서 상품명만 자동보정`}
               >
-                {matchingPage[p.page] ? <Loader2 size={10} className="animate-spin" /> : <Wand2 size={10} />}
+                {matchingPage[p.page] ? <Spinner size={10} /> : <Wand2 size={10} />}
                 {p.page}번 상품명 보정
               </button>
               {/* 🔄 재추출 (다시 파싱 시도) */}

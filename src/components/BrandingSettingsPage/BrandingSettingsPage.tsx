@@ -23,7 +23,7 @@ import { AppFooter } from "../layout/AppFooter";
 import { SettingsPageShell } from "../common/SettingsPageShell";
 import {
   SET_LABEL, SET_INPUT_STRONG, SET_HINT, SET_SECTION_TITLE, SET_SECTION_DESC,
-} from "../common/settingsTypography";
+} from "../../lib/settingsTypography";
 import type { AuthSession, StampMapping } from "../../types";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { useContactInfo } from "../../hooks/useContactInfo";

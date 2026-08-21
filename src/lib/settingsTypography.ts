@@ -1,4 +1,4 @@
-// src/components/common/settingsTypography.ts
+// src/lib/settingsTypography.ts
 // 2026-08-12 · [설정] 하위 페이지 공통 CSS 상수 · 글씨/입력/배지 크기 통일
 //   · SettingsPageShell 과 함께 · 각 페이지에서 이 상수를 사용해 일관된 톤 유지
 //   · 회귀 방지 · 각 페이지의 hard-coded className 을 이 상수로 순차 교체
