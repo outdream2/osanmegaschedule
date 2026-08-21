@@ -14,6 +14,64 @@
 
 ## 🔥 활성 (진행중 / 대기)
 
+### #183 · 발주요청 페이지 · 안내 문구 변경 (신규 · 2026-08-21)
+- 🔲 기존 문구 · "손실 확정이 되었는지 확인하세요 (ERP재고 vs 실재고 차이 · 손실추적 탭 참조)"
+- 🔲 변경 후 · "공급사를 클릭하면 최신 발주이력을 확인할 수 있습니다"
+- 🔲 위치 확인 필요 · OrderManagePage 안 발주요청 리스트 상단 or 빈 상태 안내
+- 💡 **의존** · #182 완료 후 · 안내 문구도 새 기능 (발주이력 우측) 반영
+- 💡 프레임워크 원칙 · 문구 정정 (className 유지)
+
+### #182 · 발주요청 페이지 · 우측 패널 · 발주이력 표시 (신규 · 2026-08-21)
+- 📄 대상 · 매장 > 매입 > 발주 서브탭 (`OrderManagePage.tsx` · `purchase-order` topTab)
+- 🔲 현재 · 왼쪽 발주요청 리스트 · 오른쪽 상품정보 상세
+- 🔲 변경 · 오른쪽 상품정보 → **발주이력** 로 대체
+- 🔲 공급사 클릭 · 오른쪽에 · **날짜별 발주내역 간략 리스트** 표시
+- 🔲 각 이력 항목에 · [상세] 버튼 · 클릭 시 · 해당 공급사의 해당 발주이력 자세히 (모달 or 확장)
+- 🔲 API · `/api/order-history?supplier=X` 재사용 (기존 OrderHistoryTab)
+- 🔲 **SplitPanel 비율 · 7:3** (왼쪽 발주요청 리스트 넓게 · 오른쪽 30%) · minWidth 조정
+- 프레임워크 재사용 · SplitPanel·PurchaseHistoryList·Modal·Card·useSortableTable
+- 확장 · SplitPanel `right` 슬롯에 · OrderHistoryDetailPanel (신규 컴포넌트)
+- 🔲 스펙 확정 필요:
+  - 간략 리스트 컬럼 (날짜·상품수·총액 등)
+  - 상세 모달 vs 인라인 확장 (accordion)
+  - 기간 필터 · 기본 몇 일 (30일?)
+- 💡 **의존** · #180 (발주이력 검색 기능) 과 연계 · 같은 데이터 소스
+- 💡 프레임워크 원칙 준수 (대원칙 17·19)
+
+### #181 · 매장구역도 · 인라인 편집 + 드래그 위치 변경 (신규 · 2026-08-21)
+
+**현재 상태 (조사 완료)**:
+- `StoreZoneMap` · 표시 전용 · 편집 없음
+- `ZoneSettingsPage` · 별도 페이지 · 표 형식 폼 편집 (debounce 자동 저장)
+- 드래그 · DisplayPage 스케쥴 zone 배정에만 · 구역 자체 위치 변경 X
+
+**구현 방안 (대원칙 19 · 프레임워크 관점 설계)**:
+- **Option A · Inline Popover 편집** (권장 · 저위험)
+  - 셀 클릭 → Popover 열림 (Modal 재사용 or 신규 InlineEditPopover)
+  - Popover 안 · label·category 편집 (useZoneDefs 훅)
+  - 자동 저장 (debounce)
+  - `readonly` prop · 기존 소비자 (SalesTrend·DisplayPage) readonly=true
+- **Option B · Editing Mode + 드래그** (中위험)
+  - StoreZoneMap · `editing` prop · 편집 모드 시 드래그 핸들
+  - useSortableTabs 패턴 참고 · long-press 감지
+  - 드래그 · num 재배정 or section 이동
+- **Option C · A+B 통합** (中위험)
+
+**프레임워크 재사용/확장**:
+- 재사용 · `useZoneDefs`·`Modal`·`Card`·`useKvSetting` debounce·`useSortableTabs` 로직
+- 확장 · `StoreZoneMap` 에 `editing`·`onZoneUpdate`·`onZoneReorder` prop
+- 신규 프리미티브 후보 · `InlineEditPopover<T>` (편집 폼 wrapper)
+
+**의존 · BC**:
+- 기존 소비자 · SalesTrend·DisplayPage·CategoryTab · `editing` 미전달 시 · 현재 동작 유지
+- ZoneSettingsPage · 표 편집 유지 or 통합 (사용자 결정)
+
+**💡 스펙 확정 필요**:
+- Option A/B/C · 어느 방향?
+- ZoneSettingsPage · 유지 vs 통합
+- 드래그 · num 재배정 or section 이동?
+- 편집 권한 · 관리자만 or 매니저부터
+
 ### #180 · 발주이력 페이지 · 공급사·상품 검색 기능 (신규 · 2026-08-21)
 - 📄 대상 · `src/components/OrderManagePage/OrderHistoryTab.tsx` (매장 > 매입 > 발주이력 서브탭)
 - 🔲 상단 검색바 · 공급사 검색 (부분일치 · 한글 초성 검색 지원)
