@@ -268,6 +268,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     display: 0, order: 0, mismatch: 0, lunch: 0,
     inventory: 0, return: 0, resignation: 0,
   });
+  // 2026-08-21 · #171 Phase 3 · "전체 N건" 클릭 시 · 상세 breakdown 카드 토글
+  const [statusDetailOpen, setStatusDetailOpen] = useState(false);
   // 직원용: 나에게 배정된 진열 보충 요청 중 pending 개수
   const [myPendingCount, setMyPendingCount] = useState(0);
 
@@ -999,13 +1001,34 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           })()}
 
           {/* ── 오늘의 현황 · 2026-08-17 · 사용자 지시 · 텍스트 형식 · dot 색 accent ── */}
-          {isManagerOrAdmin && (
+          {/* 2026-08-21 · #171 Phase 3 · 모든 직원 노출 (B 선택 · isManagerOrAdmin 제거) · 전체 N건 요약 · 클릭 시 상세 리스트 토글 */}
+          {authSession && !isVendor && (
             <div className="w-full mb-6">
-              <div className="flex items-center gap-2.5 mb-2">
+              <div className="flex items-center gap-2.5 mb-2 flex-wrap">
                 <AccentBar />
                 <div className="text-ink font-bold tracking-tight text-[16px]">오늘의 현황</div>
+                {/* 전체 요청 N건 요약 · 클릭 → 상세 리스트 토글 · 2026-08-21 · #171 Phase 3 */}
+                {(() => {
+                  const totalCount = leavePendingCount
+                    + requestsCounts.display + requestsCounts.order
+                    + requestsCounts.mismatch + requestsCounts.lunch
+                    + requestsCounts.inventory + requestsCounts.return
+                    + requestsCounts.resignation;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => setStatusDetailOpen(v => !v)}
+                      className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[13px] font-semibold text-brand-deep bg-brand-tint hover:brightness-95 border border-brand/15 cursor-pointer transition-colors"
+                      title={statusDetailOpen ? "상세 리스트 접기" : "상세 리스트 펼치기"}
+                      aria-expanded={statusDetailOpen}
+                    >
+                      전체 <b className="tabular-nums">{totalCount}</b>건
+                      <span aria-hidden className={`transition-transform ${statusDetailOpen ? "rotate-180" : ""}`}>▾</span>
+                    </button>
+                  );
+                })()}
               </div>
-              {/* 2026-08-21 · #171 Phase 2 · 관리자 · 모든 알림/요청 노출 · 7항목 (연차·진열발주·불일치·점심·재고점검·반품·사직서) · 각 클릭 → 페이지 이동 */}
+              {/* 7항목 (연차·진열발주·불일치·점심·재고점검·반품·사직서) · 각 클릭 → 페이지 이동 */}
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[17px] text-ink-soft pl-[13px]">
                 <button
                   type="button"
@@ -1071,6 +1094,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   사직서 승인 <b className={`font-bold tabular-nums ${requestsCounts.resignation > 0 ? "text-red-700" : "text-ink"}`}>{requestsCounts.resignation}</b>건
                 </button>
               </div>
+
+              {/* 2026-08-21 · #171 Phase 3 · 상세 리스트 (전체 N건 클릭 시 토글) · 7항목 breakdown table */}
+              {statusDetailOpen && (
+                <div className="mt-3 bg-white border border-line rounded-xl px-4 py-3 shadow-sm">
+                  <div className="text-[13px] font-bold text-ink-soft mb-2 tracking-tight">요청 상세 · 카테고리별 대기 건수</div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-[14px]">
+                    {[
+                      { label: "연차 승인", count: leavePendingCount, dot: "bg-amber-500", text: "text-amber-700", nav: "leave" as Exclude<AppNavPage, "landing"> },
+                      { label: "진열·발주 요청", count: requestsCounts.display + requestsCounts.order, dot: "bg-sky-500", text: "text-sky-700", nav: "requests" as Exclude<AppNavPage, "landing"> },
+                      { label: "배치구역 불일치", count: requestsCounts.mismatch, dot: "bg-rose-500", text: "text-rose-700", nav: "requests" as Exclude<AppNavPage, "landing"> },
+                      { label: "점심 신청", count: requestsCounts.lunch, dot: "bg-emerald-500", text: "text-emerald-700", nav: "lunch" as Exclude<AppNavPage, "landing"> },
+                      { label: "재고 점검", count: requestsCounts.inventory, dot: "bg-violet-500", text: "text-violet-700", nav: "stockcheck" as Exclude<AppNavPage, "landing"> },
+                      { label: "반품 요청", count: requestsCounts.return, dot: "bg-orange-500", text: "text-orange-700", nav: "requests" as Exclude<AppNavPage, "landing"> },
+                      { label: "사직서 승인", count: requestsCounts.resignation, dot: "bg-red-500", text: "text-red-700", nav: "business-manage" as Exclude<AppNavPage, "landing"> },
+                    ].map(item => (
+                      <button
+                        key={item.label}
+                        type="button"
+                        onClick={() => onNavigate(item.nav, authSession!)}
+                        className="flex items-center gap-2 py-1 hover:bg-zinc-50 rounded-md px-1.5 cursor-pointer transition-colors text-left"
+                      >
+                        <span className={`w-2 h-2 rounded-full ${item.count > 0 ? item.dot : "bg-zinc-300"} shrink-0`} />
+                        <span className="flex-1 text-ink-soft">{item.label}</span>
+                        <span className={`font-bold tabular-nums ${item.count > 0 ? item.text : "text-zinc-400"}`}>{item.count}</span>
+                        <span className="text-zinc-400">건</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
