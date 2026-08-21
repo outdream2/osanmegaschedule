@@ -34,6 +34,17 @@ import { IconTile } from "../common/IconTile";
 import { AccentBar } from "../common/AccentBar";
 import { ArrivalRowCard } from "./ArrivalRowCard";
 import { useToast } from "../../hooks/useToast";
+// 2026-08-21 · Framework Phase 4 · large-file 분리 · helpers 이관
+import {
+  Toast,
+  SummaryPill,
+  SortIcon,
+  STATUS_META,
+  ARRIVAL_CMP,
+  type ItemStatus,
+  type ArrivalItem,
+  type ArrivalSortKey,
+} from "./helpers";
 
 interface ProductArrivalPageProps {
   onBack: () => void;
@@ -44,62 +55,7 @@ interface ProductArrivalPageProps {
   embedded?: boolean;
 }
 
-// 일치/불일치 배타 · 유통기한임박 독립 toggle
-type ItemStatus = "pending" | "match" | "mismatch";
-
-interface ArrivalItem {
-  key: string;
-  code: string;
-  product: ProductInfo | null;
-  qty: number;
-  status: ItemStatus;
-  expiring: boolean;
-  addedAt: number;
-}
-
-const STATUS_META: Record<ItemStatus, { label: string; color: string; bg: string; border: string; icon: React.ReactNode }> = {
-  pending:  { label: "미확인",     color: "text-zinc-500",   bg: "bg-zinc-100",   border: "border-zinc-300",   icon: <ClipboardCheck size={12} /> },
-  match:    { label: "수량일치",   color: "text-emerald-700", bg: "bg-emerald-100", border: "border-emerald-400", icon: <CheckCircle2 size={12} /> },
-  mismatch: { label: "수량불일치", color: "text-rose-700",    bg: "bg-rose-100",    border: "border-rose-400",    icon: <XCircle size={12} /> },
-};
-
-// ─────────────────────────────────────────────────────────────
-// 2026-08-18 · 공용 NotificationToast 사용 (common/NotificationToast) · 중복 제거
-import { NotificationToast } from "../common/NotificationToast";
-const Toast: React.FC<{ message: string }> = ({ message }) => (
-  <NotificationToast message={message} tone="emerald" />
-);
-
-// ─────────────────────────────────────────────────────────────
-// SummaryPill · 요약 통계 셀
-// ─────────────────────────────────────────────────────────────
-interface SummaryPillProps { label: string; value: number; valueClass: string; accent?: string }
-const SummaryPill: React.FC<SummaryPillProps> = ({ label, value, valueClass, accent }) => (
-  <div className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl transition ${accent ?? ""}`}>
-    <span className={`text-[16px] sm:text-[18px] font-bold tabular-nums leading-none ${valueClass}`}>{value}</span>
-    <span className="text-[14px] sm:text-[15px] font-semibold text-zinc-400 leading-none">{label}</span>
-  </div>
-);
-
-// ─────────────────────────────────────────────────────────────
-// SortIcon
-// ─────────────────────────────────────────────────────────────
-const SortIcon: React.FC<{ active: boolean; dir: SortDir }> = ({ active, dir }) => {
-  if (!active) return <ArrowUpDown size={11} className="text-zinc-300 ml-0.5 inline" />;
-  return dir === "asc"
-    ? <ArrowUp size={11} className="text-sky-500 ml-0.5 inline" />
-    : <ArrowDown size={11} className="text-sky-500 ml-0.5 inline" />;
-};
-
-type ArrivalSortKey = "addedAt" | "supplier" | "name" | "qty" | "status";
-
-const ARRIVAL_CMP: Record<ArrivalSortKey, Comparator<ArrivalItem>> = {
-  addedAt:  (a, b) => a.addedAt - b.addedAt,
-  supplier: (a, b) => (a.product?.supplier ?? "").localeCompare(b.product?.supplier ?? "", "ko"),
-  name:     (a, b) => (a.product?.name ?? "").localeCompare(b.product?.name ?? "", "ko"),
-  qty:      (a, b) => a.qty - b.qty,
-  status:   (a, b) => a.status.localeCompare(b.status),
-};
+// 2026-08-21 · Framework Phase 4 · helpers.tsx 로 분리 (Toast · SummaryPill · SortIcon · STATUS_META · ARRIVAL_CMP · ItemStatus · ArrivalItem · ArrivalSortKey)
 
 // ─────────────────────────────────────────────────────────────
 // Main Component
