@@ -1,36 +1,48 @@
 // @vitest-environment jsdom
 // 2026-08-20 · cloudinaryUpload · fetch mock 로 uploadImageToLocal · uploadImageToCloudinary
+// 2026-08-21 · Framework Phase 3 · 내부 API (upload-image·cloudinary-signature) 는 apiClient mock
+// 2026-08-21 · Cloudinary 외부 API (res.cloudinary.com) 는 fetch mock 유지
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-// FileReader / Image / canvas 는 jsdom 이 부분지원 · 필요한 부분 mock
-// compressImage 자체는 canvas 필요 → 여기서는 mocking 로 회피
-
-vi.mock("./cloudinaryUpload", async (importOriginal) => {
-  const actual: any = await importOriginal();
+// apiClient mock (module 레벨) · 내부 서버 요청 처리
+vi.mock("./apiClient", () => {
+  class ApiError extends Error {
+    status: number;
+    data?: unknown;
+    constructor(status: number, message: string, code?: string, data?: unknown) {
+      super(message);
+      this.name = "ApiError";
+      this.status = status;
+      this.data = data;
+      void code;
+    }
+  }
   return {
-    ...actual,
-    // compressImage 우회 · Blob 하나 반환하도록
+    ApiError,
+    api: {
+      get: vi.fn(),
+      post: vi.fn(),
+      put: vi.fn(),
+      patch: vi.fn(),
+      del: vi.fn(),
+    },
   };
 });
 
-// 실제로는 상단 mock 을 활용하되 · compressImage 호출 자체는 우회 필요
-// → File.prototype 을 대신하기 위해 blobToDataUrl 로 흐르는 부분 stub
+import { uploadImageToLocal, uploadImageToCloudinary, uploadImagesToCloudinary } from "./cloudinaryUpload";
+import { api, ApiError } from "./apiClient";
 
-const { uploadImageToLocal, uploadImageToCloudinary, uploadImagesToCloudinary } = await import("./cloudinaryUpload");
+const mockPost = api.post as ReturnType<typeof vi.fn>;
 
-// compressImage 는 내부적으로 FileReader + Image + canvas 필요 → 우회 위해 fetch 만 mock
-// 대신 하위 API 만 확인 · 실제로 canvas 는 안 그리기 위해 FileReader 를 대체하지 않고
-// canvas.toBlob 를 mock
-
-// jsdom 미지원 canvas.toBlob 대응
+// jsdom 미지원 · canvas + FileReader + Image mock
 beforeEach(() => {
+  mockPost.mockReset();
   (globalThis as any).HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
     drawImage: vi.fn(),
   });
   (globalThis as any).HTMLCanvasElement.prototype.toBlob = function (cb: (blob: Blob | null) => void) {
     cb(new Blob(["fake"], { type: "image/webp" }));
   };
-  // FileReader mock (readAsDataURL → data:image/webp;base64,ZmFrZQ==)
   (globalThis as any).FileReader = class {
     result: string | null = null;
     onload: any = null;
@@ -40,7 +52,6 @@ beforeEach(() => {
       queueMicrotask(() => this.onload?.());
     }
   };
-  // Image mock (onload 자동 트리거)
   (globalThis as any).Image = class {
     width = 800;
     height = 600;
@@ -59,53 +70,40 @@ afterEach(() => {
 const makeFile = () => new File(["fake"], "test.jpg", { type: "image/jpeg" });
 
 describe("uploadImageToLocal", () => {
-  it("POST /api/board/upload-image · JSON body · data_url + filename", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
+  it("POST /api/board/upload-image · data_url + filename", async () => {
+    mockPost.mockResolvedValue({
+      data: {
         image_url: "/uploads/board/xyz.webp",
         public_id: "board/xyz",
-        width: 800,
-        height: 600,
-      }),
+        width: 800, height: 600,
+      },
+      status: 200, headers: {},
     });
-    (globalThis as any).fetch = mockFetch;
 
     const result = await uploadImageToLocal(makeFile());
 
-    expect(mockFetch).toHaveBeenCalledWith("/api/board/upload-image", expect.objectContaining({
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    expect(mockPost).toHaveBeenCalledWith("/api/board/upload-image", expect.objectContaining({
+      data_url: expect.stringContaining("data:image/webp;base64,"),
+      filename: "test",
     }));
-    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-    expect(body.data_url).toContain("data:image/webp;base64,");
-    expect(body.filename).toBe("test");
     expect(result.image_url).toBe("/uploads/board/xyz.webp");
     expect(result.public_id).toBe("board/xyz");
   });
 
-  it("서버 에러 · body.error 로 throw", async () => {
-    (globalThis as any).fetch = vi.fn().mockResolvedValue({
-      ok: false,
-      status: 500,
-      json: async () => ({ error: "저장 실패" }),
-    });
+  it("서버 에러 (ApiError with data.error) · throw · error 메시지", async () => {
+    mockPost.mockRejectedValue(new ApiError(500, "Internal", undefined, { error: "저장 실패" }));
     await expect(uploadImageToLocal(makeFile())).rejects.toThrow("저장 실패");
   });
 
-  it("에러 · body.error 없음 · 기본 메시지 + status", async () => {
-    (globalThis as any).fetch = vi.fn().mockResolvedValue({
-      ok: false,
-      status: 502,
-      json: async () => { throw new Error("bad json"); },
-    });
+  it("에러 · body 없음 · 기본 메시지 + status", async () => {
+    mockPost.mockRejectedValue(new ApiError(502, "Bad Gateway"));
     await expect(uploadImageToLocal(makeFile())).rejects.toThrow(/502/);
   });
 
   it("width/height 없는 응답 · 0 fallback", async () => {
-    (globalThis as any).fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ image_url: "u", public_id: "p" }),
+    mockPost.mockResolvedValue({
+      data: { image_url: "u", public_id: "p" },
+      status: 200, headers: {},
     });
     const r = await uploadImageToLocal(makeFile());
     expect(r.width).toBe(0);
@@ -114,20 +112,19 @@ describe("uploadImageToLocal", () => {
 });
 
 describe("uploadImageToCloudinary · 서명 발급 실패 fallback", () => {
-  it("signature 401 · uploadImageToLocal fallback", async () => {
-    const mockFetch = vi.fn()
-      .mockResolvedValueOnce({ ok: false, status: 401 }) // sig 실패
+  it("signature 401 (ApiError) · uploadImageToLocal fallback", async () => {
+    mockPost
+      .mockRejectedValueOnce(new ApiError(401, "Unauthorized")) // signature 실패
       .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ image_url: "/local/x.webp", public_id: "l", width: 100, height: 100 }),
+        data: { image_url: "/local/x.webp", public_id: "l", width: 100, height: 100 },
+        status: 200, headers: {},
       });
-    (globalThis as any).fetch = mockFetch;
 
     const r = await uploadImageToCloudinary(makeFile());
     expect(r.image_url).toBe("/local/x.webp");
-    expect(mockFetch).toHaveBeenCalledTimes(2);
-    expect(mockFetch.mock.calls[0][0]).toBe("/api/board/cloudinary-signature");
-    expect(mockFetch.mock.calls[1][0]).toBe("/api/board/upload-image");
+    expect(mockPost).toHaveBeenCalledTimes(2);
+    expect(mockPost.mock.calls[0][0]).toBe("/api/board/cloudinary-signature");
+    expect(mockPost.mock.calls[1][0]).toBe("/api/board/upload-image");
   });
 });
 
@@ -142,34 +139,32 @@ describe("uploadImageToCloudinary · 정상 흐름", () => {
       public_id: "board/x",
       width: 1200, height: 800,
     };
-    const mockFetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => sig })
-      .mockResolvedValueOnce({ ok: true, json: async () => cloudResp });
+    mockPost.mockResolvedValueOnce({ data: sig, status: 200, headers: {} });
+    // Cloudinary 외부 API 는 fetch 유지 · mock
+    const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => cloudResp });
     (globalThis as any).fetch = mockFetch;
 
     const r = await uploadImageToCloudinary(makeFile());
     expect(r.image_url).toBe("https://res.cloudinary.com/cloud1/x.webp");
     expect(r.public_id).toBe("board/x");
     expect(r.width).toBe(1200);
-    expect(mockFetch.mock.calls[1][0]).toContain("cloudinary.com/v1_1/cloud1/image/upload");
-    // FormData body 확인
-    expect(mockFetch.mock.calls[1][1].body).toBeInstanceOf(FormData);
+    expect(mockFetch.mock.calls[0][0]).toContain("cloudinary.com/v1_1/cloud1/image/upload");
+    expect(mockFetch.mock.calls[0][1].body).toBeInstanceOf(FormData);
   });
 
   it("Cloudinary 업로드 실패 · uploadImageToLocal fallback", async () => {
     const sig = { api_key: "k", timestamp: 1, folder: "b", signature: "s", cloud_name: "c" };
-    const mockFetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => sig })
-      .mockResolvedValueOnce({ ok: false, status: 500 }) // Cloudinary 실패
+    mockPost
+      .mockResolvedValueOnce({ data: sig, status: 200, headers: {} })
       .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ image_url: "/fallback.webp", public_id: "f", width: 1, height: 1 }),
+        data: { image_url: "/fallback.webp", public_id: "f", width: 1, height: 1 },
+        status: 200, headers: {},
       });
-    (globalThis as any).fetch = mockFetch;
+    (globalThis as any).fetch = vi.fn().mockResolvedValue({ ok: false, status: 500 });
 
     const r = await uploadImageToCloudinary(makeFile());
     expect(r.image_url).toBe("/fallback.webp");
-    expect(mockFetch).toHaveBeenCalledTimes(3);
+    expect(mockPost).toHaveBeenCalledTimes(2); // signature + upload-image fallback
   });
 });
 
@@ -177,11 +172,11 @@ describe("uploadImagesToCloudinary · 병렬", () => {
   it("여러 파일 · 병렬 업로드 · onProgress 콜백", async () => {
     const sig = { api_key: "k", timestamp: 1, folder: "b", signature: "s", cloud_name: "c" };
     const cloudResp = { secure_url: "u", public_id: "p", width: 100, height: 100 };
-    const mockFetch = vi.fn().mockImplementation((url: string) => {
-      if (url.includes("cloudinary-signature")) return Promise.resolve({ ok: true, json: async () => sig });
-      return Promise.resolve({ ok: true, json: async () => cloudResp });
+    mockPost.mockImplementation((url: string) => {
+      if (url.includes("cloudinary-signature")) return Promise.resolve({ data: sig, status: 200, headers: {} });
+      return Promise.resolve({ data: {}, status: 200, headers: {} });
     });
-    (globalThis as any).fetch = mockFetch;
+    (globalThis as any).fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => cloudResp });
 
     const onProgress = vi.fn();
     const files = [makeFile(), makeFile(), makeFile()];
@@ -189,18 +184,17 @@ describe("uploadImagesToCloudinary · 병렬", () => {
 
     expect(r).toHaveLength(3);
     expect(onProgress).toHaveBeenCalledTimes(3);
-    // 마지막 호출: (3, 3)
     expect(onProgress).toHaveBeenLastCalledWith(3, 3);
   });
 
-  it("progress · done/total · 콜백 optional", async () => {
+  it("progress · onProgress optional", async () => {
     const sig = { api_key: "k", timestamp: 1, folder: "b", signature: "s", cloud_name: "c" };
     const cloudResp = { secure_url: "u", public_id: "p", width: 100, height: 100 };
-    (globalThis as any).fetch = vi.fn().mockImplementation((url: string) => {
-      if (url.includes("cloudinary-signature")) return Promise.resolve({ ok: true, json: async () => sig });
-      return Promise.resolve({ ok: true, json: async () => cloudResp });
+    mockPost.mockImplementation((url: string) => {
+      if (url.includes("cloudinary-signature")) return Promise.resolve({ data: sig, status: 200, headers: {} });
+      return Promise.resolve({ data: {}, status: 200, headers: {} });
     });
-    // onProgress 없이 호출
+    (globalThis as any).fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => cloudResp });
     const r = await uploadImagesToCloudinary([makeFile()]);
     expect(r).toHaveLength(1);
   });
