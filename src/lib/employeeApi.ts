@@ -1,4 +1,8 @@
 // 2026-08-10 · 사용자 요청 · 직원정보 수정 관련 공통 모듈
+// 2026-08-21 · Framework Phase 3 (roadmap C) · raw fetch → apiClient 이관
+//   · 시그니처 완전 유지 · consumers (MyPage·Permissions·Schedule·Staff·EmployeeProfile) 무영향
+//   · ApiError → Error 로 정규화 (throw · 기존과 동일 shape)
+//
 // 사용처 (점진적 마이그레이션):
 //   · MyPage · 본인 정보 수정
 //   · PermissionsPage · 권한 레벨 수정
@@ -16,6 +20,7 @@
 //   (통장사본은 별도 엔드포인트 없음 · PUT 로 bankbook_image_url base64 저장)
 
 import type { Employee } from "../types";
+import { api, ApiError } from "./apiClient";
 
 /**
  * PUT payload · 서버가 요구하는 필드 subset
@@ -43,7 +48,7 @@ export interface EmployeeUpdatePayload {
 
 /**
  * 서버 PUT 은 전체 필드를 기대함 · 안전한 부분 갱신을 위해
- * 기존 employee (base) 를 payload 로 변환한 뒤 patch 를 덮어쓴다.
+ * 기존 employee (base) 를 payload 로 변환한 뒤 patch 로 덮어쓴다.
  */
 function mergePayload(base: Employee, patch: EmployeeUpdatePayload): EmployeeUpdatePayload {
   return {
@@ -66,11 +71,17 @@ function mergePayload(base: Employee, patch: EmployeeUpdatePayload): EmployeeUpd
   };
 }
 
-async function throwIfErr(res: Response, defaultMsg: string): Promise<void> {
-  if (res.ok) return;
-  const body = await res.json().catch(() => ({} as any));
-  const msg = (body as { error?: string }).error ?? res.statusText ?? defaultMsg;
-  throw new Error(msg);
+/**
+ * ApiError → Error 로 정규화 · 기존 throwIfErr 동일 message shape 유지
+ * consumers 는 err.message 사용 · Error/ApiError 구분 X
+ */
+function rethrowAsError(err: unknown, defaultMsg: string): never {
+  if (err instanceof ApiError) {
+    const body = err.data as { error?: string } | undefined;
+    throw new Error(body?.error ?? err.message ?? defaultMsg);
+  }
+  if (err instanceof Error) throw err;
+  throw new Error(defaultMsg);
 }
 
 /**
@@ -82,67 +93,74 @@ export async function updateEmployee(
   patch: EmployeeUpdatePayload,
 ): Promise<Employee> {
   const payload = mergePayload(base, patch);
-  const res = await fetch(`/api/employees/${base.id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  await throwIfErr(res, "직원 정보 저장 실패");
-  return { ...base, ...patch } as Employee;
+  try {
+    await api.put(`/api/employees/${base.id}`, payload);
+    return { ...base, ...patch } as Employee;
+  } catch (err) {
+    rethrowAsError(err, "직원 정보 저장 실패");
+  }
 }
 
 export async function updateEmployeeFull(
   id: number,
   payload: EmployeeUpdatePayload,
 ): Promise<Employee> {
-  const res = await fetch(`/api/employees/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  await throwIfErr(res, "직원 정보 저장 실패");
-  return res.json();
+  try {
+    const { data } = await api.put<Employee>(`/api/employees/${id}`, payload);
+    return data;
+  } catch (err) {
+    rethrowAsError(err, "직원 정보 저장 실패");
+  }
 }
 
 export async function createEmployee(payload: EmployeeUpdatePayload): Promise<Employee> {
-  const res = await fetch("/api/employees", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  await throwIfErr(res, "직원 등록 실패");
-  return res.json();
+  try {
+    const { data } = await api.post<Employee>("/api/employees", payload);
+    return data;
+  } catch (err) {
+    rethrowAsError(err, "직원 등록 실패");
+  }
 }
 
 export async function deleteEmployee(id: number): Promise<void> {
-  const res = await fetch(`/api/employees/${id}`, { method: "DELETE" });
-  await throwIfErr(res, "직원 삭제 실패");
+  try {
+    await api.del(`/api/employees/${id}`);
+  } catch (err) {
+    rethrowAsError(err, "직원 삭제 실패");
+  }
 }
 
 /** 이력서 · POST · Google Drive · returns { url } */
 export async function uploadResume(id: number, file: File): Promise<{ url: string }> {
   const fd = new FormData();
   fd.append("resume", file);
-  const res = await fetch(`/api/employees/${id}/resume`, { method: "POST", body: fd });
-  await throwIfErr(res, "이력서 업로드 실패");
-  const j = await res.json().catch(() => ({} as any));
-  return { url: String(j?.url ?? "") };
+  try {
+    const { data } = await api.post<{ url?: string }>(`/api/employees/${id}/resume`, fd);
+    return { url: String(data?.url ?? "") };
+  } catch (err) {
+    rethrowAsError(err, "이력서 업로드 실패");
+  }
 }
 
 /** 이력서 삭제 · DELETE */
 export async function deleteResume(id: number): Promise<void> {
-  const res = await fetch(`/api/employees/${id}/resume`, { method: "DELETE" });
-  await throwIfErr(res, "이력서 삭제 실패");
+  try {
+    await api.del(`/api/employees/${id}/resume`);
+  } catch (err) {
+    rethrowAsError(err, "이력서 삭제 실패");
+  }
 }
 
 /** 근로계약서 · POST · Supabase Storage · returns { url } */
 export async function uploadContract(id: number, file: File): Promise<{ url?: string }> {
   const fd = new FormData();
   fd.append("contract", file);
-  const res = await fetch(`/api/employees/${id}/contract`, { method: "POST", body: fd });
-  await throwIfErr(res, "근로계약서 업로드 실패");
-  const j = await res.json().catch(() => ({} as any));
-  return { url: j?.url ? String(j.url) : undefined };
+  try {
+    const { data } = await api.post<{ url?: string }>(`/api/employees/${id}/contract`, fd);
+    return { url: data?.url ? String(data.url) : undefined };
+  } catch (err) {
+    rethrowAsError(err, "근로계약서 업로드 실패");
+  }
 }
 
 /**
@@ -167,8 +185,10 @@ export async function uploadBankbook(emp: Employee, file: File): Promise<{ dataU
 export async function uploadResignationFile(id: number, file: File): Promise<{ url?: string }> {
   const fd = new FormData();
   fd.append("file", file);
-  const res = await fetch(`/api/employees/${id}/resignation-file`, { method: "POST", body: fd });
-  await throwIfErr(res, "사직서 업로드 실패");
-  const j = await res.json().catch(() => ({} as any));
-  return { url: j?.url ? String(j.url) : undefined };
+  try {
+    const { data } = await api.post<{ url?: string }>(`/api/employees/${id}/resignation-file`, fd);
+    return { url: data?.url ? String(data.url) : undefined };
+  } catch (err) {
+    rethrowAsError(err, "사직서 업로드 실패");
+  }
 }
