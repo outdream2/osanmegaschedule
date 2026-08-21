@@ -3,6 +3,9 @@
 // 2026-08-16 · #82 · ContractSettingsPage 컴포넌트에서 pure logic 분리
 // · ContractWriterPage 는 이 모듈에서 import (페이지 컴포넌트 상호 의존 제거)
 // · ContractSettingsPage 는 여기서 re-export (backward compat)
+// 2026-08-21 · Framework Phase 3 · fetch → apiClient · error shape 유지
+
+import { api } from "../apiClient";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ContractWriterSettings · 직군별 업무내역
@@ -67,13 +70,11 @@ export function loadContractSettings(): ContractWriterSettings {
  * · 실패 → localStorage fallback (기존 캐시값 유지)
  */
 export async function fetchContractWriterSettings(): Promise<ContractWriterSettings> {
+  // 2026-08-21 · Framework Phase 3 · fetch → apiClient
   try {
-    const res = await fetch(
+    const { data: body } = await api.get<{ value?: unknown }>(
       `/api/settings?key=${encodeURIComponent(CONTRACT_WRITER_SETTINGS_DB_KEY)}`,
-      { credentials: "include" },
     );
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const body = await res.json();
     if (body?.value == null) {
       // 서버 값 없음 · localStorage 에 값 있으면 마이그레이션
       const legacyRaw = (() => { try { return localStorage.getItem(CONTRACT_SETTINGS_KEY); } catch { return null; } })();
@@ -81,11 +82,8 @@ export async function fetchContractWriterSettings(): Promise<ContractWriterSetti
         try {
           const legacy = normalizeContractSettings(JSON.parse(legacyRaw));
           // 서버로 upload (실패 silent · 다음 마운트에서 재시도)
-          fetch(`/api/settings`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ key: CONTRACT_WRITER_SETTINGS_DB_KEY, value: legacy }),
+          api.post(`/api/settings`, {
+            key: CONTRACT_WRITER_SETTINGS_DB_KEY, value: legacy,
           }).catch(() => { /* silent */ });
           return legacy;
         } catch { /* legacy parse 실패 · fallthrough */ }
@@ -108,22 +106,16 @@ export async function fetchContractWriterSettings(): Promise<ContractWriterSetti
 export async function saveContractWriterSettingsToServer(
   settings: ContractWriterSettings,
 ): Promise<{ ok: boolean; savedToServer: boolean; error?: string }> {
+  // 2026-08-21 · Framework Phase 3 · fetch → apiClient
   // localStorage 는 항상 저장 (fallback 안전망)
   try { localStorage.setItem(CONTRACT_SETTINGS_KEY, JSON.stringify(settings)); } catch { /* silent */ }
   try {
-    const res = await fetch(`/api/settings`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ key: CONTRACT_WRITER_SETTINGS_DB_KEY, value: settings }),
-    });
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      return { ok: true, savedToServer: false, error: errBody?.error ?? `HTTP ${res.status}` };
-    }
+    await api.post(`/api/settings`, { key: CONTRACT_WRITER_SETTINGS_DB_KEY, value: settings });
     return { ok: true, savedToServer: true };
   } catch (err: any) {
-    return { ok: true, savedToServer: false, error: err?.message ?? "네트워크 오류" };
+    const apiErr = err as { data?: { error?: string }; status?: number; message?: string };
+    const msg = apiErr?.data?.error ?? (apiErr?.status ? `HTTP ${apiErr.status}` : (apiErr?.message ?? "네트워크 오류"));
+    return { ok: true, savedToServer: false, error: msg };
   }
 }
 
@@ -285,10 +277,9 @@ export function loadContractClauses(): ContractClauses {
  * · 실패: localStorage fallback (기존 값 유지)
  */
 export async function fetchContractClauses(): Promise<ContractClauses> {
+  // 2026-08-21 · Framework Phase 3 · fetch → apiClient
   try {
-    const res = await fetch("/api/contract-clauses", { credentials: "include" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const { data } = await api.get<unknown>("/api/contract-clauses");
     const merged = normalizeClauses(data);
     // localStorage sync · ContractWriterPage 의 동기 loader 가 즉시 최신값 사용
     try { localStorage.setItem(CONTRACT_CLAUSES_KEY, JSON.stringify(merged)); } catch { /* silent */ }
@@ -309,26 +300,16 @@ export async function saveContractClausesToServer(
   clauses: ContractClauses,
   updatedBy?: number | null,
 ): Promise<{ ok: boolean; savedToServer: boolean; error?: string }> {
+  // 2026-08-21 · Framework Phase 3 · fetch → apiClient
   // localStorage 는 항상 저장 (fallback 안전망)
   try { localStorage.setItem(CONTRACT_CLAUSES_KEY, JSON.stringify(clauses)); } catch { /* silent */ }
-
   try {
-    const res = await fetch("/api/contract-clauses", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        clauses,
-        updated_by: updatedBy ?? null,
-      }),
-    });
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      return { ok: true, savedToServer: false, error: errBody?.error ?? `HTTP ${res.status}` };
-    }
+    await api.put("/api/contract-clauses", { clauses, updated_by: updatedBy ?? null });
     return { ok: true, savedToServer: true };
   } catch (err: any) {
-    return { ok: true, savedToServer: false, error: err?.message ?? "네트워크 오류" };
+    const apiErr = err as { data?: { error?: string }; status?: number; message?: string };
+    const msg = apiErr?.data?.error ?? (apiErr?.status ? `HTTP ${apiErr.status}` : (apiErr?.message ?? "네트워크 오류"));
+    return { ok: true, savedToServer: false, error: msg };
   }
 }
 

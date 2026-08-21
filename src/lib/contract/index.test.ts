@@ -1,6 +1,34 @@
 // @vitest-environment jsdom
 // 2026-08-20 · contract · pure logic (localStorage + normalize + fetch/save)
+// 2026-08-21 · Framework Phase 3 · apiClient 이관 반영 · vi.mock("../apiClient")
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+
+// 2026-08-21 · apiClient 모듈 mock (module 레벨) · fetch mock 은 제거
+vi.mock("../apiClient", () => {
+  class ApiError extends Error {
+    status: number;
+    code?: string;
+    data?: unknown;
+    constructor(status: number, message: string, code?: string, data?: unknown) {
+      super(message);
+      this.name = "ApiError";
+      this.status = status;
+      this.code = code;
+      this.data = data;
+    }
+  }
+  return {
+    ApiError,
+    api: {
+      get: vi.fn(),
+      post: vi.fn(),
+      put: vi.fn(),
+      patch: vi.fn(),
+      del: vi.fn(),
+    },
+  };
+});
+
 import {
   loadContractSettings,
   fetchContractWriterSettings,
@@ -20,10 +48,17 @@ import {
   JOB_WAGES_KEY,
   CONTRACT_CLAUSES_KEY,
 } from "./index";
+import { api, ApiError } from "../apiClient";
+
+const mockGet = api.get as ReturnType<typeof vi.fn>;
+const mockPost = api.post as ReturnType<typeof vi.fn>;
+const mockPut = api.put as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   localStorage.clear();
-  vi.restoreAllMocks();
+  mockGet.mockReset();
+  mockPost.mockReset();
+  mockPut.mockReset();
 });
 
 afterEach(() => {
@@ -114,10 +149,10 @@ describe("loadContractSettings · localStorage 로더", () => {
 
 describe("fetchContractWriterSettings · 서버 조회 + fallback", () => {
   it("서버 성공 · value 있음 · localStorage 캐시 동기화", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ value: { 약사: "S", 매장: "M", 창고: "W", 기타: "E", commonNotice: "N" } }),
-    }) as any;
+    mockGet.mockResolvedValue({
+      data: { value: { 약사: "S", 매장: "M", 창고: "W", 기타: "E", commonNotice: "N" } },
+      status: 200, headers: {},
+    });
     const r = await fetchContractWriterSettings();
     expect(r.약사).toBe("S");
     expect(localStorage.getItem(CONTRACT_SETTINGS_KEY)).toContain("S");
@@ -127,22 +162,19 @@ describe("fetchContractWriterSettings · 서버 조회 + fallback", () => {
     localStorage.setItem(CONTRACT_SETTINGS_KEY, JSON.stringify({
       약사: "L", 매장: "M", 창고: "W", 기타: "E",
     }));
-    global.fetch = vi.fn().mockRejectedValue(new Error("network")) as any;
+    mockGet.mockRejectedValue(new Error("network"));
     const r = await fetchContractWriterSettings();
     expect(r.약사).toBe("L");
   });
 
   it("서버 성공 · value=null · localStorage 없음 · DEFAULT", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ value: null }),
-    }) as any;
+    mockGet.mockResolvedValue({ data: { value: null }, status: 200, headers: {} });
     const r = await fetchContractWriterSettings();
     expect(r).toEqual({ ...DEFAULT_CONTRACT_SETTINGS });
   });
 
-  it("서버 응답 !ok · fallback (throw)", async () => {
-    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 500 }) as any;
+  it("서버 응답 실패 · ApiError · fallback", async () => {
+    mockGet.mockRejectedValue(new ApiError(500, "Internal Error"));
     const r = await fetchContractWriterSettings();
     expect(r).toEqual({ ...DEFAULT_CONTRACT_SETTINGS });
   });
@@ -150,7 +182,7 @@ describe("fetchContractWriterSettings · 서버 조회 + fallback", () => {
 
 describe("saveContractWriterSettingsToServer", () => {
   it("성공 · savedToServer=true · localStorage 저장", async () => {
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }) as any;
+    mockPost.mockResolvedValue({ data: {}, status: 200, headers: {} });
     const settings = { ...DEFAULT_CONTRACT_SETTINGS, 약사: "New" };
     const r = await saveContractWriterSettingsToServer(settings);
     expect(r.ok).toBe(true);
@@ -158,8 +190,8 @@ describe("saveContractWriterSettingsToServer", () => {
     expect(localStorage.getItem(CONTRACT_SETTINGS_KEY)).toContain("New");
   });
 
-  it("실패 · savedToServer=false · localStorage 는 저장됨", async () => {
-    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 500, json: async () => ({ error: "fail" }) }) as any;
+  it("실패 (ApiError with data.error) · savedToServer=false · localStorage 는 저장됨", async () => {
+    mockPost.mockRejectedValue(new ApiError(500, "Server Error", undefined, { error: "fail" }));
     const r = await saveContractWriterSettingsToServer({ ...DEFAULT_CONTRACT_SETTINGS, 약사: "Fallback" });
     expect(r.ok).toBe(true);
     expect(r.savedToServer).toBe(false);
@@ -167,8 +199,8 @@ describe("saveContractWriterSettingsToServer", () => {
     expect(localStorage.getItem(CONTRACT_SETTINGS_KEY)).toContain("Fallback");
   });
 
-  it("네트워크 예외 · savedToServer=false · error 메시지", async () => {
-    global.fetch = vi.fn().mockRejectedValue(new Error("네트워크 오류")) as any;
+  it("네트워크 예외 (Error) · savedToServer=false · error 메시지", async () => {
+    mockPost.mockRejectedValue(new Error("네트워크 오류"));
     const r = await saveContractWriterSettingsToServer(DEFAULT_CONTRACT_SETTINGS);
     expect(r.savedToServer).toBe(false);
     expect(r.error).toBe("네트워크 오류");
@@ -285,10 +317,7 @@ describe("loadContractClauses", () => {
 
 describe("fetchContractClauses · saveContractClausesToServer", () => {
   it("서버 성공 · localStorage 동기화", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ wageClauses: ["S1", "S2"] }),
-    }) as any;
+    mockGet.mockResolvedValue({ data: { wageClauses: ["S1", "S2"] }, status: 200, headers: {} });
     const r = await fetchContractClauses();
     expect(r.wageClauses).toEqual(["S1", "S2"]);
     expect(localStorage.getItem(CONTRACT_CLAUSES_KEY)).toContain("S1");
@@ -296,26 +325,26 @@ describe("fetchContractClauses · saveContractClausesToServer", () => {
 
   it("서버 실패 · fallback (loadContractClauses)", async () => {
     localStorage.setItem(CONTRACT_CLAUSES_KEY, JSON.stringify({ wageClauses: ["L"] }));
-    global.fetch = vi.fn().mockRejectedValue(new Error("down")) as any;
+    mockGet.mockRejectedValue(new Error("down"));
     const r = await fetchContractClauses();
     expect(r.wageClauses).toEqual(["L"]);
   });
 
   it("save 성공 · savedToServer=true", async () => {
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }) as any;
+    mockPut.mockResolvedValue({ data: {}, status: 200, headers: {} });
     const r = await saveContractClausesToServer(DEFAULT_CLAUSES);
     expect(r.savedToServer).toBe(true);
   });
 
-  it("save 실패 · fallback error", async () => {
-    global.fetch = vi.fn().mockResolvedValue({ ok: false, json: async () => ({ error: "boom" }) }) as any;
+  it("save 실패 (ApiError with data.error) · fallback error", async () => {
+    mockPut.mockRejectedValue(new ApiError(500, "Bad", undefined, { error: "boom" }));
     const r = await saveContractClausesToServer(DEFAULT_CLAUSES);
     expect(r.savedToServer).toBe(false);
     expect(r.error).toBe("boom");
   });
 
   it("save · localStorage 는 항상 저장", async () => {
-    global.fetch = vi.fn().mockRejectedValue(new Error("bad")) as any;
+    mockPut.mockRejectedValue(new Error("bad"));
     const custom = { ...DEFAULT_CLAUSES, wageClauses: ["Hello"] };
     await saveContractClausesToServer(custom);
     expect(localStorage.getItem(CONTRACT_CLAUSES_KEY)).toContain("Hello");
