@@ -11,13 +11,14 @@ import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import { SplitPanel } from "../common/SplitPanel";
 import {
-  ScanLine, Loader2, AlertCircle, PackagePlus, CheckCircle2, XCircle, Clock,
+  ScanLine, AlertCircle, PackagePlus, CheckCircle2, XCircle, Clock,
   Trash2, Minus, Plus, RotateCcw, ClipboardCheck, ClipboardX,
   Barcode, Building2, Box, Hash, ArrowUpDown, ArrowUp, ArrowDown,
   Sparkles, ShieldCheck, Package, RefreshCw, X,
 } from "lucide-react";
 import { StatusPill } from "../common/StatusPill";
 import { Card } from "../common/Card";
+import { Spinner } from "../common/Spinner";
 import { BarcodeScanner } from "../BarcodeScanner";
 import { loadZBar } from "../BarcodeScanner/zbar";
 import {
@@ -449,7 +450,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 {/* 광택 레이어 */}
                 <span className="absolute inset-0 bg-gradient-to-b from-white/12 to-transparent pointer-events-none" />
                 {mapLoading
-                  ? <><Loader2 size={18} className="animate-spin" /> 상품 정보 로딩...</>
+                  ? <><Spinner size={18} /> 상품 정보 로딩...</>
                   : <><ScanLine size={18} /> 바코드 스캔</>
                 }
               </button>
@@ -797,7 +798,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                     {/* 광택 */}
                     <span className="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
                     <span className="relative flex items-center justify-center gap-2.5">
-                      {saveStatus === "saving" && <Loader2 size={17} className="animate-spin" />}
+                      {saveStatus === "saving" && <Spinner size={17} />}
                       {saveStatus === "done"    && <Sparkles size={17} />}
                       {saveStatus === "error"   && <AlertCircle size={17} />}
                       {saveStatus === "idle"    && <PackagePlus size={17} />}
