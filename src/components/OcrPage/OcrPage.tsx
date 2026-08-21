@@ -157,36 +157,9 @@ async function resizeImageForOcr(
   });
 }
 
-interface ProductSynonym {
-  id: number;
-  prod_name_old: string;
-  prod_name_new: string | null;
-  product_code: string;
-  supplier_old: string | null;
-  supplier_new: string | null;
-}
-
-interface SupplierAlias {
-  id: number;
-  alias: string;
-  supplier_name: string;
-  created_at: string;
-}
-
-interface ProdEditState {
-  prod_name_old: string;
-  prod_name_new: string;
-  product_code: string;
-  supplier_new: string;
-  supplier_old: string;
-}
-
-interface SuppEditState {
-  alias: string;
-  supplier_name: string;
-}
-
-const BALANCE_LABEL_OPTIONS = ["(없음)", "합계", "합계액", "잔고", "잔액", "총합계", "미수금"];
+// 2026-08-21 · Framework Phase 4 · large-file 분리
+import type { ProductSynonym, SupplierAlias, ProdEditState, SuppEditState, ConfirmedRecord } from "./OcrPage.types";
+import { BALANCE_LABEL_OPTIONS, fmtNum, toNum } from "./OcrPage.types";
 
 interface BalanceConfigTabProps {
   pages: OcrPageResult[];
@@ -256,36 +229,7 @@ const BalanceConfigTab: React.FC<BalanceConfigTabProps> = ({ pages, config, onCo
   );
 };
 
-interface ConfirmedRecord {
-  id: number;
-  saved_at: string;
-  invoice_date: string | null;
-  supplier: string;
-  product_name: string;
-  product_code: string | null;
-  quantity: number | string | null;
-  unit_price: number | string | null;
-  amount: number | string | null;
-  balance: number | string | null;
-  expiry_date: string | null;
-  memo: string | null;
-  raw_json: Record<string, unknown> | null;
-  image_url: string | null;
-  image_public_id: string | null;
-  created_at: string;
-}
-
-const fmtNum = (v: number | string | null | undefined) => {
-  if (v == null || v === "") return "";
-  const n = typeof v === "number" ? v : Number(v);
-  if (!Number.isFinite(n)) return "";
-  return n.toLocaleString("ko-KR");
-};
-const toNum = (v: number | string | null | undefined): number => {
-  if (v == null || v === "") return 0;
-  const n = typeof v === "number" ? v : Number(v);
-  return Number.isFinite(n) ? n : 0;
-};
+// 2026-08-21 · ConfirmedRecord · fmtNum · toNum 는 ./OcrPage.types 로 이관
 
 const ConfirmedRecordsTab: React.FC = () => {
   const confirm = useConfirm();
