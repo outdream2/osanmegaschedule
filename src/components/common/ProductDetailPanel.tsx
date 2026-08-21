@@ -7,6 +7,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { api } from "../../lib/apiClient";
 import { X, Package, TrendingUp, ChevronRight, ChevronDown, Building2, ClipboardList, History } from "lucide-react";
+import { Card } from "./Card";
 import { CollapseCard } from "./CollapseCard";
 import { StatusPill } from "./StatusPill";
 import { ProductInfoCard, PurchaseHistorySection } from "../ScanPage/ProductInfoCard";
@@ -313,7 +314,7 @@ export const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({
   if (!showChart) {
     // 단순 모드: ProductInfoCard 단독 (low/diff/product/supplier/loss/order/need 탭용)
     return (
-      <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
+      <Card padding="none" clip>
         <ProductInfoCard
           product={product}
           context={context}
@@ -321,7 +322,7 @@ export const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({
           onRealMapUpdate={handleRealMapUpdate}
           onProductUpdate={onProductUpdate}
         />
-      </div>
+      </Card>
     );
   }
 
