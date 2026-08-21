@@ -414,8 +414,10 @@ export const ScanPage: React.FC<ScanPageProps> = ({
 
     // 기존 실재고 자동 로드 · 신규 컬럼 우선 · 없으면 레거시 fallback
     // 이력 건수/최근 저장 시각도 함께 저장 (덮어쓰기 confirm · 이력 배지에 사용)
-    fetch(`/api/inventory-checks?product_code=${encodeURIComponent(result)}`)
-      .then(r => r.ok ? r.json() : [])
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+    api.get<InventoryHistoryRow[]>(`/api/inventory-checks?product_code=${encodeURIComponent(result)}`)
+      .then(({ data }) => Array.isArray(data) ? data : [])
+      .catch(() => [] as InventoryHistoryRow[])
       .then((list: InventoryHistoryRow[]) => {
         const last = list[0];
         if (!last) return;

@@ -18,6 +18,8 @@ import { fmtWonCompact } from "../../lib/format";
 import { EmptyState } from "../common/EmptyState";
 import { StatusPill } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
+// 2026-08-21 · Framework Phase 3 · fetch → apiClient
+import { api } from "../../lib/apiClient";
 import { InlineLabel } from "../common/InlineLabel";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { API_LIMITS } from "../../constants/apiLimits";
@@ -88,11 +90,12 @@ const ZoneCategoryContent: React.FC = () => {
     const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: String(API_LIMITS.MAX) });
     if (season) params.set("season", season);
     else if (months > 0) params.set("months", String(months));
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
     Promise.all([
-      fetch(`/api/stock-manage/top-sales?${params}`).then(r => r.ok ? r.json() : { rows: [] }),
+      api.get<{ rows?: any[] }>(`/api/stock-manage/top-sales?${params}`).catch(() => ({ data: { rows: [] } })),
       getProductsMap(),
     ])
-      .then(([s, p]) => { setSales(Array.isArray(s.rows) ? s.rows : []); setProducts(p ?? {}); })
+      .then(([s, p]) => { setSales(Array.isArray(s.data?.rows) ? s.data.rows : []); setProducts(p ?? {}); })
       .catch(() => { setSales([]); setProducts({}); })
       .finally(() => setLoading(false));
   }, [season, months]);
@@ -456,11 +459,12 @@ const ZoneCategoryContent: React.FC = () => {
             const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: String(API_LIMITS.MAX) });
             if (season) params.set("season", season);
             else if (months > 0) params.set("months", String(months));
+            // 2026-08-21 · Framework Phase 3 · fetch → apiClient
             Promise.all([
-              fetch(`/api/stock-manage/top-sales?${params}`).then(r => r.ok ? r.json() : { rows: [] }),
+              api.get<{ rows?: any[] }>(`/api/stock-manage/top-sales?${params}`).catch(() => ({ data: { rows: [] } })),
               getProductsMap(),
             ])
-              .then(([s, p]) => { setSales(Array.isArray(s.rows) ? s.rows : []); setProducts(p ?? {}); })
+              .then(([s, p]) => { setSales(Array.isArray(s.data?.rows) ? s.data.rows : []); setProducts(p ?? {}); })
               .catch(() => { setSales([]); setProducts({}); })
               .finally(() => setLoading(false));
           }}

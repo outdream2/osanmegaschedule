@@ -10,6 +10,8 @@ import { ZoneAssignTab, type LogisticsZoneProps } from "./ZoneAssignTab";
 import { EmployeeInfoForm, type EmployeeInfoValues } from "../common/EmployeeInfoForm";
 import { EmployeeProfileCard } from "../common/EmployeeProfileCard";
 import { AccentBar } from "../common/AccentBar";
+// 2026-08-21 · Framework Phase 3 · fetch → apiClient
+import { api } from "../../lib/apiClient";
 
 export type { LogisticsZoneProps };
 
@@ -97,9 +99,9 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
       setMonthSchedules(employee.schedules.filter(s => s.date.startsWith(ym)));
       return;
     }
-    fetch(`/api/schedules?year=${year}&month=${month}`)
-      .then(r => r.json())
-      .then((data: { employees?: Array<{ id: number; schedules: Schedule[] }> }) => {
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+    api.get<{ employees?: Array<{ id: number; schedules: Schedule[] }> }>(`/api/schedules?year=${year}&month=${month}`)
+      .then(({ data }) => {
         const found = data.employees?.find(e => e.id === employee.id);
         setMonthSchedules(found?.schedules ?? []);
       })

@@ -94,9 +94,9 @@ const PeriodCoverageWidget: React.FC<{ endpoint: string; label: string; color: "
   const [collapsed, setCollapsed] = useState(false);
   useEffect(() => {
     setLoading(true);
-    fetch(endpoint)
-      .then(r => r.ok ? r.json() : { periods: [], missing: [] })
-      .then(j => setData(j))
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+    api.get<CoverageResp>(endpoint)
+      .then(({ data: j }) => setData(j ?? { periods: [], missing: [] }))
       .catch(() => setData({ periods: [], missing: [] }))
       .finally(() => setLoading(false));
   }, [endpoint, refreshTrigger]);
@@ -457,11 +457,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const vendorPhoneRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetch("/api/stock-arrivals")
-      .then(r => r.ok ? r.json() : [])
-      .then((data: Array<{ id: number; title: string; body?: string | null; created_at: string }>) =>
-        setStockArrivals([...data].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))
-      )
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+    api.get<Array<{ id: number; title: string; body?: string | null; created_at: string }>>("/api/stock-arrivals")
+      .then(({ data }) => {
+        const list = Array.isArray(data) ? data : [];
+        setStockArrivals([...list].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+      })
       .catch(() => { })
       .finally(() => setArrivalsLoading(false));
     setPushSubscribed(localStorage.getItem("anon_push_subscribed") === "1");
@@ -791,18 +792,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   // Load pending counts for managers · 2026-08-18 · 즉시 갱신 지원 (useApprovalRefreshListener)
   const reloadPendingCounts = React.useCallback(() => {
     if (!isManagerOrAdmin) return;
-    fetch("/api/requests/pending-counts")
-      .then(r => r.ok ? r.json() : {})
-      .then((d: { leave?: number; display?: number; order?: number; mismatch?: number; lunch?: number; inventory?: number; return?: number; resignation?: number }) => {
-        setLeavePendingCount(d.leave ?? 0);
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+    api.get<{ leave?: number; display?: number; order?: number; mismatch?: number; lunch?: number; inventory?: number; return?: number; resignation?: number }>("/api/requests/pending-counts")
+      .then(({ data: d }) => {
+        setLeavePendingCount(d?.leave ?? 0);
         setRequestsCounts({
-          display: d.display ?? 0,
-          order: d.order ?? 0,
-          mismatch: d.mismatch ?? 0,
-          lunch: d.lunch ?? 0,
-          inventory: d.inventory ?? 0,
-          return: d.return ?? 0,
-          resignation: d.resignation ?? 0,
+          display: d?.display ?? 0,
+          order: d?.order ?? 0,
+          mismatch: d?.mismatch ?? 0,
+          lunch: d?.lunch ?? 0,
+          inventory: d?.inventory ?? 0,
+          return: d?.return ?? 0,
+          resignation: d?.resignation ?? 0,
         });
       })
       .catch(() => { });
@@ -815,10 +816,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const reloadMyPending = React.useCallback(() => {
     if (!isEmployee || !authSession?.employeeId) { setMyPendingCount(0); return; }
     const empId = authSession.employeeId;
-    fetch(`/api/display-requests?scope=mine&employeeId=${empId}`)
-      .then(r => r.ok ? r.json() : [])
-      .then((rows: Array<{ status?: string }>) => {
-        const pending = Array.isArray(rows) ? rows.filter(r => (r.status ?? "pending") === "pending").length : 0;
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+    api.get<Array<{ status?: string }>>(`/api/display-requests?scope=mine&employeeId=${empId}`)
+      .then(({ data }) => {
+        const rows = Array.isArray(data) ? data : [];
+        const pending = rows.filter(r => (r.status ?? "pending") === "pending").length;
         setMyPendingCount(pending);
       })
       .catch(() => setMyPendingCount(0));

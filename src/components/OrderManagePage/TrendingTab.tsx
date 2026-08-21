@@ -14,6 +14,8 @@ import { StatusPill } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
 import { InlineLabel } from "../common/InlineLabel";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
+// 2026-08-21 · Framework Phase 3 · fetch → apiClient
+import { api } from "../../lib/apiClient";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 interface TrendingRow {
@@ -290,11 +292,11 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/stock-manage/trending?window=${windowDays}&limit=1000`)
-      .then(r => r.ok ? r.json() : { rows: [] })
-      .then(j => {
-        setRows(Array.isArray(j.rows) ? j.rows : []);
-        setMeta({ recent_from: j.recent_from ?? "", prior_from: j.prior_from ?? "", total: Number(j.total ?? 0) });
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+    api.get<{ rows?: TrendingRow[]; recent_from?: string; prior_from?: string; total?: number }>(`/api/stock-manage/trending?window=${windowDays}&limit=1000`)
+      .then(({ data: j }) => {
+        setRows(Array.isArray(j?.rows) ? j.rows : []);
+        setMeta({ recent_from: j?.recent_from ?? "", prior_from: j?.prior_from ?? "", total: Number(j?.total ?? 0) });
       })
       .catch(() => { setRows([]); setMeta(null); })
       .finally(() => setLoading(false));
@@ -370,11 +372,11 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
               type="button"
               onClick={() => {
                 setLoading(true);
-                fetch(`/api/stock-manage/trending?window=${windowDays}&limit=1000`)
-                  .then(r => r.ok ? r.json() : { rows: [] })
-                  .then(j => {
-                    setRows(Array.isArray(j.rows) ? j.rows : []);
-                    setMeta({ recent_from: j.recent_from ?? "", prior_from: j.prior_from ?? "", total: Number(j.total ?? 0) });
+                // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+                api.get<{ rows?: TrendingRow[]; recent_from?: string; prior_from?: string; total?: number }>(`/api/stock-manage/trending?window=${windowDays}&limit=1000`)
+                  .then(({ data: j }) => {
+                    setRows(Array.isArray(j?.rows) ? j.rows : []);
+                    setMeta({ recent_from: j?.recent_from ?? "", prior_from: j?.prior_from ?? "", total: Number(j?.total ?? 0) });
                   })
                   .catch(() => { setRows([]); setMeta(null); })
                   .finally(() => setLoading(false));
