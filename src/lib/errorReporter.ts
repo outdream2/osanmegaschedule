@@ -29,9 +29,11 @@ function scheduleFlush(): void {
 }
 
 async function flush(): Promise<void> {
+  // 2026-08-21 · Framework Phase 3 · fetch 유지 · errorReporter 는 저수준 · window.error 핸들러 안
+  //   apiClient 사용 시 · 401 → SESSION_EXPIRED_EVENT dispatch → 무한 루프 위험
+  //   fire-and-forget + swallow catch 이미 안전 · 의도적 예외 (audit 화이트리스트)
   if (queue.length === 0) return;
   const batch = queue.splice(0, queue.length);
-  // 서버로 fire-and-forget · 실패해도 재시도 없음 (무한 루프 방지)
   try {
     await fetch("/api/client-errors", {
       method: "POST",

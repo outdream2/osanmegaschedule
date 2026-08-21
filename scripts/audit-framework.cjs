@@ -19,7 +19,9 @@ const RULES = [
   { id: "raw-fetch", severity: "high", weight: 3,
     pattern: /(?<!\/\*.*)\bfetch\s*\(\s*["`']\//g,
     fix: "apiClient (api.get/post/put)",
-    skip: /apiClient|test/ },
+    // 예외 · errorReporter · window.error 핸들러 · apiClient 401 → SESSION_EXPIRED 무한 루프 위험
+    // 예외 · cloudinaryUpload · 외부 res.cloudinary.com 은 apiClient 스코프 밖
+    skip: /apiClient|test|errorReporter/ },
   { id: "raw-alert", severity: "high", weight: 3,
     pattern: /(?<!\/\/.*)\balert\s*\(/g,
     fix: "useToast (showError·showSuccess)",
