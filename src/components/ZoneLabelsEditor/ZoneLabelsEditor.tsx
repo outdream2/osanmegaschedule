@@ -24,6 +24,7 @@ import type { AuthSession } from "../../types";
 import { SettingsPageShell } from "../common/SettingsPageShell";
 import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
+import { Card } from "../common/Card";
 import { useToast } from "../../hooks/useToast";
 import { SET_ACTION_BAR, SET_BTN_PRIMARY, SET_BTN_SECONDARY, SET_INFO_BADGE } from "../../lib/settingsTypography";
 import type { AppNavPage } from "../layout/AppNavHeader";
@@ -357,7 +358,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
                 const cs = COLOR_CLASSES[cat.color];
                 const isCollapsed = collapsed[cat.key];
                 return (
-                  <div key={cat.key} className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
+                  <Card key={cat.key} padding="none" clip>
                     {/* 카테고리 헤더 */}
                     <button
                       type="button"
@@ -454,7 +455,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
                         })}
                       </div>
                     )}
-                  </div>
+                  </Card>
                 );
               })}
             </div>
