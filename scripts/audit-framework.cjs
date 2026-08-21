@@ -35,8 +35,9 @@ const RULES = [
     fix: "Card 프리미티브 (padding·variant·clip)",
     skip: /Card\.tsx|Panel\.tsx|Toolbar\.tsx|ImageUploadField|test/ },
   { id: "raw-confirm", severity: "medium", weight: 2,
-    pattern: /(?<!\/\/.*)\b(?:window\.)?confirm\s*\(/g,
+    pattern: /(?<!\/\/.*)\bwindow\.confirm\s*\(/g,
     fix: "useConfirm (ConfirmDialog 프리미티브)",
+    // 2026-08-21 · window.confirm 만 잡음 · 로컬 `const confirm = useConfirm()` 은 정상 사용
     skip: /useConfirm|test/ },
   { id: "large-file", severity: "high", weight: 5,
     pattern: null, // 특수 · 라인 수 기반

@@ -6,6 +6,8 @@ import { Spinner } from "../common/Spinner";
 import { invalidatePagePermissions } from "../../hooks/usePagePermissions";
 import { useSidebarEnabled, invalidateSidebarEnabled } from "../../hooks/useSidebar";
 import { useToast, toastClass } from "../../hooks/useToast";
+// 2026-08-21 · Framework Phase 3 · window.confirm → useConfirm
+import { useConfirm } from "../../hooks/useConfirm";
 import { updateEmployee } from "../../lib/employeeApi";
 import type { AuthSession, PagePermissions } from "../../types";
 import { DEFAULT_PERMISSIONS } from "../../types";
@@ -74,6 +76,8 @@ const GROUP_COLOR_CLS: Record<string, string> = {
 };
 
 export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, onBack, onLogout, onNavigate, embedded = false }) => {
+  // 2026-08-21 · Framework Phase 3 · window.confirm → useConfirm
+  const confirm = useConfirm();
   const [perms, setPerms] = useState<PagePermissions>(DEFAULT_PERMISSIONS);
   const [saving, setSaving] = useState<string | null>(null); // key being saved
   const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());
@@ -217,9 +221,10 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
     const next = PRESET_POSITIONS.map((p, i) => i === editingPosIdx ? trimmed : p);
 
     if (using.length > 0) {
-      const ok = window.confirm(
-        `직군 "${original}" → "${trimmed}"\n사용중인 직원 ${using.length}명 · 자동으로 함께 변경됩니다.\n진행할까요?`,
-      );
+      // 2026-08-21 · Framework Phase 3 · window.confirm → useConfirm
+      const ok = await confirm({
+        message: `직군 "${original}" → "${trimmed}"\n사용중인 직원 ${using.length}명 · 자동으로 함께 변경됩니다.\n진행할까요?`,
+      });
       if (!ok) { setEditingPosIdx(null); return; }
       try {
         for (const emp of using) {

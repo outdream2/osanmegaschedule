@@ -12,6 +12,8 @@ import { EmployeeProfileCard } from "../common/EmployeeProfileCard";
 import { AccentBar } from "../common/AccentBar";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api } from "../../lib/apiClient";
+// 2026-08-21 · Framework Phase 3 · window.confirm → useConfirm
+import { useConfirm } from "../../hooks/useConfirm";
 
 export type { LogisticsZoneProps };
 
@@ -63,6 +65,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
   onEditEmployee,
   isLocked = false,
 }) => {
+  // 2026-08-21 · Framework Phase 3 · window.confirm → useConfirm
+  const confirm = useConfirm();
   const activeTypes = scheduleTypesProp ?? SCHEDULE_TYPES;
   const isLogistics = employee.position.includes("물류");
 
@@ -282,9 +286,10 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
     }
   };
 
-  const handleDiscardPending = () => {
+  const handleDiscardPending = async () => {
     if (Object.keys(pendingChanges).length === 0) return;
-    if (!window.confirm("변경사항을 취소하시겠습니까?")) return;
+    // 2026-08-21 · Framework Phase 3 · window.confirm → useConfirm
+    if (!await confirm({ message: "변경사항을 취소하시겠습니까?", danger: true })) return;
     setPendingChanges({});
     setEditingDay(null);
   };
