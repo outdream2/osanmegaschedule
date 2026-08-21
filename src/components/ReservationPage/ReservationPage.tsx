@@ -15,7 +15,6 @@ import {
   AlertCircle,
   X,
   Building2,
-  Loader2,
 } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import {
@@ -554,7 +553,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                               title={isBlocked ? "클릭하여 예약불가 해제" : "클릭하여 예약불가 지정"}
                             >
                               {isToggling ? (
-                                <Loader2 size={10} className="animate-spin" />
+                                <Spinner size={10} />
                               ) : isBlocked ? (
                                 <><LockOpen size={10} /><span>불가</span></>
                               ) : (
@@ -724,7 +723,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                 >
                   {submitting ? (
                     <>
-                      <Loader2 size={15} className="animate-spin" />
+                      <Spinner size={15} />
                       <span>예약 접수 중...</span>
                     </>
                   ) : (
