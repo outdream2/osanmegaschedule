@@ -8,6 +8,8 @@ import { api } from "../../lib/apiClient";
 import * as XLSX from "xlsx";
 import { Wand2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, BookmarkPlus, BookOpen, Check, Save } from "lucide-react";
 import { Spinner } from "../common/Spinner";
+// 2026-08-21 · Framework Phase 3 · Card 프리미티브 (raw wrapper 이관)
+import { Card } from "../common/Card";
 import { isNonProductText, isValidSupplierHint, isValidProductName, scoreProductRow, cleanProductName } from "../../lib/ocrRowFilter";
 import { reextractCellCandidates } from "../../lib/cellReextract";
 import { VendorDetailModal, type Vendor } from "../LandingPage/VendorListEditor";
@@ -3010,7 +3012,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
 
       {/* ── OCR 원본 표 (이미지+테이블 2컬럼 · rowSpan 방식) ── */}
       {structuredPages.length > 0 && (
-        <div className="w-full bg-white border border-line rounded-2xl overflow-hidden shadow-sm">
+        <Card variant="raw-sm" rounded="2xl" padding="none" clip className="w-full">
           <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] font-bold text-white bg-sky-500 px-1.5 py-0.5 rounded shrink-0">1차보정</span>
@@ -4737,7 +4739,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
               })()}
             </table>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* ── 상품명 보정 · 2026-07-28 · 2차보정 시작 버튼 · 2차 뷰 섹션 완전 삭제 (사용자 요청) ── */}

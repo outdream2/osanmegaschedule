@@ -60,6 +60,8 @@ import { StatusPill } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
 import { InlineLabel } from "../common/InlineLabel";
 import { Spinner } from "../common/Spinner";
+// 2026-08-21 · Framework Phase 3 · Card 프리미티브 (raw wrapper 이관)
+import { Card } from "../common/Card";
 // 2026-08-20 · #175 · 3-state 파생
 import { getEmploymentStatus } from "../../lib/employmentStatus";
 
@@ -2370,7 +2372,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                             </div>
                           </div>
                           {/* 연도 선택 */}
-                          <div className="flex items-center gap-1.5 bg-white border border-line rounded-lg px-1.5 py-1 shadow-sm">
+                          <Card variant="raw-sm" rounded="lg" padding="none" className="flex items-center gap-1.5 px-1.5 py-1">
                             <button
                               type="button"
                               onClick={() => setLeaveYear(y => y - 1)}
@@ -2397,7 +2399,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
                             >
                               <RefreshCw size={11} className={leaveLoading ? "animate-spin" : ""} />
                             </button>
-                          </div>
+                          </Card>
                         </div>
 
                         {/* 사용 이력 리스트 */}

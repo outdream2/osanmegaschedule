@@ -1989,7 +1989,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                     <div className="flex-1 bg-white border-2 border-emerald-600 rounded-xl p-2 md:p-3 flex flex-col shadow-sm relative min-w-0">
 
                       {/* 미니 위치 다이어그램: 수평윙(현재 표시 영역) 강조 */}
-                      <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-white border border-line rounded-lg px-2 py-1 shadow-sm">
+                      <Card variant="raw-sm" rounded="lg" padding="none" className="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1">
                         <svg width="36" height="28" viewBox="0 0 42 34" className="shrink-0" aria-label="수평윙 위치">
                           {/* 메인 매장 (수평 윙 · 현재 영역 · 강조) */}
                           <rect x="1" y="1" width="30" height="20" rx="1.5" fill="#10b981" stroke="#047857" strokeWidth="1" />
@@ -1999,7 +1999,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                           <circle cx="16" cy="11" r="2" fill="#fbbf24" />
                         </svg>
                         <span className="text-[10px] font-bold text-zinc-600 leading-none">수평 윙</span>
-                      </div>
+                      </Card>
 
                       {/* 상단 벽면: 21→9 좌→우 (13개) · 모바일 4열 wrap 순차 · 데스크탑 13열 한 줄 */}
                       <div className="w-full">

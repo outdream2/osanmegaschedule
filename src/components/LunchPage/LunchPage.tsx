@@ -311,7 +311,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
 
         {/* 출근인원 현황 · 휴게시간 배정 섹션 제거 · 점심불참만 노출 */}
         {false && isLoggedIn && attendance !== null && (
-          <div className="bg-white border border-line rounded-2xl px-4 py-3 shadow-sm flex items-center gap-4">
+          <Card variant="raw-sm" rounded="2xl" padding="none" className="px-4 py-3 flex items-center gap-4">
             <Users size={15} className="text-gray-400 shrink-0" />
             <div className="flex items-center gap-4 flex-1 text-sm">
               <div className="flex items-center gap-1.5">
@@ -330,12 +330,12 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
                 <span className="text-[12px] text-gray-400 font-medium">출근</span>
               </div>
             </div>
-          </div>
+          </Card>
         )}
 
         {/* ── 휴게시간 타임라인 · 제거 (점심불참만 노출) ─────── */}
         {false && (
-        <div className="bg-white border border-line rounded-2xl overflow-hidden shadow-sm">
+        <Card variant="raw-sm" rounded="2xl" padding="none" clip>
           {/* 헤더 */}
           <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
@@ -481,7 +481,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
               </div>
             )}
           </div>
-        </div>
+        </Card>
         )}
 
         {/* ── 점심 불참 내 신청 · 2026-08-17 · 최신 트렌드 · 폰트 +3 ── */}

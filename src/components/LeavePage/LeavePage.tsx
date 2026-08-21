@@ -222,7 +222,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
             {(balance || !showForm) && (
               <div className="flex items-stretch gap-1">
                 {balance && (
-                  <div className="flex-1 bg-white border border-line rounded-lg px-3 py-2 shadow-sm flex items-center justify-between">
+                  <Card variant="raw-sm" rounded="lg" padding="none" className="flex-1 px-3 py-2 flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <CalendarDays size={16} className="text-brand-deep" />
                       <span className="text-[18px] font-semibold text-ink">남은 연차</span>
@@ -231,7 +231,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                       <span className="text-[19px] font-extrabold text-brand-deep tabular-nums">{balance.remaining}</span>
                       <span className="text-[18px] text-ink-soft">일 / 총 {balance.total}일 · 사용 {balance.used}일</span>
                     </div>
-                  </div>
+                  </Card>
                 )}
                 {!showForm && (
                   <button
