@@ -3,6 +3,8 @@ import { TIMING } from "../../constants/timing";
 import { useConfirm } from "../../hooks/useConfirm";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
 import { useToast, toastClass } from "../../hooks/useToast";
+// 2026-08-21 · Framework Phase 3 · fetch → apiClient
+import { api } from "../../lib/apiClient";
 import * as XLSX from "xlsx";
 import { Wand2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, BookmarkPlus, BookOpen, Check, Save } from "lucide-react";
 import { Spinner } from "../common/Spinner";
@@ -98,24 +100,16 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     // 신규 공급사 등록 유도
     if (await confirm({ message: `"${name}" 은(는) 공급사 DB 에 없습니다.\n신규 등록하시겠습니까?` })) {
       try {
-        const created = await fetch("/api/vendors", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ company_name: name }),
-        });
-        if (created.ok) {
-          const newV = await created.json();
-          setVendorEditModal(newV);
-          refreshVendors(); // 캐시 갱신
-        } else {
-          showError("공급사 신규 등록 실패");
-        }
+        // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+        const { data: newV } = await api.post<Vendor>("/api/vendors", { company_name: name });
+        setVendorEditModal(newV);
+        refreshVendors(); // 캐시 갱신
       } catch (e) {
         console.error("[공급사조회] 실패:", e);
-        showError("공급사 정보 조회 실패");
+        showError("공급사 신규 등록 실패");
       }
     }
-  }, [_ocrVendors, refreshVendors]);
+  }, [_ocrVendors, refreshVendors, showError]);
   const [editingRawSuppRow, setEditingRawSuppRow] = useState<number | null>(null);
   const [editingRawSuppVal, setEditingRawSuppVal] = useState("");
   const [supplierConfirm,   setSupplierConfirm  ] = useState<{ pageNum: number; newVal: string; rowCount: number; addSynonyms: boolean } | null>(null);
@@ -213,8 +207,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   const [synonymsMap, setSynonymsMap] = useState<Map<string, { name: string; code: string }>>(new Map());
   const loadSynonymsMap = useCallback(async () => {
     try {
-      const r = await fetch("/api/ocr-synonyms");
-      const d = await r.json();
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+      const { data: d } = await api.get<{ synonyms?: any[] }>("/api/ocr-synonyms");
       const m = new Map<string, { name: string; code: string }>();
       for (const syn of (d.synonyms ?? [])) {
         if (syn.cancelled) continue;
@@ -375,9 +369,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   }, [normSupplierForSig, normNameForSig]);
   // 초기 로드
   useEffect(() => {
-    fetch("/api/ocr-deleted-rows")
-      .then(r => r.json())
-      .then((data: any) => {
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+    api.get<{ rows?: any[] }>("/api/ocr-deleted-rows")
+      .then(({ data }) => {
         if (Array.isArray(data?.rows)) {
           setDbDeletedSignatures(new Set(data.rows.map((r: any) => String(r.signature ?? ""))));
         }
@@ -1154,11 +1148,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     });
     setHiddenRawRows(new Set());
     if (items.length > 0) {
-      fetch("/api/ocr-deleted-rows", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items }),
-      }).catch(() => {});
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient · fire-and-forget
+      api.post("/api/ocr-deleted-rows", { items }).catch(() => {});
     }
   };
   // 행별 유효 금액 계산: 금액 있으면 그대로, 없으면 수량×단가 자동계산값 (표시와 소계 통일)
@@ -1717,9 +1708,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     if (erpStockLoaded) return;
     (async () => {
       try {
-        const res = await fetch("/api/products-map");
-        if (!res.ok) return;
-        const data = await res.json();
+        // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+        const { data } = await api.get<Record<string, any>>("/api/products-map");
         const map: Record<string, number | null> = {};
         for (const code in data) {
           const p = data[code];
@@ -1802,12 +1792,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     const name = origName.trim();
     if (!name) return;
     try {
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
       // cancel-by-name 사용: 삭제 대신 cancelled=true 마킹 → 동의어 관리에서 관리 가능, 재적용 방지
-      await fetch("/api/ocr-synonyms/cancel-by-name", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prod_name_old: name, product_code: productCode ?? null }),
-      });
+      await api.post("/api/ocr-synonyms/cancel-by-name", { prod_name_old: name, product_code: productCode ?? null });
     } catch (e) {
       console.warn("[ocr-synonyms/cancel-by-name] 취소 오류:", e);
     }
@@ -1948,22 +1935,25 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     if (entries.length === 0) return;
     setSynonymAddStatus({ pageNum, status: 'loading', count: 0 });
     try {
-      const res = await fetch("/api/ocr-match", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ names: entries.map(e => e.name), suppliers: entries.map(() => newSupplier) }),
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+      const { data } = await api.post<{ matches?: MatchedItem[] }>("/api/ocr-match", {
+        names: entries.map(e => e.name),
+        suppliers: entries.map(() => newSupplier),
       });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
       const matches: MatchedItem[] = data.matches ?? [];
       let count = 0;
       for (let i = 0; i < entries.length; i++) {
         const m = matches[i]?.matched;
         if (!m) continue;
-        const sr = await fetch("/api/ocr-synonyms", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prod_name_old: entries[i].name, prod_name_new: m.name, product_code: m.code, supplier_new: newSupplier }),
-        });
-        if (sr.ok) count++;
+        try {
+          await api.post("/api/ocr-synonyms", {
+            prod_name_old: entries[i].name,
+            prod_name_new: m.name,
+            product_code: m.code,
+            supplier_new: newSupplier,
+          });
+          count++;
+        } catch { /* silent · 개별 실패 흡수 */ }
       }
       setSynonymAddStatus({ pageNum, status: count > 0 ? 'done' : 'error', count });
     } catch {
@@ -2006,12 +1996,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     const pageHdrs = structuredPages.find(p => p.page === pageNum)?.headers;
     if (!pageHdrs?.length) return;
     try {
-      const res = await fetch("/api/ocr-templates", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ supplier_name: supplierName, headers: pageHdrs }),
-      });
-      if (!res.ok) throw new Error(await res.text());
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+      await api.post("/api/ocr-templates", { supplier_name: supplierName, headers: pageHdrs });
       setReparseStatus(prev => ({ ...prev, [pageNum]: 'saved' }));
     } catch { /* silent */ }
     // 이 페이지 상품명을 해당 공급사의 동의어로 일괄 저장
@@ -2030,32 +2016,23 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     supplierOld?: string,
   ) => {
     try {
-      const res = await fetch("/api/ocr-synonyms", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prod_name_old: nameOld,
-          prod_name_new: nameNew ?? null,
-          product_code: productCode,
-          supplier_new: supplierNew?.trim() || null,
-          supplier_old: supplierOld?.trim() || null,
-        }),
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+      const { data: json } = await api.post<{ synonym?: { id?: number } }>("/api/ocr-synonyms", {
+        prod_name_old: nameOld,
+        prod_name_new: nameNew ?? null,
+        product_code: productCode,
+        supplier_new: supplierNew?.trim() || null,
+        supplier_old: supplierOld?.trim() || null,
       });
-      if (res.ok) {
-        const json = await res.json().catch(() => ({}));
-        setSavedSynonyms(prev => new Set([...prev, ri]));
-        if (json?.synonym?.id) setSavedSynonymIds(prev => ({ ...prev, [ri]: json.synonym.id }));
-        // 2026-07-28 · 재추출 캐시에 즉시 반영
-        if (nameOld && nameNew && productCode) {
-          setSynonymsMap(prev => {
-            const m = new Map(prev);
-            m.set(nameOld.trim().toLowerCase(), { name: nameNew, code: productCode });
-            return m;
-          });
-        }
-      } else {
-        const err = await res.json().catch(() => ({}));
-        console.warn("[ocr-synonyms] 저장 실패:", err?.error ?? res.status);
+      setSavedSynonyms(prev => new Set([...prev, ri]));
+      if (json?.synonym?.id) setSavedSynonymIds(prev => ({ ...prev, [ri]: json.synonym!.id! }));
+      // 2026-07-28 · 재추출 캐시에 즉시 반영
+      if (nameOld && nameNew && productCode) {
+        setSynonymsMap(prev => {
+          const m = new Map(prev);
+          m.set(nameOld.trim().toLowerCase(), { name: nameNew, code: productCode });
+          return m;
+        });
       }
     } catch (e) {
       console.warn("[ocr-synonyms] 네트워크 오류:", e);
@@ -2066,7 +2043,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     const id = savedSynonymIds[ri];
     if (!id) return;
     try {
-      await fetch(`/api/ocr-synonyms/${id}`, { method: "DELETE" });
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+      await api.del(`/api/ocr-synonyms/${id}`);
     } catch (e) {
       console.warn("[ocr-synonyms] 삭제 오류:", e);
     }
@@ -2084,17 +2062,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     const name  = supplierNew.trim();
     if (!alias || !name || alias === name) return;
     try {
-      const res = await fetch("/api/ocr-supplier-aliases", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ alias, supplier_name: name }),
-      });
-      if (res.ok) {
-        setSavedSupplierAliases(prev => new Set([...prev, ri]));
-      } else {
-        const err = await res.json().catch(() => ({}));
-        console.warn("[ocr-supplier-aliases] 저장 실패:", err?.error ?? res.status);
-      }
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+      await api.post("/api/ocr-supplier-aliases", { alias, supplier_name: name });
+      setSavedSupplierAliases(prev => new Set([...prev, ri]));
     } catch (e) {
       console.warn("[ocr-supplier-aliases] 네트워크 오류:", e);
     }
@@ -2103,12 +2073,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   const saveSupplierBalance = useCallback(async (supplierName: string, amount: number, invoiceDate: string | null) => {
     // 2026-07-28 · setSavingBalance / savingBalance state · dead code 정리에서 제거됨 · 여기서는 fire-and-forget
     try {
-      const res = await fetch("/api/supplier-balances", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ supplier_name: supplierName, invoice_date: invoiceDate, balance: amount }),
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+      const { data: d } = await api.post<{ balance?: any }>("/api/supplier-balances", {
+        supplier_name: supplierName,
+        invoice_date: invoiceDate,
+        balance: amount,
       });
-      const d = await res.json();
       if (d.balance) setSupplierBalanceRecords(prev => [d.balance, ...prev]);
     } catch { /* silent */ }
   }, []);
@@ -2153,15 +2123,16 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     if (openCandRow === ri) { setOpenCandRow(null); return; }
     setRetryingRows(prev => new Set([...prev, ri]));
     try {
-      const res = await fetch("/api/ocr-match", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: inputName, topN: 10, supplier: supplierHint ?? "" }),
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+      const { data } = await api.post<{ candidates?: CandidateInfo[] }>("/api/ocr-match", {
+        name: inputName,
+        topN: 10,
+        supplier: supplierHint ?? "",
       });
-      const data = await res.json();
       setCandidatesMap(prev => ({ ...prev, [ri]: data.candidates ?? [] }));
       setOpenCandRow(ri);
-    } finally {
+    } catch { /* silent · handled by outer state */ }
+    finally {
       setRetryingRows(prev => { const s = new Set(prev); s.delete(ri); return s; });
     }
   }, [retryingRows, openCandRow]);
@@ -2173,10 +2144,11 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
       const params = new URLSearchParams({ q: name.trim() });
       if (supplierHint?.trim()) params.set("supplier", supplierHint.trim());
       try {
-        const res = await fetch(`/api/products-search?${params}`);
-        const data: any[] = await res.json();
-        setNameSearchResults(prev => ({ ...prev, [ri]: Array.isArray(data) ? data : [] }));
-        setNameSearchOpenRow(data.length > 0 ? ri : null);
+        // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+        const { data } = await api.get<any[]>(`/api/products-search?${params}`);
+        const list = Array.isArray(data) ? data : [];
+        setNameSearchResults(prev => ({ ...prev, [ri]: list }));
+        setNameSearchOpenRow(list.length > 0 ? ri : null);
       } catch { /* silent */ }
     }, 280);
   }, []);
@@ -2264,15 +2236,15 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     setMatching(true); setMatchItems(null); setOverrides({}); setSupplierOverrides({}); setConfirmed(false); setSavedSynonyms(new Set()); setSavedSupplierAliases(new Set());
     setRetryingRows(new Set()); setCandidatesMap({}); setOpenCandRow(null); setSelectedCands({}); setCancelledRows(new Set());
     try {
-      const res  = await fetch("/api/ocr-match", { method: "POST",
-        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ names, suppliers }) });
-      const data = await res.json();
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+      const { data } = await api.post<{ matches?: MatchedItem[] }>("/api/ocr-match", { names, suppliers });
       // matchItems 를 원본 dispRows 인덱스 순서로 재배열 (skip 된 행은 null)
       const returned: MatchedItem[] = data.matches ?? [];
       const aligned: (MatchedItem | null)[] = dispRows.map(() => null);
       activePairs.forEach((p, ai) => { aligned[p.rowIdx] = returned[ai] ?? null; });
       setMatchItems(aligned.map(m => m ?? { input: "", matched: null }));
-    } finally { setMatching(false); }
+    } catch { /* silent */ }
+    finally { setMatching(false); }
   }, [dispRows, nameIdx, pageNums, rawSupplierByPage, ocrSuppIdx, structuredPages, globalSupplier, missingSupplierPages]);
 
   // 2026-07-28 · 리팩터 · handleMatchPage · fillMissingPricesFromDB · verifyAndSwapPricesWithDB
@@ -2336,9 +2308,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
       // 캐시 miss · 최신 동의어 서버에서 재로드 후 재확인
       try {
         await loadSynonymsMap();
-        // 로드 후 · state 반영은 다음 렌더 · 임시로 fetch 결과 직접 조회
-        const r = await fetch("/api/ocr-synonyms");
-        const d = await r.json();
+        // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+        // 로드 후 · state 반영은 다음 렌더 · 임시로 API 결과 직접 조회
+        const { data: d } = await api.get<{ synonyms?: any[] }>("/api/ocr-synonyms");
         for (const syn of (d.synonyms ?? [])) {
           if (syn.cancelled) continue;
           const key = String(syn.prod_name_old ?? "").trim().toLowerCase();
@@ -2356,9 +2328,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
       setCancelledAutoMap(prev => { const s = new Set(prev); s.delete(ri); return s; });
       // 2026-07-28 · 상품코드로 직접 조회 · 판매가·사입가·이익률 즉시 반영 (handleMatchPage 대신 확실한 소스)
       try {
-        const rq = await fetch(`/api/products-search?q=${encodeURIComponent(synHit.code)}`);
-        if (rq.ok) {
-          const arr: any[] = await rq.json();
+        // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+        const { data: arr } = await api.get<any[]>(`/api/products-search?q=${encodeURIComponent(synHit.code)}`);
+        {
           const p = Array.isArray(arr) ? arr.find(x => String(x.product_code ?? "") === synHit.code) ?? arr[0] : null;
           if (p) {
             setMatchItems(prev => {
@@ -2415,9 +2387,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
         const params = new URLSearchParams({ q: tok });
         if (supplier) params.set("supplier", supplier);
         try {
-          const res = await fetch(`/api/products-search?${params}`);
-          if (!res.ok) return { tok, hit: null };
-          const data: any[] = await res.json();
+          // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+          const { data } = await api.get<any[]>(`/api/products-search?${params}`);
           const hit = Array.isArray(data) && data[0] ? data[0] : null;
           return { tok, hit };
         } catch { return { tok, hit: null }; }
@@ -2593,9 +2564,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   }, []);
 
   useEffect(() => {
-    fetch("/api/supplier-balances")
-      .then(r => r.json())
-      .then(d => { if (Array.isArray(d.balances)) setSupplierBalanceRecords(d.balances); })
+    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+    api.get<{ balances?: any[] }>("/api/supplier-balances")
+      .then(({ data }) => { if (Array.isArray(data.balances)) setSupplierBalanceRecords(data.balances); })
       .catch(() => {});
   }, []);
   // 2026-07-24 · 리팩터 · 잔고 자동 로드는 useAutoBalanceLoad 훅으로 분리
@@ -3583,7 +3554,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                 const supplier = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
                                 if (supplier && rowName) {
                                   setDbDeletedSignatures(prev => { const n = new Set(prev); n.add(makeRowSignature(supplier, rowName)); return n; });
-                                  fetch("/api/ocr-deleted-rows", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items: [{ supplier, name: rowName }] }) }).catch(() => {});
+                                  // 2026-08-21 · Framework Phase 3 · fetch → apiClient · fire-and-forget
+                                  api.post("/api/ocr-deleted-rows", { items: [{ supplier, name: rowName }] }).catch(() => {});
                                 }
                               }}
                               className="w-4 h-4 cursor-pointer accent-rose-500"
@@ -4014,8 +3986,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                         const params = new URLSearchParams({ q: v.trim() });
                                         if (rawSupplierForRow) params.set("supplier", rawSupplierForRow);
                                         try {
-                                          const res = await fetch(`/api/products-search?${params}`);
-                                          const data: any[] = await res.json();
+                                          // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+                                          const { data } = await api.get<any[]>(`/api/products-search?${params}`);
                                           const results = Array.isArray(data) ? data : [];
                                           setNameEditResults(results);
                                           setNameEditSearchDone(true);
@@ -5013,15 +4985,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                             if (!supp) { showError(`${pn}번 명세서 · 공급사 없음 · 저장 불가`); return; }
                                             if (!await confirm({ message: `${pn}번 · "${supp}" · ${invDate || "날짜미상"}\n· DB 저장하시겠습니까?` })) return;
                                             try {
+                                              // 2026-08-21 · Framework Phase 3 · fetch → apiClient
                                               const q = new URLSearchParams();
                                               if (invDate) q.set("invoice_date", invDate);
                                               q.set("supplier", supp);
-                                              const chkRes = await fetch(`/api/ocr-confirmed-items?${q}`);
-                                              const chk = chkRes.ok ? await chkRes.json() : { items: [] };
+                                              const chk = await api.get<{ items?: any[] }>(`/api/ocr-confirmed-items?${q}`)
+                                                .then(({ data }) => data)
+                                                .catch(() => ({ items: [] } as { items?: any[] }));
                                               const existing = Array.isArray(chk?.items) ? chk.items : [];
                                               if (existing.length > 0) {
                                                 if (!await confirm({ message: `이미 ${existing.length}건 저장됨 · 덮어쓰시겠습니까?`, danger: true })) return;
-                                                for (const it of existing) if (it.id) await fetch(`/api/ocr-confirmed-items/${it.id}`, { method: "DELETE" });
+                                                for (const it of existing) if (it.id) await api.del(`/api/ocr-confirmed-items/${it.id}`).catch(() => {});
                                               }
                                             } catch { /* skip check */ }
                                             await handleSaveConfirmed(pn);
