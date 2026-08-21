@@ -29,46 +29,11 @@ import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
 import { useToast, toastClass } from "../../hooks/useToast";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-interface StockFlowRow {
-  product_code: string;
-  product_name: string;
-  supplier: string | null;
-  spec: string | null;
-  opening_stock: number;
-  purchase_qty: number;
-  sale_qty: number;
-  disposal_qty: number;
-  closing_stock: number;
-  total_amount: number;
-  optimal_stock: number;
-  last_purchase_date?: string | null;
-  sale_price?: number;
-  purchase_price?: number;
-  sale_qty_month?: number;
-}
-
-type SortKey =
-  | "name" | "opening" | "sale" | "purchase" | "amount" | "closing" | "current" | "loss"
-  | "turnover" | "doh" | "cycle" | "last_purchase" | "min_order" | "last_purchase_price"
-  | "stock_value" | "sale_price" | "profit_rate" | "turnover_3m";
-type SortDir = "asc" | "desc";
-type FlowGroup = "stock" | "purchase" | "sales";
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function fmt(n: number): string {
-  if (!Number.isFinite(n)) return "0";
-  return n.toLocaleString();
-}
+// 2026-08-21 · Framework Phase 4 · large-file 분리 · types + fmt + cache
+import type { StockFlowRow, SortKey, SortDir, FlowGroup } from "./FlowTab.types";
+import { fmt, GLOBAL_FLOW_CACHE, FLOW_CACHE_TTL } from "./FlowTab.types";
 
 const fmtWon = fmtWonCompact;
-
-// ─── Module-level cache (5분 TTL) ────────────────────────────────────────────
-
-const GLOBAL_FLOW_CACHE = new Map<string, { data: any; ts: number }>();
-const FLOW_CACHE_TTL = 5 * 60 * 1000;
 
 // ─── FlowTab ─────────────────────────────────────────────────────────────────
 
