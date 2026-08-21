@@ -135,6 +135,17 @@
 - 🔲 프론트 · apiClient · useToast · 프레임워크 원칙 준수
 - 🔲 중복 검사 · product_code unique
 
+**Phase D · 상품 수정 기능 추가 (2026-08-21)**
+- 🔲 상세 패널/모달 · **편집 모드 토글** (조회 → 편집 → 저장/취소 UX · StaffManagePage 벤치마크)
+- 🔲 편집 가능 필드 · product_name · supplier · category · unit · barcode · spec · price · optimal_stock · real_map 등 (product_code 는 read-only)
+- 🔲 서버 · PATCH `/api/products/:id` · asyncHandler + HttpError + Zod (UpdateProductSchema · partial fields)
+- 🔲 Zod 스키마 · `src/shared/schemas/products.ts` · UpdateProductSchema (모든 필드 optional)
+- 🔲 프론트 · api.patch · useToast (성공 · 실패 tone) · useConfirm (변경 취소 확인)
+- 🔲 유효성 · product_code 변경 금지 · barcode 중복 검사 (자기 자신 제외)
+- 🔲 편집 후 · productsCache 무효화 (lookupProduct fresh)
+- 🔲 권한 · 관리자 lv8+ 만 수정 가능 (조회는 lv2+)
+- 🔲 감사 로그 (선택) · 누가·언제·무엇을 바꿨는지 (product_edit_log 별도 태스크로 분리 가능)
+
 **공통 · 프레임워크 원칙 준수**
 - Card·SearchBar·Modal·SortableHeader 프리미티브 재사용
 - 대원칙 14·16 · 매 단계 TS+test 검증 · 위험 작업 전 로컬 커밋
