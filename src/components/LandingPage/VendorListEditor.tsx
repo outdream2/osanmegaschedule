@@ -23,7 +23,7 @@ import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 import { StatusPill } from "../common/StatusPill";
 import { fmtWonCompact } from "../../lib/format";
 // 2026-08-09 · 신규 공급사 등록 모달 (사용자 요청)
-import { NewVendorModal } from "../common/NewVendorModal";
+import { NewVendorModal } from "../common/features/NewVendorModal";
 import { IconTile } from "../common/IconTile";
 import { Spinner } from "../common/Spinner";
 

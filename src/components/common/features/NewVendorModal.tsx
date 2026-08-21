@@ -1,4 +1,4 @@
-// src/components/common/NewVendorModal.tsx
+// src/components/common/features/NewVendorModal.tsx
 // 2026-08-09 · 사용자 요청 · 신규 공급사 등록 모달 (공통)
 // 사용처:
 //   - LandingPage 거래처용 · 공급사등록 카드 클릭
@@ -8,10 +8,10 @@
 
 // 2026-08-17 · apiClient 마이그레이션
 import { useState } from "react";
-import { api } from "../../lib/apiClient";
+import { api } from "../../../lib/apiClient";
 import { X, Building2, Save } from "lucide-react";
-import { Spinner } from "./Spinner";
-import { IconTile } from "./IconTile";
+import { Spinner } from "../Spinner";
+import { IconTile } from "../IconTile";
 
 interface NewVendorModalProps {
   onClose: () => void;

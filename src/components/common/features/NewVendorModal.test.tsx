@@ -5,7 +5,7 @@ import { render, fireEvent } from "@testing-library/react";
 import { NewVendorModal } from "./NewVendorModal";
 
 const mockPost = vi.fn();
-vi.mock("../../lib/apiClient", () => ({
+vi.mock("../../../lib/apiClient", () => ({
   api: {
     post: (...args: any[]) => mockPost(...args),
   },

@@ -166,7 +166,7 @@
 
 - #90 · ContractWriterPage · JOB_CATEGORIES → wageRates 파생 · 위험 高
 - #91 · SchedulePage · position 문자열 매칭 → settings · 위험 高 · 대형
-- #94 · 공급사 재고확인 페이지 · A1 (Modal 확장) · 중 (1-2h)
+- ✅ #94 · 공급사 재고확인 페이지 · A1 완료 (2026-08-16) · Phase 2 (백엔드 시계열 API) 유보
 - DayTimelineModal 분리 · 2704 lines · 중-高
 
 ---

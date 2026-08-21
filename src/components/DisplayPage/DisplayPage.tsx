@@ -2909,7 +2909,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { Search as SearchIcon } from "lucide-react";
 import { CARD_BASE } from "../../styles/tokens";
-import { NewVendorModal } from "../common/NewVendorModal";
+import { NewVendorModal } from "../common/features/NewVendorModal";
 import { StatusPill } from "../common/StatusPill";
 
 const VendorManageSplit: React.FC = () => {

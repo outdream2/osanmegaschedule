@@ -17,7 +17,7 @@
 import { useMemo, useState } from "react";
 import { X, Search, Loader2, Building2, Plus, PencilLine } from "lucide-react";
 import { useVendors } from "../../../hooks/useVendors";
-import { NewVendorModal } from "../NewVendorModal";
+import { NewVendorModal } from "./NewVendorModal";
 import { IconTile } from "../IconTile";
 import { Spinner } from "../Spinner";
 import { VendorDetailModal, type Vendor as VendorFull } from "../../LandingPage/VendorListEditor";
