@@ -7,6 +7,7 @@ import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 import { StatusPill } from "../common/StatusPill";
+import { Card } from "../common/Card";
 
 interface StockItem {
   product_name: string;
@@ -235,7 +236,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
 
         {/* Results list */}
         {sortedResults && sortedResults.length > 0 && (
-          <div className={`bg-white rounded-xl border border-line shadow-sm overflow-hidden ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+          <Card padding="none" clip className={loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}>
             {/* 결과 수 표시: 직원(로그인)만 · 일반 사용자는 숨김 */}
             {isLoggedIn && (
               <div className="px-4 py-2.5 bg-zinc-50 border-b border-zinc-100 flex items-center justify-between">
@@ -306,7 +307,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
             <div className="px-4 py-2 border-t border-zinc-50 text-[14px] text-zinc-300 text-center">
               재고 정보는 실시간이 아닐 수 있습니다 · 정확한 재고는 약국에 직접 문의해 주세요
             </div>
-          </div>
+          </Card>
         )}
 
         {/* Initial hint */}
