@@ -6,7 +6,7 @@ import { TIMING } from "../../constants/timing";
 import {
   Bell, Package, MapPin,
   CheckCircle2, Clock, RefreshCw, ShoppingCart, Square, CheckSquare,
-  Send, Loader2, Utensils, UtensilsCrossed, ChevronDown, ChevronUp, ScrollText,
+  Send, Utensils, UtensilsCrossed, ChevronDown, ChevronUp, ScrollText,
 } from "lucide-react";
 import { getProductsMap, type ProductInfo } from "../../lib/productsCache";
 import { fmtDateMD } from "../../lib/format";
@@ -761,7 +761,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                                     clickable ? cls + " cursor-pointer" : "text-zinc-400 bg-zinc-100 border-line cursor-not-allowed"
                                   }`}
                                 >
-                                  {completing ? <Loader2 size={9} className="animate-spin" /> : <Icon size={9} />}
+                                  {completing ? <Spinner size={9} tone="zinc" /> : <Icon size={9} />}
                                   {label}
                                 </button>
                               );
@@ -798,7 +798,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                                     clickable ? cls + " cursor-pointer" : "text-zinc-400 bg-zinc-100 border-line cursor-not-allowed"
                                   }`}
                                 >
-                                  {completing ? <Loader2 size={9} className="animate-spin" /> : <Icon size={9} />}
+                                  {completing ? <Spinner size={9} tone="zinc" /> : <Icon size={9} />}
                                   {label}
                                 </button>
                               );

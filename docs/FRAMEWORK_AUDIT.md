@@ -11,7 +11,7 @@
 | 스캔 파일 | 458 |
 | 위반 파일 | 53 |
 | 클린 파일 | 405 (88%) |
-| 총 위반 개수 | 123 |
+| 총 위반 개수 | 121 |
 
 ## 🚨 규칙별 위반 현황
 
@@ -21,7 +21,6 @@
 | `raw-alert` | 2 | 1 | high | useToast (showError·showSuccess) |
 | `raw-loader2` | 2 | 1 | medium | Spinner 프리미티브 |
 | `raw-card-wrapper` | 65 | 20 | medium | Card 프리미티브 (padding·variant·clip) |
-| `raw-confirm` | 2 | 2 | medium | useConfirm (ConfirmDialog 프리미티브) |
 | `large-file` | 44 | 44 | high | 500+라인 · 서브 컴포넌트 분리 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
@@ -42,11 +41,11 @@
 | 12 | `src/components/SalesTrendPage/SalesTrendPage.tsx` | 2677 | 15 | large-file(1) |
 | 13 | `src/components/SchedulePage/SchedulePage.tsx` | 2379 | 15 | large-file(1) |
 | 14 | `src/components/HrFormsPage/HrFormsPage.tsx` | 1123 | 14 | large-file(1) · raw-card-wrapper(2) |
-| 15 | `src/components/PermissionsPage/PermissionsPage.tsx` | 1089 | 14 | large-file(1) · raw-card-wrapper(1) · raw-confirm(1) |
-| 16 | `src/components/RequestsPage/RequestsPage.tsx` | 1307 | 14 | large-file(1) · raw-loader2(2) |
-| 17 | `src/components/OcrPage/OcrPage.tsx` | 1768 | 13 | large-file(1) · raw-fetch(1) |
-| 18 | `src/components/BoardPage/BoardPage.tsx` | 1177 | 12 | large-file(1) · raw-card-wrapper(1) |
-| 19 | `src/components/OrderManagePage/PurchaseHistoryTab/PurchaseSubTabs.tsx` | 1214 | 12 | large-file(1) · raw-card-wrapper(1) |
+| 15 | `src/components/RequestsPage/RequestsPage.tsx` | 1307 | 14 | large-file(1) · raw-loader2(2) |
+| 16 | `src/components/OcrPage/OcrPage.tsx` | 1768 | 13 | large-file(1) · raw-fetch(1) |
+| 17 | `src/components/BoardPage/BoardPage.tsx` | 1177 | 12 | large-file(1) · raw-card-wrapper(1) |
+| 18 | `src/components/OrderManagePage/PurchaseHistoryTab/PurchaseSubTabs.tsx` | 1214 | 12 | large-file(1) · raw-card-wrapper(1) |
+| 19 | `src/components/PermissionsPage/PermissionsPage.tsx` | 1094 | 12 | large-file(1) · raw-card-wrapper(1) |
 | 20 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 1926 | 10 | large-file(1) |
 | 21 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 1192 | 10 | large-file(1) |
 | 22 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 1205 | 10 | large-file(1) |
@@ -79,11 +78,11 @@
 | `src/components/SalesTrendPage/SalesTrendPage.tsx` | 2677 | 15 |
 | `src/components/SchedulePage/SchedulePage.tsx` | 2379 | 15 |
 | `src/components/HrFormsPage/HrFormsPage.tsx` | 1123 | 14 |
-| `src/components/PermissionsPage/PermissionsPage.tsx` | 1089 | 14 |
 | `src/components/RequestsPage/RequestsPage.tsx` | 1307 | 14 |
 | `src/components/OcrPage/OcrPage.tsx` | 1768 | 13 |
 | `src/components/BoardPage/BoardPage.tsx` | 1177 | 12 |
 | `src/components/OrderManagePage/PurchaseHistoryTab/PurchaseSubTabs.tsx` | 1214 | 12 |
+| `src/components/PermissionsPage/PermissionsPage.tsx` | 1094 | 12 |
 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 1926 | 10 |
 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 1192 | 10 |
 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 1205 | 10 |
@@ -95,7 +94,6 @@
 | `src/components/LunchPage/LunchPage.tsx` | 561 | 9 |
 | `src/App.tsx` | 552 | 8 |
 | `src/components/BrandingSettingsPage/BrandingSettingsPage.tsx` | 636 | 7 |
-| `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx` | 957 | 7 |
 | `src/components/PharmacistMenuSettingsPage/PharmacistMenuSettingsPage.tsx` | 515 | 7 |
 | `src/components/PharmacistPage/PharmacistPage.tsx` | 952 | 7 |
 | `src/components/SettingsModal/SettingsModal.tsx` | 690 | 7 |
@@ -103,6 +101,7 @@
 | `src/main.tsx` | 98 | 6 |
 | `src/components/BarcodeScanner/BarcodeScanner.tsx` | 538 | 5 |
 | `src/components/common/ProductDetailPanel.tsx` | 646 | 5 |
+| `src/components/EmployeeCalendarModal/EmployeeCalendarModal.tsx` | 962 | 5 |
 | `src/components/layout/AppNavHeader.tsx` | 773 | 5 |
 | `src/components/layout/SideNav.tsx` | 503 | 5 |
 | `src/components/OrderManagePage/CategoryTab.tsx` | 603 | 5 |
