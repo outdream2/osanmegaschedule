@@ -2,6 +2,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useCallback, useEffect, useState } from "react";
 import { AccentBar } from "../common/AccentBar";
+import { Card } from "../common/Card";
 import { api, ApiError } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import {
@@ -233,7 +234,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
         </div>
 
         {/* 리스트 */}
-        <div className="bg-white rounded-xl border border-line p-3 sm:p-4 shadow-sm">
+        <Card padding="none" className="p-3 sm:p-4">
           {error && (
             <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
               <Warning size={12} weight="fill" />
@@ -400,7 +401,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
               })}
             </div>
           )}
-        </div>
+        </Card>
       </main>
     </div>
   );
