@@ -8,9 +8,9 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 498 |
+| 스캔 파일 | 499 |
 | 위반 파일 | 23 |
-| 클린 파일 | 475 (95%) |
+| 클린 파일 | 476 (95%) |
 | 총 위반 개수 | 23 |
 
 ## 🚨 규칙별 위반 현황
@@ -34,7 +34,7 @@
 | 8 | `src/components/SalesTrendPage/SalesTrendPage.tsx` | 2677 | 24 | large-file-critical(1) |
 | 9 | `src/components/SchedulePage/SchedulePage.tsx` | 2379 | 24 | large-file-critical(1) |
 | 10 | `src/components/StaffManagePage/StaffManagePage.tsx` | 2729 | 24 | large-file-critical(1) |
-| 11 | `src/components/OcrPage/OcrPage.tsx` | 1216 | 6 | large-file-warn(1) |
+| 11 | `src/components/OcrPage/OcrPage.tsx` | 1149 | 6 | large-file-warn(1) |
 | 12 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 1514 | 6 | large-file-warn(1) |
 | 13 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 1159 | 6 | large-file-warn(1) |
 | 14 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 1041 | 6 | large-file-warn(1) |
@@ -64,7 +64,7 @@
 | `src/components/SalesTrendPage/SalesTrendPage.tsx` | 2677 | 24 |
 | `src/components/SchedulePage/SchedulePage.tsx` | 2379 | 24 |
 | `src/components/StaffManagePage/StaffManagePage.tsx` | 2729 | 24 |
-| `src/components/OcrPage/OcrPage.tsx` | 1216 | 6 |
+| `src/components/OcrPage/OcrPage.tsx` | 1149 | 6 |
 | `src/components/OrderManagePage/PaymentInfoTab.tsx` | 1514 | 6 |
 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 1159 | 6 |
 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 1041 | 6 |

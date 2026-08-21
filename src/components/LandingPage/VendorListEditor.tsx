@@ -36,115 +36,15 @@ interface VendorListEditorProps {
   compact?: boolean;
 }
 
-export interface Vendor {
-  id: number;
-  company_name: string;
-  contact_name: string | null;
-  phone: string | null;
-  email: string | null;
-  category: string | null;
-  note: string | null;
-  business_number: string | null;
-  vat_included?: boolean | null;   // 부가세 포함/미포함 (VAT 통합 · #193)
-  // 2026-08-10 · #21 · 팀장·긴급연락처 (마이그레이션 add_vendor_extra_contacts_2026-08-10.sql)
-  team_leader_name?: string | null;
-  team_leader_phone?: string | null;
-  emergency_contact?: string | null;
-  created_at?: string | null;
-  latestBalance?: { balance: number; invoice_date: string | null; created_at: string } | null;
-  balanceConfig?: { balance_field: string; updated_at: string } | null;
-}
-
-// VAT 포함 여부 판정 · vendor.vat_included 우선 · null 이면 company_name 문자열에서 유추
-export function detectVatIncluded(v: Pick<Vendor, "vat_included" | "company_name" | "note">): boolean | null {
-  if (v.vat_included === true) return true;
-  if (v.vat_included === false) return false;
-  const text = `${v.company_name ?? ""} ${v.note ?? ""}`;
-  if (/vat\s*미포함|부가세\s*미포함|부가가치세\s*미포함/i.test(text)) return false;
-  if (/vat\s*포함|부가세\s*포함|부가가치세\s*포함/i.test(text)) return true;
-  return null;
-}
-
-interface EditDraft {
-  company_name: string;
-  business_number: string;
-  contact_name: string;
-  phone: string;
-  email: string;
-  category: string;
-  note: string;
-  // 2026-08-03 · #193 · VAT 포함 여부 · "included"|"excluded"|"unset"
-  vat_included: "included" | "excluded" | "unset";
-  // 2026-08-10 · #21 · 팀장·긴급연락처
-  team_leader_name: string;
-  team_leader_phone: string;
-  emergency_contact: string;
-}
-
-const vatDraftVal = (v: Vendor | null | undefined): "included" | "excluded" | "unset" => {
-  // 2026-08-10 · 사용자 요청 · VAT 포함 기본 · 미설정 제거
-  if (!v) return "included";
-  if (v.vat_included === true) return "included";
-  if (v.vat_included === false) return "excluded";
-  return "included";
-};
-
-const emptyDraft = (v: Vendor): EditDraft => ({
-  company_name: v.company_name ?? "",
-  business_number: v.business_number ?? "",
-  contact_name: v.contact_name ?? "",
-  phone: v.phone ?? "",
-  email: v.email ?? "",
-  category: v.category ?? "",
-  note: v.note ?? "",
-  vat_included: vatDraftVal(v),
-  team_leader_name:  v.team_leader_name  ?? "",
-  team_leader_phone: v.team_leader_phone ?? "",
-  emergency_contact: v.emergency_contact ?? "",
-});
-
-const normalizeBizNum = (s: string): string => s.replace(/[^0-9]/g, "").slice(0, 10);
-const formatBizNum = (s: string | null): string => {
-  if (!s) return "";
-  const d = normalizeBizNum(s);
-  if (d.length !== 10) return d;
-  return `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5)}`;
-};
-const fmtWon = fmtWonCompact;
-
-// compact 모드 전용 · 분류별 좌측 컬러 바
-const CATEGORY_LEFT_BORDER: Record<string, string> = {
-  위탁:       "border-l-violet-400",
-  선결제:     "border-l-rose-400",
-  "60회전": "border-l-emerald-400",
-  "90회전": "border-l-teal-400",
-  기타:       "border-l-zinc-300",
-};
-const CATEGORY_LEFT_BG: Record<string, string> = {
-  위탁:       "bg-violet-50/40",
-  선결제:     "bg-rose-50/40",
-  "60회전": "bg-emerald-50/40",
-  "90회전": "bg-teal-50/40",
-  기타:       "bg-zinc-50/30",
-};
-
-// compact 테이블 정렬 키 타입 (모듈 레벨 · IIFE SortIcon 에서 참조)
-// 2026-08-04 · 일반 모드(non-compact) 에서도 재사용 · email/created_at 추가 (A-2 모든 헤더 정렬)
-// 2026-08-04 · #101 · 결제/공급사관리 리스트 · 총재고자산·총판매액 컬럼 추가
-type CompactSortKey =
-  | "company_name" | "category" | "business_number" | "contact_name" | "phone" | "email" | "vat"
-  | "balance" | "invoice_date" | "created_at"
-  | "stock_value" | "sales_total";
-
-// 공급사명 정규화 · vendors.company_name ↔ stock_history.supplier_name 매칭용
-// PurchaseHistoryTab.tsx 의 normalizeName 과 동일 규칙 (법인접두어/괄호/공백 제거)
-const normalizeSupplierKey = (s: string | null | undefined): string =>
-  String(s ?? "")
-    .replace(/[\s()㈜㈐]/g, "")
-    .replace(/^\(주\)/g, "")
-    .replace(/주식회사/g, "")
-    .replace(/\(주\)$/g, "")
-    .toLowerCase();
+// 2026-08-21 · Framework Phase 4 · large-file 분리 · types + utils
+import type { Vendor, EditDraft, CompactSortKey } from "./VendorListEditor.types";
+import {
+  detectVatIncluded, vatDraftVal, emptyDraft, normalizeBizNum, formatBizNum,
+  fmtWon, CATEGORY_LEFT_BORDER, CATEGORY_LEFT_BG, normalizeSupplierKey,
+} from "./VendorListEditor.utils";
+// 하위호환 · 기존 외부 참조 유지
+export type { Vendor };
+export { detectVatIncluded };
 
 export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   initialSelectedId,
