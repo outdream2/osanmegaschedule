@@ -111,33 +111,29 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
   const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
 
-  // ── Helpers ─────────────────────────────────────────────
-  const safeJson = async (res: Response) => {
-    const text = await res.text();
-    if (!text.trim()) return {};
-    try { return JSON.parse(text); } catch { return { error: text }; }
-  };
-
   // ── 점심 불참 API ────────────────────────────────────────
+  // 2026-08-21 · Framework Phase 3 · fetch → apiClient
   const loadLunch = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [lunchRes, attRes] = await Promise.all([
-        fetch(`/api/lunch-requests?date=${selectedDate}`),
-        fetch(`/api/lunch-attendance?date=${selectedDate}`),
+      const [lunchResp, attResp] = await Promise.all([
+        api.get<{ requests?: LunchRequest[]; error?: string }>(`/api/lunch-requests?date=${selectedDate}`),
+        api.get<{ pharmacistCount?: number; staffCount?: number; totalCount?: number }>(`/api/lunch-attendance?date=${selectedDate}`).catch(() => null),
       ]);
-      const lunchData = await safeJson(lunchRes);
-      if (!lunchRes.ok) throw new Error(lunchData.error ?? "서버 오류");
-      const requests: LunchRequest[] = lunchData.requests ?? [];
+      const requests: LunchRequest[] = lunchResp.data.requests ?? [];
       setAllRequests(requests);
       setMyRequest(employeeId ? (requests.find(r => r.employee_id === employeeId) ?? null) : null);
-      if (attRes.ok) {
-        const attData = await attRes.json();
-        setAttendance({ pharmacistCount: attData.pharmacistCount, staffCount: attData.staffCount, totalCount: attData.totalCount });
+      if (attResp) {
+        setAttendance({
+          pharmacistCount: attResp.data.pharmacistCount,
+          staffCount: attResp.data.staffCount,
+          totalCount: attResp.data.totalCount,
+        });
       }
     } catch (e: any) {
-      setError(e.message);
+      const msg = e instanceof ApiError ? ((e.data as any)?.error ?? e.message) : (e?.message ?? "서버 오류");
+      setError(msg);
       setMyRequest(null);
     } finally {
       setLoading(false);
@@ -145,14 +141,15 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
   }, [selectedDate, employeeId]);
 
   // ── 휴게시간 배정 API ────────────────────────────────────
+  // 2026-08-21 · Framework Phase 3 · fetch → apiClient
   const loadBreakData = useCallback(async () => {
     const [y, m] = selectedDate.split("-").map(Number);
-    const [schedRes, assignRes] = await Promise.all([
-      fetch(`/api/schedules?year=${y}&month=${m}`),
-      fetch(`/api/settings?key=break_timeline_${selectedDate}`),
+    const [schedResp, assignResp] = await Promise.all([
+      api.get<{ employees?: any[] }>(`/api/schedules?year=${y}&month=${m}`).catch(() => null),
+      api.get<{ value?: unknown }>(`/api/settings?key=break_timeline_${selectedDate}`).catch(() => null),
     ]);
-    if (schedRes.ok) {
-      const data = await schedRes.json();
+    if (schedResp) {
+      const data = schedResp.data;
       const emps: DayEmployee[] = (data.employees ?? [])
         .filter((emp: any) => {
           const s = (emp.schedules ?? []).find((sc: any) => sc.date === selectedDate);
@@ -166,9 +163,9 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
         }));
       setDayEmployees(emps);
     }
-    if (assignRes.ok) {
-      const d = await safeJson(assignRes);
-      setAssignments(Array.isArray(d.value) ? d.value : []);
+    if (assignResp) {
+      const value = assignResp.data.value;
+      setAssignments(Array.isArray(value) ? value : []);
     }
   }, [selectedDate]);
 
