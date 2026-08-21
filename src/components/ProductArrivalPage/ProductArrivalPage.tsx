@@ -33,7 +33,6 @@ import { ProductSearchInput } from "../common/features/ProductSearchInput";
 import { IconTile } from "../common/IconTile";
 import { AccentBar } from "../common/AccentBar";
 import { ArrivalRowCard } from "./ArrivalRowCard";
-import { Spinner } from "../common/Spinner";
 import { useToast } from "../../hooks/useToast";
 
 interface ProductArrivalPageProps {
