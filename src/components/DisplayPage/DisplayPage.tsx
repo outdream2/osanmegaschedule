@@ -35,7 +35,6 @@ import {
   X,
   XCircle,
   AlertTriangle,
-  Loader2,
   MapPin,
   Search,
   Coffee,
@@ -1726,7 +1725,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                       dot
                       pulse={saveStatus === "saving"}
                     >
-                      {saveStatus === "saving" && <><Loader2 size={10} className="animate-spin inline mr-0.5" />저장중</>}
+                      {saveStatus === "saving" && <><Spinner size={10} className="inline mr-0.5" />저장중</>}
                       {saveStatus === "saved" && "저장됨"}
                       {saveStatus === "error" && "저장 실패"}
                       {saveStatus === "idle" && "대기"}

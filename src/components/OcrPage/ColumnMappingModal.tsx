@@ -13,7 +13,7 @@
 //   4. 저장 → 부모의 saveMappingTemplate
 
 import React, { useState, useRef, useLayoutEffect, useEffect } from "react";
-import { X, Save, Loader2 } from "lucide-react";
+import { X, Save } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 
 interface Props {
