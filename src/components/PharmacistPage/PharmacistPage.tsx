@@ -12,6 +12,7 @@ import { AccentBar } from "../common/AccentBar";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
 import { SplitPanel } from "../common/SplitPanel";
 import { StatusPill } from "../common/StatusPill";
+import { Card } from "../common/Card";
 import { ZONE_DEFS } from "../../constants/displayZones";
 import { getZoneLabel } from "../../constants/zoneLabels";
 import type { AuthSession } from "../../types";
@@ -834,7 +835,7 @@ const SubMenuListPanel: React.FC<SubMenuListPanelProps> = ({
   tabLabel, category, items, loading, error, isAdmin, onOpenViewer, onOpenSettings,
 }) => {
   return (
-    <div className="bg-white rounded-xl border border-line shadow-sm flex flex-col overflow-hidden">
+    <Card padding="none" clip className="flex flex-col">
       <div className="px-4 py-3 border-b border-zinc-100 bg-sky-50/60 flex items-center gap-2">
         <div className="min-w-0 flex-1">
           <div className="text-[14px] font-bold text-sky-600 uppercase tracking-wider">{tabLabel}</div>
@@ -925,7 +926,7 @@ const SubMenuListPanel: React.FC<SubMenuListPanelProps> = ({
           })}
         </ul>
       )}
-    </div>
+    </Card>
   );
 };
 
