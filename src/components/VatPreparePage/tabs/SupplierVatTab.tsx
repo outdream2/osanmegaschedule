@@ -25,6 +25,7 @@ import React, { useMemo } from "react";
 import { Building2, Loader2 } from "lucide-react";
 import { StatusPill, type PillTone } from "../../common/StatusPill";
 import { Spinner } from "../../common/Spinner";
+import { Card } from "../../common/Card";
 
 const fmt = (n: number): string => n.toLocaleString("ko-KR");
 
@@ -101,7 +102,7 @@ const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
   }, [rows]);
 
   return (
-    <div className="bg-white rounded-xl border border-line shadow-sm flex flex-col min-h-0 overflow-hidden h-full">
+    <Card clip padding="none" className="flex flex-col min-h-0 h-full">
       {/* 헤더 */}
       <div className="px-4 py-3 border-b border-zinc-100 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -218,7 +219,7 @@ const SupplierVatTab: React.FC<SupplierVatTabProps> = ({
           </table>
         )}
       </div>
-    </div>
+    </Card>
   );
 };
 
