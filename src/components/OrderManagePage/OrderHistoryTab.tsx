@@ -12,6 +12,7 @@ import { AccentBar } from "../common/AccentBar";
 import { InlineLabel } from "../common/InlineLabel";
 import { PeriodSelector, PERIOD_DAYS_PRESET } from "../common/PeriodSelector";
 import { StatusPill } from "../common/StatusPill";
+import { Card } from "../common/Card";
 
 interface OrderHistoryItem {
   id: string | number;
@@ -119,7 +120,7 @@ export const OrderHistoryTab: React.FC = () => {
       )}
 
       {/* 리스트 */}
-      <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden">
+      <Card clip padding="none">
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Spinner size={16} tone="zinc" label="불러오는 중..." labelSize={15} />
@@ -231,7 +232,7 @@ export const OrderHistoryTab: React.FC = () => {
             })}
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 };
