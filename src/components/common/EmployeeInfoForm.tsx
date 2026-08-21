@@ -16,7 +16,7 @@
 
 import React from "react";
 import { Phone, Mail, MapPin, Calendar, User, Briefcase } from "lucide-react";
-import { matchHangul } from "./hangulSearch";
+import { matchHangul } from "../../lib/hangulSearch";
 import { TIMING } from "../../constants/timing";
 import { POSITIONS } from "../../constants/jobCategories";
 import { useSettings } from "../../hooks/useSettings";

@@ -16,7 +16,7 @@ import { StatusPill } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
-import { matchHangul } from "../common/hangulSearch";
+import { matchHangul } from "../../lib/hangulSearch";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
 import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp, ScanLine, PackagePlus, RotateCcw, X, Search, Info, MapPin } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";

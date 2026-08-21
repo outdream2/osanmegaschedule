@@ -45,7 +45,7 @@ import SplitPanel from "../common/SplitPanel";
 import { Card } from "../common/Card";
 import { EmployeeInfoForm } from "../common/EmployeeInfoForm";
 import { AddressSearchModal } from "../common/AddressSearchModal";
-import { matchHangul } from "../common/hangulSearch";
+import { matchHangul } from "../../lib/hangulSearch";
 import { IconTile } from "../common/IconTile";
 import sungstampUrl from "../../images/sungstamp.png";
 import { useSettings, defaultWageForPosition, type WageRate } from "../../hooks/useSettings";

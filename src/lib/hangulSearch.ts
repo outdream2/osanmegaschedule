@@ -1,4 +1,4 @@
-// src/components/common/hangulSearch.ts
+// src/lib/hangulSearch.ts
 // 2026-08-03 (#201) · 한글 초성 검색 · 자체 구현 (zero-dep · 40줄)
 //   · 배경 · npm hangul-chosung-search-js 존재하나 · 새 dep 회피 · <1KB 인라인
 //   · 한글 유니코드 0xAC00(가) ~ 0xD7A3(힣) · 588 = 21(중성) × 28(종성)
