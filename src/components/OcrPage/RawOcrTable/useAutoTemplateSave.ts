@@ -2,6 +2,8 @@
 //   structuredPages 도착 시 · 공급사 템플릿 DB 에 없으면 · 자동으로 saveTemplate 호출
 import { useEffect, useRef } from "react";
 import type { RawPage } from "./types";
+// 2026-08-21 · Framework Phase 3 · fetch → apiClient
+import { api } from "../../../lib/apiClient";
 
 interface Args {
   structuredPages: RawPage[];
@@ -20,9 +22,8 @@ export function useAutoTemplateSave({ structuredPages, rawSupplierByPage, saveTe
     if (pageSupplierPairs.length === 0) return;
     (async () => {
       try {
-        const res = await fetch("/api/ocr-templates");
-        if (!res.ok) return;
-        const data = await res.json();
+        // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+        const { data } = await api.get<{ templates?: any[] }>("/api/ocr-templates");
         const templates: any[] = Array.isArray(data?.templates) ? data.templates : [];
         const existingSuppliers = new Set(templates.map(t => String(t.supplier_name ?? "").trim()));
         for (const { pn, supplier } of pageSupplierPairs) {

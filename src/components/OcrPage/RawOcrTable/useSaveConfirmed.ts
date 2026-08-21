@@ -14,6 +14,8 @@ import { useCallback } from "react";
 import { TIMING } from "../../../constants/timing";
 import type { ConfirmedItem, MatchedItem, BarcodeProduct, CandidateInfo } from "./types";
 import { parseNumber } from "./utils";
+// 2026-08-21 · Framework Phase 3 · fetch → apiClient
+import { api, ApiError } from "../../../lib/apiClient";
 
 // ── 타입 정의 ──────────────────────────────────────────────────────────────
 
@@ -246,17 +248,14 @@ export function useSaveConfirmed({
           uniquePages.map(async (pn) => {
             const dataUrl = pageImages[pn - 1];
             if (!dataUrl || !dataUrl.startsWith("data:image/")) return null;
-            const res = await fetch("/api/invoice-images/upload", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ data_url: dataUrl, page: pn }),
-            });
-            if (!res.ok) {
-              const errText = await res.text().catch(() => "");
-              throw new Error(`p.${pn} 업로드 실패: ${res.status} ${errText.slice(0, 120)}`);
+            // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+            try {
+              const { data: d } = await api.post<{ url?: string; public_id?: string }>("/api/invoice-images/upload", { data_url: dataUrl, page: pn });
+              return { pn, url: String(d.url ?? ""), public_id: String(d.public_id ?? "") };
+            } catch (err: unknown) {
+              const msg = err instanceof ApiError ? `${err.status} ${err.message}` : String((err as any)?.message ?? err);
+              throw new Error(`p.${pn} 업로드 실패: ${msg}`);
             }
-            const d = await res.json();
-            return { pn, url: String(d.url ?? ""), public_id: String(d.public_id ?? "") };
           })
         );
         let uploadedCount = 0;

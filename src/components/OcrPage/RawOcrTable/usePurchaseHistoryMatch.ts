@@ -7,6 +7,8 @@ import { useCallback } from "react";
 import { TIMING } from "../../../constants/timing";
 import type { Dispatch, SetStateAction } from "react";
 import type { MatchedItem } from "./types";
+// 2026-08-21 · Framework Phase 3 · fetch → apiClient
+import { api } from "../../../lib/apiClient";
 
 interface UsePurchaseHistoryMatchParams {
   dispHeaders: string[];
@@ -55,9 +57,8 @@ export function usePurchaseHistoryMatch({
     if (targets.length === 0) return;
     const codes = [...new Set(targets.map(t => t.code))];
     try {
-      const res = await fetch(`/api/products/purchase-history?codes=${encodeURIComponent(codes.join(","))}&limit=5`);
-      if (!res.ok) throw new Error(`API ${res.status}`);
-      const data = await res.json();
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+      const { data } = await api.get<{ history?: Record<string, any> }>(`/api/products/purchase-history?codes=${encodeURIComponent(codes.join(","))}&limit=5`);
       const history: Record<string, any> = data.history ?? {};
       // raw 숫자 후보 추출 · 셀 내부 공백 분리 · 사업자·전화·년도 배제
       const extractCandidates = (cells: (string | number | null)[]): number[] => {

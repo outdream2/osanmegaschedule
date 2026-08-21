@@ -15,6 +15,8 @@ import {
   scoreProductRow,
   cleanProductName,
 } from "../../../lib/ocrRowFilter";
+// 2026-08-21 · Framework Phase 3 · fetch → apiClient
+import { api } from "../../../lib/apiClient";
 
 interface UseHandleMatchPageParams {
   dispHeaders: string[];
@@ -150,12 +152,8 @@ export function useHandleMatchPage({
     let lowScoreCount = 0;
     let autoSynPreservedCount = 0;
     try {
-      const res = await fetch("/api/ocr-match", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ names, suppliers }),
-      });
-      const data = await res.json();
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+      const { data } = await api.post<{ matches?: MatchedItem[] }>("/api/ocr-match", { names, suppliers });
       const returned: MatchedItem[] = data.matches ?? [];
       const MIN_ERP_SCORE = 60;
       setMatchItems(prev => {
@@ -234,11 +232,11 @@ export function useHandleMatchPage({
     });
     if (targets.length === 0) return;
     try {
-      const res = await fetch("/api/ocr-match", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ names: targets.map(t => t.name), suppliers: targets.map(t => t.supplier) }),
+      // 2026-08-21 · Framework Phase 3 · fetch → apiClient
+      const { data } = await api.post<{ matches?: MatchedItem[] }>("/api/ocr-match", {
+        names: targets.map(t => t.name),
+        suppliers: targets.map(t => t.supplier),
       });
-      const data = await res.json();
       const matches: MatchedItem[] = data.matches ?? [];
       let filled = 0;
       const dbCellKeys: string[] = [];
