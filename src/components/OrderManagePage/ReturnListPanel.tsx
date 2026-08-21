@@ -1097,7 +1097,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
           </div>
         ) : returnPanelFull ? (
           <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 overflow-y-auto">
-            <div className="bg-white rounded-xl border border-line shadow-sm overflow-hidden shrink-0">
+            <Card padding="none" clip className="shrink-0">
               <div className="flex border-b border-line bg-zinc-50/50">
                 {([
                   { k: "info" as const,     label: "상품정보",   color: "text-sky-700 border-sky-500"     },
@@ -1116,7 +1116,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                 <button type="button" onClick={() => { setReturnSelectedProduct(null); setReturnPanelFull(null); }}
                   className="ml-auto text-[14px] text-zinc-400 hover:text-zinc-600 cursor-pointer shrink-0">닫기</button>
               </div>
-            </div>
+            </Card>
 
             {returnDetailTab === "info" && (
               <ProductDetailRightPanel
