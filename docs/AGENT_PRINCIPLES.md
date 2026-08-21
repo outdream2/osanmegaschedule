@@ -2,8 +2,38 @@
 
 **목적**: 모든 에이전트(및 메인 assistant) 가 이 프로젝트에서 지켜야 할 공통 운영 원칙.
 **보관 위치**: `docs/AGENT_PRINCIPLES.md` (git 관리 · 세션 유실 방지 · 토큰 만료 대비)
-**작성일**: 2026-08-04 (사용자 지시 · 반복 강조)
-**적용 대상**: system-implementer · ocr-master · schedule-master · object-detection-specialist · dead-code-auditor · safe-refactoring-expert · stability-bug-hunter · project-architect · backend-orchestrator · error-catcher · security-architect · performance-optimizer · mobile-ui-designer · research-strategist · Explore · Plan · general-purpose
+**작성일**: 2026-08-04 (사용자 지시 · 반복 강조) · 최종 갱신 2026-08-21
+
+---
+
+## 🛑 최상위 대원칙 (2026-08-21 · 사용자 재강조)
+
+### 0. 현재 기능에 절대 문제 생기지 않게 · 각별 주의 · 모든 원칙 위 상단 (2026-08-21)
+
+**원칙**: 리팩터·확산·이관·신기능 · **무엇이든 · 기존 기능은 100% 유지**. 사용자가 사용하는 어떤 flow 도 · 회귀 X.
+
+**적용 (모든 작업 예외 없음)**:
+1. 매 변경 후 · `npx tsc --noEmit` + `npx vitest run` 즉시 검증 · 실패 시 즉시 롤백/수정
+2. 위험 中/高 판정 시 · 사전 로컬 커밋 (working tree clean) · 롤백 안전 확보
+3. props/state/API 시그니처 변경 X · 하위호환 유지 (새 prop은 default 값)
+4. 시각 변화 없음 (className 변경도 사용자 지시 없으면 X)
+5. 서버 API 응답 shape 변경 X (BC 파괴 금지)
+6. 애매하면 · 스킵 · 사용자 명시 지시 후 진입
+7. 병렬 에이전트 남용 X · 통합 검증 필수
+8. 대량 커밋 금지 · 파일 하나씩 격리
+
+**금지 (예외 없음)**:
+- 사용자 flow 회귀 · 아무리 사소해도
+- 커밋 없이 위험 작업
+- 검증 없이 다음 단계
+- "미미한 시각 차이" · "이 정도는 괜찮음" 판단 · X
+- 사용자 명시 지시 없이 · 대량 자율 변경
+
+**과거 실패 사례:**
+- `c3d7e9d` · LandingPage dots 색상 임의 변경 · revert 필요
+- 병렬 에이전트 · ProductSearchInput 이동 · ScanPage import 미갱신 · build 실패
+
+**이 원칙은 모든 하위 원칙보다 우선 · 프레임워크 이관·테스트 확산·재분류·확산 · 무엇이든 이 원칙 위배 시 · 즉시 중단**
 
 ---
 
