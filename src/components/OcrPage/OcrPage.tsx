@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
-import { Upload, Loader2, X, Zap, AlertCircle, Images, BookOpen, Building2, Plus, Trash2, Pencil, Check, RefreshCw, FileText } from "lucide-react";
+import { Upload, X, Zap, AlertCircle, Images, BookOpen, Building2, Plus, Trash2, Pencil, Check, RefreshCw, FileText } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
 import { PageImageViewer } from "./PageImageViewer";
 import { RawOcrTable, type ConfirmedItem } from "./RawOcrTable";
@@ -521,7 +521,7 @@ const ConfirmedRecordsTab: React.FC = () => {
               className="ml-auto inline-flex items-center gap-1 text-[15px] font-bold text-white bg-rose-500 hover:bg-rose-600 disabled:opacity-40 rounded px-2.5 py-1 cursor-pointer shadow-sm"
               title={`선택한 ${selectedIds.size}건 삭제`}
             >
-              {bulkDeleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+              {bulkDeleting ? <Spinner size={12} /> : <Trash2 size={12} />}
               선택삭제 <span className="bg-white text-rose-600 rounded px-1 ml-0.5">{selectedIds.size}</span>
             </button>
           )}
@@ -682,7 +682,7 @@ const ConfirmedRecordsTab: React.FC = () => {
                                     <td className="px-2 py-1.5 text-gray-500 text-[14px] break-words">{x.memo ?? ""}</td>
                                     <td className="px-2 py-1.5 text-right">
                                       <button onClick={() => handleDelete(x.id)} disabled={deletingId === x.id} className="p-1 text-gray-300 hover:text-rose-500 cursor-pointer disabled:opacity-40" title="삭제">
-                                        {deletingId === x.id ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />}
+                                        {deletingId === x.id ? <Spinner size={11} /> : <Trash2 size={11} />}
                                       </button>
                                     </td>
                                   </tr>
@@ -1699,14 +1699,14 @@ return (
               }`}
               title="ONNX (PP-OCRv5) 로 rawText 추출 → 로컬 파이프라인 (vendor-match·normalize·verify) 으로 파싱/매칭">
               {activeParser === "local"
-                ? <><Loader2 size={15} className="animate-spin" />{statusMsg || `로컬 파싱 중... (${processed}/${pageCount || "?"})`}</>
+                ? <><Spinner size={15} />{statusMsg || `로컬 파싱 중... (${processed}/${pageCount || "?"})`}</>
                 : <><Zap size={15} />ONNX → 🔧 로컬 파싱/매칭{rotDeg !== 0 ? ` · ${rotDeg}° 회전` : ""}</>}
             </button>
           ) : (
             <button onClick={() => handleExtract(null)} disabled={extracting}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm">
               {extracting
-                ? <><Loader2 size={15} className="animate-spin" />{statusMsg || `OCR 추출 중... (${processed}/${pageCount || "?"})`}</>
+                ? <><Spinner size={15} />{statusMsg || `OCR 추출 중... (${processed}/${pageCount || "?"})`}</>
                 : <><Zap size={15} />OCR 추출 (Gemini){rotDeg !== 0 ? ` · ${rotDeg}° 회전` : ""}</>}
             </button>
           )}
